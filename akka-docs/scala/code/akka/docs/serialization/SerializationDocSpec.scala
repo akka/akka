@@ -35,8 +35,7 @@ class MyOwnSerializer extends Serializer {
   // using the type hint (if any, see "includeManifest" above)
   // into the optionally provided classLoader.
   def fromBinary(bytes: Array[Byte],
-                 clazz: Option[Class[_]],
-                 classLoader: Option[ClassLoader] = None): AnyRef = {
+                 clazz: Option[Class[_]]): AnyRef = {
     // Put your code that deserializes here
     //#...
     null
@@ -143,9 +142,7 @@ class SerializationDocSpec extends AkkaSpec {
     val bytes = serializer.toBinary(original)
 
     // Turn it back into an object
-    val back = serializer.fromBinary(bytes,
-      manifest = None,
-      classLoader = None)
+    val back = serializer.fromBinary(bytes, manifest = None)
 
     // Voilá!
     back must equal(original)

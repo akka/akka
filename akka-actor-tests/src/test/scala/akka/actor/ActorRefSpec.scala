@@ -11,11 +11,10 @@ import akka.testkit._
 import akka.util.Timeout
 import akka.util.duration._
 import java.lang.IllegalStateException
-import akka.util.ReflectiveAccess
-import akka.serialization.Serialization
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.dispatch.{ Await, DefaultPromise, Promise, Future }
 import akka.pattern.ask
+import akka.serialization.JavaSerializer
 
 object ActorRefSpec {
 
@@ -240,6 +239,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
 
     "be serializable using Java Serialization on local node" in {
       val a = system.actorOf(Props[InnerActor])
+      val esys = system.asInstanceOf[ExtendedActorSystem]
 
       import java.io._
 
@@ -251,14 +251,21 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       out.flush
       out.close
 
-      Serialization.currentSystem.withValue(system.asInstanceOf[ActorSystemImpl]) {
-        val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+      val bytes = baos.toByteArray
+
+      JavaSerializer.currentSystem.withValue(esys) {
+        val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
         val readA = in.readObject
 
         a.isInstanceOf[LocalActorRef] must be === true
         readA.isInstanceOf[LocalActorRef] must be === true
         (readA eq a) must be === true
       }
+
+      val ser = new JavaSerializer(esys)
+      val readA = ser.fromBinary(bytes, None)
+      readA.isInstanceOf[LocalActorRef] must be === true
+      (readA eq a) must be === true
     }
 
     "throw an exception on deserialize if no system in scope" in {
@@ -297,7 +304,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       out.flush
       out.close
 
-      Serialization.currentSystem.withValue(sysImpl) {
+      JavaSerializer.currentSystem.withValue(sysImpl) {
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
         in.readObject must be === new EmptyLocalActorRef(sysImpl.provider, system.actorFor("/").path / "non-existing", system.eventStream)
       }

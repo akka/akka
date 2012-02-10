@@ -17,7 +17,7 @@ class FileBasedMailboxType(config: Config) extends MailboxType {
   override def create(owner: ActorContext) = new FileBasedMailbox(owner)
 }
 
-class FileBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
+class FileBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with DurableMessageSerialization {
 
   val log = Logging(system, "FileBasedMailbox")
 

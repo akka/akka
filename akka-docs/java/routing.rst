@@ -8,11 +8,6 @@ Routing (Java)
 
    .. contents:: :local:
 
-Akka-core includes some building blocks to build more complex message flow handlers, they are listed and explained below:
-
-Router
-------
-
 A Router is an actor that routes incoming messages to outbound actors.
 The router routes the messages sent to it to its underlying actors called 'routees'.
 
@@ -249,6 +244,16 @@ This is an example of how to programatically create a resizable router:
 *It is also worth pointing out that if you define the ``router`` in the configuration file then this value
 will be used instead of any programmatically sent parameters.*
 
+.. note::
+
+  Resizing is triggered by sending messages to the actor pool, but it is not
+  completed synchronously; instead a message is sent to the “head”
+  :class:`Router` to perform the size change. Thus you cannot rely on resizing
+  to instantaneously create new workers when all others are busy, because the
+  message just sent will be queued to the mailbox of a busy actor. To remedy
+  this, configure the pool to use a balancing dispatcher, see `Configuring
+  Dispatchers`_ for more information.
+
 Custom Router
 ^^^^^^^^^^^^^
 
@@ -311,4 +316,24 @@ Custom Resizer
 A router with dynamically resizable number of routees is implemented by providing a ``akka.routing.Resizer``
 in ``resizer`` method of the ``RouterConfig``. See ``akka.routing.DefaultResizer`` for inspiration
 of how to write your own resize strategy.
+
+Configuring Dispatchers
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The dispatcher for created children of the router will be taken from
+:class:`Props` as described in :ref:`dispatchers-java`. For a dynamic pool it
+makes sense to configure the :class:`BalancingDispatcher` if the precise
+routing is not so important (i.e. no consistent hashing or round-robin is
+required); this enables newly created routees to pick up work immediately by
+stealing it from their siblings.
+
+The “head” router, of couse, cannot run on the same balancing dispatcher,
+because it does not process the same messages, hence this special actor does
+not use the dispatcher configured in :class:`Props`, but takes the
+``routerDispatcher`` from the :class:`RouterConfig` instead, which defaults to
+the actor system’s default dispatcher. All standard routers allow setting this
+property in their constructor or factory method, custom routers have to
+implement the method in a suitable way.
+
+.. includecode:: code/akka/docs/jrouting/CustomRouterDocTestBase.java#dispatchers
 
