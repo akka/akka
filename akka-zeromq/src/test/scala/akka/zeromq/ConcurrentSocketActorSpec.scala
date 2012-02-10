@@ -24,7 +24,8 @@ class ConcurrentSocketActorSpec
   "ConcurrentSocketActor" should {
     "support pub-sub connections" in {
       checkZeroMQInstallation
-      val (publisherProbe, subscriberProbe) = (TestProbe(), TestProbe())
+      val publisherProbe = TestProbe()
+      val subscriberProbe = TestProbe()
       val context = Context()
       val publisher = newPublisher(context, publisherProbe.ref)
       val subscriber = newSubscriber(context, subscriberProbe.ref)
@@ -68,7 +69,7 @@ class ConcurrentSocketActorSpec
       zmq.newSocket(SocketType.Pub, context, Listener(listener), Bind(endpoint))
     }
     def newSubscriber(context: Context, listener: ActorRef) = {
-      zmq.newSocket(SocketType.Sub, context, Listener(listener), Connect(endpoint), Subscribe(Seq.empty))
+      zmq.newSocket(SocketType.Sub, context, Listener(listener), Connect(endpoint), SubscribeAll)
     }
     def newMessageGenerator(actorRef: ActorRef) = {
       system.actorOf(Props(new MessageGeneratorActor(actorRef)))
@@ -110,7 +111,7 @@ class ConcurrentSocketActorSpec
     protected def receive = {
       case _ ⇒
         val payload = "%s".format(messageNumber)
-        messageNumber = messageNumber + 1
+        messageNumber += 1
         actorRef ! ZMQMessage(payload.getBytes)
     }
   }
