@@ -15,6 +15,7 @@ import com.typesafe.config.ConfigFactory
 import akka.pattern.ask
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.config.Config
+import akka.dispatch.Dispatchers
 
 object RoutingSpec {
 
@@ -51,6 +52,7 @@ object RoutingSpec {
         case (sender, message) ⇒ Nil
       }
     }
+    def routerDispatcher: String = Dispatchers.DefaultDispatcherId
   }
 
 }
@@ -538,6 +540,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
     //#crRouter
     case class VoteCountRouter() extends RouterConfig {
+
+      def routerDispatcher: String = Dispatchers.DefaultDispatcherId
 
       //#crRoute
       def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
