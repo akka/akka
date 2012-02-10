@@ -97,7 +97,7 @@ abstract class ExtensionKey[T <: Extension](implicit m: ClassManifest[T]) extend
 
   override def lookup(): ExtensionId[T] = this
   def createExtension(system: ExtendedActorSystem): T =
-    PropertyMaster.getInstanceFor[T](m.erasure, Seq(classOf[ExtendedActorSystem] -> system)) match {
+    DynamicAccess.createInstanceFor[T](m.erasure, Seq(classOf[ExtendedActorSystem] -> system)) match {
       case Left(ex) ⇒ throw ex
       case Right(r) ⇒ r
     }

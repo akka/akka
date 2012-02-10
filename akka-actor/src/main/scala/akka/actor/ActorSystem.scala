@@ -330,7 +330,7 @@ abstract class ExtendedActorSystem extends ActorSystem {
    * set on all threads created by the ActorSystem, if one was set during
    * creation.
    */
-  def propertyMaster: PropertyMaster
+  def dynamicAccess: DynamicAccess
 }
 
 class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Config) extends ExtendedActorSystem {
@@ -360,7 +360,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
    * This is an extension point: by overriding this method, subclasses can
    * control all reflection activities of an actor system.
    */
-  protected def createPropertyMaster(): PropertyMaster = new ReflectivePropertyMaster(findClassLoader)
+  protected def createDynamicAccess(): DynamicAccess = new ReflectiveDynamicAccess(findClassLoader)
 
   protected def findClassLoader: ClassLoader = {
     def findCaller(get: Int ⇒ Class[_]): ClassLoader = {
@@ -382,8 +382,8 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
       getClass.getClassLoader
   }
 
-  private val _pm: PropertyMaster = createPropertyMaster()
-  def propertyMaster: PropertyMaster = _pm
+  private val _pm: DynamicAccess = createDynamicAccess()
+  def dynamicAccess: DynamicAccess = _pm
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
@@ -441,9 +441,9 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
       classOf[Settings] -> settings,
       classOf[EventStream] -> eventStream,
       classOf[Scheduler] -> scheduler,
-      classOf[PropertyMaster] -> propertyMaster)
+      classOf[DynamicAccess] -> dynamicAccess)
 
-    propertyMaster.getInstanceFor[ActorRefProvider](ProviderClass, arguments) match {
+    dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments) match {
       case Left(e)  ⇒ throw e
       case Right(p) ⇒ p
     }
@@ -465,7 +465,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
   def locker: Locker = provider.locker
 
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
-    threadFactory, eventStream, deadLetterMailbox, scheduler, propertyMaster))
+    threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess))
 
   val dispatcher: MessageDispatcher = dispatchers.defaultGlobalDispatcher
 
@@ -584,7 +584,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
   private def loadExtensions() {
     import scala.collection.JavaConversions._
     settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
-      propertyMaster.getObjectFor[AnyRef](fqcn).fold(_ ⇒ propertyMaster.getInstanceFor[AnyRef](fqcn, Seq()), Right(_)) match {
+      dynamicAccess.getObjectFor[AnyRef](fqcn).fold(_ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Seq()), Right(_)) match {
         case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
         case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
         case Right(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)

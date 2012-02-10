@@ -6,7 +6,7 @@ package akka.serialization
 
 import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
 import akka.util.ClassLoaderObjectInputStream
-import akka.actor.PropertyMaster
+import akka.actor.DynamicAccess
 import akka.actor.ExtendedActorSystem
 import scala.util.DynamicVariable
 
@@ -19,8 +19,8 @@ import scala.util.DynamicVariable
  * <ul>
  * <li>taking exactly one argument of type [[akka.actor.ExtendedActorSystem]];
  * this should be the preferred one because all reflective loading of classes
- * during deserialization should use ExtendedActorSystem.propertyMaster (see
- * [[akka.actor.PropertyMaster]]), and</li>
+ * during deserialization should use ExtendedActorSystem.dynamicAccess (see
+ * [[akka.actor.DynamicAccess]]), and</li>
  * <li>without arguments, which is only an option if the serializer does not
  * load classes using reflection.</li>
  * </ul>
@@ -49,7 +49,7 @@ trait Serializer extends scala.Serializable {
 
   /**
    * Produces an object from an array of bytes, with an optional type-hint;
-   * the class should be loaded using ActorSystem.propertyMaster.
+   * the class should be loaded using ActorSystem.dynamicAccess.
    */
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef
 }
@@ -108,7 +108,7 @@ class JavaSerializer(val system: ExtendedActorSystem) extends Serializer {
   }
 
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-    val in = new ClassLoaderObjectInputStream(system.propertyMaster.classLoader, new ByteArrayInputStream(bytes))
+    val in = new ClassLoaderObjectInputStream(system.dynamicAccess.classLoader, new ByteArrayInputStream(bytes))
     val obj = JavaSerializer.currentSystem.withValue(system) {
       in.readObject
     }

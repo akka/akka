@@ -121,7 +121,7 @@ object TestActorRef {
   def apply[T <: Actor](implicit m: Manifest[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
   def apply[T <: Actor](name: String)(implicit m: Manifest[T], system: ActorSystem): TestActorRef[T] = apply[T](Props({
-    PropertyMaster.getInstanceFor[T](m.erasure, Seq()) match {
+    DynamicAccess.createInstanceFor[T](m.erasure, Seq()) match {
       case Right(value) ⇒ value
       case Left(exception) ⇒ throw new ActorInitializationException(null,
         "Could not instantiate Actor" +

@@ -5,7 +5,7 @@
 package akka.serialization
 
 import com.google.protobuf.Message
-import akka.actor.PropertyMaster
+import akka.actor.DynamicAccess
 
 /**
  * This Serializer serializes `com.google.protobuf.Message`s

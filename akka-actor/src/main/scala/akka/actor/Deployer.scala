@@ -82,7 +82,7 @@ case object NoScopeGiven extends Scope {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Deployer(val settings: ActorSystem.Settings, val propertyMaster: PropertyMaster) {
+class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAccess) {
 
   import scala.collection.JavaConverters._
 
@@ -124,7 +124,7 @@ class Deployer(val settings: ActorSystem.Settings, val propertyMaster: PropertyM
       case "broadcast"        ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
       case fqn ⇒
         val args = Seq(classOf[Config] -> deployment)
-        propertyMaster.getInstanceFor[RouterConfig](fqn, args) match {
+        dynamicAccess.createInstanceFor[RouterConfig](fqn, args) match {
           case Right(router) ⇒ router
           case Left(exception) ⇒
             throw new IllegalArgumentException(

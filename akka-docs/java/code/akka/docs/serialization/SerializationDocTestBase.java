@@ -14,7 +14,6 @@ import static org.junit.Assert.*;
 
 import akka.serialization.*;
 import akka.actor.ActorSystem;
-import akka.actor.PropertyMaster;
 import com.typesafe.config.*;
 
 //#imports

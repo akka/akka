@@ -8,7 +8,7 @@ import akka.dispatch._
 import akka.util._
 import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
-import akka.serialization.Serialization
+import akka.serialization.{ Serialization, JavaSerializer }
 import akka.event.EventStream
 import scala.annotation.tailrec
 import java.util.concurrent.{ ConcurrentHashMap }
@@ -399,7 +399,7 @@ case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 private[akka] object DeadLetterActorRef {
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
     @throws(classOf[java.io.ObjectStreamException])
-    private def readResolve(): AnyRef = akka.serialization.JavaSerializer.currentSystem.value.deadLetters
+    private def readResolve(): AnyRef = JavaSerializer.currentSystem.value.deadLetters
   }
 
   val serialized = new SerializedDeadLetterActorRef

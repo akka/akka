@@ -128,12 +128,12 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
 
   /**
    * Tries to load the specified Serializer by the fully-qualified name; the actual
-   * loading is performed by the system’s [[akka.actor.PropertyMaster]].
+   * loading is performed by the system’s [[akka.actor.DynamicAccess]].
    */
   def serializerOf(serializerFQN: String): Either[Throwable, Serializer] = {
-    val pm = system.propertyMaster
-    pm.getInstanceFor[Serializer](serializerFQN, Seq(classOf[ExtendedActorSystem] -> system))
-      .fold(_ ⇒ pm.getInstanceFor[Serializer](serializerFQN, Seq()), Right(_))
+    val dynamicAccess = system.dynamicAccess
+    dynamicAccess.createInstanceFor[Serializer](serializerFQN, Seq(classOf[ExtendedActorSystem] -> system))
+      .fold(_ ⇒ dynamicAccess.createInstanceFor[Serializer](serializerFQN, Seq()), Right(_))
   }
 
   /**

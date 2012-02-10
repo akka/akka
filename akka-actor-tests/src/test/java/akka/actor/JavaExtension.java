@@ -42,8 +42,8 @@ public class JavaExtension {
 
     public final ExtendedActorSystem system;
 
-    public OtherExtension(ExtendedActorSystem i) {
-      system = i;
+    public OtherExtension(ExtendedActorSystem system) {
+      this.system = system;
     }
   }
 

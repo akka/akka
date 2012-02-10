@@ -368,7 +368,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
         }
       case fqcn ⇒
         val args = Seq(classOf[Config] -> config)
-        prerequisites.propertyMaster.getInstanceFor[MailboxType](fqcn, args) match {
+        prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒
             throw new IllegalArgumentException(
@@ -387,7 +387,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
         val args = Seq(
           classOf[Config] -> config,
           classOf[DispatcherPrerequisites] -> prerequisites)
-        prerequisites.propertyMaster.getInstanceFor[ExecutorServiceConfigurator](fqcn, args) match {
+        prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒ throw new IllegalArgumentException(
             ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],

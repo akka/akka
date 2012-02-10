@@ -7,21 +7,20 @@ import akka.util.NonFatal
 import java.lang.reflect.InvocationTargetException
 
 /**
- * The property master is responsible for acquiring all props needed for a
- * performance; in Akka this is the class which is used for
+ * The DynamicAccess implementation is the class which is used for
  * loading all configurable parts of an actor system (the
- * [[akka.actor.ReflectivePropertyMaster]] is the default implementation).
+ * [[akka.actor.ReflectiveDynamicAccess]] is the default implementation).
  *
  * This is an internal facility and users are not expected to encounter it
  * unless they are extending Akka in ways which go beyond simple Extensions.
  */
-private[akka] trait PropertyMaster {
+trait DynamicAccess {
 
   /**
    * Obtain a `Class[_]` object loaded with the right class loader (i.e. the one
    * returned by `classLoader`).
    */
-  def getClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]]
+  def createClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]]
 
   /**
    * Obtain an object conforming to the type T, which is expected to be
@@ -30,7 +29,7 @@ private[akka] trait PropertyMaster {
    * `args` argument. The exact usage of args depends on which type is requested,
    * see the relevant requesting code for details.
    */
-  def getInstanceFor[T: ClassManifest](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Throwable, T]
+  def createInstanceFor[T: ClassManifest](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Throwable, T]
 
   /**
    * Obtain the Scala “object” instance for the given fully-qualified class name, if there is one.
@@ -45,17 +44,17 @@ private[akka] trait PropertyMaster {
 
 }
 
-object PropertyMaster {
+object DynamicAccess {
 
   /**
    * Convenience method which given a `Class[_]` object and a constructor description
    * will create a new instance of that class.
    *
    * {{{
-   * val obj = PropertyMaster.getInstanceFor(clazz, Seq(classOf[Config] -> config, classOf[String] -> name))
+   * val obj = DynamicAccess.createInstanceFor(clazz, Seq(classOf[Config] -> config, classOf[String] -> name))
    * }}}
    */
-  def getInstanceFor[T: ClassManifest](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] = {
+  def createInstanceFor[T: ClassManifest](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] = {
     val types = args.map(_._1).toArray
     val values = args.map(_._2).toArray
     withErrorHandling {
@@ -86,17 +85,17 @@ object PropertyMaster {
 }
 
 /**
- * This is the default [[akka.actor.PropertyMaster]] implementation used by [[akka.actor.ActorSystemImpl]]
+ * This is the default [[akka.actor.DynamicAccess]] implementation used by [[akka.actor.ActorSystemImpl]]
  * unless overridden. It uses reflection to turn fully-qualified class names into `Class[_]` objects
  * and creates instances from there using `getDeclaredConstructor()` and invoking that. The class loader
  * to be used for all this is determined by the [[akka.actor.ActorSystemImpl]]’s `findClassLoader` method
  * by default.
  */
-class ReflectivePropertyMaster(val classLoader: ClassLoader) extends PropertyMaster {
+class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAccess {
 
-  import PropertyMaster.withErrorHandling
+  import DynamicAccess.withErrorHandling
 
-  override def getClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]] =
+  override def createClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]] =
     try {
       val c = classLoader.loadClass(fqcn).asInstanceOf[Class[_ <: T]]
       val t = classManifest[T].erasure
@@ -105,8 +104,8 @@ class ReflectivePropertyMaster(val classLoader: ClassLoader) extends PropertyMas
       case NonFatal(e) ⇒ Left(e)
     }
 
-  override def getInstanceFor[T: ClassManifest](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] =
-    getClassFor(fqcn).fold(Left(_), { c ⇒
+  override def createInstanceFor[T: ClassManifest](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] =
+    createClassFor(fqcn).fold(Left(_), { c ⇒
       val types = args.map(_._1).toArray
       val values = args.map(_._2).toArray
       withErrorHandling {
@@ -119,7 +118,7 @@ class ReflectivePropertyMaster(val classLoader: ClassLoader) extends PropertyMas
     })
 
   override def getObjectFor[T: ClassManifest](fqcn: String): Either[Throwable, T] = {
-    getClassFor(fqcn).fold(Left(_), { c ⇒
+    createClassFor(fqcn).fold(Left(_), { c ⇒
       withErrorHandling {
         val module = c.getDeclaredField("MODULE$")
         module.setAccessible(true)

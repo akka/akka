@@ -6,7 +6,7 @@ package akka.docs.serialization
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
 //#imports
-import akka.actor.{ ActorSystem, PropertyMaster }
+import akka.actor.ActorSystem
 import akka.serialization._
 import com.typesafe.config.ConfigFactory
 

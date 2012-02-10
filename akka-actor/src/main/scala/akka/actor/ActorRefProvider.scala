@@ -318,12 +318,12 @@ class LocalActorRefProvider(
            settings: ActorSystem.Settings,
            eventStream: EventStream,
            scheduler: Scheduler,
-           propertyMaster: PropertyMaster) =
+           dynamicAccess: DynamicAccess) =
     this(_systemName,
       settings,
       eventStream,
       scheduler,
-      new Deployer(settings, propertyMaster))
+      new Deployer(settings, dynamicAccess))
 
   val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
 

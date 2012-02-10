@@ -11,7 +11,7 @@ import scala.collection.JavaConverters.mapAsJavaMapConverter
 import com.typesafe.config.{ ConfigFactory, Config }
 
 import Dispatchers.DefaultDispatcherId
-import akka.actor.{ Scheduler, PropertyMaster, ActorSystem }
+import akka.actor.{ Scheduler, DynamicAccess, ActorSystem }
 import akka.event.Logging.Warning
 import akka.event.EventStream
 import akka.util.Duration
@@ -21,7 +21,7 @@ trait DispatcherPrerequisites {
   def eventStream: EventStream
   def deadLetterMailbox: Mailbox
   def scheduler: Scheduler
-  def propertyMaster: PropertyMaster
+  def dynamicAccess: DynamicAccess
 }
 
 case class DefaultDispatcherPrerequisites(
@@ -29,7 +29,7 @@ case class DefaultDispatcherPrerequisites(
   val eventStream: EventStream,
   val deadLetterMailbox: Mailbox,
   val scheduler: Scheduler,
-  val propertyMaster: PropertyMaster) extends DispatcherPrerequisites
+  val dynamicAccess: DynamicAccess) extends DispatcherPrerequisites
 
 object Dispatchers {
   /**
@@ -139,7 +139,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       case "PinnedDispatcher"    ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
       case fqn ⇒
         val args = Seq(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
-        prerequisites.propertyMaster.getInstanceFor[MessageDispatcherConfigurator](fqn, args) match {
+        prerequisites.dynamicAccess.createInstanceFor[MessageDispatcherConfigurator](fqn, args) match {
           case Right(configurator) ⇒ configurator
           case Left(exception) ⇒
             throw new IllegalArgumentException(
