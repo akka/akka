@@ -25,7 +25,7 @@ import org.jboss.netty.util.Timeout
 import java.util.concurrent.TimeUnit
 import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
 
-class RemoteClientMessageBufferException(message: String, cause: Throwable) extends AkkaException(message, cause) {
+class RemoteClientMessageBufferException(message: String, cause: Throwable) extends AkkaException(message, cause, null) {
   def this(msg: String) = this(msg, null)
 }
 

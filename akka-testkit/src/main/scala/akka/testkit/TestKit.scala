@@ -25,8 +25,8 @@ object TestActor {
   }
   case class RealMessage(msg: AnyRef, sender: ActorRef) extends Message
   case object NullMessage extends Message {
-    override def msg: AnyRef = throw new IllegalActorStateException("last receive did not dequeue a message")
-    override def sender: ActorRef = throw new IllegalActorStateException("last receive did not dequeue a message")
+    override def msg: AnyRef = throw new IllegalActorStateException("last receive did not dequeue a message", null)
+    override def sender: ActorRef = throw new IllegalActorStateException("last receive did not dequeue a message", null)
   }
 }
 

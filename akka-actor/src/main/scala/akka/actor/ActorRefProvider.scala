@@ -286,7 +286,7 @@ trait ActorRefFactory {
   def stop(actor: ActorRef): Unit
 }
 
-class ActorRefProviderException(message: String) extends AkkaException(message)
+class ActorRefProviderException(message: String, system: ActorSystem) extends AkkaException(message, system)
 
 /**
  * Internal Akka use only, used in implementation of system.actorOf.

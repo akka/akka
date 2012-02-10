@@ -47,43 +47,43 @@ case class SelectChildPattern(pattern: Pattern, next: Any) extends SelectionPath
 case class SelectParent(next: Any) extends SelectionPath
 
 // Exceptions for Actors
-class IllegalActorStateException private[akka] (message: String, cause: Throwable = null)
-  extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null);
+class IllegalActorStateException private[akka] (message: String, cause: Throwable = null, system: ActorSystem)
+  extends AkkaException(message, cause, system) {
+  def this(msg: String, system: ActorSystem) = this(msg, null, system);
 }
 
-class ActorKilledException private[akka] (message: String, cause: Throwable)
-  extends AkkaException(message, cause)
+class ActorKilledException private[akka] (message: String, cause: Throwable, system: ActorSystem)
+  extends AkkaException(message, cause, system)
   with NoStackTrace {
-  def this(msg: String) = this(msg, null);
+  def this(msg: String, system: ActorSystem) = this(msg, null, system);
 }
 
-case class InvalidActorNameException(message: String) extends AkkaException(message)
+case class InvalidActorNameException(message: String, system: ActorSystem) extends AkkaException(message, system)
 
-case class ActorInitializationException private[akka] (actor: ActorRef, message: String, cause: Throwable = null)
-  extends AkkaException(message, cause)
+case class ActorInitializationException private[akka] (actor: ActorRef, message: String, cause: Throwable = null, system: ActorSystem)
+  extends AkkaException(message, cause, system)
   with NoStackTrace {
-  def this(msg: String) = this(null, msg, null);
+  def this(msg: String, system: ActorSystem) = this(null, msg, null, system);
 }
 
-class ActorTimeoutException private[akka] (message: String, cause: Throwable = null)
-  extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null);
+class ActorTimeoutException private[akka] (message: String, cause: Throwable = null, system: ActorSystem)
+  extends AkkaException(message, cause, system) {
+  def this(msg: String, system: ActorSystem) = this(msg, null, system);
 }
 
-class InvalidMessageException private[akka] (message: String, cause: Throwable = null)
-  extends AkkaException(message, cause)
+class InvalidMessageException private[akka] (message: String, cause: Throwable = null, system: ActorSystem)
+  extends AkkaException(message, cause, system)
   with NoStackTrace {
-  def this(msg: String) = this(msg, null);
+  def this(msg: String, system: ActorSystem) = this(msg, null, system);
 }
 
-case class DeathPactException private[akka] (dead: ActorRef)
-  extends AkkaException("Monitored actor [" + dead + "] terminated")
+case class DeathPactException private[akka] (dead: ActorRef, system: ActorSystem)
+  extends AkkaException("Monitored actor [" + dead + "] terminated", system)
   with NoStackTrace
 
 // must not pass InterruptedException to other threads
-case class ActorInterruptedException private[akka] (cause: Throwable)
-  extends AkkaException(cause.getMessage, cause)
+case class ActorInterruptedException private[akka] (cause: Throwable, system: ActorSystem)
+  extends AkkaException(cause.getMessage, cause, system)
   with NoStackTrace
 
 /**
@@ -191,7 +191,7 @@ trait Actor {
           "\n\t\t'val actor = context.actorOf(Props[MyActor])'        (to create a supervised child actor from within an actor), or" +
           "\n\t\t'val actor = system.actorOf(Props(new MyActor(..)))' (to create a top level actor from the ActorSystem),        or" +
           "\n\t\t'val actor = context.actorOf(Props[MyActor])'        (to create a supervised child actor from within an actor), or" +
-          "\n\t\t'val actor = system.actorOf(Props(new MyActor(..)))' (to create a top level actor from the ActorSystem)")
+          "\n\t\t'val actor = system.actorOf(Props(new MyActor(..)))' (to create a top level actor from the ActorSystem)", system = null)
 
     if (contextStack.isEmpty) noContextError
     val c = contextStack.head
@@ -274,7 +274,7 @@ trait Actor {
    */
   def unhandled(message: Any) {
     message match {
-      case Terminated(dead) ⇒ throw new DeathPactException(dead)
+      case Terminated(dead) ⇒ throw new DeathPactException(dead, context.system)
       case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender, self))
     }
   }

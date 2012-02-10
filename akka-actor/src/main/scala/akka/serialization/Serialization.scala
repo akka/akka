@@ -14,7 +14,7 @@ import akka.event.Logging
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
 
-case class NoSerializerFoundException(m: String) extends AkkaException(m)
+case class NoSerializerFoundException(m: String, system: ActorSystem) extends AkkaException(m, system)
 
 object Serialization {
 

@@ -51,7 +51,7 @@ class RemoteRouteeProvider(nodes: Iterable[String], _context: ActorContext, _res
   private val nodeAddressIter = {
     val nodeAddresses = nodes map {
       case AddressExtractor(a) ⇒ a
-      case x                   ⇒ throw new ConfigurationException("unparseable remote node " + x)
+      case x                   ⇒ throw new ConfigurationException("unparseable remote node " + x, context.system)
     }
     Stream.continually(nodeAddresses).flatten.iterator
   }
@@ -59,7 +59,7 @@ class RemoteRouteeProvider(nodes: Iterable[String], _context: ActorContext, _res
   override def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
     (nrOfInstances, routees, nodes) match {
       case (_, _, Nil) ⇒ throw new ConfigurationException("Must specify list of remote target.nodes for [%s]"
-        format context.self.path.toString)
+        format context.self.path.toString, null, context.system)
 
       case (n, Nil, ys) ⇒
         val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
@@ -70,7 +70,7 @@ class RemoteRouteeProvider(nodes: Iterable[String], _context: ActorContext, _res
         })
 
       case (_, xs, _) ⇒ throw new ConfigurationException("Remote target.nodes can not be combined with routees for [%s]"
-        format context.self.path.toString)
+        format context.self.path.toString, context.system)
     }
 }
 

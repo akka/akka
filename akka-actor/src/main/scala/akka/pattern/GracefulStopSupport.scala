@@ -37,7 +37,7 @@ trait GracefulStopSupport {
             context stop self
           case ReceiveTimeout ⇒
             result failure new ActorTimeoutException(
-              "Failed to stop [%s] within [%s]".format(target.path, context.receiveTimeout))
+              "Failed to stop [%s] within [%s]".format(target.path, context.receiveTimeout), system)
             context stop self
         }
       }))

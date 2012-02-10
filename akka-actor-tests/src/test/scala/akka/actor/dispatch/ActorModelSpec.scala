@@ -84,8 +84,12 @@ object ActorModelSpec {
       case Increment(count)             ⇒ ack; count.incrementAndGet(); busy.switchOff()
       case CountDownNStop(l)            ⇒ ack; l.countDown(); context.stop(self); busy.switchOff()
       case Restart                      ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
-      case Interrupt                    ⇒ ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!")
       case ThrowException(e: Throwable) ⇒ ack; busy.switchOff(); throw e
+      case Interrupt ⇒
+        ack
+        sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"), context.system))
+        busy.switchOff()
+        throw new InterruptedException("Ping!")
     }
   }
 
@@ -393,9 +397,9 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val a = newTestActor(dispatcher.id)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(ActorInterruptedException(ie)) }
+        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(ActorInterruptedException(ie, system)) }
         val f4 = a ? Reply("foo2")
-        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(ActorInterruptedException(ie)) }
+        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(ActorInterruptedException(ie, system)) }
         val f6 = a ? Reply("bar2")
 
         assert(Await.result(f1, timeout.duration) === "foo")

@@ -78,7 +78,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   }
 
   if (_props.routerConfig.resizer.isEmpty && _routees.isEmpty)
-    throw new ActorInitializationException("router " + _props.routerConfig + " did not register routees!")
+    throw new ActorInitializationException("router " + _props.routerConfig + " did not register routees!", _system)
 
   _routees match {
     case x ⇒ _routees = x // volatile write to publish the route before sending messages
@@ -248,7 +248,7 @@ trait Router extends Actor {
 
   val ref = self match {
     case x: RoutedActorRef ⇒ x
-    case _                 ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef")
+    case _                 ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef", context.system)
   }
 
   final def receive = ({
@@ -310,7 +310,8 @@ case object NoRouter extends RouterConfig {
  */
 case object FromConfig extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
-    throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
+    throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)",
+      routeeProvider.context.system)
 }
 
 /**
@@ -319,7 +320,8 @@ case object FromConfig extends RouterConfig {
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class FromConfig() extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
-    throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
+    throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)",
+      routeeProvider.context.system)
 }
 
 object RoundRobinRouter {

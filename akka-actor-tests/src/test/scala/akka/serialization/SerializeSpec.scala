@@ -13,6 +13,7 @@ import akka.util.duration._
 import scala.reflect.BeanInfo
 import com.google.protobuf.Message
 import akka.pattern.ask
+import akka.AkkaException
 
 object SerializeSpec {
 
@@ -152,6 +153,20 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
         }
       } finally {
         a.shutdown()
+      }
+    }
+
+    "serialize AkkaException" in {
+      val cause = new RuntimeException("TestCause")
+      val exc = new AkkaException("TestExc", cause, system)
+
+      val b = serialize(exc) match {
+        case Left(t)      ⇒ fail(t)
+        case Right(bytes) ⇒ bytes
+      }
+      deserialize(b.asInstanceOf[Array[Byte]], classOf[AkkaException], None) match {
+        case Left(exception) ⇒ fail(exception)
+        case Right(e)        ⇒ assert(e === exc)
       }
     }
 

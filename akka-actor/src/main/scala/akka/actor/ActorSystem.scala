@@ -95,7 +95,7 @@ object ActorSystem {
     final val JvmExitOnFatalError = getBoolean("akka.jvm-exit-on-fatal-error")
 
     if (ConfigVersion != Version)
-      throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
+      throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]", system = null)
 
     override def toString: String = config.root.render
   }

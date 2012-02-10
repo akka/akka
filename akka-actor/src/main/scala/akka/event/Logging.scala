@@ -109,7 +109,7 @@ trait LoggingBus extends ActorEventBus {
           case e: Exception ⇒
             throw new ConfigurationException(
               "Event Handler specified in config can't be loaded [" + loggerName +
-                "] due to [" + e.toString + "]", e)
+                "] due to [" + e.toString + "]", e, system)
         }
       }
       guard.withGuard {
@@ -124,7 +124,7 @@ trait LoggingBus extends ActorEventBus {
       case e: Exception ⇒
         System.err.println("error while starting up EventHandler")
         e.printStackTrace()
-        throw new ConfigurationException("Could not start Event Handler due to [" + e.toString + "]")
+        throw new ConfigurationException("Could not start Event Handler due to [" + e.toString + "]", system)
     }
   }
 
@@ -161,7 +161,7 @@ trait LoggingBus extends ActorEventBus {
         publish(Warning(logName, this.getClass, "Logger " + name + " did not respond within " + timeout + " to InitializeLogger(bus)"))
     }
     if (response != LoggerInitialized)
-      throw new LoggerInitializationException("Logger " + name + " did not respond with LoggerInitialized, sent instead " + response)
+      throw new LoggerInitializationException("Logger " + name + " did not respond with LoggerInitialized, sent instead " + response, system)
     AllLogLevels filter (level >= _) foreach (l ⇒ subscribe(actor, classFor(l)))
     publish(Debug(logName, this.getClass, "logger " + name + " started"))
     actor
@@ -496,7 +496,7 @@ object Logging {
    * Artificial exception injected into Error events if no Throwable is
    * supplied; used for getting a stack dump of error locations.
    */
-  class EventHandlerException extends AkkaException
+  class EventHandlerException extends AkkaException("", null, null)
 
   /**
    * Exception that wraps a LogEvent.
@@ -596,7 +596,7 @@ object Logging {
    */
   def loggerInitialized() = LoggerInitialized
 
-  class LoggerInitializationException(msg: String) extends AkkaException(msg)
+  class LoggerInitializationException(msg: String, system: ActorSystem) extends AkkaException(msg, system)
 
   trait StdOutLogger {
     import java.text.SimpleDateFormat
