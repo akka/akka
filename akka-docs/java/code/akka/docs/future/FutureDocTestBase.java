@@ -381,6 +381,7 @@ public class FutureDocTestBase {
   @Test public void useOnSuccessOnFailureAndOnComplete() {
       {
       Future<String> future = Futures.successful("foo", system.dispatcher());
+
       //#onSuccess
       future.onSuccess(new OnSuccess<String>() {
           public void onSuccess(String result) {
