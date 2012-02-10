@@ -260,6 +260,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     mailBox.cleanUp()
   }
 
+  def inhab = inhabitantsUpdater.get(this)
+
   private val shutdownAction = new Runnable {
     @tailrec
     final def run() {

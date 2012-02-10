@@ -81,11 +81,11 @@ class BalancingDispatcher(
 
   protected[akka] override def register(actor: ActorCell) = {
     super.register(actor)
-    buddies.add(actor)
+    assert(buddies.add(actor))
   }
 
   protected[akka] override def unregister(actor: ActorCell) = {
-    buddies.remove(actor)
+    assert(buddies.remove(actor))
     super.unregister(actor)
   }
 
