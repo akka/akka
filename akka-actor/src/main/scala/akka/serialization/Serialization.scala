@@ -7,7 +7,9 @@ package akka.serialization
 import akka.AkkaException
 import scala.util.DynamicVariable
 import com.typesafe.config.Config
-import akka.actor.{ Extension, ExtendedActorSystem, Address }
+import akka.actor.{ Extension, ExtendedActorSystem, Address, DynamicAccess }
+import akka.event.Logging
+import java.util.concurrent.ConcurrentHashMap
 import akka.util.NonFatal
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
@@ -151,7 +153,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   private[akka] val bindings: Seq[ClassSerializer] = {
     val configuredBindings = for ((k: String, v: String) ← settings.SerializationBindings if v != "none") yield {
-      val c = ReflectiveAccess.getClassFor(k, system.internalClassLoader).fold(throw _, identity[Class[_]])
+      val c = system.dynamicAccess.createClassFor(k).fold(throw _, identity[Class[_]])
       (c, serializers(v))
     }
     sort(configuredBindings)

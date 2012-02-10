@@ -52,6 +52,16 @@ trait Serializer {
    * the class should be loaded using ActorSystem.dynamicAccess.
    */
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef
+
+  /**
+   * Java API: deserialize without type hint
+   */
+  final def fromBinary(bytes: Array[Byte]): AnyRef = fromBinary(bytes, None)
+
+  /**
+   * Java API: deserialize with type hint
+   */
+  final def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = fromBinary(bytes, Option(clazz))
 }
 
 /**
@@ -61,14 +71,13 @@ trait Serializer {
  * the JSerializer (also possible with empty constructor).
  */
 abstract class JSerializer extends Serializer {
-  def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
-    fromBinary(bytes, manifest.orNull)
+  final def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef =
+    fromBinaryJava(bytes, manifest.orNull)
 
   /**
-   * This method should be overridden,
-   * manifest and classLoader may be null.
+   * This method must be implemented, manifest may be null.
    */
-  def fromBinary(bytes: Array[Byte], manifest: Class[_]): AnyRef
+  protected def fromBinaryJava(bytes: Array[Byte], manifest: Class[_]): AnyRef
 }
 
 object NullSerializer extends NullSerializer

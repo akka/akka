@@ -71,14 +71,14 @@ object ZeromqDocSpec {
     def receive = {
       // the first frame is the topic, second is the message
       case m: ZMQMessage if m.firstFrameAsString == "health.heap" ⇒
-        ser.deserialize(m.payload(1), classOf[Heap], None) match {
+        ser.deserialize(m.payload(1), classOf[Heap]) match {
           case Right(Heap(timestamp, used, max)) ⇒
             log.info("Used heap {} bytes, at {}", used, timestampFormat.format(new Date(timestamp)))
           case Left(e) ⇒ throw e
         }
 
       case m: ZMQMessage if m.firstFrameAsString == "health.load" ⇒
-        ser.deserialize(m.payload(1), classOf[Load], None) match {
+        ser.deserialize(m.payload(1), classOf[Load]) match {
           case Right(Load(timestamp, loadAverage)) ⇒
             log.info("Load average {}, at {}", loadAverage, timestampFormat.format(new Date(timestamp)))
           case Left(e) ⇒ throw e
@@ -97,7 +97,7 @@ object ZeromqDocSpec {
     def receive = {
       // the first frame is the topic, second is the message
       case m: ZMQMessage if m.firstFrameAsString == "health.heap" ⇒
-        ser.deserialize(m.payload(1), classOf[Heap], None) match {
+        ser.deserialize(m.payload(1), classOf[Heap]) match {
           case Right(Heap(timestamp, used, max)) ⇒
             if ((used.toDouble / max) > 0.9) count += 1
             else count = 0

@@ -44,9 +44,8 @@ public class SerializationDocTestBase {
 
       // "fromBinary" deserializes the given array,
       // using the type hint (if any, see "includeManifest" above)
-      // into the optionally provided classLoader.
-      @Override public Object fromBinary(byte[] bytes,
-                     Class clazz) {
+      @Override public Object fromBinaryJava(byte[] bytes,
+                     Class<?> clazz) {
         // Put your code that deserializes here
         //#...
         return null;
@@ -74,7 +73,7 @@ public class SerializationDocTestBase {
 
       // Turn it back into an object,
       // the nulls are for the class manifest and for the classloader
-      String back = (String)serializer.fromBinary(bytes, Option.<Class<?>>none().asScala());
+      String back = (String)serializer.fromBinary(bytes);
 
       // Voilá!
       assertEquals(original, back);
