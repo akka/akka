@@ -17,6 +17,7 @@ import akka.util.Duration;
 import akka.util.Timeout;
 import akka.dispatch.Await;
 import akka.dispatch.Future;
+import akka.dispatch.Dispatchers;
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;
 import static akka.pattern.Patterns.ask;
@@ -37,6 +38,19 @@ public class CustomRouterDocTestBase {
   @After
   public void tearDown() {
     system.shutdown();
+  }
+  
+  public static class MyActor extends UntypedActor {
+    @Override public void onReceive(Object o) {}
+  }
+  
+  @Test
+  public void demonstrateDispatchers() {
+    //#dispatchers
+    final ActorRef router = system.actorOf(new Props(MyActor.class)
+      .withRouter(new RoundRobinRouter(5).withDispatcher("head")) // “head” router runs on "head" dispatcher
+      .withDispatcher("workers")); // MyActor “workers” run on "workers" dispatcher
+    //#dispatchers
   }
 
   //#crTest
@@ -105,6 +119,10 @@ public class CustomRouterDocTestBase {
 
   //#crRouter
   public static class VoteCountRouter extends CustomRouterConfig {
+    
+    @Override public String routerDispatcher() {
+      return Dispatchers.DefaultDispatcherId();
+    }
 
     //#crRoute
     @Override
