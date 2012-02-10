@@ -40,10 +40,10 @@ public class JavaExtension {
     static final ExtensionKey<OtherExtension> key = new ExtensionKey<OtherExtension>(OtherExtension.class) {
     };
 
-    public final ActorSystemImpl system;
+    public final ExtendedActorSystem system;
 
-    public OtherExtension(ActorSystemImpl i) {
-      system = i;
+    public OtherExtension(ExtendedActorSystem system) {
+      this.system = system;
     }
   }
 

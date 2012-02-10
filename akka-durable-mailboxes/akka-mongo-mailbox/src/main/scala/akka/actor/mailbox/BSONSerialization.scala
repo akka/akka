@@ -65,7 +65,7 @@ class BSONSerializableMailbox(system: ExtendedActorSystem) extends SerializableB
     val doc = deserializer.decodeAndFetch(in).asInstanceOf[BSONDocument]
     system.log.debug("Deserializing a durable message from MongoDB: {}", doc)
     val msgData = MessageProtocol.parseFrom(doc.as[org.bson.types.Binary]("message").getData)
-    val msg = MessageSerializer.deserialize(system, msgData, system.internalClassLoader)
+    val msg = MessageSerializer.deserialize(system, msgData)
     val ownerPath = doc.as[String]("ownerPath")
     val senderPath = doc.as[String]("senderPath")
     val sender = system.actorFor(senderPath)
