@@ -24,6 +24,9 @@ object ResizerSpec {
         }
       }
     }
+    bal-disp {
+      type = BalancingDispatcher
+    }
     """
 
   class TestActor extends Actor {
@@ -123,15 +126,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       current.routees.size must be(2)
     }
 
-    /*
-     * TODO RK This test seems invalid to me, because it relies on that no resize() event is lost;
-     * this currently fails because I made resize() asynchronous (by sending a message to the
-     * Router), but it could also fail for concurrent send operations, i.e. when one of thread
-     * fails the resizeInProgress.compareAndSet(false, true) check.
-     * 
-     * Either the test must be fixed/removed or resize() must be changed to be blocking.
-     */
-    "resize when busy" ignore {
+    "resize when busy" in {
 
       val busy = new TestLatch(1)
 
@@ -141,7 +136,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         pressureThreshold = 0,
         messagesPerResize = 1)
 
-      val router = system.actorOf(Props[BusyActor].withRouter(RoundRobinRouter(resizer = Some(resizer))))
+      val router = system.actorOf(Props[BusyActor].withRouter(RoundRobinRouter(resizer = Some(resizer))).withDispatcher("bal-disp"))
 
       val latch1 = new TestLatch(1)
       router ! (latch1, busy)

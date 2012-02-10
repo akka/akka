@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import akka.jsr166y.ThreadLocalRandom
 import akka.util.Unsafe
+import akka.dispatch.Dispatchers
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -24,7 +25,7 @@ import akka.util.Unsafe
 private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _supervisor: InternalActorRef, _path: ActorPath)
   extends LocalActorRef(
     _system,
-    _props.copy(creator = () ⇒ _props.routerConfig.createActor()),
+    _props.copy(creator = () ⇒ _props.routerConfig.createActor(), dispatcher = _props.routerConfig.routerDispatcher),
     _supervisor,
     _path) {
 
@@ -76,7 +77,10 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
           r.resize(routeeProps, routeeProvider)
       }
       r
-    } finally Unsafe.instance.monitorExit(actorContext) // unblock Router’s constructor
+    } finally {
+      assert(Thread.holdsLock(actorContext))
+      Unsafe.instance.monitorExit(actorContext) // unblock Router’s constructor
+    }
 
   if (routerConfig.resizer.isEmpty && _routees.isEmpty)
     throw new ActorInitializationException("router " + routerConfig + " did not register routees!")
@@ -168,6 +172,11 @@ trait RouterConfig {
   def createRouteeProvider(context: ActorContext) = new RouteeProvider(context, resizer)
 
   def createActor(): Router = new Router {}
+
+  /**
+   * Dispatcher ID to use for running the “head” actor, i.e. the [[akka.routing.Router]].
+   */
+  def routerDispatcher: String
 
   /**
    * Overridable merge strategy, by default completely prefers “this” (i.e. no merge).
@@ -343,6 +352,7 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case object NoRouter extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
+  def routerDispatcher: String = ""
   override def withFallback(other: RouterConfig): RouterConfig = other
 }
 
@@ -352,13 +362,17 @@ case object NoRouter extends RouterConfig {
 case object FromConfig extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
     throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
+  def routerDispatcher: String = Dispatchers.DefaultDispatcherId
 }
 
 /**
  * Java API: Router configuration which has no default, i.e. external configuration is required.
+ *
+ * This can be used when the dispatcher to be used for the head Router needs to be configured
+ * (defaults to default-dispatcher).
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class FromConfig() extends RouterConfig {
+case class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId) extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
     throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
 }
@@ -389,7 +403,8 @@ object RoundRobinRouter {
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
+case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                            val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig with RoundRobinLike {
 
   /**
@@ -415,6 +430,11 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
    * Java API
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
+
+  /**
+   * Java API for setting routerDispatcher
+   */
+  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
 }
 
 trait RoundRobinLike { this: RouterConfig ⇒
@@ -469,7 +489,8 @@ object RandomRouter {
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
+case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                        val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig with RandomLike {
 
   /**
@@ -495,6 +516,11 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
    * Java API
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
+
+  /**
+   * Java API for setting routerDispatcher
+   */
+  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
 }
 
 trait RandomLike { this: RouterConfig ⇒
@@ -555,7 +581,8 @@ object SmallestMailboxRouter {
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
+case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                                 val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig with SmallestMailboxLike {
 
   /**
@@ -581,6 +608,11 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
    * Java API
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
+
+  /**
+   * Java API for setting routerDispatcher
+   */
+  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
 }
 
 trait SmallestMailboxLike { this: RouterConfig ⇒
@@ -700,7 +732,8 @@ object BroadcastRouter {
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
+case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                           val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig with BroadcastLike {
 
   /**
@@ -727,6 +760,10 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
 
+  /**
+   * Java API for setting routerDispatcher
+   */
+  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
 }
 
 trait BroadcastLike { this: RouterConfig ⇒
@@ -773,7 +810,8 @@ object ScatterGatherFirstCompletedRouter {
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
-                                             override val resizer: Option[Resizer] = None)
+                                             override val resizer: Option[Resizer] = None,
+                                             val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig with ScatterGatherFirstCompletedLike {
 
   if (within <= Duration.Zero) throw new IllegalArgumentException(
@@ -802,6 +840,11 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * Java API
    */
   def this(resizer: Resizer, w: Duration) = this(resizer = Some(resizer), within = w)
+
+  /**
+   * Java API for setting routerDispatcher
+   */
+  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
 }
 
 trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒

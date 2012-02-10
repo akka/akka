@@ -796,7 +796,7 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
 
   def result(atMost: Duration)(implicit permit: CanAwait): T =
     ready(atMost).value.get match {
-      case Left(e: AskTimeoutException) ⇒ throw new AskTimeoutException(e.getMessage, e)
+      case Left(e: AskTimeoutException) ⇒ throw new AskTimeoutException(e.getMessage, e) // to get meaningful stack trace
       case Left(e)                      ⇒ throw e
       case Right(r)                     ⇒ r
     }
