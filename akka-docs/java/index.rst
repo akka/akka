@@ -23,3 +23,4 @@ Java API
    transactors
    fsm
    extending-akka
+   zeromq
