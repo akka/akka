@@ -3,6 +3,7 @@
  */
 package akka.docs.serialization;
 
+import akka.japi.Option;
 import akka.serialization.JSerializer;
 import akka.serialization.Serialization;
 import akka.serialization.SerializationExtension;
@@ -43,10 +44,8 @@ public class SerializationDocTestBase {
 
       // "fromBinary" deserializes the given array,
       // using the type hint (if any, see "includeManifest" above)
-      // into the optionally provided classLoader.
-      @Override public Object fromBinary(byte[] bytes,
-                     Class clazz,
-                     ClassLoader classLoader) {
+      @Override public Object fromBinaryJava(byte[] bytes,
+                     Class<?> clazz) {
         // Put your code that deserializes here
         //#...
         return null;

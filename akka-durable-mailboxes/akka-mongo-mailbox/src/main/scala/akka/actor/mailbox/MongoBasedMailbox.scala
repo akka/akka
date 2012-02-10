@@ -32,7 +32,7 @@ class MongoBasedMailboxType(config: Config) extends MailboxType {
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
-class MongoBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) {
+class MongoBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
   implicit val mailboxBSONSer = new BSONSerializableMailbox(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!

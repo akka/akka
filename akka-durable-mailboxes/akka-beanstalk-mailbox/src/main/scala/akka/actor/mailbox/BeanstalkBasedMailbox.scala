@@ -22,7 +22,7 @@ class BeanstalkBasedMailboxType(config: Config) extends MailboxType {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BeanstalkBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
+class BeanstalkBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with DurableMessageSerialization {
 
   private val settings = BeanstalkBasedMailboxExtension(owner.system)
   private val messageSubmitDelaySeconds = settings.MessageSubmitDelay.toSeconds.toInt
