@@ -40,7 +40,7 @@ class NettySettings(config: Config, val systemName: String) {
     case value ⇒ value
   }
 
-  @deprecated("WARNING: This should only be used by professionals.")
+  @deprecated("WARNING: This should only be used by professionals.", "2.0")
   val PortSelector = getInt("port")
 
   val ConnectionTimeout = Duration(getMilliseconds("connection-timeout"), MILLISECONDS)
