@@ -132,11 +132,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Tries to load the specified Serializer by the fully-qualified name; the actual
    * loading is performed by the system’s [[akka.actor.DynamicAccess]].
    */
-  def serializerOf(serializerFQN: String): Either[Throwable, Serializer] = {
-    val dynamicAccess = system.dynamicAccess
-    dynamicAccess.createInstanceFor[Serializer](serializerFQN, Seq(classOf[ExtendedActorSystem] -> system))
-      .fold(_ ⇒ dynamicAccess.createInstanceFor[Serializer](serializerFQN, Seq()), Right(_))
-  }
+  def serializerOf(serializerFQN: String): Either[Throwable, Serializer] =
+    system.dynamicAccess.createInstanceFor[Serializer](serializerFQN, Seq(classOf[ExtendedActorSystem] -> system)).fold(_ ⇒
+      system.dynamicAccess.createInstanceFor[Serializer](serializerFQN, Seq()), Right(_))
 
   /**
    * A Map of serializer from alias to implementation (class implementing akka.serialization.Serializer)
@@ -153,7 +151,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   private[akka] val bindings: Seq[ClassSerializer] = {
     val configuredBindings = for ((k: String, v: String) ← settings.SerializationBindings if v != "none") yield {
-      val c = system.dynamicAccess.createClassFor(k).fold(throw _, identity[Class[_]])
+      val c = system.dynamicAccess.getClassFor(k).fold(throw _, identity[Class[_]])
       (c, serializers(v))
     }
     sort(configuredBindings)

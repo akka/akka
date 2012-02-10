@@ -17,10 +17,30 @@ import java.lang.reflect.InvocationTargetException
 trait DynamicAccess {
 
   /**
+   * Convenience method which given a `Class[_]` object and a constructor description
+   * will create a new instance of that class.
+   *
+   * {{{
+   * val obj = DynamicAccess.createInstanceFor(clazz, Seq(classOf[Config] -> config, classOf[String] -> name))
+   * }}}
+   */
+  def createInstanceFor[T: ClassManifest](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] = {
+    val types = args.map(_._1).toArray
+    val values = args.map(_._2).toArray
+    withErrorHandling {
+      val constructor = clazz.getDeclaredConstructor(types: _*)
+      constructor.setAccessible(true)
+      val obj = constructor.newInstance(values: _*).asInstanceOf[T]
+      val t = classManifest[T].erasure
+      if (t.isInstance(obj)) Right(obj) else Left(new ClassCastException(clazz + " is not a subtype of " + t))
+    }
+  }
+
+  /**
    * Obtain a `Class[_]` object loaded with the right class loader (i.e. the one
    * returned by `classLoader`).
    */
-  def createClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]]
+  def getClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]]
 
   /**
    * Obtain an object conforming to the type T, which is expected to be
@@ -41,30 +61,6 @@ trait DynamicAccess {
    * other factory method are not applicable (e.g. when constructing a ClassLoaderBinaryInputStream).
    */
   def classLoader: ClassLoader
-
-}
-
-object DynamicAccess {
-
-  /**
-   * Convenience method which given a `Class[_]` object and a constructor description
-   * will create a new instance of that class.
-   *
-   * {{{
-   * val obj = DynamicAccess.createInstanceFor(clazz, Seq(classOf[Config] -> config, classOf[String] -> name))
-   * }}}
-   */
-  def createInstanceFor[T: ClassManifest](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] = {
-    val types = args.map(_._1).toArray
-    val values = args.map(_._2).toArray
-    withErrorHandling {
-      val constructor = clazz.getDeclaredConstructor(types: _*)
-      constructor.setAccessible(true)
-      val obj = constructor.newInstance(values: _*).asInstanceOf[T]
-      val t = classManifest[T].erasure
-      if (t.isInstance(obj)) Right(obj) else Left(new ClassCastException(clazz + " is not a subtype of " + t))
-    }
-  }
 
   /**
    * Caught exception is returned as Left(exception).
@@ -93,9 +89,7 @@ object DynamicAccess {
  */
 class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAccess {
 
-  import DynamicAccess.withErrorHandling
-
-  override def createClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]] =
+  override def getClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]] =
     try {
       val c = classLoader.loadClass(fqcn).asInstanceOf[Class[_ <: T]]
       val t = classManifest[T].erasure
@@ -105,7 +99,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
     }
 
   override def createInstanceFor[T: ClassManifest](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] =
-    createClassFor(fqcn).fold(Left(_), { c ⇒
+    getClassFor(fqcn).fold(Left(_), { c ⇒
       val types = args.map(_._1).toArray
       val values = args.map(_._2).toArray
       withErrorHandling {
@@ -118,7 +112,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
     })
 
   override def getObjectFor[T: ClassManifest](fqcn: String): Either[Throwable, T] = {
-    createClassFor(fqcn).fold(Left(_), { c ⇒
+    getClassFor(fqcn).fold(Left(_), { c ⇒
       withErrorHandling {
         val module = c.getDeclaredField("MODULE$")
         module.setAccessible(true)

@@ -14,7 +14,7 @@ object MessageSerializer {
   def deserialize(system: ExtendedActorSystem, messageProtocol: MessageProtocol): AnyRef = {
     val clazz =
       if (messageProtocol.hasMessageManifest) {
-        system.dynamicAccess.createClassFor[AnyRef](messageProtocol.getMessageManifest.toStringUtf8)
+        system.dynamicAccess.getClassFor[AnyRef](messageProtocol.getMessageManifest.toStringUtf8)
           .fold(throw _, Some(_))
       } else None
     SerializationExtension(system)

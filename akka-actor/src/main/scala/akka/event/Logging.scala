@@ -100,7 +100,7 @@ trait LoggingBus extends ActorEventBus {
         if loggerName != StandardOutLoggerName
       } yield {
         try {
-          system.dynamicAccess.createClassFor[Actor](loggerName) match {
+          system.dynamicAccess.getClassFor[Actor](loggerName) match {
             case Right(actorClass) ⇒ addLogger(system, actorClass, level, logName)
             case Left(exception)   ⇒ throw exception
           }
