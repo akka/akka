@@ -473,7 +473,7 @@ object Dependencies {
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
-  val docs = Seq(Test.scalatest, Test.junit)
+  val docs = Seq(Test.scalatest, Test.junit, playMini)
 
   val zeroMQ = Seq(Test.scalatest, Test.junit, protobuf, Dependency.zeroMQ)
 }
@@ -497,6 +497,7 @@ object Dependency {
     val Slf4j        = "1.6.4"
     val Spring       = "3.0.5.RELEASE"
     val Zookeeper    = "3.4.0"
+    val PlayMini     = "2.0-RC1-SNAPSHOT"
   }
 
   // Compile
@@ -533,6 +534,7 @@ object Dependency {
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
   val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding"  % "0.0.3" // ApacheV2
+  val playMini      = "com.typesafe"                % "play-mini_2.9.1"        % V.PlayMini
 
   // Provided
 
