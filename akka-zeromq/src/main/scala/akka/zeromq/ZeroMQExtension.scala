@@ -7,6 +7,9 @@ import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import akka.dispatch.{ Await }
 import akka.pattern.ask
+import akka.util.Duration
+import java.util.concurrent.TimeUnit
+import akka.util.Timeout
 
 /**
  * A Model to represent a version of the zeromq library
@@ -42,6 +45,9 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
  * @param system The ActorSystem this extension belongs to.
  */
 class ZeroMQExtension(system: ActorSystem) extends Extension {
+
+  val DefaultPollTimeout = Duration(system.settings.config.getMilliseconds("akka.zeromq.poll-timeout"), TimeUnit.MILLISECONDS)
+  val NewSocketTimeout = Timeout(Duration(system.settings.config.getMilliseconds("akka.zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
 
   /**
    * The version of the ZeroMQ library
@@ -136,7 +142,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
    * @return the [[akka.actor.ActorRef]]
    */
   def newSocket(socketParameters: SocketOption*): ActorRef = {
-    implicit val timeout = system.settings.ActorTimeout
+    implicit val timeout = NewSocketTimeout
     val req = (zeromqGuardian ? newSocketProps(socketParameters: _*)).mapTo[ActorRef]
     Await.result(req, timeout.duration)
   }

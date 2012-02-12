@@ -11,6 +11,7 @@ import akka.actor.Props
 import akka.actor.Status.Failure
 import akka.dispatch.Future
 import akka.dispatch.Await
+import akka.util.Timeout
 import akka.util.duration._
 import akka.dispatch.Promise
 import java.lang.IllegalStateException
@@ -46,8 +47,10 @@ class FutureDocSpec extends AkkaSpec {
     //#ask-blocking
     import akka.dispatch.Await
     import akka.pattern.ask
+    import akka.util.Timeout
+    import akka.util.duration._
 
-    implicit val timeout = system.settings.ActorTimeout
+    implicit val timeout = Timeout(5 seconds)
     val future = actor ? msg // enabled by the “ask” import
     val result = Await.result(future, timeout.duration).asInstanceOf[String]
     //#ask-blocking
@@ -57,7 +60,7 @@ class FutureDocSpec extends AkkaSpec {
   "demonstrate usage of mapTo" in {
     val actor = system.actorOf(Props[MyActor])
     val msg = "hello"
-    implicit val timeout = system.settings.ActorTimeout
+    implicit val timeout = Timeout(5 seconds)
     //#map-to
     import akka.dispatch.Future
     import akka.pattern.ask
@@ -164,7 +167,7 @@ class FutureDocSpec extends AkkaSpec {
     val actor3 = system.actorOf(Props[MyActor])
     val msg1 = 1
     val msg2 = 2
-    implicit val timeout = system.settings.ActorTimeout
+    implicit val timeout = Timeout(5 seconds)
     import akka.dispatch.Await
     import akka.pattern.ask
     //#composing-wrong
@@ -188,7 +191,7 @@ class FutureDocSpec extends AkkaSpec {
     val actor3 = system.actorOf(Props[MyActor])
     val msg1 = 1
     val msg2 = 2
-    implicit val timeout = system.settings.ActorTimeout
+    implicit val timeout = Timeout(5 seconds)
     import akka.dispatch.Await
     import akka.pattern.ask
     //#composing
@@ -208,7 +211,7 @@ class FutureDocSpec extends AkkaSpec {
   }
 
   "demonstrate usage of sequence with actors" in {
-    implicit val timeout = system.settings.ActorTimeout
+    implicit val timeout = Timeout(5 seconds)
     val oddActor = system.actorOf(Props[OddActor])
     //#sequence-ask
     // oddActor returns odd numbers sequentially from 1 as a List[Future[Int]]
@@ -256,7 +259,7 @@ class FutureDocSpec extends AkkaSpec {
   }
 
   "demonstrate usage of recover" in {
-    implicit val timeout = system.settings.ActorTimeout
+    implicit val timeout = Timeout(5 seconds)
     val actor = system.actorOf(Props[MyActor])
     val msg1 = -1
     //#recover
@@ -268,7 +271,7 @@ class FutureDocSpec extends AkkaSpec {
   }
 
   "demonstrate usage of recoverWith" in {
-    implicit val timeout = system.settings.ActorTimeout
+    implicit val timeout = Timeout(5 seconds)
     val actor = system.actorOf(Props[MyActor])
     val msg1 = -1
     //#try-recover

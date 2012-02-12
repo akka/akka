@@ -187,12 +187,9 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     fromConfig getOrElse context.system.dispatcher
   }
 
-  private val defaultPollTimeout =
-    Duration(context.system.settings.config.getMilliseconds("akka.zeromq.poll-timeout"), TimeUnit.MILLISECONDS)
-
   private val pollTimeout = {
     val fromConfig = params collectFirst { case PollTimeoutDuration(duration) ⇒ duration }
-    fromConfig getOrElse defaultPollTimeout
+    fromConfig getOrElse ZeroMQExtension(context.system).DefaultPollTimeout
   }
 
   private def newEventLoop: Option[Promise[PollLifeCycle]] = {

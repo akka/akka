@@ -68,7 +68,7 @@ class TestActorRef[T <: Actor](
     if (isTerminated) throw new IllegalActorStateException("underlying actor is terminated")
     underlying.actor.asInstanceOf[T] match {
       case null ⇒
-        val t = underlying.system.settings.ActorTimeout
+        val t = TestKitExtension(_system).DefaultTimeout
         Await.result(this.?(InternalGetActor)(t), t.duration).asInstanceOf[T]
       case ref ⇒ ref
     }
