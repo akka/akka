@@ -27,7 +27,7 @@ be removed in Akka 2.1.
 
 The migration kit is provided in separate jar files. Add the following dependency::
 
-  "com.typesafe.akka" % "akka-actor-migration" % "2.0-SNAPSHOT"
+  "com.typesafe.akka" % "akka-actor-migration" % "2.0-RC1"
 
 The first step of the migration is to do some trivial replacements.
 Search and replace the following (be careful with the non qualified names):
