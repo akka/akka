@@ -81,14 +81,16 @@ case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.def
   extends ExecutorServiceFactoryProvider {
   class ThreadPoolExecutorServiceFactory(val threadFactory: ThreadFactory) extends ExecutorServiceFactory {
     def createExecutorService: ExecutorService = {
-      val service = new ThreadPoolExecutor(
+      val service: ThreadPoolExecutor = new ThreadPoolExecutor(
         corePoolSize,
         maxPoolSize,
         threadTimeout.length,
         threadTimeout.unit,
         queueFactory(),
         threadFactory,
-        rejectionPolicy)
+        rejectionPolicy) with LoadMetrics {
+        def atFullThrottle(): Boolean = this.getActiveCount >= this.getPoolSize
+      }
       service.allowCoreThreadTimeOut(allowCorePoolTimeout)
       service
     }
@@ -182,7 +184,7 @@ case class MonitorableThreadFactory(name: String,
   protected def wire[T <: Thread](t: T): T = {
     t.setUncaughtExceptionHandler(exceptionHandler)
     t.setDaemon(daemonic)
-    contextClassLoader foreach (t.setContextClassLoader(_))
+    contextClassLoader foreach t.setContextClassLoader
     t
   }
 }

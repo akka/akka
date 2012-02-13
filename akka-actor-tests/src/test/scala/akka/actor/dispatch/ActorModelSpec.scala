@@ -110,8 +110,9 @@ object ActorModelSpec {
     val stops = new AtomicLong(0)
 
     def getStats(actorRef: ActorRef) = {
-      stats.putIfAbsent(actorRef, new InterceptorStats) match {
-        case null  ⇒ stats.get(actorRef)
+      val is = new InterceptorStats
+      stats.putIfAbsent(actorRef, is) match {
+        case null  ⇒ is
         case other ⇒ other
       }
     }
@@ -127,12 +128,12 @@ object ActorModelSpec {
     }
 
     protected[akka] abstract override def register(actor: ActorCell) {
-      getStats(actor.self).registers.incrementAndGet()
+      assert(getStats(actor.self).registers.incrementAndGet() == 1)
       super.register(actor)
     }
 
     protected[akka] abstract override def unregister(actor: ActorCell) {
-      getStats(actor.self).unregisters.incrementAndGet()
+      assert(getStats(actor.self).unregisters.incrementAndGet() == 1)
       super.unregister(actor)
     }
 
@@ -368,13 +369,18 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                 val buddies = dispatcher.buddies
                 val mq = dispatcher.messageQueue
 
-                System.err.println("Buddies left: ")
-                buddies.toArray foreach {
+                System.err.println("Buddies left: " + buddies.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
+                buddies.toArray sorted new Ordering[AnyRef] {
+                  def compare(l: AnyRef, r: AnyRef) = (l, r) match {
+                    case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path.toString.compareTo(rr.self.path.toString)
+                  }
+                } foreach {
                   case cell: ActorCell ⇒
                     System.err.println(" - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.status + " " + cell.mailbox.numberOfMessages + " " + SystemMessage.size(cell.mailbox.systemDrain()))
                 }
 
-                System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages + " ")
+                System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
+                Iterator.continually(mq.dequeue) takeWhile (_ ne null) foreach System.err.println
               case _ ⇒
             }
 
@@ -540,7 +546,8 @@ object BalancingDispatcherModelSpec {
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType,
         configureExecutor(),
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+        config.getBoolean("attempt-teamwork")) with MessageDispatcherInterceptor
 
     override def dispatcher(): MessageDispatcher = instance
   }
