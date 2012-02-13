@@ -183,7 +183,7 @@ class RemoteServerHandler(
         instruction.getCommandType match {
           case CommandType.CONNECT if settings.UsePassiveConnections ⇒
             val origin = instruction.getOrigin
-            val inbound = Address("akka", origin.getSystem, Some(origin.getHostname), Some(origin.getPort))
+            val inbound = Address("akka", origin.getSystem, origin.getHostname, origin.getPort)
             val client = new PassiveRemoteClient(event.getChannel, netty, inbound)
             netty.bindClient(inbound, client)
           case CommandType.SHUTDOWN  ⇒ //Will be unbound in channelClosed
@@ -203,7 +203,7 @@ class RemoteServerHandler(
 
   private def getClientAddress(c: Channel): Option[Address] =
     c.getRemoteAddress match {
-      case inet: InetSocketAddress ⇒ Some(Address("akka", "unknown(yet)", Some(inet.getAddress.toString), Some(inet.getPort)))
+      case inet: InetSocketAddress ⇒ Some(Address("akka", "unknown(yet)", inet.getAddress.toString, inet.getPort))
       case _                       ⇒ None
     }
 }
