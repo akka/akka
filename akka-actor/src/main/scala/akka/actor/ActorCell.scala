@@ -495,7 +495,7 @@ private[akka] class ActorCell(
             dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
-            actor.supervisorStrategy.handleSupervisorFailing(self, children)
+            if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
             parent.tell(Failed(e), self)
         } finally {
           checkReceiveTimeout // Reschedule receive timeout
