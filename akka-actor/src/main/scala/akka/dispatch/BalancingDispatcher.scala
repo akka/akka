@@ -110,40 +110,24 @@ class BalancingDispatcher(
     }
   }
 
-  protected[akka] override def systemDispatch(receiver: ActorCell, invocation: SystemMessage): Unit =
-    /*
-     * need to filter out Create() messages here because BalancingDispatcher 
-     * already enqueues this within register(), which is called first by the
-     * ActorCell.
-     */
-    invocation match {
-      case Create() ⇒
-      case x        ⇒ super.systemDispatch(receiver, invocation)
-    }
-
   protected[akka] override def register(actor: ActorCell) = {
-    val mbox = actor.mailbox
-    mbox.systemEnqueue(actor.self, Create())
-    // must make sure that Create() is the first message enqueued in this mailbox
     super.register(actor)
     buddies.add(actor)
-    // must make sure that buddy-add is executed before the actor has had a chance to die
-    registerForExecution(mbox, false, true)
   }
 
   protected[akka] override def unregister(actor: ActorCell) = {
     buddies.remove(actor)
     super.unregister(actor)
-    if (messageQueue.hasMessages) registerOne()
+    if (messageQueue.hasMessages) scheduleOne()
   }
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue.enqueue(receiver.self, invocation)
     if (!registerForExecution(receiver.mailbox, false, false) &&
       buddyWakeupThreshold >= 0 &&
-      _pressure.get >= buddyWakeupThreshold) registerOne()
+      _pressure.get >= buddyWakeupThreshold) scheduleOne()
   }
 
-  @tailrec private def registerOne(i: Iterator[ActorCell] = buddies.iterator): Unit =
-    if (i.hasNext && !registerForExecution(i.next.mailbox, false, false)) registerOne(i)
+  @tailrec private def scheduleOne(i: Iterator[ActorCell] = buddies.iterator): Unit =
+    if (i.hasNext && !registerForExecution(i.next.mailbox, false, false)) scheduleOne(i)
 }

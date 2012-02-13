@@ -185,9 +185,14 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   def id: String
 
   /**
-   * Attaches the specified actor instance to this dispatcher
+   * Attaches the specified actor instance to this dispatcher, which includes
+   * scheduling it to run for the first time (Create() is expected to have
+   * been enqueued by the ActorCell upon mailbox creation).
    */
-  final def attach(actor: ActorCell): Unit = register(actor)
+  final def attach(actor: ActorCell): Unit = {
+    register(actor)
+    registerForExecution(actor.mailbox, false, true)
+  }
 
   /**
    * Detaches the specified actor instance from this dispatcher
@@ -243,7 +248,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     () ⇒ if (inhabitantsUpdater.decrementAndGet(this) == 0) ifSensibleToDoSoThenScheduleShutdown()
 
   /**
-   * If you override it, you must call it. But only ever once. See "attach" for only invocation
+   * If you override it, you must call it. But only ever once. See "attach" for only invocation.
    */
   protected[akka] def register(actor: ActorCell) {
     inhabitantsUpdater.incrementAndGet(this)
