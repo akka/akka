@@ -15,7 +15,7 @@ import java.net.MalformedURLException
  * for example a remote transport would want to associate additional
  * information with an address, then this must be done externally.
  */
-final case class Address(protocol: String, system: String, host: Option[String], port: Option[Int]) {
+final case class Address private (protocol: String, system: String, host: Option[String], port: Option[Int]) {
 
   def this(protocol: String, system: String) = this(protocol, system, None, None)
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
@@ -62,20 +62,25 @@ object RelativeActorPath {
  * This object serves as extractor for Scala and as address parser for Java.
  */
 object AddressExtractor {
-  def unapply(addr: String): Option[Address] = {
+  def unapply(addr: String): Option[Address] =
     try {
       val uri = new URI(addr)
-      if (uri.getScheme == null || (uri.getUserInfo == null && uri.getHost == null)) None
-      else {
-        val addr = Address(uri.getScheme, if (uri.getUserInfo != null) uri.getUserInfo else uri.getHost,
-          if (uri.getUserInfo == null || uri.getHost == null) None else Some(uri.getHost),
-          if (uri.getPort < 0) None else Some(uri.getPort))
-        Some(addr)
-      }
+      unapply(uri)
     } catch {
       case _: URISyntaxException ⇒ None
     }
-  }
+
+  def unapply(uri: URI): Option[Address] =
+    if (uri.getScheme == null || (uri.getUserInfo == null && uri.getHost == null)) None
+    else if (uri.getUserInfo == null) { // case 1: “akka://system”
+      if (uri.getPort != -1) None
+      else Some(Address(uri.getScheme, uri.getHost))
+    } else { // case 2: “akka://system@host:port”
+      if (uri.getHost == null || uri.getPort == -1) None
+      else Some(
+        if (uri.getUserInfo == null) Address(uri.getScheme, uri.getHost)
+        else Address(uri.getScheme, uri.getUserInfo, uri.getHost, uri.getPort))
+    }
 
   /**
    * Try to construct an Address from the given String or throw a java.net.MalformedURLException.
@@ -92,18 +97,15 @@ object AddressExtractor {
 }
 
 object ActorPathExtractor {
-  def unapply(addr: String): Option[(Address, Iterable[String])] = {
+  def unapply(addr: String): Option[(Address, Iterable[String])] =
     try {
       val uri = new URI(addr)
-      if (uri.getScheme == null || (uri.getUserInfo == null && uri.getHost == null) || uri.getPath == null) None
-      else {
-        val addr = Address(uri.getScheme, if (uri.getUserInfo != null) uri.getUserInfo else uri.getHost,
-          if (uri.getUserInfo == null || uri.getHost == null) None else Some(uri.getHost),
-          if (uri.getPort < 0) None else Some(uri.getPort))
-        Some((addr, ActorPath.split(uri.getPath).drop(1)))
+      if (uri.getPath == null) None
+      else AddressExtractor.unapply(uri) match {
+        case None       ⇒ None
+        case Some(addr) ⇒ Some((addr, ActorPath.split(uri.getPath).drop(1)))
       }
     } catch {
       case _: URISyntaxException ⇒ None
     }
-  }
 }

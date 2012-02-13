@@ -42,7 +42,7 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
           service,
           deployment.get.config,
           RoundRobinRouter(3),
-          RemoteScope(Address("akka", "sys", Some("wallace"), Some(2552))))))
+          RemoteScope(Address("akka", "sys", "wallace", 2552)))))
     }
 
   }
