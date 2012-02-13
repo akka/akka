@@ -352,7 +352,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       def flood(num: Int) {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
         val stopLatch = new CountDownLatch(num)
-        val waitTime = (20 seconds).dilated.toMillis
+        val waitTime = (30 seconds).dilated.toMillis
         val boss = system.actorOf(Props(new Actor {
           def receive = {
             case "run"             ⇒ for (_ ← 1 to num) (context.watch(context.actorOf(props))) ! cachedMessage
@@ -369,7 +369,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                 val buddies = dispatcher.buddies
                 val mq = dispatcher.messageQueue
 
-                System.err.println("Buddies left: " + buddies.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhab)
+                System.err.println("Buddies left: " + buddies.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
                 buddies.toArray sorted new Ordering[AnyRef] {
                   def compare(l: AnyRef, r: AnyRef) = (l, r) match {
                     case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path.toString.compareTo(rr.self.path.toString)

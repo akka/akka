@@ -290,6 +290,11 @@ private[akka] class ActorCell(
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     parent.sendSystemMessage(akka.dispatch.Supervise(self))
 
+    /*
+     * attach before submitting the mailbox for the first time, because
+     * otherwise the actor could already be dead before the dispatcher is
+     * informed of its existence (with reversed attach/detach sequence).
+     */
     dispatcher.attach(this)
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅

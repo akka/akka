@@ -26,6 +26,7 @@ object ResizerSpec {
     }
     bal-disp {
       type = BalancingDispatcher
+      buddy-wakeup-threshold = 1
     }
     """
 
