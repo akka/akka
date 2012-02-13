@@ -1028,7 +1028,8 @@ case class DefaultResizer(
    */
   def capacity(routees: IndexedSeq[ActorRef]): Int = {
     val currentSize = routees.size
-    val delta = filter(pressure(routees), currentSize)
+    val press = pressure(routees)
+    val delta = filter(press, currentSize)
     val proposed = currentSize + delta
 
     if (proposed < lowerBound) delta + (lowerBound - proposed)
