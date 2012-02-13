@@ -35,7 +35,7 @@ class BalancingDispatcher(
   attemptTeamWork: Boolean)
   extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 
-  val buddies = new ConcurrentSkipListSet[ActorCell](
+  val team = new ConcurrentSkipListSet[ActorCell](
     Helpers.identityHashComparator(new Comparator[ActorCell] {
       def compare(l: ActorCell, r: ActorCell) = l.self.path compareTo r.self.path
     }))
@@ -82,31 +82,32 @@ class BalancingDispatcher(
     }
   }
 
-  protected[akka] override def register(actor: ActorCell) = {
+  protected[akka] override def register(actor: ActorCell): Unit = {
     super.register(actor)
-    buddies.add(actor)
+    team.add(actor)
   }
 
-  protected[akka] override def unregister(actor: ActorCell) = {
-    buddies.remove(actor)
+  protected[akka] override def unregister(actor: ActorCell): Unit = {
+    team.remove(actor)
     super.unregister(actor)
-    scheduleOne()
+    teamWork()
   }
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue.enqueue(receiver.self, invocation)
     registerForExecution(receiver.mailbox, false, false)
-    scheduleOne()
+    teamWork()
   }
 
-  @tailrec private def scheduleOne(i: Iterator[ActorCell] = buddies.iterator): Unit =
-    if (attemptTeamWork
-      && messageQueue.hasMessages
-      && i.hasNext
-      && (executorService.get().executor match {
-        case lm: LoadMetrics ⇒ lm.atFullThrottle == false
-        case other           ⇒ true
-      })
-      && !registerForExecution(i.next.mailbox, false, false))
-      scheduleOne(i)
+  protected def teamWork(): Unit = if (attemptTeamWork) {
+    @tailrec def scheduleOne(i: Iterator[ActorCell] = team.iterator): Unit =
+      if (messageQueue.hasMessages
+        && i.hasNext
+        && (executorService.get().executor match {
+          case lm: LoadMetrics ⇒ lm.atFullThrottle == false
+          case other           ⇒ true
+        })
+        && !registerForExecution(i.next.mailbox, false, false))
+        scheduleOne(i)
+  }
 }
