@@ -95,8 +95,7 @@ class BalancingDispatcher(
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue.enqueue(receiver.self, invocation)
-    registerForExecution(receiver.mailbox, false, false)
-    teamWork()
+    if (!registerForExecution(receiver.mailbox, false, false)) teamWork()
   }
 
   protected def teamWork(): Unit = if (attemptTeamWork) {
