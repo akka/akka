@@ -75,6 +75,24 @@ akka-testkit
 .. literalinclude:: ../../akka-testkit/src/main/resources/reference.conf
    :language: none
 
+akka-transactor
+~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-transactor/src/main/resources/reference.conf
+   :language: none
+
+akka-agent
+~~~~~~~~~~
+
+.. literalinclude:: ../../akka-agent/src/main/resources/reference.conf
+   :language: none
+
+akka-zeromq
+~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-zeromq/src/main/resources/reference.conf
+   :language: none
+
 akka-beanstalk-mailbox
 ~~~~~~~~~~~~~~~~~~~~~~
 

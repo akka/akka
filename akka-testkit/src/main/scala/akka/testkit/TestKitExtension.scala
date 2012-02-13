@@ -5,6 +5,7 @@ package akka.testkit
 
 import com.typesafe.config.Config
 import akka.util.Duration
+import akka.util.Timeout
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.{ ExtensionId, ActorSystem, Extension, ExtendedActorSystem }
 
@@ -20,4 +21,5 @@ class TestKitSettings(val config: Config) extends Extension {
   val TestTimeFactor = getDouble("akka.test.timefactor")
   val SingleExpectDefaultTimeout = Duration(getMilliseconds("akka.test.single-expect-default"), MILLISECONDS)
   val TestEventFilterLeeway = Duration(getMilliseconds("akka.test.filter-leeway"), MILLISECONDS)
+  val DefaultTimeout = Timeout(Duration(getMilliseconds("akka.test.default-timeout"), MILLISECONDS))
 }
