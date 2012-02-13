@@ -54,9 +54,9 @@ public class ParentActor extends UntypedActor {
       ActorRef scatterGatherFirstCompletedRouter = getContext().actorOf(
           new Props(FibonacciActor.class).withRouter(new ScatterGatherFirstCompletedRouter(5, Duration
               .parse("2 seconds"))), "router");
-      Timeout timeout = getContext().system().settings().ActorTimeout();
-      Future<Object> futureResult = akka.pattern.Patterns.ask(
-          scatterGatherFirstCompletedRouter, new FibonacciActor.FibonacciNumber(10), timeout);
+      Timeout timeout = new Timeout(Duration.parse("5 seconds"));
+      Future<Object> futureResult = akka.pattern.Patterns.ask(scatterGatherFirstCompletedRouter,
+          new FibonacciActor.FibonacciNumber(10), timeout);
       int result = (Integer) Await.result(futureResult, timeout.duration());
       //#scatterGatherFirstCompletedRouter
       System.out.println(String.format("The result of calculating Fibonacci for 10 is %d", result));

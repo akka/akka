@@ -4,14 +4,21 @@
 package akka.actor
 
 import java.io.File
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
+import akka.util.Timeout
+import akka.util.duration._
 
 @deprecated("use ActorSystem instead", "2.0")
 object GlobalActorSystem extends ActorSystemImpl("GlobalSystem", OldConfigurationLoader.defaultConfig) {
   start()
+
+  /**
+   * Timeout used in `OldFuture.get` and default implicit ask timeout.
+   * Hard coded since the migration kit is not intended to be used for production anyway.
+   */
+  val AwaitTimeout = Timeout(5 seconds)
 }
 
 /**

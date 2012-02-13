@@ -18,13 +18,13 @@ class OldFuture[T](future: Future[T]) {
 
   @deprecated("use akka.dispatch.Await.result instead", "2.0")
   def get: T = try {
-    Await.result(future, GlobalActorSystem.settings.ActorTimeout.duration)
+    Await.result(future, GlobalActorSystem.AwaitTimeout.duration)
   } catch {
     case e: TimeoutException ⇒ throw new FutureTimeoutException(e.getMessage, e)
   }
 
   @deprecated("use akka.dispatch.Await.ready instead", "2.0")
-  def await: Future[T] = await(GlobalActorSystem.settings.ActorTimeout.duration)
+  def await: Future[T] = await(GlobalActorSystem.AwaitTimeout.duration)
 
   @deprecated("use akka.dispatch.Await.ready instead", "2.0")
   def await(atMost: Duration) = try {
