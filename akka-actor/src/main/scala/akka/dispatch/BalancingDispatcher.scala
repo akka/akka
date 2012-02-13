@@ -109,5 +109,7 @@ class BalancingDispatcher(
         })
         && !registerForExecution(i.next.mailbox, false, false))
         scheduleOne(i)
+
+    scheduleOne()
   }
 }
