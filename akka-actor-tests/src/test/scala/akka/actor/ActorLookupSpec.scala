@@ -305,6 +305,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       intercept[MalformedURLException] { ActorPath.fromString("://hallo") }
       intercept[MalformedURLException] { ActorPath.fromString("s://dd@:12") }
       intercept[MalformedURLException] { ActorPath.fromString("s://dd@h:hd") }
+      intercept[MalformedURLException] { ActorPath.fromString("a://l:1/b") }
     }
 
   }

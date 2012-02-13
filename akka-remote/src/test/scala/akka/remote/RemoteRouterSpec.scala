@@ -160,7 +160,7 @@ akka.actor.deployment {
       children must have size 2
       val parents = children.map(_.parent)
       parents must have size 1
-      parents.head.address must be(Address("akka", "remote_sys", Some("localhost"), Some(12347)))
+      parents.head.address must be(Address("akka", "remote_sys", "localhost", 12347))
       children foreach (_.address.toString must be === "akka://remote_sys@localhost:12347")
       system.stop(router)
     }
