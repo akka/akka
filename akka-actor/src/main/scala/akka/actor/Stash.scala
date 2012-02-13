@@ -36,7 +36,7 @@ import akka.AkkaException
  *  akka {
  *    actor {
  *      my-custom-dispatcher {
- *        mailboxType = "akka.dispatch.UnboundedDequeBasedMailbox"
+ *        mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
  *      }
  *    }
  *  }
@@ -68,7 +68,7 @@ trait Stash extends Actor {
       case other ⇒ throw new ActorInitializationException(self, "DequeBasedMailbox required, got: " + other.getClass() + """
 An (unbounded) deque-based mailbox can be configured as follows:
   my-custom-dispatcher {
-    mailboxType = "akka.dispatch.UnboundedDequeBasedMailbox"
+    mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
   }
 """)
     }
