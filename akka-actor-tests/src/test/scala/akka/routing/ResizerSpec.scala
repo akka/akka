@@ -27,7 +27,6 @@ object ResizerSpec {
     }
     bal-disp {
       type = BalancingDispatcher
-      buddy-wakeup-threshold = 1
     }
     """
 
@@ -190,7 +189,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
       def loop(loops: Int, d: Duration) = {
         for (m ← 0 until loops) router ! d
-        for (m ← 0 until loops) expectMsg(d * 2, "done")
+        for (m ← 0 until loops) expectMsg(d * 3, "done")
       }
 
       // 2 more should go thru without triggering more
@@ -199,8 +198,8 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       routees(router) must be(3)
 
       // a whole bunch should max it out
-      loop(4, 500 millis)
-      awaitCond(routees(router) == 4)
+      loop(10, 500 millis)
+      awaitCond(routees(router) > 3)
 
       loop(10, 500 millis)
       awaitCond(routees(router) == 5)
