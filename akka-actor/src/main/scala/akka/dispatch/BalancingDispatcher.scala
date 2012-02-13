@@ -90,20 +90,23 @@ class BalancingDispatcher(
   protected[akka] override def unregister(actor: ActorCell) = {
     buddies.remove(actor)
     super.unregister(actor)
-    if (messageQueue.hasMessages) scheduleOne()
+    scheduleOne()
   }
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue.enqueue(receiver.self, invocation)
-    if (!registerForExecution(receiver.mailbox, false, false) && doTeamWork) scheduleOne()
+    registerForExecution(receiver.mailbox, false, false)
+    scheduleOne()
   }
 
-  protected def doTeamWork(): Boolean =
-    attemptTeamWork && (executorService.get().executor match {
-      case lm: LoadMetrics ⇒ lm.atFullThrottle == false
-      case other           ⇒ true
-    })
-
   @tailrec private def scheduleOne(i: Iterator[ActorCell] = buddies.iterator): Unit =
-    if (i.hasNext && !registerForExecution(i.next.mailbox, false, false)) scheduleOne(i)
+    if (attemptTeamWork
+      && messageQueue.hasMessages
+      && i.hasNext
+      && (executorService.get().executor match {
+        case lm: LoadMetrics ⇒ lm.atFullThrottle == false
+        case other           ⇒ true
+      })
+      && !registerForExecution(i.next.mailbox, false, false))
+      scheduleOne(i)
 }
