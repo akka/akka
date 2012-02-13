@@ -52,7 +52,7 @@ object ActorWithBoundedStashSpec {
       akka {
         actor {
           default-dispatcher {
-            mailboxType = "akka.actor.ActorWithBoundedStashSpec$Bounded"
+            mailbox-type = "akka.actor.ActorWithBoundedStashSpec$Bounded"
             stash-capacity = 20
           }
         }

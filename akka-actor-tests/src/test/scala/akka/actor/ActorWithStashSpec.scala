@@ -55,7 +55,7 @@ object ActorWithStashSpec {
       akka {
         actor {
           default-dispatcher {
-            mailboxType = "akka.dispatch.UnboundedDequeBasedMailbox"
+            mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
           }
         }
       }
