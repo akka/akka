@@ -189,7 +189,8 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
     config.getInt("throughput"),
     Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
     mailboxType, configureExecutor(),
-    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
+    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+    config.getBoolean("attempt-teamwork"))
 
   /**
    * Returns the same dispatcher instance for each invocation

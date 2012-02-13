@@ -4,12 +4,11 @@
 
 package akka.dispatch
 
-import util.DynamicVariable
 import akka.actor.{ ActorCell, ActorRef }
-import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 import annotation.tailrec
-import java.util.concurrent.atomic.AtomicBoolean
-import akka.util.Duration
+import akka.util.{ Duration, Helpers }
+import java.util.{ Comparator, Iterator }
+import java.util.concurrent.{ Executor, LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -32,20 +31,27 @@ class BalancingDispatcher(
   throughputDeadlineTime: Duration,
   mailboxType: MailboxType,
   _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  _shutdownTimeout: Duration)
+  _shutdownTimeout: Duration,
+  attemptTeamWork: Boolean)
   extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 
-  val buddies = new ConcurrentSkipListSet[ActorCell](akka.util.Helpers.IdentityHashComparator)
-  val rebalance = new AtomicBoolean(false)
+  val buddies = new ConcurrentSkipListSet[ActorCell](
+    Helpers.identityHashComparator(new Comparator[ActorCell] {
+      def compare(l: ActorCell, r: ActorCell) = l.self.path compareTo r.self.path
+    }))
 
   val messageQueue: MessageQueue = mailboxType match {
-    case u: UnboundedMailbox ⇒ new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
-      final val queue = new ConcurrentLinkedQueue[Envelope]
-    }
-    case BoundedMailbox(cap, timeout) ⇒ new QueueBasedMessageQueue with BoundedMessageQueueSemantics {
-      final val queue = new LinkedBlockingQueue[Envelope](cap)
-      final val pushTimeOut = timeout
-    }
+    case UnboundedMailbox() ⇒
+      new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
+        final val queue = new ConcurrentLinkedQueue[Envelope]
+      }
+
+    case BoundedMailbox(cap, timeout) ⇒
+      new QueueBasedMessageQueue with BoundedMessageQueueSemantics {
+        final val queue = new LinkedBlockingQueue[Envelope](cap)
+        final val pushTimeOut = timeout
+      }
+
     case other ⇒ throw new IllegalArgumentException("Only handles BoundedMailbox and UnboundedMailbox, but you specified [" + other + "]")
   }
 
@@ -84,30 +90,20 @@ class BalancingDispatcher(
   protected[akka] override def unregister(actor: ActorCell) = {
     buddies.remove(actor)
     super.unregister(actor)
-    intoTheFray(except = actor) //When someone leaves, he tosses a friend into the fray
+    if (messageQueue.hasMessages) scheduleOne()
   }
-
-  def intoTheFray(except: ActorCell): Unit =
-    if (rebalance.compareAndSet(false, true)) {
-      try {
-        val i = buddies.iterator()
-
-        @tailrec
-        def throwIn(): Unit = {
-          val n = if (i.hasNext) i.next() else null
-          if (n eq null) ()
-          else if ((n ne except) && registerForExecution(n.mailbox, false, false)) ()
-          else throwIn()
-        }
-        throwIn()
-      } finally {
-        rebalance.set(false)
-      }
-    }
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue.enqueue(receiver.self, invocation)
-    registerForExecution(receiver.mailbox, false, false)
-    intoTheFray(except = receiver)
+    if (!registerForExecution(receiver.mailbox, false, false) && doTeamWork) scheduleOne()
   }
+
+  protected def doTeamWork(): Boolean =
+    attemptTeamWork && (executorService.get().executor match {
+      case lm: LoadMetrics ⇒ lm.atFullThrottle == false
+      case other           ⇒ true
+    })
+
+  @tailrec private def scheduleOne(i: Iterator[ActorCell] = buddies.iterator): Unit =
+    if (i.hasNext && !registerForExecution(i.next.mailbox, false, false)) scheduleOne(i)
 }

@@ -1028,7 +1028,8 @@ case class DefaultResizer(
    */
   def capacity(routees: IndexedSeq[ActorRef]): Int = {
     val currentSize = routees.size
-    val delta = filter(pressure(routees), currentSize)
+    val press = pressure(routees)
+    val delta = filter(press, currentSize)
     val proposed = currentSize + delta
 
     if (proposed < lowerBound) delta + (lowerBound - proposed)
@@ -1058,7 +1059,7 @@ case class DefaultResizer(
       case a: LocalActorRef ⇒
         val cell = a.underlying
         pressureThreshold match {
-          case 1          ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
+          case 1          ⇒ cell.mailbox.isScheduled && cell.mailbox.hasMessages
           case i if i < 1 ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
           case threshold  ⇒ cell.mailbox.numberOfMessages >= threshold
         }

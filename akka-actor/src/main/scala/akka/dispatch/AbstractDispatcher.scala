@@ -156,7 +156,10 @@ trait ExecutionContext {
    * log the problem or whatever is appropriate for the implementation.
    */
   def reportFailure(t: Throwable): Unit
+}
 
+private[akka] trait LoadMetrics { self: Executor ⇒
+  def atFullThrottle(): Boolean
 }
 
 object MessageDispatcher {
@@ -185,9 +188,14 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   def id: String
 
   /**
-   * Attaches the specified actor instance to this dispatcher
+   * Attaches the specified actor instance to this dispatcher, which includes
+   * scheduling it to run for the first time (Create() is expected to have
+   * been enqueued by the ActorCell upon mailbox creation).
    */
-  final def attach(actor: ActorCell): Unit = register(actor)
+  final def attach(actor: ActorCell): Unit = {
+    register(actor)
+    registerForExecution(actor.mailbox, false, true)
+  }
 
   /**
    * Detaches the specified actor instance from this dispatcher
@@ -243,7 +251,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     () ⇒ if (inhabitantsUpdater.decrementAndGet(this) == 0) ifSensibleToDoSoThenScheduleShutdown()
 
   /**
-   * If you override it, you must call it. But only ever once. See "attach" for only invocation
+   * If you override it, you must call it. But only ever once. See "attach" for only invocation.
    */
   protected[akka] def register(actor: ActorCell) {
     inhabitantsUpdater.incrementAndGet(this)
@@ -259,6 +267,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     actor.mailbox = deadLetterMailbox
     mailBox.cleanUp()
   }
+
+  def inhabitants: Long = inhabitantsUpdater.get(this)
 
   private val shutdownAction = new Runnable {
     @tailrec
@@ -440,11 +450,13 @@ object ForkJoinExecutorConfigurator {
   final class AkkaForkJoinPool(parallelism: Int,
                                threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
                                unhandledExceptionHandler: Thread.UncaughtExceptionHandler)
-    extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) {
+    extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) with LoadMetrics {
     override def execute(r: Runnable): Unit = r match {
       case m: Mailbox ⇒ super.execute(new MailboxExecutionTask(m))
       case other      ⇒ super.execute(other)
     }
+
+    def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }
 
   /**

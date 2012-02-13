@@ -8,7 +8,7 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
 import scala.annotation.tailrec
 import com.typesafe.config.Config
-import akka.actor.{ ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorRef, ActorCell }
+import akka.actor.{ ActorInitializationException, ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorRef, ActorCell }
 import akka.dispatch.{ TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
 import akka.util.duration.intToDurationInt
 import akka.util.{ Switch, Duration }
@@ -131,6 +131,17 @@ class CallingThreadDispatcher(
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = false
 
   protected[akka] override def shutdownTimeout = 1 second
+
+  protected[akka] override def register(actor: ActorCell): Unit = {
+    super.register(actor)
+    actor.mailbox match {
+      case mbox: CallingThreadMailbox ⇒
+        val queue = mbox.queue
+        queue.enter
+        runQueue(mbox, queue)
+      case x ⇒ throw new ActorInitializationException("expected CallingThreadMailbox, got " + x.getClass)
+    }
+  }
 
   override def suspend(actor: ActorCell) {
     actor.mailbox match {
