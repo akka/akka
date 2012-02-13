@@ -378,10 +378,11 @@ public interface Config extends ConfigMergeable {
     Object getAnyRef(String path);
 
     /**
-     * Gets the value at the given path, unless the value is a null value or
-     * missing, in which case it throws just like the other getters. Use
-     * {@code get()} from the {@link java.util.Map Map} interface if you want an
-     * unprocessed value.
+     * Gets the value at the given path, unless the value is a
+     * null value or missing, in which case it throws just like
+     * the other getters. Use {@code get()} on the {@link
+     * Config#root()} object (or other object in the tree) if you
+     * want an unprocessed value.
      *
      * @param path
      *            path expression

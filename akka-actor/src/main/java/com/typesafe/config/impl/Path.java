@@ -11,6 +11,8 @@ import com.typesafe.config.ConfigException;
 
 final class Path implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     final private String first;
     final private Path remainder;
 
