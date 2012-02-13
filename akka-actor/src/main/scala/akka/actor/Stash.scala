@@ -4,6 +4,7 @@
 package akka.actor
 
 import akka.dispatch.{ Envelope, DequeBasedMessageQueue }
+import akka.AkkaException
 
 /**
  *  The `Stash` trait enables an actor to temporarily stash away messages that can not or
@@ -49,6 +50,15 @@ trait Stash extends Actor {
    */
   private var theStash = Vector.empty[Envelope]
 
+  /* The capacity of the stash. Either configured in the actor's dispatcher config, or
+   * `Int.MaxValue`.
+   */
+  private val capacity =
+    try context.system.settings.config.getConfig(context.props.dispatcher).getInt("stash-capacity")
+    catch {
+      case _ ⇒ Int.MaxValue
+    }
+
   /* The actor's deque-based message queue.
    * `mailbox.queue` is the underlying `Deque`.
    */
@@ -67,8 +77,12 @@ An (unbounded) deque-based mailbox can be configured as follows:
   /**
    *  Adds the current message (the message that the actor received last) to the
    *  actor's stash.
+   *
+   *  @throws StashOverflowException in case of a stash capacity violation
    */
-  def stash(): Unit = theStash :+= context.asInstanceOf[ActorCell].currentMessage
+  def stash(): Unit =
+    if (theStash.size < capacity) theStash :+= context.asInstanceOf[ActorCell].currentMessage
+    else throw new StashOverflowException("Couldn't enqueue message " + context.asInstanceOf[ActorCell].currentMessage + " to stash of " + self)
 
   /**
    *  Prepends all messages in the stash to the mailbox, and then clears the stash.
@@ -117,3 +131,5 @@ An (unbounded) deque-based mailbox can be configured as follows:
   }
 
 }
+
+class StashOverflowException(message: String, cause: Throwable = null) extends AkkaException(message, cause)

@@ -18,6 +18,7 @@ object ActorWithBoundedStashSpec {
     def receive = {
       case "hello" ⇒
         stash()
+        sender ! "OK"
       case "world" ⇒
         self ! "world"
         try {
@@ -29,13 +30,30 @@ object ActorWithBoundedStashSpec {
     }
   }
 
+  class StashingActorWithOverflow(implicit sys: ActorSystem) extends Actor with Stash {
+    var numStashed = 0
+
+    def receive = {
+      case "hello" ⇒
+        numStashed += 1
+        try {
+          stash()
+        } catch {
+          case e: StashOverflowException ⇒
+            if (numStashed == 21) stashOverflow.open()
+        }
+    }
+  }
+
   @volatile var expectedException: TestLatch = null
+  @volatile var stashOverflow: TestLatch = null
 
   val testConf: Config = ConfigFactory.parseString("""
       akka {
         actor {
           default-dispatcher {
             mailboxType = "akka.actor.ActorWithBoundedStashSpec$Bounded"
+            stash-capacity = 20
           }
         }
       }
@@ -68,6 +86,18 @@ class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testC
       // cause unstashAll with capacity violation
       stasher ! "world"
       Await.ready(ActorWithBoundedStashSpec.expectedException, 10 seconds)
+    }
+
+  }
+
+  "An Actor with bounded Stash" must {
+
+    "throw a StashOverflowException in case of a stash capacity violation" in {
+      ActorWithBoundedStashSpec.stashOverflow = new TestLatch
+      val stasher = system.actorOf(Props(new StashingActorWithOverflow))
+      // fill up stash
+      for (_ ← 1 to 21) { stasher ! "hello" }
+      Await.ready(ActorWithBoundedStashSpec.stashOverflow, 10 seconds)
     }
 
   }
