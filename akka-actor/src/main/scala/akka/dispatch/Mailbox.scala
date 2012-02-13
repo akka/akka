@@ -330,61 +330,32 @@ trait UnboundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
 }
 
 trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
-  import java.util.concurrent.locks.ReentrantLock
-
-  /* used to enable atomic all-or-nothing enqueueAllFirst in the presence of potential
-   * capacity violations
-   */
-  private val lock = new ReentrantLock(false)
-
   def pushTimeOut: Duration
   override def queue: BlockingDeque[Envelope]
 
   final def enqueue(receiver: ActorRef, handle: Envelope) {
-    lock.lock()
-    try {
-      if (pushTimeOut.length > 0) {
-        queue.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
-          throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
-        }
-      } else queue put handle
-    } finally {
-      lock.unlock()
-    }
+    if (pushTimeOut.length > 0) {
+      queue.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
+        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
+      }
+    } else queue put handle
   }
 
   final def enqueueFirst(receiver: ActorRef, handle: Envelope) {
-    lock.lock()
-    try {
-      if (pushTimeOut.length > 0) {
-        queue.offerFirst(handle, pushTimeOut.length, pushTimeOut.unit) || {
-          throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
-        }
-      } else queue putFirst handle
-    } finally {
-      lock.unlock()
-    }
+    if (pushTimeOut.length > 0) {
+      queue.offerFirst(handle, pushTimeOut.length, pushTimeOut.unit) || {
+        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
+      }
+    } else queue putFirst handle
   }
 
   final def enqueueAllFirst(receiver: ActorRef, handleIterator: Iterator[Envelope], size: Int) {
-    lock.lock()
-    try {
-      if (queue.asInstanceOf[BlockingQueue[Envelope]].remainingCapacity >= size) {
-        handleIterator foreach { enqueueFirst(receiver, _) }
-      } else throw new MessageQueueAppendFailedException("Couldn't enqueue stash to " + receiver)
-    } finally {
-      lock.unlock()
-    }
+    if (queue.asInstanceOf[BlockingQueue[Envelope]].remainingCapacity >= size) {
+      handleIterator foreach { enqueueFirst(receiver, _) }
+    } else throw new MessageQueueAppendFailedException("Couldn't enqueue stash to " + receiver)
   }
 
-  final def dequeue(): Envelope = {
-    lock.lock()
-    try {
-      queue.poll()
-    } finally {
-      lock.unlock()
-    }
-  }
+  final def dequeue(): Envelope = queue.poll()
 }
 
 trait DequeBasedMessageQueue extends QueueBasedMessageQueue {
