@@ -9,7 +9,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 """) {
 
   "An AccrualFailureDetector" must {
-    val conn = Address("akka", "", Some("localhost"), Some(2552))
+    val conn = Address("akka", "", "localhost", 2552)
 
     "mark node as available after a series of successful heartbeats" in {
       val fd = new AccrualFailureDetector(system)
