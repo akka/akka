@@ -366,14 +366,12 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
           case e ⇒
             dispatcher match {
               case dispatcher: BalancingDispatcher ⇒
-                val buddies = dispatcher.buddies
+                val team = dispatcher.team
                 val mq = dispatcher.messageQueue
 
-                System.err.println("Buddies left: " + buddies.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
-                buddies.toArray sorted new Ordering[AnyRef] {
-                  def compare(l: AnyRef, r: AnyRef) = (l, r) match {
-                    case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path.toString.compareTo(rr.self.path.toString)
-                  }
+                System.err.println("Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
+                team.toArray sorted new Ordering[AnyRef] {
+                  def compare(l: AnyRef, r: AnyRef) = (l, r) match { case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path compareTo rr.self.path }
                 } foreach {
                   case cell: ActorCell ⇒
                     System.err.println(" - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.status + " " + cell.mailbox.numberOfMessages + " " + SystemMessage.size(cell.mailbox.systemDrain()))
