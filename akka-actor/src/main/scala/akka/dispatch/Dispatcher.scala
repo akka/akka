@@ -32,12 +32,11 @@ class Dispatcher(
   val shutdownTimeout: Duration)
   extends MessageDispatcher(_prerequisites) {
 
-  protected[akka] val executorServiceFactory: ExecutorServiceFactory =
+  protected val executorServiceFactory: ExecutorServiceFactory =
     executorServiceFactoryProvider.createExecutorServiceFactory(id, prerequisites.threadFactory)
 
-  protected[akka] val executorService = new AtomicReference[ExecutorService](new ExecutorServiceDelegate {
-    lazy val executor = executorServiceFactory.createExecutorService
-  })
+  protected val executorService = new AtomicReference[ExecutorServiceDelegate](
+    new ExecutorServiceDelegate { lazy val executor = executorServiceFactory.createExecutorService })
 
   protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     val mbox = receiver.mailbox

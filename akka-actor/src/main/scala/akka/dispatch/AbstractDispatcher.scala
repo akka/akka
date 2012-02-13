@@ -156,7 +156,10 @@ trait ExecutionContext {
    * log the problem or whatever is appropriate for the implementation.
    */
   def reportFailure(t: Throwable): Unit
+}
 
+private[akka] trait LoadMetrics { self: Executor ⇒
+  def atFullThrottle(): Boolean
 }
 
 object MessageDispatcher {
@@ -447,11 +450,13 @@ object ForkJoinExecutorConfigurator {
   final class AkkaForkJoinPool(parallelism: Int,
                                threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
                                unhandledExceptionHandler: Thread.UncaughtExceptionHandler)
-    extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) {
+    extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) with LoadMetrics {
     override def execute(r: Runnable): Unit = r match {
       case m: Mailbox ⇒ super.execute(new MailboxExecutionTask(m))
       case other      ⇒ super.execute(other)
     }
+
+    def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }
 
   /**

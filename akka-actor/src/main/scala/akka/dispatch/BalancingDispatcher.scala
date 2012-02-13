@@ -4,15 +4,11 @@
 
 package akka.dispatch
 
-import util.DynamicVariable
 import akka.actor.{ ActorCell, ActorRef }
-import java.util.concurrent.{ LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 import annotation.tailrec
-import java.util.concurrent.atomic.AtomicBoolean
 import akka.util.{ Duration, Helpers }
 import java.util.{ Comparator, Iterator }
-import akka.util.Unsafe
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.{ Executor, LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -36,7 +32,7 @@ class BalancingDispatcher(
   mailboxType: MailboxType,
   _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
   _shutdownTimeout: Duration,
-  buddyWakeupThreshold: Int)
+  attemptTeamWork: Boolean)
   extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 
   val buddies = new ConcurrentSkipListSet[ActorCell](
@@ -48,42 +44,18 @@ class BalancingDispatcher(
     case UnboundedMailbox() ⇒
       new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
         final val queue = new ConcurrentLinkedQueue[Envelope]
-
-        override def enqueue(receiver: ActorRef, handle: Envelope) = {
-          super.enqueue(receiver, handle)
-          _pressure.getAndIncrement()
-        }
-
-        override def dequeue(): Envelope =
-          super.dequeue() match {
-            case null ⇒ null
-            case x    ⇒ _pressure.getAndDecrement(); x
-          }
       }
 
     case BoundedMailbox(cap, timeout) ⇒
       new QueueBasedMessageQueue with BoundedMessageQueueSemantics {
         final val queue = new LinkedBlockingQueue[Envelope](cap)
         final val pushTimeOut = timeout
-
-        override def enqueue(receiver: ActorRef, handle: Envelope) = {
-          super.enqueue(receiver, handle)
-          _pressure.getAndIncrement()
-        }
-
-        override def dequeue(): Envelope =
-          super.dequeue() match {
-            case null ⇒ null
-            case x    ⇒ _pressure.getAndDecrement(); x
-          }
       }
 
     case other ⇒ throw new IllegalArgumentException("Only handles BoundedMailbox and UnboundedMailbox, but you specified [" + other + "]")
   }
 
   protected[akka] override def createMailbox(actor: ActorCell): Mailbox = new SharingMailbox(actor)
-
-  private val _pressure = new AtomicLong
 
   class SharingMailbox(_actor: ActorCell) extends Mailbox(_actor) with DefaultSystemMessageQueue {
     final def enqueue(receiver: ActorRef, handle: Envelope) = messageQueue.enqueue(receiver, handle)
@@ -123,10 +95,14 @@ class BalancingDispatcher(
 
   override protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     messageQueue.enqueue(receiver.self, invocation)
-    if (!registerForExecution(receiver.mailbox, false, false) &&
-      buddyWakeupThreshold >= 0 &&
-      _pressure.get >= buddyWakeupThreshold) scheduleOne()
+    if (!registerForExecution(receiver.mailbox, false, false) && doTeamWork) scheduleOne()
   }
+
+  protected def doTeamWork(): Boolean =
+    attemptTeamWork && (executorService.get().executor match {
+      case lm: LoadMetrics ⇒ lm.atFullThrottle == false
+      case other           ⇒ true
+    })
 
   @tailrec private def scheduleOne(i: Iterator[ActorCell] = buddies.iterator): Unit =
     if (i.hasNext && !registerForExecution(i.next.mailbox, false, false)) scheduleOne(i)
