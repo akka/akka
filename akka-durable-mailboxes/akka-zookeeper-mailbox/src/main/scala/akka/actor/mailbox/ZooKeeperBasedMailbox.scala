@@ -20,7 +20,7 @@ class ZooKeeperBasedMailboxType(config: Config) extends MailboxType {
   override def create(owner: ActorContext) = new ZooKeeperBasedMailbox(owner)
 }
 
-class ZooKeeperBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
+class ZooKeeperBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with DurableMessageSerialization {
 
   private val settings = ZooKeeperBasedMailboxExtension(owner.system)
   val queueNode = "/queues"

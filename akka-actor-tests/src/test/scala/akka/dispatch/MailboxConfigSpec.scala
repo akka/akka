@@ -153,7 +153,7 @@ class PriorityMailboxSpec extends MailboxSpec {
 object CustomMailboxSpec {
   val config = """
     my-dispatcher {
-       mailboxType = "akka.dispatch.CustomMailboxSpec$MyMailboxType"
+       mailbox-type = "akka.dispatch.CustomMailboxSpec$MyMailboxType"
     }
     """
 

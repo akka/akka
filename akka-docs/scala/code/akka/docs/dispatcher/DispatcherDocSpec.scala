@@ -94,13 +94,13 @@ object DispatcherDocSpec {
 
     //#prio-dispatcher-config
     prio-dispatcher {
-      mailboxType = "akka.docs.dispatcher.DispatcherDocSpec$PrioMailbox"
+      mailbox-type = "akka.docs.dispatcher.DispatcherDocSpec$PrioMailbox"
     }
     //#prio-dispatcher-config
 
     //#prio-dispatcher-config-java
     prio-dispatcher-java {
-      mailboxType = "akka.docs.dispatcher.DispatcherDocTestBase$PrioMailbox"
+      mailbox-type = "akka.docs.dispatcher.DispatcherDocTestBase$PrioMailbox"
     }
     //#prio-dispatcher-config-java
   """

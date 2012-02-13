@@ -24,6 +24,9 @@ object ResizerSpec {
         }
       }
     }
+    bal-disp {
+      type = BalancingDispatcher
+    }
     """
 
   class TestActor extends Actor {
@@ -133,7 +136,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         pressureThreshold = 0,
         messagesPerResize = 1)
 
-      val router = system.actorOf(Props[BusyActor].withRouter(RoundRobinRouter(resizer = Some(resizer))))
+      val router = system.actorOf(Props[BusyActor].withRouter(RoundRobinRouter(resizer = Some(resizer))).withDispatcher("bal-disp"))
 
       val latch1 = new TestLatch(1)
       router ! (latch1, busy)
@@ -179,10 +182,10 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(2)
 
       def loop(loops: Int, t: Int, latch: TestLatch, count: AtomicInteger) = {
-        (10 millis).dilated.sleep
+        (100 millis).dilated.sleep
         for (m ← 0 until loops) {
           router.!((t, latch, count))
-          (10 millis).dilated.sleep
+          (100 millis).dilated.sleep
         }
       }
 
@@ -198,7 +201,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       // a whole bunch should max it out
       val count2 = new AtomicInteger
       val latch2 = TestLatch(10)
-      loop(10, 200, latch2, count2)
+      loop(10, 500, latch2, count2)
       Await.ready(latch2, TestLatch.DefaultTimeout)
       count2.get must be(10)
 
@@ -238,7 +241,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       // let it cool down
       for (m ← 0 to 3) {
         router ! 1
-        (200 millis).dilated.sleep
+        (500 millis).dilated.sleep
       }
 
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be < (z)

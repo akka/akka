@@ -5,10 +5,8 @@
 package akka
 
 import akka.actor.newUuid
-import java.net.{ InetAddress, UnknownHostException }
 
 object AkkaException {
-  val hostname = try InetAddress.getLocalHost.getHostAddress catch { case e: UnknownHostException ⇒ "unknown host" }
 
   def toStringWithStackTrace(throwable: Throwable): String = throwable match {
     case null              ⇒ "Unknown Throwable: was 'null'"
@@ -36,7 +34,7 @@ object AkkaException {
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 class AkkaException(message: String = "", cause: Throwable = null) extends RuntimeException(message, cause) with Serializable {
-  val uuid = "%s_%s".format(AkkaException.hostname, newUuid)
+  lazy val uuid = newUuid.toString
 
   override lazy val toString =
     "%s:%s\n[%s]".format(getClass.getName, message, uuid)

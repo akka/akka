@@ -10,10 +10,10 @@ import com.typesafe.config.Config
 object PriorityDispatcherSpec {
   val config = """
     unbounded-prio-dispatcher {
-      mailboxType = "akka.dispatch.PriorityDispatcherSpec$Unbounded"
+      mailbox-type = "akka.dispatch.PriorityDispatcherSpec$Unbounded"
     }
     bounded-prio-dispatcher {
-      mailboxType = "akka.dispatch.PriorityDispatcherSpec$Bounded"
+      mailbox-type = "akka.dispatch.PriorityDispatcherSpec$Bounded"
     }
     """
 

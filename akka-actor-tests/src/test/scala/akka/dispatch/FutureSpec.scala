@@ -860,7 +860,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         val l1, l2 = new TestLatch
         val complex = Future() map { _ ⇒
-          Future.blocking(system.dispatcher)
+          Future.blocking()
           val nested = Future(())
           nested foreach (_ ⇒ l1.open())
           Await.ready(l1, TestLatch.DefaultTimeout) // make sure nested is completed

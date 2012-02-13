@@ -190,7 +190,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell) extends MessageQueue 
   final def processAllSystemMessages() {
     var nextMessage = systemDrain()
     try {
-      while (nextMessage ne null) {
+      while ((nextMessage ne null) && !isClosed) {
         if (debug) println(actor.self + " processing system message " + nextMessage + " with children " + actor.childrenRefs)
         actor systemInvoke nextMessage
         nextMessage = nextMessage.next

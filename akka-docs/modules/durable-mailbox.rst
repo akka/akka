@@ -99,7 +99,7 @@ You configure durable mailboxes through the dispatcher, as described in
 Config::
 
   my-dispatcher {
-    mailboxType = akka.actor.mailbox.FileBasedMailboxType
+    mailbox-type = akka.actor.mailbox.FileBasedMailboxType
   }
 
 You can also configure and tune the file-based durable mailbox. This is done in
@@ -124,7 +124,7 @@ You configure durable mailboxes through the dispatcher, as described in
 Config::
 
   my-dispatcher {
-    mailboxType = akka.actor.mailbox.RedisBasedMailboxType
+    mailbox-type = akka.actor.mailbox.RedisBasedMailboxType
   }
 
 You also need to configure the IP and port for the Redis server. This is done in
@@ -150,7 +150,7 @@ You configure durable mailboxes through the dispatcher, as described in
 Config::
 
   my-dispatcher {
-    mailboxType = akka.actor.mailbox.ZooKeeperBasedMailboxType
+    mailbox-type = akka.actor.mailbox.ZooKeeperBasedMailboxType
   }
 
 You also need to configure ZooKeeper server addresses, timeouts, etc. This is
@@ -173,7 +173,7 @@ You configure durable mailboxes through the dispatcher, as described in
 Config::
 
   my-dispatcher {
-    mailboxType = akka.actor.mailbox.BeanstalkBasedMailboxType
+    mailbox-type = akka.actor.mailbox.BeanstalkBasedMailboxType
   }
 
 You also need to configure the IP, and port, and so on, for the Beanstalk
@@ -202,7 +202,7 @@ You configure durable mailboxes through the dispatcher, as described in
 Config::
 
   my-dispatcher {
-    mailboxType = akka.actor.mailbox.MongoBasedMailboxType
+    mailbox-type = akka.actor.mailbox.MongoBasedMailboxType
   }
 
 You will need to configure the URI for the MongoDB server, using the URI Format specified in the

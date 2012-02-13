@@ -9,7 +9,7 @@ import akka.actor.ActorRef
 object ZooKeeperBasedMailboxSpec {
   val config = """
     ZooKeeper-dispatcher {
-      mailboxType = akka.actor.mailbox.ZooKeeperBasedMailboxType
+      mailbox-type = akka.actor.mailbox.ZooKeeperBasedMailboxType
       throughput = 1
     }
     """

@@ -326,7 +326,7 @@ v1.3::
 v2.0::
 
   -Dconfig.file=<file path to configuration file>
-  -Dakka.logConfigOnStart=on
+  -Dakka.log-config-on-start=on
 
 
 Several configuration properties have been changed, such as:

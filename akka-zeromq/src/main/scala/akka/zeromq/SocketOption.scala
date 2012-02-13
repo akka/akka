@@ -174,9 +174,12 @@ private[zeromq] case object Close extends Request
  *
  * @param payload the topic to subscribe to
  */
-case class Subscribe(payload: Seq[Byte]) extends PubSubOption
+case class Subscribe(payload: Seq[Byte]) extends PubSubOption {
+  def this(topic: String) = this(topic.getBytes("UTF-8"))
+}
 object Subscribe {
-  def apply(topic: String): Subscribe = new Subscribe(topic.getBytes)
+  def apply(topic: String): Subscribe = new Subscribe(topic)
+  val all = Subscribe(Seq.empty)
 }
 
 /**
@@ -188,9 +191,11 @@ object Subscribe {
  *
  * @param payload
  */
-case class Unsubscribe(payload: Seq[Byte]) extends PubSubOption
+case class Unsubscribe(payload: Seq[Byte]) extends PubSubOption {
+  def this(topic: String) = this(topic.getBytes("UTF-8"))
+}
 object Unsubscribe {
-  def apply(topic: String): Unsubscribe = Unsubscribe(topic.getBytes)
+  def apply(topic: String): Unsubscribe = new Unsubscribe(topic)
 }
 
 /**
@@ -204,7 +209,21 @@ case class Send(frames: Seq[Frame]) extends Request
  * @param frames
  */
 case class ZMQMessage(frames: Seq[Frame]) {
-  def firstFrameAsString = new String(frames.head.payload.toArray)
+
+  def this(frame: Frame) = this(Seq(frame))
+  def this(frame1: Frame, frame2: Frame) = this(Seq(frame1, frame2))
+  def this(frameArray: Array[Frame]) = this(frameArray.toSeq)
+
+  /**
+   * Convert the bytes in the first frame to a String, using specified charset.
+   */
+  def firstFrameAsString(charsetName: String): String = new String(frames.head.payload.toArray, charsetName)
+  /**
+   * Convert the bytes in the first frame to a String, using "UTF-8" charset.
+   */
+  def firstFrameAsString: String = firstFrameAsString("UTF-8")
+
+  def payload(frameIndex: Int): Array[Byte] = frames(frameIndex).payload.toArray
 }
 object ZMQMessage {
   def apply(bytes: Array[Byte]): ZMQMessage = ZMQMessage(Seq(Frame(bytes)))

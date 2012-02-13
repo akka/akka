@@ -77,7 +77,7 @@ object ActorSystem {
     final val LogLevel = getString("akka.loglevel")
     final val StdoutLogLevel = getString("akka.stdout-loglevel")
     final val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
-    final val LogConfigOnStart = config.getBoolean("akka.logConfigOnStart")
+    final val LogConfigOnStart = config.getBoolean("akka.log-config-on-start")
     final val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
     final val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
     final val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
@@ -89,10 +89,10 @@ object ActorSystem {
       case x  ⇒ Some(x)
     }
 
-    final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tickDuration"), MILLISECONDS)
-    final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticksPerWheel")
+    final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tick-duration"), MILLISECONDS)
+    final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticks-per-wheel")
     final val Daemonicity = getBoolean("akka.daemonic")
-    final val JvmExitOnFatalError = getBoolean("akka.jvmExitOnFatalError")
+    final val JvmExitOnFatalError = getBoolean("akka.jvm-exit-on-fatal-error")
 
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
@@ -325,16 +325,16 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def deathWatch: DeathWatch
 
   /**
-   * ClassLoader which is used for reflective accesses internally. This is set
-   * to the context class loader, if one is set, or the class loader which
+   * ClassLoader wrapper which is used for reflective accesses internally. This is set
+   * to use the context class loader, if one is set, or the class loader which
    * loaded the ActorSystem implementation. The context class loader is also
    * set on all threads created by the ActorSystem, if one was set during
    * creation.
    */
-  def internalClassLoader: ClassLoader
+  def dynamicAccess: DynamicAccess
 }
 
-class ActorSystemImpl(val name: String, applicationConfig: Config) extends ExtendedActorSystem {
+class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Config) extends ExtendedActorSystem {
 
   if (!name.matches("""^\w+$"""))
     throw new IllegalArgumentException("invalid ActorSystem name [" + name + "], must contain only word characters (i.e. [a-zA-Z_0-9])")
@@ -357,6 +357,35 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
 
   final val threadFactory: MonitorableThreadFactory =
     MonitorableThreadFactory(name, settings.Daemonicity, Option(Thread.currentThread.getContextClassLoader), uncaughtExceptionHandler)
+
+  /**
+   * This is an extension point: by overriding this method, subclasses can
+   * control all reflection activities of an actor system.
+   */
+  protected def createDynamicAccess(): DynamicAccess = new ReflectiveDynamicAccess(findClassLoader)
+
+  protected def findClassLoader: ClassLoader = {
+    def findCaller(get: Int ⇒ Class[_]): ClassLoader = {
+      val frames = Iterator.from(2).map(get)
+      frames dropWhile { c ⇒
+        c != null &&
+          (c.getName.startsWith("akka.actor.ActorSystem") ||
+            c.getName.startsWith("scala.Option") ||
+            c.getName.startsWith("scala.collection.Iterator") ||
+            c.getName.startsWith("akka.util.Reflect"))
+      } next () match {
+        case null ⇒ getClass.getClassLoader
+        case c    ⇒ c.getClassLoader
+      }
+    }
+
+    Option(Thread.currentThread.getContextClassLoader) orElse
+      (Reflect.getCallerClass map findCaller) getOrElse
+      getClass.getClassLoader
+  }
+
+  private val _pm: DynamicAccess = createDynamicAccess()
+  def dynamicAccess: DynamicAccess = _pm
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
@@ -408,17 +437,15 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
 
   val scheduler: Scheduler = createScheduler()
 
-  val internalClassLoader = Option(Thread.currentThread.getContextClassLoader) getOrElse getClass.getClassLoader
-
   val provider: ActorRefProvider = {
     val arguments = Seq(
       classOf[String] -> name,
       classOf[Settings] -> settings,
       classOf[EventStream] -> eventStream,
       classOf[Scheduler] -> scheduler,
-      classOf[ClassLoader] -> internalClassLoader)
+      classOf[DynamicAccess] -> dynamicAccess)
 
-    ReflectiveAccess.createInstance[ActorRefProvider](ProviderClass, arguments, internalClassLoader) match {
+    dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments) match {
       case Left(e)  ⇒ throw e
       case Right(p) ⇒ p
     }
@@ -440,7 +467,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
   def locker: Locker = provider.locker
 
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
-    threadFactory, eventStream, deadLetterMailbox, scheduler, internalClassLoader))
+    threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess))
 
   val dispatcher: MessageDispatcher = dispatchers.defaultGlobalDispatcher
 
@@ -559,8 +586,7 @@ class ActorSystemImpl(val name: String, applicationConfig: Config) extends Exten
   private def loadExtensions() {
     import scala.collection.JavaConversions._
     settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
-      import ReflectiveAccess.{ getObjectFor, createInstance, noParams, noArgs }
-      getObjectFor[AnyRef](fqcn, internalClassLoader).fold(_ ⇒ createInstance[AnyRef](fqcn, noParams, noArgs), Right(_)) match {
+      dynamicAccess.getObjectFor[AnyRef](fqcn).fold(_ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Seq()), Right(_)) match {
         case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
         case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
         case Right(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)

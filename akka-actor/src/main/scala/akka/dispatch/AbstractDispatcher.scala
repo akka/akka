@@ -12,7 +12,6 @@ import akka.actor.ActorSystem
 import scala.annotation.tailrec
 import akka.event.EventStream
 import com.typesafe.config.Config
-import akka.util.ReflectiveAccess
 import akka.serialization.SerializationExtension
 import akka.util.NonFatal
 import akka.event.Logging.LogEventException
@@ -26,7 +25,7 @@ final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorS
       val ser = SerializationExtension(system)
       ser.serialize(msg) match { //Verify serializability
         case Left(t) ⇒ throw t
-        case Right(bytes) ⇒ ser.deserialize(bytes, msg.getClass, None) match { //Verify deserializability
+        case Right(bytes) ⇒ ser.deserialize(bytes, msg.getClass) match { //Verify deserializability
           case Left(t) ⇒ throw t
           case _       ⇒ //All good
         }
@@ -354,12 +353,12 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
   /**
    * Returns a factory for the [[akka.dispatch.Mailbox]] given the configuration.
    * Default implementation instantiate the [[akka.dispatch.MailboxType]] specified
-   * as FQCN in mailboxType config property. If mailboxType is unspecified (empty)
+   * as FQCN in mailbox-type config property. If mailbox-type is unspecified (empty)
    * then [[akka.dispatch.UnboundedMailbox]] is used when capacity is < 1,
    * otherwise [[akka.dispatch.BoundedMailbox]].
    */
   def mailboxType(): MailboxType = {
-    config.getString("mailboxType") match {
+    config.getString("mailbox-type") match {
       case "" ⇒
         val capacity = config.getInt("mailbox-capacity")
         if (capacity < 1) UnboundedMailbox()
@@ -369,7 +368,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
         }
       case fqcn ⇒
         val args = Seq(classOf[Config] -> config)
-        ReflectiveAccess.createInstance[MailboxType](fqcn, args, prerequisites.classloader) match {
+        prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒
             throw new IllegalArgumentException(
@@ -385,8 +384,10 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
       case null | "" | "fork-join-executor" ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
       case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
-        val constructorSignature = Array[Class[_]](classOf[Config], classOf[DispatcherPrerequisites])
-        ReflectiveAccess.createInstance[ExecutorServiceConfigurator](fqcn, constructorSignature, Array[AnyRef](config, prerequisites), prerequisites.classloader) match {
+        val args = Seq(
+          classOf[Config] -> config,
+          classOf[DispatcherPrerequisites] -> prerequisites)
+        prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒ throw new IllegalArgumentException(
             ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
