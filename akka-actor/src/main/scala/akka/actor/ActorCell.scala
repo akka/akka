@@ -285,14 +285,18 @@ private[akka] class ActorCell(
   final def isTerminated: Boolean = mailbox.isClosed
 
   final def start(): Unit = {
+    /*
+     * Create the mailbox and enqueue the Create() message to ensure that 
+     * this is processed before anything else.
+     */
     mailbox = dispatcher.createMailbox(this)
+    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+    mailbox.systemEnqueue(self, Create())
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     parent.sendSystemMessage(akka.dispatch.Supervise(self))
 
-    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    dispatcher.systemDispatch(this, Create())
-
+    // This call is expected to start off the actor by scheduling its mailbox.
     dispatcher.attach(this)
   }
 

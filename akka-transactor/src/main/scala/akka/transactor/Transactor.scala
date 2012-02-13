@@ -93,6 +93,8 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
  * @see [[akka.transactor.Coordinated]] for more information about the underlying mechanism
  */
 trait Transactor extends Actor {
+  private val settings = TransactorExtension(context.system)
+
   /**
    * Implement a general pattern for using coordinated transactions.
    */
@@ -108,7 +110,7 @@ trait Transactor extends Actor {
     }
     case message ⇒ {
       if (normally.isDefinedAt(message)) normally(message)
-      else receive(Coordinated(message)(context.system.settings.ActorTimeout))
+      else receive(Coordinated(message)(settings.CoordinatedTimeout))
     }
   }
 

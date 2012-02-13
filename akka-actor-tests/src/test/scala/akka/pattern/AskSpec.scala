@@ -5,8 +5,9 @@ package akka.pattern
 
 import akka.testkit.AkkaSpec
 import akka.util.duration._
+import akka.testkit.DefaultTimeout
 
-class AskSpec extends AkkaSpec {
+class AskSpec extends AkkaSpec with DefaultTimeout {
 
   "The “ask” pattern" must {
 
@@ -22,7 +23,6 @@ class AskSpec extends AkkaSpec {
 
     "return broken promises on EmptyLocalActorRefs" in {
       val empty = system.actorFor("unknown")
-      implicit val timeout = system.settings.ActorTimeout
       val f = empty ? 3.14
       f.isCompleted must be(true)
       f.value.get match {

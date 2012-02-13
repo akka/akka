@@ -70,7 +70,6 @@ object ActorSystem {
 
     final val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
     final val ReaperInterval = Duration(getMilliseconds("akka.actor.reaper-interval"), MILLISECONDS)
-    final val ActorTimeout = Timeout(Duration(getMilliseconds("akka.actor.timeout"), MILLISECONDS))
     final val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
     final val SerializeAllCreators = getBoolean("akka.actor.serialize-creators")
 
