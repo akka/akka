@@ -5,19 +5,21 @@
 package akka.cluster
 
 import akka.AkkaException
+import akka.event.Logging
+import akka.actor.ActorSystem
+
+import System.{ currentTimeMillis ⇒ newTimestamp }
+import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicLong
 
 class VectorClockException(message: String) extends AkkaException(message)
 
 /**
  * Trait to be extended by classes that wants to be versioned using a VectorClock.
  */
-trait Versioned {
+trait Versioned[T] {
   def version: VectorClock
-
-  /**
-   * Returns the Versioned that have the latest version.
-   */
-  def or(other: Versioned): Versioned = Versioned.latestVersionOf(this, other)
+  def +(node: VectorClock.Node): T
 }
 
 /**
@@ -26,13 +28,103 @@ trait Versioned {
 object Versioned {
 
   /**
+   * The result of comparing two Versioned objects.
+   * Either:
+   * {{{
+   *   1) v1 is BEFORE v2               => Before
+   *   2) v1 is AFTER t2                => After
+   *   3) v1 happens CONCURRENTLY to v2 => Concurrent
+   * }}}
+   */
+  sealed trait Ordering
+  case object Before extends Ordering
+  case object After extends Ordering
+  case object Concurrent extends Ordering
+
+  /**
+   * Returns or 'Ordering' for the two 'Versioned' instances.
+   */
+  def compare[T <: Versioned[T]](versioned1: Versioned[T], versioned2: Versioned[T]): Ordering = {
+    if (versioned1.version <> versioned2.version) Concurrent
+    else if (versioned1.version < versioned2.version) Before
+    else After
+  }
+
+  /**
    * Returns the Versioned that have the latest version.
    */
-  def latestVersionOf[T <: Versioned](versioned1: T, versioned2: T): T = {
-    (versioned1.version compare versioned2.version) match {
-      case VectorClock.Before     ⇒ versioned2 // version 1 is BEFORE (older), use version 2
-      case VectorClock.After      ⇒ versioned1 // version 1 is AFTER (newer), use version 1
-      case VectorClock.Concurrent ⇒ versioned1 // can't establish a causal relationship between versions => conflict - keeping version 1
+  def latestVersionOf[T <: Versioned[T]](versioned1: T, versioned2: T): T = {
+    compare(versioned1, versioned2) match {
+      case Concurrent ⇒ versioned2
+      case Before     ⇒ versioned2
+      case After      ⇒ versioned1
+    }
+  }
+}
+
+/**
+ * VectorClock module with helper classes and methods.
+ *
+ * Based on code from the 'vlock' VectorClock library by Coda Hale.
+ */
+object VectorClock {
+
+  /**
+   * Hash representation of a versioned node name.
+   */
+  class Node private (val name: String) extends Serializable {
+    override def hashCode = 0 + name.##
+
+    override def equals(other: Any) = Node.unapply(this) == Node.unapply(other)
+
+    override def toString = name.mkString("Node(", "", ")")
+  }
+
+  object Node {
+    def apply(name: String): Node = new Node(hash(name))
+
+    def unapply(other: Any) = other match {
+      case x: Node ⇒ import x._; Some(name)
+      case _       ⇒ None
+    }
+
+    private def hash(name: String): String = {
+      val digester = MessageDigest.getInstance("MD5")
+      digester update name.getBytes
+      digester.digest.map { h ⇒ "%02x".format(0xFF & h) }.mkString
+    }
+  }
+
+  /**
+   * Timestamp representation a unique 'Ordered' timestamp.
+   */
+  case class Timestamp private (time: Long) extends Ordered[Timestamp] {
+    def max(other: Timestamp) = {
+      if (this < other) other
+      else this
+    }
+
+    def compare(other: Timestamp) = time compare other.time
+
+    override def toString = "%016x" format time
+  }
+
+  object Timestamp {
+    private val counter = new AtomicLong(newTimestamp)
+
+    def zero(): Timestamp = Timestamp(0L)
+
+    def apply(): Timestamp = {
+      var newTime: Long = 0L
+      while (newTime == 0) {
+        val last = counter.get
+        val current = newTimestamp
+        val next = if (current > last) current else last + 1
+        if (counter.compareAndSet(last, next)) {
+          newTime = next
+        }
+      }
+      new Timestamp(newTime)
     }
   }
 }
@@ -44,108 +136,68 @@ object Versioned {
  *    1) Leslie Lamport (1978). "Time, clocks, and the ordering of events in a distributed system". Communications of the ACM 21 (7): 558-565.
  *    2) Friedemann Mattern (1988). "Virtual Time and Global States of Distributed Systems". Workshop on Parallel and Distributed Algorithms: pp. 215-226
  * }}}
+ *
+ * Based on code from the 'vlock' VectorClock library by Coda Hale.
  */
 case class VectorClock(
-  versions: Vector[VectorClock.Entry] = Vector.empty[VectorClock.Entry],
-  timestamp: Long = System.currentTimeMillis) {
+  timestamp: VectorClock.Timestamp = VectorClock.Timestamp(),
+  versions: Map[VectorClock.Node, VectorClock.Timestamp] = Map.empty[VectorClock.Node, VectorClock.Timestamp])
+  extends PartiallyOrdered[VectorClock] {
+
+  // FIXME pruning of VectorClock history
+
   import VectorClock._
 
-  def compare(other: VectorClock): Ordering = VectorClock.compare(this, other)
-
-  def increment(fingerprint: Int, timestamp: Long): VectorClock = {
-    val newVersions =
-      if (versions exists (entry ⇒ entry.fingerprint == fingerprint)) {
-        // update existing node entry
-        versions map { entry ⇒
-          if (entry.fingerprint == fingerprint) entry.increment()
-          else entry
-        }
-      } else {
-        // create and append a new node entry
-        versions :+ Entry(fingerprint = fingerprint)
-      }
-    if (newVersions.size > MaxNrOfVersions) throw new VectorClockException("Max number of versions reached")
-    copy(versions = newVersions, timestamp = timestamp)
-  }
-
-  def maxVersion: Long = versions.foldLeft(1L)((max, entry) ⇒ math.max(max, entry.version))
-
-  // FIXME Do we need to implement VectorClock.merge?
-  def merge(other: VectorClock): VectorClock = {
-    sys.error("Not implemented")
-  }
-}
-
-/**
- * Module with helper classes and methods.
- */
-object VectorClock {
-  final val MaxNrOfVersions = Short.MaxValue
-
   /**
-   * The result of comparing two vector clocks.
-   * Either:
-   * {{{
-   *   1) v1 is BEFORE v2
-   *   2) v1 is AFTER t2
-   *   3) v1 happens CONCURRENTLY to v2
-   * }}}
+   * Increment the version for the node passed as argument. Returns a new VectorClock.
    */
-  sealed trait Ordering
-  case object Before extends Ordering
-  case object After extends Ordering
-  case object Concurrent extends Ordering
+  def +(node: Node): VectorClock = copy(versions = versions + (node -> Timestamp()))
 
   /**
-   * Versioned entry in a vector clock.
+   * Returns true if <code>this</code> and <code>that</code> are concurrent else false.
    */
-  case class Entry(fingerprint: Int, version: Long = 1L) {
-    def increment(): Entry = copy(version = version + 1L)
-  }
+  def <>(that: VectorClock): Boolean = tryCompareTo(that) == None
 
   /**
+   * Returns true if this VectorClock has the same history as the 'that' VectorClock else false.
+   */
+  def ==(that: VectorClock): Boolean = versions == that.versions
+
+  /**
+   * For the 'PartiallyOrdered' trait, to allow natural comparisons using <, > and ==.
+   * <p/>
    * Compare two vector clocks. The outcomes will be one of the following:
    * <p/>
    * {{{
-   *   1. Clock 1 is BEFORE clock 2 if there exists an i such that c1(i) <= c(2) and there does not exist a j such that c1(j) > c2(j).
-   *   2. Clock 1 is CONCURRENT to clock 2 if there exists an i, j such that c1(i) < c2(i) and c1(j) > c2(j).
-   *   3. Clock 1 is AFTER clock 2 otherwise.
+   *   1. Clock 1 is BEFORE (>)      Clock 2 if there exists an i such that c1(i) <= c(2) and there does not exist a j such that c1(j) > c2(j).
+   *   2. Clock 1 is CONCURRENT (<>) to Clock 2 if there exists an i, j such that c1(i) < c2(i) and c1(j) > c2(j).
+   *   3. Clock 1 is AFTER (<)       Clock 2 otherwise.
    * }}}
-   *
-   * @param v1 The first VectorClock
-   * @param v2 The second VectorClock
    */
-  def compare(v1: VectorClock, v2: VectorClock): Ordering = {
-    if ((v1 eq null) || (v2 eq null)) throw new IllegalArgumentException("Can't compare null VectorClocks")
-
-    // FIXME rewrite to functional style, now uses ugly imperative algorithm
-
-    var v1Bigger, v2Bigger = false // We do two checks: v1 <= v2 and v2 <= v1 if both are true then
-    var p1, p2 = 0
-
-    while (p1 < v1.versions.size && p2 < v2.versions.size) {
-      val ver1 = v1.versions(p1)
-      val ver2 = v2.versions(p2)
-      if (ver1.fingerprint == ver2.fingerprint) {
-        if (ver1.version > ver2.version) v1Bigger = true
-        else if (ver2.version > ver1.version) v2Bigger = true
-        p1 += 1
-        p2 += 1
-      } else if (ver1.fingerprint > ver2.fingerprint) {
-        v2Bigger = true // Since ver1 is bigger that means it is missing a version that ver2 has
-        p2 += 1
-      } else {
-        v1Bigger = true // This means ver2 is bigger which means it is missing a version ver1 has
-        p1 += 1
-      }
+  def tryCompareTo[V >: VectorClock <% PartiallyOrdered[V]](vclock: V): Option[Int] = {
+    def compare(versions1: Map[Node, Timestamp], versions2: Map[Node, Timestamp]): Boolean = {
+      versions1.forall { case ((n, t)) ⇒ t <= versions2.getOrElse(n, Timestamp.zero) } &&
+        (versions1.exists { case ((n, t)) ⇒ t < versions2.getOrElse(n, Timestamp.zero) } ||
+          (versions1.size < versions2.size))
     }
-
-    if (p1 < v1.versions.size) v1Bigger = true
-    else if (p2 < v2.versions.size) v2Bigger = true
-
-    if (!v1Bigger && !v2Bigger) Before // This is the case where they are equal, return BEFORE arbitrarily
-    else if (v1Bigger && !v2Bigger) After // This is the case where v1 is a successor clock to v2
-    else if (!v1Bigger && v2Bigger) Before // This is the case where v2 is a successor clock to v1
-    else Concurrent // This is the case where both clocks are parallel to one another
+    vclock match {
+      case VectorClock(_, otherVersions) ⇒
+        if (compare(versions, otherVersions)) Some(-1)
+        else if (compare(otherVersions, versions)) Some(1)
+        else if (versions == otherVersions) Some(0)
+        else None
+      case _ ⇒ None
+    }
   }
+
+  /**
+   * Merges this VectorClock with another VectorClock. E.g. merges its versioned history.
+   */
+  def merge(that: VectorClock): VectorClock = {
+    val mergedVersions = scala.collection.mutable.Map.empty[Node, Timestamp] ++ that.versions
+    for ((node, time) ← versions) mergedVersions(node) = time max mergedVersions.getOrElse(node, time)
+    VectorClock(timestamp, Map.empty[Node, Timestamp] ++ mergedVersions)
+  }
+
+  override def toString = versions.map { case ((n, t)) ⇒ n + " -> " + t }.mkString("VectorClock(", ", ", ")")
 }
