@@ -47,7 +47,7 @@ class NodeStartupSpec extends AkkaSpec("""
         val members = gossiper0.latestGossip.members
         val joiningMember = members find (_.address.port.get == 5550)
         joiningMember must be('defined)
-        joiningMember.get.status must be(MemberStatus.Up)
+        joiningMember.get.status must be(MemberStatus.Joining)
       }
     }
 
@@ -84,6 +84,7 @@ class NodeStartupSpec extends AkkaSpec("""
   override def atTermination() {
     gossiper0.shutdown()
     node0.shutdown()
+
     gossiper1.shutdown()
     node1.shutdown()
   }

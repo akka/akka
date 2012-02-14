@@ -247,7 +247,9 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
   // start periodic cluster scrutinization (moving nodes condemned by the failure detector to unreachable list)
   val scrutinizeCanceller = system.scheduler.schedule(gossipInitialDelay, gossipFrequency) {
-    scrutinize()
+
+    // FIXME fix problems with 'scrutinize'
+    //scrutinize()
   }
 
   // ======================================================
