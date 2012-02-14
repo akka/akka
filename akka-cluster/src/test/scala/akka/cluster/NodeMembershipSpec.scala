@@ -12,7 +12,7 @@ import akka.remote._
 
 import com.typesafe.config._
 
-class NodeGossipingSpec extends AkkaSpec("""
+class NodeMembershipSpec extends AkkaSpec("""
   akka {
     loglevel = "DEBUG"
   }
@@ -29,7 +29,7 @@ class NodeGossipingSpec extends AkkaSpec("""
   try {
     "A set of connected cluster nodes" must {
       "(when two nodes) start gossiping to each other so that both nodes gets the same gossip info" in {
-        node0 = ActorSystem("NodeGossipingSpec", ConfigFactory
+        node0 = ActorSystem("NodeMembershipSpec", ConfigFactory
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -43,7 +43,7 @@ class NodeGossipingSpec extends AkkaSpec("""
         val remote0 = node0.provider.asInstanceOf[RemoteActorRefProvider]
         gossiper0 = Gossiper(node0, remote0)
 
-        node1 = ActorSystem("NodeGossipingSpec", ConfigFactory
+        node1 = ActorSystem("NodeMembershipSpec", ConfigFactory
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -51,7 +51,7 @@ class NodeGossipingSpec extends AkkaSpec("""
                 hostname = localhost
                 port=5551
               }
-              cluster.node-to-join = "akka://NodeGossipingSpec@localhost:5550"
+              cluster.node-to-join = "akka://NodeMembershipSpec@localhost:5550"
             }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
@@ -76,7 +76,7 @@ class NodeGossipingSpec extends AkkaSpec("""
       }
 
       "(when three nodes) start gossiping to each other so that both nodes gets the same gossip info" in {
-        node2 = ActorSystem("NodeGossipingSpec", ConfigFactory
+        node2 = ActorSystem("NodeMembershipSpec", ConfigFactory
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -84,7 +84,7 @@ class NodeGossipingSpec extends AkkaSpec("""
                 hostname = localhost
                 port=5552
               }
-              cluster.node-to-join = "akka://NodeGossipingSpec@localhost:5550"
+              cluster.node-to-join = "akka://NodeMembershipSpec@localhost:5550"
             }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
