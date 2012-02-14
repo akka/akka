@@ -141,7 +141,7 @@ This mailbox is backed by `ZooKeeper <http://zookeeper.apache.org/>`_. ZooKeeper
 is a centralized service for maintaining configuration information, naming,
 providing distributed synchronization, and providing group services This means
 that you have to start up a ZooKeeper server (for production a ZooKeeper server
-ensamble) that can host these durable mailboxes. Read more in the ZooKeeper
+ensemble) that can host these durable mailboxes. Read more in the ZooKeeper
 documentation on how to do that.
 
 You configure durable mailboxes through the dispatcher, as described in

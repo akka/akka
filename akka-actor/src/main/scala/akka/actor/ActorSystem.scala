@@ -228,7 +228,7 @@ abstract class ActorSystem extends ActorRefFactory {
   /**
    * Register a block of code (callback) to run after all actors in this actor system have
    * been stopped. Multiple code blocks may be registered by calling this method multiple times.
-   * The callbacks will be run sequentilly in reverse order of registration, i.e.
+   * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    *
    * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.
@@ -240,7 +240,7 @@ abstract class ActorSystem extends ActorRefFactory {
   /**
    * Register a block of code (callback) to run after all actors in this actor system have
    * been stopped. Multiple code blocks may be registered by calling this method multiple times.
-   * The callbacks will be run sequentilly in reverse order of registration, i.e.
+   * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    *
    * @throws a RejectedExecutionException if the System has already shut down or if shutdown has been initiated.

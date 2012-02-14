@@ -173,7 +173,7 @@ purposes as it contains exactly the default behavior.
 
   The SLF4J event listener treats this case specially (using the actual string
   to look up the logger instance to use instead of the class’ name), and you
-  might want to do this also in case you implement your own loggin adapter.
+  might want to do this also in case you implement your own logging adapter.
 
 Event Handler
 =============
