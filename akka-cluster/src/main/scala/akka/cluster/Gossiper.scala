@@ -247,9 +247,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
   // start periodic cluster scrutinization (moving nodes condemned by the failure detector to unreachable list)
   val scrutinizeCanceller = system.scheduler.schedule(gossipInitialDelay, gossipFrequency) {
-
-    // FIXME fix problems with 'scrutinize'
-    //scrutinize()
+    scrutinize()
   }
 
   // ======================================================
@@ -527,7 +525,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
       if (!newlyDetectedUnreachableAddresses.isEmpty) { // we have newly detected members marked as unavailable
 
         val newMembers = localMembers diff newlyDetectedUnreachableMembers
-        val newUnreachableAddresses: Set[Address] = (localUnreachableAddresses ++ newlyDetectedUnreachableAddresses)
+        val newUnreachableAddresses: Set[Address] = localUnreachableAddresses ++ newlyDetectedUnreachableAddresses
 
         val newOverview = localOverview copy (unreachable = newUnreachableAddresses)
         val newGossip = localGossip copy (overview = newOverview, members = newMembers)
