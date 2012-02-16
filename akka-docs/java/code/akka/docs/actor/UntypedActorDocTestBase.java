@@ -130,7 +130,7 @@ public class UntypedActorDocTestBase {
   }
 
   @Test
-  public void usingAsk() {
+  public void usingAsk() throws Exception {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(new UntypedActorFactory() {
       public UntypedActor create() {
@@ -188,7 +188,7 @@ public class UntypedActorDocTestBase {
   }
 
   @Test
-  public void useWatch() {
+  public void useWatch() throws Exception {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(WatchActor.class));
     Future<Object> future = Patterns.ask(myActor, "kill", 1000);
@@ -197,7 +197,7 @@ public class UntypedActorDocTestBase {
   }
 
   @Test
-  public void usePatternsGracefulStop() {
+  public void usePatternsGracefulStop() throws Exception {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef actorRef = system.actorOf(new Props(MyUntypedActor.class));
     //#gracefulStop
