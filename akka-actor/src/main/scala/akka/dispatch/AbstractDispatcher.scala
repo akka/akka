@@ -93,15 +93,18 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
  * Java API to create ExecutionContexts
  */
 object ExecutionContexts {
+
   /**
    * Creates an ExecutionContext from the given ExecutorService
    */
-  def fromExecutorService(e: ExecutorService): ExecutionContext = new ExecutionContext.WrappedExecutorService(e)
+  def fromExecutorService(e: ExecutorService): ExecutionContextExecutorService =
+    new ExecutionContext.WrappedExecutorService(e)
 
   /**
    * Creates an ExecutionContext from the given Executor
    */
-  def fromExecutor(e: Executor): ExecutionContext = new ExecutionContext.WrappedExecutor(e)
+  def fromExecutor(e: Executor): ExecutionContextExecutor =
+    new ExecutionContext.WrappedExecutor(e)
 }
 
 object ExecutionContext {
@@ -110,17 +113,17 @@ object ExecutionContext {
   /**
    * Creates an ExecutionContext from the given ExecutorService
    */
-  def fromExecutorService(e: ExecutorService): ExecutionContext = new WrappedExecutorService(e)
+  def fromExecutorService(e: ExecutorService): ExecutionContext with ExecutorService = new WrappedExecutorService(e)
 
   /**
    * Creates an ExecutionContext from the given Executor
    */
-  def fromExecutor(e: Executor): ExecutionContext = new WrappedExecutor(e)
+  def fromExecutor(e: Executor): ExecutionContext with Executor = new WrappedExecutor(e)
 
   /**
    * Internal Akka use only
    */
-  private[akka] class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext {
+  private[akka] class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContextExecutorService {
     override def reportFailure(t: Throwable): Unit = t match {
       case e: LogEventException ⇒ e.getCause.printStackTrace()
       case _                    ⇒ t.printStackTrace()
@@ -130,7 +133,7 @@ object ExecutionContext {
   /**
    * Internal Akka use only
    */
-  private[akka] class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext {
+  private[akka] class WrappedExecutor(val executor: Executor) extends ExecutionContextExecutor {
     override final def execute(runnable: Runnable): Unit = executor.execute(runnable)
     override def reportFailure(t: Throwable): Unit = t match {
       case e: LogEventException ⇒ e.getCause.printStackTrace()
@@ -138,6 +141,16 @@ object ExecutionContext {
     }
   }
 }
+
+/**
+ * Union interface since Java does not support union types
+ */
+trait ExecutionContextExecutor extends ExecutionContext with Executor
+
+/**
+ * Union interface since Java does not support union types
+ */
+trait ExecutionContextExecutorService extends ExecutionContextExecutor with ExecutorService
 
 /**
  * An ExecutionContext is essentially the same thing as a java.util.concurrent.Executor
