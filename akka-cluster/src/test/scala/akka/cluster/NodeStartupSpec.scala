@@ -24,22 +24,23 @@ class NodeStartupSpec extends AkkaSpec("""
   var node1: ActorSystemImpl = _
 
   try {
-    node0 = ActorSystem("NodeStartupSpec", ConfigFactory
-      .parseString("""
-        akka {
-          actor.provider = "akka.remote.RemoteActorRefProvider"
-          remote.netty {
-            hostname = localhost
-            port=5550
-          }
-        }""")
-      .withFallback(system.settings.config))
-      .asInstanceOf[ActorSystemImpl]
-    val remote0 = node0.provider.asInstanceOf[RemoteActorRefProvider]
-    gossiper0 = Gossiper(node0, remote0)
-
     "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
+      node0 = ActorSystem("NodeStartupSpec", ConfigFactory
+        .parseString("""
+          akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty {
+              hostname = localhost
+              port=5550
+            }
+          }""")
+        .withFallback(system.settings.config))
+        .asInstanceOf[ActorSystemImpl]
+      val remote0 = node0.provider.asInstanceOf[RemoteActorRefProvider]
+      gossiper0 = Gossiper(node0, remote0)
+
       "be a singleton cluster when started up" in {
+        Thread.sleep(1000)
         gossiper0.isSingletonCluster must be(true)
       }
 
@@ -51,23 +52,23 @@ class NodeStartupSpec extends AkkaSpec("""
       }
     }
 
-    node1 = ActorSystem("NodeStartupSpec", ConfigFactory
-      .parseString("""
-        akka {
-          actor.provider = "akka.remote.RemoteActorRefProvider"
-          remote.netty {
-            hostname = localhost
-            port=5551
-          }
-          cluster.node-to-join = "akka://NodeStartupSpec@localhost:5550"
-        }""")
-      .withFallback(system.settings.config))
-      .asInstanceOf[ActorSystemImpl]
-    val remote1 = node1.provider.asInstanceOf[RemoteActorRefProvider]
-    gossiper1 = Gossiper(node1, remote1)
-
     "A second cluster node with a 'node-to-join' config defined" must {
       "join the other node cluster as 'Joining' when sending a Join command" in {
+        node1 = ActorSystem("NodeStartupSpec", ConfigFactory
+          .parseString("""
+          akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty {
+              hostname = localhost
+              port=5551
+            }
+            cluster.node-to-join = "akka://NodeStartupSpec@localhost:5550"
+          }""")
+          .withFallback(system.settings.config))
+          .asInstanceOf[ActorSystemImpl]
+        val remote1 = node1.provider.asInstanceOf[RemoteActorRefProvider]
+        gossiper1 = Gossiper(node1, remote1)
+
         Thread.sleep(1000) // give enough time for node1 to JOIN node0
         val members = gossiper0.latestGossip.members
         val joiningMember = members find (_.address.port.get == 5551)
