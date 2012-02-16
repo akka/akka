@@ -16,6 +16,8 @@ import com.typesafe.config.ConfigValueType;
  */
 final class ConfigNull extends AbstractConfigValue {
 
+    private static final long serialVersionUID = 1L;
+
     ConfigNull(ConfigOrigin origin) {
         super(origin);
     }

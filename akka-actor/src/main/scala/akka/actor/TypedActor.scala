@@ -11,7 +11,9 @@ import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.dispatch._
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.lang.IllegalStateException
+import akka.util.Duration
 
 trait TypedActorFactory {
 
@@ -129,7 +131,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         val serializedParameters = Array.ofDim[(Int, Class[_], Array[Byte])](ps.length)
         for (i ← 0 until ps.length) {
           val p = ps(i)
-          val s = SerializationExtension(Serialization.currentSystem.value).findSerializerFor(p)
+          val system = akka.serialization.JavaSerializer.currentSystem.value
+          val s = SerializationExtension(system).findSerializerFor(p)
           val m = if (s.includeManifest) p.getClass else null
           serializedParameters(i) = (s.identifier, m, s toBinary parameters(i)) //Mutable for the sake of sanity
         }
@@ -146,7 +149,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
     private def readResolve(): AnyRef = {
-      val system = akka.serialization.Serialization.currentSystem.value
+      val system = akka.serialization.JavaSerializer.currentSystem.value
       if (system eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
           " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
@@ -158,7 +161,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           val deserializedParameters: Array[AnyRef] = Array.ofDim[AnyRef](a.length) //Mutable for the sake of sanity
           for (i ← 0 until a.length) {
             val (sId, manifest, bytes) = a(i)
-            deserializedParameters(i) = serialization.serializerByIdentity(sId).fromBinary(bytes, Option(manifest))
+            deserializedParameters(i) =
+              serialization.serializerByIdentity(sId).fromBinary(bytes, Option(manifest))
           }
 
           deserializedParameters
@@ -500,7 +504,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
 
   /**
    * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
-   * if null is specified, it will use the default ActorTimeout as specified in the configuration.
+   * if null is specified, it will use the default timeout as specified in the configuration.
    *
    * Java API
    */
@@ -508,7 +512,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
 
   /**
    * @return a new TypedProps that will use the specified Timeout for its non-void-returning methods,
-   * if None is specified, it will use the default ActorTimeout as specified in the configuration.
+   * if None is specified, it will use the default timeout as specified in the configuration.
    *
    * Scala API
    */
@@ -549,6 +553,11 @@ class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory
   val settings = system.settings
 
   /**
+   * Default timeout for typed actor methods with non-void return type
+   */
+  final val DefaultReturnTimeout = Timeout(Duration(settings.config.getMilliseconds("akka.actor.typed.timeout"), MILLISECONDS))
+
+  /**
    * Retrieves the underlying ActorRef for the supplied TypedActor proxy, or null if none found
    */
   def getActorRefFor(proxy: AnyRef): ActorRef = invocationHandlerFor(proxy) match {
@@ -573,7 +582,7 @@ class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory
       new TypedActorInvocationHandler(
         this,
         actorVar,
-        if (props.timeout.isDefined) props.timeout.get else this.settings.ActorTimeout)).asInstanceOf[R]
+        if (props.timeout.isDefined) props.timeout.get else DefaultReturnTimeout)).asInstanceOf[R]
 
     proxyVar match {
       case null ⇒

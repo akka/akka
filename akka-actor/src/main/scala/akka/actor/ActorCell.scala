@@ -220,7 +220,7 @@ private[akka] class ActorCell(
       val ser = SerializationExtension(system)
       ser.serialize(props.creator) match {
         case Left(t) ⇒ throw t
-        case Right(bytes) ⇒ ser.deserialize(bytes, props.creator.getClass, None) match {
+        case Right(bytes) ⇒ ser.deserialize(bytes, props.creator.getClass) match {
           case Left(t) ⇒ throw t
           case _       ⇒ //All good
         }
@@ -285,14 +285,18 @@ private[akka] class ActorCell(
   final def isTerminated: Boolean = mailbox.isClosed
 
   final def start(): Unit = {
+    /*
+     * Create the mailbox and enqueue the Create() message to ensure that 
+     * this is processed before anything else.
+     */
     mailbox = dispatcher.createMailbox(this)
+    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+    mailbox.systemEnqueue(self, Create())
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     parent.sendSystemMessage(akka.dispatch.Supervise(self))
 
-    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    dispatcher.systemDispatch(this, Create())
-
+    // This call is expected to start off the actor by scheduling its mailbox.
     dispatcher.attach(this)
   }
 
@@ -384,8 +388,6 @@ private[akka] class ActorCell(
           failedActor.preRestart(cause, if (c ne null) Some(c.message) else None)
         } finally {
           clearActorFields()
-          currentMessage = null
-          actor = null
         }
       }
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
@@ -493,7 +495,7 @@ private[akka] class ActorCell(
             dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
-            actor.supervisorStrategy.handleSupervisorFailing(self, children)
+            if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
             parent.tell(Failed(e), self)
         } finally {
           checkReceiveTimeout // Reschedule receive timeout
@@ -555,9 +557,8 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle)
           system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped")) // FIXME: can actor be null?
       } finally {
-        currentMessage = null
-        clearActorFields()
         if (a ne null) a.clearBehaviorStack()
+        clearActorFields()
       }
     }
   }
@@ -597,7 +598,11 @@ private[akka] class ActorCell(
     }
   }
 
-  final def clearActorFields(): Unit = setActorFields(context = null, self = system.deadLetters)
+  final def clearActorFields(): Unit = {
+    setActorFields(context = null, self = system.deadLetters)
+    currentMessage = null
+    actor = null
+  }
 
   final def setActorFields(context: ActorContext, self: ActorRef) {
     @tailrec
@@ -625,8 +630,5 @@ private[akka] class ActorCell(
     }
   }
 
-  private def clazz(o: AnyRef): Class[_] = {
-    if (o eq null) this.getClass
-    else o.getClass
-  }
+  private final def clazz(o: AnyRef): Class[_] = if (o eq null) this.getClass else o.getClass
 }

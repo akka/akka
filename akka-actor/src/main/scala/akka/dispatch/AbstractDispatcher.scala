@@ -12,7 +12,6 @@ import akka.actor.ActorSystem
 import scala.annotation.tailrec
 import akka.event.EventStream
 import com.typesafe.config.Config
-import akka.util.ReflectiveAccess
 import akka.serialization.SerializationExtension
 import akka.util.NonFatal
 import akka.event.Logging.LogEventException
@@ -26,7 +25,7 @@ final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorS
       val ser = SerializationExtension(system)
       ser.serialize(msg) match { //Verify serializability
         case Left(t) ⇒ throw t
-        case Right(bytes) ⇒ ser.deserialize(bytes, msg.getClass, None) match { //Verify deserializability
+        case Right(bytes) ⇒ ser.deserialize(bytes, msg.getClass) match { //Verify deserializability
           case Left(t) ⇒ throw t
           case _       ⇒ //All good
         }
@@ -157,7 +156,10 @@ trait ExecutionContext {
    * log the problem or whatever is appropriate for the implementation.
    */
   def reportFailure(t: Throwable): Unit
+}
 
+private[akka] trait LoadMetrics { self: Executor ⇒
+  def atFullThrottle(): Boolean
 }
 
 object MessageDispatcher {
@@ -186,9 +188,14 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   def id: String
 
   /**
-   * Attaches the specified actor instance to this dispatcher
+   * Attaches the specified actor instance to this dispatcher, which includes
+   * scheduling it to run for the first time (Create() is expected to have
+   * been enqueued by the ActorCell upon mailbox creation).
    */
-  final def attach(actor: ActorCell): Unit = register(actor)
+  final def attach(actor: ActorCell): Unit = {
+    register(actor)
+    registerForExecution(actor.mailbox, false, true)
+  }
 
   /**
    * Detaches the specified actor instance from this dispatcher
@@ -244,7 +251,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     () ⇒ if (inhabitantsUpdater.decrementAndGet(this) == 0) ifSensibleToDoSoThenScheduleShutdown()
 
   /**
-   * If you override it, you must call it. But only ever once. See "attach" for only invocation
+   * If you override it, you must call it. But only ever once. See "attach" for only invocation.
    */
   protected[akka] def register(actor: ActorCell) {
     inhabitantsUpdater.incrementAndGet(this)
@@ -260,6 +267,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     actor.mailbox = deadLetterMailbox
     mailBox.cleanUp()
   }
+
+  def inhabitants: Long = inhabitantsUpdater.get(this)
 
   private val shutdownAction = new Runnable {
     @tailrec
@@ -369,7 +378,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
         }
       case fqcn ⇒
         val args = Seq(classOf[Config] -> config)
-        ReflectiveAccess.createInstance[MailboxType](fqcn, args, prerequisites.classloader) match {
+        prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒
             throw new IllegalArgumentException(
@@ -385,8 +394,10 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
       case null | "" | "fork-join-executor" ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
       case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
-        val constructorSignature = Array[Class[_]](classOf[Config], classOf[DispatcherPrerequisites])
-        ReflectiveAccess.createInstance[ExecutorServiceConfigurator](fqcn, constructorSignature, Array[AnyRef](config, prerequisites), prerequisites.classloader) match {
+        val args = Seq(
+          classOf[Config] -> config,
+          classOf[DispatcherPrerequisites] -> prerequisites)
+        prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒ throw new IllegalArgumentException(
             ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
@@ -439,11 +450,13 @@ object ForkJoinExecutorConfigurator {
   final class AkkaForkJoinPool(parallelism: Int,
                                threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
                                unhandledExceptionHandler: Thread.UncaughtExceptionHandler)
-    extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) {
+    extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) with LoadMetrics {
     override def execute(r: Runnable): Unit = r match {
       case m: Mailbox ⇒ super.execute(new MailboxExecutionTask(m))
       case other      ⇒ super.execute(other)
     }
+
+    def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }
 
   /**

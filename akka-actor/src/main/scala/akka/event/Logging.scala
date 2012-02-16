@@ -6,7 +6,6 @@ package akka.event
 import akka.actor._
 import akka.AkkaException
 import akka.actor.ActorSystem.Settings
-import akka.util.ReflectiveAccess
 import akka.config.ConfigurationException
 import akka.util.ReentrantGuard
 import akka.util.duration._
@@ -101,7 +100,7 @@ trait LoggingBus extends ActorEventBus {
         if loggerName != StandardOutLoggerName
       } yield {
         try {
-          ReflectiveAccess.getClassFor[Actor](loggerName, system.internalClassLoader) match {
+          system.dynamicAccess.getClassFor[Actor](loggerName) match {
             case Right(actorClass) ⇒ addLogger(system, actorClass, level, logName)
             case Left(exception)   ⇒ throw exception
           }
@@ -350,7 +349,7 @@ object Logging {
 
   object Extension extends ExtensionKey[LogExt]
 
-  class LogExt(system: ActorSystemImpl) extends Extension {
+  class LogExt(system: ExtendedActorSystem) extends Extension {
     private val loggerId = new AtomicInteger
     def id() = loggerId.incrementAndGet()
   }

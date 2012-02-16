@@ -30,6 +30,8 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) exte
 
   override def createActor(): Router = local.createActor()
 
+  override def routerDispatcher: String = local.routerDispatcher
+
   override def resizer: Option[Resizer] = local.resizer
 
   override def withFallback(other: RouterConfig): RouterConfig = other match {

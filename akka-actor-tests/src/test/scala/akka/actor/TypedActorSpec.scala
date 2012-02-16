@@ -8,7 +8,6 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.Duration
 import akka.util.Timeout
 import akka.util.duration._
-import akka.serialization.Serialization
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
@@ -19,6 +18,7 @@ import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.testkit.DefaultTimeout
 import akka.dispatch.{ Await, Dispatchers, Future, Promise }
 import akka.pattern.ask
+import akka.serialization.JavaSerializer
 
 object TypedActorSpec {
 
@@ -113,7 +113,7 @@ object TypedActorSpec {
     }
 
     def futureComposePigdogFrom(foo: Foo): Future[String] = {
-      implicit val timeout = TypedActor.context.system.settings.ActorTimeout
+      implicit val timeout = TypedActor(TypedActor.context.system).DefaultReturnTimeout
       foo.futurePigdog(500).map(_.toUpperCase)
     }
 
@@ -367,7 +367,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
     "be able to serialize and deserialize invocations" in {
       import java.io._
-      Serialization.currentSystem.withValue(system.asInstanceOf[ActorSystemImpl]) {
+      JavaSerializer.currentSystem.withValue(system.asInstanceOf[ExtendedActorSystem]) {
         val m = TypedActor.MethodCall(classOf[Foo].getDeclaredMethod("pigdog"), Array[AnyRef]())
         val baos = new ByteArrayOutputStream(8192 * 4)
         val out = new ObjectOutputStream(baos)
@@ -386,7 +386,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     "be able to serialize and deserialize invocations' parameters" in {
       import java.io._
       val someFoo: Foo = new Bar
-      Serialization.currentSystem.withValue(system.asInstanceOf[ActorSystemImpl]) {
+      JavaSerializer.currentSystem.withValue(system.asInstanceOf[ExtendedActorSystem]) {
         val m = TypedActor.MethodCall(classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef]))
         val baos = new ByteArrayOutputStream(8192 * 4)
         val out = new ObjectOutputStream(baos)

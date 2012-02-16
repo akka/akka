@@ -9,15 +9,14 @@ import akka.util.duration._
 import akka.config.ConfigurationException
 import akka.pattern.pipe
 import akka.pattern.AskSupport
-
 import com.typesafe.config.Config
-
 import scala.collection.JavaConversions.iterableAsScalaIterable
-
 import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
-
+import java.util.concurrent.locks.ReentrantLock
 import akka.jsr166y.ThreadLocalRandom
+import akka.util.Unsafe
+import akka.dispatch.Dispatchers
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -26,17 +25,80 @@ import akka.jsr166y.ThreadLocalRandom
 private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _supervisor: InternalActorRef, _path: ActorPath)
   extends LocalActorRef(
     _system,
-    _props.copy(creator = () ⇒ _props.routerConfig.createActor()),
+    _props.copy(creator = () ⇒ _props.routerConfig.createActor(), dispatcher = _props.routerConfig.routerDispatcher),
     _supervisor,
     _path) {
 
-  private val routeeProps = _props.copy(routerConfig = NoRouter)
-  private val resizeProgress = new AtomicBoolean
+  /*
+   * CAUTION: RoutedActorRef is PROBLEMATIC
+   * ======================================
+   * 
+   * We are constructing/assembling the children outside of the scope of the 
+   * Router actor, inserting them in its childrenRef list, which is not at all
+   * synchronized. This is done exactly once at start-up, all other accesses
+   * are done from the Router actor. This means that the only thing which is
+   * really hairy is making sure that the Router does not touch its childrenRefs
+   * before we are done with them: lock the monitor of the actor cell (hence the
+   * override of newActorCell) and use that to block the Router constructor for
+   * as long as it takes to setup the RoutedActorRef itself.
+   */
+  override def newActorCell(
+    system: ActorSystemImpl,
+    ref: InternalActorRef,
+    props: Props,
+    supervisor: InternalActorRef,
+    receiveTimeout: Option[Duration]): ActorCell =
+    {
+      val cell = super.newActorCell(system, ref, props, supervisor, receiveTimeout)
+      Unsafe.instance.monitorEnter(cell)
+      cell
+    }
+
+  private[akka] val routerConfig = _props.routerConfig
+  private[akka] val routeeProps = _props.copy(routerConfig = NoRouter)
+  private[akka] val resizeInProgress = new AtomicBoolean
   private val resizeCounter = new AtomicLong
 
   @volatile
   private var _routees: IndexedSeq[ActorRef] = IndexedSeq.empty[ActorRef] // this MUST be initialized during createRoute
   def routees = _routees
+
+  @volatile
+  private var _routeeProvider: RouteeProvider = _
+  def routeeProvider = _routeeProvider
+
+  val route =
+    try {
+      _routeeProvider = routerConfig.createRouteeProvider(actorContext)
+      val r = routerConfig.createRoute(routeeProps, routeeProvider)
+      // initial resize, before message send
+      routerConfig.resizer foreach { r ⇒
+        if (r.isTimeForResize(resizeCounter.getAndIncrement()))
+          r.resize(routeeProps, routeeProvider)
+      }
+      r
+    } finally {
+      assert(Thread.holdsLock(actorContext))
+      Unsafe.instance.monitorExit(actorContext) // unblock Router’s constructor
+    }
+
+  if (routerConfig.resizer.isEmpty && _routees.isEmpty)
+    throw new ActorInitializationException("router " + routerConfig + " did not register routees!")
+
+  /*
+   * end of construction
+   */
+
+  def applyRoute(sender: ActorRef, message: Any): Iterable[Destination] = message match {
+    case _: AutoReceivedMessage ⇒ Destination(this, this) :: Nil
+    case Terminated(_)          ⇒ Destination(this, this) :: Nil
+    case CurrentRoutees ⇒
+      sender ! RouterRoutees(_routees)
+      Nil
+    case _ ⇒
+      if (route.isDefinedAt(sender, message)) route(sender, message)
+      else Nil
+  }
 
   /**
    * Adds the routees to existing routees.
@@ -44,7 +106,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
    * Not thread safe, but intended to be called from protected points, such as
    * `RouterConfig.createRoute` and `Resizer.resize`
    */
-  private[akka] def addRoutees(newRoutees: IndexedSeq[ActorRef]) {
+  private[akka] def addRoutees(newRoutees: IndexedSeq[ActorRef]): Unit = {
     _routees = _routees ++ newRoutees
     // subscribe to Terminated messages for all route destinations, to be handled by Router actor
     newRoutees foreach underlying.watch
@@ -56,32 +118,9 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`
    */
-  private[akka] def removeRoutees(abandonedRoutees: IndexedSeq[ActorRef]) {
+  private[akka] def removeRoutees(abandonedRoutees: IndexedSeq[ActorRef]): Unit = {
     _routees = _routees diff abandonedRoutees
     abandonedRoutees foreach underlying.unwatch
-  }
-
-  private val routeeProvider = _props.routerConfig.createRouteeProvider(actorContext)
-  val route = _props.routerConfig.createRoute(routeeProps, routeeProvider)
-  // initial resize, before message send
-  resize()
-
-  def applyRoute(sender: ActorRef, message: Any): Iterable[Destination] = message match {
-    case _: AutoReceivedMessage ⇒ Nil
-    case Terminated(_)          ⇒ Nil
-    case CurrentRoutees ⇒
-      sender ! RouterRoutees(_routees)
-      Nil
-    case _ ⇒
-      if (route.isDefinedAt(sender, message)) route(sender, message)
-      else Nil
-  }
-
-  if (_props.routerConfig.resizer.isEmpty && _routees.isEmpty)
-    throw new ActorInitializationException("router " + _props.routerConfig + " did not register routees!")
-
-  _routees match {
-    case x ⇒ _routees = x // volatile write to publish the route before sending messages
   }
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = {
@@ -95,20 +134,15 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     }
 
     applyRoute(s, message) match {
-      case Nil  ⇒ super.!(message)(s)
-      case refs ⇒ refs foreach (p ⇒ p.recipient.!(msg)(p.sender))
+      case Destination(_, x) :: Nil if x eq this ⇒ super.!(message)(s)
+      case refs                                  ⇒ refs foreach (p ⇒ p.recipient.!(msg)(p.sender))
     }
   }
 
-  def resize() {
-    for (r ← _props.routerConfig.resizer) {
-      if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeProgress.compareAndSet(false, true)) {
-        try {
-          r.resize(routeeProps, routeeProvider)
-        } finally {
-          resizeProgress.set(false)
-        }
-      }
+  def resize(): Unit = {
+    for (r ← routerConfig.resizer) {
+      if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeInProgress.compareAndSet(false, true))
+        super.!(Router.Resize)
     }
   }
 }
@@ -138,6 +172,11 @@ trait RouterConfig {
   def createRouteeProvider(context: ActorContext) = new RouteeProvider(context, resizer)
 
   def createActor(): Router = new Router {}
+
+  /**
+   * Dispatcher ID to use for running the “head” actor, i.e. the [[akka.routing.Router]].
+   */
+  def routerDispatcher: String
 
   /**
    * Overridable merge strategy, by default completely prefers “this” (i.e. no merge).
@@ -246,12 +285,19 @@ trait CustomRoute {
  */
 trait Router extends Actor {
 
-  val ref = self match {
-    case x: RoutedActorRef ⇒ x
-    case _                 ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef")
+  // make sure that we synchronize properly to get the childrenRefs into our CPU cache
+  val ref = context.synchronized {
+    self match {
+      case x: RoutedActorRef ⇒ x
+      case _                 ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef")
+    }
   }
 
   final def receive = ({
+
+    case Router.Resize ⇒
+      try ref.routerConfig.resizer foreach (_.resize(ref.routeeProps, ref.routeeProvider))
+      finally assert(ref.resizeInProgress.getAndSet(false))
 
     case Terminated(child) ⇒
       ref.removeRoutees(IndexedSeq(child))
@@ -262,6 +308,10 @@ trait Router extends Actor {
   def routerReceive: Receive = {
     case _ ⇒
   }
+}
+
+private object Router {
+  case object Resize
 }
 
 /**
@@ -302,6 +352,7 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case object NoRouter extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
+  def routerDispatcher: String = ""
   override def withFallback(other: RouterConfig): RouterConfig = other
 }
 
@@ -311,13 +362,20 @@ case object NoRouter extends RouterConfig {
 case object FromConfig extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
     throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
+  def routerDispatcher: String = Dispatchers.DefaultDispatcherId
 }
 
 /**
  * Java API: Router configuration which has no default, i.e. external configuration is required.
+ *
+ * This can be used when the dispatcher to be used for the head Router needs to be configured
+ * (defaults to default-dispatcher).
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class FromConfig() extends RouterConfig {
+case class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId) extends RouterConfig {
+
+  def this() = this(Dispatchers.DefaultDispatcherId)
+
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
     throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
 }
@@ -348,7 +406,8 @@ object RoundRobinRouter {
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
+case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                            val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig with RoundRobinLike {
 
   /**
@@ -374,6 +433,11 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
    * Java API
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
+
+  /**
+   * Java API for setting routerDispatcher
+   */
+  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
 }
 
 trait RoundRobinLike { this: RouterConfig ⇒
@@ -428,7 +492,8 @@ object RandomRouter {
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
+case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                        val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig with RandomLike {
 
   /**
@@ -454,6 +519,11 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
    * Java API
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
+
+  /**
+   * Java API for setting routerDispatcher
+   */
+  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
 }
 
 trait RandomLike { this: RouterConfig ⇒
@@ -514,7 +584,8 @@ object SmallestMailboxRouter {
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
+case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                                 val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig with SmallestMailboxLike {
 
   /**
@@ -540,6 +611,11 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
    * Java API
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
+
+  /**
+   * Java API for setting routerDispatcher
+   */
+  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
 }
 
 trait SmallestMailboxLike { this: RouterConfig ⇒
@@ -659,7 +735,8 @@ object BroadcastRouter {
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None)
+case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                           val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig with BroadcastLike {
 
   /**
@@ -686,6 +763,10 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
    */
   def this(resizer: Resizer) = this(resizer = Some(resizer))
 
+  /**
+   * Java API for setting routerDispatcher
+   */
+  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
 }
 
 trait BroadcastLike { this: RouterConfig ⇒
@@ -732,7 +813,8 @@ object ScatterGatherFirstCompletedRouter {
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
-                                             override val resizer: Option[Resizer] = None)
+                                             override val resizer: Option[Resizer] = None,
+                                             val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig with ScatterGatherFirstCompletedLike {
 
   if (within <= Duration.Zero) throw new IllegalArgumentException(
@@ -761,6 +843,11 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * Java API
    */
   def this(resizer: Resizer, w: Duration) = this(resizer = Some(resizer), within = w)
+
+  /**
+   * Java API for setting routerDispatcher
+   */
+  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
 }
 
 trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
@@ -795,14 +882,22 @@ trait Resizer {
    * for the initial resize and continues with 1 for the first message. Make sure to perform
    * initial resize before first message (messageCounter == 0), because there is no guarantee
    * that resize will be done when concurrent messages are in play.
+   *
+   * CAUTION: this method is invoked from the thread which tries to send a
+   * message to the pool, i.e. the ActorRef.!() method, hence it may be called
+   * concurrently.
    */
   def isTimeForResize(messageCounter: Long): Boolean
+
   /**
    * Decide if the capacity of the router need to be changed. Will be invoked when `isTimeForResize`
    * returns true and no other resize is in progress.
    * Create and register more routees with `routeeProvider.registerRoutees(newRoutees)
    * or remove routees with `routeeProvider.unregisterRoutees(abandonedRoutees)` and
    * sending [[akka.actor.PoisonPill]] to them.
+   *
+   * This method is invoked only in the context of the Router actor in order to safely
+   * create/stop children.
    */
   def resize(props: Props, routeeProvider: RouteeProvider)
 }
@@ -933,7 +1028,8 @@ case class DefaultResizer(
    */
   def capacity(routees: IndexedSeq[ActorRef]): Int = {
     val currentSize = routees.size
-    val delta = filter(pressure(routees), currentSize)
+    val press = pressure(routees)
+    val delta = filter(press, currentSize)
     val proposed = currentSize + delta
 
     if (proposed < lowerBound) delta + (lowerBound - proposed)
@@ -963,7 +1059,7 @@ case class DefaultResizer(
       case a: LocalActorRef ⇒
         val cell = a.underlying
         pressureThreshold match {
-          case 1          ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
+          case 1          ⇒ cell.mailbox.isScheduled && cell.mailbox.hasMessages
           case i if i < 1 ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
           case threshold  ⇒ cell.mailbox.numberOfMessages >= threshold
         }

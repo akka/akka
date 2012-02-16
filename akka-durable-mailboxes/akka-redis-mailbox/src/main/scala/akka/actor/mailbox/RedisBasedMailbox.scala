@@ -19,7 +19,7 @@ class RedisBasedMailboxType(config: Config) extends MailboxType {
   override def create(owner: ActorContext) = new RedisBasedMailbox(owner)
 }
 
-class RedisBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
+class RedisBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with DurableMessageSerialization {
 
   private val settings = RedisBasedMailboxExtension(owner.system)
 

@@ -5,12 +5,12 @@
 package akka.serialization
 
 import akka.AkkaException
-import akka.util.ReflectiveAccess
 import scala.util.DynamicVariable
 import com.typesafe.config.Config
-import akka.actor.{ Extension, ActorSystem, ExtendedActorSystem, Address }
-import java.util.concurrent.ConcurrentHashMap
+import akka.actor.{ Extension, ExtendedActorSystem, Address, DynamicAccess }
 import akka.event.Logging
+import java.util.concurrent.ConcurrentHashMap
+import akka.util.NonFatal
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
 
@@ -22,19 +22,6 @@ object Serialization {
    * Tuple that represents mapping from Class to Serializer
    */
   type ClassSerializer = (Class[_], Serializer)
-
-  /**
-   * This holds a reference to the current ActorSystem (the surrounding context)
-   * during serialization and deserialization.
-   *
-   * If you are using Serializers yourself, outside of SerializationExtension,
-   * you'll need to surround the serialization/deserialization with:
-   *
-   * currentSystem.withValue(system) {
-   *   ...code...
-   * }
-   */
-  val currentSystem = new DynamicVariable[ActorSystem](null)
 
   /**
    * This holds a reference to the current transport address to be inserted
@@ -71,8 +58,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Serializes the given AnyRef/java.lang.Object according to the Serialization configuration
    * to either an Array of Bytes or an Exception if one was thrown.
    */
-  def serialize(o: AnyRef): Either[Exception, Array[Byte]] =
-    try { Right(findSerializerFor(o).toBinary(o)) } catch { case e: Exception ⇒ Left(e) }
+  def serialize(o: AnyRef): Either[Throwable, Array[Byte]] =
+    try Right(findSerializerFor(o).toBinary(o))
+    catch { case NonFatal(e) ⇒ Left(e) }
 
   /**
    * Deserializes the given array of bytes using the specified serializer id,
@@ -81,26 +69,18 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   def deserialize(bytes: Array[Byte],
                   serializerId: Int,
-                  clazz: Option[Class[_]],
-                  classLoader: ClassLoader): Either[Exception, AnyRef] =
-    try {
-      currentSystem.withValue(system) {
-        Right(serializerByIdentity(serializerId).fromBinary(bytes, clazz, Some(classLoader)))
-      }
-    } catch { case e: Exception ⇒ Left(e) }
+                  clazz: Option[Class[_]]): Either[Throwable, AnyRef] =
+    try Right(serializerByIdentity(serializerId).fromBinary(bytes, clazz))
+    catch { case NonFatal(e) ⇒ Left(e) }
 
   /**
    * Deserializes the given array of bytes using the specified type to look up what Serializer should be used.
    * You can specify an optional ClassLoader to load the object into.
    * Returns either the resulting object or an Exception if one was thrown.
    */
-  def deserialize(
-    bytes: Array[Byte],
-    clazz: Class[_],
-    classLoader: Option[ClassLoader]): Either[Exception, AnyRef] =
-    try {
-      currentSystem.withValue(system) { Right(serializerFor(clazz).fromBinary(bytes, Some(clazz), classLoader)) }
-    } catch { case e: Exception ⇒ Left(e) }
+  def deserialize(bytes: Array[Byte], clazz: Class[_]): Either[Throwable, AnyRef] =
+    try Right(serializerFor(clazz).fromBinary(bytes, Some(clazz)))
+    catch { case NonFatal(e) ⇒ Left(e) }
 
   /**
    * Returns the Serializer configured for the given object, returns the NullSerializer if it's null.
@@ -149,10 +129,12 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     }
 
   /**
-   * Tries to instantiate the specified Serializer by the FQN
+   * Tries to load the specified Serializer by the fully-qualified name; the actual
+   * loading is performed by the system’s [[akka.actor.DynamicAccess]].
    */
-  def serializerOf(serializerFQN: String): Either[Exception, Serializer] =
-    ReflectiveAccess.createInstance(serializerFQN, ReflectiveAccess.noParams, ReflectiveAccess.noArgs, system.internalClassLoader)
+  def serializerOf(serializerFQN: String): Either[Throwable, Serializer] =
+    system.dynamicAccess.createInstanceFor[Serializer](serializerFQN, Seq(classOf[ExtendedActorSystem] -> system)).fold(_ ⇒
+      system.dynamicAccess.createInstanceFor[Serializer](serializerFQN, Seq()), Right(_))
 
   /**
    * A Map of serializer from alias to implementation (class implementing akka.serialization.Serializer)
@@ -169,7 +151,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   private[akka] val bindings: Seq[ClassSerializer] = {
     val configuredBindings = for ((k: String, v: String) ← settings.SerializationBindings if v != "none") yield {
-      val c = ReflectiveAccess.getClassFor(k, system.internalClassLoader).fold(throw _, identity[Class[_]])
+      val c = system.dynamicAccess.getClassFor(k).fold(throw _, identity[Class[_]])
       (c, serializers(v))
     }
     sort(configuredBindings)

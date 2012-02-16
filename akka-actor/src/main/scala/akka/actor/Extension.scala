@@ -3,8 +3,6 @@
  */
 package akka.actor
 
-import akka.util.ReflectiveAccess
-
 /**
  * The basic ActorSystem covers all that is needed for locally running actors,
  * using futures and so on. In addition, more features can hook into it and
@@ -73,12 +71,12 @@ trait ExtensionIdProvider {
 
 /**
  * This is a one-stop-shop if all you want is an extension which is
- * constructed with the ActorSystemImpl as its only constructor argument:
+ * constructed with the ExtendedActorSystem as its only constructor argument:
  *
  * {{{
  * object MyExt extends ExtensionKey[Ext]
  *
- * class Ext(system: ActorSystemImpl) extends MyExt {
+ * class Ext(system: ExtendedActorSystem) extends MyExt {
  *   ...
  * }
  * }}}
@@ -89,7 +87,7 @@ trait ExtensionIdProvider {
  * public class MyExt extends Extension {
  *   static final ExtensionKey<MyExt> key = new ExtensionKey<MyExt>(MyExt.class);
  *
- *   public MyExt(ActorSystemImpl system) {
+ *   public MyExt(ExtendedActorSystem system) {
  *     ...
  *   }
  * }}}
@@ -99,7 +97,7 @@ abstract class ExtensionKey[T <: Extension](implicit m: ClassManifest[T]) extend
 
   override def lookup(): ExtensionId[T] = this
   def createExtension(system: ExtendedActorSystem): T =
-    ReflectiveAccess.createInstance[T](m.erasure, Array[Class[_]](classOf[ActorSystemImpl]), Array[AnyRef](system)) match {
+    system.dynamicAccess.createInstanceFor[T](m.erasure, Seq(classOf[ExtendedActorSystem] -> system)) match {
       case Left(ex) ⇒ throw ex
       case Right(r) ⇒ r
     }

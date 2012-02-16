@@ -4,22 +4,24 @@
 
 package akka.dispatch
 
-import akka.actor.newUuid
-import akka.util.{ Duration, ReflectiveAccess }
-import akka.actor.ActorSystem
-import akka.event.EventStream
-import akka.actor.Scheduler
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import java.util.concurrent.{ ConcurrentHashMap, TimeUnit, ThreadFactory }
+
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+
+import com.typesafe.config.{ ConfigFactory, Config }
+
+import Dispatchers.DefaultDispatcherId
+import akka.actor.{ Scheduler, DynamicAccess, ActorSystem }
 import akka.event.Logging.Warning
-import java.util.concurrent.{ ThreadFactory, TimeUnit, ConcurrentHashMap }
+import akka.event.EventStream
+import akka.util.Duration
 
 trait DispatcherPrerequisites {
   def threadFactory: ThreadFactory
   def eventStream: EventStream
   def deadLetterMailbox: Mailbox
   def scheduler: Scheduler
-  def classloader: ClassLoader
+  def dynamicAccess: DynamicAccess
 }
 
 case class DefaultDispatcherPrerequisites(
@@ -27,7 +29,7 @@ case class DefaultDispatcherPrerequisites(
   val eventStream: EventStream,
   val deadLetterMailbox: Mailbox,
   val scheduler: Scheduler,
-  val classloader: ClassLoader) extends DispatcherPrerequisites
+  val dynamicAccess: DynamicAccess) extends DispatcherPrerequisites
 
 object Dispatchers {
   /**
@@ -137,7 +139,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       case "PinnedDispatcher"    ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
       case fqn ⇒
         val args = Seq(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
-        ReflectiveAccess.createInstance[MessageDispatcherConfigurator](fqn, args, prerequisites.classloader) match {
+        prerequisites.dynamicAccess.createInstanceFor[MessageDispatcherConfigurator](fqn, args) match {
           case Right(configurator) ⇒ configurator
           case Left(exception) ⇒
             throw new IllegalArgumentException(
@@ -187,7 +189,8 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
     config.getInt("throughput"),
     Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
     mailboxType, configureExecutor(),
-    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS))
+    Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+    config.getBoolean("attempt-teamwork"))
 
   /**
    * Returns the same dispatcher instance for each invocation

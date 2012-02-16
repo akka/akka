@@ -78,7 +78,7 @@ public class FutureDocTestBase {
     ActorRef actor = system.actorOf(new Props(MyActor.class));
     String msg = "hello";
     //#ask-blocking
-    Timeout timeout = system.settings().ActorTimeout();
+    Timeout timeout = new Timeout(Duration.parse("5 seconds"));
     Future<Object> future = Patterns.ask(actor, msg, timeout);
     String result = (String) Await.result(future, timeout.duration());
     //#ask-blocking
@@ -196,19 +196,17 @@ public class FutureDocTestBase {
     Iterable<Future<Integer>> listOfFutureInts = source;
 
     // now we have a Future[Iterable[Integer]]
-    Future<Iterable<Integer>> futureListOfInts =
-            sequence(listOfFutureInts, system.dispatcher());
+    Future<Iterable<Integer>> futureListOfInts = sequence(listOfFutureInts, system.dispatcher());
 
     // Find the sum of the odd numbers
-    Future<Long> futureSum = futureListOfInts.map(
-      new Mapper<Iterable<Integer>, Long>() {
-          public Long apply(Iterable<Integer> ints) {
-            long sum = 0;
-            for (Integer i : ints)
-              sum += i;
-            return sum;
-          }
-      });
+    Future<Long> futureSum = futureListOfInts.map(new Mapper<Iterable<Integer>, Long>() {
+      public Long apply(Iterable<Integer> ints) {
+        long sum = 0;
+        for (Integer i : ints)
+          sum += i;
+        return sum;
+      }
+    });
 
     long result = Await.result(futureSum, Duration.create(1, SECONDS));
     //#sequence
@@ -221,20 +219,18 @@ public class FutureDocTestBase {
     //Just a sequence of Strings
     Iterable<String> listStrings = Arrays.asList("a", "b", "c");
 
-    Future<Iterable<String>> futureResult = traverse(listStrings,
-            new Function<String, Future<String>>() {
-              public Future<String> apply(final String r) {
-                return future(new Callable<String>() {
-                  public String call() {
-                    return r.toUpperCase();
-                  }
-                }, system.dispatcher());
-              }
-            }, system.dispatcher());
+    Future<Iterable<String>> futureResult = traverse(listStrings, new Function<String, Future<String>>() {
+      public Future<String> apply(final String r) {
+        return future(new Callable<String>() {
+          public String call() {
+            return r.toUpperCase();
+          }
+        }, system.dispatcher());
+      }
+    }, system.dispatcher());
 
     //Returns the sequence of strings as upper case
-    Iterable<String> result =
-      Await.result(futureResult, Duration.create(1, SECONDS));
+    Iterable<String> result = Await.result(futureResult, Duration.create(1, SECONDS));
     assertEquals(Arrays.asList("A", "B", "C"), result);
     //#traverse
   }
@@ -250,12 +246,11 @@ public class FutureDocTestBase {
     Iterable<Future<String>> futures = source;
 
     //Start value is the empty string
-    Future<String> resultFuture = fold("", futures,
-      new Function2<String, String, String>() {
-          public String apply(String r, String t) {
-            return r + t; //Just concatenate
-          }
-        }, system.dispatcher());
+    Future<String> resultFuture = fold("", futures, new Function2<String, String, String>() {
+      public String apply(String r, String t) {
+        return r + t; //Just concatenate
+      }
+    }, system.dispatcher());
     String result = Await.result(resultFuture, Duration.create(1, SECONDS));
     //#fold
 
@@ -272,12 +267,11 @@ public class FutureDocTestBase {
     //A sequence of Futures, in this case Strings
     Iterable<Future<String>> futures = source;
 
-    Future<Object> resultFuture = reduce(futures,
-      new Function2<Object, String, Object>() {
-          public Object apply(Object r, String t) {
-            return r + t; //Just concatenate
-          }
-        }, system.dispatcher());
+    Future<Object> resultFuture = reduce(futures, new Function2<Object, String, Object>() {
+      public Object apply(Object r, String t) {
+        return r + t; //Just concatenate
+      }
+    }, system.dispatcher());
 
     Object result = Await.result(resultFuture, Duration.create(1, SECONDS));
     //#reduce
@@ -285,32 +279,35 @@ public class FutureDocTestBase {
     assertEquals("ab", result);
   }
 
-  @Test public void useSuccessfulAndFailed() {
+  @Test
+  public void useSuccessfulAndFailed() {
     //#successful
     Future<String> future = Futures.successful("Yay!", system.dispatcher());
     //#successful
     //#failed
-    Future<String> otherFuture =
-            Futures.failed(new IllegalArgumentException("Bang!"), system.dispatcher());
+    Future<String> otherFuture = Futures.failed(new IllegalArgumentException("Bang!"), system.dispatcher());
     //#failed
     Object result = Await.result(future, Duration.create(1, SECONDS));
-    assertEquals("Yay!",result);
+    assertEquals("Yay!", result);
     Throwable result2 = Await.result(otherFuture.failed(), Duration.create(1, SECONDS));
-    assertEquals("Bang!",result2.getMessage());
+    assertEquals("Bang!", result2.getMessage());
   }
 
-  @Test public void useFilter() {
-       //#filter
+  @Test
+  public void useFilter() {
+    //#filter
     Future<Integer> future1 = Futures.successful(4, system.dispatcher());
-    Future<Integer> successfulFilter =
-      future1.filter(new Filter<Integer>() {
-        public boolean filter(Integer i) { return i % 2 == 0; }
-      });
+    Future<Integer> successfulFilter = future1.filter(new Filter<Integer>() {
+      public boolean filter(Integer i) {
+        return i % 2 == 0;
+      }
+    });
 
-    Future<Integer> failedFilter =
-      future1.filter(new Filter<Integer>() {
-        public boolean filter(Integer i) { return i % 2 != 0; }
-      });
+    Future<Integer> failedFilter = future1.filter(new Filter<Integer>() {
+      public boolean filter(Integer i) {
+        return i % 2 != 0;
+      }
+    });
     //When filter fails, the returned Future will be failed with a scala.MatchError
     //#filter
   }
@@ -323,137 +320,140 @@ public class FutureDocTestBase {
 
   }
 
-   @Test public void useAndThen() {
+  @Test
+  public void useAndThen() {
     //#and-then
-    Future<String> future1 = Futures.successful("value", system.dispatcher()).
-       andThen(new OnComplete<String>() {
-       public void onComplete(Throwable failure, String result) {
-           if (failure != null) sendToIssueTracker(failure);
-       }
+    Future<String> future1 = Futures.successful("value", system.dispatcher()).andThen(new OnComplete<String>() {
+      public void onComplete(Throwable failure, String result) {
+        if (failure != null)
+          sendToIssueTracker(failure);
+      }
     }).andThen(new OnComplete<String>() {
-       public void onComplete(Throwable failure, String result) {
-           if (result != null) sendToTheInternetz(result);
-       }
+      public void onComplete(Throwable failure, String result) {
+        if (result != null)
+          sendToTheInternetz(result);
+      }
     });
     //#and-then
   }
 
-  @Test public void useRecover() {
+  @Test
+  public void useRecover() {
     //#recover
     Future<Integer> future = future(new Callable<Integer>() {
       public Integer call() {
         return 1 / 0;
       }
     }, system.dispatcher()).recover(new Recover<Integer>() {
-        public Integer recover(Throwable problem) throws Throwable {
-            if (problem instanceof ArithmeticException) return 0;
-            else throw problem;
-        }
+      public Integer recover(Throwable problem) throws Throwable {
+        if (problem instanceof ArithmeticException)
+          return 0;
+        else
+          throw problem;
+      }
     });
     int result = Await.result(future, Duration.create(1, SECONDS));
     assertEquals(result, 0);
     //#recover
   }
 
-  @Test public void useTryRecover() {
+  @Test
+  public void useTryRecover() {
     //#try-recover
     Future<Integer> future = future(new Callable<Integer>() {
       public Integer call() {
         return 1 / 0;
       }
     }, system.dispatcher()).recoverWith(new Recover<Future<Integer>>() {
-        public Future<Integer> recover(Throwable problem) throws Throwable {
-            if (problem instanceof ArithmeticException) {
-                return future(new Callable<Integer>() {
-                  public Integer call() {
-                    return 0;
-                  }
-                }, system.dispatcher());
+      public Future<Integer> recover(Throwable problem) throws Throwable {
+        if (problem instanceof ArithmeticException) {
+          return future(new Callable<Integer>() {
+            public Integer call() {
+              return 0;
             }
-            else throw problem;
-        }
+          }, system.dispatcher());
+        } else
+          throw problem;
+      }
     });
     int result = Await.result(future, Duration.create(1, SECONDS));
     assertEquals(result, 0);
     //#try-recover
   }
 
-  @Test public void useOnSuccessOnFailureAndOnComplete() {
-      {
+  @Test
+  public void useOnSuccessOnFailureAndOnComplete() {
+    {
       Future<String> future = Futures.successful("foo", system.dispatcher());
+
       //#onSuccess
       future.onSuccess(new OnSuccess<String>() {
-          public void onSuccess(String result) {
-              if ("bar" == result) {
-                  //Do something if it resulted in "bar"
-              } else {
-                  //Do something if it was some other String
-              }
+        public void onSuccess(String result) {
+          if ("bar" == result) {
+            //Do something if it resulted in "bar"
+          } else {
+            //Do something if it was some other String
           }
+        }
       });
       //#onSuccess
-      }
-      {
-        Future<String> future =
-                Futures.failed(new IllegalStateException("OHNOES"), system.dispatcher());
-        //#onFailure
-      future.onFailure( new OnFailure() {
+    }
+    {
+      Future<String> future = Futures.failed(new IllegalStateException("OHNOES"), system.dispatcher());
+      //#onFailure
+      future.onFailure(new OnFailure() {
         public void onFailure(Throwable failure) {
-            if (failure instanceof IllegalStateException) {
-                //Do something if it was this particular failure
-            } else {
-                //Do something if it was some other failure
-            }
+          if (failure instanceof IllegalStateException) {
+            //Do something if it was this particular failure
+          } else {
+            //Do something if it was some other failure
+          }
         }
       });
       //#onFailure
-      }
-      {
-        Future<String> future = Futures.successful("foo", system.dispatcher());
-        //#onComplete
-        future.onComplete(new OnComplete<String>() {
-           public void onComplete(Throwable failure, String result) {
-               if (failure != null) {
-                   //We got a failure, handle it here
-               } else {
-                   // We got a result, do something with it
-               }
-           }
-        });
-        //#onComplete
-      }
+    }
+    {
+      Future<String> future = Futures.successful("foo", system.dispatcher());
+      //#onComplete
+      future.onComplete(new OnComplete<String>() {
+        public void onComplete(Throwable failure, String result) {
+          if (failure != null) {
+            //We got a failure, handle it here
+          } else {
+            // We got a result, do something with it
+          }
+        }
+      });
+      //#onComplete
+    }
   }
 
-  @Test public void useOrAndZip(){
+  @Test
+  public void useOrAndZip() {
     {
-    //#zip
-    Future<String> future1 = Futures.successful("foo", system.dispatcher());
-    Future<String> future2 = Futures.successful("bar", system.dispatcher());
-    Future<String> future3 =
-      future1.zip(future2).map(new Mapper<scala.Tuple2<String,String>, String>() {
-        public String apply(scala.Tuple2<String,String> zipped) {
-            return zipped._1() + " " + zipped._2();
+      //#zip
+      Future<String> future1 = Futures.successful("foo", system.dispatcher());
+      Future<String> future2 = Futures.successful("bar", system.dispatcher());
+      Future<String> future3 = future1.zip(future2).map(new Mapper<scala.Tuple2<String, String>, String>() {
+        public String apply(scala.Tuple2<String, String> zipped) {
+          return zipped._1() + " " + zipped._2();
         }
-    });
+      });
 
-    String result = Await.result(future3,  Duration.create(1, SECONDS));
-    assertEquals("foo bar", result);
-    //#zip
+      String result = Await.result(future3, Duration.create(1, SECONDS));
+      assertEquals("foo bar", result);
+      //#zip
     }
 
     {
-        //#fallback-to
-        Future<String> future1 =
-                Futures.failed(new IllegalStateException("OHNOES1"), system.dispatcher());
-        Future<String> future2 =
-                Futures.failed(new IllegalStateException("OHNOES2"), system.dispatcher());
-        Future<String> future3 =
-                Futures.successful("bar", system.dispatcher());
-        Future<String> future4 =
-                future1.fallbackTo(future2).fallbackTo(future3); // Will have "bar" in this case
-        String result = Await.result(future4,  Duration.create(1, SECONDS));
-        assertEquals("bar", result);
-        //#fallback-to
+      //#fallback-to
+      Future<String> future1 = Futures.failed(new IllegalStateException("OHNOES1"), system.dispatcher());
+      Future<String> future2 = Futures.failed(new IllegalStateException("OHNOES2"), system.dispatcher());
+      Future<String> future3 = Futures.successful("bar", system.dispatcher());
+      Future<String> future4 = future1.fallbackTo(future2).fallbackTo(future3); // Will have "bar" in this case
+      String result = Await.result(future4, Duration.create(1, SECONDS));
+      assertEquals("bar", result);
+      //#fallback-to
     }
 
   }

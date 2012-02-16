@@ -161,8 +161,8 @@ public final class ConfigFactory {
      * used rather than the default
      * <code>application.{conf,json,properties}</code> classpath resources.
      * These system properties should not be set in code (after all, you can
-     * just parse whatever you want manually and then use {@link #load(Config)
-     * if you don't want to use <code>application.conf</code>}). The properties
+     * just parse whatever you want manually and then use {@link #load(Config)}
+     * if you don't want to use <code>application.conf</code>). The properties
      * are intended for use by the person or script launching the application.
      * For example someone might have a <code>production.conf</code> that
      * include <code>application.conf</code> but then change a couple of values.

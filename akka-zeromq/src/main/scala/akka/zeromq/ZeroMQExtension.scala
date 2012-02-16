@@ -7,6 +7,9 @@ import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import akka.dispatch.{ Await }
 import akka.pattern.ask
+import akka.util.Duration
+import java.util.concurrent.TimeUnit
+import akka.util.Timeout
 
 /**
  * A Model to represent a version of the zeromq library
@@ -22,6 +25,7 @@ case class ZeroMQVersion(major: Int, minor: Int, patch: Int) {
  * The [[akka.actor.ExtensionId]] and [[akka.actor.ExtensionIdProvider]] for the ZeroMQ module
  */
 object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProvider {
+  override def get(system: ActorSystem): ZeroMQExtension = super.get(system)
   def lookup() = this
   def createExtension(system: ExtendedActorSystem) = new ZeroMQExtension(system)
 
@@ -41,6 +45,9 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
  * @param system The ActorSystem this extension belongs to.
  */
 class ZeroMQExtension(system: ActorSystem) extends Extension {
+
+  val DefaultPollTimeout = Duration(system.settings.config.getMilliseconds("akka.zeromq.poll-timeout"), TimeUnit.MILLISECONDS)
+  val NewSocketTimeout = Timeout(Duration(system.settings.config.getMilliseconds("akka.zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
 
   /**
    * The version of the ZeroMQ library
@@ -135,98 +142,100 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
    * @return the [[akka.actor.ActorRef]]
    */
   def newSocket(socketParameters: SocketOption*): ActorRef = {
-    implicit val timeout = system.settings.ActorTimeout
+    implicit val timeout = NewSocketTimeout
     val req = (zeromqGuardian ? newSocketProps(socketParameters: _*)).mapTo[ActorRef]
     Await.result(req, timeout.duration)
   }
 
   /**
-   * Java API helper
-   * Factory method to create the actor representing the ZeroMQ Publisher socket.
+   * Java API factory method to create the actor representing the ZeroMQ Publisher socket.
    * You can pass in as many configuration options as you want and the order of the configuration options doesn't matter
    * They are matched on type and the first one found wins.
    *
-   * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socke
+   * @param socketParameters array of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.ActorRef]]
    */
-  def newPubSocket(socketParameters: SocketOption*): ActorRef = newSocket((SocketType.Pub +: socketParameters): _*)
+  def newPubSocket(socketParameters: Array[SocketOption]): ActorRef = newSocket((SocketType.Pub +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the actor representing the ZeroMQ Subscriber socket.
-   * You can pass in as many configuration options as you want and the order of the configuration options doesn't matter
-   * They are matched on type and the first one found wins.
-   *
-   * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socke
-   * @return the [[akka.actor.ActorRef]]
+   * Convenience for creating a publisher socket.
    */
-  def newSubSocket(socketParameters: SocketOption*): ActorRef = newSocket((SocketType.Sub +: socketParameters): _*)
+  def newPubSocket(bind: Bind): ActorRef = newSocket(SocketType.Pub, bind)
 
   /**
-   * Java API helper
-   * Factory method to create the actor representing the ZeroMQ Dealer socket.
+   * Java API factory method to create the actor representing the ZeroMQ Subscriber socket.
    * You can pass in as many configuration options as you want and the order of the configuration options doesn't matter
    * They are matched on type and the first one found wins.
    *
-   * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socke
+   * @param socketParameters array of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.ActorRef]]
    */
-  def newDealerSocket(socketParameters: SocketOption*): ActorRef = newSocket((SocketType.Dealer +: socketParameters): _*)
+  def newSubSocket(socketParameters: Array[SocketOption]): ActorRef = newSocket((SocketType.Sub +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the actor representing the ZeroMQ Router socket.
-   * You can pass in as many configuration options as you want and the order of the configuration options doesn't matter
-   * They are matched on type and the first one found wins.
-   *
-   * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socke
-   * @return the [[akka.actor.ActorRef]]
+   * Convenience for creating a subscriber socket.
    */
-  def newRouterSocket(socketParameters: SocketOption*): ActorRef = newSocket((SocketType.Router +: socketParameters): _*)
+  def newSubSocket(connect: Connect, listener: Listener, subscribe: Subscribe): ActorRef = newSocket(SocketType.Sub, connect, listener, subscribe)
 
   /**
-   * Java API helper
-   * Factory method to create the actor representing the ZeroMQ Push socket.
+   * Java API factory method to create the actor representing the ZeroMQ Dealer socket.
    * You can pass in as many configuration options as you want and the order of the configuration options doesn't matter
    * They are matched on type and the first one found wins.
    *
-   * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socke
+   * @param socketParameters array of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.ActorRef]]
    */
-  def newPushSocket(socketParameters: SocketOption*): ActorRef = newSocket((SocketType.Push +: socketParameters): _*)
+  def newDealerSocket(socketParameters: Array[SocketOption]): ActorRef = newSocket((SocketType.Dealer +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the actor representing the ZeroMQ Pull socket.
+   * Java API factory method to create the actor representing the ZeroMQ Router socket.
    * You can pass in as many configuration options as you want and the order of the configuration options doesn't matter
    * They are matched on type and the first one found wins.
    *
-   * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socke
+   * @param socketParameters array of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.ActorRef]]
    */
-  def newPullSocket(socketParameters: SocketOption*): ActorRef = newSocket((SocketType.Pull +: socketParameters): _*)
+  def newRouterSocket(socketParameters: Array[SocketOption]): ActorRef = newSocket((SocketType.Router +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the actor representing the ZeroMQ Req socket.
+   * Java API factory method to create the actor representing the ZeroMQ Push socket.
    * You can pass in as many configuration options as you want and the order of the configuration options doesn't matter
    * They are matched on type and the first one found wins.
    *
-   * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socke
+   * @param socketParameters array of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.ActorRef]]
    */
-  def newReqSocket(socketParameters: SocketOption*): ActorRef = newSocket((SocketType.Req +: socketParameters): _*)
+  def newPushSocket(socketParameters: Array[SocketOption]): ActorRef = newSocket((SocketType.Push +: socketParameters): _*)
 
   /**
-   * Java API helper
-   * Factory method to create the actor representing the ZeroMQ Rep socket.
+   * Java API factory method to create the actor representing the ZeroMQ Pull socket.
    * You can pass in as many configuration options as you want and the order of the configuration options doesn't matter
    * They are matched on type and the first one found wins.
    *
-   * @param socketParameters a varargs list of [[akka.zeromq.SocketOption]] to configure the socke
+   * @param socketParameters array of [[akka.zeromq.SocketOption]] to configure the socket
    * @return the [[akka.actor.ActorRef]]
    */
-  def newRepSocket(socketParameters: SocketOption*): ActorRef = newSocket((SocketType.Rep +: socketParameters): _*)
+  def newPullSocket(socketParameters: Array[SocketOption]): ActorRef = newSocket((SocketType.Pull +: socketParameters): _*)
+
+  /**
+   * Java API factory method to create the actor representing the ZeroMQ Req socket.
+   * You can pass in as many configuration options as you want and the order of the configuration options doesn't matter
+   * They are matched on type and the first one found wins.
+   *
+   * @param socketParameters array of [[akka.zeromq.SocketOption]] to configure the socket
+   * @return the [[akka.actor.ActorRef]]
+   */
+  def newReqSocket(socketParameters: Array[SocketOption]): ActorRef = newSocket((SocketType.Req +: socketParameters): _*)
+
+  /**
+   * Java API factory method to create the actor representing the ZeroMQ Rep socket.
+   * You can pass in as many configuration options as you want and the order of the configuration options doesn't matter
+   * They are matched on type and the first one found wins.
+   *
+   * @param socketParameters array of [[akka.zeromq.SocketOption]] to configure the socke
+   * @return the [[akka.actor.ActorRef]]
+   */
+  def newRepSocket(socketParameters: Array[SocketOption]): ActorRef = newSocket((SocketType.Rep +: socketParameters): _*)
 
   private val zeromqGuardian: ActorRef = {
     verifyZeroMQVersion

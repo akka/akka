@@ -12,6 +12,8 @@ import java.util.{ Set ⇒ JSet }
  * An UntypedActor version of transactor for using from Java.
  */
 abstract class UntypedTransactor extends UntypedActor {
+  private val settings = TransactorExtension(context.system)
+
   /**
    * Implement a general pattern for using coordinated transactions.
    */
@@ -29,7 +31,7 @@ abstract class UntypedTransactor extends UntypedActor {
       }
       case message ⇒ {
         val normal = normally(message)
-        if (!normal) onReceive(Coordinated(message)(context.system.settings.ActorTimeout))
+        if (!normal) onReceive(Coordinated(message)(settings.CoordinatedTimeout))
       }
     }
   }

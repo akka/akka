@@ -12,7 +12,7 @@ private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
 }
 
-abstract class DurableMailbox(owner: ActorContext) extends CustomMailbox(owner) with DefaultSystemMessageQueue {
+abstract class DurableMailbox(val owner: ActorContext) extends CustomMailbox(owner) with DefaultSystemMessageQueue {
   import DurableExecutableMailboxConfig._
 
   def system: ExtendedActorSystem = owner.system.asInstanceOf[ExtendedActorSystem]
@@ -22,15 +22,13 @@ abstract class DurableMailbox(owner: ActorContext) extends CustomMailbox(owner) 
 
 }
 
-trait DurableMessageSerialization {
-
-  def owner: ActorContext
+trait DurableMessageSerialization { this: DurableMailbox ⇒
 
   def serialize(durableMessage: Envelope): Array[Byte] = {
 
     def serializeActorRef(ref: ActorRef): ActorRefProtocol = ActorRefProtocol.newBuilder.setPath(ref.path.toString).build
 
-    val message = MessageSerializer.serialize(owner.system, durableMessage.message.asInstanceOf[AnyRef])
+    val message = MessageSerializer.serialize(system, durableMessage.message.asInstanceOf[AnyRef])
     val builder = RemoteMessageProtocol.newBuilder
       .setMessage(message)
       .setRecipient(serializeActorRef(owner.self))
@@ -41,13 +39,13 @@ trait DurableMessageSerialization {
 
   def deserialize(bytes: Array[Byte]): Envelope = {
 
-    def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = owner.system.actorFor(refProtocol.getPath)
+    def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = system.actorFor(refProtocol.getPath)
 
     val durableMessage = RemoteMessageProtocol.parseFrom(bytes)
-    val message = MessageSerializer.deserialize(owner.system, durableMessage.getMessage, getClass.getClassLoader)
+    val message = MessageSerializer.deserialize(system, durableMessage.getMessage)
     val sender = deserializeActorRef(durableMessage.getSender)
 
-    new Envelope(message, sender)(owner.system)
+    new Envelope(message, sender)(system)
   }
 
 }

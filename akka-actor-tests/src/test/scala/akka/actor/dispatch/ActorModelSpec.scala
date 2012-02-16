@@ -50,6 +50,8 @@ object ActorModelSpec {
 
   case object Restart extends ActorModelMessage
 
+  case object DoubleStop extends ActorModelMessage
+
   case class ThrowException(e: Throwable) extends ActorModelMessage
 
   val Ping = "Ping"
@@ -86,6 +88,7 @@ object ActorModelSpec {
       case Restart                      ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
       case Interrupt                    ⇒ ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!")
       case ThrowException(e: Throwable) ⇒ ack; busy.switchOff(); throw e
+      case DoubleStop                   ⇒ ack; context.stop(self); context.stop(self); busy.switchOff
     }
   }
 
@@ -107,8 +110,9 @@ object ActorModelSpec {
     val stops = new AtomicLong(0)
 
     def getStats(actorRef: ActorRef) = {
-      stats.putIfAbsent(actorRef, new InterceptorStats) match {
-        case null  ⇒ stats.get(actorRef)
+      val is = new InterceptorStats
+      stats.putIfAbsent(actorRef, is) match {
+        case null  ⇒ is
         case other ⇒ other
       }
     }
@@ -124,12 +128,12 @@ object ActorModelSpec {
     }
 
     protected[akka] abstract override def register(actor: ActorCell) {
-      getStats(actor.self).registers.incrementAndGet()
+      assert(getStats(actor.self).registers.incrementAndGet() == 1)
       super.register(actor)
     }
 
     protected[akka] abstract override def unregister(actor: ActorCell) {
-      getStats(actor.self).unregisters.incrementAndGet()
+      assert(getStats(actor.self).unregisters.incrementAndGet() == 1)
       super.unregister(actor)
     }
 
@@ -190,13 +194,13 @@ object ActorModelSpec {
   }
 
   def assertRef(actorRef: ActorRef, dispatcher: MessageDispatcher = null)(
-    suspensions: Long = statsFor(actorRef).suspensions.get(),
-    resumes: Long = statsFor(actorRef).resumes.get(),
-    registers: Long = statsFor(actorRef).registers.get(),
-    unregisters: Long = statsFor(actorRef).unregisters.get(),
-    msgsReceived: Long = statsFor(actorRef).msgsReceived.get(),
-    msgsProcessed: Long = statsFor(actorRef).msgsProcessed.get(),
-    restarts: Long = statsFor(actorRef).restarts.get())(implicit system: ActorSystem) {
+    suspensions: Long = statsFor(actorRef, dispatcher).suspensions.get(),
+    resumes: Long = statsFor(actorRef, dispatcher).resumes.get(),
+    registers: Long = statsFor(actorRef, dispatcher).registers.get(),
+    unregisters: Long = statsFor(actorRef, dispatcher).unregisters.get(),
+    msgsReceived: Long = statsFor(actorRef, dispatcher).msgsReceived.get(),
+    msgsProcessed: Long = statsFor(actorRef, dispatcher).msgsProcessed.get(),
+    restarts: Long = statsFor(actorRef, dispatcher).restarts.get())(implicit system: ActorSystem) {
     val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[LocalActorRef].underlying.dispatcher))
     val deadline = System.currentTimeMillis + 1000
     try {
@@ -362,16 +366,19 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
           case e ⇒
             dispatcher match {
               case dispatcher: BalancingDispatcher ⇒
-                val buddies = dispatcher.buddies
+                val team = dispatcher.team
                 val mq = dispatcher.messageQueue
 
-                System.err.println("Buddies left: ")
-                buddies.toArray foreach {
+                System.err.println("Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
+                team.toArray sorted new Ordering[AnyRef] {
+                  def compare(l: AnyRef, r: AnyRef) = (l, r) match { case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path compareTo rr.self.path }
+                } foreach {
                   case cell: ActorCell ⇒
                     System.err.println(" - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.status + " " + cell.mailbox.numberOfMessages + " " + SystemMessage.size(cell.mailbox.systemDrain()))
                 }
 
-                System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages + " ")
+                System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
+                Iterator.continually(mq.dequeue) takeWhile (_ ne null) foreach System.err.println
               case _ ⇒
             }
 
@@ -425,6 +432,14 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         assert(f3.value.isEmpty)
         assert(f5.value.isEmpty)
       }
+    }
+
+    "not double-deregister" in {
+      implicit val dispatcher = interceptedDispatcher()
+      val a = newTestActor(dispatcher.id)
+      a ! DoubleStop
+      awaitCond(statsFor(a, dispatcher).registers.get == 1)
+      awaitCond(statsFor(a, dispatcher).unregisters.get == 1)
     }
   }
 }
@@ -529,7 +544,8 @@ object BalancingDispatcherModelSpec {
         Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
         mailboxType,
         configureExecutor(),
-        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) with MessageDispatcherInterceptor
+        Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS),
+        config.getBoolean("attempt-teamwork")) with MessageDispatcherInterceptor
 
     override def dispatcher(): MessageDispatcher = instance
   }

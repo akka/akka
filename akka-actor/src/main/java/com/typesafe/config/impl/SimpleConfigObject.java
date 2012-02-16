@@ -17,6 +17,8 @@ import com.typesafe.config.ConfigValue;
 
 final class SimpleConfigObject extends AbstractConfigObject {
 
+    private static final long serialVersionUID = 1L;
+
     // this map should never be modified - assume immutable
     final private Map<String, AbstractConfigValue> value;
     final private boolean resolved;

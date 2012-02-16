@@ -14,7 +14,7 @@ package object migration {
 
   implicit def future2OldFuture[T](future: Future[T]): OldFuture[T] = new OldFuture[T](future)
 
-  implicit def askTimeout: Timeout = GlobalActorSystem.settings.ActorTimeout
+  implicit def askTimeout: Timeout = GlobalActorSystem.AwaitTimeout
 
   implicit def defaultDispatcher: MessageDispatcher = GlobalActorSystem.dispatcher
 
