@@ -13,14 +13,12 @@ import akka.actor.AddressExtractor
 
 class ClusterSettings(val config: Config, val systemName: String) {
   import config._
-  // cluster config section
   val FailureDetectorThreshold = getInt("akka.cluster.failure-detector.threshold")
   val FailureDetectorMaxSampleSize = getInt("akka.cluster.failure-detector.max-sample-size")
-  val SeedNodeConnectionTimeout = Duration(config.getMilliseconds("akka.cluster.seed-node-connection-timeout"), MILLISECONDS)
-  val MaxTimeToRetryJoiningCluster = Duration(config.getMilliseconds("akka.cluster.max-time-to-retry-joining-cluster"), MILLISECONDS)
-  val InitialDelayForGossip = Duration(getMilliseconds("akka.cluster.gossip.initial-delay"), MILLISECONDS)
-  val GossipFrequency = Duration(getMilliseconds("akka.cluster.gossip.frequency"), MILLISECONDS)
-  val SeedNodes = Set.empty[Address] ++ getStringList("akka.cluster.seed-nodes").asScala.collect {
-    case AddressExtractor(addr) ⇒ addr
+  val NodeToJoin: Option[Address] = getString("akka.cluster.node-to-join") match {
+    case ""                     ⇒ None
+    case AddressExtractor(addr) ⇒ Some(addr)
   }
+  val GossipInitialDelay = Duration(getMilliseconds("akka.cluster.gossip.initialDelay"), MILLISECONDS)
+  val GossipFrequency = Duration(getMilliseconds("akka.cluster.gossip.frequency"), MILLISECONDS)
 }

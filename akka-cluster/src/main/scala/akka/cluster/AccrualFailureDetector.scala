@@ -143,9 +143,12 @@ class AccrualFailureDetector(system: ActorSystem, val threshold: Int = 8, val ma
       else {
         val timestampDiff = newTimestamp - oldTimestamp.get
         val mean = oldState.failureStats.get(connection).getOrElse(FailureStats()).mean
-        PhiFactor * timestampDiff / mean
+        if (mean == 0.0D) 0.0D
+        else PhiFactor * timestampDiff / mean
       }
-    log.debug("Phi value [{}] and threshold [{}] for connection [{}] ", phi, threshold, connection)
+
+    // only log if PHI value is starting to get interesting
+    if (phi > 0.0D) log.debug("Phi value [{}] and threshold [{}] for connection [{}] ", phi, threshold, connection)
     phi
   }
 
