@@ -238,7 +238,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   log.info("Node [{}] - Starting cluster Gossiper...", remoteAddress)
 
   // try to join the node defined in the 'akka.cluster.node-to-join' option
-  nodeToJoin foreach join
+  join()
 
   // start periodic gossip to random nodes in cluster
   val gossipCanceller = system.scheduler.schedule(gossipInitialDelay, gossipFrequency) {
@@ -382,21 +382,11 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   /**
    * Joins the pre-configured contact point and retrieves current gossip state.
    */
-  private def join(address: Address) {
+  private def join() = nodeToJoin foreach { address ⇒
     setUpConnectionTo(address) foreach { connection ⇒
       val command = Join(remoteAddress)
-      log.info("Node [{}] - Sending [{}] to [{}]", remoteAddress, command, address)
+      log.info("Node [{}] - Sending [{}] to [{}] through connection [{}]", remoteAddress, command, address, connection)
       connection ! command
-    }
-
-    contactPoint match {
-      case None ⇒ log.info("Booting up in singleton cluster mode")
-      case Some(member) ⇒
-        log.info("Trying to join contact point node defined in the configuration [{}]", member)
-        setUpConnectionTo(member) match {
-          case None             ⇒ log.error("Could not set up connection to join contact point node defined in the configuration [{}]", member)
-          case Some(connection) ⇒ tryJoinContactPoint(connection, deadline)
-        }
     }
   }
 

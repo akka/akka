@@ -9,8 +9,8 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 """) {
 
   "An AccrualFailureDetector" must {
-    val conn = Address("akka", "", Some("localhost"), Some(2552))
-    val conn2 = Address("akka", "", Some("localhost"), Some(2553))
+    val conn = Address("akka", "", "localhost", 2552)
+    val conn2 = Address("akka", "", "localhost", 2553)
 
     "return phi value of 0.0D on startup for each address" in {
       val fd = new AccrualFailureDetector(system)
