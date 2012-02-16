@@ -70,11 +70,9 @@ class MongoBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) {
     val envelopePromise = Promise[Envelope]()(dispatcher)
     mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
       doc match {
-        case Some(msg) ⇒ {
-          log.debug("DEQUEUING message in mongo-based mailbox [{}]", msg)
+        case Some(msg) ⇒
           envelopePromise.success(msg.envelope(system))
-          log.debug("DEQUEUING messageInvocation in mongo-based mailbox [{}]", envelopePromise)
-        }
+          ()
         case None ⇒
           log.info("No matching document found. Not an error, just an empty queue.")
           envelopePromise.success(null)
