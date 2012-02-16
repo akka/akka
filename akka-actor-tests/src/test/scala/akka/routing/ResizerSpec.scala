@@ -12,6 +12,7 @@ import akka.actor.ActorRef
 import java.util.concurrent.atomic.AtomicInteger
 import akka.pattern.ask
 import akka.util.Duration
+import java.util.concurrent.TimeoutException
 
 object ResizerSpec {
 
@@ -240,8 +241,12 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         (500 millis).dilated.sleep
       }
 
-      Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be < (z)
-
+      awaitCond(
+        try {
+          Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size < (z)
+        } catch {
+          case _: TimeoutException ⇒ false
+        }, 1 minute)
     }
 
   }
