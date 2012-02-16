@@ -5,7 +5,7 @@ Actor Systems
 
 Actors are objects which encapsulate state and behavior, they communicate
 exclusively by exchanging messages which are placed into the recipient’s
-mailbox. In a sense, actors are the most strigent form of object-oriented
+mailbox. In a sense, actors are the most stringent form of object-oriented
 programming, but it serves better to view them as persons: while modeling a
 solution with actors, envision a group of people and assign sub-tasks to them,
 arrange their functions into an organizational structure and think about how to

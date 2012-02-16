@@ -346,7 +346,7 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
 /**
  * Routing configuration that indicates no routing; this is also the default
  * value which hence overrides the merge strategy in order to accept values
- * from lower-precendence sources. The decision whether or not to create a
+ * from lower-precedence sources. The decision whether or not to create a
  * router is taken in the LocalActorRefProvider based on Props.
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed

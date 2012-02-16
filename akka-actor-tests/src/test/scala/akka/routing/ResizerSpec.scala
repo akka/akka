@@ -93,7 +93,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       resizer.backoff(pressure = 0, capacity = 9) must be(-1)
     }
 
-    "be possible to define programatically" in {
+    "be possible to define programmatically" in {
 
       val latch = new TestLatch(3)
 

@@ -58,7 +58,7 @@ Now let’s take a look at the skeleton for our FSM actor:
    :exclude: transition-elided,unhandled-elided
 
 The basic strategy is to declare the actor, mixing in the :class:`FSM` trait
-and specifying the possible states and data values as type paramters. Within
+and specifying the possible states and data values as type parameters. Within
 the body of the actor a DSL is used for declaring the state machine:
 
  * :meth:`startsWith` defines the initial state and initial data

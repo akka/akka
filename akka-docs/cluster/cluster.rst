@@ -579,7 +579,7 @@ have a dependency on message ordering from any given source.
   approach can be used (with no forwarding or buffering needed).
 
 - If an actor is a singleton (only one instance possible throughout the cluster)
-  and state is transfered during the migration initialization, then options 2b
+  and state is transferred during the migration initialization, then options 2b
   and 3b would be required.
 
 

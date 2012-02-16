@@ -29,7 +29,7 @@ This is an example of how to create a router that is defined in configuration:
 
 .. includecode:: code/akka/docs/routing/RouterViaConfigExample.scala#configurableRouting
 
-This is an example of how to programatically create a router and set the number of routees it should create:
+This is an example of how to programmatically create a router and set the number of routees it should create:
 
 .. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingNrOfInstances
 
@@ -37,7 +37,7 @@ You can also give the router already created routees as in:
 
 .. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingRoutees
 
-When you create a router programatically you define the number of routees *or* you pass already created routees to it.
+When you create a router programmatically you define the number of routees *or* you pass already created routees to it.
 If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.
 
 *It is also worth pointing out that if you define the ``router`` in the
@@ -235,10 +235,10 @@ This is an example of how to create a resizable router that is defined in config
 
 .. includecode:: code/akka/docs/routing/RouterViaConfigExample.scala#configurableRoutingWithResizer
 
-Several more configuration options are availble and described in ``akka.actor.deployment.default.resizer``
+Several more configuration options are available and described in ``akka.actor.deployment.default.resizer``
 section of the reference :ref:`configuration`.
 
-This is an example of how to programatically create a resizable router:
+This is an example of how to programmatically create a resizable router:
 
 .. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingWithResizer
 
@@ -326,7 +326,7 @@ routing is not so important (i.e. no consistent hashing or round-robin is
 required); this enables newly created routees to pick up work immediately by
 stealing it from their siblings.
 
-The “head” router, of couse, cannot run on the same balancing dispatcher,
+The “head” router, of course, cannot run on the same balancing dispatcher,
 because it does not process the same messages, hence this special actor does
 not use the dispatcher configured in :class:`Props`, but takes the
 ``routerDispatcher`` from the :class:`RouterConfig` instead, which defaults to
