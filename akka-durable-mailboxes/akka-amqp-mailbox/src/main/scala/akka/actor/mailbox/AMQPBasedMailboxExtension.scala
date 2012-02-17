@@ -4,7 +4,6 @@
 package akka.actor.mailbox
 
 import com.rabbitmq.client.ConnectionFactory
-import com.typesafe.config.Config
 import akka.actor._
 import akka.event.Logging
 
@@ -23,7 +22,7 @@ class AMQPBasedMailboxSettings(val system: ExtendedActorSystem) extends Extensio
 
   import config._
 
-  val ConnectionTimeout = config.getMilliseconds("akka.actor.mailbox.amqp.connectionTimeout")
+  val ConnectionTimeout = getMilliseconds("akka.actor.mailbox.amqp.connectionTimeout")
   val Hostname = getString("akka.actor.mailbox.amqp.hostname")
   val Password = getString("akka.actor.mailbox.amqp.password")
   val Port = getInt("akka.actor.mailbox.amqp.port")

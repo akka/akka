@@ -3,8 +3,12 @@
  */
 package akka.actor.mailbox
 
+import java.util.concurrent.LinkedBlockingQueue
+
+import com.rabbitmq.client.Channel
 import com.rabbitmq.client.GetResponse
 import com.rabbitmq.client.MessageProperties
+import com.rabbitmq.client.QueueingConsumer
 
 import akka.AkkaException
 import akka.actor.ActorContext
@@ -21,18 +25,20 @@ class AMQPBasedMailboxType(config: Config) extends MailboxType {
 }
 
 class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
+
   private val settings = AMQPBasedMailboxExtension(owner.system)
-
   private val pool = settings.ChannelPool
-
   private val log = Logging(system, "AMQPBasedMailbox")
+  private val consumerQueue = new LinkedBlockingQueue[QueueingConsumer.Delivery]
+  private var consumer = withErrorHandling {
+    createConsumer()
+  }
 
   withErrorHandling {
     pool.withChannel { _.queueDeclare(name, true, false, false, null) }
   }
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    log.debug("ENQUEUING message in amqp-based mailbox [{}]", envelope)
     withErrorHandling {
       pool.withChannel { channel ⇒
         channel.basicPublish("", name, MessageProperties.PERSISTENT_BASIC, serialize(envelope))
@@ -41,25 +47,15 @@ class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
   }
 
   def dequeue(): Envelope = withErrorHandling {
-    pool.withChannel { channel ⇒
-      channel.basicGet(name, true) match {
-        case response: GetResponse ⇒ {
-          val envelope = deserialize(response.getBody)
-          log.debug("DEQUEUING message in amqp-based mailbox [{}]", envelope)
-          envelope
-        }
-        case _ ⇒ null
-      }
-    }
+    val envelope = deserialize(consumer.nextDelivery.getBody)
+    envelope
   }
 
   def numberOfMessages: Int = withErrorHandling {
     pool.withChannel { _.queueDeclare(name, true, false, false, null).getMessageCount }
   }
 
-  // check by message count because rabbit library does not
-  // provide a call to check if messages are in the queue
-  def hasMessages: Boolean = numberOfMessages > 0
+  def hasMessages: Boolean = !consumerQueue.isEmpty
 
   private def withErrorHandling[T](body: ⇒ T): T = {
     try {
@@ -68,6 +64,8 @@ class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
       case e: java.io.IOException ⇒ {
         log.error("Communication with AMQP server failed, retrying operation.", e)
         try {
+          pool.pool.returnObject(consumer.getChannel)
+          consumer = createConsumer
           body
         } catch {
           case e: java.io.IOException ⇒
@@ -75,5 +73,13 @@ class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) wi
         }
       }
     }
+  }
+
+  private def createConsumer() = {
+    val channel = pool.pool.borrowObject.asInstanceOf[Channel]
+    val consumer = new QueueingConsumer(channel, consumerQueue)
+    channel.queueDeclare(name, true, false, false, null)
+    channel.basicConsume(name, true, consumer)
+    consumer
   }
 }
