@@ -424,13 +424,13 @@ object RoundRobinRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the 
- * routees. Instances are created as children of this actor, hence the 
- * children are not supervised by the parent of the router. Common choices are 
- * to always escalate (meaning that fault handling is always applied to all 
- * children simultaneously; this is the default) or use the parent’s strategy, 
- * which will result in routed children being treated individually, but it is 
- * possible as well to use Routers to give different supervisor strategies to 
+ * The router creates a “head” actor which supervises and/or monitors the
+ * routees. Instances are created as children of this actor, hence the
+ * children are not supervised by the parent of the router. Common choices are
+ * to always escalate (meaning that fault handling is always applied to all
+ * children simultaneously; this is the default) or use the parent’s strategy,
+ * which will result in routed children being treated individually, but it is
+ * possible as well to use Routers to give different supervisor strategies to
  * different groups of children.
  *
  * {{{
@@ -544,13 +544,13 @@ object RandomRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the 
- * routees. Instances are created as children of this actor, hence the 
- * children are not supervised by the parent of the router. Common choices are 
- * to always escalate (meaning that fault handling is always applied to all 
- * children simultaneously; this is the default) or use the parent’s strategy, 
- * which will result in routed children being treated individually, but it is 
- * possible as well to use Routers to give different supervisor strategies to 
+ * The router creates a “head” actor which supervises and/or monitors the
+ * routees. Instances are created as children of this actor, hence the
+ * children are not supervised by the parent of the router. Common choices are
+ * to always escalate (meaning that fault handling is always applied to all
+ * children simultaneously; this is the default) or use the parent’s strategy,
+ * which will result in routed children being treated individually, but it is
+ * possible as well to use Routers to give different supervisor strategies to
  * different groups of children.
  *
  * {{{
@@ -670,13 +670,13 @@ object SmallestMailboxRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the 
- * routees. Instances are created as children of this actor, hence the 
- * children are not supervised by the parent of the router. Common choices are 
- * to always escalate (meaning that fault handling is always applied to all 
- * children simultaneously; this is the default) or use the parent’s strategy, 
- * which will result in routed children being treated individually, but it is 
- * possible as well to use Routers to give different supervisor strategies to 
+ * The router creates a “head” actor which supervises and/or monitors the
+ * routees. Instances are created as children of this actor, hence the
+ * children are not supervised by the parent of the router. Common choices are
+ * to always escalate (meaning that fault handling is always applied to all
+ * children simultaneously; this is the default) or use the parent’s strategy,
+ * which will result in routed children being treated individually, but it is
+ * possible as well to use Routers to give different supervisor strategies to
  * different groups of children.
  *
  * {{{
@@ -855,13 +855,13 @@ object BroadcastRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the 
- * routees. Instances are created as children of this actor, hence the 
- * children are not supervised by the parent of the router. Common choices are 
- * to always escalate (meaning that fault handling is always applied to all 
- * children simultaneously; this is the default) or use the parent’s strategy, 
- * which will result in routed children being treated individually, but it is 
- * possible as well to use Routers to give different supervisor strategies to 
+ * The router creates a “head” actor which supervises and/or monitors the
+ * routees. Instances are created as children of this actor, hence the
+ * children are not supervised by the parent of the router. Common choices are
+ * to always escalate (meaning that fault handling is always applied to all
+ * children simultaneously; this is the default) or use the parent’s strategy,
+ * which will result in routed children being treated individually, but it is
+ * possible as well to use Routers to give different supervisor strategies to
  * different groups of children.
  *
  * {{{
@@ -966,13 +966,13 @@ object ScatterGatherFirstCompletedRouter {
  *
  * <h1>Supervision Setup</h1>
  *
- * The router creates a “head” actor which supervises and/or monitors the 
- * routees. Instances are created as children of this actor, hence the 
- * children are not supervised by the parent of the router. Common choices are 
- * to always escalate (meaning that fault handling is always applied to all 
- * children simultaneously; this is the default) or use the parent’s strategy, 
- * which will result in routed children being treated individually, but it is 
- * possible as well to use Routers to give different supervisor strategies to 
+ * The router creates a “head” actor which supervises and/or monitors the
+ * routees. Instances are created as children of this actor, hence the
+ * children are not supervised by the parent of the router. Common choices are
+ * to always escalate (meaning that fault handling is always applied to all
+ * children simultaneously; this is the default) or use the parent’s strategy,
+ * which will result in routed children being treated individually, but it is
+ * possible as well to use Routers to give different supervisor strategies to
  * different groups of children.
  *
  * {{{

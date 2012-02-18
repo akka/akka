@@ -135,7 +135,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         //#custom-strategy
       }
       val router = system.actorOf(Props.empty.withRouter(
-          RoundRobinRouter(1, supervisorStrategy = escalator)))
+        RoundRobinRouter(1, supervisorStrategy = escalator)))
       //#supervision
       router ! CurrentRoutees
       EventFilter[ActorKilledException](occurrences = 2) intercept {
