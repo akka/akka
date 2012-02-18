@@ -23,13 +23,16 @@ import System.{ currentTimeMillis ⇒ newTimestamp }
  * <p/>
  * Default threshold is 8, but can be configured in the Akka config.
  */
-class AccrualFailureDetector(system: ActorSystem, val threshold: Int = 8, val maxSampleSize: Int = 1000) {
+class AccrualFailureDetector(system: ActorSystem, address: Address, val threshold: Int = 8, val maxSampleSize: Int = 1000) {
 
   private final val PhiFactor = 1.0 / math.log(10.0)
 
-  private case class FailureStats(mean: Double = 0.0D, variance: Double = 0.0D, deviation: Double = 0.0D)
-
   private val log = Logging(system, "FailureDetector")
+
+  /**
+   * Holds the failure statistics for a specific node Address.
+   */
+  private case class FailureStats(mean: Double = 0.0D, variance: Double = 0.0D, deviation: Double = 0.0D)
 
   /**
    * Implement using optimistic lockless concurrency, all state is represented
@@ -54,22 +57,26 @@ class AccrualFailureDetector(system: ActorSystem, val threshold: Int = 8, val ma
    */
   @tailrec
   final def heartbeat(connection: Address) {
-    log.debug("Heartbeat from connection [{}] ", connection)
-    val oldState = state.get
+    log.debug("Node [{}] - Heartbeat from connection [{}] ", address, connection)
 
+    val oldState = state.get
+    val oldFailureStats = oldState.failureStats
+    val oldTimestamps = oldState.timestamps
     val latestTimestamp = oldState.timestamps.get(connection)
+
     if (latestTimestamp.isEmpty) {
 
       // this is heartbeat from a new connection
       // add starter records for this new connection
-      val failureStats = oldState.failureStats + (connection -> FailureStats())
-      val intervalHistory = oldState.intervalHistory + (connection -> Vector.empty[Long])
-      val timestamps = oldState.timestamps + (connection -> newTimestamp)
+      val newFailureStats = oldFailureStats + (connection -> FailureStats())
+      val newIntervalHistory = oldState.intervalHistory + (connection -> Vector.empty[Long])
+      val newTimestamps = oldTimestamps + (connection -> newTimestamp)
 
-      val newState = oldState copy (version = oldState.version + 1,
-        failureStats = failureStats,
-        intervalHistory = intervalHistory,
-        timestamps = timestamps)
+      val newState = oldState copy (
+        version = oldState.version + 1,
+        failureStats = newFailureStats,
+        intervalHistory = newIntervalHistory,
+        timestamps = newTimestamps)
 
       // if we won the race then update else try again
       if (!state.compareAndSet(oldState, newState)) heartbeat(connection) // recur
@@ -79,7 +86,7 @@ class AccrualFailureDetector(system: ActorSystem, val threshold: Int = 8, val ma
       val timestamp = newTimestamp
       val interval = timestamp - latestTimestamp.get
 
-      val timestamps = oldState.timestamps + (connection -> timestamp) // record new timestamp
+      val newTimestamps = oldTimestamps + (connection -> timestamp) // record new timestamp
 
       var newIntervalsForConnection =
         oldState.intervalHistory.get(connection).getOrElse(Vector.empty[Long]) :+ interval // append the new interval to history
@@ -89,36 +96,33 @@ class AccrualFailureDetector(system: ActorSystem, val threshold: Int = 8, val ma
         newIntervalsForConnection = newIntervalsForConnection drop 0
       }
 
-      val failureStats =
+      val newFailureStats =
         if (newIntervalsForConnection.size > 1) {
 
-          val mean: Double = newIntervalsForConnection.sum / newIntervalsForConnection.size.toDouble
-
-          val oldFailureStats = oldState.failureStats.get(connection).getOrElse(FailureStats())
+          val newMean: Double = newIntervalsForConnection.sum / newIntervalsForConnection.size.toDouble
+          val oldConnectionFailureStats = oldFailureStats.get(connection).getOrElse(throw new IllegalStateException("Can't calculate new failure statistics due to missing heartbeat history"))
 
           val deviationSum =
             newIntervalsForConnection
               .map(_.toDouble)
-              .foldLeft(0.0D)((x, y) ⇒ x + (y - mean))
+              .foldLeft(0.0D)((x, y) ⇒ x + (y - newMean))
 
-          val variance: Double = deviationSum / newIntervalsForConnection.size.toDouble
-          val deviation: Double = math.sqrt(variance)
+          val newVariance: Double = deviationSum / newIntervalsForConnection.size.toDouble
+          val newDeviation: Double = math.sqrt(newVariance)
 
-          val newFailureStats = oldFailureStats copy (mean = mean,
-            deviation = deviation,
-            variance = variance)
+          val newFailureStats = oldConnectionFailureStats copy (mean = newMean, deviation = newDeviation, variance = newVariance)
+          oldFailureStats + (connection -> newFailureStats)
 
-          oldState.failureStats + (connection -> newFailureStats)
         } else {
-          oldState.failureStats
+          oldFailureStats
         }
 
-      val intervalHistory = oldState.intervalHistory + (connection -> newIntervalsForConnection)
+      val newIntervalHistory = oldState.intervalHistory + (connection -> newIntervalsForConnection)
 
       val newState = oldState copy (version = oldState.version + 1,
-        failureStats = failureStats,
-        intervalHistory = intervalHistory,
-        timestamps = timestamps)
+        failureStats = newFailureStats,
+        intervalHistory = newIntervalHistory,
+        timestamps = newTimestamps)
 
       // if we won the race then update else try again
       if (!state.compareAndSet(oldState, newState)) heartbeat(connection) // recur
@@ -138,17 +142,21 @@ class AccrualFailureDetector(system: ActorSystem, val threshold: Int = 8, val ma
   def phi(connection: Address): Double = {
     val oldState = state.get
     val oldTimestamp = oldState.timestamps.get(connection)
+
     val phi =
       if (oldTimestamp.isEmpty) 0.0D // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
       else {
         val timestampDiff = newTimestamp - oldTimestamp.get
-        val mean = oldState.failureStats.get(connection).getOrElse(FailureStats()).mean
+
+        val stats = oldState.failureStats.get(connection)
+        val mean = stats.getOrElse(throw new IllegalStateException("Can't calculate Failure Detector Phi value for a node that have no heartbeat history")).mean
+
         if (mean == 0.0D) 0.0D
         else PhiFactor * timestampDiff / mean
       }
 
     // only log if PHI value is starting to get interesting
-    if (phi > 0.0D) log.debug("Phi value [{}] and threshold [{}] for connection [{}] ", phi, threshold, connection)
+    if (phi > 0.0D) log.debug("Node [{}] - Phi value [{}] and threshold [{}] for connection [{}] ", address, phi, threshold, connection)
     phi
   }
 
