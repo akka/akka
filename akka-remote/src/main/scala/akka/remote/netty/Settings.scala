@@ -40,6 +40,11 @@ class NettySettings(config: Config, val systemName: String) {
     case value ⇒ value
   }
 
+  val OutboundLocalAddress: Option[String] = getString("outbound-local-address") match {
+    case "auto" | "" | null ⇒ None
+    case some               ⇒ Some(some)
+  }
+
   @deprecated("WARNING: This should only be used by professionals.", "2.0")
   val PortSelector = getInt("port")
 
