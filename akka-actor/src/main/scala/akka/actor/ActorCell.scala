@@ -93,7 +93,15 @@ trait ActorContext extends ActorRefFactory {
   def sender: ActorRef
 
   /**
-   * Returns all supervised children.
+   * Returns all supervised children; this method returns a view onto the
+   * internal collection of children. Targeted lookups should be using
+   * `actorFor` instead for performance reasons:
+   * 
+   * {{{
+   * val badLookup = context.children find (_.path.name == "kid")
+   * // should better be expressed as:
+   * val goodLookup = context.actorFor("kid")
+   * }}}
    */
   def children: Iterable[ActorRef]
 
