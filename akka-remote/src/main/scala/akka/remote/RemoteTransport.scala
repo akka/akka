@@ -32,7 +32,7 @@ case class RemoteClientError(
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.ErrorLevel
   override def toString =
-    "RemoteClientError@" + remoteAddress + ": Error[" + AkkaException.toStringWithStackTrace(cause) + "]"
+    "RemoteClientError@" + remoteAddress + ": Error[" + cause + "]"
 }
 
 case class RemoteClientDisconnected(
@@ -76,7 +76,7 @@ case class RemoteClientWriteFailed(
   override def toString =
     "RemoteClientWriteFailed@" + remoteAddress +
       ": MessageClass[" + (if (request ne null) request.getClass.getName else "no message") +
-      "] Error[" + AkkaException.toStringWithStackTrace(cause) + "]"
+      "] Error[" + cause + "]"
 }
 
 /**
@@ -103,7 +103,7 @@ case class RemoteServerError(
   @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.ErrorLevel
   override def toString =
-    "RemoteServerError@" + remote + "] Error[" + AkkaException.toStringWithStackTrace(cause) + "]"
+    "RemoteServerError@" + remote + "] Error[" + cause + "]"
 }
 
 case class RemoteServerClientConnected(
@@ -143,7 +143,7 @@ case class RemoteServerWriteFailed(
     "RemoteServerWriteFailed@" + remote +
       ": ClientAddress[" + remoteAddress +
       "] MessageClass[" + (if (request ne null) request.getClass.getName else "no message") +
-      "] Error[" + AkkaException.toStringWithStackTrace(cause) + "]"
+      "] Error[" + cause + "]"
 }
 
 /**
@@ -203,7 +203,7 @@ abstract class RemoteTransport {
 
   protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
     system.eventStream.publish(message)
-    system.log.log(message.logLevel, "REMOTE: {}", message)
+    system.log.log(message.logLevel, "{}", message)
   }
 
   override def toString = address.toString
