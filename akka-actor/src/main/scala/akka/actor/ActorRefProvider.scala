@@ -521,30 +521,30 @@ class LocalActorRefProvider(
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case RelativeActorPath(elems) ⇒
       if (elems.isEmpty) {
-        log.debug("look-up of empty path string '{}' fails (per definition)", path)
+        log.debug("look-up of empty path string [{}] fails (per definition)", path)
         deadLetters
       } else if (elems.head.isEmpty) actorFor(rootGuardian, elems.tail)
       else actorFor(ref, elems)
     case ActorPathExtractor(address, elems) if address == rootPath.address ⇒ actorFor(rootGuardian, elems)
     case _ ⇒
-      log.debug("look-up of unknown path '{}' failed", path)
+      log.warning("look-up of unknown path [{}] failed", path)
       deadLetters
   }
 
   def actorFor(path: ActorPath): InternalActorRef =
     if (path.root == rootPath) actorFor(rootGuardian, path.elements)
     else {
-      log.debug("look-up of foreign ActorPath '{}' failed", path)
+      log.warning("look-up of foreign ActorPath [{}] failed", path)
       deadLetters
     }
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
     if (path.isEmpty) {
-      log.debug("look-up of empty path sequence fails (per definition)")
+      log.warning("look-up of empty path sequence fails (per definition)")
       deadLetters
     } else ref.getChild(path.iterator) match {
       case Nobody ⇒
-        log.debug("look-up of path sequence '{}' failed", path)
+        log.warning("look-up of path sequence [{}] failed", path)
         new EmptyLocalActorRef(system.provider, ref.path / path, eventStream)
       case x ⇒ x
     }

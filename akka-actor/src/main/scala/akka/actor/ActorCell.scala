@@ -294,7 +294,7 @@ private[akka] class ActorCell(
 
   final def start(): Unit = {
     /*
-     * Create the mailbox and enqueue the Create() message to ensure that 
+     * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
      */
     mailbox = dispatcher.createMailbox(this)
