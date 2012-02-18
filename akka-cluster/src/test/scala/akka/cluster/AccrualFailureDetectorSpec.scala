@@ -13,13 +13,13 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
     val conn2 = Address("akka", "", "localhost", 2553)
 
     "return phi value of 0.0D on startup for each address" in {
-      val fd = new AccrualFailureDetector(system)
+      val fd = new AccrualFailureDetector(system, conn)
       fd.phi(conn) must be(0.0D)
       fd.phi(conn2) must be(0.0D)
     }
 
     "mark node as available after a series of successful heartbeats" in {
-      val fd = new AccrualFailureDetector(system)
+      val fd = new AccrualFailureDetector(system, conn)
 
       fd.heartbeat(conn)
 
@@ -34,7 +34,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 
     // FIXME how should we deal with explicit removal of connection? - if triggered as failure then we have a problem in boostrap - see line 142 in AccrualFailureDetector
     "mark node as dead after explicit removal of connection" ignore {
-      val fd = new AccrualFailureDetector(system)
+      val fd = new AccrualFailureDetector(system, conn)
 
       fd.heartbeat(conn)
 
@@ -52,7 +52,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
     }
 
     "mark node as dead if heartbeat are missed" in {
-      val fd = new AccrualFailureDetector(system, threshold = 3)
+      val fd = new AccrualFailureDetector(system, conn, threshold = 3)
 
       fd.heartbeat(conn)
 
@@ -70,7 +70,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
     }
 
     "mark node as available if it starts heartbeat again after being marked dead due to detection of failure" in {
-      val fd = new AccrualFailureDetector(system, threshold = 3)
+      val fd = new AccrualFailureDetector(system, conn, threshold = 3)
 
       fd.heartbeat(conn)
 

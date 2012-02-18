@@ -210,11 +210,12 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
   implicit val defaultTimeout = Timeout(remoteSettings.RemoteSystemDaemonAckTimeout)
 
+  val failureDetector = new AccrualFailureDetector(
+    system, remoteAddress, clusterSettings.FailureDetectorThreshold, clusterSettings.FailureDetectorMaxSampleSize)
+
   private val nodeToJoin: Option[Address] = clusterSettings.NodeToJoin filter (_ != remoteAddress)
 
   private val serialization = remote.serialization
-  private val failureDetector = new AccrualFailureDetector(
-    system, clusterSettings.FailureDetectorThreshold, clusterSettings.FailureDetectorMaxSampleSize)
 
   private val isRunning = new AtomicBoolean(true)
   private val log = Logging(system, "Gossiper")
@@ -279,12 +280,10 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     if (isRunning.compareAndSet(true, false)) {
       log.info("Node [{}] - Shutting down Gossiper and ClusterDaemon...", remoteAddress)
 
-      try connectionManager.shutdown() finally {
-        try system.stop(clusterDaemon) finally {
-          try gossipCanceller.cancel() finally {
-            try scrutinizeCanceller.cancel() finally {
-              log.info("Node [{}] - Gossiper and ClusterDaemon shut down successfully", remoteAddress)
-            }
+      try system.stop(clusterDaemon) finally {
+        try gossipCanceller.cancel() finally {
+          try scrutinizeCanceller.cancel() finally {
+            log.info("Node [{}] - Gossiper and ClusterDaemon shut down successfully", remoteAddress)
           }
         }
       }
@@ -297,6 +296,8 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   @tailrec
   final def joining(node: Address) {
     log.info("Node [{}] - Node [{}] is joining", remoteAddress, node)
+
+    failureDetector heartbeat node // update heartbeat in failure detector
 
     val localState = state.get
     val localGossip = localState.latestGossip
@@ -475,7 +476,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
    */
   private def gossipTo(address: Address) {
     setUpConnectionTo(address) foreach { connection ⇒
-      log.debug("Node [{}] - Gossiping to [{}]", remoteAddress, address)
+      log.debug("Node [{}] - Gossiping to [{}]", remoteAddress, connection)
       connection ! GossipEnvelope(self, latestGossip)
     }
   }
@@ -496,7 +497,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   }
 
   /**
-   * Scrutinizes the cluster; marks members detected by the failure detector as unavailable.
+   * Scrutinizes the cluster; marks members detected by the failure detector as unreachable.
    */
   @tailrec
   final private def scrutinize() {
@@ -516,6 +517,8 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
         val newMembers = localMembers diff newlyDetectedUnreachableMembers
         val newUnreachableAddresses: Set[Address] = localUnreachableAddresses ++ newlyDetectedUnreachableAddresses
+
+        log.info("Node [{}] - Marking node(s) an unreachable [{}]", remoteAddress, newlyDetectedUnreachableAddresses.mkString(", "))
 
         val newOverview = localOverview copy (unreachable = newUnreachableAddresses)
         val newGossip = localGossip copy (overview = newOverview, members = newMembers)
