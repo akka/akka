@@ -26,10 +26,8 @@ import com.google.protobuf.ByteString
 /**
  * Interface for membership change listener.
  */
-trait MembershipChangeListener { // FIXME add notification of MembershipChangeListener
+trait MembershipChangeListener {
   def notify(members: SortedSet[Member]): Unit
-  // def memberConnected(member: Member): Unit
-  // def memberDisconnected(member: Member): Unit
 }
 
 /**
@@ -312,6 +310,11 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     val newState = localState copy (latestGossip = seenVersionedGossip)
 
     if (!state.compareAndSet(localState, newState)) joining(node) // recur if we failed update
+    else {
+      if (convergence(newState.latestGossip).isDefined) {
+        newState.memberMembershipChangeListeners map { _ notify newMembers } // FIXME should check for cluster convergence before triggering listeners
+      }
+    }
   }
 
   /**
@@ -323,8 +326,6 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
     failureDetector heartbeat sender.address // update heartbeat in failure detector
 
-    // FIXME check for convergence - if we have convergence then trigger the listeners
-
     val localState = state.get
     val localGossip = localState.latestGossip
 
@@ -334,7 +335,8 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
         val mergedGossip = merge(remoteGossip, localGossip)
         val versionedMergedGossip = mergedGossip + selfNode
 
-        log.debug("Can't establish a causal relationship between \"remote\" gossip [{}] and \"local\" gossip [{}] - merging them into [{}]",
+        log.debug(
+          "Can't establish a causal relationship between \"remote\" gossip [{}] and \"local\" gossip [{}] - merging them into [{}]",
           remoteGossip, localGossip, versionedMergedGossip)
 
         versionedMergedGossip
@@ -352,6 +354,11 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
     // if we won the race then update else try again
     if (!state.compareAndSet(localState, newState)) receive(sender, remoteGossip) // recur if we fail the update
+    else {
+      if (convergence(newState.latestGossip).isDefined) {
+        newState.memberMembershipChangeListeners map { _ notify newState.latestGossip.members } // FIXME should check for cluster convergence before triggering listeners
+      }
+    }
   }
 
   /**
@@ -375,6 +382,13 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     val newState = localState copy (memberMembershipChangeListeners = newListeners)
     if (!state.compareAndSet(localState, newState)) unregisterListener(listener) // recur
   }
+
+  /**
+   * Checks if we have a cluster convergence.
+   *
+   * @returns Some(convergedGossip) if convergence have been reached and None if not
+   */
+  def convergence: Option[Gossip] = convergence(latestGossip)
 
   // ========================================================
   // ===================== INTERNAL API =====================
@@ -531,15 +545,26 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
         // if we won the race then update else try again
         if (!state.compareAndSet(localState, newState)) scrutinize() // recur
         else {
-          // FIXME should only notify when there is a cluster convergence
-          // notify listeners on successful update of state
-          // for {
-          //   deadNode ← newUnreachableAddresses
-          //   listener ← localState.memberMembershipChangeListeners
-          // } listener memberDisconnected deadNode
+          if (convergence(newState.latestGossip).isDefined) {
+            newState.memberMembershipChangeListeners map { _ notify newMembers } // FIXME should check for cluster convergence before triggering listeners
+          }
         }
       }
     }
+  }
+
+  /**
+   * Checks if we have a cluster convergence.
+   *
+   * @returns Some(convergedGossip) if convergence have been reached and None if not
+   */
+  private def convergence(gossip: Gossip): Option[Gossip] = {
+    val seen = gossip.overview.seen
+    val views = Set.empty[VectorClock] ++ seen.values
+    if (views.size == 1) {
+      log.debug("Node [{}] - Cluster convergence reached", remoteAddress)
+      Some(gossip)
+    } else None
   }
 
   // FIXME should shuffle list randomly before start traversing to avoid connecting to some member on every member
