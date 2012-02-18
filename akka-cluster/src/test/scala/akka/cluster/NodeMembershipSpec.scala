@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -9,12 +9,13 @@ import akka.testkit._
 import akka.dispatch._
 import akka.actor._
 import akka.remote._
+import akka.util.duration._
 
 import com.typesafe.config._
 
 class NodeMembershipSpec extends AkkaSpec("""
   akka {
-    loglevel = "DEBUG"
+    loglevel = "INFO"
   }
   """) with ImplicitSender {
 
@@ -58,7 +59,7 @@ class NodeMembershipSpec extends AkkaSpec("""
         val remote1 = node1.provider.asInstanceOf[RemoteActorRefProvider]
         gossiper1 = Gossiper(node1, remote1)
 
-        Thread.sleep(5000)
+        Thread.sleep(10.seconds.dilated.toMillis)
 
         val members0 = gossiper0.latestGossip.members.toArray
         members0.size must be(2)
@@ -91,7 +92,7 @@ class NodeMembershipSpec extends AkkaSpec("""
         val remote2 = node2.provider.asInstanceOf[RemoteActorRefProvider]
         gossiper2 = Gossiper(node2, remote2)
 
-        Thread.sleep(10000)
+        Thread.sleep(10.seconds.dilated.toMillis)
 
         val members0 = gossiper0.latestGossip.members.toArray
         val version = gossiper0.latestGossip.version

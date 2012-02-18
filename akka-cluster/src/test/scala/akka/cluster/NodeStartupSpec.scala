@@ -9,6 +9,7 @@ import akka.testkit._
 import akka.dispatch._
 import akka.actor._
 import akka.remote._
+import akka.util.duration._
 
 import com.typesafe.config._
 
@@ -40,7 +41,7 @@ class NodeStartupSpec extends AkkaSpec("""
       gossiper0 = Gossiper(node0, remote0)
 
       "be a singleton cluster when started up" in {
-        Thread.sleep(1000)
+        Thread.sleep(1.seconds.dilated.toMillis)
         gossiper0.isSingletonCluster must be(true)
       }
 
@@ -69,7 +70,7 @@ class NodeStartupSpec extends AkkaSpec("""
         val remote1 = node1.provider.asInstanceOf[RemoteActorRefProvider]
         gossiper1 = Gossiper(node1, remote1)
 
-        Thread.sleep(1000) // give enough time for node1 to JOIN node0
+        Thread.sleep(1.seconds.dilated.toMillis) // give enough time for node1 to JOIN node0
         val members = gossiper0.latestGossip.members
         val joiningMember = members find (_.address.port.get == 5551)
         joiningMember must be('defined)
