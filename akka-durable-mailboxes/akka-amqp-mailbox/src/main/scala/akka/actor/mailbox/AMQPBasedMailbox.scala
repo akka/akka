@@ -21,12 +21,12 @@ import com.typesafe.config.Config
 class AMQPBasedMailboxException(message: String) extends AkkaException(message)
 
 class AMQPBasedMailboxType(config: Config) extends MailboxType {
-  override def create(owner: ActorContext) = new AMQPBasedMailbox(owner)
+  override def create(owner: ActorContext) = new AMQPBasedMailbox(owner, config)
 }
 
-class AMQPBasedMailbox(val owner: ActorContext) extends DurableMailbox(owner) with DurableMessageSerialization {
+class AMQPBasedMailbox(val owner: ActorContext, val config: Config) extends DurableMailbox(owner) with DurableMessageSerialization {
 
-  private val settings = AMQPBasedMailboxExtension(owner.system)
+  private val settings = new AMQPBasedMailboxSettings(owner.system, config)
   private val pool = settings.ChannelPool
   private val log = Logging(system, "AMQPBasedMailbox")
   private val consumerQueue = new LinkedBlockingQueue[QueueingConsumer.Delivery]

@@ -3,21 +3,14 @@
  */
 package akka.actor.mailbox
 
-import com.rabbitmq.client.ConnectionFactory
 import akka.actor._
 import akka.event.Logging
+import com.rabbitmq.client.ConnectionFactory
+import com.typesafe.config.Config
 
-object AMQPBasedMailboxExtension extends ExtensionId[AMQPBasedMailboxSettings] with ExtensionIdProvider {
-  override def get(system: ActorSystem): AMQPBasedMailboxSettings = super.get(system)
-  def lookup(): ExtensionId[AMQPBasedMailboxSettings] = this
-  def createExtension(system: ExtendedActorSystem): AMQPBasedMailboxSettings = {
-    new AMQPBasedMailboxSettings(system)
-  }
-}
+class AMQPBasedMailboxSettings(val system: ActorSystem, val userConfig: Config) {
 
-class AMQPBasedMailboxSettings(val system: ExtendedActorSystem) extends Extension {
-
-  private val config = system.settings.config
+  private val config = userConfig.withFallback(system.settings.config)
   private val log = Logging(system, "AMQPBasedMailbox")
 
   import config._
