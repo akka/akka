@@ -13,6 +13,7 @@ import akka.actor.Props
 import akka.config.ConfigurationException
 import akka.remote.RemoteScope
 import akka.actor.AddressExtractor
+import akka.actor.SupervisorStrategy
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -29,6 +30,8 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) exte
   }
 
   override def createActor(): Router = local.createActor()
+
+  override def supervisorStrategy: SupervisorStrategy = local.supervisorStrategy
 
   override def routerDispatcher: String = local.routerDispatcher
 

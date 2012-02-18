@@ -52,6 +52,16 @@ public class CustomRouterDocTestBase {
       .withDispatcher("workers")); // MyActor “workers” run on "workers" dispatcher
     //#dispatchers
   }
+  
+  @Test
+  public void demonstrateSupervisor() {
+    //#supervision
+    final SupervisorStrategy strategy = new OneForOneStrategy(5, Duration.parse("1 minute"),
+        new Class<? extends Throwable>[] { Exception });
+    final ActorRef router = system.actorOf(new Props(MyActor.class)
+        .withRouter(new RoundRobinRouter(5).withSupervisorStrategy(strategy)));
+    //#supervision
+  }
 
   //#crTest
   @Test
@@ -122,6 +132,10 @@ public class CustomRouterDocTestBase {
     
     @Override public String routerDispatcher() {
       return Dispatchers.DefaultDispatcherId();
+    }
+    
+    @Override public SupervisorStrategy supervisorStrategy() {
+      return SupervisorStrategy.defaultStrategy();
     }
 
     //#crRoute
