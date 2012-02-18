@@ -3,17 +3,20 @@
  */
 package akka.cluster
 
-import java.net.InetSocketAddress
-
 import akka.testkit._
 import akka.dispatch._
 import akka.actor._
 import akka.remote._
 import akka.util.duration._
 
+import java.net.InetSocketAddress
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
+
+import scala.collection.immutable.SortedSet
+
 import com.typesafe.config._
 
-class NodeMembershipSpec extends AkkaSpec("""
+class MembershipChangeListenerSpec extends AkkaSpec("""
   akka {
     loglevel = "INFO"
   }
@@ -29,9 +32,7 @@ class NodeMembershipSpec extends AkkaSpec("""
 
   try {
     "A set of connected cluster nodes" must {
-      "(when two nodes) start gossiping to each other so that both nodes gets the same gossip info" in {
-
-        // ======= NODE 0 ========
+      "(when two nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
         node0 = ActorSystem("node0", ConfigFactory
           .parseString("""
             akka {
@@ -46,7 +47,6 @@ class NodeMembershipSpec extends AkkaSpec("""
         val remote0 = node0.provider.asInstanceOf[RemoteActorRefProvider]
         gossiper0 = Gossiper(node0, remote0)
 
-        // ======= NODE 1 ========
         node1 = ActorSystem("node1", ConfigFactory
           .parseString("""
             akka {
@@ -62,28 +62,27 @@ class NodeMembershipSpec extends AkkaSpec("""
         val remote1 = node1.provider.asInstanceOf[RemoteActorRefProvider]
         gossiper1 = Gossiper(node1, remote1)
 
-        Thread.sleep(10.seconds.dilated.toMillis)
+        val latch = new CountDownLatch(2)
+
+        gossiper0.registerListener(new MembershipChangeListener {
+          def notify(members: SortedSet[Member]) {
+            latch.countDown()
+          }
+        })
+        gossiper1.registerListener(new MembershipChangeListener {
+          def notify(members: SortedSet[Member]) {
+            latch.countDown()
+          }
+        })
+
+        latch.await(10.seconds.dilated.toMillis, TimeUnit.MILLISECONDS)
 
         // check cluster convergence
         gossiper0.convergence must be('defined)
         gossiper1.convergence must be('defined)
-
-        val members0 = gossiper0.latestGossip.members.toArray
-        members0.size must be(2)
-        members0(0).address.port.get must be(5550)
-        members0(0).status must be(MemberStatus.Joining)
-        members0(1).address.port.get must be(5551)
-        members0(1).status must be(MemberStatus.Joining)
-
-        val members1 = gossiper1.latestGossip.members.toArray
-        members1.size must be(2)
-        members1(0).address.port.get must be(5550)
-        members1(0).status must be(MemberStatus.Joining)
-        members1(1).address.port.get must be(5551)
-        members1(1).status must be(MemberStatus.Joining)
       }
 
-      "(when three nodes) start gossiping to each other so that both nodes gets the same gossip info" in {
+      "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
 
         // ======= NODE 2 ========
         node2 = ActorSystem("node2", ConfigFactory
@@ -101,40 +100,29 @@ class NodeMembershipSpec extends AkkaSpec("""
         val remote2 = node2.provider.asInstanceOf[RemoteActorRefProvider]
         gossiper2 = Gossiper(node2, remote2)
 
-        Thread.sleep(10.seconds.dilated.toMillis)
+        val latch = new CountDownLatch(3)
+        gossiper0.registerListener(new MembershipChangeListener {
+          def notify(members: SortedSet[Member]) {
+            latch.countDown()
+          }
+        })
+        gossiper1.registerListener(new MembershipChangeListener {
+          def notify(members: SortedSet[Member]) {
+            latch.countDown()
+          }
+        })
+        gossiper2.registerListener(new MembershipChangeListener {
+          def notify(members: SortedSet[Member]) {
+            latch.countDown()
+          }
+        })
+
+        latch.await(10.seconds.dilated.toMillis, TimeUnit.MILLISECONDS)
 
         // check cluster convergence
         gossiper0.convergence must be('defined)
         gossiper1.convergence must be('defined)
         gossiper2.convergence must be('defined)
-
-        val members0 = gossiper0.latestGossip.members.toArray
-        val version = gossiper0.latestGossip.version
-        members0.size must be(3)
-        members0(0).address.port.get must be(5550)
-        members0(0).status must be(MemberStatus.Joining)
-        members0(1).address.port.get must be(5551)
-        members0(1).status must be(MemberStatus.Joining)
-        members0(2).address.port.get must be(5552)
-        members0(2).status must be(MemberStatus.Joining)
-
-        val members1 = gossiper1.latestGossip.members.toArray
-        members1.size must be(3)
-        members1(0).address.port.get must be(5550)
-        members1(0).status must be(MemberStatus.Joining)
-        members1(1).address.port.get must be(5551)
-        members1(1).status must be(MemberStatus.Joining)
-        members1(2).address.port.get must be(5552)
-        members1(2).status must be(MemberStatus.Joining)
-
-        val members2 = gossiper2.latestGossip.members.toArray
-        members2.size must be(3)
-        members2(0).address.port.get must be(5550)
-        members2(0).status must be(MemberStatus.Joining)
-        members2(1).address.port.get must be(5551)
-        members2(1).status must be(MemberStatus.Joining)
-        members2(2).address.port.get must be(5552)
-        members2(2).status must be(MemberStatus.Joining)
       }
     }
   } catch {
