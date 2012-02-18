@@ -96,7 +96,7 @@ trait ActorContext extends ActorRefFactory {
    * Returns all supervised children; this method returns a view onto the
    * internal collection of children. Targeted lookups should be using
    * `actorFor` instead for performance reasons:
-   * 
+   *
    * {{{
    * val badLookup = context.children find (_.path.name == "kid")
    * // should better be expressed as:
