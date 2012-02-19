@@ -500,7 +500,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
   def awaitTermination(timeout: Duration) { Await.ready(terminationCallbacks, timeout) }
   def awaitTermination() = awaitTermination(Duration.Inf)
 
-  def shutdown(): Unit = stop(guardian)
+  def shutdown(): Unit = guardian.stop()
 
   /**
    * Create the scheduler service. This one needs one special behavior: if

@@ -171,7 +171,14 @@ trait RouterConfig {
 
   def createRouteeProvider(context: ActorContext) = new RouteeProvider(context, resizer)
 
-  def createActor(): Router = new Router {}
+  def createActor(): Router = new Router {
+    override def supervisorStrategy: SupervisorStrategy = RouterConfig.this.supervisorStrategy
+  }
+
+  /**
+   * SupervisorStrategy for the created Router actor.
+   */
+  def supervisorStrategy: SupervisorStrategy
 
   /**
    * Dispatcher ID to use for running the “head” actor, i.e. the [[akka.routing.Router]].
@@ -308,10 +315,19 @@ trait Router extends Actor {
   def routerReceive: Receive = {
     case _ ⇒
   }
+
+  override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
+    // do not scrap children
+  }
 }
 
 private object Router {
+
   case object Resize
+
+  val defaultSupervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
+    case _ ⇒ SupervisorStrategy.Escalate
+  }
 }
 
 /**
@@ -353,6 +369,7 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
 case object NoRouter extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
   def routerDispatcher: String = ""
+  def supervisorStrategy = null
   override def withFallback(other: RouterConfig): RouterConfig = other
 }
 
@@ -363,6 +380,7 @@ case object FromConfig extends RouterConfig {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
     throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
   def routerDispatcher: String = Dispatchers.DefaultDispatcherId
+  def supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy
 }
 
 /**
@@ -378,6 +396,8 @@ case class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatch
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
     throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
+
+  def supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy
 }
 
 object RoundRobinRouter {
@@ -402,12 +422,40 @@ object RoundRobinRouter {
  * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
  * be ignored if the router is defined in the configuration file for the actor being used.
  *
+ * <h1>Supervision Setup</h1>
+ *
+ * The router creates a “head” actor which supervises and/or monitors the
+ * routees. Instances are created as children of this actor, hence the
+ * children are not supervised by the parent of the router. Common choices are
+ * to always escalate (meaning that fault handling is always applied to all
+ * children simultaneously; this is the default) or use the parent’s strategy,
+ * which will result in routed children being treated individually, but it is
+ * possible as well to use Routers to give different supervisor strategies to
+ * different groups of children.
+ *
+ * {{{
+ * class MyActor extends Actor {
+ *   override val supervisorStrategy = ...
+ *
+ *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(5)))
+ *
+ *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
+ *     RoundRobinRouter(5, supervisorStrategy = this.supervisorStrategy)))
+ *
+ *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
+ *     RoundRobinRouter(5, supervisorStrategy = OneForOneStrategy() {
+ *       ...
+ *     })))
+ * }
+ * }}}
+ *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
-                            val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+                            val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                            val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
   extends RouterConfig with RoundRobinLike {
 
   /**
@@ -438,6 +486,12 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
    * Java API for setting routerDispatcher
    */
   def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+
+  /**
+   * Java API for setting the supervisor strategy to be used for the “head”
+   * Router actor.
+   */
+  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
 }
 
 trait RoundRobinLike { this: RouterConfig ⇒
@@ -488,12 +542,40 @@ object RandomRouter {
  * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
  * be ignored if the router is defined in the configuration file for the actor being used.
  *
+ * <h1>Supervision Setup</h1>
+ *
+ * The router creates a “head” actor which supervises and/or monitors the
+ * routees. Instances are created as children of this actor, hence the
+ * children are not supervised by the parent of the router. Common choices are
+ * to always escalate (meaning that fault handling is always applied to all
+ * children simultaneously; this is the default) or use the parent’s strategy,
+ * which will result in routed children being treated individually, but it is
+ * possible as well to use Routers to give different supervisor strategies to
+ * different groups of children.
+ *
+ * {{{
+ * class MyActor extends Actor {
+ *   override val supervisorStrategy = ...
+ *
+ *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(5)))
+ *
+ *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
+ *     RoundRobinRouter(5, supervisorStrategy = this.supervisorStrategy)))
+ *
+ *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
+ *     RoundRobinRouter(5, supervisorStrategy = OneForOneStrategy() {
+ *       ...
+ *     })))
+ * }
+ * }}}
+ *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
-                        val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+                        val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                        val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
   extends RouterConfig with RandomLike {
 
   /**
@@ -524,6 +606,12 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
    * Java API for setting routerDispatcher
    */
   def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+
+  /**
+   * Java API for setting the supervisor strategy to be used for the “head”
+   * Router actor.
+   */
+  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
 }
 
 trait RandomLike { this: RouterConfig ⇒
@@ -580,12 +668,40 @@ object SmallestMailboxRouter {
  * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
  * be ignored if the router is defined in the configuration file for the actor being used.
  *
+ * <h1>Supervision Setup</h1>
+ *
+ * The router creates a “head” actor which supervises and/or monitors the
+ * routees. Instances are created as children of this actor, hence the
+ * children are not supervised by the parent of the router. Common choices are
+ * to always escalate (meaning that fault handling is always applied to all
+ * children simultaneously; this is the default) or use the parent’s strategy,
+ * which will result in routed children being treated individually, but it is
+ * possible as well to use Routers to give different supervisor strategies to
+ * different groups of children.
+ *
+ * {{{
+ * class MyActor extends Actor {
+ *   override val supervisorStrategy = ...
+ *
+ *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(5)))
+ *
+ *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
+ *     RoundRobinRouter(5, supervisorStrategy = this.supervisorStrategy)))
+ *
+ *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
+ *     RoundRobinRouter(5, supervisorStrategy = OneForOneStrategy() {
+ *       ...
+ *     })))
+ * }
+ * }}}
+ *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
-                                 val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+                                 val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                                 val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
   extends RouterConfig with SmallestMailboxLike {
 
   /**
@@ -616,6 +732,12 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
    * Java API for setting routerDispatcher
    */
   def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+
+  /**
+   * Java API for setting the supervisor strategy to be used for the “head”
+   * Router actor.
+   */
+  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
 }
 
 trait SmallestMailboxLike { this: RouterConfig ⇒
@@ -731,12 +853,40 @@ object BroadcastRouter {
  * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
  * be ignored if the router is defined in the configuration file for the actor being used.
  *
+ * <h1>Supervision Setup</h1>
+ *
+ * The router creates a “head” actor which supervises and/or monitors the
+ * routees. Instances are created as children of this actor, hence the
+ * children are not supervised by the parent of the router. Common choices are
+ * to always escalate (meaning that fault handling is always applied to all
+ * children simultaneously; this is the default) or use the parent’s strategy,
+ * which will result in routed children being treated individually, but it is
+ * possible as well to use Routers to give different supervisor strategies to
+ * different groups of children.
+ *
+ * {{{
+ * class MyActor extends Actor {
+ *   override val supervisorStrategy = ...
+ *
+ *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(5)))
+ *
+ *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
+ *     RoundRobinRouter(5, supervisorStrategy = this.supervisorStrategy)))
+ *
+ *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
+ *     RoundRobinRouter(5, supervisorStrategy = OneForOneStrategy() {
+ *       ...
+ *     })))
+ * }
+ * }}}
+ *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
-                           val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+                           val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                           val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
   extends RouterConfig with BroadcastLike {
 
   /**
@@ -767,6 +917,12 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
    * Java API for setting routerDispatcher
    */
   def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+
+  /**
+   * Java API for setting the supervisor strategy to be used for the “head”
+   * Router actor.
+   */
+  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
 }
 
 trait BroadcastLike { this: RouterConfig ⇒
@@ -808,13 +964,41 @@ object ScatterGatherFirstCompletedRouter {
  * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
  * be ignored if the router is defined in the configuration file for the actor being used.
  *
+ * <h1>Supervision Setup</h1>
+ *
+ * The router creates a “head” actor which supervises and/or monitors the
+ * routees. Instances are created as children of this actor, hence the
+ * children are not supervised by the parent of the router. Common choices are
+ * to always escalate (meaning that fault handling is always applied to all
+ * children simultaneously; this is the default) or use the parent’s strategy,
+ * which will result in routed children being treated individually, but it is
+ * possible as well to use Routers to give different supervisor strategies to
+ * different groups of children.
+ *
+ * {{{
+ * class MyActor extends Actor {
+ *   override val supervisorStrategy = ...
+ *
+ *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(5)))
+ *
+ *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
+ *     RoundRobinRouter(5, supervisorStrategy = this.supervisorStrategy)))
+ *
+ *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
+ *     RoundRobinRouter(5, supervisorStrategy = OneForOneStrategy() {
+ *       ...
+ *     })))
+ * }
+ * }}}
+ *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
                                              override val resizer: Option[Resizer] = None,
-                                             val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+                                             val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                                             val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
   extends RouterConfig with ScatterGatherFirstCompletedLike {
 
   if (within <= Duration.Zero) throw new IllegalArgumentException(
@@ -848,6 +1032,12 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * Java API for setting routerDispatcher
    */
   def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+
+  /**
+   * Java API for setting the supervisor strategy to be used for the “head”
+   * Router actor.
+   */
+  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
 }
 
 trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒

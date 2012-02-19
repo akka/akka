@@ -56,6 +56,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
     "decorate a Receive" in {
       new TestKit(appLogging) {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        system.eventStream.subscribe(testActor, classOf[UnhandledMessage])
         val a = system.actorOf(Props(new Actor {
           def receive = new LoggingReceive(Some("funky"), {
             case null ⇒
@@ -63,6 +64,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
         }))
         a ! "hallo"
         expectMsg(1 second, Logging.Debug("funky", classOf[DummyClassForStringSources], "received unhandled message hallo"))
+        expectMsgType[UnhandledMessage](1 second)
       }
     }
 
