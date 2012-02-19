@@ -82,9 +82,35 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       val future = Promise[String]().complete(Left(new NonLocalReturnControl[String]("test", result)))
       behave like futureWithResult(_(future, result))
     }
+
+    "have different ECs" in {
+      def namedCtx(n: String) = ExecutionContexts.fromExecutorService(
+        Executors.newSingleThreadExecutor(new ThreadFactory {
+          def newThread(r: Runnable) = new Thread(r, n)
+        }))
+
+      val A = namedCtx("A")
+      val B = namedCtx("B")
+
+      // create a promise with ctx A
+      val p = Promise[String]()(A)
+
+      // I would expect that any callback from p
+      // is executed in the context of p
+      val result = p map { _ + Thread.currentThread().getName() }
+
+      p.completeWith(Future { "Hi " }(B))
+      try {
+        Await.result(result, timeout.duration) must be === "Hi A"
+      } finally {
+        A.asInstanceOf[ExecutorService].shutdown()
+        B.asInstanceOf[ExecutorService].shutdown()
+      }
+    }
   }
 
   "A Future" when {
+
     "awaiting a result" that {
       "is not completed" must {
         behave like emptyFuture { test ⇒
