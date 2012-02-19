@@ -39,12 +39,14 @@ object Await {
      * Should throw [[java.util.concurrent.TimeoutException]] if times out
      * This method should not be called directly.
      */
+    @throws(classOf[TimeoutException])
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type
 
     /**
      * Throws exceptions if cannot produce a T within the specified time
      * This method should not be called directly.
      */
+    @throws(classOf[Exception])
     def result(atMost: Duration)(implicit permit: CanAwait): T
   }
 
@@ -57,6 +59,7 @@ object Await {
    * @throws [[java.util.concurrent.TimeoutException]] if times out
    * @return The returned value as returned by Awaitable.ready
    */
+  @throws(classOf[TimeoutException])
   def ready[T <: Awaitable[_]](awaitable: T, atMost: Duration): T = awaitable.ready(atMost)
 
   /**
@@ -66,6 +69,7 @@ object Await {
    * @throws [[java.util.concurrent.TimeoutException]] if times out
    * @return The returned value as returned by Awaitable.result
    */
+  @throws(classOf[Exception])
   def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
 }
 
@@ -819,10 +823,12 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
     awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
   }
 
+  @throws(classOf[TimeoutException])
   def ready(atMost: Duration)(implicit permit: CanAwait): this.type =
     if (isCompleted || tryAwait(atMost)) this
     else throw new TimeoutException("Futures timed out after [" + atMost.toMillis + "] milliseconds")
 
+  @throws(classOf[Exception])
   def result(atMost: Duration)(implicit permit: CanAwait): T =
     ready(atMost).value.get match {
       case Left(e: AskTimeoutException) ⇒ throw new AskTimeoutException(e.getMessage, e) // to get meaningful stack trace

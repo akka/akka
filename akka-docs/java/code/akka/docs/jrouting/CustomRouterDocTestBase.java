@@ -55,7 +55,7 @@ public class CustomRouterDocTestBase {
 
   //#crTest
   @Test
-  public void countVotesAsIntendedNotAsInFlorida() {
+  public void countVotesAsIntendedNotAsInFlorida() throws Exception {
     ActorRef routedActor = system.actorOf(new Props().withRouter(new VoteCountRouter()));
     routedActor.tell(DemocratVote);
     routedActor.tell(DemocratVote);
