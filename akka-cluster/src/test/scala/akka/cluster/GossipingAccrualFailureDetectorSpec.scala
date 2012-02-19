@@ -86,7 +86,7 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
       val fd3 = gossiper3.failureDetector
       val address3 = gossiper3.self.address
 
-      "receive gossip heartbeats so that all healthy nodes in the cluster are marked 'available'" in {
+      "receive gossip heartbeats so that all healthy nodes in the cluster are marked 'available'" taggedAs LongRunningTest in {
         println("Let the nodes gossip for a while...")
         Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
         fd1.isAvailable(address2) must be(true)
@@ -97,7 +97,7 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
         fd3.isAvailable(address2) must be(true)
       }
 
-      "mark node as 'unavailable' if a node in the cluster is shut down (and its heartbeats stops)" in {
+      "mark node as 'unavailable' if a node in the cluster is shut down (and its heartbeats stops)" taggedAs LongRunningTest in {
         // shut down node3
         gossiper3.shutdown()
         node3.shutdown()
@@ -116,13 +116,13 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
   }
 
   override def atTermination() {
-    gossiper1.shutdown()
-    node1.shutdown()
+    if (gossiper1 ne null) gossiper1.shutdown()
+    if (node1 ne null) node1.shutdown()
 
-    gossiper2.shutdown()
-    node2.shutdown()
+    if (gossiper2 ne null) gossiper2.shutdown()
+    if (node2 ne null) node2.shutdown()
 
-    gossiper3.shutdown()
-    node3.shutdown()
+    if (gossiper3 ne null) gossiper3.shutdown()
+    if (node3 ne null) node3.shutdown()
   }
 }
