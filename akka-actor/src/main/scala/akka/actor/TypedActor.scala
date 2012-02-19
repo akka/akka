@@ -256,36 +256,40 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case _              ⇒ super.postRestart(reason)
     }
 
-    def receive = {
-      case m: MethodCall ⇒
-        TypedActor.selfReference set proxyVar.get
-        TypedActor.currentContext set context
-        try {
-          if (m.isOneWay) m(me)
-          else {
-            try {
-              if (m.returnsFuture_?) {
-                val s = sender
-                m(me).asInstanceOf[Future[Any]] onComplete {
-                  case Left(f)  ⇒ s ! Status.Failure(f)
-                  case Right(r) ⇒ s ! r
-                }
-              } else {
-                sender ! m(me)
-              }
-            } catch {
-              case NonFatal(e) ⇒
-                sender ! Status.Failure(e)
-                throw e
-            }
-          }
-        } finally {
-          TypedActor.selfReference set null
-          TypedActor.currentContext set null
-        }
+    protected def withContext[T](unitOfWork: ⇒ T): T = {
+      TypedActor.selfReference set proxyVar.get
+      TypedActor.currentContext set context
+      try unitOfWork finally {
+        TypedActor.selfReference set null
+        TypedActor.currentContext set null
+      }
+    }
 
-      case t: Terminated if me.isInstanceOf[DeathWatcher] =>
-        me.asInstanceOf[DeathWatcher].onTermination(t.actor)
+    def receive = {
+      case m: MethodCall ⇒ withContext {
+        if (m.isOneWay) m(me)
+        else {
+          try {
+            if (m.returnsFuture_?) {
+              val s = sender
+              m(me).asInstanceOf[Future[Any]] onComplete {
+                case Left(f)  ⇒ s ! Status.Failure(f)
+                case Right(r) ⇒ s ! r
+              }
+            } else {
+              sender ! m(me)
+            }
+          } catch {
+            case NonFatal(e) ⇒
+              sender ! Status.Failure(e)
+              throw e
+          }
+        }
+      }
+
+      case msg if me.isInstanceOf[Receiver] ⇒ withContext {
+        me.asInstanceOf[Receiver].onReceive(msg, sender)
+      }
     }
   }
 
@@ -303,13 +307,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * Mix this into your TypedActor to be able to intercept Terminated messages
    */
-  trait DeathWatcher {
-
-    /**
-     * User overridable callback to intercept Terminated messages.
-     * @param actor
-     */
-    def onTermination(actor: ActorRef): Unit
+  trait Receiver {
+    def onReceive(message: Any, sender: ActorRef): Unit
   }
 
   /**
