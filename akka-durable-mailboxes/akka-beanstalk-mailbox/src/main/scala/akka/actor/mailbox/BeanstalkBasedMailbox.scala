@@ -12,11 +12,16 @@ import akka.event.Logging
 import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
+import akka.config.ConfigurationException
+import akka.dispatch.MessageQueue
 
 class BeanstalkBasedMailboxException(message: String) extends AkkaException(message) {}
 
 class BeanstalkBasedMailboxType(config: Config) extends MailboxType {
-  override def create(owner: ActorContext) = new BeanstalkBasedMailbox(owner)
+  override def create(owner: Option[ActorContext]): MessageQueue = owner match {
+    case Some(o) ⇒ new BeanstalkBasedMailbox(o)
+    case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
+  }
 }
 
 /**
@@ -110,4 +115,6 @@ class BeanstalkBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner)
   private def reconnect(name: String): ThreadLocal[Client] = {
     new ThreadLocal[Client] { override def initialValue: Client = connect(name) }
   }
+
+  def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
 }

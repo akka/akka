@@ -452,15 +452,19 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
 
   def deadLetters: ActorRef = provider.deadLetters
 
-  val deadLetterMailbox: Mailbox = new Mailbox(null) {
+  val deadLetterQueue: MessageQueue = new MessageQueue {
+    def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
+    def dequeue() = null
+    def hasMessages = false
+    def numberOfMessages = 0
+    def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
+  }
+
+  val deadLetterMailbox: Mailbox = new Mailbox(null, deadLetterQueue) {
     becomeClosed()
-    override def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
-    override def dequeue() = null
-    override def systemEnqueue(receiver: ActorRef, handle: SystemMessage) { deadLetters ! DeadLetter(handle, receiver, receiver) }
-    override def systemDrain(): SystemMessage = null
-    override def hasMessages = false
-    override def hasSystemMessages = false
-    override def numberOfMessages = 0
+    def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit = deadLetters ! DeadLetter(handle, receiver, receiver)
+    def systemDrain(): SystemMessage = null
+    def hasSystemMessages = false
   }
 
   def locker: Locker = provider.locker

@@ -6,15 +6,19 @@ package akka.actor.mailbox
 
 import org.apache.commons.io.FileUtils
 import akka.actor.ActorContext
-import akka.dispatch.Envelope
+import akka.dispatch.{ Envelope, MessageQueue }
 import akka.event.Logging
 import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
 import akka.util.NonFatal
+import akka.config.ConfigurationException
 
 class FileBasedMailboxType(config: Config) extends MailboxType {
-  override def create(owner: ActorContext) = new FileBasedMailbox(owner)
+  override def create(owner: Option[ActorContext]): MessageQueue = owner match {
+    case Some(o) ⇒ new FileBasedMailbox(o)
+    case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
+  }
 }
 
 class FileBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with DurableMessageSerialization {
@@ -71,5 +75,7 @@ class FileBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with
   } catch {
     case NonFatal(_) ⇒ false
   }
+
+  def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
 
 }

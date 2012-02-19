@@ -40,7 +40,7 @@ class Dispatcher(
 
   protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     val mbox = receiver.mailbox
-    mbox.enqueue(receiver.self, invocation)
+    mbox.messageQueue.enqueue(receiver.self, invocation)
     registerForExecution(mbox, true, false)
   }
 
@@ -65,7 +65,7 @@ class Dispatcher(
     }
   }
 
-  protected[akka] def createMailbox(actor: ActorCell): Mailbox = mailboxType.create(actor)
+  protected[akka] def createMailbox(actor: ActorCell): Mailbox = new Mailbox(actor, mailboxType.create(Some(actor))) with DefaultSystemMessageQueue
 
   protected[akka] def shutdown: Unit =
     Option(executorService.getAndSet(new ExecutorServiceDelegate {

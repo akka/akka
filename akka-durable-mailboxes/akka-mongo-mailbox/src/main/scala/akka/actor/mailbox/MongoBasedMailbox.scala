@@ -14,11 +14,16 @@ import akka.dispatch.{ Await, Promise, Envelope }
 import java.util.concurrent.TimeoutException
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
+import akka.config.ConfigurationException
+import akka.dispatch.MessageQueue
 
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
 
 class MongoBasedMailboxType(config: Config) extends MailboxType {
-  override def create(owner: ActorContext) = new MongoBasedMailbox(owner)
+  override def create(owner: Option[ActorContext]): MessageQueue = owner match {
+    case Some(o) ⇒ new MongoBasedMailbox(o)
+    case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
+  }
 }
 
 /**
@@ -36,6 +41,8 @@ class MongoBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
   implicit val mailboxBSONSer = new BSONSerializableMailbox(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!
+
+  private val dispatcher = owner.dispatcher
 
   private val settings = MongoBasedMailboxExtension(owner.system)
 
@@ -132,4 +139,6 @@ class MongoBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) {
       }
     }
   }
+
+  def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
 }
