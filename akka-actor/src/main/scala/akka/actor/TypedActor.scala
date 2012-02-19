@@ -283,6 +283,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           TypedActor.selfReference set null
           TypedActor.currentContext set null
         }
+
+      case t: Terminated if me.isInstanceOf[DeathWatcher] =>
+        me.asInstanceOf[DeathWatcher].onTermination(t.actor)
     }
   }
 
@@ -295,6 +298,18 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * child actors.
      */
     def supervisorStrategy(): SupervisorStrategy
+  }
+
+  /**
+   * Mix this into your TypedActor to be able to intercept Terminated messages
+   */
+  trait DeathWatcher {
+
+    /**
+     * User overridable callback to intercept Terminated messages.
+     * @param actor
+     */
+    def onTermination(actor: ActorRef): Unit
   }
 
   /**
