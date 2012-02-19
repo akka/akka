@@ -30,6 +30,20 @@ object ActorWithStashSpec {
     }
   }
 
+  class StashingTwiceActor(implicit sys: ActorSystem) extends Actor with Stash {
+    def receive = {
+      case "hello" ⇒
+        try {
+          stash()
+          stash()
+        } catch {
+          case e: IllegalStateException ⇒
+            state.expectedException.open()
+        }
+      case msg ⇒ // do nothing
+    }
+  }
+
   class ActorWithProtocol(implicit sys: ActorSystem) extends Actor with Stash {
     def receive = {
       case "open" ⇒
@@ -49,6 +63,7 @@ object ActorWithStashSpec {
     @volatile
     var s: String = ""
     val finished = TestBarrier(2)
+    var expectedException: TestLatch = null
   }
 
   val testConf: Config = ConfigFactory.parseString("""
@@ -97,6 +112,14 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
       protoActor ! "close"
       protoActor ! "done"
       state.finished.await
+    }
+
+    "throw an IllegalStateException if the same messages is stashed twice" in {
+      state.expectedException = new TestLatch
+      val stasher = system.actorOf(Props(new StashingTwiceActor))
+      stasher ! "hello"
+      stasher ! "hello"
+      Await.ready(state.expectedException, 10 seconds)
     }
 
     "process stashed messages after restart" in {

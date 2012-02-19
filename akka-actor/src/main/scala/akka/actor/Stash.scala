@@ -78,10 +78,15 @@ An (unbounded) deque-based mailbox can be configured as follows:
    *  actor's stash.
    *
    *  @throws StashOverflowException in case of a stash capacity violation
+   *  @throws IllegalStateException  if the same message is stashed more than once
    */
-  def stash(): Unit =
-    if (capacity <= 0 || theStash.size < capacity) theStash :+= context.asInstanceOf[ActorCell].currentMessage
-    else throw new StashOverflowException("Couldn't enqueue message " + context.asInstanceOf[ActorCell].currentMessage + " to stash of " + self)
+  def stash(): Unit = {
+    val currMsg = context.asInstanceOf[ActorCell].currentMessage
+    if (theStash.size > 0 && (currMsg eq theStash.last))
+      throw new IllegalStateException("Can't stash the same message " + currMsg + " more than once")
+    if (capacity <= 0 || theStash.size < capacity) theStash :+= currMsg
+    else throw new StashOverflowException("Couldn't enqueue message " + currMsg + " to stash of " + self)
+  }
 
   /**
    *  Prepends all messages in the stash to the mailbox, and then clears the stash.
