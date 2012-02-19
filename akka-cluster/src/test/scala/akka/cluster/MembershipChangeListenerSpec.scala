@@ -32,7 +32,7 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
 
   try {
     "A set of connected cluster nodes" must {
-      "(when two nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
+      "(when two nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
         node0 = ActorSystem("node0", ConfigFactory
           .parseString("""
             akka {
@@ -82,7 +82,7 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
         gossiper1.convergence must be('defined)
       }
 
-      "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
+      "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 
         // ======= NODE 2 ========
         node2 = ActorSystem("node2", ConfigFactory
@@ -132,13 +132,13 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
   }
 
   override def atTermination() {
-    gossiper0.shutdown()
-    node0.shutdown()
+    if (gossiper0 ne null) gossiper0.shutdown()
+    if (node0 ne null) node0.shutdown()
 
-    gossiper1.shutdown()
-    node1.shutdown()
+    if (gossiper1 ne null) gossiper1.shutdown()
+    if (node1 ne null) node1.shutdown()
 
-    gossiper2.shutdown()
-    node2.shutdown()
+    if (gossiper2 ne null) gossiper2.shutdown()
+    if (node2 ne null) node2.shutdown()
   }
 }

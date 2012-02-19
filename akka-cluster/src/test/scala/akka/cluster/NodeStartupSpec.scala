@@ -84,10 +84,10 @@ class NodeStartupSpec extends AkkaSpec("""
   }
 
   override def atTermination() {
-    gossiper0.shutdown()
-    node0.shutdown()
+    if (gossiper0 ne null) gossiper0.shutdown()
+    if (node0 ne null) node0.shutdown()
 
-    gossiper1.shutdown()
-    node1.shutdown()
+    if (gossiper1 ne null) gossiper1.shutdown()
+    if (node1 ne null) node1.shutdown()
   }
 }

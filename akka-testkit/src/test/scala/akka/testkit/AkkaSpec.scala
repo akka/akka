@@ -20,6 +20,7 @@ import akka.dispatch.Dispatchers
 import akka.pattern.ask
 
 object TimingTest extends Tag("timing")
+object LongRunningTest extends Tag("long-running")
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
