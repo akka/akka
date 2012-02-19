@@ -57,7 +57,7 @@ public class CustomRouterDocTestBase {
   public void demonstrateSupervisor() {
     //#supervision
     final SupervisorStrategy strategy = new OneForOneStrategy(5, Duration.parse("1 minute"),
-        new Class<? extends Throwable>[] { Exception });
+        new Class<?>[] { Exception.class });
     final ActorRef router = system.actorOf(new Props(MyActor.class)
         .withRouter(new RoundRobinRouter(5).withSupervisorStrategy(strategy)));
     //#supervision
