@@ -74,7 +74,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useBlockingFromActor() {
+  public void useBlockingFromActor() throws Exception {
     ActorRef actor = system.actorOf(new Props(MyActor.class));
     String msg = "hello";
     //#ask-blocking
@@ -86,7 +86,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useFutureEval() {
+  public void useFutureEval() throws Exception {
     //#future-eval
     Future<String> f = future(new Callable<String>() {
       public String call() {
@@ -99,7 +99,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useMap() {
+  public void useMap() throws Exception {
     //#map
     Future<String> f1 = future(new Callable<String>() {
       public String call() {
@@ -162,7 +162,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useFlatMap() {
+  public void useFlatMap() throws Exception {
     //#flat-map
     Future<String> f1 = future(new Callable<String>() {
       public String call() {
@@ -186,7 +186,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useSequence() {
+  public void useSequence() throws Exception {
     List<Future<Integer>> source = new ArrayList<Future<Integer>>();
     source.add(Futures.successful(1, system.dispatcher()));
     source.add(Futures.successful(2, system.dispatcher()));
@@ -214,7 +214,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useTraverse() {
+  public void useTraverse() throws Exception {
     //#traverse
     //Just a sequence of Strings
     Iterable<String> listStrings = Arrays.asList("a", "b", "c");
@@ -236,7 +236,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useFold() {
+  public void useFold() throws Exception {
     List<Future<String>> source = new ArrayList<Future<String>>();
     source.add(Futures.successful("a", system.dispatcher()));
     source.add(Futures.successful("b", system.dispatcher()));
@@ -258,7 +258,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useReduce() {
+  public void useReduce() throws Exception {
     List<Future<String>> source = new ArrayList<Future<String>>();
     source.add(Futures.successful("a", system.dispatcher()));
     source.add(Futures.successful("b", system.dispatcher()));
@@ -280,7 +280,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useSuccessfulAndFailed() {
+  public void useSuccessfulAndFailed() throws Exception {
     //#successful
     Future<String> future = Futures.successful("Yay!", system.dispatcher());
     //#successful
@@ -294,7 +294,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useFilter() {
+  public void useFilter() throws Exception {
     //#filter
     Future<Integer> future1 = Futures.successful(4, system.dispatcher());
     Future<Integer> successfulFilter = future1.filter(new Filter<Integer>() {
@@ -338,7 +338,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useRecover() {
+  public void useRecover() throws Exception {
     //#recover
     Future<Integer> future = future(new Callable<Integer>() {
       public Integer call() {
@@ -358,7 +358,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useTryRecover() {
+  public void useTryRecover() throws Exception {
     //#try-recover
     Future<Integer> future = future(new Callable<Integer>() {
       public Integer call() {
@@ -382,7 +382,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useOnSuccessOnFailureAndOnComplete() {
+  public void useOnSuccessOnFailureAndOnComplete() throws Exception {
     {
       Future<String> future = Futures.successful("foo", system.dispatcher());
 
@@ -429,7 +429,7 @@ public class FutureDocTestBase {
   }
 
   @Test
-  public void useOrAndZip() {
+  public void useOrAndZip() throws Exception {
     {
       //#zip
       Future<String> future1 = Futures.successful("foo", system.dispatcher());

@@ -20,7 +20,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class TransactorDocTest {
 
     @Test
-    public void coordinatedExample() {
+    public void coordinatedExample() throws Exception {
         //#coordinated-example
         ActorSystem system = ActorSystem.create("CoordinatedExample");
 
@@ -63,7 +63,7 @@ public class TransactorDocTest {
     }
 
     @Test
-    public void counterTransactor() {
+    public void counterTransactor() throws Exception {
         ActorSystem system = ActorSystem.create("CounterTransactor");
         ActorRef counter = system.actorOf(new Props(Counter.class));
 
@@ -79,7 +79,7 @@ public class TransactorDocTest {
     }
 
     @Test
-    public void friendlyCounterTransactor() {
+    public void friendlyCounterTransactor() throws Exception {
         ActorSystem system = ActorSystem.create("FriendlyCounterTransactor");
         ActorRef friend = system.actorOf(new Props(Counter.class));
         ActorRef friendlyCounter = system.actorOf(new Props(FriendlyCounter.class));
