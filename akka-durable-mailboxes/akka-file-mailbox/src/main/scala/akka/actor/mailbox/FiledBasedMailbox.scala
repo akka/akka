@@ -37,7 +37,6 @@ class FileBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with
   }
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    log.debug("ENQUEUING message in file-based mailbox [{}]", envelope)
     queue.add(serialize(envelope))
   }
 
@@ -45,9 +44,7 @@ class FileBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with
     val item = queue.remove
     if (item.isDefined) {
       queue.confirmRemove(item.get.xid)
-      val envelope = deserialize(item.get.data)
-      log.debug("DEQUEUING message in file-based mailbox [{}]", envelope)
-      envelope
+      deserialize(item.get.data)
     } else null
   } catch {
     case e: java.util.NoSuchElementException ⇒ null

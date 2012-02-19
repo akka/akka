@@ -774,7 +774,7 @@ final class IOManagerActor extends Actor {
   /** Buffer used for all reads */
   private val buffer = ByteBuffer.allocate(bufferSize)
 
-  /** a counter that is incremented each time a message is retreived */
+  /** a counter that is incremented each time a message is retrieved */
   private var lastSelect = 0
 
   /** force a select when lastSelect reaches this amount */

@@ -8,7 +8,6 @@ import java.io.InputStream
 import org.bson.collection.BSONDocument
 import org.bson.io.BasicOutputBuffer
 import org.bson.io.OutputBuffer
-import org.bson.util.Logging
 import org.bson.SerializableBSONObject
 import org.bson.BSONSerializer
 import org.bson.DefaultBSONDeserializer
@@ -18,7 +17,7 @@ import akka.remote.RemoteProtocol.MessageProtocol
 import akka.remote.MessageSerializer
 import akka.actor.ExtendedActorSystem
 
-class BSONSerializableMailbox(system: ExtendedActorSystem) extends SerializableBSONObject[MongoDurableMessage] with Logging {
+class BSONSerializableMailbox(system: ExtendedActorSystem) extends SerializableBSONObject[MongoDurableMessage] {
 
   protected[akka] def serializeDurableMsg(msg: MongoDurableMessage)(implicit serializer: BSONSerializer) = {
 
@@ -35,7 +34,6 @@ class BSONSerializableMailbox(system: ExtendedActorSystem) extends SerializableB
     val msgData = MessageSerializer.serialize(system, msg.message.asInstanceOf[AnyRef])
     b += "message" -> new org.bson.types.Binary(0, msgData.toByteArray)
     val doc = b.result
-    system.log.debug("Serialized Document: {}", doc)
     serializer.putObject(doc)
   }
 
@@ -63,7 +61,6 @@ class BSONSerializableMailbox(system: ExtendedActorSystem) extends SerializableB
     val deserializer = new DefaultBSONDeserializer
     // TODO - Skip the whole doc step for performance, fun, and profit! (Needs Salat / custom Deser)
     val doc = deserializer.decodeAndFetch(in).asInstanceOf[BSONDocument]
-    system.log.debug("Deserializing a durable message from MongoDB: {}", doc)
     val msgData = MessageProtocol.parseFrom(doc.as[org.bson.types.Binary]("message").getData)
     val msg = MessageSerializer.deserialize(system, msgData)
     val ownerPath = doc.as[String]("ownerPath")

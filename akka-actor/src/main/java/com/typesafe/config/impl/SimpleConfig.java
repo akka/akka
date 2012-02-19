@@ -31,6 +31,8 @@ import com.typesafe.config.ConfigValueType;
  */
 final class SimpleConfig implements Config, MergeableValue, Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     final private AbstractConfigObject object;
 
     SimpleConfig(AbstractConfigObject object) {

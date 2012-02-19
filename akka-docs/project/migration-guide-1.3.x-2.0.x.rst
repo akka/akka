@@ -14,6 +14,12 @@ The 2.0 release contains several new features which require source-level
 changes in client code. This API cleanup is planned to be the last one for a
 significant amount of time.
 
+New Concepts
+============
+
+First you should take some time to understand the new concepts of :ref:`actor-systems`,
+:ref:`supervision`, and :ref:`addressing`.
+
 Migration Kit
 =============
 
@@ -261,16 +267,6 @@ which will give deprecation warnings where the old method signature is used::
   import akka.migration.ask
 
   actor ? (1, Timeout(2 seconds)) // will give deprecation warning
-
-ActorPool
-^^^^^^^^^
-
-The ActorPool has been replaced by dynamically resizable routers.
-
-Documentation:
-
- * :ref:`routing-scala`
- * :ref:`routing-java`
 
 ``UntypedActor.getContext()`` (Java API only)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -579,6 +575,75 @@ hands of the actor itself.
  * :ref:`actors-scala`
  * :ref:`untyped-actors-java`
 
+Routing
+^^^^^^^
+
+Routing has been redesign with improved performance and additional features as a result.
+
+v1.3::
+
+  class MyLoadBalancer extends Actor with LoadBalancer {
+    val pinger = actorOf(new Actor { def receive = { case x => println("Pinger: " + x) } }).start()
+    val ponger = actorOf(new Actor { def receive = { case x => println("Ponger: " + x) } }).start()
+
+    val seq = new CyclicIterator[ActorRef](List(pinger,ponger))
+  }
+  val loadbalancer = actorOf[MyLoadBalancer].start()
+
+v2.0::
+
+  val pinger = system.actorOf(Props(new Actor { def receive = { case x ⇒ println("Pinger: " + x) } }))
+  val ponger = system.actorOf(Props(new Actor { def receive = { case x ⇒ println("Ponger: " + x) } }))
+  val loadbalancer = system.actorOf(Props().withRouter(RoundRobinRouter(Seq(pinger, ponger))))
+
+Documentation:
+
+ * :ref:`routing-scala`
+ * :ref:`routing-java`
+
+ActorPool
+^^^^^^^^^
+
+The ActorPool has been replaced by dynamically resizable routers.
+
+v1.3::
+
+  class TestPool extends Actor with DefaultActorPool
+                               with BoundedCapacityStrategy
+                               with ActiveFuturesPressureCapacitor
+                               with SmallestMailboxSelector
+                               with BasicNoBackoffFilter
+  {
+    def receive = _route
+    def lowerBound = 2
+    def upperBound = 4
+    def rampupRate = 0.1
+    def partialFill = true
+    def selectionCount = 1
+    def instance = actorOf[ExampleActor]
+  }
+
+v2.0::
+
+  // in configuration
+  akka.actor.deployment {
+    /router2 {
+      router = round-robin
+      resizer {
+        lower-bound = 2
+        upper-bound = 15
+      }
+    }
+  }
+
+  // in code
+  val router2 = system.actorOf(Props[ExampleActor].withRouter(FromConfig())
+
+Documentation:
+
+ * :ref:`routing-scala`
+ * :ref:`routing-java`
+
 STM
 ---
 
@@ -838,10 +903,3 @@ returning ``java.util`` ``Map``, ``Set``, and ``List``: ``newMap``, ``newSet``,
 and ``newArrayAsList``.
 
 
-More to be written
-------------------
-
-* Futures
-* TypedActors
-* Routing
-* Remoting

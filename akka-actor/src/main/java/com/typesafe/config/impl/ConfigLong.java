@@ -8,6 +8,8 @@ import com.typesafe.config.ConfigValueType;
 
 final class ConfigLong extends ConfigNumber {
 
+    private static final long serialVersionUID = 1L;
+
     final private long value;
 
     ConfigLong(ConfigOrigin origin, long value, String originalText) {

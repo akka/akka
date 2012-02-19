@@ -32,7 +32,7 @@ IO.Handle
 IOManager
 ^^^^^^^^^
 
-The ``IOManager`` takes care of the low level IO details. Each ``ActorSystem`` has it's own ``IOManager``, which can be accessed calling ``IOManager(system: ActorSystem)``. ``Actor``\s communicate with the ``IOManager`` with specific messages. The messages sent from an ``Actor`` to the ``IOManager`` are handled automatically when using certain methods and the messagegs sent from an ``IOManager`` are handled within an ``Actor``\'s ``receive`` method.
+The ``IOManager`` takes care of the low level IO details. Each ``ActorSystem`` has it's own ``IOManager``, which can be accessed calling ``IOManager(system: ActorSystem)``. ``Actor``\s communicate with the ``IOManager`` with specific messages. The messages sent from an ``Actor`` to the ``IOManager`` are handled automatically when using certain methods and the messages sent from an ``IOManager`` are handled within an ``Actor``\'s ``receive`` method.
 
 Connecting to a remote host:
 

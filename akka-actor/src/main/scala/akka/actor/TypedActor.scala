@@ -50,7 +50,7 @@ trait TypedActorFactory {
   def getActorRefFor(proxy: AnyRef): ActorRef
 
   /**
-   * Creates a new TypedActor with the specified properies
+   * Creates a new TypedActor with the specified properties
    */
   def typedActorOf[R <: AnyRef, T <: R](props: TypedProps[T]): R = {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
@@ -60,7 +60,7 @@ trait TypedActorFactory {
   }
 
   /**
-   * Creates a new TypedActor with the specified properies
+   * Creates a new TypedActor with the specified properties
    */
   def typedActorOf[R <: AnyRef, T <: R](props: TypedProps[T], name: String): R = {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
@@ -382,7 +382,7 @@ object TypedProps {
   val defaultLoader: Option[ClassLoader] = None
 
   /**
-   * @return a sequence of interfaces that the speicified class implements,
+   * @return a sequence of interfaces that the specified class implements,
    * or a sequence containing only itself, if itself is an interface.
    */
   def extractInterfaces(clazz: Class[_]): Seq[Class[_]] =

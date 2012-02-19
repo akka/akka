@@ -204,7 +204,7 @@ of failure) so that all actors—including the test actor—are stopped.
 Built-In Assertions
 -------------------
 
-The abovementioned :meth:`expectMsg` is not the only method for formulating
+The above mentioned :meth:`expectMsg` is not the only method for formulating
 assertions concerning received messages. Here is the full list:
 
   * :meth:`expectMsg[T](d: Duration, msg: T): T`

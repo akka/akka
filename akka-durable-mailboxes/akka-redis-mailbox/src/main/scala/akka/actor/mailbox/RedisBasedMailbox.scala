@@ -29,7 +29,6 @@ class RedisBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) wit
   val log = Logging(system, "RedisBasedMailbox")
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    log.debug("ENQUEUING message in redis-based mailbox [%s]".format(envelope))
     withErrorHandling {
       clients.withClient { client ⇒
         client.rpush(name, serialize(envelope))
@@ -40,12 +39,8 @@ class RedisBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) wit
   def dequeue(): Envelope = withErrorHandling {
     try {
       import serialization.Parse.Implicits.parseByteArray
-      val item = clients.withClient { client ⇒
-        client.lpop[Array[Byte]](name).getOrElse(throw new NoSuchElementException(name + " not present"))
-      }
-      val envelope = deserialize(item)
-      log.debug("DEQUEUING message in redis-based mailbox [%s]".format(envelope))
-      envelope
+      val item = clients.withClient { _.lpop[Array[Byte]](name).getOrElse(throw new NoSuchElementException(name + " not present")) }
+      deserialize(item)
     } catch {
       case e: java.util.NoSuchElementException ⇒ null
       case NonFatal(e) ⇒

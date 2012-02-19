@@ -45,7 +45,7 @@ trait ConnectionManager {
   def shutdown()
 
   /**
-   * Returns a VersionedIterator containing all connectected ActorRefs at some moment in time. Since there is
+   * Returns a VersionedIterator containing all connected ActorRefs at some moment in time. Since there is
    * the time element, also the version is included to be able to read the data (the connections) and the version
    * in an atomic manner.
    *

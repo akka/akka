@@ -8,6 +8,8 @@ import com.typesafe.config.ConfigValueType;
 
 final class ConfigBoolean extends AbstractConfigValue {
 
+    private static final long serialVersionUID = 1L;
+
     final private boolean value;
 
     ConfigBoolean(ConfigOrigin origin, boolean value) {

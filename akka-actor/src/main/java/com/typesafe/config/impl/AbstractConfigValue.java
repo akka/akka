@@ -20,6 +20,8 @@ import com.typesafe.config.ConfigValue;
  */
 abstract class AbstractConfigValue implements ConfigValue, MergeableValue, Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     final private SimpleConfigOrigin origin;
 
     AbstractConfigValue(ConfigOrigin origin) {

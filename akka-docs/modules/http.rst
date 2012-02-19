@@ -19,7 +19,7 @@ Getting started
 First you must make your application aware of play-mini.
 In SBT you just have to add the following to your _libraryDependencies_::
 
-  libraryDependencies += "com.typesafe" %% "play-mini" % "2.0-RC1-SNAPSHOT"
+  libraryDependencies += "com.typesafe" %% "play-mini" % "2.0-RC3-SNAPSHOT"
 
 Sample Application
 ------------------
@@ -148,7 +148,7 @@ Build.scala (<yourApp>/project/Build.scala):
 
     object PlayMiniApplicationBuild extends Build {
       lazy val root = Project(id = "play-mini-application", base = file("."), settings = Project.defaultSettings).settings(
-        libraryDependencies += "com.typesafe" %% "play-mini" % "2.0-RC1-SNAPSHOT",
+        libraryDependencies += "com.typesafe" %% "play-mini" % "2.0-RC3-SNAPSHOT",
         mainClass in (Compile, run) := Some("play.core.server.NettyServer"))
     }
 

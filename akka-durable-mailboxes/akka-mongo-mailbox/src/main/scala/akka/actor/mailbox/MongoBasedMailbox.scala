@@ -45,7 +45,6 @@ class MongoBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) {
   private var mongo = connect()
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    log.debug("ENQUEUING message in mongodb-based mailbox [{}]", envelope)
     /* TODO - Test if a BSON serializer is registered for the message and only if not, use toByteString? */
     val durableMessage = MongoDurableMessage(ownerPathString, envelope.message, envelope.sender)
     // todo - do we need to filter the actor name at all for safe collection naming?
@@ -70,11 +69,9 @@ class MongoBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) {
     val envelopePromise = Promise[Envelope]()(dispatcher)
     mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
       doc match {
-        case Some(msg) ⇒ {
-          log.debug("DEQUEUING message in mongo-based mailbox [{}]", msg)
+        case Some(msg) ⇒
           envelopePromise.success(msg.envelope(system))
-          log.debug("DEQUEUING messageInvocation in mongo-based mailbox [{}]", envelopePromise)
-        }
+          ()
         case None ⇒
           log.info("No matching document found. Not an error, just an empty queue.")
           envelopePromise.success(null)
