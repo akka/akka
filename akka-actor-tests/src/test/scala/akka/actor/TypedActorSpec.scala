@@ -12,13 +12,13 @@ import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
 import akka.serialization.SerializationExtension
-import akka.actor.TypedActor.{ PostRestart, PreRestart, PostStop, PreStart }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.testkit.DefaultTimeout
 import akka.dispatch.{ Await, Dispatchers, Future, Promise }
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
+import akka.actor.TypedActor._
 
 object TypedActorSpec {
 
@@ -160,7 +160,7 @@ object TypedActorSpec {
     def crash(): Unit
   }
 
-  class LifeCyclesImpl(val latch: CountDownLatch) extends PreStart with PostStop with PreRestart with PostRestart with LifeCycles {
+  class LifeCyclesImpl(val latch: CountDownLatch) extends PreStart with PostStop with PreRestart with PostRestart with LifeCycles with Receiver {
 
     override def crash(): Unit = throw new IllegalStateException("Crash!")
 
@@ -171,6 +171,12 @@ object TypedActorSpec {
     override def preRestart(reason: Throwable, message: Option[Any]): Unit = for (i ← 1 to 5) latch.countDown()
 
     override def postRestart(reason: Throwable): Unit = for (i ← 1 to 7) latch.countDown()
+
+    override def onReceive(msg: Any, sender: ActorRef): Unit = {
+      msg match {
+        case "pigdog" ⇒ sender ! "dogpig"
+      }
+    }
   }
 }
 
@@ -415,6 +421,16 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       EventFilter[IllegalStateException]("Crash!", occurrences = 1) intercept {
         t.crash()
       }
+
+      //Sneak in a check for the Receiver override
+      val ref = ta getActorRefFor t
+
+      ref.tell("pigdog", testActor)
+
+      expectMsg(timeout.duration, "dogpig")
+
+      //Done with that now
+
       ta.poisonPill(t)
       latch.await(10, TimeUnit.SECONDS) must be === true
     }
