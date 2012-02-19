@@ -98,7 +98,7 @@ An (unbounded) deque-based mailbox can be configured as follows:
    */
   def unstashAll(): Unit = {
     try {
-      mailbox.enqueueAllFirst(self, theStash.reverseIterator, theStash.size)
+      for (msg ← theStash.reverseIterator) mailbox.enqueueFirst(self, msg)
     } finally {
       theStash = Vector.empty[Envelope]
     }

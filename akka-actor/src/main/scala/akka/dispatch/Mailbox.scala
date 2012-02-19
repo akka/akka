@@ -335,16 +335,12 @@ trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
 trait DequeBasedMessageQueue extends QueueBasedMessageQueue {
   def queue: Deque[Envelope]
   def enqueueFirst(receiver: ActorRef, handle: Envelope): Unit
-  def enqueueAllFirst(receiver: ActorRef, handleIterator: Iterator[Envelope], size: Int): Unit
 }
 
 trait UnboundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
   final def enqueue(receiver: ActorRef, handle: Envelope): Unit = queue add handle
 
   final def enqueueFirst(receiver: ActorRef, handle: Envelope): Unit = queue addFirst handle
-
-  final def enqueueAllFirst(receiver: ActorRef, handleIterator: Iterator[Envelope], size: Int): Unit =
-    handleIterator foreach { enqueueFirst(receiver, _) }
 
   final def dequeue(): Envelope = queue.poll()
 }
@@ -366,11 +362,6 @@ trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
         throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
       }
     else queue putFirst handle
-
-  final def enqueueAllFirst(receiver: ActorRef, handleIterator: Iterator[Envelope], size: Int): Unit =
-    if (queue.asInstanceOf[BlockingQueue[Envelope]].remainingCapacity >= size)
-      handleIterator foreach { enqueueFirst(receiver, _) }
-    else throw new MessageQueueAppendFailedException("Couldn't enqueue stash to " + receiver)
 
   final def dequeue(): Envelope = queue.poll()
 }

@@ -20,7 +20,6 @@ object ActorWithBoundedStashSpec {
         stash()
         sender ! "OK"
       case "world" ⇒
-        self ! "world"
         try {
           unstashAll()
         } catch {
@@ -60,7 +59,7 @@ object ActorWithBoundedStashSpec {
       """)
 
   // bounded deque-based mailbox with capacity 10
-  class Bounded(config: Config) extends BoundedDequeBasedMailbox(10, 10 seconds)
+  class Bounded(config: Config) extends BoundedDequeBasedMailbox(10, 5 seconds)
 
 }
 
@@ -80,7 +79,7 @@ class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testC
       ActorWithBoundedStashSpec.expectedException = new TestLatch
       val stasher = system.actorOf(Props(new StashingActor))
       // fill up stash
-      val futures = for (_ ← 1 to 10) yield { stasher ? "hello" }
+      val futures = for (_ ← 1 to 11) yield { stasher ? "hello" }
       futures foreach { Await.ready(_, 10 seconds) }
 
       // cause unstashAll with capacity violation
