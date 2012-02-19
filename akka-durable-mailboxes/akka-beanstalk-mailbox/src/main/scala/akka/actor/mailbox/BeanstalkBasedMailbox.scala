@@ -35,7 +35,6 @@ class BeanstalkBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner)
   // ===== For MessageQueue =====
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    log.debug("ENQUEUING message in beanstalk-based mailbox [%s]".format(envelope))
     Some(queue.get.put(65536, messageSubmitDelaySeconds, messageTimeToLiveSeconds, serialize(envelope)).toInt)
   }
 
@@ -46,9 +45,7 @@ class BeanstalkBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner)
       val bytes = job.getData
       if (bytes ne null) {
         queue.get.delete(job.getJobId)
-        val envelope = deserialize(bytes)
-        log.debug("DEQUEUING message in beanstalk-based mailbox [%s]".format(envelope))
-        envelope
+        deserialize(bytes)
       } else null: Envelope
     }
   } catch {

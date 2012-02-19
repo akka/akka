@@ -35,14 +35,11 @@ class ZooKeeperBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner)
   private val queue = new ZooKeeperQueue[Array[Byte]](zkClient, queuePathTemplate.format(name), settings.BlockingQueue)
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    log.debug("ENQUEUING message in zookeeper-based mailbox [%s]".format(envelope))
     queue.enqueue(serialize(envelope))
   }
 
   def dequeue: Envelope = try {
-    val messageInvocation = deserialize(queue.dequeue.asInstanceOf[Array[Byte]])
-    log.debug("DEQUEUING message in zookeeper-based mailbox [%s]".format(messageInvocation))
-    messageInvocation
+    deserialize(queue.dequeue.asInstanceOf[Array[Byte]])
   } catch {
     case e: java.util.NoSuchElementException ⇒ null
     case e: InterruptedException             ⇒ null
