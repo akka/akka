@@ -50,14 +50,13 @@ trait Stash extends Actor {
    */
   private var theStash = Vector.empty[Envelope]
 
-  /* The capacity of the stash. Either configured in the actor's dispatcher config, or
-   * `Int.MaxValue`.
+  /* The capacity of the stash. Configured in the actor's dispatcher config.
    */
-  private val capacity =
-    try context.system.settings.config.getConfig(context.props.dispatcher).getInt("stash-capacity")
-    catch {
-      case _ ⇒ Int.MaxValue
-    }
+  private val capacity = {
+    val dispatcher = context.system.settings.config.getConfig(context.props.dispatcher)
+    val config = dispatcher.withFallback(context.system.settings.config.getConfig("akka.actor.default-dispatcher"))
+    config.getInt("stash-capacity")
+  }
 
   /* The actor's deque-based message queue.
    * `mailbox.queue` is the underlying `Deque`.
@@ -81,7 +80,7 @@ An (unbounded) deque-based mailbox can be configured as follows:
    *  @throws StashOverflowException in case of a stash capacity violation
    */
   def stash(): Unit =
-    if (theStash.size < capacity) theStash :+= context.asInstanceOf[ActorCell].currentMessage
+    if (capacity <= 0 || theStash.size < capacity) theStash :+= context.asInstanceOf[ActorCell].currentMessage
     else throw new StashOverflowException("Couldn't enqueue message " + context.asInstanceOf[ActorCell].currentMessage + " to stash of " + self)
 
   /**
