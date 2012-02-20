@@ -182,12 +182,12 @@ abstract class ActorSystem extends ActorRefFactory {
   /**
    * Start-up time in milliseconds since the epoch.
    */
-  val startTime = System.currentTimeMillis
+  val startTime: Long = System.currentTimeMillis
 
   /**
    * Up-time of this actor system in seconds.
    */
-  def uptime = (System.currentTimeMillis - startTime) / 1000
+  def uptime: Long = (System.currentTimeMillis - startTime) / 1000
 
   /**
    * Main event bus of this actor system, used for example for logging.
@@ -253,6 +253,8 @@ abstract class ActorSystem extends ActorRefFactory {
    * Block current thread until the system has been shutdown, or the specified
    * timeout has elapsed. This will block until after all on termination
    * callbacks have been run.
+   *
+   * @throws TimeoutException in case of timeout
    */
   def awaitTermination(timeout: Duration): Unit
 
@@ -269,6 +271,15 @@ abstract class ActorSystem extends ActorRefFactory {
    * termination handlers (see [[ActorSystem.registerOnTermination]]).
    */
   def shutdown(): Unit
+
+  /**
+   * Query the termination status: if it returns true, all callbacks have run
+   * and the ActorSystem has been fully stopped, i.e.
+   * `awaitTermination(0 seconds)` would return normally. If this method
+   * returns `false`, the status is actually unknown, since it might have
+   * changed since you queried it.
+   */
+  def isTerminated: Boolean
 
   /**
    * Registers the provided extension and creates its payload, if this extension isn't already registered
@@ -499,6 +510,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
   def registerOnTermination(code: Runnable) { terminationCallbacks.add(code) }
   def awaitTermination(timeout: Duration) { Await.ready(terminationCallbacks, timeout) }
   def awaitTermination() = awaitTermination(Duration.Inf)
+  def isTerminated = terminationCallbacks.isTerminated
 
   def shutdown(): Unit = guardian.stop()
 
@@ -634,5 +646,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
     }
 
     final def result(atMost: Duration)(implicit permit: CanAwait): Unit = ready(atMost)
+
+    final def isTerminated: Boolean = latch.getCount == 0
   }
 }
