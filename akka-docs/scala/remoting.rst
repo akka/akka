@@ -261,5 +261,47 @@ Observe how the name of the server actor matches the deployment given in the
 configuration file, which will transparently delegate the actor creation to the
 remote node.
 
+Remote Events
+-------------
 
+It is possible to listen to events that occur in Akka Remote, and to subscribe/unsubscribe to there events,
+you simply register as listener to the below described types in on the ``ActorSystem.eventStream``.
 
+.. note::
+    To subscribe to any outbound-related events, subscribe to ``RemoteClientLifeCycleEvent``
+    To subscribe to any inbound-related events, subscribe to ``RemoteServerLifeCycleEvent``
+    To subscribe to any remote events, subscribe to ``RemoteLifeCycleEvent``
+
+To intercept when an outbound connection is disconnected, you listen to ``RemoteClientDisconnected`` which
+holds the transport used (RemoteTransport) and the outbound address that was disconnected (Address).
+
+To intercept when an outbound connection is connected, you listen to ``RemoteClientConnected`` which
+holds the transport used (RemoteTransport) and the outbound address that was connected to (Address).
+
+To intercept when an outbound client is started you listen to ``RemoteClientStarted``
+which holds the transport used (RemoteTransport) and the outbound address that it is connected to (Address).
+
+To intercept when an outbound client is shut down you listen to ``RemoteClientShutdown``
+which holds the transport used (RemoteTransport) and the outbound address that it was connected to (Address).
+
+To intercept when an outbound message cannot be sent, you listen to ``RemoteClientWriteFailed`` which holds
+the payload that was not written (AnyRef), the cause of the failed send (Throwable),
+the transport used (RemoteTransport) and the outbound address that was the destination (Address).
+
+For general outbound-related errors, that do not classify as any of the others, you can listen to ``RemoteClientError``,
+which holds the cause (Throwable), the transport used (RemoteTransport) and the outbound address (Address).
+
+To intercept when an inbound server is started (typically only once) you listen to ``RemoteServerStarted``
+which holds the transport that it will use (RemoteTransport).
+
+To intercept when an inbound server is shut down (typically only once) you listen to ``RemoteServerShutdown``
+which holds the transport that it used (RemoteTransport).
+
+To intercept when an inbound connection has been established you listen to ``RemoteServerClientConnected``
+which holds the transport used (RemoteTransport) and optionally the address that connected (Option[Address]).
+
+To intercept when an inbound connection has been disconnected you listen to ``RemoteServerClientDisconnected``
+which holds the transport used (RemoteTransport) and optionally the address that disconnected (Option[Address]).
+
+To intercept when an inbound remote client has been closed you listen to ``RemoteServerClientClosed``
+which holds the transport used (RemoteTransport) and optionally the address of the remote client that was closed (Option[Address]).

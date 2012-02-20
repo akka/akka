@@ -133,19 +133,6 @@ case class RemoteServerClientClosed(
       ": Client[" + clientAddress.getOrElse("no address") + "]"
 }
 
-case class RemoteServerWriteFailed(
-  @BeanProperty request: AnyRef,
-  @BeanProperty cause: Throwable,
-  @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
-  override def logLevel = Logging.WarningLevel
-  override def toString =
-    "RemoteServerWriteFailed@" + remote +
-      ": ClientAddress[" + remoteAddress +
-      "] MessageClass[" + (if (request ne null) request.getClass.getName else "no message") +
-      "] Error[" + AkkaException.toStringWithStackTrace(cause) + "]"
-}
-
 /**
  * Thrown for example when trying to send a message using a RemoteClient that is either not started or shut down.
  */
