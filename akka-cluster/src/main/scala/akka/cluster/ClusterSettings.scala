@@ -21,4 +21,5 @@ class ClusterSettings(val config: Config, val systemName: String) {
   }
   val GossipInitialDelay = Duration(getMilliseconds("akka.cluster.gossip.initialDelay"), MILLISECONDS)
   val GossipFrequency = Duration(getMilliseconds("akka.cluster.gossip.frequency"), MILLISECONDS)
+  val NrOfGossipDaemons = getInt("akka.cluster.nr-of-gossip-daemons")
 }
