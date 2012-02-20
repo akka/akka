@@ -74,6 +74,14 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       callbackWasRun must be(true)
     }
 
+    "return isTerminated status correctly" in {
+      val system = ActorSystem()
+      system.isTerminated must be(false)
+      system.shutdown()
+      system.awaitTermination()
+      system.isTerminated must be(true)
+    }
+
     "throw RejectedExecutionException when shutdown" in {
       val system2 = ActorSystem("AwaitTermination", AkkaSpec.testConf)
       system2.shutdown()
