@@ -19,14 +19,14 @@ class NodeStartupSpec extends AkkaSpec("""
   }
   """) with ImplicitSender {
 
-  var gossiper0: Gossiper = _
-  var gossiper1: Gossiper = _
-  var node0: ActorSystemImpl = _
-  var node1: ActorSystemImpl = _
+  var node0: Node = _
+  var node1: Node = _
+  var system0: ActorSystemImpl = _
+  var system1: ActorSystemImpl = _
 
   try {
     "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
-      node0 = ActorSystem("NodeStartupSpec", ConfigFactory
+      system0 = ActorSystem("NodeStartupSpec", ConfigFactory
         .parseString("""
           akka {
             actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -37,16 +37,16 @@ class NodeStartupSpec extends AkkaSpec("""
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
-      val remote0 = node0.provider.asInstanceOf[RemoteActorRefProvider]
-      gossiper0 = Gossiper(node0, remote0)
+      val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
+      node0 = Node(system0, remote0)
 
       "be a singleton cluster when started up" in {
         Thread.sleep(1.seconds.dilated.toMillis)
-        gossiper0.isSingletonCluster must be(true)
+        node0.isSingletonCluster must be(true)
       }
 
       "be in 'Up' phase when started up" in {
-        val members = gossiper0.latestGossip.members
+        val members = node0.latestGossip.members
         val joiningMember = members find (_.address.port.get == 5550)
         joiningMember must be('defined)
         joiningMember.get.status must be(MemberStatus.Joining)
@@ -55,7 +55,7 @@ class NodeStartupSpec extends AkkaSpec("""
 
     "A second cluster node with a 'node-to-join' config defined" must {
       "join the other node cluster as 'Joining' when sending a Join command" in {
-        node1 = ActorSystem("NodeStartupSpec", ConfigFactory
+        system1 = ActorSystem("NodeStartupSpec", ConfigFactory
           .parseString("""
           akka {
             actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -67,11 +67,11 @@ class NodeStartupSpec extends AkkaSpec("""
           }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
-        val remote1 = node1.provider.asInstanceOf[RemoteActorRefProvider]
-        gossiper1 = Gossiper(node1, remote1)
+        val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
+        node1 = Node(system1, remote1)
 
         Thread.sleep(1.seconds.dilated.toMillis) // give enough time for node1 to JOIN node0
-        val members = gossiper0.latestGossip.members
+        val members = node0.latestGossip.members
         val joiningMember = members find (_.address.port.get == 5551)
         joiningMember must be('defined)
         joiningMember.get.status must be(MemberStatus.Joining)
@@ -84,10 +84,10 @@ class NodeStartupSpec extends AkkaSpec("""
   }
 
   override def atTermination() {
-    if (gossiper0 ne null) gossiper0.shutdown()
     if (node0 ne null) node0.shutdown()
+    if (system0 ne null) system0.shutdown()
 
-    if (gossiper1 ne null) gossiper1.shutdown()
     if (node1 ne null) node1.shutdown()
+    if (system1 ne null) system1.shutdown()
   }
 }

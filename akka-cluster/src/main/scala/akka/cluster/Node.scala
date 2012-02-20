@@ -156,35 +156,35 @@ case class Gossip(
 // FIXME ClusterCommandDaemon with FSM trait
 /**
  * Single instance. FSM managing the different cluster nodes states.
- * Serialized access to Gossiper.
+ * Serialized access to Node.
  */
-final class ClusterCommandDaemon(system: ActorSystem, gossiper: Gossiper) extends Actor {
+final class ClusterCommandDaemon(system: ActorSystem, node: Node) extends Actor {
   val log = Logging(system, "ClusterCommandDaemon")
 
   def receive = {
-    case Join(address)   ⇒ gossiper.joining(address)
-    case Leave(address)  ⇒ //gossiper.leaving(address)
-    case Down(address)   ⇒ //gossiper.downing(address)
-    case Remove(address) ⇒ //gossiper.removing(address)
+    case Join(address)   ⇒ node.joining(address)
+    case Leave(address)  ⇒ //node.leaving(address)
+    case Down(address)   ⇒ //node.downing(address)
+    case Remove(address) ⇒ //node.removing(address)
     case unknown         ⇒ log.error("Unknown message sent to cluster daemon [" + unknown + "]")
   }
 }
 
 /**
  * Pooled and routed wit N number of configurable instances.
- * Concurrent access to Gossiper.
+ * Concurrent access to Node.
  */
-final class ClusterGossipDaemon(system: ActorSystem, gossiper: Gossiper) extends Actor {
+final class ClusterGossipDaemon(system: ActorSystem, node: Node) extends Actor {
   val log = Logging(system, "ClusterGossipDaemon")
 
   def receive = {
-    case GossipEnvelope(sender, gossip) ⇒ gossiper.receive(sender, gossip)
+    case GossipEnvelope(sender, gossip) ⇒ node.receive(sender, gossip)
     case unknown                        ⇒ log.error("Unknown message sent to cluster daemon [" + unknown + "]")
   }
 }
 
 // FIXME Cluster public API should be an Extension
-// FIXME Add cluster Node class and refactor out all non-gossip related stuff out of Gossiper
+// FIXME Add cluster Node class and refactor out all non-gossip related stuff out of Node
 
 /**
  * This module is responsible for Gossiping cluster information. The abstraction maintains the list of live
@@ -201,10 +201,10 @@ final class ClusterGossipDaemon(system: ActorSystem, gossiper: Gossiper) extends
  *       gossip to random deputy with certain probability depending on number of unreachable, deputy and live members.
  * </pre>
  */
-case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
+case class Node(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
   /**
-   * Represents the state for this Gossiper. Implemented using optimistic lockless concurrency,
+   * Represents the state for this Node. Implemented using optimistic lockless concurrency,
    * all state is represented by this immutable case class and managed by an AtomicReference.
    */
   private case class State(
@@ -216,7 +216,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   val clusterSettings = new ClusterSettings(system.settings.config, system.name)
 
   val remoteAddress = remote.transport.address
-  val selfNode = VectorClock.Node(remoteAddress.toString)
+  val vclockNode = VectorClock.Node(remoteAddress.toString)
 
   val gossipInitialDelay = clusterSettings.GossipInitialDelay
   val gossipFrequency = clusterSettings.GossipFrequency
@@ -234,7 +234,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   private val serialization = remote.serialization
 
   private val isRunning = new AtomicBoolean(true)
-  private val log = Logging(system, "Gossiper")
+  private val log = Logging(system, "Node")
   private val random = SecureRandom.getInstance("SHA1PRNG")
 
   // Is it right to put this guy under the /system path or should we have a top-level /cluster or something else...?
@@ -247,13 +247,13 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
   private val state = {
     val member = Member(remoteAddress, MemberStatus.Joining)
-    val gossip = Gossip(members = SortedSet.empty[Member] + member) + selfNode // add me as member and update my vector clock
+    val gossip = Gossip(members = SortedSet.empty[Member] + member) + vclockNode // add me as member and update my vector clock
     new AtomicReference[State](State(member, gossip))
   }
 
   import Versioned.latestVersionOf
 
-  log.info("Node [{}] - Starting cluster Gossiper...", remoteAddress)
+  log.info("Node [{}] - Starting cluster Node...", remoteAddress)
 
   // try to join the node defined in the 'akka.cluster.node-to-join' option
   join()
@@ -295,13 +295,13 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     // FIXME Cheating for now. Can't just shut down. Node must first gossip an Leave command, wait for Leader to do proper Handoff and then await an Exit command before switching to Removed
 
     if (isRunning.compareAndSet(true, false)) {
-      log.info("Node [{}] - Shutting down Gossiper and ClusterDaemon...", remoteAddress)
+      log.info("Node [{}] - Shutting down Node and ClusterDaemon...", remoteAddress)
 
       try system.stop(clusterCommandDaemon) finally {
         try system.stop(clusterGossipDaemon) finally {
           try gossipCanceller.cancel() finally {
             try scrutinizeCanceller.cancel() finally {
-              log.info("Node [{}] - Gossiper and ClusterDaemon shut down successfully", remoteAddress)
+              log.info("Node [{}] - Node and ClusterDaemon shut down successfully", remoteAddress)
             }
           }
         }
@@ -325,7 +325,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     val newMembers = localMembers + Member(node, MemberStatus.Joining) // add joining node as Joining
     val newGossip = localGossip copy (members = newMembers)
 
-    val versionedGossip = newGossip + selfNode
+    val versionedGossip = newGossip + vclockNode
     val seenVersionedGossip = versionedGossip seen remoteAddress
 
     val newState = localState copy (latestGossip = seenVersionedGossip)
@@ -354,7 +354,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
       if (remoteGossip.version <> localGossip.version) {
         // concurrent
         val mergedGossip = merge(remoteGossip, localGossip)
-        val versionedMergedGossip = mergedGossip + selfNode
+        val versionedMergedGossip = mergedGossip + vclockNode
 
         log.debug(
           "Can't establish a causal relationship between \"remote\" gossip [{}] and \"local\" gossip [{}] - merging them into [{}]",
@@ -497,7 +497,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     val newMembersSortedSet = SortedSet[Member](newMembersSet.toList: _*)
     val newGossip = localGossip copy (members = newMembersSortedSet)
 
-    val versionedGossip = newGossip + selfNode
+    val versionedGossip = newGossip + vclockNode
     val seenVersionedGossip = versionedGossip seen remoteAddress
 
     val newState = localState copy (self = newSelf, latestGossip = seenVersionedGossip)
@@ -556,7 +556,7 @@ case class Gossiper(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
         val newOverview = localOverview copy (unreachable = newUnreachableAddresses)
         val newGossip = localGossip copy (overview = newOverview, members = newMembers)
 
-        val versionedGossip = newGossip + selfNode
+        val versionedGossip = newGossip + vclockNode
         val seenVersionedGossip = versionedGossip seen remoteAddress
 
         val newState = localState copy (latestGossip = seenVersionedGossip)
