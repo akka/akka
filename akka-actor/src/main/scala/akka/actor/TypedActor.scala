@@ -128,11 +128,11 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null)
       case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array())
       case ps ⇒
+        val serialization = SerializationExtension(akka.serialization.JavaSerializer.currentSystem.value)
         val serializedParameters = Array.ofDim[(Int, Class[_], Array[Byte])](ps.length)
         for (i ← 0 until ps.length) {
           val p = ps(i)
-          val system = akka.serialization.JavaSerializer.currentSystem.value
-          val s = SerializationExtension(system).findSerializerFor(p)
+          val s = serialization.findSerializerFor(p)
           val m = if (s.includeManifest) p.getClass else null
           serializedParameters(i) = (s.identifier, m, s toBinary parameters(i)) //Mutable for the sake of sanity
         }
