@@ -421,6 +421,14 @@ using a small example:
 .. includecode:: code/akka/docs/testkit/TestkitDocSpec.scala
    :include: imports-test-probe,my-double-echo,test-probe
 
+Here a the system under test is simulated by :class:`MyDoubleEcho`, which is
+supposed to mirror its input to two outputs. Attaching two test probes enables
+verification of the (simplistic) behavior. Another example would be two actors
+A and B which collaborate by A sending messages to B. In order to verify this
+message flow, a :class:`TestProbe` could be inserted as target of A, using the
+forwarding capabilities or auto-pilot described below to include a real B in
+the test setup.
+
 Probes may also be equipped with custom assertions to make your test code even
 more concise and clear:
 
@@ -454,6 +462,21 @@ network functioning:
 
 The ``dest`` actor will receive the same message invocation as if no test probe
 had intervened.
+
+Auto-Pilot
+^^^^^^^^^^
+
+Receiving messages in a queue for later inspection is nice, but in order to
+keep a test running and verify traces later you can also install an
+:class:`AutoPilot` in the participating test probes (actually in any
+:class:`TestKit`) which is invoked before enqueueing to the inspection queue.
+This code can be used to forward messages, e.g. in a chain ``A --> Probe -->
+B``, as long as a certain protocol is obeyed.
+
+.. includecode:: ../../akka-testkit/src/test/scala/akka/testkit/TestProbeSpec.scala#autopilot
+
+The :meth:`run` method must return the auto-pilot for the next message, wrapped
+in an :class:`Option`; setting it to :obj:`None` terminates the auto-pilot.
 
 Caution about Timing Assertions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
