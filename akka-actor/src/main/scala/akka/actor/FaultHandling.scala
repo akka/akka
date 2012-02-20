@@ -260,10 +260,7 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration
     SupervisorStrategy.maxNrOfRetriesOption(maxNrOfRetries),
     SupervisorStrategy.withinTimeRangeOption(withinTimeRange).map(_.toMillis.toInt))
 
-  def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = {
-    children foreach (context.stop(_))
-    //TODO optimization to drop all children here already?
-  }
+  def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = {}
 
   def processFailure(context: ActorContext, restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit = {
     if (children.nonEmpty) {
