@@ -283,6 +283,14 @@ case class Node(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
   def self: Member = state.get.self
 
   /**
+   * Is this node the leader?
+   */
+  def isLeader: Boolean = {
+    val currentState = state.get
+    remoteAddress == currentState.latestGossip.members.head.address
+  }
+
+  /**
    * Is this node a singleton cluster?
    */
   def isSingletonCluster: Boolean = isSingletonCluster(state.get)
@@ -540,6 +548,7 @@ case class Node(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
       val localGossip = localState.latestGossip
       val localOverview = localGossip.overview
+      val localSeen = localOverview.seen
       val localMembers = localGossip.members
       val localUnreachableAddresses = localGossip.overview.unreachable
 
@@ -553,7 +562,9 @@ case class Node(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
 
         log.info("Node [{}] - Marking node(s) an unreachable [{}]", remoteAddress, newlyDetectedUnreachableAddresses.mkString(", "))
 
-        val newOverview = localOverview copy (unreachable = newUnreachableAddresses)
+        val newSeen = newUnreachableAddresses.foldLeft(localSeen)((currentSeen, address) ⇒ currentSeen - address)
+
+        val newOverview = localOverview copy (seen = newSeen, unreachable = newUnreachableAddresses)
         val newGossip = localGossip copy (overview = newOverview, members = newMembers)
 
         val versionedGossip = newGossip + vclockNode
