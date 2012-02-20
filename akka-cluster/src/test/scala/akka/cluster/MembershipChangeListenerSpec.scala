@@ -22,18 +22,18 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
   }
   """) with ImplicitSender {
 
-  var gossiper0: Gossiper = _
-  var gossiper1: Gossiper = _
-  var gossiper2: Gossiper = _
+  var node0: Node = _
+  var node1: Node = _
+  var node2: Node = _
 
-  var node0: ActorSystemImpl = _
-  var node1: ActorSystemImpl = _
-  var node2: ActorSystemImpl = _
+  var system0: ActorSystemImpl = _
+  var system1: ActorSystemImpl = _
+  var system2: ActorSystemImpl = _
 
   try {
-    "A set of connected cluster nodes" must {
-      "(when two nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
-        node0 = ActorSystem("node0", ConfigFactory
+    "A set of connected cluster systems" must {
+      "(when two systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
+        system0 = ActorSystem("system0", ConfigFactory
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -44,10 +44,10 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
             }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
-        val remote0 = node0.provider.asInstanceOf[RemoteActorRefProvider]
-        gossiper0 = Gossiper(node0, remote0)
+        val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
+        node0 = Node(system0, remote0)
 
-        node1 = ActorSystem("node1", ConfigFactory
+        system1 = ActorSystem("system1", ConfigFactory
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -55,21 +55,21 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
                 hostname = localhost
                 port=5551
               }
-              cluster.node-to-join = "akka://node0@localhost:5550"
+              cluster.node-to-join = "akka://system0@localhost:5550"
             }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
-        val remote1 = node1.provider.asInstanceOf[RemoteActorRefProvider]
-        gossiper1 = Gossiper(node1, remote1)
+        val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
+        node1 = Node(system1, remote1)
 
         val latch = new CountDownLatch(2)
 
-        gossiper0.registerListener(new MembershipChangeListener {
+        node0.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
             latch.countDown()
           }
         })
-        gossiper1.registerListener(new MembershipChangeListener {
+        node1.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
             latch.countDown()
           }
@@ -80,14 +80,14 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
         Thread.sleep(10.seconds.dilated.toMillis)
 
         // check cluster convergence
-        gossiper0.convergence must be('defined)
-        gossiper1.convergence must be('defined)
+        node0.convergence must be('defined)
+        node1.convergence must be('defined)
       }
 
-      "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
+      "(when three systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 
         // ======= NODE 2 ========
-        node2 = ActorSystem("node2", ConfigFactory
+        system2 = ActorSystem("system2", ConfigFactory
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -95,25 +95,25 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
                 hostname = localhost
                 port=5552
               }
-              cluster.node-to-join = "akka://node0@localhost:5550"
+              cluster.node-to-join = "akka://system0@localhost:5550"
             }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
-        val remote2 = node2.provider.asInstanceOf[RemoteActorRefProvider]
-        gossiper2 = Gossiper(node2, remote2)
+        val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
+        node2 = Node(system2, remote2)
 
         val latch = new CountDownLatch(3)
-        gossiper0.registerListener(new MembershipChangeListener {
+        node0.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
             latch.countDown()
           }
         })
-        gossiper1.registerListener(new MembershipChangeListener {
+        node1.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
             latch.countDown()
           }
         })
-        gossiper2.registerListener(new MembershipChangeListener {
+        node2.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
             latch.countDown()
           }
@@ -124,9 +124,9 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
         Thread.sleep(10.seconds.dilated.toMillis)
 
         // check cluster convergence
-        gossiper0.convergence must be('defined)
-        gossiper1.convergence must be('defined)
-        gossiper2.convergence must be('defined)
+        node0.convergence must be('defined)
+        node1.convergence must be('defined)
+        node2.convergence must be('defined)
       }
     }
   } catch {
@@ -136,13 +136,13 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
   }
 
   override def atTermination() {
-    if (gossiper0 ne null) gossiper0.shutdown()
     if (node0 ne null) node0.shutdown()
+    if (system0 ne null) system0.shutdown()
 
-    if (gossiper1 ne null) gossiper1.shutdown()
     if (node1 ne null) node1.shutdown()
+    if (system1 ne null) system1.shutdown()
 
-    if (gossiper2 ne null) gossiper2.shutdown()
     if (node2 ne null) node2.shutdown()
+    if (system2 ne null) system2.shutdown()
   }
 }
