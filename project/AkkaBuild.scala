@@ -31,7 +31,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, cluster, slf4j, agent, transactor, amqp, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -132,14 +132,14 @@ object AkkaBuild extends Build {
     )
   )
 
-  // lazy val amqp = Project(
-  //   id = "akka-amqp",
-  //   base = file("akka-amqp"),
-  //   dependencies = Seq(actor, testkit % "test->test"),
-  //   settings = defaultSettings ++ Seq(
-  //     libraryDependencies ++= Dependencies.amqp
-  //   )
-  // )
+  lazy val amqp = Project(
+    id = "akka-amqp",
+    base = file("akka-amqp"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.amqp
+    )
+  )
 
   lazy val mailboxes = Project(
     id = "akka-durable-mailboxes",
@@ -349,6 +349,7 @@ object AkkaBuild extends Build {
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
     resolvers += "Twitter Public Repo" at "http://maven.twttr.com", // This will be going away with com.mongodb.async's next release
     resolvers += "Typesafe Snapshot Repo" at "http://repo.typesafe.com/typesafe/snapshots/", // Used while play-mini is still on RC
+    resolvers += "Codehaus Repo" at "http://repository.codehaus.org", // Used for AMQP tests
 
     // compile options
     scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked") ++ (
@@ -439,7 +440,7 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val amqp = Seq(rabbit, commonsIo, protobuf)
+  val amqp = Seq(rabbit, commonsIo, protobuf, Test.multiverse)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
@@ -492,13 +493,14 @@ object Dependency {
     val Logback      = "0.9.28"
     val Netty        = "3.3.0.Final"
     val Protobuf     = "2.4.1"
-    val Rabbit       = "2.3.1"
+    val Rabbit       = "2.7.1"
     val ScalaStm     = "0.5"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.4"
     val Spring       = "3.0.5.RELEASE"
     val Zookeeper    = "3.4.0"
     val PlayMini     = "2.0-RC1-SNAPSHOT"
+    val Multiverse   = "0.6.2"
   }
 
   // Compile
@@ -568,5 +570,6 @@ object Dependency {
     val scalacheck  = "org.scala-tools.testing"     %% "scalacheck"         % "1.9"        % "test" // New BSD
     val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % V.Zookeeper  % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
+    val multiverse  = "org.multiverse"              % "multiverse-alpha"    % V.Multiverse % "test" //ApacheV2
   }
 }

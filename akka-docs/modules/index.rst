@@ -9,3 +9,4 @@ Modules
    microkernel
    camel
    spring
+   amqp
