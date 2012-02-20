@@ -22,6 +22,9 @@ which is very similar to a ``java.util.concurrent.Executor``. if you have an ``A
 it will use its default dispatcher as the ``ExecutionContext``, or you can use the factory methods provided
 by the ``ExecutionContexts`` class to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
 
+.. includecode:: code/akka/docs/future/FutureDocTestBase.java
+   :include: imports1,imports7,diy-execution-context
+
 Use with Actors
 ---------------
 
