@@ -22,6 +22,9 @@ which is very similar to a ``java.util.concurrent.Executor``. if you have an ``A
 it will use its default dispatcher as the ``ExecutionContext``, or you can use the factory methods provided
 by the ``ExecutionContext`` companion object to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
 
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: diy-execution-context
+
 Use With Actors
 ---------------
 
