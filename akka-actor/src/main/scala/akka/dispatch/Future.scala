@@ -160,9 +160,9 @@ object Futures {
 
   /**
    * Signals that the current thread of execution will potentially engage
-   * in blocking calls after the call to this method, giving the system a
-   * chance to spawn new threads, reuse old threads or otherwise, to prevent
-   * starvation and/or unfairness.
+   * an action that will take a non-trivial amount of time, perhaps by using blocking.IO or using a lot of CPU time,
+   * giving the system a chance to spawn new threads, reuse old threads or otherwise,
+   * to prevent starvation and/or unfairness.
    *
    * Assures that any Future tasks initiated in the current thread will be
    * executed asynchronously, including any tasks currently queued to be
@@ -316,9 +316,9 @@ object Future {
 
   /**
    * Signals that the current thread of execution will potentially engage
-   * in blocking calls after the call to this method, giving the system a
-   * chance to spawn new threads, reuse old threads or otherwise, to prevent
-   * starvation and/or unfairness.
+   * an action that will take a non-trivial amount of time, perhaps by using blocking.IO or using a lot of CPU time,
+   * giving the system a chance to spawn new threads, reuse old threads or otherwise,
+   * to prevent starvation and/or unfairness.
    *
    * Assures that any Future tasks initiated in the current thread will be
    * executed asynchronously, including any tasks currently queued to be
