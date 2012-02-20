@@ -77,6 +77,8 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
 
         latch.await(10.seconds.dilated.toMillis, TimeUnit.MILLISECONDS)
 
+        Thread.sleep(10.seconds.dilated.toMillis)
+
         // check cluster convergence
         gossiper0.convergence must be('defined)
         gossiper1.convergence must be('defined)
@@ -118,6 +120,8 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
         })
 
         latch.await(10.seconds.dilated.toMillis, TimeUnit.MILLISECONDS)
+
+        Thread.sleep(10.seconds.dilated.toMillis)
 
         // check cluster convergence
         gossiper0.convergence must be('defined)
