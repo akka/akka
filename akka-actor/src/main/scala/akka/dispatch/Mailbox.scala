@@ -11,6 +11,7 @@ import java.util.concurrent._
 import annotation.tailrec
 import akka.event.Logging.Error
 import akka.actor.ActorContext
+import com.typesafe.config.Config
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -355,6 +356,9 @@ trait MailboxType {
  * It's a case class for Java (new UnboundedMailbox)
  */
 case class UnboundedMailbox() extends MailboxType {
+
+  def this(config: Config) = this()
+
   final override def create(owner: Option[ActorContext]): MessageQueue =
     new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
       final val queue = new ConcurrentLinkedQueue[Envelope]()
@@ -362,6 +366,9 @@ case class UnboundedMailbox() extends MailboxType {
 }
 
 case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
+
+  def this(config: Config) = this(config.getInt("mailbox-capacity"),
+    Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
