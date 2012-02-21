@@ -5,10 +5,13 @@ package akka.docs.jrouting;
 
 import akka.routing.RoundRobinRouter;
 import akka.routing.DefaultResizer;
+import akka.routing.RemoteRouterConfig;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.ActorSystem;
+import akka.actor.Address;
+import akka.actor.AddressExtractor;
 import java.util.Arrays;
 
 public class RouterViaProgramExample {
@@ -67,6 +70,14 @@ public class RouterViaProgramExample {
     for (int i = 1; i <= 6; i++) {
       router3.tell(new ExampleActor.Message(i));
     }
+    
+    //#remoteRoutees
+    Address addr1 = new Address("akka", "remotesys", "otherhost", 1234);
+    Address addr2 = AddressExtractor.parse("akka://othersys@anotherhost:1234");
+    Address[] addresses = new Address[] { addr1, addr2 };
+    ActorRef routerRemote = system.actorOf(new Props(ExampleActor.class)
+      .withRouter(new RemoteRouterConfig(new RoundRobinRouter(5), addresses)));
+    //#remoteRoutees
   }
   
   private class CompileCheckJavaDocsForRouting extends UntypedActor {
