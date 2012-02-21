@@ -43,6 +43,18 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
         return this;
     }
 
+    @Override
+    abstract public AbstractConfigObject withOnlyKey(String key);
+
+    @Override
+    abstract public AbstractConfigObject withoutKey(String key);
+
+    abstract protected AbstractConfigObject withOnlyPathOrNull(Path path);
+
+    abstract AbstractConfigObject withOnlyPath(Path path);
+
+    abstract AbstractConfigObject withoutPath(Path path);
+
     /**
      * This looks up the key with no transformation or type conversion of any
      * kind, and returns null if the key is not present.
