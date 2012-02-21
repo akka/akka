@@ -108,6 +108,8 @@ object DispatcherDocSpec {
   //#prio-mailbox
   import akka.dispatch.PriorityGenerator
   import akka.dispatch.UnboundedPriorityMailbox
+  import akka.dispatch.MailboxType
+  import akka.actor.ActorContext
   import com.typesafe.config.Config
 
   val generator = PriorityGenerator { // Create a new PriorityGenerator, lower prio means more important
@@ -118,7 +120,10 @@ object DispatcherDocSpec {
   }
 
   // We create a new Priority dispatcher and seed it with the priority generator
-  class PrioMailbox(config: Config) extends UnboundedPriorityMailbox(generator)
+  class PrioMailbox(config: Config) extends MailboxType {
+    val priorityMailbox = UnboundedPriorityMailbox(generator)
+    def create(owner: Option[ActorContext]) = priorityMailbox.create(owner)
+  }
   //#prio-mailbox
 
   class MyActor extends Actor {

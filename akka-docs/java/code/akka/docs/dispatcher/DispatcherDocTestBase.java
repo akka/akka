@@ -20,8 +20,11 @@ import akka.event.LoggingAdapter;
 //#imports-prio
 
 //#imports-prio-mailbox
+import akka.actor.ActorContext;
 import akka.dispatch.PriorityGenerator;
 import akka.dispatch.UnboundedPriorityMailbox;
+import akka.dispatch.MailboxType;
+import akka.dispatch.MessageQueue;
 import com.typesafe.config.Config;
 
 //#imports-prio-mailbox
@@ -120,7 +123,7 @@ public class DispatcherDocTestBase {
   }
 
   //#prio-mailbox
-  public static class PrioMailbox extends UnboundedPriorityMailbox {
+  public static class PrioMailbox implements MailboxType {
 
     static final PriorityGenerator generator = new PriorityGenerator() { // Create a new PriorityGenerator, lower prio means more important
       @Override
@@ -135,9 +138,15 @@ public class DispatcherDocTestBase {
           return 50; // We default to 50
       }
     };
+    
+    private UnboundedPriorityMailbox priorityMailbox;
 
-    public PrioMailbox(Config config) {
-      super(generator);
+    public PrioMailbox(Config config) { // needed for reflective instantiation
+      priorityMailbox = new UnboundedPriorityMailbox(generator);
+    }
+    
+    public MessageQueue create(Option<ActorContext> owner) {
+      return priorityMailbox.create(owner);
     }
   }
   //#prio-mailbox
