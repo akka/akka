@@ -380,14 +380,20 @@ case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Durat
     }
 }
 
-case class UnboundedPriorityMailbox( final val cmp: Comparator[Envelope]) extends MailboxType {
+/**
+ * Extend me to provide the comparator
+ */
+class UnboundedPriorityMailbox( final val cmp: Comparator[Envelope]) extends MailboxType {
   final override def create(owner: Option[ActorContext]): MessageQueue =
     new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
       final val queue = new PriorityBlockingQueue[Envelope](11, cmp)
     }
 }
 
-case class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
+/**
+ * Extend me to provide the comparator
+ */
+class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
