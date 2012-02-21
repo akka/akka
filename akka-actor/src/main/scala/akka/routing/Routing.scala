@@ -773,7 +773,7 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def hasMessages(a: ActorRef): Boolean = a match {
-    case x: LocalActorRef ⇒ x.underlying.mailbox.messageQueue.hasMessages
+    case x: LocalActorRef ⇒ x.underlying.mailbox.hasMessages
     case _                ⇒ false
   }
 
@@ -797,7 +797,7 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def numberOfMessages(a: ActorRef): Int = a match {
-    case x: LocalActorRef ⇒ x.underlying.mailbox.messageQueue.numberOfMessages
+    case x: LocalActorRef ⇒ x.underlying.mailbox.numberOfMessages
     case _                ⇒ 0
   }
 
@@ -1249,9 +1249,9 @@ case class DefaultResizer(
       case a: LocalActorRef ⇒
         val cell = a.underlying
         pressureThreshold match {
-          case 1          ⇒ cell.mailbox.isScheduled && cell.mailbox.messageQueue.hasMessages
+          case 1          ⇒ cell.mailbox.isScheduled && cell.mailbox.hasMessages
           case i if i < 1 ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
-          case threshold  ⇒ cell.mailbox.messageQueue.numberOfMessages >= threshold
+          case threshold  ⇒ cell.mailbox.numberOfMessages >= threshold
         }
       case x ⇒
         false

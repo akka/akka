@@ -44,6 +44,11 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
 
   import Mailbox._
 
+  def enqueue(receiver: ActorRef, msg: Envelope): Unit = messageQueue.enqueue(receiver, msg)
+  def dequeue(): Envelope = messageQueue.dequeue()
+  def hasMessages: Boolean = messageQueue.hasMessages
+  def numberOfMessages: Int = messageQueue.numberOfMessages
+
   @volatile
   protected var _statusDoNotCallMeDirectly: Status = _ //0 by default
 
@@ -142,7 +147,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
     Unsafe.instance.compareAndSwapObject(this, AbstractMailbox.systemMessageOffset, _old, _new)
 
   final def canBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
-    case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || messageQueue.hasMessages
+    case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
     case Closed           ⇒ false
     case _                ⇒ hasSystemMessageHint || hasSystemMessages
   }
@@ -166,7 +171,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
     left: Int = java.lang.Math.max(dispatcher.throughput, 1),
     deadlineNs: Long = if (dispatcher.isThroughputDeadlineTimeDefined == true) System.nanoTime + dispatcher.throughputDeadlineTime.toNanos else 0L): Unit =
     if (shouldProcessMessage) {
-      val next = messageQueue.dequeue()
+      val next = dequeue()
       if (next ne null) {
         if (Mailbox.debug) println(actor.self + " processing message " + next)
         actor invoke next

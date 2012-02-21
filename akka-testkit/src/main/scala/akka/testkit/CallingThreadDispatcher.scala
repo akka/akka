@@ -199,7 +199,7 @@ class CallingThreadDispatcher(
           } else false
         }
         if (execute) runQueue(mbox, queue)
-      case m ⇒ m.messageQueue.enqueue(receiver.self, handle)
+      case m ⇒ m.enqueue(receiver.self, handle)
     }
   }
 
