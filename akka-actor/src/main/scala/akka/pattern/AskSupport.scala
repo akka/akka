@@ -193,7 +193,7 @@ trait AskSupport {
     provider.registerTempActor(a, path)
     val f = provider.scheduler.scheduleOnce(timeout.duration) { result.tryComplete(Left(new AskTimeoutException("Timed out"))) }
     result onComplete { _ ⇒
-      try { a.stop(); f.cancel() }
+      try { try a.stop() finally f.cancel() }
       finally { provider.unregisterTempActor(path) }
     }
     a
