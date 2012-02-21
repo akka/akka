@@ -6,6 +6,7 @@ package akka.docs.routing
 import akka.routing.RoundRobinRouter
 import akka.actor.{ ActorRef, Props, Actor, ActorSystem }
 import akka.routing.DefaultResizer
+import akka.routing.RemoteRouterConfig
 
 case class Message1(nbr: Int)
 
@@ -39,5 +40,14 @@ object RoutingProgrammaticallyExample extends App {
     RoundRobinRouter(resizer = Some(resizer))))
   //#programmaticRoutingWithResizer
   1 to 6 foreach { i ⇒ router3 ! Message1(i) }
+
+  //#remoteRoutees
+  import akka.actor.{ Address, AddressExtractor }
+  val addresses = Seq(
+    Address("akka", "remotesys", "otherhost", 1234),
+    AddressExtractor("akka://othersys@anotherhost:1234"))
+  val routerRemote = system.actorOf(Props[ExampleActor1].withRouter(
+    RemoteRouterConfig(RoundRobinRouter(5), addresses)))
+  //#remoteRoutees
 
 }

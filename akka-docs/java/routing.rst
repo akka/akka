@@ -54,6 +54,18 @@ Once you have the router actor it is just to send messages to it as you would to
 
 The router will apply its behavior to the message it receives and forward it to the routees.
 
+Remotely Deploying Routees
+**************************
+
+In addition to being able to supply looked-up remote actors as routees, you can
+make the router deploy its created children on a set of remote hosts; this will
+be done in round-robin fashion. In order to do that, wrap the router
+configuration in a :class:`RemoteRouterConfig`, attaching the remote addresses of
+the nodes to deploy to. Naturally, this requires your to include the
+``akka-remote`` module on your classpath:
+
+.. includecode:: code/akka/docs/jrouting/RouterViaProgramExample.java#remoteRoutees
+
 How Routing is Designed within Akka
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
