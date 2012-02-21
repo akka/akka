@@ -123,30 +123,21 @@ public class DispatcherDocTestBase {
   }
 
   //#prio-mailbox
-  public static class PrioMailbox implements MailboxType {
-
-    static final PriorityGenerator generator = new PriorityGenerator() { // Create a new PriorityGenerator, lower prio means more important
-      @Override
-      public int gen(Object message) {
-        if (message.equals("highpriority"))
-          return 0; // 'highpriority messages should be treated first if possible
-        else if (message.equals("lowpriority"))
-          return 100; // 'lowpriority messages should be treated last if possible
-        else if (message.equals(Actors.poisonPill()))
-          return 1000; // PoisonPill when no other left
-        else
-          return 50; // We default to 50
-      }
-    };
-    
-    private UnboundedPriorityMailbox priorityMailbox;
-
+  public static class PrioMailbox extends UnboundedPriorityMailbox {
     public PrioMailbox(Config config) { // needed for reflective instantiation
-      priorityMailbox = new UnboundedPriorityMailbox(generator);
-    }
-    
-    public MessageQueue create(Option<ActorContext> owner) {
-      return priorityMailbox.create(owner);
+      super(new PriorityGenerator() { // Create a new PriorityGenerator, lower prio means more important
+        @Override
+        public int gen(Object message) {
+          if (message.equals("highpriority"))
+            return 0; // 'highpriority messages should be treated first if possible
+          else if (message.equals("lowpriority"))
+            return 100; // 'lowpriority messages should be treated last if possible
+          else if (message.equals(Actors.poisonPill()))
+            return 1000; // PoisonPill when no other left
+          else
+            return 50; // We default to 50
+        }
+      });
     }
   }
   //#prio-mailbox
