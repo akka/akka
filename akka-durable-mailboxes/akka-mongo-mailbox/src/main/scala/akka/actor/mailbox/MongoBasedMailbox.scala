@@ -21,7 +21,7 @@ class MongoBasedMailboxException(message: String) extends AkkaException(message)
 
 class MongoBasedMailboxType(config: Config) extends MailboxType {
   override def create(owner: Option[ActorContext]): MessageQueue = owner match {
-    case Some(o) ⇒ new MongoBasedMailbox(o)
+    case Some(o) ⇒ new MongoBasedMessageQueue(o)
     case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
@@ -37,16 +37,16 @@ class MongoBasedMailboxType(config: Config) extends MailboxType {
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
-class MongoBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) {
+class MongoBasedMessageQueue(_owner: ActorContext) extends DurableMessageQueue(_owner) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
-  implicit val mailboxBSONSer = new BSONSerializableMailbox(system)
+  implicit val mailboxBSONSer = new BSONSerializableMessageQueue(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!
 
   private val dispatcher = owner.dispatcher
 
   private val settings = MongoBasedMailboxExtension(owner.system)
 
-  val log = Logging(system, "MongoBasedMailbox")
+  val log = Logging(system, "MongoBasedMessageQueue")
 
   @volatile
   private var mongo = connect()

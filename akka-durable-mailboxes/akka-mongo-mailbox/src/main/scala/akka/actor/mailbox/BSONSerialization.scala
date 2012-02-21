@@ -18,7 +18,7 @@ import akka.remote.RemoteProtocol.MessageProtocol
 import akka.remote.MessageSerializer
 import akka.actor.ExtendedActorSystem
 
-class BSONSerializableMailbox(system: ExtendedActorSystem) extends SerializableBSONObject[MongoDurableMessage] with Logging {
+class BSONSerializableMessageQueue(system: ExtendedActorSystem) extends SerializableBSONObject[MongoDurableMessage] with Logging {
 
   protected[akka] def serializeDurableMsg(msg: MongoDurableMessage)(implicit serializer: BSONSerializer) = {
 

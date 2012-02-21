@@ -12,7 +12,7 @@ private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
 }
 
-abstract class DurableMailbox(val owner: ActorContext) extends MessageQueue {
+abstract class DurableMessageQueue(val owner: ActorContext) extends MessageQueue {
   import DurableExecutableMailboxConfig._
 
   def system: ExtendedActorSystem = owner.system.asInstanceOf[ExtendedActorSystem]
@@ -22,7 +22,7 @@ abstract class DurableMailbox(val owner: ActorContext) extends MessageQueue {
 
 }
 
-trait DurableMessageSerialization { this: DurableMailbox ⇒
+trait DurableMessageSerialization { this: DurableMessageQueue ⇒
 
   def serialize(durableMessage: Envelope): Array[Byte] = {
 
