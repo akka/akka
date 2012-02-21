@@ -120,10 +120,7 @@ object DispatcherDocSpec {
   }
 
   // We create a new Priority dispatcher and seed it with the priority generator
-  class PrioMailbox(config: Config) extends MailboxType {
-    val priorityMailbox = UnboundedPriorityMailbox(generator)
-    def create(owner: Option[ActorContext]) = priorityMailbox.create(owner)
-  }
+  class PrioMailbox(config: Config) extends UnboundedPriorityMailbox(generator)
   //#prio-mailbox
 
   class MyActor extends Actor {
