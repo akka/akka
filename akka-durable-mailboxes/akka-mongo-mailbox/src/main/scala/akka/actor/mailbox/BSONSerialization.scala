@@ -18,7 +18,7 @@ import akka.remote.RemoteProtocol.MessageProtocol
 import akka.remote.MessageSerializer
 import akka.actor.ExtendedActorSystem
 
-class BSONSerializableMailbox(system: ExtendedActorSystem) extends SerializableBSONObject[MongoDurableMessage] with Logging {
+class BSONSerializableMessageQueue(system: ExtendedActorSystem) extends SerializableBSONObject[MongoDurableMessage] with Logging {
 
   protected[akka] def serializeDurableMsg(msg: MongoDurableMessage)(implicit serializer: BSONSerializer) = {
 
@@ -26,7 +26,7 @@ class BSONSerializableMailbox(system: ExtendedActorSystem) extends SerializableB
     val b = Map.newBuilder[String, Any]
     b += "_id" -> msg._id
     b += "ownerPath" -> msg.ownerPath
-    b += "senderPath" -> msg.sender.path
+    b += "senderPath" -> msg.sender.path.toString
 
     /**
      * TODO - Figure out a way for custom serialization of the message instance
