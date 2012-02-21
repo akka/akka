@@ -14,11 +14,16 @@ import akka.dispatch.{ Await, Promise, Envelope }
 import java.util.concurrent.TimeoutException
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
+import akka.config.ConfigurationException
+import akka.dispatch.MessageQueue
 
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
 
 class MongoBasedMailboxType(config: Config) extends MailboxType {
-  override def create(owner: ActorContext) = new MongoBasedMailbox(owner)
+  override def create(owner: Option[ActorContext]): MessageQueue = owner match {
+    case Some(o) ⇒ new MongoBasedMessageQueue(o)
+    case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
+  }
 }
 
 /**
@@ -32,20 +37,21 @@ class MongoBasedMailboxType(config: Config) extends MailboxType {
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
-class MongoBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) {
+class MongoBasedMessageQueue(_owner: ActorContext) extends DurableMessageQueue(_owner) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
-  implicit val mailboxBSONSer = new BSONSerializableMailbox(system)
+  implicit val mailboxBSONSer = new BSONSerializableMessageQueue(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!
+
+  private val dispatcher = owner.dispatcher
 
   private val settings = MongoBasedMailboxExtension(owner.system)
 
-  val log = Logging(system, "MongoBasedMailbox")
+  val log = Logging(system, "MongoBasedMessageQueue")
 
   @volatile
   private var mongo = connect()
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    log.debug("ENQUEUING message in mongodb-based mailbox [{}]", envelope)
     /* TODO - Test if a BSON serializer is registered for the message and only if not, use toByteString? */
     val durableMessage = MongoDurableMessage(ownerPathString, envelope.message, envelope.sender)
     // todo - do we need to filter the actor name at all for safe collection naming?
@@ -70,11 +76,9 @@ class MongoBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) {
     val envelopePromise = Promise[Envelope]()(dispatcher)
     mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
       doc match {
-        case Some(msg) ⇒ {
-          log.debug("DEQUEUING message in mongo-based mailbox [{}]", msg)
+        case Some(msg) ⇒
           envelopePromise.success(msg.envelope(system))
-          log.debug("DEQUEUING messageInvocation in mongo-based mailbox [{}]", envelopePromise)
-        }
+          ()
         case None ⇒
           log.info("No matching document found. Not an error, just an empty queue.")
           envelopePromise.success(null)
@@ -132,4 +136,6 @@ class MongoBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) {
       }
     }
   }
+
+  def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
 }

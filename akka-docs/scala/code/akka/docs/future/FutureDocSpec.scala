@@ -9,12 +9,10 @@ import akka.testkit._
 import akka.actor.Actor
 import akka.actor.Props
 import akka.actor.Status.Failure
-import akka.dispatch.Future
-import akka.dispatch.Await
 import akka.util.Timeout
 import akka.util.duration._
-import akka.dispatch.Promise
 import java.lang.IllegalStateException
+import akka.dispatch.{ ExecutionContext, Future, Await, Promise }
 
 object FutureDocSpec {
 
@@ -40,6 +38,22 @@ object FutureDocSpec {
 
 class FutureDocSpec extends AkkaSpec {
   import FutureDocSpec._
+
+  "demonstrate usage custom ExecutionContext" in {
+    val yourExecutorServiceGoesHere = java.util.concurrent.Executors.newSingleThreadExecutor()
+    //#diy-execution-context
+    import akka.dispatch.{ ExecutionContext, Promise }
+
+    implicit val ec = ExecutionContext.fromExecutorService(yourExecutorServiceGoesHere)
+
+    // Do stuff with your brand new shiny ExecutionContext
+    val f = Promise.successful("foo")
+
+    // Then shut your ExecutionContext down at some
+    // appropriate place in your program/application
+    ec.shutdown()
+    //#diy-execution-context
+  }
 
   "demonstrate usage of blocking from actor" in {
     val actor = system.actorOf(Props[MyActor])

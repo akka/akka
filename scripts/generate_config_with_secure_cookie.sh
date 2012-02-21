@@ -50,9 +50,12 @@ include "akka-reference.conf"
 
 akka {
   remote {
-    secure-cookie = """")
+    netty {
+      secure-cookie = """")
 print(Crypt.generateSecureCookie)
 print(""""
+      require-cookie = on
+    }
   }
 }
 """)

@@ -30,13 +30,14 @@ class TestLatch(count: Int = 1)(implicit system: ActorSystem) extends Awaitable[
   def open() = while (!isOpen) countDown()
   def reset() = latch = new CountDownLatch(count)
 
+  @throws(classOf[TimeoutException])
   def ready(atMost: Duration)(implicit permit: CanAwait) = {
     val opened = latch.await(atMost.dilated.toNanos, TimeUnit.NANOSECONDS)
     if (!opened) throw new TimeoutException(
       "Timeout of %s with time factor of %s" format (atMost.toString, TestKitExtension(system).TestTimeFactor))
     this
   }
-
+  @throws(classOf[Exception])
   def result(atMost: Duration)(implicit permit: CanAwait): Unit = {
     ready(atMost)
   }

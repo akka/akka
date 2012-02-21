@@ -99,26 +99,25 @@ class Coordinated(val message: Any, member: CommitBarrier.Member) {
    * Create a new Coordinated object and increment the number of members by one.
    * Use this method to ''pass on'' the coordination.
    */
-  def apply(msg: Any) = {
+  def apply(msg: Any): Coordinated =
     new Coordinated(msg, member.commitBarrier.addMember())
-  }
 
   /**
    * Create a new Coordinated object but *do not* increment the number of members by one.
    * Only use this method if you know this is what you need.
    */
-  def noIncrement(msg: Any) = new Coordinated(msg, member)
+  def noIncrement(msg: Any): Coordinated = new Coordinated(msg, member)
 
   /**
    * Java API: get the message for this Coordinated.
    */
-  def getMessage() = message
+  def getMessage(): Any = message
 
   /**
    * Java API: create a new Coordinated object and increment the number of members by one.
    * Use this method to ''pass on'' the coordination.
    */
-  def coordinate(msg: Any) = apply(msg)
+  def coordinate(msg: Any): Coordinated = apply(msg)
 
   /**
    * Delimits the coordinated transaction. The transaction will wait for all other transactions
@@ -158,10 +157,10 @@ class Coordinated(val message: Any, member: CommitBarrier.Member) {
    * An empty coordinated atomic block. Can be used to complete the number of members involved
    * and wait for all transactions to complete.
    */
-  def await() = atomic(txn ⇒ ())
+  def await(): Unit = atomic(txn ⇒ ())
 
   /**
    * Cancel this Coordinated transaction.
    */
-  def cancel(info: Any) = member.cancel(CommitBarrier.UserCancel(info))
+  def cancel(info: Any): Unit = member.cancel(CommitBarrier.UserCancel(info))
 }

@@ -24,6 +24,10 @@ If you are starting to get contention on the single dispatcher (the ``Executor``
 for a dedicated dispatcher for better flexibility and configurability then you can override the defaults and define your own dispatcher.
 See below for details on which ones are available and how they can be configured.
 
+.. warning::
+  Try to stick to a sensible default dispatcher, that means avoid using CallingThreadDispatcher, BalancingDispatcher or PinnedDispatcher
+  as the default-dispatcher. This is because they have very specific requirements from the environment in which they are used.
+
 Setting the dispatcher
 ----------------------
 

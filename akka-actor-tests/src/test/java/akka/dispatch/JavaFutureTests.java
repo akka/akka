@@ -39,7 +39,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void mustBeAbleToMapAFuture() {
+  public void mustBeAbleToMapAFuture() throws Exception {
 
     Future<String> f1 = Futures.future(new Callable<String>() {
       public String call() {
@@ -163,7 +163,7 @@ public class JavaFutureTests {
 
   // TODO: Improve this test, perhaps with an Actor
   @Test
-  public void mustSequenceAFutureList() {
+  public void mustSequenceAFutureList() throws Exception{
     LinkedList<Future<String>> listFutures = new LinkedList<Future<String>>();
     LinkedList<String> listExpected = new LinkedList<String>();
 
@@ -183,7 +183,7 @@ public class JavaFutureTests {
 
   // TODO: Improve this test, perhaps with an Actor
   @Test
-  public void foldForJavaApiMustWork() {
+  public void foldForJavaApiMustWork() throws Exception{
     LinkedList<Future<String>> listFutures = new LinkedList<Future<String>>();
     StringBuilder expected = new StringBuilder();
 
@@ -206,7 +206,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void reduceForJavaApiMustWork() {
+  public void reduceForJavaApiMustWork() throws Exception{
     LinkedList<Future<String>> listFutures = new LinkedList<Future<String>>();
     StringBuilder expected = new StringBuilder();
 
@@ -229,7 +229,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void traverseForJavaApiMustWork() {
+  public void traverseForJavaApiMustWork() throws Exception{
     LinkedList<String> listStrings = new LinkedList<String>();
     LinkedList<String> expectedStrings = new LinkedList<String>();
 
@@ -252,7 +252,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void findForJavaApiMustWork() {
+  public void findForJavaApiMustWork() throws Exception{
     LinkedList<Future<Integer>> listFutures = new LinkedList<Future<Integer>>();
     for (int i = 0; i < 10; i++) {
       final Integer fi = i;
@@ -273,7 +273,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void blockMustBeCallable() {
+  public void blockMustBeCallable() throws Exception {
     Promise<String> p = Futures.promise(system.dispatcher());
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.success("foo");
@@ -282,7 +282,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void mapToMustBeCallable() {
+  public void mapToMustBeCallable() throws Exception {
     Promise<Object> p = Futures.promise(system.dispatcher());
     Future<String> f = p.future().mapTo(manifest(String.class));
     Duration d = Duration.create(1, TimeUnit.SECONDS);
@@ -292,7 +292,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void recoverToMustBeCallable() {
+  public void recoverToMustBeCallable() throws Exception {
     final IllegalStateException fail = new IllegalStateException("OHNOES");
     Promise<Object> p = Futures.promise(system.dispatcher());
     Future<Object> f = p.future().recover(new Recover<Object>() {
@@ -309,7 +309,7 @@ public class JavaFutureTests {
   }
 
   @Test
-  public void recoverWithToMustBeCallable() {
+  public void recoverWithToMustBeCallable() throws Exception{
     final IllegalStateException fail = new IllegalStateException("OHNOES");
     Promise<Object> p = Futures.promise(system.dispatcher());
     Future<Object> f = p.future().recoverWith(new Recover<Future<Object>>() {

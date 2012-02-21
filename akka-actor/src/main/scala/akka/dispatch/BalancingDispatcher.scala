@@ -40,47 +40,9 @@ class BalancingDispatcher(
       def compare(l: ActorCell, r: ActorCell) = l.self.path compareTo r.self.path
     }))
 
-  val messageQueue: MessageQueue = mailboxType match {
-    case UnboundedMailbox() ⇒
-      new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
-        final val queue = new ConcurrentLinkedQueue[Envelope]
-      }
+  val messageQueue: MessageQueue = mailboxType.create(None)
 
-    case BoundedMailbox(cap, timeout) ⇒
-      new QueueBasedMessageQueue with BoundedMessageQueueSemantics {
-        final val queue = new LinkedBlockingQueue[Envelope](cap)
-        final val pushTimeOut = timeout
-      }
-
-    case other ⇒ throw new IllegalArgumentException("Only handles BoundedMailbox and UnboundedMailbox, but you specified [" + other + "]")
-  }
-
-  protected[akka] override def createMailbox(actor: ActorCell): Mailbox = new SharingMailbox(actor)
-
-  class SharingMailbox(_actor: ActorCell) extends Mailbox(_actor) with DefaultSystemMessageQueue {
-    final def enqueue(receiver: ActorRef, handle: Envelope) = messageQueue.enqueue(receiver, handle)
-
-    final def dequeue(): Envelope = messageQueue.dequeue()
-
-    final def numberOfMessages: Int = messageQueue.numberOfMessages
-
-    final def hasMessages: Boolean = messageQueue.hasMessages
-
-    override def cleanUp(): Unit = {
-      //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
-      if (hasSystemMessages) {
-        val dlq = actor.systemImpl.deadLetterMailbox
-        var message = systemDrain()
-        while (message ne null) {
-          // message must be “virgin” before being able to systemEnqueue again
-          val next = message.next
-          message.next = null
-          dlq.systemEnqueue(actor.self, message)
-          message = next
-        }
-      }
-    }
-  }
+  protected[akka] override def createMailbox(actor: ActorCell): Mailbox = new SharingMailbox(actor, messageQueue)
 
   protected[akka] override def register(actor: ActorCell): Unit = {
     super.register(actor)
@@ -110,5 +72,24 @@ class BalancingDispatcher(
         scheduleOne(i)
 
     scheduleOne()
+  }
+}
+
+class SharingMailbox(_actor: ActorCell, _messageQueue: MessageQueue)
+  extends Mailbox(_actor, _messageQueue) with DefaultSystemMessageQueue {
+
+  override def cleanUp(): Unit = {
+    //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
+    if (hasSystemMessages) {
+      val dlq = actor.systemImpl.deadLetterMailbox
+      var message = systemDrain()
+      while (message ne null) {
+        // message must be “virgin” before being able to systemEnqueue again
+        val next = message.next
+        message.next = null
+        dlq.systemEnqueue(actor.self, message)
+        message = next
+      }
+    }
   }
 }

@@ -7,6 +7,8 @@ This chapter outlines the concept behind supervision, the primitives offered
 and their semantics. For details on how that translates into real code, please
 refer to the corresponding chapters for Scala and Java APIs.
 
+.. _supervision-directives:
+
 What Supervision Means
 ----------------------
 
@@ -109,4 +111,40 @@ Another common use case is that an actor needs to fail in the absence of an
 external resource, which may also be one of its own children. If a third party
 terminates a child by way of the ``system.stop(child)`` method or sending a
 :class:`PoisonPill`, the supervisor might well be affected.
+
+One-For-One Strategy vs. All-For-One Strategy
+---------------------------------------------
+
+There are two classes of supervision strategies which come with Akka:
+:class:`OneForOneStrategy` and :class:`AllForOneStrategy`. Both are configured
+with a mapping from exception type to supervision directive (see
+:ref:`above <supervision-directives>`) and limits on how often a child is allowed to fail
+before terminating it. The difference between them is that the former applies
+the obtained directive only to the failed child, whereas the latter applies it
+to all siblings as well. Normally, you should use the
+:class:`OneForOneStrategy`, which also is the default if none is specified
+explicitly.
+
+The :class:`AllForOneStrategy` is applicable in cases where the ensemble of
+children has so tight dependencies among them, that a failure of one child
+affects the function of the others, i.e. they are intricably linked. Since a
+restart does not clear out the mailbox, it often is best to stop the children
+upon failure and re-create them explicitly from the supervisor (by watching the
+children’s lifecycle); otherwise you have to make sure that it is no problem
+for any of the actors to receive a message which was queued before the restart
+but processed afterwards.
+
+Normally stopping a child (i.e. not in response to a failure) will not
+automatically terminate the other children in an all-for-one strategy, that can
+easily be done by watching their lifecycle: if the :class:`Terminated` message
+is not handled by the supervisor, it will throw a :class:`DeathPathException`
+which (depending on its supervisor) will restart it, and the default
+:meth:`preRestart` action will terminate all children. Of course this can be
+handled explicitly as well.
+
+Please note that creating one-off actors from an all-for-one supervisor entails
+that failures escalated by the temporary actor will affect all the permanent
+ones. If this is not desired, install an intermediate supervisor; this can very
+easily be done by declaring a router of size 1 for the worker, see
+:ref:`routing-scala` or :ref:`routing-java`.
 

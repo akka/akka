@@ -12,6 +12,7 @@ import akka.actor.ActorRef
 import java.util.concurrent.atomic.AtomicInteger
 import akka.pattern.ask
 import akka.util.Duration
+import java.util.concurrent.TimeoutException
 
 object ResizerSpec {
 
@@ -93,7 +94,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       resizer.backoff(pressure = 0, capacity = 9) must be(-1)
     }
 
-    "be possible to define programatically" in {
+    "be possible to define programmatically" in {
 
       val latch = new TestLatch(3)
 
@@ -240,8 +241,12 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         (500 millis).dilated.sleep
       }
 
-      Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be < (z)
-
+      awaitCond(
+        try {
+          Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size < (z)
+        } catch {
+          case _: TimeoutException ⇒ false
+        }, 1 minute)
     }
 
   }

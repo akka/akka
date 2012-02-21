@@ -43,8 +43,8 @@ public class ForkJoinWorkerThread extends Thread {
         if (ueh != null)
             setUncaughtExceptionHandler(ueh);
         this.pool = pool;
-        this.workQueue = new ForkJoinPool.WorkQueue(this, pool.localMode);
-        pool.registerWorker(this);
+        pool.registerWorker(this.workQueue = new ForkJoinPool.WorkQueue
+                            (pool, this, pool.localMode));
     }
 
     /**
@@ -101,7 +101,7 @@ public class ForkJoinWorkerThread extends Thread {
         Throwable exception = null;
         try {
             onStart();
-            pool.runWorker(this);
+            pool.runWorker(workQueue);
         } catch (Throwable ex) {
             exception = ex;
         } finally {

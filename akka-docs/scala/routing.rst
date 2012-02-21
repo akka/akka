@@ -29,7 +29,7 @@ This is an example of how to create a router that is defined in configuration:
 
 .. includecode:: code/akka/docs/routing/RouterViaConfigExample.scala#configurableRouting
 
-This is an example of how to programatically create a router and set the number of routees it should create:
+This is an example of how to programmatically create a router and set the number of routees it should create:
 
 .. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingNrOfInstances
 
@@ -37,7 +37,7 @@ You can also give the router already created routees as in:
 
 .. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingRoutees
 
-When you create a router programatically you define the number of routees *or* you pass already created routees to it.
+When you create a router programmatically you define the number of routees *or* you pass already created routees to it.
 If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.
 
 *It is also worth pointing out that if you define the ``router`` in the
@@ -53,6 +53,18 @@ Once you have the router actor it is just to send messages to it as you would to
   router ! MyMsg
 
 The router will apply its behavior to the message it receives and forward it to the routees.
+
+Remotely Deploying Routees
+**************************
+
+In addition to being able to supply looked-up remote actors as routees, you can
+make the router deploy its created children on a set of remote hosts; this will
+be done in round-robin fashion. In order to do that, wrap the router
+configuration in a :class:`RemoteRouterConfig`, attaching the remote addresses of
+the nodes to deploy to. Naturally, this requires your to include the
+``akka-remote`` module on your classpath:
+
+.. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#remoteRoutees
 
 How Routing is Designed within Akka
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -91,6 +103,30 @@ possible to “bolt on” later: whether or not an actor is routed means a chang
 to the actor hierarchy, changing the actor paths of all children of the router.
 The routees especially do need to know that they are routed to in order to
 choose the sender reference for any messages they dispatch as shown above.
+
+Routers vs. Supervision
+^^^^^^^^^^^^^^^^^^^^^^^
+
+As explained in the previous section, routers create new actor instances as
+children of the “head” router, who therefor also is their supervisor. The
+supervisor strategy of this actor can be configured by means of the
+:meth:`RouterConfig.supervisorStrategy` property, which is supported for all
+built-in router types. It defaults to “always escalate”, which leads to the
+application of the router’s parent’s supervision directive to all children of
+the router uniformly (i.e. not only the one which failed). It should be
+mentioned that the router overrides the default behavior of terminating all
+children upon restart, which means that a restart—while re-creating them—does
+not have an effect on the number of actors in the pool.
+
+Setting the strategy is easily done:
+
+.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala
+   :include: supervision
+   :exclude: custom-strategy
+
+Another potentially useful approach is to give the router the same strategy as
+its parent, which effectively treats all actors in the pool as if they were
+direct children of their grand-parent instead.
 
 Router usage
 ^^^^^^^^^^^^
@@ -235,10 +271,10 @@ This is an example of how to create a resizable router that is defined in config
 
 .. includecode:: code/akka/docs/routing/RouterViaConfigExample.scala#configurableRoutingWithResizer
 
-Several more configuration options are availble and described in ``akka.actor.deployment.default.resizer``
+Several more configuration options are available and described in ``akka.actor.deployment.default.resizer``
 section of the reference :ref:`configuration`.
 
-This is an example of how to programatically create a resizable router:
+This is an example of how to programmatically create a resizable router:
 
 .. includecode:: code/akka/docs/routing/RouterViaProgramExample.scala#programmaticRoutingWithResizer
 
@@ -326,7 +362,7 @@ routing is not so important (i.e. no consistent hashing or round-robin is
 required); this enables newly created routees to pick up work immediately by
 stealing it from their siblings.
 
-The “head” router, of couse, cannot run on the same balancing dispatcher,
+The “head” router, of course, cannot run on the same balancing dispatcher,
 because it does not process the same messages, hence this special actor does
 not use the dispatcher configured in :class:`Props`, but takes the
 ``routerDispatcher`` from the :class:`RouterConfig` instead, which defaults to

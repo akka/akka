@@ -9,6 +9,7 @@ import com.typesafe.config.Config
 import akka.dispatch.DispatcherPrerequisites
 import akka.dispatch.MessageDispatcher
 import akka.dispatch.MessageDispatcherConfigurator
+import akka.dispatch.UnboundedMailbox
 
 object CallingThreadDispatcherModelSpec {
   import ActorModelSpec._
@@ -31,7 +32,7 @@ object CallingThreadDispatcherModelSpec {
     extends MessageDispatcherConfigurator(config, prerequisites) {
 
     private val instance: MessageDispatcher =
-      new CallingThreadDispatcher(prerequisites) with MessageDispatcherInterceptor {
+      new CallingThreadDispatcher(prerequisites, UnboundedMailbox()) with MessageDispatcherInterceptor {
         override def id: String = config.getString("id")
       }
 

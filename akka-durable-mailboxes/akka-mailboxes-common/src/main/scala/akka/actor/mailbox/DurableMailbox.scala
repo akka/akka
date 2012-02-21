@@ -4,7 +4,7 @@
 package akka.actor.mailbox
 
 import akka.actor.{ ActorContext, ActorRef, ExtendedActorSystem }
-import akka.dispatch.{ Envelope, DefaultSystemMessageQueue, CustomMailbox }
+import akka.dispatch.{ Envelope, MessageQueue }
 import akka.remote.MessageSerializer
 import akka.remote.RemoteProtocol.{ ActorRefProtocol, RemoteMessageProtocol }
 
@@ -12,7 +12,7 @@ private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
 }
 
-abstract class DurableMailbox(val owner: ActorContext) extends CustomMailbox(owner) with DefaultSystemMessageQueue {
+abstract class DurableMessageQueue(val owner: ActorContext) extends MessageQueue {
   import DurableExecutableMailboxConfig._
 
   def system: ExtendedActorSystem = owner.system.asInstanceOf[ExtendedActorSystem]
@@ -22,7 +22,7 @@ abstract class DurableMailbox(val owner: ActorContext) extends CustomMailbox(own
 
 }
 
-trait DurableMessageSerialization { this: DurableMailbox ⇒
+trait DurableMessageSerialization { this: DurableMessageQueue ⇒
 
   def serialize(durableMessage: Envelope): Array[Byte] = {
 

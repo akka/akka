@@ -150,7 +150,7 @@ public class FaultHandlingTestBase {
   }
 
   @Test
-  public void mustEmploySupervisorStrategy() {
+  public void mustEmploySupervisorStrategy() throws Exception {
     // code here
     //#testkit
     EventFilter ex1 = (EventFilter) new ErrorFilter(ArithmeticException.class);

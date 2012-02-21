@@ -66,6 +66,11 @@ behavior logic, or the function itself may be swapped out at runtime, see the
 during construction of the actor object is special in the sense that a restart
 of the actor will reset its behavior to this initial one.
 
+.. note::
+   The initial behavior of an Actor is extracted prior to constructor is run,
+   so if you want to base your initial behavior on member state, you should
+   use ``become`` in the constructor.
+
 Mailbox
 -------
 
