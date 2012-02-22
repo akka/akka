@@ -389,7 +389,6 @@ private[akka] class ActorCell(
     def recreate(cause: Throwable): Unit = try {
       val failedActor = actor
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
-      val freshActor = newActor()
       if (failedActor ne null) {
         val c = currentMessage //One read only plz
         try {
@@ -398,6 +397,7 @@ private[akka] class ActorCell(
           clearActorFields()
         }
       }
+      val freshActor = newActor()
       actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
       freshActor.postRestart(cause)
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
