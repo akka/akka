@@ -15,7 +15,7 @@ package object zeromq {
    * @param system
    * @return An augmented [[akka.actor.ActorSystem]]
    */
-  implicit def zeromqSystem(system: ActorSystem) = system.extension(ZeroMQExtension)
+  implicit def zeromqSystem(system: ActorSystem): ZeroMQExtension = ZeroMQExtension(system)
 
   /**
    * Convenience accessor to subscribe to all events
