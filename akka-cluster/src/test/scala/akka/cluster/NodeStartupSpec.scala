@@ -38,7 +38,7 @@ class NodeStartupSpec extends AkkaSpec("""
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
-      node0 = Node(system0, remote0)
+      node0 = new Node(system0)
 
       "be a singleton cluster when started up" in {
         Thread.sleep(1.seconds.dilated.toMillis)
@@ -68,7 +68,7 @@ class NodeStartupSpec extends AkkaSpec("""
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
-        node1 = Node(system1, remote1)
+        node1 = new Node(system1)
 
         Thread.sleep(1.seconds.dilated.toMillis) // give enough time for node1 to JOIN node0
         val members = node0.latestGossip.members

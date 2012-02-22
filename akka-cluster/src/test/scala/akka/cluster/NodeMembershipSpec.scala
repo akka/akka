@@ -44,7 +44,7 @@ class NodeMembershipSpec extends AkkaSpec("""
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
-        node0 = Node(system0, remote0)
+        node0 = new Node(system0)
 
         // ======= NODE 1 ========
         system1 = ActorSystem("system1", ConfigFactory
@@ -60,7 +60,7 @@ class NodeMembershipSpec extends AkkaSpec("""
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
-        node1 = Node(system1, remote1)
+        node1 = new Node(system1)
 
         Thread.sleep(10.seconds.dilated.toMillis)
 
@@ -99,7 +99,7 @@ class NodeMembershipSpec extends AkkaSpec("""
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
-        node2 = Node(system2, remote2)
+        node2 = new Node(system2)
 
         Thread.sleep(10.seconds.dilated.toMillis)
 
