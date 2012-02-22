@@ -89,4 +89,11 @@ class LoggingDocSpec extends AkkaSpec {
     //#deadletters
   }
 
+  "demonstrate logging more arguments" in {
+    //#array
+    val args = Array("The", "brown", "fox", "jumps", 42)
+    system.log.debug("five parameters: {}, {}, {}, {}, {}", args)
+    //#array
+  }
+
 }
