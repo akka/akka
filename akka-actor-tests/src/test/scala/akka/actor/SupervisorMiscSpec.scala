@@ -60,5 +60,22 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
         assert(Await.result(actor4 ? "status", timeout.duration) == "OK", "actor4 is shutdown")
       }
     }
+
+    "be able to create named children in its constructor" in {
+      val a = system.actorOf(Props(new Actor {
+        context.actorOf(Props.empty, "bob")
+        def receive = {
+          case x: Exception ⇒ throw x
+        }
+        override def preStart(): Unit = testActor ! "preStart"
+      }))
+      val m = "weird message"
+      EventFilter[Exception](m, occurrences = 1) intercept {
+        a ! new Exception(m)
+      }
+      expectMsg("preStart")
+      expectMsg("preStart")
+      a.isTerminated must be(false)
+    }
   }
 }
