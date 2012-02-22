@@ -170,6 +170,8 @@ final class ClusterCommandDaemon(system: ActorSystem, node: Node) extends Actor 
   }
 }
 
+// FIXME create package object with implicit conversion that enables: system.node
+
 /**
  * Pooled and routed wit N number of configurable instances.
  * Concurrent access to Node.
@@ -183,7 +185,22 @@ final class ClusterGossipDaemon(system: ActorSystem, node: Node) extends Actor {
   }
 }
 
-// FIXME Cluster public API should be an Extension
+/**
+ * Node Extension Id and factory for creating Node extension.
+ * Example:
+ * {{{
+ *  val node = NodeExtension(system)
+ *
+ *  if (node.isLeader) { ... }
+ * }}}
+ */
+object NodeExtension extends ExtensionId[Node] with ExtensionIdProvider {
+  override def get(system: ActorSystem): Node = super.get(system)
+
+  override def lookup = NodeExtension
+
+  override def createExtension(system: ExtendedActorSystem): Node = new Node(system.asInstanceOf[ActorSystemImpl]) // not nice but need API in ActorSystemImpl inside Node
+}
 
 /**
  * This module is responsible for Gossiping cluster information. The abstraction maintains the list of live
@@ -200,7 +217,12 @@ final class ClusterGossipDaemon(system: ActorSystem, node: Node) extends Actor {
  *       gossip to random deputy with certain probability depending on number of unreachable, deputy and live members.
  * </pre>
  */
-case class Node(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
+class Node(system: ActorSystemImpl) extends Extension {
+
+  if (!system.provider.isInstanceOf[RemoteActorRefProvider])
+    throw new ConfigurationException("ActorSystem[" + system + "] needs to have a 'RemoteActorRefProvider' enabled in the configuration")
+
+  val remote: RemoteActorRefProvider = system.provider.asInstanceOf[RemoteActorRefProvider]
 
   /**
    * Represents the state for this Node. Implemented using optimistic lockless concurrency,
@@ -372,7 +394,7 @@ case class Node(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     if (!state.compareAndSet(localState, newState)) joining(node) // recur if we failed update
     else {
       if (convergence(newState.latestGossip).isDefined) {
-        newState.memberMembershipChangeListeners map { _ notify newMembers } // FIXME should check for cluster convergence before triggering listeners
+        newState.memberMembershipChangeListeners map { _ notify newMembers }
       }
     }
   }
@@ -416,7 +438,7 @@ case class Node(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
     if (!state.compareAndSet(localState, newState)) receive(sender, remoteGossip) // recur if we fail the update
     else {
       if (convergence(newState.latestGossip).isDefined) {
-        newState.memberMembershipChangeListeners map { _ notify newState.latestGossip.members } // FIXME should check for cluster convergence before triggering listeners
+        newState.memberMembershipChangeListeners map { _ notify newState.latestGossip.members }
       }
     }
   }
@@ -571,7 +593,7 @@ case class Node(system: ActorSystemImpl, remote: RemoteActorRefProvider) {
         if (!state.compareAndSet(localState, newState)) scrutinize() // recur
         else {
           if (convergence(newState.latestGossip).isDefined) {
-            newState.memberMembershipChangeListeners map { _ notify newMembers } // FIXME should check for cluster convergence before triggering listeners
+            newState.memberMembershipChangeListeners map { _ notify newMembers }
           }
         }
       }
