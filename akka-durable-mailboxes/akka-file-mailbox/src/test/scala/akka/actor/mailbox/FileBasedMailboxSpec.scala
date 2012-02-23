@@ -1,12 +1,14 @@
 package akka.actor.mailbox
 
 import org.apache.commons.io.FileUtils
+import com.typesafe.config.ConfigFactory
 
 object FileBasedMailboxSpec {
   val config = """
     File-dispatcher {
       mailbox-type = akka.actor.mailbox.FileBasedMailboxType
       throughput = 1
+      file-based.directory-path = "file-based"
     }
     """
 }
@@ -14,8 +16,15 @@ object FileBasedMailboxSpec {
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileBasedMailboxSpec.config) {
 
+  val queuePath = new FileBasedMailboxSettings(system, system.settings.config.getConfig("File-dispatcher")).QueuePath
+
+  "FileBasedMailboxSettings" must {
+    "read the file-based section" in {
+      queuePath must be("file-based")
+    }
+  }
+
   def clean {
-    val queuePath = FileBasedMailboxExtension(system).QueuePath
     FileUtils.deleteDirectory(new java.io.File(queuePath))
   }
 
