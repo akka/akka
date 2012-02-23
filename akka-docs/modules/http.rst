@@ -21,6 +21,9 @@ In SBT you just have to add the following to your _libraryDependencies_::
 
   libraryDependencies += "com.typesafe" %% "play-mini" % "2.0-RC3-SNAPSHOT"
 
+Note: At the time of this writing play-mini version 2.0-RC3-SNAPSHOT (the current snapshot) only works with
+Akka versions 2.0-RC1 and below in the 2.x series.
+
 Sample Application
 ------------------
 
