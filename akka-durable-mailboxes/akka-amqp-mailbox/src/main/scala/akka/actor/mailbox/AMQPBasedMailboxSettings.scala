@@ -10,17 +10,17 @@ import com.typesafe.config.Config
 
 class AMQPBasedMailboxSettings(val system: ActorSystem, val userConfig: Config) {
 
-  private val config = userConfig.withFallback(system.settings.config)
+  private val config = userConfig.withFallback(system.settings.config.getConfig("akka.actor.mailbox.amqp"))
   private val log = Logging(system, "AMQPBasedMailbox")
 
   import config._
 
-  val ConnectionTimeout = getMilliseconds("akka.actor.mailbox.amqp.connectionTimeout")
-  val Hostname = getString("akka.actor.mailbox.amqp.hostname")
-  val Password = getString("akka.actor.mailbox.amqp.password")
-  val Port = getInt("akka.actor.mailbox.amqp.port")
-  val User = getString("akka.actor.mailbox.amqp.user")
-  val VirtualHost = getString("akka.actor.mailbox.amqp.virtualHost")
+  val ConnectionTimeout = getMilliseconds("connectionTimeout")
+  val Hostname = getString("hostname")
+  val Password = getString("password")
+  val Port = getInt("port")
+  val User = getString("user")
+  val VirtualHost = getString("virtualHost")
 
   private val factory = new ConnectionFactory
   factory.setUsername(User)
