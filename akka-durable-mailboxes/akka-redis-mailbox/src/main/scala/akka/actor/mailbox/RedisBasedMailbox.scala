@@ -19,14 +19,14 @@ class RedisBasedMailboxException(message: String) extends AkkaException(message)
 
 class RedisBasedMailboxType(config: Config) extends MailboxType {
   override def create(owner: Option[ActorContext]): MessageQueue = owner match {
-    case Some(o) ⇒ new RedisBasedMessageQueue(o)
+    case Some(o) ⇒ new RedisBasedMessageQueue(o, config)
     case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
 
-class RedisBasedMessageQueue(_owner: ActorContext) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+class RedisBasedMessageQueue(_owner: ActorContext, _config: Config) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
-  private val settings = RedisBasedMailboxExtension(owner.system)
+  private val settings = new RedisBasedMailboxSettings(owner.system, _config)
 
   @volatile
   private var clients = connect() // returns a RedisClientPool for multiple asynchronous message handling
