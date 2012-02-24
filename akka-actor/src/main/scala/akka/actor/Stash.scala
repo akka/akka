@@ -42,7 +42,7 @@ import akka.AkkaException
  *  }
  *  </pre>
  */
-trait Stash extends Actor {
+trait Stash {
   this: Actor ⇒
 
   /* The private stash of the actor. It is only accessible using `stash()` and
@@ -131,7 +131,8 @@ An (unbounded) deque-based mailbox can be configured as follows:
    */
   override def preRestart(reason: Throwable, message: Option[Any]) {
     unstashAll()
-    super.preRestart(reason, message)
+    context.children foreach context.stop
+    postStop()
   }
 
 }
