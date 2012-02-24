@@ -41,6 +41,10 @@ import akka.AkkaException
  *    }
  *  }
  *  </pre>
+ *
+ *  Note that the `Stash` trait must be mixed into (a subclass of) the `Actor` trait before
+ *  any trait/class that overrides the `preRestart` callback. This means it's not possible to write
+ *  `Actor with MyActor with Stash` if `MyActor` overrides `preRestart`.
  */
 trait Stash {
   this: Actor ⇒
