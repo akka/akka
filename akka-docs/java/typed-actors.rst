@@ -160,6 +160,15 @@ By having your Typed Actor implementation class implement ``TypedActor.Superviso
 you can define the strategy to use for supervising child actors, as described in
 :ref:`supervision` and :ref:`fault-tolerance-java`.
 
+Receive arbitrary messages
+--------------------------
+
+If your implementation class of your TypedActor extends ``akka.actor.TypedActor.Receiver``,
+all messages that are not ``MethodCall``s will be passed into the ``onReceive``-method.
+
+This allows you to react to DeathWatch ``Terminated``-messages and other types of messages,
+e.g. when interfacing with untyped actors.
+
 Lifecycle callbacks
 -------------------
 

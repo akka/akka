@@ -73,7 +73,7 @@ public class UntypedTransactorTest {
   }
 
   @Test
-  public void incrementAllCountersWithSuccessfulTransaction() {
+  public void incrementAllCountersWithSuccessfulTransaction() throws Exception {
     CountDownLatch incrementLatch = new CountDownLatch(numCounters);
     Increment message = new Increment(counters.subList(1, counters.size()), incrementLatch);
     counters.get(0).tell(message);
@@ -89,7 +89,7 @@ public class UntypedTransactorTest {
   }
 
   @Test
-  public void incrementNoCountersWithFailingTransaction() {
+  public void incrementNoCountersWithFailingTransaction() throws Exception {
     EventFilter expectedFailureFilter = (EventFilter) new ErrorFilter(ExpectedFailureException.class);
     EventFilter coordinatedFilter = (EventFilter) new ErrorFilter(CoordinatedTransactionException.class);
     Seq<EventFilter> ignoreExceptions = seq(expectedFailureFilter, coordinatedFilter);

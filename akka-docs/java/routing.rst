@@ -54,6 +54,18 @@ Once you have the router actor it is just to send messages to it as you would to
 
 The router will apply its behavior to the message it receives and forward it to the routees.
 
+Remotely Deploying Routees
+**************************
+
+In addition to being able to supply looked-up remote actors as routees, you can
+make the router deploy its created children on a set of remote hosts; this will
+be done in round-robin fashion. In order to do that, wrap the router
+configuration in a :class:`RemoteRouterConfig`, attaching the remote addresses of
+the nodes to deploy to. Naturally, this requires your to include the
+``akka-remote`` module on your classpath:
+
+.. includecode:: code/akka/docs/jrouting/RouterViaProgramExample.java#remoteRoutees
+
 How Routing is Designed within Akka
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -91,6 +103,29 @@ possible to “bolt on” later: whether or not an actor is routed means a chang
 to the actor hierarchy, changing the actor paths of all children of the router.
 The routees especially do need to know that they are routed to in order to
 choose the sender reference for any messages they dispatch as shown above.
+
+Routers vs. Supervision
+^^^^^^^^^^^^^^^^^^^^^^^
+
+As explained in the previous section, routers create new actor instances as
+children of the “head” router, who therefor also is their supervisor. The
+supervisor strategy of this actor can be configured by means of the
+:meth:`RouterConfig.supervisorStrategy` property, which is supported for all
+built-in router types. It defaults to “always escalate”, which leads to the
+application of the router’s parent’s supervision directive to all children of
+the router uniformly (i.e. not only the one which failed). It should be
+mentioned that the router overrides the default behavior of terminating all
+children upon restart, which means that a restart—while re-creating them—does
+not have an effect on the number of actors in the pool.
+
+Setting the strategy is easily done:
+
+.. includecode:: code/akka/docs/jrouting/CustomRouterDocTestBase.java
+   :include: supervision
+
+Another potentially useful approach is to give the router the same strategy as
+its parent, which effectively treats all actors in the pool as if they were
+direct children of their grand-parent instead.
 
 Router usage
 ^^^^^^^^^^^^

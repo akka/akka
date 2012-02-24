@@ -383,12 +383,10 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
   def mailboxType(): MailboxType = {
     config.getString("mailbox-type") match {
       case "" ⇒
-        val capacity = config.getInt("mailbox-capacity")
-        if (capacity < 1) UnboundedMailbox()
-        else {
-          val duration = Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS)
-          BoundedMailbox(capacity, duration)
-        }
+        if (config.getInt("mailbox-capacity") < 1) UnboundedMailbox()
+        else new BoundedMailbox(config)
+      case "unbounded" ⇒ UnboundedMailbox()
+      case "bounded"   ⇒ new BoundedMailbox(config)
       case fqcn ⇒
         val args = Seq(classOf[Config] -> config)
         prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args) match {

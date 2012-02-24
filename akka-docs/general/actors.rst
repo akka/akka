@@ -66,6 +66,11 @@ behavior logic, or the function itself may be swapped out at runtime, see the
 during construction of the actor object is special in the sense that a restart
 of the actor will reset its behavior to this initial one.
 
+.. note::
+   The initial behavior of an Actor is extracted prior to constructor is run,
+   so if you want to base your initial behavior on member state, you should
+   use ``become`` in the constructor.
+
 Mailbox
 -------
 
@@ -127,7 +132,7 @@ Once an actor terminates, i.e. fails in a way which is not handled by a
 restart, stops itself or is stopped by its supervisor, it will free up its
 resources, draining all remaining messages from its mailbox into the system’s
 “dead letter mailbox”. The mailbox is then replaced within the actor reference
-with a that system mailbox, redirecting all new messages “into the drain”. This
+with a system mailbox, redirecting all new messages “into the drain”. This
 is done on a best effort basis, though, so do not rely on it in order to
 construct “guaranteed delivery”.
 

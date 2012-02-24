@@ -13,20 +13,25 @@ import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
 import akka.util.NonFatal
+import akka.config.ConfigurationException
+import akka.dispatch.MessageQueue
 
 class ZooKeeperBasedMailboxException(message: String) extends AkkaException(message)
 
 class ZooKeeperBasedMailboxType(config: Config) extends MailboxType {
-  override def create(owner: ActorContext) = new ZooKeeperBasedMailbox(owner)
+  override def create(owner: Option[ActorContext]): MessageQueue = owner match {
+    case Some(o) ⇒ new ZooKeeperBasedMessageQueue(o)
+    case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
+  }
 }
 
-class ZooKeeperBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with DurableMessageSerialization {
+class ZooKeeperBasedMessageQueue(_owner: ActorContext) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
   private val settings = ZooKeeperBasedMailboxExtension(owner.system)
   val queueNode = "/queues"
   val queuePathTemplate = queueNode + "/%s"
 
-  val log = Logging(system, "ZooKeeperBasedMailbox")
+  val log = Logging(system, "ZooKeeperBasedMessageQueue")
 
   private val zkClient = new AkkaZkClient(
     settings.ZkServerAddresses,
@@ -59,7 +64,7 @@ class ZooKeeperBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner)
     case e: Exception ⇒ false
   }
 
-  override def cleanUp() {
+  def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = {
     try {
       zkClient.close()
     } catch {

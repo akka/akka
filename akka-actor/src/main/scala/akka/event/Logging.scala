@@ -734,37 +734,37 @@ trait LoggingAdapter {
    */
 
   def error(cause: Throwable, message: String) { if (isErrorEnabled) notifyError(cause, message) }
-  def error(cause: Throwable, template: String, arg1: Any) { if (isErrorEnabled) notifyError(cause, format(template, arg1)) }
+  def error(cause: Throwable, template: String, arg1: Any) { if (isErrorEnabled) notifyError(cause, format1(template, arg1)) }
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any) { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2)) }
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any) { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3)) }
   def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3, arg4)) }
 
   def error(message: String) { if (isErrorEnabled) notifyError(message) }
-  def error(template: String, arg1: Any) { if (isErrorEnabled) notifyError(format(template, arg1)) }
+  def error(template: String, arg1: Any) { if (isErrorEnabled) notifyError(format1(template, arg1)) }
   def error(template: String, arg1: Any, arg2: Any) { if (isErrorEnabled) notifyError(format(template, arg1, arg2)) }
   def error(template: String, arg1: Any, arg2: Any, arg3: Any) { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3)) }
   def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4)) }
 
   def warning(message: String) { if (isWarningEnabled) notifyWarning(message) }
-  def warning(template: String, arg1: Any) { if (isWarningEnabled) notifyWarning(format(template, arg1)) }
+  def warning(template: String, arg1: Any) { if (isWarningEnabled) notifyWarning(format1(template, arg1)) }
   def warning(template: String, arg1: Any, arg2: Any) { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2)) }
   def warning(template: String, arg1: Any, arg2: Any, arg3: Any) { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3)) }
   def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4)) }
 
   def info(message: String) { if (isInfoEnabled) notifyInfo(message) }
-  def info(template: String, arg1: Any) { if (isInfoEnabled) notifyInfo(format(template, arg1)) }
+  def info(template: String, arg1: Any) { if (isInfoEnabled) notifyInfo(format1(template, arg1)) }
   def info(template: String, arg1: Any, arg2: Any) { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2)) }
   def info(template: String, arg1: Any, arg2: Any, arg3: Any) { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3)) }
   def info(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3, arg4)) }
 
   def debug(message: String) { if (isDebugEnabled) notifyDebug(message) }
-  def debug(template: String, arg1: Any) { if (isDebugEnabled) notifyDebug(format(template, arg1)) }
+  def debug(template: String, arg1: Any) { if (isDebugEnabled) notifyDebug(format1(template, arg1)) }
   def debug(template: String, arg1: Any, arg2: Any) { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2)) }
   def debug(template: String, arg1: Any, arg2: Any, arg3: Any) { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3)) }
   def debug(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3, arg4)) }
 
   def log(level: Logging.LogLevel, message: String) { if (isEnabled(level)) notifyLog(level, message) }
-  def log(level: Logging.LogLevel, template: String, arg1: Any) { if (isEnabled(level)) notifyLog(level, format(template, arg1)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any) { if (isEnabled(level)) notifyLog(level, format1(template, arg1)) }
   def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any) { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2)) }
   def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any) { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3)) }
   def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3, arg4)) }
@@ -783,16 +783,28 @@ trait LoggingAdapter {
     case Logging.DebugLevel   ⇒ if (isDebugEnabled) notifyDebug(message)
   }
 
+  private def format1(t: String, arg: Any) = arg match {
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive ⇒ format(t, a: _*)
+    case a: Array[_] ⇒ format(t, (a map (_.asInstanceOf[AnyRef]): _*))
+    case x ⇒ format(t, x)
+  }
+
   def format(t: String, arg: Any*) = {
     val sb = new StringBuilder
     var p = 0
     var rest = t
     while (p < arg.length) {
       val index = rest.indexOf("{}")
-      sb.append(rest.substring(0, index))
-      sb.append(arg(p))
-      rest = rest.substring(index + 2)
-      p += 1
+      if (index == -1) {
+        sb.append(rest).append(" WARNING arguments left: ").append(arg.length - p)
+        rest = ""
+        p = arg.length
+      } else {
+        sb.append(rest.substring(0, index))
+        sb.append(arg(p))
+        rest = rest.substring(index + 2)
+        p += 1
+      }
     }
     sb.append(rest)
     sb.toString

@@ -62,7 +62,7 @@ trait Stash extends Actor {
    * `mailbox.queue` is the underlying `Deque`.
    */
   private val mailbox: DequeBasedMessageQueue = {
-    context.asInstanceOf[ActorCell].mailbox match {
+    context.asInstanceOf[ActorCell].mailbox.messageQueue match {
       case queue: DequeBasedMessageQueue ⇒ queue
       case other ⇒ throw new ActorInitializationException(self, "DequeBasedMailbox required, got: " + other.getClass() + """
 An (unbounded) deque-based mailbox can be configured as follows:

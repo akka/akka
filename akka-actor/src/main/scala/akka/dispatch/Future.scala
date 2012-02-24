@@ -39,12 +39,14 @@ object Await {
      * Should throw [[java.util.concurrent.TimeoutException]] if times out
      * This method should not be called directly.
      */
+    @throws(classOf[TimeoutException])
     def ready(atMost: Duration)(implicit permit: CanAwait): this.type
 
     /**
      * Throws exceptions if cannot produce a T within the specified time
      * This method should not be called directly.
      */
+    @throws(classOf[Exception])
     def result(atMost: Duration)(implicit permit: CanAwait): T
   }
 
@@ -57,6 +59,7 @@ object Await {
    * @throws [[java.util.concurrent.TimeoutException]] if times out
    * @return The returned value as returned by Awaitable.ready
    */
+  @throws(classOf[TimeoutException])
   def ready[T <: Awaitable[_]](awaitable: T, atMost: Duration): T = awaitable.ready(atMost)
 
   /**
@@ -66,6 +69,7 @@ object Await {
    * @throws [[java.util.concurrent.TimeoutException]] if times out
    * @return The returned value as returned by Awaitable.result
    */
+  @throws(classOf[Exception])
   def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
 }
 
@@ -156,9 +160,9 @@ object Futures {
 
   /**
    * Signals that the current thread of execution will potentially engage
-   * in blocking calls after the call to this method, giving the system a
-   * chance to spawn new threads, reuse old threads or otherwise, to prevent
-   * starvation and/or unfairness.
+   * an action that will take a non-trivial amount of time, perhaps by using blocking.IO or using a lot of CPU time,
+   * giving the system a chance to spawn new threads, reuse old threads or otherwise,
+   * to prevent starvation and/or unfairness.
    *
    * Assures that any Future tasks initiated in the current thread will be
    * executed asynchronously, including any tasks currently queued to be
@@ -312,9 +316,9 @@ object Future {
 
   /**
    * Signals that the current thread of execution will potentially engage
-   * in blocking calls after the call to this method, giving the system a
-   * chance to spawn new threads, reuse old threads or otherwise, to prevent
-   * starvation and/or unfairness.
+   * an action that will take a non-trivial amount of time, perhaps by using blocking.IO or using a lot of CPU time,
+   * giving the system a chance to spawn new threads, reuse old threads or otherwise,
+   * to prevent starvation and/or unfairness.
    *
    * Assures that any Future tasks initiated in the current thread will be
    * executed asynchronously, including any tasks currently queued to be
@@ -819,10 +823,12 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
     awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
   }
 
+  @throws(classOf[TimeoutException])
   def ready(atMost: Duration)(implicit permit: CanAwait): this.type =
     if (isCompleted || tryAwait(atMost)) this
     else throw new TimeoutException("Futures timed out after [" + atMost.toMillis + "] milliseconds")
 
+  @throws(classOf[Exception])
   def result(atMost: Duration)(implicit permit: CanAwait): T =
     ready(atMost).value.get match {
       case Left(e: AskTimeoutException) ⇒ throw new AskTimeoutException(e.getMessage, e) // to get meaningful stack trace

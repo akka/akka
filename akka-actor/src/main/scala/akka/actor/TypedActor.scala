@@ -128,11 +128,11 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null)
       case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array())
       case ps ⇒
+        val serialization = SerializationExtension(akka.serialization.JavaSerializer.currentSystem.value)
         val serializedParameters = Array.ofDim[(Int, Class[_], Array[Byte])](ps.length)
         for (i ← 0 until ps.length) {
           val p = ps(i)
-          val system = akka.serialization.JavaSerializer.currentSystem.value
-          val s = SerializationExtension(system).findSerializerFor(p)
+          val s = serialization.findSerializerFor(p)
           val m = if (s.includeManifest) p.getClass else null
           serializedParameters(i) = (s.identifier, m, s toBinary parameters(i)) //Mutable for the sake of sanity
         }
@@ -256,33 +256,40 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case _              ⇒ super.postRestart(reason)
     }
 
+    protected def withContext[T](unitOfWork: ⇒ T): T = {
+      TypedActor.selfReference set proxyVar.get
+      TypedActor.currentContext set context
+      try unitOfWork finally {
+        TypedActor.selfReference set null
+        TypedActor.currentContext set null
+      }
+    }
+
     def receive = {
-      case m: MethodCall ⇒
-        TypedActor.selfReference set proxyVar.get
-        TypedActor.currentContext set context
-        try {
-          if (m.isOneWay) m(me)
-          else {
-            try {
-              if (m.returnsFuture_?) {
-                val s = sender
-                m(me).asInstanceOf[Future[Any]] onComplete {
-                  case Left(f)  ⇒ s ! Status.Failure(f)
-                  case Right(r) ⇒ s ! r
-                }
-              } else {
-                sender ! m(me)
+      case m: MethodCall ⇒ withContext {
+        if (m.isOneWay) m(me)
+        else {
+          try {
+            if (m.returnsFuture_?) {
+              val s = sender
+              m(me).asInstanceOf[Future[Any]] onComplete {
+                case Left(f)  ⇒ s ! Status.Failure(f)
+                case Right(r) ⇒ s ! r
               }
-            } catch {
-              case NonFatal(e) ⇒
-                sender ! Status.Failure(e)
-                throw e
+            } else {
+              sender ! m(me)
             }
+          } catch {
+            case NonFatal(e) ⇒
+              sender ! Status.Failure(e)
+              throw e
           }
-        } finally {
-          TypedActor.selfReference set null
-          TypedActor.currentContext set null
         }
+      }
+
+      case msg if me.isInstanceOf[Receiver] ⇒ withContext {
+        me.asInstanceOf[Receiver].onReceive(msg, sender)
+      }
     }
   }
 
@@ -295,6 +302,13 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
      * child actors.
      */
     def supervisorStrategy(): SupervisorStrategy
+  }
+
+  /**
+   * Mix this into your TypedActor to be able to intercept Terminated messages
+   */
+  trait Receiver {
+    def onReceive(message: Any, sender: ActorRef): Unit
   }
 
   /**

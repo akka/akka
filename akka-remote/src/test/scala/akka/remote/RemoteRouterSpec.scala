@@ -90,7 +90,7 @@ akka.actor.deployment {
 
     "deploy its children on remote host driven by programatic definition" in {
       val router = system.actorOf(Props[Echo].withRouter(new RemoteRouterConfig(RoundRobinRouter(2),
-        Seq("akka://remote_sys@localhost:12347"))), "blub2")
+        Seq(Address("akka", "remote_sys", "localhost", 12347)))), "blub2")
       val replies = for (i ← 1 to 5) yield {
         router ! ""
         expectMsgType[ActorRef].path

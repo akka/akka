@@ -66,15 +66,11 @@ object ActorWithStashSpec {
     var expectedException: TestLatch = null
   }
 
-  val testConf: Config = ConfigFactory.parseString("""
-      akka {
-        actor {
-          default-dispatcher {
-            mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
-          }
-        }
-      }
-      """)
+  val testConf = """
+    my-dispatcher {
+      mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
+    }
+    """
 
 }
 
@@ -88,14 +84,14 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 
-  override def beforeEach() = {
-    state.finished.reset
-  }
+  override def beforeEach() = state.finished.reset
+
+  def myProps(creator: ⇒ Actor): Props = Props(creator).withDispatcher("my-dispatcher")
 
   "An Actor with Stash" must {
 
     "stash messages" in {
-      val stasher = system.actorOf(Props(new StashingActor))
+      val stasher = system.actorOf(myProps(new StashingActor))
       stasher ! "bye"
       stasher ! "hello"
       state.finished.await
@@ -103,7 +99,7 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
     }
 
     "support protocols" in {
-      val protoActor = system.actorOf(Props(new ActorWithProtocol))
+      val protoActor = system.actorOf(myProps(new ActorWithProtocol))
       protoActor ! "open"
       protoActor ! "write"
       protoActor ! "open"
@@ -116,20 +112,20 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
 
     "throw an IllegalStateException if the same messages is stashed twice" in {
       state.expectedException = new TestLatch
-      val stasher = system.actorOf(Props(new StashingTwiceActor))
+      val stasher = system.actorOf(myProps(new StashingTwiceActor))
       stasher ! "hello"
       stasher ! "hello"
       Await.ready(state.expectedException, 10 seconds)
     }
 
     "process stashed messages after restart" in {
-      val boss = system.actorOf(Props(new Supervisor(
+      val boss = system.actorOf(myProps(new Supervisor(
         OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 1 second)(List(classOf[Throwable])))))
 
       val restartLatch = new TestLatch
       val hasMsgLatch = new TestLatch
 
-      val slaveProps = Props(new Actor with Stash {
+      val slaveProps = myProps(new Actor with Stash {
         protected def receive = {
           case "crash" ⇒
             throw new Exception("Crashing...")

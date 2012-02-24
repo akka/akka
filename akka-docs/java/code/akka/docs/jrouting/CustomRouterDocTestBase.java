@@ -52,10 +52,20 @@ public class CustomRouterDocTestBase {
       .withDispatcher("workers")); // MyActor “workers” run on "workers" dispatcher
     //#dispatchers
   }
+  
+  @Test
+  public void demonstrateSupervisor() {
+    //#supervision
+    final SupervisorStrategy strategy = new OneForOneStrategy(5, Duration.parse("1 minute"),
+        new Class<?>[] { Exception.class });
+    final ActorRef router = system.actorOf(new Props(MyActor.class)
+        .withRouter(new RoundRobinRouter(5).withSupervisorStrategy(strategy)));
+    //#supervision
+  }
 
   //#crTest
   @Test
-  public void countVotesAsIntendedNotAsInFlorida() {
+  public void countVotesAsIntendedNotAsInFlorida() throws Exception {
     ActorRef routedActor = system.actorOf(new Props().withRouter(new VoteCountRouter()));
     routedActor.tell(DemocratVote);
     routedActor.tell(DemocratVote);
@@ -122,6 +132,10 @@ public class CustomRouterDocTestBase {
     
     @Override public String routerDispatcher() {
       return Dispatchers.DefaultDispatcherId();
+    }
+    
+    @Override public SupervisorStrategy supervisorStrategy() {
+      return SupervisorStrategy.defaultStrategy();
     }
 
     //#crRoute
