@@ -21,7 +21,8 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.util.concurrent.{ ExecutionException, Callable, TimeoutException }
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
 import akka.pattern.AskTimeoutException
-import util.DynamicVariable
+import scala.util.DynamicVariable
+import scala.runtime.BoxedUnit
 
 object Await {
 
@@ -929,9 +930,12 @@ final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val exe
  */
 object japi {
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
-  class CallbackBridge[-T] extends PartialFunction[T, Unit] {
+  class CallbackBridge[-T] extends PartialFunction[T, BoxedUnit] {
     override final def isDefinedAt(t: T): Boolean = true
-    override final def apply(t: T): Unit = internal(t)
+    override final def apply(t: T): BoxedUnit = {
+      internal(t)
+      BoxedUnit.UNIT
+    }
     protected def internal(result: T): Unit = ()
   }
 
@@ -949,8 +953,11 @@ object japi {
   }
 
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
-  class UnitFunctionBridge[-T] extends (T ⇒ Unit) {
-    override final def apply(t: T): Unit = internal(t)
+  class UnitFunctionBridge[-T] extends (T ⇒ BoxedUnit) {
+    override final def apply(t: T): BoxedUnit = {
+      internal(t)
+      BoxedUnit.UNIT
+    }
     protected def internal(result: T): Unit = ()
   }
 }
