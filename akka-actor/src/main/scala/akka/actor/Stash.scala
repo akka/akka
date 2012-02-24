@@ -109,23 +109,6 @@ An (unbounded) deque-based mailbox can be configured as follows:
   }
 
   /**
-   *  Prepends all messages in the stash to the mailbox, clears the stash, and then
-   *  assumes the argument behavior. The invocation `unstashAll(handler)` is
-   *  equivalent to the following code:
-   *  <pre>
-   *    unstashAll()
-   *    context.become(handler)
-   *  </pre>
-   *
-   *  @param handler the behavior that should be assumed after unstashing
-   *  all messages.
-   */
-  def unstashAll(handler: Receive): Unit = {
-    unstashAll()
-    context.become(handler)
-  }
-
-  /**
    *  Overridden callback. Prepends all messages in the stash to the mailbox,
    *  clears the stash, and invokes the callback of the superclass.
    */

@@ -25,7 +25,8 @@ object ActorWithStashSpec {
     def receive = {
       case "hello" ⇒
         state.s = "hello"
-        unstashAll(greeted)
+        unstashAll()
+        context.become(greeted)
       case msg ⇒ stash()
     }
   }
@@ -47,7 +48,8 @@ object ActorWithStashSpec {
   class ActorWithProtocol(implicit sys: ActorSystem) extends Actor with Stash {
     def receive = {
       case "open" ⇒
-        unstashAll {
+        unstashAll()
+        context.become {
           case "write" ⇒ // do writing...
           case "close" ⇒
             unstashAll()
