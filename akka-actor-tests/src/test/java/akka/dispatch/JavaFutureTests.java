@@ -148,12 +148,12 @@ public class JavaFutureTests {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
     Future<String> f = cf;
-    Future<String> r = f.filter(new Filter<String>() {
+    Future<String> r = f.filter(Filter.create(new Filter<String>() {
       public boolean filter(String r) {
         latch.countDown();
         return r.equals("foo");
       }
-    });
+    }));
 
     cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));

@@ -1044,9 +1044,7 @@ abstract class Recover[+T] extends japi.RecoverBridge[T] {
  * SAM (Single Abstract Method) class
  * Java API
  */
-abstract class Filter[-T] extends japi.BooleanFunctionBridge[T] {
-  override final def internal(t: T): Boolean = filter(t)
-
+abstract class Filter[-T] {
   /**
    * This method will be invoked once when/if a Future that this callback is registered on
    * becomes completed with a success.
@@ -1054,6 +1052,12 @@ abstract class Filter[-T] extends japi.BooleanFunctionBridge[T] {
    * @return true if the successful value should be propagated to the new Future or not
    */
   def filter(result: T): Boolean
+}
+
+object Filter {
+  def create[T](f: Filter[T]): (T ⇒ Boolean) = new Function1[T, Boolean] {
+    def apply(result: T): Boolean = f.filter(result)
+  }
 }
 
 /**

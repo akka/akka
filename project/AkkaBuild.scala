@@ -19,8 +19,7 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.0-SNAPSHOT",
-    scalaVersion := "2.9.2-SNAPSHOT",
-    scalaHome := Some(file("/Users/rkuhn/comp/scala-2.9.2.2.9.1-0138-g280cffc14e-2012-02-12"))
+    scalaVersion := "2.9.2-SNAPSHOT"
   )
 
   lazy val akka = Project(
@@ -39,9 +38,6 @@ object AkkaBuild extends Build {
     id = "akka-actor",
     base = file("akka-actor"),
     settings = defaultSettings ++ Seq(
-      autoCompilerPlugins := true,
-      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
-      scalacOptions += "-P:continuations:enable",
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile
     )
@@ -61,9 +57,6 @@ object AkkaBuild extends Build {
     base = file("akka-actor-tests"),
     dependencies = Seq(testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
-      autoCompilerPlugins := true,
-      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
-      scalacOptions += "-P:continuations:enable",
       libraryDependencies ++= Dependencies.actorTests
     )
   )
@@ -354,7 +347,7 @@ object AkkaBuild extends Build {
     resolvers += "Typesafe Snapshot Repo" at "http://repo.typesafe.com/typesafe/snapshots/", // Used while play-mini is still on RC
 
     // compile options
-    scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked", "-verbose") ++ (
+    scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked") ++ (
       if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 
