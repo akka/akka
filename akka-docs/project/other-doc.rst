@@ -19,6 +19,12 @@ be found here:
 Release Versions
 ================
 
+1.3.1
+---
+
+- Akka 1.3.1 - http://akka.io/docs/akka/1.3.1/ (or in `PDF format <http://akka.io/docs/akka/1.3.1/Akka.pdf>`__)
+- Akka Modules 1.3.1 - http://akka.io/docs/akka-modules/1.3.1/ (or in `PDF format <http://akka.io/docs/akka-modules/1.3.1/AkkaModules.pdf>`__)
+
 1.2
 ---
 
