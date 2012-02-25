@@ -440,7 +440,7 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val amqp = Seq(rabbit, commonsIo, protobuf, Test.multiverse)
+  val amqp = Seq(rabbit, commonsIo, protobuf, multiverse)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
@@ -538,6 +538,7 @@ object Dependency {
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
   val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding"  % "0.0.3" // ApacheV2
   val playMini      = "com.typesafe"                % "play-mini_2.9.1"        % V.PlayMini
+  val multiverse    = "org.multiverse"              % "multiverse-alpha"      % V.Multiverse  //ApacheV2
 
   // Provided
 
@@ -570,6 +571,5 @@ object Dependency {
     val scalacheck  = "org.scala-tools.testing"     %% "scalacheck"         % "1.9"        % "test" // New BSD
     val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % V.Zookeeper  % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
-    val multiverse  = "org.multiverse"              % "multiverse-alpha"    % V.Multiverse % "test" //ApacheV2
   }
 }

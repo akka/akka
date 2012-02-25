@@ -1,27 +1,37 @@
-package akka.amqp.test
-
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-import akka.amqp._
-import org.multiverse.api.latches.StandardLatch
+package akka.amqp.test
+
 import org.scalatest.matchers.MustMatchers
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import akka.amqp.AMQP.{ ConsumerParameters, ChannelParameters, ProducerParameters }
-import org.scalatest.junit.JUnitSuite
+import akka.amqp._
 import org.junit.Test
-import akka.actor.{ Props, ActorSystem, Actor }
+import org.scalatest.junit.JUnitSuite
+import akka.util.Timeout
+import akka.pattern.ask
+import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
+import akka.dispatch.Await
+import akka.testkit.TestLatch
 
 class AMQPConsumerPrivateQueueTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessage = AMQPTest.withCleanEndState {
-    val system = ActorSystem.create
+  def consumerMessage = AMQPTest.withCleanEndState((mySys: ActorSystem) ⇒ {
 
-    val connection = AMQP.newConnection()
+    //TODO is there a cleaner way to handle this implicit declaration?
+    implicit val system = mySys
+    val settings = Settings(system)
+    implicit val timeout = Timeout(settings.Timeout)
+
     try {
-      val countDown = new CountDownLatch(2)
+      val amqp = system.actorOf(Props[AMQPActor])
+      val connectionFuture = (amqp ? ConnectionRequest(ConnectionParameters(initReconnectDelay = 50))) mapTo manifest[ActorRef]
+      val connection = Await.result(connectionFuture, timeout.duration)
+
+      val countDown = new TestLatch(2)
+      val payloadLatch = new TestLatch
+
       val channelCallback = system.actorOf(Props(new Actor {
         def receive = {
           case Started    ⇒ countDown.countDown
@@ -32,21 +42,25 @@ class AMQPConsumerPrivateQueueTestIntegration extends JUnitSuite with MustMatche
 
       val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
-      val payloadLatch = new StandardLatch
-      AMQP.newConsumer(connection, ConsumerParameters("my.private.routing.key", system.actorOf(Props(new Actor {
-        def receive = { case Delivery(payload, _, _, _, _, _) ⇒ payloadLatch.open }
-      })), channelParameters = Some(channelParameters))).
-        getOrElse(throw new NoSuchElementException("Could not create consumer"))
+      Await.result((connection ? ConsumerRequest(
+        ConsumerParameters("my.private.routing.key", system.actorOf(Props(new Actor {
+          def receive = { case Delivery(payload, _, _, _, _, _) ⇒ payloadLatch.open }
+        })), channelParameters = Some(channelParameters))))
+        mapTo manifest[ActorRef], timeout.duration)
 
-      val producer = AMQP.newProducer(connection,
-        ProducerParameters(channelParameters = Some(channelParameters))).
-        getOrElse(throw new NoSuchElementException("Could not create producer"))
+      val producer = Await.result((connection ? ProducerRequest(
+        ProducerParameters(channelParameters = Some(channelParameters))))
+        mapTo manifest[ActorRef], timeout.duration)
 
-      countDown.await(2, TimeUnit.SECONDS) must be(true)
+      Await.result(countDown, timeout.duration)
+
       producer ! Message("some_payload".getBytes, "my.private.routing.key")
-      payloadLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
+
+      Await.result(payloadLatch, timeout.duration)
+    } catch {
+      case e: Exception ⇒ fail(e)
     } finally {
-      AMQP.shutdownConnection(connection)
+      system.shutdown
     }
-  }
+  })
 }

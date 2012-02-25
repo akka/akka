@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.amqp
@@ -8,7 +8,7 @@ import collection.JavaConversions
 
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.{ Channel, Envelope, DefaultConsumer }
-import akka.amqp.AMQP._
+import akka.util.NonFatal
 
 private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
   extends FaultTolerantChannelActor(
@@ -21,9 +21,9 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
     case Acknowledge(deliveryTag)     ⇒ acknowledgeDeliveryTag(deliveryTag, true)
     case Reject(deliveryTag, requeue) ⇒ rejectDeliveryTag(deliveryTag, requeue, true)
     case message: Message ⇒
-      handleIllegalMessage("%s can't be used to send messages, ignoring message [%s]".format(this, message))
+      throw new IllegalArgumentException("%s can't be used to send messages, ignoring message [%s]".format(this, message))
     case unknown ⇒
-      handleIllegalMessage("Unknown message [%s] to %s".format(unknown, this))
+      throw new IllegalArgumentException("Unknown message [%s] to %s".format(unknown, this))
   }
 
   protected def setupChannel(ch: Channel) = {
@@ -52,17 +52,18 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
     val tag = ch.basicConsume(consumingQueue, false, new DefaultConsumer(ch) {
       override def handleDelivery(tag: String, envelope: Envelope, properties: BasicProperties, payload: Array[Byte]) {
         try {
-          val deliveryTag = envelope.getDeliveryTag
           import envelope._
-          deliveryHandler ! Delivery(payload, getRoutingKey, getDeliveryTag, isRedeliver, properties, Option(self))
+          val deliveryTag = getDeliveryTag
+          deliveryHandler ! Delivery(payload, getRoutingKey, deliveryTag, isRedeliver, properties, Option(self))
 
           if (selfAcknowledging) {
             acknowledgeDeliveryTag(deliveryTag, false)
           }
         } catch {
-          case cause ⇒
+          case NonFatal(cause) ⇒
             log.error(cause, "Delivery of message to %s failed" format toString)
             self ! Failure(cause) // pass on and re-throw exception in consumer actor to trigger restart and connect
+
         }
       }
     })
@@ -83,43 +84,27 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
     }
   }
 
-  private def acknowledgeDeliveryTag(deliveryTag: Long, remoteAcknowledgement: Boolean) = {
-    channel.foreach {
-      ch ⇒
-        ch.basicAck(deliveryTag, false)
-        if (remoteAcknowledgement) {
-          deliveryHandler ! Acknowledged(deliveryTag)
-        }
+  private def acknowledgeDeliveryTag(deliveryTag: Long, remoteAcknowledgement: Boolean): Unit =
+    for (c ← channel) {
+      c.basicAck(deliveryTag, false)
+      if (remoteAcknowledgement) deliveryHandler ! Acknowledged(deliveryTag)
     }
-  }
 
   private def rejectDeliveryTag(deliveryTag: Long, requeue: Boolean, remoteAcknowledgement: Boolean) = {
-    val message = ("Consumer is rejecting delivery with tag [%s] - requeue [%s]" format (deliveryTag, requeue))
-    log.warning(message)
-    channel.foreach {
-      ch ⇒
-        ch.basicReject(deliveryTag, requeue)
-        if (remoteAcknowledgement) {
-          deliveryHandler ! Rejected(deliveryTag)
-        }
+    log.warning("Consumer is rejecting delivery with tag [{}] - requeue [{}]", deliveryTag, requeue)
+    for (c ← channel) {
+      c.basicReject(deliveryTag, requeue)
+      if (remoteAcknowledgement) deliveryHandler ! Rejected(deliveryTag)
     }
-  }
-
-  private def handleIllegalMessage(errorMessage: String) = {
-    log.error(errorMessage)
-    throw new IllegalArgumentException(errorMessage)
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]) = {
-    listenerTag = None
     super.preRestart(reason, message)
   }
 
   override def postStop = {
-    listenerTag.foreach(tag ⇒ channel.foreach(ch ⇒ if (ch.isOpen) ch.basicCancel(tag)))
-    for (ref ← context.children) {
-      context.stop(ref)
-    }
+    for (tag ← listenerTag; ch ← channel if ch.isOpen) ch basicCancel tag
+
     // also stop the delivery handler
     context.stop(consumerParameters.deliveryHandler)
 

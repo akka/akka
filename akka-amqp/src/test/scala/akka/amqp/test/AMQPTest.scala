@@ -1,19 +1,21 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.amqp.test
 
-import akka.amqp.AMQP
+import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
 
 object AMQPTest {
 
-  def withCleanEndState(action: ⇒ Unit) {
+  def withCleanEndState(action: ⇒ (ActorSystem) ⇒ Unit) {
     try {
+      val system = ActorSystem("Testing", ConfigFactory.load.getConfig("testing"))
       try {
-        action
+        action(system)
       } finally {
-        AMQP.shutdownAll
+        system.shutdown()
       }
     } catch {
       case e ⇒ {

@@ -1,7 +1,16 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.amqp;
 
 import akka.actor.*;
-import akka.japi.Procedure;
+import akka.dispatch.*;
+import akka.pattern.Patterns;
+import akka.util.*;
+import akka.util.Timeout;
+import com.typesafe.config.ConfigFactory;
+import org.jboss.netty.akka.util.*;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -9,38 +18,62 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings({"unchecked"})
 public class ExampleSessionJava {
 
+    //Timeout timeout = new Timeout(Duration.parse("2 seconds"));
+    ActorSystem system = ActorSystem.create("ExampleSessionJava" , ConfigFactory.load().getConfig("example"));
+
+    final SettingsImpl settings = new SettingsImpl(system.settings().config());
+    Timeout timeout = new Timeout(settings.Timeout());
+
+    ActorRef amqp = system.actorOf(new Props(AMQPActor.class));
+    // defaults to amqp://guest:guest@localhost:5672/
+    Future<Object> future = Patterns.ask(amqp, new ConnectionRequest(new ConnectionParameters()), timeout);
+    ActorRef connection = null;
+
+
     public static void main(String... args) {
         new ExampleSessionJava();
     }
 
     public ExampleSessionJava() {
-        ActorSystem system = ActorSystem.create();
-        printTopic("DIRECT");
-        direct(system);
 
-        printTopic("FANOUT");
-        fanout(system);
+        try {
+            printTopic("timeout = " + timeout.toString());
+           connection = (ActorRef) Await.result(future, timeout.duration());
 
-        printTopic("TOPIC");
-        topic(system);
+            printTopic("DIRECT");
+            direct();
 
-        printTopic("CALLBACK");
-        callback(system);
+            /*
+                    printTopic("FANOUT");
+                    fanout(system);
 
-        printTopic("EASY STRING PRODUCER AND CONSUMER");
-        easyStringProducerConsumer(system);
+                    printTopic("TOPIC");
+                    topic(system);
 
-        printTopic("EASY PROTOBUF PRODUCER AND CONSUMER");
-        easyProtobufProducerConsumer(system);
+                    printTopic("CALLBACK");
+                    callback(system);
 
-        // postStop everything the amqp tree except the main AMQP supervisor
-        // all connections/consumers/producers will be stopped
-         AMQP.shutdownAll();
-        system.shutdown();
+            */
+            /*
+                    printTopic("EASY STRING PRODUCER AND CONSUMER");
+                    easyStringProducerConsumer(system);
 
-        printTopic("Happy hAkking :-)");
+                    printTopic("EASY PROTOBUF PRODUCER AND CONSUMER");
+                    easyProtobufProducerConsumer(system);
+            */
 
-        System.exit(0);
+            // postStop everything the amqp tree except the main AMQP supervisor
+            // all connections/consumers/producers will be stopped
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+
+            system.shutdown();
+
+            printTopic("Happy hAkking :-)");
+
+            System.exit(0);
+        }
     }
 
     private void printTopic(String topic) {
@@ -50,27 +83,30 @@ public class ExampleSessionJava {
         System.out.println("");
         try {
             TimeUnit.SECONDS.sleep(2);
-        } catch (InterruptedException ignore) {}
+        } catch (InterruptedException ignore) {
+        }
     }
 
-    private void direct(ActorSystem system) {
-        // defaults to amqp://guest:guest@localhost:5672/
-        ActorRef connection = AMQP.newConnection();
 
-        AMQP.ExchangeParameters exchangeParameters = new AMQP.ExchangeParameters("my_direct_exchange", Direct.getInstance());
+    private void direct() throws Exception {
+
+        ExchangeParameters exchangeParameters = new ExchangeParameters("my_direct_exchange", Direct.getInstance());
 
         Props props = new Props(DirectDeliveryHandlerActor.class);
         ActorRef deliveryHandler = system.actorOf(props, "deliveryHandlerActor");
 
-        AMQP.ConsumerParameters consumerParameters = new AMQP.ConsumerParameters("some.routing", deliveryHandler, exchangeParameters);
+        ConsumerParameters consumerParameters = new ConsumerParameters("some.routing", deliveryHandler, exchangeParameters);
 
-        AMQP.newConsumer(connection, consumerParameters).getOrElse(null);
+        Future<Object> future = Patterns.ask(connection, new ConsumerRequest(consumerParameters), timeout);
+        ActorRef consumer = (ActorRef) Await.result(future, timeout.duration());
 
-        ActorRef producer = AMQP.newProducer(connection, new AMQP.ProducerParameters(exchangeParameters)).getOrElse(null);
+        future = Patterns.ask(connection, new ProducerRequest(new ProducerParameters(exchangeParameters)), timeout);
+        ActorRef producer = (ActorRef) Await.result(future, timeout.duration());
 
         producer.tell(new Message("@jonas_boner: You sucked!!".getBytes(), "some.routing"));
     }
 
+    /*
     private void fanout(ActorSystem system) {
 
         // defaults to amqp://guest:guest@localhost:5672/
@@ -152,51 +188,7 @@ public class ExampleSessionJava {
         } catch (InterruptedException ignore) {}
     }
 
-
-    public void easyStringProducerConsumer(ActorSystem system) {
-        ActorRef connection = AMQP.newConnection();
-
-        String exchangeName = "easy.string";
-
-        // listen by default to:
-        // exchange = optional exchangeName
-        // routingKey = provided routingKey or <exchangeName>.request
-        // queueName = <routingKey>.in
-        Procedure<String> procedure = new Procedure<String>() {
-            public void apply(String message) {
-                System.out.println("### >> Received message: " + message);
-            }
-        };
-        AMQP.newStringConsumer(connection, procedure, exchangeName);
-
-        // send by default to:
-        // exchange = exchangeName
-        // routingKey = <exchange>.request
-        AMQP.ProducerClient<String> producer = AMQP.newStringProducer(connection, exchangeName);
-
-        producer.send("This is easy!");
-
-    }
-
-    public void easyProtobufProducerConsumer(ActorSystem system) {
-
-        ActorRef connection = AMQP.newConnection();
-
-        String exchangeName = "easy.protobuf";
-
-        Procedure<AkkaAmqp.TestMessage> procedure = new Procedure<AkkaAmqp.TestMessage>() {
-            public void apply(AkkaAmqp.TestMessage message) {
-                System.out.println("### >> Received message: " + message);
-            }
-        };
-
-        AMQP.newProtobufConsumer(connection, procedure, exchangeName, AkkaAmqp.TestMessage.class);
-
-        AMQP.ProducerClient<AkkaAmqp.TestMessage> producerClient = AMQP.newProtobufProducer(connection, exchangeName);
-
-        producerClient.send(AkkaAmqp.TestMessage.newBuilder().setMessage("akka-amqp rocks!").build());
-    }
-
+*/
 
     static public class DummyActor extends UntypedActor {
         public void onReceive(Object message) throws Exception {

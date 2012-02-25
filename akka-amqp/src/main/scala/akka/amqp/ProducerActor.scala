@@ -1,12 +1,11 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.amqp
 
 import com.rabbitmq.client._
 
-import akka.amqp.AMQP.ProducerParameters
 import com.rabbitmq.client.AMQP.BasicProperties
 
 private[amqp] class ProducerActor(producerParameters: ProducerParameters)
@@ -48,8 +47,7 @@ private[amqp] class ProducerActor(producerParameters: ProducerParameters)
               "] with reply code [" + replyCode +
               "] with reply text [" + replyText +
               "] and routing key [" + routingKey +
-              "] to exchange [" + exchange + "]",
-            replyCode, replyText, exchange, routingKey, properties, body)
+              "] to exchange [" + exchange + "]")
         }
 
       })

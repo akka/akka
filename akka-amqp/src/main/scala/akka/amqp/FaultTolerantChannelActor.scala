@@ -1,27 +1,27 @@
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.amqp
 
 import collection.JavaConversions
 import java.lang.Throwable
-import akka.actor.Actor
 import akka.event.Logging
 import akka.pattern.ask
 import com.rabbitmq.client.{ ShutdownSignalException, Channel, ShutdownListener }
 import scala.PartialFunction
-import akka.amqp.AMQP._
 import akka.util.duration._
 import akka.util.Timeout
-import akka.dispatch.Await
+import akka.dispatch.{ Future, Await }
+import akka.actor.{ Kill, Failed, ActorRef, Actor }
 
 abstract private[amqp] class FaultTolerantChannelActor(
   exchangeParameters: Option[ExchangeParameters], channelParameters: Option[ChannelParameters]) extends Actor {
 
   protected[amqp] var channel: Option[Channel] = None
 
-  implicit val timeout = Timeout(5 seconds)
+  val settings = Settings(context.system)
+  implicit val timeout = Timeout(settings.Timeout)
 
   val log = Logging(context.system, this)
 
@@ -34,9 +34,7 @@ abstract private[amqp] class FaultTolerantChannelActor(
 
     case Start ⇒ {
       // ask the connection for a new channel
-      val c = context.parent ? ChannelRequest
-      val newChannel = Await.result(c, timeout.duration).asInstanceOf[Option[Channel]]
-      newChannel.foreach(ch ⇒ setupChannelInternal(ch))
+      context.parent ? ChannelRequest map (_.asInstanceOf[Channel]) map setupChannelInternal
     }
 
     case ch: Channel ⇒ {
@@ -48,23 +46,21 @@ abstract private[amqp] class FaultTolerantChannelActor(
       if (cause.isHardError) {
         // connection error
         if (cause.isInitiatedByApplication) {
-          log.info("%s got normal shutdown" format toString)
+          log.info("{} got normal shutdown", self.toString)
         } else {
-          log.error(cause, "%s got hard error" format toString)
+          log.error(cause, "{} got hard error", self.toString)
         }
       } else {
         // channel error
-        log.error(cause, "%s self restarting because of channel shutdown" format toString)
+        log.error(cause, "{} self restarting because of channel shutdown", self.toString)
         notifyCallback(Restarting)
         self ! Start
       }
     }
 
     case Failure(cause) ⇒
-      log.error(cause, "%s self restarting because of channel failure" format toString)
-      closeChannel
-      notifyCallback(Restarting)
-      self ! Start
+      log.error(cause, "{} self-restarting because of channel failure", self.toString)
+      self ! Kill
   }
 
   // to be defined in subclassing actor
@@ -90,7 +86,7 @@ abstract private[amqp] class FaultTolerantChannelActor(
         }
       })
 
-      channelParameters.foreach(_.shutdownListener.foreach(sdl ⇒ ch.getConnection.addShutdownListener(sdl)))
+      for (cp ← channelParameters; sdl ← cp.shutdownListener) ch.getConnection.addShutdownListener(sdl)
 
       setupChannel(ch)
       channel = Some(ch)
@@ -101,19 +97,16 @@ abstract private[amqp] class FaultTolerantChannelActor(
     }
   }
 
-  private def closeChannel = {
-    channel.foreach {
-      ch ⇒
-        if (ch.isOpen) ch.close
-        notifyCallback(Stopped)
-        log.info("%s channel closed" format toString)
-    }
-    channel = None
-  }
+  private def closeChannel(): Unit =
+    channel = channel.flatMap(c ⇒ {
+      if (c.isOpen) c.close()
+      notifyCallback(Stopped)
+      log.info("{} channel closed", self)
+      None
+    })
 
-  private def notifyCallback(message: AMQPMessage) = {
-    channelParameters.foreach(_.channelCallback.foreach(cb ⇒ if (!cb.isTerminated) cb ! message))
-  }
+  private def notifyCallback(message: AMQPMessage): Unit =
+    for (cp ← channelParameters; cb ← cp.channelCallback if !cb.isTerminated) cb ! message
 
   override def postRestart(reason: Throwable) {
     self ! Start

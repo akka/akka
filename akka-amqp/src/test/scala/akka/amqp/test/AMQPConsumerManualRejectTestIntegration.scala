@@ -1,28 +1,37 @@
-package akka.amqp.test
-
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
+
+package akka.amqp.test
 
 import org.scalatest.matchers.MustMatchers
 import akka.amqp._
 import org.junit.Test
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import akka.amqp.AMQP.{ ExchangeParameters, ConsumerParameters, ChannelParameters, ProducerParameters }
-import org.multiverse.api.latches.StandardLatch
 import org.scalatest.junit.JUnitSuite
-import akka.actor.{ Props, ActorSystem, Actor }
+import akka.util.Timeout
+import akka.pattern.ask
+import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
+import akka.dispatch.Await
+import akka.testkit.TestLatch
 
 class AMQPConsumerManualRejectTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def consumerMessageManualReject = AMQPTest.withCleanEndState {
+  def consumerMessageManualAcknowledge = AMQPTest.withCleanEndState((mySys: ActorSystem) ⇒ {
 
-    val system = ActorSystem.create
+    //TODO is there a cleaner way to handle this implicit declaration?
+    implicit val system = mySys
+    val settings = Settings(system)
+    implicit val timeout = Timeout(settings.Timeout)
 
-    val connection = AMQP.newConnection()
     try {
-      val countDown = new CountDownLatch(2)
+      val amqp = system.actorOf(Props[AMQPActor])
+      val connectionFuture = (amqp ? ConnectionRequest(ConnectionParameters(initReconnectDelay = 50))) mapTo manifest[ActorRef]
+      val connection = Await.result(connectionFuture, timeout.duration)
+
+      val countDown = new TestLatch(2)
+      val rejectedLatch = new TestLatch
+
       val channelCallback = system.actorOf(Props(new Actor {
         def receive = {
           case Started    ⇒ countDown.countDown
@@ -30,29 +39,34 @@ class AMQPConsumerManualRejectTestIntegration extends JUnitSuite with MustMatche
           case Stopped    ⇒ ()
         }
       }))
+
       val exchangeParameters = ExchangeParameters("text_exchange")
       val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
 
-      val rejectedLatch = new StandardLatch
-      AMQP.newConsumer(connection, ConsumerParameters("manual.reject.this", system.actorOf(Props(new Actor {
-        def receive = {
-          case Delivery(payload, _, deliveryTag, _, _, sender) ⇒ sender.foreach(_ ! Reject(deliveryTag))
-          case Rejected(deliveryTag)                           ⇒ rejectedLatch.open
-        }
-      })), queueName = Some("self.reject.queue"), exchangeParameters = Some(exchangeParameters),
-        selfAcknowledging = false, channelParameters = Some(channelParameters))).
-        getOrElse(throw new NoSuchElementException("Could not create consumer"))
+      Await.result((connection ? ConsumerRequest(
+        ConsumerParameters("manual.reject.this", system.actorOf(Props(new Actor {
+          def receive = {
+            case Delivery(payload, _, deliveryTag, _, _, sender) ⇒ sender.foreach(_ ! Reject(deliveryTag))
+            case Rejected(deliveryTag)                           ⇒ rejectedLatch.open
+          }
+        })), queueName = Some("self.reject.queue"), exchangeParameters = Some(exchangeParameters),
+          selfAcknowledging = false, channelParameters = Some(channelParameters))))
+        mapTo manifest[ActorRef], timeout.duration)
 
-      val producer = AMQP.newProducer(connection,
-        ProducerParameters(Some(exchangeParameters), channelParameters = Some(channelParameters))).
-        getOrElse(throw new NoSuchElementException("Could not create producer"))
+      val producer = Await.result((connection ? ProducerRequest(
+        ProducerParameters(Some(exchangeParameters), channelParameters = Some(channelParameters))))
+        mapTo manifest[ActorRef], timeout.duration)
 
-      countDown.await(2, TimeUnit.SECONDS) must be(true)
+      Await.result(countDown, timeout.duration)
+
       producer ! Message("some_payload".getBytes, "manual.reject.this")
 
-      rejectedLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
+      Await.result(rejectedLatch, timeout.duration)
+
+    } catch {
+      case e: Exception ⇒ fail(e)
     } finally {
-      AMQP.shutdownConnection(connection)
+      system.shutdown
     }
-  }
+  })
 }

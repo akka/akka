@@ -1,58 +1,69 @@
-package akka.amqp.test
-
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-import java.util.concurrent.TimeUnit
-import org.multiverse.api.latches.StandardLatch
+package akka.amqp.test
+
+import org.scalatest.matchers.MustMatchers
 import akka.amqp._
+import org.junit.Test
+import org.scalatest.junit.JUnitSuite
+import akka.util.Timeout
+import akka.pattern.ask
+import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
+import akka.dispatch.Await
+import akka.testkit.TestLatch
 import com.rabbitmq.client.ReturnListener
 import com.rabbitmq.client.AMQP.BasicProperties
-import java.lang.String
-import org.scalatest.matchers.MustMatchers
-import akka.amqp.AMQP.{ ExchangeParameters, ProducerParameters }
-import org.scalatest.junit.JUnitSuite
-import org.junit.Test
-import akka.actor.ActorSystem
-import akka.event.{ LogSource, Logging }
 
 class AMQPProducerMessageTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def producerMessage = AMQPTest.withCleanEndState {
+  def producerMessage = AMQPTest.withCleanEndState((mySys: ActorSystem) ⇒ {
 
-    implicit val logSourceString = LogSource.fromString
-
-    val system = ActorSystem.create(math.random.toInt.toHexString)
-
-    val log = Logging(system, this.getClass.getName)
-
-    log.info("in producerMessage")
-
-    val connection = AMQP.newConnection()
-
-    log.info("connection actor path = " + connection.path.toString)
+    //TODO is there a cleaner way to handle this implicit declaration?
+    implicit val system = mySys
+    val settings = Settings(system)
+    implicit val timeout = Timeout(settings.Timeout)
 
     try {
-      val returnLatch = new StandardLatch
+      val amqp = system.actorOf(Props[AMQPActor])
+      val connectionFuture = (amqp ? ConnectionRequest(ConnectionParameters(initReconnectDelay = 50))) mapTo manifest[ActorRef]
+      val connection = Await.result(connectionFuture, timeout.duration)
+
+      val returnLatch = new TestLatch
+      val startedLatch = new TestLatch
+
+      def channelCallback(startedLatch: TestLatch) = system.actorOf(Props(new Actor {
+        def receive = {
+          case Started ⇒ startedLatch.open
+          case _       ⇒ ()
+        }
+      }))
+
+      val producerChannelParameters = ChannelParameters(channelCallback = Some(channelCallback(startedLatch)))
+
       val returnListener = new ReturnListener {
         def handleReturn(replyCode: Int, replyText: String, exchange: String, routingKey: String, properties: BasicProperties, body: Array[Byte]) = {
           returnLatch.open
         }
       }
       val producerParameters = ProducerParameters(
-        Some(ExchangeParameters("text_exchange")), returnListener = Some(returnListener))
+        Some(ExchangeParameters("text_exchange")), returnListener = Some(returnListener), channelParameters = Some(producerChannelParameters))
 
-      val producer = AMQP.newProducer(connection, producerParameters).
-        getOrElse(throw new NoSuchElementException("Could not create producer"))
+      val producer = Await.result((connection ? ProducerRequest(producerParameters))
+        mapTo manifest[ActorRef], timeout.duration)
 
-      log.info("producer path = {}", producer.path.toString)
+      Await.result(startedLatch, timeout.duration)
 
       producer ! new Message("some_payload".getBytes, "non.interesing.routing.key", mandatory = true)
-      returnLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
+
+      Await.result(returnLatch, timeout.duration)
+
+    } catch {
+      case e: Exception ⇒ fail(e)
     } finally {
-      AMQP.shutdownConnection(connection)
+      system.shutdown
     }
-  }
+  })
 }

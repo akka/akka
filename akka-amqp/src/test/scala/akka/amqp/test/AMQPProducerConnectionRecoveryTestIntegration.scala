@@ -1,31 +1,38 @@
-package akka.amqp.test
-
 /**
- * Copyright (C) 2009-2010 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-import java.util.concurrent.TimeUnit
-import org.multiverse.api.latches.StandardLatch
-import com.rabbitmq.client.ShutdownSignalException
-import akka.amqp._
+package akka.amqp.test
+
 import org.scalatest.matchers.MustMatchers
-import akka.amqp.AMQP.{ ExchangeParameters, ChannelParameters, ProducerParameters, ConnectionParameters }
-import org.scalatest.junit.JUnitSuite
+import akka.amqp._
 import org.junit.Test
-import akka.actor.{ Props, ActorSystem, Actor }
+import org.scalatest.junit.JUnitSuite
+import akka.util.Timeout
+import akka.pattern.ask
+import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
+import akka.dispatch.Await
+import akka.testkit.TestLatch
+import com.rabbitmq.client.ShutdownSignalException
 
 class AMQPProducerConnectionRecoveryTestIntegration extends JUnitSuite with MustMatchers {
 
   @Test
-  def producerConnectionRecovery = AMQPTest.withCleanEndState {
+  def producerConnectionRecovery = AMQPTest.withCleanEndState((mySys: ActorSystem) ⇒ {
 
-    val system = ActorSystem.create(math.random.toInt.toHexString)
+    //TODO is there a cleaner way to handle this implicit declaration?
+    implicit val system = mySys
+    val settings = Settings(system)
+    implicit val timeout = Timeout(settings.Timeout)
 
-    val connection = AMQP.newConnection(ConnectionParameters(initReconnectDelay = 50))
     try {
-      val startedLatch = new StandardLatch
-      val restartingLatch = new StandardLatch
-      val restartedLatch = new StandardLatch
+      val amqp = system.actorOf(Props[AMQPActor])
+      val connectionFuture = (amqp ? ConnectionRequest(ConnectionParameters(initReconnectDelay = 50))) mapTo manifest[ActorRef]
+      val connection = Await.result(connectionFuture, timeout.duration)
+
+      val startedLatch = new TestLatch
+      val restartingLatch = new TestLatch
+      val restartedLatch = new TestLatch
 
       val producerCallback = system.actorOf(Props(new Actor {
         def receive = {
@@ -37,6 +44,7 @@ class AMQPProducerConnectionRecoveryTestIntegration extends JUnitSuite with Must
             }
           }
           case Restarting ⇒ restartingLatch.open
+
           case Stopped    ⇒ ()
         }
       }))
@@ -45,14 +53,18 @@ class AMQPProducerConnectionRecoveryTestIntegration extends JUnitSuite with Must
       val producerParameters = ProducerParameters(
         Some(ExchangeParameters("text_exchange")), channelParameters = Some(channelParameters))
 
-      AMQP.newProducer(connection, producerParameters)
-      startedLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
+      Await.result((connection ? ProducerRequest(producerParameters)) mapTo manifest[ActorRef], timeout.duration)
+
+      Await.result(startedLatch, timeout.duration)
 
       connection ! new ConnectionShutdown(new ShutdownSignalException(true, false, "TestException", "TestRef"))
-      restartingLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
-      restartedLatch.tryAwait(2, TimeUnit.SECONDS) must be(true)
+
+      Await.result(restartingLatch, timeout.duration)
+      Await.result(restartedLatch, timeout.duration)
+    } catch {
+      case e: Exception ⇒ fail(e)
     } finally {
-      AMQP.shutdownConnection(connection)
+      system.shutdown
     }
-  }
+  })
 }
