@@ -360,8 +360,8 @@ case class UnboundedMailbox() extends MailboxType {
   def this(config: Config) = this()
 
   final override def create(owner: Option[ActorContext]): MessageQueue =
-    new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
-      final val queue = new ConcurrentLinkedQueue[Envelope]()
+    new ConcurrentLinkedQueue[Envelope]() with QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
+      final def queue: Queue[Envelope] = this
     }
 }
 
@@ -374,8 +374,8 @@ case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Durat
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
   final override def create(owner: Option[ActorContext]): MessageQueue =
-    new QueueBasedMessageQueue with BoundedMessageQueueSemantics {
-      final val queue = new LinkedBlockingQueue[Envelope](capacity)
+    new LinkedBlockingQueue[Envelope](capacity) with QueueBasedMessageQueue with BoundedMessageQueueSemantics {
+      final def queue: BlockingQueue[Envelope] = this
       final val pushTimeOut = BoundedMailbox.this.pushTimeOut
     }
 }
@@ -385,8 +385,8 @@ case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Durat
  */
 class UnboundedPriorityMailbox( final val cmp: Comparator[Envelope]) extends MailboxType {
   final override def create(owner: Option[ActorContext]): MessageQueue =
-    new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
-      final val queue = new PriorityBlockingQueue[Envelope](11, cmp)
+    new PriorityBlockingQueue[Envelope](11, cmp) with QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
+      final def queue: Queue[Envelope] = this
     }
 }
 
@@ -399,8 +399,8 @@ class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val cap
   if (pushTimeOut eq null) throw new IllegalArgumentException("The push time-out for BoundedMailbox can not be null")
 
   final override def create(owner: Option[ActorContext]): MessageQueue =
-    new QueueBasedMessageQueue with BoundedMessageQueueSemantics {
-      final val queue = new BoundedBlockingQueue[Envelope](capacity, new PriorityQueue[Envelope](11, cmp))
+    new BoundedBlockingQueue[Envelope](capacity, new PriorityQueue[Envelope](11, cmp)) with QueueBasedMessageQueue with BoundedMessageQueueSemantics {
+      final def queue: BlockingQueue[Envelope] = this
       final val pushTimeOut = BoundedPriorityMailbox.this.pushTimeOut
     }
 }

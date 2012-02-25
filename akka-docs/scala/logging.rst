@@ -34,8 +34,20 @@ The source object is translated to a String according to the following rules:
   * and in all other cases a compile error occurs unless and implicit
     :class:`LogSource[T]` is in scope for the type in question.
 
-The log message may contain argument placeholders ``{}``, which will be substituted if the log level
-is enabled.
+The log message may contain argument placeholders ``{}``, which will be
+substituted if the log level is enabled. Giving more arguments as there are
+placeholders results in a warning being appended to the log statement (i.e. on
+the same line with the same severity). You may pass a Java array as the only
+substitution argument to have its elements be treated individually:
+
+.. includecode:: code/akka/docs/event/LoggingDocSpec.scala#array
+
+The Java :class:`Class` of the log source is also included in the generated
+:class:`LogEvent`. In case of a simple string this is replaced with a “marker”
+class :class:`akka.event.DummyClassForStringSources` in order to allow special
+treatment of this case, e.g. in the SLF4J event listener which will then use
+the string instead of the class’ name for looking up the logger instance to
+use.
 
 Auxiliary logging options
 -------------------------
