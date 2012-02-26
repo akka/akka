@@ -1038,11 +1038,27 @@ abstract class Recover[+T] extends japi.RecoverBridge[T] {
 }
 
 /**
+ * <i><b>Java API (not recommended):</b></i>
  * Callback for the Future.filter operation that creates a new Future which will
  * conditionally contain the success of another Future.
  *
- * SAM (Single Abstract Method) class
- * Java API
+ * Unfortunately it is not possible to express the type of a Scala filter in
+ * Java: Function1[T, Boolean], where “Boolean” is the primitive type. It is
+ * possible to use `Future.filter` by constructing such a function indirectly:
+ *
+ * {{{
+ * Future<String> f = ...;
+ * f.filter(Filter.create(new Filter<String>() {
+ *   @Override
+ *   public boolean filter(String s) {
+ *     ...
+ *   }
+ * }));
+ * }}}
+ *
+ * However, `Future.filter` exists mainly to support Scala’s for-comprehensions,
+ * thus Java users should prefer `Future.map`, translating non-matching values
+ * to failure cases.
  */
 abstract class Filter[-T] {
   /**
