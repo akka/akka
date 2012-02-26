@@ -16,12 +16,14 @@ import akka.dispatch.MailboxType
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
 import akka.dispatch.MessageQueue
+import akka.actor.ActorSystem
 
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
 
-class MongoBasedMailboxType(config: Config) extends MailboxType {
+class MongoBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
+  private val settings = new MongoBasedMailboxSettings(systemSettings, config)
   override def create(owner: Option[ActorContext]): MessageQueue = owner match {
-    case Some(o) ⇒ new MongoBasedMessageQueue(o)
+    case Some(o) ⇒ new MongoBasedMessageQueue(o, settings)
     case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
@@ -37,14 +39,12 @@ class MongoBasedMailboxType(config: Config) extends MailboxType {
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
-class MongoBasedMessageQueue(_owner: ActorContext) extends DurableMessageQueue(_owner) {
+class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailboxSettings) extends DurableMessageQueue(_owner) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
   implicit val mailboxBSONSer = new BSONSerializableMessageQueue(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!
 
   private val dispatcher = owner.dispatcher
-
-  private val settings = MongoBasedMailboxExtension(owner.system)
 
   val log = Logging(system, "MongoBasedMessageQueue")
 
@@ -98,9 +98,8 @@ class MongoBasedMessageQueue(_owner: ActorContext) extends DurableMessageQueue(_
   def hasMessages: Boolean = numberOfMessages > 0
 
   private[akka] def connect() = {
-    require(settings.MongoURI.isDefined, "Mongo URI (%s) must be explicitly defined in akka.conf; will not assume defaults for safety sake.".format(settings.UriConfigKey))
     log.info("CONNECTING mongodb uri : [{}]", settings.MongoURI)
-    val _dbh = MongoConnection.fromURI(settings.MongoURI.get) match {
+    val _dbh = MongoConnection.fromURI(settings.MongoURI) match {
       case (conn, None, None) ⇒ {
         throw new UnsupportedOperationException("You must specify a database name to use with MongoDB; please see the MongoDB Connection URI Spec: 'http://www.mongodb.org/display/DOCS/Connections'")
       }

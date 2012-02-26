@@ -26,6 +26,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
+      testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
@@ -141,6 +142,8 @@ object AkkaBuild extends Build {
   //   )
   // )
 
+  val testMailbox = SettingKey[Boolean]("test-mailbox")
+
   lazy val mailboxes = Project(
     id = "akka-durable-mailboxes",
     base = file("akka-durable-mailboxes"),
@@ -165,8 +168,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.beanstalkMailbox,
-      testBeanstalkMailbox := false,
-      testOptions in Test <+= testBeanstalkMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
     )
   )
 
@@ -179,16 +181,13 @@ object AkkaBuild extends Build {
     )
   )
 
-  val testRedisMailbox = SettingKey[Boolean]("test-redis-mailbox")
-
   lazy val redisMailbox = Project(
     id = "akka-redis-mailbox",
     base = file("akka-durable-mailboxes/akka-redis-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.redisMailbox,
-      testRedisMailbox := false,
-      testOptions in Test <+= testRedisMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
     )
   )
 
@@ -201,8 +200,6 @@ object AkkaBuild extends Build {
     )
   )
 
-  val testMongoMailbox = SettingKey[Boolean]("test-mongo-mailbox")
-
   lazy val mongoMailbox = Project(
     id = "akka-mongo-mailbox",
     base = file("akka-durable-mailboxes/akka-mongo-mailbox"),
@@ -210,8 +207,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.mongoMailbox,
       ivyXML := Dependencies.mongoMailboxExcludes,
-      testMongoMailbox := false,
-      testOptions in Test <+= testMongoMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
     )
   )
 

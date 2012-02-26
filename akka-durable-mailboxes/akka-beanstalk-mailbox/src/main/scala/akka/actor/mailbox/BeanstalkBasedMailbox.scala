@@ -14,12 +14,14 @@ import akka.dispatch.MailboxType
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
 import akka.dispatch.MessageQueue
+import akka.actor.ActorSystem
 
 class BeanstalkBasedMailboxException(message: String) extends AkkaException(message) {}
 
-class BeanstalkBasedMailboxType(config: Config) extends MailboxType {
+class BeanstalkBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
+  private val settings = new BeanstalkMailboxSettings(systemSettings, config)
   override def create(owner: Option[ActorContext]): MessageQueue = owner match {
-    case Some(o) ⇒ new BeanstalkBasedMessageQueue(o)
+    case Some(o) ⇒ new BeanstalkBasedMessageQueue(o, settings)
     case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
@@ -27,9 +29,8 @@ class BeanstalkBasedMailboxType(config: Config) extends MailboxType {
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BeanstalkBasedMessageQueue(_owner: ActorContext) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+class BeanstalkBasedMessageQueue(_owner: ActorContext, val settings: BeanstalkMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
-  private val settings = BeanstalkBasedMailboxExtension(owner.system)
   private val messageSubmitDelaySeconds = settings.MessageSubmitDelay.toSeconds.toInt
   private val messageTimeToLiveSeconds = settings.MessageTimeToLive.toSeconds.toInt
 
