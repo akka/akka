@@ -6,7 +6,8 @@ package akka.actor.mailbox
 import com.typesafe.config.Config
 import akka.actor.ActorSystem
 
-class RedisBasedMailboxSettings(val system: ActorSystem, val userConfig: Config) extends DurableMailboxSettings {
+class RedisBasedMailboxSettings(val systemSettings: ActorSystem.Settings, val userConfig: Config)
+  extends DurableMailboxSettings {
 
   def name = "redis"
 

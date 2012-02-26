@@ -71,7 +71,7 @@ trait DurableMailboxSettings {
   /**
    * A reference to the enclosing actor system.
    */
-  def system: ActorSystem
+  def systemSettings: ActorSystem.Settings
 
   /**
    * A reference to the config section which the user specified for this mailbox’s dispatcher.
@@ -100,7 +100,7 @@ trait DurableMailboxSettings {
    */
   def initialize: Config =
     if (userConfig.hasPath(name))
-      userConfig.getConfig(name).withFallback(system.settings.config.getConfig("akka.actor.mailbox." + name))
-    else system.settings.config.getConfig("akka.actor.mailbox." + name)
+      userConfig.getConfig(name).withFallback(systemSettings.config.getConfig("akka.actor.mailbox." + name))
+    else systemSettings.config.getConfig("akka.actor.mailbox." + name)
 }
 

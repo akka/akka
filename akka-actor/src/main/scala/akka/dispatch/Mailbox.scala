@@ -12,6 +12,7 @@ import annotation.tailrec
 import akka.event.Logging.Error
 import akka.actor.ActorContext
 import com.typesafe.config.Config
+import akka.actor.ActorSystem
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
@@ -357,7 +358,7 @@ trait MailboxType {
  */
 case class UnboundedMailbox() extends MailboxType {
 
-  def this(config: Config) = this()
+  def this(settings: ActorSystem.Settings, config: Config) = this()
 
   final override def create(owner: Option[ActorContext]): MessageQueue =
     new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
@@ -367,7 +368,7 @@ case class UnboundedMailbox() extends MailboxType {
 
 case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
 
-  def this(config: Config) = this(config.getInt("mailbox-capacity"),
+  def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
     Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedMailbox can not be negative")

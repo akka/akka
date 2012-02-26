@@ -15,6 +15,7 @@ import akka.actor.PoisonPill
 import akka.dispatch.MessageDispatcherConfigurator
 import akka.dispatch.MessageDispatcher
 import akka.dispatch.DispatcherPrerequisites
+import akka.actor.ActorSystem
 
 object DispatcherDocSpec {
   val config = """
@@ -113,7 +114,7 @@ object DispatcherDocSpec {
   import com.typesafe.config.Config
 
   // We create a new Priority dispatcher and seed it with the priority generator
-  class PrioMailbox(config: Config) extends UnboundedPriorityMailbox(
+  class PrioMailbox(settings: ActorSystem.Settings, config: Config) extends UnboundedPriorityMailbox(
     PriorityGenerator { // Create a new PriorityGenerator, lower prio means more important
       case 'highpriority ⇒ 0 // 'highpriority messages should be treated first if possible
       case 'lowpriority  ⇒ 100 // 'lowpriority messages should be treated last if possible

@@ -481,7 +481,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
   def locker: Locker = provider.locker
 
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
-    threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess))
+    threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings))
 
   val dispatcher: MessageDispatcher = dispatchers.defaultGlobalDispatcher
 

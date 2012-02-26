@@ -124,7 +124,7 @@ public class DispatcherDocTestBase {
 
   //#prio-mailbox
   public static class PrioMailbox extends UnboundedPriorityMailbox {
-    public PrioMailbox(Config config) { // needed for reflective instantiation
+    public PrioMailbox(ActorSystem.Settings settings, Config config) { // needed for reflective instantiation
       super(new PriorityGenerator() { // Create a new PriorityGenerator, lower prio means more important
         @Override
         public int gen(Object message) {

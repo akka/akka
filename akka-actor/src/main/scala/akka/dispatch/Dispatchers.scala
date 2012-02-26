@@ -22,6 +22,7 @@ trait DispatcherPrerequisites {
   def deadLetterMailbox: Mailbox
   def scheduler: Scheduler
   def dynamicAccess: DynamicAccess
+  def settings: ActorSystem.Settings
 }
 
 case class DefaultDispatcherPrerequisites(
@@ -29,7 +30,8 @@ case class DefaultDispatcherPrerequisites(
   val eventStream: EventStream,
   val deadLetterMailbox: Mailbox,
   val scheduler: Scheduler,
-  val dynamicAccess: DynamicAccess) extends DispatcherPrerequisites
+  val dynamicAccess: DynamicAccess,
+  val settings: ActorSystem.Settings) extends DispatcherPrerequisites
 
 object Dispatchers {
   /**

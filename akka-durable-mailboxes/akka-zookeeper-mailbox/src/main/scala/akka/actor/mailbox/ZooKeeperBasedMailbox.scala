@@ -15,19 +15,20 @@ import com.typesafe.config.Config
 import akka.util.NonFatal
 import akka.config.ConfigurationException
 import akka.dispatch.MessageQueue
+import akka.actor.ActorSystem
 
 class ZooKeeperBasedMailboxException(message: String) extends AkkaException(message)
 
-class ZooKeeperBasedMailboxType(config: Config) extends MailboxType {
+class ZooKeeperBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
+  private val settings = new ZooKeeperBasedMailboxSettings(systemSettings, config)
   override def create(owner: Option[ActorContext]): MessageQueue = owner match {
-    case Some(o) ⇒ new ZooKeeperBasedMessageQueue(o, config)
+    case Some(o) ⇒ new ZooKeeperBasedMessageQueue(o, settings)
     case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
 
-class ZooKeeperBasedMessageQueue(_owner: ActorContext, _config: Config) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+class ZooKeeperBasedMessageQueue(_owner: ActorContext, val settings: ZooKeeperBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
-  private val settings = new ZooKeeperBasedMailboxSettings(owner.system, _config)
   val queueNode = "/queues"
   val queuePathTemplate = queueNode + "/%s"
 
