@@ -8,7 +8,8 @@ import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.ActorSystem
 
-class BeanstalkMailboxSettings(val system: ActorSystem, val userConfig: Config) extends DurableMailboxSettings {
+class BeanstalkMailboxSettings(val systemSettings: ActorSystem.Settings, val userConfig: Config)
+  extends DurableMailboxSettings {
 
   def name = "beanstalk"
 

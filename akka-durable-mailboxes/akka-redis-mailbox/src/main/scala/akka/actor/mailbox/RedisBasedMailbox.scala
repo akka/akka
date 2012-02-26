@@ -14,19 +14,19 @@ import com.typesafe.config.Config
 import akka.util.NonFatal
 import akka.config.ConfigurationException
 import akka.dispatch.MessageQueue
+import akka.actor.ActorSystem
 
 class RedisBasedMailboxException(message: String) extends AkkaException(message)
 
-class RedisBasedMailboxType(config: Config) extends MailboxType {
+class RedisBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
+  private val settings = new RedisBasedMailboxSettings(systemSettings, config)
   override def create(owner: Option[ActorContext]): MessageQueue = owner match {
-    case Some(o) ⇒ new RedisBasedMessageQueue(o, config)
+    case Some(o) ⇒ new RedisBasedMessageQueue(o, settings)
     case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
 
-class RedisBasedMessageQueue(_owner: ActorContext, _config: Config) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
-
-  private val settings = new RedisBasedMailboxSettings(owner.system, _config)
+class RedisBasedMessageQueue(_owner: ActorContext, val settings: RedisBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
   @volatile
   private var clients = connect() // returns a RedisClientPool for multiple asynchronous message handling
