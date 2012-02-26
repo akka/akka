@@ -15,3 +15,9 @@ Scalatra has Akka integration.
 
 Read more here: `<https://github.com/scalatra/scalatra/blob/develop/akka/src/main/scala/org/scalatra/akka/AkkaSupport.scala>`_
 
+Gatling
+-------
+
+Gatling is an Open Source Stress Tool.
+
+Read more here: `<http://gatling-tool.org/>`_
