@@ -6,4 +6,3 @@
 
   (description in LsKeys.lsync) := "Akka is the platform for the next generation of event-driven, scalable and fault-tolerant architectures on the JVM."
 
-  //testMailbox in Global := true
