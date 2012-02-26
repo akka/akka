@@ -14,6 +14,7 @@ object MongoBasedMailboxSpec {
     mongodb-dispatcher {
       mailbox-type = akka.actor.mailbox.MongoBasedMailboxType
       throughput = 1
+      mongodb.uri = "mongodb://localhost:27123/akka.mailbox"
     }
     """
 }
@@ -23,9 +24,23 @@ class MongoBasedMailboxSpec extends DurableMailboxSpec("mongodb", MongoBasedMail
 
   import com.mongodb.async._
 
-  val mongo = MongoConnection("localhost", 27017)("akka")
+  lazy val mongod = new ProcessBuilder("mongod", "--dbpath", "mongoDB", "--bind_ip", "127.0.0.1", "--port", "27123").start()
+  lazy val mongo = MongoConnection("localhost", 27123)("akka")
 
-  mongo.dropDatabase() { success ⇒ }
+  override def atStartup(): Unit = {
+    // start MongoDB daemon
+    new java.io.File("mongoDB").mkdir()
+    val in = mongod.getInputStream
+
+    try {
+      streamMustContain(in, "waiting for connections on port")
+      mongo.dropDatabase() { success ⇒ }
+    } catch {
+      case e ⇒ mongod.destroy(); throw e
+    }
+  }
+
+  override def atTermination(): Unit = mongod.destroy()
 
 }
 

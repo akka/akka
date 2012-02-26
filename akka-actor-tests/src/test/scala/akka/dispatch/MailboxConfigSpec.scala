@@ -8,6 +8,7 @@ import akka.util.duration._
 import akka.testkit.AkkaSpec
 import akka.actor.{ ActorRef, ActorContext, Props, LocalActorRef }
 import com.typesafe.config.Config
+import akka.actor.ActorSystem
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -156,7 +157,7 @@ object CustomMailboxSpec {
     }
     """
 
-  class MyMailboxType(config: Config) extends MailboxType {
+  class MyMailboxType(settings: ActorSystem.Settings, config: Config) extends MailboxType {
     override def create(owner: Option[ActorContext]) = owner match {
       case Some(o) ⇒ new MyMailbox(o)
       case None    ⇒ throw new Exception("no mailbox owner given")
