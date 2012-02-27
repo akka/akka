@@ -110,7 +110,7 @@ object DispatcherDocSpec {
 
   // We inherit, in this case, from UnboundedPriorityMailbox
   // and seed it with the priority generator
-  class MyPrioMailbox(config: Config) extends UnboundedPriorityMailbox(
+  class MyPrioMailbox(settings: ActorSystem.Settings, config: Config) extends UnboundedPriorityMailbox(
     // Create a new PriorityGenerator, lower prio means more important
     PriorityGenerator {
       // 'highpriority messages should be treated first if possible
