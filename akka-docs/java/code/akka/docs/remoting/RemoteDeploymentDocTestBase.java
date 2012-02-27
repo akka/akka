@@ -10,7 +10,7 @@ import org.junit.Test;
 //#import
 import akka.actor.ActorRef;
 import akka.actor.Address;
-import akka.actor.AddressExtractor;
+import akka.actor.AddressFromURIString;
 import akka.actor.Deploy;
 import akka.actor.Props;
 import akka.actor.ActorSystem;
@@ -35,7 +35,7 @@ public class RemoteDeploymentDocTestBase {
   public void demonstrateDeployment() {
     //#make-address
     Address addr = new Address("akka", "sys", "host", 1234);
-    addr = AddressExtractor.parse("akka://sys@host:1234"); // the same
+    addr = AddressFromURIString.parse("akka://sys@host:1234"); // the same
     //#make-address
     //#deploy
     ActorRef ref = system.actorOf(new Props(RemoteDeploymentDocSpec.Echo.class).withDeploy(new Deploy(new RemoteScope(addr))));
