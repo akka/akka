@@ -11,7 +11,7 @@ import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.ActorSystem;
 import akka.actor.Address;
-import akka.actor.AddressExtractor;
+import akka.actor.AddressFromURIString;
 import java.util.Arrays;
 
 public class RouterViaProgramExample {
@@ -73,7 +73,7 @@ public class RouterViaProgramExample {
     
     //#remoteRoutees
     Address addr1 = new Address("akka", "remotesys", "otherhost", 1234);
-    Address addr2 = AddressExtractor.parse("akka://othersys@anotherhost:1234");
+    Address addr2 = AddressFromURIString.parse("akka://othersys@anotherhost:1234");
     Address[] addresses = new Address[] { addr1, addr2 };
     ActorRef routerRemote = system.actorOf(new Props(ExampleActor.class)
       .withRouter(new RemoteRouterConfig(new RoundRobinRouter(5), addresses)));

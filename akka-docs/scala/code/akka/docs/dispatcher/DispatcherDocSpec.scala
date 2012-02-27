@@ -9,7 +9,7 @@ import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.util.duration._
-import akka.actor.{ Props, Actor, PoisonPill }
+import akka.actor.{ Props, Actor, PoisonPill, ActorSystem }
 
 object DispatcherDocSpec {
   val config = """
@@ -110,7 +110,7 @@ object DispatcherDocSpec {
 
   // We inherit, in this case, from UnboundedPriorityMailbox
   // and seed it with the priority generator
-  class MyPrioMailbox(config: Config) extends UnboundedPriorityMailbox(
+  class MyPrioMailbox(settings: ActorSystem.Settings, config: Config) extends UnboundedPriorityMailbox(
     // Create a new PriorityGenerator, lower prio means more important
     PriorityGenerator {
       // 'highpriority messages should be treated first if possible
@@ -146,7 +146,7 @@ object DispatcherDocSpec {
     }
 
     // This constructor signature must exist, it will be called by Akka
-    def this(config: Config) = this()
+    def this(settings: ActorSystem.Settings, config: Config) = this()
 
     // The create method is called to create the MessageQueue
     final override def create(owner: Option[ActorContext]): MessageQueue =

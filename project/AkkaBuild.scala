@@ -26,6 +26,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
+      testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
@@ -141,6 +142,8 @@ object AkkaBuild extends Build {
   //   )
   // )
 
+  val testMailbox = SettingKey[Boolean]("test-mailbox")
+
   lazy val mailboxes = Project(
     id = "akka-durable-mailboxes",
     base = file("akka-durable-mailboxes"),
@@ -165,8 +168,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.beanstalkMailbox,
-      testBeanstalkMailbox := false,
-      testOptions in Test <+= testBeanstalkMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
     )
   )
 
@@ -179,16 +181,13 @@ object AkkaBuild extends Build {
     )
   )
 
-  val testRedisMailbox = SettingKey[Boolean]("test-redis-mailbox")
-
   lazy val redisMailbox = Project(
     id = "akka-redis-mailbox",
     base = file("akka-durable-mailboxes/akka-redis-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.redisMailbox,
-      testRedisMailbox := false,
-      testOptions in Test <+= testRedisMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
     )
   )
 
@@ -201,8 +200,6 @@ object AkkaBuild extends Build {
     )
   )
 
-  val testMongoMailbox = SettingKey[Boolean]("test-mongo-mailbox")
-
   lazy val mongoMailbox = Project(
     id = "akka-mongo-mailbox",
     base = file("akka-durable-mailboxes/akka-mongo-mailbox"),
@@ -210,8 +207,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.mongoMailbox,
       ivyXML := Dependencies.mongoMailboxExcludes,
-      testMongoMailbox := false,
-      testOptions in Test <+= testMongoMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
     )
   )
 
@@ -474,7 +470,7 @@ object Dependencies {
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
-  val docs = Seq(Test.scalatest, Test.junit, playMini)
+  val docs = Seq(Test.scalatest, Test.junit)
 
   val zeroMQ = Seq(Test.scalatest, Test.junit, protobuf, Dependency.zeroMQ)
 }
@@ -486,8 +482,6 @@ object Dependency {
   object V {
     val Camel        = "2.8.0"
     val Jackson      = "1.8.0"
-    val JavaxServlet = "3.0"
-    val Jersey       = "1.3"
     val Jetty        = "7.4.0.v20110414"
     val Logback      = "0.9.28"
     val Netty        = "3.3.0.Final"
@@ -498,7 +492,6 @@ object Dependency {
     val Slf4j        = "1.6.4"
     val Spring       = "3.0.5.RELEASE"
     val Zookeeper    = "3.4.0"
-    val PlayMini     = "2.0-RC1-SNAPSHOT"
   }
 
   // Compile
@@ -534,8 +527,7 @@ object Dependency {
   val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
-  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding"  % "0.0.3" // ApacheV2
-  val playMini      = "com.typesafe"                % "play-mini_2.9.1"        % V.PlayMini
+  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding"  % "0.0.3"      // ApacheV2
 
   // Provided
 
