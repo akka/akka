@@ -42,10 +42,10 @@ object RoutingProgrammaticallyExample extends App {
   1 to 6 foreach { i ⇒ router3 ! Message1(i) }
 
   //#remoteRoutees
-  import akka.actor.{ Address, AddressExtractor }
+  import akka.actor.{ Address, AddressFromURIString }
   val addresses = Seq(
     Address("akka", "remotesys", "otherhost", 1234),
-    AddressExtractor("akka://othersys@anotherhost:1234"))
+    AddressFromURIString("akka://othersys@anotherhost:1234"))
   val routerRemote = system.actorOf(Props[ExampleActor1].withRouter(
     RemoteRouterConfig(RoundRobinRouter(5), addresses)))
   //#remoteRoutees

@@ -133,7 +133,7 @@ akka.actor.deployment {
 
     "deploy remote routers based on explicit deployment" in {
       val router = system.actorOf(Props[Echo].withRouter(RoundRobinRouter(2))
-        .withDeploy(Deploy(scope = RemoteScope(AddressExtractor("akka://remote_sys@localhost:12347")))), "remote-blub2")
+        .withDeploy(Deploy(scope = RemoteScope(AddressFromURIString("akka://remote_sys@localhost:12347")))), "remote-blub2")
       router.path.address.toString must be("akka://remote_sys@localhost:12347")
       val replies = for (i ← 1 to 5) yield {
         router ! ""
@@ -150,7 +150,7 @@ akka.actor.deployment {
 
     "let remote deployment be overridden by local configuration" in {
       val router = system.actorOf(Props[Echo].withRouter(RoundRobinRouter(2))
-        .withDeploy(Deploy(scope = RemoteScope(AddressExtractor("akka://remote_sys@localhost:12347")))), "local-blub")
+        .withDeploy(Deploy(scope = RemoteScope(AddressFromURIString("akka://remote_sys@localhost:12347")))), "local-blub")
       router.path.address.toString must be("akka://RemoteRouterSpec")
       val replies = for (i ← 1 to 5) yield {
         router ! ""
@@ -167,7 +167,7 @@ akka.actor.deployment {
 
     "let remote deployment router be overridden by local configuration" in {
       val router = system.actorOf(Props[Echo].withRouter(RoundRobinRouter(2))
-        .withDeploy(Deploy(scope = RemoteScope(AddressExtractor("akka://remote_sys@localhost:12347")))), "local-blub2")
+        .withDeploy(Deploy(scope = RemoteScope(AddressFromURIString("akka://remote_sys@localhost:12347")))), "local-blub2")
       router.path.address.toString must be("akka://remote_sys@localhost:12347")
       val replies = for (i ← 1 to 5) yield {
         router ! ""
@@ -184,7 +184,7 @@ akka.actor.deployment {
 
     "let remote deployment be overridden by remote configuration" in {
       val router = system.actorOf(Props[Echo].withRouter(RoundRobinRouter(2))
-        .withDeploy(Deploy(scope = RemoteScope(AddressExtractor("akka://remote_sys@localhost:12347")))), "remote-override")
+        .withDeploy(Deploy(scope = RemoteScope(AddressFromURIString("akka://remote_sys@localhost:12347")))), "remote-override")
       router.path.address.toString must be("akka://remote_sys@localhost:12347")
       val replies = for (i ← 1 to 5) yield {
         router ! ""
