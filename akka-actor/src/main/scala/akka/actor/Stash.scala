@@ -117,9 +117,15 @@ An (unbounded) deque-based mailbox can be configured as follows:
    *  clears the stash, and invokes the callback of the superclass.
    */
   override def preRestart(reason: Throwable, message: Option[Any]) {
-    unstashAll()
-    context.children foreach context.stop
-    postStop()
+    try {
+      unstashAll()
+    } catch {
+      // do not catch Exception, since we shouldn't swallow InterruptedException
+      case _: AkkaException ⇒ // do nothing
+    } finally {
+      context.children foreach context.stop
+      postStop()
+    }
   }
 
 }
