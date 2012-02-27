@@ -152,7 +152,7 @@ Mailbox configuration examples
 
 How to create a PriorityMailbox:
 
-.. includecode:: ../java/code/akka/docs/dispatcher/DispatcherTestBase.java#prio-mailbox
+.. includecode:: ../java/code/akka/docs/dispatcher/DispatcherDocTestBase.java#prio-mailbox
 
 And then add it to the configuration:
 
