@@ -380,6 +380,16 @@ class LocalActorRefProvider(
     }
   }
 
+  // Default guardian strategy
+  protected[actor] val guardianSupervisorStrategy = {
+    import akka.actor.SupervisorStrategy._
+    OneForOneStrategy() {
+      case _: ActorKilledException         ⇒ Stop
+      case _: ActorInitializationException ⇒ Stop
+      case _: Exception                    ⇒ Restart
+    }
+  }
+
   /*
    * Guardians can be asked by ActorSystem to create children, i.e. top-level
    * actors. Therefore these need to answer to these requests, forwarding any
@@ -387,14 +397,7 @@ class LocalActorRefProvider(
    */
   private class Guardian extends Actor {
 
-    override val supervisorStrategy = {
-      import akka.actor.SupervisorStrategy._
-      OneForOneStrategy() {
-        case _: ActorKilledException         ⇒ Stop
-        case _: ActorInitializationException ⇒ Stop
-        case _: Exception                    ⇒ Restart
-      }
-    }
+    override val supervisorStrategy = guardianSupervisorStrategy
 
     def receive = {
       case Terminated(_)                ⇒ context.stop(self)
@@ -559,3 +562,23 @@ class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassificat
   }
 }
 
+/**
+ * LocalActorRefProvider with default stopping policy. Used only for migration purposes.
+ */
+protected final class MigrationLocalRefProvider(_systemName: String,
+                                                settings: ActorSystem.Settings,
+                                                eventStream: EventStream,
+                                                scheduler: Scheduler,
+                                                deployer: Deployer)
+  extends LocalActorRefProvider(_systemName, settings, eventStream, scheduler, deployer) {
+
+  override val guardianSupervisorStrategy = {
+    import akka.actor.SupervisorStrategy._
+    OneForOneStrategy() {
+      case _: ActorKilledException         ⇒ Stop
+      case _: ActorInitializationException ⇒ Stop
+      case _: Exception                    ⇒ Stop
+    }
+  }
+
+}
