@@ -11,6 +11,7 @@ import akka.pattern.ask
 import akka.util.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.junit.JUnitSuite
 
 object ActorWithStashSpec {
 
@@ -75,6 +76,8 @@ object ActorWithStashSpec {
     """
 
 }
+
+class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuite
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with DefaultTimeout with BeforeAndAfterEach {
