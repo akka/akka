@@ -440,7 +440,7 @@ class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val cap
 
 case class UnboundedDequeBasedMailbox() extends MailboxType {
 
-  def this(config: Config) = this()
+  def this(settings: ActorSystem.Settings, config: Config) = this()
 
   final override def create(owner: Option[ActorContext]): MessageQueue =
     new LinkedBlockingDeque[Envelope]() with DequeBasedMessageQueue with UnboundedDequeBasedMessageQueueSemantics {
@@ -450,7 +450,7 @@ case class UnboundedDequeBasedMailbox() extends MailboxType {
 
 case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
 
-  def this(config: Config) = this(config.getInt("mailbox-capacity"),
+  def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
     Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))
 
   if (capacity < 0) throw new IllegalArgumentException("The capacity for BoundedDequeBasedMailbox can not be negative")
