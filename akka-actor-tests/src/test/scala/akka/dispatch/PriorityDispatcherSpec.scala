@@ -6,6 +6,7 @@ import akka.pattern.ask
 import akka.util.duration._
 import akka.testkit.DefaultTimeout
 import com.typesafe.config.Config
+import akka.actor.ActorSystem
 
 object PriorityDispatcherSpec {
   val config = """
@@ -17,12 +18,12 @@ object PriorityDispatcherSpec {
     }
     """
 
-  class Unbounded(config: Config) extends UnboundedPriorityMailbox(PriorityGenerator({
+  class Unbounded(settings: ActorSystem.Settings, config: Config) extends UnboundedPriorityMailbox(PriorityGenerator({
     case i: Int  ⇒ i //Reverse order
     case 'Result ⇒ Int.MaxValue
   }: Any ⇒ Int))
 
-  class Bounded(config: Config) extends BoundedPriorityMailbox(PriorityGenerator({
+  class Bounded(settings: ActorSystem.Settings, config: Config) extends BoundedPriorityMailbox(PriorityGenerator({
     case i: Int  ⇒ i //Reverse order
     case 'Result ⇒ Int.MaxValue
   }: Any ⇒ Int), 1000, 10 seconds)

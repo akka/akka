@@ -23,6 +23,8 @@ import com.typesafe.config.ConfigValueType;
 final class ConfigSubstitution extends AbstractConfigValue implements
         Unmergeable {
 
+    private static final long serialVersionUID = 1L;
+
     // this is a list of String and SubstitutionExpression where the
     // SubstitutionExpression has to be resolved to values, then if there's more
     // than one piece everything is stringified and concatenated

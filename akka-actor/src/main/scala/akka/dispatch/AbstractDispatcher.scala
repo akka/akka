@@ -384,17 +384,17 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
     config.getString("mailbox-type") match {
       case "" ⇒
         if (config.getInt("mailbox-capacity") < 1) UnboundedMailbox()
-        else new BoundedMailbox(config)
+        else new BoundedMailbox(prerequisites.settings, config)
       case "unbounded" ⇒ UnboundedMailbox()
-      case "bounded"   ⇒ new BoundedMailbox(config)
+      case "bounded"   ⇒ new BoundedMailbox(prerequisites.settings, config)
       case fqcn ⇒
-        val args = Seq(classOf[Config] -> config)
+        val args = Seq(classOf[ActorSystem.Settings] -> prerequisites.settings, classOf[Config] -> config)
         prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒
             throw new IllegalArgumentException(
               ("Cannot instantiate MailboxType [%s], defined in [%s], " +
-                "make sure it has constructor with a [com.typesafe.config.Config] parameter")
+                "make sure it has constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters")
                 .format(fqcn, config.getString("id")), exception)
         }
     }

@@ -9,7 +9,7 @@ import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.util.duration._
-import akka.actor.{ Props, Actor, PoisonPill }
+import akka.actor.{ Props, Actor, PoisonPill, ActorSystem }
 
 object DispatcherDocSpec {
   val config = """
