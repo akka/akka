@@ -170,3 +170,12 @@ An example is worth a thousand quacks:
 .. includecode:: ../scala/code/akka/docs/dispatcher/DispatcherDocSpec.scala#mailbox-implementation-example
 
 And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher configuration.
+
+.. note::
+
+  Make sure to include a constructor which takes
+  ``akka.actor.ActorSystem.Settings`` and ``com.typesafe.config.Config``
+  arguments, as this constructor is invoked reflectively to construct your
+  mailbox type. The config passed in as second argument is that section from
+  the configuration which describes the dispatcher using this mailbox type; the
+  mailbox type will be instantiated once for each dispatcher using it.
