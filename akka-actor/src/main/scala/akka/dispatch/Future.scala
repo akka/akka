@@ -1047,10 +1047,11 @@ abstract class Recover[+T] extends japi.RecoverBridge[T] {
  * possible to use `Future.filter` by constructing such a function indirectly:
  *
  * {{{
+ * import static akka.dispatch.Filter.filterOf;
  * Future<String> f = ...;
- * f.filter(Filter.create(new Filter<String>() {
+ * f.filter(filterOf(new Function<String, Boolean>() {
  *   @Override
- *   public boolean filter(String s) {
+ *   public Boolean apply(String s) {
  *     ...
  *   }
  * }));
@@ -1060,20 +1061,9 @@ abstract class Recover[+T] extends japi.RecoverBridge[T] {
  * thus Java users should prefer `Future.map`, translating non-matching values
  * to failure cases.
  */
-abstract class Filter[-T] {
-  /**
-   * This method will be invoked once when/if a Future that this callback is registered on
-   * becomes completed with a success.
-   *
-   * @return true if the successful value should be propagated to the new Future or not
-   */
-  def filter(result: T): Boolean
-}
-
 object Filter {
-  def create[T](f: Filter[T]): (T ⇒ Boolean) = new Function1[T, Boolean] {
-    def apply(result: T): Boolean = f.filter(result)
-  }
+  def filterOf[T](f: akka.japi.Function[T, java.lang.Boolean]): (T ⇒ Boolean) =
+    new Function1[T, Boolean] { def apply(result: T): Boolean = f(result).booleanValue() }
 }
 
 /**

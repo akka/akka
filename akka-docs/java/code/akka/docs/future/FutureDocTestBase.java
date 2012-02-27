@@ -317,14 +317,14 @@ public class FutureDocTestBase {
   public void useFilter() throws Exception {
     //#filter
     Future<Integer> future1 = Futures.successful(4, system.dispatcher());
-    Future<Integer> successfulFilter = future1.filter(Filter.create(new Filter<Integer>() {
-      public boolean filter(Integer i) {
+    Future<Integer> successfulFilter = future1.filter(Filter.filterOf(new Function<Integer, Boolean>() {
+      public Boolean apply(Integer i) {
         return i % 2 == 0;
       }
     }));
 
-    Future<Integer> failedFilter = future1.filter(Filter.create(new Filter<Integer>() {
-      public boolean filter(Integer i) {
+    Future<Integer> failedFilter = future1.filter(Filter.filterOf(new Function<Integer, Boolean>() {
+      public Boolean apply(Integer i) {
         return i % 2 != 0;
       }
     }));
