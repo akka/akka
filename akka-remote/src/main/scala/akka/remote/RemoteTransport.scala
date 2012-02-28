@@ -11,6 +11,7 @@ import akka.event.{ LoggingAdapter, Logging }
 import akka.AkkaException
 import akka.serialization.Serialization
 import akka.remote.RemoteProtocol._
+import akka.dispatch.ChildTerminated
 
 /**
  * Remote life-cycle events.
@@ -273,6 +274,7 @@ trait RemoteMarshallingOps {
       case l: LocalRef ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received local message {}", remoteMessage)
         remoteMessage.payload match {
+          case ct: ChildTerminated if l.isTerminated ⇒ provider.locker.childTerminated(l, ct)
           case msg: SystemMessage ⇒
             if (useUntrustedMode)
               throw new SecurityException("RemoteModule server is operating is untrusted mode, can not send system message")
