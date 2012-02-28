@@ -19,7 +19,7 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.0-SNAPSHOT",
-    scalaVersion := "2.9.2-SNAPSHOT"
+    scalaVersion := "2.9.1-1-RC1"
   )
 
   lazy val akka = Project(
@@ -38,6 +38,9 @@ object AkkaBuild extends Build {
     id = "akka-actor",
     base = file("akka-actor"),
     settings = defaultSettings ++ Seq(
+      autoCompilerPlugins := true,
+      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
+      scalacOptions += "-P:continuations:enable",
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile
     )
@@ -57,6 +60,9 @@ object AkkaBuild extends Build {
     base = file("akka-actor-tests"),
     dependencies = Seq(testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
+      autoCompilerPlugins := true,
+      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
+      scalacOptions += "-P:continuations:enable",
       libraryDependencies ++= Dependencies.actorTests
     )
   )
