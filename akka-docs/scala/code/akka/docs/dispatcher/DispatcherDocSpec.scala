@@ -146,7 +146,7 @@ object DispatcherDocSpec {
     }
 
     // This constructor signature must exist, it will be called by Akka
-    def this(config: Config) = this()
+    def this(settings: ActorSystem.Settings, config: Config) = this()
 
     // The create method is called to create the MessageQueue
     final override def create(owner: Option[ActorContext]): MessageQueue =
