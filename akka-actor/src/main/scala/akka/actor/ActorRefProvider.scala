@@ -582,14 +582,25 @@ class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassificat
 /**
  * LocalActorRefProvider with default stopping policy. Used only for migration purposes.
  */
-protected final class MigrationLocalRefProvider(_systemName: String,
-                                                settings: ActorSystem.Settings,
-                                                eventStream: EventStream,
-                                                scheduler: Scheduler,
-                                                deployer: Deployer)
+final class MigrationLocalRefProvider(_systemName: String,
+                                      settings: ActorSystem.Settings,
+                                      eventStream: EventStream,
+                                      scheduler: Scheduler,
+                                      deployer: Deployer)
   extends LocalActorRefProvider(_systemName, settings, eventStream, scheduler, deployer) {
 
-  override val guardianSupervisorStrategy = {
+  def this(_systemName: String,
+           settings: ActorSystem.Settings,
+           eventStream: EventStream,
+           scheduler: Scheduler,
+           dynamicAccess: DynamicAccess) =
+    this(_systemName,
+      settings,
+      eventStream,
+      scheduler,
+      new Deployer(settings, dynamicAccess))
+
+  override def guardianSupervisionStrategy = {
     import akka.actor.SupervisorStrategy._
     OneForOneStrategy() {
       case _: ActorKilledException         ⇒ Stop

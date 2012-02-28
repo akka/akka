@@ -8,6 +8,8 @@ import scala.collection.JavaConverters._
  * Singleton ActorSystem used for migration from Scala actors to Akka.
  */
 object MigrationSystem extends ActorSystemImpl(
-  "mig-system",
+  "MigrationSystem",
   ConfigFactory.parseMap(Map(
-    "akka.actor.provider" -> "akka.actor.MigrationLocalRefProvider").asJava).withFallback(ConfigFactory.load()))
+    "akka.actor.provider" -> "akka.actor.MigrationLocalRefProvider").asJava).withFallback(ConfigFactory.load())) {
+  start()
+}
