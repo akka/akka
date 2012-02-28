@@ -21,7 +21,8 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.util.concurrent.{ ExecutionException, Callable, TimeoutException }
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
 import akka.pattern.AskTimeoutException
-import util.DynamicVariable
+import scala.util.DynamicVariable
+import scala.runtime.BoxedUnit
 
 object Await {
 
@@ -933,9 +934,12 @@ final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val exe
  */
 object japi {
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
-  class CallbackBridge[-T] extends PartialFunction[T, Unit] {
+  class CallbackBridge[-T] extends PartialFunction[T, BoxedUnit] {
     override final def isDefinedAt(t: T): Boolean = true
-    override final def apply(t: T): Unit = internal(t)
+    override final def apply(t: T): BoxedUnit = {
+      internal(t)
+      BoxedUnit.UNIT
+    }
     protected def internal(result: T): Unit = ()
   }
 
@@ -953,8 +957,11 @@ object japi {
   }
 
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
-  class UnitFunctionBridge[-T] extends (T ⇒ Unit) {
-    override final def apply(t: T): Unit = internal(t)
+  class UnitFunctionBridge[-T] extends (T ⇒ BoxedUnit) {
+    override final def apply(t: T): BoxedUnit = {
+      internal(t)
+      BoxedUnit.UNIT
+    }
     protected def internal(result: T): Unit = ()
   }
 }
@@ -1035,22 +1042,32 @@ abstract class Recover[+T] extends japi.RecoverBridge[T] {
 }
 
 /**
+ * <i><b>Java API (not recommended):</b></i>
  * Callback for the Future.filter operation that creates a new Future which will
  * conditionally contain the success of another Future.
  *
- * SAM (Single Abstract Method) class
- * Java API
+ * Unfortunately it is not possible to express the type of a Scala filter in
+ * Java: Function1[T, Boolean], where “Boolean” is the primitive type. It is
+ * possible to use `Future.filter` by constructing such a function indirectly:
+ *
+ * {{{
+ * import static akka.dispatch.Filter.filterOf;
+ * Future<String> f = ...;
+ * f.filter(filterOf(new Function<String, Boolean>() {
+ *   @Override
+ *   public Boolean apply(String s) {
+ *     ...
+ *   }
+ * }));
+ * }}}
+ *
+ * However, `Future.filter` exists mainly to support Scala’s for-comprehensions,
+ * thus Java users should prefer `Future.map`, translating non-matching values
+ * to failure cases.
  */
-abstract class Filter[-T] extends japi.BooleanFunctionBridge[T] {
-  override final def internal(t: T): Boolean = filter(t)
-
-  /**
-   * This method will be invoked once when/if a Future that this callback is registered on
-   * becomes completed with a success.
-   *
-   * @return true if the successful value should be propagated to the new Future or not
-   */
-  def filter(result: T): Boolean
+object Filter {
+  def filterOf[T](f: akka.japi.Function[T, java.lang.Boolean]): (T ⇒ Boolean) =
+    new Function1[T, Boolean] { def apply(result: T): Boolean = f(result).booleanValue() }
 }
 
 /**
