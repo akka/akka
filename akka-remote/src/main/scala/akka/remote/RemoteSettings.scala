@@ -10,7 +10,7 @@ import java.net.InetAddress
 import akka.config.ConfigurationException
 import scala.collection.JavaConverters._
 import akka.actor.Address
-import akka.actor.AddressExtractor
+import akka.actor.AddressFromURIString
 
 class RemoteSettings(val config: Config, val systemName: String) {
   import config._

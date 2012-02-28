@@ -181,6 +181,16 @@ all messages that are not ``MethodCall``s will be passed into the ``onReceive``-
 This allows you to react to DeathWatch ``Terminated``-messages and other types of messages,
 e.g. when interfacing with untyped actors.
 
+Proxying
+--------
+
+You can use the ``typedActorOf`` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
+This is usable if you want to communicate remotely with TypedActors on other machines, just look them up with ``actorFor`` and pass the ``ActorRef`` to ``typedActorOf``.
+
+.. note::
+
+  The ActorRef needs to accept ``MethodCall`` messages.
+
 Supercharging
 -------------
 

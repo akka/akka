@@ -12,7 +12,7 @@ import akka.actor.InternalActorRef
 import akka.actor.Props
 import akka.config.ConfigurationException
 import akka.remote.RemoteScope
-import akka.actor.AddressExtractor
+import akka.actor.AddressFromURIString
 import akka.actor.SupervisorStrategy
 import akka.actor.Address
 

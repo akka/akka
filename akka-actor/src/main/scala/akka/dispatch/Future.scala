@@ -308,7 +308,11 @@ object Future {
   def flow[A](body: ⇒ A @cps[Future[Any]])(implicit executor: ExecutionContext): Future[A] = {
     val p = Promise[A]
     dispatchTask({ () ⇒
-      (reify(body) foreachFull (p success, p failure): Future[Any]) onFailure {
+      try {
+        (reify(body) foreachFull (p success, p failure): Future[Any]) onFailure {
+          case NonFatal(e) ⇒ p tryComplete Left(e)
+        }
+      } catch {
         case NonFatal(e) ⇒ p tryComplete Left(e)
       }
     }, true)

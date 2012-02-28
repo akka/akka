@@ -13,19 +13,20 @@ import akka.dispatch.MailboxType
 import com.typesafe.config.Config
 import akka.util.NonFatal
 import akka.config.ConfigurationException
+import akka.actor.ActorSystem
 
-class FileBasedMailboxType(config: Config) extends MailboxType {
+class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
+  private val settings = new FileBasedMailboxSettings(systemSettings, config)
   override def create(owner: Option[ActorContext]): MessageQueue = owner match {
-    case Some(o) ⇒ new FileBasedMessageQueue(o)
+    case Some(o) ⇒ new FileBasedMessageQueue(o, settings)
     case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
 
-class FileBasedMessageQueue(_owner: ActorContext) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
   val log = Logging(system, "FileBasedMessageQueue")
 
-  private val settings = FileBasedMailboxExtension(owner.system)
   val queuePath = settings.QueuePath
 
   private val queue = try {

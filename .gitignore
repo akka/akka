@@ -63,3 +63,6 @@ akka.sublime-workspace
 _mb
 schoir.props
 worker*.log
+mongoDB/
+redis/
+beanstalk/

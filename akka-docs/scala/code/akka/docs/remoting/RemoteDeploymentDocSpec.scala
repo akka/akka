@@ -6,7 +6,7 @@ package akka.docs.remoting
 import akka.actor.{ ExtendedActorSystem, ActorSystem, Actor, ActorRef }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 //#import
-import akka.actor.{ Props, Deploy, Address, AddressExtractor }
+import akka.actor.{ Props, Deploy, Address, AddressFromURIString }
 import akka.remote.RemoteScope
 //#import
 
@@ -43,7 +43,7 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
 
   "demonstrate address extractor" in {
     //#make-address
-    val one = AddressExtractor("akka://sys@host:1234")
+    val one = AddressFromURIString("akka://sys@host:1234")
     val two = Address("akka", "sys", "host", 1234) // this gives the same
     //#make-address
     one must be === two
