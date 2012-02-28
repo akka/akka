@@ -895,6 +895,13 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         }
         Await.ready(complex, timeout.duration) must be('completed)
       }
+
+      "should capture first exception with dataflow" in {
+        import Future.flow
+        val f1 = flow { 40 / 0 }
+        intercept[java.lang.ArithmeticException](Await result (f1, TestLatch.DefaultTimeout))
+      }
+
     }
   }
 
