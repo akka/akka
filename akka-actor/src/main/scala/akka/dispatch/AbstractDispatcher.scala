@@ -16,6 +16,7 @@ import akka.serialization.SerializationExtension
 import akka.util.NonFatal
 import akka.event.Logging.LogEventException
 import akka.jsr166y.{ ForkJoinTask, ForkJoinPool }
+import akka.util.Index
 
 final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
   if (message.isInstanceOf[AnyRef]) {
@@ -180,6 +181,29 @@ object MessageDispatcher {
   val SCHEDULED = 1
   val RESCHEDULED = 2
 
+  // dispatcher debugging helper using println (see below)
+  // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
+  final val debug = false
+  lazy val actors = new Index[MessageDispatcher, ActorRef](16, _ compareTo _)
+  def printActors: Unit = if (debug) {
+    for {
+      d ← actors.keys
+      val c = println(d + " inhabitants: " + d.inhabitants)
+      a ← actors.valueIterator(d)
+    } {
+      val status = if (a.isTerminated) " (terminated)" else " (alive)"
+      val messages = a match {
+        case l: LocalActorRef ⇒ " " + l.underlying.mailbox.numberOfMessages + " messages"
+        case _                ⇒ " " + a.getClass
+      }
+      val parent = a match {
+        case i: InternalActorRef ⇒ ", parent: " + i.getParent
+        case _                   ⇒ ""
+      }
+      println(" -> " + a + status + messages + parent)
+    }
+  }
+
   implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
 
@@ -267,6 +291,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    * If you override it, you must call it. But only ever once. See "attach" for only invocation.
    */
   protected[akka] def register(actor: ActorCell) {
+    if (debug) actors.put(this, actor.self)
     inhabitantsUpdater.incrementAndGet(this)
   }
 
@@ -274,6 +299,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    * If you override it, you must call it. But only ever once. See "detach" for the only invocation
    */
   protected[akka] def unregister(actor: ActorCell) {
+    if (debug) actors.remove(this, actor.self)
     inhabitantsUpdater.decrementAndGet(this)
     val mailBox = actor.mailbox
     mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up

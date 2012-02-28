@@ -256,10 +256,9 @@ private[akka] class ActorCell(
 
   final def stop(actor: ActorRef): Unit = {
     val a = actor.asInstanceOf[InternalActorRef]
-    if (childrenRefs contains actor.path.name) {
+    if (a.getParent == self && (childrenRefs contains actor.path.name)) {
       system.locker ! a
-      childrenRefs -= actor.path.name
-      handleChildTerminated(actor)
+      handleChildTerminated(actor) // will remove child from childrenRefs
     }
     a.stop()
   }
