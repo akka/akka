@@ -497,6 +497,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
   private lazy val _start: this.type = {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
+    registerOnTermination(locker.shutdown())
     registerOnTermination(stopScheduler())
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
