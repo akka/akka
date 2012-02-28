@@ -15,7 +15,7 @@ import java.net.InetSocketAddress
 
 class LeaderElectionSpec extends AkkaSpec("""
   akka {
-    loglevel = "DEBUG"
+    loglevel = "INFO"
     actor.debug.lifecycle = on
     actor.debug.autoreceive = on
     cluster.failure-detector.threshold = 3

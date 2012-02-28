@@ -5,7 +5,7 @@ import akka.testkit.AkkaSpec
 import akka.actor.Address
 
 class AccrualFailureDetectorSpec extends AkkaSpec("""
-  akka.loglevel = "DEBUG"
+  akka.loglevel = "INFO"
 """) {
 
   "An AccrualFailureDetector" must {

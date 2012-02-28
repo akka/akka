@@ -170,8 +170,6 @@ final class ClusterCommandDaemon(system: ActorSystem, node: Node) extends Actor 
   }
 }
 
-// FIXME create package object with implicit conversion that enables: system.node
-
 /**
  * Pooled and routed wit N number of configurable instances.
  * Concurrent access to Node.
