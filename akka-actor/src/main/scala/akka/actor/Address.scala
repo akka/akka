@@ -61,7 +61,7 @@ object RelativeActorPath {
 /**
  * This object serves as extractor for Scala and as address parser for Java.
  */
-object AddressExtractor {
+object AddressFromURIString {
   def unapply(addr: String): Option[Address] =
     try {
       val uri = new URI(addr)
@@ -87,8 +87,8 @@ object AddressExtractor {
    * Try to construct an Address from the given String or throw a java.net.MalformedURLException.
    */
   def apply(addr: String): Address = addr match {
-    case AddressExtractor(address) ⇒ address
-    case _                         ⇒ throw new MalformedURLException
+    case AddressFromURIString(address) ⇒ address
+    case _                             ⇒ throw new MalformedURLException
   }
 
   /**
@@ -102,7 +102,7 @@ object ActorPathExtractor {
     try {
       val uri = new URI(addr)
       if (uri.getPath == null) None
-      else AddressExtractor.unapply(uri) match {
+      else AddressFromURIString.unapply(uri) match {
         case None       ⇒ None
         case Some(addr) ⇒ Some((addr, ActorPath.split(uri.getPath).drop(1)))
       }

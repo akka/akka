@@ -20,10 +20,10 @@ class RemoteDeployer(_settings: ActorSystem.Settings, _pm: DynamicAccess) extend
     super.parseConfig(path, config) match {
       case d @ Some(deploy) ⇒
         deploy.config.getString("remote") match {
-          case AddressExtractor(r) ⇒ Some(deploy.copy(scope = RemoteScope(r)))
+          case AddressFromURIString(r) ⇒ Some(deploy.copy(scope = RemoteScope(r)))
           case str ⇒
             if (!str.isEmpty) throw new ConfigurationException("unparseable remote node name " + str)
-            val nodes = deploy.config.getStringList("target.nodes").asScala
+            val nodes = deploy.config.getStringList("target.nodes").asScala map (AddressFromURIString(_))
             if (nodes.isEmpty || deploy.routerConfig == NoRouter) d
             else Some(deploy.copy(routerConfig = RemoteRouterConfig(deploy.routerConfig, nodes)))
         }

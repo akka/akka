@@ -18,9 +18,12 @@ Execution Contexts
 ------------------
 
 In order to execute callbacks and operations, Futures need something called an ``ExecutionContext``,
-which is very similar to a `java.util.concurrent.Executor``. if you have an ``ActorSystem`` in scope,
+which is very similar to a ``java.util.concurrent.Executor``. if you have an ``ActorSystem`` in scope,
 it will use its default dispatcher as the ``ExecutionContext``, or you can use the factory methods provided
 by the ``ExecutionContext`` companion object to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
+
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: diy-execution-context
 
 Use With Actors
 ---------------
@@ -157,8 +160,8 @@ For example:
    :include: sequence-ask
 
 To better explain what happened in the example, ``Future.sequence`` is taking the ``List[Future[Int]]``
-and turning it into a ``Future[List[Int]]``. We can then use ``map`` to work with the ``List[Int]`` directly, a
-nd we find the sum of the ``List``.
+and turning it into a ``Future[List[Int]]``. We can then use ``map`` to work with the ``List[Int]`` directly,
+and we find the sum of the ``List``.
 
 The ``traverse`` method is similar to ``sequence``, but it takes a ``T[A]`` and a function ``A => Future[B]`` to return a ``Future[T[B]]``,
 where ``T`` is again a subclass of Traversable. For example, to use ``traverse`` to sum the first 100 odd numbers:

@@ -25,6 +25,8 @@ import com.typesafe.config.ConfigValueType;
 final class ConfigDelayedMerge extends AbstractConfigValue implements
         Unmergeable {
 
+    private static final long serialVersionUID = 1L;
+
     // earlier items in the stack win
     final private List<AbstractConfigValue> stack;
     final private boolean ignoresFallbacks;

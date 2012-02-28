@@ -11,6 +11,7 @@ import akka.pattern.ask
 import akka.util.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.junit.JUnitSuite
 
 object ActorWithStashSpec {
 
@@ -25,15 +26,31 @@ object ActorWithStashSpec {
     def receive = {
       case "hello" ⇒
         state.s = "hello"
-        unstashAll(greeted)
+        unstashAll()
+        context.become(greeted)
       case msg ⇒ stash()
+    }
+  }
+
+  class StashingTwiceActor(implicit sys: ActorSystem) extends Actor with Stash {
+    def receive = {
+      case "hello" ⇒
+        try {
+          stash()
+          stash()
+        } catch {
+          case e: IllegalStateException ⇒
+            state.expectedException.open()
+        }
+      case msg ⇒ // do nothing
     }
   }
 
   class ActorWithProtocol(implicit sys: ActorSystem) extends Actor with Stash {
     def receive = {
       case "open" ⇒
-        unstashAll {
+        unstashAll()
+        context.become {
           case "write" ⇒ // do writing...
           case "close" ⇒
             unstashAll()
@@ -49,19 +66,18 @@ object ActorWithStashSpec {
     @volatile
     var s: String = ""
     val finished = TestBarrier(2)
+    var expectedException: TestLatch = null
   }
 
-  val testConf: Config = ConfigFactory.parseString("""
-      akka {
-        actor {
-          default-dispatcher {
-            mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
-          }
-        }
-      }
-      """)
+  val testConf = """
+    my-dispatcher {
+      mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
+    }
+    """
 
 }
+
+class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuite
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with DefaultTimeout with BeforeAndAfterEach {
@@ -73,14 +89,14 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 
-  override def beforeEach() = {
-    state.finished.reset
-  }
+  override def beforeEach() = state.finished.reset
+
+  def myProps(creator: ⇒ Actor): Props = Props(creator).withDispatcher("my-dispatcher")
 
   "An Actor with Stash" must {
 
     "stash messages" in {
-      val stasher = system.actorOf(Props(new StashingActor))
+      val stasher = system.actorOf(myProps(new StashingActor))
       stasher ! "bye"
       stasher ! "hello"
       state.finished.await
@@ -88,7 +104,7 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
     }
 
     "support protocols" in {
-      val protoActor = system.actorOf(Props(new ActorWithProtocol))
+      val protoActor = system.actorOf(myProps(new ActorWithProtocol))
       protoActor ! "open"
       protoActor ! "write"
       protoActor ! "open"
@@ -99,14 +115,22 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
       state.finished.await
     }
 
+    "throw an IllegalStateException if the same messages is stashed twice" in {
+      state.expectedException = new TestLatch
+      val stasher = system.actorOf(myProps(new StashingTwiceActor))
+      stasher ! "hello"
+      stasher ! "hello"
+      Await.ready(state.expectedException, 10 seconds)
+    }
+
     "process stashed messages after restart" in {
-      val boss = system.actorOf(Props(new Supervisor(
+      val boss = system.actorOf(myProps(new Supervisor(
         OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 1 second)(List(classOf[Throwable])))))
 
       val restartLatch = new TestLatch
       val hasMsgLatch = new TestLatch
 
-      val slaveProps = Props(new Actor with Stash {
+      val slaveProps = myProps(new Actor with Stash {
         protected def receive = {
           case "crash" ⇒
             throw new Exception("Crashing...")

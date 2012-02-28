@@ -18,7 +18,7 @@ import akka.dispatch.Await;
 
 //#parentActor
 public class ParentActor extends UntypedActor {
-  public void onReceive(Object msg) {
+  public void onReceive(Object msg) throws Exception {
     if (msg.equals("rrr")) {
       //#roundRobinRouter
       ActorRef roundRobinRouter = getContext().actorOf(

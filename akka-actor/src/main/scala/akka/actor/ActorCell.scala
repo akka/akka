@@ -93,7 +93,15 @@ trait ActorContext extends ActorRefFactory {
   def sender: ActorRef
 
   /**
-   * Returns all supervised children.
+   * Returns all supervised children; this method returns a view onto the
+   * internal collection of children. Targeted lookups should be using
+   * `actorFor` instead for performance reasons:
+   *
+   * {{{
+   * val badLookup = context.children find (_.path.name == "kid")
+   * // should better be expressed as:
+   * val goodLookup = context.actorFor("kid")
+   * }}}
    */
   def children: Iterable[ActorRef]
 
@@ -248,10 +256,9 @@ private[akka] class ActorCell(
 
   final def stop(actor: ActorRef): Unit = {
     val a = actor.asInstanceOf[InternalActorRef]
-    if (childrenRefs contains actor.path.name) {
+    if (a.getParent == self && (childrenRefs contains actor.path.name)) {
       system.locker ! a
-      childrenRefs -= actor.path.name
-      handleChildTerminated(actor)
+      handleChildTerminated(actor) // will remove child from childrenRefs
     }
     a.stop()
   }
@@ -381,7 +388,6 @@ private[akka] class ActorCell(
     def recreate(cause: Throwable): Unit = try {
       val failedActor = actor
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
-      val freshActor = newActor()
       if (failedActor ne null) {
         val c = currentMessage //One read only plz
         try {
@@ -390,7 +396,8 @@ private[akka] class ActorCell(
           clearActorFields()
         }
       }
-      actor = freshActor // assign it here so if preStart fails, we can null out the sef-refs next call
+      val freshActor = newActor() // this must happen after failedActor.preRestart (to scrap those children)
+      actor = freshActor // this must happen before postRestart has a chance to fail
       freshActor.postRestart(cause)
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
 

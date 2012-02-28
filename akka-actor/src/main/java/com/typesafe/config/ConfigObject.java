@@ -91,4 +91,23 @@ public interface ConfigObject extends ConfigValue, Map<String, ConfigValue> {
      */
     @Override
     ConfigValue get(Object key);
+
+    /**
+     * Clone the object with only the given key (and its children) retained; all
+     * sibling keys are removed.
+     *
+     * @param key
+     *            key to keep
+     * @return a copy of the object minus all keys except the one specified
+     */
+    ConfigObject withOnlyKey(String key);
+
+    /**
+     * Clone the object with the given key removed.
+     *
+     * @param key
+     *            key to remove
+     * @return a copy of the object minus the specified key
+     */
+    ConfigObject withoutKey(String key);
 }

@@ -12,7 +12,11 @@ import akka.actor.InternalActorRef
 import akka.actor.Props
 import akka.config.ConfigurationException
 import akka.remote.RemoteScope
-import akka.actor.AddressExtractor
+import akka.actor.AddressFromURIString
+import akka.actor.SupervisorStrategy
+import akka.actor.Address
+
+import scala.collection.JavaConverters._
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -20,7 +24,10 @@ import akka.actor.AddressExtractor
  * which makes it possible to mix this with the built-in routers such as
  * [[akka.routing.RoundRobinRouter]] or custom routers.
  */
-case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) extends RouterConfig {
+case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) extends RouterConfig {
+
+  def this(local: RouterConfig, nodes: java.lang.Iterable[Address]) = this(local, nodes.asScala)
+  def this(local: RouterConfig, nodes: Array[Address]) = this(local, nodes: Iterable[Address])
 
   override def createRouteeProvider(context: ActorContext) = new RemoteRouteeProvider(nodes, context, resizer)
 
@@ -29,6 +36,8 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) exte
   }
 
   override def createActor(): Router = local.createActor()
+
+  override def supervisorStrategy: SupervisorStrategy = local.supervisorStrategy
 
   override def routerDispatcher: String = local.routerDispatcher
 
@@ -46,17 +55,11 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[String]) exte
  *
  * Routee paths may not be combined with remote target nodes.
  */
-class RemoteRouteeProvider(nodes: Iterable[String], _context: ActorContext, _resizer: Option[Resizer])
+class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _resizer: Option[Resizer])
   extends RouteeProvider(_context, _resizer) {
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
-  private val nodeAddressIter = {
-    val nodeAddresses = nodes map {
-      case AddressExtractor(a) ⇒ a
-      case x                   ⇒ throw new ConfigurationException("unparseable remote node " + x)
-    }
-    Stream.continually(nodeAddresses).flatten.iterator
-  }
+  private val nodeAddressIter = Stream.continually(nodes).flatten.iterator
 
   override def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
     (nrOfInstances, routees, nodes) match {

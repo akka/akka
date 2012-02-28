@@ -191,9 +191,9 @@ trait AskSupport {
     val result = Promise[Any]()(provider.dispatcher)
     val a = new PromiseActorRef(provider, path, provider.tempContainer, result, provider.deathWatch)
     provider.registerTempActor(a, path)
-    val f = provider.scheduler.scheduleOnce(timeout.duration) { result.failure(new AskTimeoutException("Timed out")) }
+    val f = provider.scheduler.scheduleOnce(timeout.duration) { result.tryComplete(Left(new AskTimeoutException("Timed out"))) }
     result onComplete { _ ⇒
-      try { a.stop(); f.cancel() }
+      try { try a.stop() finally f.cancel() }
       finally { provider.unregisterTempActor(path) }
     }
     a

@@ -19,13 +19,14 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.0-SNAPSHOT",
-    scalaVersion := "2.9.1"
+    scalaVersion := "2.9.1-1-RC1"
   )
 
   lazy val akka = Project(
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
+      testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
@@ -141,6 +142,8 @@ object AkkaBuild extends Build {
   //   )
   // )
 
+  val testMailbox = SettingKey[Boolean]("test-mailbox")
+
   lazy val mailboxes = Project(
     id = "akka-durable-mailboxes",
     base = file("akka-durable-mailboxes"),
@@ -165,8 +168,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.beanstalkMailbox,
-      testBeanstalkMailbox := false,
-      testOptions in Test <+= testBeanstalkMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
     )
   )
 
@@ -179,16 +181,13 @@ object AkkaBuild extends Build {
     )
   )
 
-  val testRedisMailbox = SettingKey[Boolean]("test-redis-mailbox")
-
   lazy val redisMailbox = Project(
     id = "akka-redis-mailbox",
     base = file("akka-durable-mailboxes/akka-redis-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.redisMailbox,
-      testRedisMailbox := false,
-      testOptions in Test <+= testRedisMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
     )
   )
 
@@ -201,8 +200,6 @@ object AkkaBuild extends Build {
     )
   )
 
-  val testMongoMailbox = SettingKey[Boolean]("test-mongo-mailbox")
-
   lazy val mongoMailbox = Project(
     id = "akka-mongo-mailbox",
     base = file("akka-durable-mailboxes/akka-mongo-mailbox"),
@@ -210,8 +207,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.mongoMailbox,
       ivyXML := Dependencies.mongoMailboxExcludes,
-      testMongoMailbox := false,
-      testOptions in Test <+= testMongoMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
     )
   )
 
@@ -331,7 +327,9 @@ object AkkaBuild extends Build {
 
   // Settings
 
-  override lazy val settings = super.settings ++ buildSettings
+  override lazy val settings = super.settings ++ buildSettings ++ Seq(
+      resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/"
+    )
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
@@ -474,7 +472,7 @@ object Dependencies {
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
-  val docs = Seq(Test.scalatest, Test.junit, playMini)
+  val docs = Seq(Test.scalatest, Test.junit)
 
   val zeroMQ = Seq(Test.scalatest, Test.junit, protobuf, Dependency.zeroMQ)
 }
@@ -486,8 +484,6 @@ object Dependency {
   object V {
     val Camel        = "2.8.0"
     val Jackson      = "1.8.0"
-    val JavaxServlet = "3.0"
-    val Jersey       = "1.3"
     val Jetty        = "7.4.0.v20110414"
     val Logback      = "0.9.28"
     val Netty        = "3.3.0.Final"
@@ -498,7 +494,6 @@ object Dependency {
     val Slf4j        = "1.6.4"
     val Spring       = "3.0.5.RELEASE"
     val Zookeeper    = "3.4.0"
-    val PlayMini     = "2.0-RC1-SNAPSHOT"
   }
 
   // Compile
@@ -523,9 +518,9 @@ object Dependency {
   val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
   val rabbit        = "com.rabbitmq"                % "amqp-client"            % V.Rabbit     // Mozilla Public License
-  val redis         = "net.debasishg"               %% "redisclient"           % "2.4.0"      // ApacheV2
-  val scalaStm      = "org.scala-tools"             %% "scala-stm"             % V.ScalaStm   // Modified BSD (Scala)
-  val sjson         = "net.debasishg"               %% "sjson"                 % "0.15"       // ApacheV2
+  val redis         = "net.debasishg"               % "redisclient_2.9.1"      % "2.4.0"      // ApacheV2
+  val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
+  val sjson         = "net.debasishg"               % "sjson_2.9.1"            % "0.15"       // ApacheV2
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
   val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
@@ -534,8 +529,7 @@ object Dependency {
   val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
-  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding"  % "0.0.3" // ApacheV2
-  val playMini      = "com.typesafe"                % "play-mini_2.9.1"        % V.PlayMini
+  val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.3" // ApacheV2
 
   // Provided
 
@@ -564,8 +558,8 @@ object Dependency {
     val junit       = "junit"                       % "junit"               % "4.5"        % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"         % "1.8.1"      % "test" // MIT
-    val scalatest   = "org.scalatest"               %% "scalatest"          % V.Scalatest  % "test" // ApacheV2
-    val scalacheck  = "org.scala-tools.testing"     %% "scalacheck"         % "1.9"        % "test" // New BSD
+    val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
+    val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
     val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % V.Zookeeper  % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }

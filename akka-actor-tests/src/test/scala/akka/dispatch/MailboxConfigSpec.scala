@@ -6,15 +6,15 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import akka.util._
 import akka.util.duration._
 import akka.testkit.AkkaSpec
-import akka.actor.ActorRef
-import akka.actor.ActorContext
+import akka.actor.{ ActorRef, ActorContext, Props, LocalActorRef }
 import com.typesafe.config.Config
+import akka.actor.ActorSystem
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   def name: String
 
-  def factory: MailboxType ⇒ Mailbox
+  def factory: MailboxType ⇒ MessageQueue
 
   name should {
     "create an unbounded mailbox" in {
@@ -77,7 +77,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
   def createMessageInvocation(msg: Any): Envelope = Envelope(msg, system.deadLetters)(system)
 
-  def ensureInitialMailboxState(config: MailboxType, q: Mailbox) {
+  def ensureInitialMailboxState(config: MailboxType, q: MessageQueue) {
     q must not be null
     q match {
       case aQueue: BlockingQueue[_] ⇒
@@ -136,8 +136,8 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 class DefaultMailboxSpec extends MailboxSpec {
   lazy val name = "The default mailbox implementation"
   def factory = {
-    case u: UnboundedMailbox ⇒ u.create(null)
-    case b: BoundedMailbox   ⇒ b.create(null)
+    case u: UnboundedMailbox ⇒ u.create(None)
+    case b: BoundedMailbox   ⇒ b.create(None)
   }
 }
 
@@ -145,8 +145,8 @@ class PriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    ⇒ UnboundedPriorityMailbox(comparator).create(null)
-    case BoundedMailbox(capacity, pushTimeOut) ⇒ BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(null)
+    case UnboundedMailbox()                    ⇒ new UnboundedPriorityMailbox(comparator).create(None)
+    case BoundedMailbox(capacity, pushTimeOut) ⇒ new BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(None)
   }
 }
 
@@ -157,12 +157,14 @@ object CustomMailboxSpec {
     }
     """
 
-  class MyMailboxType(config: Config) extends MailboxType {
-    override def create(owner: ActorContext) = new MyMailbox(owner)
+  class MyMailboxType(settings: ActorSystem.Settings, config: Config) extends MailboxType {
+    override def create(owner: Option[ActorContext]) = owner match {
+      case Some(o) ⇒ new MyMailbox(o)
+      case None    ⇒ throw new Exception("no mailbox owner given")
+    }
   }
 
-  class MyMailbox(owner: ActorContext) extends CustomMailbox(owner)
-    with QueueBasedMessageQueue with UnboundedMessageQueueSemantics with DefaultSystemMessageQueue {
+  class MyMailbox(owner: ActorContext) extends QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
     final val queue = new ConcurrentLinkedQueue[Envelope]()
   }
 }
@@ -171,8 +173,9 @@ object CustomMailboxSpec {
 class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
   "Dispatcher configuration" must {
     "support custom mailboxType" in {
-      val dispatcher = system.dispatchers.lookup("my-dispatcher")
-      dispatcher.createMailbox(null).getClass must be(classOf[CustomMailboxSpec.MyMailbox])
+      val actor = system.actorOf(Props.empty.withDispatcher("my-dispatcher"))
+      val queue = actor.asInstanceOf[LocalActorRef].underlying.mailbox.messageQueue
+      queue.getClass must be(classOf[CustomMailboxSpec.MyMailbox])
     }
   }
 }

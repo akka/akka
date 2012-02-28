@@ -9,6 +9,7 @@ import akka.testkit.TestEvent._
 import akka.dispatch.{ Await, MessageQueueAppendFailedException, BoundedDequeBasedMailbox }
 import akka.pattern.ask
 import akka.util.duration._
+import akka.actor.ActorSystem.Settings
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterEach
 
@@ -20,7 +21,6 @@ object ActorWithBoundedStashSpec {
         stash()
         sender ! "OK"
       case "world" ⇒
-        self ! "world"
         try {
           unstashAll()
         } catch {
@@ -49,18 +49,14 @@ object ActorWithBoundedStashSpec {
   @volatile var stashOverflow: TestLatch = null
 
   val testConf: Config = ConfigFactory.parseString("""
-      akka {
-        actor {
-          default-dispatcher {
-            mailbox-type = "akka.actor.ActorWithBoundedStashSpec$Bounded"
-            stash-capacity = 20
-          }
-        }
-      }
-      """)
+    my-dispatcher {
+      mailbox-type = "akka.actor.ActorWithBoundedStashSpec$Bounded"
+      stash-capacity = 20
+    }
+    """)
 
   // bounded deque-based mailbox with capacity 10
-  class Bounded(config: Config) extends BoundedDequeBasedMailbox(10, 10 seconds)
+  class Bounded(settings: Settings, config: Config) extends BoundedDequeBasedMailbox(10, 5 seconds)
 
 }
 
@@ -74,13 +70,15 @@ class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testC
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 
+  def myProps(creator: ⇒ Actor): Props = Props(creator).withDispatcher("my-dispatcher")
+
   "An Actor with Stash and BoundedDequeBasedMailbox" must {
 
     "throw a MessageQueueAppendFailedException in case of a capacity violation" in {
       ActorWithBoundedStashSpec.expectedException = new TestLatch
-      val stasher = system.actorOf(Props(new StashingActor))
+      val stasher = system.actorOf(myProps(new StashingActor))
       // fill up stash
-      val futures = for (_ ← 1 to 10) yield { stasher ? "hello" }
+      val futures = for (_ ← 1 to 11) yield { stasher ? "hello" }
       futures foreach { Await.ready(_, 10 seconds) }
 
       // cause unstashAll with capacity violation
@@ -94,7 +92,7 @@ class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testC
 
     "throw a StashOverflowException in case of a stash capacity violation" in {
       ActorWithBoundedStashSpec.stashOverflow = new TestLatch
-      val stasher = system.actorOf(Props(new StashingActorWithOverflow))
+      val stasher = system.actorOf(myProps(new StashingActorWithOverflow))
       // fill up stash
       for (_ ← 1 to 21) { stasher ! "hello" }
       Await.ready(ActorWithBoundedStashSpec.stashOverflow, 10 seconds)

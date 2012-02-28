@@ -157,12 +157,12 @@ class ActiveRemoteClient private[akka] (
       openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
 
       executionHandler = new ExecutionHandler(netty.executor)
-
       val b = new ClientBootstrap(netty.clientChannelFactory)
       b.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, b, executionHandler, remoteAddress, localAddress, this))
       b.setOption("tcpNoDelay", true)
       b.setOption("keepAlive", true)
       b.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
+      settings.OutboundLocalAddress.foreach(s ⇒ b.setOption("localAddress", new InetSocketAddress(s, 0)))
       bootstrap = b
 
       val remoteIP = InetAddress.getByName(remoteAddress.host.get)

@@ -16,6 +16,7 @@ import akka.serialization.SerializationExtension
 import akka.util.NonFatal
 import akka.event.Logging.LogEventException
 import akka.jsr166y.{ ForkJoinTask, ForkJoinPool }
+import akka.util.Index
 
 final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
   if (message.isInstanceOf[AnyRef]) {
@@ -93,15 +94,18 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
  * Java API to create ExecutionContexts
  */
 object ExecutionContexts {
+
   /**
    * Creates an ExecutionContext from the given ExecutorService
    */
-  def fromExecutorService(e: ExecutorService): ExecutionContext = new ExecutionContext.WrappedExecutorService(e)
+  def fromExecutorService(e: ExecutorService): ExecutionContextExecutorService =
+    new ExecutionContext.WrappedExecutorService(e)
 
   /**
    * Creates an ExecutionContext from the given Executor
    */
-  def fromExecutor(e: Executor): ExecutionContext = new ExecutionContext.WrappedExecutor(e)
+  def fromExecutor(e: Executor): ExecutionContextExecutor =
+    new ExecutionContext.WrappedExecutor(e)
 }
 
 object ExecutionContext {
@@ -110,17 +114,17 @@ object ExecutionContext {
   /**
    * Creates an ExecutionContext from the given ExecutorService
    */
-  def fromExecutorService(e: ExecutorService): ExecutionContext = new WrappedExecutorService(e)
+  def fromExecutorService(e: ExecutorService): ExecutionContext with ExecutorService = new WrappedExecutorService(e)
 
   /**
    * Creates an ExecutionContext from the given Executor
    */
-  def fromExecutor(e: Executor): ExecutionContext = new WrappedExecutor(e)
+  def fromExecutor(e: Executor): ExecutionContext with Executor = new WrappedExecutor(e)
 
   /**
    * Internal Akka use only
    */
-  private[akka] class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContext {
+  private[akka] class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContextExecutorService {
     override def reportFailure(t: Throwable): Unit = t match {
       case e: LogEventException ⇒ e.getCause.printStackTrace()
       case _                    ⇒ t.printStackTrace()
@@ -130,7 +134,7 @@ object ExecutionContext {
   /**
    * Internal Akka use only
    */
-  private[akka] class WrappedExecutor(val executor: Executor) extends Executor with ExecutionContext {
+  private[akka] class WrappedExecutor(val executor: Executor) extends ExecutionContextExecutor {
     override final def execute(runnable: Runnable): Unit = executor.execute(runnable)
     override def reportFailure(t: Throwable): Unit = t match {
       case e: LogEventException ⇒ e.getCause.printStackTrace()
@@ -138,6 +142,16 @@ object ExecutionContext {
     }
   }
 }
+
+/**
+ * Union interface since Java does not support union types
+ */
+trait ExecutionContextExecutor extends ExecutionContext with Executor
+
+/**
+ * Union interface since Java does not support union types
+ */
+trait ExecutionContextExecutorService extends ExecutionContextExecutor with ExecutorService
 
 /**
  * An ExecutionContext is essentially the same thing as a java.util.concurrent.Executor
@@ -166,6 +180,29 @@ object MessageDispatcher {
   val UNSCHEDULED = 0 //WARNING DO NOT CHANGE THE VALUE OF THIS: It relies on the faster init of 0 in AbstractMessageDispatcher
   val SCHEDULED = 1
   val RESCHEDULED = 2
+
+  // dispatcher debugging helper using println (see below)
+  // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
+  final val debug = false
+  lazy val actors = new Index[MessageDispatcher, ActorRef](16, _ compareTo _)
+  def printActors: Unit = if (debug) {
+    for {
+      d ← actors.keys
+      val c = println(d + " inhabitants: " + d.inhabitants)
+      a ← actors.valueIterator(d)
+    } {
+      val status = if (a.isTerminated) " (terminated)" else " (alive)"
+      val messages = a match {
+        case l: LocalActorRef ⇒ " " + l.underlying.mailbox.numberOfMessages + " messages"
+        case _                ⇒ " " + a.getClass
+      }
+      val parent = a match {
+        case i: InternalActorRef ⇒ ", parent: " + i.getParent
+        case _                   ⇒ ""
+      }
+      println(" -> " + a + status + messages + parent)
+    }
+  }
 
   implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
@@ -254,6 +291,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    * If you override it, you must call it. But only ever once. See "attach" for only invocation.
    */
   protected[akka] def register(actor: ActorCell) {
+    if (debug) actors.put(this, actor.self)
     inhabitantsUpdater.incrementAndGet(this)
   }
 
@@ -261,6 +299,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    * If you override it, you must call it. But only ever once. See "detach" for the only invocation
    */
   protected[akka] def unregister(actor: ActorCell) {
+    if (debug) actors.remove(this, actor.self)
     inhabitantsUpdater.decrementAndGet(this)
     val mailBox = actor.mailbox
     mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up
@@ -370,20 +409,18 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
   def mailboxType(): MailboxType = {
     config.getString("mailbox-type") match {
       case "" ⇒
-        val capacity = config.getInt("mailbox-capacity")
-        if (capacity < 1) UnboundedMailbox()
-        else {
-          val duration = Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS)
-          BoundedMailbox(capacity, duration)
-        }
+        if (config.getInt("mailbox-capacity") < 1) UnboundedMailbox()
+        else new BoundedMailbox(prerequisites.settings, config)
+      case "unbounded" ⇒ UnboundedMailbox()
+      case "bounded"   ⇒ new BoundedMailbox(prerequisites.settings, config)
       case fqcn ⇒
-        val args = Seq(classOf[Config] -> config)
+        val args = Seq(classOf[ActorSystem.Settings] -> prerequisites.settings, classOf[Config] -> config)
         prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args) match {
           case Right(instance) ⇒ instance
           case Left(exception) ⇒
             throw new IllegalArgumentException(
               ("Cannot instantiate MailboxType [%s], defined in [%s], " +
-                "make sure it has constructor with a [com.typesafe.config.Config] parameter")
+                "make sure it has constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters")
                 .format(fqcn, config.getString("id")), exception)
         }
     }

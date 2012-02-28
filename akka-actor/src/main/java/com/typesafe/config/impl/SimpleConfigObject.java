@@ -42,6 +42,83 @@ final class SimpleConfigObject extends AbstractConfigObject {
     }
 
     @Override
+    public SimpleConfigObject withOnlyKey(String key) {
+        return withOnlyPath(Path.newKey(key));
+    }
+
+    @Override
+    public SimpleConfigObject withoutKey(String key) {
+        return withoutPath(Path.newKey(key));
+    }
+
+    // gets the object with only the path if the path
+    // exists, otherwise null if it doesn't. this ensures
+    // that if we have { a : { b : 42 } } and do
+    // withOnlyPath("a.b.c") that we don't keep an empty
+    // "a" object.
+    @Override
+    protected SimpleConfigObject withOnlyPathOrNull(Path path) {
+        String key = path.first();
+        Path next = path.remainder();
+        AbstractConfigValue v = value.get(key);
+
+        if (next != null) {
+            if (v != null && (v instanceof AbstractConfigObject)) {
+                v = ((AbstractConfigObject) v).withOnlyPathOrNull(next);
+            } else {
+                // if the path has more elements but we don't have an object,
+                // then the rest of the path does not exist.
+                v = null;
+            }
+        }
+
+        if (v == null) {
+            return null;
+        } else {
+            return new SimpleConfigObject(origin(), Collections.singletonMap(key, v),
+                    resolveStatus(), ignoresFallbacks);
+        }
+    }
+
+    @Override
+    SimpleConfigObject withOnlyPath(Path path) {
+        SimpleConfigObject o = withOnlyPathOrNull(path);
+        if (o == null) {
+            return new SimpleConfigObject(origin(),
+                    Collections.<String, AbstractConfigValue> emptyMap(), resolveStatus(),
+                    ignoresFallbacks);
+        } else {
+            return o;
+        }
+    }
+
+    @Override
+    SimpleConfigObject withoutPath(Path path) {
+        String key = path.first();
+        Path next = path.remainder();
+        AbstractConfigValue v = value.get(key);
+
+        if (v != null && next != null && v instanceof AbstractConfigObject) {
+            v = ((AbstractConfigObject) v).withoutPath(next);
+            Map<String, AbstractConfigValue> updated = new HashMap<String, AbstractConfigValue>(
+                    value);
+            updated.put(key, v);
+            return new SimpleConfigObject(origin(), updated, resolveStatus(), ignoresFallbacks);
+        } else if (next != null || v == null) {
+            // can't descend, nothing to remove
+            return this;
+        } else {
+            Map<String, AbstractConfigValue> smaller = new HashMap<String, AbstractConfigValue>(
+                    value.size() - 1);
+            for (Map.Entry<String, AbstractConfigValue> old : value.entrySet()) {
+                if (!old.getKey().equals(key))
+                    smaller.put(old.getKey(), old.getValue());
+            }
+            return new SimpleConfigObject(origin(), smaller, resolveStatus(), ignoresFallbacks);
+        }
+    }
+
+    @Override
     protected AbstractConfigValue peek(String key) {
         return value.get(key);
     }

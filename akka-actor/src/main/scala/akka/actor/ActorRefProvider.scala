@@ -380,8 +380,10 @@ class LocalActorRefProvider(
     }
   }
 
-  // Default guardian strategy
-  protected[actor] val guardianSupervisorStrategy = {
+  /**
+   * Overridable supervision strategy to be used by the “/user” guardian.
+   */
+  protected def guardianSupervisionStrategy = {
     import akka.actor.SupervisorStrategy._
     OneForOneStrategy() {
       case _: ActorKilledException         ⇒ Stop
@@ -397,7 +399,7 @@ class LocalActorRefProvider(
    */
   private class Guardian extends Actor {
 
-    override val supervisorStrategy = guardianSupervisorStrategy
+    override val supervisorStrategy = guardianSupervisionStrategy
 
     def receive = {
       case Terminated(_)                ⇒ context.stop(self)
@@ -411,12 +413,27 @@ class LocalActorRefProvider(
     override def preRestart(cause: Throwable, msg: Option[Any]) {}
   }
 
+  /**
+   * Overridable supervision strategy to be used by the “/system” guardian.
+   */
+  protected def systemGuardianSupervisionStrategy = {
+    import akka.actor.SupervisorStrategy._
+    OneForOneStrategy() {
+      case _: ActorKilledException         ⇒ Stop
+      case _: ActorInitializationException ⇒ Stop
+      case _: Exception                    ⇒ Restart
+    }
+  }
+
   /*
    * Guardians can be asked by ActorSystem to create children, i.e. top-level
    * actors. Therefore these need to answer to these requests, forwarding any
    * exceptions which might have occurred.
    */
   private class SystemGuardian extends Actor {
+
+    override val supervisorStrategy = systemGuardianSupervisionStrategy
+
     def receive = {
       case Terminated(_) ⇒
         eventStream.stopDefaultLoggers()
