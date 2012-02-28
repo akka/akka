@@ -19,7 +19,7 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.0-SNAPSHOT",
-    scalaVersion := "2.9.1"
+    scalaVersion := "2.9.1-1-RC1"
   )
 
   lazy val akka = Project(
@@ -327,7 +327,9 @@ object AkkaBuild extends Build {
 
   // Settings
 
-  override lazy val settings = super.settings ++ buildSettings
+  override lazy val settings = super.settings ++ buildSettings ++ Seq(
+      resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/"
+    )
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
@@ -516,9 +518,9 @@ object Dependency {
   val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
   val rabbit        = "com.rabbitmq"                % "amqp-client"            % V.Rabbit     // Mozilla Public License
-  val redis         = "net.debasishg"               %% "redisclient"           % "2.4.0"      // ApacheV2
-  val scalaStm      = "org.scala-tools"             %% "scala-stm"             % V.ScalaStm   // Modified BSD (Scala)
-  val sjson         = "net.debasishg"               %% "sjson"                 % "0.15"       // ApacheV2
+  val redis         = "net.debasishg"               % "redisclient_2.9.1"      % "2.4.0"      // ApacheV2
+  val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
+  val sjson         = "net.debasishg"               % "sjson_2.9.1"            % "0.15"       // ApacheV2
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
   val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
@@ -527,7 +529,7 @@ object Dependency {
   val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
-  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding"  % "0.0.3"      // ApacheV2
+  val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.3" // ApacheV2
 
   // Provided
 
@@ -556,8 +558,8 @@ object Dependency {
     val junit       = "junit"                       % "junit"               % "4.5"        % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"         % "1.8.1"      % "test" // MIT
-    val scalatest   = "org.scalatest"               %% "scalatest"          % V.Scalatest  % "test" // ApacheV2
-    val scalacheck  = "org.scala-tools.testing"     %% "scalacheck"         % "1.9"        % "test" // New BSD
+    val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
+    val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
     val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % V.Zookeeper  % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }
