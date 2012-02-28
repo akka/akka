@@ -16,8 +16,8 @@ class ClusterSettings(val config: Config, val systemName: String) {
   val FailureDetectorThreshold = getInt("akka.cluster.failure-detector.threshold")
   val FailureDetectorMaxSampleSize = getInt("akka.cluster.failure-detector.max-sample-size")
   val NodeToJoin: Option[Address] = getString("akka.cluster.node-to-join") match {
-    case ""                     ⇒ None
-    case AddressExtractor(addr) ⇒ Some(addr)
+    case ""                         ⇒ None
+    case AddressFromURIString(addr) ⇒ Some(addr)
   }
   val GossipInitialDelay = Duration(getMilliseconds("akka.cluster.gossip.initialDelay"), MILLISECONDS)
   val GossipFrequency = Duration(getMilliseconds("akka.cluster.gossip.frequency"), MILLISECONDS)

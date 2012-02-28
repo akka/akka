@@ -24,8 +24,7 @@ logs
 .#*
 .codefellow
 storage
-.codefellow
-.ensime
+.ensime*
 _dump
 .manager
 manifest.mf
