@@ -774,15 +774,15 @@ class Node(system: ActorSystemImpl) extends Extension {
    */
   private def convergence(gossip: Gossip): Option[Gossip] = {
     val overview = gossip.overview
-    if (overview.unreachable.isEmpty) { // if there are any unreachable nodes then we can't have a convergence -
-      // waiting for user to act (issuing DOWN) or leader to act (issuing DOWN through auto-down)
-      val seen = gossip.overview.seen
-      val views = Set.empty[VectorClock] ++ seen.values
-      if (views.size == 1) {
-        log.debug("Node [{}] - Cluster convergence reached", remoteAddress)
-        Some(gossip)
-      } else None
+    //    if (overview.unreachable.isEmpty) { // if there are any unreachable nodes then we can't have a convergence -
+    // waiting for user to act (issuing DOWN) or leader to act (issuing DOWN through auto-down)
+    val seen = gossip.overview.seen
+    val views = Set.empty[VectorClock] ++ seen.values
+    if (views.size == 1) {
+      log.debug("Node [{}] - Cluster convergence reached", remoteAddress)
+      Some(gossip)
     } else None
+    //    } else None
   }
 
   /**
