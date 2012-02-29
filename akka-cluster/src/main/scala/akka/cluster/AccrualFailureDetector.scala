@@ -88,8 +88,10 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
 
       val newTimestamps = oldTimestamps + (connection -> timestamp) // record new timestamp
 
-      var newIntervalsForConnection =
-        oldState.intervalHistory.get(connection).getOrElse(Vector.empty[Long]) :+ interval // append the new interval to history
+      var newIntervalsForConnection = (oldState.intervalHistory.get(connection) match {
+        case Some(history) ⇒ history
+        case _             ⇒ Vector.empty[Long]
+      }) :+ interval
 
       if (newIntervalsForConnection.size > maxSampleSize) {
         // reached max history, drop first interval
@@ -100,7 +102,11 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
         if (newIntervalsForConnection.size > 1) {
 
           val newMean: Double = newIntervalsForConnection.sum / newIntervalsForConnection.size.toDouble
-          val oldConnectionFailureStats = oldFailureStats.get(connection).getOrElse(throw new IllegalStateException("Can't calculate new failure statistics due to missing heartbeat history"))
+
+          val oldConnectionFailureStats = oldState.failureStats.get(connection) match {
+            case Some(stats) ⇒ stats
+            case _           ⇒ throw new IllegalStateException("Can't calculate new failure statistics due to missing heartbeat history")
+          }
 
           val deviationSum =
             newIntervalsForConnection
@@ -148,8 +154,10 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
       else {
         val timestampDiff = newTimestamp - oldTimestamp.get
 
-        val stats = oldState.failureStats.get(connection)
-        val mean = stats.getOrElse(throw new IllegalStateException("Can't calculate Failure Detector Phi value for a node that have no heartbeat history")).mean
+        val mean = oldState.failureStats.get(connection) match {
+          case Some(FailureStats(mean, _, _)) ⇒ mean
+          case _                              ⇒ throw new IllegalStateException("Can't calculate Failure Detector Phi value for a node that have no heartbeat history")
+        }
 
         if (mean == 0.0D) 0.0D
         else PhiFactor * timestampDiff / mean
