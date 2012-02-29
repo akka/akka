@@ -11,7 +11,7 @@ class AMQPActor extends Actor {
 
   def receive = {
     case cr: ConnectionRequest ⇒ {
-      val connection = context.system.actorOf(Props(new FaultTolerantConnectionActor(cr.connectionParameters)), "amqp-" + UUID.randomUUID.toString)
+      val connection = context.actorOf(Props(new FaultTolerantConnectionActor(cr.connectionParameters)), "amqp-" + UUID.randomUUID.toString)
       connection ! Connect
       sender ! connection
     }

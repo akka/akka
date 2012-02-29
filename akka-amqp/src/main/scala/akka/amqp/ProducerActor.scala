@@ -7,6 +7,10 @@ package akka.amqp
 import com.rabbitmq.client._
 
 import com.rabbitmq.client.AMQP.BasicProperties
+import akka.dispatch.Future
+import java.io.IOException
+import akka.actor.{ Status, ActorRef }
+import akka.util.NonFatal
 
 private[amqp] class ProducerActor(producerParameters: ProducerParameters)
   extends FaultTolerantChannelActor(
@@ -14,23 +18,47 @@ private[amqp] class ProducerActor(producerParameters: ProducerParameters)
 
   import producerParameters._
 
-  val exchangeName = exchangeParameters.flatMap(params ⇒ Some(params.exchangeName))
+  val exchangeName = exchangeParameters.flatMap(params ⇒ Option(params.exchangeName))
 
   def specificMessageHandler = {
+    /**
+     * if we get an AMQP message, try to publish it to the exchange
+     */
+    case message @ Message(payload, routingKey, mandatory, immediate, properties) ⇒
+      channel orElse errorCallbackActor match {
+        case Some(actor: ActorRef) ⇒ actor ! message
+        case Some(cf: Future[Channel]) ⇒
+          cf onComplete {
+            case Right(c: Channel) ⇒ try {
+              c.basicPublish(exchangeName.getOrElse(""), routingKey, mandatory, immediate, properties.orNull, payload.toArray)
+            } catch {
+              case e: IOException ⇒ sender ! Status.Failure(e)
+            }
+            case Left(e: IOException) ⇒ sender ! Status.Failure(e)
+            case Left(NonFatal(e)) ⇒
+              log.error("producer {} failed to publish messsage {}", self, message)
+              sender ! Status.Failure(e)
+          }
 
-    case message @ Message(payload, routingKey, mandatory, immediate, properties) if channel.isDefined ⇒ {
-      log.debug("in producer, received message and channel is defined")
-      channel.foreach(_.basicPublish(exchangeName.getOrElse(""), routingKey, mandatory, immediate, properties.getOrElse(null), payload))
-    }
-    case message @ Message(payload, routingKey, mandatory, immediate, properties) ⇒ {
-      log.debug("in producer, received message and channel is not defined")
-      errorCallbackActor match {
-        case Some(errorCallbackActor) ⇒ errorCallbackActor ! message
-        case None                     ⇒ log.warning("Unable to send message [%s]" format message)
+        case None ⇒
+          log.warning("Unable to send message [{}]", message)
+          sender ! new AkkaAMQPException("Unable to send message [" + message + "], no channel or errorCallbackActor available.")
       }
-    }
+
+    /**
+     * ignore any other kind of message.  control message for the channel will be handled by another block
+     * in the FaultTolerantChannelActor
+     */
+    case _ ⇒ ()
   }
 
+  //self ! Start
+
+  /**
+   * implements the producer logic for setting up the channel.  if a return listener was defined in the producer params,
+   * we use it to define what to do when publishing to the channel fails and the mandatory or immediate flags were set,
+   * otherwise we create a generic one that recycles the channel.
+   */
   protected def setupChannel(ch: Channel) {
     returnListener match {
       case Some(listener) ⇒ ch.addReturnListener(listener)
@@ -42,12 +70,14 @@ private[amqp] class ProducerActor(producerParameters: ProducerParameters)
           routingKey: String,
           properties: BasicProperties,
           body: Array[Byte]) {
-          throw new MessageNotDeliveredException(
+          val e = new MessageNotDeliveredException(
             "Could not deliver message [" + body +
               "] with reply code [" + replyCode +
               "] with reply text [" + replyText +
               "] and routing key [" + routingKey +
-              "] to exchange [" + exchange + "]")
+              "] to exchange [" + exchange + "] - restarting channel")
+          self ! Failure(e)
+          sender ! Status.Failure(e)
         }
 
       })
@@ -55,7 +85,8 @@ private[amqp] class ProducerActor(producerParameters: ProducerParameters)
   }
 
   override def toString =
-    "AMQP.Producer[actor path= " + self.path.toString +
+    "Producer[actor = " + self +
       ", exchangeParameters=" + exchangeParameters + "]"
+
 }
 

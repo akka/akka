@@ -440,7 +440,7 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val amqp = Seq(rabbit, commonsIo, protobuf, multiverse)
+  val amqp = Seq(rabbit, commonsIo, protobuf)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
@@ -500,7 +500,6 @@ object Dependency {
     val Spring       = "3.0.5.RELEASE"
     val Zookeeper    = "3.4.0"
     val PlayMini     = "2.0-RC1-SNAPSHOT"
-    val Multiverse   = "0.6.2"
   }
 
   // Compile
@@ -538,7 +537,6 @@ object Dependency {
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
   val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding"  % "0.0.3" // ApacheV2
   val playMini      = "com.typesafe"                % "play-mini_2.9.1"        % V.PlayMini
-  val multiverse    = "org.multiverse"              % "multiverse-alpha"      % V.Multiverse  //ApacheV2
 
   // Provided
 
