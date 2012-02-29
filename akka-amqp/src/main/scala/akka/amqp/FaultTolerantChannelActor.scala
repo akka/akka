@@ -10,10 +10,8 @@ import akka.event.Logging
 import akka.pattern.ask
 import com.rabbitmq.client.{ ShutdownSignalException, Channel, ShutdownListener }
 import scala.PartialFunction
-import akka.util.duration._
 import akka.util.Timeout
-import akka.dispatch.{ Future, Await }
-import akka.actor.{ Kill, Failed, ActorRef, Actor }
+import akka.actor.{ Kill, Actor }
 
 abstract private[amqp] class FaultTolerantChannelActor(
   exchangeParameters: Option[ExchangeParameters], channelParameters: Option[ChannelParameters]) extends Actor {

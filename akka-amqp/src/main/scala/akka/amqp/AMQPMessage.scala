@@ -12,12 +12,8 @@ import com.rabbitmq.client.{ ReturnListener, Address, ShutdownListener, Shutdown
 sealed trait AMQPMessage
 sealed trait InternalAMQPMessage extends AMQPMessage
 
-case class Message(
-  payload: Array[Byte],
-  routingKey: String,
-  mandatory: Boolean = false,
-  immediate: Boolean = false,
-  properties: Option[BasicProperties] = None) extends AMQPMessage {
+case class Message(payload: Seq[Byte], routingKey: String, mandatory: Boolean = false, immediate: Boolean = false,
+                   properties: Option[BasicProperties] = None) extends AMQPMessage {
 
   // Needed for Java API usage
   def this(payload: Array[Byte], routingKey: String) = this(payload, routingKey, false, false, None)
@@ -28,20 +24,18 @@ case class Message(
 
   // Needed for Java API usage
   def this(payload: Array[Byte], routingKey: String, properties: BasicProperties) =
-    this(payload, routingKey, false, false, Some(properties))
+    this(payload, routingKey, false, false, Option(properties))
 
   // Needed for Java API usage
   def this(payload: Array[Byte], routingKey: String, mandatory: Boolean, immediate: Boolean, properties: BasicProperties) =
-    this(payload, routingKey, mandatory, immediate, Some(properties))
+    this(payload.toSeq, routingKey, mandatory, immediate, Option(properties))
 }
 
-case class Delivery(
-  payload: Array[Byte],
-  routingKey: String,
-  deliveryTag: Long,
-  isRedeliver: Boolean,
-  properties: BasicProperties,
-  sender: Option[ActorRef]) extends AMQPMessage
+case class Delivery(payload: Seq[Byte], routingKey: String, deliveryTag: Long, isRedeliver: Boolean,
+                    properties: BasicProperties, sender: Option[ActorRef]) extends AMQPMessage {
+
+  def payloadAsArrayBytes() = payload.toArray
+}
 
 // connection messages
 case class ConnectionRequest(connectionParameters: ConnectionParameters) extends AMQPMessage {
@@ -119,11 +113,11 @@ case class ConnectionParameters(
 
   // Needed for Java API usage
   def this(addresses: Seq[Address], username: String, password: String, virtualHost: String, initReconnectDelay: Long, connectionCallback: ActorRef) =
-    this(addresses, username, password, virtualHost, initReconnectDelay, Some(connectionCallback))
+    this(addresses, username, password, virtualHost, initReconnectDelay, Option(connectionCallback))
 
   // Needed for Java API usage
   def this(connectionCallback: ActorRef) =
-    this(Seq(new Address(DEFAULT_HOST, DEFAULT_AMQP_PORT)), DEFAULT_USER, DEFAULT_PASS, DEFAULT_VHOST, 5000, Some(connectionCallback))
+    this(Seq(new Address(DEFAULT_HOST, DEFAULT_AMQP_PORT)), DEFAULT_USER, DEFAULT_PASS, DEFAULT_VHOST, 5000, Option(connectionCallback))
 
 }
 
@@ -139,11 +133,11 @@ case class ChannelParameters(
   def this() = this(None, None)
 
   // Needed for Java API usage
-  def this(channelCallback: ActorRef) = this(None, Some(channelCallback))
+  def this(channelCallback: ActorRef) = this(None, Option(channelCallback))
 
   // Needed for Java API usage
   def this(shutdownListener: ShutdownListener, channelCallback: ActorRef) =
-    this(Some(shutdownListener), Some(channelCallback))
+    this(Option(shutdownListener), Option(channelCallback))
 }
 
 /**
@@ -199,27 +193,27 @@ case class ProducerParameters(
 
   // Needed for Java API usage
   def this(exchangeParameters: ExchangeParameters) =
-    this(Some(exchangeParameters), None, None, None)
+    this(Option(exchangeParameters), None, None, None)
 
   // Needed for Java API usage
   def this(exchangeParameters: ExchangeParameters, returnListener: ReturnListener) =
-    this(Some(exchangeParameters), Some(returnListener), None, None)
+    this(Option(exchangeParameters), Option(returnListener), None, None)
 
   // Needed for Java API usage
   def this(exchangeParameters: ExchangeParameters, channelParameters: ChannelParameters) =
-    this(Some(exchangeParameters), None, Some(channelParameters), None)
+    this(Option(exchangeParameters), None, Option(channelParameters), None)
 
   // Needed for Java API usage
   def this(exchangeParameters: ExchangeParameters, returnListener: ReturnListener, channelParameters: ChannelParameters) =
-    this(Some(exchangeParameters), Some(returnListener), Some(channelParameters), None)
+    this(Option(exchangeParameters), Option(returnListener), Option(channelParameters), None)
 
   // Needed for Java API usage
   def this(exchangeParameters: ExchangeParameters, returnListener: ReturnListener, channelParameters: ChannelParameters, errorCallbackActor: ActorRef) =
-    this(Some(exchangeParameters), Some(returnListener), Some(channelParameters), Some(errorCallbackActor))
+    this(Option(exchangeParameters), Option(returnListener), Option(channelParameters), Option(errorCallbackActor))
 
   // Needed for Java API usage
   def this(exchangeParameters: ExchangeParameters, channelParameters: ChannelParameters, errorCallbackActor: ActorRef) =
-    this(Some(exchangeParameters), None, Some(channelParameters), Some(errorCallbackActor))
+    this(Option(exchangeParameters), None, Option(channelParameters), Option(errorCallbackActor))
 }
 
 /**
@@ -248,7 +242,7 @@ case class ConsumerParameters(
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, channelParameters: ChannelParameters) =
-    this(routingKey, deliveryHandler, None, None, ActiveDeclaration(), true, Some(channelParameters))
+    this(routingKey, deliveryHandler, None, None, ActiveDeclaration(), true, Option(channelParameters))
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, selfAcknowledging: Boolean) =
@@ -256,43 +250,43 @@ case class ConsumerParameters(
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, selfAcknowledging: Boolean, channelParameters: ChannelParameters) =
-    this(routingKey, deliveryHandler, None, None, ActiveDeclaration(), selfAcknowledging, Some(channelParameters))
+    this(routingKey, deliveryHandler, None, None, ActiveDeclaration(), selfAcknowledging, Option(channelParameters))
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, queueName: String) =
-    this(routingKey, deliveryHandler, Some(queueName), None, ActiveDeclaration(), true, None)
+    this(routingKey, deliveryHandler, Option(queueName), None, ActiveDeclaration(), true, None)
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, queueDeclaration: Declaration, selfAcknowledging: Boolean, channelParameters: ChannelParameters) =
-    this(routingKey, deliveryHandler, Some(queueName), None, queueDeclaration, selfAcknowledging, Some(channelParameters))
+    this(routingKey, deliveryHandler, Option(queueName), None, queueDeclaration, selfAcknowledging, Option(channelParameters))
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, exchangeParameters: ExchangeParameters) =
-    this(routingKey, deliveryHandler, None, Some(exchangeParameters), ActiveDeclaration(), true, None)
+    this(routingKey, deliveryHandler, None, Option(exchangeParameters), ActiveDeclaration(), true, None)
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, exchangeParameters: ExchangeParameters, channelParameters: ChannelParameters) =
-    this(routingKey, deliveryHandler, None, Some(exchangeParameters), ActiveDeclaration(), true, Some(channelParameters))
+    this(routingKey, deliveryHandler, None, Option(exchangeParameters), ActiveDeclaration(), true, Option(channelParameters))
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, exchangeParameters: ExchangeParameters, selfAcknowledging: Boolean) =
-    this(routingKey, deliveryHandler, None, Some(exchangeParameters), ActiveDeclaration(), selfAcknowledging, None)
+    this(routingKey, deliveryHandler, None, Option(exchangeParameters), ActiveDeclaration(), selfAcknowledging, None)
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters) =
-    this(routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), ActiveDeclaration(), true, None)
+    this(routingKey, deliveryHandler, Option(queueName), Option(exchangeParameters), ActiveDeclaration(), true, None)
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters, queueDeclaration: Declaration) =
-    this(routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), queueDeclaration, true, None)
+    this(routingKey, deliveryHandler, Option(queueName), Option(exchangeParameters), queueDeclaration, true, None)
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters, queueDeclaration: Declaration, selfAcknowledging: Boolean) =
-    this(routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), queueDeclaration, selfAcknowledging, None)
+    this(routingKey, deliveryHandler, Option(queueName), Option(exchangeParameters), queueDeclaration, selfAcknowledging, None)
 
   // Needed for Java API usage
   def this(routingKey: String, deliveryHandler: ActorRef, queueName: String, exchangeParameters: ExchangeParameters, queueDeclaration: Declaration, selfAcknowledging: Boolean, channelParameters: ChannelParameters) =
-    this(routingKey, deliveryHandler, Some(queueName), Some(exchangeParameters), queueDeclaration, selfAcknowledging, Some(channelParameters))
+    this(routingKey, deliveryHandler, Option(queueName), Option(exchangeParameters), queueDeclaration, selfAcknowledging, Option(channelParameters))
 
   // How about that for some overloading... huh? :P (yes, I know, there are still possibilities left...sue me!)
   // Who said java is easy :(

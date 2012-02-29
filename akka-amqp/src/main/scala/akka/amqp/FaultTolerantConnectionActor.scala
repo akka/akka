@@ -10,6 +10,7 @@ import akka.event.Logging
 import akka.actor._
 import akka.util.duration._
 import java.util.UUID
+import akka.util.NonFatal
 
 private[amqp] class FaultTolerantConnectionActor(connectionParameters: ConnectionParameters) extends Actor {
   import connectionParameters._
@@ -28,13 +29,16 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
 
   protected def receive = {
     case Connect    ⇒ if (connectionStatus.isEmpty || connectionStatus.get.left.toOption.map(!_.isOpen).getOrElse(false)) connect
-    case Disconnect ⇒ context stop self // self ! PoisonPill //disconnect
+    case Disconnect ⇒ context stop self
     case ChannelRequest ⇒ connectionStatus match {
       case Some(conn) ⇒ conn.fold(l ⇒ {
         val channel: Channel = l.createChannel
         sender ! channel
       }, r ⇒ ())
-      case None ⇒ log.warning("Unable to create new channel - no connection")
+      case None ⇒ {
+        log.warning("Unable to create new channel - no connection")
+        sender ! akka.actor.Status.Failure(new AkkaAMQPException("Unable to create new channel - no connection"))
+      }
     }
     case ConnectionShutdown(cause) ⇒
       if (cause.isHardError) {
@@ -43,8 +47,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
           log.info("ConnectionShutdown by application [%s]" format self.path)
         } else {
           log.error(cause, "ConnectionShutdown is hard error - self terminating")
-          throw new DeathPactException(self)
-          //self ! Kill
+          context.parent ! Failed(cause)
         }
       }
     case cr: ConsumerRequest ⇒ connectionStatus match {
@@ -103,9 +106,10 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
     } catch {
       case e: IOException ⇒
         log.error(e, "Could not close AMQP connection")
-      case _ ⇒ log.info("Connection closed")
+      case NonFatal(_) ⇒ log.info("Connection closed")
+    } finally {
+      connectionStatus = None
     }
-    connectionStatus = None
   }
 
   private def notifyCallback(message: AMQPMessage) = {

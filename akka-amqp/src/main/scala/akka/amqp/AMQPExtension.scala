@@ -13,10 +13,12 @@ class SettingsImpl(config: Config) extends Extension {
   final val Timeout: Duration = Duration(config.getMilliseconds("akka.amqp.timeout"), TimeUnit.MILLISECONDS)
 }
 
-object Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider {
+abstract class Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider
 
-  override def lookup = Settings
+object Settings extends Settings {
 
-  override def createExtension(system: ExtendedActorSystem) = new SettingsImpl(system.settings.config)
+  override def lookup: Settings = this
+
+  override def createExtension(system: ExtendedActorSystem): SettingsImpl = new SettingsImpl(system.settings.config)
 }
 

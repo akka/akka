@@ -18,17 +18,13 @@ private[amqp] class ProducerActor(producerParameters: ProducerParameters)
 
   def specificMessageHandler = {
 
-    case message @ Message(payload, routingKey, mandatory, immediate, properties) if channel.isDefined ⇒ {
-      log.debug("in producer, received message and channel is defined")
-      channel.foreach(_.basicPublish(exchangeName.getOrElse(""), routingKey, mandatory, immediate, properties.getOrElse(null), payload))
-    }
     case message @ Message(payload, routingKey, mandatory, immediate, properties) ⇒ {
-      log.debug("in producer, received message and channel is not defined")
-      errorCallbackActor match {
-        case Some(errorCallbackActor) ⇒ errorCallbackActor ! message
-        case None                     ⇒ log.warning("Unable to send message [%s]" format message)
-      }
+      channel.orElse(errorCallbackActor match {
+        case Some(errorCallbackActor) ⇒ errorCallbackActor ! message; None
+        case None                     ⇒ log.warning("Unable to send message [%s]" format message); None
+      }).map(_.basicPublish(exchangeName.getOrElse(""), routingKey, mandatory, immediate, properties.getOrElse(null), payload.toArray))
     }
+    case _ ⇒ ()
   }
 
   protected def setupChannel(ch: Channel) {
