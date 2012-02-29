@@ -460,61 +460,84 @@ private[akka] class ActorCell(
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def systemInvoke(message: SystemMessage) {
 
-    def create(): Unit = try {
-      val created = newActor()
-      actor = created
-      created.preStart()
-      checkReceiveTimeout
-      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
-    } catch {
-      case NonFatal(e) ⇒
-        try {
+    def isTerminating = childrenRefs match {
+      case TerminatingChildrenContainer(_, _, Termination) ⇒ true
+      case _ ⇒ false
+    }
+    def isNormal = childrenRefs match {
+      case TerminatingChildrenContainer(_, _, Termination | _: Recreation) ⇒ false
+      case _ ⇒ true
+    }
+
+    def create(): Unit = if (isNormal) {
+      try {
+        val created = newActor()
+        actor = created
+        created.preStart()
+        checkReceiveTimeout
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
+      } catch {
+        case NonFatal(e) ⇒
+          try {
+            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
+            // prevent any further messages to be processed until the actor has been restarted
+            dispatcher.suspend(this)
+          } finally {
+            parent.tell(Failed(ActorInitializationException(self, "exception during creation", e)), self)
+          }
+      }
+    }
+
+    def recreate(cause: Throwable): Unit = if (isNormal) {
+      try {
+        val failedActor = actor
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
+        if (failedActor ne null) {
+          val c = currentMessage //One read only plz
+          try {
+            if (failedActor.context ne null) failedActor.preRestart(cause, if (c ne null) Some(c.message) else None)
+          } finally {
+            clearActorFields()
+          }
+        }
+        childrenRefs match {
+          case ct: TerminatingChildrenContainer ⇒
+            childrenRefs = ct.copy(reason = Recreation(cause))
+            dispatcher suspend this
+          case _ ⇒
+            doRecreate(cause)
+        }
+      } catch {
+        case NonFatal(e) ⇒ try {
           dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
-          parent.tell(Failed(ActorInitializationException(self, "exception during creation", e)), self)
+          parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
         }
-    }
-
-    def recreate(cause: Throwable): Unit = try {
-      val failedActor = actor
-      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
-      if (failedActor ne null) {
-        val c = currentMessage //One read only plz
-        try {
-          if (failedActor.context ne null) failedActor.preRestart(cause, if (c ne null) Some(c.message) else None)
-        } finally {
-          clearActorFields()
-        }
-      }
-      childrenRefs match {
-        case ct: TerminatingChildrenContainer ⇒
-          childrenRefs = ct.copy(reason = Recreation(cause))
-          dispatcher suspend this
-        case _ ⇒
-          doRecreate(cause)
-      }
-    } catch {
-      case NonFatal(e) ⇒ try {
-        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
-        // prevent any further messages to be processed until the actor has been restarted
-        dispatcher.suspend(this)
-      } finally {
-        parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
       }
     }
 
-    def suspend(): Unit = dispatcher suspend this
+    def suspend(): Unit = if (isNormal) dispatcher suspend this
 
-    def resume(): Unit = dispatcher resume this
+    def resume(): Unit = if (isNormal) dispatcher resume this
+
+    def link(subject: ActorRef): Unit = if (!isTerminating) {
+      system.deathWatch.subscribe(self, subject)
+      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + subject))
+    }
+
+    def unlink(subject: ActorRef): Unit = if (!isTerminating) {
+      system.deathWatch.unsubscribe(self, subject)
+      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + subject))
+    }
 
     def terminate() {
       setReceiveTimeout(None)
       cancelReceiveTimeout
 
       // stop all children, which will turn childrenRefs into TerminatingChildrenContainer (if there are children)
-      for (child ← children) stop(child)
+      children foreach stop
 
       childrenRefs match {
         case ct: TerminatingChildrenContainer ⇒
@@ -522,54 +545,30 @@ private[akka] class ActorCell(
           // do not process normal messages while waiting for all children to terminate
           dispatcher suspend this
           if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopping"))
-        case x ⇒ doTerminate()
+        case _ ⇒ doTerminate()
       }
     }
 
-    def supervise(child: ActorRef): Unit = {
+    def supervise(child: ActorRef): Unit = if (!isTerminating) {
       if (childrenRefs.getByRef(child).isEmpty) childrenRefs = childrenRefs.add(child)
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
     }
 
     try {
-      childrenRefs match {
-        case TerminatingChildrenContainer(_, _, Termination) ⇒ message match {
-          case Terminate()            ⇒ terminate() // to allow retry
-          case ChildTerminated(child) ⇒ handleChildTerminated(child)
-          case _                      ⇒
-        }
-        case TerminatingChildrenContainer(_, _, _: Recreation) ⇒ message match {
-          case Link(subject) ⇒
-            system.deathWatch.subscribe(self, subject)
-            if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + subject))
-          case Unlink(subject) ⇒
-            system.deathWatch.unsubscribe(self, subject)
-            if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + subject))
-          case Terminate()            ⇒ terminate()
-          case Supervise(child)       ⇒ supervise(child)
-          case ChildTerminated(child) ⇒ handleChildTerminated(child)
-          case _                      ⇒
-        }
-        case _ ⇒ message match {
-          case Create()        ⇒ create()
-          case Recreate(cause) ⇒ recreate(cause)
-          case Link(subject) ⇒
-            system.deathWatch.subscribe(self, subject)
-            if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + subject))
-          case Unlink(subject) ⇒
-            system.deathWatch.unsubscribe(self, subject)
-            if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + subject))
-          case Suspend()              ⇒ suspend()
-          case Resume()               ⇒ resume()
-          case Terminate()            ⇒ terminate()
-          case Supervise(child)       ⇒ supervise(child)
-          case ChildTerminated(child) ⇒ handleChildTerminated(child)
-        }
+      message match {
+        case Create()               ⇒ create()
+        case Recreate(cause)        ⇒ recreate(cause)
+        case Link(subject)          ⇒ link(subject)
+        case Unlink(subject)        ⇒ unlink(subject)
+        case Suspend()              ⇒ suspend()
+        case Resume()               ⇒ resume()
+        case Terminate()            ⇒ terminate()
+        case Supervise(child)       ⇒ supervise(child)
+        case ChildTerminated(child) ⇒ handleChildTerminated(child)
       }
     } catch {
       case NonFatal(e) ⇒
         dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while processing " + message), e))
-        //TODO FIXME How should problems here be handled???
         throw e
     }
   }
