@@ -243,11 +243,11 @@ private[akka] object ActorCell {
 
     def add(child: ActorRef): ChildrenContainer = copy(c.updated(child.path.name, ChildRestartStats(child)))
 
-    def remove(child: ActorRef): ChildrenContainer =
-      if (toDie contains child)
-        if (toDie.size == 1) NormalChildrenContainer(c - child.path.name)
-        else copy(c - child.path.name, toDie - child)
-      else copy(c - child.path.name)
+    def remove(child: ActorRef): ChildrenContainer = {
+      val t = toDie - child
+      if (t.isEmpty) NormalChildrenContainer(c - child.path.name)
+      else copy(c - child.path.name, t)
+    }
 
     def getByName(name: String): Option[ChildRestartStats] = c get name
 
@@ -264,7 +264,7 @@ private[akka] object ActorCell {
 
     override def toString =
       if (c.size > 20) c.size + " children"
-      else c.mkString("children (" + toDie.size + " terminating):\n    ", "\n    ", "")
+      else c.mkString("children (" + toDie.size + " terminating):\n    ", "\n    ", "\n") + toDie
   }
 }
 
