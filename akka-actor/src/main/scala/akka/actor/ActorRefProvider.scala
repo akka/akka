@@ -45,12 +45,6 @@ trait ActorRefProvider {
   def deathWatch: DeathWatch
 
   /**
-   * Care-taker of actor refs which await final termination but cannot be kept
-   * in their parent’s children list because the name shall be freed.
-   */
-  def locker: Locker
-
-  /**
    * The root path for all actors within this actor system, including remote
    * address if enabled.
    */
@@ -332,8 +326,6 @@ class LocalActorRefProvider(
   val deadLetters = new DeadLetterActorRef(this, rootPath / "deadLetters", eventStream)
 
   val deathWatch = new LocalDeathWatch(1024) //TODO make configrable
-
-  val locker: Locker = new Locker(scheduler, settings.ReaperInterval, this, rootPath / "locker", deathWatch)
 
   /*
    * generate name for temporary actor refs

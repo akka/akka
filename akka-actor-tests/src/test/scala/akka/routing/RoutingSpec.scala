@@ -118,7 +118,9 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     "use configured nr-of-instances when FromConfig" in {
       val router = system.actorOf(Props[TestActor].withRouter(FromConfig), "router1")
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(3)
+      watch(router)
       system.stop(router)
+      expectMsgType[Terminated]
     }
 
     "use configured nr-of-instances when router is specified" in {
