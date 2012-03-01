@@ -188,7 +188,7 @@ private[akka] object ActorCell {
     def shallDie(actor: ActorRef): ChildrenContainer
   }
 
-  object EmptyChildrenContainer extends ChildrenContainer {
+  trait EmptyChildrenContainer extends ChildrenContainer {
     val emptyStats = TreeMap.empty[String, ChildRestartStats]
     def add(child: ActorRef): ChildrenContainer =
       new NormalChildrenContainer(emptyStats.updated(child.path.name, ChildRestartStats(child)))
@@ -199,6 +199,11 @@ private[akka] object ActorCell {
     def stats: Iterable[ChildRestartStats] = Nil
     def shallDie(actor: ActorRef): ChildrenContainer = this
     override def toString = "no children"
+  }
+
+  object EmptyChildrenContainer extends EmptyChildrenContainer
+  object TerminatedChildrenContainer extends EmptyChildrenContainer {
+    override def add(child: ActorRef): ChildrenContainer = this
   }
 
   class NormalChildrenContainer(c: TreeMap[String, ChildRestartStats]) extends ChildrenContainer {
@@ -238,7 +243,10 @@ private[akka] object ActorCell {
 
     def remove(child: ActorRef): ChildrenContainer = {
       val t = toDie - child
-      if (t.isEmpty) NormalChildrenContainer(c - child.path.name)
+      if (t.isEmpty) reason match {
+        case Termination ⇒ TerminatedChildrenContainer
+        case _           ⇒ NormalChildrenContainer(c - child.path.name)
+      }
       else copy(c - child.path.name, t)
     }
 
@@ -309,6 +317,16 @@ private[akka] class ActorCell(
   @volatile
   var childrenRefs: ChildrenContainer = EmptyChildrenContainer
 
+  private def isTerminating = childrenRefs match {
+    case TerminatingChildrenContainer(_, _, Termination) ⇒ true
+    case TerminatedChildrenContainer ⇒ true
+    case _ ⇒ false
+  }
+  private def isNormal = childrenRefs match {
+    case TerminatingChildrenContainer(_, _, Termination | _: Recreation) ⇒ false
+    case _ ⇒ true
+  }
+
   private def _actorOf(props: Props, name: String): ActorRef = {
     if (system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
       val ser = SerializationExtension(system)
@@ -320,9 +338,12 @@ private[akka] class ActorCell(
         }
       }
     }
-    val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None, true)
-    childrenRefs = childrenRefs.add(actor)
-    actor
+    if (isTerminating) provider.actorFor(self, Seq(name))
+    else {
+      val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None, true)
+      childrenRefs = childrenRefs.add(actor)
+      actor
+    }
   }
 
   def actorOf(props: Props): ActorRef = _actorOf(props, randomName())
@@ -448,15 +469,6 @@ private[akka] class ActorCell(
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def systemInvoke(message: SystemMessage) {
-
-    def isTerminating = childrenRefs match {
-      case TerminatingChildrenContainer(_, _, Termination) ⇒ true
-      case _ ⇒ false
-    }
-    def isNormal = childrenRefs match {
-      case TerminatingChildrenContainer(_, _, Termination | _: Recreation) ⇒ false
-      case _ ⇒ true
-    }
 
     def create(): Unit = if (isNormal) {
       try {
