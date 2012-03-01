@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Properties;
 
 import com.typesafe.config.impl.ConfigImpl;
-import com.typesafe.config.impl.ConfigImplUtil;
 import com.typesafe.config.impl.Parseable;
 
 /**
@@ -41,6 +40,12 @@ public final class ConfigFactory {
      * {@link Class#getResource}).
      *
      * <p>
+     * Resources are loaded from the current thread's
+     * {@link Thread#getContextClassLoader()}. In general, a library needs its
+     * configuration to come from the class loader used to load that library, so
+     * the proper "reference.conf" are present.
+     *
+     * <p>
      * The loaded object will already be resolved (substitutions have already
      * been processed). As a result, if you add more fallbacks then they won't
      * be seen by substitutions. Substitutions are the "${foo.bar}" syntax. If
@@ -49,16 +54,29 @@ public final class ConfigFactory {
      *
      * @param resourceBasename
      *            name (optionally without extension) of a resource on classpath
-     * @return configuration for an application
+     * @return configuration for an application relative to context class loader
      */
     public static Config load(String resourceBasename) {
-        return load(resourceBasename, ConfigParseOptions.defaults(),
+        return load(Thread.currentThread().getContextClassLoader(), resourceBasename);
+    }
+
+    /**
+     * Like {@link #load(String)} but uses the supplied class loader instead of
+     * the current thread's context class loader.
+     *
+     * @param loader
+     * @param resourceBasename
+     * @return configuration for an application relative to given class loader
+     */
+    public static Config load(ClassLoader loader, String resourceBasename) {
+        return load(loader, resourceBasename, ConfigParseOptions.defaults(),
                 ConfigResolveOptions.defaults());
     }
 
     /**
      * Like {@link #load(String)} but allows you to specify parse and resolve
      * options.
+     *
      * @param resourceBasename
      *            the classpath resource name with optional extension
      * @param parseOptions
@@ -69,9 +87,29 @@ public final class ConfigFactory {
      */
     public static Config load(String resourceBasename, ConfigParseOptions parseOptions,
             ConfigResolveOptions resolveOptions) {
-        Config appConfig = ConfigFactory.parseResourcesAnySyntax(ConfigFactory.class, "/"
-                + resourceBasename, parseOptions);
-        return load(appConfig, resolveOptions);
+        return load(Thread.currentThread().getContextClassLoader(), resourceBasename, parseOptions,
+                resolveOptions);
+    }
+
+    /**
+     * Like {@link #load(String,ConfigParseOptions,ConfigResolveOptions)} but
+     * allows you to specify a class loader
+     *
+     * @param loader
+     *            class loader in which to find resources
+     * @param resourceBasename
+     *            the classpath resource name with optional extension
+     * @param parseOptions
+     *            options to use when parsing the resource
+     * @param resolveOptions
+     *            options to use when resolving the stack
+     * @return configuration for an application
+     */
+    public static Config load(ClassLoader loader, String resourceBasename,
+            ConfigParseOptions parseOptions, ConfigResolveOptions resolveOptions) {
+        Config appConfig = ConfigFactory.parseResourcesAnySyntax(loader, resourceBasename,
+                parseOptions);
+        return load(loader, appConfig, resolveOptions);
     }
 
     /**
@@ -85,7 +123,11 @@ public final class ConfigFactory {
      * @return resolved configuration with overrides and fallbacks added
      */
     public static Config load(Config config) {
-        return load(config, ConfigResolveOptions.defaults());
+        return load(Thread.currentThread().getContextClassLoader(), config);
+    }
+
+    public static Config load(ClassLoader loader, Config config) {
+        return load(loader, config, ConfigResolveOptions.defaults());
     }
 
     /**
@@ -99,53 +141,64 @@ public final class ConfigFactory {
      * @return resolved configuration with overrides and fallbacks added
      */
     public static Config load(Config config, ConfigResolveOptions resolveOptions) {
-        return defaultOverrides().withFallback(config).withFallback(defaultReference())
+        return load(Thread.currentThread().getContextClassLoader(), config, resolveOptions);
+    }
+
+    /**
+     * Like {@link #load(Config,ConfigResolveOptions)} but allows you to specify
+     * a class loader other than the context class loader.
+     *
+     * @param loader
+     *            class loader to use when looking up override and reference
+     *            configs
+     * @param config
+     *            the application's portion of the configuration
+     * @param resolveOptions
+     *            options for resolving the assembled config stack
+     * @return resolved configuration with overrides and fallbacks added
+     */
+    public static Config load(ClassLoader loader, Config config, ConfigResolveOptions resolveOptions) {
+        return defaultOverrides(loader).withFallback(config).withFallback(defaultReference(loader))
                 .resolve(resolveOptions);
     }
 
-    private static class DefaultConfigHolder {
+    private static Config loadDefaultConfig(ClassLoader loader) {
+        int specified = 0;
 
-        private static Config loadDefaultConfig() {
-            int specified = 0;
+        // override application.conf with config.file, config.resource,
+        // config.url if requested.
+        String resource = System.getProperty("config.resource");
+        if (resource != null)
+            specified += 1;
+        String file = System.getProperty("config.file");
+        if (file != null)
+            specified += 1;
+        String url = System.getProperty("config.url");
+        if (url != null)
+            specified += 1;
 
-            // override application.conf with config.file, config.resource,
-            // config.url if requested.
-            String resource = System.getProperty("config.resource");
-            if (resource != null)
-                specified += 1;
-            String file = System.getProperty("config.file");
-            if (file != null)
-                specified += 1;
-            String url = System.getProperty("config.url");
-            if (url != null)
-                specified += 1;
-
-            if (specified == 0) {
-                return load("application");
-            } else if (specified > 1) {
-                throw new ConfigException.Generic("You set more than one of config.file='" + file
-                        + "', config.url='" + url + "', config.resource='" + resource
-                        + "'; don't know which one to use!");
+        if (specified == 0) {
+            return load(loader, "application");
+        } else if (specified > 1) {
+            throw new ConfigException.Generic("You set more than one of config.file='" + file
+                    + "', config.url='" + url + "', config.resource='" + resource
+                    + "'; don't know which one to use!");
+        } else {
+            if (resource != null) {
+                // this deliberately does not parseResourcesAnySyntax; if
+                // people want that they can use an include statement.
+                return load(loader, parseResources(loader, resource));
+            } else if (file != null) {
+                return load(loader, parseFile(new File(file)));
             } else {
-                if (resource != null) {
-                    // this deliberately does not parseResourcesAnySyntax; if
-                    // people want that they can use an include statement.
-                    return load(parseResources(ConfigFactory.class, resource));
-                } else if (file != null) {
-                    return load(parseFile(new File(file)));
-                } else {
-                    try {
-                        return load(parseURL(new URL(url)));
-                    } catch (MalformedURLException e) {
-                        throw new ConfigException.Generic(
-                                "Bad URL in config.url system property: '" + url + "': "
-                                        + e.getMessage(), e);
-                    }
+                try {
+                    return load(loader, parseURL(new URL(url)));
+                } catch (MalformedURLException e) {
+                    throw new ConfigException.Generic("Bad URL in config.url system property: '"
+                            + url + "': " + e.getMessage(), e);
                 }
             }
         }
-
-        static final Config defaultConfig = loadDefaultConfig();
     }
 
     /**
@@ -176,11 +229,19 @@ public final class ConfigFactory {
      * @return configuration for an application
      */
     public static Config load() {
-        try {
-            return DefaultConfigHolder.defaultConfig;
-        } catch (ExceptionInInitializerError e) {
-            throw ConfigImplUtil.extractInitializerError(e);
-        }
+        return load(Thread.currentThread().getContextClassLoader());
+    }
+
+    /**
+     * Like {@link #load()} but allows specifying a class loader other than the
+     * thread's current context class loader.
+     *
+     * @param loader
+     *            class loader for finding resources
+     * @return configuration for an application
+     */
+    public static Config load(ClassLoader loader) {
+        return loadDefaultConfig(loader);
     }
 
     /**
@@ -194,6 +255,13 @@ public final class ConfigFactory {
      * jar.
      *
      * <p>
+     * The reference config must be looked up in the class loader that contains
+     * the libraries that you want to use with this config, so the
+     * "reference.conf" for each library can be found. Use
+     * {@link #defaultReference(ClassLoader)} if the context class loader is not
+     * suitable.
+     *
+     * <p>
      * The {@link #load()} methods merge this configuration for you
      * automatically.
      *
@@ -202,10 +270,21 @@ public final class ConfigFactory {
      * is not guaranteed that this method <em>only</em> looks at
      * "reference.conf".
      *
-     * @return the default reference config
+     * @return the default reference config for context class loader
      */
     public static Config defaultReference() {
-        return ConfigImpl.defaultReference();
+        return defaultReference(Thread.currentThread().getContextClassLoader());
+    }
+
+    /**
+     * Like {@link #defaultReference()} but allows you to specify a class loader
+     * to use rather than the current context class loader.
+     *
+     * @param loader
+     * @return the default reference config for this class loader
+     */
+    public static Config defaultReference(ClassLoader loader) {
+        return ConfigImpl.defaultReference(loader);
     }
 
     /**
@@ -224,6 +303,17 @@ public final class ConfigFactory {
      * @return the default override configuration
      */
     public static Config defaultOverrides() {
+        return systemProperties();
+    }
+
+    /**
+     * Like {@link #defaultOverrides()} but allows you to specify a class loader
+     * to use rather than the current context class loader.
+     *
+     * @param loader
+     * @return the default override configuration
+     */
+    public static Config defaultOverrides(ClassLoader loader) {
         return systemProperties();
     }
 
@@ -301,12 +391,12 @@ public final class ConfigFactory {
      * string values. If you have both "a=foo" and "a.b=bar" in your properties
      * file, so "a" is both the object containing "b" and the string "foo", then
      * the string value is dropped.
-     * 
+     *
      * <p>
      * If you want to have <code>System.getProperties()</code> as a
      * ConfigObject, it's better to use the {@link #systemProperties()} method
      * which returns a cached global singleton.
-     * 
+     *
      * @param properties
      *            a Java Properties object
      * @param options
@@ -463,6 +553,106 @@ public final class ConfigFactory {
 
     public static Config parseResourcesAnySyntax(Class<?> klass, String resourceBasename) {
         return parseResourcesAnySyntax(klass, resourceBasename, ConfigParseOptions.defaults());
+    }
+
+    /**
+     * Parses all resources on the classpath with the given name and merges them
+     * into a single <code>Config</code>.
+     *
+     * <p>
+     * This works like {@link java.lang.ClassLoader#getResource}, not like
+     * {@link java.lang.Class#getResource}, so the name never begins with a
+     * slash.
+     *
+     * <p>
+     * See {@link #parseResources(Class,String,ConfigParseOptions)} for full
+     * details.
+     *
+     * @param loader
+     *            will be used to load resources
+     * @param resource
+     *            resource to look up
+     * @param options
+     *            parse options
+     * @return the parsed configuration
+     */
+    public static Config parseResources(ClassLoader loader, String resource,
+            ConfigParseOptions options) {
+        return Parseable.newResources(loader, resource, options).parse().toConfig();
+    }
+
+    public static Config parseResources(ClassLoader loader, String resource) {
+        return parseResources(loader, resource, ConfigParseOptions.defaults());
+    }
+
+    /**
+     * Parses classpath resources with a flexible extension. In general, this
+     * method has the same behavior as
+     * {@link #parseFileAnySyntax(File,ConfigParseOptions)} but for classpath
+     * resources instead, as in
+     * {@link #parseResources(ClassLoader,String,ConfigParseOptions)}.
+     *
+     * <p>
+     * {@link #parseResourcesAnySyntax(Class,String,ConfigParseOptions)} differs
+     * in the syntax for the resource name, but otherwise see
+     * {@link #parseResourcesAnySyntax(Class,String,ConfigParseOptions)} for
+     * some details and caveats on this method.
+     *
+     * @param loader
+     *            class loader to look up resources in
+     * @param resourceBasename
+     *            a resource name as in
+     *            {@link java.lang.ClassLoader#getResource}, with or without
+     *            extension
+     * @param options
+     *            parse options
+     * @return the parsed configuration
+     */
+    public static Config parseResourcesAnySyntax(ClassLoader loader, String resourceBasename,
+            ConfigParseOptions options) {
+        return ConfigImpl.parseResourcesAnySyntax(loader, resourceBasename, options).toConfig();
+    }
+
+    public static Config parseResourcesAnySyntax(ClassLoader loader, String resourceBasename) {
+        return parseResourcesAnySyntax(loader, resourceBasename, ConfigParseOptions.defaults());
+    }
+
+    /**
+     * Like {@link #parseResources(ClassLoader,String,ConfigParseOptions)} but
+     * uses thread's current context class loader.
+     */
+    public static Config parseResources(String resource, ConfigParseOptions options) {
+        return Parseable
+                .newResources(Thread.currentThread().getContextClassLoader(), resource, options)
+                .parse().toConfig();
+    }
+
+    /**
+     * Like {@link #parseResources(ClassLoader,String)} but uses thread's
+     * current context class loader.
+     */
+    public static Config parseResources(String resource) {
+        return parseResources(Thread.currentThread().getContextClassLoader(), resource,
+                ConfigParseOptions.defaults());
+    }
+
+    /**
+     * Like
+     * {@link #parseResourcesAnySyntax(ClassLoader,String,ConfigParseOptions)}
+     * but uses thread's current context class loader.
+     */
+    public static Config parseResourcesAnySyntax(String resourceBasename, ConfigParseOptions options) {
+        return ConfigImpl.parseResourcesAnySyntax(Thread.currentThread().getContextClassLoader(),
+                resourceBasename, options).toConfig();
+    }
+
+    /**
+     * Like {@link #parseResourcesAnySyntax(ClassLoader,String)} but uses
+     * thread's current context class loader.
+     */
+    public static Config parseResourcesAnySyntax(String resourceBasename) {
+        return parseResourcesAnySyntax(Thread.currentThread().getContextClassLoader(),
+                resourceBasename, ConfigParseOptions.defaults());
     }
 
     public static Config parseString(String s, ConfigParseOptions options) {
