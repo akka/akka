@@ -9,9 +9,10 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import akka.util.duration._
 import akka.util.Duration
+import akka.actor.ActorSystem
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
+class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) {
 
   "The default configuration file (i.e. reference.conf)" must {
     "contain all configuration properties for akka-actor that are used in code with their correct defaults" in {
