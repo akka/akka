@@ -197,8 +197,9 @@ private[akka] object ActorCell {
   }
 
   object EmptyChildrenContainer extends ChildrenContainer {
+    val emptyStats = TreeMap.empty[String, ChildRestartStats]
     def add(child: ActorRef): ChildrenContainer =
-      new NormalChildrenContainer(TreeMap.empty[String, ChildRestartStats].updated(child.path.name, ChildRestartStats(child)))
+      new NormalChildrenContainer(emptyStats.updated(child.path.name, ChildRestartStats(child)))
     def remove(child: ActorRef): ChildrenContainer = this
     def getByName(name: String): Option[ChildRestartStats] = None
     def getByRef(actor: ActorRef): Option[ChildRestartStats] = None
@@ -342,9 +343,10 @@ private[akka] class ActorCell(
       case ElementRegex() ⇒ // this is fine
       case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex)
     }
-    if (childrenRefs.getByName(name).isDefined)
-      throw new InvalidActorNameException("actor name " + name + " is not unique!")
-    _actorOf(props, name)
+    childrenRefs.getByName(name) match {
+      case None ⇒ _actorOf(props, name)
+      case _    ⇒ throw new InvalidActorNameException("actor name " + name + " is not unique!")
+    }
   }
 
   final def stop(actor: ActorRef): Unit = {
@@ -641,7 +643,7 @@ private[akka] class ActorCell(
       case Kill                     ⇒ throw new ActorKilledException("Kill")
       case PoisonPill               ⇒ self.stop()
       case SelectParent(m)          ⇒ parent.tell(m, msg.sender)
-      case SelectChildName(name, m) ⇒ childrenRefs getByName name foreach (_.child.tell(m, msg.sender))
+      case SelectChildName(name, m) ⇒ for (c ← childrenRefs getByName name) c.child.tell(m, msg.sender)
       case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
   }
