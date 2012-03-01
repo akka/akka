@@ -11,7 +11,7 @@ import akka.util.Timeout
 import akka.util.duration._
 
 @deprecated("use ActorSystem instead", "2.0")
-object GlobalActorSystem extends ActorSystemImpl("GlobalSystem", OldConfigurationLoader.defaultConfig) {
+object GlobalActorSystem extends ActorSystemImpl("GlobalSystem", OldConfigurationLoader.defaultConfig, OldConfigurationLoader.oldClassLoader) {
   start()
 
   /**
@@ -26,11 +26,12 @@ object GlobalActorSystem extends ActorSystemImpl("GlobalSystem", OldConfiguratio
  */
 @deprecated("use default config location or write your own configuration loader", "2.0")
 object OldConfigurationLoader {
+  val oldClassLoader: ClassLoader = ActorSystem.findClassLoader(1)
 
   val defaultConfig: Config = {
     val cfg = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
-    val config = cfg.withFallback(ConfigFactory.defaultReference)
-    config.checkValid(ConfigFactory.defaultReference, "akka")
+    val config = cfg.withFallback(ConfigFactory.defaultReference(oldClassLoader))
+    config.checkValid(ConfigFactory.defaultReference(oldClassLoader), "akka")
     config
   }
 

@@ -10,7 +10,6 @@ import akka.routing._
 import akka.AkkaException
 import akka.util.{ Switch, Helpers }
 import akka.event._
-import com.typesafe.config.ConfigFactory
 
 /**
  * Interface for all ActorRef providers to implement.
