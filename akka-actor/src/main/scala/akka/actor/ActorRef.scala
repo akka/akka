@@ -284,14 +284,11 @@ private[akka] class LocalActorRef private[akka] (
    * Method for looking up a single child beneath this actor. Override in order
    * to inject “synthetic” actor paths like “/temp”.
    */
-  protected def getSingleChild(name: String): InternalActorRef = {
-    if (actorCell.isTerminated) Nobody // read of the mailbox status ensures we get the latest childrenRefs
-    else {
-      val children = actorCell.childrenRefs
-      if (children contains name) children(name).child.asInstanceOf[InternalActorRef]
-      else Nobody
+  protected def getSingleChild(name: String): InternalActorRef =
+    actorCell.childrenRefs.getByName(name) match {
+      case Some(crs) ⇒ crs.child.asInstanceOf[InternalActorRef]
+      case None      ⇒ Nobody
     }
-  }
 
   def getChild(names: Iterator[String]): InternalActorRef = {
     /*

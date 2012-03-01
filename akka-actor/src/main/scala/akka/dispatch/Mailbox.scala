@@ -187,10 +187,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
     var nextMessage = systemDrain()
     try {
       while ((nextMessage ne null) && !isClosed) {
-        if (debug) println(actor.self + " processing system message " + nextMessage + " with " +
-          (if (actor.childrenRefs.isEmpty) "no children"
-          else if (actor.childrenRefs.size > 20) actor.childrenRefs.size + " children"
-          else actor.childrenRefs.mkString("children:\n    ", "\n    ", "")))
+        if (debug) println(actor.self + " processing system message " + nextMessage + " with " + actor.childrenRefs)
         actor systemInvoke nextMessage
         nextMessage = nextMessage.next
         // don’t ever execute normal message when system message present!
