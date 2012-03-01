@@ -50,10 +50,10 @@ object ActorSystem {
    */
   def apply(): ActorSystem = apply("default")
   def apply(name: String): ActorSystem = {
-    val classLoader = findClassLoader(1)
+    val classLoader = findClassLoader()
     apply(name, ConfigFactory.load(classLoader), classLoader)
   }
-  def apply(name: String, config: Config): ActorSystem = apply(name, config, findClassLoader(1))
+  def apply(name: String, config: Config): ActorSystem = apply(name, config, findClassLoader())
   def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem = new ActorSystemImpl(name, config, classLoader).start()
 
   class Settings(classLoader: ClassLoader, cfg: Config, final val name: String) {
@@ -105,9 +105,9 @@ object ActorSystem {
   /**
    * INTERNAL
    */
-  private[akka] def findClassLoader(depth: Int): ClassLoader = {
+  private[akka] def findClassLoader(): ClassLoader = {
     def findCaller(get: Int ⇒ Class[_]): ClassLoader =
-      Iterator.from(depth).map(get) dropWhile { c ⇒
+      Iterator.from(2 /*is the magic number, promise*/ ).map(get) dropWhile { c ⇒
         c != null &&
           (c.getName.startsWith("akka.actor.ActorSystem") ||
             c.getName.startsWith("scala.Option") ||

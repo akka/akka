@@ -26,7 +26,7 @@ object GlobalActorSystem extends ActorSystemImpl("GlobalSystem", OldConfiguratio
  */
 @deprecated("use default config location or write your own configuration loader", "2.0")
 object OldConfigurationLoader {
-  val oldClassLoader: ClassLoader = ActorSystem.findClassLoader(1)
+  val oldClassLoader: ClassLoader = ActorSystem.findClassLoader()
 
   val defaultConfig: Config = {
     val cfg = fromProperties orElse fromClasspath orElse fromHome getOrElse emptyConfig
