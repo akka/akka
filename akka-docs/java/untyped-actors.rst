@@ -453,17 +453,6 @@ actors does not respond (i.e. processing a message for extended periods of time
 and therefore not receiving the stop command), this whole process will be
 stuck.
 
-It is possible to disregard specific children with respect to shutdown
-confirmation by stopping them explicitly before issuing the
-``context.stop(self)``::
-
-  context.stop(someChild);
-  context.stop(self);
-
-In this case ``someChild`` will be stopped asynchronously and re-parented to
-the :class:`Locker`, where :class:`DavyJones` will keep tabs and dispose of it
-eventually.
-
 Upon :meth:`ActorSystem.shutdown()`, the system guardian actors will be
 stopped, and the aforementioned process will ensure proper termination of the
 whole system.
@@ -478,6 +467,13 @@ enables cleaning up of resources:
     // close some file or database connection
   }
 
+.. note::
+
+  Since stopping an actor is asynchronous, you cannot immediately reuse the
+  name of the child you just stopped; this will result in an
+  :class:`InvalidActorNameException`. Instead, :meth:`watch()` the terminating
+  actor and create its replacement in response to the :class:`Terminated`
+  message which will eventually arrive.
 
 PoisonPill
 ----------

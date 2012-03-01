@@ -134,14 +134,6 @@ trait ActorContext extends ActorRefFactory {
    */
   def unwatch(subject: ActorRef): ActorRef
 
-  /**
-   * Suspend this actor (after finishing processing of the current message)
-   * until all children for which stop(child) has been called have actually
-   * terminated. This is useful if a new child with the same name needs to
-   * be created before processing can continue.
-   */
-  def suspendForChildTermination(): Unit
-
   final protected def writeObject(o: ObjectOutputStream): Unit =
     throw new NotSerializableException("ActorContext is not serializable!")
 }
@@ -417,11 +409,6 @@ private[akka] class ActorCell(
     subject
   }
 
-  final def suspendForChildTermination(): Unit = childrenRefs match {
-    case _: TerminatingChildrenContainer ⇒ dispatcher suspend this
-    case _                               ⇒
-  }
-
   final def children: Iterable[ActorRef] = childrenRefs.children
 
   /**
@@ -686,6 +673,7 @@ private[akka] class ActorCell(
       dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
       // prevent any further messages to be processed until the actor has been restarted
       dispatcher.suspend(this)
+      actor.supervisorStrategy.handleSupervisorFailing(self, children)
     } finally {
       parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
     }
@@ -696,21 +684,29 @@ private[akka] class ActorCell(
     case None        ⇒ system.eventStream.publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
   }
 
-  final def handleChildTerminated(child: ActorRef): Unit = {
+  final def handleChildTerminated(child: ActorRef): Unit = try {
     childrenRefs match {
       case tc @ TerminatingChildrenContainer(_, _, reason) ⇒
         val n = tc.remove(child)
         childrenRefs = n
         actor.supervisorStrategy.handleChildTerminated(this, child, children)
         if (!n.isInstanceOf[TerminatingChildrenContainer]) reason match {
-          case UserRequest       ⇒ if (mailbox.isSuspended) dispatcher resume this
           case Recreation(cause) ⇒ doRecreate(cause)
           case Termination       ⇒ doTerminate()
+          case _                 ⇒
         }
       case _ ⇒
         childrenRefs = childrenRefs.remove(child)
         actor.supervisorStrategy.handleChildTerminated(this, child, children)
     }
+  } catch {
+    case NonFatal(e) ⇒
+      try {
+        dispatcher suspend this
+        actor.supervisorStrategy.handleSupervisorFailing(self, children)
+      } finally {
+        parent.tell(Failed(e), self)
+      }
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅

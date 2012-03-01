@@ -142,17 +142,5 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
       expectMsg("green")
     }
 
-    "support suspending until all dying children have properly expired" in {
-      val parent = system.actorOf(Props(new Actor {
-        val child = context.actorOf(Props.empty, "bob")
-        def receive = {
-          case "engage" ⇒ context.stop(child); context.suspendForChildTermination(); self ! "next"
-          case "next"   ⇒ context.actorOf(Props.empty, "bob"); testActor ! "green"
-        }
-      }))
-      parent ! "engage"
-      expectMsg("green")
-    }
-
   }
 }
