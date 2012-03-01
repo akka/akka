@@ -161,6 +161,11 @@ trait UntypedActorContext extends ActorContext {
 
 }
 
+/**
+ * Everything in here is completely Akka PRIVATE. You will not find any
+ * supported APIs in this place. This is not the API you were looking 
+ * for! (waves hand)
+ */
 private[akka] object ActorCell {
   val contextStack = new ThreadLocal[Stack[ActorContext]] {
     override def initialValue = Stack[ActorContext]()
@@ -201,11 +206,26 @@ private[akka] object ActorCell {
     override def toString = "no children"
   }
 
+  /**
+   * This is the empty container, shared among all leaf actors.
+   */
   object EmptyChildrenContainer extends EmptyChildrenContainer
+  
+  /**
+   * This is the empty container which is installed after the last child has 
+   * terminated while stopping; it is necessary to distinguish from the normal
+   * empty state while calling handleChildTerminated() for the last time.
+   */
   object TerminatedChildrenContainer extends EmptyChildrenContainer {
     override def add(child: ActorRef): ChildrenContainer = this
   }
 
+  /**
+   * Normal children container: we do have at least one child, but none of our
+   * children are currently terminating (which is the time period between 
+   * calling context.stop(child) and processing the ChildTerminated() system
+   * message).
+   */
   class NormalChildrenContainer(c: TreeMap[String, ChildRestartStats]) extends ChildrenContainer {
 
     def add(child: ActorRef): ChildrenContainer = new NormalChildrenContainer(c.updated(child.path.name, ChildRestartStats(child)))
@@ -236,6 +256,16 @@ private[akka] object ActorCell {
       else new NormalChildrenContainer(c)
   }
 
+  /**
+   * Waiting state: there are outstanding termination requests (i.e. context.stop(child) 
+   * was called but the corresponding ChildTerminated() system message has not yet been
+   * processed). There could be no specific reason (UserRequested), we could be Restarting
+   * or Terminating.
+   * 
+   * Removing the last child which was supposed to be terminating will return a different
+   * type of container, depending on whether or not children are left and whether or not
+   * the reason was “Terminating”.
+   */
   case class TerminatingChildrenContainer(c: TreeMap[String, ChildRestartStats], toDie: Set[ActorRef], reason: SuspendReason)
     extends ChildrenContainer {
 
@@ -338,6 +368,7 @@ private[akka] class ActorCell(
         }
       }
     }
+    // in case we are currently terminating, swallow creation requests and return EmptyLocalActorRef
     if (isTerminating) provider.actorFor(self, Seq(name))
     else {
       val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None, true)
