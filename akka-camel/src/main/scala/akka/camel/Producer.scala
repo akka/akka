@@ -14,14 +14,14 @@ import org.apache.camel.{ Exchange, ExchangePattern, AsyncCallback }
  * @author Martin Krasser
  */
 trait ProducerSupport { this: Actor ⇒
-  protected[this] implicit lazy val camel = CamelExtension(context.system)
+  protected[this] implicit def camel = CamelExtension(context.system)
 
   protected[this] lazy val (endpoint, processor) = camel.registerProducer(self, endpointUri)
 
   /**
-   * Message headers to copy by default from request message to response-message.
+   * CamelMessage headers to copy by default from request message to response-message.
    */
-  private val headersToCopyDefault = Set(Message.MessageExchangeId)
+  private val headersToCopyDefault = Set(CamelMessage.MessageExchangeId)
 
   /**
    * If set to false (default), this producer expects a response message from the Camel endpoint.
@@ -37,7 +37,7 @@ trait ProducerSupport { this: Actor ⇒
 
   /**
    * Returns the names of message headers to copy from a request message to a response message.
-   * By default only the Message.MessageExchangeId is copied. Applications may override this to
+   * By default only the CamelMessage.MessageExchangeId is copied. Applications may override this to
    * define an application-specific set of message headers to copy.
    */
   def headersToCopy: Set[String] = headersToCopyDefault
@@ -52,7 +52,7 @@ trait ProducerSupport { this: Actor ⇒
    * asynchronously. The original
    * sender and senderFuture are preserved.
    *
-   * @see Message#canonicalize(Any)
+   * @see CamelMessage#canonicalize(Any)
    *
    * @param msg message to produce
    * @param pattern exchange pattern
@@ -60,7 +60,7 @@ trait ProducerSupport { this: Actor ⇒
   protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
     implicit def toExchangeAdapter(exchange: Exchange): CamelExchangeAdapter = new CamelExchangeAdapter(exchange)
 
-    val cmsg = Message.canonicalize(msg)
+    val cmsg = CamelMessage.canonicalize(msg)
     val exchange = endpoint.createExchange(pattern)
     exchange.setRequest(cmsg)
     processor.process(exchange, new AsyncCallback {
@@ -68,15 +68,10 @@ trait ProducerSupport { this: Actor ⇒
       // Need copies of sender reference here since the callback could be done
       // later by another thread.
       val originalSender = sender
-
-      def done(doneSync: Boolean): Unit = {
-        if (exchange.isFailed) {
-          dispatch(FailureResult(exchange.toFailureMessage(cmsg.headers(headersToCopy))))
-        } else {
-          dispatch(MessageResult(exchange.toResponseMessage(cmsg.headers(headersToCopy))))
-        }
-      }
-      private def dispatch(result: Any) { producer.tell(result, originalSender) }
+      // Ignoring doneSync, sending back async uniformly.
+      def done(doneSync: Boolean): Unit = producer.tell(
+        if (exchange.isFailed) FailureResult(exchange.toFailureMessage(cmsg.headers(headersToCopy)))
+        else MessageResult(exchange.toResponseMessage(cmsg.headers(headersToCopy))), originalSender)
     })
   }
 
@@ -135,12 +130,12 @@ trait Producer extends ProducerSupport { this: Actor ⇒
 /**
  * @author Martin Krasser
  */
-private[camel] case class MessageResult(message: Message)
+private case class MessageResult(message: CamelMessage)
 
 /**
  * @author Martin Krasser
  */
-private[camel] case class FailureResult(failure: Failure)
+private case class FailureResult(failure: Failure)
 
 /**
  * A one-way producer.

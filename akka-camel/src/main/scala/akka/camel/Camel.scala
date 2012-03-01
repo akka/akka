@@ -11,6 +11,7 @@ import org.apache.camel.{ ProducerTemplate, CamelContext }
 //TODO complete this doc
 /**
  * Camel trait encapsulates the underlying camel machinery.
+ * '''Note:''' `CamelContext` and `ProducerTemplate` are stopped when the associated actor system is shut down.
  *
  */
 trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with Activation {
@@ -30,30 +31,6 @@ trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with A
    */
   def template: ProducerTemplate
 
-  /**
-   * Associated `ActorSystem`.
-   *
-   * <p>It can be used to start producers, consumers or any other actors which need to interact with camel,
-   * for example:
-   * {{{
-   * val system = ActorSystem("test")
-   * system.actorOf(Props[SysOutConsumer])
-   *
-   * class SysOutConsumer extends Consumer {
-   * def endpointUri = "file://data/input/CamelConsumer"
-   *
-   * protected def receive = {
-   * case msg: Message ⇒ {
-   * printf("Received '%s'\\n", msg.bodyAs[String])
-   * }
-   * }
-   * }
-   * }}}
-   * '''Note:''' This actor system is responsible for stopping the underlying camel instance.
-   *
-   * @see [[akka.camel.CamelExtension]]
-   */
-  def system: ActorSystem
 }
 
 /**
@@ -75,10 +52,12 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider {
    * Creates a new instance of Camel and makes sure it gets stopped when the actor system is shutdown.
    */
   def createExtension(system: ExtendedActorSystem) = {
-    val camel = new DefaultCamel(system).start;
+    val camel = new DefaultCamel(system).start
     system.registerOnTermination(camel.shutdown())
     camel
   }
 
-  def lookup() = CamelExtension
+  def lookup(): ExtensionId[Camel] = CamelExtension
+
+  override def get(system: ActorSystem): Camel = super.get(system)
 }

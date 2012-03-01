@@ -26,19 +26,23 @@ class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem with Mess
   }
 
   test("mustSetOutMessageFromResponseMessage") {
-    val e1 = sampleInOut; e1.setResponse(Message("y"))
+    val e1 = sampleInOut
+    e1.setResponse(Message("y"))
     assert(e1.getOut.getBody === "y")
   }
 
   test("mustSetInMessageFromResponseMessage") {
-    val e1 = sampleInOnly; e1.setResponse(Message("x"))
+    val e1 = sampleInOnly
+    e1.setResponse(Message("x"))
     assert(e1.getIn.getBody === "x")
   }
 
   test("mustSetExceptionFromFailureMessage") {
-    val e1 = sampleInOnly; e1.setFailure(Failure(new Exception("test1")))
+    val e1 = sampleInOnly
+    e1.setFailure(Failure(new Exception("test1")))
     assert(e1.getException.getMessage === "test1")
-    val e2 = sampleInOut; e2.setFailure(Failure(new Exception("test2")))
+    val e2 = sampleInOut
+    e2.setFailure(Failure(new Exception("test2")))
     assert(e2.getException.getMessage === "test2")
   }
 

@@ -9,9 +9,10 @@ import akka.util.duration._
 import org.apache.camel.ProducerTemplate
 import akka.actor._
 import akka.util.Timeout
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import TestSupport._
 import org.scalatest.WordSpec
+import akka.testkit.TestLatch
+import akka.dispatch.Await
 
 class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCamelSystem {
   implicit val timeout = Timeout(10 seconds)
@@ -31,21 +32,21 @@ class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCa
   }
 
   "ActivationAware must be notified when endpoint is de-activated" in {
-    val stopped = new CountDownLatch(1)
+    val latch = TestLatch()
     val actor = start(new Consumer {
       def endpointUri = "direct:a3"
       def receive = { case _ ⇒ {} }
 
       override def postStop() = {
         super.postStop()
-        stopped.countDown()
+        latch.countDown()
       }
     })
     camel.awaitActivation(actor, 1 second)
 
     system.stop(actor)
     camel.awaitDeactivation(actor, 1 second)
-    if (!stopped.await(1, TimeUnit.SECONDS)) fail("Actor must have stopped quickly after deactivation!")
+    Await.ready(latch, 1 second)
   }
 
   "ActivationAware must time out when waiting for endpoint de-activation for too long" in {
@@ -66,7 +67,7 @@ class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCa
   class TestConsumer(uri: String) extends Consumer {
     def endpointUri = uri
     override def receive = {
-      case msg: Message ⇒ sender ! "received " + msg.body
+      case msg: CamelMessage ⇒ sender ! "received " + msg.body
     }
   }
 

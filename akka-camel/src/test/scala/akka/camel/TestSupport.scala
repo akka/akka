@@ -41,8 +41,8 @@ private[camel] object TestSupport {
 
   @deprecated
   trait MessageSugar {
-    def Message(body: Any) = akka.camel.Message(body, Map.empty)
-    def Message(body: Any, headers: Map[String, Any]) = akka.camel.Message(body, headers)
+    def Message(body: Any) = akka.camel.CamelMessage(body, Map.empty)
+    def Message(body: Any, headers: Map[String, Any]) = akka.camel.CamelMessage(body, headers)
   }
 
   trait SharedCamelSystem extends BeforeAndAfterAll { this: Suite ⇒

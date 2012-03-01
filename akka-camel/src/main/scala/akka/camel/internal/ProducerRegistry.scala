@@ -5,26 +5,24 @@ import org.apache.camel.processor.SendProcessor
 import akka.actor.{ Props, ActorRef, Terminated, Actor }
 import org.apache.camel.Endpoint
 import akka.camel.Camel
+import akka.util.NonFatal
 
 /**
  * Watches the end of life of <code>Producer</code>s.
  * Removes a <code>Producer</code> from the <code>ProducerRegistry</code> when it is <code>Terminated</code>,
  * which in turn stops the <code>SendProcessor</code>.
  */
-private[camel] class ProducerWatcher(registry: ProducerRegistry) extends Actor {
+private class ProducerWatcher(registry: ProducerRegistry) extends Actor {
   override def receive = {
-    case RegisterProducer(actorRef) ⇒ {
-      context.watch(actorRef)
-    }
-    case Terminated(actorRef) ⇒ {
-      registry.unregisterProducer(actorRef)
-    }
+    case RegisterProducer(actorRef) ⇒ context.watch(actorRef)
+    case Terminated(actorRef)       ⇒ registry.unregisterProducer(actorRef)
   }
 }
 
-private[camel] case class RegisterProducer(actorRef: ActorRef)
+private case class RegisterProducer(actorRef: ActorRef)
 
 /**
+ * For internal use only.
  * Manages the Camel objects for <code>Producer</code>s.
  * Every <code>Producer</code> needs an <code>Endpoint</code> and a <code>SendProcessor</code>
  * to produce messages over an <code>Exchange</code>.
@@ -39,6 +37,7 @@ private[camel] trait ProducerRegistry {
   }
 
   /**
+   * For internal use only.
    * Unregisters <code>Endpoint</code> and <code>SendProcessor</code> and stops the SendProcessor
    */
   private[camel] def unregisterProducer(actorRef: ActorRef): Unit = {
@@ -49,12 +48,13 @@ private[camel] trait ProducerRegistry {
           processor.stop()
           system.eventStream.publish(EndpointDeActivated(actorRef))
         } catch {
-          case e ⇒ system.eventStream.publish(EndpointFailedToDeActivate(actorRef, e))
+          case NonFatal(e) ⇒ system.eventStream.publish(EndpointFailedToDeActivate(actorRef, e))
         }
     }
   }
 
   /**
+   * For internal use only.
    * Creates <code>Endpoint</code> and <code>SendProcessor</code> and associates the actorRef to these.
    * @param actorRef the actorRef of the <code>Producer</code> actor.
    * @param endpointUri the endpoint Uri of the producer
@@ -65,17 +65,16 @@ private[camel] trait ProducerRegistry {
       val endpoint = context.getEndpoint(endpointUri)
       val processor = new SendProcessor(endpoint)
 
-      val prev = camelObjects.putIfAbsent(actorRef, (endpoint, processor))
-      if (prev != null) {
-        prev
-      } else {
-        processor.start()
-        system.eventStream.publish(EndpointActivated(actorRef))
-        registerWatch(actorRef)
-        (endpoint, processor)
+      camelObjects.putIfAbsent(actorRef, (endpoint, processor)) match {
+        case null ⇒
+          processor.start()
+          registerWatch(actorRef)
+          system.eventStream.publish(EndpointActivated(actorRef))
+          (endpoint, processor)
+        case prev ⇒ prev
       }
     } catch {
-      case e ⇒ {
+      case NonFatal(e) ⇒ {
         system.eventStream.publish(EndpointFailedToActivate(actorRef, e))
         // can't return null to the producer actor, so blow up actor in initialization.
         throw e

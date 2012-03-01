@@ -11,15 +11,21 @@ import java.util.concurrent.TimeoutException
 import akka.actor.{ ActorSystem, Props, ActorRef }
 import akka.pattern._
 
+/**
+ * Activation trait that can be used to wait on activation or de-activation of Camel endpoints.
+ * The Camel endpoints are activated asynchronously. This trait can signal when an endpoint is activated or de-activated.
+ */
 trait Activation {
   import akka.dispatch.Await
 
   def system: ActorSystem
-  private[camel] val activationTracker = system.actorOf(Props[ActivationTracker])
+
+  private val activationTracker = system.actorOf(Props[ActivationTracker])
 
   /**
    * Awaits for endpoint to be activated. It blocks until the endpoint is registered in camel context or timeout expires.
-   *
+   * @param endpoint the endpoint to wait for to be activated
+   * @param timeout the timeout for the wait
    * @throws akka.camel.ActivationTimeoutException if endpoint is not activated within timeout.
    */
   def awaitActivation(endpoint: ActorRef, timeout: Duration): ActorRef = {
@@ -32,7 +38,8 @@ trait Activation {
 
   /**
    * Awaits for endpoint to be de-activated. It is blocking until endpoint is unregistered in camel context or timeout expires.
-   *
+   * @param endpoint the endpoint to wait for to be de-activated
+   * @param timeout the timeout for the wait
    * @throws akka.camel.DeActivationTimeoutException if endpoint is not de-activated within timeout.
    */
   def awaitDeactivation(endpoint: ActorRef, timeout: Duration) {
@@ -44,7 +51,9 @@ trait Activation {
   }
 
   /**
-   * Similar to `awaitActivation` but returns future instead.
+   * Similar to `awaitActivation` but returns a future instead.
+   * @param endpoint the endpoint to be activated
+   * @param timeout the timeout for the Future
    */
   def activationFutureFor(endpoint: ActorRef, timeout: Duration): Future[ActorRef] = {
     (activationTracker.ask(AwaitActivation(endpoint))(Timeout(timeout))).map[ActorRef] {
@@ -54,20 +63,32 @@ trait Activation {
   }
 
   /**
-   * Similar to awaitDeactivation but returns future instead.
+   * Similar to awaitDeactivation but returns a future instead.
+   * @param endpoint the endpoint to be deactivated
+   * @param timeout the timeout of the Future
    */
   def deactivationFutureFor(endpoint: ActorRef, timeout: Duration): Future[Unit] = {
     (activationTracker.ask(AwaitDeActivation(endpoint))(Timeout(timeout))).map[Unit] {
-      case EndpointDeActivated(_)               ⇒ {}
+      case EndpointDeActivated(_)               ⇒ ()
       case EndpointFailedToDeActivate(_, cause) ⇒ throw cause
     }
   }
 }
 
+/**
+ * An exception for when a timeout has occurred during deactivation of an endpoint
+ * @param endpoint the endpoint that could not be de-activated in time
+ * @param timeout the timeout
+ */
 class DeActivationTimeoutException(endpoint: ActorRef, timeout: Duration) extends TimeoutException {
   override def getMessage = "Timed out after %s, while waiting for de-activation of %s" format (timeout, endpoint.path)
 }
 
+/**
+ * An exception for when a timeout has occurred during the activation of an endpoint
+ * @param endpoint the endpoint that could not be activated in time
+ * @param timeout the timeout
+ */
 class ActivationTimeoutException(endpoint: ActorRef, timeout: Duration) extends TimeoutException {
   override def getMessage = "Timed out after %s, while waiting for activation of %s" format (timeout, endpoint.path)
 }

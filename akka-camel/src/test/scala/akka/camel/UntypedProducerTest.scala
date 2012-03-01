@@ -33,13 +33,13 @@ class UntypedProducerTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
 
       when("a test message is sent to the producer with !!")
-      val message = Message("test", Map(Message.MessageExchangeId -> "123"))
+      val message = CamelMessage("test", Map(CamelMessage.MessageExchangeId -> "123"))
       val future = producer.ask(message)(timeout)
       then("a normal response should have been returned by the producer")
-      val expected = Message("received test", Map(Message.MessageExchangeId -> "123"))
+      val expected = CamelMessage("received test", Map(CamelMessage.MessageExchangeId -> "123"))
       Await.result(future, timeout) match {
-        case result: Message ⇒ assert(result === expected)
-        case unexpected      ⇒ fail("Actor responded with unexpected message:" + unexpected)
+        case result: CamelMessage ⇒ assert(result === expected)
+        case unexpected           ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
 
     }
@@ -49,7 +49,7 @@ class UntypedProducerTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
 
       when("a test message causing an exception is sent to the producer with !!")
-      val message = Message("fail", Map(Message.MessageExchangeId -> "123"))
+      val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
       val future = producer.ask(message)(timeout)
       then("a failure response should have been returned by the producer")
       Await.result(future, timeout) match {
@@ -57,7 +57,7 @@ class UntypedProducerTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
           val expectedFailureText = result.cause.getMessage
           val expectedHeaders = result.headers
           assert(expectedFailureText === "failure")
-          assert(expectedHeaders === Map(Message.MessageExchangeId -> "123"))
+          assert(expectedHeaders === Map(CamelMessage.MessageExchangeId -> "123"))
         }
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
@@ -73,7 +73,7 @@ class UntypedProducerTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
 
       when("a test message is sent to the producer with !")
       mockEndpoint.expectedBodiesReceived("received test")
-      val result = producer.tell(Message("test", Map[String, Any]()), producer)
+      val result = producer.tell(CamelMessage("test", Map[String, Any]()), producer)
 
       then("a normal response should have been sent")
       mockEndpoint.assertIsSatisfied

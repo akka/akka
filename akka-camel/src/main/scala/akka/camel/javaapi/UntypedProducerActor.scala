@@ -19,7 +19,7 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    * message is passed as argument. By default, this method simply returns the argument but may be overridden
    * by subclasses.
    */
-  def onReceiveBeforeProduce(message: Any): Any = super.receiveBeforeProduce(message)
+  def onReceiveBeforeProduce(message: AnyRef): AnyRef = message
 
   /**
    * Called after a response was received from the endpoint specified by <code>endpointUri</code>. The
@@ -27,14 +27,14 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    * if <code>oneway</code> is <code>false</code>. If <code>oneway</code> is <code>true</code>, nothing is
    * done. This method may be overridden by subclasses (e.g. to forward responses to another actor).
    */
-  def onReceiveAfterProduce(message: Any): Unit = super.receiveAfterProduce(message)
+  def onReceiveAfterProduce(message: AnyRef): Unit = super.receiveAfterProduce(message)
 
   final override def receiveBeforeProduce = {
-    case msg ⇒ onReceiveBeforeProduce(msg)
+    case msg: AnyRef ⇒ onReceiveBeforeProduce(msg)
   }
 
   final override def receiveAfterProduce = {
-    case msg ⇒ onReceiveAfterProduce(msg)
+    case msg: AnyRef ⇒ onReceiveAfterProduce(msg)
   }
 
   final override def endpointUri = getEndpointUri
@@ -59,13 +59,6 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    * exchange pattern (fire and forget).
    */
   def isOneway() = super.oneway
-
-  /**
-   * Creates a <code>RichMessage</code> out of a message. The <code>RichMessage</code> has convenience methods for accessing body and headers
-   * @param message the message
-   * @return the <code>RichMessage</code>
-   */
-  def rich(message: Message): RichMessage = message
 
   /**
    * Returns the <code>CamelContext</code>.

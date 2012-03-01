@@ -4,12 +4,13 @@ import akka.actor.ActorSystem
 import component.{ DurationTypeConverter, ActorComponent }
 import org.apache.camel.CamelContext
 import org.apache.camel.impl.DefaultCamelContext
-import akka.util.Duration
 import scala.Predef._
 import akka.event.Logging
 import akka.camel.Camel
+import akka.util.{ NonFatal, Duration }
 
 /**
+ * For internal use only.
  * Creates an instance of the Camel subsystem.
  *
  * @param system is used to create internal actors needed by camel instance.
@@ -18,6 +19,9 @@ import akka.camel.Camel
  * Also by not creating extra internal actor system we are conserving resources.
  */
 private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
+  /**
+   * For internal use only.
+   */
   private[camel] implicit val log = Logging(system, "Camel")
 
   lazy val context: CamelContext = {
@@ -38,7 +42,7 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
    */
   def start = {
     context.start()
-    Try(template.start()) otherwise context.stop()
+    try template.start() catch { case NonFatal(e) ⇒ context.stop(); throw e }
     log.debug("Started CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
     this
   }
@@ -51,7 +55,9 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
    * @see akka.camel.DefaultCamel#start()
    */
   def shutdown() {
-    try context.stop() finally Try.safe(template.stop())
+    try context.stop() finally {
+      try { template.stop() } catch { case NonFatal(e) ⇒ log.debug("Swallowing non-fatal exception [{}] on stopping Camel producer template", e) }
+    }
     log.debug("Stopped CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
   }
 }
