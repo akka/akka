@@ -37,23 +37,69 @@ object ActorSystem {
 
   val GlobalHome = SystemHome orElse EnvHome
 
-  def create(): ActorSystem = apply()
   /**
-   * Uses the standard default Config from ConfigFactory.load(), since none is provided.
+   * Creates a new ActorSystem with the name "default",
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   * Then it loads the default reference configuration using the ClassLoader.
+   */
+  def create(): ActorSystem = apply()
+
+  /**
+   * Creates a new ActorSystem with the specified name,
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   * Then it loads the default reference configuration using the ClassLoader.
    */
   def create(name: String): ActorSystem = apply(name)
+
+  /**
+   * Creates a new ActorSystem with the name "default", and the specified Config, then
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   */
   def create(name: String, config: Config): ActorSystem = apply(name, config)
+
+  /**
+   * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
+   */
   def create(name: String, config: Config, classLoader: ClassLoader): ActorSystem = apply(name, config, classLoader)
 
   /**
-   * Uses the standard default Config from ConfigFactory.load(), since none is provided.
+   * Creates a new ActorSystem with the name "default",
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   * Then it loads the default reference configuration using the ClassLoader.
    */
   def apply(): ActorSystem = apply("default")
+
+  /**
+   * Creates a new ActorSystem with the specified name,
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   * Then it loads the default reference configuration using the ClassLoader.
+   */
   def apply(name: String): ActorSystem = {
     val classLoader = findClassLoader()
     apply(name, ConfigFactory.load(classLoader), classLoader)
   }
+
+  /**
+   * Creates a new ActorSystem with the name "default", and the specified Config, then
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   */
   def apply(name: String, config: Config): ActorSystem = apply(name, config, findClassLoader())
+
+  /**
+   * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
+   */
   def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem = new ActorSystemImpl(name, config, classLoader).start()
 
   class Settings(classLoader: ClassLoader, cfg: Config, final val name: String) {
