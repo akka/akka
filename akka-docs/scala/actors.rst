@@ -580,7 +580,7 @@ Here is another little cute example of ``become`` and ``unbecome`` in action:
 Encoding Scala Actors nested receives without accidentally leaking memory
 -------------------------------------------------------------------------
 
-See this `Unnested receive example <http://github.com/jboner/akka/blob/master/akka/akka-docs/scala/code/akka/docs/actor/UnnestedReceives.scala>`_.
+See this `Unnested receive example <https://github.com/jboner/akka/blob/master/akka-docs/scala/code/akka/docs/actor/UnnestedReceives.scala>`_.
 
 
 Downgrade
