@@ -179,10 +179,10 @@ By having your Typed Actor implementation class implement any and all of the fol
     * ``TypedActor.PreRestart``
     * ``TypedActor.PostRestart``
 
- You can hook into the lifecycle of your Typed Actor.
+You can hook into the lifecycle of your Typed Actor.
 
- Proxying
- --------
+Proxying
+--------
 
- You can use the ``typedActorOf`` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
- This is usable if you want to communicate remotely with TypedActors on other machines, just look them up with ``actorFor`` and pass the ``ActorRef`` to ``typedActorOf``.
+You can use the ``typedActorOf`` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
+This is usable if you want to communicate remotely with TypedActors on other machines, just look them up with ``actorFor`` and pass the ``ActorRef`` to ``typedActorOf``.

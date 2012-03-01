@@ -528,8 +528,6 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
     def hasSystemMessages = false
   }
 
-  def locker: Locker = provider.locker
-
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
     threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings))
 
@@ -547,7 +545,6 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
   private lazy val _start: this.type = {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
-    registerOnTermination(locker.shutdown())
     registerOnTermination(stopScheduler())
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
