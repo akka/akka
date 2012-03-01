@@ -6,7 +6,7 @@
 http://www.springframework.org/schema/beans
 http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
 http://akka.io/schema/akka
-http://akka.io/akka-2.0-SNAPSHOT.xsd
+http://akka.io/akka-2.0-RC4.xsd
 http://camel.apache.org/schema/spring
 http://camel.apache.org/schema/spring/camel-spring.xsd">
 
