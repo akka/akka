@@ -49,7 +49,7 @@ trait ActorRefProvider {
    */
   def rootPath: ActorPath
   
-  def system: ActorSystem
+  def system: ExtendedActorSystem
 
   def settings: ActorSystem.Settings
 
@@ -135,11 +135,10 @@ trait ActorRefProvider {
 
   /**
    * Obtain the address which is to be used within sender references when
-   * sending to the given other address or none if the other address cannot be
-   * reached from this system (i.e. no means of communication known; no
-   * attempt is made to verify actual reachability).
+   * sending using the given protocol. Returns None if the protocol is unknown
+   * or has multiple addresses associated.
    */
-  def getExternalAddressFor(addr: Address): Option[Address]
+  def getExternalAddressFor(protocol: String): Option[Address]
 }
 
 /**
@@ -450,7 +449,7 @@ class LocalActorRefProvider(
    */
   @volatile
   private var _system: ActorSystemImpl = _
-  def system: ActorSystem = _system
+  def system: ExtendedActorSystem = _system
 
   def dispatcher: MessageDispatcher = system.dispatcher
 
@@ -554,8 +553,10 @@ class LocalActorRefProvider(
         new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path)
     }
   }
+  
+  private val address = Some(rootPath.address)
 
-  def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
+  def getExternalAddressFor(protocol: String): Option[Address] = if (protocol == "akka") address else None
 }
 
 class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassification {

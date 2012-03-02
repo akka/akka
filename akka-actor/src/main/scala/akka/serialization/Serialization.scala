@@ -13,8 +13,12 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.util.NonFatal
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
+import akka.actor.ActorRef
+import akka.actor.InternalActorRef
+import akka.actor.ActorSystem
 
 case class NoSerializerFoundException(m: String) extends AkkaException(m)
+case class NoSingleAddressFoundException(protocol: String) extends AkkaException("no single external address for protocol " + protocol)
 
 object Serialization {
 
@@ -42,6 +46,18 @@ object Serialization {
       cfg.root.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
 
   }
+
+  def toExternalForm(actorRef: ActorRef, protocol: String): String = actorRef match {
+    case ref: InternalActorRef ⇒
+      ref.system.provider.getExternalAddressFor(protocol) match {
+        case Some(addr) ⇒ ref.path.toStringWithAddress(addr)
+        case None       ⇒ throw NoSingleAddressFoundException(protocol)
+      }
+    case _ ⇒ throw new IllegalArgumentException("unknown actor reference type " + actorRef.getClass)
+  }
+  
+  def fromExternalForm(path: String, system: ActorSystem): ActorRef = system.actorFor(path)
+
 }
 
 /**
@@ -68,8 +84,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Returns either the resulting object or an Exception if one was thrown.
    */
   def deserialize(bytes: Array[Byte],
-                  serializerId: Int,
-                  clazz: Option[Class[_]]): Either[Throwable, AnyRef] =
+    serializerId: Int,
+    clazz: Option[Class[_]]): Either[Throwable, AnyRef] =
     try Right(serializerByIdentity(serializerId).fromBinary(bytes, clazz))
     catch { case NonFatal(e) ⇒ Left(e) }
 
