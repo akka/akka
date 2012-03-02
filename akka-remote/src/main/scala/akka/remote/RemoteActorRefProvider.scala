@@ -54,6 +54,7 @@ class RemoteActorRefProvider(
   def unregisterTempActor(path: ActorPath) = local.unregisterTempActor(path)
   def tempPath() = local.tempPath()
   def tempContainer = local.tempContainer
+  def system = local.system
 
   @volatile
   private var _transport: RemoteTransport = _

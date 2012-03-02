@@ -76,6 +76,8 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * Returns the path for this actor (from this actor up to the root actor).
    */
   def path: ActorPath
+  
+  def system: ActorSystem
 
   /**
    * Comparison only takes address into account.
@@ -184,6 +186,8 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
    * Get a reference to the actor ref provider which created this ref.
    */
   def provider: ActorRefProvider
+  
+  def system: ActorSystem = provider.system
 
   /**
    * Obtain parent of this ref; used by getChild for ".." paths.
