@@ -18,6 +18,8 @@ import com.typesafe.config._
 
 class MembershipChangeListenerSpec extends AkkaSpec("""
   akka {
+    actor.provider = akka.remote.RemoteActorRefProvider
+    remote.netty.hostname = localhost
     loglevel = "INFO"
   }
   """) with ImplicitSender {
@@ -34,33 +36,22 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
     "A set of connected cluster systems" must {
       "(when two systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
         system0 = ActorSystem("system0", ConfigFactory
-          .parseString("""
-            akka {
-              actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty {
-                hostname = localhost
-                port=5550
-              }
-            }""")
+          .parseString("akka.remote.netty.port=5550")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
-        node0 = new Node(system0)
+        node0 = Node(system0)
 
         system1 = ActorSystem("system1", ConfigFactory
           .parseString("""
             akka {
-              actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty {
-                hostname = localhost
-                port=5551
-              }
+              remote.netty.port=5551
               cluster.node-to-join = "akka://system0@localhost:5550"
             }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
-        node1 = new Node(system1)
+        node1 = Node(system1)
 
         val latch = new CountDownLatch(2)
 
@@ -90,17 +81,13 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
         system2 = ActorSystem("system2", ConfigFactory
           .parseString("""
             akka {
-              actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty {
-                hostname = localhost
-                port=5552
-              }
+              remote.netty.port=5552
               cluster.node-to-join = "akka://system0@localhost:5550"
             }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
-        node2 = new Node(system2)
+        node2 = Node(system2)
 
         val latch = new CountDownLatch(3)
         node0.registerListener(new MembershipChangeListener {

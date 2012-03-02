@@ -16,9 +16,11 @@ import java.net.InetSocketAddress
 class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
   akka {
     loglevel = "INFO"
-    cluster.failure-detector.threshold = 3
     actor.debug.lifecycle = on
     actor.debug.autoreceive = on
+    actor.provider = akka.remote.RemoteActorRefProvider
+    remote.netty.hostname = localhost
+    cluster.failure-detector.threshold = 3
   }
   """) with ImplicitSender {
 
@@ -35,18 +37,11 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
 
       // ======= NODE 1 ========
       system1 = ActorSystem("system1", ConfigFactory
-        .parseString("""
-          akka {
-            actor.provider = "akka.remote.RemoteActorRefProvider"
-            remote.netty {
-              hostname = localhost
-              port=5550
-            }
-          }""")
+        .parseString("akka.remote.netty.port=5550")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
-      node1 = new Node(system1)
+      node1 = Node(system1)
       val fd1 = node1.failureDetector
       val address1 = node1.self.address
 
@@ -54,17 +49,13 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
       system2 = ActorSystem("system2", ConfigFactory
         .parseString("""
           akka {
-            actor.provider = "akka.remote.RemoteActorRefProvider"
-            remote.netty {
-              hostname = localhost
-              port = 5551
-            }
+            remote.netty.port=5551
             cluster.node-to-join = "akka://system1@localhost:5550"
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
-      node2 = new Node(system2)
+      node2 = Node(system2)
       val fd2 = node2.failureDetector
       val address2 = node2.self.address
 
@@ -72,17 +63,13 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
       system3 = ActorSystem("system3", ConfigFactory
         .parseString("""
           akka {
-            actor.provider = "akka.remote.RemoteActorRefProvider"
-            remote.netty {
-              hostname = localhost
-              port=5552
-            }
+            remote.netty.port=5552
             cluster.node-to-join = "akka://system1@localhost:5550"
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote3 = system3.provider.asInstanceOf[RemoteActorRefProvider]
-      node3 = new Node(system3)
+      node3 = Node(system3)
       val fd3 = node3.failureDetector
       val address3 = node3.self.address
 

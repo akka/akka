@@ -327,9 +327,7 @@ object AkkaBuild extends Build {
 
   // Settings
 
-  override lazy val settings = super.settings ++ buildSettings ++ Seq(
-      resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/"
-    )
+  override lazy val settings = super.settings ++ buildSettings
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 

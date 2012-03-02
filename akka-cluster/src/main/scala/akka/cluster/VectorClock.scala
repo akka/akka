@@ -72,25 +72,18 @@ object VectorClock {
   /**
    * Hash representation of a versioned node name.
    */
-  class Node private (val name: String) extends Serializable {
-    override def hashCode = 0 + name.##
-
-    override def equals(other: Any) = Node.unapply(this) == Node.unapply(other)
-
-    override def toString = name.mkString("Node(", "", ")")
-  }
+  sealed trait Node extends Serializable
 
   object Node {
-    def apply(name: String): Node = new Node(hash(name))
-
-    def unapply(other: Any) = other match {
-      case x: Node ⇒ import x._; Some(name)
-      case _       ⇒ None
+    private case class NodeImpl(name: String) extends Node {
+      override def toString(): String = "Node(" + name + ")"
     }
+
+    def apply(name: String): Node = NodeImpl(hash(name))
 
     private def hash(name: String): String = {
       val digester = MessageDigest.getInstance("MD5")
-      digester update name.getBytes
+      digester update name.getBytes("UTF-8")
       digester.digest.map { h ⇒ "%02x".format(0xFF & h) }.mkString
     }
   }
@@ -143,8 +136,6 @@ case class VectorClock(
   timestamp: VectorClock.Timestamp = VectorClock.Timestamp(),
   versions: Map[VectorClock.Node, VectorClock.Timestamp] = Map.empty[VectorClock.Node, VectorClock.Timestamp])
   extends PartiallyOrdered[VectorClock] {
-
-  // FIXME pruning of VectorClock history
 
   import VectorClock._
 

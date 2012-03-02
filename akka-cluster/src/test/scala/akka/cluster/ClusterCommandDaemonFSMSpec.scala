@@ -19,19 +19,19 @@ class ClusterCommandDaemonFSMSpec extends AkkaSpec(
   "A ClusterCommandDaemon FSM" must {
 
     "start in Joining" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
     }
 
     "be able to switch from Joining to Up" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Up
       fsm.stateName must be(MemberStatus.Up)
     }
 
     "be able to switch from Up to Down" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Up
       fsm.stateName must be(MemberStatus.Up)
@@ -40,7 +40,7 @@ class ClusterCommandDaemonFSMSpec extends AkkaSpec(
     }
 
     "be able to switch from Up to Leaving" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Up
       fsm.stateName must be(MemberStatus.Up)
@@ -49,7 +49,7 @@ class ClusterCommandDaemonFSMSpec extends AkkaSpec(
     }
 
     "be able to switch from Up to Exiting" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Up
       fsm.stateName must be(MemberStatus.Up)
@@ -58,7 +58,7 @@ class ClusterCommandDaemonFSMSpec extends AkkaSpec(
     }
 
     "be able to switch from Up to Removed" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Up
       fsm.stateName must be(MemberStatus.Up)
@@ -67,7 +67,7 @@ class ClusterCommandDaemonFSMSpec extends AkkaSpec(
     }
 
     "be able to switch from Leaving to Down" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Up
       fsm.stateName must be(MemberStatus.Up)
@@ -78,7 +78,7 @@ class ClusterCommandDaemonFSMSpec extends AkkaSpec(
     }
 
     "be able to switch from Leaving to Removed" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Up
       fsm.stateName must be(MemberStatus.Up)
@@ -89,7 +89,7 @@ class ClusterCommandDaemonFSMSpec extends AkkaSpec(
     }
 
     "be able to switch from Exiting to Removed" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Up
       fsm.stateName must be(MemberStatus.Up)
@@ -100,7 +100,7 @@ class ClusterCommandDaemonFSMSpec extends AkkaSpec(
     }
 
     "be able to switch from Down to Removed" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Up
       fsm.stateName must be(MemberStatus.Up)
@@ -111,7 +111,7 @@ class ClusterCommandDaemonFSMSpec extends AkkaSpec(
     }
 
     "not be able to switch from Removed to any other state" in {
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Up
       fsm.stateName must be(MemberStatus.Up)
@@ -132,7 +132,7 @@ class ClusterCommandDaemonFSMSpec extends AkkaSpec(
     "remain in the same state when receiving a Join command" in {
       val address = Address("akka", system.name)
 
-      val fsm = TestFSMRef(new ClusterCommandDaemon(system, system.node))
+      val fsm = TestFSMRef(new ClusterCommandDaemon(system, Node(system)))
       fsm.stateName must be(MemberStatus.Joining)
       fsm ! ClusterAction.Join(address)
       fsm.stateName must be(MemberStatus.Joining)

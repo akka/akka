@@ -15,6 +15,8 @@ import com.typesafe.config._
 
 class NodeMembershipSpec extends AkkaSpec("""
   akka {
+    actor.provider = akka.remote.RemoteActorRefProvider
+    remote.netty.hostname = localhost
     loglevel = "INFO"
   }
   """) with ImplicitSender {
@@ -33,34 +35,23 @@ class NodeMembershipSpec extends AkkaSpec("""
 
         // ======= NODE 0 ========
         system0 = ActorSystem("system0", ConfigFactory
-          .parseString("""
-            akka {
-              actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty {
-                hostname = localhost
-                port=5550
-              }
-            }""")
+          .parseString("akka.remote.netty.port=5550")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
-        node0 = system0.node
+        node0 = Node(system0)
 
         // ======= NODE 1 ========
         system1 = ActorSystem("system1", ConfigFactory
           .parseString("""
             akka {
-              actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty {
-                hostname = localhost
-                port=5551
-              }
+              remote.netty.port=5551
               cluster.node-to-join = "akka://system0@localhost:5550"
             }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
-        node1 = system1.node
+        node1 = Node(system1)
 
         Thread.sleep(10.seconds.dilated.toMillis)
 
@@ -89,17 +80,13 @@ class NodeMembershipSpec extends AkkaSpec("""
         system2 = ActorSystem("system2", ConfigFactory
           .parseString("""
             akka {
-              actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty {
-                hostname = localhost
-                port=5552
-              }
+              remote.netty.port=5552
               cluster.node-to-join = "akka://system0@localhost:5550"
             }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
-        node2 = system2.node
+        node2 = Node(system2)
 
         Thread.sleep(10.seconds.dilated.toMillis)
 

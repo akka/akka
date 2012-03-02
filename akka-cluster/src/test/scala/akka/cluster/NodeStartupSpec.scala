@@ -16,6 +16,8 @@ import com.typesafe.config._
 class NodeStartupSpec extends AkkaSpec("""
   akka {
     loglevel = "INFO"
+    actor.provider = akka.remote.RemoteActorRefProvider
+    remote.netty.hostname = localhost
   }
   """) with ImplicitSender {
 
@@ -26,19 +28,12 @@ class NodeStartupSpec extends AkkaSpec("""
 
   try {
     "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
-      system0 = ActorSystem("NodeStartupSpec", ConfigFactory
-        .parseString("""
-          akka {
-            actor.provider = "akka.remote.RemoteActorRefProvider"
-            remote.netty {
-              hostname = localhost
-              port=5550
-            }
-          }""")
+      system0 = ActorSystem("system0", ConfigFactory
+        .parseString("akka.remote.netty.port=5550")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
-      node0 = new Node(system0)
+      node0 = Node(system0)
 
       "be a singleton cluster when started up" in {
         Thread.sleep(1.seconds.dilated.toMillis)
@@ -55,20 +50,16 @@ class NodeStartupSpec extends AkkaSpec("""
 
     "A second cluster node with a 'node-to-join' config defined" must {
       "join the other node cluster as 'Joining' when sending a Join command" in {
-        system1 = ActorSystem("NodeStartupSpec", ConfigFactory
+        system1 = ActorSystem("system1", ConfigFactory
           .parseString("""
-          akka {
-            actor.provider = "akka.remote.RemoteActorRefProvider"
-            remote.netty {
-              hostname = localhost
-              port=5551
-            }
-            cluster.node-to-join = "akka://NodeStartupSpec@localhost:5550"
-          }""")
+            akka {
+              remote.netty.port=5551
+              cluster.node-to-join = "akka://system0@localhost:5550"
+            }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
-        node1 = new Node(system1)
+        node1 = Node(system1)
 
         Thread.sleep(1.seconds.dilated.toMillis) // give enough time for node1 to JOIN node0
         val members = node0.latestGossip.members
