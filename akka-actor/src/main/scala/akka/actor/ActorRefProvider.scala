@@ -48,6 +48,8 @@ trait ActorRefProvider {
    * address if enabled.
    */
   def rootPath: ActorPath
+  
+  def system: ExtendedActorSystem
 
   def settings: ActorSystem.Settings
 
@@ -133,11 +135,10 @@ trait ActorRefProvider {
 
   /**
    * Obtain the address which is to be used within sender references when
-   * sending to the given other address or none if the other address cannot be
-   * reached from this system (i.e. no means of communication known; no
-   * attempt is made to verify actual reachability).
+   * sending using the given protocol. Returns None if the protocol is unknown
+   * or has multiple addresses associated.
    */
-  def getExternalAddressFor(addr: Address): Option[Address]
+  def getExternalAddressFor(protocol: String): Option[Address]
 }
 
 /**
@@ -447,7 +448,8 @@ class LocalActorRefProvider(
    * but it also requires these references to be @volatile and lazy.
    */
   @volatile
-  private var system: ActorSystemImpl = _
+  private var _system: ActorSystemImpl = _
+  def system: ExtendedActorSystem = _system
 
   def dispatcher: MessageDispatcher = system.dispatcher
 
@@ -467,7 +469,7 @@ class LocalActorRefProvider(
   private val guardianProps = Props(new Guardian)
 
   lazy val rootGuardian: InternalActorRef =
-    new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
+    new LocalActorRef(_system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
       object Extra {
         def unapply(s: String): Option[InternalActorRef] = extraNames.get(s)
       }
@@ -484,12 +486,12 @@ class LocalActorRefProvider(
     }
 
   lazy val guardian: InternalActorRef =
-    actorOf(system, guardianProps, rootGuardian, rootPath / "user", true, None, false)
+    actorOf(_system, guardianProps, rootGuardian, rootPath / "user", true, None, false)
 
   lazy val systemGuardian: InternalActorRef =
-    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true, None, false)
+    actorOf(_system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true, None, false)
 
-  lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
+  lazy val tempContainer = new VirtualPathContainer(_system.provider, tempNode, rootGuardian, log)
 
   def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = {
     assert(path.parent eq tempNode, "cannot registerTempActor() with anything not obtained from tempPath()")
@@ -501,8 +503,8 @@ class LocalActorRefProvider(
     tempContainer.removeChild(path.name)
   }
 
-  def init(_system: ActorSystemImpl) {
-    system = _system
+  def init(__system: ActorSystemImpl) {
+    _system = __system
     // chain death watchers so that killing guardian stops the application
     deathWatch.subscribe(systemGuardian, guardian)
     deathWatch.subscribe(rootGuardian, systemGuardian)
@@ -536,7 +538,7 @@ class LocalActorRefProvider(
     } else ref.getChild(path.iterator) match {
       case Nobody ⇒
         log.debug("look-up of path sequence '{}' failed", path)
-        new EmptyLocalActorRef(system.provider, ref.path / path, eventStream)
+        new EmptyLocalActorRef(_system.provider, ref.path / path, eventStream)
       case x ⇒ x
     }
 
@@ -551,8 +553,10 @@ class LocalActorRefProvider(
         new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path)
     }
   }
+  
+  private val address = Some(rootPath.address)
 
-  def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
+  def getExternalAddressFor(protocol: String): Option[Address] = if (protocol == "akka") address else None
 }
 
 class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassification {

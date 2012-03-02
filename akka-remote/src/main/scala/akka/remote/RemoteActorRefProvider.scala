@@ -54,6 +54,7 @@ class RemoteActorRefProvider(
   def unregisterTempActor(path: ActorPath) = local.unregisterTempActor(path)
   def tempPath() = local.tempPath()
   def tempContainer = local.tempContainer
+  def system = local.system
 
   @volatile
   private var _transport: RemoteTransport = _
@@ -200,16 +201,10 @@ class RemoteActorRefProvider(
     // we don’t wait for the ACK, because the remote end will process this command before any other message to the new actor
     actorFor(RootActorPath(path.address) / "remote") ! DaemonMsgCreate(props, deploy, path.toString, supervisor)
   }
+  
+  private val address = Some(transport.address)
 
-  def getExternalAddressFor(addr: Address): Option[Address] = {
-    val ta = transport.address
-    val ra = rootPath.address
-    addr match {
-      case `ta` | `ra`                          ⇒ Some(rootPath.address)
-      case Address("akka", _, Some(_), Some(_)) ⇒ Some(transport.address)
-      case _                                    ⇒ None
-    }
-  }
+  def getExternalAddressFor(protocol: String): Option[Address] = if (protocol == "akka") address else None
 }
 
 trait RemoteRef extends ActorRefScope {
