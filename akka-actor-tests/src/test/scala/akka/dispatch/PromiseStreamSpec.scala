@@ -95,6 +95,17 @@ class PromiseStreamSpec extends AkkaSpec with DefaultTimeout {
       assert(Await.result(c, timeout.duration) === 4)
     }
 
+    "map futures" in {
+      val q = PromiseStream[String]()
+      flow {
+        q << (Future("a"), Future("b"), Future("c"))
+      }
+      val a, b, c = q.dequeue
+      Await.result(a, timeout.duration) must be("a")
+      Await.result(b, timeout.duration) must be("b")
+      Await.result(c, timeout.duration) must be("c")
+    }
+
     "not fail under concurrent stress" in {
       implicit val timeout = Timeout(60 seconds)
       val q = PromiseStream[Long](timeout.duration.toMillis)
