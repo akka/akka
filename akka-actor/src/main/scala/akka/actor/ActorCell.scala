@@ -163,7 +163,7 @@ trait UntypedActorContext extends ActorContext {
 
 /**
  * Everything in here is completely Akka PRIVATE. You will not find any
- * supported APIs in this place. This is not the API you were looking 
+ * supported APIs in this place. This is not the API you were looking
  * for! (waves hand)
  */
 private[akka] object ActorCell {
@@ -210,9 +210,9 @@ private[akka] object ActorCell {
    * This is the empty container, shared among all leaf actors.
    */
   object EmptyChildrenContainer extends EmptyChildrenContainer
-  
+
   /**
-   * This is the empty container which is installed after the last child has 
+   * This is the empty container which is installed after the last child has
    * terminated while stopping; it is necessary to distinguish from the normal
    * empty state while calling handleChildTerminated() for the last time.
    */
@@ -222,7 +222,7 @@ private[akka] object ActorCell {
 
   /**
    * Normal children container: we do have at least one child, but none of our
-   * children are currently terminating (which is the time period between 
+   * children are currently terminating (which is the time period between
    * calling context.stop(child) and processing the ChildTerminated() system
    * message).
    */
@@ -257,11 +257,11 @@ private[akka] object ActorCell {
   }
 
   /**
-   * Waiting state: there are outstanding termination requests (i.e. context.stop(child) 
+   * Waiting state: there are outstanding termination requests (i.e. context.stop(child)
    * was called but the corresponding ChildTerminated() system message has not yet been
    * processed). There could be no specific reason (UserRequested), we could be Restarting
    * or Terminating.
-   * 
+   *
    * Removing the last child which was supposed to be terminating will return a different
    * type of container, depending on whether or not children are left and whether or not
    * the reason was “Terminating”.
