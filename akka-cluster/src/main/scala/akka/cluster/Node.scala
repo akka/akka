@@ -60,27 +60,27 @@ object ClusterAction {
   /**
    * Command to set a node to Up (from Joining).
    */
-  case object Up extends ClusterMessage
+  case class Up(address: Address) extends ClusterMessage
 
   /**
    * Command to leave the cluster.
    */
-  case object Leave extends ClusterMessage
+  case class Leave(address: Address) extends ClusterMessage
 
   /**
    * Command to mark node as temporary down.
    */
-  case object Down extends ClusterMessage
+  case class Down(address: Address) extends ClusterMessage
 
   /**
    * Command to mark a node to be removed from the cluster immediately.
    */
-  case object Exit extends ClusterMessage
+  case class Exit(address: Address) extends ClusterMessage
 
   /**
    * Command to remove a node from the cluster immediately.
    */
-  case object Remove extends ClusterMessage
+  case class Remove(address: Address) extends ClusterMessage
 }
 
 /**
@@ -162,75 +162,85 @@ case class Gossip(
 
 /**
  * FSM actor managing the different cluster nodes states.
- * Single instance - e.g. serialized access to Node - message after message.
+ * Instantiated as a single instance for each Node - e.g. commands are serialized to Node message after message.
  */
-final class ClusterCommandDaemon(system: ActorSystem, node: Node) extends Actor with FSM[MemberStatus, Unit] {
+final class ClusterCommandDaemon extends Actor with FSM[MemberStatus, Unit] {
+  val node = Node(context.system)
 
-  // start in JOINING
+  // ========================
+  // === START IN JOINING ==
   startWith(MemberStatus.Joining, Unit)
 
   // ========================
-  // === IN JOINING ===
+  // === WHEN JOINING ===
   when(MemberStatus.Joining) {
-    case Event(ClusterAction.Up, _) ⇒
-      node.up()
+    case Event(ClusterAction.Up(address), _) ⇒
+      node.up(address)
       goto(MemberStatus.Up)
+
+    case Event(ClusterAction.Remove(address), _) ⇒
+      node.removing(address)
+      goto(MemberStatus.Removed)
+
+    case Event(ClusterAction.Down(address), _) ⇒
+      node.downing(address)
+      goto(MemberStatus.Down)
   }
 
   // ========================
-  // === IN UP ===
+  // === WHEN UP ===
   when(MemberStatus.Up) {
-    case Event(ClusterAction.Down, _) ⇒
-      node.downing()
+    case Event(ClusterAction.Down(address), _) ⇒
+      node.downing(address)
       goto(MemberStatus.Down)
 
-    case Event(ClusterAction.Leave, _) ⇒
-      node.leaving()
+    case Event(ClusterAction.Leave(address), _) ⇒
+      node.leaving(address)
       goto(MemberStatus.Leaving)
 
-    case Event(ClusterAction.Exit, _) ⇒
-      node.exiting()
+    case Event(ClusterAction.Exit(address), _) ⇒
+      node.exiting(address)
       goto(MemberStatus.Exiting)
 
-    case Event(ClusterAction.Remove, _) ⇒
-      node.removing()
+    case Event(ClusterAction.Remove(address), _) ⇒
+      node.removing(address)
       goto(MemberStatus.Removed)
   }
 
   // ========================
-  // === IN LEAVING ===
+  // === WHEN LEAVING ===
   when(MemberStatus.Leaving) {
-    case Event(ClusterAction.Down, _) ⇒
-      node.downing()
+    case Event(ClusterAction.Down(address), _) ⇒
+      node.downing(address)
       goto(MemberStatus.Down)
 
-    case Event(ClusterAction.Remove, _) ⇒
-      node.removing()
+    case Event(ClusterAction.Remove(address), _) ⇒
+      node.removing(address)
       goto(MemberStatus.Removed)
   }
 
   // ========================
-  // === IN EXITING ===
+  // === WHEN EXITING ===
   when(MemberStatus.Exiting) {
-    case Event(ClusterAction.Remove, _) ⇒
-      node.removing()
+    case Event(ClusterAction.Remove(address), _) ⇒
+      node.removing(address)
       goto(MemberStatus.Removed)
   }
 
   // ========================
-  // === IN DOWN ===
+  // === WHEN DOWN ===
   when(MemberStatus.Down) {
     // FIXME How to transition from DOWN => JOINING when node comes back online. Can't just listen to Gossip message since it is received be another actor. How to fix this?
-    case Event(ClusterAction.Remove, _) ⇒
-      node.removing()
+    case Event(ClusterAction.Remove(address), _) ⇒
+      node.removing(address)
       goto(MemberStatus.Removed)
   }
 
   // ========================
-  // === IN REMOVED ===
+  // === WHEN REMOVED ===
   when(MemberStatus.Removed) {
     case command ⇒
-      log.warning("Removed node [{}] received cluster command [{}]", system.name, command)
+      log.warning("Removed node [{}] received cluster command [{}]", context.system.name, command)
       stay
   }
 
@@ -242,39 +252,39 @@ final class ClusterCommandDaemon(system: ActorSystem, node: Node) extends Actor 
       node.joining(address)
       stay
 
-    case Event(command, _) ⇒ {
-      log.warning("Unhandled command [{}] in state [{}]", command, stateName)
+    case Event(illegal, _) ⇒ {
+      log.error("Illegal command [{}] in state [{}]", illegal, stateName)
       stay
     }
   }
 }
 
 /**
- * Pooled and routed wit N number of configurable instances.
+ * Pooled and routed with N number of configurable instances.
  * Concurrent access to Node.
  */
-final class ClusterGossipDaemon(system: ActorSystem, node: Node) extends Actor {
-  val log = Logging(system, "ClusterGossipDaemon")
+final class ClusterGossipDaemon extends Actor {
+  val log = Logging(context.system, this)
+  val node = Node(context.system)
 
   def receive = {
     case GossipEnvelope(sender, gossip) ⇒ node.receive(sender, gossip)
   }
 
-  override def unhandled(unknown: Any) = log.error("Unknown message sent to cluster daemon [{}]", unknown)
+  override def unhandled(unknown: Any) = log.error("[/system/cluster/gossip] can not respond to messages - received [{}]", unknown)
 }
 
-final class ClusterDaemonSupervisor(system: ActorSystem, node: Node) extends Actor {
-  val log = Logging(system, "ClusterDaemonSupervisor")
+final class ClusterDaemonSupervisor extends Actor {
+  val log = Logging(context.system, this)
+  val node = Node(context.system)
 
-  override val supervisorStrategy = SupervisorStrategy.defaultStrategy
+  private val commands = context.actorOf(Props[ClusterCommandDaemon], "commands")
+  private val gossip = context.actorOf(
+    Props[ClusterGossipDaemon].withRouter(RoundRobinRouter(node.clusterSettings.NrOfGossipDaemons)), "gossip")
 
-  private val commands = context.actorOf(Props(new ClusterCommandDaemon(system, node)), "commands")
-  private val gossip = context.actorOf(Props(new ClusterGossipDaemon(system, node))
-    .withRouter(RoundRobinRouter(node.clusterSettings.NrOfGossipDaemons)), "gossip")
+  def receive = Actor.emptyBehavior
 
-  def receive = {
-    case unknown ⇒ log.error("/system/cluster can not respond to messages - received [{}]", unknown)
-  }
+  override def unhandled(unknown: Any): Unit = log.error("/system/cluster can not respond to messages - received [{}]", unknown)
 }
 
 /**
@@ -360,14 +370,12 @@ class Node(system: ExtendedActorSystem) extends Extension {
 
   // create superisor for daemons under path "/system/cluster"
   private val clusterDaemons = {
-    val createChild = CreateChild(Props(new ClusterDaemonSupervisor(system, this)), "cluster")
+    val createChild = CreateChild(Props[ClusterDaemonSupervisor], "cluster")
     Await.result(system.systemGuardian ? createChild, defaultTimeout.duration) match {
       case a: ActorRef  ⇒ a
       case e: Exception ⇒ throw e
     }
   }
-
-  private val clusterCommandDaemon = system.actorFor("/system/cluster/commands")
 
   private val state = {
     val member = Member(remoteAddress, MemberStatus.Joining)
@@ -471,22 +479,22 @@ class Node(system: ExtendedActorSystem) extends Extension {
   /**
    * Send command to issue state transition to LEAVING.
    */
-  def sendLeave() {
-    clusterCommandDaemon ! ClusterAction.Leave
+  def sendLeave(address: Address) {
+    clusterCommandDaemon ! ClusterAction.Leave(address)
   }
 
   /**
    * Send command to issue state transition to EXITING.
    */
-  def sendDown() {
-    clusterCommandDaemon ! ClusterAction.Down
+  def sendDown(address: Address) {
+    clusterCommandDaemon ! ClusterAction.Down(address)
   }
 
   /**
    * Send command to issue state transition to REMOVED.
    */
-  def sendRemove() {
-    clusterCommandDaemon ! ClusterAction.Remove
+  def sendRemove(address: Address) {
+    clusterCommandDaemon ! ClusterAction.Remove(address)
   }
 
   // ========================================================
@@ -525,27 +533,27 @@ class Node(system: ExtendedActorSystem) extends Extension {
   /**
    * State transition to UP.
    */
-  private[cluster] final def up() {}
+  private[cluster] final def up(address: Address) {}
 
   /**
    * State transition to LEAVING.
    */
-  private[cluster] final def leaving() {}
+  private[cluster] final def leaving(address: Address) {}
 
   /**
    * State transition to EXITING.
    */
-  private[cluster] final def exiting() {}
+  private[cluster] final def exiting(address: Address) {}
 
   /**
    * State transition to REMOVED.
    */
-  private[cluster] final def removing() {}
+  private[cluster] final def removing(address: Address) {}
 
   /**
    * State transition to DOWN.
    */
-  private[cluster] final def downing() {}
+  private[cluster] final def downing(address: Address) {}
 
   /**
    * Receive new gossip.
@@ -770,6 +778,11 @@ class Node(system: ExtendedActorSystem) extends Extension {
    * Sets up cluster command connection.
    */
   private def clusterCommandConnectionFor(address: Address): ActorRef = system.actorFor(RootActorPath(address) / "system" / "cluster" / "commands")
+
+  /**
+   * Sets up local cluster command connection.
+   */
+  private def clusterCommandDaemon = system.actorFor(RootActorPath(remoteAddress) / "system" / "cluster" / "commands")
 
   /**
    * Sets up cluster gossip connection.
