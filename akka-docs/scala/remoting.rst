@@ -166,7 +166,7 @@ Description of the Remoting Sample
 
 There is a more extensive remote example that comes with the Akka distribution.
 Please have a look here for more information: `Remote Sample
-<https://github.com/jboner/akka/tree/master/akka-samples/akka-sample-remote>`_
+<https://github.com/akka/akka/tree/master/akka-samples/akka-sample-remote>`_
 This sample demonstrates both, remote deployment and look-up of remote actors.
 First, let us have a look at the common setup for both scenarios (this is
 ``common.conf``):

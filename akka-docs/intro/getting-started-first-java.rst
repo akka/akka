@@ -30,19 +30,19 @@ Tutorial source code
 
 If you want don't want to type in the code and/or set up a Maven project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here`__, with the actual source code `here`__.
 
-__ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
-__ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/java/akka/tutorial/first/java/Pi.java
+__ https://github.com/akka/akka/tree/master/akka-tutorials/akka-tutorial-first
+__ https://github.com/akka/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/java/akka/tutorial/first/java/Pi.java
 
 To check out the code using Git invoke the following command and you can then you can navigate down to the tutorial.
 
 On Linux/Unix/Mac systems::
 
-    $ git clone git://github.com/jboner/akka.git
+    $ git clone git://github.com/akka/akka.git
     $ cd akka/akka-tutorials/akka-tutorial-first
 
 On Windows systems::
 
-    C:\Users\jboner\src> git clone git://github.com/jboner/akka.git
+    C:\Users\jboner\src> git clone git://github.com/akka/akka.git
     C:\Users\jboner\src> cd akka\akka-tutorials\akka-tutorial-first
 
 Prerequisites

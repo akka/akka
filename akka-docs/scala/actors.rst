@@ -567,7 +567,7 @@ The ``become`` method is useful for many different things, but a particular nice
 example of it is in example where it is used to implement a Finite State Machine
 (FSM): `Dining Hakkers`_.
 
-.. _Dining Hakkers: http://github.com/jboner/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala
+.. _Dining Hakkers: http://github.com/akka/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala
 
 Here is another little cute example of ``become`` and ``unbecome`` in action:
 
@@ -576,7 +576,7 @@ Here is another little cute example of ``become`` and ``unbecome`` in action:
 Encoding Scala Actors nested receives without accidentally leaking memory
 -------------------------------------------------------------------------
 
-See this `Unnested receive example <https://github.com/jboner/akka/blob/master/akka-docs/scala/code/akka/docs/actor/UnnestedReceives.scala>`_.
+See this `Unnested receive example <https://github.com/akka/akka/blob/master/akka-docs/scala/code/akka/docs/actor/UnnestedReceives.scala>`_.
 
 
 Downgrade

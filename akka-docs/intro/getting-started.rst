@@ -159,7 +159,7 @@ Build from sources
 
 Akka uses Git and is hosted at `Github <http://github.com>`_.
 
-* Akka: clone the Akka repository from `<http://github.com/jboner/akka>`_
+* Akka: clone the Akka repository from `<http://github.com/akka/akka>`_
 
 Continue reading the page on :ref:`building-akka`
 

@@ -139,7 +139,7 @@ Akka Benchmark project
 ^^^^^^^^^^^^^^^^^^^^^^
 
 Benches Akka against various other actors and concurrency tools
-`<http://github.com/jboner/akka-bench>`_
+`<http://github.com/akka/akka-bench>`_
 
 Typed Actor (Java API) sample project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
