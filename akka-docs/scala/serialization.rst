@@ -102,6 +102,15 @@ First you need to create a class definition of your ``Serializer`` like so:
 Then you only need to fill in the blanks, bind it to a name in your :ref:`configuration` and then
 list which classes that should be serialized using it.
 
+Serializing ActorRefs
+---------------------
+
+All ActorRefs are serializable using JavaSerializer, but in case you are writing your own serializer,
+you might want to know how to serialize and deserialize them properly, here's the magic incantation:
+
+.. includecode:: code/akka/docs/serialization/SerializationDocSpec.scala
+   :include: imports,actorref-serializer
+
 A Word About Java Serialization
 ===============================
 
