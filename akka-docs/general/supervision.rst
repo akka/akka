@@ -18,7 +18,7 @@ therefore must respond to their failures.  When a subordinate detects a failure
 (i.e. throws an exception), it suspends itself and all its subordinates and
 sends a message to its supervisor, signaling failure.  Depending on the nature
 of the work to be supervised and the nature of the failure, the supervisor has
-four basic choices:
+a choice of the following four options:
 
 #. Resume the subordinate, keeping its accumulated internal state
 #. Restart the subordinate, clearing out its accumulated internal state
@@ -29,11 +29,12 @@ It is important to always view an actor as part of a supervision hierarchy,
 which explains the existence of the fourth choice (as a supervisor also is
 subordinate to another supervisor higher up) and has implications on the first
 three: resuming an actor resumes all its subordinates, restarting an actor
-entails restarting all its subordinates, similarly terminating an actor will also
-terminating all its subordinates. It should be noted that the default behavior of an
-actor is to terminate all its children before restarting, but this can be overridden
-using the :meth:`preRestart` hook; the recursive restart applies to all 
-children left after this hook has been executed.
+entails restarting all its subordinates (but see below for more details),
+similarly terminating an actor will also terminating all its subordinates. It
+should be noted that the default behavior of the :meth:`preRestart` hook of the
+:class:`Actor` class is to terminate all its children before restarting, but
+this hook can be overridden; the recursive restart applies to all children left
+after this hook has been executed.
 
 Each supervisor is configured with a function translating all possible failure
 causes (i.e. exceptions) into one of the four choices given above; notably,
@@ -77,12 +78,19 @@ that the restart is not visible outside of the actor itself with the notable
 exception that the message during which the failure occurred is not
 re-processed.
 
-Restarting an actor in this way recursively terminates all its children. If 
-this is not the right approach for certain sub-trees of the supervision 
-hierarchy, you may choose to retain the children, in which case they will be 
-recursively restarted in the same fashion as the failed parent (with the same 
-default to terminate children, which must be overridden on a per-actor basis, 
-see :class:`Actor` for details).
+The precise sequence of events during a restart is the following:
+
+* suspend the actor
+* call the old instance’s :meth:`supervisionStrategy.handleSupervisorFailing`
+  method (defaults to suspending all children)
+* call the old instance’s :meth:`preRestart` hook (defaults to sending
+  termination requests to all children and calling :meth:`postStop`)
+* wait for all children stopped during :meth:`preRestart` to actually terminate
+* call the old instance’s :meth:`supervisionStrategy.handleSupervisorRestarted`
+  method (defaults to sending restart request to all remaining children)
+* create new actor instance by invoking the originally provided factory again
+* invoke :meth:`postRestart` on the new instance
+* resume the actor
 
 What Lifecycle Monitoring Means
 -------------------------------
