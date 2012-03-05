@@ -22,7 +22,7 @@ Links
 
 * `Downloads <http://akka.io/downloads/>`_
 
-* `Source Code <http://github.com/jboner/akka>`_
+* `Source Code <http://github.com/akka/akka>`_
 
 * :ref:`scaladoc`
 
