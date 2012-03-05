@@ -544,7 +544,7 @@ class LocalActorRefProvider(
       deadLetters
     } else ref.getChild(path.iterator) match {
       case Nobody ⇒
-        log.warning("look-up of path sequence [{}] failed", path)
+        log.warning("look-up of path sequence [/{}] failed", path.mkString("/"))
         new EmptyLocalActorRef(system.provider, ref.path / path, eventStream)
       case x ⇒ x
     }
