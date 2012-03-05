@@ -49,14 +49,17 @@ check out the full tutorial from the Akka GitHub repository. It is in the
 __ https://github.com/akka/akka/tree/master/akka-tutorials/akka-tutorial-first
 __ https://github.com/akka/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala
 
-To check out the code using Git invoke the following::
+To check out the code using Git invoke the following command and you can then you can navigate down to the tutorial.
+
+On Linux/Unix/Mac systems::
 
     $ git clone git://github.com/akka/akka.git
-
-Then you can navigate down to the tutorial::
-
     $ cd akka/akka-tutorials/akka-tutorial-first
 
+On Windows systems::
+
+    C:\Users\jboner\src> git clone git://github.com/akka/akka.git
+    C:\Users\jboner\src> cd akka\akka-tutorials\akka-tutorial-first
 
 Prerequisites
 -------------
@@ -68,9 +71,11 @@ code.
 
 You need to make sure that ``$JAVA_HOME`` environment variable is set to the
 root of the Java distribution. You also need to make sure that the
-``$JAVA_HOME/bin`` is on your ``PATH``::
+``$JAVA_HOME/bin`` is on your ``PATH``.
 
-    $ export JAVA_HOME=..root of java distribution..
+On Linux/Unix/Mac systems::
+
+    $ export JAVA_HOME=..root of Java distribution..
     $ export PATH=$PATH:$JAVA_HOME/bin
 
 You can test your installation by invoking ``java``::
@@ -80,6 +85,17 @@ You can test your installation by invoking ``java``::
     Java(TM) SE Runtime Environment (build 1.6.0_24-b07-334-10M3326)
     Java HotSpot(TM) 64-Bit Server VM (build 19.1-b02-334, mixed mode)
 
+On Windows systems::
+
+    C:\Users\jboner\src\akka> set JAVA_HOME=..root of Java distribution..
+    C:\Users\jboner\src\akka> set PATH=%PATH%;%JAVA_HOME%/bin
+
+You can test your installation by invoking ``java``::
+
+    C:\Users\jboner\src\akka> java -version
+    java version "1.6.0_24"
+    Java(TM) SE Runtime Environment (build 1.6.0_24-b07-334-10M3326)
+    Java HotSpot(TM) 64-Bit Server VM (build 19.1-b02-334, mixed mode)
 
 Downloading and installing Akka
 -------------------------------
@@ -97,16 +113,38 @@ would like to have Akka installed in. In my case I choose to install it in
 You need to do one more thing in order to install Akka properly: set the
 ``AKKA_HOME`` environment variable to the root of the distribution. In my case
 I'm opening up a shell, navigating down to the distribution, and setting the
-``AKKA_HOME`` variable::
+``AKKA_HOME`` variable.
+
+
+On Linux/Unix/Mac systems::
 
     $ cd /Users/jboner/tools/akka-2.1-SNAPSHOT
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
     /Users/jboner/tools/akka-2.1-SNAPSHOT
 
-The distribution looks like this::
+On Windows systems::
+
+    C:\Users\jboner\src\akka> cd akka-2.1-SNAPSHOT
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> set AKKA_HOME=%cd%
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> echo %AKKA_HOME%
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT
+
+The distribution looks like this.
+
+On Linux/Unix/Mac systems::
 
     $ ls -1
+    bin
+    config
+    deploy
+    doc
+    lib
+    src
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> dir
     bin
     config
     deploy
@@ -156,7 +194,7 @@ This plugin comes with its own version of Scala, so if you don't plan to run the
 you don't need to download the Scala distribution (and you can skip the next section).
 
 You can install this plugin using the regular update mechanism. First choose a version of the IDE from
-`http://download.scala-ide.org <http://download.scala-ide.org>`_. We recommend you choose 2.0.x, which
+`http://download.scala-ide.org <http://download.scala-ide.org>`_. We recommend you choose 2.1.x, which
 comes with Scala 2.9. Copy the corresponding URL and then choose ``Help/Install New Software`` and paste
 the URL you just copied. You should see something similar to the following image.
 
@@ -191,13 +229,25 @@ distribution then just unzip it where you want it installed. If you pick the
 IzPack Installer then double click on it and follow the instructions.
 
 You also need to make sure that the ``scala-2.9.1/bin`` (if that is the
-directory where you installed Scala) is on your ``PATH``::
+directory where you installed Scala) is on your ``PATH``.
+On Linux/Unix/Mac systems::
 
     $ export PATH=$PATH:scala-2.9.1/bin
 
-You can test your installation by invoking scala::
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> set PATH=%PATH%;scala-2.9.1\bin
+
+You can test your installation by invoking scala.
+
+On Linux/Unix/Mac systems::
 
     $ scala -version
+    Scala code runner version 2.9.1.final -- Copyright 2002-2011, LAMP/EPFL
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> scala -version
     Scala code runner version 2.9.1.final -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for
@@ -228,14 +278,28 @@ instruction and additionally install the ``sbteclipse`` plugin. This adds suppor
 from your SBT project. You need to install the plugin as described in the `README of sbteclipse
 <https://github.com/typesafehub/sbteclipse>`_
 
-Then run the ``eclipse`` target to generate the Eclipse project::
+Then run the ``eclipse`` target to generate the Eclipse project.
+
+On Linux/Unix/Mac systems::
 
     $ sbt
     > eclipse
 
-The options `create-src` and `with-sources` are useful::
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> sbt
+    > eclipse
+
+The options `create-src` and `with-sources` are useful:
+
+On Linux/Unix/Mac systems::
 
     $ sbt
+    > eclipse create-src with-sources
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> sbt
     > eclipse create-src with-sources
 
 * create-src to create the common source directories, e.g. src/main/scala, src/main/test
@@ -410,7 +474,7 @@ If everything works fine, you should see::
     Calculation time:   359 millis
 
 You can also define a new Run configuration, by going to ``Run/Run Configurations``. Create a new ``Scala application``
-and choose the tutorial project and the main class to be ``akkatutorial.Pi``. You can pass additional command line
+and choose the tutorial project and the main class to be ``akka/tutorial.Pi``. You can pass additional command line
 arguments to the JVM on the ``Arguments`` page, for instance to define where :ref:`configuration` is:
 
 .. image:: ../images/run-config.png

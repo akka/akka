@@ -34,7 +34,7 @@ Similarly you can create a subscription socket, with a listener, that subscribes
 
 The following sub-sections describe the supported connection patterns and how they can be used in an Akka environment. However, for a comprehensive discussion of connection patterns, please refer to `ZeroMQ -- The Guide <http://zguide.zeromq.org/page:all>`_.
 
-Publisher-subscriber connection
+Publisher-Subscriber Connection
 -------------------------------
 
 In a publisher-subscriber (pub-sub) connection, the publisher accepts one or more subscribers. Each subscriber shall
@@ -84,7 +84,7 @@ Another subscriber keep track of used heap and warns if too much heap is used. I
 
 .. includecode:: code/akka/docs/zeromq/ZeromqDocTestBase.java#alerter2
 
-Router-Dealer connection
+Router-Dealer Connection
 ------------------------
 
 While Pub/Sub is nice the real advantage of zeromq is that it is a "lego-box" for reliable messaging. And because there are so many integrations the multi-language support is fantastic.
@@ -96,3 +96,34 @@ To create a Router socket that has a high watermark configured, you would do:
 .. includecode:: code/akka/docs/zeromq/ZeromqDocTestBase.java#high-watermark
 
 The akka-zeromq module accepts most if not all the available configuration options for a zeromq socket.
+
+Push-Pull Connection
+--------------------
+
+Akka ZeroMQ module supports ``Push-Pull`` connections.
+
+You can create a ``Push`` connection through the::
+
+    ActorRef newPushSocket(SocketOption[] socketParameters);
+
+You can create a ``Pull`` connection through the::
+
+    ActorRef newPullSocket(SocketOption[] socketParameters);
+
+More documentation and examples will follow soon.
+
+Rep-Req Connection
+------------------
+
+Akka ZeroMQ module supports ``Rep-Req`` connections.
+
+You can create a ``Rep`` connection through the::
+
+    ActorRef newRepSocket(SocketOption[] socketParameters);
+
+You can create a ``Req`` connection through the::
+
+    ActorRef newReqSocket(SocketOption[] socketParameters);
+
+More documentation and examples will follow soon.
+
