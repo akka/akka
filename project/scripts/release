@@ -3,7 +3,7 @@
 # Release script for Akka.
 #
 # To run this script you need a user account on akka.io and contributor access
-# to github.com/jboner/akka.
+# to github.com/akka/akka.
 #
 # If your username on akka.io is different from your local username then you can
 # configure ssh to always associate a particular username with akka.io by adding
