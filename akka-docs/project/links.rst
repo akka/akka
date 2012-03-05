@@ -20,12 +20,12 @@ Akka is now part of the `Typesafe Stack <http://typesafe.com/stack>`_.
 `<http://akka.io/downloads/>`_
 
 
-`Source Code <http://github.com/jboner/akka>`_
+`Source Code <http://github.com/akka/akka>`_
 ==============================================
 
 Akka uses Git and is hosted at `Github <http://github.com>`_.
 
-* Akka: clone the Akka repository from `<http://github.com/jboner/akka>`_
+* Akka: clone the Akka repository from `<http://github.com/akka/akka>`_
 
 
 `Releases Repository <http://akka.io/releases/>`_

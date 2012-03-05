@@ -246,7 +246,10 @@ class PromiseStream[A](implicit val dispatcher: MessageDispatcher, val timeout: 
     shift { cont: (PromiseStream[A] ⇒ Future[Any]) ⇒ elem map (a ⇒ cont(this += a)) }
 
   final def <<(elem1: Future[A], elem2: Future[A], elems: Future[A]*): PromiseStream[A] @cps[Future[Any]] =
-    shift { cont: (PromiseStream[A] ⇒ Future[Any]) ⇒ Future.flow(this << elem1 << elem2 <<< Future.sequence(elems.toSeq)) map cont }
+    shift { cont: (PromiseStream[A] ⇒ Future[Any]) ⇒
+      val seq = Future.sequence(elem1 +: elem2 +: elems)
+      seq map (a ⇒ cont(this ++= a))
+    }
 
   final def <<<(elems: Traversable[A]): PromiseStream[A] @cps[Future[Any]] =
     shift { cont: (PromiseStream[A] ⇒ Future[Any]) ⇒ cont(this ++= elems) }
