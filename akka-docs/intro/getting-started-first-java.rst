@@ -441,7 +441,7 @@ On Linux/Unix/Mac systems::
         -cp lib/scala-library.jar:lib/akka/akka-actor-2.1-SNAPSHOT.jar:. \
         akka.tutorial.first.scala.Pi
 
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 On Windows systems::
@@ -450,7 +450,7 @@ On Windows systems::
         -cp lib/scala-library.jar;lib\akka\akka-actor-2.1-SNAPSHOT.jar;. \
         akka.tutorial.first.scala.Pi
 
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 Yippee! It is working.
@@ -474,7 +474,7 @@ On Linux/Unix/Mac systems::
 
     $ mvn exec:java -Dexec.mainClass="akka.tutorial.first.java.Pi"
     ...
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 On Windows systems::
@@ -482,7 +482,7 @@ On Windows systems::
     C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> mvn exec:java \
         -Dexec.mainClass="akka.tutorial.first.java.Pi"
     ...
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 Yippee! It is working.
