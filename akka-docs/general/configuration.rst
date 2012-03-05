@@ -8,41 +8,101 @@ Configuration
    .. contents:: :local:
 
 
-Specifying the configuration file
----------------------------------
+Akka uses the `Typesafe Config Library
+<https://github.com/typesafehub/config>`_, which might also be a good choice
+for the configuration of your own application or library built with or without
+Akka. This library is implemented in Java with no external dependencies; you
+should have a look at its documentation (in particular about `ConfigFactory
+<http://typesafehub.github.com/config/latest/api/com/typesafe/config/ConfigFactory.html>`_),
+which is only summarized in the following.
 
-If you don't specify a configuration file then Akka uses default values, corresponding to the reference
-configuration files that you see below. You can specify your own configuration file to override any
-property in the reference config. You only have to define the properties that differ from the default
-configuration.
+Where configuration is read from
+--------------------------------
 
-By default the ``ConfigFactory.load`` method is used, which will load all ``application.conf`` (and
-``application.json`` and ``application.properties``) from the root of the classpath, if they exists.
-It uses ``ConfigFactory.defaultOverrides``, i.e. system properties, before falling back to
-application and reference configuration.
-
-Note that *all* ``application.{conf,json,properties}`` classpath resources, from all directories and
-jar files, are loaded and merged. Therefore it is a good practice to define separate sub-trees in the
-configuration for each actor system, and grab the specific configuration when instantiating the ActorSystem.
-
-::
-
-  myapp1 {
-    akka.loglevel = WARNING
-  }
-  myapp2 {
-    akka.loglevel = ERROR
-  }
+All configuration for Akka is held within instances of :class:`ActorSystem`, or
+put differently, as viewed from the outside, :class:`ActorSystem` is the only
+consumer of configuration information. While constructing an actor system, you
+can either pass in a :class:`Config` object or not, where the second case is
+equivalent to passing ``ConfigFactory.load()`` (with the right class loader).
+This means roughly that the default is to parse all ``application.conf``,
+``application.json`` and ``application.properties`` found at the root of the
+class path—please refer to the aforementioned documentation for details. The
+actor system then merges in all ``reference.conf`` resources found at the root
+of the class path to form the fallback configuration, i.e. it internally uses
 
 .. code-block:: scala
 
-  val app1 = ActorSystem("MyApp1", ConfigFactory.load.getConfig("myapp1"))
-  val app2 = ActorSystem("MyApp2", ConfigFactory.load.getConfig("myapp2"))
+  appConfig.withFallback(ConfigFactory.defaultReference(classLoader))
+  
+The philosophy is that code never contains default values, but instead relies
+upon their presence in the ``reference.conf`` supplied with the library in
+question.
 
-If the system properties ``config.resource``, ``config.file``, or ``config.url`` are set, then the
-classpath resource, file, or URL specified in those properties will be used rather than the default
-``application.{conf,json,properties}`` classpath resources. Note that classpath resource names start
-with ``/``. ``-Dconfig.resource=/dev.conf`` will load the ``dev.conf`` from the root of the classpath.
+Highest precedence is given to overrides given as system properties, see `the
+HOCON specification
+<https://github.com/typesafehub/config/blob/master/HOCON.md>`_ (near the
+bottom). Also noteworthy is that the application configuration—which defaults
+to ``application``—may be overridden using the ``config.resource`` property
+(there are more, please refer to the `Config docs
+<https://github.com/typesafehub/config/blob/master/README.md>`_).
+
+.. note::
+
+  If you are writing an Akka application, keep you configuration in
+  ``application.conf`` at the root of the class path. If you are writing an
+  Akka-based library, keep its configuration in ``reference.conf`` at the root
+  of the JAR file.
+
+How to structure your configuration
+-----------------------------------
+
+Given that ``ConfigFactory.load()`` merges all resources with matching name
+from the whole class path, it is easiest to utilize that functionality and
+differenciate actor systems within the hierarchy of the configuration::
+
+  myapp1 {
+    akka.loglevel = WARNING
+    my.own.setting = 43
+  }
+  myapp2 {
+    akka.loglevel = ERROR
+    app2.setting = "appname"
+  }
+  my.own.setting = 42
+  my.other.setting = "hello"
+
+.. code-block:: scala
+
+  val config = ConfigFactory.load()
+  val app1 = ActorSystem("MyApp1", config.getConfig("myapp1").withFallback(config))
+  val app2 = ActorSystem("MyApp2", config.getConfig("myapp2").withOnlyPath("akka").withFallback(config))
+
+These two samples demonstrate different variations of the “lift-a-subtree”
+trick: in the first case, the configuration accessible from within the actor
+system is this
+
+.. code-block:: ruby
+
+  akka.loglevel = WARNING
+  my.own.setting = 43
+  my.other.setting = "hello"
+  // plus myapp1 and myapp2 subtrees
+
+while in the second one, only the “akka” subtree is lifted, with the following
+result::
+
+  akka.loglevel = ERROR
+  my.own.setting = 42
+  my.other.setting = "hello"
+  // plus myapp1 and myapp2 subtrees
+
+.. note::
+
+  The configuration library is really powerful, explaining all features exceeds
+  the scope affordable here. In particular not covered are how to include other
+  configuration files within other files (see a small example at `Including
+  files`_) and copying parts of the configuration tree by way of path
+  substitutions.
 
 You may also specify and parse the configuration programmatically in other ways when instantiating
 the ``ActorSystem``.
@@ -50,10 +110,8 @@ the ``ActorSystem``.
 .. includecode:: code/akka/docs/config/ConfigDocSpec.scala
    :include: imports,custom-config
 
-The ``ConfigFactory`` provides several methods to parse the configuration from various sources.
-
-Defining the configuration file
--------------------------------
+Listing of the Reference Configuration
+--------------------------------------
 
 Each Akka module has a reference configuration file with the default values.
 
@@ -159,13 +217,6 @@ A custom ``application.conf`` might look like this::
       }
     }
   }
-
-
-Config file format
-------------------
-
-The configuration file syntax is described in the `HOCON <https://github.com/typesafehub/config/blob/master/HOCON.md>`_
-specification. Note that it supports three formats; conf, json, and properties.
 
 
 Including files

@@ -41,7 +41,7 @@ class BeanstalkBasedMessageQueue(_owner: ActorContext, val settings: BeanstalkMa
   // ===== For MessageQueue =====
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    Some(queue.get.put(65536, messageSubmitDelaySeconds, messageTimeToLiveSeconds, serialize(envelope)).toInt)
+    queue.get.put(65536, messageSubmitDelaySeconds, messageTimeToLiveSeconds, serialize(envelope)).toInt
   }
 
   def dequeue(): Envelope = try {
