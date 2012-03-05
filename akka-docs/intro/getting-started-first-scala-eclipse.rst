@@ -162,9 +162,6 @@ the URL you just copied. You should see something similar to the following image
 
 .. image:: ../images/install-beta2-updatesite.png
 
-Make sure you select both the ``JDT Weaving for Scala`` and the ``Scala IDE for Eclipse`` plugins.
-The other plugin is optional, and contains the source code of the plugin itself.
-
 Once the installation is finished, you need to restart Eclipse. The first time the plugin starts it will
 open a diagnostics window and offer to fix several settings, such as the delay for content assist (code-completion)
 or the shown completion proposal types.
