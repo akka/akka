@@ -21,7 +21,6 @@ class BeanstalkMailboxSettings(val systemSettings: ActorSystem.Settings, val use
   val Port = getInt("port")
   val ReconnectWindow = Duration(getMilliseconds("reconnect-window"), MILLISECONDS)
   val MessageSubmitDelay = Duration(getMilliseconds("message-submit-delay"), MILLISECONDS)
-  val MessageSubmitTimeout = Duration(getMilliseconds("message-submit-timeout"), MILLISECONDS)
   val MessageTimeToLive = Duration(getMilliseconds("message-time-to-live"), MILLISECONDS)
 
 }
