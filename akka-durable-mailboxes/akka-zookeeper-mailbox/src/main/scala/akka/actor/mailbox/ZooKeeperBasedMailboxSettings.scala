@@ -20,6 +20,5 @@ class ZooKeeperBasedMailboxSettings(val systemSettings: ActorSystem.Settings, va
   val ZkServerAddresses = getString("server-addresses")
   val SessionTimeout = Duration(getMilliseconds("session-timeout"), MILLISECONDS)
   val ConnectionTimeout = Duration(getMilliseconds("connection-timeout"), MILLISECONDS)
-  val BlockingQueue = getBoolean("blocking-queue")
 
 }

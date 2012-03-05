@@ -38,7 +38,7 @@ class ZooKeeperBasedMessageQueue(_owner: ActorContext, val settings: ZooKeeperBa
     settings.ZkServerAddresses,
     settings.SessionTimeout,
     settings.ConnectionTimeout)
-  private val queue = new ZooKeeperQueue[Array[Byte]](zkClient, queuePathTemplate.format(name), settings.BlockingQueue)
+  private val queue = new ZooKeeperQueue[Array[Byte]](zkClient, queuePathTemplate.format(name), true)
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
     queue.enqueue(serialize(envelope))
