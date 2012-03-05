@@ -78,7 +78,7 @@ object ExampleSession {
         ProducerParameters(Some(exchangeParameters))) mapTo manifest[ActorRef]
 
       for (c ← cf; p ← pf) {
-        p ! Message("@jonas_boner: You sucked!!".getBytes(utf8Charset).toSeq, "some.routing")
+        p ! Message("@jxstanford: You sucked!!".getBytes(utf8Charset).toSeq, "some.routing")
 
       }
       Await.result(msgProcessed, timeout.duration)
@@ -120,7 +120,7 @@ object ExampleSession {
         ProducerParameters(Some(exchangeParameters))) mapTo manifest[ActorRef]
 
       for (c1 ← cf1; c2 ← cf2; p ← pf) {
-        p ! Message("@jonas_boner: I'm going surfing".getBytes(utf8Charset).toSeq, "")
+        p ! Message("@jxstanford: I'm going surfing".getBytes(utf8Charset).toSeq, "")
 
       }
       Await.result(msgProcessed, timeout.duration)
@@ -162,8 +162,8 @@ object ExampleSession {
         ProducerParameters(Some(exchangeParameters))) mapTo manifest[ActorRef]
 
       for (c1 ← cf1; c2 ← cf2; p ← pf) {
-        p ! Message("@jonas_boner: You still suck!!".getBytes(utf8Charset).toSeq, "@george_bush")
-        p ! Message("@jonas_boner: Yes I can!".getBytes(utf8Charset).toSeq, "@barack_obama")
+        p ! Message("@jxstanford: You still suck!!".getBytes(utf8Charset).toSeq, "@george_bush")
+        p ! Message("@jxstanford: Yes I can!".getBytes(utf8Charset).toSeq, "@barack_obama")
       }
       Await.result(msgProcessed, timeout.duration)
       system stop conn

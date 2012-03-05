@@ -113,7 +113,7 @@ public class ExampleSessionJava {
 
                 producer.foreach(new Foreach<ActorRef>() {
                     public void each(ActorRef p) {
-                        p.tell(new Message("@jonas_boner: You sucked!!".getBytes(utf8Charset), "some.routing"));
+                        p.tell(new Message("@jxstanford: You sucked!!".getBytes(utf8Charset), "some.routing"));
                     }
                 });
             }
@@ -161,7 +161,7 @@ public class ExampleSessionJava {
 
                 producer.foreach(new Foreach<ActorRef>() {
                     public void each(ActorRef p) {
-                        p.tell(new Message("@jonas_boner: I'm going surfing".getBytes(utf8Charset), ""));
+                        p.tell(new Message("@jxstanford: I'm going surfing".getBytes(utf8Charset), ""));
                     }
                 });
             }
@@ -208,8 +208,8 @@ public class ExampleSessionJava {
 
                 producer.foreach(new Foreach<ActorRef>() {
                     public void each(ActorRef p) {
-                        p.tell(new Message("@jonas_boner: You still suck!!".getBytes(utf8Charset), "@george_bush"));
-                        p.tell(new Message("@jonas_boner: Yes I can!".getBytes(utf8Charset), "@barack_obama"));
+                        p.tell(new Message("@jxstanford: You still suck!!".getBytes(utf8Charset), "@george_bush"));
+                        p.tell(new Message("@jxstanford: Yes I can!".getBytes(utf8Charset), "@barack_obama"));
                     }
                 });
             }
