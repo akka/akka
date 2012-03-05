@@ -29,9 +29,9 @@ It is important to always view an actor as part of a supervision hierarchy,
 which explains the existence of the fourth choice (as a supervisor also is
 subordinate to another supervisor higher up) and has implications on the first
 three: resuming an actor resumes all its subordinates, restarting an actor
-entails restarting all its subordinates, similarly stopping an actor will also
-stop all its subordinates. It should be noted that the default behavior of an
-actor is to stop all its children before restarting, but this can be overridden
+entails restarting all its subordinates, similarly terminating an actor will also
+terminating all its subordinates. It should be noted that the default behavior of an
+actor is to terminate all its children before restarting, but this can be overridden
 using the :meth:`preRestart` hook; the recursive restart applies to all 
 children left after this hook has been executed.
 
@@ -103,7 +103,7 @@ which the monitoring request and target’s termination occur, i.e. you still ge
 the message even if at the time of registration the target is already dead.
 
 Monitoring is particularly useful if a supervisor cannot simply restart its
-children and has to stop them, e.g. in case of errors during actor
+children and has to terminate them, e.g. in case of errors during actor
 initialization. In that case it should monitor those children and re-create
 them or schedule itself to retry this at a later time.
 
@@ -128,7 +128,7 @@ explicitly.
 The :class:`AllForOneStrategy` is applicable in cases where the ensemble of
 children has so tight dependencies among them, that a failure of one child
 affects the function of the others, i.e. they are intricably linked. Since a
-restart does not clear out the mailbox, it often is best to stop the children
+restart does not clear out the mailbox, it often is best to terminate the children
 upon failure and re-create them explicitly from the supervisor (by watching the
 children’s lifecycle); otherwise you have to make sure that it is no problem
 for any of the actors to receive a message which was queued before the restart
