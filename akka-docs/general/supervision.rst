@@ -30,7 +30,7 @@ which explains the existence of the fourth choice (as a supervisor also is
 subordinate to another supervisor higher up) and has implications on the first
 three: resuming an actor resumes all its subordinates, restarting an actor
 entails restarting all its subordinates (but see below for more details),
-similarly terminating an actor will also terminating all its subordinates. It
+similarly terminating an actor will also terminate all its subordinates. It
 should be noted that the default behavior of the :meth:`preRestart` hook of the
 :class:`Actor` class is to terminate all its children before restarting, but
 this hook can be overridden; the recursive restart applies to all children left
