@@ -22,7 +22,7 @@ declare release_path=${default_path}
 declare -r unzipped_dir="target/dist/unzipped"
 
 # flags
-unset run_tests dry_run
+unset run_tests dry_run no_revert
 
 # get the source location for this script; handles symlinks
 function get_script_path {
@@ -47,6 +47,7 @@ Usage: ${script_name} [options] VERSION
   -s | --server SERVER   Set the release server (default ${default_server})
   -p | --path PATH       Set the path on the release server (default ${default_path})
   -n | --dry-run         Build everything but do not push the release
+  -r | --no-revert       On dry-run don't revert git commits and tags
 EOM
 }
 
@@ -79,6 +80,7 @@ while true; do
     -s | --server ) release_server=$2; shift 2 ;;
     -p | --path ) release_path=$2; shift 2 ;;
     -n | --dry-run) dry_run=true; shift ;;
+    -r | --no-revert) no_revert=true; shift ;;
     * ) break ;;
   esac
 done
@@ -221,7 +223,7 @@ echolog "Successfully created local release"
 echolog "Committing and tagging..."
 try git add .
 try git commit -am "Update version for release ${version}"
-try git tag -m "Version ${version}" v${version}
+try git tag -am "Version ${version}" v${version}
 
 # the point of no return... we're now pushing out to servers
 
@@ -272,7 +274,11 @@ else
 fi
 
 if [ $dry_run ]; then
-  git_cleanup
+  if [ $no_revert ]; then
+    echodry "No revert: git branch ${release_branch} and git tag v${version} remain"
+  else
+    git_cleanup
+  fi
   echodry "Successfully created release ${version}"
   echodry "See ${release_dir}"
 else
