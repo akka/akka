@@ -4,10 +4,6 @@
  Agents (Scala)
 ################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 Agents in Akka are inspired by `agents in Clojure`_.
 
 .. _agents in Clojure: http://clojure.org/agents

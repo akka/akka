@@ -18,6 +18,8 @@ import com.typesafe.config.ConfigValueType;
 
 final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
 
+    private static final long serialVersionUID = 1L;
+
     final private List<AbstractConfigValue> value;
     final private boolean resolved;
 

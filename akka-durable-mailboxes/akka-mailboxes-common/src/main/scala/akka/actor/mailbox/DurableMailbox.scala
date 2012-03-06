@@ -4,15 +4,17 @@
 package akka.actor.mailbox
 
 import akka.actor.{ ActorContext, ActorRef, ExtendedActorSystem }
-import akka.dispatch.{ Envelope, DefaultSystemMessageQueue, CustomMailbox }
+import akka.dispatch.{ Envelope, MessageQueue }
 import akka.remote.MessageSerializer
 import akka.remote.RemoteProtocol.{ ActorRefProtocol, RemoteMessageProtocol }
+import com.typesafe.config.Config
+import akka.actor.ActorSystem
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
 }
 
-abstract class DurableMailbox(val owner: ActorContext) extends CustomMailbox(owner) with DefaultSystemMessageQueue {
+abstract class DurableMessageQueue(val owner: ActorContext) extends MessageQueue {
   import DurableExecutableMailboxConfig._
 
   def system: ExtendedActorSystem = owner.system.asInstanceOf[ExtendedActorSystem]
@@ -22,7 +24,7 @@ abstract class DurableMailbox(val owner: ActorContext) extends CustomMailbox(own
 
 }
 
-trait DurableMessageSerialization { this: DurableMailbox ⇒
+trait DurableMessageSerialization { this: DurableMessageQueue ⇒
 
   def serialize(durableMessage: Envelope): Array[Byte] = {
 
@@ -48,5 +50,57 @@ trait DurableMessageSerialization { this: DurableMailbox ⇒
     new Envelope(message, sender)(system)
   }
 
+}
+
+/**
+ * Conventional organization of durable mailbox settings:
+ *
+ * {{{
+ * my-durable-dispatcher {
+ *   mailbox-type = "my.durable.mailbox"
+ *   my-durable-mailbox {
+ *     setting1 = 1
+ *     setting2 = 2
+ *   }
+ * }
+ * }}}
+ *
+ * where name=“my-durable-mailbox” in this example.
+ */
+trait DurableMailboxSettings {
+  /**
+   * A reference to the enclosing actor system.
+   */
+  def systemSettings: ActorSystem.Settings
+
+  /**
+   * A reference to the config section which the user specified for this mailbox’s dispatcher.
+   */
+  def userConfig: Config
+
+  /**
+   * The extracted config section for this mailbox, which is the “name”
+   * section (if that exists), falling back to system defaults. Typical
+   * implementation looks like:
+   *
+   * {{{
+   * val config = initialize
+   * }}}
+   */
+  def config: Config
+
+  /**
+   * Name of this mailbox type for purposes of configuration scoping. Reference
+   * defaults go into “akka.actor.mailbox.<name>”.
+   */
+  def name: String
+
+  /**
+   * Obtain default extracted mailbox config section from userConfig and system.
+   */
+  def initialize: Config =
+    if (userConfig.hasPath(name))
+      userConfig.getConfig(name).withFallback(systemSettings.config.getConfig("akka.actor.mailbox." + name))
+    else systemSettings.config.getConfig("akka.actor.mailbox." + name)
 }
 

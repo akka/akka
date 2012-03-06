@@ -826,4 +826,16 @@ final class SimpleConfig implements Config, MergeableValue, Serializable {
             throw new ConfigException.ValidationFailed(problems);
         }
     }
+
+    @Override
+    public SimpleConfig withOnlyPath(String pathExpression) {
+        Path path = Path.newPath(pathExpression);
+        return new SimpleConfig(root().withOnlyPath(path));
+    }
+
+    @Override
+    public SimpleConfig withoutPath(String pathExpression) {
+        Path path = Path.newPath(pathExpression);
+        return new SimpleConfig(root().withoutPath(path));
+    }
 }

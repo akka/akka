@@ -3,9 +3,6 @@
 Futures (Scala)
 ===============
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 Introduction
 ------------
@@ -21,6 +18,9 @@ In order to execute callbacks and operations, Futures need something called an `
 which is very similar to a ``java.util.concurrent.Executor``. if you have an ``ActorSystem`` in scope,
 it will use its default dispatcher as the ``ExecutionContext``, or you can use the factory methods provided
 by the ``ExecutionContext`` companion object to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
+
+.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+   :include: diy-execution-context
 
 Use With Actors
 ---------------

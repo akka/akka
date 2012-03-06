@@ -5,10 +5,17 @@
 #########################
 
 
-.. sidebar:: Contents
+If you want to add features to Akka, there is a very elegant, but powerful mechanism for doing so.
+It's called Akka Extensions and is comprised of 2 basic components: an ``Extension`` and an ``ExtensionId``.
 
-   .. contents:: :local:
+Extensions will only be loaded once per ``ActorSystem``, which will be managed by Akka.
+You can choose to have your Extension loaded on-demand or at ``ActorSystem`` creation time through the Akka configuration.
+Details on how to make that happens are below, in the "Loading from Configuration" section.
 
+.. warning::
+
+    Since an extension is a way to hook into Akka itself, the implementor of the extension needs to
+    ensure the thread safety of his/her extension.
 
 Building an Extension
 =====================

@@ -3,17 +3,11 @@
  */
 package akka.docs.serialization;
 
-import akka.japi.Option;
-import akka.serialization.JSerializer;
-import akka.serialization.Serialization;
-import akka.serialization.SerializationExtension;
-import akka.serialization.Serializer;
 import org.junit.Test;
 import static org.junit.Assert.*;
 //#imports
-
+import akka.actor.*;
 import akka.serialization.*;
-import akka.actor.ActorSystem;
 import com.typesafe.config.*;
 
 //#imports
@@ -53,6 +47,37 @@ public class SerializationDocTestBase {
       }
     }
 //#my-own-serializer
+
+    @Test public void serializeActorRefs() {
+        final ActorSystem theActorSystem =
+                ActorSystem.create("whatever");
+        final ActorRef theActorRef =
+                theActorSystem.deadLetters(); // Of course this should be you
+
+        //#actorref-serializer
+        // Serialize
+        // (beneath toBinary)
+        final Address transportAddress =
+                Serialization.currentTransportAddress().value();
+        String identifier;
+
+        // If there is no transportAddress,
+        // it means that either this Serializer isn't called
+        // within a piece of code that sets it,
+        // so either you need to supply your own,
+        // or simply use the local path.
+        if (transportAddress == null) identifier = theActorRef.path().toString();
+        else identifier = theActorRef.path().toStringWithAddress(transportAddress);
+        // Then just serialize the identifier however you like
+
+
+        // Deserialize
+        // (beneath fromBinary)
+        final ActorRef deserializedActorRef = theActorSystem.actorFor(identifier);
+        // Then just use the ActorRef
+        //#actorref-serializer
+        theActorSystem.shutdown();
+    }
 
 
     @Test public void demonstrateTheProgrammaticAPI() {

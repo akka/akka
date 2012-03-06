@@ -418,7 +418,7 @@ public interface Config extends ConfigMergeable {
      * units suffixes like "10m" or "5ns" as documented in the <a
      * href="https://github.com/typesafehub/config/blob/master/HOCON.md">the
      * spec</a>.
-     * 
+     *
      * @param path
      *            path expression
      * @return the duration value at the requested path, in milliseconds
@@ -487,4 +487,23 @@ public interface Config extends ConfigMergeable {
     List<Long> getMillisecondsList(String path);
 
     List<Long> getNanosecondsList(String path);
+
+    /**
+     * Clone the config with only the given path (and its children) retained;
+     * all sibling paths are removed.
+     *
+     * @param path
+     *            path to keep
+     * @return a copy of the config minus all paths except the one specified
+     */
+    Config withOnlyPath(String path);
+
+    /**
+     * Clone the config with the given path removed.
+     *
+     * @param path
+     *            path to remove
+     * @return a copy of the config minus the specified path
+     */
+    Config withoutPath(String path);
 }

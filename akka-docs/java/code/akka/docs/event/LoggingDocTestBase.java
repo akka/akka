@@ -33,7 +33,7 @@ import akka.actor.DeadLetter;
 //#imports-deadletter
 
 public class LoggingDocTestBase {
-
+  
   @Test
   public void useLoggingActor() {
     ActorSystem system = ActorSystem.create("MySystem");
@@ -53,6 +53,16 @@ public class LoggingDocTestBase {
     final ActorRef actor = system.actorOf(new Props(DeadLetterActor.class));
     system.eventStream().subscribe(actor, DeadLetter.class);
     //#deadletters
+    system.shutdown();
+  }
+  
+  @Test
+  public void demonstrateMultipleArgs() {
+    final ActorSystem system = ActorSystem.create("multiArg");
+    //#array
+    final Object[] args = new Object[] { "The", "brown", "fox", "jumps", 42 };
+    system.log().debug("five parameters: {}, {}, {}, {}, {}", args);
+    //#array
     system.shutdown();
   }
 

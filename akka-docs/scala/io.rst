@@ -3,9 +3,6 @@
 IO (Scala)
 ==========
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 Introduction
 ------------

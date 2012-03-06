@@ -30,25 +30,33 @@ Tutorial source code
 
 If you want don't want to type in the code and/or set up a Maven project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here`__, with the actual source code `here`__.
 
-__ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
-__ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/java/akka/tutorial/first/java/Pi.java
+__ https://github.com/akka/akka/tree/master/akka-tutorials/akka-tutorial-first
+__ https://github.com/akka/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/java/akka/tutorial/first/java/Pi.java
 
-To check out the code using Git invoke the following::
+To check out the code using Git invoke the following command and you can then you can navigate down to the tutorial.
 
-    $ git clone git://github.com/jboner/akka.git
+On Linux/Unix/Mac systems::
 
-Then you can navigate down to the tutorial::
-
+    $ git clone git://github.com/akka/akka.git
     $ cd akka/akka-tutorials/akka-tutorial-first
+
+On Windows systems::
+
+    C:\Users\jboner\src> git clone git://github.com/akka/akka.git
+    C:\Users\jboner\src> cd akka\akka-tutorials\akka-tutorial-first
 
 Prerequisites
 -------------
 
 This tutorial assumes that you have Java 1.6 or later installed on you machine and ``java`` on your ``PATH``. You also need to know how to run commands in a shell (ZSH, Bash, DOS etc.) and a decent text editor or IDE to type in the Java code.
 
-You need to make sure that ``$JAVA_HOME`` environment variable is set to the root of the Java distribution. You also need to make sure that the ``$JAVA_HOME/bin`` is on your ``PATH``::
+You need to make sure that ``$JAVA_HOME`` environment variable is set to the
+root of the Java distribution. You also need to make sure that the
+``$JAVA_HOME/bin`` is on your ``PATH``.
 
-    $ export JAVA_HOME=..root of java distribution..
+On Linux/Unix/Mac systems::
+
+    $ export JAVA_HOME=..root of Java distribution..
     $ export PATH=$PATH:$JAVA_HOME/bin
 
 You can test your installation by invoking ``java``::
@@ -58,6 +66,17 @@ You can test your installation by invoking ``java``::
     Java(TM) SE Runtime Environment (build 1.6.0_24-b07-334-10M3326)
     Java HotSpot(TM) 64-Bit Server VM (build 19.1-b02-334, mixed mode)
 
+On Windows systems::
+
+    C:\Users\jboner\src\akka> set JAVA_HOME=..root of Java distribution..
+    C:\Users\jboner\src\akka> set PATH=%PATH%;%JAVA_HOME%/bin
+
+You can test your installation by invoking ``java``::
+
+    C:\Users\jboner\src\akka> java -version
+    java version "1.6.0_24"
+    Java(TM) SE Runtime Environment (build 1.6.0_24-b07-334-10M3326)
+    Java HotSpot(TM) 64-Bit Server VM (build 19.1-b02-334, mixed mode)
 
 Downloading and installing Akka
 -------------------------------
@@ -66,7 +85,7 @@ To build and run the tutorial sample from the command line, you have to download
 Akka. If you prefer to use SBT to build and run the sample then you can skip this
 section and jump to the next one.
 
-Let's get the ``akka-2.0-SNAPSHOT.zip`` distribution of Akka from
+Let's get the ``akka-2.0.zip`` distribution of Akka from
 http://akka.io/downloads/ which includes everything we need for this
 tutorial. Once you have downloaded the distribution unzip it in the folder you
 would like to have Akka installed in. In my case I choose to install it in
@@ -75,16 +94,37 @@ would like to have Akka installed in. In my case I choose to install it in
 You need to do one more thing in order to install Akka properly: set the
 ``AKKA_HOME`` environment variable to the root of the distribution. In my case
 I'm opening up a shell, navigating down to the distribution, and setting the
-``AKKA_HOME`` variable::
+``AKKA_HOME`` variable.
 
-    $ cd /Users/jboner/tools/akka-2.0-SNAPSHOT
+On Linux/Unix/Mac systems::
+
+    $ cd /Users/jboner/tools/akka-2.0
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-2.0-SNAPSHOT
+    /Users/jboner/tools/akka-2.0
 
-The distribution looks like this::
+On Windows systems::
+
+    C:\Users\jboner\src\akka> cd akka-2.0
+    C:\Users\jboner\src\akka\akka-2.0> set AKKA_HOME=%cd%
+    C:\Users\jboner\src\akka\akka-2.0> echo %AKKA_HOME%
+    C:\Users\jboner\src\akka\akka-2.0
+
+The distribution looks like this.
+
+On Linux/Unix/Mac systems::
 
     $ ls -1
+    bin
+    config
+    deploy
+    doc
+    lib
+    src
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.0> dir
     bin
     config
     deploy
@@ -100,7 +140,7 @@ The distribution looks like this::
 - In the ``src`` directory we have the source JARs for Akka.
 
 The only JAR we will need for this tutorial (apart from the
-``scala-library.jar`` JAR) is the ``akka-actor-2.0-SNAPSHOT.jar`` JAR in the ``lib/akka``
+``scala-library.jar`` JAR) is the ``akka-actor-2.0.jar`` JAR in the ``lib/akka``
 directory. This is a self-contained JAR with zero dependencies and contains
 everything we need to write a system using Actors.
 
@@ -120,10 +160,10 @@ modules are:
 - ``akka-durable-mailboxes`` -- Durable mailboxes: file-based, MongoDB, Redis, Beanstalk and Zookeeper
 
 .. - ``akka-amqp`` -- AMQP integration
-.. - ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-.. - ``akka-camel-2.0-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-.. - ``akka-camel-typed-2.0-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
-.. - ``akka-spring-2.0-SNAPSHOT.jar`` -- Spring framework integration
+.. - ``akka-stm-2.0.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+.. - ``akka-camel-2.0.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+.. - ``akka-camel-typed-2.0.jar`` -- Apache Camel Typed Actors integration
+.. - ``akka-spring-2.0.jar`` -- Spring framework integration
 
 
 
@@ -139,7 +179,9 @@ To install Maven it is easiest to follow the instructions on `http://maven.apach
 Creating an Akka Maven project
 ------------------------------
 
-If you have not already done so, now is the time to create a Maven project for our tutorial. You do that by stepping into the directory you want to create your project in and invoking the ``mvn`` command::
+If you have not already done so, now is the time to create a Maven project for our tutorial. You do that by stepping into the directory you want to create your project in and invoking the ``mvn`` command.
+
+On Linux/Unix/Mac systems::
 
     $ mvn archetype:generate \
         -DgroupId=akka.tutorial.first.java \
@@ -147,9 +189,23 @@ If you have not already done so, now is the time to create a Maven project for o
         -DarchetypeArtifactId=maven-archetype-quickstart \
         -DinteractiveMode=false
 
-Now we have the basis for our Maven-based Akka project. Let's step into the project directory::
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.0> mvn archetype:generate \
+        -DgroupId=akka.tutorial.first.java \
+        -DartifactId=akka-tutorial-first-java \
+        -DarchetypeArtifactId=maven-archetype-quickstart \
+        -DinteractiveMode=false
+
+Now we have the basis for our Maven-based Akka project. Let's step into the project directory.
+
+On Linux/Unix/Mac systems::
 
     $ cd akka-tutorial-first-java
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.0> cd akka-tutorial-first-java
 
 Here is the layout that Maven created::
 
@@ -192,7 +248,7 @@ repositories, including akka.io.  It should now look something like this:
             <dependency>
                 <groupId>com.typesafe.akka</groupId>
                 <artifactId>akka-actor</artifactId>
-                <version>2.0-SNAPSHOT</version>
+                <version>2.0</version>
             </dependency>
         </dependencies>
 
@@ -360,39 +416,73 @@ time. When that's done open up a shell and step in to the Akka distribution
 (``cd $AKKA_HOME``).
 
 First we need to compile the source file. That is done with Java's compiler
-``javac``. Our application depends on the ``akka-actor-2.0-SNAPSHOT.jar`` and the
+``javac``. Our application depends on the ``akka-actor-2.0.jar`` and the
 ``scala-library.jar`` JAR files, so let's add them to the compiler classpath
-when we compile the source::
+when we compile the source.
 
-    $ javac -cp lib/scala-library.jar:lib/akka/akka-actor-2.0-SNAPSHOT.jar tutorial/akka/tutorial/first/java/Pi.java
+On Linux/Unix/Mac systems::
+
+    $ javac -cp lib/scala-library.jar:lib/akka/akka-actor-2.0.jar tutorial/akka/tutorial/first/java/Pi.java
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.0> javac -cp \
+       lib/scala-library.jar;lib/akka/akka-actor-2.0.jar \
+       tutorial/akka/tutorial/first/java/Pi.java
 
 When we have compiled the source file we are ready to run the application. This
-is done with ``java`` but yet again we need to add the ``akka-actor-2.0-SNAPSHOT.jar``
+is done with ``java`` but yet again we need to add the ``akka-actor-2.0.jar``
 and the ``scala-library.jar`` JAR files to the classpath as well as the classes
-we compiled ourselves::
+we compiled ourselves.
+
+On Linux/Unix/Mac systems::
 
     $ java \
-        -cp lib/scala-library.jar:lib/akka/akka-actor-2.0-SNAPSHOT.jar:. \
-        akka.tutorial.java.first.Pi
+        -cp lib/scala-library.jar:lib/akka/akka-actor-2.0.jar:. \
+        akka.tutorial.first.scala.Pi
 
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
+    Calculation time:   359 millis
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.0> java \
+        -cp lib/scala-library.jar;lib\akka\akka-actor-2.0.jar;. \
+        akka.tutorial.first.scala.Pi
+
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 Yippee! It is working.
 
-
 Run it inside Maven
 -------------------
 
-If you used Maven, then you can run the application directly inside Maven. First you need to compile the project::
+If you used Maven, then you can run the application directly inside Maven. First you need to compile the project.
+
+On Linux/Unix/Mac systems::
 
     $ mvn compile
 
-When this in done we can run our application directly inside Maven::
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.0> mvn compile
+
+When this in done we can run our application directly inside Maven.
+
+On Linux/Unix/Mac systems::
 
     $ mvn exec:java -Dexec.mainClass="akka.tutorial.first.java.Pi"
     ...
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
+    Calculation time:   359 millis
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.0> mvn exec:java \
+        -Dexec.mainClass="akka.tutorial.first.java.Pi"
+    ...
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 Yippee! It is working.

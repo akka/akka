@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.config.ConfigurationException
 import scala.collection.JavaConverters._
 import akka.actor.Address
-import akka.actor.AddressExtractor
+import akka.actor.AddressFromURIString
 
 class ClusterSettings(val config: Config, val systemName: String) {
   import config._
@@ -21,6 +21,6 @@ class ClusterSettings(val config: Config, val systemName: String) {
   val InitialDelayForGossip = Duration(getMilliseconds("akka.cluster.gossip.initial-delay"), MILLISECONDS)
   val GossipFrequency = Duration(getMilliseconds("akka.cluster.gossip.frequency"), MILLISECONDS)
   val SeedNodes = Set.empty[Address] ++ getStringList("akka.cluster.seed-nodes").asScala.collect {
-    case AddressExtractor(addr) ⇒ addr
+    case AddressFromURIString(addr) ⇒ addr
   }
 }

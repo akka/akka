@@ -8,8 +8,6 @@
 Support for running applications (objects with main methods) and
 ScalaTest tests in multiple JVMs.
 
-.. contents:: :local:
-
 
 Setup
 =====
@@ -48,7 +46,7 @@ multi-JVM testing::
 
      lazy val buildSettings = Defaults.defaultSettings ++ Seq(
        organization := "com.typesafe.akka",
-       version      := "2.0-SNAPSHOT",
+       version      := "2.0",
        scalaVersion := "2.9.1",
        crossPaths   := false
      )
@@ -361,13 +359,13 @@ machines using schoir (read the same as ``esquire``) plugin. The plugin is inclu
 The interaction with the plugin is through ``schoir:master`` input task. This input task optionally accepts the
 path to the file with the following properties::
 
-   git.url=git@github.com:jboner/akka.git
+   git.url=git@github.com:akka/akka.git
    external.addresses.for.ssh=host1:port1,...,hostN:portN
    internal.host.names=host1,...,hostN
 
 Alternative to specifying the property file, one can set respective settings in the build file::
 
-   gitUrl := "git@github.com:jboner/akka.git",
+   gitUrl := "git@github.com:akka/akka.git",
    machinesExt := List(InetAddress("host1", port1)),
    machinesInt := List("host1")
 

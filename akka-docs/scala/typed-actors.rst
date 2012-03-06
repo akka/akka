@@ -1,10 +1,6 @@
 Typed Actors (Scala)
 ====================
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 Akka Typed Actors is an implementation of the `Active Objects <http://en.wikipedia.org/wiki/Active_object>`_ pattern.
 Essentially turning method invocations into asynchronous dispatch instead of synchronous that has been the default way since Smalltalk came out.
 
@@ -171,6 +167,25 @@ By having your Typed Actor implementation class implement any and all of the fol
     * ``TypedActor.PostRestart``
 
  You can hook into the lifecycle of your Typed Actor.
+
+Receive arbitrary messages
+--------------------------
+
+If your implementation class of your TypedActor extends ``akka.actor.TypedActor.Receiver``,
+all messages that are not ``MethodCall``s will be passed into the ``onReceive``-method.
+
+This allows you to react to DeathWatch ``Terminated``-messages and other types of messages,
+e.g. when interfacing with untyped actors.
+
+Proxying
+--------
+
+You can use the ``typedActorOf`` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
+This is usable if you want to communicate remotely with TypedActors on other machines, just look them up with ``actorFor`` and pass the ``ActorRef`` to ``typedActorOf``.
+
+.. note::
+
+  The ActorRef needs to accept ``MethodCall`` messages.
 
 Supercharging
 -------------

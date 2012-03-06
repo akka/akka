@@ -6,22 +6,27 @@ package akka.actor.mailbox
 
 import org.apache.commons.io.FileUtils
 import akka.actor.ActorContext
-import akka.dispatch.Envelope
+import akka.dispatch.{ Envelope, MessageQueue }
 import akka.event.Logging
 import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
 import akka.util.NonFatal
+import akka.config.ConfigurationException
+import akka.actor.ActorSystem
 
-class FileBasedMailboxType(config: Config) extends MailboxType {
-  override def create(owner: ActorContext) = new FileBasedMailbox(owner)
+class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
+  private val settings = new FileBasedMailboxSettings(systemSettings, config)
+  override def create(owner: Option[ActorContext]): MessageQueue = owner match {
+    case Some(o) ⇒ new FileBasedMessageQueue(o, settings)
+    case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
+  }
 }
 
-class FileBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with DurableMessageSerialization {
+class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
-  val log = Logging(system, "FileBasedMailbox")
+  val log = Logging(system, "FileBasedMessageQueue")
 
-  private val settings = FileBasedMailboxExtension(owner.system)
   val queuePath = settings.QueuePath
 
   private val queue = try {
@@ -68,5 +73,7 @@ class FileBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with
   } catch {
     case NonFatal(_) ⇒ false
   }
+
+  def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
 
 }

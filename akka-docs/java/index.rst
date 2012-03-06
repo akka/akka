@@ -12,7 +12,6 @@ Java API
    event-bus
    scheduler
    futures
-   dataflow
    fault-tolerance
    dispatchers
    routing

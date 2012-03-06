@@ -111,16 +111,14 @@ class JavaSerializer(val system: ExtendedActorSystem) extends Serializer {
   def toBinary(o: AnyRef): Array[Byte] = {
     val bos = new ByteArrayOutputStream
     val out = new ObjectOutputStream(bos)
-    out.writeObject(o)
+    JavaSerializer.currentSystem.withValue(system) { out.writeObject(o) }
     out.close()
     bos.toByteArray
   }
 
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
     val in = new ClassLoaderObjectInputStream(system.dynamicAccess.classLoader, new ByteArrayInputStream(bytes))
-    val obj = JavaSerializer.currentSystem.withValue(system) {
-      in.readObject
-    }
+    val obj = JavaSerializer.currentSystem.withValue(system) { in.readObject }
     in.close()
     obj
   }

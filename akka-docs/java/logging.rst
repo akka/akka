@@ -4,9 +4,6 @@
  Logging (Java)
 ################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 How to Log
 ==========
@@ -30,8 +27,13 @@ object is translated to a String according to the following rules:
   * in case of a class an approximation of its simpleName
   * and in all other cases the simpleName of its class
 
-The log message may contain argument placeholders ``{}``, which will be substituted if the log level
-is enabled.
+The log message may contain argument placeholders ``{}``, which will be
+substituted if the log level is enabled. Giving more arguments as there are
+placeholders results in a warning being appended to the log statement (i.e. on
+the same line with the same severity). You may pass a Java array as the only
+substitution argument to have its elements be treated individually:
+
+.. includecode:: code/akka/docs/event/LoggingDocTestBase.java#array
 
 The Java :class:`Class` of the log source is also included in the generated
 :class:`LogEvent`. In case of a simple string this is replaced with a “marker”

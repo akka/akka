@@ -5,12 +5,13 @@
 package akka.remote
 
 import scala.reflect.BeanProperty
-import akka.actor.{ Terminated, LocalRef, InternalActorRef, AutoReceivedMessage, AddressExtractor, Address, ActorSystemImpl, ActorSystem, ActorRef }
+import akka.actor.{ Terminated, LocalRef, InternalActorRef, AutoReceivedMessage, AddressFromURIString, Address, ActorSystemImpl, ActorSystem, ActorRef }
 import akka.dispatch.SystemMessage
 import akka.event.{ LoggingAdapter, Logging }
 import akka.AkkaException
 import akka.serialization.Serialization
 import akka.remote.RemoteProtocol._
+import akka.dispatch.ChildTerminated
 
 /**
  * Remote life-cycle events.
@@ -131,19 +132,6 @@ case class RemoteServerClientClosed(
   override def toString =
     "RemoteServerClientClosed@" + remote +
       ": Client[" + clientAddress.getOrElse("no address") + "]"
-}
-
-case class RemoteServerWriteFailed(
-  @BeanProperty request: AnyRef,
-  @BeanProperty cause: Throwable,
-  @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
-  override def logLevel = Logging.WarningLevel
-  override def toString =
-    "RemoteServerWriteFailed@" + remote +
-      ": ClientAddress[" + remoteAddress +
-      "] MessageClass[" + (if (request ne null) request.getClass.getName else "no message") +
-      "] Error[" + AkkaException.toStringWithStackTrace(cause) + "]"
 }
 
 /**
@@ -297,12 +285,12 @@ trait RemoteMarshallingOps {
       case r: RemoteRef ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", remoteMessage)
         remoteMessage.originalReceiver match {
-          case AddressExtractor(address) if address == provider.transport.address ⇒
+          case AddressFromURIString(address) if address == provider.transport.address ⇒
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
-          case r ⇒ log.error("dropping message {} for non-local recipient {}", remoteMessage.payload, r)
+          case r ⇒ log.error("dropping message {} for non-local recipient {} at {} local is {}", remoteMessage.payload, r, address, provider.transport.address)
         }
-      case r ⇒ log.error("dropping message {} for non-local recipient {}", remoteMessage.payload, r)
+      case r ⇒ log.error("dropping message {} for non-local recipient {} of type {}", remoteMessage.payload, r, if (r ne null) r.getClass else "null")
     }
   }
 }

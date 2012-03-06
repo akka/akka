@@ -7,7 +7,7 @@
 http://www.springframework.org/schema/beans
 http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
 http://akka.io/schema/akka
-http://akka.io/akka-2.0-SNAPSHOT.xsd">
+http://akka.io/akka-2.0.xsd">
 
 
   <akka:untyped-actor id="client-managed-remote-untyped-actor"

@@ -5,8 +5,6 @@ package akka.docs.future;
 
 //#imports1
 import akka.dispatch.*;
-import akka.japi.Procedure;
-import akka.japi.Procedure2;
 import akka.util.Timeout;
 
 //#imports1
@@ -41,9 +39,17 @@ import static akka.dispatch.Futures.reduce;
 
 //#imports6
 
+//#imports7
+import akka.dispatch.ExecutionContexts;
+import akka.dispatch.ExecutionContextExecutorService;
+
+//#imports7
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.junit.After;
 import org.junit.Before;
@@ -71,6 +77,20 @@ public class FutureDocTestBase {
   @After
   public void tearDown() {
     system.shutdown();
+  }
+
+  @Test public void useCustomExecutionContext() throws Exception {
+      ExecutorService yourExecutorServiceGoesHere = Executors.newSingleThreadExecutor();
+      //#diy-execution-context
+      ExecutionContextExecutorService ec =
+        ExecutionContexts.fromExecutorService(yourExecutorServiceGoesHere);
+
+      //Use ec with your Futures
+      Future<String> f1 = Futures.successful("foo", ec);
+
+      // Then you shut the ec down somewhere at the end of your program/application.
+      ec.shutdown();
+      //#diy-execution-context
   }
 
   @Test
@@ -297,17 +317,17 @@ public class FutureDocTestBase {
   public void useFilter() throws Exception {
     //#filter
     Future<Integer> future1 = Futures.successful(4, system.dispatcher());
-    Future<Integer> successfulFilter = future1.filter(new Filter<Integer>() {
-      public boolean filter(Integer i) {
+    Future<Integer> successfulFilter = future1.filter(Filter.filterOf(new Function<Integer, Boolean>() {
+      public Boolean apply(Integer i) {
         return i % 2 == 0;
       }
-    });
+    }));
 
-    Future<Integer> failedFilter = future1.filter(new Filter<Integer>() {
-      public boolean filter(Integer i) {
+    Future<Integer> failedFilter = future1.filter(Filter.filterOf(new Function<Integer, Boolean>() {
+      public Boolean apply(Integer i) {
         return i % 2 != 0;
       }
-    });
+    }));
     //When filter fails, the returned Future will be failed with a scala.MatchError
     //#filter
   }
@@ -324,10 +344,10 @@ public class FutureDocTestBase {
   public void useAndThen() {
     //#and-then
     Future<String> future1 = Futures.successful("value", system.dispatcher()).andThen(new OnComplete<String>() {
-      public void onComplete(Throwable failure, String result) {
-        if (failure != null)
-          sendToIssueTracker(failure);
-      }
+        public void onComplete(Throwable failure, String result) {
+            if (failure != null)
+                sendToIssueTracker(failure);
+        }
     }).andThen(new OnComplete<String>() {
       public void onComplete(Throwable failure, String result) {
         if (result != null)
@@ -416,13 +436,13 @@ public class FutureDocTestBase {
       Future<String> future = Futures.successful("foo", system.dispatcher());
       //#onComplete
       future.onComplete(new OnComplete<String>() {
-        public void onComplete(Throwable failure, String result) {
-          if (failure != null) {
-            //We got a failure, handle it here
-          } else {
-            // We got a result, do something with it
+          public void onComplete(Throwable failure, String result) {
+              if (failure != null) {
+                  //We got a failure, handle it here
+              } else {
+                  // We got a result, do something with it
+              }
           }
-        }
       });
       //#onComplete
     }

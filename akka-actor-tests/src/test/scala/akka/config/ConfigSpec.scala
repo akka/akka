@@ -9,9 +9,10 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import akka.util.duration._
 import akka.util.Duration
+import akka.actor.ActorSystem
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
+class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) {
 
   "The default configuration file (i.e. reference.conf)" must {
     "contain all configuration properties for akka-actor that are used in code with their correct defaults" in {
@@ -22,8 +23,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference) {
       {
         import config._
 
-        getString("akka.version") must equal("2.0-SNAPSHOT")
-        settings.ConfigVersion must equal("2.0-SNAPSHOT")
+        getString("akka.version") must equal("2.0")
+        settings.ConfigVersion must equal("2.0")
 
         getBoolean("akka.daemonic") must equal(false)
         getBoolean("akka.actor.serialize-messages") must equal(false)

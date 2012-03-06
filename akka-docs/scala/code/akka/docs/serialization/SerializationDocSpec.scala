@@ -5,8 +5,9 @@ package akka.docs.serialization
 
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
+import akka.actor.{ ActorRef, ActorSystem }
+
 //#imports
-import akka.actor.ActorSystem
 import akka.serialization._
 import com.typesafe.config.ConfigFactory
 
@@ -149,5 +150,31 @@ class SerializationDocSpec extends AkkaSpec {
 
     //#programmatic
     system.shutdown()
+  }
+
+  "demonstrate serialization of ActorRefs" in {
+    val theActorRef: ActorRef = system.deadLetters
+    val theActorSystem: ActorSystem = system
+
+    //#actorref-serializer
+    // Serialize
+    // (beneath toBinary)
+
+    // If there is no transportAddress,
+    // it means that either this Serializer isn't called
+    // within a piece of code that sets it,
+    // so either you need to supply your own,
+    // or simply use the local path.
+    val identifier: String = Serialization.currentTransportAddress.value match {
+      case null    ⇒ theActorRef.path.toString
+      case address ⇒ theActorRef.path.toStringWithAddress(address)
+    }
+    // Then just serialize the identifier however you like
+
+    // Deserialize
+    // (beneath fromBinary)
+    val deserializedActorRef = theActorSystem actorFor identifier
+    // Then just use the ActorRef
+    //#actorref-serializer
   }
 }

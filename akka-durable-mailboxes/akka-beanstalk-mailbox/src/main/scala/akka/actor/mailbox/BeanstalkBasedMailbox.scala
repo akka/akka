@@ -12,30 +12,36 @@ import akka.event.Logging
 import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
+import akka.config.ConfigurationException
+import akka.dispatch.MessageQueue
+import akka.actor.ActorSystem
 
 class BeanstalkBasedMailboxException(message: String) extends AkkaException(message) {}
 
-class BeanstalkBasedMailboxType(config: Config) extends MailboxType {
-  override def create(owner: ActorContext) = new BeanstalkBasedMailbox(owner)
+class BeanstalkBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
+  private val settings = new BeanstalkMailboxSettings(systemSettings, config)
+  override def create(owner: Option[ActorContext]): MessageQueue = owner match {
+    case Some(o) ⇒ new BeanstalkBasedMessageQueue(o, settings)
+    case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
+  }
 }
 
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BeanstalkBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner) with DurableMessageSerialization {
+class BeanstalkBasedMessageQueue(_owner: ActorContext, val settings: BeanstalkMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
-  private val settings = BeanstalkBasedMailboxExtension(owner.system)
   private val messageSubmitDelaySeconds = settings.MessageSubmitDelay.toSeconds.toInt
   private val messageTimeToLiveSeconds = settings.MessageTimeToLive.toSeconds.toInt
 
-  val log = Logging(system, "BeanstalkBasedMailbox")
+  val log = Logging(system, "BeanstalkBasedMessageQueue")
 
   private val queue = new ThreadLocal[Client] { override def initialValue = connect(name) }
 
   // ===== For MessageQueue =====
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    Some(queue.get.put(65536, messageSubmitDelaySeconds, messageTimeToLiveSeconds, serialize(envelope)).toInt)
+    queue.get.put(65536, messageSubmitDelaySeconds, messageTimeToLiveSeconds, serialize(envelope)).toInt
   }
 
   def dequeue(): Envelope = try {
@@ -107,4 +113,6 @@ class BeanstalkBasedMailbox(_owner: ActorContext) extends DurableMailbox(_owner)
   private def reconnect(name: String): ThreadLocal[Client] = {
     new ThreadLocal[Client] { override def initialValue: Client = connect(name) }
   }
+
+  def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
 }

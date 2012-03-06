@@ -11,6 +11,9 @@ import akka.dispatch.Await
 import akka.testkit.AkkaSpec
 import akka.testkit.TestLatch
 import akka.util.duration._
+import java.io.InputStream
+import scala.annotation.tailrec
+import com.typesafe.config.Config
 
 object DurableMailboxSpecActorFactory {
 
@@ -30,6 +33,26 @@ object DurableMailboxSpecActorFactory {
  */
 abstract class DurableMailboxSpec(val backendName: String, config: String) extends AkkaSpec(config) {
   import DurableMailboxSpecActorFactory._
+
+  protected def streamMustContain(in: InputStream, words: String): Unit = {
+    val output = new Array[Byte](8192)
+
+    def now = System.currentTimeMillis
+
+    def string(len: Int) = new String(output, 0, len, "ISO-8859-1") // don’t want parse errors
+
+    @tailrec def read(end: Int = 0, start: Long = now): Int =
+      in.read(output, end, output.length - end) match {
+        case -1 ⇒ end
+        case x ⇒
+          val next = end + x
+          if (string(next).contains(words) || now - start > 10000 || next == output.length) next
+          else read(next, start)
+      }
+
+    val result = string(read())
+    if (!result.contains(words)) throw new Exception("stream did not contain '" + words + "':\n" + result)
+  }
 
   def createMailboxTestActor(id: String): ActorRef =
     system.actorOf(Props(new MailboxTestActor).withDispatcher(backendName + "-dispatcher"))

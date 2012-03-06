@@ -17,8 +17,8 @@ exclude_patterns = ['_build', 'pending', 'disabled']
 
 project = u'Akka'
 copyright = u'2011, Typesafe Inc'
-version = '2.0-SNAPSHOT'
-release = '2.0-SNAPSHOT'
+version = '2.0'
+release = '2.0'
 
 pygments_style = 'simple'
 highlight_language = 'scala'
@@ -29,6 +29,7 @@ show_authors = True
 
 html_theme = 'akka'
 html_theme_path = ['_sphinx/themes']
+html_favicon = '_sphinx/static/favicon.ico'
 
 html_title = 'Akka Documentation'
 html_logo = '_sphinx/static/logo.png'
@@ -45,12 +46,13 @@ html_show_sourcelink = False
 html_show_sphinx = False
 html_show_copyright = True
 htmlhelp_basename = 'Akkadoc'
+html_add_permalinks = ''
 
 # -- Options for LaTeX output --------------------------------------------------
 
 def setup(app):
-     from sphinx.util.texescape import tex_replacements
-     tex_replacements.append((u'⇒', ur'\(\Rightarrow\)'))
+  from sphinx.util.texescape import tex_replacements
+  tex_replacements.append((u'⇒', ur'\(\Rightarrow\)'))
 
 latex_paper_size = 'a4'
 latex_font_size = '10pt'

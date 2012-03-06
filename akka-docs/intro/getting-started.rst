@@ -1,10 +1,6 @@
 Getting Started
 ===============
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 The best way to start learning Akka is to try the Getting Started Tutorial,
 which comes in several flavours depending on you development environment
 preferences:
@@ -18,8 +14,6 @@ preferences:
 
   - as standalone project, running from the command line,
   - or as SBT (Simple Build Tool) project and running it from within SBT
-
-- :ref:`getting-started-first-scala-eclipse` for Scala development with Eclipse
 
 The Getting Started Tutorial describes everything you need to get going, and you
 don't need to read the rest of this page if you study the tutorial. For later
@@ -44,12 +38,12 @@ Modules
 
 Akka is very modular and has many JARs for containing different features.
 
-- ``akka-actor-2.0-SNAPSHOT.jar`` -- Standard Actors, Typed Actors and much more
-- ``akka-remote-2.0-SNAPSHOT.jar`` -- Remote Actors
-- ``akka-slf4j-2.0-SNAPSHOT.jar`` -- SLF4J Event Handler Listener
-- ``akka-testkit-2.0-SNAPSHOT.jar`` -- Toolkit for testing Actors
-- ``akka-kernel-2.0-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server
-- ``akka-<storage-system>-mailbox-2.0-SNAPSHOT.jar`` -- Akka durable mailboxes
+- ``akka-actor-2.0.jar`` -- Standard Actors, Typed Actors and much more
+- ``akka-remote-2.0.jar`` -- Remote Actors
+- ``akka-slf4j-2.0.jar`` -- SLF4J Event Handler Listener
+- ``akka-testkit-2.0.jar`` -- Toolkit for testing Actors
+- ``akka-kernel-2.0.jar`` -- Akka microkernel for running a bare-bones mini application server
+- ``akka-<storage-system>-mailbox-2.0.jar`` -- Akka durable mailboxes
 
 How to see the JARs dependencies of each Akka module is described in the
 :ref:`dependencies` section. Worth noting is that ``akka-actor`` has zero
@@ -105,14 +99,14 @@ Summary of the essential parts for using Akka with Maven:
     <url>http://repo.typesafe.com/typesafe/releases/</url>
   </repository>
 
-2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 2.0-SNAPSHOT:
+2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 2.0:
 
 .. code-block:: xml
 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
     <artifactId>akka-actor</artifactId>
-    <version>2.0-SNAPSHOT</version>
+    <version>2.0</version>
   </dependency>
 
 **Note**: for snapshot versions both ``SNAPSHOT`` and timestamped versions are published.
@@ -138,14 +132,11 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0"
 
 
 Using Akka with Eclipse
 -----------------------
-
-Information about how to use Akka with Eclipse, including how to create an Akka Eclipse project from scratch,
-can be found in the :ref:`getting-started-first-scala-eclipse`.
 
 Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate Eclipse project.
 
@@ -159,7 +150,7 @@ Build from sources
 
 Akka uses Git and is hosted at `Github <http://github.com>`_.
 
-* Akka: clone the Akka repository from `<http://github.com/jboner/akka>`_
+* Akka: clone the Akka repository from `<http://github.com/akka/akka>`_
 
 Continue reading the page on :ref:`building-akka`
 
