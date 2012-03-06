@@ -8,8 +8,6 @@
 Support for running applications (objects with main methods) and
 ScalaTest tests in multiple JVMs.
 
-.. contents:: :local:
-
 
 Setup
 =====

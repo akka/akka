@@ -3,11 +3,6 @@
 Configuration
 =============
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
-
 Akka uses the `Typesafe Config Library
 <https://github.com/typesafehub/config>`_, which might also be a good choice
 for the configuration of your own application or library built with or without

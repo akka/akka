@@ -4,9 +4,6 @@
 Event Bus (Scala)
 #################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 Originally conceived as a way to send messages to groups of actors, the
 :class:`EventBus` has been generalized into a set of composable traits

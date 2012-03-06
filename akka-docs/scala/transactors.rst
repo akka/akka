@@ -4,10 +4,6 @@
  Transactors (Scala)
 #####################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 
 Why Transactors?
 ================

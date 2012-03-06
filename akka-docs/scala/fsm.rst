@@ -4,9 +4,6 @@
 FSM
 ###
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 Overview
 ========

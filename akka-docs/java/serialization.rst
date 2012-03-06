@@ -5,10 +5,6 @@
  Serialization (Java)
 #####################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 Akka has a built-in Extension for serialization,
 and it is both possible to use the built-in serializers and to write your own.
 

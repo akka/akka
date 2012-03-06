@@ -197,7 +197,7 @@ On Windows systems::
         -DarchetypeArtifactId=maven-archetype-quickstart \
         -DinteractiveMode=false
 
-Now we have the basis for our Maven-based Akka project. Let's step into the project directory::
+Now we have the basis for our Maven-based Akka project. Let's step into the project directory.
 
 On Linux/Unix/Mac systems::
 
@@ -468,7 +468,7 @@ On Windows systems::
 
     C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT> mvn compile
 
-When this in done we can run our application directly inside Maven::
+When this in done we can run our application directly inside Maven.
 
 On Linux/Unix/Mac systems::
 
