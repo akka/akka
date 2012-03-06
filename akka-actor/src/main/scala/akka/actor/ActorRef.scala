@@ -28,6 +28,8 @@ import akka.event.LoggingAdapter
  *
  * Scala:
  * {{{
+ * import akka.pattern.ask
+ *
  * class ExampleActor extends Actor {
  *   val other = context.actorOf(Props[OtherActor], "childName") // will be destroyed and re-created upon restart by default
  *
@@ -41,6 +43,8 @@ import akka.event.LoggingAdapter
  *
  * Java:
  * {{{
+ * import static akka.pattern.Patterns.ask;
+ *
  * public class ExampleActor Extends UntypedActor {
  *   // this child will be destroyed and re-created upon restart by default
  *   final ActorRef other = getContext().actorOf(new Props(OtherActor.class), "childName");
