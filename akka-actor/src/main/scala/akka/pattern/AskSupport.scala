@@ -15,8 +15,9 @@ import akka.util.Timeout
  * This is what is used to complete a Future that is returned from an ask/? call,
  * when it times out.
  */
-class AskTimeoutException(message: String, cause: Throwable) extends TimeoutException {
+class AskTimeoutException(message: String, cause: Throwable) extends TimeoutException(message) {
   def this(message: String) = this(message, null: Throwable)
+  override def getCause(): Throwable = cause
 }
 
 /**
