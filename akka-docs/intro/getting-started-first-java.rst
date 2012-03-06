@@ -33,7 +33,7 @@ If you want don't want to type in the code and/or set up a Maven project then yo
 __ https://github.com/akka/akka/tree/master/akka-tutorials/akka-tutorial-first
 __ https://github.com/akka/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/java/akka/tutorial/first/java/Pi.java
 
-To check out the code using Git invoke the following command and you can then you can navigate down to the tutorial.
+To check out the code using Git invoke the following command and you can then navigate down to the tutorial.
 
 On Linux/Unix/Mac systems::
 
