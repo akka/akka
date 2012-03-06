@@ -7,10 +7,6 @@
 
 Akkas integration with the `Spring Framework <http://www.springsource.org>`_ supplies the Spring way of using the Typed Actor Java API and for CamelService configuration for :ref:`camel-spring-applications`. It uses Spring's custom namespaces to create Typed Actors, supervisor hierarchies and a CamelService in a Spring environment.
 
-Contents:
-
-.. contents:: :local:
-
 To use the custom name space tags for Akka you have to add the XML schema definition to your spring configuration. It is available at `http://akka.io/akka-1.0.xsd <http://akka.io/akka.xsd>`_. The namespace for Akka is:
 
 .. code-block:: xml

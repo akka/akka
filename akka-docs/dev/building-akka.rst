@@ -9,8 +9,6 @@
 
 This page describes how to build and run Akka from the latest source code.
 
-.. contents:: :local:
-
 
 Get the source code
 ===================

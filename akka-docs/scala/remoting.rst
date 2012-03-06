@@ -5,10 +5,6 @@
 #################
 
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 For an introduction of remoting capabilities of Akka please see :ref:`remoting`.
 
 Preparing your ActorSystem for Remoting

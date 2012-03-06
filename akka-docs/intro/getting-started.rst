@@ -1,10 +1,6 @@
 Getting Started
 ===============
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 The best way to start learning Akka is to try the Getting Started Tutorial,
 which comes in several flavours depending on you development environment
 preferences:

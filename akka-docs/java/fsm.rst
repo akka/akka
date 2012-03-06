@@ -4,9 +4,6 @@
 Building Finite State Machine Actors (Java)
 ###########################################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 Overview
 ========
