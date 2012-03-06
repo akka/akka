@@ -4,10 +4,6 @@
 Routing (Scala)
 ===============
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 A Router is an actor that routes incoming messages to outbound actors.
 The router routes the messages sent to it to its underlying actors called 'routees'.
 

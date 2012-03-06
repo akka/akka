@@ -1,7 +1,7 @@
 Release Notes
 ==============
 
-Release 2.0
+Release 2.1
 -----------
 
-Release notes for 2.0 will be written.
+Release notes for 2.1 will be written...

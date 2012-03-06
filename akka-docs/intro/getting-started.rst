@@ -1,10 +1,6 @@
 Getting Started
 ===============
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 The best way to start learning Akka is to try the Getting Started Tutorial,
 which comes in several flavours depending on you development environment
 preferences:
@@ -18,8 +14,6 @@ preferences:
 
   - as standalone project, running from the command line,
   - or as SBT (Simple Build Tool) project and running it from within SBT
-
-- :ref:`getting-started-first-scala-eclipse` for Scala development with Eclipse
 
 The Getting Started Tutorial describes everything you need to get going, and you
 don't need to read the rest of this page if you study the tutorial. For later
@@ -143,9 +137,6 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
 Using Akka with Eclipse
 -----------------------
-
-Information about how to use Akka with Eclipse, including how to create an Akka Eclipse project from scratch,
-can be found in the :ref:`getting-started-first-scala-eclipse`.
 
 Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate Eclipse project.
 

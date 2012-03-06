@@ -5,9 +5,6 @@
  Durable Mailboxes
 ###################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 Overview
 ========

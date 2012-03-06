@@ -6,11 +6,6 @@
 ################
 
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
-
 The `Actor Model`_ provides a higher level of abstraction for writing concurrent
 and distributed systems. It alleviates the developer from having to deal with
 explicit locking and thread management, making it easier to write correct
