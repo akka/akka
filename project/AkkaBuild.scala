@@ -133,14 +133,14 @@ object AkkaBuild extends Build {
     )
   )
 
-  // lazy val amqp = Project(
-  //   id = "akka-amqp",
-  //   base = file("akka-amqp"),
-  //   dependencies = Seq(actor, testkit % "test->test"),
-  //   settings = defaultSettings ++ Seq(
-  //     libraryDependencies ++= Dependencies.amqp
-  //   )
-  // )
+  lazy val amqp = Project(
+    id = "akka-amqp",
+    base = file("akka-amqp"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.amqp
+    )
+  )
 
   val testMailbox = SettingKey[Boolean]("test-mailbox")
 
@@ -487,7 +487,7 @@ object Dependency {
     val Logback      = "0.9.28"
     val Netty        = "3.3.0.Final"
     val Protobuf     = "2.4.1"
-    val Rabbit       = "2.3.1"
+    val Rabbit       = "2.7.1"
     val ScalaStm     = "0.5"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.4"
