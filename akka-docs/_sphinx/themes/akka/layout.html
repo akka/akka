@@ -15,7 +15,6 @@
 {% set css_files = css_files + ['_static/base.css'] %}
 {% set css_files = css_files + ['_static/docs.css'] %}
 {% set css_files = css_files + ['http://fonts.googleapis.com/css?family=Exo:300,400,600,700'] %}
-{% set is_snapshot = version.endswith("-SNAPSHOT") %}
 
 {# do not display relbars #}
 {% block relbar1 %}{% endblock %}
@@ -43,11 +42,7 @@
   <div class="main">
     <div class="container">
       <div class="page-title">{{ title }}</div>
-      {%- if is_snapshot -%}
-      <div class="pdf-link"><a href="http://doc.akka.io/docs/akka/snapshot/Akka.pdf"><img src="{{ pathto('_static/pdf-icon.png', 1) }}" style="height: 40px;" /></a></div>
-      {%- else -%}
-      <div class="pdf-link"><a href="http://doc.akka.io/docs/akka/{{ version|e }}/Akka.pdf"><img src="{{ pathto('_static/pdf-icon.png', 1) }}" style="height: 40px;" /></a></div>
-      {%- endif -%}
+      <div class="pdf-link"><a href="{{ pathto('Akka.pdf', 1) }}"><img src="{{ pathto('_static/pdf-icon.png', 1) }}" style="height: 40px;" /></a></div>
     </div>
     <div class="main-container">
       <div class="container">
