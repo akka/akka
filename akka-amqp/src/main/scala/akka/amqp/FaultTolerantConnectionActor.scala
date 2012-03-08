@@ -81,7 +81,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
       if (connection.isDefined) {
         val consumer = context.actorOf(Props(new ConsumerActor(cr.consumerParameters)).
           withDispatcher("akka.actor.amqp.consumer-dispatcher"), "amqp-consumer-" + UUID.randomUUID().toString)
-        consumer ? Start pipeTo sender
+        consumer.tell(Start, sender)
       } else {
         log.warning("Unable to create new consumer - no connection")
         sender ! Status.Failure(new AkkaAMQPException("Unable to create new producer - no connection, establish one"))
@@ -96,7 +96,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
       if (connection.isDefined) {
         val producer = context.actorOf(Props(new ProducerActor(pr.producerParameters)).
           withDispatcher("akka.actor.amqp.producer-dispatcher"), "amqp-producer-" + UUID.randomUUID().toString)
-        producer ? Start pipeTo sender
+        producer.tell(Start, sender)
       } else {
         log.warning("Unable to create new producer - no connection")
         sender ! Status.Failure(new AkkaAMQPException("Unable to create new producer - no connection, establish one"))

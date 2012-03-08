@@ -12,10 +12,10 @@ import com.typesafe.config.ConfigFactory
 import akka.amqp._
 import akka.testkit.TestLatch
 import akka.util.Timeout
-import akka.dispatch.{ Future, Await }
 import akka.event.Logging
 import java.nio.charset.Charset
 import akka.util.duration._
+import akka.dispatch.{ Promise, Future, Await }
 
 object ExampleSession {
 
@@ -82,10 +82,7 @@ object ExampleSession {
 
       }
       Await.result(msgProcessed, timeout.duration)
-      /*for (c ← cf; p ← pf) {
-        system stop c
-        system stop p
-      }*/
+
       system stop conn
     }
   }
@@ -176,52 +173,66 @@ object ExampleSession {
 
   def callback = {
 
-    val channelCountdown = new TestLatch(2)
+    val msgProcessed = new TestLatch
 
     val connection = amqp ? ConnectionRequest(ConnectionParameters()) mapTo manifest[ActorRef]
 
-    val channelCallback = system.actorOf(Props(new Actor {
+    var startedConsumer = Promise.apply[AMQPMessage]()
+    var startedProducer = Promise.apply[AMQPMessage]()
+
+    val consumerChannelCallback = system.actorOf(Props(new Actor {
       def receive = {
-        case Started ⇒ {
+        case Started ⇒
           log.info("Channel callback: Started")
-          channelCountdown.countDown
-        }
-        case Restarting ⇒ // not used, sent when channel or connection fails and initiates a restart
-        case Stopped    ⇒ log.info("Channel callback: Stopped")
+          startedConsumer.success(Started)
+        case Restarting ⇒ startedConsumer = Promise.apply[AMQPMessage]()
+        case Stopped ⇒
+          log.info("Channel callback: Stopped")
+          startedConsumer = Promise.apply[AMQPMessage]()
+      }
+    }))
+
+    val producerChannelCallback = system.actorOf(Props(new Actor {
+      def receive = {
+        case Started ⇒
+          log.info("Channel callback: Started")
+          startedProducer.success(Started)
+        case Restarting ⇒ startedProducer = Promise.apply[AMQPMessage]()
+        case Stopped ⇒
+          log.info("Channel callback: Stopped")
+          startedProducer = Promise.apply[AMQPMessage]()
       }
     }))
 
     val exchangeParameters = ExchangeParameters("my_callback_exchange", Direct)
-    val channelParameters = ChannelParameters(channelCallback = Some(channelCallback))
+    val consumerChannelParameters = ChannelParameters(channelCallback = Some(consumerChannelCallback))
+    val producerChannelParameters = ChannelParameters(channelCallback = Some(producerChannelCallback))
 
     for (conn ← connection) {
 
       val cf: Future[ActorRef] = conn ? ConsumerRequest(
         ConsumerParameters("callback.routing", system.actorOf(Props(new Actor {
           def receive = {
+            case Delivery(payload, _, _, _, _, _) ⇒
+              log.info("@barack_obama received message from: {}", new String(payload.toArray, utf8Charset.name()))
+              msgProcessed.countDown()
             case _ ⇒ () // not used
           }
         })), None, Some(exchangeParameters),
-          channelParameters = Some(channelParameters))) mapTo manifest[ActorRef]
+          channelParameters = Some(consumerChannelParameters))) mapTo manifest[ActorRef]
 
       val pf: Future[ActorRef] = conn ? ProducerRequest(
         ProducerParameters(Some(exchangeParameters),
-          channelParameters = Some(channelParameters))) mapTo manifest[ActorRef]
+          channelParameters = Some(producerChannelParameters))) mapTo manifest[ActorRef]
 
-      Await.result(channelCountdown, timeout.duration)
+      for (c ← cf; sc ← startedConsumer; p ← pf; sp ← startedProducer) {
+        log.debug("********* About to produce a message...")
+        p ! Message("@jxstanford: I am productive!!".getBytes(utf8Charset).toSeq, "callback.routing")
+      }
+
+      Await.result(msgProcessed, timeout.duration)
       system stop conn
     }
   }
-
-  /**
-   * use this to confirm that the consumer/producer channels have been started prior to sending messages
-   */
-
-  def channelCallback(startedLatch: TestLatch) = system.actorOf(Props(new Actor {
-    def receive = {
-      case Started ⇒ startedLatch.open
-      case _       ⇒ ()
-    }
-  }))
 
 }
