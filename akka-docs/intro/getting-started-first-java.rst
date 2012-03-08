@@ -224,7 +224,7 @@ As you can see we already have a Java source file called ``App.java``, let's now
 
 We also need to edit the ``pom.xml`` build file. Let's add the dependency we
 need as well as the Maven repository it should download it from. The Akka Maven
-repository can be found at http://akka.io/releases/ and Typesafe provides
+repository can be found at http://repo.akka.io/releases/ and Typesafe provides
 http://repo.typesafe.com/typesafe/releases/ that proxies several other
 repositories, including akka.io.  It should now look something like this:
 
