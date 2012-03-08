@@ -4,9 +4,6 @@
  Logging (Java)
 ################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 How to Log
 ==========

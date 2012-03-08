@@ -3,10 +3,6 @@
 Fault Tolerance (Scala)
 =======================
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 As explained in :ref:`actor-systems` each actor is the supervisor of its
 children, and as such each actor defines fault handling supervisor strategy.
 This strategy cannot be changed afterwards as it is an integral part of the

@@ -197,7 +197,7 @@ On Windows systems::
         -DarchetypeArtifactId=maven-archetype-quickstart \
         -DinteractiveMode=false
 
-Now we have the basis for our Maven-based Akka project. Let's step into the project directory::
+Now we have the basis for our Maven-based Akka project. Let's step into the project directory.
 
 On Linux/Unix/Mac systems::
 
@@ -224,7 +224,7 @@ As you can see we already have a Java source file called ``App.java``, let's now
 
 We also need to edit the ``pom.xml`` build file. Let's add the dependency we
 need as well as the Maven repository it should download it from. The Akka Maven
-repository can be found at http://akka.io/releases/ and Typesafe provides
+repository can be found at http://repo.akka.io/releases/ and Typesafe provides
 http://repo.typesafe.com/typesafe/releases/ that proxies several other
 repositories, including akka.io.  It should now look something like this:
 
@@ -441,7 +441,7 @@ On Linux/Unix/Mac systems::
         -cp lib/scala-library.jar:lib/akka/akka-actor-2.1-SNAPSHOT.jar:. \
         akka.tutorial.first.scala.Pi
 
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 On Windows systems::
@@ -450,7 +450,7 @@ On Windows systems::
         -cp lib/scala-library.jar;lib\akka\akka-actor-2.1-SNAPSHOT.jar;. \
         akka.tutorial.first.scala.Pi
 
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 Yippee! It is working.
@@ -468,13 +468,13 @@ On Windows systems::
 
     C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> mvn compile
 
-When this in done we can run our application directly inside Maven::
+When this in done we can run our application directly inside Maven.
 
 On Linux/Unix/Mac systems::
 
     $ mvn exec:java -Dexec.mainClass="akka.tutorial.first.java.Pi"
     ...
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 On Windows systems::
@@ -482,7 +482,7 @@ On Windows systems::
     C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> mvn exec:java \
         -Dexec.mainClass="akka.tutorial.first.java.Pi"
     ...
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 Yippee! It is working.

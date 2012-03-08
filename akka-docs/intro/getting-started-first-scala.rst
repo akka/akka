@@ -477,7 +477,7 @@ On Linux/Unix/Mac systems::
         -cp lib/scala-library.jar:lib/akka/akka-actor-2.1-SNAPSHOT.jar:. \
         akka.tutorial.first.scala.Pi
 
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 On Windows systems::
@@ -486,7 +486,7 @@ On Windows systems::
         -cp lib/scala-library.jar;lib\akka\akka-actor-2.1-SNAPSHOT.jar;. \
         akka.tutorial.first.scala.Pi
 
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 Yippee! It is working.
@@ -513,7 +513,7 @@ When this in done we can run our application directly inside SBT::
 
     > run
     ...
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 Yippee! It is working.

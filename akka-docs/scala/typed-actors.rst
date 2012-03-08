@@ -1,10 +1,6 @@
 Typed Actors (Scala)
 ====================
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 Akka Typed Actors is an implementation of the `Active Objects <http://en.wikipedia.org/wiki/Active_object>`_ pattern.
 Essentially turning method invocations into asynchronous dispatch instead of synchronous that has been the default way since Smalltalk came out.
 

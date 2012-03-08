@@ -5,9 +5,6 @@
  ZeroMQ (Java)
 ###############
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 Akka provides a ZeroMQ module which abstracts a ZeroMQ connection and therefore allows interaction between Akka actors to take place over ZeroMQ connections. The messages can be of a proprietary format or they can be defined using Protobuf. The socket actor is fault-tolerant by default and when you use the newSocket method to create new sockets it will properly reinitialize the socket.
 

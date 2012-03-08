@@ -3,10 +3,6 @@
 Actor References, Paths and Addresses
 =====================================
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 This chapter describes how actors are identified and located within a possibly
 distributed actor system. It ties into the central idea that
 :ref:`actor-systems` form intrinsic supervision hierarchies as well as that

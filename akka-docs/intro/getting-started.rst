@@ -1,10 +1,6 @@
 Getting Started
 ===============
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 The best way to start learning Akka is to try the Getting Started Tutorial,
 which comes in several flavours depending on you development environment
 preferences:
@@ -61,7 +57,7 @@ Download the release you need from http://akka.io/downloads and unzip it.
 Using a snapshot version
 ------------------------
 
-The Akka nightly snapshots are published to http://akka.io/snapshots/ and are
+The Akka nightly snapshots are published to http://repo.akka.io/snapshots/ and are
 versioned with both ``SNAPSHOT`` and timestamps. You can choose a timestamped
 version to work with and can decide when to update to a newer version. The Akka
 snapshots repository is also proxied through http://repo.typesafe.com/typesafe/snapshots/
@@ -80,7 +76,7 @@ Using a build tool
 ------------------
 
 Akka can be used with build tools that support Maven repositories. The Akka
-Maven repository can be found at http://akka.io/realeses/ and Typesafe provides
+Maven repository can be found at http://repo.akka.io/releases/ and Typesafe provides
 http://repo.typesafe.com/typesafe/releases/ that proxies several other
 repositories, including akka.io.
 

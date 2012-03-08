@@ -4,9 +4,6 @@
  Logging (Scala)
 #################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 How to Log
 ==========
