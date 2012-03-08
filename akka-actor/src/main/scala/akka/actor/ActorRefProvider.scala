@@ -268,10 +268,7 @@ trait ActorRefFactory {
 
   /**
    * Stop the actor pointed to by the given [[akka.actor.ActorRef]]; this is
-   * an asynchronous operation, i.e. involves a message send, but if invoked
-   * on an [[akka.actor.ActorContext]] if operating on a child of that
-   * context it will free up the name for immediate reuse.
-   *
+   * an asynchronous operation, i.e. involves a message send.
    * When invoked on [[akka.actor.ActorSystem]] for a top-level actor, this
    * method sends a message to the guardian actor and blocks waiting for a reply,
    * see `akka.actor.creation-timeout` in the `reference.conf`.
