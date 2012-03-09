@@ -4,12 +4,12 @@
  "name":"akka",
  "version":"2.0",
  "description":"Akka is the platform for the next generation of event-driven, scalable and fault-tolerant architectures on the JVM.",
- "site":"",
+ "site":"http://akka.io",
  "tags":["actors","stm","concurrency","distributed","fault-tolerance","scala","java","futures","dataflow","remoting"],
- "docs":"",
- "licenses": [],
- "resolvers": ["http://akka.io/repository/"],
- "dependencies": [],
- "scalas": ["2.9.1"],
- "sbt": false
+ "docs":"http://akka.io/docs",
+ "licenses":[{"name":"Apache 2","url":"http://www.apache.org/licenses/LICENSE-2.0.html"}],
+ "resolvers":["http://repo.typesafe.com/typesafe/releases/"],
+ "dependencies":[],
+ "scalas":["2.9.1-1"],
+ "sbt":false
 }
