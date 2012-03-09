@@ -11,6 +11,7 @@ import akka.event.{ LoggingAdapter, Logging }
 import akka.AkkaException
 import akka.serialization.Serialization
 import akka.remote.RemoteProtocol._
+import akka.dispatch.ChildTerminated
 
 /**
  * Remote life-cycle events.

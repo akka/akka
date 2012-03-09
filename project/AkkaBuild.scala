@@ -18,8 +18,8 @@ object AkkaBuild extends Build {
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
-    version      := "2.0-SNAPSHOT",
-    scalaVersion := "2.9.1-1-RC1"
+    version      := "2.1-SNAPSHOT",
+    scalaVersion := "2.9.1-1"
   )
 
   lazy val akka = Project(
@@ -327,7 +327,10 @@ object AkkaBuild extends Build {
 
   // Settings
 
-  override lazy val settings = super.settings ++ buildSettings
+  override lazy val settings = super.settings ++ buildSettings ++ Seq(
+      resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
+      resolvers += "Twitter Public Repo" at "http://maven.twttr.com" // This will be going away with com.mongodb.async's next release
+    )
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
@@ -343,8 +346,6 @@ object AkkaBuild extends Build {
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-    resolvers += "Twitter Public Repo" at "http://maven.twttr.com", // This will be going away with com.mongodb.async's next release
-    resolvers += "Typesafe Snapshot Repo" at "http://repo.typesafe.com/typesafe/snapshots/", // Used while play-mini is still on RC
 
     // compile options
     scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked") ++ (

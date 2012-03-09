@@ -9,8 +9,6 @@
 
 This page describes how to build and run Akka from the latest source code.
 
-.. contents:: :local:
-
 
 Get the Source Code
 ===================
@@ -21,11 +19,11 @@ Akka uses `Git`_ and is hosted at `Github`_.
 .. _Github: http://github.com
 
 You first need Git installed on your machine. You can then clone the source
-repository from http://github.com/jboner/akka.
+repository from http://github.com/akka/akka.
 
 For example::
 
-   git clone git://github.com/jboner/akka.git
+   git clone git://github.com/akka/akka.git
 
 If you have already cloned the repository previously then you can update the
 code with ``git pull``::

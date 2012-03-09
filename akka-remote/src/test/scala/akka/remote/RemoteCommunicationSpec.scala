@@ -31,6 +31,7 @@ object RemoteCommunicationSpec {
   }
 }
 
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteCommunicationSpec extends AkkaSpec("""
 akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -123,6 +124,8 @@ akka {
       myref ! 43
       expectMsg(43)
       lastSender must be theSameInstanceAs remref
+      r.asInstanceOf[RemoteActorRef].getParent must be(l)
+      system.actorFor("/user/looker/child") must be theSameInstanceAs r
       Await.result(l ? "child/..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
       Await.result(system.actorFor(system / "looker" / "child") ? "..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
     }

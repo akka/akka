@@ -3,10 +3,6 @@
 HTTP
 ====
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 Play2-mini
 ----------
 

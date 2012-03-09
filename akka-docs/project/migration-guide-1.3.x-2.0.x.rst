@@ -4,12 +4,6 @@
  Migration Guide 1.3.x to 2.0.x
 ################################
 
-.. sidebar:: Contents
-
-   .. contents::
-      :local:
-      :depth: 3
-
 The 2.0 release contains several new features which require source-level
 changes in client code. This API cleanup is planned to be the last one for a
 significant amount of time.
@@ -33,7 +27,7 @@ be removed in Akka 2.1.
 
 The migration kit is provided in separate jar files. Add the following dependency::
 
-  "com.typesafe.akka" % "akka-actor-migration" % "2.0-SNAPSHOT"
+  "com.typesafe.akka" % "akka-actor-migration" % "2.0"
 
 The first step of the migration is to do some trivial replacements.
 Search and replace the following (be careful with the non qualified names):

@@ -4,10 +4,6 @@
 Event Bus (Java)
 ################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 Originally conceived as a way to send messages to groups of actors, the
 :class:`EventBus` has been generalized into a set of composable traits
 implementing a simple interface:
@@ -48,7 +44,7 @@ The classifiers presented here are part of the Akka distribution, but rolling
 your own in case you do not find a perfect match is not difficult, check the
 implementation of the existing ones on `github`_.
 
-.. _github: https://github.com/jboner/akka/blob/master/akka-actor/src/main/scala/akka/event/EventBus.scala
+.. _github: https://github.com/akka/akka/blob/master/akka-actor/src/main/scala/akka/event/EventBus.scala
 
 Lookup Classification
 ---------------------
