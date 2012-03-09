@@ -149,7 +149,6 @@ object MemberStatus {
   case object Removed extends MemberStatus
 
   def isUnavailable(status: MemberStatus): Boolean = {
-    //    status == MemberStatus.Joining ||
     status == MemberStatus.Down ||
       status == MemberStatus.Exiting ||
       status == MemberStatus.Removed ||
