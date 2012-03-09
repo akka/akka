@@ -14,24 +14,29 @@ import com.typesafe.config._
 
 import java.net.InetSocketAddress
 
-class LeaderElectionSpec extends AkkaSpec("""
+class ClientDowningSpec extends AkkaSpec("""
   akka {
     loglevel = "INFO"
     actor.provider = "akka.remote.RemoteActorRefProvider"
-    cluster.failure-detector.threshold = 3
+    cluster {
+      failure-detector.threshold = 3
+      auto-down = off
+    }
   }
   """) with ImplicitSender {
 
   var node1: Node = _
   var node2: Node = _
   var node3: Node = _
+  var node4: Node = _
 
   var system1: ActorSystemImpl = _
   var system2: ActorSystemImpl = _
   var system3: ActorSystemImpl = _
+  var system4: ActorSystemImpl = _
 
   try {
-    "A cluster of three nodes" must {
+    "Client of a 4 node cluster" must {
 
       // ======= NODE 1 ========
       system1 = ActorSystem("system1", ConfigFactory
@@ -83,7 +88,24 @@ class LeaderElectionSpec extends AkkaSpec("""
       val fd3 = node3.failureDetector
       val address3 = node3.remoteAddress
 
-      "be able to 'elect' a single leader" taggedAs LongRunningTest in {
+      // ======= NODE 4 ========
+      system4 = ActorSystem("system4", ConfigFactory
+        .parseString("""
+          akka {
+            remote.netty {
+              hostname = localhost
+              port=5553
+            }
+            cluster.node-to-join = "akka://system1@localhost:5550"
+          }""")
+        .withFallback(system.settings.config))
+        .asInstanceOf[ActorSystemImpl]
+      val remote4 = system4.provider.asInstanceOf[RemoteActorRefProvider]
+      node4 = Node(system4)
+      val fd4 = node4.failureDetector
+      val address4 = node4.remoteAddress
+
+      "be able to DOWN a node that is UP" taggedAs LongRunningTest in {
 
         println("Give the system time to converge...")
         Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
@@ -92,51 +114,54 @@ class LeaderElectionSpec extends AkkaSpec("""
         node1.convergence must be('defined)
         node2.convergence must be('defined)
         node3.convergence must be('defined)
+        node4.convergence must be('defined)
 
-        // check leader
-        node1.isLeader must be(true)
-        node2.isLeader must be(false)
-        node3.isLeader must be(false)
-      }
+        // shut down node3
+        node3.shutdown()
+        system3.shutdown()
 
-      "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in {
+        // wait for convergence
+        println("Give the system time to converge...")
+        Thread.sleep(30.seconds.dilated.toMillis)
 
-        // shut down system1 - the leader
-        node1.shutdown()
-        system1.shutdown()
-
-        // user marks node1 as DOWN
-        node2.scheduleNodeDown(address1)
+        // client marks node3 as DOWN
+        node1.scheduleNodeDown(address3)
 
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // give them 30 seconds to detect failure of system3
+        Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
 
         // check cluster convergence
+        node1.convergence must be('defined)
         node2.convergence must be('defined)
-        node3.convergence must be('defined)
+        node4.convergence must be('defined)
 
-        // check leader
-        node2.isLeader must be(true)
-        node3.isLeader must be(false)
+        node1.latestGossip.members.size must be(3)
+        node1.latestGossip.members.exists(_.address == address3) must be(false)
       }
 
-      "be able to 're-elect' a single leader after leader has left (again, leaving a single node)" taggedAs LongRunningTest in {
+      "be able to DOWN a node that is UNREACHABLE" taggedAs LongRunningTest in {
 
         // shut down system1 - the leader
-        node2.shutdown()
-        system2.shutdown()
+        node4.shutdown()
+        system4.shutdown()
 
-        // user marks node2 as DOWN
-        node3.scheduleNodeDown(address2)
+        // wait for convergence
+        println("Give the system time to converge...")
+        Thread.sleep(30.seconds.dilated.toMillis)
+
+        // clien marks node4 as DOWN
+        node2.scheduleNodeDown(address4)
 
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // give them 30 seconds to detect failure of system3
+        Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
 
         // check cluster convergence
-        node3.convergence must be('defined)
+        node1.convergence must be('defined)
+        node2.convergence must be('defined)
 
-        // check leader
-        node3.isLeader must be(true)
+        node1.latestGossip.members.size must be(2)
+        node1.latestGossip.members.exists(_.address == address4) must be(false)
+        node1.latestGossip.members.exists(_.address == address3) must be(false)
       }
     }
   } catch {
@@ -154,5 +179,8 @@ class LeaderElectionSpec extends AkkaSpec("""
 
     if (node3 ne null) node3.shutdown()
     if (system3 ne null) system3.shutdown()
+
+    if (node4 ne null) node4.shutdown()
+    if (system4 ne null) system4.shutdown()
   }
 }

@@ -106,9 +106,9 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
           }
         })
 
-        latch.await(10.seconds.dilated.toMillis, TimeUnit.MILLISECONDS)
+        latch.await(30.seconds.dilated.toMillis, TimeUnit.MILLISECONDS)
 
-        Thread.sleep(10.seconds.dilated.toMillis)
+        Thread.sleep(30.seconds.dilated.toMillis)
 
         // check cluster convergence
         node0.convergence must be('defined)

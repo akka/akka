@@ -43,7 +43,7 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
       val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
       node1 = Node(system1)
       val fd1 = node1.failureDetector
-      val address1 = node1.self.address
+      val address1 = node1.remoteAddress
 
       // ======= NODE 2 ========
       system2 = ActorSystem("system2", ConfigFactory
@@ -57,7 +57,7 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
       val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
       node2 = Node(system2)
       val fd2 = node2.failureDetector
-      val address2 = node2.self.address
+      val address2 = node2.remoteAddress
 
       // ======= NODE 3 ========
       system3 = ActorSystem("system3", ConfigFactory
@@ -71,7 +71,7 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
       val remote3 = system3.provider.asInstanceOf[RemoteActorRefProvider]
       node3 = Node(system3)
       val fd3 = node3.failureDetector
-      val address3 = node3.self.address
+      val address3 = node3.remoteAddress
 
       "receive gossip heartbeats so that all healthy systems in the cluster are marked 'available'" taggedAs LongRunningTest in {
         println("Let the systems gossip for a while...")

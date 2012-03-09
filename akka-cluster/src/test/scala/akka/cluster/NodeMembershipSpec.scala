@@ -62,19 +62,19 @@ class NodeMembershipSpec extends AkkaSpec("""
         val members0 = node0.latestGossip.members.toArray
         members0.size must be(2)
         members0(0).address.port.get must be(5550)
-        members0(0).status must be(MemberStatus.Joining)
+        members0(0).status must be(MemberStatus.Up)
         members0(1).address.port.get must be(5551)
-        members0(1).status must be(MemberStatus.Joining)
+        members0(1).status must be(MemberStatus.Up)
 
         val members1 = node1.latestGossip.members.toArray
         members1.size must be(2)
         members1(0).address.port.get must be(5550)
-        members1(0).status must be(MemberStatus.Joining)
+        members1(0).status must be(MemberStatus.Up)
         members1(1).address.port.get must be(5551)
-        members1(1).status must be(MemberStatus.Joining)
+        members1(1).status must be(MemberStatus.Up)
       }
 
-      "(when three systems) start gossiping to each other so that both systems gets the same gossip info" taggedAs LongRunningTest in {
+      "(when three systems) start gossiping to each other so that both systems gets the same gossip info" taggedAs LongRunningTest ignore {
 
         // ======= NODE 2 ========
         system2 = ActorSystem("system2", ConfigFactory
@@ -99,29 +99,29 @@ class NodeMembershipSpec extends AkkaSpec("""
         val version = node0.latestGossip.version
         members0.size must be(3)
         members0(0).address.port.get must be(5550)
-        members0(0).status must be(MemberStatus.Joining)
+        members0(0).status must be(MemberStatus.Up)
         members0(1).address.port.get must be(5551)
-        members0(1).status must be(MemberStatus.Joining)
+        members0(1).status must be(MemberStatus.Up)
         members0(2).address.port.get must be(5552)
-        members0(2).status must be(MemberStatus.Joining)
+        members0(2).status must be(MemberStatus.Up)
 
         val members1 = node1.latestGossip.members.toArray
         members1.size must be(3)
         members1(0).address.port.get must be(5550)
-        members1(0).status must be(MemberStatus.Joining)
+        members1(0).status must be(MemberStatus.Up)
         members1(1).address.port.get must be(5551)
-        members1(1).status must be(MemberStatus.Joining)
+        members1(1).status must be(MemberStatus.Up)
         members1(2).address.port.get must be(5552)
-        members1(2).status must be(MemberStatus.Joining)
+        members1(2).status must be(MemberStatus.Up)
 
         val members2 = node2.latestGossip.members.toArray
         members2.size must be(3)
         members2(0).address.port.get must be(5550)
-        members2(0).status must be(MemberStatus.Joining)
+        members2(0).status must be(MemberStatus.Up)
         members2(1).address.port.get must be(5551)
-        members2(1).status must be(MemberStatus.Joining)
+        members2(1).status must be(MemberStatus.Up)
         members2(2).address.port.get must be(5552)
-        members2(2).status must be(MemberStatus.Joining)
+        members2(2).status must be(MemberStatus.Up)
       }
     }
   } catch {
