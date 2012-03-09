@@ -15,6 +15,21 @@ Typed Actors are implemented using `JDK Proxies <http://docs.oracle.com/javase/6
 
     Just as with regular Akka Untyped Actors, Typed Actors process one call at a time.
 
+When to use Typed Actors
+------------------------
+
+Typed actors are nice for bridging between actor systems (the “inside”) and
+non-actor code (the “outside”), because they allow you to write normal
+OO-looking code on the outside. Think of them like doors: their practicality
+lies in interfacing between private sphere and the public, but you don’t want
+that many doors inside your house, do you?
+
+A bit more background: TypedActors can very easily be abused as RPC, and that
+is an abstraction which is `well-known
+<http://labs.oracle.com/techrep/1994/abstract-29.html>`_ to be leaky. Hence
+TypedActors are not what we think of first when we talk about making highly
+scalable concurrent software easier to write correctly. They have their niche,
+use them sparingly.
 
 The tools of the trade
 ----------------------
