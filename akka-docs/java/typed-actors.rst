@@ -22,7 +22,8 @@ Typed actors are nice for bridging between actor systems (the “inside”) and
 non-actor code (the “outside”), because they allow you to write normal
 OO-looking code on the outside. Think of them like doors: their practicality
 lies in interfacing between private sphere and the public, but you don’t want
-that many doors inside your house, do you?
+that many doors inside your house, do you? For a longer discussion see `this
+blog post <http://letitcrash.com/post/19074284309/when-to-use-typedactors>`_.
 
 A bit more background: TypedActors can very easily be abused as RPC, and that
 is an abstraction which is `well-known
