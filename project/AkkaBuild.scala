@@ -420,11 +420,11 @@ object Dependencies {
 
   val actorTests = Seq(
     Test.junit, Test.scalatest, Test.commonsMath, Test.mockito,
-    Test.scalacheck, protobuf, jacksonMapper, sjson
+    Test.scalacheck, protobuf, jacksonMapper
   )
 
   val remote = Seq(
-    netty, protobuf, sjson, h2Lzf, Test.junit, Test.scalatest,
+    netty, protobuf, Test.junit, Test.scalatest,
     Test.zookeeper, Test.log4j // needed for ZkBarrier in multi-jvm tests
   )
 
@@ -440,7 +440,7 @@ object Dependencies {
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
-  val fileMailbox = Seq(Test.scalatest, Test.junit)
+  val fileMailbox = Seq(commonsIo, Test.scalatest, Test.junit)
 
   val beanstalkMailbox = Seq(beanstalk, Test.junit)
 
@@ -459,7 +459,7 @@ object Dependencies {
     </dependencies>
   }
 
-  val zookeeperMailbox = Seq(zkClient, zookeeper, Test.junit)
+  val zookeeperMailbox = Seq(zkClient, zookeeper, commonsIo, Test.junit)
 
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
 
@@ -505,7 +505,6 @@ object Dependency {
   val commonsIo     = "commons-io"                  % "commons-io"             % "2.0.1"      // ApacheV2
   val commonsPool   = "commons-pool"                % "commons-pool"           % "1.5.6"      // ApacheV2
   val guice         = "org.guiceyfruit"             % "guice-all"              % "2.0"        // ApacheV2
-  val h2Lzf         = "voldemort.store.compress"    % "h2-lzf"                 % "1.0"        // ApacheV2
   val jacksonCore   = "org.codehaus.jackson"        % "jackson-core-asl"       % V.Jackson    // ApacheV2
   val jacksonMapper = "org.codehaus.jackson"        % "jackson-mapper-asl"     % V.Jackson    // ApacheV2
   val jettyUtil     = "org.eclipse.jetty"           % "jetty-util"             % V.Jetty      // Eclipse license
@@ -519,7 +518,6 @@ object Dependency {
   val rabbit        = "com.rabbitmq"                % "amqp-client"            % V.Rabbit     // Mozilla Public License
   val redis         = "net.debasishg"               % "redisclient_2.9.1"      % "2.4.0"      // ApacheV2
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
-  val sjson         = "net.debasishg"               % "sjson_2.9.1"            % "0.15"       // ApacheV2
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
   val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
