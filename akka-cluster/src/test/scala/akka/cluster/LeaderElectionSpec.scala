@@ -1,6 +1,7 @@
 /**
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
+
 package akka.cluster
 
 import akka.testkit._
@@ -13,13 +14,10 @@ import com.typesafe.config._
 
 import java.net.InetSocketAddress
 
-class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
+class LeaderElectionSpec extends AkkaSpec("""
   akka {
     loglevel = "INFO"
-    actor.debug.lifecycle = on
-    actor.debug.autoreceive = on
-    actor.provider = akka.remote.RemoteActorRefProvider
-    remote.netty.hostname = localhost
+    actor.provider = "akka.remote.RemoteActorRefProvider"
     cluster.failure-detector.threshold = 3
   }
   """) with ImplicitSender {
@@ -33,11 +31,17 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
   var system3: ActorSystemImpl = _
 
   try {
-    "A Gossip-driven Failure Detector" must {
+    "A cluster of three nodes" must {
 
       // ======= NODE 1 ========
       system1 = ActorSystem("system1", ConfigFactory
-        .parseString("akka.remote.netty.port=5550")
+        .parseString("""
+          akka {
+            remote.netty {
+              hostname = localhost
+              port=5550
+            }
+          }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
@@ -49,7 +53,10 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
       system2 = ActorSystem("system2", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port=5551
+            remote.netty {
+              hostname = localhost
+              port = 5551
+            }
             cluster.node-to-join = "akka://system1@localhost:5550"
           }""")
         .withFallback(system.settings.config))
@@ -63,7 +70,10 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
       system3 = ActorSystem("system3", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port=5552
+            remote.netty {
+              hostname = localhost
+              port=5552
+            }
             cluster.node-to-join = "akka://system1@localhost:5550"
           }""")
         .withFallback(system.settings.config))
@@ -73,27 +83,60 @@ class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
       val fd3 = node3.failureDetector
       val address3 = node3.remoteAddress
 
-      "receive gossip heartbeats so that all healthy systems in the cluster are marked 'available'" taggedAs LongRunningTest in {
-        println("Let the systems gossip for a while...")
+      "be able to 'elect' a single leader" taggedAs LongRunningTest in {
+
+        println("Give the system time to converge...")
         Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
-        fd1.isAvailable(address2) must be(true)
-        fd1.isAvailable(address3) must be(true)
-        fd2.isAvailable(address1) must be(true)
-        fd2.isAvailable(address3) must be(true)
-        fd3.isAvailable(address1) must be(true)
-        fd3.isAvailable(address2) must be(true)
+
+        // check cluster convergence
+        node1.convergence must be('defined)
+        node2.convergence must be('defined)
+        node3.convergence must be('defined)
+
+        // check leader
+        node1.isLeader must be(true)
+        node2.isLeader must be(false)
+        node3.isLeader must be(false)
       }
 
-      "mark system as 'unavailable' if a system in the cluster is shut down (and its heartbeats stops)" taggedAs LongRunningTest in {
-        // shut down system3
-        node3.shutdown()
-        system3.shutdown()
-        println("Give the remaning systems time to detect failure...")
+      "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in {
+
+        // shut down system1 - the leader
+        node1.shutdown()
+        system1.shutdown()
+
+        // user marks node1 as DOWN
+        node2.scheduleNodeDown(address1)
+
+        println("Give the system time to converge...")
         Thread.sleep(30.seconds.dilated.toMillis) // give them 30 seconds to detect failure of system3
-        fd1.isAvailable(address2) must be(true)
-        fd1.isAvailable(address3) must be(false)
-        fd2.isAvailable(address1) must be(true)
-        fd2.isAvailable(address3) must be(false)
+
+        // check cluster convergence
+        node2.convergence must be('defined)
+        node3.convergence must be('defined)
+
+        // check leader
+        node2.isLeader must be(true)
+        node3.isLeader must be(false)
+      }
+
+      "be able to 're-elect' a single leader after leader has left (again, leaving a single node)" taggedAs LongRunningTest in {
+
+        // shut down system1 - the leader
+        node2.shutdown()
+        system2.shutdown()
+
+        // user marks node2 as DOWN
+        node3.scheduleNodeDown(address2)
+
+        println("Give the system time to converge...")
+        Thread.sleep(30.seconds.dilated.toMillis) // give them 30 seconds to detect failure of system3
+
+        // check cluster convergence
+        node3.convergence must be('defined)
+
+        // check leader
+        node3.isLeader must be(true)
       }
     }
   } catch {
