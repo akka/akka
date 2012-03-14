@@ -805,7 +805,13 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
     // Lowest score wins, score 0 is autowin
     // If no actor with score 0 is found, it will return that, or if it is terminated, a random of the entire set.
     //   Why? Well, in case we had 0 viable actors and all we got was the default, which is the DeadLetters, anything else is better.
-    // A suspended actor is better than nothing, but just.
+    // Order of interest, in ascending priority:
+    // 1. The DeadLetterActorRef
+    // 2. A Suspended ActorRef
+    // 3. An ActorRef with unknown mailbox size but with one message being processed
+    // 4. An ActorRef with unknown mailbox size that isn't processing anything
+    // 5. An ActorRef with a known mailbox size
+    // 6. An ActorRef without any messages
     @tailrec def getNext(targets: IndexedSeq[ActorRef] = routeeProvider.routees,
                          proposedTarget: ActorRef = routeeProvider.context.system.deadLetters,
                          currentScore: Long = Long.MaxValue,
