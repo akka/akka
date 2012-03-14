@@ -411,7 +411,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
     leaderActions()
   }
 
-  log.info("Node [{}] - have JOINED cluster successfully", remoteAddress)
+  log.info("Node [{}] - has JOINED cluster successfully", remoteAddress)
 
   // ======================================================
   // ===================== PUBLIC API =====================
