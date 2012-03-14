@@ -747,10 +747,6 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  private val random = new ThreadLocal[SecureRandom] {
-    override def initialValue = SecureRandom.getInstance("SHA1PRNG")
-  }
-
   /**
    * Returns true if the actor is currently processing a message.
    * It will always return false for remote actors.
@@ -819,7 +815,7 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
                          deep: Boolean = false): ActorRef =
       if (at >= targets.size) {
         if (deep) {
-          if (proposedTarget.isTerminated) targets(random.get.nextInt(targets.size)) else proposedTarget
+          if (proposedTarget.isTerminated) targets(ThreadLocalRandom.current.nextInt(targets.size)) else proposedTarget
         } else getNext(targets, proposedTarget, currentScore, 0, deep = true)
       } else {
         val target = targets(at)
