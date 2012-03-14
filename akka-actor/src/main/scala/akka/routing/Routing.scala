@@ -805,7 +805,7 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
     // Lowest score wins, score 0 is autowin
     // If no actor with score 0 is found, it will return that, or if it is terminated, a random of the entire set.
     //   Why? Well, in case we had 0 viable actors and all we got was the default, which is the DeadLetters, anything else is better.
-    // A suspended actor is never better than the current best
+    // A suspended actor is better than nothing, but just.
     @tailrec def getNext(targets: IndexedSeq[ActorRef] = routeeProvider.routees,
                          proposedTarget: ActorRef = routeeProvider.context.system.deadLetters,
                          currentScore: Long = Long.MaxValue,
@@ -818,11 +818,11 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
       } else {
         val target = targets(at)
         val newScore: Long =
-          if (isSuspended(target)) currentScore else {
+          if (isSuspended(target)) Long.MaxValue - 1 else { //Just about better than the DeadLetters
             (if (isProcessingMessage(target)) 1l else 0l) +
               (if (!hasMessages(target)) 0l else { //Race between hasMessages and numberOfMessages here, unfortunate the numberOfMessages returns 0 if unknown
                 val noOfMsgs: Long = if (deep) numberOfMessages(target) else 0
-                if (noOfMsgs > 0) noOfMsgs else Long.MaxValue - 2 //Just about better than the DeadLetters
+                if (noOfMsgs > 0) noOfMsgs else Long.MaxValue - 3 //Just better than a suspended actorref
               })
           }
 
