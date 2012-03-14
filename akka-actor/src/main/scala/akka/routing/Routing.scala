@@ -17,6 +17,7 @@ import java.util.concurrent.locks.ReentrantLock
 import akka.jsr166y.ThreadLocalRandom
 import akka.util.Unsafe
 import akka.dispatch.Dispatchers
+import annotation.tailrec
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -312,9 +313,7 @@ trait Router extends Actor {
 
   }: Receive) orElse routerReceive
 
-  def routerReceive: Receive = {
-    case _ ⇒
-  }
+  def routerReceive: Receive = Actor.emptyBehavior
 
   override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
     // do not scrap children
@@ -784,10 +783,8 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def isSuspended(a: ActorRef): Boolean = a match {
-    case x: LocalActorRef ⇒
-      val cell = x.underlying
-      cell.mailbox.isSuspended
-    case _ ⇒ false
+    case x: LocalActorRef ⇒ x.underlying.mailbox.isSuspended
+    case _                ⇒ false
   }
 
   /**
@@ -804,22 +801,41 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
     routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
-    def getNext(): ActorRef = {
-      // non-local actors mailbox size is unknown, so consider them lowest priority
-      val activeLocal = routeeProvider.routees collect { case l: LocalActorRef if !isSuspended(l) ⇒ l }
-      // 1. anyone not processing message and with empty mailbox
-      activeLocal.find(a ⇒ !isProcessingMessage(a) && !hasMessages(a)) getOrElse {
-        // 2. anyone with empty mailbox
-        activeLocal.find(a ⇒ !hasMessages(a)) getOrElse {
-          // 3. sort on mailbox size
-          activeLocal.sortBy(a ⇒ numberOfMessages(a)).headOption getOrElse {
-            // 4. no locals, just pick one, random
-            val _routees = routeeProvider.routees
-            _routees(random.get.nextInt(_routees.size))
+    // Worst-case a 2-pass inspection with mailbox size checking done on second pass, and only until no one empty is found.
+    // Lowest score wins, score 0 is autowin
+    // If no actor with score 0 is found, it will return that, or if it is terminated, a random of the entire set.
+    //   Why? Well, in case we had 0 viable actors and all we got was the default, which is the DeadLetters, anything else is better.
+    // Order of interest, in ascending priority:
+    // 1. The DeadLetterActorRef
+    // 2. A Suspended ActorRef
+    // 3. An ActorRef with unknown mailbox size but with one message being processed
+    // 4. An ActorRef with unknown mailbox size that isn't processing anything
+    // 5. An ActorRef with a known mailbox size
+    // 6. An ActorRef without any messages
+    @tailrec def getNext(targets: IndexedSeq[ActorRef] = routeeProvider.routees,
+                         proposedTarget: ActorRef = routeeProvider.context.system.deadLetters,
+                         currentScore: Long = Long.MaxValue,
+                         at: Int = 0,
+                         deep: Boolean = false): ActorRef =
+      if (at >= targets.size) {
+        if (deep) {
+          if (proposedTarget.isTerminated) targets(random.get.nextInt(targets.size)) else proposedTarget
+        } else getNext(targets, proposedTarget, currentScore, 0, deep = true)
+      } else {
+        val target = targets(at)
+        val newScore: Long =
+          if (isSuspended(target)) Long.MaxValue - 1 else { //Just about better than the DeadLetters
+            (if (isProcessingMessage(target)) 1l else 0l) +
+              (if (!hasMessages(target)) 0l else { //Race between hasMessages and numberOfMessages here, unfortunate the numberOfMessages returns 0 if unknown
+                val noOfMsgs: Long = if (deep) numberOfMessages(target) else 0
+                if (noOfMsgs > 0) noOfMsgs else Long.MaxValue - 3 //Just better than a suspended actorref
+              })
           }
-        }
+
+        if (newScore == 0) target
+        else if (newScore < 0 || newScore >= currentScore) getNext(targets, proposedTarget, currentScore, at + 1, deep)
+        else getNext(targets, target, newScore, at + 1, deep)
       }
-    }
 
     {
       case (sender, message) ⇒
