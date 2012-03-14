@@ -818,18 +818,12 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
         targets(at) match {
           case l if !isSuspended(l) ⇒
 
-            val newScore: Long = (if (isProcessingMessage(l)) 1l else 0l) + (
-              if (!hasMessages(l)) 0l else {
-                val UnknownMailboxSize = Long.MaxValue - 2 //Just about better than the DeadLetters
-                if (deep) {
-                  numberOfMessages(l) match { //Race between hasMessages and numberOfMessages here, unfortunate the numberOfMessages returns 0 if unknown
-                    case n if n > 0 ⇒ n
-                    case _          ⇒ UnknownMailboxSize
-                  }
-                } else {
-                  UnknownMailboxSize
-                }
-              })
+            val newScore: Long =
+              (if (isProcessingMessage(l)) 1l else 0l) +
+                (if (!hasMessages(l)) 0l else { //Race between hasMessages and numberOfMessages here, unfortunate the numberOfMessages returns 0 if unknown
+                  val noOfMsgs: Long = if (deep) numberOfMessages(l) else 0
+                  if (noOfMsgs > 0) noOfMsgs else Long.MaxValue - 2 //Just about better than the DeadLetters
+                })
 
             if (newScore == 0) l
             else if (newScore < 0 || newScore >= currentScore) getNext(targets, proposedTarget, currentScore, at + 1, deep)
