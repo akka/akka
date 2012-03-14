@@ -397,6 +397,20 @@ object Future {
 
 }
 
+/**
+ *  Trait representing a value that may not have been computed yet.
+ *
+ *  @define asyncCallbackWarning
+ *
+ *    Note: the callback function may (and probably will) run in another thread,
+ *    and therefore should not refer to any unsynchronized state. In
+ *    particular, if using this method from an actor, do not access
+ *    the state of the actor from the callback function.
+ *    [[akka.dispatch.Promise]].`completeWith`,
+ *    [[akka.pattern.PipeToSupport.PipeableFuture]].`pipeTo`,
+ *    and [[akka.dispatch.Future]].`fallbackTo` are some methods to consider
+ *    using when possible, to avoid concurrent callbacks.
+ */
 sealed trait Future[+T] extends Await.Awaitable[T] {
 
   protected implicit def executor: ExecutionContext
@@ -449,6 +463,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    * immediately. Multiple
    * callbacks may be registered; there is no guarantee that they will be
    * executed in a particular order.
+   *
+   * $asyncCallbackWarning
    */
   def onComplete[U](func: Either[Throwable, T] ⇒ U): this.type
 
@@ -461,6 +477,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    *     case Bar ⇒ target ! "bar"
    *   }
    * </pre>
+   *
+   * $asyncCallbackWarning
    */
   final def onSuccess[U](pf: PartialFunction[T, U]): this.type = onComplete {
     case Right(r) if pf isDefinedAt r ⇒ pf(r)
@@ -475,6 +493,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    *     case NumberFormatException ⇒ target ! "wrong format"
    *   }
    * </pre>
+   *
+   * $asyncCallbackWarning
    */
   final def onFailure[U](pf: PartialFunction[Throwable, U]): this.type = onComplete {
     case Left(ex) if pf isDefinedAt ex ⇒ pf(ex)
@@ -518,6 +538,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    * Future(6 / 0) recover { case e: NotFoundException   ⇒ 0 } // result: exception
    * Future(6 / 2) recover { case e: ArithmeticException ⇒ 0 } // result: 3
    * </pre>
+   *
+   * $asyncCallbackWarning
    */
   final def recover[A >: T](pf: PartialFunction[Throwable, A]): Future[A] = {
     val p = Promise[A]()
@@ -541,6 +563,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    *  val f = Future { Int.MaxValue }
    *  Future (6 / 0) recoverWith { case e: ArithmeticException => f } // result: Int.MaxValue
    *  }}}
+   *
+   * $asyncCallbackWarning
    */
   def recoverWith[U >: T](pf: PartialFunction[Throwable, Future[U]]): Future[U] = {
     val p = Promise[U]()
@@ -568,6 +592,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    *    case Right(v) => dealWithSuccess(v)
    *  }
    *  }}}
+   *
+   * $asyncCallbackWarning
    */
   def andThen[U](pf: PartialFunction[Either[Throwable, T], U]): Future[T] = {
     val p = Promise[T]()
@@ -587,6 +613,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    *   c: String <- actor ? 7       // returns "14"
    * } yield b + "-" + c
    * </pre>
+   *
+   * $asyncCallbackWarning
    */
   final def map[A](f: T ⇒ A): Future[A] = {
     val future = Promise[A]()
@@ -639,6 +667,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    *   c: String <- actor ? 7       // returns "14"
    * } yield b + "-" + c
    * </pre>
+   *
+   * $asyncCallbackWarning
    */
   final def flatMap[A](f: T ⇒ Future[A]): Future[A] = {
     val p = Promise[A]()
@@ -661,6 +691,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
 
   /**
    * Same as onSuccess { case r => f(r) } but is also used in for-comprehensions
+   *
+   * $asyncCallbackWarning
    */
   final def foreach[U](f: T ⇒ U): Unit = onComplete {
     case Right(r) ⇒ f(r)
@@ -669,6 +701,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
 
   /**
    * Used by for-comprehensions
+   *
+   * $asyncCallbackWarning
    */
   final def withFilter(p: T ⇒ Boolean) = new FutureWithFilter[T](this, p)
 
@@ -683,6 +717,8 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    * Returns a new Future that will hold the successful result of this Future if it matches
    * the given predicate, if it doesn't match, the resulting Future will be a failed Future
    * with a MatchError, of if this Future fails, that failure will be propagated to the returned Future
+   *
+   * $asyncCallbackWarning
    */
   final def filter(pred: T ⇒ Boolean): Future[T] = {
     val p = Promise[T]()
