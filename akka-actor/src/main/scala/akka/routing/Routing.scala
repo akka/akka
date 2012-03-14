@@ -805,6 +805,7 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
     // Lowest score wins, score 0 is autowin
     // If no actor with score 0 is found, it will return that, or if it is terminated, a random of the entire set.
     //   Why? Well, in case we had 0 viable actors and all we got was the default, which is the DeadLetters, anything else is better.
+    // A suspended actor is never better than the current best
     @tailrec def getNext(targets: IndexedSeq[ActorRef] = routeeProvider.routees,
                          proposedTarget: ActorRef = routeeProvider.context.system.deadLetters,
                          currentScore: Long = Long.MaxValue,
@@ -815,24 +816,21 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
           if (proposedTarget.isTerminated) targets(random.get.nextInt(targets.size)) else proposedTarget
         } else getNext(targets, proposedTarget, currentScore, 0, deep = true)
       } else {
-        targets(at) match {
-          case l if !isSuspended(l) ⇒
+        val target = targets(at)
+        val newScore: Long =
+          if (isSuspended(target)) currentScore else {
+            (if (isProcessingMessage(target)) 1l else 0l) +
+              (if (!hasMessages(target)) 0l else { //Race between hasMessages and numberOfMessages here, unfortunate the numberOfMessages returns 0 if unknown
+                val noOfMsgs: Long = if (deep) numberOfMessages(target) else 0
+                if (noOfMsgs > 0) noOfMsgs else Long.MaxValue - 2 //Just about better than the DeadLetters
+              })
+          }
 
-            val newScore: Long =
-              (if (isProcessingMessage(l)) 1l else 0l) +
-                (if (!hasMessages(l)) 0l else { //Race between hasMessages and numberOfMessages here, unfortunate the numberOfMessages returns 0 if unknown
-                  val noOfMsgs: Long = if (deep) numberOfMessages(l) else 0
-                  if (noOfMsgs > 0) noOfMsgs else Long.MaxValue - 2 //Just about better than the DeadLetters
-                })
-
-            if (newScore == 0) l
-            else if (newScore < 0 || newScore >= currentScore) getNext(targets, proposedTarget, currentScore, at + 1, deep)
-            else getNext(targets, l, newScore, at + 1, deep)
-
-          case _ ⇒
-            getNext(targets, proposedTarget, currentScore, at + 1, deep)
-        }
+        if (newScore == 0) target
+        else if (newScore < 0 || newScore >= currentScore) getNext(targets, proposedTarget, currentScore, at + 1, deep)
+        else getNext(targets, target, newScore, at + 1, deep)
       }
+
     {
       case (sender, message) ⇒
         message match {
