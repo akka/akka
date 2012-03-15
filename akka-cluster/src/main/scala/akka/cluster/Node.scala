@@ -335,8 +335,8 @@ object Node extends ExtensionId[Node] with ExtensionIdProvider {
 class Node(system: ExtendedActorSystem) extends Extension {
 
   /**
-   * Represents the state for this Node. Implemented using optimistic lockless concurrency,
-   * all state is represented by this immutable case class and managed by an AtomicReference.
+   * Represents the state for this Node. Implemented using optimistic lockless concurrency.
+   * All state is represented by this immutable case class and managed by an AtomicReference.
    */
   private case class State(
     latestGossip: Gossip,
@@ -356,8 +356,10 @@ class Node(system: ExtendedActorSystem) extends Extension {
 
   private val vclockNode = VectorClock.Node(remoteAddress.toString)
 
-  private val gossipInitialDelay = clusterSettings.GossipInitialDelay
+  private val periodicTasksInitialDelay = clusterSettings.PeriodicTasksInitialDelay
   private val gossipFrequency = clusterSettings.GossipFrequency
+  private val leaderActionsFrequency = clusterSettings.LeaderActionsFrequency
+  private val unreachableNodesReaperFrequency = clusterSettings.UnreachableNodesReaperFrequency
 
   implicit private val defaultTimeout = Timeout(remoteSettings.RemoteSystemDaemonAckTimeout)
 
@@ -397,17 +399,17 @@ class Node(system: ExtendedActorSystem) extends Extension {
   // ========================================================
 
   // start periodic gossip to random nodes in cluster
-  private val gossipCanceller = system.scheduler.schedule(gossipInitialDelay, gossipFrequency) {
+  private val gossipCanceller = system.scheduler.schedule(periodicTasksInitialDelay, gossipFrequency) {
     gossip()
   }
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  private val failureDetectorReaperCanceller = system.scheduler.schedule(gossipInitialDelay, gossipFrequency) { // TODO: should we use the same gossipFrequency for reaping?
+  private val failureDetectorReaperCanceller = system.scheduler.schedule(periodicTasksInitialDelay, unreachableNodesReaperFrequency) {
     reapUnreachableMembers()
   }
 
   // start periodic leader action management (only applies for the current leader)
-  private val leaderActionsCanceller = system.scheduler.schedule(gossipInitialDelay, gossipFrequency) { // TODO: should we use the same gossipFrequency for leaderActions?
+  private val leaderActionsCanceller = system.scheduler.schedule(periodicTasksInitialDelay, leaderActionsFrequency) {
     leaderActions()
   }
 

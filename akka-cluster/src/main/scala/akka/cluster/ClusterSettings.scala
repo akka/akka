@@ -19,8 +19,10 @@ class ClusterSettings(val config: Config, val systemName: String) {
     case ""                         ⇒ None
     case AddressFromURIString(addr) ⇒ Some(addr)
   }
-  val GossipInitialDelay = Duration(getMilliseconds("akka.cluster.gossip.initialDelay"), MILLISECONDS)
-  val GossipFrequency = Duration(getMilliseconds("akka.cluster.gossip.frequency"), MILLISECONDS)
+  val PeriodicTasksInitialDelay = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
+  val GossipFrequency = Duration(getMilliseconds("akka.cluster.gossip-frequency"), MILLISECONDS)
+  val LeaderActionsFrequency = Duration(getMilliseconds("akka.cluster.leader-actions-frequency"), MILLISECONDS)
+  val UnreachableNodesReaperFrequency = Duration(getMilliseconds("akka.cluster.unreachable-nodes-reaper-frequency"), MILLISECONDS)
   val NrOfGossipDaemons = getInt("akka.cluster.nr-of-gossip-daemons")
   val NrOfDeputyNodes = getInt("akka.cluster.nr-of-deputy-nodes")
   val AutoDown = getBoolean("akka.cluster.auto-down")
