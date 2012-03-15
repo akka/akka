@@ -691,7 +691,7 @@ private[akka] class ActorCell(
         parent.sendSystemMessage(ChildTerminated(self))
         system.deathWatch.publish(Terminated(self))
         if (system.settings.DebugLifecycle)
-          system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped")) // FIXME: can actor be null?
+          system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped"))
       } finally {
         if (a ne null) a.clearBehaviorStack()
         clearActorFields()
