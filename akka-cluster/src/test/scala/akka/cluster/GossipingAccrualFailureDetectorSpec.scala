@@ -13,16 +13,7 @@ import com.typesafe.config._
 
 import java.net.InetSocketAddress
 
-class GossipingAccrualFailureDetectorSpec extends AkkaSpec("""
-  akka {
-    loglevel = "INFO"
-    actor.debug.lifecycle = on
-    actor.debug.autoreceive = on
-    actor.provider = akka.remote.RemoteActorRefProvider
-    remote.netty.hostname = localhost
-    cluster.failure-detector.threshold = 3
-  }
-  """) with ImplicitSender {
+class GossipingAccrualFailureDetectorSpec extends ClusterSpec with ImplicitSender {
 
   var node1: Node = _
   var node2: Node = _

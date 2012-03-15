@@ -461,7 +461,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
    */
   def shutdown() {
     if (isRunning.compareAndSet(true, false)) {
-      log.info("Node [{}] - Shutting down Node and cluster daemons...", remoteAddress)
+      log.info("Node [{}] - Shutting down cluster Node and cluster daemons...", remoteAddress)
       gossipCanceller.cancel()
       failureDetectorReaperCanceller.cancel()
       leaderActionsCanceller.cancel()
@@ -957,7 +957,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
     //   2. all unreachable members in the set have status DOWN
     // Else we can't continue to check for convergence
     // When that is done we check that all the entries in the 'seen' table have the same vector clock version
-    if (unreachable.isEmpty || !unreachable.exists(m ⇒ m.status != MemberStatus.Down || m.status != MemberStatus.Removed)) {
+    if (unreachable.isEmpty || !unreachable.exists(m ⇒ (m.status != MemberStatus.Down) && (m.status != MemberStatus.Removed))) {
       val seen = gossip.overview.seen
       val views = Set.empty[VectorClock] ++ seen.values
 

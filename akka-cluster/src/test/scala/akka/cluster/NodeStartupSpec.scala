@@ -13,13 +13,7 @@ import akka.util.duration._
 
 import com.typesafe.config._
 
-class NodeStartupSpec extends AkkaSpec("""
-  akka {
-    loglevel = "INFO"
-    actor.provider = akka.remote.RemoteActorRefProvider
-    remote.netty.hostname = localhost
-  }
-  """) with ImplicitSender {
+class NodeStartupSpec extends ClusterSpec with ImplicitSender {
 
   var node0: Node = _
   var node1: Node = _
@@ -61,7 +55,7 @@ class NodeStartupSpec extends AkkaSpec("""
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
         node1 = Node(system1)
 
-        Thread.sleep(1.seconds.dilated.toMillis) // give enough time for node1 to JOIN node0
+        Thread.sleep(5.seconds.dilated.toMillis) // give enough time for node1 to JOIN node0
         val members = node0.latestGossip.members
         val joiningMember = members find (_.address.port.get == 5551)
         joiningMember must be('defined)

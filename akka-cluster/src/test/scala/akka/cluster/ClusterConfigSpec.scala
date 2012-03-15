@@ -9,14 +9,7 @@ import akka.util.duration._
 import akka.util.Duration
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ClusterConfigSpec extends AkkaSpec(
-  """
-  akka {
-    actor {
-      provider = "akka.remote.RemoteActorRefProvider"
-    }
-  }
-  """) {
+class ClusterConfigSpec extends ClusterSpec {
 
   "Clustering" must {
 

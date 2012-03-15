@@ -14,16 +14,7 @@ import com.typesafe.config._
 
 import java.net.InetSocketAddress
 
-class LeaderDowningSpec extends AkkaSpec("""
-  akka {
-    loglevel = "INFO"
-    actor.provider = "akka.remote.RemoteActorRefProvider"
-    cluster {
-      failure-detector.threshold = 3
-      auto-down = on
-    }
-  }
-  """) with ImplicitSender {
+class LeaderDowningSpec extends ClusterSpec with ImplicitSender {
 
   var node1: Node = _
   var node2: Node = _
@@ -108,13 +99,7 @@ class LeaderDowningSpec extends AkkaSpec("""
       "be able to DOWN a (last) node that is UNREACHABLE" taggedAs LongRunningTest in {
 
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
-
-        // check cluster convergence
-        node1.convergence must be('defined)
-        node2.convergence must be('defined)
-        node3.convergence must be('defined)
-        node4.convergence must be('defined)
+        awaitConvergence(node1 :: node2 :: node3 :: node4 :: Nil)
 
         // shut down system4
         node4.shutdown()
@@ -122,35 +107,22 @@ class LeaderDowningSpec extends AkkaSpec("""
 
         // wait for convergence - e.g. the leader to auto-down the failed node
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
-
-        // check cluster convergence
-        node1.convergence must be('defined)
-        node2.convergence must be('defined)
-        node3.convergence must be('defined)
+        Thread.sleep(30.seconds.dilated.toMillis)
+        awaitConvergence(node1 :: node2 :: node3 :: Nil)
 
         node1.latestGossip.members.size must be(3)
         node1.latestGossip.members.exists(_.address == address4) must be(false)
       }
 
       "be able to DOWN a (middle) node that is UNREACHABLE" taggedAs LongRunningTest in {
-
-        // check cluster convergence
-        node1.convergence must be('defined)
-        node2.convergence must be('defined)
-        node3.convergence must be('defined)
-
         // shut down system4
         node2.shutdown()
         system2.shutdown()
 
         // wait for convergence - e.g. the leader to auto-down the failed node
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
-
-        // check cluster convergence
-        node1.convergence must be('defined)
-        node3.convergence must be('defined)
+        Thread.sleep(30.seconds.dilated.toMillis)
+        awaitConvergence(node1 :: node3 :: Nil)
 
         node1.latestGossip.members.size must be(2)
         node1.latestGossip.members.exists(_.address == address4) must be(false)

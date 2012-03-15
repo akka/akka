@@ -16,13 +16,7 @@ import scala.collection.immutable.SortedSet
 
 import com.typesafe.config._
 
-class MembershipChangeListenerSpec extends AkkaSpec("""
-  akka {
-    actor.provider = akka.remote.RemoteActorRefProvider
-    remote.netty.hostname = localhost
-    loglevel = "INFO"
-  }
-  """) with ImplicitSender {
+class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
 
   var node0: Node = _
   var node1: Node = _
@@ -107,13 +101,6 @@ class MembershipChangeListenerSpec extends AkkaSpec("""
         })
 
         latch.await(30.seconds.dilated.toMillis, TimeUnit.MILLISECONDS)
-
-        Thread.sleep(30.seconds.dilated.toMillis)
-
-        // check cluster convergence
-        node0.convergence must be('defined)
-        node1.convergence must be('defined)
-        node2.convergence must be('defined)
       }
     }
   } catch {

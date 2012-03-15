@@ -14,16 +14,7 @@ import com.typesafe.config._
 
 import java.net.InetSocketAddress
 
-class ClientDowningSpec extends AkkaSpec("""
-  akka {
-    loglevel = "INFO"
-    actor.provider = "akka.remote.RemoteActorRefProvider"
-    cluster {
-      failure-detector.threshold = 3
-      auto-down = off
-    }
-  }
-  """) with ImplicitSender {
+class ClientDowningSpec extends ClusterSpec("akka.cluster.auto-down = off") with ImplicitSender {
 
   var node1: Node = _
   var node2: Node = _
@@ -106,58 +97,33 @@ class ClientDowningSpec extends AkkaSpec("""
       val address4 = node4.remoteAddress
 
       "be able to DOWN a node that is UP" taggedAs LongRunningTest in {
-
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
+        awaitConvergence(node1 :: node2 :: node3 :: node4 :: Nil)
 
-        // check cluster convergence
-        node1.convergence must be('defined)
-        node2.convergence must be('defined)
-        node3.convergence must be('defined)
-        node4.convergence must be('defined)
-
-        // shut down node3
         node3.shutdown()
         system3.shutdown()
-
-        // wait for convergence
-        println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis)
 
         // client marks node3 as DOWN
         node1.scheduleNodeDown(address3)
 
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
-
-        // check cluster convergence
-        node1.convergence must be('defined)
-        node2.convergence must be('defined)
-        node4.convergence must be('defined)
+        Thread.sleep(10.seconds.dilated.toMillis)
+        awaitConvergence(node1 :: node2 :: node4 :: Nil)
 
         node1.latestGossip.members.size must be(3)
         node1.latestGossip.members.exists(_.address == address3) must be(false)
       }
 
       "be able to DOWN a node that is UNREACHABLE" taggedAs LongRunningTest in {
-
-        // shut down system1 - the leader
         node4.shutdown()
         system4.shutdown()
-
-        // wait for convergence
-        println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis)
 
         // clien marks node4 as DOWN
         node2.scheduleNodeDown(address4)
 
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
-
-        // check cluster convergence
-        node1.convergence must be('defined)
-        node2.convergence must be('defined)
+        Thread.sleep(10.seconds.dilated.toMillis)
+        awaitConvergence(node1 :: node2 :: Nil)
 
         node1.latestGossip.members.size must be(2)
         node1.latestGossip.members.exists(_.address == address4) must be(false)

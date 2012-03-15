@@ -14,13 +14,7 @@ import com.typesafe.config._
 
 import java.net.InetSocketAddress
 
-class LeaderElectionSpec extends AkkaSpec("""
-  akka {
-    loglevel = "INFO"
-    actor.provider = "akka.remote.RemoteActorRefProvider"
-    cluster.failure-detector.threshold = 3
-  }
-  """) with ImplicitSender {
+class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
 
   var node1: Node = _
   var node2: Node = _
@@ -86,12 +80,7 @@ class LeaderElectionSpec extends AkkaSpec("""
       "be able to 'elect' a single leader" taggedAs LongRunningTest in {
 
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // let them gossip for 30 seconds
-
-        // check cluster convergence
-        node1.convergence must be('defined)
-        node2.convergence must be('defined)
-        node3.convergence must be('defined)
+        awaitConvergence(node1 :: node2 :: node3 :: Nil)
 
         // check leader
         node1.isLeader must be(true)
@@ -109,11 +98,8 @@ class LeaderElectionSpec extends AkkaSpec("""
         node2.scheduleNodeDown(address1)
 
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // give them 30 seconds to detect failure of system3
-
-        // check cluster convergence
-        node2.convergence must be('defined)
-        node3.convergence must be('defined)
+        Thread.sleep(10.seconds.dilated.toMillis)
+        awaitConvergence(node2 :: node3 :: Nil)
 
         // check leader
         node2.isLeader must be(true)
@@ -130,10 +116,8 @@ class LeaderElectionSpec extends AkkaSpec("""
         node3.scheduleNodeDown(address2)
 
         println("Give the system time to converge...")
-        Thread.sleep(30.seconds.dilated.toMillis) // give them 30 seconds to detect failure of system3
-
-        // check cluster convergence
-        node3.convergence must be('defined)
+        Thread.sleep(10.seconds.dilated.toMillis)
+        awaitConvergence(node3 :: Nil)
 
         // check leader
         node3.isLeader must be(true)

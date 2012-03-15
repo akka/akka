@@ -13,13 +13,7 @@ import akka.util.duration._
 
 import com.typesafe.config._
 
-class NodeMembershipSpec extends AkkaSpec("""
-  akka {
-    actor.provider = akka.remote.RemoteActorRefProvider
-    remote.netty.hostname = localhost
-    loglevel = "INFO"
-  }
-  """) with ImplicitSender {
+class NodeMembershipSpec extends ClusterSpec with ImplicitSender {
 
   var node0: Node = _
   var node1: Node = _
@@ -53,11 +47,8 @@ class NodeMembershipSpec extends AkkaSpec("""
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
         node1 = Node(system1)
 
-        Thread.sleep(10.seconds.dilated.toMillis)
-
         // check cluster convergence
-        node0.convergence must be('defined)
-        node1.convergence must be('defined)
+        awaitConvergence(node0 :: node1 :: Nil)
 
         val members0 = node0.latestGossip.members.toArray
         members0.size must be(2)
@@ -88,12 +79,7 @@ class NodeMembershipSpec extends AkkaSpec("""
         val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
         node2 = Node(system2)
 
-        Thread.sleep(10.seconds.dilated.toMillis)
-
-        // check cluster convergence
-        node0.convergence must be('defined)
-        node1.convergence must be('defined)
-        node2.convergence must be('defined)
+        awaitConvergence(node0 :: node1 :: node2 :: Nil)
 
         val members0 = node0.latestGossip.members.toArray
         val version = node0.latestGossip.version
