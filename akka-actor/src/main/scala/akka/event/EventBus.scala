@@ -9,10 +9,7 @@ import akka.util.Index
 import java.util.concurrent.ConcurrentSkipListSet
 import java.util.Comparator
 import akka.util.{ Subclassification, SubclassifiedIndex }
-<<<<<<< HEAD
-=======
 import scala.collection.immutable.TreeSet
->>>>>>> a4bd12e... Switching to the faster append and removed a relative import
 
 /**
  * Represents the base type for EventBuses
@@ -240,8 +237,8 @@ trait ScanningClassification { self: EventBus ⇒
 trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
   import java.util.concurrent.ConcurrentHashMap
   import scala.annotation.tailrec
-
-  protected val mappings = new ConcurrentHashMap[ActorRef, Vector[ActorRef]](mapSize)
+  private val empty = TreeSet.empty[ActorRef]
+  protected val mappings = new ConcurrentHashMap[ActorRef, TreeSet[ActorRef]](mapSize)
 
   @tailrec
   protected final def associate(monitored: ActorRef, monitor: ActorRef): Boolean = {
@@ -250,15 +247,19 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
       case null ⇒
         if (monitored.isTerminated) false
         else {
+<<<<<<< HEAD
           if (mappings.putIfAbsent(monitored, empty + monitor) ne null) associate(monitored, monitor)
+=======
+          if (mappings.putIfAbsent(monitored, TreeSet(monitor)) ne null) associate(monitored, monitor)
+>>>>>>> ef399e2... Switching to TreeSet, which should also receive quite some performance enhancements in Scala 2.10
           else if (monitored.isTerminated) !dissociate(monitored, monitor) else true
         }
-      case raw: Vector[_] ⇒
-        val v = raw.asInstanceOf[Vector[ActorRef]]
+      case raw: TreeSet[_] ⇒
+        val v = raw.asInstanceOf[TreeSet[ActorRef]]
         if (monitored.isTerminated) false
         if (v.contains(monitor)) true
         else {
-          val added = v :+ monitor
+          val added = v + monitor
           if (!mappings.replace(monitored, v, added)) associate(monitored, monitor)
           else if (monitored.isTerminated) !dissociate(monitored, monitor) else true
         }
@@ -270,9 +271,9 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
     def dissociateAsMonitored(monitored: ActorRef): Iterable[ActorRef] = {
       val current = mappings get monitored
       current match {
-        case null ⇒ Vector.empty[ActorRef]
-        case raw: Vector[_] ⇒
-          val v = raw.asInstanceOf[Vector[ActorRef]]
+        case null ⇒ empty
+        case raw: TreeSet[_] ⇒
+          val v = raw.asInstanceOf[TreeSet[ActorRef]]
           if (!mappings.remove(monitored, v)) dissociateAsMonitored(monitored)
           else v
       }
@@ -284,8 +285,8 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
         val entry = i.next()
         val v = entry.getValue
         v match {
-          case raw: Vector[_] ⇒
-            val monitors = raw.asInstanceOf[Vector[ActorRef]]
+          case raw: TreeSet[_] ⇒
+            val monitors = raw.asInstanceOf[TreeSet[ActorRef]]
             if (monitors.contains(monitor))
               dissociate(entry.getKey, monitor)
           case _ ⇒ //Dun care
@@ -303,7 +304,11 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
       case null ⇒ false
       case raw: TreeSet[_] ⇒
         val v = raw.asInstanceOf[TreeSet[ActorRef]]
+<<<<<<< HEAD
         val removed = v - monitor
+=======
+        val removed = v.filterNot(monitor ==)
+>>>>>>> ef399e2... Switching to TreeSet, which should also receive quite some performance enhancements in Scala 2.10
         if (removed eq raw) false
         else if (removed.isEmpty) {
           if (!mappings.remove(monitored, v)) dissociate(monitored, monitor) else true
