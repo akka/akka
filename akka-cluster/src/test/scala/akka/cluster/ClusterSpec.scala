@@ -4,9 +4,12 @@
 package akka.cluster
 
 import akka.actor.ActorSystem
-import akka.testkit.AkkaSpec
 import akka.util._
 import akka.util.duration._
+
+import akka.testkit.AkkaSpec
+import akka.testkit.TestEvent._
+import akka.testkit.EventFilter
 
 import com.typesafe.config.{ Config, ConfigFactory }
 
@@ -49,7 +52,11 @@ abstract class ClusterSpec(_system: ActorSystem) extends AkkaSpec(_system) {
       if (deadline.isOverdue) throw new IllegalStateException("Convergence could no be reached within " + maxWaitTime)
       Thread.sleep(1000)
     }
-    nodes.foreach(n ⇒ println("Converged: " + n.self + " == " + n.convergence.isDefined))
+    nodes foreach { n ⇒ println("Converged: " + n.self + " == " + n.convergence.isDefined) }
+  }
+
+  override def atStartup {
+    system.eventStream.publish(Mute(EventFilter[java.net.ConnectException]()))
+    system.eventStream.publish(Mute(EventFilter[java.nio.channels.ClosedChannelException]()))
   }
 }
-
