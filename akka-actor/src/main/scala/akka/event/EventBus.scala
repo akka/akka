@@ -9,6 +9,10 @@ import akka.util.Index
 import java.util.concurrent.ConcurrentSkipListSet
 import java.util.Comparator
 import akka.util.{ Subclassification, SubclassifiedIndex }
+<<<<<<< HEAD
+=======
+import scala.collection.immutable.TreeSet
+>>>>>>> a4bd12e... Switching to the faster append and removed a relative import
 
 /**
  * Represents the base type for EventBuses
@@ -246,7 +250,7 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
       case null ⇒
         if (monitored.isTerminated) false
         else {
-          if (mappings.putIfAbsent(monitored, Vector(monitor)) ne null) associate(monitored, monitor)
+          if (mappings.putIfAbsent(monitored, empty + monitor) ne null) associate(monitored, monitor)
           else if (monitored.isTerminated) !dissociate(monitored, monitor) else true
         }
       case raw: Vector[_] ⇒
