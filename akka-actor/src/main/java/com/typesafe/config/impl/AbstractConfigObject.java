@@ -6,12 +6,8 @@ package com.typesafe.config.impl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigMergeable;
@@ -57,66 +53,92 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
 
     /**
      * This looks up the key with no transformation or type conversion of any
-     * kind, and returns null if the key is not present.
+     * kind, and returns null if the key is not present. The object must be
+     * resolved; use attemptPeekWithPartialResolve() if it is not.
      *
      * @param key
      * @return the unmodified raw value or null
      */
-    protected abstract AbstractConfigValue peek(String key);
-
-    protected AbstractConfigValue peek(String key,
-            SubstitutionResolver resolver, int depth,
-            ConfigResolveOptions options) {
-        AbstractConfigValue v = peek(key);
-
-        if (v != null && resolver != null) {
-            v = resolver.resolve(v, depth, options);
+    protected final AbstractConfigValue peekAssumingResolved(String key, String originalPath) {
+        try {
+            return attemptPeekWithPartialResolve(key);
+        } catch (NeedsFullResolve e) {
+            throw new ConfigException.NotResolved(originalPath + ": " + e.getMessage(), e);
         }
-
-        return v;
     }
+
+    /**
+     * Look up the key on an only-partially-resolved object, with no
+     * transformation or type conversion of any kind; if 'this' is not resolved
+     * then try to look up the key anyway if possible.
+     *
+     * @param key
+     *            key to look up
+     * @return the value of the key, or null if known not to exist
+     * @throws NeedsFullResolve
+     *             if can't figure out key's value or can't know whether it
+     *             exists
+     */
+    protected abstract AbstractConfigValue attemptPeekWithPartialResolve(String key)
+            throws NeedsFullResolve;
 
     /**
      * Looks up the path with no transformation, type conversion, or exceptions
      * (just returns null if path not found). Does however resolve the path, if
      * resolver != null.
+     *
+     * @throws NotPossibleToResolve
      */
-    protected AbstractConfigValue peekPath(Path path, SubstitutionResolver resolver,
-            int depth, ConfigResolveOptions options) {
+    protected AbstractConfigValue peekPath(Path path, SubstitutionResolver resolver, int depth,
+            ConfigResolveOptions options) throws NotPossibleToResolve, NeedsFullResolve {
         return peekPath(this, path, resolver, depth, options);
     }
 
-    AbstractConfigValue peekPath(Path path) {
-        return peekPath(this, path, null, 0, null);
+    /**
+     * Looks up the path and throws public API exceptions (ConfigException).
+     * Doesn't do any resolution, will throw if any is needed.
+     */
+    AbstractConfigValue peekPathWithExternalExceptions(Path path) {
+        try {
+            return peekPath(this, path, null, 0, null);
+        } catch (NotPossibleToResolve e) {
+            throw e.exportException(origin(), path.render());
+        } catch (NeedsFullResolve e) {
+            throw new ConfigException.NotResolved(
+                    "need to resolve() this Config before looking up value at " + path.render(), e);
+        }
     }
 
+    // as a side effect, peekPath() will have to resolve all parents of the
+    // child being peeked, but NOT the child itself. Caller has to resolve
+    // the child itself if needed.
     private static AbstractConfigValue peekPath(AbstractConfigObject self, Path path,
-            SubstitutionResolver resolver, int depth,
-            ConfigResolveOptions options) {
-        String key = path.first();
-        Path next = path.remainder();
-
-        if (next == null) {
-            AbstractConfigValue v = self.peek(key, resolver, depth, options);
-            return v;
-        } else {
-            // it's important to ONLY resolve substitutions here, not
-            // all values, because if you resolve arrays or objects
-            // it creates unnecessary cycles as a side effect (any sibling
-            // of the object we want to follow could cause a cycle, not just
-            // the object we want to follow).
-
-            ConfigValue v = self.peek(key);
-
-            if (v instanceof ConfigSubstitution && resolver != null) {
-                v = resolver.resolve((AbstractConfigValue) v, depth, options);
-            }
-
-            if (v instanceof AbstractConfigObject) {
-                return peekPath((AbstractConfigObject) v, next, resolver,
-                        depth, options);
+            SubstitutionResolver resolver, int depth, ConfigResolveOptions options)
+            throws NotPossibleToResolve, NeedsFullResolve {
+        if (resolver != null) {
+            // walk down through the path resolving only things along that path,
+            // and then recursively call ourselves with no resolver.
+            AbstractConfigValue partiallyResolved = resolver.resolve(self, depth, options, path);
+            if (partiallyResolved instanceof AbstractConfigObject) {
+                return peekPath((AbstractConfigObject) partiallyResolved, path, null, 0, null);
             } else {
-                return null;
+                throw new ConfigException.BugOrBroken("resolved object to non-object " + self
+                        + " to " + partiallyResolved);
+            }
+        } else {
+            // with no resolver, we'll fail if anything along the path can't be
+            // looked at without resolving.
+            Path next = path.remainder();
+            AbstractConfigValue v = self.attemptPeekWithPartialResolve(path.first());
+
+            if (next == null) {
+                return v;
+            } else {
+                if (v instanceof AbstractConfigObject) {
+                    return peekPath((AbstractConfigObject) v, next, null, 0, null);
+                } else {
+                    return null;
+                }
             }
         }
     }
@@ -151,47 +173,7 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
     }
 
     @Override
-    protected AbstractConfigObject mergedWithObject(AbstractConfigObject fallback) {
-        if (ignoresFallbacks())
-            throw new ConfigException.BugOrBroken("should not be reached");
-
-        boolean changed = false;
-        boolean allResolved = true;
-        Map<String, AbstractConfigValue> merged = new HashMap<String, AbstractConfigValue>();
-        Set<String> allKeys = new HashSet<String>();
-        allKeys.addAll(this.keySet());
-        allKeys.addAll(fallback.keySet());
-        for (String key : allKeys) {
-            AbstractConfigValue first = this.peek(key);
-            AbstractConfigValue second = fallback.peek(key);
-            AbstractConfigValue kept;
-            if (first == null)
-                kept = second;
-            else if (second == null)
-                kept = first;
-            else
-                kept = first.withFallback(second);
-
-            merged.put(key, kept);
-
-            if (first != kept)
-                changed = true;
-
-            if (kept.resolveStatus() == ResolveStatus.UNRESOLVED)
-                allResolved = false;
-        }
-
-        ResolveStatus newResolveStatus = ResolveStatus.fromBoolean(allResolved);
-        boolean newIgnoresFallbacks = fallback.ignoresFallbacks();
-
-        if (changed)
-            return new SimpleConfigObject(mergeOrigins(this, fallback), merged, newResolveStatus,
-                    newIgnoresFallbacks);
-        else if (newResolveStatus != resolveStatus() || newIgnoresFallbacks != ignoresFallbacks())
-            return newCopy(newResolveStatus, newIgnoresFallbacks, origin());
-        else
-            return this;
-    }
+    protected abstract AbstractConfigObject mergedWithObject(AbstractConfigObject fallback);
 
     @Override
     public AbstractConfigObject withFallback(ConfigMergeable mergeable) {
@@ -234,175 +216,23 @@ abstract class AbstractConfigObject extends AbstractConfigValue implements
         return mergeOrigins(Arrays.asList(stack));
     }
 
-    private AbstractConfigObject modify(Modifier modifier,
-            ResolveStatus newResolveStatus) {
-        Map<String, AbstractConfigValue> changes = null;
-        for (String k : keySet()) {
-            AbstractConfigValue v = peek(k);
-            // "modified" may be null, which means remove the child;
-            // to do that we put null in the "changes" map.
-            AbstractConfigValue modified = modifier.modifyChild(v);
-            if (modified != v) {
-                if (changes == null)
-                    changes = new HashMap<String, AbstractConfigValue>();
-                changes.put(k, modified);
-            }
-        }
-        if (changes == null) {
-            return newCopy(newResolveStatus, ignoresFallbacks(), origin());
-        } else {
-            Map<String, AbstractConfigValue> modified = new HashMap<String, AbstractConfigValue>();
-            for (String k : keySet()) {
-                if (changes.containsKey(k)) {
-                    AbstractConfigValue newValue = changes.get(k);
-                    if (newValue != null) {
-                        modified.put(k, newValue);
-                    } else {
-                        // remove this child; don't put it in the new map.
-                    }
-                } else {
-                    modified.put(k, peek(k));
-                }
-            }
-            return new SimpleConfigObject(origin(), modified, newResolveStatus,
-                    ignoresFallbacks());
-        }
-    }
+    @Override
+    abstract AbstractConfigObject resolveSubstitutions(final SubstitutionResolver resolver,
+            int depth, ConfigResolveOptions options, Path restrictToChildOrNull)
+            throws NotPossibleToResolve, NeedsFullResolve;
 
     @Override
-    AbstractConfigObject resolveSubstitutions(final SubstitutionResolver resolver,
-            final int depth,
-            final ConfigResolveOptions options) {
-        if (resolveStatus() == ResolveStatus.RESOLVED)
-            return this;
-
-        return modify(new Modifier() {
-
-            @Override
-            public AbstractConfigValue modifyChild(AbstractConfigValue v) {
-                return resolver.resolve(v, depth, options);
-            }
-
-        }, ResolveStatus.RESOLVED);
-    }
+    abstract AbstractConfigObject relativized(final Path prefix);
 
     @Override
-    AbstractConfigObject relativized(final Path prefix) {
-        return modify(new Modifier() {
-
-            @Override
-            public AbstractConfigValue modifyChild(AbstractConfigValue v) {
-                return v.relativized(prefix);
-            }
-
-        }, resolveStatus());
-    }
+    public abstract AbstractConfigValue get(Object key);
 
     @Override
-    public AbstractConfigValue get(Object key) {
-        if (key instanceof String)
-            return peek((String) key);
-        else
-            return null;
-    }
-
-    @Override
-    protected void render(StringBuilder sb, int indent, boolean formatted) {
-        if (isEmpty()) {
-            sb.append("{}");
-        } else {
-            sb.append("{");
-            if (formatted)
-                sb.append('\n');
-            for (String k : keySet()) {
-                AbstractConfigValue v = peek(k);
-                if (formatted) {
-                    indent(sb, indent + 1);
-                    sb.append("# ");
-                    sb.append(v.origin().description());
-                    sb.append("\n");
-                    for (String comment : v.origin().comments()) {
-                        indent(sb, indent + 1);
-                        sb.append("# ");
-                        sb.append(comment);
-                        sb.append("\n");
-                    }
-                    indent(sb, indent + 1);
-                }
-                v.render(sb, indent + 1, k, formatted);
-                sb.append(",");
-                if (formatted)
-                    sb.append('\n');
-            }
-            // chop comma or newline
-            sb.setLength(sb.length() - 1);
-            if (formatted) {
-                sb.setLength(sb.length() - 1); // also chop comma
-                sb.append("\n"); // put a newline back
-                indent(sb, indent);
-            }
-            sb.append("}");
-        }
-    }
-
-    private static boolean mapEquals(Map<String, ConfigValue> a,
-            Map<String, ConfigValue> b) {
-        Set<String> aKeys = a.keySet();
-        Set<String> bKeys = b.keySet();
-
-        if (!aKeys.equals(bKeys))
-            return false;
-
-        for (String key : aKeys) {
-            if (!a.get(key).equals(b.get(key)))
-                return false;
-        }
-        return true;
-    }
-
-    private static int mapHash(Map<String, ConfigValue> m) {
-        // the keys have to be sorted, otherwise we could be equal
-        // to another map but have a different hashcode.
-        List<String> keys = new ArrayList<String>();
-        keys.addAll(m.keySet());
-        Collections.sort(keys);
-
-        int valuesHash = 0;
-        for (String k : keys) {
-            valuesHash += m.get(k).hashCode();
-        }
-        return 41 * (41 + keys.hashCode()) + valuesHash;
-    }
-
-    @Override
-    protected boolean canEqual(Object other) {
-        return other instanceof ConfigObject;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        // note that "origin" is deliberately NOT part of equality.
-        // neither are other "extras" like ignoresFallbacks or resolve status.
-        if (other instanceof ConfigObject) {
-            // optimization to avoid unwrapped() for two ConfigObject,
-            // which is what AbstractConfigValue does.
-            return canEqual(other) && mapEquals(this, ((ConfigObject) other));
-        } else {
-            return false;
-        }
-    }
-
-    @Override
-    public int hashCode() {
-        // note that "origin" is deliberately NOT part of equality
-        // neither are other "extras" like ignoresFallbacks or resolve status.
-        return mapHash(this);
-    }
+    protected abstract void render(StringBuilder sb, int indent, boolean formatted);
 
     private static UnsupportedOperationException weAreImmutable(String method) {
-        return new UnsupportedOperationException(
-                "ConfigObject is immutable, you can't call Map.'" + method
-                        + "'");
+        return new UnsupportedOperationException("ConfigObject is immutable, you can't call Map."
+                + method);
     }
 
     @Override

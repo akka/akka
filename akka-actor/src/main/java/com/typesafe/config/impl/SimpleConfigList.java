@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
+import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigOrigin;
 import com.typesafe.config.ConfigResolveOptions;
@@ -33,6 +34,11 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
         super(origin);
         this.value = value;
         this.resolved = status == ResolveStatus.RESOLVED;
+
+        // kind of an expensive debug check (makes this constructor pointless)
+        if (status != ResolveStatus.fromValues(value))
+            throw new ConfigException.BugOrBroken(
+                    "SimpleConfigList created with wrong resolve status: " + this);
     }
 
     @Override
@@ -54,13 +60,23 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
         return ResolveStatus.fromBoolean(resolved);
     }
 
-    private SimpleConfigList modify(Modifier modifier,
-            ResolveStatus newResolveStatus) {
+    private SimpleConfigList modify(NoExceptionsModifier modifier, ResolveStatus newResolveStatus) {
+        try {
+            return modifyMayThrow(modifier, newResolveStatus);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ConfigException.BugOrBroken("unexpected checked exception", e);
+        }
+    }
+
+    private SimpleConfigList modifyMayThrow(Modifier modifier, ResolveStatus newResolveStatus)
+            throws Exception {
         // lazy-create for optimization
         List<AbstractConfigValue> changed = null;
         int i = 0;
         for (AbstractConfigValue v : value) {
-            AbstractConfigValue modified = modifier.modifyChild(v);
+            AbstractConfigValue modified = modifier.modifyChildMayThrow(null /* key */, v);
 
             // lazy-create the new list if required
             if (changed == null && modified != v) {
@@ -88,25 +104,43 @@ final class SimpleConfigList extends AbstractConfigValue implements ConfigList {
     }
 
     @Override
-    SimpleConfigList resolveSubstitutions(final SubstitutionResolver resolver,
-            final int depth, final ConfigResolveOptions options) {
+    SimpleConfigList resolveSubstitutions(final SubstitutionResolver resolver, final int depth,
+            final ConfigResolveOptions options, Path restrictToChildOrNull)
+            throws NotPossibleToResolve, NeedsFullResolve {
         if (resolved)
             return this;
 
-        return modify(new Modifier() {
-            @Override
-            public AbstractConfigValue modifyChild(AbstractConfigValue v) {
-                return resolver.resolve(v, depth, options);
-            }
+        if (restrictToChildOrNull != null) {
+            // if a list restricts to a child path, then it has no child paths,
+            // so nothing to do.
+            return this;
+        } else {
+            try {
+                return modifyMayThrow(new Modifier() {
+                    @Override
+                    public AbstractConfigValue modifyChildMayThrow(String key, AbstractConfigValue v)
+                            throws NotPossibleToResolve, NeedsFullResolve {
+                        return resolver.resolve(v, depth, options, null /* restrictToChild */);
+                    }
 
-        }, ResolveStatus.RESOLVED);
+                }, ResolveStatus.RESOLVED);
+            } catch (NotPossibleToResolve e) {
+                throw e;
+            } catch (NeedsFullResolve e) {
+                throw e;
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new ConfigException.BugOrBroken("unexpected checked exception", e);
+            }
+        }
     }
 
     @Override
     SimpleConfigList relativized(final Path prefix) {
-        return modify(new Modifier() {
+        return modify(new NoExceptionsModifier() {
             @Override
-            public AbstractConfigValue modifyChild(AbstractConfigValue v) {
+            public AbstractConfigValue modifyChild(String key, AbstractConfigValue v) {
                 return v.relativized(prefix);
             }
 

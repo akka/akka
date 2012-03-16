@@ -61,11 +61,11 @@ final class ConfigDelayedMergeObject extends AbstractConfigObject implements
     }
 
     @Override
-    AbstractConfigObject resolveSubstitutions(SubstitutionResolver resolver,
-            int depth, ConfigResolveOptions options) {
-        AbstractConfigValue merged = ConfigDelayedMerge.resolveSubstitutions(
-                stack, resolver, depth,
-                options);
+    AbstractConfigObject resolveSubstitutions(SubstitutionResolver resolver, int depth,
+            ConfigResolveOptions options, Path restrictToChildOrNull) throws NotPossibleToResolve,
+            NeedsFullResolve {
+        AbstractConfigValue merged = ConfigDelayedMerge.resolveSubstitutions(stack, resolver,
+                depth, options, restrictToChildOrNull);
         if (merged instanceof AbstractConfigObject) {
             return (AbstractConfigObject) merged;
         } else {
@@ -171,6 +171,11 @@ final class ConfigDelayedMergeObject extends AbstractConfigObject implements
         ConfigDelayedMerge.render(stack, sb, indent, atKey, formatted);
     }
 
+    @Override
+    protected void render(StringBuilder sb, int indent, boolean formatted) {
+        render(sb, indent, null, formatted);
+    }
+
     private static ConfigException notResolved() {
         return new ConfigException.NotResolved(
                 "bug: this object has not had substitutions resolved, so can't be used");
@@ -178,6 +183,11 @@ final class ConfigDelayedMergeObject extends AbstractConfigObject implements
 
     @Override
     public Map<String, Object> unwrapped() {
+        throw notResolved();
+    }
+
+    @Override
+    public AbstractConfigValue get(Object key) {
         throw notResolved();
     }
 
@@ -217,8 +227,73 @@ final class ConfigDelayedMergeObject extends AbstractConfigObject implements
     }
 
     @Override
-    protected AbstractConfigValue peek(String key) {
-        throw notResolved();
+    protected AbstractConfigValue attemptPeekWithPartialResolve(String key) throws NeedsFullResolve {
+        // a partial resolve of a ConfigDelayedMergeObject always results in a
+        // SimpleConfigObject because all the substitutions in the stack get
+        // resolved in order to look up the partial.
+        // So we know here that we have not been resolved at all even
+        // partially.
+        // Given that, all this code is probably gratuitous, since the app code
+        // is likely broken. But in general we only throw NotResolved if you try
+        // to touch the exact key that isn't resolved, so this is in that
+        // spirit.
+
+        // this function should never return null; if we know a value doesn't
+        // exist, then there would be no reason for the merge to be delayed
+        // (i.e. as long as some stuff is unmerged, the value may be non-null).
+
+        // we'll be able to return a key if we have a value that ignores
+        // fallbacks, prior to any unmergeable values.
+        for (AbstractConfigValue layer : stack) {
+            if (layer instanceof AbstractConfigObject) {
+                AbstractConfigObject objectLayer = (AbstractConfigObject) layer;
+                AbstractConfigValue v = objectLayer.attemptPeekWithPartialResolve(key);
+                if (v != null) {
+                    if (v.ignoresFallbacks()) {
+                        // we know we won't need to merge anything in to this
+                        // value
+                        return v;
+                    } else {
+                        // we can't return this value because we know there are
+                        // unmergeable values later in the stack that may
+                        // contain values that need to be merged with this
+                        // value. we'll throw the exception when we get to those
+                        // unmergeable values, so continue here.
+                        continue;
+                    }
+                } else if (layer instanceof Unmergeable) {
+                    // an unmergeable object (which would be another
+                    // ConfigDelayedMergeObject) can't know that a key is
+                    // missing, so it can't return null; it can only return a
+                    // value or throw NotPossibleToResolve
+                    throw new ConfigException.BugOrBroken(
+                            "should not be reached: unmergeable object returned null value");
+                } else {
+                    // a non-unmergeable AbstractConfigObject that returned null
+                    // for the key in question is not relevant, we can keep
+                    // looking for a value.
+                    continue;
+                }
+            } else if (layer instanceof Unmergeable) {
+                throw new NeedsFullResolve("Key '" + key + "' is not available at '"
+                        + origin().description() + "' because value at '"
+                        + layer.origin().description()
+                        + "' has not been resolved and may turn out to contain '" + key + "'."
+                        + " Be sure to Config.resolve() before using a config object.");
+            } else {
+                // non-object, but not unresolved, like an integer or something.
+                // has no children so the one we're after won't be in it.
+                // this should always be overridden by an object though so
+                // ideally we never build a stack that would have this in it.
+                continue;
+            }
+        }
+        // If we get here, then we never found an unmergeable which means
+        // the ConfigDelayedMergeObject should not have existed. some
+        // invariant was violated.
+        throw new ConfigException.BugOrBroken(
+                "Delayed merge stack does not contain any unmergeable values");
+
     }
 
     // This ridiculous hack is because some JDK versions apparently can't
