@@ -555,13 +555,15 @@ private[akka] class ActorCell(
     def resume(): Unit = if (isNormal) dispatcher resume this
 
     def link(subject: ActorRef): Unit = if (!isTerminating) {
-      system.deathWatch.subscribe(self, subject)
-      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + subject))
+      if (system.deathWatch.subscribe(self, subject)) {
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + subject))
+      }
     }
 
     def unlink(subject: ActorRef): Unit = if (!isTerminating) {
-      system.deathWatch.unsubscribe(self, subject)
-      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + subject))
+      if (system.deathWatch.unsubscribe(self, subject)) {
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + subject))
+      }
     }
 
     def terminate() {
