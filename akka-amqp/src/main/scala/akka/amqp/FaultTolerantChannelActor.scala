@@ -18,19 +18,15 @@ abstract private[amqp] class FaultTolerantChannelActor(
   exchangeParameters: Option[ExchangeParameters], channelParameters: Option[ChannelParameters]) extends Actor {
 
   protected[amqp] var channel: Option[Future[Channel]] = None
-  implicit val sys = context.system
 
   val settings = AMQP(context.system)
   implicit val timeout = Timeout(settings.Timeout)
 
   val log = Logging(context.system, this)
 
-  val replyTo = self
-
-  val shutdownListener = new ShutdownListener {
-    def shutdownCompleted(cause: ShutdownSignalException) = {
-      replyTo ! ChannelShutdown(cause)
-    }
+  val shutdownListener = {
+    val replyTo = self
+    new ShutdownListener { def shutdownCompleted(cause: ShutdownSignalException): Unit = replyTo ! ChannelShutdown(cause) }
   }
 
   /**
@@ -121,9 +117,8 @@ abstract private[amqp] class FaultTolerantChannelActor(
       ch.addShutdownListener(shutdownListener)
 
       for (cp ← channelParameters; sdl ← cp.shutdownListener) ch.getConnection.addShutdownListener(sdl)
-
       setupChannel(ch)
-      channel = Some(Promise.successful(ch))
+      channel = Some(Promise.successful(ch)(context.dispatcher))
       notifyCallback(Started)
     } else {
       // close not needed channel, if the channel is not open, then it should be in the process of restarting.
@@ -167,12 +162,14 @@ abstract private[amqp] class FaultTolerantChannelActor(
    *
    */
   override def postRestart(reason: Throwable) {
-    val replyTo = self
-    replyTo ! Start
+    self ! Start
   }
 
   /**
    * if the channel actor is stopped, shut down the AMQP channel
    */
-  override def postStop = notifyCallback(Stopped)
+  override def postStop = {
+    notifyCallback(Stopped)
+    super.postStop
+  }
 }

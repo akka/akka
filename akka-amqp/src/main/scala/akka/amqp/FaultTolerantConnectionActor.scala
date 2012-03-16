@@ -20,9 +20,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
 
   val log = Logging(context.system, this)
 
-  implicit val sys = context.system
-  val settings = AMQP(sys)
-  implicit val timeout = Timeout(settings.Timeout)
+  val settings = AMQP(context.system)
 
   val connectionFactory = {
     val c = new ConnectionFactory
@@ -107,7 +105,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
     val replyTo = self
     try {
       log.info("Connecting to one of [{}]", addrs)
-      connection = Option(Future(connectionFactory.newConnection(addrs.toArray)))
+      connection = Option(Future(connectionFactory.newConnection(addrs.toArray))(context.dispatcher))
 
       for (opt ← connection; c ← opt) {
         val x = c.createChannel()
@@ -170,7 +168,10 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
     self ! connect
   }
 
-  override def postStop = disconnect
+  override def postStop = {
+    disconnect
+    super.postStop
+  }
 
   override def preRestart(reason: Throwable, message: Option[Any]) = disconnect
 

@@ -35,10 +35,10 @@ private[amqp] class ProducerActor(producerParameters: ProducerParameters)
             } catch {
               case e: IOException ⇒ replyTo ! Status.Failure(e)
             }
-            case Left(e: IOException) ⇒ sender ! Status.Failure(e)
+            case Left(e: IOException) ⇒ replyTo ! Status.Failure(e)
             case Left(NonFatal(e)) ⇒
               log.error("producer {} failed to publish messsage {}", self, message)
-              sender ! Status.Failure(e)
+              replyTo ! Status.Failure(e)
           }
 
         case None ⇒

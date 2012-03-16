@@ -77,17 +77,20 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
         routingKey
     }
 
-    listenerTag = Option(ch.basicConsume(consumingQueue, false, new DefaultConsumer(ch) {
-      override def handleDelivery(tag: String, envelope: Envelope, properties: BasicProperties, payload: Array[Byte]) {
-        import envelope._
-        val deliveryTag = getDeliveryTag
-        deliveryHandler ! Delivery(payload, getRoutingKey, deliveryTag, isRedeliver, properties, Option(self))
+    listenerTag = {
+      val replyTo = self
+      Option(ch.basicConsume(consumingQueue, false, new DefaultConsumer(ch) {
+        override def handleDelivery(tag: String, envelope: Envelope, properties: BasicProperties, payload: Array[Byte]) {
+          import envelope._
+          val deliveryTag = getDeliveryTag
+          deliveryHandler ! Delivery(payload, getRoutingKey, deliveryTag, isRedeliver, properties, Option(replyTo))
 
-        if (selfAcknowledging) {
-          acknowledgeDeliveryTag(ch, deliveryTag, false)
+          if (selfAcknowledging) {
+            acknowledgeDeliveryTag(ch, deliveryTag, false)
+          }
         }
-      }
-    }))
+      }))
+    }
   }
 
   private def declareQueue(ch: Channel, queueName: String, queueDeclaration: Declaration): Queue.DeclareOk = {
@@ -118,11 +121,10 @@ private[amqp] class ConsumerActor(consumerParameters: ConsumerParameters)
   }
 
   /**
-   * cancel the consumer, stop the delivery handler actor, and then do the stuff defined in the parent class
+   * cancel the consumer, stop the delivery handler actor
    */
   override def postStop = {
-    val channelVal = channel
-    for (tag ← listenerTag; opt ← channelVal; ch ← opt if ch.isOpen)
+    for (tag ← listenerTag; opt ← channel; ch ← opt if ch.isOpen)
       try { ch basicCancel tag }
       catch {
         case e: IOException ⇒
