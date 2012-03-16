@@ -9,7 +9,7 @@ import com.rabbitmq.client._
 import akka.event.Logging
 import akka.actor._
 import akka.util.duration._
-import java.util.UUID
+import com.eaio.uuid.UUID
 import akka.pattern.{ ask, pipe }
 import akka.util.{ Timeout, Duration, NonFatal }
 import akka.dispatch.{ Await, ExecutionContext, Future, Promise }
@@ -21,23 +21,23 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
   val log = Logging(context.system, this)
 
   implicit val sys = context.system
-  val settings = Settings(sys)
+  val settings = AMQP(sys)
   implicit val timeout = Timeout(settings.Timeout)
 
   val connectionFactory = {
     val c = new ConnectionFactory
-    c setUsername username.getOrElse(Settings.get(context.system).DefaultUser)
-    c setPassword password.getOrElse(Settings.get(context.system).DefaultPassword)
-    c setVirtualHost virtualHost.getOrElse(Settings.get(context.system).DefaultVhost)
+    c setUsername username.getOrElse(settings.DefaultUser)
+    c setPassword password.getOrElse(settings.DefaultPassword)
+    c setVirtualHost virtualHost.getOrElse(settings.DefaultVhost)
     c
   }
 
-  val addrs = connectionParameters.addresses.getOrElse(Settings.get(context.system).DefaultAddresses)
-  val reconnectDelay = connectionParameters.initReconnectDelay.getOrElse(Settings.get(context.system).DefaultInitReconnectDelay)
+  val addrs = Option(connectionParameters.addresses).filterNot(_.isEmpty).getOrElse(settings.DefaultAddresses)
+  val reconnectDelay = connectionParameters.initReconnectDelay.getOrElse(settings.DefaultInitReconnectDelay)
 
   private var connection: Option[Future[Connection]] = None
 
-  protected def receive = {
+  def receive = {
     /**
      * if we don't have a connection, or we do have one and it's not open, connect.  if we have a cancellable, then
      * there is a connection request already scheduled, so do nothing.
@@ -80,7 +80,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
     case cr: ConsumerRequest ⇒
       if (connection.isDefined) {
         val consumer = context.actorOf(Props(new ConsumerActor(cr.consumerParameters)).
-          withDispatcher("akka.actor.amqp.consumer-dispatcher"), "amqp-consumer-" + UUID.randomUUID().toString)
+          withDispatcher("akka.actor.amqp.consumer-dispatcher"), "amqp-consumer-" + (new UUID).toString)
         consumer.tell(Start, sender)
       } else {
         log.warning("Unable to create new consumer - no connection")
@@ -95,7 +95,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
     case pr: ProducerRequest ⇒
       if (connection.isDefined) {
         val producer = context.actorOf(Props(new ProducerActor(pr.producerParameters)).
-          withDispatcher("akka.actor.amqp.producer-dispatcher"), "amqp-producer-" + UUID.randomUUID().toString)
+          withDispatcher("akka.actor.amqp.producer-dispatcher"), "amqp-producer-" + (new UUID).toString)
         producer.tell(Start, sender)
       } else {
         log.warning("Unable to create new producer - no connection")
@@ -167,7 +167,7 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
 
   override def preStart = {
     notifyCallback(Starting)
-    connect
+    self ! connect
   }
 
   override def postStop = disconnect
@@ -176,6 +176,6 @@ private[amqp] class FaultTolerantConnectionActor(connectionParameters: Connectio
 
   override def postRestart(reason: Throwable) = {
     notifyCallback(Reconnecting)
-    connect
+    self ! connect
   }
 }

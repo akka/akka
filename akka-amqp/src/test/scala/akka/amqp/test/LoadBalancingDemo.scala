@@ -7,7 +7,6 @@ package akka.amqp.test
 import akka.actor._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import util.Random
-import java.util.UUID
 import akka.dispatch.Await
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
@@ -17,13 +16,21 @@ import akka.event.Logging
 import akka.testkit.TestLatch
 import akka.util.duration._
 import java.nio.charset.Charset
+import com.eaio.uuid.UUID
 
 object LoadBalancingDemo {
 
-  def main(args: Array[String]) {
+  implicit val system = ActorSystem.create("LoadBalancingDemo", ConfigFactory.load.getConfig("example"))
+  val utf8Charset = Charset.forName("UTF-8")
 
-    implicit val system = ActorSystem.create("LoadBalancingDemo", ConfigFactory.load.getConfig("example"))
-    val utf8Charset = Charset.forName("UTF-8")
+  def main(args: Array[String]) = {
+    system.actorOf(Props[MyActor])
+  }
+
+  class MyActor extends Actor {
+    def receive = {
+      case _ ⇒ ()
+    }
 
     case class ConnectionLatches(connected: TestLatch = new TestLatch, reconnecting: TestLatch = new TestLatch,
                                  reconnected: TestLatch = new TestLatch, disconnected: TestLatch = new TestLatch)
@@ -64,19 +71,15 @@ object LoadBalancingDemo {
     val messages = 100
     val maxRandomWaitMs = 2000
 
-    val settings = Settings(system)
+    val settings = AMQP(system)
     implicit val timeout = Timeout(settings.Timeout)
 
     val log = Logging(system, "LoadBalancingDemo")
 
-    val connectionLatches = ConnectionLatches()
-    val consumerLatches = ChannelLatches(started = new TestLatch(workers), stopped = new TestLatch(workers))
-    val producerLatches = ChannelLatches()
     val countDownLatch = new TestLatch(messages)
 
-    val amqp = system.actorOf(Props(new AMQPActor))
     // defaults to amqp://guest:guest@localhost:5672/
-    val connection = amqp ? ConnectionRequest(ConnectionParameters()) mapTo manifest[ActorRef]
+    val connection = AMQP.newConnection(context, ConnectionParameters(), Option("connection"))
 
     // specifies how many messages the amqp channel should
     // prefetch as unacknowledged messages before processing
@@ -102,25 +105,23 @@ object LoadBalancingDemo {
     }
 
     // consumers
-    for (conn ← connection) {
-      val consumers = for (i ← 1 to workers) yield {
-        conn ? ConsumerRequest(ConsumerParameters(
-          routingKey = someRoutingKey,
-          deliveryHandler = system.actorOf(Props(new JobConsumer(i)), "jobconsumer-" + UUID.randomUUID.toString),
-          queueName = Some("my-job-queue"),
-          exchangeParameters = Some(directExchangeParameters),
-          channelParameters = smallPrefetchChannelParameters)) mapTo manifest[ActorRef]
-      }
+    val consumers = for (i ← 1 to workers) yield {
+      connection ? ConsumerRequest(ConsumerParameters(
+        routingKey = someRoutingKey,
+        deliveryHandler = context.actorOf(Props(new JobConsumer(i)), "jobconsumer-" + new UUID().toString),
+        queueName = Some("my-job-queue"),
+        exchangeParameters = Some(directExchangeParameters),
+        channelParameters = smallPrefetchChannelParameters)) mapTo manifest[ActorRef]
+    }
 
-      val producer = conn ? ProducerRequest(ProducerParameters(Some(directExchangeParameters),
-        channelParameters = producerChannelParameters)) mapTo manifest[ActorRef]
+    val producer = connection ? ProducerRequest(ProducerParameters(Some(directExchangeParameters),
+      channelParameters = producerChannelParameters)) mapTo manifest[ActorRef]
 
-      for (cs ← consumers; p ← producer) {
-        for (i ← 1 to messages) {
-          p ! Message(("data (" + i + ")").getBytes(utf8Charset).toSeq, someRoutingKey)
-        }
-        log.info("Sent all {} messages - awaiting processing...", messages)
+    for (cs ← consumers; p ← producer) {
+      for (i ← 1 to messages) {
+        p ! Message(("data (" + i + ")").getBytes(utf8Charset).toSeq, someRoutingKey)
       }
+      log.info("Sent all {} messages - awaiting processing...", messages)
     }
 
     Await.result(countDownLatch, ((maxRandomWaitMs * messages) + 1000) milliseconds)

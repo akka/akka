@@ -20,7 +20,7 @@ abstract private[amqp] class FaultTolerantChannelActor(
   protected[amqp] var channel: Option[Future[Channel]] = None
   implicit val sys = context.system
 
-  val settings = Settings(context.system)
+  val settings = AMQP(context.system)
   implicit val timeout = Timeout(settings.Timeout)
 
   val log = Logging(context.system, this)

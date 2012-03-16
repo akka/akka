@@ -8,7 +8,7 @@ import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.{ ReturnListener, Address, ShutdownListener, ShutdownSignalException }
 import akka.actor.{ ActorSystem, ActorRef }
 import akka.util.Duration
-import scala.None
+import java.lang.Iterable
 
 sealed trait AMQPMessage
 
@@ -102,8 +102,10 @@ private[akka] class MessageNotDeliveredException(val message: String) extends Ru
 /**
  * Parameters used to make the connection to the amqp broker. Uses the rabbitmq defaults.
  */
+import scala.collection.JavaConversions._
+
 case class ConnectionParameters(
-  addresses: Option[Seq[Address]] = None,
+  addresses: Seq[Address] = Nil,
   username: Option[String] = None,
   password: Option[String] = None,
   virtualHost: Option[String] = None,
@@ -111,15 +113,25 @@ case class ConnectionParameters(
   connectionCallback: Option[ActorRef] = None) {
 
   // Needed for Java API usage
-  def this() = this(None, None, None, None, None, None)
+  def this() = this(Nil, None, None, None, None, None)
 
   // Needed for Java API usage
-  def this(addresses: Seq[Address], username: String, password: String, virtualHost: String) =
-    this(Option(addresses), Option(username), Option(password), Option(virtualHost), None, None)
+
+  def this(addresses: Iterable[Address], username: String, password: String, virtualHost: String) = {
+    this(addresses.toSeq, Option(username), Option(password), Option(virtualHost), None, None)
+  }
+
+  def this(addresses: Iterable[Address]) = {
+    this(addresses.toSeq, None, None, None, None, None)
+  }
+
+  def this(addresses: Iterable[Address], username: String, password: String) = {
+    this(addresses.toSeq, Option(username), Option(password), None, None, None)
+  }
 
   // Needed for Java API usage
   def this(connectionCallback: ActorRef) =
-    this(None, None, None, None, None, Option(connectionCallback))
+    this(Nil, None, None, None, None, Option(connectionCallback))
 
 }
 

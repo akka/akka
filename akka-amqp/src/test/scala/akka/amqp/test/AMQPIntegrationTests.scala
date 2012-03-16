@@ -19,14 +19,14 @@ import com.rabbitmq.client.{ ReturnListener, ShutdownSignalException, Address }
 import com.rabbitmq.client.AMQP.BasicProperties
 import java.nio.charset.Charset
 import akka.util.duration._
+import com.eaio.uuid.UUID
 
 class AMQPIntegrationTests(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
   with WordSpec with MustMatchers with BeforeAndAfterAll {
 
   def this() = this(ActorSystem.create("AMQPIntegrationTests", ConfigFactory.load.getConfig("testing")))
 
-  val amqp = system.actorOf(Props[AMQPActor])
-  val settings = Settings(system)
+  val settings = AMQP(system)
   implicit val timeout = Timeout(settings.Timeout)
   implicit val log = Logging(system, self)
   val utf8Charset = Charset.forName("UTF-8")
@@ -41,18 +41,22 @@ class AMQPIntegrationTests(_system: ActorSystem) extends TestKit(_system) with I
       val latches = ConnectionLatches()
 
       // second address is default local rabbitmq instance, tests multiple address connection
-      val localAddresses = Option(Seq(new Address("localhost", 9999), new Address("localhost", 5672)))
-      val connection = amqp ? ConnectionRequest(ConnectionParameters(addresses = localAddresses,
+      val localAddresses = Seq(new Address("localhost", 9999), new Address("localhost", 5672))
+      /*val conn = AMQP.getConnection(ConnectionParameters(addresses = localAddresses,
         initReconnectDelay = Option(50 milliseconds),
-        connectionCallback = Some(system.actorOf(Props(new ConnectionCallbackActor(latches)))))) mapTo manifest[ActorRef]
+        connectionCallback = Some(system.actorOf(Props(new ConnectionCallbackActor(latches))))))*/
+
+      val connection = system.actorOf(Props(new FaultTolerantConnectionActor(ConnectionParameters(addresses = localAddresses,
+        initReconnectDelay = Option(50 milliseconds),
+        connectionCallback = Some(system.actorOf(Props(new ConnectionCallbackActor(latches))))))), "conn-" + (new UUID()).toString)
 
       Await result (latches.connected, timeout.duration)
 
-      connection foreach (_ ! new ConnectionShutdown(new ShutdownSignalException(true, false, "TestException", "TestRef")))
+      connection ! new ConnectionShutdown(new ShutdownSignalException(true, false, "TestException", "TestRef"))
 
       Await result (latches.reconnected, timeout.duration)
 
-      connection foreach (_ ! PoisonPill)
+      connection ! PoisonPill
 
       Await result (latches.disconnected, timeout.duration)
       latches.connected.isOpen must be(true)
@@ -65,47 +69,45 @@ class AMQPIntegrationTests(_system: ActorSystem) extends TestKit(_system) with I
       val latches = ConnectionLatches()
 
       // second address is default local rabbitmq instance, tests multiple address connection
-      val localAddresses = Option(Seq(new Address("localhost", 9999), new Address("localhost", 5672)))
-      val connection = amqp ? ConnectionRequest(ConnectionParameters(addresses = localAddresses,
+      val localAddresses = Seq(new Address("localhost", 9999), new Address("localhost", 5672))
+      val connection = system.actorOf(Props(new FaultTolerantConnectionActor(ConnectionParameters(addresses = localAddresses,
         initReconnectDelay = Option(50 milliseconds),
-        connectionCallback = Some(system.actorOf(Props(new ConnectionCallbackActor(latches)))))) mapTo manifest[ActorRef]
+        connectionCallback = Some(system.actorOf(Props(new ConnectionCallbackActor(latches))))))), "conn-" + (new UUID()).toString)
 
       Await result (latches.connected, timeout.duration)
 
-      connection foreach (_ ! PoisonPill)
+      connection ! PoisonPill
 
       Await result (latches.disconnected, timeout.duration)
 
-      connection foreach (_.isTerminated must be(true))
+      connection.isTerminated must be(true)
     }
 
     "send a message from a producer to a consumer" in {
 
-      val localAddress = Option(Seq(new Address("localhost", 5672)))
+      val localAddress = Seq(new Address("localhost", 5672))
 
-      val connf: Future[ActorRef] = amqp ? ConnectionRequest(
-        ConnectionParameters(addresses = localAddress)) mapTo manifest[ActorRef]
+      val connection = system.actorOf(Props(new FaultTolerantConnectionActor(ConnectionParameters(addresses = localAddress))),
+        "conn-" + (new UUID()).toString)
 
       val exchangeParameters = ExchangeParameters("text_exchange")
 
-      for (conn ← connf) {
-        val cf: Future[ActorRef] = conn ? ConsumerRequest(
-          ConsumerParameters("non.interesting.routing.key", system.actorOf(Props(new Actor {
-            def receive = {
-              case Delivery(payload, routingKey, _, _, _, _) ⇒ testActor forward Message(payload, routingKey)
-            }
-          })), exchangeParameters = Some(exchangeParameters))) mapTo manifest[ActorRef]
+      val cf: Future[ActorRef] = connection ? ConsumerRequest(
+        ConsumerParameters("non.interesting.routing.key", system.actorOf(Props(new Actor {
+          def receive = {
+            case Delivery(payload, routingKey, _, _, _, _) ⇒ testActor forward Message(payload, routingKey)
+          }
+        })), exchangeParameters = Some(exchangeParameters))) mapTo manifest[ActorRef]
 
-        val pf: Future[ActorRef] = conn ? ProducerRequest(
-          ProducerParameters(Some(exchangeParameters))) mapTo manifest[ActorRef]
+      val pf: Future[ActorRef] = connection ? ProducerRequest(
+        ProducerParameters(Some(exchangeParameters))) mapTo manifest[ActorRef]
 
-        for (consumer ← cf; producer ← pf)
-          producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
-      }
+      for (consumer ← cf; producer ← pf)
+        producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
 
       expectMsgClass(timeout.duration, classOf[Message])
 
-      connf foreach (_ ! PoisonPill)
+      connection ! PoisonPill
     }
 
     "recover from a consumer channel failure" in {
@@ -113,10 +115,10 @@ class AMQPIntegrationTests(_system: ActorSystem) extends TestKit(_system) with I
       val consumerLatches = ChannelLatches()
       val producerLatches = ChannelLatches()
 
-      val localAddress = Option(Seq(new Address("localhost", 5672)))
+      val localAddress = Seq(new Address("localhost", 5672))
 
-      val connf: Future[ActorRef] = amqp ? ConnectionRequest(
-        ConnectionParameters(addresses = localAddress)) mapTo manifest[ActorRef]
+      val connection = system.actorOf(Props(new FaultTolerantConnectionActor(ConnectionParameters(addresses = localAddress))),
+        "conn-" + (new UUID()).toString)
 
       val exchangeParameters = ExchangeParameters("text_exchange")
 
@@ -126,38 +128,36 @@ class AMQPIntegrationTests(_system: ActorSystem) extends TestKit(_system) with I
       val producerChannelParameters = ChannelParameters(channelCallback =
         Some(system.actorOf(Props(new ChannelCallbackActor(producerLatches)))))
 
-      for (conn ← connf) {
-        val cf: Future[ActorRef] = conn ? ConsumerRequest(
-          ConsumerParameters("non.interesting.routing.key", system.actorOf(Props(new Actor {
-            def receive = {
-              case Delivery(payload, routingKey, _, _, _, _) ⇒ {
-                log.debug("***** consumer got a delivery")
-                testActor forward Message(payload, routingKey)
-              }
+      val cf: Future[ActorRef] = connection ? ConsumerRequest(
+        ConsumerParameters("non.interesting.routing.key", system.actorOf(Props(new Actor {
+          def receive = {
+            case Delivery(payload, routingKey, _, _, _, _) ⇒ {
+              log.debug("***** consumer got a delivery")
+              testActor forward Message(payload, routingKey)
             }
-          })), exchangeParameters = Some(exchangeParameters),
-            channelParameters = Some(consumerChannelParameters))) mapTo manifest[ActorRef]
+          }
+        })), exchangeParameters = Some(exchangeParameters),
+          channelParameters = Some(consumerChannelParameters))) mapTo manifest[ActorRef]
 
-        val pf: Future[ActorRef] = conn ? ProducerRequest(ProducerParameters(Some(exchangeParameters),
-          channelParameters = Some(producerChannelParameters))) mapTo manifest[ActorRef]
+      val pf: Future[ActorRef] = connection ? ProducerRequest(ProducerParameters(Some(exchangeParameters),
+        channelParameters = Some(producerChannelParameters))) mapTo manifest[ActorRef]
 
-        for (consumer ← cf; producer ← pf) {
-          // send a test message before killing the consumer channel
-          producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
+      for (consumer ← cf; producer ← pf) {
+        // send a test message before killing the consumer channel
+        producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
 
-          consumer ! new ChannelShutdown(new ShutdownSignalException(false, false, "TestException", "TestRef"))
+        consumer ! new ChannelShutdown(new ShutdownSignalException(false, false, "TestException", "TestRef"))
 
-          Await.result(consumerLatches.restarted, timeout.duration)
-          consumerLatches.restarted.isOpen must be(true)
+        Await.result(consumerLatches.restarted, timeout.duration)
+        consumerLatches.restarted.isOpen must be(true)
 
-          producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
-        }
+        producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
       }
 
       expectMsgClass(timeout.duration, classOf[Message])
       expectMsgClass(timeout.duration, classOf[Message])
 
-      connf foreach (_ ! PoisonPill)
+      connection ! PoisonPill
     }
 
     "recover from a producer channel failure" in {
@@ -165,10 +165,10 @@ class AMQPIntegrationTests(_system: ActorSystem) extends TestKit(_system) with I
       val consumerLatches = ChannelLatches()
       val producerLatches = ChannelLatches()
 
-      val localAddress = Option(Seq(new Address("localhost", 5672)))
+      val localAddress = Seq(new Address("localhost", 5672))
 
-      val connf: Future[ActorRef] = amqp ? ConnectionRequest(
-        ConnectionParameters(addresses = localAddress)) mapTo manifest[ActorRef]
+      val connection = system.actorOf(Props(new FaultTolerantConnectionActor(ConnectionParameters(addresses = localAddress))),
+        "conn-" + (new UUID()).toString)
 
       val exchangeParameters = ExchangeParameters("text_exchange")
 
@@ -178,39 +178,36 @@ class AMQPIntegrationTests(_system: ActorSystem) extends TestKit(_system) with I
       val producerChannelParameters = ChannelParameters(channelCallback =
         Some(system.actorOf(Props(new ChannelCallbackActor(producerLatches)))))
 
-      for (conn ← connf) {
-        val cf: Future[ActorRef] = conn ? ConsumerRequest(
-          ConsumerParameters("non.interesting.routing.key", system.actorOf(Props(new Actor {
-            def receive = {
-              case Delivery(payload, routingKey, _, _, _, _) ⇒ {
-                log.debug("***** consumer got a delivery")
-                testActor forward Message(payload, routingKey)
-              }
+      val cf: Future[ActorRef] = connection ? ConsumerRequest(
+        ConsumerParameters("non.interesting.routing.key", system.actorOf(Props(new Actor {
+          def receive = {
+            case Delivery(payload, routingKey, _, _, _, _) ⇒ {
+              log.debug("***** consumer got a delivery")
+              testActor forward Message(payload, routingKey)
             }
-          })), exchangeParameters = Some(exchangeParameters),
-            channelParameters = Some(consumerChannelParameters))) mapTo manifest[ActorRef]
+          }
+        })), exchangeParameters = Some(exchangeParameters),
+          channelParameters = Some(consumerChannelParameters))) mapTo manifest[ActorRef]
 
-        val pf: Future[ActorRef] = conn ? ProducerRequest(ProducerParameters(Some(exchangeParameters),
-          channelParameters = Some(producerChannelParameters))) mapTo manifest[ActorRef]
+      val pf: Future[ActorRef] = connection ? ProducerRequest(ProducerParameters(Some(exchangeParameters),
+        channelParameters = Some(producerChannelParameters))) mapTo manifest[ActorRef]
 
-        for (consumer ← cf; producer ← pf) {
-          // send a test message before killing the consumer channel
-          producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
+      for (consumer ← cf; producer ← pf) {
+        // send a test message before killing the consumer channel
+        producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
 
-          system.scheduler.scheduleOnce(timeout.duration / 4, producer, new ChannelShutdown(new ShutdownSignalException(false, false, "TestException", "TestRef")))
+        system.scheduler.scheduleOnce(timeout.duration / 4, producer, new ChannelShutdown(new ShutdownSignalException(false, false, "TestException", "TestRef")))
 
-          Await.result(producerLatches.restarted, timeout.duration)
-          producerLatches.restarted.isOpen must be(true)
+        Await.result(producerLatches.restarted, timeout.duration)
+        producerLatches.restarted.isOpen must be(true)
 
-          producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
-
-        }
+        producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
       }
 
       expectMsgClass(timeout.duration, classOf[Message])
       expectMsgClass(timeout.duration, classOf[Message])
 
-      connf foreach (_ ! PoisonPill)
+      connection ! PoisonPill
     }
 
     "resume consumers and producers after a connection recovery" in {
@@ -219,11 +216,11 @@ class AMQPIntegrationTests(_system: ActorSystem) extends TestKit(_system) with I
       val consumerLatches = ChannelLatches()
       val producerLatches = ChannelLatches()
 
-      val localAddress = Option(Seq(new Address("localhost", 5672)))
+      val localAddress = Seq(new Address("localhost", 5672))
 
-      val connf: Future[ActorRef] = amqp ? ConnectionRequest(ConnectionParameters(addresses = localAddress,
-        connectionCallback =
-          Some(system.actorOf(Props(new ConnectionCallbackActor(connectionLatches)))))) mapTo manifest[ActorRef]
+      val connection = system.actorOf(Props(new FaultTolerantConnectionActor(ConnectionParameters(addresses = localAddress,
+        connectionCallback = Some(system.actorOf(Props(new ConnectionCallbackActor(connectionLatches))))))),
+        "conn-" + (new UUID()).toString)
 
       val exchangeParameters = ExchangeParameters("text_exchange")
 
@@ -233,128 +230,122 @@ class AMQPIntegrationTests(_system: ActorSystem) extends TestKit(_system) with I
       val producerChannelParameters = ChannelParameters(channelCallback =
         Some(system.actorOf(Props(new ChannelCallbackActor(producerLatches)))))
 
-      for (conn ← connf) {
-        val cf: Future[ActorRef] = conn ? ConsumerRequest(
-          ConsumerParameters("non.interesting.routing.key", system.actorOf(Props(new Actor {
-            def receive = {
-              case Delivery(payload, routingKey, _, _, _, _) ⇒ {
-                log.debug("***** consumer got a delivery")
-                testActor forward Message(payload, routingKey)
-              }
+      val cf: Future[ActorRef] = connection ? ConsumerRequest(
+        ConsumerParameters("non.interesting.routing.key", system.actorOf(Props(new Actor {
+          def receive = {
+            case Delivery(payload, routingKey, _, _, _, _) ⇒ {
+              log.debug("***** consumer got a delivery")
+              testActor forward Message(payload, routingKey)
             }
-          })), exchangeParameters = Some(exchangeParameters),
-            channelParameters = Some(consumerChannelParameters))) mapTo manifest[ActorRef]
+          }
+        })), exchangeParameters = Some(exchangeParameters),
+          channelParameters = Some(consumerChannelParameters))) mapTo manifest[ActorRef]
 
-        val pf: Future[ActorRef] = conn ? ProducerRequest(ProducerParameters(Some(exchangeParameters),
-          channelParameters = Some(producerChannelParameters))) mapTo manifest[ActorRef]
+      val pf: Future[ActorRef] = connection ? ProducerRequest(ProducerParameters(Some(exchangeParameters),
+        channelParameters = Some(producerChannelParameters))) mapTo manifest[ActorRef]
 
-        for (consumer ← cf; producer ← pf) {
-          // send a test message before killing the consumer channel
-          producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
+      for (consumer ← cf; producer ← pf) {
+        // send a test message before killing the consumer channel
+        producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
 
-          system.scheduler.scheduleOnce(timeout.duration / 4, conn, new ConnectionShutdown(
-            new ShutdownSignalException(true, false, "TestException", "TestRef")))
+        system.scheduler.scheduleOnce(timeout.duration / 4, connection, new ConnectionShutdown(
+          new ShutdownSignalException(true, false, "TestException", "TestRef")))
 
-          Await.result(connectionLatches.reconnected, timeout.duration)
-          Await.result(consumerLatches.restarted, timeout.duration)
-          Await.result(producerLatches.restarted, timeout.duration)
-          connectionLatches.reconnected.isOpen must be(true)
-          consumerLatches.restarted.isOpen must be(true)
-          producerLatches.restarted.isOpen must be(true)
+        Await.result(connectionLatches.reconnected, timeout.duration)
+        Await.result(consumerLatches.restarted, timeout.duration)
+        Await.result(producerLatches.restarted, timeout.duration)
+        connectionLatches.reconnected.isOpen must be(true)
+        consumerLatches.restarted.isOpen must be(true)
+        producerLatches.restarted.isOpen must be(true)
 
-          producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
-        }
+        producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesting.routing.key")
       }
 
       expectMsgClass(timeout.duration, classOf[Message])
       expectMsgClass(timeout.duration, classOf[Message])
 
-      connf foreach (_ ! PoisonPill)
+      connection ! PoisonPill
     }
 
     "support consumer manual ack of messages" in {
 
       var deliveryTagCheck: Long = -1
 
-      val localAddress = Option(Seq(new Address("localhost", 5672)))
+      val localAddress = Seq(new Address("localhost", 5672))
 
-      val connf: Future[ActorRef] = amqp ? ConnectionRequest(
-        ConnectionParameters(addresses = localAddress)) mapTo manifest[ActorRef]
+      val connection = system.actorOf(Props(new FaultTolerantConnectionActor(ConnectionParameters(addresses = localAddress))),
+        "conn-" + (new UUID()).toString)
 
       val exchangeParameters = ExchangeParameters("text_exchange")
 
-      for (conn ← connf) {
-        val cf: Future[ActorRef] = conn ? ConsumerRequest(
-          ConsumerParameters("manual.ack.this", system.actorOf(Props(new Actor {
-            def receive = {
-              case Delivery(payload, _, deliveryTag, _, _, sender) ⇒ {
-                deliveryTagCheck = deliveryTag
-                sender.foreach(_ ! Acknowledge(deliveryTag))
-              }
-              case Acknowledged(deliveryTag) ⇒ {
-                if (deliveryTagCheck == deliveryTag) {
-                  log.debug("***** Acknowledging message")
-                  testActor forward Acknowledged(deliveryTag)
-                }
-              }
-              case _ ⇒ ()
+      val cf: Future[ActorRef] = connection ? ConsumerRequest(
+        ConsumerParameters("manual.ack.this", system.actorOf(Props(new Actor {
+          def receive = {
+            case Delivery(payload, _, deliveryTag, _, _, sender) ⇒ {
+              deliveryTagCheck = deliveryTag
+              sender.foreach(_ ! Acknowledge(deliveryTag))
             }
-          })), queueName = Some("self.ack.queue"), exchangeParameters = Some(exchangeParameters),
-            selfAcknowledging = false,
-            queueDeclaration = ActiveDeclaration(autoDelete = false))) mapTo manifest[ActorRef]
+            case Acknowledged(deliveryTag) ⇒ {
+              if (deliveryTagCheck == deliveryTag) {
+                log.debug("***** Acknowledging message")
+                testActor forward Acknowledged(deliveryTag)
+              }
+            }
+            case _ ⇒ ()
+          }
+        })), queueName = Some("self.ack.queue"), exchangeParameters = Some(exchangeParameters),
+          selfAcknowledging = false,
+          queueDeclaration = ActiveDeclaration(autoDelete = false))) mapTo manifest[ActorRef]
 
-        val pf: Future[ActorRef] = conn ? ProducerRequest(ProducerParameters(Some(exchangeParameters))) mapTo manifest[ActorRef]
+      val pf: Future[ActorRef] = connection ? ProducerRequest(ProducerParameters(Some(exchangeParameters))) mapTo manifest[ActorRef]
 
-        for (consumer ← cf; producer ← pf)
-          producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "manual.ack.this")
-      }
+      for (consumer ← cf; producer ← pf)
+        producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "manual.ack.this")
 
       expectMsgClass(timeout.duration, classOf[Acknowledged])
 
-      connf foreach (_ ! PoisonPill)
+      connection ! PoisonPill
     }
 
     "support consumer manual reject of messages" in {
 
-      val localAddress = Option(Seq(new Address("localhost", 5672)))
+      val localAddress = Seq(new Address("localhost", 5672))
 
-      val connf: Future[ActorRef] = amqp ? ConnectionRequest(
-        ConnectionParameters(addresses = localAddress)) mapTo manifest[ActorRef]
+      val connection = system.actorOf(Props(new FaultTolerantConnectionActor(ConnectionParameters(addresses = localAddress))),
+        "conn-" + (new UUID()).toString)
 
       val exchangeParameters = ExchangeParameters("text_exchange")
 
-      for (conn ← connf) {
-        val cf: Future[ActorRef] = conn ? ConsumerRequest(
-          ConsumerParameters("manual.reject.this", system.actorOf(Props(new Actor {
-            def receive = {
-              case Delivery(payload, _, deliveryTag, _, _, sender) ⇒ sender.foreach(_ ! Reject(deliveryTag))
-              case msg: Rejected ⇒ {
-                log.debug("***** Rejecting message")
-                testActor forward msg
-              }
+      val cf: Future[ActorRef] = connection ? ConsumerRequest(
+        ConsumerParameters("manual.reject.this", system.actorOf(Props(new Actor {
+          def receive = {
+            case Delivery(payload, _, deliveryTag, _, _, sender) ⇒ sender.foreach(_ ! Reject(deliveryTag))
+            case msg: Rejected ⇒ {
+              log.debug("***** Rejecting message")
+              testActor forward msg
             }
-          })), queueName = Some("self.reject.queue"), exchangeParameters = Some(exchangeParameters),
-            selfAcknowledging = false)) mapTo manifest[ActorRef]
+          }
+        })), queueName = Some("self.reject.queue"), exchangeParameters = Some(exchangeParameters),
+          selfAcknowledging = false)) mapTo manifest[ActorRef]
 
-        val pf: Future[ActorRef] = conn ? ProducerRequest(ProducerParameters(Some(exchangeParameters))) mapTo manifest[ActorRef]
+      val pf: Future[ActorRef] = connection ? ProducerRequest(ProducerParameters(Some(exchangeParameters))) mapTo manifest[ActorRef]
 
-        for (consumer ← cf; producer ← pf)
-          producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "manual.reject.this")
-      }
+      for (consumer ← cf; producer ← pf)
+        producer ! Message("some_payload".getBytes(utf8Charset).toSeq, "manual.reject.this")
 
       expectMsgClass(timeout.duration, classOf[Rejected])
 
-      connf foreach (_ ! PoisonPill)
+      connection ! PoisonPill
     }
 
     "support receiving messages on a producer return listener" in {
 
       val returnLatch = new TestLatch
 
-      val localAddress = Option(Seq(new Address("localhost", 5672)))
+      val localAddress = Seq(new Address("localhost", 5672))
 
-      val connf: Future[ActorRef] = amqp ? ConnectionRequest(
-        ConnectionParameters(addresses = localAddress)) mapTo manifest[ActorRef]
+      val connection = system.actorOf(Props(new FaultTolerantConnectionActor(ConnectionParameters(addresses = localAddress))),
+        "conn-" + (new UUID()).toString)
 
       val exchangeParameters = ExchangeParameters("text_exchange")
 
@@ -368,67 +359,16 @@ class AMQPIntegrationTests(_system: ActorSystem) extends TestKit(_system) with I
       val producerParameters = ProducerParameters(
         Some(exchangeParameters), returnListener = Some(returnListener))
 
-      for (conn ← connf) {
+      val pf: Future[ActorRef] = connection ? ProducerRequest(producerParameters) mapTo manifest[ActorRef]
 
-        val pf: Future[ActorRef] = conn ? ProducerRequest(producerParameters) mapTo manifest[ActorRef]
-
-        for (producer ← pf)
-          producer ! new Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesing.routing.key", mandatory = true)
-      }
+      for (producer ← pf)
+        producer ! new Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesing.routing.key", mandatory = true)
 
       Await.result(returnLatch, timeout.duration)
       returnLatch.isOpen must be(true)
 
-      connf foreach (_ ! PoisonPill)
+      connection ! PoisonPill
     }
-
-    /*
-
-    "support receiving messages on a producer return listener" in {
-
-      val connectionLatches = ConnectionLatches()
-      val consumerLatches = ChannelLatches()
-      val producerLatches = ChannelLatches()
-      val returnLatch = new TestLatch
-
-      val localAddress = Option(Seq(new Address("localhost", 5672)))
-
-      val connection = (amqp ? ConnectionRequest(ConnectionParameters(addresses = localAddress,
-        connectionCallback =
-          Some(system.actorOf(Props(new ConnectionCallbackActor(connectionLatches))))))) mapTo manifest[ActorRef]
-
-      try {
-        val exchangeParameters = ExchangeParameters("text_exchange")
-
-        val producerChannelParameters = ChannelParameters(channelCallback =
-          Some(system.actorOf(Props(new ChannelCallbackActor(producerLatches)))))
-
-        val returnListener = new ReturnListener {
-          def handleReturn(replyCode: Int, replyText: String, exchange: String, routingKey: String, properties: BasicProperties, body: Array[Byte]) = {
-            returnLatch.open
-          }
-        }
-
-        val producerParameters = ProducerParameters(
-          Some(exchangeParameters), returnListener = Some(returnListener), channelParameters = Some(producerChannelParameters))
-
-        val producer = for {
-          conn ← connection
-          pr ← (conn ? ProducerRequest(producerParameters)) mapTo manifest[ActorRef]
-        } yield pr
-
-        Await result(producerLatches.started, timeout.duration)
-
-        producer foreach (_ ! new Message("some_payload".getBytes(utf8Charset).toSeq, "non.interesing.routing.key", mandatory = true))
-
-        Await.result(returnLatch, timeout.duration)
-
-      } finally {
-        returnLatch.isOpen must be(true)
-        connection foreach (_ ! PoisonPill)
-      }
-    }
-    */
   }
 
   case class ConnectionLatches(connected: TestLatch = new TestLatch, reconnecting: TestLatch = new TestLatch,

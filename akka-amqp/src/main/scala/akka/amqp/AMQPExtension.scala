@@ -28,12 +28,24 @@ class SettingsImpl(config: Config) extends Extension {
 
 }
 
-abstract class Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider
+object AMQP extends ExtensionId[SettingsImpl] with ExtensionIdProvider {
 
-object Settings extends Settings {
-
-  override def lookup: Settings = this
+  override def lookup() = this
 
   override def createExtension(system: ExtendedActorSystem): SettingsImpl = new SettingsImpl(system.settings.config)
+
+  // for java
+  def newConnection(context: ActorContext): ActorRef = newConnection(context, ConnectionParameters(), None)
+  def newConnection(context: ActorContext, params: ConnectionParameters): ActorRef = newConnection(context, params, None)
+  def newConnection(context: ActorContext, name: String): ActorRef = newConnection(context, ConnectionParameters(), Option(name))
+  def newConnection(context: ActorContext, params: ConnectionParameters, name: String): ActorRef = newConnection(context, params, Option(name))
+
+  // for the saner language
+  def newConnection(context: ActorContext, params: ConnectionParameters = ConnectionParameters(), name: Option[String] = None): ActorRef = {
+    if (name.isDefined)
+      context.actorOf(Props(new FaultTolerantConnectionActor(params)), name.get)
+    else
+      context.actorOf(Props(new FaultTolerantConnectionActor(params)))
+  }
 }
 
