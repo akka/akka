@@ -287,6 +287,13 @@ Messages are sent to an Actor through one of the following methods.
 
 Message ordering is guaranteed on a per-sender basis.
 
+.. note::
+
+    There are performance implications of using ``ask`` since something needs to
+    keep track of when it times out, there needs to be something that bridges
+    a ``Promise`` into an ``ActorRef`` and it also needs to be reachable through
+    remoting. So always prefer ``tell`` for performance, and only ``ask`` if you must.
+
 In all these methods you have the option of passing along your own ``ActorRef``.
 Make it a practice of doing so because it will allow the receiver actors to be able to respond
 to your message, since the sender reference is sent along with the message.
