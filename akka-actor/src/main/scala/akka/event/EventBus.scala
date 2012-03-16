@@ -297,9 +297,9 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
     val current = mappings get monitored
     current match {
       case null ⇒ false
-      case raw: Vector[_] ⇒
-        val v = raw.asInstanceOf[Vector[ActorRef]]
-        val removed = v.filterNot(monitor ==)
+      case raw: TreeSet[_] ⇒
+        val v = raw.asInstanceOf[TreeSet[ActorRef]]
+        val removed = v - monitor
         if (removed eq raw) false
         else if (removed.isEmpty) {
           if (!mappings.remove(monitored, v)) dissociate(monitored, monitor) else true
