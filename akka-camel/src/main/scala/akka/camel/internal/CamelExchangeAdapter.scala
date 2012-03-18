@@ -1,24 +1,27 @@
 package akka.camel.internal
 
-import java.util.{ Map ⇒ JMap, Set ⇒ JSet }
-
 import scala.collection.JavaConversions._
 
 import org.apache.camel.util.ExchangeHelper
 
-import akka.japi.{ Function ⇒ JFunction }
 import org.apache.camel.{ Exchange, Message ⇒ JCamelMessage }
 import akka.camel.{ Failure, CamelMessage }
 
 /**
  *  For internal use only.
- *  Adapter for converting an org.apache.camel.Exchange to and from CamelMessage and Failure objects.
+ *  Adapter for converting an [[org.apache.camel.Exchange]] to and from [[akka.camel.CamelMessage]] and [[akka.camel.Failure]] objects.
  *
  * @author Martin Krasser
  */
 private[camel] class CamelExchangeAdapter(exchange: Exchange) {
+  /**
+   * Returns the exchange id
+   */
   def getExchangeId = exchange.getExchangeId
 
+  /**
+   * Returns if the exchange is out capable.
+   */
   def isOutCapable = exchange.getPattern.isOutCapable
 
   /**

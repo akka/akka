@@ -8,25 +8,24 @@ import internal._
 import akka.actor._
 import org.apache.camel.{ ProducerTemplate, CamelContext }
 
-//TODO complete this doc
 /**
  * Camel trait encapsulates the underlying camel machinery.
  * '''Note:''' `CamelContext` and `ProducerTemplate` are stopped when the associated actor system is shut down.
- *
+ * This trait can be obtained through the [[akka.camel.CamelExtension]] object.
  */
 trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with Activation {
   /**
    * Underlying camel context.
    *
    * It can be used to configure camel manually, i.e. when the user wants to add new routes or endpoints,
-   * i.e. <pre>camel.context.addRoutes(...)</pre>
+   * i.e. {{{camel.context.addRoutes(...)}}}
    *
    * @see [[org.apache.camel.CamelContext]]
    */
   def context: CamelContext
 
   /**
-   * Producer template.
+   * The Camel ProducerTemplate.
    * @see [[org.apache.camel.ProducerTemplate]]
    */
   def template: ProducerTemplate

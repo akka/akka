@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap
 import org.apache.camel.processor.SendProcessor
 import akka.actor.{ Props, ActorRef, Terminated, Actor }
 import org.apache.camel.Endpoint
-import akka.camel.Camel
+import akka.camel._
 import akka.util.NonFatal
 
 /**

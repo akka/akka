@@ -9,7 +9,7 @@ import akka.actor.{ Props, ActorSystem }
 import akka.camel._
 import RichString._
 
-object _3_SimpleActorEndpoint extends App {
+private[camelexamples] object _3_SimpleActorEndpoint extends App {
 
   val system = ActorSystem("test")
   val camel = CamelExtension(system)
