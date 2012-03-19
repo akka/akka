@@ -251,7 +251,8 @@ object AkkaBuild extends Build {
     id = "akka-sbt-plugin",
     base = file("akka-sbt-plugin"),
     settings = defaultSettings ++ Seq(
-      sbtPlugin := true
+      sbtPlugin := true,
+      scalaVersion := "2.9.1"
     )
   )
 
