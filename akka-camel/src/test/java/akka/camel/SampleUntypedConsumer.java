@@ -1,6 +1,10 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package akka.camel;
 
-import akka.camel.UntypedConsumerActor;
+import akka.camel.javaapi.UntypedConsumerActor;
 
 /**
  * @author Martin Krasser
@@ -12,10 +16,10 @@ public class SampleUntypedConsumer extends UntypedConsumerActor {
     }
 
     public void onReceive(Object message) {
-        Message msg = (Message)message;
-        String body = msg.getBodyAs(String.class);
-        String header = msg.getHeaderAs("test", String.class);
-        sender.tell(String.format("%s %s", body, header));
+        CamelMessage msg = (CamelMessage)message;
+        String body = msg.getBodyAs(String.class, getCamelContext());
+        String header = msg.getHeaderAs("test", String.class,getCamelContext());
+        sender().tell(String.format("%s %s", body, header));
    }
 
 }
