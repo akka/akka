@@ -102,6 +102,9 @@ class RoundRobinRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RoundRobin
       barrier("end")
       replies.values foreach { _ must be(10) }
 
+      // shut down the actor before we let the other node(s) shut down so we don't try to send
+      // "Terminate" to a shut down node
+      system.stop(actor)
       barrier("done")
     }
   }
