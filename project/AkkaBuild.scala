@@ -352,7 +352,7 @@ object AkkaBuild extends Build {
   val excludeTestTags = SettingKey[Seq[String]]("exclude-test-tags")
   val includeTestTags = SettingKey[Seq[String]]("include-test-tags")
 
-  val defaultExcludedTags = Seq("timing")
+  val defaultExcludedTags = Seq("timing", "long-running")
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
