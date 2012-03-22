@@ -36,6 +36,10 @@ See the next section for more information of how to run the sample application.
 Running
 -------
 
+Before starting SBT, you should make sure you have allocated enough memory in the JVM. That can be done by typing:
+
+export JAVA_OPTS="-Xmx1024m" 
+
 In order to run all three actor systems you have to start SBT in three different terminal windows.
 
 We start off by running the CalculatorApplication:
