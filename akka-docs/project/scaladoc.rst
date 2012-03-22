@@ -12,7 +12,8 @@ Release Versions
 2.0
 -----
 
-- Akka 2.0 - http://doc.akka.io/api/akka/2.0/
+- Akka - http://doc.akka.io/api/akka/2.0/
+
 
 1.3.1
 -----

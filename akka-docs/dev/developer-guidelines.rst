@@ -13,9 +13,11 @@ Akka is using ``Scalariform`` to format the source code as part of the build. So
 Process
 -------
 
+* Make sure you have signed the Akka CLA, if not, ask for it on the Mailing List.
 * Pick a ticket, if there is no ticket for your work then create one first.
-* Start working in a feature branch. Name it something like ``wip-<descriptive name or ticket number>-<your username>``.
-* When you are done send a request for review to the Akka developer mailing list. If successfully review, merge into master.
+* Start working in a feature branch. Name it something like ``wip-<ticket number>-<descriptive name>-<your username>``.
+* When you are done, create a GitHub Pull-Request towards the targeted branch and email the Akka Mailing List that you want it reviewed
+* When there's consensus on the review, someone from the Akka Core Team will merge it.
 
 Commit messages
 ---------------

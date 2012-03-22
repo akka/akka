@@ -383,15 +383,6 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   protected def writeReplace(): AnyRef = SerializedActorRef(path)
 }
 
-private[akka] object MinimalActorRef {
-  def apply(_path: ActorPath, _provider: ActorRefProvider)(receive: PartialFunction[Any, Unit]): ActorRef = new MinimalActorRef {
-    def path = _path
-    def provider = _provider
-    override def !(message: Any)(implicit sender: ActorRef = null): Unit =
-      if (receive.isDefinedAt(message)) receive(message)
-  }
-}
-
 case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 
 private[akka] object DeadLetterActorRef {

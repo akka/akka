@@ -555,13 +555,15 @@ private[akka] class ActorCell(
     def resume(): Unit = if (isNormal) dispatcher resume this
 
     def link(subject: ActorRef): Unit = if (!isTerminating) {
-      system.deathWatch.subscribe(self, subject)
-      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + subject))
+      if (system.deathWatch.subscribe(self, subject)) {
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + subject))
+      }
     }
 
     def unlink(subject: ActorRef): Unit = if (!isTerminating) {
-      system.deathWatch.unsubscribe(self, subject)
-      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + subject))
+      if (system.deathWatch.unsubscribe(self, subject)) {
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + subject))
+      }
     }
 
     def terminate() {
@@ -691,7 +693,7 @@ private[akka] class ActorCell(
         parent.sendSystemMessage(ChildTerminated(self))
         system.deathWatch.publish(Terminated(self))
         if (system.settings.DebugLifecycle)
-          system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped")) // FIXME: can actor be null?
+          system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped"))
       } finally {
         if (a ne null) a.clearBehaviorStack()
         clearActorFields()

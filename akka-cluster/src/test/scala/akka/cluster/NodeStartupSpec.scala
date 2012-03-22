@@ -29,12 +29,12 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
       val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
       node0 = Node(system0)
 
-      "be a singleton cluster when started up" in {
+      "be a singleton cluster when started up" taggedAs LongRunningTest in {
         Thread.sleep(1.seconds.dilated.toMillis)
         node0.isSingletonCluster must be(true)
       }
 
-      "be in 'Up' phase when started up" in {
+      "be in 'Joining' phase when started up" taggedAs LongRunningTest in {
         val members = node0.latestGossip.members
         val joiningMember = members find (_.address.port.get == 5550)
         joiningMember must be('defined)
@@ -43,7 +43,7 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
     }
 
     "A second cluster node with a 'node-to-join' config defined" must {
-      "join the other node cluster as 'Joining' when sending a Join command" in {
+      "join the other node cluster when sending a Join command" taggedAs LongRunningTest in {
         system1 = ActorSystem("system1", ConfigFactory
           .parseString("""
             akka {
@@ -55,11 +55,11 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
         node1 = Node(system1)
 
-        Thread.sleep(5.seconds.dilated.toMillis) // give enough time for node1 to JOIN node0
+        Thread.sleep(10.seconds.dilated.toMillis) // give enough time for node1 to JOIN node0 and leader to move him to UP
         val members = node0.latestGossip.members
         val joiningMember = members find (_.address.port.get == 5551)
         joiningMember must be('defined)
-        joiningMember.get.status must be(MemberStatus.Joining)
+        joiningMember.get.status must be(MemberStatus.Up)
       }
     }
   } catch {

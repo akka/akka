@@ -55,6 +55,9 @@ class NewRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(NewRemoteActorMultiJvmS
       val actor = system.actorOf(Props[SomeActor], "service-hello")
       Await.result(actor ? "identify", timeout.duration).asInstanceOf[ActorRef].path.address.hostPort must equal(akkaSpec(0))
 
+      // shut down the actor before we let the other node(s) shut down so we don't try to send
+      // "Terminate" to a shut down node
+      system.stop(actor)
       barrier("done")
     }
   }

@@ -32,7 +32,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -239,6 +239,15 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.kernel
     )
   )
+ 
+  lazy val camel = Project(
+     id = "akka-camel",
+     base = file("akka-camel"),
+     dependencies = Seq(actor, slf4j, testkit % "test->test"),
+     settings = defaultSettings ++ Seq(
+       libraryDependencies ++= Dependencies.camel
+     )
+  )
 
   lazy val actorMigration = Project(
     id = "akka-actor-migration",
@@ -251,7 +260,8 @@ object AkkaBuild extends Build {
     id = "akka-sbt-plugin",
     base = file("akka-sbt-plugin"),
     settings = defaultSettings ++ Seq(
-      sbtPlugin := true
+      sbtPlugin := true,
+      scalaVersion := "2.9.1"
     )
   )
 
@@ -464,6 +474,8 @@ object Dependencies {
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
 
   val kernel = Seq(Test.scalatest, Test.junit)
+
+  val camel = Seq(Test.scalatest, Test.junit, Test.mockito, camelCore)
 
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,

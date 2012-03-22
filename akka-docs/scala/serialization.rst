@@ -107,6 +107,23 @@ you might want to know how to serialize and deserialize them properly, here's th
 .. includecode:: code/akka/docs/serialization/SerializationDocSpec.scala
    :include: imports,actorref-serializer
 
+Deep serialization of Actors
+----------------------------
+
+The current recommended approach to do deep serialization of internal actor state is to use Event Sourcing,
+for more reading on the topic, see these examples:
+
+`Martin Krasser on EventSourcing Part1 <http://krasserm.blogspot.com/2011/11/building-event-sourced-web-application.html>`_
+
+`Martin Krasser on EventSourcing Part2 <http://krasserm.blogspot.com/2012/01/building-event-sourced-web-application.html>`_
+
+
+.. note::
+
+    Built-in API support for persisting Actors will come in a later release, see the roadmap for more info:
+
+    `Akka 2.0 roadmap <https://docs.google.com/a/typesafe.com/document/d/18W9-fKs55wiFNjXL9q50PYOnR7-nnsImzJqHOPPbM4E>`_
+
 A Word About Java Serialization
 ===============================
 
