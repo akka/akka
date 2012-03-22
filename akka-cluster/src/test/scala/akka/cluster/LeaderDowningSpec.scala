@@ -33,10 +33,7 @@ class LeaderDowningSpec extends ClusterSpec with ImplicitSender {
       system1 = ActorSystem("system1", ConfigFactory
         .parseString("""
           akka {
-            remote.netty {
-              hostname = localhost
-              port=5550
-            }
+            remote.netty.port = 5550
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
@@ -49,10 +46,7 @@ class LeaderDowningSpec extends ClusterSpec with ImplicitSender {
       system2 = ActorSystem("system2", ConfigFactory
         .parseString("""
           akka {
-            remote.netty {
-              hostname = localhost
-              port = 5551
-            }
+            remote.netty.port = 5551
             cluster.node-to-join = "akka://system1@localhost:5550"
           }""")
         .withFallback(system.settings.config))
@@ -66,10 +60,7 @@ class LeaderDowningSpec extends ClusterSpec with ImplicitSender {
       system3 = ActorSystem("system3", ConfigFactory
         .parseString("""
           akka {
-            remote.netty {
-              hostname = localhost
-              port=5552
-            }
+            remote.netty.port = 5552
             cluster.node-to-join = "akka://system1@localhost:5550"
           }""")
         .withFallback(system.settings.config))
@@ -83,10 +74,7 @@ class LeaderDowningSpec extends ClusterSpec with ImplicitSender {
       system4 = ActorSystem("system4", ConfigFactory
         .parseString("""
           akka {
-            remote.netty {
-              hostname = localhost
-              port=5553
-            }
+            remote.netty.port = 5553
             cluster.node-to-join = "akka://system1@localhost:5550"
           }""")
         .withFallback(system.settings.config))

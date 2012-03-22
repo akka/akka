@@ -334,6 +334,8 @@ object Node extends ExtensionId[Node] with ExtensionIdProvider {
  */
 class Node(system: ExtendedActorSystem) extends Extension {
 
+  // FIXME rename Node to Cluster
+
   /**
    * Represents the state for this Node. Implemented using optimistic lockless concurrency.
    * All state is represented by this immutable case class and managed by an AtomicReference.
