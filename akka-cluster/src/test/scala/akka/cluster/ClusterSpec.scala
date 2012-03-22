@@ -46,7 +46,7 @@ abstract class ClusterSpec(_system: ActorSystem) extends AkkaSpec(_system) {
 
   def this() = this(ActorSystem(AkkaSpec.getCallerName, ClusterSpec.testConf))
 
-  def awaitConvergence(nodes: Iterable[Node], maxWaitTime: Duration = 60 seconds) {
+  def awaitConvergence(nodes: Iterable[Cluster], maxWaitTime: Duration = 60 seconds) {
     val deadline = maxWaitTime.fromNow
     while (nodes map (_.convergence.isDefined) exists (_ == false)) {
       if (deadline.isOverdue) throw new IllegalStateException("Convergence could no be reached within " + maxWaitTime)

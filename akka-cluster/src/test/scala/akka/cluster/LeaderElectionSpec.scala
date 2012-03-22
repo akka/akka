@@ -16,9 +16,9 @@ import java.net.InetSocketAddress
 
 class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
 
-  var node1: Node = _
-  var node2: Node = _
-  var node3: Node = _
+  var node1: Cluster = _
+  var node2: Cluster = _
+  var node3: Cluster = _
 
   var system1: ActorSystemImpl = _
   var system2: ActorSystemImpl = _
@@ -35,7 +35,7 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
-      node1 = Node(system1)
+      node1 = Cluster(system1)
       val address1 = node1.remoteAddress
 
       // ======= NODE 2 ========
@@ -47,7 +47,7 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
-      node2 = Node(system2)
+      node2 = Cluster(system2)
       val address2 = node2.remoteAddress
 
       // ======= NODE 3 ========
@@ -59,7 +59,7 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
-      node3 = Node(system3)
+      node3 = Cluster(system3)
       val address3 = node3.remoteAddress
 
       "be able to 'elect' a single leader" taggedAs LongRunningTest in {

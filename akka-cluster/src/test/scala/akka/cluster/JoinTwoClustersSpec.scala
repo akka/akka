@@ -16,12 +16,12 @@ import java.net.InetSocketAddress
 
 class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.threshold = 5") with ImplicitSender {
 
-  var node1: Node = _
-  var node2: Node = _
-  var node3: Node = _
-  var node4: Node = _
-  var node5: Node = _
-  var node6: Node = _
+  var node1: Cluster = _
+  var node2: Cluster = _
+  var node3: Cluster = _
+  var node4: Cluster = _
+  var node5: Cluster = _
+  var node6: Cluster = _
 
   var system1: ActorSystemImpl = _
   var system2: ActorSystemImpl = _
@@ -41,7 +41,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
-      node1 = Node(system1)
+      node1 = Cluster(system1)
 
       // ======= NODE 2 ========
       system2 = ActorSystem("system2", ConfigFactory
@@ -52,7 +52,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
-      node2 = Node(system2)
+      node2 = Cluster(system2)
 
       // ======= NODE 3 ========
       system3 = ActorSystem("system3", ConfigFactory
@@ -62,7 +62,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
-      node3 = Node(system3)
+      node3 = Cluster(system3)
 
       // ======= NODE 4 ========
       system4 = ActorSystem("system4", ConfigFactory
@@ -73,7 +73,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
-      node4 = Node(system4)
+      node4 = Cluster(system4)
 
       // ======= NODE 5 ========
       system5 = ActorSystem("system5", ConfigFactory
@@ -83,7 +83,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
-      node5 = Node(system5)
+      node5 = Cluster(system5)
 
       // ======= NODE 6 ========
       system6 = ActorSystem("system6", ConfigFactory
@@ -94,7 +94,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
           }""")
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
-      node6 = Node(system6)
+      node6 = Cluster(system6)
 
       "be able to 'elect' a single leader after joining (A -> B)" taggedAs LongRunningTest in {
 

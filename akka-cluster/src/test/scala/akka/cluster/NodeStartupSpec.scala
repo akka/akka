@@ -15,8 +15,8 @@ import com.typesafe.config._
 
 class NodeStartupSpec extends ClusterSpec with ImplicitSender {
 
-  var node0: Node = _
-  var node1: Node = _
+  var node0: Cluster = _
+  var node1: Cluster = _
   var system0: ActorSystemImpl = _
   var system1: ActorSystemImpl = _
 
@@ -27,7 +27,7 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
-      node0 = Node(system0)
+      node0 = Cluster(system0)
 
       "be a singleton cluster when started up" taggedAs LongRunningTest in {
         Thread.sleep(1.seconds.dilated.toMillis)
@@ -53,7 +53,7 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
-        node1 = Node(system1)
+        node1 = Cluster(system1)
 
         Thread.sleep(10.seconds.dilated.toMillis) // give enough time for node1 to JOIN node0 and leader to move him to UP
         val members = node0.latestGossip.members

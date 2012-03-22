@@ -18,9 +18,9 @@ import com.typesafe.config._
 
 class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
 
-  var node0: Node = _
-  var node1: Node = _
-  var node2: Node = _
+  var node0: Cluster = _
+  var node1: Cluster = _
+  var node2: Cluster = _
 
   var system0: ActorSystemImpl = _
   var system1: ActorSystemImpl = _
@@ -34,7 +34,7 @@ class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
-        node0 = Node(system0)
+        node0 = Cluster(system0)
 
         system1 = ActorSystem("system1", ConfigFactory
           .parseString("""
@@ -45,7 +45,7 @@ class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
-        node1 = Node(system1)
+        node1 = Cluster(system1)
 
         val latch = new CountDownLatch(2)
 
@@ -81,7 +81,7 @@ class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
-        node2 = Node(system2)
+        node2 = Cluster(system2)
 
         val latch = new CountDownLatch(3)
         node0.registerListener(new MembershipChangeListener {

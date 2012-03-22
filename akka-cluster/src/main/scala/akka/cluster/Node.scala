@@ -242,21 +242,21 @@ case class Gossip(
 
 /**
  * Manages routing of the different cluster commands.
- * Instantiated as a single instance for each Node - e.g. commands are serialized to Node message after message.
+ * Instantiated as a single instance for each Cluster - e.g. commands are serialized to Cluster message after message.
  */
 final class ClusterCommandDaemon extends Actor {
   import ClusterAction._
 
-  val node = Node(context.system)
+  val cluster = Cluster(context.system)
   val log = Logging(context.system, this)
 
   def receive = {
-    case Join(address)   ⇒ node.joining(address)
-    case Up(address)     ⇒ node.up(address)
-    case Down(address)   ⇒ node.downing(address)
-    case Leave(address)  ⇒ node.leaving(address)
-    case Exit(address)   ⇒ node.exiting(address)
-    case Remove(address) ⇒ node.removing(address)
+    case Join(address)   ⇒ cluster.joining(address)
+    case Up(address)     ⇒ cluster.up(address)
+    case Down(address)   ⇒ cluster.downing(address)
+    case Leave(address)  ⇒ cluster.leaving(address)
+    case Exit(address)   ⇒ cluster.exiting(address)
+    case Remove(address) ⇒ cluster.removing(address)
   }
 
   override def unhandled(unknown: Any) = log.error("Illegal command [{}]", unknown)
@@ -264,29 +264,29 @@ final class ClusterCommandDaemon extends Actor {
 
 /**
  * Pooled and routed with N number of configurable instances.
- * Concurrent access to Node.
+ * Concurrent access to Cluster.
  */
 final class ClusterGossipDaemon extends Actor {
   val log = Logging(context.system, this)
-  val node = Node(context.system)
+  val cluster = Cluster(context.system)
 
   def receive = {
-    case GossipEnvelope(sender, gossip) ⇒ node.receive(sender, gossip)
+    case GossipEnvelope(sender, gossip) ⇒ cluster.receive(sender, gossip)
   }
 
   override def unhandled(unknown: Any) = log.error("[/system/cluster/gossip] can not respond to messages - received [{}]", unknown)
 }
 
 /**
- * Supervisor managing the different cluste daemons.
+ * Supervisor managing the different Cluster daemons.
  */
 final class ClusterDaemonSupervisor extends Actor {
   val log = Logging(context.system, this)
-  val node = Node(context.system)
+  val cluster = Cluster(context.system)
 
   private val commands = context.actorOf(Props[ClusterCommandDaemon], "commands")
   private val gossip = context.actorOf(
-    Props[ClusterGossipDaemon].withRouter(RoundRobinRouter(node.clusterSettings.NrOfGossipDaemons)), "gossip")
+    Props[ClusterGossipDaemon].withRouter(RoundRobinRouter(cluster.clusterSettings.NrOfGossipDaemons)), "gossip")
 
   def receive = Actor.emptyBehavior
 
@@ -294,20 +294,20 @@ final class ClusterDaemonSupervisor extends Actor {
 }
 
 /**
- * Node Extension Id and factory for creating Node extension.
+ * Cluster Extension Id and factory for creating Cluster extension.
  * Example:
  * {{{
- *  val node = Node(system)
+ *  val cluster = Cluster(system)
  *
- *  if (node.isLeader) { ... }
+ *  if (cluster.isLeader) { ... }
  * }}}
  */
-object Node extends ExtensionId[Node] with ExtensionIdProvider {
-  override def get(system: ActorSystem): Node = super.get(system)
+object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
+  override def get(system: ActorSystem): Cluster = super.get(system)
 
-  override def lookup = Node
+  override def lookup = Cluster
 
-  override def createExtension(system: ExtendedActorSystem): Node = new Node(system)
+  override def createExtension(system: ExtendedActorSystem): Cluster = new Cluster(system)
 }
 
 /**
@@ -327,17 +327,17 @@ object Node extends ExtensionId[Node] with ExtensionIdProvider {
  *
  * Example:
  * {{{
- *  val node = Node(system)
+ *  val cluster = Cluster(system)
  *
- *  if (node.isLeader) { ... }
+ *  if (cluster.isLeader) { ... }
  * }}}
  */
-class Node(system: ExtendedActorSystem) extends Extension {
+class Cluster(system: ExtendedActorSystem) extends Extension {
 
-  // FIXME rename Node to Cluster
+  // FIXME rename Cluster to Cluster
 
   /**
-   * Represents the state for this Node. Implemented using optimistic lockless concurrency.
+   * Represents the state for this Cluster. Implemented using optimistic lockless concurrency.
    * All state is represented by this immutable case class and managed by an AtomicReference.
    */
   private case class State(
@@ -376,7 +376,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
   private val log = Logging(system, "Node")
   private val random = SecureRandom.getInstance("SHA1PRNG")
 
-  log.info("Node [{}] - is JOINING cluster...", remoteAddress)
+  log.info("Cluster Node [{}] - is JOINING cluster...", remoteAddress)
 
   // create superisor for daemons under path "/system/cluster"
   private val clusterDaemons = {
@@ -415,7 +415,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
     leaderActions()
   }
 
-  log.info("Node [{}] - has JOINED cluster successfully", remoteAddress)
+  log.info("Cluster Node [{}] - has JOINED cluster successfully", remoteAddress)
 
   // ======================================================
   // ===================== PUBLIC API =====================
@@ -465,7 +465,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
    */
   def shutdown() {
     if (isRunning.compareAndSet(true, false)) {
-      log.info("Node [{}] - Shutting down cluster Node and cluster daemons...", remoteAddress)
+      log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", remoteAddress)
       gossipCanceller.cancel()
       failureDetectorReaperCanceller.cancel()
       leaderActionsCanceller.cancel()
@@ -533,7 +533,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
    */
   @tailrec
   private[cluster] final def joining(node: Address) {
-    log.info("Node [{}] - Node [{}] is JOINING", remoteAddress, node)
+    log.info("Cluster Node [{}] - Node [{}] is JOINING", remoteAddress, node)
 
     val localState = state.get
     val localGossip = localState.latestGossip
@@ -566,28 +566,28 @@ class Node(system: ExtendedActorSystem) extends Extension {
    * State transition to UP.
    */
   private[cluster] final def up(address: Address) {
-    log.info("Node [{}] - Marking node [{}] as UP", remoteAddress, address)
+    log.info("Cluster Node [{}] - Marking node [{}] as UP", remoteAddress, address)
   }
 
   /**
    * State transition to LEAVING.
    */
   private[cluster] final def leaving(address: Address) {
-    log.info("Node [{}] - Marking node [{}] as LEAVING", remoteAddress, address)
+    log.info("Cluster Node [{}] - Marking node [{}] as LEAVING", remoteAddress, address)
   }
 
   /**
    * State transition to EXITING.
    */
   private[cluster] final def exiting(address: Address) {
-    log.info("Node [{}] - Marking node [{}] as EXITING", remoteAddress, address)
+    log.info("Cluster Node [{}] - Marking node [{}] as EXITING", remoteAddress, address)
   }
 
   /**
    * State transition to REMOVED.
    */
   private[cluster] final def removing(address: Address) {
-    log.info("Node [{}] - Marking node [{}] as REMOVED", remoteAddress, address)
+    log.info("Cluster Node [{}] - Marking node [{}] as REMOVED", remoteAddress, address)
   }
 
   /**
@@ -612,7 +612,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
       localMembers
         .map { member ⇒
           if (member.address == address) {
-            log.info("Node [{}] - Marking node [{}] as DOWN", remoteAddress, member.address)
+            log.info("Cluster Node [{}] - Marking node [{}] as DOWN", remoteAddress, member.address)
             val newMember = member copy (status = MemberStatus.Down)
             downedMember = Some(newMember)
             newMember
@@ -626,7 +626,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
         .filter(_.status != MemberStatus.Down) // no need to DOWN members already DOWN
         .map { member ⇒
           if (member.address == address) {
-            log.info("Node [{}] - Marking unreachable node [{}] as DOWN", remoteAddress, member.address)
+            log.info("Cluster Node [{}] - Marking unreachable node [{}] as DOWN", remoteAddress, member.address)
             member copy (status = MemberStatus.Down)
           } else member
         }
@@ -689,7 +689,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
     // if we won the race then update else try again
     if (!state.compareAndSet(localState, newState)) receive(sender, remoteGossip) // recur if we fail the update
     else {
-      log.debug("Node [{}] - Receiving gossip from [{}]", remoteAddress, sender.address)
+      log.debug("Cluster Node [{}] - Receiving gossip from [{}]", remoteAddress, sender.address)
 
       failureDetector heartbeat sender.address // update heartbeat in failure detector
 
@@ -705,7 +705,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
   private def autoJoin() = nodeToJoin foreach { address ⇒
     val connection = clusterCommandConnectionFor(address)
     val command = ClusterAction.Join(remoteAddress)
-    log.info("Node [{}] - Sending [{}] to [{}] through connection [{}]", remoteAddress, command, address, connection)
+    log.info("Cluster Node [{}] - Sending [{}] to [{}] through connection [{}]", remoteAddress, command, address, connection)
     connection ! command
   }
 
@@ -717,7 +717,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
    * @return the updated new state with the new member status
    */
   private def switchMemberStatusTo(newStatus: MemberStatus, state: State): State = {
-    log.info("Node [{}] - Switching membership status to [{}]", remoteAddress, newStatus)
+    log.info("Cluster Node [{}] - Switching membership status to [{}]", remoteAddress, newStatus)
 
     val localSelf = self
 
@@ -749,7 +749,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
    */
   private def gossipTo(address: Address) {
     val connection = clusterGossipConnectionFor(address)
-    log.debug("Node [{}] - Gossiping to [{}]", remoteAddress, connection)
+    log.debug("Cluster Node [{}] - Gossiping to [{}]", remoteAddress, connection)
     connection ! GossipEnvelope(self, latestGossip)
   }
 
@@ -779,7 +779,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
     if (!isSingletonCluster(localState) && isAvailable(localState)) {
       // only gossip if we are a non-singleton cluster and available
 
-      log.debug("Node [{}] - Initiating new round of gossip", remoteAddress)
+      log.debug("Cluster Node [{}] - Initiating new round of gossip", remoteAddress)
 
       val localGossip = localState.latestGossip
       val localMembers = localGossip.members
@@ -844,7 +844,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
         // if we won the race then update else try again
         if (!state.compareAndSet(localState, newState)) reapUnreachableMembers() // recur
         else {
-          log.info("Node [{}] - Marking node(s) as UNREACHABLE [{}]", remoteAddress, newlyDetectedUnreachableMembers.mkString(", "))
+          log.info("Cluster Node [{}] - Marking node(s) as UNREACHABLE [{}]", remoteAddress, newlyDetectedUnreachableMembers.mkString(", "))
 
           if (convergence(newState.latestGossip).isDefined) {
             newState.memberMembershipChangeListeners foreach { _ notify newMembers }
@@ -889,14 +889,14 @@ class Node(system: ExtendedActorSystem) extends Extension {
             localMembers map { member ⇒
               // 1. Move JOINING => UP
               if (member.status == MemberStatus.Joining) {
-                log.info("Node [{}] - Leader is moving node [{}] from JOINING to UP", remoteAddress, member.address)
+                log.info("Cluster Node [{}] - Leader is moving node [{}] from JOINING to UP", remoteAddress, member.address)
                 hasChangedState = true
                 member copy (status = MemberStatus.Up)
               } else member
             } map { member ⇒
               // 2. Move EXITING => REMOVED
               if (member.status == MemberStatus.Exiting) {
-                log.info("Node [{}] - Leader is moving node [{}] from EXITING to REMOVED", remoteAddress, member.address)
+                log.info("Cluster Node [{}] - Leader is moving node [{}] from EXITING to REMOVED", remoteAddress, member.address)
                 hasChangedState = true
                 member copy (status = MemberStatus.Removed)
               } else member
@@ -912,7 +912,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
             localUnreachableMembers
               .filter(_.status != MemberStatus.Down) // no need to DOWN members already DOWN
               .map { member ⇒
-                log.info("Node [{}] - Leader is marking unreachable node [{}] as DOWN", remoteAddress, member.address)
+                log.info("Cluster Node [{}] - Leader is marking unreachable node [{}] as DOWN", remoteAddress, member.address)
                 hasChangedState = true
                 member copy (status = MemberStatus.Down)
               }
@@ -966,7 +966,7 @@ class Node(system: ExtendedActorSystem) extends Extension {
       val views = Set.empty[VectorClock] ++ seen.values
 
       if (views.size == 1) {
-        log.debug("Node [{}] - Cluster convergence reached", remoteAddress)
+        log.debug("Cluster Node [{}] - Cluster convergence reached", remoteAddress)
         Some(gossip)
       } else None
     } else None

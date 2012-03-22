@@ -15,9 +15,9 @@ import java.net.InetSocketAddress
 
 class GossipingAccrualFailureDetectorSpec extends ClusterSpec with ImplicitSender {
 
-  var node1: Node = _
-  var node2: Node = _
-  var node3: Node = _
+  var node1: Cluster = _
+  var node2: Cluster = _
+  var node3: Cluster = _
 
   var system1: ActorSystemImpl = _
   var system2: ActorSystemImpl = _
@@ -32,7 +32,7 @@ class GossipingAccrualFailureDetectorSpec extends ClusterSpec with ImplicitSende
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
-      node1 = Node(system1)
+      node1 = Cluster(system1)
       val fd1 = node1.failureDetector
       val address1 = node1.remoteAddress
 
@@ -46,7 +46,7 @@ class GossipingAccrualFailureDetectorSpec extends ClusterSpec with ImplicitSende
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
-      node2 = Node(system2)
+      node2 = Cluster(system2)
       val fd2 = node2.failureDetector
       val address2 = node2.remoteAddress
 
@@ -60,7 +60,7 @@ class GossipingAccrualFailureDetectorSpec extends ClusterSpec with ImplicitSende
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote3 = system3.provider.asInstanceOf[RemoteActorRefProvider]
-      node3 = Node(system3)
+      node3 = Cluster(system3)
       val fd3 = node3.failureDetector
       val address3 = node3.remoteAddress
 
