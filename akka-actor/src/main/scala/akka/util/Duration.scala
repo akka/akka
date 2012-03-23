@@ -348,7 +348,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   def finite_? = true
 
   override def equals(other: Any) =
-    other.isInstanceOf[FiniteDuration] &&
+    (other.asInstanceOf[AnyRef] eq this) || other.isInstanceOf[FiniteDuration] &&
       toNanos == other.asInstanceOf[FiniteDuration].toNanos
 
   override def hashCode = toNanos.asInstanceOf[Int]
