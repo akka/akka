@@ -49,7 +49,7 @@ private[amqp] class DurableConnectionActor(connectionProperties: ConnectionPrope
 
   import connectionProperties._
   val connectionFactory = new ConnectionFactory()
-  connectionFactory.setRequestedHeartbeat(amqpHeartbeat.toMillis.toInt)
+  connectionFactory.setRequestedHeartbeat(amqpHeartbeat.toSeconds.toInt)
   connectionFactory.setUsername(user)
   connectionFactory.setPassword(pass)
   connectionFactory.setVirtualHost(vhost)
