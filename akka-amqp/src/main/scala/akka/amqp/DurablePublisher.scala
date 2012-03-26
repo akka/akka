@@ -8,8 +8,9 @@ import akka.util.duration._
 import akka.event.Logging
 import akka.dispatch.{ Await, Promise, Future }
 import com.rabbitmq.client.{ ConfirmListener, ReturnListener }
+import akka.serialization.SerializationExtension
 
-case class Message(payload: Array[Byte],
+case class Message(payload: AnyRef,
                    routingKey: String,
                    mandatory: Boolean = false,
                    immediate: Boolean = false,
@@ -20,6 +21,7 @@ class DurablePublisher(durableConnection: DurableConnection,
                        persistent: Boolean = false) extends DurableChannel(durableConnection, persistent) {
 
   implicit val system = durableConnection.connectionProperties.system
+  val serialization = SerializationExtension(system)
   protected val log = Logging(system, this.getClass)
 
   val latch = new CountDownLatch(1)
@@ -58,8 +60,13 @@ class DurablePublisher(durableConnection: DurableConnection,
       channelActor ! ExecuteCallback { channel ⇒
         import message._
         log.debug("Publishing on '{}': {}", exchangeName, message)
-        channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), payload)
-        future.success(())
+        serialization.serialize(payload) match {
+          case Right(serialized) =>
+            channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
+            future.success(())
+          case Left(exception) =>
+            future.failure(exception)
+        }
       }
     } catch {
       case e: Exception ⇒ future.failure(e)
@@ -97,7 +104,12 @@ trait ConfirmingPublisher extends ConfirmListener {
       Future {
         Await.ready(future, timeout)
       }.onFailure { case te: TimeoutException ⇒ confirmHandles.remove(seqNo) }
-      channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), payload)
+      serialization.serialize(payload) match {
+        case Right(serialized) =>
+          channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
+        case Left(exception) =>
+          future.failure(exception)
+      }
     }
     future
   }
