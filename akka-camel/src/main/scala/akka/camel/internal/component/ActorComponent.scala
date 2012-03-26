@@ -17,18 +17,24 @@ import akka.util.duration._
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import akka.camel.internal.CamelExchangeAdapter
 import akka.util.{ NonFatal, Duration, Timeout }
-import akka.camel.{ DefaultConsumerConfig, ConsumerConfig, Camel, Ack, Failure ⇒ CamelFailure, CamelMessage }
+import akka.camel.{ ActorNotRegisteredException, DefaultConsumerConfig, ConsumerConfig, Camel, Ack, Failure ⇒ CamelFailure, CamelMessage }
 
 /**
  * For internal use only.
- * Camel component for sending messages to and receiving replies from (untyped) actors.
+ * Creates Camel [[org.apache.camel.Endpoint]]s that send messages to [[akka.camel.Consumer]] actors through an [[akka.camel.internal.component.ActorProducer]].
+ * The `ActorComponent` is a Camel [[org.apache.camel.Component]].
  *
- * @see akka.camel.component.ActorEndpoint
- * @see akka.camel.component.ActorProducer
+ * Camel integrates with Akka through this component. The [[akka.camel.internal.DefaultCamel]] module adds the
+ * `ActorComponent` to the [[org.apache.camel.CamelContext]] under the 'actor' component name.
+ * Messages are sent to [[akka.camel.Consumer]] actors through a [[akka.camel.internal.component.ActorEndpoint]] that
+ * this component provides.
  *
  * @author Martin Krasser
  */
 private[camel] class ActorComponent(camel: Camel) extends DefaultComponent {
+  /**
+   * @see org.apache.camel.Component
+   */
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
     val path = ActorEndpointPath.fromCamelPath(remaining)
     new ActorEndpoint(uri, this, path, camel)
@@ -37,13 +43,14 @@ private[camel] class ActorComponent(camel: Camel) extends DefaultComponent {
 
 /**
  * For internal use only.
- * The ActorEndpoint is a Camel Endpoint that is used to receive messages from Camel through the ActorComponent
- * Actors are referenced using <code>actor</code> endpoint URIs of the following format:
- * <code>actor://path:[actorPath]?[options]%s</code>,
- * where <code>[actorPath]</code> refers to the Actor Path to the Actor.
+ * Does what an endpoint does, creates consumers and producers for the component. The `ActorEndpoint` is a Camel [[org.apache.camel.Endpoint]] that is used to
+ * receive messages from Camel. Sending messages from the `ActorComponent` is not supported, a [[akka.camel.Producer]] actor should be used instead.
  *
- * @see akka.camel.component.ActorComponent
- * @see akka.camel.component.ActorProducer
+ * The `ActorEndpoint`s are created by the [[akka.camel.internal.component.ActorComponent]].
+ *
+ * Actors are referenced using actor endpoint URIs of the following format:
+ * <code>actor://path:[actorPath]?[options]%s</code>,
+ * where <code>[actorPath]</code> refers to the actor path to the actor.
  *
  * @author Martin Krasser
  */
@@ -53,8 +60,7 @@ private[camel] class ActorEndpoint(uri: String,
                                    camel: Camel) extends DefaultEndpoint(uri, comp) with ActorEndpointConfig {
 
   /**
-   *
-   * The ActorEndpoint right now only supports receiving messages from Camel.
+   * The ActorEndpoint only supports receiving messages from Camel.
    * The createProducer method (not to be confused with a producer actor) is used to send messages into the endpoint.
    * The ActorComponent is only there to send to actors registered through an actor endpoint URI.
    * You can use an actor as an endpoint to send to in a camel route (as in, a Camel Consumer Actor). so from(someuri) to (actoruri), but not 'the other way around'.
@@ -66,7 +72,9 @@ private[camel] class ActorEndpoint(uri: String,
     throw new UnsupportedOperationException("actor consumer not supported yet")
 
   /**
-   * Creates a new ActorProducer instance initialized with this endpoint.
+   * Creates a new producer which is used send messages into the endpoint.
+   *
+   * @return a newly created producer
    */
   def createProducer: ActorProducer = new ActorProducer(this, camel)
 
@@ -76,16 +84,20 @@ private[camel] class ActorEndpoint(uri: String,
   def isSingleton: Boolean = true
 }
 
+/**
+ * For internal use only.
+ * Configures the `ActorEndpoint`. This needs to be a `bean` for Camel purposes.
+ *
+ */
 private[camel] trait ActorEndpointConfig {
   def path: ActorEndpointPath
 
   @BeanProperty var replyTimeout: Duration = 1 minute
 
   /**
-   * TODO fix it
    * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
-   * set via the <code>blocking=true|false</code> endpoint URI parameter. Default value is
-   * <code>true</code>. When set to <code>true</code> consumer actors need to additionally
+   * set via the <code>autoack=true|false</code> endpoint URI parameter. Default value is
+   * <code>true</code>. When set to <code>false</code> consumer actors need to additionally
    * call <code>Consumer.ack</code> within <code>Actor.receive</code>.
    */
   @BeanProperty var autoack: Boolean = true
@@ -102,7 +114,7 @@ private[camel] trait ActorEndpointConfig {
 private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) extends DefaultProducer(endpoint) with AsyncProcessor {
   /**
    * Processes the exchange.
-   * Calls the asynchronous version of the method and waits for the result (blocking)
+   * Calls the asynchronous version of the method and waits for the result (blocking).
    * @param exchange the exchange to process
    */
   def process(exchange: Exchange) { processExchangeAdapter(new CamelExchangeAdapter(exchange)) }
@@ -200,38 +212,21 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 }
 
 /**
- * Thrown to indicate that an actor referenced by an endpoint URI cannot be
- * found in the Actor.registry.
- *
- * @author Martin Krasser
+ * For internal use only. Converts Strings to [[akka.util.Duration]]s
  */
-class ActorNotRegisteredException(uri: String) extends RuntimeException {
-  override def getMessage = "Actor [%s] doesn't exist" format uri
-}
-
-/**
- * For internal use only.
- */
-private[camel] object DurationTypeConverter extends CamelTypeConverter {
+private[camel] object DurationTypeConverter extends TypeConverter {
   def convertTo[T](`type`: Class[T], value: AnyRef) = {
     Duration(value.toString).asInstanceOf[T]
   }
-
+  def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
+  def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef) = convertTo(`type`, value)
+  def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
   def toString(duration: Duration) = duration.toNanos + " nanos"
 }
 
 /**
- * For internal use only.
- */
-private[camel] abstract class CamelTypeConverter extends TypeConverter {
-  def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
-  def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef) = convertTo(`type`, value)
-  def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
-}
-
-/**
- * For internal use only. An endpoint to an <code>ActorRef</code>
- * @param actorPath the path to the actor
+ * For internal use only. An endpoint to an [[akka.actor.ActorRef]]
+ * @param actorPath the String representation of the path to the actor
  */
 private[camel] case class ActorEndpointPath private (actorPath: String) {
   require(actorPath != null)
@@ -242,17 +237,17 @@ private[camel] case class ActorEndpointPath private (actorPath: String) {
     val ref = system.actorFor(actorPath)
     if (ref.isTerminated) None else Some(ref)
   }
-
 }
 
 /**
- * For internal use only. Companion of <code>ActorEndpointPath</code>
+ * For internal use only. Companion of `ActorEndpointPath`
  */
 private[camel] object ActorEndpointPath {
   def apply(actorRef: ActorRef) = new ActorEndpointPath(actorRef.path.toString)
 
   /**
-   * Expects path in a format: path:%s
+   * Creates an [[akka.camel.internal.component.ActorEndpointPath]] from the remaining part of the endpoint URI (the part after the scheme, without the parameters of the URI).
+   * Expects the remaining part of the URI (the actor path) in a format: path:%s
    */
   def fromCamelPath(camelPath: String) = camelPath match {
     case id if id startsWith "path:" ⇒ new ActorEndpointPath(id substring 5)

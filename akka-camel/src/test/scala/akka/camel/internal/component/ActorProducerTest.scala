@@ -46,7 +46,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         }
 
         "not expect response and not block" in {
-          time(producer.processExchangeAdapter(exchange)) must be < (30 millis)
+          time(producer.processExchangeAdapter(exchange)) must be < (200 millis)
         }
 
       }

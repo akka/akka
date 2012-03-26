@@ -32,7 +32,7 @@ class UntypedProducerTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       given("a registered two-way producer")
       val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
 
-      when("a test message is sent to the producer with !!")
+      when("a test message is sent to the producer with ask")
       val message = CamelMessage("test", Map(CamelMessage.MessageExchangeId -> "123"))
       val future = producer.ask(message)(timeout)
       then("a normal response should have been returned by the producer")
@@ -48,7 +48,7 @@ class UntypedProducerTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       given("a registered two-way producer")
       val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
 
-      when("a test message causing an exception is sent to the producer with !!")
+      when("a test message causing an exception is sent to the producer with ask")
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
       val future = producer.ask(message)(timeout)
       then("a failure response should have been returned by the producer")

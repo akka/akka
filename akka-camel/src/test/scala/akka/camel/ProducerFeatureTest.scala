@@ -216,7 +216,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       val target = system.actorOf(Props[ReplyingForwardTarget])
       val producer = system.actorOf(Props(new TestForwarder("direct:producer-test-3", target)))
 
-      when("a test message causing an exception is sent to the producer with !!")
+      when("a test message causing an exception is sent to the producer with ask")
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
       val future = producer.ask(message)(timeout)
       Await.result(future, timeout) match {

@@ -114,15 +114,14 @@ private[camel] case class RegisterConsumer(endpointUri: String, actorRef: ActorR
 
 /**
  * For internal use only.
- * Abstract builder of a route to a target which can be either an actor or an typed actor method.
+ * Builder of a route to a target which can be an actor.
  *
- * @param endpointUri endpoint URI of the consumer actor or typed actor method.
+ * @param endpointUri endpoint URI of the consumer actor.
  *
  * @author Martin Krasser
  */
 private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: ActorRef, config: ConsumerConfig) extends RouteBuilder {
 
-  //TODO: what if actorpath contains parameters? Should we use url encoding? But this will look ugly...
   protected def targetActorUri = ActorEndpointPath(consumer).toCamelPath(config)
 
   def configure() {
@@ -137,7 +136,6 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: Ac
   def applyUserRouteCustomization(rd: RouteDefinition) = config.onRouteDefinition(rd)
 
   object Conversions {
-    // TODO: make conversions configurable
     private val bodyConversions = Map(
       "file" -> classOf[InputStream])
 
@@ -148,43 +146,3 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: Ac
   }
 
 }
-
-/**
- * Super class of all activation messages.
- */
-abstract class ActivationMessage(val actor: ActorRef)
-
-/**
- * For internal use only. companion object of <code>ActivationMessage</code>
- *
- */
-private[camel] object ActivationMessage {
-  def unapply(msg: ActivationMessage): Option[ActorRef] = Some(msg.actor)
-}
-
-/**
- * For internal use only.
- * Event message indicating that a single endpoint has been activated.
- */
-sealed case class EndpointActivated(actorRef: ActorRef) extends ActivationMessage(actorRef)
-
-/**
- * For internal use only.
- * Event message indicating that a single endpoint failed tp activate
- * @param actorRef the endpoint that failed to activate
- * @param cause the cause for failure
- */
-sealed case class EndpointFailedToActivate(actorRef: ActorRef, cause: Throwable) extends ActivationMessage(actorRef)
-
-/**
- * For internal use only.
- * @param actorRef the endpoint that was de-activated
- */
-sealed case class EndpointDeActivated(actorRef: ActorRef) extends ActivationMessage(actorRef)
-
-/**
- * For internal use only.
- * @param actorRef the endpoint that failed to de-activate
- * @param cause the cause for failure
- */
-sealed case class EndpointFailedToDeActivate(actorRef: ActorRef, cause: Throwable) extends ActivationMessage(actorRef)

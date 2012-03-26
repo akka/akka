@@ -6,9 +6,10 @@ package akka.camel.internal
 
 import akka.actor._
 import collection.mutable.WeakHashMap
+import akka.camel._
 
 /**
- * For internal use only. Tracks activation and de-activation of endpoints.
+ * For internal use only. An actor that tracks activation and de-activation of endpoints.
  */
 private[akka] final class ActivationTracker extends Actor with ActorLogging {
   val activations = new WeakHashMap[ActorRef, ActivationStateMachine]
@@ -99,10 +100,6 @@ private[akka] final class ActivationTracker extends Actor with ActorLogging {
     context.system.eventStream.subscribe(self, classOf[ActivationMessage])
   }
 
-  /**
-   *
-   * @return
-   */
   override def receive = {
     case msg @ ActivationMessage(ref) ⇒
       val state = activations.getOrElseUpdate(ref, new ActivationStateMachine)
@@ -112,6 +109,15 @@ private[akka] final class ActivationTracker extends Actor with ActorLogging {
   private[this] def logStateWarning(actorRef: ActorRef): Receive = { case msg ⇒ log.warning("Message [{}] not expected in current state of actor [{}]", msg, actorRef) }
 }
 
-case class AwaitActivation(ref: ActorRef) extends ActivationMessage(ref)
+/**
+ * For internal use only. A request message to the ActivationTracker for the status of activation.
+ * @param ref the actorRef
+ */
+private[camel] case class AwaitActivation(ref: ActorRef) extends ActivationMessage(ref)
 
-case class AwaitDeActivation(ref: ActorRef) extends ActivationMessage(ref)
+/**
+ * For internal use only. A request message to the ActivationTracker for the status of de-activation.
+ * For internal use only.
+ * @param ref the actorRef
+ */
+private[camel] case class AwaitDeActivation(ref: ActorRef) extends ActivationMessage(ref)
