@@ -1,6 +1,5 @@
 package akka.amqp
 
-import akka.util.DurationInt
 import com.rabbitmq.client._
 import akka.actor.ActorSystem
 import akka.dispatch.Await
@@ -11,7 +10,9 @@ class PublisherSpec extends AkkaSpec {
 
   trait PublisherScope {
     def exchange: Exchange
-    val durableConnection = new DurableConnection(ConnectionProperties())
+
+    val system = ActorSystem("amqp")
+    val durableConnection = new DurableConnection(ConnectionProperties(system))
     val publisher = durableConnection.newPublisher(exchange)
     publisher.awaitStart()
 
@@ -37,6 +38,7 @@ class PublisherSpec extends AkkaSpec {
       def exchange = UnmanagedExchange("does-not-exist")
 
       try {
+        implicit val system = ActorSystem("amqp")
         val latch = TestLatch()
         publisher.onAvailable { channel ⇒
           channel.addShutdownListener(new ShutdownListener {
@@ -53,6 +55,7 @@ class PublisherSpec extends AkkaSpec {
       def exchange = DefaultExchange
 
       try {
+        implicit val system = ActorSystem("amqp")
         val latch = TestLatch()
         publisher.onReturn { returnedMessage ⇒
           latch.open()
@@ -64,6 +67,7 @@ class PublisherSpec extends AkkaSpec {
     "get message returned when sending with mandatory flag" in new PublisherScope {
       def exchange = DefaultExchange
       try {
+        implicit val system = ActorSystem("amqp")
         val latch = TestLatch()
         publisher.onReturn { returnedMessage ⇒
           latch.open()
@@ -74,7 +78,8 @@ class PublisherSpec extends AkkaSpec {
     }
     "get message publishing acknowledged when using confirming publiser" in {
 
-      val durableConnection = new DurableConnection(ConnectionProperties())
+      val system = ActorSystem("amqp")
+      val durableConnection = new DurableConnection(ConnectionProperties(system))
       val confirmingPublisher = durableConnection.newConfirmingPublisher(DefaultExchange)
       try {
         confirmingPublisher.awaitStart()
