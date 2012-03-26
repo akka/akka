@@ -6,7 +6,7 @@ import akka.util.duration._
 import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
 import akka.actor.{ Props, ActorSystem }
 import akka.util.Duration
-
+import akka.camel._
 class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
 
   override protected def afterAll() { system.shutdown() }

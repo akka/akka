@@ -27,6 +27,7 @@ trait Activation {
    * @param endpoint the endpoint to wait for to be activated
    * @param timeout the timeout for the wait
    * @throws akka.camel.ActivationTimeoutException if endpoint is not activated within timeout.
+   * @return the activated ActorRef
    */
   def awaitActivation(endpoint: ActorRef, timeout: Duration): ActorRef = {
     try {
@@ -76,7 +77,7 @@ trait Activation {
 }
 
 /**
- * An exception for when a timeout has occurred during deactivation of an endpoint
+ * An exception for when a timeout has occurred during deactivation of an endpoint.
  * @param endpoint the endpoint that could not be de-activated in time
  * @param timeout the timeout
  */
@@ -85,7 +86,7 @@ class DeActivationTimeoutException(endpoint: ActorRef, timeout: Duration) extend
 }
 
 /**
- * An exception for when a timeout has occurred during the activation of an endpoint
+ * An exception for when a timeout has occurred during the activation of an endpoint.
  * @param endpoint the endpoint that could not be activated in time
  * @param timeout the timeout
  */

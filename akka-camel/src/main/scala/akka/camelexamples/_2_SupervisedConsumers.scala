@@ -8,7 +8,7 @@ import akka.actor.{ PoisonPill, Terminated, Props, ActorSystem, Actor }
 import ExamplesSupport._
 import RichString._
 
-object SupervisedConsumersExample extends App {
+private[camelexamples] object SupervisedConsumersExample extends App {
 
   val system = ActorSystem("test1")
 
@@ -22,7 +22,7 @@ object SupervisedConsumersExample extends App {
   "data/input/CamelConsumer/file1.txt" << "test data " + math.random
 }
 
-class EndpointManager extends Actor {
+private[camelexamples] class EndpointManager extends Actor {
   import context._
 
   override def supervisorStrategy() = retry3xWithin1s

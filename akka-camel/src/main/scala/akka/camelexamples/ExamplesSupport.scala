@@ -9,13 +9,13 @@ import akka.util.duration._
 import akka.actor.{ Actor, OneForOneStrategy }
 import akka.actor.SupervisorStrategy._
 
-object ExamplesSupport {
+private[camelexamples] object ExamplesSupport {
   val retry3xWithin1s = OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 1 second) {
     case _: Exception ⇒ Restart
   }
 }
 
-class SysOutConsumer extends Consumer {
+private[camelexamples] class SysOutConsumer extends Consumer {
   override def activationTimeout = 10 seconds
   def endpointUri = "file://data/input/CamelConsumer"
 
@@ -26,14 +26,14 @@ class SysOutConsumer extends Consumer {
   }
 }
 
-class TroubleMaker extends Consumer {
+private[camelexamples] class TroubleMaker extends Consumer {
   def endpointUri = "WRONG URI"
 
   println("Trying to instantiate conumer with uri: " + endpointUri)
   protected def receive = { case _ ⇒ }
 }
 
-class SysOutActor(implicit camel: Camel) extends Actor {
+private[camelexamples] class SysOutActor(implicit camel: Camel) extends Actor {
   implicit val camelContext = camel.context
   protected def receive = {
     case msg: CamelMessage ⇒ {

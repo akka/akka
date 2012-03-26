@@ -127,35 +127,38 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
 
   /**
    * Returns the body of the message converted to the type <code>T</code>. Conversion is done
-   * using Camel's type converter. The type converter is obtained from the CamelContext managed
-   * by CamelContextManager. Applications have to ensure proper initialization of
-   * CamelContextManager.
-   *
-   * @see CamelContextManager.
+   * using Camel's type converter. The type converter is obtained from the CamelContext that is passed in.
+   * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
+   * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    */
-
   def bodyAs[T](implicit m: Manifest[T], camelContext: CamelContext): T = getBodyAs(m.erasure.asInstanceOf[Class[T]], camelContext)
 
   /**
    * Returns the body of the message converted to the type as given by the <code>clazz</code>
    * parameter. Conversion is done using Camel's type converter. The type converter is obtained
-   * from the CamelContext managed by CamelContextManager. Applications have to ensure proper
-   * initialization of CamelContextManager.
+   * from the CamelContext that is passed in.
+   * <p>
+   * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
+   * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    * <p>
    * Java API
    *
-   * @see CamelContextManager.
    */
   def getBodyAs[T](clazz: Class[T], camelContext: CamelContext): T =
     camelContext.getTypeConverter.mandatoryConvertTo[T](clazz, body)
 
   /**
    * Creates a CamelMessage with current <code>body</code> converted to type <code>T</code>.
+   * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
+   * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    */
   def withBodyAs[T](implicit m: Manifest[T], camelContext: CamelContext): CamelMessage = withBodyAs(m.erasure.asInstanceOf[Class[T]])
 
   /**
    * Creates a CamelMessage with current <code>body</code> converted to type <code>clazz</code>.
+   * <p>
+   * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
+   * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    * <p>
    * Java API
    */
@@ -164,12 +167,19 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
   /**
    * Returns the header with given <code>name</code> converted to type <code>T</code>. Throws
    * <code>NoSuchElementException</code> if the header doesn't exist.
+   * <p>
+   * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
+   * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
+   *
    */
   def headerAs[T](name: String)(implicit m: Manifest[T], camelContext: CamelContext): Option[T] = header(name).map(camelContext.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], _))
 
   /**
    * Returns the header with given <code>name</code> converted to type as given by the <code>clazz</code>
    * parameter. Throws <code>NoSuchElementException</code> if the header doesn't exist.
+   * <p>
+   * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
+   * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    * <p>
    * Java API
    */
@@ -219,7 +229,7 @@ object CamelMessage {
 
 /**
  * Positive acknowledgement message (used for application-acknowledged message receipts).
- *
+ * When `autoack` is set to false in the [[akka.camel.Consumer]], you can send an `Ack` to the sender of the CamelMessage.
  * @author Martin Krasser
  */
 case object Ack {

@@ -37,7 +37,7 @@ class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCa
       def endpointUri = "direct:a3"
       def receive = { case _ ⇒ {} }
 
-      override def postStop() = {
+      override def postStop() {
         super.postStop()
         latch.countDown()
       }

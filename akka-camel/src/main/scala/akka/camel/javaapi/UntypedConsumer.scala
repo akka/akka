@@ -12,7 +12,6 @@ import org.apache.camel.{ ProducerTemplate, CamelContext }
  *  Java-friendly Consumer.
  *
  * @see UntypedConsumerActor
- * @see RemoteUntypedConsumerActor
  *
  * @author Martin Krasser
  */
