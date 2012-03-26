@@ -52,7 +52,7 @@ class DurablePublisher(durableConnection: DurableConnection,
     }
   }
 
-  def publish(message: Message, timeout: Long = 5000): Future[Unit] = {
+  def publish(message: Message): Future[Unit] = {
     val future = Promise[Unit]
     try {
       channelActor ! ExecuteCallback { channel ⇒
@@ -86,7 +86,7 @@ trait ConfirmingPublisher extends ConfirmListener {
     channel.addConfirmListener(this)
   }
 
-  def publishConfirmed(message: Message, timeout: Duration = (5 seconds)): Future[Confirm] = {
+  def publishConfirmed(message: Message, timeout: Duration = (settings.DefaultPublisherConfirmTimeout milliseconds)): Future[Confirm] = {
     val future = Promise[Confirm]
     channelActor ! ExecuteCallback { channel ⇒
       import message._

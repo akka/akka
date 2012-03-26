@@ -177,10 +177,12 @@ class DurableConnection(private[amqp] val connectionProperties: ConnectionProper
 
   private[amqp] val durableConnectionActor = connectionProperties.system.actorOf(Props(new DurableConnectionActor(connectionProperties)), "connection")
   durableConnectionActor ! Connect
+  val settings = AMQP(connectionProperties.system)
 
   def withConnection[T](callback: Connection ⇒ T): Future[T] = {
     import akka.pattern.ask
-    (durableConnectionActor.ask(ConnectionCallback(callback))(Timeout(5000))).map(_.asInstanceOf[T])
+    implicit val timeout = Timeout(settings.DefaultInteractionTimeout)
+    (durableConnectionActor ? ConnectionCallback(callback)) map (_.asInstanceOf[T])
   }
 
   def withTempChannel[T](callback: Channel ⇒ T): Future[T] = {

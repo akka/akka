@@ -14,6 +14,10 @@ class AMQPSettings(config: Config) extends Extension {
   val DefaultAmqpHeartbeatMs: Long = config.getMilliseconds("akka.amqp.default.heartbeat")
   val DefaultMaxReconnectDelayMs: Long = config.getMilliseconds("akka.amqp.default.max-reconnect-delay")
   val DefaultChannelThreads: Int = config.getInt("akka.amqp.default.channel-threads")
+  val DefaultInteractionTimeout: Long = config.getMilliseconds("akka.amqp.default.interaction-timeout")
+  val DefaultChannelCreationTimeout: Long = config.getMilliseconds("akka.amqp.default.channel-creation-timeout")
+  val DefaultChannelReconnectTimeout: Long = config.getMilliseconds("akka.amqp.default.channel-reconnect-timeout")
+  val DefaultPublisherConfirmTimeout: Long = config.getMilliseconds("akka.amqp.default.publisher-confirm-timeout")
 }
 
 object AMQP extends ExtensionId[AMQPSettings] with ExtensionIdProvider {

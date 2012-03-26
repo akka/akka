@@ -37,6 +37,7 @@ private[amqp] class DurableChannelActor
   extends Actor with FSM[ChannelState, Option[Channel]] with ShutdownListener {
 
   val registeredCallbacks = new ArrayBuffer[Channel ⇒ Unit]
+  val settings = AMQP(context.system)
 
   startWith(Unavailable, None)
 
@@ -50,7 +51,7 @@ private[amqp] class DurableChannelActor
       } catch {
         case ioe: IOException ⇒
           log.error(ioe, "Error while requesting channel from connection {}", connection)
-          setTimer("request-channel", RequestChannel(connection), 5 seconds, true)
+          setTimer("request-channel", RequestChannel(connection), settings.DefaultChannelReconnectTimeout milliseconds, true)
       }
     case Event(ConnectionConnected(connection), _) ⇒
       connection ! ConnectionCallback(c ⇒ self ! RequestChannel(c))
@@ -97,7 +98,7 @@ private[amqp] class DurableChannelActor
         stop()
       } else {
         log.error(cause, "Channel {} broke down", channel)
-        setTimer("request-channel", RequestChannel(channel.getConnection), 1 seconds, true)
+        setTimer("request-channel", RequestChannel(channel.getConnection), settings.DefaultChannelReconnectTimeout milliseconds, true)
         goto(Unavailable) using None
       }
     }
@@ -116,6 +117,7 @@ class DurableChannel(durableConnection: DurableConnection, withDowntimeStash: Bo
 
   import durableConnection.connectionProperties.system
   private val log = Logging(system, this.getClass)
+  val settings = AMQP(system)
 
   def channelActorCreator = if (withDowntimeStash) {
     Props(new DurableChannelActor with DowntimeStash).withDispatcher("akka.amqp.stashing-dispatcher")
@@ -125,10 +127,10 @@ class DurableChannel(durableConnection: DurableConnection, withDowntimeStash: Bo
 
   private[amqp] val connectionActor = durableConnection.durableConnectionActor
   import akka.pattern.ask
-  implicit val timeout = Timeout(5000)
+  implicit val timeout = Timeout(settings.DefaultChannelCreationTimeout)
   // copy from internals, so at lease channel actors are children of the connection for supervision purposes
   val channelFuture = connectionActor ? (CreateRandomNameChild(channelActorCreator)) mapTo manifest[ActorRef]
-  private[amqp] val channelActor = Await.result(channelFuture, 5 seconds)
+  private[amqp] val channelActor = Await.result(channelFuture, settings.DefaultChannelCreationTimeout milliseconds)
 
   connectionActor ! SubscribeTransitionCallBack(channelActor)
 
@@ -138,7 +140,7 @@ class DurableChannel(durableConnection: DurableConnection, withDowntimeStash: Bo
 
   def withChannel[T](callback: Channel ⇒ T): Future[T] = {
     import akka.pattern.ask
-    implicit val timeout = Timeout(5000)
+    implicit val timeout = Timeout(settings.DefaultInteractionTimeout)
     (channelActor.ask(ExecuteCallbackTo(callback))).map(_.asInstanceOf[T])
   }
 
