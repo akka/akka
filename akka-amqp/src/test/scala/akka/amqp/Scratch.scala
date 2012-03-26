@@ -1,7 +1,7 @@
 package akka.amqp
 
 import java.util.concurrent.CountDownLatch
-import akka.actor.{ActorSystem, Actor, Props}
+import akka.actor.{ ActorSystem, Actor, Props }
 
 object Scratch extends App {
 
