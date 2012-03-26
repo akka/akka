@@ -61,10 +61,10 @@ class DurablePublisher(durableConnection: DurableConnection,
         import message._
         log.debug("Publishing on '{}': {}", exchangeName, message)
         serialization.serialize(payload) match {
-          case Right(serialized) =>
+          case Right(serialized) ⇒
             channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
             future.success(())
-          case Left(exception) =>
+          case Left(exception) ⇒
             future.failure(exception)
         }
       }
@@ -105,9 +105,9 @@ trait ConfirmingPublisher extends ConfirmListener {
         Await.ready(future, timeout)
       }.onFailure { case te: TimeoutException ⇒ confirmHandles.remove(seqNo) }
       serialization.serialize(payload) match {
-        case Right(serialized) =>
+        case Right(serialized) ⇒
           channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
-        case Left(exception) =>
+        case Left(exception) ⇒
           future.failure(exception)
       }
     }
