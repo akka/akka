@@ -72,11 +72,11 @@ private[amqp] class DurableConnectionActor(connectionProperties: ConnectionPrope
 
   when(Disconnected) {
     case Event(Connect, _) ⇒
-      if (log.isInfoEnabled) log.info("Connecting to one of [%s]" format (addresses.mkString(", ")))
+      log.info("Connecting to one of [{}]", addresses.mkString(", "))
       try {
         val connection = connectionFactory.newConnection(executorService, addresses.map(RmqAddress.parseAddress).toArray)
         connection.addShutdownListener(this)
-        if (log.isInfoEnabled) log.info("Successfully connected to %s".format(connection))
+        log.info("Successfully connected to {}", connection)
         cancelTimer("reconnect")
         timeoutGenerator.reset()
         goto(Connected) using Some(connection)
@@ -86,12 +86,12 @@ private[amqp] class DurableConnectionActor(connectionProperties: ConnectionPrope
           val nextReconnectTimeout = timeoutGenerator.nextTimeoutSec(maxReconnectDelay.toSeconds.toInt)
           import akka.util.duration._
           setTimer("reconnect", Connect, nextReconnectTimeout seconds, true)
-          if (log.isInfoEnabled) log.info("Reconnecting in %s seconds...".format(nextReconnectTimeout))
+          log.info("Reconnecting in {} seconds...".format(nextReconnectTimeout))
           stay()
       }
     case Event(Disconnect, _) ⇒
       cancelTimer("reconnect")
-      if (log.isInfoEnabled) log.info("Already disconnected")
+      log.info("Already disconnected")
       stay()
   }
 
@@ -100,16 +100,16 @@ private[amqp] class DurableConnectionActor(connectionProperties: ConnectionPrope
       stay() replying callback.apply(connection)
     case Event(Disconnect, Some(connection)) ⇒
       try {
-        if (log.isDebugEnabled) log.debug("Disconnecting from %s".format(connection))
+        log.debug("Disconnecting from {}", connection)
         connection.close()
-        if (log.isInfoEnabled) log.info("Successfully disconnected from %s".format(connection))
+        log.info("Successfully disconnected from {}", connection)
       } catch {
         case e: Exception ⇒ log.error(e, "Error while closing connection")
       }
       goto(Disconnected)
     case Event(cause: ShutdownSignalException, Some(connection)) ⇒
       if (cause.isHardError) {
-        log.error(cause, "Connection broke down %s".format(connection))
+        log.error(cause, "Connection broke down {}", connection)
         self ! Connect
       }
       goto(Disconnected)
@@ -124,7 +124,7 @@ private[amqp] class DurableConnectionActor(connectionProperties: ConnectionPrope
 
   onTermination {
     case StopEvent(reason, state, stateData) ⇒
-      if (log.isDebugEnabled) log.debug("Successfully disposed")
+      log.debug("Successfully disposed")
       executorService.shutdown()
   }
 
@@ -174,7 +174,6 @@ case class ConnectionProperties(user: String,
                                 system: ActorSystem)
 
 class DurableConnection(private[amqp] val connectionProperties: ConnectionProperties) {
-
 
   private[amqp] val durableConnectionActor = connectionProperties.system.actorOf(Props(new DurableConnectionActor(connectionProperties)), "connection")
   durableConnectionActor ! Connect

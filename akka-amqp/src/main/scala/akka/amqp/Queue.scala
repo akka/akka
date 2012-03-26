@@ -2,7 +2,6 @@ package akka.amqp
 
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.AMQP.Queue.DeclareOk
-import akka.event.{ Logging, LoggingAdapter }
 
 sealed trait Queue
 

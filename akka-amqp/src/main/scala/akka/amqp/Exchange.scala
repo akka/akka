@@ -1,7 +1,6 @@
 package akka.amqp
 
 import com.rabbitmq.client.Channel
-import akka.event.{ Logging, LoggingAdapter }
 
 trait Exchange
 

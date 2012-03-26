@@ -47,14 +47,14 @@ class DurableConsumer(durableConnection: DurableConnection,
     channel ⇒
       val queueName = queue match {
         case managed: ManagedQueue ⇒
-          if (log.isDebugEnabled) log.debug("Declaring queue %s".format(managed))
+          log.debug("Declaring queue {}", managed)
           managed.declare(channel).name
         case unmanaged: UnmanagedQueue ⇒ unmanaged.name
       }
       queueBindings.foreach { binding ⇒
         binding.exchange match {
           case managed: ManagedExchange ⇒
-            if (log.isDebugEnabled) log.debug("Declaring exchange %s".format(managed))
+            log.debug("Declaring exchange {}", managed)
             managed.declare(channel)
           case _ ⇒ ()
         }

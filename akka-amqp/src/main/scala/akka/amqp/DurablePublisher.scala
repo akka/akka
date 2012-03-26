@@ -8,7 +8,6 @@ import akka.util.duration._
 import akka.event.Logging
 import akka.dispatch.{ Await, Promise, Future }
 import com.rabbitmq.client.{ ConfirmListener, ReturnListener }
-import akka.actor.ActorSystem
 
 case class Message(payload: Array[Byte],
                    routingKey: String,
@@ -27,7 +26,7 @@ class DurablePublisher(durableConnection: DurableConnection,
   onAvailable { channel ⇒
     exchange match {
       case managed: ManagedExchange ⇒
-        if (log.isDebugEnabled) log.debug("Declaring exchange %s".format(managed))
+        log.debug("Declaring exchange {}", managed)
         managed.declare(channel)
       case _ ⇒
     }
@@ -58,7 +57,7 @@ class DurablePublisher(durableConnection: DurableConnection,
     try {
       channelActor ! ExecuteCallback { channel ⇒
         import message._
-        if (log.isDebugEnabled) log.debug("Publishing on '%s': %s".format(exchangeName, message))
+        log.debug("Publishing on '{}': {}", exchangeName, message)
         channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), payload)
         future.success(())
       }
@@ -91,7 +90,7 @@ trait ConfirmingPublisher extends ConfirmListener {
     val future = Promise[Confirm]
     channelActor ! ExecuteCallback { channel ⇒
       import message._
-      if (log.isDebugEnabled) log.debug("Publishing on '%s': %s".format(exchangeName, message))
+      log.debug("Publishing on '{}': {}", exchangeName, message)
       val seqNo = channel.getNextPublishSeqNo
       unconfirmedSet.add(seqNo)
       confirmHandles.put(seqNo, future)

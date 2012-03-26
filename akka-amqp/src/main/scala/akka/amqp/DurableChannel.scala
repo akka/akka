@@ -9,7 +9,7 @@ import util.control.Exception
 import akka.actor._
 import akka.util.Timeout
 import akka.event.Logging
-import akka.dispatch.{Await, Future}
+import akka.dispatch.{ Await, Future }
 
 private sealed trait ChannelState
 private case object Available extends ChannelState
@@ -43,23 +43,23 @@ private[amqp] class DurableChannelActor
   when(Unavailable) {
     case Event(RequestChannel(connection), _) ⇒
       cancelTimer("request-channel")
-      if (log.isDebugEnabled) log.debug("Requesting channel from %s".format(connection))
+      log.debug("Requesting channel from {}", connection)
       try {
         self ! connection.createChannel
         stay()
       } catch {
         case ioe: IOException ⇒
-          log.error(ioe, "Error while requesting channel from connection %s".format(connection))
+          log.error(ioe, "Error while requesting channel from connection {}", connection)
           setTimer("request-channel", RequestChannel(connection), 5 seconds, true)
       }
     case Event(ConnectionConnected(connection), _) ⇒
       connection ! ConnectionCallback(c ⇒ self ! RequestChannel(c))
       stay()
     case Event(channel: Channel, _) ⇒
-      if (log.isDebugEnabled) log.debug("Received channel %s".format(channel))
+      log.debug("Received channel {}", channel)
       channel.addShutdownListener(this)
       if (!registeredCallbacks.isEmpty) {
-        if (log.isDebugEnabled) log.debug("Applying %s registered callbacks on channel %s".format(registeredCallbacks.size, channel))
+        log.debug("Applying {} registered callbacks on channel {}", registeredCallbacks.size, channel)
         registeredCallbacks.foreach(_.apply(channel))
       }
       goto(Available) using Some(channel)
@@ -69,7 +69,7 @@ private[amqp] class DurableChannelActor
 
   when(Available) {
     case Event(ConnectionDisconnected(), Some(channel)) ⇒
-      log.warning("Connection went down of channel %s".format(channel))
+      log.warning("Connection went down of channel {}", channel)
       goto(Unavailable) using None
     case Event(ExecuteCallback(callback), Some(channel)) ⇒
       callback.apply(channel)
@@ -93,10 +93,10 @@ private[amqp] class DurableChannelActor
     } else { // channel error
       val channel = cause.getReference.asInstanceOf[Channel]
       if (cause.isInitiatedByApplication) {
-        if (log.isDebugEnabled) log.debug("Channel %s shutdown (%s)".format(channel, cause.getMessage))
+        log.debug("Channel {} shutdown ({})", channel, cause.getMessage)
         stop()
       } else {
-        log.error(cause, "Channel %s broke down".format(channel))
+        log.error(cause, "Channel {} broke down", channel)
         setTimer("request-channel", RequestChannel(channel.getConnection), 1 seconds, true)
         goto(Unavailable) using None
       }
@@ -146,7 +146,7 @@ class DurableChannel(durableConnection: DurableConnection, withDowntimeStash: Bo
     if (!channelActor.isTerminated) {
       channelActor ! ExecuteCallback { channel ⇒
         if (channel.isOpen) {
-          if (log.isDebugEnabled) log.debug("Closing channel %s".format(channel))
+          log.debug("Closing channel {}", channel)
           Exception.ignoring(classOf[AlreadyClosedException], classOf[ShutdownSignalException]) {
             channel.close()
           }
