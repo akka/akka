@@ -18,8 +18,8 @@ object AkkaBuild extends Build {
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
-    version      := "2.0-SNAPSHOT",
-    scalaVersion := "2.9.1-1-RC1"
+    version      := "2.1-SNAPSHOT",
+    scalaVersion := "2.9.1-1"
   )
 
   lazy val akka = Project(
@@ -32,7 +32,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -239,6 +239,15 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.kernel
     )
   )
+ 
+  lazy val camel = Project(
+     id = "akka-camel",
+     base = file("akka-camel"),
+     dependencies = Seq(actor, slf4j, testkit % "test->test"),
+     settings = defaultSettings ++ Seq(
+       libraryDependencies ++= Dependencies.camel
+     )
+  )
 
   lazy val actorMigration = Project(
     id = "akka-actor-migration",
@@ -251,7 +260,8 @@ object AkkaBuild extends Build {
     id = "akka-sbt-plugin",
     base = file("akka-sbt-plugin"),
     settings = defaultSettings ++ Seq(
-      sbtPlugin := true
+      sbtPlugin := true,
+      scalaVersion := "2.9.1"
     )
   )
 
@@ -328,7 +338,8 @@ object AkkaBuild extends Build {
   // Settings
 
   override lazy val settings = super.settings ++ buildSettings ++ Seq(
-      resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/"
+      resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
+      resolvers += "Twitter Public Repo" at "http://maven.twttr.com" // This will be going away with com.mongodb.async's next release
     )
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
@@ -341,12 +352,10 @@ object AkkaBuild extends Build {
   val excludeTestTags = SettingKey[Seq[String]]("exclude-test-tags")
   val includeTestTags = SettingKey[Seq[String]]("include-test-tags")
 
-  val defaultExcludedTags = Seq("timing")
+  val defaultExcludedTags = Seq("timing", "long-running")
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-    resolvers += "Twitter Public Repo" at "http://maven.twttr.com", // This will be going away with com.mongodb.async's next release
-    resolvers += "Typesafe Snapshot Repo" at "http://repo.typesafe.com/typesafe/snapshots/", // Used while play-mini is still on RC
 
     // compile options
     scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked") ++ (
@@ -421,11 +430,11 @@ object Dependencies {
 
   val actorTests = Seq(
     Test.junit, Test.scalatest, Test.commonsMath, Test.mockito,
-    Test.scalacheck, protobuf, jacksonMapper, sjson
+    Test.scalacheck, protobuf, jacksonMapper
   )
 
   val remote = Seq(
-    netty, protobuf, sjson, h2Lzf, Test.junit, Test.scalatest,
+    netty, protobuf, Test.junit, Test.scalatest,
     Test.zookeeper, Test.log4j // needed for ZkBarrier in multi-jvm tests
   )
 
@@ -441,7 +450,7 @@ object Dependencies {
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
-  val fileMailbox = Seq(Test.scalatest, Test.junit)
+  val fileMailbox = Seq(commonsIo, Test.scalatest, Test.junit)
 
   val beanstalkMailbox = Seq(beanstalk, Test.junit)
 
@@ -460,11 +469,13 @@ object Dependencies {
     </dependencies>
   }
 
-  val zookeeperMailbox = Seq(zkClient, zookeeper, Test.junit)
+  val zookeeperMailbox = Seq(zkClient, zookeeper, commonsIo, Test.junit)
 
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
 
   val kernel = Seq(Test.scalatest, Test.junit)
+
+  val camel = Seq(Test.scalatest, Test.junit, Test.mockito, camelCore)
 
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
@@ -506,7 +517,6 @@ object Dependency {
   val commonsIo     = "commons-io"                  % "commons-io"             % "2.0.1"      // ApacheV2
   val commonsPool   = "commons-pool"                % "commons-pool"           % "1.5.6"      // ApacheV2
   val guice         = "org.guiceyfruit"             % "guice-all"              % "2.0"        // ApacheV2
-  val h2Lzf         = "voldemort.store.compress"    % "h2-lzf"                 % "1.0"        // ApacheV2
   val jacksonCore   = "org.codehaus.jackson"        % "jackson-core-asl"       % V.Jackson    // ApacheV2
   val jacksonMapper = "org.codehaus.jackson"        % "jackson-mapper-asl"     % V.Jackson    // ApacheV2
   val jettyUtil     = "org.eclipse.jetty"           % "jetty-util"             % V.Jetty      // Eclipse license
@@ -520,7 +530,6 @@ object Dependency {
   val rabbit        = "com.rabbitmq"                % "amqp-client"            % V.Rabbit     // Mozilla Public License
   val redis         = "net.debasishg"               % "redisclient_2.9.1"      % "2.4.0"      // ApacheV2
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
-  val sjson         = "net.debasishg"               % "sjson_2.9.1"            % "0.15"       // ApacheV2
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
   val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2

@@ -119,6 +119,18 @@ public class ConfigImpl {
     }
 
     /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
+    public static ConfigObject parseResourcesAnySyntax(final ClassLoader loader,
+            String resourceBasename, final ConfigParseOptions baseOptions) {
+        NameSource source = new NameSource() {
+            @Override
+            public ConfigParseable nameToParseable(String name) {
+                return Parseable.newResources(loader, name, baseOptions);
+            }
+        };
+        return fromBasename(source, resourceBasename, baseOptions);
+    }
+
+    /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
     public static ConfigObject parseFileAnySyntax(final File basename,
             final ConfigParseOptions baseOptions) {
         NameSource source = new NameSource() {
@@ -397,20 +409,11 @@ public class ConfigImpl {
         return envVariablesAsConfigObject().toConfig();
     }
 
-    private static class ReferenceHolder {
-        private static final Config unresolvedResources = Parseable
-                .newResources(ConfigImpl.class, "/reference.conf", ConfigParseOptions.defaults())
-                .parse().toConfig();
-        static final Config referenceConfig = systemPropertiesAsConfig().withFallback(
-                unresolvedResources).resolve();
-    }
-
     /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
-    public static Config defaultReference() {
-        try {
-            return ReferenceHolder.referenceConfig;
-        } catch (ExceptionInInitializerError e) {
-            throw ConfigImplUtil.extractInitializerError(e);
-        }
+    public static Config defaultReference(ClassLoader loader) {
+        Config unresolvedResources = Parseable
+                .newResources(loader, "reference.conf", ConfigParseOptions.defaults()).parse()
+                .toConfig();
+        return systemPropertiesAsConfig().withFallback(unresolvedResources).resolve();
     }
 }

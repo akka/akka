@@ -67,22 +67,27 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  * timing are available in the form of `within` blocks.
  *
  * <pre>
- * class Test extends TestKit {
- *     val test = actorOf(Props[SomeActor]
+ * class Test extends TestKit(ActorSystem()) {
+ *     try {
+ *     
+ *       val test = system.actorOf(Props[SomeActor]
  *
- *     within (1 second) {
- *       test ! SomeWork
- *       expectMsg(Result1) // bounded to 1 second
- *       expectMsg(Result2) // bounded to the remainder of the 1 second
+ *       within (1 second) {
+ *         test ! SomeWork
+ *         expectMsg(Result1) // bounded to 1 second
+ *         expectMsg(Result2) // bounded to the remainder of the 1 second
+ *       }
+ *     
+ *     } finally {
+ *       system.shutdown()
  *     }
  * }
  * </pre>
  *
  * Beware of two points:
  *
- *  - the internal test actor needs to be stopped, either explicitly using
- *    `stopTestActor` or implicitly by using its internal inactivity timeout,
- *    see `setTestActorTimeout`
+ *  - the ActorSystem passed into the constructor needs to be shutdown, 
+ *    otherwise thread pools and memory will be leaked
  *  - this trait is not thread-safe (only one actor with one queue, one stack
  *    of `within` blocks); it is expected that the code is executed from a
  *    constructor as shown above, which makes this a non-issue, otherwise take

@@ -40,7 +40,6 @@ class RemoteActorRefProvider(
   def log: LoggingAdapter = _log
 
   def rootPath = local.rootPath
-  def locker = local.locker
   def deadLetters = local.deadLetters
 
   val deathWatch = new RemoteDeathWatch(local.deathWatch, this)

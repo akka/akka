@@ -3,10 +3,6 @@
 Futures (Java)
 ===============
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 Introduction
 ------------
 

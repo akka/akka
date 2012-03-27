@@ -5,10 +5,6 @@
  Cluster Specification
 ######################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 .. note:: *This document describes the new clustering coming in Akka 2.1 (not 2.0)*
 
 Intro
@@ -57,15 +53,42 @@ These terms are used throughout the documentation.
   A mapping from partition path to a set of instance nodes (where the nodes are
   referred to by the ordinal position given the nodes in sorted order).
 
+**leader**
+  A single node in the cluster that acts as the leader. Managing cluster convergence,
+  partitions, fail-over, rebalancing etc.
+
+**deputy nodes**
+  A set of nodes responsible for breaking logical partitions.
+
 
 Membership
 ==========
 
 A cluster is made up of a set of member nodes. The identifier for each node is a
-`hostname:port` pair. An Akka application is distributed over a cluster with
+``hostname:port`` pair. An Akka application is distributed over a cluster with
 each node hosting some part of the application. Cluster membership and
 partitioning of the application are decoupled. A node could be a member of a
 cluster without hosting any actors.
+
+
+Singleton Cluster
+-----------------
+
+If a node does not have a preconfigured contact point to join in the Akka
+configuration, then it is considered a singleton cluster (single node cluster)
+and will automatically transition from ``joining`` to ``up``. Singleton clusters
+can later explicitly send a ``Join`` message to another node to form a N-node
+cluster. It is also possible to link multiple N-node clusters by ``joining`` them.
+
+
+Singleton Cluster
+-----------------
+
+If a node does not have a preconfigured contact point to join in the Akka
+configuration, then it is considered a singleton cluster (single node cluster)
+and will automatically transition from ``joining`` to ``up``. Singleton clusters
+can later explicitly send a ``Join`` message to another node to form a N-node
+cluster. It is also possible to link multiple N-node clusters by ``joining`` them.
 
 
 Gossip
@@ -75,8 +98,8 @@ The cluster membership used in Akka is based on Amazon's `Dynamo`_ system and
 particularly the approach taken in Basho's' `Riak`_ distributed database.
 Cluster membership is communicated using a `Gossip Protocol`_, where the current
 state of the cluster is gossiped randomly through the cluster. Joining a cluster
-is initiated by specifying a set of ``seed`` nodes with which to begin
-gossiping.
+is initiated by issuing a ``Join`` command to one of the nodes in the cluster to
+join.
 
 .. _Gossip Protocol: http://en.wikipedia.org/wiki/Gossip_protocol
 .. _Dynamo: http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf
@@ -102,7 +125,7 @@ the `pruning algorithm`_ in Riak.
 .. _pruning algorithm: http://wiki.basho.com/Vector-Clocks.html#Vector-Clock-Pruning
 
 
-Gossip convergence
+Gossip Convergence
 ^^^^^^^^^^^^^^^^^^
 
 Information about the cluster converges at certain points of time. This is when
@@ -146,31 +169,45 @@ order to account for network issues that sometimes occur on such platforms.
 Leader
 ^^^^^^
 
-After gossip convergence a leader for the cluster can be determined. There is no
-leader election process, the leader can always be recognised deterministically
-by any node whenever there is gossip convergence. The leader is simply the first
+After gossip convergence a ``leader`` for the cluster can be determined. There is no
+``leader`` election process, the ``leader`` can always be recognised deterministically
+by any node whenever there is gossip convergence. The ``leader`` is simply the first
 node in sorted order that is able to take the leadership role, where the only
-allowed member states for a leader are ``up`` or ``leaving`` (see below for more
+allowed member states for a ``leader`` are ``up`` or ``leaving`` (see below for more
 information about member states).
 
-The role of the leader is to shift members in and out of the cluster, changing
+The role of the ``leader`` is to shift members in and out of the cluster, changing
 ``joining`` members to the ``up`` state or ``exiting`` members to the
 ``removed`` state, and to schedule rebalancing across the cluster. Currently
-leader actions are only triggered by receiving a new cluster state with gossip
+``leader`` actions are only triggered by receiving a new cluster state with gossip
 convergence but it may also be possible for the user to explicitly rebalance the
 cluster by specifying migrations, or to rebalance the cluster automatically
 based on metrics from member nodes. Metrics may be spread using the gossip
 protocol or possibly more efficiently using a *random chord* method, where the
-leader contacts several random nodes around the cluster ring and each contacted
+``leader`` contacts several random nodes around the cluster ring and each contacted
 node gathers information from their immediate neighbours, giving a random
 sampling of load information.
 
-The leader also has the power, if configured so, to "auto-down" a node that
+The ``leader`` also has the power, if configured so, to "auto-down" a node that
 according to the Failure Detector is considered unreachable. This means setting
 the unreachable node status to ``down`` automatically.
 
 
-Gossip protocol
+Deputy Nodes
+^^^^^^^^^^^^
+
+After gossip convergence a set of ``deputy`` nodes for the cluster can be
+determined. As with the ``leader``, there is no ``deputy`` election process,
+the deputies can always be recognised deterministically by any node whenever there
+is gossip convergence. The list of ``deputy`` nodes is simply the N - 1 number
+of nodes (e.g. starting with the first node after the ``leader``) in sorted order.
+
+The nodes defined as ``deputy`` nodes are just regular member nodes whose only
+"special role" is to help breaking logical partitions as seen in the gossip
+algorithm defined below.
+
+
+Gossip Protocol
 ^^^^^^^^^^^^^^^
 
 A variation of *push-pull gossip* is used to reduce the amount of gossip
@@ -186,14 +223,14 @@ nodes involved in a gossip exchange.
 
 Periodically, the default is every 1 second, each node chooses another random
 node to initiate a round of gossip with. The choice of node is random but can
-also include extra gossiping for unreachable nodes, seed nodes, and nodes with
+also include extra gossiping for unreachable nodes, ``deputy`` nodes, and nodes with
 either newer or older state versions.
 
 The gossip overview contains the current state version for all nodes and also a
 list of unreachable nodes. Whenever a node receives a gossip overview it updates
 the `Failure Detector`_ with the liveness information.
 
-The nodes defined as ``seed`` nodes are just regular member nodes whose only
+The nodes defined as ``deputy`` nodes are just regular member nodes whose only
 "special role" is to function as contact points in the cluster and to help
 breaking logical partitions as seen in the gossip algorithm defined below.
 
@@ -204,9 +241,9 @@ During each round of gossip exchange the following process is used:
 2. Gossip to random unreachable node with certain probability depending on the
    number of unreachable and live nodes
 
-3. If the node gossiped to at (1) was not a ``seed`` node, or the number of live
-   nodes is less than number of seeds, gossip to random ``seed`` node with
-   certain probability depending on number of unreachable, seed, and live nodes.
+3. If the node gossiped to at (1) was not a ``deputy`` node, or the number of live
+   nodes is less than number of ``deputy`` nodes, gossip to random ``deputy`` node with
+   certain probability depending on number of unreachable, ``deputy``, and live nodes.
 
 4. Gossip to random node with newer or older state information, based on the
    current gossip overview, with some probability (?)
@@ -260,18 +297,18 @@ Some of the other structures used are::
   PartitionChangeStatus = Awaiting | Complete
 
 
-Membership lifecycle
+Membership Lifecycle
 --------------------
 
 A node begins in the ``joining`` state. Once all nodes have seen that the new
-node is joining (through gossip convergence) the leader will set the member
+node is joining (through gossip convergence) the ``leader`` will set the member
 state to ``up`` and can start assigning partitions to the new node.
 
 If a node is leaving the cluster in a safe, expected manner then it switches to
-the ``leaving`` state. The leader will reassign partitions across the cluster
-(it is possible for a leaving node to itself be the leader). When all partition
+the ``leaving`` state. The ``leader`` will reassign partitions across the cluster
+(it is possible for a leaving node to itself be the ``leader``). When all partition
 handoff has completed then the node will change to the ``exiting`` state. Once
-all nodes have seen the exiting state (convergence) the leader will remove the
+all nodes have seen the exiting state (convergence) the ``leader`` will remove the
 node from the cluster, marking it as ``removed``.
 
 A node can also be removed forcefully by moving it directly to the ``removed``
@@ -279,7 +316,7 @@ state using the ``remove`` action. The cluster will rebalance based on the new
 cluster membership.
 
 If a node is unreachable then gossip convergence is not possible and therefore
-any leader actions are also not possible (for instance, allowing a node to
+any ``leader`` actions are also not possible (for instance, allowing a node to
 become a part of the cluster, or changing actor distribution). To be able to
 move forward the state of the unreachable nodes must be changed. If the
 unreachable node is experiencing only transient difficulties then it can be
@@ -293,13 +330,13 @@ This means that nodes can join and leave the cluster at any point in time,
 e.g. provide cluster elasticity.
 
 
-State diagram for the member states
+State Diagram for the Member States
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. image:: images/member-states.png
 
 
-Member states
+Member States
 ^^^^^^^^^^^^^
 
 - **joining**
@@ -318,12 +355,12 @@ Member states
     marked as down/offline/unreachable
 
 
-User actions
+User Actions
 ^^^^^^^^^^^^
 
 - **join**
     join a single node to a cluster - can be explicit or automatic on
-    startup if a list of seed nodes have been specified in the configuration
+    startup if a node to join have been specified in the configuration
 
 - **leave**
     tell a node to leave the cluster gracefully
@@ -335,10 +372,10 @@ User actions
     remove a node from the cluster immediately
 
 
-Leader actions
+Leader Actions
 ^^^^^^^^^^^^^^
 
-The leader has the following duties:
+The ``leader`` has the following duties:
 
 - shifting members in and out of the cluster
 
@@ -364,7 +401,7 @@ set of nodes in the cluster. The actor at the head of the partition is referred
 to as the partition point. The mapping from partition path (actor address of the
 format "a/b/c") to instance nodes is stored in the partition table and is
 maintained as part of the cluster state through the gossip protocol. The
-partition table is only updated by the leader node. Currently the only possible
+partition table is only updated by the ``leader`` node. Currently the only possible
 partition points are *routed* actors.
 
 Routed actors can have an instance count greater than one. The instance count is
@@ -375,7 +412,7 @@ Note that in the first implementation there may be a restriction such that only
 top-level partitions are possible (the highest possible partition points are
 used and sub-partitioning is not allowed). Still to be explored in more detail.
 
-The cluster leader determines the current instance count for a partition based
+The cluster ``leader`` determines the current instance count for a partition based
 on two axes: fault-tolerance and scaling.
 
 Fault-tolerance determines a minimum number of instances for a routed actor
@@ -415,8 +452,8 @@ the following, with all instances on the same physical nodes as before::
    B -> { 7, 9, 10 }
    C -> { 12, 14, 15, 1, 2 }
 
-When rebalancing is required the leader will schedule handoffs, gossiping a set
-of pending changes, and when each change is complete the leader will update the
+When rebalancing is required the ``leader`` will schedule handoffs, gossiping a set
+of pending changes, and when each change is complete the ``leader`` will update the
 partition table.
 
 
@@ -436,7 +473,7 @@ the handoff), given a previous host node ``N1``, a new host node ``N2``, and an
 actor partition ``A`` to be migrated from ``N1`` to ``N2``, has this general
 structure:
 
-  1. the leader sets a pending change for ``N1`` to handoff ``A`` to ``N2``
+  1. the ``leader`` sets a pending change for ``N1`` to handoff ``A`` to ``N2``
 
   2. ``N1`` notices the pending change and sends an initialization message to ``N2``
 
@@ -445,7 +482,7 @@ structure:
   4. after receiving the ready message ``N1`` marks the change as
      complete and shuts down ``A``
 
-  5. the leader sees the migration is complete and updates the partition table
+  5. the ``leader`` sees the migration is complete and updates the partition table
 
   6. all nodes eventually see the new partitioning and use ``N2``
 
@@ -457,7 +494,7 @@ There are transition times in the handoff process where different approaches can
 be used to give different guarantees.
 
 
-Migration transition
+Migration Transition
 ~~~~~~~~~~~~~~~~~~~~
 
 The first transition starts when ``N1`` initiates the moving of ``A`` and ends
@@ -480,7 +517,7 @@ buffered until the actor is ready, or the messages are simply dropped by
 terminating the actor and allowing the normal dead letter process to be used.
 
 
-Update transition
+Update Transition
 ~~~~~~~~~~~~~~~~~
 
 The second transition begins when the migration is marked as complete and ends
@@ -514,12 +551,12 @@ messages sent directly to ``N2`` before the acknowledgement has been forwarded
 that will be buffered.
 
 
-Graceful handoff
+Graceful Handoff
 ^^^^^^^^^^^^^^^^
 
 A more complete process for graceful handoff would be:
 
-  1. the leader sets a pending change for ``N1`` to handoff ``A`` to ``N2``
+  1. the ``leader`` sets a pending change for ``N1`` to handoff ``A`` to ``N2``
 
 
   2. ``N1`` notices the pending change and sends an initialization message to
@@ -550,7 +587,7 @@ A more complete process for graceful handoff would be:
         becoming dead letters)
 
 
-  5. the leader sees the migration is complete and updates the partition table
+  5. the ``leader`` sees the migration is complete and updates the partition table
 
 
   6. all nodes eventually see the new partitioning and use ``N2``
@@ -594,7 +631,7 @@ distributed datastore. See the next section for a rough outline on how the
 distributed datastore could be implemented.
 
 
-Implementing a Dynamo-style distributed database on top of Akka Cluster
+Implementing a Dynamo-style Distributed Database on top of Akka Cluster
 -----------------------------------------------------------------------
 
 The missing pieces to implement a full Dynamo-style eventually consistent data

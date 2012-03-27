@@ -4,9 +4,6 @@
 FSM
 ###
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
 
 Overview
 ========
@@ -157,7 +154,7 @@ Defining States
 A state is defined by one or more invocations of the method
 
   :func:`when(<name>[, stateTimeout = <timeout>])(stateFunction)`.
-  
+
 The given name must be an object which is type-compatible with the first type
 parameter given to the :class:`FSM` trait. This object is used as a hash key,
 so you must ensure that it properly implements :meth:`equals` and
@@ -440,7 +437,7 @@ and in the following.
 Event Tracing
 -------------
 
-The setting ``akka.actor.debug.fsm`` in `:ref:`configuration` enables logging of an
+The setting ``akka.actor.debug.fsm`` in :ref:`configuration` enables logging of an
 event trace by :class:`LoggingFSM` instances::
 
   class MyFSM extends Actor with LoggingFSM[X, Z] {
@@ -493,5 +490,5 @@ Examples
 
 A bigger FSM example contrasted with Actor's :meth:`become`/:meth:`unbecome` can be found in the sources:
 
- * `Dining Hakkers using FSM <https://github.com/jboner/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnFsm.scala#L1>`_
- * `Dining Hakkers using become <https://github.com/jboner/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala#L1>`_
+ * `Dining Hakkers using FSM <https://github.com/akka/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnFsm.scala#L1>`_
+ * `Dining Hakkers using become <https://github.com/akka/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala#L1>`_

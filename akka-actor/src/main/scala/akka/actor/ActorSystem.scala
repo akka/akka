@@ -23,7 +23,7 @@ import collection.immutable.Stack
 
 object ActorSystem {
 
-  val Version = "2.0-SNAPSHOT"
+  val Version = "2.1-SNAPSHOT"
 
   val EnvHome = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
@@ -37,27 +37,76 @@ object ActorSystem {
 
   val GlobalHome = SystemHome orElse EnvHome
 
-  def create(name: String, config: Config): ActorSystem = apply(name, config)
-  def apply(name: String, config: Config): ActorSystem = new ActorSystemImpl(name, config).start()
+  /**
+   * Creates a new ActorSystem with the name "default",
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   * Then it loads the default reference configuration using the ClassLoader.
+   */
+  def create(): ActorSystem = apply()
 
   /**
-   * Uses the standard default Config from ConfigFactory.load(), since none is provided.
+   * Creates a new ActorSystem with the specified name,
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   * Then it loads the default reference configuration using the ClassLoader.
    */
   def create(name: String): ActorSystem = apply(name)
 
   /**
-   * Uses the standard default Config from ConfigFactory.load(), since none is provided.
+   * Creates a new ActorSystem with the name "default", and the specified Config, then
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
    */
-  def apply(name: String): ActorSystem = apply(name, ConfigFactory.load())
+  def create(name: String, config: Config): ActorSystem = apply(name, config)
 
-  def create(): ActorSystem = apply()
+  /**
+   * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
+   */
+  def create(name: String, config: Config, classLoader: ClassLoader): ActorSystem = apply(name, config, classLoader)
+
+  /**
+   * Creates a new ActorSystem with the name "default",
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   * Then it loads the default reference configuration using the ClassLoader.
+   */
   def apply(): ActorSystem = apply("default")
 
-  class Settings(cfg: Config, final val name: String) {
+  /**
+   * Creates a new ActorSystem with the specified name,
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   * Then it loads the default reference configuration using the ClassLoader.
+   */
+  def apply(name: String): ActorSystem = {
+    val classLoader = findClassLoader()
+    apply(name, ConfigFactory.load(classLoader), classLoader)
+  }
+
+  /**
+   * Creates a new ActorSystem with the name "default", and the specified Config, then
+   * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
+   * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
+   * associated with the ActorSystem class.
+   */
+  def apply(name: String, config: Config): ActorSystem = apply(name, config, findClassLoader())
+
+  /**
+   * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
+   */
+  def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem = new ActorSystemImpl(name, config, classLoader).start()
+
+  class Settings(classLoader: ClassLoader, cfg: Config, final val name: String) {
 
     final val config: Config = {
-      val config = cfg.withFallback(ConfigFactory.defaultReference)
-      config.checkValid(ConfigFactory.defaultReference, "akka")
+      val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
+      config.checkValid(ConfigFactory.defaultReference(classLoader), "akka")
       config
     }
 
@@ -97,6 +146,27 @@ object ActorSystem {
       throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
 
     override def toString: String = config.root.render
+  }
+
+  /**
+   * INTERNAL
+   */
+  private[akka] def findClassLoader(): ClassLoader = {
+    def findCaller(get: Int ⇒ Class[_]): ClassLoader =
+      Iterator.from(2 /*is the magic number, promise*/ ).map(get) dropWhile { c ⇒
+        c != null &&
+          (c.getName.startsWith("akka.actor.ActorSystem") ||
+            c.getName.startsWith("scala.Option") ||
+            c.getName.startsWith("scala.collection.Iterator") ||
+            c.getName.startsWith("akka.util.Reflect"))
+      } next () match {
+        case null ⇒ getClass.getClassLoader
+        case c    ⇒ c.getClassLoader
+      }
+
+    Option(Thread.currentThread.getContextClassLoader) orElse
+      (Reflect.getCallerClass map findCaller) getOrElse
+      getClass.getClassLoader
   }
 }
 
@@ -344,14 +414,14 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def dynamicAccess: DynamicAccess
 }
 
-class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Config) extends ExtendedActorSystem {
+class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Config, classLoader: ClassLoader) extends ExtendedActorSystem {
 
   if (!name.matches("""^\w+$"""))
     throw new IllegalArgumentException("invalid ActorSystem name [" + name + "], must contain only word characters (i.e. [a-zA-Z_0-9])")
 
   import ActorSystem._
 
-  final val settings: Settings = new Settings(applicationConfig, name)
+  final val settings: Settings = new Settings(classLoader, applicationConfig, name)
 
   protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =
     new Thread.UncaughtExceptionHandler() {
@@ -366,33 +436,13 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
     }
 
   final val threadFactory: MonitorableThreadFactory =
-    MonitorableThreadFactory(name, settings.Daemonicity, Option(Thread.currentThread.getContextClassLoader), uncaughtExceptionHandler)
+    MonitorableThreadFactory(name, settings.Daemonicity, Option(classLoader), uncaughtExceptionHandler)
 
   /**
    * This is an extension point: by overriding this method, subclasses can
    * control all reflection activities of an actor system.
    */
-  protected def createDynamicAccess(): DynamicAccess = new ReflectiveDynamicAccess(findClassLoader)
-
-  protected def findClassLoader: ClassLoader = {
-    def findCaller(get: Int ⇒ Class[_]): ClassLoader = {
-      val frames = Iterator.from(2).map(get)
-      frames dropWhile { c ⇒
-        c != null &&
-          (c.getName.startsWith("akka.actor.ActorSystem") ||
-            c.getName.startsWith("scala.Option") ||
-            c.getName.startsWith("scala.collection.Iterator") ||
-            c.getName.startsWith("akka.util.Reflect"))
-      } next () match {
-        case null ⇒ getClass.getClassLoader
-        case c    ⇒ c.getClassLoader
-      }
-    }
-
-    Option(Thread.currentThread.getContextClassLoader) orElse
-      (Reflect.getCallerClass map findCaller) getOrElse
-      getClass.getClassLoader
-  }
+  protected def createDynamicAccess(): DynamicAccess = new ReflectiveDynamicAccess(classLoader)
 
   private val _pm: DynamicAccess = createDynamicAccess()
   def dynamicAccess: DynamicAccess = _pm
@@ -478,8 +528,6 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
     def hasSystemMessages = false
   }
 
-  def locker: Locker = provider.locker
-
   val dispatchers: Dispatchers = new Dispatchers(settings, DefaultDispatcherPrerequisites(
     threadFactory, eventStream, deadLetterMailbox, scheduler, dynamicAccess, settings))
 
@@ -497,7 +545,6 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
   private lazy val _start: this.type = {
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
-    registerOnTermination(locker.shutdown())
     registerOnTermination(stopScheduler())
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()

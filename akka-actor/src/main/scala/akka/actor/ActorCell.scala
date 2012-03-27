@@ -161,12 +161,15 @@ trait UntypedActorContext extends ActorContext {
 
 }
 
+/**
+ * Everything in here is completely Akka PRIVATE. You will not find any
+ * supported APIs in this place. This is not the API you were looking
+ * for! (waves hand)
+ */
 private[akka] object ActorCell {
   val contextStack = new ThreadLocal[Stack[ActorContext]] {
     override def initialValue = Stack[ActorContext]()
   }
-
-  val emptyChildrenRefs = TreeMap[String, ChildRestartStats]()
 
   final val emptyCancellable: Cancellable = new Cancellable {
     def isCancelled = false
@@ -174,6 +177,126 @@ private[akka] object ActorCell {
   }
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
+
+  trait SuspendReason
+  case object UserRequest extends SuspendReason
+  case class Recreation(cause: Throwable) extends SuspendReason
+  case object Termination extends SuspendReason
+
+  trait ChildrenContainer {
+    def add(child: ActorRef): ChildrenContainer
+    def remove(child: ActorRef): ChildrenContainer
+    def getByName(name: String): Option[ChildRestartStats]
+    def getByRef(actor: ActorRef): Option[ChildRestartStats]
+    def children: Iterable[ActorRef]
+    def stats: Iterable[ChildRestartStats]
+    def shallDie(actor: ActorRef): ChildrenContainer
+  }
+
+  trait EmptyChildrenContainer extends ChildrenContainer {
+    val emptyStats = TreeMap.empty[String, ChildRestartStats]
+    def add(child: ActorRef): ChildrenContainer =
+      new NormalChildrenContainer(emptyStats.updated(child.path.name, ChildRestartStats(child)))
+    def remove(child: ActorRef): ChildrenContainer = this
+    def getByName(name: String): Option[ChildRestartStats] = None
+    def getByRef(actor: ActorRef): Option[ChildRestartStats] = None
+    def children: Iterable[ActorRef] = Nil
+    def stats: Iterable[ChildRestartStats] = Nil
+    def shallDie(actor: ActorRef): ChildrenContainer = this
+    override def toString = "no children"
+  }
+
+  /**
+   * This is the empty container, shared among all leaf actors.
+   */
+  object EmptyChildrenContainer extends EmptyChildrenContainer
+
+  /**
+   * This is the empty container which is installed after the last child has
+   * terminated while stopping; it is necessary to distinguish from the normal
+   * empty state while calling handleChildTerminated() for the last time.
+   */
+  object TerminatedChildrenContainer extends EmptyChildrenContainer {
+    override def add(child: ActorRef): ChildrenContainer = this
+  }
+
+  /**
+   * Normal children container: we do have at least one child, but none of our
+   * children are currently terminating (which is the time period between
+   * calling context.stop(child) and processing the ChildTerminated() system
+   * message).
+   */
+  class NormalChildrenContainer(c: TreeMap[String, ChildRestartStats]) extends ChildrenContainer {
+
+    def add(child: ActorRef): ChildrenContainer = new NormalChildrenContainer(c.updated(child.path.name, ChildRestartStats(child)))
+
+    def remove(child: ActorRef): ChildrenContainer = NormalChildrenContainer(c - child.path.name)
+
+    def getByName(name: String): Option[ChildRestartStats] = c get name
+
+    def getByRef(actor: ActorRef): Option[ChildRestartStats] = c get actor.path.name match {
+      case c @ Some(crs) if (crs.child == actor) ⇒ c
+      case _                                     ⇒ None
+    }
+
+    def children: Iterable[ActorRef] = c.values.view.map(_.child)
+
+    def stats: Iterable[ChildRestartStats] = c.values
+
+    def shallDie(actor: ActorRef): ChildrenContainer = TerminatingChildrenContainer(c, Set(actor), UserRequest)
+
+    override def toString =
+      if (c.size > 20) c.size + " children"
+      else c.mkString("children:\n    ", "\n    ", "")
+  }
+
+  object NormalChildrenContainer {
+    def apply(c: TreeMap[String, ChildRestartStats]): ChildrenContainer =
+      if (c.isEmpty) EmptyChildrenContainer
+      else new NormalChildrenContainer(c)
+  }
+
+  /**
+   * Waiting state: there are outstanding termination requests (i.e. context.stop(child)
+   * was called but the corresponding ChildTerminated() system message has not yet been
+   * processed). There could be no specific reason (UserRequested), we could be Restarting
+   * or Terminating.
+   *
+   * Removing the last child which was supposed to be terminating will return a different
+   * type of container, depending on whether or not children are left and whether or not
+   * the reason was “Terminating”.
+   */
+  case class TerminatingChildrenContainer(c: TreeMap[String, ChildRestartStats], toDie: Set[ActorRef], reason: SuspendReason)
+    extends ChildrenContainer {
+
+    def add(child: ActorRef): ChildrenContainer = copy(c.updated(child.path.name, ChildRestartStats(child)))
+
+    def remove(child: ActorRef): ChildrenContainer = {
+      val t = toDie - child
+      if (t.isEmpty) reason match {
+        case Termination ⇒ TerminatedChildrenContainer
+        case _           ⇒ NormalChildrenContainer(c - child.path.name)
+      }
+      else copy(c - child.path.name, t)
+    }
+
+    def getByName(name: String): Option[ChildRestartStats] = c get name
+
+    def getByRef(actor: ActorRef): Option[ChildRestartStats] = c get actor.path.name match {
+      case c @ Some(crs) if (crs.child == actor) ⇒ c
+      case _                                     ⇒ None
+    }
+
+    def children: Iterable[ActorRef] = c.values.view.map(_.child)
+
+    def stats: Iterable[ChildRestartStats] = c.values
+
+    def shallDie(actor: ActorRef): ChildrenContainer = copy(toDie = toDie + actor)
+
+    override def toString =
+      if (c.size > 20) c.size + " children"
+      else c.mkString("children (" + toDie.size + " terminating):\n    ", "\n    ", "\n") + toDie
+  }
 }
 
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)
@@ -221,7 +344,18 @@ private[akka] class ActorCell(
   var receiveTimeoutData: (Long, Cancellable) =
     if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
 
-  var childrenRefs: TreeMap[String, ChildRestartStats] = emptyChildrenRefs
+  @volatile
+  var childrenRefs: ChildrenContainer = EmptyChildrenContainer
+
+  private def isTerminating = childrenRefs match {
+    case TerminatingChildrenContainer(_, _, Termination) ⇒ true
+    case TerminatedChildrenContainer ⇒ true
+    case _ ⇒ false
+  }
+  private def isNormal = childrenRefs match {
+    case TerminatingChildrenContainer(_, _, Termination | _: Recreation) ⇒ false
+    case _ ⇒ true
+  }
 
   private def _actorOf(props: Props, name: String): ActorRef = {
     if (system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
@@ -234,9 +368,13 @@ private[akka] class ActorCell(
         }
       }
     }
-    val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None, true)
-    childrenRefs = childrenRefs.updated(name, ChildRestartStats(actor))
-    actor
+    // in case we are currently terminating, swallow creation requests and return EmptyLocalActorRef
+    if (isTerminating) provider.actorFor(self, Seq(name))
+    else {
+      val actor = provider.actorOf(systemImpl, props, self, self.path / name, false, None, true)
+      childrenRefs = childrenRefs.add(actor)
+      actor
+    }
   }
 
   def actorOf(props: Props): ActorRef = _actorOf(props, randomName())
@@ -249,25 +387,20 @@ private[akka] class ActorCell(
       case ElementRegex() ⇒ // this is fine
       case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex)
     }
-    if (childrenRefs contains name)
-      throw new InvalidActorNameException("actor name " + name + " is not unique!")
-    _actorOf(props, name)
+    childrenRefs.getByName(name) match {
+      case None ⇒ _actorOf(props, name)
+      case _    ⇒ throw new InvalidActorNameException("actor name " + name + " is not unique!")
+    }
   }
 
   final def stop(actor: ActorRef): Unit = {
-    val a = actor.asInstanceOf[InternalActorRef]
-    if (a.getParent == self && (childrenRefs contains actor.path.name)) {
-      system.locker ! a
-      handleChildTerminated(actor) // will remove child from childrenRefs
-    }
-    a.stop()
+    if (childrenRefs.getByRef(actor).isDefined) childrenRefs = childrenRefs.shallDie(actor)
+    actor.asInstanceOf[InternalActorRef].stop()
   }
 
   var currentMessage: Envelope = null
 
   var actor: Actor = _
-
-  var stopping = false
 
   @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
@@ -293,7 +426,7 @@ private[akka] class ActorCell(
 
   final def start(): Unit = {
     /*
-     * Create the mailbox and enqueue the Create() message to ensure that 
+     * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
      */
     mailbox = dispatcher.createMailbox(this)
@@ -328,7 +461,7 @@ private[akka] class ActorCell(
     subject
   }
 
-  final def children: Iterable[ActorRef] = childrenRefs.values.view.map(_.child)
+  final def children: Iterable[ActorRef] = childrenRefs.children
 
   /**
    * Impl UntypedActorContext
@@ -368,100 +501,99 @@ private[akka] class ActorCell(
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def systemInvoke(message: SystemMessage) {
 
-    def create(): Unit = try {
-      val created = newActor()
-      actor = created
-      created.preStart()
-      checkReceiveTimeout
-      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
-    } catch {
-      case NonFatal(e) ⇒
-        try {
+    def create(): Unit = if (isNormal) {
+      try {
+        val created = newActor()
+        actor = created
+        created.preStart()
+        checkReceiveTimeout
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
+      } catch {
+        case NonFatal(e) ⇒
+          try {
+            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
+            // prevent any further messages to be processed until the actor has been restarted
+            dispatcher.suspend(this)
+          } finally {
+            parent.tell(Failed(ActorInitializationException(self, "exception during creation", e)), self)
+          }
+      }
+    }
+
+    def recreate(cause: Throwable): Unit = if (isNormal) {
+      try {
+        val failedActor = actor
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
+        if (failedActor ne null) {
+          val c = currentMessage //One read only plz
+          try {
+            if (failedActor.context ne null) failedActor.preRestart(cause, if (c ne null) Some(c.message) else None)
+          } finally {
+            clearActorFields()
+          }
+        }
+        childrenRefs match {
+          case ct: TerminatingChildrenContainer ⇒
+            childrenRefs = ct.copy(reason = Recreation(cause))
+            dispatcher suspend this
+          case _ ⇒
+            doRecreate(cause)
+        }
+      } catch {
+        case NonFatal(e) ⇒ try {
           dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
           // prevent any further messages to be processed until the actor has been restarted
           dispatcher.suspend(this)
         } finally {
-          parent.tell(Failed(ActorInitializationException(self, "exception during creation", e)), self)
+          parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
         }
-    }
-
-    def recreate(cause: Throwable): Unit = try {
-      val failedActor = actor
-      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
-      if (failedActor ne null) {
-        val c = currentMessage //One read only plz
-        try {
-          failedActor.preRestart(cause, if (c ne null) Some(c.message) else None)
-        } finally {
-          clearActorFields()
-        }
-      }
-      val freshActor = newActor() // this must happen after failedActor.preRestart (to scrap those children)
-      actor = freshActor // this must happen before postRestart has a chance to fail
-      freshActor.postRestart(cause)
-      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
-
-      dispatcher.resume(this) //FIXME should this be moved down?
-
-      actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
-    } catch {
-      case NonFatal(e) ⇒ try {
-        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
-        // prevent any further messages to be processed until the actor has been restarted
-        dispatcher.suspend(this)
-      } finally {
-        parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
       }
     }
 
-    def suspend(): Unit = dispatcher suspend this
+    def suspend(): Unit = if (isNormal) dispatcher suspend this
 
-    def resume(): Unit = dispatcher resume this
+    def resume(): Unit = if (isNormal) dispatcher resume this
+
+    def link(subject: ActorRef): Unit = if (!isTerminating) {
+      if (system.deathWatch.subscribe(self, subject)) {
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + subject))
+      }
+    }
+
+    def unlink(subject: ActorRef): Unit = if (!isTerminating) {
+      if (system.deathWatch.unsubscribe(self, subject)) {
+        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + subject))
+      }
+    }
 
     def terminate() {
       setReceiveTimeout(None)
       cancelReceiveTimeout
 
-      val c = children
-      if (c.isEmpty) doTerminate()
-      else {
-        // do not process normal messages while waiting for all children to terminate
-        dispatcher suspend this
-        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopping"))
-        // do not use stop(child) because that would dissociate the children from us, but we still want to wait for them
-        for (child ← c) child.asInstanceOf[InternalActorRef].stop()
-        stopping = true
+      // stop all children, which will turn childrenRefs into TerminatingChildrenContainer (if there are children)
+      children foreach stop
+
+      childrenRefs match {
+        case ct: TerminatingChildrenContainer ⇒
+          childrenRefs = ct.copy(reason = Termination)
+          // do not process normal messages while waiting for all children to terminate
+          dispatcher suspend this
+          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopping"))
+        case _ ⇒ doTerminate()
       }
     }
 
-    def supervise(child: ActorRef): Unit = {
-      childrenRefs.get(child.path.name) match {
-        case None ⇒
-          childrenRefs = childrenRefs.updated(child.path.name, ChildRestartStats(child))
-          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
-        case Some(ChildRestartStats(`child`, _, _)) ⇒
-          // this is the nominal case where we created the child and entered it in actorCreated() above
-          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
-        case Some(ChildRestartStats(c, _, _)) ⇒
-          system.eventStream.publish(Warning(self.path.toString, clazz(actor), "Already supervising other child with same name '" + child.path.name + "', old: " + c + " new: " + child))
-      }
+    def supervise(child: ActorRef): Unit = if (!isTerminating) {
+      if (childrenRefs.getByRef(child).isEmpty) childrenRefs = childrenRefs.add(child)
+      if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
     }
 
     try {
-      if (stopping) message match {
-        case Terminate()            ⇒ terminate() // to allow retry
-        case ChildTerminated(child) ⇒ handleChildTerminated(child)
-        case _                      ⇒
-      }
-      else message match {
-        case Create()        ⇒ create()
-        case Recreate(cause) ⇒ recreate(cause)
-        case Link(subject) ⇒
-          system.deathWatch.subscribe(self, subject)
-          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + subject))
-        case Unlink(subject) ⇒
-          system.deathWatch.unsubscribe(self, subject)
-          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + subject))
+      message match {
+        case Create()               ⇒ create()
+        case Recreate(cause)        ⇒ recreate(cause)
+        case Link(subject)          ⇒ link(subject)
+        case Unlink(subject)        ⇒ unlink(subject)
         case Suspend()              ⇒ suspend()
         case Resume()               ⇒ resume()
         case Terminate()            ⇒ terminate()
@@ -471,7 +603,6 @@ private[akka] class ActorCell(
     } catch {
       case NonFatal(e) ⇒
         dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while processing " + message), e))
-        //TODO FIXME How should problems here be handled???
         throw e
     }
   }
@@ -544,7 +675,7 @@ private[akka] class ActorCell(
       case Kill                     ⇒ throw new ActorKilledException("Kill")
       case PoisonPill               ⇒ self.stop()
       case SelectParent(m)          ⇒ parent.tell(m, msg.sender)
-      case SelectChildName(name, m) ⇒ if (childrenRefs contains name) childrenRefs(name).child.tell(m, msg.sender)
+      case SelectChildName(name, m) ⇒ for (c ← childrenRefs getByName name) c.child.tell(m, msg.sender)
       case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
   }
@@ -562,26 +693,65 @@ private[akka] class ActorCell(
         parent.sendSystemMessage(ChildTerminated(self))
         system.deathWatch.publish(Terminated(self))
         if (system.settings.DebugLifecycle)
-          system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped")) // FIXME: can actor be null?
+          system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped"))
       } finally {
         if (a ne null) a.clearBehaviorStack()
         clearActorFields()
+        actor = null
       }
     }
   }
 
-  final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenRefs.get(child.path.name) match {
-    case Some(stats) if stats.child == child ⇒ if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, childrenRefs.values)) throw cause
-    case Some(stats)                         ⇒ system.eventStream.publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child + " matching names but not the same, was: " + stats.child))
-    case None                                ⇒ system.eventStream.publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
+  private def doRecreate(cause: Throwable): Unit = try {
+    // after all killed children have terminated, recreate the rest, then go on to start the new instance
+    actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
+
+    val freshActor = newActor()
+    actor = freshActor // this must happen before postRestart has a chance to fail
+
+    freshActor.postRestart(cause)
+    if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
+
+    dispatcher.resume(this)
+  } catch {
+    case NonFatal(e) ⇒ try {
+      dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
+      // prevent any further messages to be processed until the actor has been restarted
+      dispatcher.suspend(this)
+      actor.supervisorStrategy.handleSupervisorFailing(self, children)
+    } finally {
+      parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
+    }
   }
 
-  final def handleChildTerminated(child: ActorRef): Unit = {
-    if (childrenRefs contains child.path.name) {
-      childrenRefs -= child.path.name
-      actor.supervisorStrategy.handleChildTerminated(this, child, children)
-      if (stopping && childrenRefs.isEmpty) doTerminate()
-    } else system.locker ! ChildTerminated(child)
+  final def handleFailure(child: ActorRef, cause: Throwable): Unit = childrenRefs.getByRef(child) match {
+    case Some(stats) ⇒ if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, childrenRefs.stats)) throw cause
+    case None        ⇒ system.eventStream.publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
+  }
+
+  final def handleChildTerminated(child: ActorRef): Unit = try {
+    childrenRefs match {
+      case tc @ TerminatingChildrenContainer(_, _, reason) ⇒
+        val n = tc.remove(child)
+        childrenRefs = n
+        actor.supervisorStrategy.handleChildTerminated(this, child, children)
+        if (!n.isInstanceOf[TerminatingChildrenContainer]) reason match {
+          case Recreation(cause) ⇒ doRecreate(cause)
+          case Termination       ⇒ doTerminate()
+          case _                 ⇒
+        }
+      case _ ⇒
+        childrenRefs = childrenRefs.remove(child)
+        actor.supervisorStrategy.handleChildTerminated(this, child, children)
+    }
+  } catch {
+    case NonFatal(e) ⇒
+      try {
+        dispatcher suspend this
+        actor.supervisorStrategy.handleSupervisorFailing(self, children)
+      } finally {
+        parent.tell(Failed(e), self)
+      }
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
@@ -608,7 +778,6 @@ private[akka] class ActorCell(
   final def clearActorFields(): Unit = {
     setActorFields(context = null, self = system.deadLetters)
     currentMessage = null
-    actor = null
   }
 
   final def setActorFields(context: ActorContext, self: ActorRef) {
@@ -639,3 +808,4 @@ private[akka] class ActorCell(
 
   private final def clazz(o: AnyRef): Class[_] = if (o eq null) this.getClass else o.getClass
 }
+

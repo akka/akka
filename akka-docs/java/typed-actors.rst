@@ -1,10 +1,6 @@
 Typed Actors (Java)
 ===================
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 Akka Typed Actors is an implementation of the `Active Objects <http://en.wikipedia.org/wiki/Active_object>`_ pattern.
 Essentially turning method invocations into asynchronous dispatch instead of synchronous that has been the default way since Smalltalk came out.
 
@@ -19,6 +15,22 @@ Typed Actors are implemented using `JDK Proxies <http://docs.oracle.com/javase/6
 
     Just as with regular Akka Untyped Actors, Typed Actors process one call at a time.
 
+When to use Typed Actors
+------------------------
+
+Typed actors are nice for bridging between actor systems (the “inside”) and
+non-actor code (the “outside”), because they allow you to write normal
+OO-looking code on the outside. Think of them like doors: their practicality
+lies in interfacing between private sphere and the public, but you don’t want
+that many doors inside your house, do you? For a longer discussion see `this
+blog post <http://letitcrash.com/post/19074284309/when-to-use-typedactors>`_.
+
+A bit more background: TypedActors can very easily be abused as RPC, and that
+is an abstraction which is `well-known
+<http://labs.oracle.com/techrep/1994/abstract-29.html>`_ to be leaky. Hence
+TypedActors are not what we think of first when we talk about making highly
+scalable concurrent software easier to write correctly. They have their niche,
+use them sparingly.
 
 The tools of the trade
 ----------------------
@@ -179,10 +191,10 @@ By having your Typed Actor implementation class implement any and all of the fol
     * ``TypedActor.PreRestart``
     * ``TypedActor.PostRestart``
 
- You can hook into the lifecycle of your Typed Actor.
+You can hook into the lifecycle of your Typed Actor.
 
- Proxying
- --------
+Proxying
+--------
 
- You can use the ``typedActorOf`` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
- This is usable if you want to communicate remotely with TypedActors on other machines, just look them up with ``actorFor`` and pass the ``ActorRef`` to ``typedActorOf``.
+You can use the ``typedActorOf`` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
+This is usable if you want to communicate remotely with TypedActors on other machines, just look them up with ``actorFor`` and pass the ``ActorRef`` to ``typedActorOf``.

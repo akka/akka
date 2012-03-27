@@ -4,10 +4,6 @@
  Transactors (Java)
 ####################
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 
 Why Transactors?
 ================

@@ -10,7 +10,6 @@ import akka.routing._
 import akka.AkkaException
 import akka.util.{ Switch, Helpers }
 import akka.event._
-import com.typesafe.config.ConfigFactory
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -43,12 +42,6 @@ trait ActorRefProvider {
    * Reference to the death watch service.
    */
   def deathWatch: DeathWatch
-
-  /**
-   * Care-taker of actor refs which await final termination but cannot be kept
-   * in their parent’s children list because the name shall be freed.
-   */
-  def locker: Locker
 
   /**
    * The root path for all actors within this actor system, including remote
@@ -275,10 +268,7 @@ trait ActorRefFactory {
 
   /**
    * Stop the actor pointed to by the given [[akka.actor.ActorRef]]; this is
-   * an asynchronous operation, i.e. involves a message send, but if invoked
-   * on an [[akka.actor.ActorContext]] if operating on a child of that
-   * context it will free up the name for immediate reuse.
-   *
+   * an asynchronous operation, i.e. involves a message send.
    * When invoked on [[akka.actor.ActorSystem]] for a top-level actor, this
    * method sends a message to the guardian actor and blocks waiting for a reply,
    * see `akka.actor.creation-timeout` in the `reference.conf`.
@@ -332,8 +322,6 @@ class LocalActorRefProvider(
   val deadLetters = new DeadLetterActorRef(this, rootPath / "deadLetters", eventStream)
 
   val deathWatch = new LocalDeathWatch(1024) //TODO make configrable
-
-  val locker: Locker = new Locker(scheduler, settings.ReaperInterval, this, rootPath / "locker", deathWatch)
 
   /*
    * generate name for temporary actor refs
@@ -521,30 +509,30 @@ class LocalActorRefProvider(
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case RelativeActorPath(elems) ⇒
       if (elems.isEmpty) {
-        log.debug("look-up of empty path string '{}' fails (per definition)", path)
+        log.debug("look-up of empty path string [{}] fails (per definition)", path)
         deadLetters
       } else if (elems.head.isEmpty) actorFor(rootGuardian, elems.tail)
       else actorFor(ref, elems)
     case ActorPathExtractor(address, elems) if address == rootPath.address ⇒ actorFor(rootGuardian, elems)
     case _ ⇒
-      log.debug("look-up of unknown path '{}' failed", path)
+      log.warning("look-up of unknown path [{}] failed", path)
       deadLetters
   }
 
   def actorFor(path: ActorPath): InternalActorRef =
     if (path.root == rootPath) actorFor(rootGuardian, path.elements)
     else {
-      log.debug("look-up of foreign ActorPath '{}' failed", path)
+      log.warning("look-up of foreign ActorPath [{}] failed", path)
       deadLetters
     }
 
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef =
     if (path.isEmpty) {
-      log.debug("look-up of empty path sequence fails (per definition)")
+      log.warning("look-up of empty path sequence fails (per definition)")
       deadLetters
     } else ref.getChild(path.iterator) match {
       case Nobody ⇒
-        log.debug("look-up of path sequence '{}' failed", path)
+        log.warning("look-up of path sequence [/{}] failed", path.mkString("/"))
         new EmptyLocalActorRef(system.provider, ref.path / path, eventStream)
       case x ⇒ x
     }

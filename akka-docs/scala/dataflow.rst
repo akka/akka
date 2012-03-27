@@ -1,10 +1,6 @@
 Dataflow Concurrency (Scala)
 ============================
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 Description
 -----------
 

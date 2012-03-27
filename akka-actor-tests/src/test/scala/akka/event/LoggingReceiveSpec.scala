@@ -200,9 +200,10 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
           }
 
           system.stop(supervisor)
-          expectMsg(Logging.Debug(sname, `sclass`, "stopping"))
-          expectMsg(Logging.Debug(aname, `aclass`, "stopped"))
-          expectMsg(Logging.Debug(sname, `sclass`, "stopped"))
+          expectMsgAllOf(
+            Logging.Debug(aname, aclass, "stopped"),
+            Logging.Debug(sname, sclass, "stopping"),
+            Logging.Debug(sname, sclass, "stopped"))
         }
       }
     }

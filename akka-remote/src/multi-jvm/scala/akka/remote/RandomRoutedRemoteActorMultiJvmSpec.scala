@@ -100,6 +100,9 @@ class RandomRoutedRemoteActorMultiJvmNode4 extends AkkaRemoteSpec(RandomRoutedRe
       barrier("end")
       replies.values foreach { _ must be > (0) }
 
+      // shut down the actor before we let the other node(s) shut down so we don't try to send
+      // "Terminate" to a shut down node
+      system.stop(actor)
       barrier("done")
     }
   }

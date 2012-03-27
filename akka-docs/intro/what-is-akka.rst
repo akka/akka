@@ -5,10 +5,6 @@
  What is Akka?
 ###############
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 **Scalable real-time transaction processing**
 
 We believe that writing correct concurrent, fault-tolerant and scalable

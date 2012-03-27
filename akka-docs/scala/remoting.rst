@@ -5,10 +5,6 @@
 #################
 
 
-.. sidebar:: Contents
-
-   .. contents:: :local:
-
 For an introduction of remoting capabilities of Akka please see :ref:`remoting`.
 
 Preparing your ActorSystem for Remoting
@@ -16,7 +12,7 @@ Preparing your ActorSystem for Remoting
 
 The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project::
 
-  "com.typesafe.akka" % "akka-remote" % "2.0-SNAPSHOT"
+  "com.typesafe.akka" % "akka-remote" % "2.1-SNAPSHOT"
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
 to your ``application.conf`` file::
@@ -166,7 +162,7 @@ Description of the Remoting Sample
 
 There is a more extensive remote example that comes with the Akka distribution.
 Please have a look here for more information: `Remote Sample
-<https://github.com/jboner/akka/tree/master/akka-samples/akka-sample-remote>`_
+<https://github.com/akka/akka/tree/master/akka-samples/akka-sample-remote>`_
 This sample demonstrates both, remote deployment and look-up of remote actors.
 First, let us have a look at the common setup for both scenarios (this is
 ``common.conf``):

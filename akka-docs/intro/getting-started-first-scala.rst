@@ -48,16 +48,20 @@ check out the full tutorial from the Akka GitHub repository. It is in the
 ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online
 `here`__, with the actual source code `here`__.
 
-__ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
-__ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala
+__ https://github.com/akka/akka/tree/master/akka-tutorials/akka-tutorial-first
+__ https://github.com/akka/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala
 
-To check out the code using Git invoke the following::
+To check out the code using Git invoke the following command and you can then you can navigate down to the tutorial.
 
-    $ git clone git://github.com/jboner/akka.git
+On Linux/Unix/Mac systems::
 
-Then you can navigate down to the tutorial::
-
+    $ git clone git://github.com/akka/akka.git
     $ cd akka/akka-tutorials/akka-tutorial-first
+
+On Windows systems::
+
+    C:\Users\jboner\src> git clone git://github.com/akka/akka.git
+    C:\Users\jboner\src> cd akka\akka-tutorials\akka-tutorial-first
 
 Prerequisites
 =============
@@ -69,9 +73,11 @@ code.
 
 You need to make sure that ``$JAVA_HOME`` environment variable is set to the
 root of the Java distribution. You also need to make sure that the
-``$JAVA_HOME/bin`` is on your ``PATH``::
+``$JAVA_HOME/bin`` is on your ``PATH``.
 
-    $ export JAVA_HOME=..root of java distribution..
+On Linux/Unix/Mac systems::
+
+    $ export JAVA_HOME=..root of Java distribution..
     $ export PATH=$PATH:$JAVA_HOME/bin
 
 You can test your installation by invoking ``java``::
@@ -81,6 +87,17 @@ You can test your installation by invoking ``java``::
     Java(TM) SE Runtime Environment (build 1.6.0_24-b07-334-10M3326)
     Java HotSpot(TM) 64-Bit Server VM (build 19.1-b02-334, mixed mode)
 
+On Windows systems::
+
+    C:\Users\jboner\src\akka> set JAVA_HOME=..root of Java distribution..
+    C:\Users\jboner\src\akka> set PATH=%PATH%;%JAVA_HOME%/bin
+
+You can test your installation by invoking ``java``::
+
+    C:\Users\jboner\src\akka> java -version
+    java version "1.6.0_24"
+    Java(TM) SE Runtime Environment (build 1.6.0_24-b07-334-10M3326)
+    Java HotSpot(TM) 64-Bit Server VM (build 19.1-b02-334, mixed mode)
 
 Downloading and installing Akka
 ===============================
@@ -89,7 +106,7 @@ To build and run the tutorial sample from the command line, you have to download
 Akka. If you prefer to use SBT to build and run the sample then you can skip this
 section and jump to the next one.
 
-Let's get the ``akka-2.0-SNAPSHOT.zip`` distribution of Akka from
+Let's get the ``akka-2.1-SNAPSHOT.zip`` distribution of Akka from
 http://akka.io/downloads/ which includes everything we need for this
 tutorial. Once you have downloaded the distribution unzip it in the folder you
 would like to have Akka installed in. In my case I choose to install it in
@@ -98,16 +115,37 @@ would like to have Akka installed in. In my case I choose to install it in
 You need to do one more thing in order to install Akka properly: set the
 ``AKKA_HOME`` environment variable to the root of the distribution. In my case
 I'm opening up a shell, navigating down to the distribution, and setting the
-``AKKA_HOME`` variable::
+``AKKA_HOME`` variable.
 
-    $ cd /Users/jboner/tools/akka-2.0-SNAPSHOT
+On Linux/Unix/Mac systems::
+
+    $ cd /Users/jboner/tools/akka-2.1-SNAPSHOT
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-2.0-SNAPSHOT
+    /Users/jboner/tools/akka-2.1-SNAPSHOT
 
-The distribution looks like this::
+On Windows systems::
+
+    C:\Users\jboner\src\akka> cd akka-2.1-SNAPSHOT
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> set AKKA_HOME=%cd%
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> echo %AKKA_HOME%
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT
+
+The distribution looks like this.
+
+On Linux/Unix/Mac systems::
 
     $ ls -1
+    bin
+    config
+    deploy
+    doc
+    lib
+    src
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> dir
     bin
     config
     deploy
@@ -123,7 +161,7 @@ The distribution looks like this::
 - In the ``src`` directory we have the source JARs for Akka.
 
 The only JAR we will need for this tutorial (apart from the
-``scala-library.jar`` JAR) is the ``akka-actor-2.0-SNAPSHOT.jar`` JAR in the ``lib/akka``
+``scala-library.jar`` JAR) is the ``akka-actor-2.1-SNAPSHOT.jar`` JAR in the ``lib/akka``
 directory. This is a self-contained JAR with zero dependencies and contains
 everything we need to write a system using Actors.
 
@@ -144,10 +182,10 @@ modules are:
 
 - ``akka-amqp`` -- AMQP integration
 
-.. - ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-.. - ``akka-camel-2.0-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-.. - ``akka-camel-typed-2.0-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
-.. - ``akka-spring-2.0-SNAPSHOT.jar`` -- Spring framework integration
+.. - ``akka-stm-2.1-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+.. - ``akka-camel-2.1-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+.. - ``akka-camel-typed-2.1-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
+.. - ``akka-spring-2.1-SNAPSHOT.jar`` -- Spring framework integration
 
 
 Downloading and installing Scala
@@ -163,13 +201,26 @@ distribution then just unzip it where you want it installed. If you pick the
 IzPack Installer then double click on it and follow the instructions.
 
 You also need to make sure that the ``scala-2.9.1/bin`` (if that is the
-directory where you installed Scala) is on your ``PATH``::
+directory where you installed Scala) is on your ``PATH``.
+
+On Linux/Unix/Mac systems::
 
     $ export PATH=$PATH:scala-2.9.1/bin
 
-You can test your installation by invoking scala::
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> set PATH=%PATH%;scala-2.9.1\bin
+
+You can test your installation by invoking scala.
+
+On Linux/Unix/Mac systems::
 
     $ scala -version
+    Scala code runner version 2.9.1.final -- Copyright 2002-2011, LAMP/EPFL
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> scala -version
     Scala code runner version 2.9.1.final -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for
@@ -216,7 +267,7 @@ in the directory you want to create your project in::
 
     resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.1-SNAPSHOT"
 
 Create a directory ``src/main/scala`` in which you will store the Scala source
 files.
@@ -226,14 +277,14 @@ modules beyond ``akka-actor``, you can add these as ``libraryDependencies`` in
 ``build.sbt``. Note that there must be a blank line between each. Here is an
 example adding ``akka-remote``::
 
-    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.1-SNAPSHOT"
 
-    libraryDependencies += "com.typesafe.akka" % "akka-remote" % "2.0-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-remote" % "2.1-SNAPSHOT"
 
 So, now we are all set.
 
 SBT itself needs a whole bunch of dependencies but our project will only need
-one; ``akka-actor-2.0-SNAPSHOT.jar``. SBT will download that as well.
+one; ``akka-actor-2.1-SNAPSHOT.jar``. SBT will download that as well.
 
 
 Start writing the code
@@ -403,22 +454,39 @@ If you have not typed in (or copied) the code for the tutorial as in
 When that's done open up a shell and step in to the Akka distribution (``cd $AKKA_HOME``).
 
 First we need to compile the source file. That is done with Scala's compiler
-``scalac``. Our application depends on the ``akka-actor-2.0-SNAPSHOT.jar`` JAR
-file, so let's add that to the compiler classpath when we compile the source::
+``scalac``. Our application depends on the ``akka-actor-2.1-SNAPSHOT.jar`` JAR
+file, so let's add that to the compiler classpath when we compile the source.
 
-    $ scalac -cp lib/akka/akka-actor-2.0-SNAPSHOT.jar Pi.scala
+On Linux/Unix/Mac systems::
+
+    $ scalac -cp lib/akka/akka-actor-2.1-SNAPSHOT.jar Pi.scala
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> scalac -cp lib\akka\akka-actor-2.1-SNAPSHOT.jar Pi.scala
 
 When we have compiled the source file we are ready to run the application. This
 is done with ``java`` but yet again we need to add the
-``akka-actor-2.0-SNAPSHOT.jar`` JAR file to the classpath, and this time we also
+``akka-actor-2.1-SNAPSHOT.jar`` JAR file to the classpath, and this time we also
 need to add the Scala runtime library ``scala-library.jar`` and the classes we
-compiled ourselves::
+compiled ourselves.
+
+On Linux/Unix/Mac systems::
 
     $ java \
-        -cp lib/scala-library.jar:lib/akka/akka-actor-2.0-SNAPSHOT.jar:. \
+        -cp lib/scala-library.jar:lib/akka/akka-actor-2.1-SNAPSHOT.jar:. \
         akka.tutorial.first.scala.Pi
 
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
+    Calculation time:   359 millis
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> java \
+        -cp lib/scala-library.jar;lib\akka\akka-actor-2.1-SNAPSHOT.jar;. \
+        akka.tutorial.first.scala.Pi
+
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 Yippee! It is working.
@@ -427,9 +495,17 @@ Run it inside SBT
 =================
 
 If you used SBT, then you can run the application directly inside SBT. First you
-need to compile the project::
+need to compile the project.
+
+On Linux/Unix/Mac systems::
 
     $ sbt
+    > compile
+    ...
+
+On Windows systems::
+
+    C:\Users\jboner\src\akka\akka-2.1-SNAPSHOT> sbt
     > compile
     ...
 
@@ -437,7 +513,7 @@ When this in done we can run our application directly inside SBT::
 
     > run
     ...
-    Pi approximation:   3.1435501812459323
+    Pi approximation:   3.1415926435897883
     Calculation time:   359 millis
 
 Yippee! It is working.

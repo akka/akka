@@ -28,6 +28,8 @@ import akka.event.LoggingAdapter
  *
  * Scala:
  * {{{
+ * import akka.pattern.ask
+ *
  * class ExampleActor extends Actor {
  *   val other = context.actorOf(Props[OtherActor], "childName") // will be destroyed and re-created upon restart by default
  *
@@ -41,6 +43,8 @@ import akka.event.LoggingAdapter
  *
  * Java:
  * {{{
+ * import static akka.pattern.Patterns.ask;
+ *
  * public class ExampleActor Extends UntypedActor {
  *   // this child will be destroyed and re-created upon restart by default
  *   final ActorRef other = getContext().actorOf(new Props(OtherActor.class), "childName");
@@ -284,14 +288,11 @@ private[akka] class LocalActorRef private[akka] (
    * Method for looking up a single child beneath this actor. Override in order
    * to inject “synthetic” actor paths like “/temp”.
    */
-  protected def getSingleChild(name: String): InternalActorRef = {
-    if (actorCell.isTerminated) Nobody // read of the mailbox status ensures we get the latest childrenRefs
-    else {
-      val children = actorCell.childrenRefs
-      if (children contains name) children(name).child.asInstanceOf[InternalActorRef]
-      else Nobody
+  protected def getSingleChild(name: String): InternalActorRef =
+    actorCell.childrenRefs.getByName(name) match {
+      case Some(crs) ⇒ crs.child.asInstanceOf[InternalActorRef]
+      case None      ⇒ Nobody
     }
-  }
 
   def getChild(names: Iterator[String]): InternalActorRef = {
     /*
@@ -384,15 +385,6 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 
   @throws(classOf[java.io.ObjectStreamException])
   protected def writeReplace(): AnyRef = SerializedActorRef(path)
-}
-
-private[akka] object MinimalActorRef {
-  def apply(_path: ActorPath, _provider: ActorRefProvider)(receive: PartialFunction[Any, Unit]): ActorRef = new MinimalActorRef {
-    def path = _path
-    def provider = _provider
-    override def !(message: Any)(implicit sender: ActorRef = null): Unit =
-      if (receive.isDefinedAt(message)) receive(message)
-  }
 }
 
 case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)

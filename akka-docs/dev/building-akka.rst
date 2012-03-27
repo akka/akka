@@ -9,10 +9,8 @@
 
 This page describes how to build and run Akka from the latest source code.
 
-.. contents:: :local:
 
-
-Get the source code
+Get the Source Code
 ===================
 
 Akka uses `Git`_ and is hosted at `Github`_.
@@ -21,11 +19,11 @@ Akka uses `Git`_ and is hosted at `Github`_.
 .. _Github: http://github.com
 
 You first need Git installed on your machine. You can then clone the source
-repository from http://github.com/jboner/akka.
+repository from http://github.com/akka/akka.
 
 For example::
 
-   git clone git://github.com/jboner/akka.git
+   git clone git://github.com/akka/akka.git
 
 If you have already cloned the repository previously then you can update the
 code with ``git pull``::
@@ -84,7 +82,20 @@ launch script to activate parallel execution::
 
   -Dakka.parallelExecution=true
 
-Publish to local Ivy repository
+Long Running and Time Sensitive Tests
+-------------------------------------
+
+By default are the long running tests (mainly cluster tests) and time sensitive tests (dependent on the
+performance of the machine it is running on) disabled. You can enable them by adding one of the flags::
+
+  -Dakka.test.tags.include=long-running
+  -Dakka.test.tags.include=timing
+
+Or if you need to enable them both::
+
+  -Dakka.test.tags.include=long-running,timing
+
+Publish to Local Ivy Repository
 -------------------------------
 
 If you want to deploy the artifacts to your local Ivy repository (for example,
@@ -93,7 +104,7 @@ to use from an sbt project) use the ``publish-local`` command::
    sbt publish-local
 
 
-sbt interactive mode
+sbt Interactive Mode
 --------------------
 
 Note that in the examples above we are calling ``sbt compile`` and ``sbt test``
@@ -113,7 +124,7 @@ For example, building Akka as above is more commonly done like this::
    ...
 
 
-sbt batch mode
+sbt Batch Mode
 --------------
 
 It's also possible to combine commands in a single call. For example, testing,

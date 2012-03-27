@@ -10,6 +10,7 @@ import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.pattern.ask
 import akka.util.duration._
+import akka.util.NonFatal
 
 object SupervisorMiscSpec {
   val config = """
@@ -77,5 +78,69 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
       expectMsg("preStart")
       a.isTerminated must be(false)
     }
+
+    "be able to recreate child when old child is Terminated" in {
+      val parent = system.actorOf(Props(new Actor {
+        val kid = context.watch(context.actorOf(Props.empty, "foo"))
+        def receive = {
+          case Terminated(`kid`) ⇒
+            try {
+              val newKid = context.actorOf(Props.empty, "foo")
+              val result =
+                if (newKid eq kid) "Failure: context.actorOf returned the same instance!"
+                else if (!kid.isTerminated) "Kid is zombie"
+                else if (newKid.isTerminated) "newKid was stillborn"
+                else if (kid.path != newKid.path) "The kids do not share the same path"
+                else "green"
+              testActor ! result
+            } catch {
+              case NonFatal(e) ⇒ testActor ! e
+            }
+          case "engage" ⇒ context.stop(kid)
+        }
+      }))
+      parent ! "engage"
+      expectMsg("green")
+    }
+
+    "not be able to recreate child when old child is alive" in {
+      val parent = system.actorOf(Props(new Actor {
+        def receive = {
+          case "engage" ⇒
+            try {
+              val kid = context.actorOf(Props.empty, "foo")
+              context.stop(kid)
+              context.actorOf(Props.empty, "foo")
+              testActor ! "red"
+            } catch {
+              case e: InvalidActorNameException ⇒ testActor ! "green"
+            }
+        }
+      }))
+      parent ! "engage"
+      expectMsg("green")
+    }
+
+    "be able to create a similar kid in the fault handling strategy" in {
+      val parent = system.actorOf(Props(new Actor {
+
+        override val supervisorStrategy = new OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider) {
+          override def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = {
+            val newKid = context.actorOf(Props.empty, child.path.name)
+            testActor ! {
+              if ((newKid ne child) && newKid.path == child.path) "green"
+              else "red"
+            }
+          }
+        }
+
+        def receive = {
+          case "engage" ⇒ context.stop(context.actorOf(Props.empty, "Robert"))
+        }
+      }))
+      parent ! "engage"
+      expectMsg("green")
+    }
+
   }
 }
