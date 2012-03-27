@@ -158,11 +158,8 @@ trait AskSupport {
  * Akka private optimized representation of the temporary actor spawned to
  * receive the reply to an "ask" operation.
  */
-private[akka] final class PromiseActorRef private (
-  val provider: ActorRefProvider,
-  override val getParent: InternalActorRef,
-  val result: Promise[Any],
-  val deathWatch: DeathWatch) extends MinimalActorRef {
+private[akka] final class PromiseActorRef private (val provider: ActorRefProvider, val result: Promise[Any])
+  extends MinimalActorRef {
   import PromiseActorRef._
   import AbstractPromiseActorRef.stateOffset
 
@@ -179,7 +176,7 @@ private[akka] final class PromiseActorRef private (
    * Stopped               => stopped, path not yet created
    */
   @volatile
-  private var _stateDoNotCallMeDirectly: AnyRef = _
+  private[this] var _stateDoNotCallMeDirectly: AnyRef = _
 
   @inline
   private def state: AnyRef = Unsafe.instance.getObjectVolatile(this, stateOffset)
@@ -189,8 +186,10 @@ private[akka] final class PromiseActorRef private (
     Unsafe.instance.compareAndSwapObject(this, stateOffset, oldState, newState)
 
   @inline
-  private def setState(newState: AnyRef) =
+  private def setState(newState: AnyRef): Unit =
     Unsafe.instance.putObjectVolatile(this, stateOffset, newState)
+
+  override def getParent = provider.tempContainer
 
   /**
    * Contract of this method:
@@ -252,8 +251,8 @@ private[akka] final class PromiseActorRef private (
       case p: ActorPath ⇒
         if (updateState(p, StoppedWithPath(p))) {
           try {
-            deathWatch.publish(Terminated(this))
             ensurePromiseCompleted()
+            provider.deathWatch.publish(Terminated(this))
           } finally {
             provider.unregisterTempActor(p)
           }
@@ -271,7 +270,7 @@ private[akka] object PromiseActorRef {
 
   def apply(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
     val result = Promise[Any]()(provider.dispatcher)
-    val a = new PromiseActorRef(provider, provider.tempContainer, result, provider.deathWatch)
+    val a = new PromiseActorRef(provider, result)
     val f = provider.scheduler.scheduleOnce(timeout.duration) { result.tryComplete(Left(new AskTimeoutException("Timed out"))) }
     result onComplete { _ ⇒
       try a.stop() finally f.cancel()
