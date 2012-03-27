@@ -113,7 +113,7 @@ object ActorDSL extends ActorDSL[Actor, ActorRef, ActorContext] {
       tlQueue set queue
 
       // initialize thread-local ActorRef
-      val ref = new ThreadActorRef(queue)
+      val ref = new ThreadActorRef(queue, system)
       tl set ref
 
       ref
@@ -121,7 +121,7 @@ object ActorDSL extends ActorDSL[Actor, ActorRef, ActorContext] {
       s
   }
 
-  private class ThreadActorRef(queue: Queue[Any]) extends InternalActorRef with LocalRef {
+  private class ThreadActorRef(queue: Queue[Any], system: ActorSystem) extends InternalActorRef with LocalRef {
     /* Since we are not providing an ActorContext for the current thread, the following
        methods should not be invoked internally.
      */
@@ -131,11 +131,11 @@ object ActorDSL extends ActorDSL[Actor, ActorRef, ActorContext] {
     def stop(): Unit = throw new RuntimeException
     def sendSystemMessage(message: SystemMessage): Unit = throw new RuntimeException
 
-    def provider: ActorRefProvider = null //ActorSystem("ThreadActorSystem").asInstanceOf[ActorSystemImpl].provider
+    def provider: ActorRefProvider = null
 
-    def getParent: InternalActorRef = null
+    def getParent: InternalActorRef = null //system.deadLetters
 
-    def getChild(name: Iterator[String]): InternalActorRef = null
+    def getChild(name: Iterator[String]): InternalActorRef = null //system.deadLetters
 
     def !(message: Any)(implicit sender: ActorRef = null): Unit = {
       /* put message into queue and notify receiving thread

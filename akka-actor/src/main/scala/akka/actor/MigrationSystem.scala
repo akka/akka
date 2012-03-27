@@ -10,6 +10,7 @@ import scala.collection.JavaConverters._
 object MigrationSystem extends ActorSystemImpl(
   "MigrationSystem",
   ConfigFactory.parseMap(Map(
-    "akka.actor.provider" -> "akka.actor.MigrationLocalRefProvider").asJava).withFallback(ConfigFactory.load())) {
+    "akka.actor.provider" -> "akka.actor.MigrationLocalRefProvider").asJava).withFallback(ConfigFactory.load()),
+  Thread.currentThread().getContextClassLoader()) {
   start()
 }
