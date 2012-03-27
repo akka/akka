@@ -2,6 +2,7 @@ package akka.amqp
 
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.AMQP.Queue.DeclareOk
+import scala.collection.JavaConverters._
 
 sealed trait Queue
 
@@ -48,7 +49,6 @@ case class ActiveQueue(name: String,
                        autoDelete: Boolean = true,
                        arguments: Option[Map[String, AnyRef]] = None) extends ManagedQueue {
   def declare(channel: Channel) = {
-    import scala.collection.JavaConverters._
     channel.queueDeclare(name, durable, exclusive, autoDelete, arguments.map(_.asJava).getOrElse(null))
   }
 }
@@ -58,12 +58,10 @@ case class QueueBinding(exchange: NamedExchange,
                         arguments: Option[Map[String, AnyRef]] = None) {
 
   def bind(channel: Channel, queueName: String) {
-    import scala.collection.JavaConverters._
     channel.queueBind(queueName, exchange.name, routingKey, arguments.map(_.asJava).getOrElse(null))
   }
 
   def unbind(channel: Channel, queueName: String) {
-    import scala.collection.JavaConverters._
     channel.queueUnbind(queueName, exchange.name, routingKey, arguments.map(_.asJava).getOrElse(null))
   }
 }

@@ -10,6 +10,7 @@ import java.util.concurrent.{ ThreadFactory, Executors }
 import akka.actor._
 import akka.util.{ Duration, Timeout }
 import akka.util.duration._
+import akka.pattern.ask
 
 sealed trait ConnectionState
 case object Disconnected extends ConnectionState
@@ -84,7 +85,6 @@ private[amqp] class DurableConnectionActor(connectionProperties: ConnectionPrope
         case e: Exception ⇒
           log.error(e, "Error while trying to connect")
           val nextReconnectTimeout = timeoutGenerator.nextTimeoutSec(maxReconnectDelay.toSeconds.toInt)
-          import akka.util.duration._
           setTimer("reconnect", Connect, nextReconnectTimeout seconds, true)
           log.info("Reconnecting in {} seconds...".format(nextReconnectTimeout))
           stay()
@@ -180,7 +180,6 @@ class DurableConnection(private[amqp] val connectionProperties: ConnectionProper
   val settings = AMQP(connectionProperties.system)
 
   def withConnection[T](callback: Connection ⇒ T): Future[T] = {
-    import akka.pattern.ask
     implicit val timeout = Timeout(settings.DefaultInteractionTimeout)
     (durableConnectionActor ? ConnectionCallback(callback)) map (_.asInstanceOf[T])
   }
