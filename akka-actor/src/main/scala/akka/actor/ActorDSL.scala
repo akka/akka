@@ -121,23 +121,10 @@ object ActorDSL extends ActorDSL[Actor, ActorRef, ActorContext] {
       s
   }
 
-  private class ThreadActorRef(queue: Queue[Any], system: ActorSystem) extends InternalActorRef with LocalRef {
-    /* Since we are not providing an ActorContext for the current thread, the following
-       methods should not be invoked internally.
-     */
-    def resume(): Unit = throw new RuntimeException
-    def suspend(): Unit = throw new RuntimeException
-    def restart(cause: Throwable): Unit = throw new RuntimeException
-    def stop(): Unit = throw new RuntimeException
-    def sendSystemMessage(message: SystemMessage): Unit = throw new RuntimeException
-
+  private class ThreadActorRef(queue: Queue[Any], system: ActorSystem) extends MinimalActorRef {
     def provider: ActorRefProvider = null
 
-    def getParent: InternalActorRef = null //system.deadLetters
-
-    def getChild(name: Iterator[String]): InternalActorRef = null //system.deadLetters
-
-    def !(message: Any)(implicit sender: ActorRef = null): Unit = {
+    override def !(message: Any)(implicit sender: ActorRef = null): Unit = {
       /* put message into queue and notify receiving thread
          
          note that we are ignoring the sender, because the current thread
@@ -149,8 +136,6 @@ object ActorDSL extends ActorDSL[Actor, ActorRef, ActorContext] {
         queue.notifyAll()
       }
     }
-
-    def isTerminated: Boolean = false
 
     def path: ActorPath = null
   }

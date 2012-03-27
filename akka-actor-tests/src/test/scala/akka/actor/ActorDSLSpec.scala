@@ -4,10 +4,9 @@
 package akka.actor
 
 import akka.testkit._
-import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
 
-import akka.dispatch.{ Await, MessageQueueAppendFailedException, BoundedDequeBasedMailbox }
+import akka.dispatch.Await
 import akka.pattern.ask
 import akka.util.duration._
 
@@ -32,18 +31,16 @@ class ActorDSLSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach 
 
   "An actor created with the DSL" must {
     "have a working context" in {
-      @volatile var in1 = false
-      @volatile var in2 = false
+      val latch = new TestLatch
 
       val actor = actorOf { context ⇒
         {
           case m ⇒
-            in1 = true
             m must be("hello")
             context.become {
               case m ⇒
-                in2 = true
                 m must be("hello")
+                latch.open()
             }
         }
       }
@@ -51,15 +48,11 @@ class ActorDSLSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach 
       actor ! "hello"
       actor ! "hello"
 
-      Thread.sleep(200)
-      in1 must be(true)
-      in2 must be(true)
+      Await.ready(latch, 10 seconds)
 
       actor ! PoisonPill
     }
-  }
 
-  "An actor created with the DSL" must {
     "be able to exchange messages with a regular thread " in {
       val tA = self
       val actor = actorOf { context ⇒
@@ -103,9 +96,7 @@ class ActorDSLSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach 
           }
       }
     }
-  }
 
-  "A thread actor" must {
     "only receive user messages" in {
       val tA = self
       val actor = actorOf { context ⇒
