@@ -75,6 +75,7 @@ class ActorDSLSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach 
 
   "A thread actor" must {
     "support nested receives" in {
+      val latch = new TestLatch
       val tA = self
       val actor = actorOf { context ⇒
         {
@@ -88,13 +89,14 @@ class ActorDSLSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach 
       actor ! "world"
 
       receive {
-        case m @ "hello" ⇒
-          m must be("hello")
+        case "hello" ⇒
           receive {
-            case next @ "world" ⇒
-              next must be("world")
+            case "world" ⇒
+              latch.open()
           }
       }
+
+      Await.ready(latch, 10 seconds)
     }
 
     "only receive user messages" in {
