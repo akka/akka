@@ -16,6 +16,11 @@ import org.apache.camel.{ Exchange, ExchangePattern, AsyncCallback }
 trait ProducerSupport { this: Actor ⇒
   protected[this] implicit def camel = CamelExtension(context.system)
 
+  /**
+   * camelContext implicit is useful when using advanced methods of CamelMessage.
+   */
+  protected[this] implicit def camelContext = camel.context
+
   protected[this] lazy val (endpoint, processor) = camel.registerProducer(self, endpointUri)
 
   /**
