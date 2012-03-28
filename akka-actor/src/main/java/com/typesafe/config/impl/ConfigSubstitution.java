@@ -127,31 +127,27 @@ final class ConfigSubstitution extends AbstractConfigValue implements
     // larger than anyone would ever want
     private static final int MAX_DEPTH = 100;
 
-    private ConfigValue findInObject(AbstractConfigObject root,
+    private AbstractConfigValue findInObject(AbstractConfigObject root,
             SubstitutionResolver resolver, /* null if we should not have refs */
-            Path subst, int depth, ConfigResolveOptions options) {
+            Path subst, int depth, ConfigResolveOptions options) throws NotPossibleToResolve,
+            NeedsFullResolve {
         if (depth > MAX_DEPTH) {
-            throw new ConfigException.BadValue(origin(), subst.render(),
-                    "Substitution ${" + subst.render()
-                            + "} is part of a cycle of substitutions");
+            throw new NotPossibleToResolve(origin(), subst.render(), "Substitution ${"
+                    + subst.render() + "} is part of a cycle of substitutions");
         }
 
-        ConfigValue result = root.peekPath(subst, resolver, depth, options);
-
-        if (result instanceof ConfigSubstitution) {
-            throw new ConfigException.BugOrBroken(
-                    "peek or peekPath returned an unresolved substitution");
-        }
+        AbstractConfigValue result = root.peekPath(subst, resolver, depth, options);
 
         return result;
     }
 
-    private ConfigValue resolve(SubstitutionResolver resolver, SubstitutionExpression subst,
-            int depth, ConfigResolveOptions options) {
+    private AbstractConfigValue resolve(SubstitutionResolver resolver,
+            SubstitutionExpression subst, int depth, ConfigResolveOptions options,
+            Path restrictToChildOrNull) throws NotPossibleToResolve, NeedsFullResolve {
         // First we look up the full path, which means relative to the
         // included file if we were not a root file
-        ConfigValue result = findInObject(resolver.root(), resolver, subst.path(),
-                depth, options);
+        AbstractConfigValue result = findInObject(resolver.root(), resolver, subst.path(), depth,
+                options);
 
         if (result == null) {
             // Then we want to check relative to the root file. We don't
@@ -169,11 +165,15 @@ final class ConfigSubstitution extends AbstractConfigValue implements
             }
         }
 
+        if (result != null) {
+            result = resolver.resolve(result, depth, options, restrictToChildOrNull);
+        }
+
         return result;
     }
 
     private ConfigValue resolve(SubstitutionResolver resolver, int depth,
-            ConfigResolveOptions options) {
+            ConfigResolveOptions options, Path restrictToChildOrNull) throws NotPossibleToResolve {
         if (pieces.size() > 1) {
             // need to concat everything into a string
             StringBuilder sb = new StringBuilder();
@@ -182,7 +182,15 @@ final class ConfigSubstitution extends AbstractConfigValue implements
                     sb.append((String) p);
                 } else {
                     SubstitutionExpression exp = (SubstitutionExpression) p;
-                    ConfigValue v = resolve(resolver, exp, depth, options);
+                    ConfigValue v;
+                    try {
+                        // to concat into a string we have to do a full resolve,
+                        // so don't pass along restrictToChildOrNull
+                        v = resolve(resolver, exp, depth, options, null);
+                    } catch (NeedsFullResolve e) {
+                        throw new NotPossibleToResolve(null, exp.path().render(),
+                                "Some kind of loop or interdependency prevents resolving " + exp, e);
+                    }
 
                     if (v == null) {
                         if (exp.optional()) {
@@ -210,7 +218,13 @@ final class ConfigSubstitution extends AbstractConfigValue implements
                 throw new ConfigException.BugOrBroken(
                         "ConfigSubstitution should never contain a single String piece");
             SubstitutionExpression exp = (SubstitutionExpression) pieces.get(0);
-            ConfigValue v = resolve(resolver, exp, depth, options);
+            ConfigValue v;
+            try {
+                v = resolve(resolver, exp, depth, options, restrictToChildOrNull);
+            } catch (NeedsFullResolve e) {
+                throw new NotPossibleToResolve(null, exp.path().render(),
+                        "Some kind of loop or interdependency prevents resolving " + exp, e);
+            }
             if (v == null && !exp.optional()) {
                 throw new ConfigException.UnresolvedSubstitution(origin(), exp.toString());
             }
@@ -219,13 +233,12 @@ final class ConfigSubstitution extends AbstractConfigValue implements
     }
 
     @Override
-    AbstractConfigValue resolveSubstitutions(SubstitutionResolver resolver,
-            int depth,
-            ConfigResolveOptions options) {
+    AbstractConfigValue resolveSubstitutions(SubstitutionResolver resolver, int depth,
+            ConfigResolveOptions options, Path restrictToChildOrNull) throws NotPossibleToResolve {
         // only ConfigSubstitution adds to depth here, because the depth
-        // is the substitution depth not the recursion depth
-        AbstractConfigValue resolved = (AbstractConfigValue) resolve(resolver,
-                depth + 1, options);
+        // is the substitution depth not the recursion depth.
+        AbstractConfigValue resolved = (AbstractConfigValue) resolve(resolver, depth + 1, options,
+                restrictToChildOrNull);
         return resolved;
     }
 

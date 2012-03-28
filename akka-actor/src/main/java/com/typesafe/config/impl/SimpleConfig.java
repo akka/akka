@@ -22,6 +22,8 @@ import com.typesafe.config.ConfigOrigin;
 import com.typesafe.config.ConfigResolveOptions;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
+import com.typesafe.config.impl.AbstractConfigValue.NeedsFullResolve;
+import com.typesafe.config.impl.AbstractConfigValue.NotPossibleToResolve;
 
 /**
  * One thing to keep in mind in the future: as Collection-like APIs are added
@@ -56,8 +58,9 @@ final class SimpleConfig implements Config, MergeableValue, Serializable {
 
     @Override
     public SimpleConfig resolve(ConfigResolveOptions options) {
-        AbstractConfigValue resolved = SubstitutionResolver.resolve(object,
+        AbstractConfigValue resolved = SubstitutionResolver.resolveWithExternalExceptions(object,
                 object, options);
+
         if (resolved == object)
             return this;
         else
@@ -68,7 +71,15 @@ final class SimpleConfig implements Config, MergeableValue, Serializable {
     @Override
     public boolean hasPath(String pathExpression) {
         Path path = Path.newPath(pathExpression);
-        ConfigValue peeked = object.peekPath(path, null, 0, null);
+        ConfigValue peeked;
+        try {
+            peeked = object.peekPath(path, null, 0, null);
+        } catch (NotPossibleToResolve e) {
+            throw e.exportException(origin(), pathExpression);
+        } catch (NeedsFullResolve e) {
+            throw new ConfigException.NotResolved(origin().description() + ": " + pathExpression
+                    + ": Have to resolve() the Config before using hasPath() here");
+        }
         return peeked != null && peeked.valueType() != ConfigValueType.NULL;
     }
 
@@ -110,7 +121,7 @@ final class SimpleConfig implements Config, MergeableValue, Serializable {
 
     static private AbstractConfigValue findKey(AbstractConfigObject self,
             String key, ConfigValueType expected, String originalPath) {
-        AbstractConfigValue v = self.peek(key);
+        AbstractConfigValue v = self.peekAssumingResolved(key, originalPath);
         if (v == null)
             throw new ConfigException.Missing(originalPath);
 
@@ -656,7 +667,7 @@ final class SimpleConfig implements Config, MergeableValue, Serializable {
     }
 
     private AbstractConfigValue peekPath(Path path) {
-        return root().peekPath(path);
+        return root().peekPathWithExternalExceptions(path);
     }
 
     private static void addProblem(List<ConfigException.ValidationProblem> accumulator, Path path,

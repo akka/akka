@@ -34,7 +34,62 @@ abstract class AbstractConfigValue implements ConfigValue, MergeableValue, Seria
     }
 
     /**
-     * Called only by SubstitutionResolver object.
+     * This exception means that a value is inherently not resolveable, for
+     * example because there's a cycle in the substitutions. That's different
+     * from a ConfigException.NotResolved which just means it hasn't been
+     * resolved. This is a checked exception since it's internal to the library
+     * and we want to be sure we handle it before passing it out to public API.
+     */
+    static final class NotPossibleToResolve extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        ConfigOrigin origin;
+        String path;
+
+        NotPossibleToResolve(String message) {
+            super(message);
+            this.origin = null;
+            this.path = null;
+        }
+
+        // use this constructor ONLY if you know the right origin and path
+        // to describe the problem.
+        NotPossibleToResolve(ConfigOrigin origin, String path, String message) {
+            this(origin, path, message, null);
+        }
+
+        NotPossibleToResolve(ConfigOrigin origin, String path, String message, Throwable cause) {
+            super(message, cause);
+            this.origin = origin;
+            this.path = path;
+        }
+
+        ConfigException exportException(ConfigOrigin outerOrigin, String outerPath) {
+            ConfigOrigin o = origin != null ? origin : outerOrigin;
+            String p = path != null ? path : outerPath;
+            if (p == null)
+                path = "";
+            if (o != null)
+                return new ConfigException.BadValue(o, p, getMessage(), this);
+            else
+                return new ConfigException.BadValue(p, getMessage(), this);
+        }
+    }
+
+    // thrown if a full rather than partial resolve is needed
+    static final class NeedsFullResolve extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        NeedsFullResolve(String message) {
+            super(message);
+        }
+    }
+
+    /**
+     * Called only by SubstitutionResolver object. The "restrict to child"
+     * parameter is to avoid unnecessary cycles as a side effect (any sibling of
+     * the object we want to follow could cause a cycle, not just the object we
+     * want to follow, otherwise).
      *
      * @param resolver
      *            the resolver doing the resolving
@@ -43,11 +98,13 @@ abstract class AbstractConfigValue implements ConfigValue, MergeableValue, Seria
      *            one
      * @param options
      *            whether to look at system props and env vars
+     * @param restrictToChildOrNull
+     *            if non-null, only recurse into this child path
      * @return a new value if there were changes, or this if no changes
      */
-    AbstractConfigValue resolveSubstitutions(SubstitutionResolver resolver,
-            int depth,
-            ConfigResolveOptions options) {
+    AbstractConfigValue resolveSubstitutions(SubstitutionResolver resolver, int depth,
+            ConfigResolveOptions options, Path restrictToChildOrNull) throws NotPossibleToResolve,
+            NeedsFullResolve {
         return this;
     }
 
@@ -72,7 +129,25 @@ abstract class AbstractConfigValue implements ConfigValue, MergeableValue, Seria
     }
 
     protected interface Modifier {
-        AbstractConfigValue modifyChild(AbstractConfigValue v);
+        // keyOrNull is null for non-objects
+        AbstractConfigValue modifyChildMayThrow(String keyOrNull, AbstractConfigValue v)
+                throws Exception;
+    }
+
+    protected abstract class NoExceptionsModifier implements Modifier {
+        @Override
+        public final AbstractConfigValue modifyChildMayThrow(String keyOrNull, AbstractConfigValue v)
+                throws Exception {
+            try {
+                return modifyChild(keyOrNull, v);
+            } catch (RuntimeException e) {
+                throw e;
+            } catch(Exception e) {
+                throw new ConfigException.BugOrBroken("Unexpected exception", e);
+            }
+        }
+
+        abstract AbstractConfigValue modifyChild(String keyOrNull, AbstractConfigValue v);
     }
 
     @Override

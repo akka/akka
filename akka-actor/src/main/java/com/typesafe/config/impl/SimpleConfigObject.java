@@ -4,15 +4,19 @@
 package com.typesafe.config.impl;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.typesafe.config.ConfigException;
+import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigOrigin;
+import com.typesafe.config.ConfigResolveOptions;
 import com.typesafe.config.ConfigValue;
 
 final class SimpleConfigObject extends AbstractConfigObject {
@@ -34,6 +38,10 @@ final class SimpleConfigObject extends AbstractConfigObject {
         this.value = value;
         this.resolved = status == ResolveStatus.RESOLVED;
         this.ignoresFallbacks = ignoresFallbacks;
+
+        // Kind of an expensive debug check. Comment out?
+        if (status != ResolveStatus.fromValues(value.values()))
+            throw new ConfigException.BugOrBroken("Wrong resolved status on " + this);
     }
 
     SimpleConfigObject(ConfigOrigin origin,
@@ -76,7 +84,7 @@ final class SimpleConfigObject extends AbstractConfigObject {
             return null;
         } else {
             return new SimpleConfigObject(origin(), Collections.singletonMap(key, v),
-                    resolveStatus(), ignoresFallbacks);
+                    v.resolveStatus(), ignoresFallbacks);
         }
     }
 
@@ -85,7 +93,7 @@ final class SimpleConfigObject extends AbstractConfigObject {
         SimpleConfigObject o = withOnlyPathOrNull(path);
         if (o == null) {
             return new SimpleConfigObject(origin(),
-                    Collections.<String, AbstractConfigValue> emptyMap(), resolveStatus(),
+                    Collections.<String, AbstractConfigValue> emptyMap(), ResolveStatus.RESOLVED,
                     ignoresFallbacks);
         } else {
             return o;
@@ -103,7 +111,8 @@ final class SimpleConfigObject extends AbstractConfigObject {
             Map<String, AbstractConfigValue> updated = new HashMap<String, AbstractConfigValue>(
                     value);
             updated.put(key, v);
-            return new SimpleConfigObject(origin(), updated, resolveStatus(), ignoresFallbacks);
+            return new SimpleConfigObject(origin(), updated, ResolveStatus.fromValues(updated
+                    .values()), ignoresFallbacks);
         } else if (next != null || v == null) {
             // can't descend, nothing to remove
             return this;
@@ -114,12 +123,13 @@ final class SimpleConfigObject extends AbstractConfigObject {
                 if (!old.getKey().equals(key))
                     smaller.put(old.getKey(), old.getValue());
             }
-            return new SimpleConfigObject(origin(), smaller, resolveStatus(), ignoresFallbacks);
+            return new SimpleConfigObject(origin(), smaller, ResolveStatus.fromValues(smaller
+                    .values()), ignoresFallbacks);
         }
     }
 
     @Override
-    protected AbstractConfigValue peek(String key) {
+    protected AbstractConfigValue attemptPeekWithPartialResolve(String key) {
         return value.get(key);
     }
 
@@ -146,6 +156,262 @@ final class SimpleConfigObject extends AbstractConfigObject {
             m.put(e.getKey(), e.getValue().unwrapped());
         }
         return m;
+    }
+
+    @Override
+    protected SimpleConfigObject mergedWithObject(AbstractConfigObject abstractFallback) {
+        if (ignoresFallbacks())
+            throw new ConfigException.BugOrBroken("should not be reached");
+
+        if (!(abstractFallback instanceof SimpleConfigObject)) {
+            throw new ConfigException.BugOrBroken(
+                    "should not be reached (merging non-SimpleConfigObject)");
+        }
+
+        SimpleConfigObject fallback = (SimpleConfigObject) abstractFallback;
+
+        boolean changed = false;
+        boolean allResolved = true;
+        Map<String, AbstractConfigValue> merged = new HashMap<String, AbstractConfigValue>();
+        Set<String> allKeys = new HashSet<String>();
+        allKeys.addAll(this.keySet());
+        allKeys.addAll(fallback.keySet());
+        for (String key : allKeys) {
+            AbstractConfigValue first = this.value.get(key);
+            AbstractConfigValue second = fallback.value.get(key);
+            AbstractConfigValue kept;
+            if (first == null)
+                kept = second;
+            else if (second == null)
+                kept = first;
+            else
+                kept = first.withFallback(second);
+
+            merged.put(key, kept);
+
+            if (first != kept)
+                changed = true;
+
+            if (kept.resolveStatus() == ResolveStatus.UNRESOLVED)
+                allResolved = false;
+        }
+
+        ResolveStatus newResolveStatus = ResolveStatus.fromBoolean(allResolved);
+        boolean newIgnoresFallbacks = fallback.ignoresFallbacks();
+
+        if (changed)
+            return new SimpleConfigObject(mergeOrigins(this, fallback), merged, newResolveStatus,
+                    newIgnoresFallbacks);
+        else if (newResolveStatus != resolveStatus() || newIgnoresFallbacks != ignoresFallbacks())
+            return newCopy(newResolveStatus, newIgnoresFallbacks, origin());
+        else
+            return this;
+    }
+
+    private SimpleConfigObject modify(NoExceptionsModifier modifier) {
+        try {
+            return modifyMayThrow(modifier);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ConfigException.BugOrBroken("unexpected checked exception", e);
+        }
+    }
+
+    private SimpleConfigObject modifyMayThrow(Modifier modifier) throws Exception {
+        Map<String, AbstractConfigValue> changes = null;
+        for (String k : keySet()) {
+            AbstractConfigValue v = value.get(k);
+            // "modified" may be null, which means remove the child;
+            // to do that we put null in the "changes" map.
+            AbstractConfigValue modified = modifier.modifyChildMayThrow(k, v);
+            if (modified != v) {
+                if (changes == null)
+                    changes = new HashMap<String, AbstractConfigValue>();
+                changes.put(k, modified);
+            }
+        }
+        if (changes == null) {
+            return newCopy(resolveStatus(), ignoresFallbacks(), origin());
+        } else {
+            Map<String, AbstractConfigValue> modified = new HashMap<String, AbstractConfigValue>();
+            boolean sawUnresolved = false;
+            for (String k : keySet()) {
+                if (changes.containsKey(k)) {
+                    AbstractConfigValue newValue = changes.get(k);
+                    if (newValue != null) {
+                        modified.put(k, newValue);
+                        if (newValue.resolveStatus() == ResolveStatus.UNRESOLVED)
+                            sawUnresolved = true;
+                    } else {
+                        // remove this child; don't put it in the new map.
+                    }
+                } else {
+                    AbstractConfigValue newValue = value.get(k);
+                    modified.put(k, newValue);
+                    if (newValue.resolveStatus() == ResolveStatus.UNRESOLVED)
+                        sawUnresolved = true;
+                }
+            }
+            return new SimpleConfigObject(origin(), modified,
+                    sawUnresolved ? ResolveStatus.UNRESOLVED : ResolveStatus.RESOLVED,
+                    ignoresFallbacks());
+        }
+    }
+
+    @Override
+    AbstractConfigObject resolveSubstitutions(final SubstitutionResolver resolver, final int depth,
+            final ConfigResolveOptions options, final Path restrictToChildOrNull)
+            throws NotPossibleToResolve, NeedsFullResolve {
+        if (resolveStatus() == ResolveStatus.RESOLVED)
+            return this;
+
+        try {
+            return modifyMayThrow(new Modifier() {
+
+                @Override
+                public AbstractConfigValue modifyChildMayThrow(String key, AbstractConfigValue v)
+                        throws NotPossibleToResolve, NeedsFullResolve {
+                    if (restrictToChildOrNull != null) {
+                        if (key.equals(restrictToChildOrNull.first())) {
+                            Path remainder = restrictToChildOrNull.remainder();
+                            if (remainder != null) {
+                                return resolver.resolve(v, depth, options, remainder);
+                            } else {
+                                // we don't want to resolve the leaf child.
+                                return v;
+                            }
+                        } else {
+                            // not in the restrictToChild path
+                            return v;
+                        }
+                    } else {
+                        // no restrictToChild, resolve everything
+                        return resolver.resolve(v, depth, options, null);
+                    }
+                }
+
+            });
+        } catch (NotPossibleToResolve e) {
+            throw e;
+        } catch (NeedsFullResolve e) {
+            throw e;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ConfigException.BugOrBroken("unexpected checked exception", e);
+        }
+    }
+
+    @Override
+    SimpleConfigObject relativized(final Path prefix) {
+        return modify(new NoExceptionsModifier() {
+
+            @Override
+            public AbstractConfigValue modifyChild(String key, AbstractConfigValue v) {
+                return v.relativized(prefix);
+            }
+
+        });
+    }
+
+    @Override
+    protected void render(StringBuilder sb, int indent, boolean formatted) {
+        if (isEmpty()) {
+            sb.append("{}");
+        } else {
+            sb.append("{");
+            if (formatted)
+                sb.append('\n');
+            for (String k : keySet()) {
+                AbstractConfigValue v;
+                v = value.get(k);
+
+                if (formatted) {
+                    indent(sb, indent + 1);
+                    sb.append("# ");
+                    sb.append(v.origin().description());
+                    sb.append("\n");
+                    for (String comment : v.origin().comments()) {
+                        indent(sb, indent + 1);
+                        sb.append("# ");
+                        sb.append(comment);
+                        sb.append("\n");
+                    }
+                    indent(sb, indent + 1);
+                }
+                v.render(sb, indent + 1, k, formatted);
+                sb.append(",");
+                if (formatted)
+                    sb.append('\n');
+            }
+            // chop comma or newline
+            sb.setLength(sb.length() - 1);
+            if (formatted) {
+                sb.setLength(sb.length() - 1); // also chop comma
+                sb.append("\n"); // put a newline back
+                indent(sb, indent);
+            }
+            sb.append("}");
+        }
+    }
+
+    @Override
+    public AbstractConfigValue get(Object key) {
+        return value.get(key);
+    }
+
+    private static boolean mapEquals(Map<String, ConfigValue> a, Map<String, ConfigValue> b) {
+        Set<String> aKeys = a.keySet();
+        Set<String> bKeys = b.keySet();
+
+        if (!aKeys.equals(bKeys))
+            return false;
+
+        for (String key : aKeys) {
+            if (!a.get(key).equals(b.get(key)))
+                return false;
+        }
+        return true;
+    }
+
+    private static int mapHash(Map<String, ConfigValue> m) {
+        // the keys have to be sorted, otherwise we could be equal
+        // to another map but have a different hashcode.
+        List<String> keys = new ArrayList<String>();
+        keys.addAll(m.keySet());
+        Collections.sort(keys);
+
+        int valuesHash = 0;
+        for (String k : keys) {
+            valuesHash += m.get(k).hashCode();
+        }
+        return 41 * (41 + keys.hashCode()) + valuesHash;
+    }
+
+    @Override
+    protected boolean canEqual(Object other) {
+        return other instanceof ConfigObject;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        // note that "origin" is deliberately NOT part of equality.
+        // neither are other "extras" like ignoresFallbacks or resolve status.
+        if (other instanceof ConfigObject) {
+            // optimization to avoid unwrapped() for two ConfigObject,
+            // which is what AbstractConfigValue does.
+            return canEqual(other) && mapEquals(this, ((ConfigObject) other));
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        // note that "origin" is deliberately NOT part of equality
+        // neither are other "extras" like ignoresFallbacks or resolve status.
+        return mapHash(this);
     }
 
     @Override

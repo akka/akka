@@ -9,6 +9,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 
 import com.typesafe.config.impl.ConfigImpl;
 import com.typesafe.config.impl.Parseable;
@@ -242,8 +243,13 @@ public final class ConfigFactory {
      *            class loader for finding resources
      * @return configuration for an application
      */
-    public static Config load(ClassLoader loader) {
-        return loadDefaultConfig(loader);
+    public static Config load(final ClassLoader loader) {
+        return ConfigImpl.computeCachedConfig(loader, "load", new Callable<Config>() {
+            @Override
+            public Config call() {
+                return loadDefaultConfig(loader);
+            }
+        });
     }
 
     /**

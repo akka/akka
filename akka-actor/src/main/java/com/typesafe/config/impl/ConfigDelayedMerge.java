@@ -64,22 +64,25 @@ final class ConfigDelayedMerge extends AbstractConfigValue implements
     }
 
     @Override
-    AbstractConfigValue resolveSubstitutions(SubstitutionResolver resolver,
-            int depth, ConfigResolveOptions options) {
-        return resolveSubstitutions(stack, resolver, depth, options);
+    AbstractConfigValue resolveSubstitutions(SubstitutionResolver resolver, int depth,
+            ConfigResolveOptions options, Path restrictToChildOrNull) throws NotPossibleToResolve,
+            NeedsFullResolve {
+        return resolveSubstitutions(stack, resolver, depth, options, restrictToChildOrNull);
     }
 
     // static method also used by ConfigDelayedMergeObject
-    static AbstractConfigValue resolveSubstitutions(
-            List<AbstractConfigValue> stack, SubstitutionResolver resolver,
-            int depth, ConfigResolveOptions options) {
+    static AbstractConfigValue resolveSubstitutions(List<AbstractConfigValue> stack,
+            SubstitutionResolver resolver, int depth, ConfigResolveOptions options,
+            Path restrictToChildOrNull) throws NotPossibleToResolve, NeedsFullResolve {
         // to resolve substitutions, we need to recursively resolve
         // the stack of stuff to merge, and merge the stack so
-        // we won't be a delayed merge anymore.
+        // we won't be a delayed merge anymore. If restrictToChildOrNull
+        // is non-null, we may remain a delayed merge though.
 
         AbstractConfigValue merged = null;
         for (AbstractConfigValue v : stack) {
-            AbstractConfigValue resolved = resolver.resolve(v, depth, options);
+            AbstractConfigValue resolved = resolver.resolve(v, depth, options,
+                    restrictToChildOrNull);
             if (resolved != null) {
                 if (merged == null)
                     merged = resolved;

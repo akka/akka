@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
@@ -24,6 +25,58 @@ import com.typesafe.config.ConfigValue;
 
 /** This is public but is only supposed to be used by the "config" package */
 public class ConfigImpl {
+
+    private static class LoaderCache {
+        private ClassLoader current;
+        private Map<String, Config> cache;
+
+        LoaderCache() {
+            this.current = null;
+            this.cache = new HashMap<String, Config>();
+        }
+
+        // for now, caching as long as the loader remains the same,
+        // drop entire cache if it changes.
+        synchronized Config getOrElseUpdate(ClassLoader loader, String key, Callable<Config> updater) {
+            if (loader != current) {
+                // reset the cache if we start using a different loader
+                cache.clear();
+                current = loader;
+            }
+
+            Config config = cache.get(key);
+            if (config == null) {
+                try {
+                    config = updater.call();
+                } catch (RuntimeException e) {
+                    throw e; // this will include ConfigException
+                } catch (Exception e) {
+                    throw new ConfigException.Generic(e.getMessage(), e);
+                }
+                if (config == null)
+                    throw new ConfigException.BugOrBroken("null config from cache updater");
+                cache.put(key, config);
+            }
+
+            return config;
+        }
+    }
+
+    private static class LoaderCacheHolder {
+        static final LoaderCache cache = new LoaderCache();
+    }
+
+    /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
+    public static Config computeCachedConfig(ClassLoader loader, String key,
+            Callable<Config> updater) {
+        LoaderCache cache;
+        try {
+            cache = LoaderCacheHolder.cache;
+        } catch (ExceptionInInitializerError e) {
+            throw ConfigImplUtil.extractInitializerError(e);
+        }
+        return cache.getOrElseUpdate(loader, key, updater);
+    }
 
     private interface NameSource {
         ConfigParseable nameToParseable(String name);
@@ -410,10 +463,62 @@ public class ConfigImpl {
     }
 
     /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
-    public static Config defaultReference(ClassLoader loader) {
-        Config unresolvedResources = Parseable
-                .newResources(loader, "reference.conf", ConfigParseOptions.defaults()).parse()
-                .toConfig();
-        return systemPropertiesAsConfig().withFallback(unresolvedResources).resolve();
+    public static Config defaultReference(final ClassLoader loader) {
+        return computeCachedConfig(loader, "defaultReference", new Callable<Config>() {
+            @Override
+            public Config call() {
+                Config unresolvedResources = Parseable
+                        .newResources(loader, "reference.conf", ConfigParseOptions.defaults())
+                        .parse().toConfig();
+                return systemPropertiesAsConfig().withFallback(unresolvedResources).resolve();
+            }
+        });
+    }
+
+    private static class DebugHolder {
+        private static String LOADS = "loads";
+
+        private static Map<String, Boolean> loadDiagnostics() {
+            Map<String, Boolean> result = new HashMap<String, Boolean>();
+            result.put(LOADS, false);
+
+            // People do -Dconfig.trace=foo,bar to enable tracing of different things
+            String s = System.getProperty("config.trace");
+            if (s == null) {
+                return result;
+            } else {
+                String[] keys = s.split(",");
+                for (String k : keys) {
+                    if (k.equals(LOADS)) {
+                        result.put(LOADS, true);
+                    } else {
+                        System.err.println("config.trace property contains unknown trace topic '"
+                                + k + "'");
+                    }
+                }
+                return result;
+            }
+        }
+
+        private static final Map<String, Boolean> diagnostics = loadDiagnostics();
+
+        private static final boolean traceLoadsEnabled = diagnostics.get(LOADS);
+
+        static boolean traceLoadsEnabled() {
+            return traceLoadsEnabled;
+        }
+    }
+
+    /** For use ONLY by library internals, DO NOT TOUCH not guaranteed ABI */
+    public static boolean traceLoadsEnabled() {
+        try {
+            return DebugHolder.traceLoadsEnabled();
+        } catch (ExceptionInInitializerError e) {
+            throw ConfigImplUtil.extractInitializerError(e);
+        }
+    }
+
+    public static void trace(String message) {
+        System.err.println(message);
     }
 }
