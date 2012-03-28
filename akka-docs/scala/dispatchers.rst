@@ -42,6 +42,9 @@ There are 4 different types of message dispatchers:
 
 * Dispatcher
 
+  - This is an event-based dispatcher that binds a set of Actors to a thread pool. It is the default dispatcher
+    used if one is not specified.
+
   - Sharability: Unlimited
 
   - Mailboxes: Any, creates one per Actor
@@ -55,6 +58,8 @@ There are 4 different types of message dispatchers:
 
 * PinnedDispatcher
 
+  - This dispatcher dedicates a unique thread for each actor passed in as reference.
+
   - Sharability: None
 
   - Mailboxes: Any, creates one per Actor
@@ -65,6 +70,10 @@ There are 4 different types of message dispatchers:
                by default a "thread-pool-executor"
 
 * BalancingDispatcher
+
+  - This is an executor based event driven dispatcher that will try to redistribute work from busy actors to idle actors. 
+
+  - It is assumed that all actors using the same instance of this dispatcher can process all messages that have been sent to one of the actors; i.e. the actors belong to a pool of actors, and to the client there is no guarantee about which actor instance actually processes a given message.
 
   - Sharability: Actors of the same type only
 
@@ -79,6 +88,9 @@ There are 4 different types of message dispatchers:
 
 * CallingThreadDispatcher
 
+  - This dispatcher runs invocations on the current thread only. This dispatcher does not create any new threads, 
+    but it can be used from different threads concurrently for the same actor. 
+
   - Sharability: Unlimited
 
   - Mailboxes: Any, creates one per Actor per Thread (on demand)
@@ -86,6 +98,7 @@ There are 4 different types of message dispatchers:
   - Use cases: Testing
 
   - Driven by: The calling thread (duh)
+
 
 More dispatcher configuration examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -97,6 +110,10 @@ Configuring a ``PinnedDispatcher``:
 And then using it:
 
 .. includecode:: ../scala/code/akka/docs/dispatcher/DispatcherDocSpec.scala#defining-pinned-dispatcher
+
+Note that ``thread-pool-executor`` configuration as per the above ``my-thread-pool-dispatcher`` exmaple is 
+NOT applicable. This is because every actor will have its own thread pool when using ``PinnedDispatcher``, 
+and that pool will have only one thread.
 
 Mailboxes
 ---------
