@@ -497,6 +497,8 @@ see any deadline. Currently, the only option is to use ``probe.within`` in the
 above code to make it work; later versions may include lexically scoped
 deadlines using implicit arguments.
 
+.. _TestCallingThreadDispatcherRef:
+
 CallingThreadDispatcher
 =======================
 
