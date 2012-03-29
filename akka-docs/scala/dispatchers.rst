@@ -89,7 +89,8 @@ There are 4 different types of message dispatchers:
 * CallingThreadDispatcher
 
   - This dispatcher runs invocations on the current thread only. This dispatcher does not create any new threads, 
-    but it can be used from different threads concurrently for the same actor. See :ref:`testing`
+    but it can be used from different threads concurrently for the same actor. See :ref:`TestCallingThreadDispatcherRef`
+    for details and restrictions.
 
   - Sharability: Unlimited
 
