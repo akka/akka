@@ -58,7 +58,7 @@ There are 4 different types of message dispatchers:
 
 * PinnedDispatcher
 
-  - This dispatcher dedicates a unique thread for each actor passed in as reference.
+  - This dispatcher dedicates a unique thread for each actor using it.
 
   - Sharability: None
 
@@ -89,7 +89,7 @@ There are 4 different types of message dispatchers:
 * CallingThreadDispatcher
 
   - This dispatcher runs invocations on the current thread only. This dispatcher does not create any new threads, 
-    but it can be used from different threads concurrently for the same actor. 
+    but it can be used from different threads concurrently for the same actor. See :ref:`testing`
 
   - Sharability: Unlimited
 
