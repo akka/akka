@@ -3,12 +3,15 @@ package akka.amqp
 import com.rabbitmq.client.AMQP.BasicProperties
 import java.util.{ Collections, TreeSet }
 import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch, ConcurrentHashMap }
-import akka.util.Duration
 import akka.util.duration._
 import akka.event.Logging
 import akka.dispatch.{ Await, Promise, Future }
 import com.rabbitmq.client.{ ConfirmListener, ReturnListener }
 import akka.serialization.SerializationExtension
+import akka.pattern.ask
+import scala.collection.JavaConverters._
+import akka.util.Timeout._
+import akka.util.{ Timeout, Duration }
 
 case class Message(payload: AnyRef,
                    routingKey: String,
@@ -16,12 +19,13 @@ case class Message(payload: AnyRef,
                    immediate: Boolean = false,
                    properties: Option[BasicProperties] = None)
 
+private[amqp] case class MessageWithExchange(message: Message, exchangeName: String, confirm: Boolean = false)
+
 class DurablePublisher(durableConnection: DurableConnection,
                        exchange: Exchange,
                        persistent: Boolean = false) extends DurableChannel(durableConnection, persistent) {
 
   implicit val system = durableConnection.connectionProperties.system
-  val serialization = SerializationExtension(system)
   protected val log = Logging(system, this.getClass)
 
   val latch = new CountDownLatch(1)
@@ -55,24 +59,7 @@ class DurablePublisher(durableConnection: DurableConnection,
   }
 
   def publish(message: Message): Future[Unit] = {
-    val future = Promise[Unit]
-    try {
-      channelActor ! ExecuteCallback { channel ⇒
-        import message._
-        log.debug("Publishing on '{}': {}", exchangeName, message)
-        serialization.serialize(payload) match {
-          case Right(serialized) ⇒
-            channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
-            future.success(())
-          case Left(exception) ⇒
-            future.failure(exception)
-        }
-      }
-    } catch {
-      case e: Exception ⇒ future.failure(e)
-    }
-
-    future
+    channelActor ? MessageWithExchange(message, exchangeName) mapTo manifest[Unit]
   }
 }
 
@@ -83,8 +70,6 @@ case object Nack extends Confirm
 trait ConfirmingPublisher extends ConfirmListener {
   this: DurablePublisher ⇒
 
-  import scala.collection.JavaConverters._
-
   private val confirmHandles = new ConcurrentHashMap[Long, Promise[Confirm]]().asScala
   private val unconfirmedSet = Collections.synchronizedSortedSet(new TreeSet[Long]());
 
@@ -94,24 +79,16 @@ trait ConfirmingPublisher extends ConfirmListener {
   }
 
   def publishConfirmed(message: Message, timeout: Duration = (settings.DefaultPublisherConfirmTimeout milliseconds)): Future[Confirm] = {
-    val future = Promise[Confirm]
-    channelActor ! ExecuteCallback { channel ⇒
-      import message._
-      log.debug("Publishing on '{}': {}", exchangeName, message)
-      val seqNo = channel.getNextPublishSeqNo
-      unconfirmedSet.add(seqNo)
-      confirmHandles.put(seqNo, future)
-      Future {
-        Await.ready(future, timeout)
-      }.onFailure { case te: TimeoutException ⇒ confirmHandles.remove(seqNo) }
-      serialization.serialize(payload) match {
-        case Right(serialized) ⇒
-          channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
-        case Left(exception) ⇒
-          future.failure(exception)
-      }
+    log.debug("Publishing on '{}': {}", exchangeName, message)
+    implicit val timeout = Timeout(settings.DefaultInteractionTimeout)
+    val confirmPromise = Promise[Confirm]
+    val seqNoFuture = channelActor ? MessageWithExchange(message, exchangeName, true) mapTo manifest[Long]
+    seqNoFuture.onSuccess {
+      case seqNo ⇒
+        unconfirmedSet.add(seqNo)
+        confirmHandles.put(seqNo, confirmPromise)
     }
-    future
+    confirmPromise
   }
 
   private[amqp] def handleAck(seqNo: Long, multiple: Boolean) {

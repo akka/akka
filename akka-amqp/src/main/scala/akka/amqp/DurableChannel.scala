@@ -10,6 +10,9 @@ import akka.actor._
 import akka.util.Timeout
 import akka.event.Logging
 import akka.dispatch.{ Await, Future }
+import akka.pattern.ask
+import akka.serialization.SerializationExtension
+import akka.amqp.Message._
 
 private sealed trait ChannelState
 private case object Available extends ChannelState
@@ -38,6 +41,7 @@ private[amqp] class DurableChannelActor
 
   val registeredCallbacks = new ArrayBuffer[Channel ⇒ Unit]
   val settings = AMQP(context.system)
+  val serialization = SerializationExtension(context.system)
 
   startWith(Unavailable, None)
 
@@ -69,6 +73,27 @@ private[amqp] class DurableChannelActor
   }
 
   when(Available) {
+    case Event(MessageWithExchange(message, exchangeName, false), Some(channel)) ⇒
+      log.debug("Publishing on '{}': {}", exchangeName, message)
+      import message._
+      val reply = serialization.serialize(payload) match {
+        case Right(serialized) ⇒
+          channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
+        case Left(exception) ⇒ exception
+      }
+      stay() replying reply
+    case Event(MessageWithExchange(message, exchangeName, true), Some(channel)) ⇒
+      log.debug("Publishing confirmed on '{}': {}", exchangeName, message)
+      import message._
+      val reply = serialization.serialize(payload) match {
+        case Right(serialized) ⇒
+          val seqNo = channel.getNextPublishSeqNo
+          channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
+          seqNo
+        case Left(exception) ⇒ exception
+      }
+      stay() replying reply
+
     case Event(ConnectionDisconnected(), Some(channel)) ⇒
       log.warning("Connection went down of channel {}", channel)
       goto(Unavailable) using None
@@ -126,7 +151,6 @@ class DurableChannel(durableConnection: DurableConnection, withDowntimeStash: Bo
   }
 
   private[amqp] val connectionActor = durableConnection.durableConnectionActor
-  import akka.pattern.ask
   implicit val timeout = Timeout(settings.DefaultChannelCreationTimeout)
   // copy from internals, so at lease channel actors are children of the connection for supervision purposes
   val channelFuture = connectionActor ? (CreateRandomNameChild(channelActorCreator)) mapTo manifest[ActorRef]
@@ -139,7 +163,6 @@ class DurableChannel(durableConnection: DurableConnection, withDowntimeStash: Bo
   }
 
   def withChannel[T](callback: Channel ⇒ T): Future[T] = {
-    import akka.pattern.ask
     implicit val timeout = Timeout(settings.DefaultInteractionTimeout)
     (channelActor.ask(ExecuteCallbackTo(callback))).map(_.asInstanceOf[T])
   }
