@@ -32,7 +32,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, amqp, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, camel, amqp, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -248,6 +248,15 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.kernel
     )
   )
+ 
+  lazy val camel = Project(
+     id = "akka-camel",
+     base = file("akka-camel"),
+     dependencies = Seq(actor, slf4j, testkit % "test->test"),
+     settings = defaultSettings ++ Seq(
+       libraryDependencies ++= Dependencies.camel
+     )
+  )
 
   lazy val actorMigration = Project(
     id = "akka-actor-migration",
@@ -352,7 +361,7 @@ object AkkaBuild extends Build {
   val excludeTestTags = SettingKey[Seq[String]]("exclude-test-tags")
   val includeTestTags = SettingKey[Seq[String]]("include-test-tags")
 
-  val defaultExcludedTags = Seq("timing")
+  val defaultExcludedTags = Seq("timing", "long-running")
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
@@ -474,6 +483,8 @@ object Dependencies {
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
 
   val kernel = Seq(Test.scalatest, Test.junit)
+
+  val camel = Seq(Test.scalatest, Test.junit, Test.mockito, camelCore)
 
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
