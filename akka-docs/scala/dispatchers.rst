@@ -58,7 +58,7 @@ There are 4 different types of message dispatchers:
 
 * PinnedDispatcher
 
-  - This dispatcher dedicates a unique thread for each actor using it.
+  - This dispatcher dedicates a unique thread for each actor using it; i.e. each actor will have its own thread pool with only one thread in the pool.
 
   - Sharability: None
 
