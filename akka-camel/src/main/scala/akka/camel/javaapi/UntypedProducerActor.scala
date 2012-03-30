@@ -19,7 +19,14 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    * message is passed as argument. By default, this method simply returns the argument but may be overridden
    * by subclasses.
    */
-  def onReceiveBeforeProduce(message: AnyRef): AnyRef = message
+  def onTransformOutgoingMessage(message: AnyRef): AnyRef = message
+
+  /**
+   * Called before the response message is sent to original sender. The original
+   * message is passed as argument. By default, this method simply returns the argument but may be overridden
+   * by subclasses.
+   */
+  def onTransformResponse(message: AnyRef): AnyRef = message
 
   /**
    * Called after a response was received from the endpoint specified by <code>endpointUri</code>. The
@@ -27,14 +34,18 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    * if <code>oneway</code> is <code>false</code>. If <code>oneway</code> is <code>true</code>, nothing is
    * done. This method may be overridden by subclasses (e.g. to forward responses to another actor).
    */
-  def onReceiveAfterProduce(message: AnyRef): Unit = super.routeResponse(message)
+  def onRouteResponse(message: AnyRef): Unit = super.routeResponse(message)
 
   final override def transformOutgoingMessage = {
-    case msg: AnyRef ⇒ onReceiveBeforeProduce(msg)
+    case msg: AnyRef ⇒ onTransformOutgoingMessage(msg)
+  }
+
+  final override def transformResponse = {
+    case msg: AnyRef ⇒ onTransformResponse(msg)
   }
 
   final override def routeResponse = {
-    case msg: AnyRef ⇒ onReceiveAfterProduce(msg)
+    case msg: AnyRef ⇒ onRouteResponse(msg)
   }
 
   final override def endpointUri = getEndpointUri
