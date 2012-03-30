@@ -2,6 +2,7 @@ package akka.actor
 
 import akka.dispatch.SystemMessage
 import collection.mutable.Queue
+import com.typesafe.config.ConfigFactory
 
 /**
  * The ActorDSL trait provides factory methods which allow creating actors
@@ -67,8 +68,7 @@ trait ActorDSL[A, AR, CT] {
 }
 
 object ActorDSL extends ActorDSL[Actor, ActorRef, ActorContext] {
-
-  private val system = ActorSystem("ActorDSLSystem")
+  private val system = new ThreadActorSystem("ThreadActorSystem")
 
   /* The ActorRef of the current thread */
   private val tl = new ThreadLocal[ActorRef]
@@ -113,31 +113,48 @@ object ActorDSL extends ActorDSL[Actor, ActorRef, ActorContext] {
       tlQueue set queue
 
       // initialize thread-local ActorRef
-      val ref = new ThreadActorRef(queue, system)
+      val ref = system.createThreadActorRef(queue)
       tl set ref
 
       ref
     } else
       s
   }
+}
 
-  private class ThreadActorRef(queue: Queue[Any], system: ActorSystem) extends MinimalActorRef {
-    def provider: ActorRefProvider = null
+private class ThreadActorSystem(name: String) extends ActorSystemImpl(name, ConfigFactory.load(), Thread.currentThread().getContextClassLoader()) {
+  start()
 
-    override def !(message: Any)(implicit sender: ActorRef = null): Unit = {
-      /* put message into queue and notify receiving thread
+  // thread provider
+  // private val threadProvider = new LocalActorRefProvider(name, settings, eventStream, scheduler, dynamicAccess)
+
+  val threadPath = provider.rootPath / "threadActor"
+  val pathContainer = new VirtualPathContainer(provider, threadPath, provider.rootGuardian, log)
+
+  def createThreadActorRef(queue: Queue[Any]) = {
+    val path = threadPath / Thread.currentThread().getId().toString
+    val res = new ThreadActorRef(provider, path, queue)
+    pathContainer.addChild(path.name, res)
+    res
+  }
+}
+
+private class ThreadActorRef(
+  val provider: ActorRefProvider,
+  val path: ActorPath,
+  queue: Queue[Any]) extends MinimalActorRef {
+
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = {
+    /* put message into queue and notify receiving thread
          
          note that we are ignoring the sender, because the current thread
          does not have a context anyway
        */
-      queue.synchronized {
-        queue += message
-        // notify the thread that's waiting
-        queue.notifyAll()
-      }
+    queue.synchronized {
+      queue += message
+      // notify the thread that's waiting
+      queue.notifyAll()
     }
-
-    def path: ActorPath = null
   }
-
 }
+

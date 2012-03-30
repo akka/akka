@@ -123,18 +123,15 @@ class ActorDSLSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach 
     }
   }
 
-  /*
   "A thread actor" must {
     "support the ask pattern" in {
       val tA = self
+
       val actor = actorOf { context ⇒
         {
           case m ⇒
             // send message and wait for response
-            println("context.sender: " + context.sender)
             val f = context.sender ? "hello"
-            val res = Await.result(f, 1 seconds)
-            res must be("response")
         }
       }
 
@@ -142,11 +139,9 @@ class ActorDSLSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach 
 
       receive {
         case resp ⇒
-          println("tA received " + resp)
-          actor ! "response"
+          resp must be("hello")
       }
     }
   }
-  */
 
 }
