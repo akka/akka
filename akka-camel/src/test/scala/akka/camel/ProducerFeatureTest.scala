@@ -266,7 +266,7 @@ object ProducerFeatureTest {
   class TestProducer(uri: String, upper: Boolean = false) extends Actor with Producer {
     def endpointUri = uri
 
-    override protected def receiveBeforeProduce = {
+    override protected def transformOutgoingMessage = {
       case msg: CamelMessage ⇒ if (upper) msg.mapBody {
         body: String ⇒ body.toUpperCase
       }
@@ -277,7 +277,7 @@ object ProducerFeatureTest {
   class TestForwarder(uri: String, target: ActorRef) extends Actor with Producer {
     def endpointUri = uri
 
-    override protected def receiveAfterProduce = {
+    override protected def routeResponse = {
       case msg ⇒ target forward msg
     }
   }
