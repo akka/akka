@@ -148,7 +148,6 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
       val payload = iter.next.payload
       val flags = if (iter.hasNext) JZMQ.SNDMORE else 0
       sendBytes(payload, flags)
-      Thread.sleep(5)
     }
   }
 
