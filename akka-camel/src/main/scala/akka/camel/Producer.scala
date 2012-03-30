@@ -88,13 +88,13 @@ trait ProducerSupport { this: Actor ⇒
    * @see Producer#produce(Any, ExchangePattern)
    */
   protected def produce: Receive = {
-    case res: MessageResult ⇒ receiveAfterProduce(res.message)
-    case res: FailureResult ⇒ receiveAfterProduce(res.failure)
+    case res: MessageResult ⇒ routeResponse(res.message)
+    case res: FailureResult ⇒ routeResponse(res.failure)
     case msg ⇒ {
       if (oneway)
-        produce(receiveBeforeProduce(msg), ExchangePattern.InOnly)
+        produce(transformOutgoingMessage(msg), ExchangePattern.InOnly)
       else
-        produce(receiveBeforeProduce(msg), ExchangePattern.InOut)
+        produce(transformOutgoingMessage(msg), ExchangePattern.InOut)
     }
   }
 
@@ -103,7 +103,16 @@ trait ProducerSupport { this: Actor ⇒
    * message is passed as argument. By default, this method simply returns the argument but may be overridden
    * by subtraits or subclasses.
    */
-  protected def receiveBeforeProduce: PartialFunction[Any, Any] = {
+  protected def transformOutgoingMessage: PartialFunction[Any, Any] = {
+    case msg ⇒ msg
+  }
+
+  /**
+   * Called before the response message is sent to the original sender. The original
+   * message is passed as argument. By default, this method simply returns the argument but may be overridden
+   * by subtraits or subclasses.
+   */
+  protected def transformResponse: PartialFunction[Any, Any] = {
     case msg ⇒ msg
   }
 
@@ -114,8 +123,9 @@ trait ProducerSupport { this: Actor ⇒
    * done. This method may be overridden by subtraits or subclasses (e.g. to forward responses to another
    * actor).
    */
-  protected def receiveAfterProduce: Receive = {
-    case msg ⇒ if (!oneway) sender ! msg
+
+  protected def routeResponse: Receive = {
+    case msg ⇒ if (!oneway) sender ! transformResponse(msg)
   }
 
 }

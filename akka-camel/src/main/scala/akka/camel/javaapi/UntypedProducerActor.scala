@@ -27,13 +27,13 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    * if <code>oneway</code> is <code>false</code>. If <code>oneway</code> is <code>true</code>, nothing is
    * done. This method may be overridden by subclasses (e.g. to forward responses to another actor).
    */
-  def onReceiveAfterProduce(message: AnyRef): Unit = super.receiveAfterProduce(message)
+  def onReceiveAfterProduce(message: AnyRef): Unit = super.routeResponse(message)
 
-  final override def receiveBeforeProduce = {
+  final override def transformOutgoingMessage = {
     case msg: AnyRef ⇒ onReceiveBeforeProduce(msg)
   }
 
-  final override def receiveAfterProduce = {
+  final override def routeResponse = {
     case msg: AnyRef ⇒ onReceiveAfterProduce(msg)
   }
 
