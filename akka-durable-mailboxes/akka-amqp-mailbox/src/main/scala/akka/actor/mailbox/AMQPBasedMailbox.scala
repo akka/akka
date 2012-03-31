@@ -40,9 +40,7 @@ class AMQPBasedMailbox(val owner: ActorContext, val config: Config) extends Dura
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
     withErrorHandling {
-      pool.withChannel { channel ⇒
-        channel.basicPublish("", name, MessageProperties.PERSISTENT_BASIC, serialize(envelope))
-      }
+      pool.withChannel { _.basicPublish("", name, MessageProperties.PERSISTENT_BASIC, serialize(envelope)) }
     }
   }
 
