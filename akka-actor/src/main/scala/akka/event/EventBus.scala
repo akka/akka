@@ -247,11 +247,7 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
       case null ⇒
         if (monitored.isTerminated) false
         else {
-<<<<<<< HEAD
-          if (mappings.putIfAbsent(monitored, empty + monitor) ne null) associate(monitored, monitor)
-=======
           if (mappings.putIfAbsent(monitored, TreeSet(monitor)) ne null) associate(monitored, monitor)
->>>>>>> ef399e2... Switching to TreeSet, which should also receive quite some performance enhancements in Scala 2.10
           else if (monitored.isTerminated) !dissociate(monitored, monitor) else true
         }
       case raw: TreeSet[_] ⇒
@@ -304,11 +300,7 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
       case null ⇒ false
       case raw: TreeSet[_] ⇒
         val v = raw.asInstanceOf[TreeSet[ActorRef]]
-<<<<<<< HEAD
         val removed = v - monitor
-=======
-        val removed = v.filterNot(monitor ==)
->>>>>>> ef399e2... Switching to TreeSet, which should also receive quite some performance enhancements in Scala 2.10
         if (removed eq raw) false
         else if (removed.isEmpty) {
           if (!mappings.remove(monitored, v)) dissociate(monitored, monitor) else true
