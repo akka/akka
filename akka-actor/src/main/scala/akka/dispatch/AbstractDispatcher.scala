@@ -341,7 +341,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   def suspend(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
-    if (mbox.dispatcher eq this)
+    if ((mbox.actor eq actor) && (mbox.dispatcher eq this))
       mbox.becomeSuspended()
   }
 
@@ -350,7 +350,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   def resume(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
-    if ((mbox.dispatcher eq this) && mbox.becomeOpen())
+    if ((mbox.actor eq actor) && (mbox.dispatcher eq this) && mbox.becomeOpen())
       registerForExecution(mbox, false, false)
   }
 
