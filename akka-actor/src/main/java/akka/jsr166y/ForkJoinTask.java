@@ -138,17 +138,17 @@ import akka.util.Unsafe;
  * {@link Phaser}, {@link #helpQuiesce}, and {@link #complete}) that
  * may be of use in constructing custom subclasses for problems that
  * are not statically structured as DAGs. To support such usages a
- * ForkJoinTask may be atomically <em>marked</em> using {@link
- * #markForkJoinTask} and checked for marking using {@link
- * #isMarkedForkJoinTask}. The ForkJoinTask implementation does not
- * use these {@code protected} methods or marks for any purpose, but
+ * ForkJoinTask may be atomically <em>tagged</em> with a {@code
+ * short} value using {@link #setForkJoinTaskTag} or {@link
+ * #compareAndSetForkJoinTaskTag} and checked using {@link
+ * #getForkJoinTaskTag}. The ForkJoinTask implementation does not
+ * use these {@code protected} methods or tags for any purpose, but
  * they may be of use in the construction of specialized subclasses.
  * For example, parallel graph traversals can use the supplied methods
  * to avoid revisiting nodes/tasks that have already been processed.
- * Also, completion based designs can use them to record that one
- * subtask has completed. (Method names for marking are bulky in part
- * to encourage definition of methods that reflect their usage
- * patterns.)
+ * Also, completion based designs can use them to record that subtasks
+ * have completed. (Method names for tagging are bulky in part to
+ * encourage definition of methods that reflect their usage patterns.)
  *
  * <p>Most base support methods are {@code final}, to prevent
  * overriding of implementations that are intrinsically tied to the
@@ -214,6 +214,10 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
      * thin-lock techniques, so use some odd coding idioms that tend
      * to avoid them, mainly by arranging that every synchronized
      * block performs a wait, notifyAll or both.
+     *
+     * These control bits occupy only (some of) the upper half (16
+     * bits) of status field. The lower bits are used for user-defined
+     * tags.
      */
 
     /** The run status of this task */
@@ -222,13 +226,12 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
     static final int NORMAL      = 0xf0000000;  // must be negative
     static final int CANCELLED   = 0xc0000000;  // must be < NORMAL
     static final int EXCEPTIONAL = 0x80000000;  // must be < CANCELLED
-    static final int SIGNAL      = 0x00000001;
-    static final int MARKED      = 0x00000002;
+    static final int SIGNAL      = 0x00010000;  // must be >= 1 << 16
+    static final int SMASK       = 0x0000ffff;  // short bits for tags
 
     /**
      * Marks completion and wakes up threads waiting to join this
-     * task. A specialization for NORMAL completion is in method
-     * doExec.
+     * task.
      *
      * @param completion one of NORMAL, CANCELLED, EXCEPTIONAL
      * @return completion status on exit
@@ -238,7 +241,7 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
             if ((s = status) < 0)
                 return s;
             if (U.compareAndSwapInt(this, STATUS, s, s | completion)) {
-                if ((s & SIGNAL) != 0)
+                if ((s >>> 16) != 0)
                     synchronized (this) { notifyAll(); }
                 return completion;
             }
@@ -260,13 +263,8 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
             } catch (Throwable rex) {
                 return setExceptionalCompletion(rex);
             }
-            while ((s = status) >= 0 && completed) {
-                if (U.compareAndSwapInt(this, STATUS, s, s | NORMAL)) {
-                    if ((s & SIGNAL) != 0)
-                        synchronized (this) { notifyAll(); }
-                    return NORMAL;
-                }
-            }
+            if (completed)
+                s = setCompletion(NORMAL);
         }
         return s;
     }
@@ -328,7 +326,6 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
         }
         return s;
     }
-
 
     /**
      * Implementation for join, get, quietlyJoin. Directly handles
@@ -908,6 +905,18 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
     }
 
     /**
+     * Completes this task. The most recent value established by
+     * {@link #setRawResult} (or {@code null}) will be returned as the
+     * result of subsequent invocations of {@code join} and related
+     * operations. This method may be useful when processing sets of
+     * tasks when some do not otherwise complete normally. Its use in
+     * other situations is discouraged.
+     */
+    public final void quietlyComplete() {
+        setCompletion(NORMAL);
+    }
+
+    /**
      * Waits if necessary for the computation to complete, and then
      * retrieves its result.
      *
@@ -1303,44 +1312,53 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
         return wt.pool.nextTaskFor(wt.workQueue);
     }
 
-    // Mark-bit operations
+    // tag operations
 
     /**
-     * Returns true if this task is marked.
+     * Returns the tag for this task.
      *
-     * @return true if this task is marked
+     * @return the tag for this task
      * @since 1.8
      */
-    public final boolean isMarkedForkJoinTask() {
-        return (status & MARKED) != 0;
+    public final short getForkJoinTaskTag() {
+        return (short)status;
     }
 
     /**
-     * Atomically sets the mark on this task.
+     * Atomically sets the tag value for this task.
      *
-     * @return true if this task was previously unmarked
+     * @param tag the tag value
+     * @return the previous value of the tag
      * @since 1.8
      */
-    public final boolean markForkJoinTask() {
+    public final short setForkJoinTaskTag(short tag) {
         for (int s;;) {
-            if (((s = status) & MARKED) != 0)
-                return false;
-            if (U.compareAndSwapInt(this, STATUS, s, s | MARKED))
-                return true;
+            if (U.compareAndSwapInt(this, STATUS, s = status,
+                                    (s & ~SMASK) | (tag & SMASK)))
+                return (short)s;
         }
     }
 
     /**
-     * Atomically clears the mark on this task.
+     * Atomically conditionally sets the tag value for this task.
+     * Among other applications, tags can be used as visit markers
+     * in tasks operating on graphs, as in methods that check: {@code
+     * if (task.compareAndSetForkJoinTaskTag((short)0, (short)1))}
+     * before processing, otherwise exiting because the node has
+     * already been visited.
      *
-     * @return true if this task was previously marked
+     * @param e the expected tag value
+     * @param tag the new tag value
+     * @return true if successful; i.e., the current value was
+     * equal to e and is now tag.
      * @since 1.8
      */
-    public final boolean unmarkForkJoinTask() {
+    public final boolean compareAndSetForkJoinTaskTag(short e, short tag) {
         for (int s;;) {
-            if (((s = status) & MARKED) == 0)
+            if ((short)(s = status) != e)
                 return false;
-            if (U.compareAndSwapInt(this, STATUS, s, s & ~MARKED))
+            if (U.compareAndSwapInt(this, STATUS, s,
+                                    (s & ~SMASK) | (tag & SMASK)))
                 return true;
         }
     }
