@@ -16,7 +16,7 @@ import akka.dispatch.ChildTerminated
 /**
  * Remote life-cycle events.
  */
-sealed trait RemoteLifeCycleEvent {
+sealed trait RemoteLifeCycleEvent extends Serializable {
   def logLevel: Logging.LogLevel
 }
 
@@ -29,7 +29,7 @@ trait RemoteClientLifeCycleEvent extends RemoteLifeCycleEvent {
 
 case class RemoteClientError(
   @BeanProperty cause: Throwable,
-  @BeanProperty remote: RemoteTransport,
+  @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.ErrorLevel
   override def toString =
@@ -37,7 +37,7 @@ case class RemoteClientError(
 }
 
 case class RemoteClientDisconnected(
-  @BeanProperty remote: RemoteTransport,
+  @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
   override def toString =
@@ -45,7 +45,7 @@ case class RemoteClientDisconnected(
 }
 
 case class RemoteClientConnected(
-  @BeanProperty remote: RemoteTransport,
+  @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
   override def toString =
@@ -53,7 +53,7 @@ case class RemoteClientConnected(
 }
 
 case class RemoteClientStarted(
-  @BeanProperty remote: RemoteTransport,
+  @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.InfoLevel
   override def toString =
@@ -61,7 +61,7 @@ case class RemoteClientStarted(
 }
 
 case class RemoteClientShutdown(
-  @BeanProperty remote: RemoteTransport,
+  @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.InfoLevel
   override def toString =
@@ -71,7 +71,7 @@ case class RemoteClientShutdown(
 case class RemoteClientWriteFailed(
   @BeanProperty request: AnyRef,
   @BeanProperty cause: Throwable,
-  @BeanProperty remote: RemoteTransport,
+  @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.WarningLevel
   override def toString =
@@ -86,14 +86,14 @@ case class RemoteClientWriteFailed(
 trait RemoteServerLifeCycleEvent extends RemoteLifeCycleEvent
 
 case class RemoteServerStarted(
-  @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
+  @transient @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.InfoLevel
   override def toString =
     "RemoteServerStarted@" + remote
 }
 
 case class RemoteServerShutdown(
-  @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
+  @transient @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.InfoLevel
   override def toString =
     "RemoteServerShutdown@" + remote
@@ -101,14 +101,14 @@ case class RemoteServerShutdown(
 
 case class RemoteServerError(
   @BeanProperty val cause: Throwable,
-  @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
+  @transient @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.ErrorLevel
   override def toString =
     "RemoteServerError@" + remote + "] Error[" + cause + "]"
 }
 
 case class RemoteServerClientConnected(
-  @BeanProperty remote: RemoteTransport,
+  @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty val clientAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
   override def toString =
@@ -117,7 +117,7 @@ case class RemoteServerClientConnected(
 }
 
 case class RemoteServerClientDisconnected(
-  @BeanProperty remote: RemoteTransport,
+  @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty val clientAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
   override def toString =
@@ -126,7 +126,7 @@ case class RemoteServerClientDisconnected(
 }
 
 case class RemoteServerClientClosed(
-  @BeanProperty remote: RemoteTransport,
+  @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty val clientAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
   override def toString =
@@ -139,7 +139,7 @@ case class RemoteServerClientClosed(
  */
 class RemoteClientException private[akka] (
   message: String,
-  @BeanProperty val client: RemoteTransport,
+  @transient @BeanProperty val client: RemoteTransport,
   val remoteAddress: Address, cause: Throwable = null) extends AkkaException(message, cause)
 
 class RemoteTransportException(message: String, cause: Throwable) extends AkkaException(message, cause)
