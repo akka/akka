@@ -1,7 +1,7 @@
 package akka.actor
 
 import akka.dispatch.SystemMessage
-import collection.mutable.Queue
+import java.util.concurrent.LinkedBlockingDeque
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -72,8 +72,15 @@ object ActorDSL extends ActorDSL[Actor, ActorRef, ActorContext] {
 
   /* The ActorRef of the current thread */
   private val tl = new ThreadLocal[ActorRef]
-  /* The message queue of the current thread */
-  private val tlQueue = new ThreadLocal[Queue[Any]]
+
+  /* The message queue of the current thread.
+     It's a dequeue to support stashing. It's blocking to support
+     the blocking receive.
+  */
+  private val tlQueue = new ThreadLocal[LinkedBlockingDeque[Any]]
+
+  /* The current message */
+  private val tlMessage = new ThreadLocal[Any]
 
   def actorOf(body: ActorContext ⇒ PartialFunction[Any, Unit]): ActorRef =
     system actorOf Props(new Actor {
@@ -88,28 +95,16 @@ object ActorDSL extends ActorDSL[Actor, ActorRef, ActorContext] {
 
   def receive[T](pf: PartialFunction[Any, T]): T = {
     val queue = tlQueue.get
-    var done = false // guarded by queue
-    var msgOpt: Option[Any] = None // guarded by queue
-
-    while (!done) {
-      queue.synchronized {
-        // find (and remove) first message that matches any of the patterns in pf
-        msgOpt = queue.dequeueFirst(m ⇒ pf.isDefinedAt(m))
-
-        if (msgOpt.isEmpty) queue.wait()
-        else done = true
-      }
-    }
-
-    // apply partial function to message
-    pf(msgOpt.get)
+    val msg = queue.takeFirst() // blocks until the next message is available
+    tlMessage set msg
+    pf(msg)
   }
 
   implicit def self: ActorRef = {
     val s = tl.get
     if (s eq null) {
       // initialize thread-local message queue
-      val queue = Queue[Any]()
+      val queue = new LinkedBlockingDeque[Any]()
       tlQueue set queue
 
       // initialize thread-local ActorRef
@@ -131,7 +126,7 @@ private class ThreadActorSystem(name: String) extends ActorSystemImpl(name, Conf
   val threadPath = provider.rootPath / "threadActor"
   val pathContainer = new VirtualPathContainer(provider, threadPath, provider.rootGuardian, log)
 
-  def createThreadActorRef(queue: Queue[Any]) = {
+  def createThreadActorRef(queue: LinkedBlockingDeque[Any]) = {
     val path = threadPath / Thread.currentThread().getId().toString
     val res = new ThreadActorRef(provider, path, queue)
     pathContainer.addChild(path.name, res)
@@ -142,19 +137,15 @@ private class ThreadActorSystem(name: String) extends ActorSystemImpl(name, Conf
 private class ThreadActorRef(
   val provider: ActorRefProvider,
   val path: ActorPath,
-  queue: Queue[Any]) extends MinimalActorRef {
+  queue: LinkedBlockingDeque[Any]) extends MinimalActorRef {
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = {
-    /* put message into queue and notify receiving thread
+    /* Add message to queue (non-blocking). The receiving thread is notified
+       automatically, since we're using a blocking queue.
          
-         note that we are ignoring the sender, because the current thread
-         does not have a context anyway
-       */
-    queue.synchronized {
-      queue += message
-      // notify the thread that's waiting
-      queue.notifyAll()
-    }
+       Note that we are ignoring the sender, because the current thread
+       does not have a context anyway.
+     */
+    queue add message
   }
 }
-
