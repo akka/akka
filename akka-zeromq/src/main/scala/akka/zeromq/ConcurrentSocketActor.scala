@@ -15,9 +15,7 @@ import java.util.concurrent.TimeUnit
 private[zeromq] object ConcurrentSocketActor {
   private trait PollMsg
   private case object Poll extends PollMsg
-  private case class ContinuePoll(frames: Vector[Frame]) extends PollMsg {
-    println("continue")
-  }
+  private case class ContinuePoll(frames: Vector[Frame]) extends PollMsg
 
   private class NoSocketHandleException() extends Exception("Couldn't create a zeromq socket.")
 
