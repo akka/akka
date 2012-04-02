@@ -69,7 +69,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  * <pre>
  * class Test extends TestKit(ActorSystem()) {
  *     try {
- *     
+ *
  *       val test = system.actorOf(Props[SomeActor]
  *
  *       within (1 second) {
@@ -77,7 +77,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  *         expectMsg(Result1) // bounded to 1 second
  *         expectMsg(Result2) // bounded to the remainder of the 1 second
  *       }
- *     
+ *
  *     } finally {
  *       system.shutdown()
  *     }
@@ -86,7 +86,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  *
  * Beware of two points:
  *
- *  - the ActorSystem passed into the constructor needs to be shutdown, 
+ *  - the ActorSystem passed into the constructor needs to be shutdown,
  *    otherwise thread pools and memory will be leaked
  *  - this trait is not thread-safe (only one actor with one queue, one stack
  *    of `within` blocks); it is expected that the code is executed from a
