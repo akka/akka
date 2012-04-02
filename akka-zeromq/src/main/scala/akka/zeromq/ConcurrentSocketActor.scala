@@ -79,25 +79,26 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     case ReceiveBufferSize(value)    ⇒ socket.setReceiveBufferSize(value)
   }
 
-  private def handleSocketOptionQuery(msg: SocketOptionQuery): Unit = msg match {
-    case Linger               ⇒ sender ! socket.getLinger
-    case ReconnectIVL         ⇒ sender ! socket.getReconnectIVL
-    case Backlog              ⇒ sender ! socket.getBacklog
-    case ReconnectIVLMax      ⇒ sender ! socket.getReconnectIVLMax
-    case MaxMsgSize           ⇒ sender ! socket.getMaxMsgSize
-    case SendHighWatermark    ⇒ sender ! socket.getSndHWM
-    case ReceiveHighWatermark ⇒ sender ! socket.getRcvHWM
-    case Swap                 ⇒ sender ! socket.getSwap
-    case Affinity             ⇒ sender ! socket.getAffinity
-    case Identity             ⇒ sender ! socket.getIdentity
-    case Rate                 ⇒ sender ! socket.getRate
-    case RecoveryInterval     ⇒ sender ! socket.getRecoveryInterval
-    case MulticastLoop        ⇒ sender ! socket.hasMulticastLoop
-    case MulticastHops        ⇒ sender ! socket.getMulticastHops
-    case SendBufferSize       ⇒ sender ! socket.getSendBufferSize
-    case ReceiveBufferSize    ⇒ sender ! socket.getReceiveBufferSize
-    case FileDescriptor       ⇒ sender ! socket.getFD
-  }
+  private def handleSocketOptionQuery(msg: SocketOptionQuery): Unit =
+    sender ! (msg match {
+      case Linger               ⇒ socket.getLinger
+      case ReconnectIVL         ⇒ socket.getReconnectIVL
+      case Backlog              ⇒ socket.getBacklog
+      case ReconnectIVLMax      ⇒ socket.getReconnectIVLMax
+      case MaxMsgSize           ⇒ socket.getMaxMsgSize
+      case SendHighWatermark    ⇒ socket.getSndHWM
+      case ReceiveHighWatermark ⇒ socket.getRcvHWM
+      case Swap                 ⇒ socket.getSwap
+      case Affinity             ⇒ socket.getAffinity
+      case Identity             ⇒ socket.getIdentity
+      case Rate                 ⇒ socket.getRate
+      case RecoveryInterval     ⇒ socket.getRecoveryInterval
+      case MulticastLoop        ⇒ socket.hasMulticastLoop
+      case MulticastHops        ⇒ socket.getMulticastHops
+      case SendBufferSize       ⇒ socket.getSendBufferSize
+      case ReceiveBufferSize    ⇒ socket.getReceiveBufferSize
+      case FileDescriptor       ⇒ socket.getFD
+    })
 
   override def preStart {
     watchListener()
