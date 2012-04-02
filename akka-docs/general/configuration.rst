@@ -48,6 +48,17 @@ to ``application``—may be overridden using the ``config.resource`` property
   Akka-based library, keep its configuration in ``reference.conf`` at the root
   of the JAR file.
 
+When using JarJar, OneJar, Assembly or any jar-bundler
+------------------------------------------------------
+
+.. warning::
+
+    Akka's configuration approach relies heavily on the notion of every
+    module/jar having its own reference.conf file, all of these will be
+    discovered by the configuration and loaded. Unfortunately this also means
+    that if you put merge multiple jars into the same jar, you need to merge all the
+    reference.confs as well. Otherwise all defaults will be lost and Akka will not function.
+
 How to structure your configuration
 -----------------------------------
 
