@@ -416,8 +416,10 @@ abstract class ExtendedActorSystem extends ActorSystem {
 
 class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Config, classLoader: ClassLoader) extends ExtendedActorSystem {
 
-  if (!name.matches("""^\w+$"""))
-    throw new IllegalArgumentException("invalid ActorSystem name [" + name + "], must contain only word characters (i.e. [a-zA-Z_0-9])")
+  if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-]*$"""))
+    throw new IllegalArgumentException(
+      "invalid ActorSystem name [" + name +
+        "], must contain only word characters (i.e. [a-zA-Z_0-9] plus non-leading '-')")
 
   import ActorSystem._
 
