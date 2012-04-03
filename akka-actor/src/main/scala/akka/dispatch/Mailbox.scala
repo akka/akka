@@ -50,7 +50,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
    * Try to enqueue the message to this queue, or throw an exception.
    */
   def enqueue(receiver: ActorRef, msg: Envelope): Unit = messageQueue.enqueue(receiver, msg)
-  
+
   /**
    * Try to dequeue the next message from this queue, return null failing that.
    */
