@@ -26,6 +26,26 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
 
   "An ActorSystem" must {
 
+    "reject invalid names" in {
+      for (
+        n ← Seq(
+          "hallo_welt",
+          "-hallowelt",
+          "hallo*welt",
+          "hallo@welt",
+          "hallo#welt",
+          "hallo$welt",
+          "hallo%welt",
+          "hallo/welt")
+      ) intercept[IllegalArgumentException] {
+        ActorSystem(n)
+      }
+    }
+
+    "allow valid names" in {
+      ActorSystem("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-").shutdown()
+    }
+
     "support extensions" in {
       TestExtension(system).system must be === system
       system.extension(TestExtension).system must be === system
