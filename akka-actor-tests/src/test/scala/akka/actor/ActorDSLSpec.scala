@@ -112,14 +112,11 @@ class ActorDSLSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach 
 
       actor ! "hello"
 
-      var i = 0
-      while (i < 10000) {
-        i += 1
+      for (_ ← 0 until 10000)
         receive {
           case m ⇒
             m must be("hello")
         }
-      }
     }
   }
 
