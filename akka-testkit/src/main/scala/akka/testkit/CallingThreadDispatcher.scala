@@ -294,7 +294,7 @@ class CallingThreadMailbox(_receiver: ActorCell, val mailboxType: MailboxType) e
   override def enqueue(receiver: ActorRef, msg: Envelope): Unit = throw new UnsupportedOperationException("CallingThreadMailbox cannot enqueue normally")
   override def dequeue(): Envelope = throw new UnsupportedOperationException("CallingThreadMailbox cannot dequeue normally")
   override def hasMessages: Boolean = q.get.q.hasMessages
-  override def numberOfMessages: Int = -1
+  override def numberOfMessages: Int = 0
 
   def queue = q.get
 
