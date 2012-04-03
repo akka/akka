@@ -8,74 +8,10 @@ import akka.testkit.{ TestProbe, DefaultTimeout, AkkaSpec }
 import akka.util.duration._
 import akka.actor.{ Cancellable, Actor, Props, ActorRef }
 
-object ConcurrentSocketActorSpec {
-  val config = ""
-}
+class ConcurrentSocketActorSpec extends AkkaSpec with DefaultTimeout {
 
-class ConcurrentSocketActorSpec
-  extends AkkaSpec(ConcurrentSocketActorSpec.config)
-  with MustMatchers
-  with DefaultTimeout {
-
-  val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
-
-  def zmq = ZeroMQExtension(system)
-
-  "ConcurrentSocketActor" should {
-    "support pub-sub connections" in {
-      checkZeroMQInstallation
-      val publisherProbe = TestProbe()
-      val subscriberProbe = TestProbe()
-      val context = Context()
-      val publisher = newPublisher(context, publisherProbe.ref)
-      val subscriber = newSubscriber(context, subscriberProbe.ref)
-      val msgGenerator = newMessageGenerator(publisher)
-
-      try {
-        subscriberProbe.expectMsg(Connecting)
-        val msgNumbers = subscriberProbe.receiveWhile(2 seconds) {
-          case msg: ZMQMessage ⇒ msg
-        }.map(_.firstFrameAsString.toInt)
-        msgNumbers.length must be > 0
-        msgNumbers must equal(for (i ← msgNumbers.head to msgNumbers.last) yield i)
-      } finally {
-        system stop msgGenerator
-        within(2 seconds) { awaitCond(msgGenerator.isTerminated) }
-        system stop publisher
-        system stop subscriber
-        subscriberProbe.receiveWhile(1 seconds) {
-          case msg ⇒ msg
-        }.last must equal(Closed)
-        context.term
-      }
-    }
-    "support zero-length message frames" in {
-      checkZeroMQInstallation
-      val publisherProbe = TestProbe()
-      val context = Context()
-      val publisher = newPublisher(context, publisherProbe.ref)
-
-      try {
-        publisher ! ZMQMessage(Seq[Frame]())
-      } finally {
-        system stop publisher
-        publisherProbe.within(5 seconds) {
-          publisherProbe.expectMsg(Closed)
-        }
-        context.term
-      }
-    }
-    def newPublisher(context: Context, listener: ActorRef) = {
-      zmq.newSocket(SocketType.Pub, context, Listener(listener), Bind(endpoint))
-    }
-    def newSubscriber(context: Context, listener: ActorRef) = {
-      zmq.newSocket(SocketType.Sub, context, Listener(listener), Connect(endpoint), SubscribeAll)
-    }
-    def newMessageGenerator(actorRef: ActorRef) = {
-      system.actorOf(Props(new MessageGeneratorActor(actorRef)))
-
-    }
-    def checkZeroMQInstallation = try {
+  def checkZeroMQInstallation =
+    try {
       zmq.version match {
         case ZeroMQVersion(2, 1, _) ⇒ Unit
         case version                ⇒ invalidZeroMQVersion(version)
@@ -83,19 +19,109 @@ class ConcurrentSocketActorSpec
     } catch {
       case e: LinkageError ⇒ zeroMQNotInstalled
     }
-    def invalidZeroMQVersion(version: ZeroMQVersion) {
-      info("WARNING: The tests are not run because invalid ZeroMQ version: %s. Version >= 2.1.x required.".format(version))
-      pending
-    }
-    def zeroMQNotInstalled {
-      info("WARNING: The tests are not run because ZeroMQ is not installed. Version >= 2.1.x required.")
-      pending
-    }
+
+  def invalidZeroMQVersion(version: ZeroMQVersion) {
+    info("WARNING: The tests are not run because invalid ZeroMQ version: %s. Version >= 2.1.x required.".format(version))
+    pending
   }
+
+  def zeroMQNotInstalled {
+    info("WARNING: The tests are not run because ZeroMQ is not installed. Version >= 2.1.x required.")
+    pending
+  }
+
+  val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
+
+  val zmq = ZeroMQExtension(system)
+
+  "ConcurrentSocketActor" should {
+    "support pub-sub connections" in {
+      checkZeroMQInstallation
+      val subscriberProbe = TestProbe()
+      val context = Context()
+      val publisher = zmq.newSocket(SocketType.Pub, context, Bind(endpoint))
+      val subscriber = zmq.newSocket(SocketType.Sub, context, Listener(subscriberProbe.ref), Connect(endpoint), SubscribeAll)
+      val msgGenerator = system.scheduler.schedule(100 millis, 10 millis, new Runnable {
+        var number = 0
+        def run() {
+          publisher ! ZMQMessage(Seq(Frame(number.toString.getBytes), Frame(Seq())))
+          number += 1
+        }
+      })
+
+      try {
+        subscriberProbe.expectMsg(Connecting)
+        val msgNumbers = subscriberProbe.receiveWhile(2 seconds) {
+          case msg: ZMQMessage if msg.frames.size == 2 ⇒
+            msg.payload(1).length must be(0)
+            msg
+        }.map(_.firstFrameAsString.toInt)
+        msgNumbers.length must be > 0
+        msgNumbers must equal(for (i ← msgNumbers.head to msgNumbers.last) yield i)
+      } finally {
+        msgGenerator.cancel()
+        system stop publisher
+        system stop subscriber
+        subscriberProbe.receiveWhile(1 seconds) {
+          case msg ⇒ msg
+        }.last must equal(Closed)
+        awaitCond(publisher.isTerminated)
+        awaitCond(subscriber.isTerminated)
+        context.term
+      }
+    }
+
+    "support req-rep connections" in {
+      checkZeroMQInstallation
+      val requesterProbe = TestProbe()
+      val replierProbe = TestProbe()
+      val context = Context()
+      val requester = zmq.newSocket(SocketType.Req, context, Listener(requesterProbe.ref), Bind(endpoint))
+      val replier = zmq.newSocket(SocketType.Rep, context, Listener(replierProbe.ref), Connect(endpoint))
+
+      try {
+        replierProbe.expectMsg(Connecting)
+        val request = ZMQMessage(Seq(Frame("Request")))
+        val reply = ZMQMessage(Seq(Frame("Reply")))
+
+        requester ! request
+        replierProbe.expectMsg(request)
+        replier ! reply
+        requesterProbe.expectMsg(reply)
+      } finally {
+        system stop requester
+        system stop replier
+        replierProbe.expectMsg(Closed)
+        context.term
+      }
+    }
+
+    "should support push-pull connections" in {
+      checkZeroMQInstallation
+      val pullerProbe = TestProbe()
+      val context = Context()
+      val pusher = zmq.newSocket(SocketType.Push, context, Bind(endpoint))
+      val puller = zmq.newSocket(SocketType.Pull, context, Listener(pullerProbe.ref), Connect(endpoint))
+
+      try {
+        pullerProbe.expectMsg(Connecting)
+        val message = ZMQMessage(Seq(Frame("Pushed message")))
+
+        pusher ! message
+        pullerProbe.expectMsg(message)
+      } finally {
+        system stop pusher
+        system stop puller
+        pullerProbe.expectMsg(Closed)
+        context.term
+      }
+    }
+
+  }
+
   class MessageGeneratorActor(actorRef: ActorRef) extends Actor {
     var messageNumber: Int = 0
-
-    private var genMessages: Cancellable = null
+    var genMessages: Cancellable = null
 
     override def preStart() = {
       genMessages = system.scheduler.schedule(100 millis, 10 millis, self, "genMessage")
