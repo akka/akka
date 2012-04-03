@@ -46,9 +46,26 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
 
   import Mailbox._
 
+  /**
+   * Try to enqueue the message to this queue, or throw an exception.
+   */
   def enqueue(receiver: ActorRef, msg: Envelope): Unit = messageQueue.enqueue(receiver, msg)
+  
+  /**
+   * Try to dequeue the next message from this queue, return null failing that.
+   */
   def dequeue(): Envelope = messageQueue.dequeue()
+
+  /**
+   * Indicates whether this queue is non-empty.
+   */
   def hasMessages: Boolean = messageQueue.hasMessages
+
+  /**
+   * Should return the current number of messages held in this queue; may
+   * always return 0 if no other value is available efficiently. Do not use
+   * this for testing for presence of messages, use `hasMessages` instead.
+   */
   def numberOfMessages: Int = messageQueue.numberOfMessages
 
   @volatile
