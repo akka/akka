@@ -61,7 +61,7 @@ by multiplying actor sub-trees which support parallelization (think for example
 a search engine processing different queries in parallel). The clones can then
 be routed to in different fashions, e.g. round-robin. The only thing necessary
 to achieve this is that the developer needs to declare a certain actor as
-“withRouter”, the in its stead a router actor will be created which will spawn
+“withRouter”, then—in its stead—a router actor will be created which will spawn
 up a configurable number of children of the desired type and route to them in
 the configured fashion. Once such a router has been declared, its configuration
 can be freely overridden from the configuration file, including mixing it with

@@ -1066,7 +1066,7 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
     {
       case (sender, message) ⇒
         val provider: ActorRefProvider = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider
-        val asker = akka.pattern.createAsker(provider, within)
+        val asker = akka.pattern.PromiseActorRef(provider, within)
         asker.result.pipeTo(sender)
         toAll(asker, routeeProvider.routees)
     }
