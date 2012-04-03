@@ -87,6 +87,13 @@ object TestActorRefSpec {
     }
   }
 
+  class ReceiveTimeoutActor(target: ActorRef) extends Actor {
+    context setReceiveTimeout 1.second
+    def receive = {
+      case ReceiveTimeout ⇒ target ! "timeout"
+    }
+  }
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -201,6 +208,11 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       // CallingThreadDispatcher means that there is no delay
       f must be('completed)
       Await.result(f, timeout.duration) must equal("workDone")
+    }
+
+    "support receive timeout" in {
+      val a = TestActorRef(new ReceiveTimeoutActor(testActor))
+      expectMsg("timeout")
     }
 
   }
