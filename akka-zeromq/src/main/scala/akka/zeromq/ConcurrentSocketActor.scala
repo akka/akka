@@ -13,9 +13,9 @@ import akka.util.Duration
 import java.util.concurrent.TimeUnit
 
 private[zeromq] object ConcurrentSocketActor {
-  private trait PollMsg
+  private sealed trait PollMsg
   private case object Poll extends PollMsg
-  private case class ContinuePoll(frames: Vector[Frame]) extends PollMsg
+  private case object PollCareful extends PollMsg
 
   private class NoSocketHandleException() extends Exception("Couldn't create a zeromq socket.")
 
@@ -28,16 +28,19 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   private val zmqContext = params collectFirst { case c: Context ⇒ c } getOrElse DefaultContext
 
   private val deserializer = deserializerFromParams
-  private val socket: Socket = socketFromParams
+  private val socketType = {
+    import SocketType.{ ZMQSocketType ⇒ ST }
+    params.collectFirst { case t: ST ⇒ t }.getOrElse(throw new IllegalArgumentException("A socket type is required"))
+  }
+  private val socket: Socket = zmqContext.socket(socketType)
   private val poller: Poller = zmqContext.poller
   private val log = Logging(context.system, this)
 
   def receive = {
-    case Poll                 ⇒ doPoll()
-    case ContinuePoll(frames) ⇒ doPoll(currentFrames = frames)
-    case ZMQMessage(frames)   ⇒ sendMessage(frames)
-    case r: Request           ⇒ handleRequest(r)
-    case Terminated(_)        ⇒ context stop self
+    case m: PollMsg         ⇒ doPoll(m)
+    case ZMQMessage(frames) ⇒ sendMessage(frames)
+    case r: Request         ⇒ handleRequest(r)
+    case Terminated(_)      ⇒ context stop self
   }
 
   private def handleRequest(msg: Request): Unit = msg match {
@@ -105,19 +108,18 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     setupSocket()
     poller.register(socket, Poller.POLLIN)
     setupConnection()
-    self ! Poll
+
+    import SocketType._
+    socketType match {
+      case Pub | Push                          ⇒ // don’t poll
+      case Sub | Pull | Pair | Dealer | Router ⇒ self ! Poll
+      case Req | Rep                           ⇒ self ! PollCareful
+    }
   }
 
   private def setupConnection() {
     params filter (_.isInstanceOf[SocketConnectOption]) foreach { self ! _ }
     params filter (_.isInstanceOf[PubSubOption]) foreach { self ! _ }
-  }
-
-  private def socketFromParams() = {
-    require(ZeroMQExtension.check[SocketType.ZMQSocketType](params), "A socket type is required")
-    (params
-      collectFirst { case t: SocketType.ZMQSocketType ⇒ zmqContext.socket(t) }
-      getOrElse (throw new NoSocketHandleException))
   }
 
   private def deserializerFromParams = {
@@ -169,27 +171,28 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     }
   }
 
-  @tailrec private def doPoll(togo: Int = 10, currentFrames: Vector[Frame] = Vector.empty): Unit =
-    receiveMessage(currentFrames) match {
+  @tailrec private def doPoll(mode: PollMsg, togo: Int = 10): Unit =
+    receiveMessage(mode) match {
       case null  ⇒ // receiveMessage has already done something special here
-      case Seq() ⇒ doPollTimeout(Poll)
+      case Seq() ⇒ doPollTimeout(mode)
       case frames ⇒
         notifyListener(deserializer(frames))
-        if (togo > 0) doPoll(togo - 1)
-        else self ! Poll
+        if (togo > 0) doPoll(mode, togo - 1)
+        else self ! mode
     }
 
-  @tailrec private def receiveMessage(currentFrames: Vector[Frame]): Seq[Frame] = {
-    socket.recv(JZMQ.NOBLOCK) match {
+  @tailrec private def receiveMessage(mode: PollMsg, currentFrames: Vector[Frame] = Vector.empty): Seq[Frame] = {
+    val result = mode match {
+      case Poll        ⇒ socket.recv(JZMQ.NOBLOCK)
+      case PollCareful ⇒ if (poller.poll(0) > 0) socket.recv(0) else null
+    }
+    result match {
       case null ⇒
         if (currentFrames.isEmpty) currentFrames
-        else {
-          doPollTimeout(ContinuePoll(currentFrames))
-          null
-        }
+        else throw new IllegalStateException("no more frames available while socket.hasReceivedMore==true")
       case bytes ⇒
         val frames = currentFrames :+ Frame(if (bytes.length == 0) noBytes else bytes)
-        if (socket.hasReceiveMore) receiveMessage(frames) else frames
+        if (socket.hasReceiveMore) receiveMessage(mode, frames) else frames
     }
   }
 

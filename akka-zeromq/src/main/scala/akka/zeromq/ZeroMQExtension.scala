@@ -10,6 +10,7 @@ import akka.pattern.ask
 import akka.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.util.Timeout
+import org.zeromq.ZMQException
 
 /**
  * A Model to represent a version of the zeromq library
@@ -239,8 +240,22 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
 
   private val zeromqGuardian: ActorRef = {
     verifyZeroMQVersion
+
     system.actorOf(Props(new Actor {
-      def receive = { case p: Props ⇒ sender ! context.actorOf(p) }
+      import SupervisorStrategy._
+      override def supervisorStrategy = OneForOneStrategy() {
+        case ex: ZMQException if nonfatal(ex) ⇒ Resume
+        case _                                ⇒ Stop
+      }
+
+      private def nonfatal(ex: ZMQException) = ex.getErrorCode match {
+        case org.zeromq.ZeroMQ.EFSM | 45 /* ENOTSUP */ ⇒ true
+        case _                                         ⇒ false
+      }
+
+      def receive = {
+        case p: Props ⇒ sender ! context.actorOf(p)
+      }
     }), "zeromq")
   }
 
