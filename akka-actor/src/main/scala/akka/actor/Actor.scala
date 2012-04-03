@@ -246,6 +246,8 @@ trait Actor {
 
   /**
    * User overridable callback: '''By default it disposes of all children and then calls `postStop()`.'''
+   * @param reason the Throwable that caused the restart to happen
+   * @param message optionally the current message the actor processed when failing, if applicable
    * <p/>
    * Is called on a crashed Actor right BEFORE it is restarted to allow clean
    * up of resources before Actor is terminated.
@@ -257,6 +259,7 @@ trait Actor {
 
   /**
    * User overridable callback: By default it calls `preStart()`.
+   * @param reason the Throwable that caused the restart to happen
    * <p/>
    * Is called right AFTER restart on the newly created Actor to allow reinitialization after an Actor crash.
    */
