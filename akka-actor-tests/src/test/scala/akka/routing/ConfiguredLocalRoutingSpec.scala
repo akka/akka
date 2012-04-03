@@ -11,7 +11,7 @@ import akka.actor.actorRef2Scala
 import akka.actor.{ Props, LocalActorRef, Deploy, Actor }
 import akka.config.ConfigurationException
 import akka.dispatch.Await
-import akka.pattern.ask
+import akka.pattern.{ ask, gracefulStop }
 import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }
 import akka.util.duration.intToDurationInt
 
@@ -49,7 +49,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
         }
       }).withRouter(RoundRobinRouter(12)), "someOther")
       actor.asInstanceOf[LocalActorRef].underlying.props.routerConfig must be === RoundRobinRouter(12)
-      system.stop(actor)
+      Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in config" in {
@@ -59,7 +59,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
         }
       }).withRouter(RoundRobinRouter(12)), "config")
       actor.asInstanceOf[LocalActorRef].underlying.props.routerConfig must be === RandomRouter(4)
-      system.stop(actor)
+      Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in explicit deployment" in {
@@ -69,7 +69,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
         }
       }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "someOther")
       actor.asInstanceOf[LocalActorRef].underlying.props.routerConfig must be === RoundRobinRouter(12)
-      system.stop(actor)
+      Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in config even with explicit deployment" in {
@@ -79,7 +79,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
         }
       }).withRouter(FromConfig).withDeploy(Deploy(routerConfig = RoundRobinRouter(12))), "config")
       actor.asInstanceOf[LocalActorRef].underlying.props.routerConfig must be === RandomRouter(4)
-      system.stop(actor)
+      Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "fail with an exception if not correct" in {
