@@ -113,11 +113,11 @@ Akka ZeroMQ module supports ``Rep-Req`` connections.
 
 You can create a ``Rep`` connection through the::
 
-    def newReqSocket(socketParameters: Array[SocketOption]): ActorRef
+    def newRepSocket(socketParameters: Array[SocketOption]): ActorRef
 
 You can create a ``Req`` connection through the::
 
-    def newRepSocket(socketParameters: Array[SocketOption]): ActorRef
+    def newReqSocket(socketParameters: Array[SocketOption]): ActorRef
 
 More documentation and examples will follow soon.
 
