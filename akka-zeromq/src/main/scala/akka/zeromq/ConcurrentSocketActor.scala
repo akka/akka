@@ -131,10 +131,18 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     }
   }
 
+  override def preRestart(reason: Throwable, message: Option[Any]) {
+    context.children foreach context.stop //Do not call postStop
+  }
+
+  override def postRestart(reason: Throwable) {} //Do nothing
+
   override def postStop {
     try {
-      poller.unregister(socket)
-      if (socket != null) socket.close
+      if (socket != null) {
+        poller.unregister(socket)
+        socket.close
+      }
     } finally {
       notifyListener(Closed)
     }
