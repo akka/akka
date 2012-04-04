@@ -76,23 +76,18 @@ private[amqp] class DurableChannelActor
     case Event(MessageWithExchange(message, exchangeName, false), Some(channel)) ⇒
       log.debug("Publishing on '{}': {}", exchangeName, message)
       import message._
-      val reply = serialization.serialize(payload) match {
-        case Right(serialized) ⇒
-          channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
-        case Left(exception) ⇒ exception
-      }
-      stay() replying reply
+      val s = serialization.findSerializerFor(payload)
+      val serialized = s.toBinary(payload)
+      channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
+      stay()
     case Event(MessageWithExchange(message, exchangeName, true), Some(channel)) ⇒
       log.debug("Publishing confirmed on '{}': {}", exchangeName, message)
       import message._
-      val reply = serialization.serialize(payload) match {
-        case Right(serialized) ⇒
-          val seqNo = channel.getNextPublishSeqNo
-          channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
-          seqNo
-        case Left(exception) ⇒ exception
-      }
-      stay() replying reply
+      val s = serialization.findSerializerFor(payload)
+      val serialized = s.toBinary(payload)
+      val seqNo = channel.getNextPublishSeqNo
+      channel.basicPublish(exchangeName, routingKey, mandatory, immediate, properties.getOrElse(null), serialized)
+      stay() replying seqNo
 
     case Event(ConnectionDisconnected(), Some(channel)) ⇒
       log.warning("Connection went down of channel {}", channel)

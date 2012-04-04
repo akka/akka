@@ -58,8 +58,8 @@ class DurablePublisher(durableConnection: DurableConnection,
     }
   }
 
-  def publish(message: Message): Future[Unit] = {
-    channelActor ? MessageWithExchange(message, exchangeName) mapTo manifest[Unit]
+  def publish(message: Message) {
+    channelActor ! MessageWithExchange(message, exchangeName)
   }
 }
 
