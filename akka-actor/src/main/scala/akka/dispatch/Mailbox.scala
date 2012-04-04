@@ -47,6 +47,10 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
   import Mailbox._
 
   def enqueue(receiver: ActorRef, msg: Envelope): Unit = messageQueue.enqueue(receiver, msg)
+
+  /**
+   * Try to dequeue the next message from this queue, return null failing that.
+   */
   def dequeue(): Envelope = messageQueue.dequeue()
   def hasMessages: Boolean = messageQueue.hasMessages
   def numberOfMessages: Int = messageQueue.numberOfMessages
