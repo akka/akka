@@ -299,22 +299,22 @@ trait RemoteMarshallingOps {
           case AddressFromURIString(address) if address == provider.transport.address ⇒
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
-          case ActorPathExtractor(natAddress, elements) if natOK(natAddress) ⇒
-            //address akka://sys@host:port
-            system.actorFor(elements).tell(remoteMessage.payload, remoteMessage.sender)
+          case ActorPathExtractor(natAddress, elements) ⇒
+            if (allow(natAddress)) system.actorFor(elements).tell(remoteMessage.payload, remoteMessage.sender)
+            else log.error("Firewall: dropping message {} for non-local recipient {} at {} local is {}", remoteMessage.payload, r, address, provider.transport.address)
           case r ⇒ log.error("dropping message {} for non-local recipient {} at {} local is {}", remoteMessage.payload, r, address, provider.transport.address)
         }
       case r ⇒ log.error("dropping message {} for non-local recipient {} of type {}", remoteMessage.payload, r, if (r ne null) r.getClass else "null")
     }
   }
 
-  private def natOK(natAddress: Address): Boolean = {
-    provider.remoteSettings.NATFirewall match {
-      case "whitelist" ⇒ (natAddress.host.isDefined && natAddress.port.isDefined &&
-        provider.remoteSettings.NATFirewallAddresses.contains(natAddress.host.get + ":" + natAddress.port.get))
-      case "blacklist" ⇒ (natAddress.host.isDefined && natAddress.port.isDefined &&
-        !provider.remoteSettings.NATFirewallAddresses.contains(natAddress.host.get + ":" + natAddress.port.get))
+  private def allow(natAddress: Address): Boolean = {
+    val settings = provider.remoteSettings //have to do this to do the import or else err "stable identifier required"
+    import settings.{ NATFirewallAddresses, NATFirewall }
+    if (natAddress.host.isEmpty || natAddress.port.isEmpty) false //Partial addresses are never OK
+    else NATFirewall match {
+      case "whitelist" ⇒ NATFirewallAddresses.nonEmpty && NATFirewallAddresses.contains(natAddress.host.get + ":" + natAddress.port.get)
+      case "blacklist" ⇒ NATFirewallAddresses.isEmpty || !NATFirewallAddresses.contains(natAddress.host.get + ":" + natAddress.port.get)
     }
-
   }
 }
