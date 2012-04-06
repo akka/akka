@@ -4,7 +4,6 @@
 
 package akka
 
-@deprecated("will be removed to sanitize dependencies, use sjson directly", "2.0.1")
 package object serialization {
   type JsValue = _root_.dispatch.json.JsValue
   val JsValue = _root_.dispatch.json.JsValue
