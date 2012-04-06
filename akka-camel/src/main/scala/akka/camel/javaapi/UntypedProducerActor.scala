@@ -36,11 +36,11 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    */
   def onRouteResponse(message: AnyRef): Unit = super.routeResponse(message)
 
-  final override def transformOutgoingMessage = {
+  final override def transformOutgoingMessage(msg: Any) = msg match {
     case msg: AnyRef ⇒ onTransformOutgoingMessage(msg)
   }
 
-  final override def transformResponse = {
+  final override def transformResponse(msg: Any) = msg match {
     case msg: AnyRef ⇒ onTransformResponse(msg)
   }
 

@@ -266,7 +266,7 @@ object ProducerFeatureTest {
   class TestProducer(uri: String, upper: Boolean = false) extends Actor with Producer {
     def endpointUri = uri
 
-    override protected def transformOutgoingMessage = {
+    override protected def transformOutgoingMessage(msg: Any) = msg match {
       case msg: CamelMessage ⇒ if (upper) msg.mapBody {
         body: String ⇒ body.toUpperCase
       }
