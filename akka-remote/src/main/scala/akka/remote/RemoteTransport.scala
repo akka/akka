@@ -299,7 +299,7 @@ trait RemoteMarshallingOps {
           case AddressFromURIString(address) if address == provider.transport.address ⇒
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
-          case ActorPathExtractor(natAddress, elements) if natOK(natAddress.host, natAddress.port) ⇒
+          case ActorPathExtractor(natAddress, elements) if natOK(natAddress) ⇒
             //address akka://sys@host:port
             system.actorFor(elements).tell(remoteMessage.payload, remoteMessage.sender)
           case r ⇒ log.error("dropping message {} for non-local recipient {} at {} local is {}", remoteMessage.payload, r, address, provider.transport.address)
@@ -308,9 +308,13 @@ trait RemoteMarshallingOps {
     }
   }
 
-  private def natOK(hostOpt: Option[String], portOpt: Option[Int]): Boolean = {
-    provider.remoteSettings.NATFriendly &&
-      (provider.remoteSettings.NATWhitelist.isEmpty ||
-        (hostOpt.isDefined && portOpt.isDefined && provider.remoteSettings.NATWhitelist.contains(hostOpt.get + ":" + portOpt.get)))
+  private def natOK(natAddress: Address): Boolean = {
+    provider.remoteSettings.NATFirewall match {
+      case "whitelist" ⇒ (natAddress.host.isDefined && natAddress.port.isDefined &&
+        provider.remoteSettings.NATFirewallAddresses.contains(natAddress.host.get + ":" + natAddress.port.get))
+      case "blacklist" ⇒ (natAddress.host.isDefined && natAddress.port.isDefined &&
+        !provider.remoteSettings.NATFirewallAddresses.contains(natAddress.host.get + ":" + natAddress.port.get))
+    }
+
   }
 }

@@ -17,11 +17,9 @@ class RemoteSettings(val config: Config, val systemName: String) {
   val LogSend = getBoolean("akka.remote.log-sent-messages")
   val RemoteSystemDaemonAckTimeout = Duration(getMilliseconds("akka.remote.remote-daemon-ack-timeout"), MILLISECONDS)
   val UntrustedMode = getBoolean("akka.remote.untrusted-mode")
-  val NATFriendly = getBoolean("akka.remote.nat-friendly")
-  val NATWhitelist = {
-    if (hasPath("akka.remote.nat-whitelist"))
-      getStringList("akka.remote.nat-whitelist").asScala.toList
-    else
-      List.empty[String]
+  val NATFirewall = getString("akka.remote.nat-firewall") match {
+    case firewall if firewall == "whitelist" || firewall == "blacklist" ⇒ firewall
+    case bad ⇒ throw new IllegalArgumentException("akka.remote.nat-firewall was not set to whitelist or blacklist")
   }
+  val NATFirewallAddresses = Set() ++ getStringList("akka.remote.nat-firewall-addresses").asScala
 }
