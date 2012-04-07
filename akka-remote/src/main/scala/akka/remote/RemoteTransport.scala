@@ -185,11 +185,11 @@ abstract class RemoteTransport {
 
   /** Methods that needs to be implemented by a transport **/
 
-  protected[akka] def send(message: Any,
-                           senderOption: Option[ActorRef],
-                           recipient: RemoteActorRef): Unit
+  def send(message: Any,
+           senderOption: Option[ActorRef],
+           recipient: RemoteActorRef): Unit
 
-  protected[akka] def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
+  def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
     system.eventStream.publish(message)
     system.log.log(message.logLevel, "REMOTE: {}", message)
   }

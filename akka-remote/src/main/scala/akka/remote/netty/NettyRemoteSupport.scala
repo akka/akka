@@ -101,7 +101,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
     }
   }
 
-  protected[akka] def send(
+  def send(
     message: Any,
     senderOption: Option[ActorRef],
     recipient: RemoteActorRef): Unit = {
