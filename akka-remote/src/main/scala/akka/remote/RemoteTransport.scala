@@ -299,7 +299,7 @@ trait RemoteMarshallingOps {
           case AddressFromURIString(address) if address == provider.transport.address ⇒
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
-          case ActorPathExtractor(natAddress, elements) ⇒
+          case ActorPathExtractor(natAddress, elements) if natAddress.system == system.name ⇒
             if (allow(natAddress)) system.actorFor(elements).tell(remoteMessage.payload, remoteMessage.sender)
             else log.error("Firewall: dropping message {} for non-local recipient {} at {} local is {}", remoteMessage.payload, r, address, provider.transport.address)
           case r ⇒ log.error("dropping message {} for non-local recipient {} at {} local is {}", remoteMessage.payload, r, address, provider.transport.address)
