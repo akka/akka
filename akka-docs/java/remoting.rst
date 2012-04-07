@@ -14,7 +14,7 @@ The Akka remoting is a separate jar file. Make sure that you have the following 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
     <artifactId>akka-remote</artifactId>
-    <version>2.0-SNAPSHOT</version>
+    <version>2.0.1-SNAPSHOT</version>
   </dependency>
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes

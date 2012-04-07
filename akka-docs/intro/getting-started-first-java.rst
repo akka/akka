@@ -85,7 +85,7 @@ To build and run the tutorial sample from the command line, you have to download
 Akka. If you prefer to use SBT to build and run the sample then you can skip this
 section and jump to the next one.
 
-Let's get the ``akka-2.0-SNAPSHOT.zip`` distribution of Akka from
+Let's get the ``akka-2.0.1-SNAPSHOT.zip`` distribution of Akka from
 http://akka.io/downloads/ which includes everything we need for this
 tutorial. Once you have downloaded the distribution unzip it in the folder you
 would like to have Akka installed in. In my case I choose to install it in
@@ -98,17 +98,17 @@ I'm opening up a shell, navigating down to the distribution, and setting the
 
 On Linux/Unix/Mac systems::
 
-    $ cd /Users/jboner/tools/akka-2.0-SNAPSHOT
+    $ cd /Users/jboner/tools/akka-2.0.1-SNAPSHOT
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-2.0-SNAPSHOT
+    /Users/jboner/tools/akka-2.0.1-SNAPSHOT
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka> cd akka-2.0-SNAPSHOT
-    C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT> set AKKA_HOME=%cd%
-    C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT> echo %AKKA_HOME%
-    C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT
+    C:\Users\jboner\src\akka> cd akka-2.0.1-SNAPSHOT
+    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> set AKKA_HOME=%cd%
+    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> echo %AKKA_HOME%
+    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT
 
 The distribution looks like this.
 
@@ -124,7 +124,7 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT> dir
+    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> dir
     bin
     config
     deploy
@@ -140,7 +140,7 @@ On Windows systems::
 - In the ``src`` directory we have the source JARs for Akka.
 
 The only JAR we will need for this tutorial (apart from the
-``scala-library.jar`` JAR) is the ``akka-actor-2.0-SNAPSHOT.jar`` JAR in the ``lib/akka``
+``scala-library.jar`` JAR) is the ``akka-actor-2.0.1-SNAPSHOT.jar`` JAR in the ``lib/akka``
 directory. This is a self-contained JAR with zero dependencies and contains
 everything we need to write a system using Actors.
 
@@ -160,10 +160,10 @@ modules are:
 - ``akka-durable-mailboxes`` -- Durable mailboxes: file-based, MongoDB, Redis, Beanstalk and Zookeeper
 
 .. - ``akka-amqp`` -- AMQP integration
-.. - ``akka-stm-2.0-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-.. - ``akka-camel-2.0-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-.. - ``akka-camel-typed-2.0-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
-.. - ``akka-spring-2.0-SNAPSHOT.jar`` -- Spring framework integration
+.. - ``akka-stm-2.0.1-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+.. - ``akka-camel-2.0.1-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+.. - ``akka-camel-typed-2.0.1-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
+.. - ``akka-spring-2.0.1-SNAPSHOT.jar`` -- Spring framework integration
 
 
 
@@ -191,7 +191,7 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT> mvn archetype:generate \
+    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> mvn archetype:generate \
         -DgroupId=akka.tutorial.first.java \
         -DartifactId=akka-tutorial-first-java \
         -DarchetypeArtifactId=maven-archetype-quickstart \
@@ -205,7 +205,7 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT> cd akka-tutorial-first-java
+    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> cd akka-tutorial-first-java
 
 Here is the layout that Maven created::
 
@@ -248,7 +248,7 @@ repositories, including akka.io.  It should now look something like this:
             <dependency>
                 <groupId>com.typesafe.akka</groupId>
                 <artifactId>akka-actor</artifactId>
-                <version>2.0-SNAPSHOT</version>
+                <version>2.0.1-SNAPSHOT</version>
             </dependency>
         </dependencies>
 
@@ -416,29 +416,29 @@ time. When that's done open up a shell and step in to the Akka distribution
 (``cd $AKKA_HOME``).
 
 First we need to compile the source file. That is done with Java's compiler
-``javac``. Our application depends on the ``akka-actor-2.0-SNAPSHOT.jar`` and the
+``javac``. Our application depends on the ``akka-actor-2.0.1-SNAPSHOT.jar`` and the
 ``scala-library.jar`` JAR files, so let's add them to the compiler classpath
 when we compile the source.
 
 On Linux/Unix/Mac systems::
 
-    $ javac -cp lib/scala-library.jar:lib/akka/akka-actor-2.0-SNAPSHOT.jar tutorial/akka/tutorial/first/java/Pi.java
+    $ javac -cp lib/scala-library.jar:lib/akka/akka-actor-2.0.1-SNAPSHOT.jar tutorial/akka/tutorial/first/java/Pi.java
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT> javac -cp \
-       lib/scala-library.jar;lib/akka/akka-actor-2.0-SNAPSHOT.jar \
+    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> javac -cp \
+       lib/scala-library.jar;lib/akka/akka-actor-2.0.1-SNAPSHOT.jar \
        tutorial/akka/tutorial/first/java/Pi.java
 
 When we have compiled the source file we are ready to run the application. This
-is done with ``java`` but yet again we need to add the ``akka-actor-2.0-SNAPSHOT.jar``
+is done with ``java`` but yet again we need to add the ``akka-actor-2.0.1-SNAPSHOT.jar``
 and the ``scala-library.jar`` JAR files to the classpath as well as the classes
 we compiled ourselves.
 
 On Linux/Unix/Mac systems::
 
     $ java \
-        -cp lib/scala-library.jar:lib/akka/akka-actor-2.0-SNAPSHOT.jar:. \
+        -cp lib/scala-library.jar:lib/akka/akka-actor-2.0.1-SNAPSHOT.jar:. \
         akka.tutorial.first.scala.Pi
 
     Pi approximation:   3.1415926435897883
@@ -446,8 +446,8 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT> java \
-        -cp lib/scala-library.jar;lib\akka\akka-actor-2.0-SNAPSHOT.jar;. \
+    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> java \
+        -cp lib/scala-library.jar;lib\akka\akka-actor-2.0.1-SNAPSHOT.jar;. \
         akka.tutorial.first.scala.Pi
 
     Pi approximation:   3.1415926435897883
@@ -466,7 +466,7 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT> mvn compile
+    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> mvn compile
 
 When this in done we can run our application directly inside Maven.
 
@@ -479,7 +479,7 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0-SNAPSHOT> mvn exec:java \
+    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> mvn exec:java \
         -Dexec.mainClass="akka.tutorial.first.java.Pi"
     ...
     Pi approximation:   3.1415926435897883
