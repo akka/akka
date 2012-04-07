@@ -72,9 +72,11 @@ by Actors:
 .. code-block:: ruby
 
     akka {
-      debug {
-        # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill and the like)
-        autoreceive = on
+      actor {
+        debug {
+          # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill and the like)
+          autoreceive = on
+        }
       }
     }
 
@@ -83,9 +85,11 @@ If you want very detailed logging of all lifecycle changes of Actors (restarts, 
 .. code-block:: ruby
 
     akka {
-      debug {
-        # enable DEBUG logging of actor lifecycle changes
-        lifecycle = on
+      actor {
+        debug {
+          # enable DEBUG logging of actor lifecycle changes
+          lifecycle = on
+        }
       }
     }
 
@@ -94,9 +98,11 @@ If you want very detailed logging of all events, transitions and timers of FSM A
 .. code-block:: ruby
 
     akka {
-      debug {
-        # enable DEBUG logging of all LoggingFSMs for events, transitions and timers
-        fsm = on
+      actor {
+        debug {
+          # enable DEBUG logging of all LoggingFSMs for events, transitions and timers
+          fsm = on
+        }
       }
     }
 
@@ -105,9 +111,11 @@ If you want to monitor subscriptions (subscribe/unsubscribe) on the ActorSystem.
 .. code-block:: ruby
 
     akka {
-      debug {
-        # enable DEBUG logging of subscription changes on the eventStream
-        event-stream = on
+      actor {
+        debug {
+          # enable DEBUG logging of subscription changes on the eventStream
+          event-stream = on
+        }
       }
     }
 
