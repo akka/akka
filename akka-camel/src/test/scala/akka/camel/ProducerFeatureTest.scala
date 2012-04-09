@@ -277,9 +277,7 @@ object ProducerFeatureTest {
   class TestForwarder(uri: String, target: ActorRef) extends Actor with Producer {
     def endpointUri = uri
 
-    override protected def routeResponse = {
-      case msg ⇒ target forward msg
-    }
+    override protected def routeResponse(msg: Any): Any = { target forward msg }
   }
 
   class TestResponder extends Actor {
