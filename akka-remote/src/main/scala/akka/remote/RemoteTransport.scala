@@ -308,13 +308,10 @@ trait RemoteMarshallingOps {
     }
   }
 
-  private def allow(natAddress: Address): Boolean = {
+  def allow(natAddress: Address): Boolean = {
     val settings = provider.remoteSettings //have to do this to do the import or else err "stable identifier required"
-    import settings.{ NATFirewallAddresses, NATFirewall }
+    import settings.PublicAddresses
     if (natAddress.host.isEmpty || natAddress.port.isEmpty) false //Partial addresses are never OK
-    else NATFirewall match {
-      case "whitelist" ⇒ NATFirewallAddresses.nonEmpty && NATFirewallAddresses.contains(natAddress.host.get + ":" + natAddress.port.get)
-      case "blacklist" ⇒ NATFirewallAddresses.isEmpty || !NATFirewallAddresses.contains(natAddress.host.get + ":" + natAddress.port.get)
-    }
+    else PublicAddresses.nonEmpty && PublicAddresses.contains(natAddress.host.get + ":" + natAddress.port.get)
   }
 }
