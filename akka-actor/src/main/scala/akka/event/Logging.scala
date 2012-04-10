@@ -588,12 +588,19 @@ object Logging {
    * InitializeLogger request. If initialization takes longer, send the reply
    * as soon as subscriptions are set-up.
    */
-  case object LoggerInitialized
+  abstract class LoggerInitialized
+  case object LoggerInitialized extends LoggerInitialized {
+    /**
+     * Java API: get the singleton instance
+     */
+    def getInstance = this
+  }
 
   /**
    * Java API to create a LoggerInitialized message.
    */
-  def loggerInitialized() = LoggerInitialized
+  // weird return type due to binary compatibility
+  def loggerInitialized(): LoggerInitialized.type = LoggerInitialized
 
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 

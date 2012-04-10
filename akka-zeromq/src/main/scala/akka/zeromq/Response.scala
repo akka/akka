@@ -11,8 +11,18 @@ sealed trait Response
 /**
  * When the ZeroMQ socket connects it sends this message to a listener
  */
-case object Connecting extends Response
+case object Connecting extends Response {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
 /**
  * When the ZeroMQ socket disconnects it sends this message to a listener
  */
-case object Closed extends Response
+case object Closed extends Response {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
