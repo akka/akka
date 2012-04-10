@@ -28,13 +28,22 @@ trait NoSerializationVerificationNeeded
 
 case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
-case object PoisonPill extends AutoReceivedMessage with PossiblyHarmful
+abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful
+case object PoisonPill extends PoisonPill {
+  def instance = this
+}
 
-case object Kill extends AutoReceivedMessage with PossiblyHarmful
+abstract class Kill extends AutoReceivedMessage with PossiblyHarmful
+case object Kill extends Kill {
+  def instance = this
+}
 
 case class Terminated(@BeanProperty actor: ActorRef) extends PossiblyHarmful
 
-case object ReceiveTimeout extends PossiblyHarmful
+abstract class ReceiveTimeout extends PossiblyHarmful
+case object ReceiveTimeout extends ReceiveTimeout {
+  def instance = this
+}
 
 /**
  * ActorRefFactory.actorSelection returns a special ref which sends these
