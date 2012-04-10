@@ -32,18 +32,18 @@ public class JavaAPI {
   // compilation tests
   @SuppressWarnings("unused")
   public void mustCompile() {
-    final Kill kill = Kill.instance();
-    final PoisonPill pill = PoisonPill.instance();
-    final ReceiveTimeout t = ReceiveTimeout.instance();
+    final Kill kill = Kill.getInstance();
+    final PoisonPill pill = PoisonPill.getInstance();
+    final ReceiveTimeout t = ReceiveTimeout.getInstance();
 
-    final LocalScope ls = LocalScope.instance();
-    final NoScopeGiven noscope = NoScopeGiven.instance();
+    final LocalScope ls = LocalScope.getInstance();
+    final NoScopeGiven noscope = NoScopeGiven.getInstance();
     
     final LoggerInitialized x = Logging.loggerInitialized();
     
-    final CurrentRoutees r = CurrentRoutees.instance();
-    final NoRouter nr = NoRouter.instance();
-    final FromConfig fc = FromConfig.instance();
+    final CurrentRoutees r = CurrentRoutees.getInstance();
+    final NoRouter nr = NoRouter.getInstance();
+    final FromConfig fc = FromConfig.getInstance();
   }
 
   @Test

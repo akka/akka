@@ -71,7 +71,10 @@ case object LocalScope extends LocalScope {
   @deprecated("use instance() method instead", "2.0.1")
   def scope: Scope = this
 
-  def instance = this
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
 
   def withFallback(other: Scope): Scope = this
 }
@@ -84,7 +87,10 @@ abstract class NoScopeGiven extends Scope
 case object NoScopeGiven extends NoScopeGiven {
   def withFallback(other: Scope): Scope = other
 
-  def instance = this
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
 }
 
 /**
