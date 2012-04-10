@@ -590,7 +590,10 @@ object Logging {
    */
   abstract class LoggerInitialized
   case object LoggerInitialized extends LoggerInitialized {
-    def instance = this
+    /**
+     * Java API: get the singleton instance
+     */
+    def getInstance = this
   }
 
   /**

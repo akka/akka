@@ -30,19 +30,28 @@ case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHar
 
 abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 case object PoisonPill extends PoisonPill {
-  def instance = this
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
 }
 
 abstract class Kill extends AutoReceivedMessage with PossiblyHarmful
 case object Kill extends Kill {
-  def instance = this
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
 }
 
 case class Terminated(@BeanProperty actor: ActorRef) extends PossiblyHarmful
 
 abstract class ReceiveTimeout extends PossiblyHarmful
 case object ReceiveTimeout extends ReceiveTimeout {
-  def instance = this
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
 }
 
 /**

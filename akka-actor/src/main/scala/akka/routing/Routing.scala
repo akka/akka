@@ -346,7 +346,10 @@ case class Broadcast(message: Any)
  */
 abstract class CurrentRoutees
 case object CurrentRoutees extends CurrentRoutees {
-  def instance = this
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
 }
 
 /**
@@ -376,16 +379,22 @@ case object NoRouter extends NoRouter {
   def supervisorStrategy = null
   override def withFallback(other: RouterConfig): RouterConfig = other
 
-  def instance = this
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
 }
 
 /**
  * Router configuration which has no default, i.e. external configuration is required.
  */
 case object FromConfig extends FromConfig {
-  def instance = this
-  def apply(routerDispatcher: String = Dispatchers.DefaultDispatcherId) = new FromConfig(routerDispatcher)
-  def unapply(fc: FromConfig): Option[String] = Some(fc.routerDispatcher)
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+  @inline final def apply(routerDispatcher: String = Dispatchers.DefaultDispatcherId) = new FromConfig(routerDispatcher)
+  @inline final def unapply(fc: FromConfig): Option[String] = Some(fc.routerDispatcher)
 }
 
 /**
@@ -411,21 +420,28 @@ class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   // open-coded case class to preserve binary compatibility, all deprecated for 2.1
   @deprecated("FromConfig does not make sense as case class", "2.0.1")
   override def productPrefix = "FromConfig"
+
   @deprecated("FromConfig does not make sense as case class", "2.0.1")
   def productArity = 1
+
   @deprecated("FromConfig does not make sense as case class", "2.0.1")
   def productElement(x: Int) = x match {
     case 0 ⇒ routerDispatcher
     case _ ⇒ throw new IndexOutOfBoundsException(x.toString)
   }
+
   @deprecated("FromConfig does not make sense as case class", "2.0.1")
   def copy(d: String = Dispatchers.DefaultDispatcherId): FromConfig = new FromConfig(d)
+
   @deprecated("FromConfig does not make sense as case class", "2.0.1")
   def canEqual(o: Any) = o.isInstanceOf[FromConfig]
+
   @deprecated("FromConfig does not make sense as case class", "2.0.1")
   override def hashCode = ScalaRunTime._hashCode(this)
+
   @deprecated("FromConfig does not make sense as case class", "2.0.1")
   override def toString = "FromConfig(" + routerDispatcher + ")"
+
   @deprecated("FromConfig does not make sense as case class", "2.0.1")
   override def equals(other: Any): Boolean = other match {
     case FromConfig(x) ⇒ x == routerDispatcher
