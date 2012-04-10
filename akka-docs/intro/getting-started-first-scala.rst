@@ -106,7 +106,7 @@ To build and run the tutorial sample from the command line, you have to download
 Akka. If you prefer to use SBT to build and run the sample then you can skip this
 section and jump to the next one.
 
-Let's get the ``akka-2.0.1-SNAPSHOT.zip`` distribution of Akka from
+Let's get the ``akka-2.0.1-RC1.zip`` distribution of Akka from
 http://akka.io/downloads/ which includes everything we need for this
 tutorial. Once you have downloaded the distribution unzip it in the folder you
 would like to have Akka installed in. In my case I choose to install it in
@@ -119,17 +119,17 @@ I'm opening up a shell, navigating down to the distribution, and setting the
 
 On Linux/Unix/Mac systems::
 
-    $ cd /Users/jboner/tools/akka-2.0.1-SNAPSHOT
+    $ cd /Users/jboner/tools/akka-2.0.1-RC1
     $ export AKKA_HOME=`pwd`
     $ echo $AKKA_HOME
-    /Users/jboner/tools/akka-2.0.1-SNAPSHOT
+    /Users/jboner/tools/akka-2.0.1-RC1
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka> cd akka-2.0.1-SNAPSHOT
-    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> set AKKA_HOME=%cd%
-    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> echo %AKKA_HOME%
-    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT
+    C:\Users\jboner\src\akka> cd akka-2.0.1-RC1
+    C:\Users\jboner\src\akka\akka-2.0.1-RC1> set AKKA_HOME=%cd%
+    C:\Users\jboner\src\akka\akka-2.0.1-RC1> echo %AKKA_HOME%
+    C:\Users\jboner\src\akka\akka-2.0.1-RC1
 
 The distribution looks like this.
 
@@ -145,7 +145,7 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> dir
+    C:\Users\jboner\src\akka\akka-2.0.1-RC1> dir
     bin
     config
     deploy
@@ -161,7 +161,7 @@ On Windows systems::
 - In the ``src`` directory we have the source JARs for Akka.
 
 The only JAR we will need for this tutorial (apart from the
-``scala-library.jar`` JAR) is the ``akka-actor-2.0.1-SNAPSHOT.jar`` JAR in the ``lib/akka``
+``scala-library.jar`` JAR) is the ``akka-actor-2.0.1-RC1.jar`` JAR in the ``lib/akka``
 directory. This is a self-contained JAR with zero dependencies and contains
 everything we need to write a system using Actors.
 
@@ -182,10 +182,10 @@ modules are:
 
 - ``akka-amqp`` -- AMQP integration
 
-.. - ``akka-stm-2.0.1-SNAPSHOT.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-.. - ``akka-camel-2.0.1-SNAPSHOT.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-.. - ``akka-camel-typed-2.0.1-SNAPSHOT.jar`` -- Apache Camel Typed Actors integration
-.. - ``akka-spring-2.0.1-SNAPSHOT.jar`` -- Spring framework integration
+.. - ``akka-stm-2.0.1-RC1.jar`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+.. - ``akka-camel-2.0.1-RC1.jar`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+.. - ``akka-camel-typed-2.0.1-RC1.jar`` -- Apache Camel Typed Actors integration
+.. - ``akka-spring-2.0.1-RC1.jar`` -- Spring framework integration
 
 
 Downloading and installing Scala
@@ -209,7 +209,7 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> set PATH=%PATH%;scala-2.9.1\bin
+    C:\Users\jboner\src\akka\akka-2.0.1-RC1> set PATH=%PATH%;scala-2.9.1\bin
 
 You can test your installation by invoking scala.
 
@@ -220,7 +220,7 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> scala -version
+    C:\Users\jboner\src\akka\akka-2.0.1-RC1> scala -version
     Scala code runner version 2.9.1.final -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for
@@ -267,7 +267,7 @@ in the directory you want to create your project in::
 
     resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0.1-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0.1-RC1"
 
 Create a directory ``src/main/scala`` in which you will store the Scala source
 files.
@@ -277,14 +277,14 @@ modules beyond ``akka-actor``, you can add these as ``libraryDependencies`` in
 ``build.sbt``. Note that there must be a blank line between each. Here is an
 example adding ``akka-remote``::
 
-    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0.1-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0.1-RC1"
 
-    libraryDependencies += "com.typesafe.akka" % "akka-remote" % "2.0.1-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-remote" % "2.0.1-RC1"
 
 So, now we are all set.
 
 SBT itself needs a whole bunch of dependencies but our project will only need
-one; ``akka-actor-2.0.1-SNAPSHOT.jar``. SBT will download that as well.
+one; ``akka-actor-2.0.1-RC1.jar``. SBT will download that as well.
 
 
 Start writing the code
@@ -454,27 +454,27 @@ If you have not typed in (or copied) the code for the tutorial as in
 When that's done open up a shell and step in to the Akka distribution (``cd $AKKA_HOME``).
 
 First we need to compile the source file. That is done with Scala's compiler
-``scalac``. Our application depends on the ``akka-actor-2.0.1-SNAPSHOT.jar`` JAR
+``scalac``. Our application depends on the ``akka-actor-2.0.1-RC1.jar`` JAR
 file, so let's add that to the compiler classpath when we compile the source.
 
 On Linux/Unix/Mac systems::
 
-    $ scalac -cp lib/akka/akka-actor-2.0.1-SNAPSHOT.jar Pi.scala
+    $ scalac -cp lib/akka/akka-actor-2.0.1-RC1.jar Pi.scala
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> scalac -cp lib\akka\akka-actor-2.0.1-SNAPSHOT.jar Pi.scala
+    C:\Users\jboner\src\akka\akka-2.0.1-RC1> scalac -cp lib\akka\akka-actor-2.0.1-RC1.jar Pi.scala
 
 When we have compiled the source file we are ready to run the application. This
 is done with ``java`` but yet again we need to add the
-``akka-actor-2.0.1-SNAPSHOT.jar`` JAR file to the classpath, and this time we also
+``akka-actor-2.0.1-RC1.jar`` JAR file to the classpath, and this time we also
 need to add the Scala runtime library ``scala-library.jar`` and the classes we
 compiled ourselves.
 
 On Linux/Unix/Mac systems::
 
     $ java \
-        -cp lib/scala-library.jar:lib/akka/akka-actor-2.0.1-SNAPSHOT.jar:. \
+        -cp lib/scala-library.jar:lib/akka/akka-actor-2.0.1-RC1.jar:. \
         akka.tutorial.first.scala.Pi
 
     Pi approximation:   3.1415926435897883
@@ -482,8 +482,8 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> java \
-        -cp lib/scala-library.jar;lib\akka\akka-actor-2.0.1-SNAPSHOT.jar;. \
+    C:\Users\jboner\src\akka\akka-2.0.1-RC1> java \
+        -cp lib/scala-library.jar;lib\akka\akka-actor-2.0.1-RC1.jar;. \
         akka.tutorial.first.scala.Pi
 
     Pi approximation:   3.1415926435897883
@@ -505,7 +505,7 @@ On Linux/Unix/Mac systems::
 
 On Windows systems::
 
-    C:\Users\jboner\src\akka\akka-2.0.1-SNAPSHOT> sbt
+    C:\Users\jboner\src\akka\akka-2.0.1-RC1> sbt
     > compile
     ...
 
