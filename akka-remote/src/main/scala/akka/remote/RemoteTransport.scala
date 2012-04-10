@@ -5,13 +5,12 @@
 package akka.remote
 
 import scala.reflect.BeanProperty
-import akka.actor.{ Terminated, LocalRef, InternalActorRef, AutoReceivedMessage, AddressFromURIString, Address, ActorSystemImpl, ActorSystem, ActorRef }
 import akka.dispatch.SystemMessage
 import akka.event.{ LoggingAdapter, Logging }
 import akka.AkkaException
 import akka.serialization.Serialization
 import akka.remote.RemoteProtocol._
-import akka.dispatch.ChildTerminated
+import akka.actor._
 
 /**
  * Remote life-cycle events.
@@ -32,6 +31,7 @@ case class RemoteClientError(
   @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.ErrorLevel
+
   override def toString =
     "RemoteClientError@" + remoteAddress + ": Error[" + cause + "]"
 }
@@ -40,6 +40,7 @@ case class RemoteClientDisconnected(
   @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
+
   override def toString =
     "RemoteClientDisconnected@" + remoteAddress
 }
@@ -48,6 +49,7 @@ case class RemoteClientConnected(
   @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
+
   override def toString =
     "RemoteClientConnected@" + remoteAddress
 }
@@ -56,6 +58,7 @@ case class RemoteClientStarted(
   @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.InfoLevel
+
   override def toString =
     "RemoteClientStarted@" + remoteAddress
 }
@@ -64,6 +67,7 @@ case class RemoteClientShutdown(
   @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.InfoLevel
+
   override def toString =
     "RemoteClientShutdown@" + remoteAddress
 }
@@ -74,6 +78,7 @@ case class RemoteClientWriteFailed(
   @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel = Logging.WarningLevel
+
   override def toString =
     "RemoteClientWriteFailed@" + remoteAddress +
       ": MessageClass[" + (if (request ne null) request.getClass.getName else "no message") +
@@ -88,6 +93,7 @@ trait RemoteServerLifeCycleEvent extends RemoteLifeCycleEvent
 case class RemoteServerStarted(
   @transient @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.InfoLevel
+
   override def toString =
     "RemoteServerStarted@" + remote
 }
@@ -95,6 +101,7 @@ case class RemoteServerStarted(
 case class RemoteServerShutdown(
   @transient @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.InfoLevel
+
   override def toString =
     "RemoteServerShutdown@" + remote
 }
@@ -103,6 +110,7 @@ case class RemoteServerError(
   @BeanProperty val cause: Throwable,
   @transient @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.ErrorLevel
+
   override def toString =
     "RemoteServerError@" + remote + "] Error[" + cause + "]"
 }
@@ -111,6 +119,7 @@ case class RemoteServerClientConnected(
   @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty val clientAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
+
   override def toString =
     "RemoteServerClientConnected@" + remote +
       ": Client[" + clientAddress.getOrElse("no address") + "]"
@@ -120,6 +129,7 @@ case class RemoteServerClientDisconnected(
   @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty val clientAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
+
   override def toString =
     "RemoteServerClientDisconnected@" + remote +
       ": Client[" + clientAddress.getOrElse("no address") + "]"
@@ -129,6 +139,7 @@ case class RemoteServerClientClosed(
   @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty val clientAddress: Option[Address]) extends RemoteServerLifeCycleEvent {
   override def logLevel = Logging.DebugLevel
+
   override def toString =
     "RemoteServerClientClosed@" + remote +
       ": Client[" + clientAddress.getOrElse("no address") + "]"
@@ -183,7 +194,7 @@ abstract class RemoteTransport {
    */
   def restartClientConnection(address: Address): Boolean
 
-  /** Methods that needs to be implemented by a transport **/
+  /**Methods that needs to be implemented by a transport **/
 
   def send(message: Any,
            senderOption: Option[ActorRef],
@@ -288,9 +299,19 @@ trait RemoteMarshallingOps {
           case AddressFromURIString(address) if address == provider.transport.address ⇒
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
+          case ActorPathExtractor(natAddress, elements) if natAddress.system == system.name ⇒
+            if (allow(natAddress)) system.actorFor(elements).tell(remoteMessage.payload, remoteMessage.sender)
+            else log.error("Firewall: dropping message {} for non-local recipient {} at {} local is {}", remoteMessage.payload, r, address, provider.transport.address)
           case r ⇒ log.error("dropping message {} for non-local recipient {} at {} local is {}", remoteMessage.payload, r, address, provider.transport.address)
         }
       case r ⇒ log.error("dropping message {} for non-local recipient {} of type {}", remoteMessage.payload, r, if (r ne null) r.getClass else "null")
     }
+  }
+
+  def allow(natAddress: Address): Boolean = {
+    val settings = provider.remoteSettings //have to do this to do the import or else err "stable identifier required"
+    import settings.PublicAddresses
+    if (natAddress.host.isEmpty || natAddress.port.isEmpty) false //Partial addresses are never OK
+    else PublicAddresses.nonEmpty && PublicAddresses.contains(natAddress.host.get + ":" + natAddress.port.get)
   }
 }
