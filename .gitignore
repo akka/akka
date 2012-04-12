@@ -26,6 +26,7 @@ logs
 storage
 .codefellow
 .ensime
+.ensime_port
 _dump
 .manager
 manifest.mf
