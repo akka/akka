@@ -80,7 +80,7 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
         system1.shutdown()
 
         // user marks node1 as DOWN
-        node2.scheduleNodeDown(address1)
+        node2.down(address1)
 
         println("Give the system time to converge...")
         Thread.sleep(10.seconds.dilated.toMillis)
@@ -98,7 +98,7 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
         system2.shutdown()
 
         // user marks node2 as DOWN
-        node3.scheduleNodeDown(address2)
+        node3.down(address2)
 
         println("Give the system time to converge...")
         Thread.sleep(10.seconds.dilated.toMillis)

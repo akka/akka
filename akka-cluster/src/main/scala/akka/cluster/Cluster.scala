@@ -490,30 +490,34 @@ class Cluster(system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * Send command to JOIN one node to another.
+   * Try to join this cluster node with the node specified by 'address'.
+   * A 'Join(thisNodeAddress)'' command is sent to the node to join.
    */
-  def scheduleNodeJoin(address: Address) {
-    clusterCommandDaemon ! ClusterAction.Join(address)
+  def join(address: Address) {
+    val connection = clusterCommandConnectionFor(address)
+    val command = ClusterAction.Join(remoteAddress)
+    log.info("Cluster Node [{}] - Trying to send JOIN to [{}] through connection [{}]", remoteAddress, address, connection)
+    connection ! command
   }
 
   /**
-   * Send command to issue state transition to LEAVING.
+   * Send command to issue state transition to LEAVING for the node specified by 'address'.
    */
-  def scheduleNodeLeave(address: Address) {
+  def leave(address: Address) {
     clusterCommandDaemon ! ClusterAction.Leave(address)
   }
 
   /**
-   * Send command to issue state transition to EXITING.
+   * Send command to issue state transition to from DOWN to EXITING for the node specified by 'address'.
    */
-  def scheduleNodeDown(address: Address) {
+  def down(address: Address) {
     clusterCommandDaemon ! ClusterAction.Down(address)
   }
 
   /**
-   * Send command to issue state transition to REMOVED.
+   * Send command to issue state transition to REMOVED for the node specified by 'address'.
    */
-  def scheduleNodeRemove(address: Address) {
+  def remove(address: Address) {
     clusterCommandDaemon ! ClusterAction.Remove(address)
   }
 
