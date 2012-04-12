@@ -297,9 +297,7 @@ final class ClusterDaemonSupervisor extends Actor {
  * Cluster Extension Id and factory for creating Cluster extension.
  * Example:
  * {{{
- *  val cluster = Cluster(system)
- *
- *  if (cluster.isLeader) { ... }
+ *  if (Cluster(system).isLeader) { ... }
  * }}}
  */
 object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
@@ -327,9 +325,7 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
  *
  * Example:
  * {{{
- *  val cluster = Cluster(system)
- *
- *  if (cluster.isLeader) { ... }
+ *  if (Cluster(system).isLeader) { ... }
  * }}}
  */
 class Cluster(system: ExtendedActorSystem) extends Extension {
