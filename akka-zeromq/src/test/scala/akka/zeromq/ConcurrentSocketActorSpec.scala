@@ -32,7 +32,8 @@ class ConcurrentSocketActorSpec extends AkkaSpec with DefaultTimeout {
 
   val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
 
-  val zmq = ZeroMQExtension(system)
+  // this must stay a def for checkZeroMQInstallation to work correctly
+  def zmq = ZeroMQExtension(system)
 
   "ConcurrentSocketActor" should {
     "support pub-sub connections" in {
