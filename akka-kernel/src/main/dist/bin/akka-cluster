@@ -1,0 +1,205 @@
+#!/bin/bash
+
+# FIXME allow passing in a hostname:port to override default
+# FIXME leader should return the current leader - not boolean
+
+DEFAULT_HOST="localhost:9999"
+SCRIPT=`basename $0`
+JMX_CLIENT="java -jar $AKKA_HOME/jmx/cmdline-jmxclient-0.10.3.jar - $DEFAULT_HOST akka:type=Cluster"
+
+# Check the first argument for instructions
+case "$1" in
+    join)
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SCRIPT join <node>"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT join=$@
+        ;;
+
+    leave)
+        if [ $# -ne 1 ]; then
+            echo "Usage: $SCRIPT leave"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT leave=$@
+        ;;
+
+    remove)
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SCRIPT remove <node>"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT remove=$@
+        ;;
+
+    down)
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SCRIPT down <node>"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT down=$@
+        ;;
+
+    member-status)
+        if [ $# -ne 1 ]; then
+            echo "Usage: $SCRIPT member-status"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT MemberStatus
+        ;;
+
+    cluster-status)
+        if [ $# -ne 1 ]; then
+            echo "Usage: $SCRIPT cluster-status"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT ClusterStatus
+        ;;
+
+    ping)
+        if [ $# -ne 1 ]; then
+            echo "Usage: $SCRIPT ping"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT ping
+        ;;
+
+    leader)
+        if [ $# -ne 1 ]; then
+            echo "Usage: $SCRIPT leader"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT Leader
+        ;;
+
+    is-singleton)
+        if [ $# -ne 1 ]; then
+            echo "Usage: $SCRIPT is-singleton"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT Singleton
+        ;;
+
+    has-convergence)
+        if [ $# -ne 1 ]; then
+            echo "Usage: $SCRIPT is-convergence"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT Convergence
+        ;;
+
+    is-available)
+        if [ $# -ne 1 ]; then
+            echo "Usage: $SCRIPT is-available"
+            exit 1
+        fi
+
+        # Make sure the local node IS running
+        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
+        if [[ "$REPLY" != *pong* ]]; then
+            echo "Akka cluster node is not running"
+            exit 1
+        fi
+
+        shift
+        $JMX_CLIENT Available
+        ;;
+
+    *)
+        echo "Usage: $SCRIPT { ping | join | leave | remove | down"
+        echo "                      member-status | cluster-status | leader"
+        echo "                      is-singleton | has-convergence | is-available }"
+        exit 1
+        ;;
+esac
