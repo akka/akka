@@ -1,0 +1,23 @@
+language: scala
+
+# Override Travis CI default 'script' and 'scala' values for following reasons:
+#  - Each branch will dynamically builds against Scala version required in project/AkkaBuild.scala
+#  - Add extra option to sbt (-XX:ReservedCodeCacheSize=64M) to prevent memory troubles during build
+#  - Run the tests in parallel, as described in http://doc.akka.io/docs/akka/snapshot/dev/building-akka.html
+
+scala: "'version defined in project/AkkaBuild.scala'"
+script: "$CUSTOM_SBT compile && $CUSTOM_SBT -Dakka.parallelExecution=true test"
+
+env:
+  - CUSTOM_SBT="java -Xms256M -Xmx512M -Xss1M -XX:ReservedCodeCacheSize=64M -XX:+CMSClassUnloadingEnabled -XX:PermSize=256M -XX:MaxPermSize=512M -jar /usr/lib/sbt-0.11.2/sbt-launch.jar"
+
+branches:
+  only:
+    - master
+    - /^release-2\..+$/
+
+notifications:
+  # Email notifications are disabled to not annoy anybody.
+  # See http://about.travis-ci.org/docs/user/build-configuration/ to learn more
+  # about configuring notification recipients and more (e.g. IRC notifications).
+  email: false
