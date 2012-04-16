@@ -44,8 +44,10 @@ class ClusterMBeanSpec extends ClusterSpec("akka.loglevel = DEBUG") with Implici
       val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
       node0 = Cluster(system0)
 
-      "be able to communicate over JMX through its ClusterMBean" in { //taggedAs LongRunningTest in {
-        Thread.sleep(120.seconds.dilated.toMillis)
+      "be able to communicate over JMX through its ClusterMBean" taggedAs LongRunningTest in {
+        Thread.sleep(60.seconds.dilated.toMillis)
+
+        // FIXME test JMX API
       }
     }
   } catch {

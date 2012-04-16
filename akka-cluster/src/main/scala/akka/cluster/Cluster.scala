@@ -500,7 +500,11 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
       failureDetectorReaperCanceller.cancel()
       leaderActionsCanceller.cancel()
       system.stop(clusterDaemons)
-      mBeanServer.unregisterMBean(clusterMBeanName)
+      try {
+        mBeanServer.unregisterMBean(clusterMBeanName)
+      } catch {
+        case e: InstanceNotFoundException ⇒ // ignore - we are running multiple cluster nodes in the same JVM (probably for testing)
+      }
     }
   }
 
@@ -1050,24 +1054,55 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
     val mbean = new StandardMBean(classOf[ClusterNodeMBean]) with ClusterNodeMBean {
 
       // JMX attributes (bean-style)
+
+      /*
+       * Sends a string to the JMX client that will list all nodes in the node ring as follows:
+       * {{{
+       * Members:
+       *         Member(address = akka://system0@localhost:5550, status = Up)
+       *         Member(address = akka://system1@localhost:5551, status = Up)
+       * Unreachable:
+       *         Member(address = akka://system2@localhost:5553, status = Down)
+       * }}}
+       */
+      def getClusterStatus: String = {
+        val gossip = clusterNode.latestGossip
+        val unreachable = gossip.overview.unreachable
+        val metaData = gossip.meta
+        "\nMembers:\n\t" + gossip.members.mkString("\n\t") +
+          { if (!unreachable.isEmpty) "\nUnreachable:\n\t" + unreachable.mkString("\n\t") else "" } +
+          { if (!metaData.isEmpty) "\nMeta Data:\t" + metaData.toString else "" }
+      }
+
       def getMemberStatus: String = clusterNode.status.toString
-      // FIXME clean up: Gossip(overview = GossipOverview(seen = [], unreachable = []), members = [Member(address = akka://system0@localhost:5550, status = Joining)], meta = [], version = VectorClock(Node(df2691d6cc6779dc2555316f557b5fa4) -> 00000136b164746d))
-      def getClusterStatus: String = clusterNode.latestGossip.toString
+
       def getLeader: String = clusterNode.leader.toString
 
       def isSingleton: Boolean = clusterNode.isSingletonCluster
+
       def isConvergence: Boolean = clusterNode.convergence.isDefined
+
       def isAvailable: Boolean = clusterNode.isAvailable
 
       // JMX commands
+
       def ping(): String = clusterNode.ping
+
       def join(address: String) = clusterNode.join(AddressFromURIString(address))
+
       def leave(address: String) = clusterNode.leave(AddressFromURIString(address))
+
       def down(address: String) = clusterNode.down(AddressFromURIString(address))
+
       def remove(address: String) = clusterNode.remove(AddressFromURIString(address))
+
       def shutdown() = clusterNode.shutdown()
     }
     log.info("Cluster Node [{}] - registering cluster JMX MBean [{}]", remoteAddress, clusterMBeanName)
-    mBeanServer.registerMBean(mbean, clusterMBeanName)
+    try {
+      mBeanServer.registerMBean(mbean, clusterMBeanName)
+    } catch {
+      case e: InstanceAlreadyExistsException ⇒ // ignore - we are running multiple cluster nodes in the same JVM (probably for testing)
+    }
   }
 }
