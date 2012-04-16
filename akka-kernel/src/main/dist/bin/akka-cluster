@@ -1,205 +1,176 @@
 #!/bin/bash
 
-# FIXME allow passing in a hostname:port to override default
-# FIXME leader should return the current leader - not boolean
+# FIXME support authentication?
 
-DEFAULT_HOST="localhost:9999"
-SCRIPT=`basename $0`
-JMX_CLIENT="java -jar $AKKA_HOME/jmx/cmdline-jmxclient-0.10.3.jar - $DEFAULT_HOST akka:type=Cluster"
+JMX_CLIENT="java -jar $AKKA_HOME/lib/cmdline-jmxclient-0.10.3.jar -"
 
-# Check the first argument for instructions
-case "$1" in
-    join)
+SELF=`basename $0` # script name
+HOST=$1            # cluster node:port to talk to through JMX
+
+function checkNodeIsRunning {
+    REPLY=$($JMX_CLIENT $HOST akka:type=Cluster ping 2>&1 >/dev/null) # redirects STDERR to STDOUT before capturing it
+    if [[ "$REPLY" != *pong* ]]; then
+        echo "Akka cluster node is not running on $HOST"
+        exit 1
+    fi
+}
+
+case "$2" in
+
+    ping)
         if [ $# -ne 2 ]; then
-            echo "Usage: $SCRIPT join <node>"
+            echo "Usage: $SELF <node-hostname:jmx-port> ping"
             exit 1
         fi
 
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
+        checkNodeIsRunning
         shift
-        $JMX_CLIENT join=$@
+
+        echo "Pinging $HOST"
+        $JMX_CLIENT $HOST akka:type=Cluster ping
+        ;;
+
+    join)
+        if [ $# -ne 3 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> join <actor-system-url-to-join>"
+            exit 1
+        fi
+
+        checkNodeIsRunning
+        shift
+
+        ACTOR_SYSTEM_URL=$2
+        echo "$HOST is JOINING cluster node $ACTOR_SYSTEM_URL"
+        $JMX_CLIENT $HOST akka:type=Cluster join=$ACTOR_SYSTEM_URL
         ;;
 
     leave)
-        if [ $# -ne 1 ]; then
-            echo "Usage: $SCRIPT leave"
+        if [ $# -ne 3 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> leave <actor-system-url-to-join>"
             exit 1
         fi
 
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
+        checkNodeIsRunning
         shift
-        $JMX_CLIENT leave=$@
+
+        ACTOR_SYSTEM_URL=$2
+        echo "Scheduling $ACTOR_SYSTEM_URL to LEAVE cluster"
+        $JMX_CLIENT $HOST akka:type=Cluster leave=$ACTOR_SYSTEM_URL
         ;;
 
     remove)
-        if [ $# -ne 2 ]; then
-            echo "Usage: $SCRIPT remove <node>"
+        if [ $# -ne 3 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> remove <actor-system-url-to-join>"
             exit 1
         fi
 
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
+        checkNodeIsRunning
         shift
-        $JMX_CLIENT remove=$@
+
+        ACTOR_SYSTEM_URL=$2
+        echo "Scheduling $ACTOR_SYSTEM_URL to REMOVE"
+        $JMX_CLIENT $HOST akka:type=Cluster remove=$ACTOR_SYSTEM_URL
         ;;
 
     down)
-        if [ $# -ne 2 ]; then
-            echo "Usage: $SCRIPT down <node>"
+        if [ $# -ne 3 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> down <actor-system-url-to-join>"
             exit 1
         fi
 
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
+        checkNodeIsRunning
         shift
-        $JMX_CLIENT down=$@
+
+        ACTOR_SYSTEM_URL=$2
+        echo "Marking $ACTOR_SYSTEM_URL as DOWN"
+        $JMX_CLIENT $HOST akka:type=Cluster down=$ACTOR_SYSTEM_URL
         ;;
 
     member-status)
-        if [ $# -ne 1 ]; then
-            echo "Usage: $SCRIPT member-status"
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> member-status"
             exit 1
         fi
 
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
+        checkNodeIsRunning
         shift
-        $JMX_CLIENT MemberStatus
+
+        echo "Querying member status for $HOST"
+        $JMX_CLIENT $HOST akka:type=Cluster MemberStatus
         ;;
 
     cluster-status)
-        if [ $# -ne 1 ]; then
-            echo "Usage: $SCRIPT cluster-status"
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> cluster-status"
             exit 1
         fi
 
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
+        checkNodeIsRunning
         shift
-        $JMX_CLIENT ClusterStatus
-        ;;
 
-    ping)
-        if [ $# -ne 1 ]; then
-            echo "Usage: $SCRIPT ping"
-            exit 1
-        fi
-
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
-        shift
-        $JMX_CLIENT ping
+        echo "Querying cluster status"
+        $JMX_CLIENT $HOST akka:type=Cluster ClusterStatus
         ;;
 
     leader)
-        if [ $# -ne 1 ]; then
-            echo "Usage: $SCRIPT leader"
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> leader"
             exit 1
         fi
 
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
+        checkNodeIsRunning
         shift
-        $JMX_CLIENT Leader
+
+        echo "Checking leader status"
+        $JMX_CLIENT $HOST akka:type=Cluster Leader
         ;;
 
     is-singleton)
-        if [ $# -ne 1 ]; then
-            echo "Usage: $SCRIPT is-singleton"
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> is-singleton"
             exit 1
         fi
 
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
+        checkNodeIsRunning
         shift
-        $JMX_CLIENT Singleton
+
+        echo "Checking for singleton cluster"
+        $JMX_CLIENT $HOST akka:type=Cluster Singleton
         ;;
 
     has-convergence)
-        if [ $# -ne 1 ]; then
-            echo "Usage: $SCRIPT is-convergence"
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> is-convergence"
             exit 1
         fi
 
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
+        checkNodeIsRunning
         shift
-        $JMX_CLIENT Convergence
+
+        echo "Checking for cluster convergence"
+        $JMX_CLIENT $HOST akka:type=Cluster Convergence
         ;;
 
     is-available)
-        if [ $# -ne 1 ]; then
-            echo "Usage: $SCRIPT is-available"
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> is-available"
             exit 1
         fi
 
-        # Make sure the local node IS running
-        REPLY=$($JMX_CLIENT ping 2>&1 >/dev/null) # redirect STDERR to STDOUT before capturing it
-        if [[ "$REPLY" != *pong* ]]; then
-            echo "Akka cluster node is not running"
-            exit 1
-        fi
-
+        checkNodeIsRunning
         shift
-        $JMX_CLIENT Available
+
+        echo "Checking if $ACTOR_SYSTEM_URL is AVAILABLE"
+        $JMX_CLIENT $HOST akka:type=Cluster Available
         ;;
 
     *)
-        echo "Usage: $SCRIPT { ping | join | leave | remove | down"
-        echo "                      member-status | cluster-status | leader"
-        echo "                      is-singleton | has-convergence | is-available }"
+        echo "Usage: $SELF <node-hostname:jmx-port> { ping | join | leave | remove | down"
+        echo "                                      member-status | cluster-status | leader"
+        echo "                                      is-singleton | has-convergence | is-available }"
+        echo "Examples: $SELF localhost:9999 ping"
+        echo "          $SELF localhost:9999 join akka://service0@localhost:5550"
+        echo "          $SELF localhost:9999 cluster-status"
         exit 1
         ;;
 esac

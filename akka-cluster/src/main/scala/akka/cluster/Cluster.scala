@@ -317,8 +317,8 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
 trait ClusterNodeMBean {
   def getMemberStatus: String
   def getClusterStatus: String
+  def getLeader: String
 
-  def isLeader: Boolean
   def isSingleton: Boolean
   def isConvergence: Boolean
   def isAvailable: Boolean
@@ -448,7 +448,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
 
   def self: Member = latestGossip.members
     .find(_.address == remoteAddress)
-    .getOrElse(throw new IllegalStateException("Can't find 'this' Member in the cluster membership ring"))
+    .getOrElse(throw new IllegalStateException("Can't find 'this' Member (" + remoteAddress + ") in the cluster membership ring"))
 
   /**
    * Latest gossip.
@@ -467,6 +467,11 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
     val members = latestGossip.members
     !members.isEmpty && (remoteAddress == members.head.address)
   }
+
+  /**
+   * Get the address of the current leader.
+   */
+  def leader: Address = latestGossip.members.head.address
 
   /**
    * Is this node a singleton cluster?
@@ -523,7 +528,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
 
   /**
    * Try to join this cluster node with the node specified by 'address'.
-   * A 'Join(thisNodeAddress)'' command is sent to the node to join.
+   * A 'Join(thisNodeAddress)' command is sent to the node to join.
    */
   def join(address: Address) {
     val connection = clusterCommandConnectionFor(address)
@@ -1043,19 +1048,19 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
    */
   private def createMBean() = {
     val mbean = new StandardMBean(classOf[ClusterNodeMBean]) with ClusterNodeMBean {
-      def getMemberStatus: String = clusterNode.status.toString
 
+      // JMX attributes (bean-style)
+      def getMemberStatus: String = clusterNode.status.toString
       // FIXME clean up: Gossip(overview = GossipOverview(seen = [], unreachable = []), members = [Member(address = akka://system0@localhost:5550, status = Joining)], meta = [], version = VectorClock(Node(df2691d6cc6779dc2555316f557b5fa4) -> 00000136b164746d))
       def getClusterStatus: String = clusterNode.latestGossip.toString
+      def getLeader: String = clusterNode.leader.toString
 
-      def isLeader: Boolean = clusterNode.isLeader
       def isSingleton: Boolean = clusterNode.isSingletonCluster
       def isConvergence: Boolean = clusterNode.convergence.isDefined
       def isAvailable: Boolean = clusterNode.isAvailable
 
+      // JMX commands
       def ping(): String = clusterNode.ping
-
-      // FIXME return error message if failure
       def join(address: String) = clusterNode.join(AddressFromURIString(address))
       def leave(address: String) = clusterNode.leave(AddressFromURIString(address))
       def down(address: String) = clusterNode.down(AddressFromURIString(address))
