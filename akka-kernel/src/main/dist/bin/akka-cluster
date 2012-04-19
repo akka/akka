@@ -22,13 +22,7 @@ function checkNodeIsRunning {
     fi
 }
 
-# Help page is triggered by either: help, -help or --help
-if [[ $1 == *help* ]]; then
-    echo "Welcome to Akka Cluster Administration Tool"
-    echo " --- TODO: Write up a help page ---"
-    exit 0
-fi
-
+# switch on command
 case "$2" in
 
     ping)
@@ -179,12 +173,25 @@ case "$2" in
         ;;
 
     *)
-        echo "Usage: $SELF <node-hostname:jmx-port> { ping | join | leave | remove | down"
-        echo "                                               member-status | cluster-status | leader"
-        echo "                                               is-singleton | has-convergence | is-available }"
-        echo "Examples: $SELF localhost:9999 ping"
-        echo "          $SELF localhost:9999 join akka://service0@localhost:5550"
-        echo "          $SELF localhost:9999 cluster-status"
+        printf "Usage: $SELF <node-hostname:jmx-port> <command> ...\n"
+        printf "\n"
+        printf "Supported commands are:\n"
+        printf "%26s - %s\n" ping                        "Sends a PING command to the node to see if it is up and available"
+        printf "%26s - %s\n" "join <actor-system-url>"   "Sends request a JOIN node with the specified URL"
+        printf "%26s - %s\n" "leave <actor-system-url>"  "Sends a request for node with URL to LEAVE the cluster"
+        printf "%26s - %s\n" "remove <actor-system-url>" "Sends a request for node with URL to be instantly REMOVED from the cluster"
+        printf "%26s - %s\n" "down <actor-system-url>"   "Sends a request for marking node with URL as DOWN"
+        printf "%26s - %s\n" member-status               "Asks the member node for its current status"
+        printf "%26s - %s\n" cluster-status              "Asks the cluster for its current status (member ring, unavailable nodes, meta data etc.)"
+        printf "%26s - %s\n" leader                      "Asks the cluster who the current leader is"
+        printf "%26s - %s\n" is-singleton                "Checks if the cluster is a singleton cluster (single node cluster)"
+        printf "%26s - %s\n" is-available                "Checks if the member node is available"
+        printf "%26s - %s\n" has-convergence             "Checks if there is a cluster convergence"
+        printf "Where the <actor-system-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
+        printf "\n"
+        printf "Examples: $SELF localhost:9999 ping\n"
+        printf "          $SELF localhost:9999 join akka://MySystem@darkstar:2552\n"
+        printf "          $SELF localhost:9999 cluster-status\n"
         exit 1
         ;;
 esac
