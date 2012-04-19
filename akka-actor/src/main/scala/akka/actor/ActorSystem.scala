@@ -200,7 +200,7 @@ object ActorSystem {
  *
  * Where no name is given explicitly, one will be automatically generated.
  *
- * <b><i>Important Notice:</i></o>
+ * <b><i>Important Notice:</i></b>
  *
  * This class is not meant to be extended by user code. If you want to
  * actually roll your own Akka, it will probably be better to look into
@@ -376,7 +376,7 @@ abstract class ActorSystem extends ActorRefFactory {
 /**
  * More powerful interface to the actor system’s implementation which is presented to extensions (see [[akka.actor.Extension]]).
  *
- * <b><i>Important Notice:</i></o>
+ * <b><i>Important Notice:</i></b>
  *
  * This class is not meant to be extended by user code. If you want to
  * actually roll your own Akka, beware that you are completely on your own in
