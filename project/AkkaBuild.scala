@@ -430,7 +430,7 @@ object Dependencies {
 
   val actorTests = Seq(
     Test.junit, Test.scalatest, Test.commonsMath, Test.mockito,
-    Test.scalacheck, protobuf, jacksonMapper
+    Test.scalacheck, protobuf
   )
 
   val remote = Seq(
@@ -494,8 +494,6 @@ object Dependency {
 
   object V {
     val Camel        = "2.8.0"
-    val Jackson      = "1.8.0"
-    val Jetty        = "7.4.0.v20110414"
     val Logback      = "0.9.28"
     val Netty        = "3.3.0.Final"
     val Protobuf     = "2.4.1"
@@ -510,22 +508,13 @@ object Dependency {
   // Compile
 
   val beanstalk     = "beanstalk"                   % "beanstalk_client"       % "1.4.5"      // New BSD
-  val bookkeeper    = "org.apache.hadoop.zookeeper" % "bookkeeper"             % V.Zookeeper  // ApacheV2
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
   val camelSpring   = "org.apache.camel"            % "camel-spring"           % V.Camel      // ApacheV2
   val commonsCodec  = "commons-codec"               % "commons-codec"          % "1.4"        // ApacheV2
   val commonsIo     = "commons-io"                  % "commons-io"             % "2.0.1"      // ApacheV2
   val commonsPool   = "commons-pool"                % "commons-pool"           % "1.5.6"      // ApacheV2
-  val guice         = "org.guiceyfruit"             % "guice-all"              % "2.0"        // ApacheV2
-  val jacksonCore   = "org.codehaus.jackson"        % "jackson-core-asl"       % V.Jackson    // ApacheV2
-  val jacksonMapper = "org.codehaus.jackson"        % "jackson-mapper-asl"     % V.Jackson    // ApacheV2
-  val jettyUtil     = "org.eclipse.jetty"           % "jetty-util"             % V.Jetty      // Eclipse license
-  val jettyXml      = "org.eclipse.jetty"           % "jetty-xml"              % V.Jetty      // Eclipse license
-  val jettyServlet  = "org.eclipse.jetty"           % "jetty-servlet"          % V.Jetty      // Eclipse license
-  val log4j         = "log4j"                       % "log4j"                  % "1.2.14"     // ApacheV2
   val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.9-1"    // ApacheV2
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
-  val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
   val rabbit        = "com.rabbitmq"                % "amqp-client"            % V.Rabbit     // Mozilla Public License
   val redis         = "net.debasishg"               % "redisclient_2.9.1"      % "2.4.0"      // ApacheV2
@@ -533,19 +522,11 @@ object Dependency {
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
   val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
-  val staxApi       = "javax.xml.stream"            % "stax-api"               % "1.0-2"      // ApacheV2
   val twttrUtilCore = "com.twitter"                 % "util-core"              % "1.8.1"      // ApacheV2
   val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
   val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
   val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
   val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.5" // ApacheV2
-
-  // Provided
-
-  object Provided {
-    val javaxServlet = "org.apache.geronimo.specs" % "geronimo-servlet_3.0_spec" % "1.0" % "provided" // CDDL v1
-    val jetty        = "org.eclipse.jetty" % "jetty-server"  % V.Jetty        % "provided"            // Eclipse license
-  }
 
   // Runtime
 
@@ -562,8 +543,6 @@ object Dependency {
   object Test {
     val commonsColl = "commons-collections"         % "commons-collections" % "3.2.1"      % "test" // ApacheV2
     val commonsMath = "org.apache.commons"          % "commons-math"        % "2.1"        % "test" // ApacheV2
-    val jetty       = "org.eclipse.jetty"           % "jetty-server"        % V.Jetty      % "test" // Eclipse license
-    val jettyWebapp = "org.eclipse.jetty"           % "jetty-webapp"        % V.Jetty      % "test" // Eclipse license
     val junit       = "junit"                       % "junit"               % "4.5"        % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"         % "1.8.1"      % "test" // MIT
