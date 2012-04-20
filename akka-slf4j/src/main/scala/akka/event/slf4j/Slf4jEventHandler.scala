@@ -43,8 +43,15 @@ class Slf4jEventHandler extends Actor with SLF4JLogging {
     case event @ Error(cause, logSource, logClass, message) ⇒
       withMdc(logSource, event.thread.getName) {
         cause match {
-          case Error.NoCause ⇒ Logger(logClass, logSource).error(message.toString)
-          case _             ⇒ Logger(logClass, logSource).error(message.toString, cause)
+          case Error.NoCause ⇒
+            val logger = Logger(logClass, logSource)
+            logger.error(message.toString)
+          case _             ⇒
+            val logger = Logger(logClass, logSource)
+            if(message != null)
+              logger.error(message.toString, cause)
+            else
+              logger.error(cause.getLocalizedMessage, cause)
         }
       }
 
