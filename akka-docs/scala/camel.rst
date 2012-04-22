@@ -46,24 +46,7 @@ APIs. The `camel-extra`_ project provides further components.
 Usage of Camel's integration components in Akka is essentially a
 one-liner. Here's an example.
 
-.. code-block:: scala
-
-   import akka.actor.Actor
-   import akka.actor.Actor._
-   import akka.camel.{CamelMessage, Consumer}
-
-   class MyActor extends Consumer {
-     def endpointUri = "mina:tcp://localhost:6200?textline=true"
-
-     def receive = {
-       case msg: CamelMessage => { /* ... */}
-       case _            => { /* ... */}
-     }
-   }
-
-   // start and expose actor via tcp
-   val sys = ActorSystem("camel")
-   val myActor = sys.actorOf(Props[MyActor])
+.. includecode:: code/akka/docs/camel/Introduction.scala#Consumer-mina
 
 The above example exposes an actor over a tcp endpoint on port 6200 via Apache
 Camel's `Mina component`_. The actor implements the endpointUri method to define
@@ -75,28 +58,12 @@ component`_), only the actor's endpointUri method must be changed.
 .. _Mina component: http://camel.apache.org/mina.html
 .. _Jetty component: http://camel.apache.org/jetty.html
 
-.. code-block:: scala
-
-   class MyActor extends Consumer {
-     def endpointUri = "jetty:http://localhost:8877/example"
-
-     def receive = {
-       case msg: CamelMessage => { /* ... */}
-       case _            => { /* ... */}
-     }
-   }
+.. includecode:: code/akka/docs/camel/Introduction.scala#Consumer
 
 Actors can also trigger message exchanges with external systems i.e. produce to
 Camel endpoints.
 
-.. code-block:: scala
-
-   import akka.actor.Actor
-   import akka.camel.{Producer, Oneway}
-
-   class MyActor extends Actor with Producer with Oneway {
-     def endpointUri = "jms:queue:example"
-   }
+.. includecode:: code/akka/docs/camel/Introduction.scala#Producer
 
 In the above example, any message sent to this actor will be added (produced) to
 the example JMS queue. Producer actors may choose from the same set of Camel
@@ -110,6 +77,8 @@ Camel components bind protocol-specific message formats to a Camel-specific
 `normalized message format`__. The normalized message format hides
 protocol-specific details from Akka and makes it therefore very easy to support
 a large number of protocols through a uniform Camel component interface. The
-akka-camel module further converts mutable Camel messages into `immutable
-representations`__ which are used by Consumer and Producer actors for pattern
+akka-camel module further converts mutable Camel messages into immutable
+representations which are used by Consumer and Producer actors for pattern
 matching, transformation, serialization or storage.
+
+__ https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/Message.java
