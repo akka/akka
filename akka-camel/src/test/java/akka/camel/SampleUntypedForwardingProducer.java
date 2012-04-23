@@ -15,7 +15,7 @@ public class SampleUntypedForwardingProducer extends UntypedProducerActor {
     }
 
     @Override
-    public void onReceiveAfterProduce(Object message) {
+    public void onRouteResponse(Object message) {
         CamelMessage msg = (CamelMessage)message;
         String body = msg.getBodyAs(String.class,getCamelContext());
         getProducerTemplate().sendBody("direct:forward-test-1", body);
