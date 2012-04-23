@@ -24,7 +24,7 @@ Other, more advanced external articles (for version 1) are:
 Introduction
 ============
 
-The akka-camel module allows actors, untyped actors, and typed actors to receive
+The akka-camel module allows actors to receive
 and send messages over a great variety of protocols and APIs. This section gives
 a brief overview of the general ideas behind the akka-camel module, the
 remaining sections go into the details. In addition to the native Scala and Java
