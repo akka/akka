@@ -38,7 +38,7 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
 
   final override def transformOutgoingMessage(msg: Any): AnyRef = onTransformOutgoingMessage(msg.asInstanceOf[AnyRef])
   final override def transformResponse(msg: Any): AnyRef = onTransformResponse(msg.asInstanceOf[AnyRef])
-  final override def routeResponse(msg: Any): Any = onRouteResponse(msg.asInstanceOf[AnyRef])
+  final override def routeResponse(msg: Any): Unit = onRouteResponse(msg.asInstanceOf[AnyRef])
 
   final override def endpointUri = getEndpointUri
 
