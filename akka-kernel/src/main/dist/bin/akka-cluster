@@ -14,10 +14,10 @@ JMX_CLIENT="java -jar $AKKA_HOME/lib/cmdline-jmxclient-0.10.3.jar -"
 SELF=`basename $0` # script name
 HOST=$1            # cluster node:port to talk to through JMX
 
-function checkNodeIsRunning {
-    REPLY=$($JMX_CLIENT $HOST akka:type=Cluster ping 2>&1 >/dev/null) # redirects STDERR to STDOUT before capturing it
-    if [[ "$REPLY" != *pong* ]]; then
-        echo "Akka cluster node is not running on $HOST"
+function ensureNodeIsRunningAndAvailable {
+    REPLY=$($JMX_CLIENT $HOST akka:type=Cluster Available 2>&1 >/dev/null) # redirects STDERR to STDOUT before capturing it
+    if [[ "$REPLY" != *true ]]; then
+        echo "Akka cluster node is not available on $HOST"
         exit 1
     fi
 }
@@ -25,26 +25,13 @@ function checkNodeIsRunning {
 # switch on command
 case "$2" in
 
-    ping)
-        if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> ping"
-            exit 1
-        fi
-
-        checkNodeIsRunning
-        shift
-
-        echo "Pinging $HOST"
-        $JMX_CLIENT $HOST akka:type=Cluster ping
-        ;;
-
     join)
         if [ $# -ne 3 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> join <actor-system-url-to-join>"
             exit 1
         fi
 
-        checkNodeIsRunning
+        ensureNodeIsRunningAndAvailable
         shift
 
         ACTOR_SYSTEM_URL=$2
@@ -58,7 +45,7 @@ case "$2" in
             exit 1
         fi
 
-        checkNodeIsRunning
+        ensureNodeIsRunningAndAvailable
         shift
 
         ACTOR_SYSTEM_URL=$2
@@ -72,7 +59,7 @@ case "$2" in
             exit 1
         fi
 
-        checkNodeIsRunning
+        ensureNodeIsRunningAndAvailable
         shift
 
         ACTOR_SYSTEM_URL=$2
@@ -86,7 +73,7 @@ case "$2" in
             exit 1
         fi
 
-        checkNodeIsRunning
+        ensureNodeIsRunningAndAvailable
         shift
 
         ACTOR_SYSTEM_URL=$2
@@ -100,7 +87,7 @@ case "$2" in
             exit 1
         fi
 
-        checkNodeIsRunning
+        ensureNodeIsRunningAndAvailable
         shift
 
         echo "Querying member status for $HOST"
@@ -113,7 +100,7 @@ case "$2" in
             exit 1
         fi
 
-        checkNodeIsRunning
+        ensureNodeIsRunningAndAvailable
         shift
 
         echo "Querying cluster status"
@@ -126,7 +113,7 @@ case "$2" in
             exit 1
         fi
 
-        checkNodeIsRunning
+        ensureNodeIsRunningAndAvailable
         shift
 
         echo "Checking leader status"
@@ -139,7 +126,7 @@ case "$2" in
             exit 1
         fi
 
-        checkNodeIsRunning
+        ensureNodeIsRunningAndAvailable
         shift
 
         echo "Checking for singleton cluster"
@@ -152,7 +139,7 @@ case "$2" in
             exit 1
         fi
 
-        checkNodeIsRunning
+        ensureNodeIsRunningAndAvailable
         shift
 
         echo "Checking for cluster convergence"
@@ -165,10 +152,10 @@ case "$2" in
             exit 1
         fi
 
-        checkNodeIsRunning
+        ensureNodeIsRunningAndAvailable
         shift
 
-        echo "Checking if $ACTOR_SYSTEM_URL is AVAILABLE"
+        echo "Checking if member node on $HOST is AVAILABLE"
         $JMX_CLIENT $HOST akka:type=Cluster Available
         ;;
 
@@ -176,7 +163,6 @@ case "$2" in
         printf "Usage: $SELF <node-hostname:jmx-port> <command> ...\n"
         printf "\n"
         printf "Supported commands are:\n"
-        printf "%26s - %s\n" ping                        "Sends a PING command to the node to see if it is up and available"
         printf "%26s - %s\n" "join <actor-system-url>"   "Sends request a JOIN node with the specified URL"
         printf "%26s - %s\n" "leave <actor-system-url>"  "Sends a request for node with URL to LEAVE the cluster"
         printf "%26s - %s\n" "remove <actor-system-url>" "Sends a request for node with URL to be instantly REMOVED from the cluster"
@@ -189,7 +175,7 @@ case "$2" in
         printf "%26s - %s\n" has-convergence             "Checks if there is a cluster convergence"
         printf "Where the <actor-system-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
         printf "\n"
-        printf "Examples: $SELF localhost:9999 ping\n"
+        printf "Examples: $SELF localhost:9999 is-available\n"
         printf "          $SELF localhost:9999 join akka://MySystem@darkstar:2552\n"
         printf "          $SELF localhost:9999 cluster-status\n"
         exit 1

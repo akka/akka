@@ -323,7 +323,6 @@ trait ClusterNodeMBean {
   def isConvergence: Boolean
   def isAvailable: Boolean
 
-  def ping(): String
   def join(address: String)
   def leave(address: String)
   def down(address: String)
@@ -443,8 +442,6 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   // ======================================================
   // ===================== PUBLIC API =====================
   // ======================================================
-
-  def ping = "pong"
 
   def self: Member = latestGossip.members
     .find(_.address == remoteAddress)
@@ -1085,8 +1082,6 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
       def isAvailable: Boolean = clusterNode.isAvailable
 
       // JMX commands
-
-      def ping(): String = clusterNode.ping
 
       def join(address: String) = clusterNode.join(AddressFromURIString(address))
 
