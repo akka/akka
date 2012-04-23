@@ -19,6 +19,7 @@ import akka.dispatch.{ Await, Dispatchers, Future, Promise }
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
 import akka.actor.TypedActor._
+import java.lang.IllegalStateException
 
 object TypedActorSpec {
 
@@ -162,20 +163,26 @@ object TypedActorSpec {
 
   class LifeCyclesImpl(val latch: CountDownLatch) extends PreStart with PostStop with PreRestart with PostRestart with LifeCycles with Receiver {
 
+    private def ensureContextAvailable[T](f: ⇒ T): T = TypedActor.context match {
+      case null ⇒ throw new IllegalStateException("TypedActor.context is null!")
+      case some ⇒ f
+    }
+
     override def crash(): Unit = throw new IllegalStateException("Crash!")
 
-    override def preStart(): Unit = latch.countDown()
+    override def preStart(): Unit = ensureContextAvailable(latch.countDown())
 
-    override def postStop(): Unit = for (i ← 1 to 3) latch.countDown()
+    override def postStop(): Unit = ensureContextAvailable(for (i ← 1 to 3) latch.countDown())
 
-    override def preRestart(reason: Throwable, message: Option[Any]): Unit = for (i ← 1 to 5) latch.countDown()
+    override def preRestart(reason: Throwable, message: Option[Any]): Unit = ensureContextAvailable(for (i ← 1 to 5) latch.countDown())
 
-    override def postRestart(reason: Throwable): Unit = for (i ← 1 to 7) latch.countDown()
+    override def postRestart(reason: Throwable): Unit = ensureContextAvailable(for (i ← 1 to 7) latch.countDown())
 
     override def onReceive(msg: Any, sender: ActorRef): Unit = {
-      msg match {
-        case "pigdog" ⇒ sender ! "dogpig"
-      }
+      ensureContextAvailable(
+        msg match {
+          case "pigdog" ⇒ sender ! "dogpig"
+        })
     }
   }
 }
