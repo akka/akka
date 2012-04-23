@@ -101,6 +101,12 @@ Actor Best Practices
    breaks all the properties which make programming in actors such a nice
    experience.
 
+#. Top-level actors are the innermost part of your Error Kernel, so create them
+   sparingly and prefer truly hierarchical systems. This has benefits wrt.
+   fault-handling (both considering the granularity of configuration and the
+   performance) and it also reduces the number of blocking calls made, since
+   the creation of top-level actors involves synchronous messaging.
+
 What you should not concern yourself with
 -----------------------------------------
 
