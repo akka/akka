@@ -66,7 +66,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   def address = _address.get
 
-  val log = Logging(system.eventStream, "NettyRemoteTransport(" + address + ")")
+  lazy val log = Logging(system.eventStream, "NettyRemoteTransport(" + address + ")")
 
   def start(): Unit = {
     server.start()
