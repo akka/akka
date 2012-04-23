@@ -125,7 +125,7 @@ class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAcc
 
     val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
 
-    val resizer: Option[Resizer] = if (config.hasPath("resizer")) {
+    val resizer: Option[Resizer] = if (config.hasPath("resizer") && config.getBoolean("resizer.status")) {
       Some(DefaultResizer(deployment.getConfig("resizer")))
     } else {
       None

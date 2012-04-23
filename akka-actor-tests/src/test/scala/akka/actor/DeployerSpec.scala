@@ -36,6 +36,7 @@ object DeployerSpec {
         /service-resizer {
           router = round-robin
           resizer {
+            status = on
             lower-bound = 1
             upper-bound = 10
           }
