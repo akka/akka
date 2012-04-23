@@ -150,4 +150,20 @@ public class TypedActorDocTestBase {
 //Ignore
     }
   }
+
+ @Test public void proxyAnyActorRef() {
+    try {
+    //#typed-actor-remote
+    Squarer typedActor =
+      TypedActor.get(system).
+        typedActorOf(
+          new TypedProps<Squarer>(Squarer.class),
+          system.actorFor("akka://SomeSystem@somehost:2552/user/some/foobar")
+        );
+    //Use "typedActor" as a FooBar
+    //#typed-actor-remote
+    } catch (Exception e) {
+      //dun care
+    }
+  }
 }
