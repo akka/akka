@@ -37,6 +37,11 @@ class EventStream(private val debug: Boolean = false) extends LoggingBus with Su
     else subscriber ! event
   }
 
+  protected def publish(event: AnyRef, subscriber: ActorRef)(implicit sender: ActorRef) = {
+    if (subscriber.isTerminated) unsubscribe(subscriber)
+    else subscriber ! event
+  }
+
   override def subscribe(subscriber: ActorRef, channel: Class[_]): Boolean = {
     if (debug) publish(Logging.Debug(simpleName(this), this.getClass, "subscribing " + subscriber + " to channel " + channel))
     super.subscribe(subscriber, channel)

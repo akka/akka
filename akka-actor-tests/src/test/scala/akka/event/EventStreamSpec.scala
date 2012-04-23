@@ -5,10 +5,9 @@ package akka.event
 
 import akka.testkit.AkkaSpec
 import akka.util.duration._
-import akka.actor.{ Actor, ActorRef, ActorSystemImpl }
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
-import akka.actor.ActorSystem
+import akka.actor._
 
 object EventStreamSpec {
 
@@ -56,6 +55,21 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       within(1 second) {
         expectMsg(M(42))
         bus.unsubscribe(testActor)
+        bus.publish(M(13))
+        expectNoMsg
+      }
+    }
+
+    "preserve senders" in {
+      val bus = new EventStream(true)
+      val fooActor = system.actorOf(Props(implicit ctx ⇒ {
+        case m: M ⇒ testActor forward m
+      }))
+      bus.subscribe(fooActor, classOf[M])
+      bus.publish(M(42))
+      within(1 second) {
+        expectMsg(M(42))
+        bus.unsubscribe(fooActor)
         bus.publish(M(13))
         expectNoMsg
       }
