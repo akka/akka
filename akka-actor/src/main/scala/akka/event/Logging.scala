@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException
 import akka.dispatch.Await
+import annotation.implicitNotFound
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -211,7 +212,7 @@ trait LoggingBus extends ActorEventBus {
  *
  * The default implementation of the second variant will just call the first.
  */
-trait LogSource[-T] {
+@implicitNotFound("Cannot find LogSource for ${T} please see ScalaDoc for LogSource for how to obtain or construct one.") trait LogSource[-T] {
   def genString(t: T): String
   def genString(t: T, system: ActorSystem): String = genString(t)
   def getClazz(t: T): Class[_] = t.getClass
