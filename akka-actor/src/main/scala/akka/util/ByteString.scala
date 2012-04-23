@@ -349,6 +349,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     val newtemp = new Array[Byte](size)
     if (_tempLength > 0) Array.copy(_temp, 0, newtemp, 0, _tempLength)
     _temp = newtemp
+    _tempCapacity = _temp.length
   }
 
   private def ensureTempSize(size: Int) {
