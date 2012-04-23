@@ -120,7 +120,7 @@ trait ProducerSupport { this: Actor ⇒
    * actor).
    */
 
-  protected def routeResponse(msg: Any): Any = {
+  protected def routeResponse(msg: Any) {
     if (!oneway) sender ! transformResponse(msg)
   }
 
