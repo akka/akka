@@ -95,25 +95,39 @@ trait LoggingBus extends ActorEventBus {
         case Nil     ⇒ "akka.event.Logging$DefaultLogger" :: Nil
         case loggers ⇒ loggers
       }
-      val myloggers = for {
-        loggerName ← defaultLoggers
-        if loggerName != StandardOutLoggerName
-      } yield {
-        try {
-          system.dynamicAccess.getClassFor[Actor](loggerName) match {
-            case Right(actorClass) ⇒ addLogger(system, actorClass, level, logName)
-            case Left(exception)   ⇒ throw exception
+      val myloggers =
+        for {
+          loggerName ← defaultLoggers
+          if loggerName != StandardOutLoggerName
+        } yield {
+          try {
+            system.dynamicAccess.getClassFor[Actor](loggerName) match {
+              case Right(actorClass) ⇒ addLogger(system, actorClass, level, logName)
+              case Left(exception)   ⇒ throw exception
+            }
+          } catch {
+            case e: Exception ⇒
+              throw new ConfigurationException(
+                "Event Handler specified in config can't be loaded [" + loggerName +
+                  "] due to [" + e.toString + "]", e)
           }
-        } catch {
-          case e: Exception ⇒
-            throw new ConfigurationException(
-              "Event Handler specified in config can't be loaded [" + loggerName +
-                "] due to [" + e.toString + "]", e)
         }
-      }
       guard.withGuard {
         loggers = myloggers
         _logLevel = level
+      }
+      try {
+        if (system.settings.DebugUnhandledMessage)
+          subscribe(system.systemActorOf(Props(new Actor {
+            println("started" + self)
+            def receive = {
+              case UnhandledMessage(msg, sender, rcp) ⇒
+                println("got it")
+                publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
+            }
+          }), "UnhandledMessageForwarder"), classOf[UnhandledMessage])
+      } catch {
+        case _: InvalidActorNameException ⇒ // ignore if it is already running
       }
       publish(Debug(logName, this.getClass, "Default Loggers started"))
       if (!(defaultLoggers contains StandardOutLoggerName)) {
@@ -153,7 +167,7 @@ trait LoggingBus extends ActorEventBus {
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel, logName: String): ActorRef = {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
-    implicit val timeout = Timeout(5 seconds)
+    implicit def timeout = system.settings.EventHandlerStartTimeout
     import akka.pattern.ask
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration) catch {
       case _: TimeoutException ⇒
