@@ -36,8 +36,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
       fd.isAvailable(conn) must be(true)
     }
 
-    // FIXME how should we deal with explicit removal of connection? - if triggered as failure then we have a problem in boostrap - see line 142 in AccrualFailureDetector
-    "mark node as dead after explicit removal of connection" ignore {
+    "mark node as dead after explicit removal of connection" in {
       val fd = new AccrualFailureDetector(system, conn)
 
       fd.heartbeat(conn)
@@ -53,6 +52,35 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
       fd.remove(conn)
 
       fd.isAvailable(conn) must be(false)
+    }
+
+    "mark node as available after explicit removal of connection and receiving heartbeat again" in {
+      val fd = new AccrualFailureDetector(system, conn)
+
+      fd.heartbeat(conn)
+
+      Thread.sleep(1000)
+      fd.heartbeat(conn)
+
+      Thread.sleep(100)
+      fd.heartbeat(conn)
+
+      fd.isAvailable(conn) must be(true)
+
+      fd.remove(conn)
+
+      fd.isAvailable(conn) must be(false)
+
+      // it recieves heartbeat from an explicitly removed node
+      fd.heartbeat(conn)
+
+      Thread.sleep(1000)
+      fd.heartbeat(conn)
+
+      Thread.sleep(100)
+      fd.heartbeat(conn)
+
+      fd.isAvailable(conn) must be(true)
     }
 
     "mark node as dead if heartbeat are missed" in {
