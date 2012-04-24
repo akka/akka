@@ -239,7 +239,7 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.kernel
     )
   )
- 
+
   lazy val camel = Project(
      id = "akka-camel",
      base = file("akka-camel"),
@@ -315,13 +315,6 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.tutorials
     )
   )
-
-  //  lazy val secondTutorial = Project(
-  //    id = "akka-tutorial-second",
-  //    base = file("akka-tutorials/akka-tutorial-second"),
-  //    dependencies = Seq(actor),
-  //    settings = defaultSettings
-  //  )
 
   lazy val docs = Project(
     id = "akka-docs",
@@ -439,7 +432,7 @@ object Dependencies {
     Test.zookeeper, Test.log4j // needed for ZkBarrier in multi-jvm tests
   )
 
- val cluster = Seq(Test.junit, Test.scalatest)
+  val cluster = Seq(Test.junit, Test.scalatest)
 
   val slf4j = Seq(slf4jApi, Test.logback)
 
@@ -474,9 +467,9 @@ object Dependencies {
 
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
 
-  val kernel = Seq(Test.scalatest, Test.junit)
+  val kernel = Seq(jmxClient, Test.scalatest, Test.junit)
 
-  val camel = Seq(Test.scalatest, Test.junit, Test.mockito, camelCore)
+  val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
@@ -486,7 +479,7 @@ object Dependencies {
 
   val docs = Seq(Test.scalatest, Test.junit)
 
-  val zeroMQ = Seq(Test.scalatest, Test.junit, protobuf, Dependency.zeroMQ)
+  val zeroMQ = Seq(protobuf, Dependency.zeroMQ, Test.scalatest, Test.junit)
 }
 
 object Dependency {
@@ -514,6 +507,7 @@ object Dependency {
   val commonsCodec  = "commons-codec"               % "commons-codec"          % "1.4"        // ApacheV2
   val commonsIo     = "commons-io"                  % "commons-io"             % "2.0.1"      // ApacheV2
   val commonsPool   = "commons-pool"                % "commons-pool"           % "1.5.6"      // ApacheV2
+  val jmxClient     = "cmdline-jmxclient"           % "cmdline-jmxclient"      % "0.10.3"     // LGPL
   val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.9-1"    // ApacheV2
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD

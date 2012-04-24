@@ -20,6 +20,9 @@ import java.util.concurrent.TimeUnit._
 import java.util.concurrent.TimeoutException
 import java.security.SecureRandom
 
+import java.lang.management.ManagementFactory
+import javax.management._
+
 import scala.collection.immutable.{ Map, SortedSet }
 import scala.annotation.tailrec
 
@@ -309,6 +312,26 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
 }
 
 /**
+ * Interface for the cluster JMX MBean.
+ */
+trait ClusterNodeMBean {
+  def getMemberStatus: String
+  def getClusterStatus: String
+  def getLeader: String
+
+  def isSingleton: Boolean
+  def isConvergence: Boolean
+  def isAvailable: Boolean
+
+  def join(address: String)
+  def leave(address: String)
+  def down(address: String)
+  def remove(address: String)
+
+  def shutdown()
+}
+
+/**
  * This module is responsible for Gossiping cluster information. The abstraction maintains the list of live
  * and dead members. Periodically i.e. every 1 second this module chooses a random member and initiates a round
  * of Gossip with it. Whenever it gets gossip updates it updates the Failure Detector with the liveness
@@ -328,7 +351,7 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
  *  if (Cluster(system).isLeader) { ... }
  * }}}
  */
-class Cluster(system: ExtendedActorSystem) extends Extension {
+class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
 
   /**
    * Represents the state for this Cluster. Implemented using optimistic lockless concurrency.
@@ -370,7 +393,10 @@ class Cluster(system: ExtendedActorSystem) extends Extension {
   private val log = Logging(system, "Node")
   private val random = SecureRandom.getInstance("SHA1PRNG")
 
-  log.info("Cluster Node [{}] - is JOINING cluster...", remoteAddress)
+  private val mBeanServer = ManagementFactory.getPlatformMBeanServer
+  private val clusterMBeanName = new ObjectName("akka:type=Cluster")
+
+  log.info("Cluster Node [{}] - is starting up...", remoteAddress)
 
   // create superisor for daemons under path "/system/cluster"
   private val clusterDaemons = {
@@ -409,7 +435,9 @@ class Cluster(system: ExtendedActorSystem) extends Extension {
     leaderActions()
   }
 
-  log.info("Cluster Node [{}] - has JOINED cluster successfully", remoteAddress)
+  createMBean()
+
+  log.info("Cluster Node [{}] - has started up successfully", remoteAddress)
 
   // ======================================================
   // ===================== PUBLIC API =====================
@@ -417,7 +445,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension {
 
   def self: Member = latestGossip.members
     .find(_.address == remoteAddress)
-    .getOrElse(throw new IllegalStateException("Can't find 'this' Member in the cluster membership ring"))
+    .getOrElse(throw new IllegalStateException("Can't find 'this' Member (" + remoteAddress + ") in the cluster membership ring"))
 
   /**
    * Latest gossip.
@@ -436,6 +464,11 @@ class Cluster(system: ExtendedActorSystem) extends Extension {
     val members = latestGossip.members
     !members.isEmpty && (remoteAddress == members.head.address)
   }
+
+  /**
+   * Get the address of the current leader.
+   */
+  def leader: Address = latestGossip.members.head.address
 
   /**
    * Is this node a singleton cluster?
@@ -464,6 +497,11 @@ class Cluster(system: ExtendedActorSystem) extends Extension {
       failureDetectorReaperCanceller.cancel()
       leaderActionsCanceller.cancel()
       system.stop(clusterDaemons)
+      try {
+        mBeanServer.unregisterMBean(clusterMBeanName)
+      } catch {
+        case e: InstanceNotFoundException ⇒ // ignore - we are running multiple cluster nodes in the same JVM (probably for testing)
+      }
     }
   }
 
@@ -491,7 +529,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension {
 
   /**
    * Try to join this cluster node with the node specified by 'address'.
-   * A 'Join(thisNodeAddress)'' command is sent to the node to join.
+   * A 'Join(thisNodeAddress)' command is sent to the node to join.
    */
   def join(address: Address) {
     val connection = clusterCommandConnectionFor(address)
@@ -1005,4 +1043,61 @@ class Cluster(system: ExtendedActorSystem) extends Extension {
   private def selectRandomNode(addresses: Iterable[Address]): Address = addresses.toSeq(random nextInt addresses.size)
 
   private def isSingletonCluster(currentState: State): Boolean = currentState.latestGossip.members.size == 1
+
+  /**
+   * Creates the cluster JMX MBean and registers it in the MBean server.
+   */
+  private def createMBean() = {
+    val mbean = new StandardMBean(classOf[ClusterNodeMBean]) with ClusterNodeMBean {
+
+      // JMX attributes (bean-style)
+
+      /*
+       * Sends a string to the JMX client that will list all nodes in the node ring as follows:
+       * {{{
+       * Members:
+       *         Member(address = akka://system0@localhost:5550, status = Up)
+       *         Member(address = akka://system1@localhost:5551, status = Up)
+       * Unreachable:
+       *         Member(address = akka://system2@localhost:5553, status = Down)
+       * }}}
+       */
+      def getClusterStatus: String = {
+        val gossip = clusterNode.latestGossip
+        val unreachable = gossip.overview.unreachable
+        val metaData = gossip.meta
+        "\nMembers:\n\t" + gossip.members.mkString("\n\t") +
+          { if (!unreachable.isEmpty) "\nUnreachable:\n\t" + unreachable.mkString("\n\t") else "" } +
+          { if (!metaData.isEmpty) "\nMeta Data:\t" + metaData.toString else "" }
+      }
+
+      def getMemberStatus: String = clusterNode.status.toString
+
+      def getLeader: String = clusterNode.leader.toString
+
+      def isSingleton: Boolean = clusterNode.isSingletonCluster
+
+      def isConvergence: Boolean = clusterNode.convergence.isDefined
+
+      def isAvailable: Boolean = clusterNode.isAvailable
+
+      // JMX commands
+
+      def join(address: String) = clusterNode.join(AddressFromURIString(address))
+
+      def leave(address: String) = clusterNode.leave(AddressFromURIString(address))
+
+      def down(address: String) = clusterNode.down(AddressFromURIString(address))
+
+      def remove(address: String) = clusterNode.remove(AddressFromURIString(address))
+
+      def shutdown() = clusterNode.shutdown()
+    }
+    log.info("Cluster Node [{}] - registering cluster JMX MBean [{}]", remoteAddress, clusterMBeanName)
+    try {
+      mBeanServer.registerMBean(mbean, clusterMBeanName)
+    } catch {
+      case e: InstanceAlreadyExistsException ⇒ // ignore - we are running multiple cluster nodes in the same JVM (probably for testing)
+    }
+  }
 }
