@@ -4,7 +4,7 @@
 
 package akka.dispatch
 
-import akka.event.Logging.Warning
+import akka.event.Logging.Error
 import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorCell
 import akka.util.Duration
@@ -59,7 +59,7 @@ class Dispatcher(
           executorService.get() execute invocation
         } catch {
           case e2: RejectedExecutionException ⇒
-            prerequisites.eventStream.publish(Warning("Dispatcher", this.getClass, e2.toString))
+            prerequisites.eventStream.publish(Error(e, getClass.getName, getClass, "executeTask was rejected twice!"))
             throw e2
         }
     }
@@ -87,7 +87,10 @@ class Dispatcher(
               executorService.get() execute mbox
               true
             } catch { //Retry once
-              case e: RejectedExecutionException ⇒ mbox.setAsIdle(); throw e
+              case e: RejectedExecutionException ⇒
+                mbox.setAsIdle()
+                prerequisites.eventStream.publish(Error(e, getClass.getName, getClass, "registerForExecution was rejected twice!"))
+                throw e
             }
         }
       } else false
