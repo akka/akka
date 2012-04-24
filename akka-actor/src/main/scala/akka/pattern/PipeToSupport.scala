@@ -9,14 +9,14 @@ import akka.actor.{ Status, ActorRef }
 trait PipeToSupport {
 
   final class PipeableFuture[T](val future: Future[T]) {
-    def pipeTo(recipient: ActorRef): Future[T] =
+    def pipeTo(recipient: ActorRef)(implicit sender: ActorRef = null): Future[T] =
       future onComplete {
         case Right(r) ⇒ recipient ! r
         case Left(f)  ⇒ recipient ! Status.Failure(f)
       }
-
-    def to(recipient: ActorRef): PipeableFuture[T] = {
-      pipeTo(recipient)
+    def to(recipient: ActorRef): PipeableFuture[T] = to(recipient, null)
+    def to(recipient: ActorRef, sender: ActorRef): PipeableFuture[T] = {
+      pipeTo(recipient)(sender)
       this
     }
   }
