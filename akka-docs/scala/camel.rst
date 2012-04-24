@@ -63,7 +63,8 @@ component`_), only the actor's endpointUri method must be changed.
 Actors can also trigger message exchanges with external systems i.e. produce to
 Camel endpoints.
 
-.. includecode:: code/akka/docs/camel/Introduction.scala#Producer
+.. includecode:: code/akka/docs/camel/Introduction.scala
+                :include: imports,Producer
 
 In the above example, any message sent to this actor will be added (produced) to
 the example JMS queue. Producer actors may choose from the same set of Camel
