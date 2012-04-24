@@ -239,7 +239,7 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.kernel
     )
   )
- 
+
   lazy val camel = Project(
      id = "akka-camel",
      base = file("akka-camel"),
@@ -315,13 +315,6 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.tutorials
     )
   )
-
-  //  lazy val secondTutorial = Project(
-  //    id = "akka-tutorial-second",
-  //    base = file("akka-tutorials/akka-tutorial-second"),
-  //    dependencies = Seq(actor),
-  //    settings = defaultSettings
-  //  )
 
   lazy val docs = Project(
     id = "akka-docs",
@@ -438,7 +431,7 @@ object Dependencies {
     Test.zookeeper, Test.log4j // needed for ZkBarrier in multi-jvm tests
   )
 
- val cluster = Seq(Test.junit, Test.scalatest)
+  val cluster = Seq(Test.junit, Test.scalatest)
 
   val slf4j = Seq(slf4jApi, Test.logback)
 
@@ -473,9 +466,9 @@ object Dependencies {
 
   val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
 
-  val kernel = Seq(Test.scalatest, Test.junit)
+  val kernel = Seq(jmxClient, Test.scalatest, Test.junit)
 
-  val camel = Seq(Test.scalatest, Test.junit, Test.mockito, camelCore)
+  val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
   // TODO: resolve Jetty version conflict
   // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
@@ -485,7 +478,7 @@ object Dependencies {
 
   val docs = Seq(Test.scalatest, Test.junit)
 
-  val zeroMQ = Seq(Test.scalatest, Test.junit, protobuf, Dependency.zeroMQ)
+  val zeroMQ = Seq(protobuf, Dependency.zeroMQ, Test.scalatest, Test.junit)
 }
 
 object Dependency {
@@ -493,58 +486,59 @@ object Dependency {
   // Versions
 
   object V {
-    val Camel        = "2.8.0"
-    val Jackson      = "1.8.0"
-    val Jetty        = "7.4.0.v20110414"
-    val Logback      = "0.9.28"
-    val Netty        = "3.3.0.Final"
-    val Protobuf     = "2.4.1"
-    val Rabbit       = "2.3.1"
-    val ScalaStm     = "0.5"
-    val Scalatest    = "1.6.1"
-    val Slf4j        = "1.6.4"
-    val Spring       = "3.0.5.RELEASE"
-    val Zookeeper    = "3.4.0"
+    val Camel     = "2.8.0"
+    val Jackson   = "1.8.0"
+    val Jetty     = "7.4.0.v20110414"
+    val Logback   = "0.9.28"
+    val Netty     = "3.3.0.Final"
+    val Protobuf  = "2.4.1"
+    val Rabbit    = "2.3.1"
+    val ScalaStm  = "0.5"
+    val Scalatest = "1.6.1"
+    val Slf4j     = "1.6.4"
+    val Spring    = "3.0.5.RELEASE"
+    val Zookeeper = "3.4.0"
   }
 
   // Compile
 
-  val beanstalk     = "beanstalk"                   % "beanstalk_client"       % "1.4.5"      // New BSD
-  val bookkeeper    = "org.apache.hadoop.zookeeper" % "bookkeeper"             % V.Zookeeper  // ApacheV2
-  val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
-  val camelSpring   = "org.apache.camel"            % "camel-spring"           % V.Camel      // ApacheV2
-  val commonsCodec  = "commons-codec"               % "commons-codec"          % "1.4"        // ApacheV2
-  val commonsIo     = "commons-io"                  % "commons-io"             % "2.0.1"      // ApacheV2
-  val commonsPool   = "commons-pool"                % "commons-pool"           % "1.5.6"      // ApacheV2
-  val guice         = "org.guiceyfruit"             % "guice-all"              % "2.0"        // ApacheV2
-  val jacksonCore   = "org.codehaus.jackson"        % "jackson-core-asl"       % V.Jackson    // ApacheV2
-  val jacksonMapper = "org.codehaus.jackson"        % "jackson-mapper-asl"     % V.Jackson    // ApacheV2
-  val jettyUtil     = "org.eclipse.jetty"           % "jetty-util"             % V.Jetty      // Eclipse license
-  val jettyXml      = "org.eclipse.jetty"           % "jetty-xml"              % V.Jetty      // Eclipse license
-  val jettyServlet  = "org.eclipse.jetty"           % "jetty-servlet"          % V.Jetty      // Eclipse license
-  val log4j         = "log4j"                       % "log4j"                  % "1.2.14"     // ApacheV2
-  val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.9-1"    // ApacheV2
-  val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
-  val osgi          = "org.osgi"                    % "org.osgi.core"          % "4.2.0"      // ApacheV2
-  val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
-  val rabbit        = "com.rabbitmq"                % "amqp-client"            % V.Rabbit     // Mozilla Public License
-  val redis         = "net.debasishg"               % "redisclient_2.9.1"      % "2.4.0"      // ApacheV2
-  val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
-  val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
-  val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
-  val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
-  val staxApi       = "javax.xml.stream"            % "stax-api"               % "1.0-2"      // ApacheV2
-  val twttrUtilCore = "com.twitter"                 % "util-core"              % "1.8.1"      // ApacheV2
-  val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
-  val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
-  val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
-  val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.5" // ApacheV2
+  val beanstalk     = "beanstalk"                   % "beanstalk_client"           % "1.4.5"      // New BSD
+  val bookkeeper    = "org.apache.hadoop.zookeeper" % "bookkeeper"                 % V.Zookeeper  // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"                 % V.Camel      // ApacheV2
+  val camelSpring   = "org.apache.camel"            % "camel-spring"               % V.Camel      // ApacheV2
+  val commonsCodec  = "commons-codec"               % "commons-codec"              % "1.4"        // ApacheV2
+  val commonsIo     = "commons-io"                  % "commons-io"                 % "2.0.1"      // ApacheV2
+  val commonsPool   = "commons-pool"                % "commons-pool"               % "1.5.6"      // ApacheV2
+  val guice         = "org.guiceyfruit"             % "guice-all"                  % "2.0"        // ApacheV2
+  val jacksonCore   = "org.codehaus.jackson"        % "jackson-core-asl"           % V.Jackson    // ApacheV2
+  val jacksonMapper = "org.codehaus.jackson"        % "jackson-mapper-asl"         % V.Jackson    // ApacheV2
+  val jettyUtil     = "org.eclipse.jetty"           % "jetty-util"                 % V.Jetty      // Eclipse license
+  val jettyXml      = "org.eclipse.jetty"           % "jetty-xml"                  % V.Jetty      // Eclipse license
+  val jettyServlet  = "org.eclipse.jetty"           % "jetty-servlet"              % V.Jetty      // Eclipse license
+  val jmxClient     = "cmdline-jmxclient"           % "cmdline-jmxclient"          % "0.10.3"     // LGPL
+  val log4j         = "log4j"                       % "log4j"                      % "1.2.14"     // ApacheV2
+  val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"       % "0.2.9-1"    // ApacheV2
+  val netty         = "io.netty"                    % "netty"                      % V.Netty      // ApacheV2
+  val osgi          = "org.osgi"                    % "org.osgi.core"              % "4.2.0"      // ApacheV2
+  val protobuf      = "com.google.protobuf"         % "protobuf-java"              % V.Protobuf   // New BSD
+  val rabbit        = "com.rabbitmq"                % "amqp-client"                % V.Rabbit     // Mozilla Public License
+  val redis         = "net.debasishg"               % "redisclient_2.9.1"          % "2.4.0"      // ApacheV2
+  val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"            % V.ScalaStm   // Modified BSD (Scala)
+  val slf4jApi      = "org.slf4j"                   % "slf4j-api"                  % V.Slf4j      // MIT
+  val springBeans   = "org.springframework"         % "spring-beans"               % V.Spring     // ApacheV2
+  val springContext = "org.springframework"         % "spring-context"             % V.Spring     // ApacheV2
+  val staxApi       = "javax.xml.stream"            % "stax-api"                   % "1.0-2"      // ApacheV2
+  val twttrUtilCore = "com.twitter"                 % "util-core"                  % "1.8.1"      // ApacheV2
+  val zkClient      = "zkclient"                    % "zkclient"                   % "0.3"        // ApacheV2
+  val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"                  % V.Zookeeper  // ApacheV2
+  val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock"     % V.Zookeeper  // ApacheV2
+  val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1" % "0.0.5"      // ApacheV2
 
   // Provided
 
   object Provided {
-    val javaxServlet = "org.apache.geronimo.specs" % "geronimo-servlet_3.0_spec" % "1.0" % "provided" // CDDL v1
-    val jetty        = "org.eclipse.jetty" % "jetty-server"  % V.Jetty        % "provided"            // Eclipse license
+    val javaxServlet = "org.apache.geronimo.specs" % "geronimo-servlet_3.0_spec" % "1.0"    % "provided" // CDDL v1
+    val jetty        = "org.eclipse.jetty"         % "jetty-server"              % V.Jetty  % "provided" // Eclipse license
   }
 
   // Runtime

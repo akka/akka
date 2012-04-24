@@ -1,15 +1,23 @@
 #!/bin/bash
 
- # Add these options to the sbt or startup script:
- #   java \
- #      -Dcom.sun.management.jmxremote.port=9999 \
- #      -Dcom.sun.management.jmxremote.ssl=false \
- #      -Dcom.sun.management.jmxremote.authenticate=false \
- #      ...
+# ============== Akka Cluster Administration Tool ==============
+#
+# This script is meant to be used from within the Akka distribution.
+# Requires setting $AKKA_HOME to the root of the distribution.
+#
+# Add these options to the sbt or startup script:
+#   java \
+#      -Dcom.sun.management.jmxremote.port=9999 \
+#      -Dcom.sun.management.jmxremote.ssl=false \
+#      -Dcom.sun.management.jmxremote.authenticate=false \
+#      ...
+# ==============================================================
 
-# FIXME support authentication? if so add: -Dcom.sun.management.jmxremote.password.file=<path to file>
+# FIXME support authentication? if so add: -Dcom.sun.management.jmxremote.password.file=<path to file> AND tweak this script to support it (arg need 'user:passwd' instead of '-')
 
-JMX_CLIENT="java -jar $AKKA_HOME/lib/cmdline-jmxclient-0.10.3.jar -"
+# NOTE: The 'cmdline-jmxclient' JAR is available as part of the Akka distribution.
+#       Provided by Typesafe Maven Repository: http://repo.typesafe.com/typesafe/releases/cmdline-jmxclient.
+JMX_CLIENT="java -jar $AKKA_HOME/lib/akka/cmdline-jmxclient-0.10.3.jar -"
 
 SELF=`basename $0` # script name
 HOST=$1            # cluster node:port to talk to through JMX
