@@ -1015,6 +1015,7 @@ abstract class OnSuccess[-T] extends japi.CallbackBridge[T] {
    * This method will be invoked once when/if a Future that this callback is registered on
    * becomes successfully completed
    */
+  @throws(classOf[Throwable])
   def onSuccess(result: T): Unit
 }
 
@@ -1031,6 +1032,7 @@ abstract class OnFailure extends japi.CallbackBridge[Throwable] {
    * This method will be invoked once when/if a Future that this callback is registered on
    * becomes completed with a failure
    */
+  @throws(classOf[Throwable])
   def onFailure(failure: Throwable): Unit
 }
 
@@ -1051,6 +1053,7 @@ abstract class OnComplete[-T] extends japi.CallbackBridge[Either[Throwable, T]] 
    * becomes completed with a failure or a success.
    * In the case of success then "failure" will be null, and in the case of failure the "success" will be null.
    */
+  @throws(classOf[Throwable])
   def onComplete(failure: Throwable, success: T): Unit
 }
 
@@ -1121,6 +1124,7 @@ abstract class Foreach[-T] extends japi.UnitFunctionBridge[T] {
    * This method will be invoked once when/if a Future that this callback is registered on
    * becomes successfully completed
    */
+  @throws(classOf[Throwable])
   def each(result: T): Unit
 }
 
@@ -1129,8 +1133,25 @@ abstract class Foreach[-T] extends japi.UnitFunctionBridge[T] {
  * if the Future that this callback is registered on becomes completed with a success.
  * This callback is the equivalent of an akka.japi.Function
  *
+ * Override "apply" normally, or "checkedApply" if you need to throw checked exceptions.
+ *
  * SAM (Single Abstract Method) class
  *
  * Java API
  */
-abstract class Mapper[-T, +R] extends scala.runtime.AbstractFunction1[T, R]
+abstract class Mapper[-T, +R] extends scala.runtime.AbstractFunction1[T, R] {
+
+  /**
+   * Override this method to perform the map operation, by default delegates to "checkedApply"
+   * which by default throws an UnsupportedOperationException.
+   */
+  def apply(parameter: T): R = checkedApply(parameter)
+
+  /**
+   * Override this method if you need to throw checked exceptions
+   *
+   * @throws UnsupportedOperation by default
+   */
+  @throws(classOf[Throwable])
+  def checkedApply(parameter: T): R = throw new UnsupportedOperationException("Mapper.checkedApply has not been implemented")
+}
