@@ -19,6 +19,20 @@ class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
       expectMsgAllOf(1 second, 42, 42)
     }
 
+    "support convenient sending to multiple destinations with implicit sender" in {
+      implicit val someActor = system.actorOf(Props(ctx ⇒ Actor.emptyBehavior))
+      Future(42) pipeTo testActor pipeTo testActor
+      expectMsgAllOf(1 second, 42, 42)
+      lastSender must be(someActor)
+    }
+
+    "support convenient sending with explicit sender" in {
+      val someActor = system.actorOf(Props(ctx ⇒ Actor.emptyBehavior))
+      Future(42).to(testActor, someActor)
+      expectMsgAllOf(1 second, 42)
+      lastSender must be(someActor)
+    }
+
     "support reply via sender" in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
