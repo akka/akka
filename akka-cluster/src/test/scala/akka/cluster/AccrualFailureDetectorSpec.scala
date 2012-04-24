@@ -36,7 +36,6 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
       fd.isAvailable(conn) must be(true)
     }
 
-    // FIXME how should we deal with explicit removal of connection? - if triggered as failure then we have a problem in boostrap - see line 142 in AccrualFailureDetector
     "mark node as dead after explicit removal of connection" in {
       val fd = new AccrualFailureDetector(system, conn)
 
