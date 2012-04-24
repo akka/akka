@@ -21,6 +21,7 @@ object ResizerSpec {
       /router1 {
         router = round-robin
         resizer {
+          status = on
           lower-bound = 2
           upper-bound = 3
         }
