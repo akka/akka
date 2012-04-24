@@ -27,3 +27,4 @@ Scala API
    extending-akka
    zeromq
    microkernel
+   camel
