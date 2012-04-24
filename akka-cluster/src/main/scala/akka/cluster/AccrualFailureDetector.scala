@@ -73,7 +73,7 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
       val newFailureStats = oldFailureStats + (connection -> FailureStats())
       val newIntervalHistory = oldState.intervalHistory + (connection -> Vector.empty[Long])
       val newTimestamps = oldTimestamps + (connection -> newTimestamp)
-      val newExplicitRemovals = if (explicitRemovals.contains(connection)) explicitRemovals - connection else explicitRemovals
+      val newExplicitRemovals = explicitRemovals - connection
 
       val newState = oldState copy (
         version = oldState.version + 1,
@@ -129,7 +129,7 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
 
       val newIntervalHistory = oldState.intervalHistory + (connection -> newIntervalsForConnection)
 
-      val newExplicitRemovals = if (explicitRemovals.contains(connection)) explicitRemovals - connection else explicitRemovals
+      val newExplicitRemovals = explicitRemovals - connection
 
       val newState = oldState copy (version = oldState.version + 1,
         failureStats = newFailureStats,
