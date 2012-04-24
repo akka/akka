@@ -16,18 +16,19 @@ import org.jboss.netty.channel.{ ChannelHandlerContext, Channel }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufEncoder, ProtobufDecoder }
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor
 import org.jboss.netty.util.HashedWheelTimer
-import akka.actor.{ Address, ActorSystemImpl, ActorRef }
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
 import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
 import akka.util.NonFatal
+import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
 
 /**
  * Provides the implementation of the Netty remote support
  */
-class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: ActorSystemImpl, val provider: RemoteActorRefProvider)
-  extends RemoteTransport with RemoteMarshallingOps {
+class NettyRemoteTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) with RemoteMarshallingOps {
+
+  import provider.remoteSettings
 
   val settings = new NettySettings(remoteSettings.config.getConfig("akka.remote.netty"), remoteSettings.systemName)
 
@@ -66,7 +67,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   def address = _address.get
 
-  val log = Logging(system.eventStream, "NettyRemoteTransport(" + address + ")")
+  lazy val log = Logging(system.eventStream, "NettyRemoteTransport(" + address + ")")
 
   def start(): Unit = {
     server.start()

@@ -92,6 +92,18 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
 
   "An AkkaSpec" must {
 
+    "warn about unhandled messages" in {
+      implicit val system = ActorSystem("AkkaSpec0", AkkaSpec.testConf)
+      try {
+        val a = system.actorOf(Props.empty)
+        EventFilter.warning(start = "unhandled message", occurrences = 1) intercept {
+          a ! 42
+        }
+      } finally {
+        system.shutdown()
+      }
+    }
+
     "terminate all actors" in {
       // verbose config just for demonstration purposes, please leave in in case of debugging
       import scala.collection.JavaConverters._

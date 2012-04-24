@@ -157,6 +157,45 @@ class VectorClockSpec extends AkkaSpec {
       merged1 == merged2 must be(true)
     }
 
+    "correctly merge two disjoint vector clocks" in {
+      val node1 = Node("1")
+      val node2 = Node("2")
+      val node3 = Node("3")
+      val node4 = Node("4")
+
+      val clock1_1 = VectorClock()
+      val clock2_1 = clock1_1 + node1
+      val clock3_1 = clock2_1 + node2
+      val clock4_1 = clock3_1 + node2
+      val clock5_1 = clock4_1 + node3
+
+      val clock1_2 = VectorClock()
+      val clock2_2 = clock1_2 + node4
+      val clock3_2 = clock2_2 + node4
+
+      val merged1 = clock3_2 merge clock5_1
+      merged1.versions.size must be(4)
+      merged1.versions.contains(node1) must be(true)
+      merged1.versions.contains(node2) must be(true)
+      merged1.versions.contains(node3) must be(true)
+      merged1.versions.contains(node4) must be(true)
+
+      val merged2 = clock5_1 merge clock3_2
+      merged2.versions.size must be(4)
+      merged2.versions.contains(node1) must be(true)
+      merged2.versions.contains(node2) must be(true)
+      merged2.versions.contains(node3) must be(true)
+      merged2.versions.contains(node4) must be(true)
+
+      clock3_2 < merged1 must be(true)
+      clock5_1 < merged1 must be(true)
+
+      clock3_2 < merged2 must be(true)
+      clock5_1 < merged2 must be(true)
+
+      merged1 == merged2 must be(true)
+    }
+
     "pass blank clock incrementing" in {
       val node1 = Node("1")
       val node2 = Node("2")

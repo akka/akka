@@ -49,7 +49,7 @@ object Pi extends App {
 
     var pi: Double = _
     var nrOfResults: Int = _
-    val start: Long = System.currentTimeMillis
+    val start: Long = System.currentTimeMillis()
 
     //#create-router
     val workerRouter = context.actorOf(
@@ -66,7 +66,7 @@ object Pi extends App {
         nrOfResults += 1
         if (nrOfResults == nrOfMessages) {
           // Send the result to the listener
-          listener ! PiApproximation(pi, duration = (System.currentTimeMillis - start).millis)
+          listener ! PiApproximation(pi, duration = (System.currentTimeMillis() - start).millis)
           // Stops this actor and all its supervised children
           context.stop(self)
         }

@@ -5,13 +5,13 @@
 package akka.remote
 
 import scala.reflect.BeanProperty
-import akka.actor.{ Terminated, LocalRef, InternalActorRef, AutoReceivedMessage, AddressFromURIString, Address, ActorSystemImpl, ActorSystem, ActorRef }
 import akka.dispatch.SystemMessage
 import akka.event.{ LoggingAdapter, Logging }
 import akka.AkkaException
 import akka.serialization.Serialization
 import akka.remote.RemoteProtocol._
 import akka.dispatch.ChildTerminated
+import akka.actor._
 
 /**
  * Remote life-cycle events.
@@ -152,7 +152,7 @@ class RemoteTransportException(message: String, cause: Throwable) extends AkkaEx
  * be available (i.e. fully initialized) by the time the first message is
  * received or when the start() method returns, whatever happens first.
  */
-abstract class RemoteTransport {
+abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) {
   /**
    * Shuts down the remoting
    */
@@ -162,11 +162,6 @@ abstract class RemoteTransport {
    * Address to be used in RootActorPath of refs generated for this transport.
    */
   def address: Address
-
-  /**
-   * The actor system, for which this transport is instantiated. Will publish to its eventStream.
-   */
-  def system: ActorSystem
 
   /**
    * Start up the transport, i.e. enable incoming connections.
@@ -197,7 +192,7 @@ abstract class RemoteTransport {
   override def toString = address.toString
 }
 
-class RemoteMessage(input: RemoteMessageProtocol, system: ActorSystemImpl) {
+class RemoteMessage(input: RemoteMessageProtocol, system: ExtendedActorSystem) {
 
   def originalReceiver = input.getRecipient.getPath
 
@@ -216,7 +211,7 @@ trait RemoteMarshallingOps {
 
   def log: LoggingAdapter
 
-  def system: ActorSystemImpl
+  def system: ExtendedActorSystem
 
   def provider: RemoteActorRefProvider
 
@@ -288,9 +283,9 @@ trait RemoteMarshallingOps {
           case AddressFromURIString(address) if address == provider.transport.address ⇒
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
-          case r ⇒ log.error("dropping message {} for non-local recipient {} at {} local is {}", remoteMessage.payload, r, address, provider.transport.address)
+          case r ⇒ log.error("dropping message {} for non-local recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
         }
-      case r ⇒ log.error("dropping message {} for non-local recipient {} of type {}", remoteMessage.payload, r, if (r ne null) r.getClass else "null")
+      case r ⇒ log.error("dropping message {} for non-local recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
     }
   }
 }

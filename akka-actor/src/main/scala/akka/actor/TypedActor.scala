@@ -227,15 +227,19 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case _             ⇒ super.supervisorStrategy
     }
 
-    override def preStart(): Unit = me match {
-      case l: PreStart ⇒ l.preStart()
-      case _           ⇒ super.preStart()
+    override def preStart(): Unit = withContext {
+      me match {
+        case l: PreStart ⇒ l.preStart()
+        case _           ⇒ super.preStart()
+      }
     }
 
     override def postStop(): Unit = try {
-      me match {
-        case l: PostStop ⇒ l.postStop()
-        case _           ⇒ super.postStop()
+      withContext {
+        me match {
+          case l: PostStop ⇒ l.postStop()
+          case _           ⇒ super.postStop()
+        }
       }
     } finally {
       TypedActor(context.system).invocationHandlerFor(proxyVar.get) match {
@@ -246,14 +250,18 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       }
     }
 
-    override def preRestart(reason: Throwable, message: Option[Any]): Unit = me match {
-      case l: PreRestart ⇒ l.preRestart(reason, message)
-      case _             ⇒ super.preRestart(reason, message)
+    override def preRestart(reason: Throwable, message: Option[Any]): Unit = withContext {
+      me match {
+        case l: PreRestart ⇒ l.preRestart(reason, message)
+        case _             ⇒ super.preRestart(reason, message)
+      }
     }
 
-    override def postRestart(reason: Throwable): Unit = me match {
-      case l: PostRestart ⇒ l.postRestart(reason)
-      case _              ⇒ super.postRestart(reason)
+    override def postRestart(reason: Throwable): Unit = withContext {
+      me match {
+        case l: PostRestart ⇒ l.postRestart(reason)
+        case _              ⇒ super.postRestart(reason)
+      }
     }
 
     protected def withContext[T](unitOfWork: ⇒ T): T = {

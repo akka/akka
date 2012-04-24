@@ -43,6 +43,12 @@ To prevent visibility and reordering problems on actors, Akka guarantees the fol
 *  **The actor send rule:** the send of the message to an actor happens before the receive of that message by the same actor.
 *  **The actor subsequent processing rule:** processing of one message happens before processing of the next message by the same actor.
 
+.. note::
+
+    In layman's terms this means that changes to internal fields of the actor is visible when the next message
+    is processed by that actor. So fields in your actor does not need to be volatile or equivalent.
+
+
 Both rules only apply for the same actor instance and are not valid if different actors are used.
 
 Futures and the Java Memory Model

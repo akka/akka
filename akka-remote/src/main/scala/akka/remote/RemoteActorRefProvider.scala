@@ -78,8 +78,7 @@ class RemoteActorRefProvider(
     _transport = {
       val fqn = remoteSettings.RemoteTransport
       val args = Seq(
-        classOf[RemoteSettings] -> remoteSettings,
-        classOf[ActorSystemImpl] -> system,
+        classOf[ExtendedActorSystem] -> system,
         classOf[RemoteActorRefProvider] -> this)
 
       system.dynamicAccess.createInstanceFor[RemoteTransport](fqn, args) match {
