@@ -13,7 +13,7 @@ Contents
 --------
 
 - README    - this document
-- bin       - start scripts for the Akka Microkernel
+- bin       - start scripts for the Akka Microkernel and Akka Cluster admin tool
 - config    - config files for microkernel applications
 - deploy    - deploy dir for microkernel applications
 - doc       - Akka documentation and Scaladoc API
@@ -32,3 +32,12 @@ There is a sample microkernel application included in this download.
 Start this application with the following command:
 
     bin/akka sample.kernel.hello.HelloKernel
+
+
+Cluster Administration Tool
+---------------------------
+
+The 'akka-cluster' tool is an administration tool for managing Akka cluster nodes.
+Learn more by invoking:
+
+    bin/akka-cluster --help
