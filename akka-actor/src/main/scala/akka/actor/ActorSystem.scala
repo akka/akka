@@ -17,9 +17,9 @@ import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import java.io.Closeable
 import akka.dispatch.Await.Awaitable
 import akka.dispatch.Await.CanAwait
-import java.util.concurrent.{ CountDownLatch, TimeoutException, RejectedExecutionException }
 import akka.util._
 import collection.immutable.Stack
+import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 
 object ActorSystem {
 
@@ -406,6 +406,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
    * Implementation of the mechanism which is used for watch()/unwatch().
    */
   def deathWatch: DeathWatch
+
+  /**
+   * A ThreadFactory that can be used if the transport needs to create any Threads
+   */
+  def threadFactory: ThreadFactory
 
   /**
    * ClassLoader wrapper which is used for reflective accesses internally. This is set
