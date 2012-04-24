@@ -447,7 +447,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
   /**
    * Tests whether this Future has been completed.
    */
-  def isCompleted: Boolean
+  def isCompleted(): Boolean
 
   /**
    * The contained value of this Future. Before this Future is completed
@@ -852,21 +852,21 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
 
     @tailrec
     def awaitUnsafe(waitTimeNanos: Long): Boolean = {
-      if (!isCompleted && waitTimeNanos > 0) {
+      if (!isCompleted() && waitTimeNanos > 0) {
         val ms = NANOSECONDS.toMillis(waitTimeNanos)
         val ns = (waitTimeNanos % 1000000l).toInt //As per object.wait spec
         val start = System.nanoTime()
-        try { synchronized { if (!isCompleted) wait(ms, ns) } } catch { case e: InterruptedException ⇒ }
+        try { synchronized { if (!isCompleted()) wait(ms, ns) } } catch { case e: InterruptedException ⇒ }
 
         awaitUnsafe(waitTimeNanos - (System.nanoTime() - start))
-      } else isCompleted
+      } else isCompleted()
     }
     awaitUnsafe(if (atMost.isFinite) atMost.toNanos else Long.MaxValue)
   }
 
   @throws(classOf[TimeoutException])
   def ready(atMost: Duration)(implicit permit: CanAwait): this.type =
-    if (isCompleted || tryAwait(atMost)) this
+    if (isCompleted() || tryAwait(atMost)) this
     else throw new TimeoutException("Futures timed out after [" + atMost.toMillis + "] milliseconds")
 
   @throws(classOf[Exception])

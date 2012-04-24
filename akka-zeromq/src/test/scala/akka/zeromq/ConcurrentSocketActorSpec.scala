@@ -66,8 +66,8 @@ class ConcurrentSocketActorSpec extends AkkaSpec with DefaultTimeout {
         subscriberProbe.receiveWhile(1 seconds) {
           case msg ⇒ msg
         }.last must equal(Closed)
-        awaitCond(publisher.isTerminated)
-        awaitCond(subscriber.isTerminated)
+        awaitCond(publisher.isTerminated())
+        awaitCond(subscriber.isTerminated())
         context.term
       }
     }

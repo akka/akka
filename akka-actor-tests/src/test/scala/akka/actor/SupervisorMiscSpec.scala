@@ -76,7 +76,7 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
       }
       expectMsg("preStart")
       expectMsg("preStart")
-      a.isTerminated must be(false)
+      a.isTerminated() must be(false)
     }
 
     "be able to recreate child when old child is Terminated" in {
@@ -88,8 +88,8 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
               val newKid = context.actorOf(Props.empty, "foo")
               val result =
                 if (newKid eq kid) "Failure: context.actorOf returned the same instance!"
-                else if (!kid.isTerminated) "Kid is zombie"
-                else if (newKid.isTerminated) "newKid was stillborn"
+                else if (!kid.isTerminated()) "Kid is zombie"
+                else if (newKid.isTerminated()) "newKid was stillborn"
                 else if (kid.path != newKid.path) "The kids do not share the same path"
                 else "green"
               testActor ! result

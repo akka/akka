@@ -95,7 +95,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       (1 to 100) foreach { _ ⇒ slave ! Crash }
       Await.ready(countDownLatch, 2 minutes)
-      assert(!slave.isTerminated)
+      assert(!slave.isTerminated())
     }
 
     "ensure that slave restarts after number of crashes not within time range" in {
@@ -153,7 +153,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       Await.ready(thirdRestartLatch, 1 second)
 
-      assert(!slave.isTerminated)
+      assert(!slave.isTerminated())
     }
 
     "ensure that slave is not restarted after max retries" in {
@@ -190,7 +190,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       // test restart and post restart ping
       Await.ready(restartLatch, 10 seconds)
 
-      assert(!slave.isTerminated)
+      assert(!slave.isTerminated())
 
       // now crash again... should not restart
       slave ! Crash
@@ -204,7 +204,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       slave ! Crash
       Await.ready(stopLatch, 10 seconds)
       sleep(500L)
-      assert(slave.isTerminated)
+      assert(slave.isTerminated())
     }
 
     "ensure that slave is not restarted within time range" in {
@@ -243,7 +243,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       // test restart and post restart ping
       Await.ready(restartLatch, 10 seconds)
 
-      assert(!slave.isTerminated)
+      assert(!slave.isTerminated())
 
       // now crash again... should not restart
       slave ! Crash
@@ -259,7 +259,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       Await.ready(maxNoOfRestartsLatch, 10 seconds)
       sleep(500L)
-      assert(slave.isTerminated)
+      assert(slave.isTerminated())
     }
   }
 }

@@ -276,7 +276,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     "be able to call Future-returning methods non-blockingly" in {
       val t = newFooBar
       val f = t.futurePigdog(200)
-      f.isCompleted must be(false)
+      f.isCompleted() must be(false)
       Await.result(f, timeout.duration) must be("Pigdog")
       mustStop(t)
     }
@@ -307,7 +307,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     "be able to compose futures without blocking" in {
       val t, t2 = newFooBar(Duration(2, "s"))
       val f = t.futureComposePigdogFrom(t2)
-      f.isCompleted must be(false)
+      f.isCompleted() must be(false)
       Await.result(f, timeout.duration) must equal("PIGDOG")
       mustStop(t)
       mustStop(t2)
@@ -354,8 +354,8 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       val t: Foo = TypedActor(system).typedActorOf(TypedProps[Bar]())
       val f = t.futurePigdog(200)
       val f2 = t.futurePigdog(0)
-      f2.isCompleted must be(false)
-      f.isCompleted must be(false)
+      f2.isCompleted() must be(false)
+      f.isCompleted() must be(false)
       Await.result(f, timeout.duration) must equal(Await.result(f2, timeout.duration))
       mustStop(t)
     }

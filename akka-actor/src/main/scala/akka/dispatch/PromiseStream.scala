@@ -167,7 +167,7 @@ class PromiseStream[A](implicit val dispatcher: MessageDispatcher, val timeout: 
         } else {
           if (_pendOut.compareAndSet(po, po.tail)) {
             po.head success elem
-            if (!po.head.isCompleted) enqueue(elem)
+            if (!po.head.isCompleted()) enqueue(elem)
           } else enqueue(elem)
         }
       }

@@ -132,14 +132,14 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       system.actorFor(a.path.toString) must be === a
       system.actorFor(a.path.elements) must be === a
       system.actorFor(a.path.toString + "/") must be === a
-      system.actorFor(a.path.toString + "/hallo").isTerminated must be === true
-      f.isCompleted must be === false
-      a.isTerminated must be === false
+      system.actorFor(a.path.toString + "/hallo").isTerminated() must be === true
+      f.isCompleted() must be === false
+      a.isTerminated() must be === false
       a ! 42
-      f.isCompleted must be === true
+      f.isCompleted() must be === true
       Await.result(f, timeout.duration) must be === 42
       // clean-up is run as onComplete callback, i.e. dispatched on another thread
-      awaitCond(system.actorFor(a.path).isTerminated, 1 second)
+      awaitCond(system.actorFor(a.path).isTerminated(), 1 second)
     }
 
   }
@@ -247,13 +247,13 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
       Await.result(c2 ? LookupString("../../" + a.path.elements.mkString("/") + "/"), timeout.duration) must be === a
       Await.result(c2 ? LookupElems(Seq("..", "..") ++ a.path.elements), timeout.duration) must be === a
       Await.result(c2 ? LookupElems(Seq("..", "..") ++ a.path.elements :+ ""), timeout.duration) must be === a
-      f.isCompleted must be === false
-      a.isTerminated must be === false
+      f.isCompleted() must be === false
+      a.isTerminated() must be === false
       a ! 42
-      f.isCompleted must be === true
+      f.isCompleted() must be === true
       Await.result(f, timeout.duration) must be === 42
       // clean-up is run as onComplete callback, i.e. dispatched on another thread
-      awaitCond(Await.result(c2 ? LookupPath(a.path), timeout.duration).asInstanceOf[ActorRef].isTerminated, 1 second)
+      awaitCond(Await.result(c2 ? LookupPath(a.path), timeout.duration).asInstanceOf[ActorRef].isTerminated(), 1 second)
     }
 
   }

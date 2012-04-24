@@ -866,7 +866,7 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
                          deep: Boolean = false): ActorRef =
       if (at >= targets.size) {
         if (deep) {
-          if (proposedTarget.isTerminated) targets(ThreadLocalRandom.current.nextInt(targets.size)) else proposedTarget
+          if (proposedTarget.isTerminated()) targets(ThreadLocalRandom.current.nextInt(targets.size)) else proposedTarget
         } else getNext(targets, proposedTarget, currentScore, 0, deep = true)
       } else {
         val target = targets(at)

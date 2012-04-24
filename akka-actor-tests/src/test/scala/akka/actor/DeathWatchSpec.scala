@@ -108,7 +108,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
         terminal ! Kill
 
         expectTerminationOf(terminal)
-        terminal.isTerminated must be === true
+        terminal.isTerminated() must be === true
 
         system.stop(supervisor)
       }
@@ -139,7 +139,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
           case FF(Failed(DeathPactException(`failed`))) if lastSender eq brother â‡’ 2
           case Terminated(`brother`) â‡’ 3
         }
-        testActor.isTerminated must not be true
+        testActor.isTerminated() must not be true
         result must be(Seq(1, 2, 3))
       }
     }

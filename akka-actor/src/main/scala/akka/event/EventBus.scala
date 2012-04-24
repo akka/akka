@@ -245,19 +245,19 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
     val current = mappings get monitored
     current match {
       case null ⇒
-        if (monitored.isTerminated) false
+        if (monitored.isTerminated()) false
         else {
           if (mappings.putIfAbsent(monitored, empty + monitor) ne null) associate(monitored, monitor)
-          else if (monitored.isTerminated) !dissociate(monitored, monitor) else true
+          else if (monitored.isTerminated()) !dissociate(monitored, monitor) else true
         }
       case raw: TreeSet[_] ⇒
         val v = raw.asInstanceOf[TreeSet[ActorRef]]
-        if (monitored.isTerminated) false
+        if (monitored.isTerminated()) false
         if (v.contains(monitor)) true
         else {
           val added = v + monitor
           if (!mappings.replace(monitored, v, added)) associate(monitored, monitor)
-          else if (monitored.isTerminated) !dissociate(monitored, monitor) else true
+          else if (monitored.isTerminated()) !dissociate(monitored, monitor) else true
         }
     }
   }
