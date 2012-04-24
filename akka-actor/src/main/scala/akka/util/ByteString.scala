@@ -60,15 +60,15 @@ object ByteString {
     def apply() = newBuilder
   }
 
-  private[akka] object ByteStringCompact {
-    def apply(bytes: Array[Byte]) = new ByteStringCompact(bytes)
+  private[akka] object ByteString1C {
+    def apply(bytes: Array[Byte]) = new ByteString1C(bytes)
   }
 
   /**
-   * Implementation of CompactByteString.
+   * A compact (unsliced) and unfragmented ByteString, implementaton of ByteString1C.
    */
-  @SerialVersionUID(8153715304510848081L)
-  final class ByteStringCompact private (private val bytes: Array[Byte]) extends CompactByteString {
+  @SerialVersionUID(3956956327691936932L)
+  final class ByteString1C private (private val bytes: Array[Byte]) extends CompactByteString {
     def apply(idx: Int): Byte = bytes(idx)
 
     override def length = bytes.length
@@ -77,9 +77,9 @@ object ByteString {
 
     def toByteString1: ByteString1 = ByteString1(bytes)
 
-    override def clone: ByteStringCompact = new ByteStringCompact(toArray)
+    override def clone: ByteString1C = new ByteString1C(toArray)
 
-    def compact: ByteStringCompact = this
+    def compact: ByteString1C = this
 
     def asByteBuffer: ByteBuffer =
       toByteString1.asByteBuffer
@@ -126,10 +126,10 @@ object ByteString {
       ar
     }
 
-    override def clone: CompactByteString = ByteStringCompact(toArray)
+    override def clone: CompactByteString = ByteString1C(toArray)
 
     def compact: CompactByteString =
-      if (length == bytes.length) ByteStringCompact(bytes) else clone
+      if (length == bytes.length) ByteString1C(bytes) else clone
 
     def asByteBuffer: ByteBuffer = {
       val buffer = ByteBuffer.wrap(bytes, startIndex, length).asReadOnlyBuffer
@@ -141,9 +141,9 @@ object ByteString {
       new String(if (length == bytes.length) bytes else toArray, charset)
 
     def ++(that: ByteString): ByteString = that match {
-      case b: ByteStringCompact ⇒ ByteStrings(this, b.toByteString1)
-      case b: ByteString1       ⇒ ByteStrings(this, b)
-      case bs: ByteStrings      ⇒ ByteStrings(this, bs)
+      case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
+      case b: ByteString1  ⇒ ByteStrings(this, b)
+      case bs: ByteStrings ⇒ ByteStrings(this, bs)
     }
 
     override def slice(from: Int, until: Int): ByteString = {
@@ -259,9 +259,9 @@ object ByteString {
     }
 
     def ++(that: ByteString): ByteString = that match {
-      case b: ByteStringCompact ⇒ ByteStrings(this, b.toByteString1)
-      case b: ByteString1       ⇒ ByteStrings(this, b)
-      case bs: ByteStrings      ⇒ ByteStrings(this, bs)
+      case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
+      case b: ByteString1  ⇒ ByteStrings(this, b)
+      case bs: ByteStrings ⇒ ByteStrings(this, bs)
     }
 
     def compact: CompactByteString = {
@@ -271,7 +271,7 @@ object ByteString {
         b.copyToArray(ar, pos, b.length)
         pos += b.length
       }
-      ByteStringCompact(ar)
+      ByteString1C(ar)
     }
 
     def asByteBuffer: ByteBuffer = compact.asByteBuffer
@@ -353,7 +353,7 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by copying a byte array.
    */
-  def apply(bytes: Array[Byte]): CompactByteString = ByteString.ByteStringCompact(bytes.clone)
+  def apply(bytes: Array[Byte]): CompactByteString = ByteString.ByteString1C(bytes.clone)
 
   /**
    * Creates a new CompactByteString by copying bytes.
@@ -368,7 +368,7 @@ object CompactByteString {
    * Creates a new CompactByteString by converting from integral numbers to bytes.
    */
   def apply[T](bytes: T*)(implicit num: Integral[T]): CompactByteString =
-    ByteString.ByteStringCompact(bytes.map(x ⇒ num.toInt(x).toByte)(collection.breakOut))
+    ByteString.ByteString1C(bytes.map(x ⇒ num.toInt(x).toByte)(collection.breakOut))
 
   /**
    * Creates a new CompactByteString by copying bytes from a ByteBuffer.
@@ -376,7 +376,7 @@ object CompactByteString {
   def apply(bytes: ByteBuffer): CompactByteString = {
     val ar = new Array[Byte](bytes.remaining)
     bytes.get(ar)
-    ByteString.ByteStringCompact(ar)
+    ByteString.ByteString1C(ar)
   }
 
   /**
@@ -388,7 +388,7 @@ object CompactByteString {
    * Creates a new CompactByteString by encoding a String with a charset.
    */
   def apply(string: String, charset: String): CompactByteString =
-    ByteString.ByteStringCompact(string.getBytes(charset))
+    ByteString.ByteString1C(string.getBytes(charset))
 
   /**
    * Creates a new CompactByteString by copying length bytes starting at offset from
@@ -401,11 +401,11 @@ object CompactByteString {
     else {
       val copyArray = new Array[Byte](copyLength)
       Array.copy(array, copyOffset, copyArray, 0, copyLength)
-      ByteString.ByteStringCompact(copyArray)
+      ByteString.ByteString1C(copyArray)
     }
   }
 
-  val empty: CompactByteString = ByteString.ByteStringCompact(Array.empty[Byte])
+  val empty: CompactByteString = ByteString.ByteString1C(Array.empty[Byte])
 }
 
 /**
@@ -419,7 +419,7 @@ sealed abstract class CompactByteString extends ByteString with Serializable
  * The created ByteString is not automatically compacted.
  */
 final class ByteStringBuilder extends Builder[Byte, ByteString] {
-  import ByteString.{ ByteStringCompact, ByteString1, ByteStrings }
+  import ByteString.{ ByteString1C, ByteString1, ByteStrings }
   private var _length = 0
   private val _builder = new VectorBuilder[ByteString1]()
   private var _temp: Array[Byte] = _
@@ -460,7 +460,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
 
   override def ++=(xs: TraversableOnce[Byte]): this.type = {
     xs match {
-      case b: ByteStringCompact ⇒
+      case b: ByteString1C ⇒
         clearTemp()
         _builder += b.toByteString1
         _length += b.length
