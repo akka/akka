@@ -353,30 +353,41 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by copying a byte array.
    */
-  def apply(bytes: Array[Byte]): CompactByteString = ByteString.ByteString1C(bytes.clone)
+  def apply(bytes: Array[Byte]): CompactByteString = {
+    if (bytes.isEmpty) empty
+    else ByteString.ByteString1C(bytes.clone)
+  }
 
   /**
    * Creates a new CompactByteString by copying bytes.
    */
   def apply(bytes: Byte*): CompactByteString = {
-    val ar = new Array[Byte](bytes.size)
-    bytes.copyToArray(ar)
-    CompactByteString(ar)
+    if (bytes.isEmpty) empty
+    else {
+      val ar = new Array[Byte](bytes.size)
+      bytes.copyToArray(ar)
+      CompactByteString(ar)
+    }
   }
 
   /**
    * Creates a new CompactByteString by converting from integral numbers to bytes.
    */
-  def apply[T](bytes: T*)(implicit num: Integral[T]): CompactByteString =
-    ByteString.ByteString1C(bytes.map(x ⇒ num.toInt(x).toByte)(collection.breakOut))
+  def apply[T](bytes: T*)(implicit num: Integral[T]): CompactByteString = {
+    if (bytes.isEmpty) empty
+    else ByteString.ByteString1C(bytes.map(x ⇒ num.toInt(x).toByte)(collection.breakOut))
+  }
 
   /**
    * Creates a new CompactByteString by copying bytes from a ByteBuffer.
    */
   def apply(bytes: ByteBuffer): CompactByteString = {
-    val ar = new Array[Byte](bytes.remaining)
-    bytes.get(ar)
-    ByteString.ByteString1C(ar)
+    if (bytes.remaining < 1) empty
+    else {
+      val ar = new Array[Byte](bytes.remaining)
+      bytes.get(ar)
+      ByteString.ByteString1C(ar)
+    }
   }
 
   /**
@@ -387,8 +398,10 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by encoding a String with a charset.
    */
-  def apply(string: String, charset: String): CompactByteString =
-    ByteString.ByteString1C(string.getBytes(charset))
+  def apply(string: String, charset: String): CompactByteString = {
+    if (string.isEmpty) empty
+    else ByteString.ByteString1C(string.getBytes(charset))
+  }
 
   /**
    * Creates a new CompactByteString by copying length bytes starting at offset from
