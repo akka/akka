@@ -26,9 +26,10 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   val ip = InetAddress.getByName(settings.Hostname)
 
-  private val factory = new NioServerSocketChannelFactory(
-    Executors.newCachedThreadPool(netty.system.threadFactory),
-    Executors.newCachedThreadPool(netty.system.threadFactory))
+  private val factory = {
+    val boss, worker = if (settings.UseDefaultDispatcherForIO) netty.system.dispatcher else Executors.newCachedThreadPool()
+    new NioServerSocketChannelFactory(boss, worker)
+  }
 
   private val executionHandler = new ExecutionHandler(netty.executor)
 

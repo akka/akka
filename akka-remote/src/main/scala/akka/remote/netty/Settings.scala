@@ -27,6 +27,7 @@ class NettySettings(config: Config, val systemName: String) {
   }
 
   val UsePassiveConnections = getBoolean("use-passive-connections")
+  val UseDefaultDispatcherForIO = getBoolean("use-default-dispatcher-for-io")
 
   val ReconnectionTimeWindow = Duration(getMilliseconds("reconnection-time-window"), MILLISECONDS)
   val ReadTimeout = Duration(getMilliseconds("read-timeout"), MILLISECONDS)
