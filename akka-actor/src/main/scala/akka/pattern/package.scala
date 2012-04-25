@@ -40,6 +40,6 @@ import akka.util.{ Timeout, Duration }
  * ask(actor, message);
  * }}}
  */
-package object pattern extends PipeToSupport with AskSupport with GracefulStopSupport {
+package object pattern extends PipeToSupport with AskSupport with GracefulStopSupport with FutureTimeoutSupport {
 
 }
