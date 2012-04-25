@@ -11,7 +11,6 @@ import scala.collection.immutable.Map
 import scala.annotation.tailrec
 
 import java.util.concurrent.atomic.AtomicReference
-import System.{ currentTimeMillis ⇒ newTimestamp }
 
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
@@ -23,7 +22,7 @@ import System.{ currentTimeMillis ⇒ newTimestamp }
  * <p/>
  * Default threshold is 8, but can be configured in the Akka config.
  */
-class AccrualFailureDetector(system: ActorSystem, address: Address, val threshold: Int = 8, val maxSampleSize: Int = 1000) {
+class AccrualFailureDetector(system: ActorSystem, address: Address, val threshold: Int = 8, val maxSampleSize: Int = 1000, val timeMachine: () ⇒ Long = System.currentTimeMillis) {
 
   private final val PhiFactor = 1.0 / math.log(10.0)
 
@@ -72,7 +71,7 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
       // add starter records for this new connection
       val newFailureStats = oldFailureStats + (connection -> FailureStats())
       val newIntervalHistory = oldState.intervalHistory + (connection -> Vector.empty[Long])
-      val newTimestamps = oldTimestamps + (connection -> newTimestamp)
+      val newTimestamps = oldTimestamps + (connection -> timeMachine())
       val newExplicitRemovals = explicitRemovals - connection
 
       val newState = oldState copy (
@@ -87,7 +86,7 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
 
     } else {
       // this is a known connection
-      val timestamp = newTimestamp
+      val timestamp = timeMachine()
       val interval = timestamp - latestTimestamp.get
 
       val newTimestamps = oldTimestamps + (connection -> timestamp) // record new timestamp
@@ -161,7 +160,7 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
       if (oldState.explicitRemovals.contains(connection)) Double.MaxValue
       else if (oldTimestamp.isEmpty) 0.0D // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
       else {
-        val timestampDiff = newTimestamp - oldTimestamp.get
+        val timestampDiff = timeMachine() - oldTimestamp.get
 
         val mean = oldState.failureStats.get(connection) match {
           case Some(FailureStats(mean, _, _)) ⇒ mean
