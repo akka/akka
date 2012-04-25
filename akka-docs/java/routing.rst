@@ -123,6 +123,12 @@ Another potentially useful approach is to give the router the same strategy as
 its parent, which effectively treats all actors in the pool as if they were
 direct children of their grand-parent instead.
 
+.. note::
+
+  If the child of a router terminates, the router will not automatically spawn
+  a new child. In the event that all children of a router have terminated the
+  router will terminate itself.
+
 Router usage
 ^^^^^^^^^^^^
 
