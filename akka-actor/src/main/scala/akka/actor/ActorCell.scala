@@ -509,14 +509,7 @@ private[akka] class ActorCell(
         checkReceiveTimeout
         if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
       } catch {
-        case NonFatal(e) ⇒
-          try {
-            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
-            // prevent any further messages to be processed until the actor has been restarted
-            dispatcher.suspend(this)
-          } finally {
-            parent.tell(Failed(ActorInitializationException(self, "exception during creation", e)), self)
-          }
+        case NonFatal(e) ⇒ throw ActorInitializationException(self, "exception during creation", e)
       }
     }
 
@@ -540,13 +533,7 @@ private[akka] class ActorCell(
             doRecreate(cause)
         }
       } catch {
-        case NonFatal(e) ⇒ try {
-          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
-          // prevent any further messages to be processed until the actor has been restarted
-          dispatcher.suspend(this)
-        } finally {
-          parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
-        }
+        case NonFatal(e) ⇒ throw ActorInitializationException(self, "exception during creation", e)
       }
     }
 
@@ -601,48 +588,34 @@ private[akka] class ActorCell(
         case ChildTerminated(child) ⇒ handleChildTerminated(child)
       }
     } catch {
-      case NonFatal(e) ⇒
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
         dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while processing " + message), e))
-        throw e
+        // prevent any further messages to be processed until the actor has been restarted
+        dispatcher.suspend(this)
+        if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
+        parent.tell(Failed(if (e.isInstanceOf[InterruptedException]) ActorInterruptedException(e) else e), self) // Wrap InterruptedExceptions
+        throw e // FIXME should we rethrow?
     }
   }
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def invoke(messageHandle: Envelope) {
+    currentMessage = messageHandle
     try {
-      currentMessage = messageHandle
-      try {
-        try {
-          cancelReceiveTimeout() // FIXME: leave this here???
-          messageHandle.message match {
-            case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-            case msg                      ⇒ actor(msg)
-          }
-          currentMessage = null // reset current message after successful invocation
-        } catch {
-          case e: InterruptedException ⇒
-            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
-            // prevent any further messages to be processed until the actor has been restarted
-            dispatcher.suspend(this)
-            // make sure that InterruptedException does not leave this thread
-            val ex = ActorInterruptedException(e)
-            actor.supervisorStrategy.handleSupervisorFailing(self, children)
-            parent.tell(Failed(ex), self)
-            throw e //Re-throw InterruptedExceptions as expected
-          case NonFatal(e) ⇒
-            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
-            // prevent any further messages to be processed until the actor has been restarted
-            dispatcher.suspend(this)
-            if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
-            parent.tell(Failed(e), self)
-        } finally {
-          checkReceiveTimeout // Reschedule receive timeout
-        }
-      } catch {
-        case NonFatal(e) ⇒
-          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
-          throw e
+      cancelReceiveTimeout() // FIXME: leave this here???
+      messageHandle.message match {
+        case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
+        case msg                      ⇒ actor(msg)
       }
+      currentMessage = null // reset current message after successful invocation
+    } catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
+        dispatcher.suspend(this) // prevent any further messages to be processed until the actor has been restarted
+        if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
+        parent.tell(Failed(if (e.isInstanceOf[InterruptedException]) ActorInterruptedException(e) else e), self) // Wrap InterruptedExceptions
+    } finally {
+      checkReceiveTimeout // Reschedule receive timeout
     }
   }
 

@@ -20,12 +20,9 @@ package akka.util
  */
 object NonFatal {
 
-  def unapply(t: Throwable): Option[Throwable] = t match {
-    case e: StackOverflowError ⇒ Some(e) // StackOverflowError ok even though it is a VirtualMachineError
-    // VirtualMachineError includes OutOfMemoryError and other fatal errors
-    case _: VirtualMachineError | _: ThreadDeath | _: InterruptedException | _: LinkageError ⇒ None
-    case e ⇒ Some(e)
-  }
+  def unapply(t: Throwable): Option[Throwable] = if (isFatal(t)) None else Some(t)
 
+  private def isFatal(t: Throwable): Boolean =
+    (t.isInstanceOf[VirtualMachineError] && !t.isInstanceOf[StackOverflowError]) || t.isInstanceOf[ThreadDeath] || t.isInstanceOf[InterruptedException] || t.isInstanceOf[LinkageError]
 }
 
