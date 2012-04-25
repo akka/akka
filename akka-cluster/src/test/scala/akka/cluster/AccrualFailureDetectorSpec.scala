@@ -4,9 +4,9 @@
 
 package akka.cluster
 
-import java.net.InetSocketAddress
-import akka.testkit.AkkaSpec
 import akka.actor.Address
+import akka.testkit.{ LongRunningTest, AkkaSpec }
+import java.lang.Thread
 
 class AccrualFailureDetectorSpec extends AkkaSpec("""
   akka.loglevel = "INFO"
@@ -22,7 +22,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
       fd.phi(conn2) must be(0.0D)
     }
 
-    "mark node as available after a series of successful heartbeats" in {
+    "mark node as available after a series of successful heartbeats" taggedAs LongRunningTest in {
       val fd = new AccrualFailureDetector(system, conn)
 
       fd.heartbeat(conn)
@@ -36,7 +36,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
       fd.isAvailable(conn) must be(true)
     }
 
-    "mark node as dead after explicit removal of connection" in {
+    "mark node as dead after explicit removal of connection" taggedAs LongRunningTest in {
       val fd = new AccrualFailureDetector(system, conn)
 
       fd.heartbeat(conn)
@@ -54,7 +54,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
       fd.isAvailable(conn) must be(false)
     }
 
-    "mark node as available after explicit removal of connection and receiving heartbeat again" in {
+    "mark node as available after explicit removal of connection and receiving heartbeat again" taggedAs LongRunningTest in {
       val fd = new AccrualFailureDetector(system, conn)
 
       fd.heartbeat(conn)
@@ -83,7 +83,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
       fd.isAvailable(conn) must be(true)
     }
 
-    "mark node as dead if heartbeat are missed" in {
+    "mark node as dead if heartbeat are missed" taggedAs LongRunningTest in {
       val fd = new AccrualFailureDetector(system, conn, threshold = 3)
 
       fd.heartbeat(conn)
@@ -101,7 +101,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
       fd.isAvailable(conn) must be(false)
     }
 
-    "mark node as available if it starts heartbeat again after being marked dead due to detection of failure" in {
+    "mark node as available if it starts heartbeat again after being marked dead due to detection of failure" taggedAs LongRunningTest in {
       val fd = new AccrualFailureDetector(system, conn, threshold = 3)
 
       fd.heartbeat(conn)
