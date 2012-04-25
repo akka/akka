@@ -6,7 +6,6 @@ package akka.cluster
 
 import akka.actor.Address
 import akka.testkit.{ LongRunningTest, AkkaSpec }
-import java.lang.Thread
 
 class AccrualFailureDetectorSpec extends AkkaSpec("""
   akka.loglevel = "INFO"
