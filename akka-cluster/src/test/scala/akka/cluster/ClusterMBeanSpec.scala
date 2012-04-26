@@ -29,7 +29,7 @@ import com.typesafe.config._
  * *****************************************************
  */
 
-class ClusterMBeanSpec extends ClusterSpec("akka.loglevel = DEBUG") with ImplicitSender {
+/*class ClusterMBeanSpec extends ClusterSpec("akka.loglevel = DEBUG") with ImplicitSender {
 
   var node0: Cluster = _
   var system0: ActorSystemImpl = _
@@ -61,3 +61,4 @@ class ClusterMBeanSpec extends ClusterSpec("akka.loglevel = DEBUG") with Implici
     if (system0 ne null) system0.shutdown()
   }
 }
+*/ 
