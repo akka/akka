@@ -588,13 +588,17 @@ private[akka] class ActorCell(
         case ChildTerminated(child) ⇒ handleChildTerminated(child)
       }
     } catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒ try {
         dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while processing " + message), e))
         // prevent any further messages to be processed until the actor has been restarted
         dispatcher.suspend(this)
         if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
-        parent.tell(Failed(if (e.isInstanceOf[InterruptedException]) ActorInterruptedException(e) else e), self) // Wrap InterruptedExceptions
-        throw e // FIXME should we rethrow?
+      } finally {
+        e match { // Wrap InterruptedExceptions and rethrow
+          case _: InterruptedException ⇒ parent.tell(Failed(ActorInterruptedException(e)), self); throw e
+          case _                       ⇒ parent.tell(Failed(e), self)
+        }
+      }
     }
   }
 
