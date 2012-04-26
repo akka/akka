@@ -3,10 +3,14 @@
  */
 package akka.pattern
 
+import akka.actor.Scheduler
+import akka.dispatch.ExecutionContext
+import java.util.concurrent.Callable
+
 object Patterns {
   import akka.actor.{ ActorRef, ActorSystem }
   import akka.dispatch.Future
-  import akka.pattern.{ ask ⇒ scalaAsk, pipe ⇒ scalaPipe }
+  import akka.pattern.{ ask ⇒ scalaAsk, pipe ⇒ scalaPipe, gracefulStop ⇒ scalaGracefulStop, after ⇒ scalaAfter }
   import akka.util.{ Timeout, Duration }
 
   /**
@@ -99,5 +103,19 @@ object Patterns {
    * is completed with failure [[akka.actor.ActorTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: Duration, system: ActorSystem): Future[java.lang.Boolean] =
-    akka.pattern.gracefulStop(target, timeout)(system).asInstanceOf[Future[java.lang.Boolean]]
+    scalaGracefulStop(target, timeout)(system).asInstanceOf[Future[java.lang.Boolean]]
+
+  /**
+   * Returns a [[akka.dispatch.Future]] that will be completed with the success or failure of the provided Callable
+   * after the specified duration.
+   */
+  def after[T](duration: Duration, scheduler: Scheduler, context: ExecutionContext, value: Callable[Future[T]]): Future[T] =
+    scalaAfter(duration, scheduler)(value.call())(context)
+
+  /**
+   * Returns a [[akka.dispatch.Future]] that will be completed with the success or failure of the provided value
+   * after the specified duration.
+   */
+  def after[T](duration: Duration, scheduler: Scheduler, context: ExecutionContext, value: Future[T]): Future[T] =
+    scalaAfter(duration, scheduler)(value)(context)
 }
