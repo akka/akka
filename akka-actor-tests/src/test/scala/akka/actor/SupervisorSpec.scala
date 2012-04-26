@@ -157,6 +157,55 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       expectNoMsg(1 second)
     }
 
+    "restart properly when same instance is returned" in {
+      val restarts = 3 //max number of restarts
+      lazy val childInstance = new Actor {
+        var preRestarts = 0
+        var postRestarts = 0
+        var preStarts = 0
+        var postStops = 0
+        override def preRestart(reason: Throwable, message: Option[Any]) { preRestarts += 1; testActor ! ("preRestart" + preRestarts) }
+        override def postRestart(reason: Throwable) { postRestarts += 1; testActor ! ("postRestart" + postRestarts) }
+        override def preStart() { preStarts += 1; testActor ! ("preStart" + preStarts) }
+        override def postStop() { postStops += 1; testActor ! ("postStop" + postStops) }
+        def receive = {
+          case "crash" ⇒ testActor ! "crashed"; throw new RuntimeException("Expected")
+          case "ping"  ⇒ sender ! "pong"
+        }
+      }
+      val master = system.actorOf(Props(new Actor {
+        override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = restarts)(List(classOf[Exception]))
+        val child = context.actorOf(Props(childInstance))
+        def receive = {
+          case msg ⇒ child forward msg
+        }
+      }))
+
+      expectMsg("preStart1")
+
+      master ! "ping"
+      expectMsg("pong")
+
+      filterEvents(EventFilter[RuntimeException]("Expected", occurrences = restarts + 1)) {
+        (1 to restarts) foreach {
+          i ⇒
+            master ! "crash"
+            expectMsg("crashed")
+
+            expectMsg("preRestart" + i)
+            expectMsg("postRestart" + i)
+
+            master ! "ping"
+            expectMsg("pong")
+        }
+        master ! "crash"
+        expectMsg("crashed")
+        expectMsg("postStop1")
+      }
+
+      expectNoMsg(1 second)
+    }
+
     "not restart temporary actor" in {
       val (temporaryActor, _) = temporaryActorAllForOne
 
