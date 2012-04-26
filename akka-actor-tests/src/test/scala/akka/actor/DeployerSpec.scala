@@ -51,7 +51,6 @@ object DeployerSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
-
   "A Deployer" must {
 
     "be able to parse 'akka.actor.deployment._' with all default values" in {
@@ -121,6 +120,5 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
       deployment.get.routerConfig.resizer must be(expected.resizer)
       deployment.get.scope must be(NoScopeGiven)
     }
-
   }
 }

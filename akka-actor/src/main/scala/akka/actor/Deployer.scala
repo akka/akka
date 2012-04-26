@@ -8,6 +8,9 @@ import akka.util.Duration
 import com.typesafe.config._
 import akka.routing._
 import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
+import scala.collection.immutable.{ HashMap }
+import java.util.concurrent.atomic.AtomicReference
+import annotation.tailrec
 
 /**
  * This class represents deployment configuration for a given actor path. It is
@@ -93,27 +96,61 @@ case object NoScopeGiven extends NoScopeGiven {
   def getInstance = this
 }
 
+private[akka] object WildcardTree {
+  val empty = new WildcardTree()
+  def apply(): WildcardTree = empty
+}
+private[akka] case class WildcardTree(deploy: Option[Deploy] = None, children: Map[String, WildcardTree] = Map.empty) {
+
+  def insert(elems: Iterator[String], d: Deploy): WildcardTree =
+    if (!elems.hasNext) {
+      copy(deploy = Some(d))
+    } else {
+      val e = elems.next()
+      copy(children = children.updated(e, children.get(e).getOrElse(WildcardTree()).insert(elems, d)))
+    }
+
+  @tailrec final def find(elems: Iterator[String]): WildcardTree =
+    if (!elems.hasNext) this
+    else {
+      (children.get(elems.next()) orElse children.get("*")) match {
+        case Some(branch) ⇒ branch.find(elems)
+        case None         ⇒ WildcardTree.empty
+      }
+    }
+
+  override def toString: String = "WildcardTree('" + deploy.map(_.path).getOrElse("") + "', " + children + ")\n"
+}
+
 /**
  * Deployer maps actor paths to actor deployments.
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAccess) {
+private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAccess) {
 
   import scala.collection.JavaConverters._
 
-  private val deployments = new ConcurrentHashMap[String, Deploy]
+  private val deployments = new AtomicReference[WildcardTree](WildcardTree.empty)
   private val config = settings.config.getConfig("akka.actor.deployment")
   protected val default = config.getConfig("default")
+
   config.root.asScala flatMap {
     case ("default", _)             ⇒ None
     case (key, value: ConfigObject) ⇒ parseConfig(key, value.toConfig)
     case _                          ⇒ None
   } foreach deploy
 
-  def lookup(path: String): Option[Deploy] = Option(deployments.get(path))
+  def lookup(path: String): Option[Deploy] = lookup(path.split("/").iterator)
 
-  def deploy(d: Deploy): Unit = deployments.put(d.path, d)
+  def lookup(path: Iterator[String]): Option[Deploy] = deployments.get().find(path).deploy
+
+  def deploy(d: Deploy): Unit = {
+    @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree = deployments.get): Unit =
+      if (!deployments.compareAndSet(w, w.insert(path.iterator, d))) add(path, d)
+
+    add(d.path.split("/"), d)
+  }
 
   protected def parseConfig(key: String, config: Config): Option[Deploy] = {
 
