@@ -542,7 +542,7 @@ class LocalActorRefProvider(
     props.routerConfig match {
       case NoRouter ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
       case router ⇒
-        val lookup = if (lookupDeploy) deployer.lookup(path.elements.drop(1).mkString("/", "/", "")) else None
+        val lookup = if (lookupDeploy) deployer.lookup(path) else None
         val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
         val d = fromProps ++ deploy.iterator ++ lookup.iterator reduce ((a, b) ⇒ b withFallback a)
         new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path)

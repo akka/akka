@@ -141,9 +141,11 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
     case _                          ⇒ None
   } foreach deploy
 
-  def lookup(path: String): Option[Deploy] = lookup(path.split("/").iterator)
+  def lookup(path: Iterable[String]): Option[Deploy] = deployments.get().find(path.iterator).deploy
 
   def lookup(path: Iterator[String]): Option[Deploy] = deployments.get().find(path).deploy
+
+  def lookup(path: ActorPath): Option[Deploy] = deployments.get().find(Iterator.single("") ++ path.elements.drop(1).iterator).deploy
 
   def deploy(d: Deploy): Unit = {
     @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree = deployments.get): Unit =
