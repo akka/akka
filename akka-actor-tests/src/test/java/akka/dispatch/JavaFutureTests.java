@@ -10,6 +10,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+
+import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.LinkedList;
 import java.lang.Iterable;
@@ -130,7 +132,8 @@ public class JavaFutureTests {
     cf.success("1000");
     Future<String> f = cf;
     Future<Integer> r = f.flatMap(new Mapper<String, Future<Integer>>() {
-      public Future<Integer> apply(String r) {
+      public Future<Integer> checkedApply(String r) throws Throwable {
+        if (false) throw new IOException("Just here to make sure this compiles.");
         latch.countDown();
         Promise<Integer> cf = Futures.promise(system.dispatcher());
         cf.success(Integer.parseInt(r));
