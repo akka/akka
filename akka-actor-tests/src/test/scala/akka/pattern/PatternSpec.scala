@@ -8,9 +8,10 @@ import akka.testkit.AkkaSpec
 import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.ActorTimeoutException
-import akka.dispatch.Await
 import akka.util.Duration
 import akka.util.duration._
+import akka.dispatch.{ Future, Promise, Await }
+import java.lang.IllegalStateException
 
 object PatternSpec {
   case class Work(duration: Duration)
@@ -47,6 +48,22 @@ class PatternSpec extends AkkaSpec {
       intercept[ActorTimeoutException] {
         Await.result(result, 200 millis)
       }
+    }
+  }
+
+  "pattern.after" must {
+    "be completed successfully eventually" in {
+      val f = after(1 second, using = system.scheduler)(Promise.successful(5))
+
+      val r = Future.firstCompletedOf(Seq(Promise[Int](), f))
+      Await.result(r, remaining) must be(5)
+    }
+
+    "be completed abnormally eventually" in {
+      val f = after(1 second, using = system.scheduler)(Promise.failed(new IllegalStateException("Mexico")))
+
+      val r = Future.firstCompletedOf(Seq(Promise[Int](), f))
+      intercept[IllegalStateException] { Await.result(r, remaining) }.getMessage must be("Mexico")
     }
   }
 }
