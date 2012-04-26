@@ -140,6 +140,17 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#typed-actor-poisonpill
   }
 
+  "proxy any ActorRef" in {
+    //#typed-actor-remote
+    val typedActor: Foo with Bar =
+      TypedActor(system).
+        typedActorOf(
+          TypedProps[FooBar],
+          system.actorFor("akka://SomeSystem@somehost:2552/user/some/foobar"))
+    //Use "typedActor" as a FooBar
+    //#typed-actor-remote
+  }
+
   "supercharge" in {
     //#typed-actor-supercharge-usage
     val awesomeFooBar: Foo with Bar = TypedActor(system).typedActorOf(TypedProps[FooBar]())

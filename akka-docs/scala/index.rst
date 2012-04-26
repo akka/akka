@@ -26,3 +26,4 @@ Scala API
    testing
    extending-akka
    zeromq
+   microkernel

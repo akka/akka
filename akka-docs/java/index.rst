@@ -23,3 +23,4 @@ Java API
    fsm
    extending-akka
    zeromq
+   microkernel

@@ -1,7 +1,12 @@
 package akka.actor;
 
 import akka.actor.ActorSystem;
+import akka.event.Logging;
+import akka.event.Logging.LoggerInitialized;
 import akka.japi.Creator;
+import akka.routing.CurrentRoutees;
+import akka.routing.FromConfig;
+import akka.routing.NoRouter;
 import akka.testkit.AkkaSpec;
 
 import org.junit.AfterClass;
@@ -22,6 +27,23 @@ public class JavaAPI {
   public static void afterAll() {
     system.shutdown();
     system = null;
+  }
+  
+  // compilation tests
+  @SuppressWarnings("unused")
+  public void mustCompile() {
+    final Kill kill = Kill.getInstance();
+    final PoisonPill pill = PoisonPill.getInstance();
+    final ReceiveTimeout t = ReceiveTimeout.getInstance();
+
+    final LocalScope ls = LocalScope.getInstance();
+    final NoScopeGiven noscope = NoScopeGiven.getInstance();
+    
+    final LoggerInitialized x = Logging.loggerInitialized();
+    
+    final CurrentRoutees r = CurrentRoutees.getInstance();
+    final NoRouter nr = NoRouter.getInstance();
+    final FromConfig fc = FromConfig.getInstance();
   }
 
   @Test
