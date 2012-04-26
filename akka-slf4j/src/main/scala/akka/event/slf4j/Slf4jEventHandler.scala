@@ -43,25 +43,19 @@ class Slf4jEventHandler extends Actor with SLF4JLogging {
     case event @ Error(cause, logSource, logClass, message) ⇒
       withMdc(logSource, event.thread.getName) {
         cause match {
-          case Error.NoCause ⇒ Logger(logClass, logSource).error(message.toString)
-          case _             ⇒ Logger(logClass, logSource).error(message.toString, cause)
+          case Error.NoCause | null ⇒ Logger(logClass, logSource).error(if (message != null) message.toString else null)
+          case cause                ⇒ Logger(logClass, logSource).error(if (message != null) message.toString else cause.getLocalizedMessage, cause)
         }
       }
 
     case event @ Warning(logSource, logClass, message) ⇒
-      withMdc(logSource, event.thread.getName) {
-        Logger(logClass, logSource).warn("{}", message.asInstanceOf[AnyRef])
-      }
+      withMdc(logSource, event.thread.getName) { Logger(logClass, logSource).warn("{}", message.asInstanceOf[AnyRef]) }
 
     case event @ Info(logSource, logClass, message) ⇒
-      withMdc(logSource, event.thread.getName) {
-        Logger(logClass, logSource).info("{}", message.asInstanceOf[AnyRef])
-      }
+      withMdc(logSource, event.thread.getName) { Logger(logClass, logSource).info("{}", message.asInstanceOf[AnyRef]) }
 
     case event @ Debug(logSource, logClass, message) ⇒
-      withMdc(logSource, event.thread.getName) {
-        Logger(logClass, logSource).debug("{}", message.asInstanceOf[AnyRef])
-      }
+      withMdc(logSource, event.thread.getName) { Logger(logClass, logSource).debug("{}", message.asInstanceOf[AnyRef]) }
 
     case InitializeLogger(_) ⇒
       log.info("Slf4jEventHandler started")

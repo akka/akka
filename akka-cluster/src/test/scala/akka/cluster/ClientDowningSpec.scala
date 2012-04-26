@@ -92,7 +92,7 @@ class ClientDowningSpec extends ClusterSpec("akka.cluster.auto-down = off") with
         system3.shutdown()
 
         // client marks node3 as DOWN
-        node1.scheduleNodeDown(address3)
+        node1.down(address3)
 
         println("Give the system time to converge...")
         Thread.sleep(10.seconds.dilated.toMillis)
@@ -107,7 +107,7 @@ class ClientDowningSpec extends ClusterSpec("akka.cluster.auto-down = off") with
         system4.shutdown()
 
         // clien marks node4 as DOWN
-        node2.scheduleNodeDown(address4)
+        node2.down(address4)
 
         println("Give the system time to converge...")
         Thread.sleep(10.seconds.dilated.toMillis)

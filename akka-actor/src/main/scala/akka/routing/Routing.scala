@@ -17,7 +17,8 @@ import java.util.concurrent.locks.ReentrantLock
 import akka.jsr166y.ThreadLocalRandom
 import akka.util.Unsafe
 import akka.dispatch.Dispatchers
-import annotation.tailrec
+import scala.annotation.tailrec
+import scala.runtime.ScalaRunTime
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -343,7 +344,13 @@ case class Broadcast(message: Any)
  * A RouterRoutees message is sent asynchronously to the "requester" containing information
  * about what routees the router is routing over.
  */
-case object CurrentRoutees
+abstract class CurrentRoutees
+case object CurrentRoutees extends CurrentRoutees {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
 
 /**
  * Message used to carry information about what routees the router is currently using.
@@ -365,21 +372,29 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
  * router is taken in the LocalActorRefProvider based on Props.
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case object NoRouter extends RouterConfig {
+abstract class NoRouter extends RouterConfig
+case object NoRouter extends NoRouter {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
   def routerDispatcher: String = ""
   def supervisorStrategy = null
   override def withFallback(other: RouterConfig): RouterConfig = other
+
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
 }
 
 /**
  * Router configuration which has no default, i.e. external configuration is required.
  */
-case object FromConfig extends RouterConfig {
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
-    throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
-  def routerDispatcher: String = Dispatchers.DefaultDispatcherId
-  def supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy
+case object FromConfig extends FromConfig {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+  @inline final def apply(routerDispatcher: String = Dispatchers.DefaultDispatcherId) = new FromConfig(routerDispatcher)
+  @inline final def unapply(fc: FromConfig): Option[String] = Some(fc.routerDispatcher)
 }
 
 /**
@@ -389,7 +404,11 @@ case object FromConfig extends RouterConfig {
  * (defaults to default-dispatcher).
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId) extends RouterConfig {
+class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+  extends RouterConfig
+  with Product
+  with Serializable
+  with Equals {
 
   def this() = this(Dispatchers.DefaultDispatcherId)
 
@@ -397,6 +416,38 @@ case class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatch
     throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
 
   def supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy
+
+  // open-coded case class to preserve binary compatibility, all deprecated for 2.1
+  @deprecated("FromConfig does not make sense as case class", "2.0.1")
+  override def productPrefix = "FromConfig"
+
+  @deprecated("FromConfig does not make sense as case class", "2.0.1")
+  def productArity = 1
+
+  @deprecated("FromConfig does not make sense as case class", "2.0.1")
+  def productElement(x: Int) = x match {
+    case 0 ⇒ routerDispatcher
+    case _ ⇒ throw new IndexOutOfBoundsException(x.toString)
+  }
+
+  @deprecated("FromConfig does not make sense as case class", "2.0.1")
+  def copy(d: String = Dispatchers.DefaultDispatcherId): FromConfig = new FromConfig(d)
+
+  @deprecated("FromConfig does not make sense as case class", "2.0.1")
+  def canEqual(o: Any) = o.isInstanceOf[FromConfig]
+
+  @deprecated("FromConfig does not make sense as case class", "2.0.1")
+  override def hashCode = ScalaRunTime._hashCode(this)
+
+  @deprecated("FromConfig does not make sense as case class", "2.0.1")
+  override def toString = "FromConfig(" + routerDispatcher + ")"
+
+  @deprecated("FromConfig does not make sense as case class", "2.0.1")
+  override def equals(other: Any): Boolean = other match {
+    case FromConfig(x) ⇒ x == routerDispatcher
+    case _             ⇒ false
+  }
+
 }
 
 object RoundRobinRouter {

@@ -29,7 +29,7 @@ The quintessential feature of actor systems is that tasks are split up and
 delegated until they become small enough to be handled in one piece. In doing
 so, not only is the task itself clearly structured, but the resulting actors
 can be reasoned about in terms of which messages they should process, how they
-should react nominally and how failure should be handled. If one actor does not
+should react normally and how failure should be handled. If one actor does not
 have the means for dealing with a certain situation, it sends a corresponding
 failure message to its supervisor, asking for help. The recursive structure
 then allows to handle failure at the right level.
@@ -41,7 +41,7 @@ trying to keep everything “under the carpet”.
 
 Now, the difficulty in designing such a system is how to decide who should
 supervise what. There is of course no single best solution, but there are a few
-guide lines which might be helpful:
+guidelines which might be helpful:
 
  - If one actor manages the work another actor is doing, e.g. by passing on
    sub-tasks, then the manager should supervise the child. The reason is that
@@ -100,6 +100,12 @@ Actor Best Practices
    state between actors, and this violation of the actor model unfortunately
    breaks all the properties which make programming in actors such a nice
    experience.
+
+#. Top-level actors are the innermost part of your Error Kernel, so create them
+   sparingly and prefer truly hierarchical systems. This has benefits wrt.
+   fault-handling (both considering the granularity of configuration and the
+   performance) and it also reduces the number of blocking calls made, since
+   the creation of top-level actors involves synchronous messaging.
 
 What you should not concern yourself with
 -----------------------------------------

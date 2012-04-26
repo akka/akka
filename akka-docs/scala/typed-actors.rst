@@ -203,6 +203,13 @@ This is usable if you want to communicate remotely with TypedActors on other mac
 
   The ActorRef needs to accept ``MethodCall`` messages.
 
+Lookup & Remoting
+-----------------
+
+Since ``TypedActors`` are backed by ``Akka Actors``, you can use ``actorFor`` together with ``typedActorOf`` to proxy ``ActorRefs`` potentially residing on remote nodes.
+
+.. includecode:: code/akka/docs/actor/TypedActorDocSpec.scala#typed-actor-remote
+
 Supercharging
 -------------
 

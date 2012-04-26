@@ -6,7 +6,7 @@ package akka.remote
 import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
-import akka.dispatch.Await
+import akka.dispatch.{ Await, Future }
 import akka.pattern.ask
 
 object RemoteCommunicationSpec {
@@ -128,6 +128,11 @@ akka {
       system.actorFor("/user/looker/child") must be theSameInstanceAs r
       Await.result(l ? "child/..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
       Await.result(system.actorFor(system / "looker" / "child") ? "..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
+    }
+
+    "not fail ask across node boundaries" in {
+      val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo manifest[(String, ActorRef)]
+      Await.result(Future.sequence(f), remaining).map(_._1).toSet must be(Set("pong"))
     }
 
   }

@@ -110,7 +110,8 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
         node6.isLeader must be(false)
 
         // join
-        node1.scheduleNodeJoin(node4.remoteAddress)
+        node4.join(node1.remoteAddress)
+        //node1.scheduleNodeJoin(node4.remoteAddress)
 
         println("Give the system time to converge...")
         Thread.sleep(10.seconds.dilated.toMillis)
@@ -127,7 +128,8 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
 
       "be able to 'elect' a single leader after joining (C -> A + B)" taggedAs LongRunningTest in {
         // join
-        node5.scheduleNodeJoin(node4.remoteAddress)
+        node4.join(node5.remoteAddress)
+        //node5.scheduleNodeJoin(node4.remoteAddress)
 
         println("Give the system time to converge...")
         Thread.sleep(10.seconds.dilated.toMillis)

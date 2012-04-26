@@ -17,9 +17,9 @@ import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import java.io.Closeable
 import akka.dispatch.Await.Awaitable
 import akka.dispatch.Await.CanAwait
-import java.util.concurrent.{ CountDownLatch, TimeoutException, RejectedExecutionException }
 import akka.util._
 import collection.immutable.Stack
+import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 
 object ActorSystem {
 
@@ -125,12 +125,15 @@ object ActorSystem {
     final val LogLevel = getString("akka.loglevel")
     final val StdoutLogLevel = getString("akka.stdout-loglevel")
     final val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
+    final val EventHandlerStartTimeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
     final val LogConfigOnStart = config.getBoolean("akka.log-config-on-start")
+
     final val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
     final val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
     final val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
     final val FsmDebugEvent = getBoolean("akka.actor.debug.fsm")
     final val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
+    final val DebugUnhandledMessage = getBoolean("akka.actor.debug.unhandled")
 
     final val Home = config.getString("akka.home") match {
       case "" ⇒ None
@@ -200,7 +203,7 @@ object ActorSystem {
  *
  * Where no name is given explicitly, one will be automatically generated.
  *
- * <b><i>Important Notice:</i></o>
+ * <b><i>Important Notice:</i></b>
  *
  * This class is not meant to be extended by user code. If you want to
  * actually roll your own Akka, it will probably be better to look into
@@ -376,7 +379,7 @@ abstract class ActorSystem extends ActorRefFactory {
 /**
  * More powerful interface to the actor system’s implementation which is presented to extensions (see [[akka.actor.Extension]]).
  *
- * <b><i>Important Notice:</i></o>
+ * <b><i>Important Notice:</i></b>
  *
  * This class is not meant to be extended by user code. If you want to
  * actually roll your own Akka, beware that you are completely on your own in
@@ -403,6 +406,11 @@ abstract class ExtendedActorSystem extends ActorSystem {
    * Implementation of the mechanism which is used for watch()/unwatch().
    */
   def deathWatch: DeathWatch
+
+  /**
+   * A ThreadFactory that can be used if the transport needs to create any Threads
+   */
+  def threadFactory: ThreadFactory
 
   /**
    * ClassLoader wrapper which is used for reflective accesses internally. This is set

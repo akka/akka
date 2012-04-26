@@ -63,11 +63,18 @@ trait Scope {
 }
 
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case object LocalScope extends Scope {
+abstract class LocalScope extends Scope
+case object LocalScope extends LocalScope {
   /**
    * Java API
    */
+  @deprecated("use instance() method instead", "2.0.1")
   def scope: Scope = this
+
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
 
   def withFallback(other: Scope): Scope = this
 }
@@ -76,8 +83,14 @@ case object LocalScope extends Scope {
  * This is the default value and as such allows overrides.
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case object NoScopeGiven extends Scope {
+abstract class NoScopeGiven extends Scope
+case object NoScopeGiven extends NoScopeGiven {
   def withFallback(other: Scope): Scope = other
+
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
 }
 
 /**
@@ -112,11 +125,7 @@ class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAcc
 
     val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
 
-    val resizer: Option[Resizer] = if (config.hasPath("resizer")) {
-      Some(DefaultResizer(deployment.getConfig("resizer")))
-    } else {
-      None
-    }
+    val resizer: Option[Resizer] = if (config.hasPath("resizer")) Some(DefaultResizer(deployment.getConfig("resizer"))) else None
 
     val router: RouterConfig = deployment.getString("router") match {
       case "from-code"        ⇒ NoRouter
