@@ -19,7 +19,7 @@ import akka.event.Logging.LogEventException
 import akka.event.Logging.Debug
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.util.concurrent.{ ExecutionException, Callable, TimeoutException }
-import java.util.concurrent.atomic.{ AtomicInteger, AtomicReferenceFieldUpdater }
+import java.util.concurrent.atomic.{ AtomicInteger }
 import akka.pattern.AskTimeoutException
 import scala.util.DynamicVariable
 import scala.runtime.BoxedUnit
@@ -886,15 +886,6 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
     case _: Either[_, _] ⇒ true
     case _               ⇒ false
   }
-
-  @inline
-  private[this] final def updater = AbstractPromise.updater.asInstanceOf[AtomicReferenceFieldUpdater[AbstractPromise, AnyRef]]
-
-  @inline
-  protected final def updateState(oldState: AnyRef, newState: AnyRef): Boolean = updater.compareAndSet(this, oldState, newState)
-
-  @inline
-  protected final def getState: AnyRef = updater.get(this)
 
   def tryComplete(value: Either[Throwable, T]): Boolean = {
     val callbacks: List[Either[Throwable, T] ⇒ Unit] = {
