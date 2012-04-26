@@ -7,14 +7,9 @@ package akka.dispatch;
 import akka.util.Unsafe;
 
 abstract class AbstractPromise {
-    private volatile Object _ref;
+    private volatile Object _ref = DefaultPromise.EmptyPending();
 
-    {
-    	if (!updateState(null, DefaultPromise.EmptyPending()))
-    		throw new ExceptionInInitializerError(new IllegalStateException("AbstractPromise initial value not null!"));
-    }
-
-    final static long _refOffset;
+    final static long _refOffset; // Memory offset to _ref field
 
     static {
         try {
@@ -29,6 +24,6 @@ abstract class AbstractPromise {
   }
 
   protected final Object getState() {
-  	return Unsafe.instance.getObjectVolatile(this, _refOffset);
+  	return _ref;
   }
 }
