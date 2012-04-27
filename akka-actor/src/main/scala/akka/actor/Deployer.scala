@@ -7,8 +7,8 @@ package akka.actor
 import akka.util.Duration
 import com.typesafe.config._
 import akka.routing._
-import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
-import scala.collection.immutable.{ HashMap }
+import java.util.concurrent.{ TimeUnit }
+import akka.util.WildcardTree
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 
@@ -96,32 +96,6 @@ case object NoScopeGiven extends NoScopeGiven {
   def getInstance = this
 }
 
-private[akka] object WildcardTree {
-  val empty = new WildcardTree()
-  def apply(): WildcardTree = empty
-}
-private[akka] case class WildcardTree(deploy: Option[Deploy] = None, children: Map[String, WildcardTree] = Map.empty) {
-
-  def insert(elems: Iterator[String], d: Deploy): WildcardTree =
-    if (!elems.hasNext) {
-      copy(deploy = Some(d))
-    } else {
-      val e = elems.next()
-      copy(children = children.updated(e, children.get(e).getOrElse(WildcardTree()).insert(elems, d)))
-    }
-
-  @tailrec final def find(elems: Iterator[String]): WildcardTree =
-    if (!elems.hasNext) this
-    else {
-      (children.get(elems.next()) orElse children.get("*")) match {
-        case Some(branch) ⇒ branch.find(elems)
-        case None         ⇒ WildcardTree.empty
-      }
-    }
-
-  override def toString: String = "WildcardTree('" + deploy.map(_.path).getOrElse("") + "', " + children + ")\n"
-}
-
 /**
  * Deployer maps actor paths to actor deployments.
  *
@@ -131,7 +105,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
   import scala.collection.JavaConverters._
 
-  private val deployments = new AtomicReference[WildcardTree](WildcardTree.empty)
+  private val deployments = new AtomicReference(WildcardTree[Deploy]())
   private val config = settings.config.getConfig("akka.actor.deployment")
   protected val default = config.getConfig("default")
 
@@ -143,12 +117,12 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
   def lookup(path: Iterable[String]): Option[Deploy] = deployments.get().find(path.iterator).deploy
 
-  def lookup(path: Iterator[String]): Option[Deploy] = deployments.get().find(path).deploy
+  def lookup(path: Iterator[String]): Option[Deploy] = deployments.get().find(path).data
 
   def lookup(path: ActorPath): Option[Deploy] = deployments.get().find(Iterator.single("") ++ path.elements.drop(1).iterator).deploy
 
   def deploy(d: Deploy): Unit = {
-    @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree = deployments.get): Unit =
+    @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree[Deploy] = deployments.get): Unit =
       if (!deployments.compareAndSet(w, w.insert(path.iterator, d))) add(path, d)
 
     add(d.path.split("/"), d)
