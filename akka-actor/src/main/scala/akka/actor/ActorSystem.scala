@@ -352,7 +352,7 @@ abstract class ActorSystem extends ActorRefFactory {
    * returns `false`, the status is actually unknown, since it might have
    * changed since you queried it.
    */
-  def isTerminated: Boolean
+  def isTerminated(): Boolean
 
   /**
    * Registers the provided extension and creates its payload, if this extension isn't already registered
@@ -572,7 +572,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
   def registerOnTermination(code: Runnable) { terminationCallbacks.add(code) }
   def awaitTermination(timeout: Duration) { Await.ready(terminationCallbacks, timeout) }
   def awaitTermination() = awaitTermination(Duration.Inf)
-  def isTerminated = terminationCallbacks.isTerminated
+  def isTerminated() = terminationCallbacks.isTerminated
 
   def shutdown(): Unit = guardian.stop()
 
@@ -709,6 +709,6 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
 
     final def result(atMost: Duration)(implicit permit: CanAwait): Unit = ready(atMost)
 
-    final def isTerminated: Boolean = latch.getCount == 0
+    final def isTerminated(): Boolean = latch.getCount == 0
   }
 }

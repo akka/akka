@@ -33,7 +33,7 @@ class EventStream(private val debug: Boolean = false) extends LoggingBus with Su
   protected def classify(event: AnyRef): Class[_] = event.getClass
 
   protected def publish(event: AnyRef, subscriber: ActorRef) = {
-    if (subscriber.isTerminated) unsubscribe(subscriber)
+    if (subscriber.isTerminated()) unsubscribe(subscriber)
     else subscriber ! event
   }
 
