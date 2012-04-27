@@ -7,8 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import org.junit.runner.RunWith
 
-import akka.actor.actorRef2Scala
-import akka.actor.{ Props, LocalActorRef, Deploy, Actor }
+import akka.actor.{ Props, LocalActorRef, Deploy, Actor, ActorRef }
 import akka.config.ConfigurationException
 import akka.dispatch.Await
 import akka.pattern.{ ask, gracefulStop }
@@ -30,6 +29,14 @@ object ConfiguredLocalRoutingSpec {
           /config {
             router = random
             nr-of-instances = 4
+          }
+          /weird {
+            router = round-robin
+            nr-of-instances = 3
+          }
+          "/weird/*" {
+            router = round-robin
+            nr-of-instances = 2
           }
         }
       }
@@ -86,6 +93,17 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       intercept[ConfigurationException] {
         system.actorOf(Props.empty.withRouter(FromConfig))
       }
+    }
+
+    "not get confused when trying to wildcard-configure children" in {
+      val router = system.actorOf(Props(new Actor {
+        testActor ! self
+        def receive = { case _ ⇒ }
+      }).withRouter(FromConfig), "weird")
+      val recv = Set() ++ (for (_ ← 1 to 3) yield expectMsgType[ActorRef])
+      val expc = Set('a', 'b', 'c') map (i ⇒ system.actorFor("/user/weird/$" + i))
+      recv must be(expc)
+      expectNoMsg(1 second)
     }
 
   }
