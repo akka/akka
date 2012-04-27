@@ -55,7 +55,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "be able to parse 'akka.actor.deployment._' with all default values" in {
       val service = "/service1"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/"))
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment must be('defined)
 
       deployment must be(Some(
@@ -68,7 +68,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "use None deployment for undefined service" in {
       val service = "/undefined"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/"))
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment must be(None)
     }
 
@@ -113,7 +113,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     def assertRouting(expected: RouterConfig, service: String) {
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/"))
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment must be('defined)
       deployment.get.path must be(service)
       deployment.get.routerConfig.getClass must be(expected.getClass)

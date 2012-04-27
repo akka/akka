@@ -115,17 +115,17 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
     case _                          ⇒ None
   } foreach deploy
 
-  def lookup(path: Iterable[String]): Option[Deploy] = deployments.get().find(path.iterator).deploy
+  def lookup(path: ActorPath): Option[Deploy] = lookup(path.elements.drop(1).iterator)
+
+  def lookup(path: Iterable[String]): Option[Deploy] = lookup(path.iterator)
 
   def lookup(path: Iterator[String]): Option[Deploy] = deployments.get().find(path).data
-
-  def lookup(path: ActorPath): Option[Deploy] = deployments.get().find(Iterator.single("") ++ path.elements.drop(1).iterator).deploy
 
   def deploy(d: Deploy): Unit = {
     @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree[Deploy] = deployments.get): Unit =
       if (!deployments.compareAndSet(w, w.insert(path.iterator, d))) add(path, d)
 
-    add(d.path.split("/"), d)
+    add(d.path.split("/").drop(1), d)
   }
 
   protected def parseConfig(key: String, config: Config): Option[Deploy] = {
