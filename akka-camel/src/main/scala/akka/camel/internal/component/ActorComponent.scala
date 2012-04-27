@@ -235,7 +235,7 @@ private[camel] case class ActorEndpointPath private (actorPath: String) {
 
   def findActorIn(system: ActorSystem): Option[ActorRef] = {
     val ref = system.actorFor(actorPath)
-    if (ref.isTerminated) None else Some(ref)
+    if (ref.isTerminated()) None else Some(ref)
   }
 }
 

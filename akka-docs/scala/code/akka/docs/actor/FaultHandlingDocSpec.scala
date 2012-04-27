@@ -112,7 +112,7 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
         watch(child) // have testActor watch “child”
         child ! new IllegalArgumentException // break it
         expectMsg(Terminated(child))
-        child.isTerminated must be(true)
+        child.isTerminated() must be(true)
         //#stop
       }
       EventFilter[Exception]("CRASH", occurrences = 4) intercept {

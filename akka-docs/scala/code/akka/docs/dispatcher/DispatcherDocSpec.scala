@@ -216,7 +216,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     */
     //#prio-dispatcher
 
-    awaitCond(a.isTerminated, 5 seconds)
+    awaitCond(a.isTerminated(), 5 seconds)
   }
 
   "defining balancing dispatcher" in {

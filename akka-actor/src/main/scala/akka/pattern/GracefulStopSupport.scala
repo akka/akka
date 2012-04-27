@@ -20,7 +20,7 @@ trait GracefulStopSupport {
    * is completed with failure [[akka.actor.ActorTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
-    if (target.isTerminated) {
+    if (target.isTerminated()) {
       Promise.successful(true)
     } else {
       val result = Promise[Boolean]()

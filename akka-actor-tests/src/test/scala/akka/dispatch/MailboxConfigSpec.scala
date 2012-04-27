@@ -109,7 +109,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
     def createConsumer: Future[Vector[Envelope]] = spawn {
       var r = Vector[Envelope]()
-      while (producers.exists(_.isCompleted == false) || q.hasMessages) {
+      while (producers.exists(_.isCompleted() == false) || q.hasMessages) {
         q.dequeue match {
           case null    ⇒
           case message ⇒ r = r :+ message
