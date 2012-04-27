@@ -11,6 +11,14 @@ should have a look at its documentation (in particular about `ConfigFactory
 <http://typesafehub.github.com/config/latest/api/com/typesafe/config/ConfigFactory.html>`_),
 which is only summarized in the following.
 
+.. warning::
+
+   If you use Akka from the Scala REPL from the 2.9.x series,
+   and you do not provide your own ClassLoader to the ActorSystem,
+   start the REPL with "-Yrepl-sync" to work around a deficiency in
+   the REPLs provided Context ClassLoader.
+
+
 Where configuration is read from
 --------------------------------
 
