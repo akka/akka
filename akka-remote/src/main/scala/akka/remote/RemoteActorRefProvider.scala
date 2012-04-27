@@ -140,7 +140,7 @@ class RemoteActorRefProvider(
         p.headOption match {
           case None           ⇒ None
           case Some("remote") ⇒ lookupRemotes(p.drop(2))
-          case Some("user")   ⇒ deployer.lookup(p.drop(1).mkString("/", "/", ""))
+          case Some("user")   ⇒ deployer.lookup(p.drop(1))
           case Some(_)        ⇒ None
         }
       }
@@ -149,7 +149,7 @@ class RemoteActorRefProvider(
       val lookup =
         if (lookupDeploy)
           elems.head match {
-            case "user"   ⇒ deployer.lookup(elems.drop(1).mkString("/", "/", ""))
+            case "user"   ⇒ deployer.lookup(elems.drop(1))
             case "remote" ⇒ lookupRemotes(elems)
             case _        ⇒ None
           }
