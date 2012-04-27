@@ -40,6 +40,15 @@ object DeployerSpec {
             upper-bound = 10
           }
         }
+        /some/random-service {
+          router = round-robin
+        }
+        "/some/*" {
+          router = random
+        }
+        "/*/some" {
+          router = scatter-gather
+        }
       }
       """, ConfigParseOptions.defaults)
 
@@ -88,34 +97,38 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
     }
 
     "be able to parse 'akka.actor.deployment._' with direct router" in {
-      assertRouting(NoRouter, "/service-direct")
+      assertRouting("/service-direct", NoRouter, "/service-direct")
     }
 
     "ignore nr-of-instances with direct router" in {
-      assertRouting(NoRouter, "/service-direct2")
+      assertRouting("/service-direct2", NoRouter, "/service-direct2")
     }
 
     "be able to parse 'akka.actor.deployment._' with round-robin router" in {
-      assertRouting(RoundRobinRouter(1), "/service-round-robin")
+      assertRouting("/service-round-robin", RoundRobinRouter(1), "/service-round-robin")
     }
 
     "be able to parse 'akka.actor.deployment._' with random router" in {
-      assertRouting(RandomRouter(1), "/service-random")
+      assertRouting("/service-random", RandomRouter(1), "/service-random")
     }
 
     "be able to parse 'akka.actor.deployment._' with scatter-gather router" in {
-      assertRouting(ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/service-scatter-gather")
+      assertRouting("/service-scatter-gather", ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/service-scatter-gather")
     }
 
     "be able to parse 'akka.actor.deployment._' with router resizer" in {
       val resizer = DefaultResizer()
-      assertRouting(RoundRobinRouter(resizer = Some(resizer)), "/service-resizer")
+      assertRouting("/service-resizer", RoundRobinRouter(resizer = Some(resizer)), "/service-resizer")
     }
 
-    def assertRouting(expected: RouterConfig, service: String) {
+    "be able to use wildcards" in {
+      assertRouting("/some/wildcardmatch", RandomRouter(1), "/some/*")
+      assertRouting("/somewildcardmatch/some", ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/*/some")
+    }
+
+    def assertRouting(service: String, expected: RouterConfig, expectPath: String): Unit = {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
-      deployment must be('defined)
-      deployment.get.path must be(service)
+      deployment.map(_.path).getOrElse("NOT FOUND") must be(expectPath)
       deployment.get.routerConfig.getClass must be(expected.getClass)
       deployment.get.routerConfig.resizer must be(expected.resizer)
       deployment.get.scope must be(NoScopeGiven)
