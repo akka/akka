@@ -9,6 +9,7 @@ import akka.remote.MessageSerializer
 import akka.remote.RemoteProtocol.{ ActorRefProtocol, RemoteMessageProtocol }
 import com.typesafe.config.Config
 import akka.actor.ActorSystem
+import java.util.concurrent.TimeUnit
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
@@ -22,6 +23,14 @@ abstract class DurableMessageQueue(val owner: ActorContext) extends MessageQueue
   val ownerPathString = ownerPath.elements.mkString("/")
   val name = "mailbox_" + Name.replaceAllIn(ownerPathString, "_")
 
+  // TODO: Arbitrary defaults for now
+  val circuitBreakerMaxFailures: Int = 5
+  val circuitBreakerResetTimeout: Int = 10
+  val circuitBreakerCallTimeout: Int = 1
+  val circuitBreakerTimeUnit: TimeUnit = TimeUnit.SECONDS
+
+  val circuitBreaker = new CircuitBreakerFSM(system,circuitBreakerMaxFailures,circuitBreakerCallTimeout,circuitBreakerResetTimeout,circuitBreakerTimeUnit)
+  def withCircuitBreaker[T](body: ⇒ T): T = circuitBreaker.withCircuitBreaker(body)
 }
 
 trait DurableMessageSerialization { this: DurableMessageQueue ⇒
