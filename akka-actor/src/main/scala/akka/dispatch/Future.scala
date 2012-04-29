@@ -242,8 +242,8 @@ object Future {
     val remainingFutures = new AtomicInteger(futures.size)
 
     val succeedFirstOrFailLast: Either[Throwable, T] ⇒ Unit = _ match {
-      case Right(result) ⇒ futureResult success result
-      case Left(error)   ⇒ if (remainingFutures.decrementAndGet == 0) futureResult failure error
+      case r @ Right(_) ⇒ futureResult tryComplete r
+      case l @ Left(_)  ⇒ if (remainingFutures.decrementAndGet == 0) futureResult tryComplete l
     }
 
     futures.foreach(_ onComplete succeedFirstOrFailLast)
