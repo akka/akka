@@ -129,10 +129,6 @@ class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends Si
   }
 }
 
-object ChannelLocalSystem extends ChannelLocal[ActorSystemImpl] {
-  override def initialValue(ch: Channel): ActorSystemImpl = null
-}
-
 @ChannelHandler.Sharable
 class RemoteServerHandler(
   val openChannels: ChannelGroup,
