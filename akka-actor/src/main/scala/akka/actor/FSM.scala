@@ -172,7 +172,7 @@ object FSM {
  *   timerActive_? ("tock")
  * </pre>
  */
-trait FSM[S, D] extends Listeners {
+trait FSM[S, D] extends Listeners with ActorLogging {
   this: Actor ⇒
 
   import FSM._
@@ -185,8 +185,6 @@ trait FSM[S, D] extends Listeners {
   // “import” so that it is visible without an import
   val -> = FSM.->
   val StateTimeout = FSM.StateTimeout
-
-  val log = Logging(context.system, this)
 
   /**
    * ****************************************
