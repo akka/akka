@@ -29,7 +29,7 @@ import com.typesafe.config._
  * *****************************************************
  */
 
-/*class ClusterMBeanSpec extends ClusterSpec("akka.loglevel = DEBUG") with ImplicitSender {
+class ClusterMBeanSpec extends ClusterSpec("akka.loglevel = DEBUG") with ImplicitSender {
 
   var node0: Cluster = _
   var system0: ActorSystemImpl = _
@@ -45,7 +45,7 @@ import com.typesafe.config._
       node0 = Cluster(system0)
 
       "be able to communicate over JMX through its ClusterMBean" taggedAs LongRunningTest in {
-        Thread.sleep(60.seconds.dilated.toMillis)
+        //Thread.sleep(60.seconds.dilated.toMillis)
 
         // FIXME test JMX API
       }
@@ -56,9 +56,9 @@ import com.typesafe.config._
       fail(e.toString)
   }
 
-  override def atTermination() {
+  override def atTermination(): Unit = try {
     if (node0 ne null) node0.shutdown()
+  } finally {
     if (system0 ne null) system0.shutdown()
   }
 }
-*/ 
