@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
 import akka.serialization.SerializationExtension
-import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.testkit.DefaultTimeout
 import akka.dispatch.{ Await, Dispatchers, Future, Promise }
@@ -20,6 +19,7 @@ import akka.pattern.ask
 import akka.serialization.JavaSerializer
 import akka.actor.TypedActor._
 import java.lang.IllegalStateException
+import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
 
 object TypedActorSpec {
 
@@ -64,6 +64,7 @@ object TypedActorSpec {
   trait Foo {
     def pigdog(): String
 
+    @throws(classOf[TimeoutException])
     def self = TypedActor.self[Foo]
 
     def futurePigdog(): Future[String]
@@ -76,20 +77,26 @@ object TypedActorSpec {
 
     def failingFuturePigdog(): Future[String] = throw new IllegalStateException("expected")
 
+    @throws(classOf[TimeoutException])
     def failingOptionPigdog(): Option[String] = throw new IllegalStateException("expected")
 
+    @throws(classOf[TimeoutException])
     def failingJOptionPigdog(): JOption[String] = throw new IllegalStateException("expected")
 
     def failingPigdog(): Unit = throw new IllegalStateException("expected")
 
+    @throws(classOf[TimeoutException])
     def optionPigdog(): Option[String]
 
+    @throws(classOf[TimeoutException])
     def optionPigdog(delay: Long): Option[String]
 
+    @throws(classOf[TimeoutException])
     def joptionPigdog(delay: Long): JOption[String]
 
     def incr()
 
+    @throws(classOf[TimeoutException])
     def read(): Int
 
     def testMethodCallSerialization(foo: Foo, s: String, i: Int): Unit = throw new IllegalStateException("expected")
