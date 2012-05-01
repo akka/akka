@@ -79,8 +79,6 @@ object ByteString {
 
     override def clone: ByteString1C = new ByteString1C(toArray)
 
-    def compact: ByteString1C = this
-
     def asByteBuffer: ByteBuffer =
       toByteString1.asByteBuffer
 
@@ -107,7 +105,7 @@ object ByteString {
   /**
    * An unfragmented ByteString.
    */
-  final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int) extends ByteString {
+  final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int) extends ContByteString {
 
     private def this(bytes: Array[Byte]) = this(bytes, 0, bytes.length)
 
@@ -268,6 +266,7 @@ object ByteString {
       case bs: ByteStrings ⇒ ByteStrings(this, bs)
     }
 
+    def contiguous = compact
     def compact: CompactByteString = {
       val ar = new Array[Byte](length)
       var pos = 0
@@ -320,8 +319,14 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   def copyToBuffer(buffer: ByteBuffer): Int
 
   /**
-   * Create a new ByteString with all contents compacted into a single
-   * byte array.
+   * Create a new ByteString with all contents contiguous in memory
+   * (in a single section of a byte array).
+   */
+  def contiguous: ContByteString
+
+  /**
+   * Create a new ByteString with all contents compacted into a single,
+   * full byte array.
    */
   def compact: CompactByteString
 
@@ -426,9 +431,24 @@ object CompactByteString {
 }
 
 /**
- * A compact, unfragmented ByteString.
+ * A contiguous (i.e. non-fragmented) ByteString.
+ *
+ * The ByteString is guarantieed to be contiguous in memory, making certain
+ * operations more efficient than on chunked ByteString instances.
  */
-sealed abstract class CompactByteString extends ByteString with Serializable
+sealed abstract class ContByteString extends ByteString {
+  def contiguous = this
+}
+
+/**
+ * A compact and contiguous ByteString.
+ *
+ * The ByteString is guarantied to be contiguous in memory and to blocks only
+ * as much memory as required for its contents.
+ */
+sealed abstract class CompactByteString extends ContByteString with Serializable {
+  def compact = this
+}
 
 /**
  * A mutable builder for efficiently creating a [[akka.util.ByteString]].
