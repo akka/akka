@@ -75,8 +75,6 @@ object ByteString {
 
     override def iterator = ByteArrayIterator(bytes, 0, bytes.length)
 
-    def toArray: Array[Byte] = bytes.clone
-
     def toByteString1: ByteString1 = ByteString1(bytes)
 
     override def clone: ByteString1C = new ByteString1C(toArray)
@@ -92,12 +90,6 @@ object ByteString {
     override def slice(from: Int, until: Int): ByteString =
       if ((from != 0) || (until != length)) toByteString1.slice(from, until)
       else this
-
-    override def copyToArray[A >: Byte](xs: Array[A], start: Int, len: Int): Unit =
-      toByteString1.copyToArray(xs, start, len)
-
-    def copyToBuffer(buffer: ByteBuffer): Int =
-      toByteString1.copyToBuffer(buffer)
   }
 
   private[akka] object ByteString1 {
@@ -123,12 +115,6 @@ object ByteString {
         throw new IndexOutOfBoundsException(index.toString)
     }
 
-    def toArray: Array[Byte] = {
-      val ar = new Array[Byte](length)
-      Array.copy(bytes, startIndex, ar, 0, length)
-      ar
-    }
-
     override def clone: CompactByteString = ByteString1C(toArray)
 
     def compact: CompactByteString =
@@ -152,23 +138,6 @@ object ByteString {
       }
       case bs: ByteStrings ⇒ ByteStrings(this, bs)
     }
-
-    override def slice(from: Int, until: Int): ByteString = {
-      val newStartIndex = math.max(from, 0) + startIndex
-      val newLength = math.min(until, length) - from
-      if (newLength <= 0) ByteString.empty
-      else new ByteString1(bytes, newStartIndex, newLength)
-    }
-
-    override def copyToArray[A >: Byte](xs: Array[A], start: Int, len: Int): Unit =
-      Array.copy(bytes, startIndex, xs, start, math.min(math.min(length, len), xs.length - start))
-
-    def copyToBuffer(buffer: ByteBuffer): Int = {
-      val copyLength = math.min(buffer.remaining, length)
-      if (copyLength > 0) buffer.put(bytes, startIndex, copyLength)
-      copyLength
-    }
-
   }
 
   private[akka] object ByteStrings {
@@ -230,43 +199,6 @@ object ByteString {
 
     override def iterator = MultiByteArrayIterator(bytestrings.toList.map { _.iterator })
 
-    override def slice(from: Int, until: Int): ByteString = {
-      val start = math.max(from, 0)
-      val end = math.min(until, length)
-      if (end <= start)
-        ByteString.empty
-      else {
-        val iter = bytestrings.iterator
-        var cur = iter.next
-        var pos = 0
-        var seen = 0
-        while (from >= seen + cur.length) {
-          seen += cur.length
-          pos += 1
-          cur = iter.next
-        }
-        val startpos = pos
-        val startidx = start - seen
-        while (until > seen + cur.length) {
-          seen += cur.length
-          pos += 1
-          cur = iter.next
-        }
-        val endpos = pos
-        val endidx = end - seen
-        if (startpos == endpos)
-          cur.slice(startidx, endidx)
-        else {
-          val first = bytestrings(startpos).drop(startidx).asInstanceOf[ByteString1]
-          val last = cur.take(endidx).asInstanceOf[ByteString1]
-          if ((endpos - startpos) == 1)
-            new ByteStrings(Vector(first, last), until - from)
-          else
-            new ByteStrings(first +: bytestrings.slice(startpos + 1, endpos) :+ last, until - from)
-        }
-      }
-    }
-
     def ++(that: ByteString): ByteString = that match {
       case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
       case b: ByteString1  ⇒ ByteStrings(this, b)
@@ -287,15 +219,6 @@ object ByteString {
     def asByteBuffer: ByteBuffer = compact.asByteBuffer
 
     def decodeString(charset: String): String = compact.decodeString(charset)
-
-    def copyToBuffer(buffer: ByteBuffer): Int = {
-      val copyLength = math.min(buffer.remaining, length)
-      val iter = bytestrings.iterator
-      while (iter.hasNext && buffer.hasRemaining) {
-        iter.next.copyToBuffer(buffer)
-      }
-      copyLength
-    }
   }
 
 }
@@ -314,6 +237,35 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   // *must* be overridden by derived classes
   override def iterator: ByteIterator = null
 
+  @inline final override def head: Byte = this(0)
+  @inline final override def tail: ByteString = this.drop(1)
+  @inline final override def last: Byte = this(this.length - 1)
+  override def init: ByteString = this.take(this.length - 1)
+
+  override def slice(from: Int, until: Int): ByteString =
+    if ((from == 0) && (until == length)) this
+    else iterator.slice(from, until).toByteString
+
+  override def take(n: Int): ByteString = slice(0, n)
+  override def takeRight(n: Int): ByteString = slice(length - n, length)
+  override def drop(n: Int): ByteString = slice(n, length)
+  override def dropRight(n: Int): ByteString = slice(0, length - n)
+
+  override def takeWhile(p: Byte ⇒ Boolean) = iterator.takeWhile(p).toByteString
+  override def dropWhile(p: Byte ⇒ Boolean) = iterator.dropWhile(p).toByteString
+  override def span(p: Byte ⇒ Boolean): (ByteString, ByteString) =
+    { val (a, b) = iterator.span(p); (a.toByteString, b.toByteString) }
+
+  override def splitAt(n: Int): (ByteString, ByteString) = (take(n), drop(n))
+
+  override def indexWhere(p: Byte ⇒ Boolean): Int = iterator.indexWhere(p)
+  override def indexOf[B >: Byte](elem: B): Int = iterator.indexOf(elem)
+
+  override def toArray[B >: Byte](implicit arg0: ClassManifest[B]) = iterator.toArray
+  override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int) = iterator.copyToArray(xs, start, len)
+
+  @inline final override def foreach[@specialized U](f: Byte ⇒ U): Unit = iterator foreach f
+
   /**
    * Efficiently concatenate another ByteString.
    */
@@ -326,7 +278,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * @param buffer a ByteBuffer to copy bytes to
    * @return the number of bytes actually copied
    */
-  def copyToBuffer(buffer: ByteBuffer): Int
+  def copyToBuffer(buffer: ByteBuffer): Int = iterator.copyToBuffer(buffer)
 
   /**
    * Create a new ByteString with all contents contiguous in memory

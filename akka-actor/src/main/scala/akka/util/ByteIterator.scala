@@ -143,7 +143,7 @@ class ByteArrayIterator private (private var array: Array[Byte], private var fro
 
   def clear() { this.array = ByteArrayIterator.emptyArray; from = 0; until = from }
 
-  final override def length = { val l = len; drop(len); l }
+  final override def length = { val l = len; clear(); l }
 
   final override def ++(that: TraversableOnce[Byte]) = that match {
     case that: ByteArrayIterator ⇒ {
