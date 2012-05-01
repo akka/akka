@@ -73,6 +73,8 @@ object ByteString {
 
     override def length = bytes.length
 
+    override def iterator = ByteArrayIterator(bytes, 0, bytes.length)
+
     def toArray: Array[Byte] = bytes.clone
 
     def toByteString1: ByteString1 = ByteString1(bytes)
@@ -111,6 +113,8 @@ object ByteString {
     private def this(bytes: Array[Byte]) = this(bytes, 0, bytes.length)
 
     def apply(idx: Int): Byte = bytes(checkRangeConvert(idx))
+
+    override def iterator = ByteArrayIterator(bytes, startIndex, startIndex + length)
 
     private def checkRangeConvert(index: Int) = {
       if (0 <= index && length > index)
@@ -224,6 +228,8 @@ object ByteString {
         bytestrings(pos)(idx - seen)
       } else throw new IndexOutOfBoundsException(idx.toString)
 
+    override def iterator = MultiByteArrayIterator(bytestrings.toList.map { _.iterator })
+
     override def slice(from: Int, until: Int): ByteString = {
       val start = math.max(from, 0)
       val end = math.min(until, length)
@@ -304,6 +310,9 @@ object ByteString {
  */
 sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
   override protected[this] def newBuilder = ByteString.newBuilder
+
+  // *must* be overridden by derived classes
+  override def iterator: ByteIterator = null
 
   /**
    * Efficiently concatenate another ByteString.
