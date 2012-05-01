@@ -142,7 +142,11 @@ object ByteString {
 
     def ++(that: ByteString): ByteString = that match {
       case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
-      case b: ByteString1  ⇒ ByteStrings(this, b)
+      case b: ByteString1 ⇒ {
+        if ((bytes eq b.bytes) && (startIndex + length == b.startIndex))
+          new ByteString1(bytes, startIndex, length + b.length)
+        else ByteStrings(this, b)
+      }
       case bs: ByteStrings ⇒ ByteStrings(this, bs)
     }
 
