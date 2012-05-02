@@ -18,6 +18,14 @@ object DurableMailboxSpecActorFactory {
     def receive = { case x ⇒ sender ! x }
   }
 
+  class AccumulatorActor extends Actor {
+    var num = 0l
+    def receive = {
+      case x: Int ⇒ num += x
+      case "sum"  ⇒ sender ! num
+    }
+  }
+
 }
 
 /**
@@ -47,11 +55,9 @@ abstract class DurableMailboxSpec(val backendName: String, config: String) exten
     if (!result.contains(words)) throw new Exception("stream did not contain '" + words + "':\n" + result)
   }
 
-  private val props = Props[MailboxTestActor].withDispatcher(backendName + "-dispatcher")
-
-  def createMailboxTestActor(id: String = ""): ActorRef = id match {
-    case null | "" ⇒ system.actorOf(props)
-    case some      ⇒ system.actorOf(props, some)
+  def createMailboxTestActor(props: Props = Props[MailboxTestActor], id: String = ""): ActorRef = id match {
+    case null | "" ⇒ system.actorOf(props.withDispatcher(backendName + "-dispatcher"))
+    case some      ⇒ system.actorOf(props.withDispatcher(backendName + "-dispatcher"), some)
   }
 
   def isDurableMailbox(m: Mailbox): Boolean
@@ -74,6 +80,26 @@ abstract class DurableMailboxSpec(val backendName: String, config: String) exten
       msgs foreach { m ⇒ queueActor ! m }
 
       msgs foreach { m ⇒ expectMsg(m) }
+
+      expectNoMsg()
+    }
+
+    "support having multiple actors at the same time" in {
+      val actors = Vector.fill(3)(createMailboxTestActor(Props[AccumulatorActor]))
+
+      actors foreach { a ⇒ isDurableMailbox(a.asInstanceOf[LocalActorRef].underlying.mailbox) must be(true) }
+
+      val msgs = 1 to 3
+
+      val expectedResult: Long = msgs.sum
+
+      for (a ← actors; m ← msgs) a ! m
+
+      for (a ← actors) {
+        implicit val sender = testActor
+        a ! "sum"
+        expectMsg(expectedResult)
+      }
 
       expectNoMsg()
     }
