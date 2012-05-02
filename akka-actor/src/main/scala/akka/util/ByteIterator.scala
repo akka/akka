@@ -15,6 +15,29 @@ import scala.annotation.tailrec
 
 import java.nio.ByteBuffer
 
+object ByteIterator {
+  /**
+   * An InputStream that directly wraps a ByteIterator without copying
+   */
+  final class InputStreamWrapper(val iterator: ByteIterator) extends java.io.InputStream {
+    override def available = iterator.len
+
+    def read = iterator.next.toInt
+
+    override def read(b: Array[Byte], off: Int, len: Int) = {
+      val nRead = math.min(iterator.len, len - off)
+      iterator.copyToArray(b, off, nRead)
+      nRead
+    }
+
+    override def skip(n: Long) = {
+      val nSkip = math.min(iterator.len, n.toInt)
+      iterator.drop(nSkip)
+      nSkip
+    }
+  }
+}
+
 abstract class ByteIterator extends BufferedIterator[Byte] {
   def isIdenticalTo(that: Iterator[Byte]): Boolean
 
@@ -106,6 +129,13 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
    * @return the number of bytes actually copied
    */
   def copyToBuffer(buffer: ByteBuffer): Int
+
+  /**
+   * Directly wraps this ByteIterator in an InputStream without copying.
+   * Read and skip operations on the stream will advance the iterator
+   * accordingly.
+   */
+  def asInputStream: java.io.InputStream = new ByteIterator.InputStreamWrapper(this)
 }
 
 object ByteArrayIterator {
