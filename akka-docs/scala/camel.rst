@@ -5,6 +5,8 @@
  Camel
 #######
 
+Additional Resources
+====================
 For an introduction to akka-camel 2, see also the Peter Gabryanczyk's talk `Migrating akka-camel module to Akka 2.x`_.
 
 For an introduction to akka-camel 1, see also the `Appendix E - Akka and Camel`_
@@ -32,6 +34,8 @@ actor API, actors can now exchange messages with other systems over large number
 of protocols and APIs such as HTTP, SOAP, TCP, FTP, SMTP or JMS, to mention a
 few. At the moment, approximately 80 protocols and APIs are supported.
 
+Apache Camel
+------------
 The akka-camel module is based on `Apache Camel`_, a powerful and leight-weight
 integration framework for the JVM. For an introduction to Apache Camel you may
 want to read this `Apache Camel article`_. Camel comes with a
@@ -43,6 +47,8 @@ APIs. The `camel-extra`_ project provides further components.
 .. _components: http://camel.apache.org/components.html
 .. _camel-extra: http://code.google.com/p/camel-extra/
 
+Consumer
+--------
 Usage of Camel's integration components in Akka is essentially a
 one-liner. Here's an example.
 
@@ -60,6 +66,8 @@ component`_), only the actor's endpointUri method must be changed.
 
 .. includecode:: code/akka/docs/camel/Introduction.scala#Consumer
 
+Producer
+--------
 Actors can also trigger message exchanges with external systems i.e. produce to
 Camel endpoints.
 
@@ -70,6 +78,8 @@ In the above example, any message sent to this actor will be added (produced) to
 the example JMS queue. Producer actors may choose from the same set of Camel
 components as Consumer actors do.
 
+CamelMessage
+------------
 The number of Camel components is constantly increasing. The akka-camel module
 can support these in a plug-and-play manner. Just add them to your application's
 classpath, define a component-specific endpoint URI and use it to exchange
@@ -83,3 +93,23 @@ representations which are used by Consumer and Producer actors for pattern
 matching, transformation, serialization or storage.
 
 __ https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/Message.java
+
+
+Dependencies
+============
+
+SBT
+---
+.. code-block:: scala
+
+    "com.typesafe.akka" % "akka-camel" % "2.1-SNAPSHOT"
+
+Maven
+-----
+.. code-block:: xml
+
+    <dependency>
+        <groupId>com.typesafe.akka</groupId>
+        <artifactId>akka-camel</artifactId>
+        <version>2.1-SNAPSHOT</version>
+    </dependency>
