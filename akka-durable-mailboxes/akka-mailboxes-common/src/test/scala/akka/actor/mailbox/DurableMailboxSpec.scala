@@ -3,26 +3,19 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.PoisonPill
-import akka.actor.Props
-import akka.dispatch.Await
 import akka.testkit.AkkaSpec
 import akka.testkit.TestLatch
 import akka.util.duration._
 import java.io.InputStream
 import scala.annotation.tailrec
 import com.typesafe.config.Config
+import akka.actor._
+import akka.dispatch.{ Mailbox, Await }
 
 object DurableMailboxSpecActorFactory {
 
   class MailboxTestActor extends Actor {
-    def receive = { case "sum" ⇒ sender ! "sum" }
-  }
-
-  class Sender(latch: TestLatch) extends Actor {
-    def receive = { case "sum" ⇒ latch.countDown() }
+    def receive = { case x ⇒ sender ! x }
   }
 
 }
@@ -54,32 +47,35 @@ abstract class DurableMailboxSpec(val backendName: String, config: String) exten
     if (!result.contains(words)) throw new Exception("stream did not contain '" + words + "':\n" + result)
   }
 
-  def createMailboxTestActor(id: String): ActorRef =
-    system.actorOf(Props(new MailboxTestActor).withDispatcher(backendName + "-dispatcher"))
+  private val props = Props[MailboxTestActor].withDispatcher(backendName + "-dispatcher")
+
+  def createMailboxTestActor(id: String = ""): ActorRef = id match {
+    case null | "" ⇒ system.actorOf(props)
+    case some      ⇒ system.actorOf(props, some)
+  }
+
+  def isDurableMailbox(m: Mailbox): Boolean
 
   "A " + backendName + " based mailbox backed actor" must {
 
-    "handle reply to ! for 1 message" in {
-      val latch = new TestLatch(1)
-      val queueActor = createMailboxTestActor(backendName + " should handle reply to !")
-      val sender = system.actorOf(Props(new Sender(latch)))
-
-      queueActor.!("sum")(sender)
-      Await.ready(latch, 10 seconds)
-      queueActor ! PoisonPill
-      sender ! PoisonPill
+    "get a new, unique, durable mailbox" in {
+      val a1, a2 = createMailboxTestActor()
+      isDurableMailbox(a1.asInstanceOf[LocalActorRef].underlying.mailbox) must be(true)
+      isDurableMailbox(a2.asInstanceOf[LocalActorRef].underlying.mailbox) must be(true)
+      (a1.asInstanceOf[LocalActorRef].underlying.mailbox ne a2.asInstanceOf[LocalActorRef].underlying.mailbox) must be(true)
     }
 
-    "handle reply to ! for multiple messages" in {
-      val latch = new TestLatch(5)
-      val queueActor = createMailboxTestActor(backendName + " should handle reply to !")
-      val sender = system.actorOf(Props(new Sender(latch)))
+    "deliver messages at most once" in {
+      val queueActor = createMailboxTestActor()
+      implicit val sender = testActor
 
-      for (i ← 1 to 10) queueActor.!("sum")(sender)
+      val msgs = 1 to 100 map { x ⇒ "foo" + x }
 
-      Await.ready(latch, 10 seconds)
-      queueActor ! PoisonPill
-      sender ! PoisonPill
+      msgs foreach { m ⇒ queueActor ! m }
+
+      msgs foreach { m ⇒ expectMsg(m) }
+
+      expectNoMsg()
     }
   }
 
