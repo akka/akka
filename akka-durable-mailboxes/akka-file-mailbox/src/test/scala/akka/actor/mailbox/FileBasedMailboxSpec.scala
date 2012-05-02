@@ -2,6 +2,7 @@ package akka.actor.mailbox
 
 import org.apache.commons.io.FileUtils
 import com.typesafe.config.ConfigFactory
+import akka.dispatch.Mailbox
 
 object FileBasedMailboxSpec {
   val config = """
@@ -23,6 +24,8 @@ class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileBasedMailboxSp
       queuePath must be("file-based")
     }
   }
+
+  def isDurableMailbox(m: Mailbox): Boolean = m.messageQueue.isInstanceOf[FileBasedMessageQueue]
 
   def clean {
     FileUtils.deleteDirectory(new java.io.File(queuePath))
