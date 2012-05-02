@@ -4,12 +4,13 @@
 package akka.actor.mailbox
 
 import akka.actor.{ ActorContext, ActorRef, ExtendedActorSystem }
-import akka.dispatch.{ Envelope, MessageQueue }
 import akka.remote.MessageSerializer
 import akka.remote.RemoteProtocol.{ ActorRefProtocol, RemoteMessageProtocol }
 import com.typesafe.config.Config
 import akka.actor.ActorSystem
-import java.util.concurrent.TimeUnit
+import akka.util.duration._
+import akka.util.Duration
+import akka.dispatch.{ ExecutionContext, Envelope, MessageQueue }
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
@@ -25,11 +26,10 @@ abstract class DurableMessageQueue(val owner: ActorContext) extends MessageQueue
 
   // TODO: Arbitrary defaults for now
   val circuitBreakerMaxFailures: Int = 5
-  val circuitBreakerResetTimeout: Int = 10
-  val circuitBreakerCallTimeout: Int = 1
-  val circuitBreakerTimeUnit: TimeUnit = TimeUnit.SECONDS
+  val circuitBreakerResetTimeout: Duration = 10 seconds
+  val circuitBreakerCallTimeout: Duration = 1 seconds
 
-  val circuitBreaker = new CircuitBreakerFSM(system,circuitBreakerMaxFailures,circuitBreakerCallTimeout,circuitBreakerResetTimeout,circuitBreakerTimeUnit)
+  val circuitBreaker = new CircuitBreaker(system.scheduler, circuitBreakerMaxFailures, circuitBreakerCallTimeout, circuitBreakerResetTimeout)(ExecutionContext.defaultExecutionContext(system))
   def withCircuitBreaker[T](body: ⇒ T): T = circuitBreaker.withCircuitBreaker(body)
 }
 
