@@ -36,7 +36,7 @@ few. At the moment, approximately 80 protocols and APIs are supported.
 
 Apache Camel
 ------------
-The akka-camel module is based on `Apache Camel`_, a powerful and leight-weight
+The akka-camel module is based on `Apache Camel`_, a powerful and light-weight
 integration framework for the JVM. For an introduction to Apache Camel you may
 want to read this `Apache Camel article`_. Camel comes with a
 large number of `components`_ that provide bindings to different protocols and
