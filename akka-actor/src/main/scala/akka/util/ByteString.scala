@@ -424,6 +424,15 @@ sealed abstract class CompactByteString extends ContByteString with Serializable
 
 object ByteStringBuilder {
   def apply(initialSize: Int = 0): ByteStringBuilder = new ByteStringBuilder(initialSize)
+
+  /**
+   * An OutputStream that directly wraps a ByteStringBuilder.
+   */
+  class OutputStreamWrapper(val builder: ByteStringBuilder) extends java.io.OutputStream {
+    def write(b: Int) = builder += b.toByte
+
+    override def write(b: Array[Byte], off: Int, len: Int) { builder.putBytes(b, off, len) }
+  }
 }
 
 /**
@@ -526,4 +535,9 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
         ByteStrings(bytestrings, _length)
     }
 
+  /**
+   * Directly wraps this ByteStringBuilder in an OutputStream. Write
+   * operations on the stream are forwarded to the builder.
+   */
+  def asOutputStream = new ByteStringBuilder.OutputStreamWrapper(this)
 }
