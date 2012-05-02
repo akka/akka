@@ -422,6 +422,10 @@ sealed abstract class CompactByteString extends ContByteString with Serializable
   def compact = this
 }
 
+object ByteStringBuilder {
+  def apply(initialSize: Int = 0): ByteStringBuilder = new ByteStringBuilder(initialSize)
+}
+
 /**
  * A mutable builder for efficiently creating a [[akka.util.ByteString]].
  *
@@ -434,6 +438,17 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   private var _temp: Array[Byte] = _
   private var _tempLength = 0
   private var _tempCapacity = 0
+
+  def this(initialSize: Int) = {
+    this()
+    if (initialSize > 0) sizeHint(initialSize)
+  }
+
+  def length: Int = _length
+
+  override def sizeHint(len: Int) {
+    resizeTemp(len - (_length - _tempLength))
+  }
 
   private def clearTemp() {
     if (_tempLength > 0) {
