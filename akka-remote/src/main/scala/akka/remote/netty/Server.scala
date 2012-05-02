@@ -37,13 +37,15 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   private val bootstrap = {
     val b = new ServerBootstrap(factory)
-    b.setPipelineFactory(new RemoteServerPipelineFactory(openChannels, executionHandler, netty))
+    b.setPipelineFactory(makePipeline())
     b.setOption("backlog", settings.Backlog)
     b.setOption("tcpNoDelay", true)
     b.setOption("child.keepAlive", true)
     b.setOption("reuseAddress", true)
     b
   }
+  
+  protected def makePipeline(): ChannelPipelineFactory = new RemoteServerPipelineFactory(openChannels, executionHandler, netty)
 
   @volatile
   private[akka] var channel: Channel = _

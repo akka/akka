@@ -31,9 +31,11 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   val settings = new NettySettings(remoteSettings.config.getConfig("akka.remote.netty"), remoteSettings.systemName)
 
+  // TODO replace by system.scheduler
   val timer: HashedWheelTimer = new HashedWheelTimer(system.threadFactory)
 
-  val executor = new OrderedMemoryAwareThreadPoolExecutor(
+  // TODO make configurable
+  lazy val executor = new OrderedMemoryAwareThreadPoolExecutor(
     settings.ExecutionPoolSize,
     settings.MaxChannelMemorySize,
     settings.MaxTotalMemorySize,
@@ -41,6 +43,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
     settings.ExecutionPoolKeepalive.unit,
     system.threadFactory)
 
+  // TODO make configurable/shareable with server socket factory
   val clientChannelFactory = new NioClientSocketChannelFactory(
     Executors.newCachedThreadPool(system.threadFactory),
     Executors.newCachedThreadPool(system.threadFactory))
@@ -50,9 +53,20 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   override protected def useUntrustedMode = remoteSettings.UntrustedMode
 
-  val server = try new NettyRemoteServer(this) catch {
-    case ex ⇒ shutdown(); throw ex
-  }
+  val server: NettyRemoteServer = try createServer() catch { case NonFatal(ex) ⇒ shutdown(); throw ex }
+
+  /**
+   * Override this method to inject a subclass of NettyRemoteServer instead of 
+   * the normal one, e.g. for altering the pipeline.
+   */
+  protected def createServer(): NettyRemoteServer = new NettyRemoteServer(this)
+  
+  /**
+   * Override this method to inject a subclass of RemoteClient instead of 
+   * the normal one, e.g. for altering the pipeline. Get this transport’s
+   * address from `this.address`.
+   */
+  protected def createClient(recipient: Address): RemoteClient = new ActiveRemoteClient(this, recipient, address)
 
   // the address is set in start() or from the RemoteServerHandler, whichever comes first
   private val _address = new AtomicReference[Address]
@@ -121,7 +135,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
                 //Recheck for addition, race between upgrades
                 case Some(client) ⇒ client //If already populated by other writer
                 case None ⇒ //Populate map
-                  val client = new ActiveRemoteClient(this, recipientAddress, address)
+                  val client = createClient(recipientAddress)
                   client.connect()
                   remoteClients += recipientAddress -> client
                   client

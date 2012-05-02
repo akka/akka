@@ -3,25 +3,42 @@
  */
 package akka.remote.testconductor
 
-import akka.actor.{ Actor, ActorRef, LoggingFSM, Timeout, UntypedChannel }
-import akka.event.EventHandler
+import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
 import RemoteConnection.getAddrString
 import akka.util.duration._
 import TestConductorProtocol._
-import akka.NoStackTrace
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
 import com.eaio.uuid.UUID
+import com.typesafe.config.ConfigFactory
+import akka.util.Timeout
+import akka.util.Duration
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import akka.pattern.ask
+import akka.dispatch.Await
+import scala.util.control.NoStackTrace
+import akka.actor.Status
+import akka.event.LoggingAdapter
+import akka.actor.PoisonPill
+import akka.event.Logging
 
 object Player extends BarrierSync {
 
-  private val server = Actor.actorOf[ClientFSM]
+  val system = ActorSystem("Player", ConfigFactory.load().getConfig("player"))
+
+  object Settings {
+    val config = system.settings.config
+
+    implicit val BarrierTimeout = Timeout(Duration(config.getMilliseconds("barrier-timeout"), MILLISECONDS))
+  }
+
+  private val server = system.actorOf(Props[ClientFSM], "client")
 
   override def enter(name: String*) {
-    EventHandler.debug(this, "entering barriers " + name.mkString("(", ", ", ")"))
-    implicit val timeout = Timeout(30 seconds)
+    system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
     name foreach { b ⇒
-      (server ? EnterBarrier(b)).get
-      EventHandler.debug(this, "passed barrier " + b)
+      import Settings.BarrierTimeout
+      Await.result(server ? EnterBarrier(b), Duration.Inf)
+      system.log.debug("passed barrier {}", b)
     }
   }
 }
@@ -31,7 +48,7 @@ object ClientFSM {
   case object Connecting extends State
   case object Connected extends State
 
-  case class Data(channel: Channel, msg: Either[List[ClientOp], (String, UntypedChannel)])
+  case class Data(channel: Channel, msg: Either[List[ClientOp], (String, ActorRef)])
 
   class ConnectionFailure(msg: String) extends RuntimeException(msg) with NoStackTrace
   case object Disconnected
@@ -39,14 +56,16 @@ object ClientFSM {
 
 class ClientFSM extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
   import ClientFSM._
-  import akka.actor.FSM._
 
-  val name = System.getProperty("akka.testconductor.name", (new UUID).toString)
-  val host = System.getProperty("akka.testconductor.host", "localhost")
-  val port = Integer.getInteger("akka.testconductor.port", 4545)
-  val handler = new PlayerHandler(self)
+  val config = context.system.settings.config
 
-  val myself = Actor.remote.address
+  val name = config.getString("akka.testconductor.name")
+  val host = config.getString("akka.testconductor.host")
+  val port = config.getInt("akka.testconductor.port")
+  val handler = new PlayerHandler(self, Logging(context.system, "PlayerHandler"))
+
+  val myself = "XXX"
+  val myport = 12345
 
   startWith(Connecting, Data(RemoteConnection(Client, host, port, handler), Left(Nil)))
 
@@ -54,7 +73,7 @@ class ClientFSM extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
     case Event(msg: ClientOp, Data(channel, Left(msgs))) ⇒
       stay using Data(channel, Left(msg :: msgs))
     case Event(Connected, Data(channel, Left(msgs))) ⇒
-      val hello = Hello.newBuilder.setName(name).setHost(myself.getAddress.getHostAddress).setPort(myself.getPort).build
+      val hello = Hello.newBuilder.setName(name).setHost(myself).setPort(myport).build
       channel.write(Wrapper.newBuilder.setHello(hello).build)
       msgs.reverse foreach sendMsg(channel)
       goto(Connected) using Data(channel, Left(Nil))
@@ -62,23 +81,23 @@ class ClientFSM extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
       // System.exit(1)
       stop
     case Event(StateTimeout, _) ⇒
-      EventHandler.error(this, "connect timeout to TestConductor")
+      log.error("connect timeout to TestConductor")
       // System.exit(1)
       stop
   }
 
   when(Connected) {
     case Event(Disconnected, _) ⇒
-      EventHandler.info(this, "disconnected from TestConductor")
+      log.info("disconnected from TestConductor")
       throw new ConnectionFailure("disconnect")
     case Event(msg: EnterBarrier, Data(channel, _)) ⇒
       sendMsg(channel)(msg)
-      stay using Data(channel, Right((msg.name, self.channel)))
+      stay using Data(channel, Right((msg.name, sender)))
     case Event(msg: Wrapper, Data(channel, Right((barrier, sender)))) if msg.getAllFields.size == 1 ⇒
       if (msg.hasBarrier) {
         val b = msg.getBarrier.getName
         if (b != barrier) {
-          sender.sendException(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
+          sender ! Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
         } else {
           sender ! b
         }
@@ -101,31 +120,30 @@ class ClientFSM extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
 
 }
 
-class PlayerHandler(fsm: ActorRef) extends SimpleChannelUpstreamHandler {
+class PlayerHandler(fsm: ActorRef, log: LoggingAdapter) extends SimpleChannelUpstreamHandler {
 
   import ClientFSM._
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
-    EventHandler.debug(this, "connected to " + getAddrString(channel))
-    while (!fsm.isRunning) Thread.sleep(100)
+    log.debug("connected to {}", getAddrString(channel))
     fsm ! Connected
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
-    EventHandler.debug(this, "disconnected from " + getAddrString(channel))
-    fsm.stop()
+    log.debug("disconnected from {}", getAddrString(channel))
+    fsm ! PoisonPill
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val channel = event.getChannel
-    EventHandler.debug(this, "message from " + getAddrString(channel) + ": " + event.getMessage)
+    log.debug("message from {}: {}", getAddrString(channel), event.getMessage)
     event.getMessage match {
       case msg: Wrapper if msg.getAllFields.size == 1 ⇒
         fsm ! msg
       case msg ⇒
-        EventHandler.info(this, "server " + getAddrString(channel) + " sent garbage '" + msg + "', disconnecting")
+        log.info("server {} sent garbage '{}', disconnecting", getAddrString(channel), msg)
         channel.close()
     }
   }

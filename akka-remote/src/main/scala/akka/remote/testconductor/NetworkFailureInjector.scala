@@ -4,9 +4,7 @@
 package akka.remote.testconductor
 
 import java.net.InetSocketAddress
-
 import scala.collection.immutable.Queue
-
 import org.jboss.netty.buffer.ChannelBuffer
 import org.jboss.netty.channel.ChannelState.BOUND
 import org.jboss.netty.channel.ChannelState.OPEN
@@ -17,34 +15,34 @@ import org.jboss.netty.channel.ChannelHandlerContext
 import org.jboss.netty.channel.ChannelStateEvent
 import org.jboss.netty.channel.ChannelUpstreamHandler
 import org.jboss.netty.channel.MessageEvent
-
 import akka.actor.FSM
 import akka.actor.Actor
 import akka.util.duration.doubleToDurationDouble
 import akka.util.Index
-import akka.util.RemoteAddress
+import akka.actor.Address
+import akka.actor.ActorSystem
+import akka.actor.Props
 
 object NetworkFailureInjector {
 
-  val channels = new Index[RemoteAddress, Channel]()
+  val channels = new Index[Address, Channel](16, (c1, c2) => c1 compareTo c2)
 
-  def close(remote: RemoteAddress): Unit = {
-    val set = channels.remove(remote)
+  def close(remote: Address): Unit = {
     // channels will be cleaned up by the handler
-    set foreach (_.close())
+    for (chs <- channels.remove(remote); c <- chs) c.close()
   }
 }
 
-class NetworkFailureInjector extends ChannelUpstreamHandler with ChannelDownstreamHandler {
+class NetworkFailureInjector(system: ActorSystem) extends ChannelUpstreamHandler with ChannelDownstreamHandler {
 
   import NetworkFailureInjector._
 
   // local cache of remote address
-  private var remote: Option[RemoteAddress] = None
+  private var remote: Option[Address] = None
 
   // everything goes via these Throttle actors to enable easy steering
-  private val sender = Actor.actorOf(new Throttle(_.sendDownstream(_)))
-  private val receiver = Actor.actorOf(new Throttle(_.sendUpstream(_)))
+  private val sender = system.actorOf(Props(new Throttle(_.sendDownstream(_))))
+  private val receiver = system.actorOf(Props(new Throttle(_.sendUpstream(_))))
 
   /*
    * State, Data and Messages for the internal Throttle actor
@@ -135,7 +133,7 @@ class NetworkFailureInjector extends ChannelUpstreamHandler with ChannelDownstre
               case null ⇒
                 remote = remote flatMap { a ⇒ channels.remove(a, state.getChannel); None }
               case a: InetSocketAddress ⇒
-                val addr = RemoteAddress(a)
+                val addr = Address("akka", "XXX", a.getHostName, a.getPort)
                 channels.put(addr, state.getChannel)
                 remote = Some(addr)
             }

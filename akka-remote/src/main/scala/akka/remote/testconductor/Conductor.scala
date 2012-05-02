@@ -3,24 +3,41 @@
  */
 package akka.remote.testconductor
 
-import akka.actor.{ Actor, ActorRef, LoggingFSM, Timeout, UntypedChannel }
-import akka.event.EventHandler
+import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
 import RemoteConnection.getAddrString
-import akka.util.duration._
 import TestConductorProtocol._
-import akka.NoStackTrace
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
+import com.typesafe.config.ConfigFactory
+import akka.util.Timeout
+import akka.util.Duration
+import akka.util.duration._
+import akka.pattern.ask
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import akka.dispatch.Await
+import akka.event.LoggingAdapter
+import akka.actor.PoisonPill
+import akka.event.Logging
+import scala.util.control.NoStackTrace
 
 object Conductor extends RunControl with FailureInject with BarrierSync {
 
+  val system = ActorSystem("conductor", ConfigFactory.load().getConfig("conductor"))
+
+  object Settings {
+    val config = system.settings.config
+
+    implicit val BarrierTimeout = Timeout(Duration(config.getMilliseconds("barrier-timeout"), MILLISECONDS))
+    implicit val QueryTimeout = Timeout(Duration(config.getMilliseconds("query-timeout"), MILLISECONDS))
+  }
+
   import Controller._
 
-  private val controller = Actor.actorOf[Controller]
+  private val controller = system.actorOf(Props[Controller], "controller")
   controller ! ClientConnected
 
   override def enter(name: String*) {
-    implicit val timeout = Timeout(30 seconds)
-    name foreach (b ⇒ (controller ? EnterBarrier(b)).get)
+    import Settings.BarrierTimeout
+    name foreach (b ⇒ Await.result(controller ? EnterBarrier(b), Duration.Inf))
   }
 
   override def throttle(node: String, target: String, direction: Direction, rateMBit: Float) {
@@ -47,7 +64,10 @@ object Conductor extends RunControl with FailureInject with BarrierSync {
     controller ! Terminate(node, -1)
   }
 
-  override def getNodes = (controller ? GetNodes).as[List[String]].get
+  override def getNodes = {
+    import Settings.QueryTimeout
+    Await.result(controller ? GetNodes mapTo manifest[List[String]], Duration.Inf)
+  }
 
   override def removeNode(node: String) {
     controller ! Remove(node)
@@ -55,33 +75,33 @@ object Conductor extends RunControl with FailureInject with BarrierSync {
 
 }
 
-class ConductorHandler(controller: ActorRef) extends SimpleChannelUpstreamHandler {
+class ConductorHandler(system: ActorSystem, controller: ActorRef, log: LoggingAdapter) extends SimpleChannelUpstreamHandler {
 
   var clients = Map[Channel, ActorRef]()
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
-    EventHandler.debug(this, "connection from " + getAddrString(channel))
-    val fsm = Actor.actorOf(new ServerFSM(controller, channel))
+    log.debug("connection from {}", getAddrString(channel))
+    val fsm = system.actorOf(Props(new ServerFSM(controller, channel)))
     clients += channel -> fsm
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
-    EventHandler.debug(this, "disconnect from " + getAddrString(channel))
+    log.debug("disconnect from {}", getAddrString(channel))
     val fsm = clients(channel)
-    fsm.stop()
+    fsm ! PoisonPill
     clients -= channel
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
     val channel = event.getChannel
-    EventHandler.debug(this, "message from " + getAddrString(channel) + ": " + event.getMessage)
+    log.debug("message from {}: {}", getAddrString(channel), event.getMessage)
     event.getMessage match {
       case msg: Wrapper if msg.getAllFields.size == 1 ⇒
         clients(channel) ! msg
       case msg ⇒
-        EventHandler.info(this, "client " + getAddrString(channel) + " sent garbage '" + msg + "', disconnecting")
+        log.info("client {} sent garbage '{}', disconnecting", getAddrString(channel), msg)
         channel.close()
     }
   }
@@ -104,35 +124,35 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
   startWith(Initial, null)
 
   when(Initial, stateTimeout = 10 seconds) {
-    case Ev(msg: Wrapper) ⇒
+    case Event(msg: Wrapper, _) ⇒
       if (msg.hasHello) {
         val hello = msg.getHello
         controller ! ClientConnected(hello.getName, hello.getHost, hello.getPort)
         goto(Ready)
       } else {
-        EventHandler.warning(this, "client " + getAddrString(channel) + " sent no Hello in first message, disconnecting")
+        log.warning("client {} sent no Hello in first message, disconnecting", getAddrString(channel))
         channel.close()
         stop()
       }
-    case Ev(StateTimeout) ⇒
-      EventHandler.info(this, "closing channel to " + getAddrString(channel) + " because of Hello timeout")
+    case Event(StateTimeout, _) ⇒
+      log.info("closing channel to {} because of Hello timeout", getAddrString(channel))
       channel.close()
       stop()
   }
 
   when(Ready) {
-    case Ev(msg: Wrapper) ⇒
+    case Event(msg: Wrapper, _) ⇒
       if (msg.hasBarrier) {
         val barrier = msg.getBarrier
         controller ! EnterBarrier(barrier.getName)
       } else {
-        EventHandler.warning(this, "client " + getAddrString(channel) + " sent unsupported message " + msg)
+        log.warning("client {} sent unsupported message {}", getAddrString(channel), msg)
       }
       stay
-    case Ev(Send(msg)) ⇒
+    case Event(Send(msg), _) ⇒
       channel.write(msg)
       stay
-    case Ev(EnterBarrier(name)) ⇒
+    case Event(EnterBarrier(name), _) ⇒
       val barrier = TestConductorProtocol.EnterBarrier.newBuilder.setName(name).build
       channel.write(Wrapper.newBuilder.setBarrier(barrier).build)
       stay
@@ -152,18 +172,19 @@ object Controller {
 class Controller extends Actor {
   import Controller._
 
-  val host = System.getProperty("akka.testconductor.host", "localhost")
-  val port = Integer.getInteger("akka.testconductor.port", 4545)
-  val connection = RemoteConnection(Server, host, port, new ConductorHandler(self))
+  val config = context.system.settings.config
 
-  val barrier = Actor.actorOf[BarrierCoordinator]
+  val host = config.getString("akka.testconductor.host")
+  val port = config.getInt("akka.testconductor.port")
+  val connection = RemoteConnection(Server, host, port,
+    new ConductorHandler(context.system, self, Logging(context.system, "ConductorHandler")))
+
+  val barrier = context.actorOf(Props[BarrierCoordinator], "barriers")
   var nodes = Map[String, NodeInfo]()
 
-  override def receive = Actor.loggable(this) {
+  override def receive = {
     case ClientConnected(name, host, port) ⇒
-      self.channel match {
-        case ref: ActorRef ⇒ nodes += name -> NodeInfo(name, host, port, ref)
-      }
+      nodes += name -> NodeInfo(name, host, port, sender)
       barrier forward ClientConnected
     case ClientConnected ⇒
       barrier forward ClientConnected
@@ -202,7 +223,7 @@ class Controller extends Actor {
     // TODO: properly remove node from BarrierCoordinator
     //    case Remove(node) =>
     //      nodes -= node
-    case GetNodes ⇒ self reply nodes.keys
+    case GetNodes ⇒ sender ! nodes.keys
   }
 }
 
@@ -211,7 +232,7 @@ object BarrierCoordinator {
   case object Idle extends State
   case object Waiting extends State
 
-  case class Data(clients: Int, barrier: String, arrived: List[UntypedChannel])
+  case class Data(clients: Int, barrier: String, arrived: List[ActorRef])
   class BarrierTimeoutException(msg: String) extends RuntimeException(msg) with NoStackTrace
 }
 
@@ -225,7 +246,7 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
   when(Idle) {
     case Event(EnterBarrier(name), Data(num, _, _)) ⇒
       if (num == 0) throw new IllegalStateException("no client expected yet")
-      goto(Waiting) using Data(num, name, self.channel :: Nil)
+      goto(Waiting) using Data(num, name, sender :: Nil)
     case Event(ClientConnected, d @ Data(num, _, _)) ⇒
       stay using d.copy(clients = num + 1)
     case Event(ClientDisconnected, d @ Data(num, _, _)) ⇒
@@ -241,7 +262,7 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
   when(Waiting) {
     case Event(e @ EnterBarrier(name), d @ Data(num, barrier, arrived)) ⇒
       if (name != barrier) throw new IllegalStateException("trying enter barrier '" + name + "' while barrier '" + barrier + "' is active")
-      val together = self.channel :: arrived
+      val together = sender :: arrived
       if (together.size == num) {
         together foreach (_ ! e)
         goto(Idle) using Data(num, "", Nil)
@@ -254,7 +275,7 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
       val expected = num - 1
       if (arrived.size == expected) {
         val e = EnterBarrier(barrier)
-        self.channel :: arrived foreach (_ ! e)
+        sender :: arrived foreach (_ ! e)
         goto(Idle) using Data(expected, "", Nil)
       } else {
         stay using d.copy(clients = expected)
