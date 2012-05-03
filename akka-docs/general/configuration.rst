@@ -56,6 +56,80 @@ to ``application``—may be overridden using the ``config.resource`` property
   Akka-based library, keep its configuration in ``reference.conf`` at the root
   of the JAR file.
 
+Reading configuration from a custom location
+--------------------------------------------
+
+You can replace or supplement ``application.conf`` either in code
+or using system properties.
+
+If you're using ``ConfigFactory.load()`` (which Akka does by
+default) it allows you to override ``application.conf`` by
+defining ``-Dconfig.resource=whatever``,
+``-Dconfig.file=whatever``, or ``-Dconfig.url=whatever``.
+
+In code, there are many options.
+
+There are several overloads of ``ConfigFactory.load()``; these
+allow you to specify something to be sandwiched between system
+properties (which override) and the defaults (from
+``reference.conf``), replacing the usual
+``application.{conf,json,properties}`` and replacing
+``-Dconfig.file`` and friends.
+
+The simplest variant of ``ConfigFactory.load()`` takes a resource
+basename (instead of ``application``); ``myname.conf``,
+``myname.json``, and ``myname.properties`` would then be used
+instead of ``application.{conf,json,properties}``.
+
+The most flexible variant takes a ``Config`` object, which
+you can load using any method in ``ConfigFactory``.  For example
+you could put a config string in code using
+``ConfigFactory.parseString()`` or you could make a map and
+``ConfigFactory.parseMap()``, or you could load a file.
+
+You can also combine your custom config with the usual config,
+that might look like:
+
+.. code-block:: java
+
+  // make a Config with just your special setting
+  Config myConfig =
+    ConfigFactory.parseString("something=somethingElse");
+  // load the normal config stack (system props,
+  // then application.conf, then reference.conf)
+  Config regularConfig =
+    ConfigFactory.load();
+  // override regular stack with myConfig
+  Config combined =
+    myConfig.withFallback(regularConfig)
+  // put the result in between the overrides
+  // (system props) and defaults again
+  Config complete =
+    ConfigFactory.load(combined)
+  // create ActorSystem
+  ActorSystem system =
+    ActorSystem.create("myname", complete)
+
+When working with ``Config`` objects, keep in mind that there are
+three "layers" in the cake:
+
+ - ``ConfigFactory.defaultOverrides()`` (system properties)
+ - the app's settings
+ - ``ConfigFactory.defaultReference()`` (reference.conf)
+
+The normal goal is to customize the middle layer while leaving the
+other two alone.
+
+ - ``ConfigFactory.load()`` loads the whole stack
+ - the overloads of ``ConfigFactory.load()`` let you specify a
+   different middle layer
+ - the ``ConfigFactory.parse()`` variations load single files or resources
+
+To stack two layers, use ``override.withFallback(fallback)``; try
+to keep system props (``defaultOverrides()``) on top and
+``reference.conf`` (``defaultReference()``) on the bottom.
+
+
 When using JarJar, OneJar, Assembly or any jar-bundler
 ------------------------------------------------------
 
