@@ -159,25 +159,8 @@ you could put a config string in code using
 You can also combine your custom config with the usual config,
 that might look like:
 
-.. code-block:: java
-
-  // make a Config with just your special setting
-  Config myConfig =
-    ConfigFactory.parseString("something=somethingElse");
-  // load the normal config stack (system props,
-  // then application.conf, then reference.conf)
-  Config regularConfig =
-    ConfigFactory.load();
-  // override regular stack with myConfig
-  Config combined =
-    myConfig.withFallback(regularConfig)
-  // put the result in between the overrides
-  // (system props) and defaults again
-  Config complete =
-    ConfigFactory.load(combined)
-  // create ActorSystem
-  ActorSystem system =
-    ActorSystem.create("myname", complete)
+.. includecode:: code/akka/docs/config/ConfigDoc.java
+   :include: java-custom-config
 
 When working with ``Config`` objects, keep in mind that there are
 three "layers" in the cake:
@@ -197,7 +180,6 @@ other two alone.
 To stack two layers, use ``override.withFallback(fallback)``; try
 to keep system props (``defaultOverrides()``) on top and
 ``reference.conf`` (``defaultReference()``) on the bottom.
-
 
 Custom application.conf
 -----------------------
