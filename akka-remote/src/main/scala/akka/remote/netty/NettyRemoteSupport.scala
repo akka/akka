@@ -56,13 +56,13 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
   val server: NettyRemoteServer = try createServer() catch { case NonFatal(ex) ⇒ shutdown(); throw ex }
 
   /**
-   * Override this method to inject a subclass of NettyRemoteServer instead of 
+   * Override this method to inject a subclass of NettyRemoteServer instead of
    * the normal one, e.g. for altering the pipeline.
    */
   protected def createServer(): NettyRemoteServer = new NettyRemoteServer(this)
-  
+
   /**
-   * Override this method to inject a subclass of RemoteClient instead of 
+   * Override this method to inject a subclass of RemoteClient instead of
    * the normal one, e.g. for altering the pipeline. Get this transport’s
    * address from `this.address`.
    */

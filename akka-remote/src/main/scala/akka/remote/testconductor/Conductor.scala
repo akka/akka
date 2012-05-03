@@ -18,26 +18,30 @@ import akka.event.LoggingAdapter
 import akka.actor.PoisonPill
 import akka.event.Logging
 import scala.util.control.NoStackTrace
+import akka.event.LoggingReceive
+import akka.actor.Address
+import java.net.InetSocketAddress
 
-object Conductor extends RunControl with FailureInject with BarrierSync {
-
-  val system = ActorSystem("conductor", ConfigFactory.load().getConfig("conductor"))
-
-  object Settings {
-    val config = system.settings.config
-
-    implicit val BarrierTimeout = Timeout(Duration(config.getMilliseconds("barrier-timeout"), MILLISECONDS))
-    implicit val QueryTimeout = Timeout(Duration(config.getMilliseconds("query-timeout"), MILLISECONDS))
-  }
+trait Conductor extends RunControl with FailureInject { this: TestConductorExt ⇒
 
   import Controller._
 
-  private val controller = system.actorOf(Props[Controller], "controller")
-  controller ! ClientConnected
+  private var _controller: ActorRef = _
+  private def controller: ActorRef = _controller match {
+    case null ⇒ throw new RuntimeException("TestConductorServer was not started")
+    case x    ⇒ x
+  }
 
-  override def enter(name: String*) {
+  override def startController() {
+    if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
+    _controller = system.actorOf(Props[Controller], "controller")
     import Settings.BarrierTimeout
-    name foreach (b ⇒ Await.result(controller ? EnterBarrier(b), Duration.Inf))
+    startClient(Await.result(controller ? GetPort mapTo, Duration.Inf))
+  }
+
+  override def port: Int = {
+    import Settings.QueryTimeout
+    Await.result(controller ? GetPort mapTo, Duration.Inf)
   }
 
   override def throttle(node: String, target: String, direction: Direction, rateMBit: Float) {
@@ -127,7 +131,7 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
     case Event(msg: Wrapper, _) ⇒
       if (msg.hasHello) {
         val hello = msg.getHello
-        controller ! ClientConnected(hello.getName, hello.getHost, hello.getPort)
+        controller ! ClientConnected(hello.getName, hello.getAddress)
         goto(Ready)
       } else {
         log.warning("client {} sent no Hello in first message, disconnecting", getAddrString(channel))
@@ -162,29 +166,28 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
 }
 
 object Controller {
-  case class ClientConnected(name: String, host: String, port: Int)
+  case class ClientConnected(name: String, address: Address)
   case class ClientDisconnected(name: String)
   case object GetNodes
+  case object GetPort
 
-  case class NodeInfo(name: String, host: String, port: Int, fsm: ActorRef)
+  case class NodeInfo(name: String, addr: Address, fsm: ActorRef)
 }
 
 class Controller extends Actor {
   import Controller._
 
-  val config = context.system.settings.config
-
-  val host = config.getString("akka.testconductor.host")
-  val port = config.getInt("akka.testconductor.port")
-  val connection = RemoteConnection(Server, host, port,
+  val settings = TestConductor().Settings
+  val connection = RemoteConnection(Server, settings.host, settings.port,
     new ConductorHandler(context.system, self, Logging(context.system, "ConductorHandler")))
 
   val barrier = context.actorOf(Props[BarrierCoordinator], "barriers")
   var nodes = Map[String, NodeInfo]()
 
-  override def receive = {
-    case ClientConnected(name, host, port) ⇒
-      nodes += name -> NodeInfo(name, host, port, sender)
+  override def receive = LoggingReceive {
+    case "ready?" ⇒ sender ! "yes"
+    case ClientConnected(name, addr) ⇒
+      nodes += name -> NodeInfo(name, addr, sender)
       barrier forward ClientConnected
     case ClientConnected ⇒
       barrier forward ClientConnected
@@ -199,8 +202,7 @@ class Controller extends Actor {
         InjectFailure.newBuilder
           .setFailure(FailType.Throttle)
           .setDirection(TestConductorProtocol.Direction.valueOf(direction.toString))
-          .setHost(t.host)
-          .setPort(t.port)
+          .setAddress(t.addr)
           .setRateMBit(rateMBit)
           .build
       nodes(node).fsm ! ServerFSM.Send(Wrapper.newBuilder.setFailure(throttle).build)
@@ -209,8 +211,7 @@ class Controller extends Actor {
       val disconnect =
         InjectFailure.newBuilder
           .setFailure(if (abort) FailType.Abort else FailType.Disconnect)
-          .setHost(t.host)
-          .setPort(t.port)
+          .setAddress(t.addr)
           .build
       nodes(node).fsm ! ServerFSM.Send(Wrapper.newBuilder.setFailure(disconnect).build)
     case Terminate(node, exitValueOrKill) ⇒
@@ -224,6 +225,10 @@ class Controller extends Actor {
     //    case Remove(node) =>
     //      nodes -= node
     case GetNodes ⇒ sender ! nodes.keys
+    case GetPort ⇒
+      sender ! (connection.getLocalAddress match {
+        case inet: InetSocketAddress ⇒ inet.getPort
+      })
   }
 }
 

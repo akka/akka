@@ -25,11 +25,11 @@ import akka.actor.Props
 
 object NetworkFailureInjector {
 
-  val channels = new Index[Address, Channel](16, (c1, c2) => c1 compareTo c2)
+  val channels = new Index[Address, Channel](16, (c1, c2) ⇒ c1 compareTo c2)
 
   def close(remote: Address): Unit = {
     // channels will be cleaned up by the handler
-    for (chs <- channels.remove(remote); c <- chs) c.close()
+    for (chs ← channels.remove(remote); c ← chs) c.close()
   }
 }
 

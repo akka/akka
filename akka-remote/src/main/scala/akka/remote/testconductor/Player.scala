@@ -21,23 +21,40 @@ import akka.event.LoggingAdapter
 import akka.actor.PoisonPill
 import akka.event.Logging
 
-object Player extends BarrierSync {
+trait Player extends BarrierSync { this: TestConductorExt ⇒
 
-  val system = ActorSystem("Player", ConfigFactory.load().getConfig("player"))
-
-  object Settings {
-    val config = system.settings.config
-
-    implicit val BarrierTimeout = Timeout(Duration(config.getMilliseconds("barrier-timeout"), MILLISECONDS))
+  private var _client: ActorRef = _
+  private def client = _client match {
+    case null ⇒ throw new IllegalStateException("TestConductor client not yet started")
+    case x    ⇒ x
   }
 
-  private val server = system.actorOf(Props[ClientFSM], "client")
+  def startClient(port: Int) {
+    import ClientFSM._
+    import akka.actor.FSM._
+    import Settings.BarrierTimeout
+
+    if (_client ne null) throw new IllegalStateException("TestConductorClient already started")
+    _client = system.actorOf(Props(new ClientFSM(port)), "TestConductorClient")
+    val a = system.actorOf(Props(new Actor {
+      var waiting: ActorRef = _
+      def receive = {
+        case fsm: ActorRef                        ⇒ waiting = sender; fsm ! SubscribeTransitionCallBack(self)
+        case Transition(_, Connecting, Connected) ⇒ waiting ! "okay"
+        case t: Transition[_]                     ⇒ waiting ! Status.Failure(new RuntimeException("unexpected transition: " + t))
+        case CurrentState(_, Connected)           ⇒ waiting ! "okay"
+        case _: CurrentState[_]                   ⇒
+      }
+    }))
+
+    Await.result(a ? client, Duration.Inf)
+  }
 
   override def enter(name: String*) {
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
     name foreach { b ⇒
       import Settings.BarrierTimeout
-      Await.result(server ? EnterBarrier(b), Duration.Inf)
+      Await.result(client ? EnterBarrier(b), Duration.Inf)
       system.log.debug("passed barrier {}", b)
     }
   }
@@ -48,35 +65,28 @@ object ClientFSM {
   case object Connecting extends State
   case object Connected extends State
 
-  case class Data(channel: Channel, msg: Either[List[ClientOp], (String, ActorRef)])
+  case class Data(channel: Channel, barrier: Option[(String, ActorRef)])
 
   class ConnectionFailure(msg: String) extends RuntimeException(msg) with NoStackTrace
   case object Disconnected
 }
 
-class ClientFSM extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
+class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
   import ClientFSM._
 
-  val config = context.system.settings.config
+  val settings = TestConductor().Settings
 
-  val name = config.getString("akka.testconductor.name")
-  val host = config.getString("akka.testconductor.host")
-  val port = config.getInt("akka.testconductor.port")
   val handler = new PlayerHandler(self, Logging(context.system, "PlayerHandler"))
 
-  val myself = "XXX"
-  val myport = 12345
-
-  startWith(Connecting, Data(RemoteConnection(Client, host, port, handler), Left(Nil)))
+  startWith(Connecting, Data(RemoteConnection(Client, settings.host, port, handler), None))
 
   when(Connecting, stateTimeout = 10 seconds) {
-    case Event(msg: ClientOp, Data(channel, Left(msgs))) ⇒
-      stay using Data(channel, Left(msg :: msgs))
-    case Event(Connected, Data(channel, Left(msgs))) ⇒
-      val hello = Hello.newBuilder.setName(name).setHost(myself).setPort(myport).build
+    case Event(msg: ClientOp, _) ⇒
+      stay replying Status.Failure(new IllegalStateException("not connected yet"))
+    case Event(Connected, d @ Data(channel, _)) ⇒
+      val hello = Hello.newBuilder.setName(settings.name).setAddress(TestConductor().address).build
       channel.write(Wrapper.newBuilder.setHello(hello).build)
-      msgs.reverse foreach sendMsg(channel)
-      goto(Connected) using Data(channel, Left(Nil))
+      goto(Connected)
     case Event(_: ConnectionFailure, _) ⇒
       // System.exit(1)
       stop
@@ -92,8 +102,8 @@ class ClientFSM extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
       throw new ConnectionFailure("disconnect")
     case Event(msg: EnterBarrier, Data(channel, _)) ⇒
       sendMsg(channel)(msg)
-      stay using Data(channel, Right((msg.name, sender)))
-    case Event(msg: Wrapper, Data(channel, Right((barrier, sender)))) if msg.getAllFields.size == 1 ⇒
+      stay using Data(channel, Some(msg.name, sender))
+    case Event(msg: Wrapper, Data(channel, Some((barrier, sender)))) if msg.getAllFields.size == 1 ⇒
       if (msg.hasBarrier) {
         val b = msg.getBarrier.getName
         if (b != barrier) {
@@ -102,13 +112,15 @@ class ClientFSM extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
           sender ! b
         }
       }
-      stay using Data(channel, Left(Nil))
+      stay using Data(channel, None)
   }
 
   onTermination {
     case StopEvent(_, _, Data(channel, _)) ⇒
       channel.close()
   }
+
+  initialize
 
   private def sendMsg(channel: Channel)(msg: ClientOp) {
     msg match {

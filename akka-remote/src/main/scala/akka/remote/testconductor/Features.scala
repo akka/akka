@@ -50,6 +50,16 @@ trait FailureInject {
 trait RunControl {
 
   /**
+   * Start the server port.
+   */
+  def startController(): Unit
+
+  /**
+   * Get the actual port used by the server.
+   */
+  def port: Int
+
+  /**
    * Tell the remote node to shut itself down using System.exit with the given
    * exitValue.
    */

@@ -44,7 +44,7 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
     b.setOption("reuseAddress", true)
     b
   }
-  
+
   protected def makePipeline(): ChannelPipelineFactory = new RemoteServerPipelineFactory(openChannels, executionHandler, netty)
 
   @volatile
