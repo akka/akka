@@ -3,7 +3,10 @@
  */
 package akka.docs.config;
 
-public class CustomConfig {
+import akka.actor.ActorSystem;
+import com.typesafe.config.*;
+
+public class ConfigDoc {
   public ActorSystem createConfiguredSystem() {
     //#java-custom-config
     // make a Config with just your special setting
