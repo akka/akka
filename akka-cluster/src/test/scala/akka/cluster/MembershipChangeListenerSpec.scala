@@ -30,7 +30,11 @@ class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
     "A set of connected cluster systems" must {
       "(when two systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
         system0 = ActorSystem("system0", ConfigFactory
-          .parseString("akka.remote.netty.port=5550")
+          .parseString("""
+            akka {
+              actor.provider = "akka.remote.RemoteActorRefProvider"
+              remote.netty.port=5550
+            }""")
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
@@ -39,6 +43,7 @@ class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
         system1 = ActorSystem("system1", ConfigFactory
           .parseString("""
             akka {
+              actor.provider = "akka.remote.RemoteActorRefProvider"
               remote.netty.port=5551
               cluster.node-to-join = "akka://system0@localhost:5550"
             }""")
@@ -75,6 +80,7 @@ class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
         system2 = ActorSystem("system2", ConfigFactory
           .parseString("""
             akka {
+              actor.provider = "akka.remote.RemoteActorRefProvider"
               remote.netty.port=5552
               cluster.node-to-join = "akka://system0@localhost:5550"
             }""")

@@ -8,6 +8,7 @@ import akka.actor.Address
 import akka.testkit.{ LongRunningTest, AkkaSpec }
 
 class AccrualFailureDetectorSpec extends AkkaSpec("""
+  actor.provider = "akka.remote.RemoteActorRefProvider"
   akka.loglevel = "INFO"
 """) {
 

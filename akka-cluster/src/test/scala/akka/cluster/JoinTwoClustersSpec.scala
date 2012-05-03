@@ -37,6 +37,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system1 = ActorSystem("system1", ConfigFactory
         .parseString("""
           akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
             remote.netty.port = 5551
           }""")
         .withFallback(system.settings.config))
@@ -47,6 +48,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system2 = ActorSystem("system2", ConfigFactory
         .parseString("""
           akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
             remote.netty.port = 5552
             cluster.node-to-join = "akka://system1@localhost:5551"
           }""")
@@ -58,6 +60,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system3 = ActorSystem("system3", ConfigFactory
         .parseString("""
           akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
             remote.netty.port = 5553
           }""")
         .withFallback(system.settings.config))
@@ -68,6 +71,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system4 = ActorSystem("system4", ConfigFactory
         .parseString("""
           akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
             remote.netty.port = 5554
             cluster.node-to-join = "akka://system3@localhost:5553"
           }""")
@@ -79,6 +83,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system5 = ActorSystem("system5", ConfigFactory
         .parseString("""
           akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
             remote.netty.port = 5555
           }""")
         .withFallback(system.settings.config))
@@ -89,6 +94,7 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system6 = ActorSystem("system6", ConfigFactory
         .parseString("""
           akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
             remote.netty.port = 5556
             cluster.node-to-join = "akka://system5@localhost:5555"
           }""")

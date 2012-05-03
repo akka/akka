@@ -16,7 +16,6 @@ import com.typesafe.config.{ Config, ConfigFactory }
 object ClusterSpec {
   val testConf: Config = ConfigFactory.parseString("""
     akka {
-      actor.provider = "akka.remote.RemoteActorRefProvider"
       event-handlers = ["akka.testkit.TestEventListener"]
       loglevel = "WARNING"
       stdout-loglevel = "WARNING"

@@ -31,6 +31,7 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
       system1 = ActorSystem("system1", ConfigFactory
         .parseString("""
           akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
             remote.netty.port = 5550
           }""")
         .withFallback(system.settings.config))
@@ -42,6 +43,7 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
       system2 = ActorSystem("system2", ConfigFactory
         .parseString("""
           akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
             remote.netty.port = 5551
             cluster.node-to-join = "akka://system1@localhost:5550"
           }""")
@@ -54,6 +56,7 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
       system3 = ActorSystem("system3", ConfigFactory
         .parseString("""
           akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
             remote.netty.port = 5552
             cluster.node-to-join = "akka://system1@localhost:5550"
           }""")

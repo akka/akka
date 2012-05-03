@@ -23,7 +23,11 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
   try {
     "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
       system0 = ActorSystem("system0", ConfigFactory
-        .parseString("akka.remote.netty.port=5550")
+        .parseString("""
+          akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port=5550
+          } """)
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
@@ -47,6 +51,7 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
         system1 = ActorSystem("system1", ConfigFactory
           .parseString("""
             akka {
+              actor.provider = "akka.remote.RemoteActorRefProvider"
               remote.netty.port=5551
               cluster.node-to-join = "akka://system0@localhost:5550"
             }""")
