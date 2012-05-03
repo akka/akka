@@ -867,7 +867,7 @@ class DefaultPromise[T](implicit val executor: ExecutionContext) extends Abstrac
   @throws(classOf[TimeoutException])
   def ready(atMost: Duration)(implicit permit: CanAwait): this.type =
     if (isCompleted || tryAwait(atMost)) this
-    else throw new TimeoutException("Futures timed out after [" + atMost.toMillis + "] milliseconds")
+    else throw new TimeoutException("Futures timed out after [" + atMost + "]")
 
   @throws(classOf[Exception])
   def result(atMost: Duration)(implicit permit: CanAwait): T =
