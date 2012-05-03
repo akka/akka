@@ -198,77 +198,6 @@ the ``ActorSystem``.
 .. includecode:: code/akka/docs/config/ConfigDocSpec.scala
    :include: imports,custom-config
 
-Listing of the Reference Configuration
---------------------------------------
-
-Each Akka module has a reference configuration file with the default values.
-
-akka-actor
-~~~~~~~~~~
-
-.. literalinclude:: ../../akka-actor/src/main/resources/reference.conf
-   :language: none
-
-akka-remote
-~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-remote/src/main/resources/reference.conf
-   :language: none
-
-akka-testkit
-~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-testkit/src/main/resources/reference.conf
-   :language: none
-
-akka-transactor
-~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-transactor/src/main/resources/reference.conf
-   :language: none
-
-akka-agent
-~~~~~~~~~~
-
-.. literalinclude:: ../../akka-agent/src/main/resources/reference.conf
-   :language: none
-
-akka-zeromq
-~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-zeromq/src/main/resources/reference.conf
-   :language: none
-
-akka-beanstalk-mailbox
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-durable-mailboxes/akka-beanstalk-mailbox/src/main/resources/reference.conf
-   :language: none
-
-akka-file-mailbox
-~~~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
-   :language: none
-
-akka-mongo-mailbox
-~~~~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-durable-mailboxes/akka-mongo-mailbox/src/main/resources/reference.conf
-   :language: none
-
-akka-redis-mailbox
-~~~~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-durable-mailboxes/akka-redis-mailbox/src/main/resources/reference.conf
-   :language: none
-
-akka-zookeeper-mailbox
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-durable-mailboxes/akka-zookeeper-mailbox/src/main/resources/reference.conf
-   :language: none
-
 Custom application.conf
 -----------------------
 
@@ -397,3 +326,74 @@ A good practice is to place those settings in an Extension, as described in:
 
  * Scala API: :ref:`extending-akka-scala.settings`
  * Java API: :ref:`extending-akka-java.settings`
+
+Listing of the Reference Configuration
+--------------------------------------
+
+Each Akka module has a reference configuration file with the default values.
+
+akka-actor
+~~~~~~~~~~
+
+.. literalinclude:: ../../akka-actor/src/main/resources/reference.conf
+   :language: none
+
+akka-remote
+~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-remote/src/main/resources/reference.conf
+   :language: none
+
+akka-testkit
+~~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-testkit/src/main/resources/reference.conf
+   :language: none
+
+akka-transactor
+~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-transactor/src/main/resources/reference.conf
+   :language: none
+
+akka-agent
+~~~~~~~~~~
+
+.. literalinclude:: ../../akka-agent/src/main/resources/reference.conf
+   :language: none
+
+akka-zeromq
+~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-zeromq/src/main/resources/reference.conf
+   :language: none
+
+akka-beanstalk-mailbox
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-durable-mailboxes/akka-beanstalk-mailbox/src/main/resources/reference.conf
+   :language: none
+
+akka-file-mailbox
+~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
+   :language: none
+
+akka-mongo-mailbox
+~~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-durable-mailboxes/akka-mongo-mailbox/src/main/resources/reference.conf
+   :language: none
+
+akka-redis-mailbox
+~~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-durable-mailboxes/akka-redis-mailbox/src/main/resources/reference.conf
+   :language: none
+
+akka-zookeeper-mailbox
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../akka-durable-mailboxes/akka-zookeeper-mailbox/src/main/resources/reference.conf
+   :language: none
