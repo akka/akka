@@ -68,133 +68,6 @@ When using JarJar, OneJar, Assembly or any jar-bundler
     that if you put merge multiple jars into the same jar, you need to merge all the
     reference.confs as well. Otherwise all defaults will be lost and Akka will not function.
 
-How to structure your configuration
------------------------------------
-
-Given that ``ConfigFactory.load()`` merges all resources with matching name
-from the whole class path, it is easiest to utilize that functionality and
-differenciate actor systems within the hierarchy of the configuration::
-
-  myapp1 {
-    akka.loglevel = WARNING
-    my.own.setting = 43
-  }
-  myapp2 {
-    akka.loglevel = ERROR
-    app2.setting = "appname"
-  }
-  my.own.setting = 42
-  my.other.setting = "hello"
-
-.. code-block:: scala
-
-  val config = ConfigFactory.load()
-  val app1 = ActorSystem("MyApp1", config.getConfig("myapp1").withFallback(config))
-  val app2 = ActorSystem("MyApp2", config.getConfig("myapp2").withOnlyPath("akka").withFallback(config))
-
-These two samples demonstrate different variations of the “lift-a-subtree”
-trick: in the first case, the configuration accessible from within the actor
-system is this
-
-.. code-block:: ruby
-
-  akka.loglevel = WARNING
-  my.own.setting = 43
-  my.other.setting = "hello"
-  // plus myapp1 and myapp2 subtrees
-
-while in the second one, only the “akka” subtree is lifted, with the following
-result::
-
-  akka.loglevel = ERROR
-  my.own.setting = 42
-  my.other.setting = "hello"
-  // plus myapp1 and myapp2 subtrees
-
-.. note::
-
-  The configuration library is really powerful, explaining all features exceeds
-  the scope affordable here. In particular not covered are how to include other
-  configuration files within other files (see a small example at `Including
-  files`_) and copying parts of the configuration tree by way of path
-  substitutions.
-
-You may also specify and parse the configuration programmatically in other ways when instantiating
-the ``ActorSystem``.
-
-.. includecode:: code/akka/docs/config/ConfigDocSpec.scala
-   :include: imports,custom-config
-
-Reading configuration from a custom location
---------------------------------------------
-
-You can replace or supplement ``application.conf`` either in code
-or using system properties.
-
-If you're using ``ConfigFactory.load()`` (which Akka does by
-default) you can replace ``application.conf`` by defining
-``-Dconfig.resource=whatever``, ``-Dconfig.file=whatever``, or
-``-Dconfig.url=whatever``.
-
-From inside your replacement file specified with
-``-Dconfig.resource`` and friends, you can ``include
-"application"`` if you still want to use
-``application.{conf,json,properties}`` as well.  Settings
-specified before ``include "application"`` would be overridden by
-the included file, while those after would override the included
-file.
-
-In code, there are many customization options.
-
-There are several overloads of ``ConfigFactory.load()``; these
-allow you to specify something to be sandwiched between system
-properties (which override) and the defaults (from
-``reference.conf``), replacing the usual
-``application.{conf,json,properties}`` and replacing
-``-Dconfig.file`` and friends.
-
-The simplest variant of ``ConfigFactory.load()`` takes a resource
-basename (instead of ``application``); ``myname.conf``,
-``myname.json``, and ``myname.properties`` would then be used
-instead of ``application.{conf,json,properties}``.
-
-The most flexible variant takes a ``Config`` object, which
-you can load using any method in ``ConfigFactory``.  For example
-you could put a config string in code using
-``ConfigFactory.parseString()`` or you could make a map and
-``ConfigFactory.parseMap()``, or you could load a file.
-
-You can also combine your custom config with the usual config,
-that might look like:
-
-.. includecode:: code/akka/docs/config/ConfigDoc.java
-   :include: java-custom-config
-
-When working with ``Config`` objects, keep in mind that there are
-three "layers" in the cake:
-
- - ``ConfigFactory.defaultOverrides()`` (system properties)
- - the app's settings
- - ``ConfigFactory.defaultReference()`` (reference.conf)
-
-The normal goal is to customize the middle layer while leaving the
-other two alone.
-
- - ``ConfigFactory.load()`` loads the whole stack
- - the overloads of ``ConfigFactory.load()`` let you specify a
-   different middle layer
- - the ``ConfigFactory.parse()`` variations load single files or resources
-
-To stack two layers, use ``override.withFallback(fallback)``; try
-to keep system props (``defaultOverrides()``) on top and
-``reference.conf`` (``defaultReference()``) on the bottom.
-
-Do keep in mind, you can often just add another ``include``
-statement in ``application.conf`` rather than writing code.
-Includes at the top of ``application.conf`` will be overridden by
-the rest of ``application.conf``, while those at the bottom will
-override the earlier stuff.
-
 Custom application.conf
 -----------------------
 
@@ -323,6 +196,133 @@ A good practice is to place those settings in an Extension, as described in:
 
  * Scala API: :ref:`extending-akka-scala.settings`
  * Java API: :ref:`extending-akka-java.settings`
+
+How to structure your configuration
+-----------------------------------
+
+Given that ``ConfigFactory.load()`` merges all resources with matching name
+from the whole class path, it is easiest to utilize that functionality and
+differenciate actor systems within the hierarchy of the configuration::
+
+  myapp1 {
+    akka.loglevel = WARNING
+    my.own.setting = 43
+  }
+  myapp2 {
+    akka.loglevel = ERROR
+    app2.setting = "appname"
+  }
+  my.own.setting = 42
+  my.other.setting = "hello"
+
+.. code-block:: scala
+
+  val config = ConfigFactory.load()
+  val app1 = ActorSystem("MyApp1", config.getConfig("myapp1").withFallback(config))
+  val app2 = ActorSystem("MyApp2", config.getConfig("myapp2").withOnlyPath("akka").withFallback(config))
+
+These two samples demonstrate different variations of the “lift-a-subtree”
+trick: in the first case, the configuration accessible from within the actor
+system is this
+
+.. code-block:: ruby
+
+  akka.loglevel = WARNING
+  my.own.setting = 43
+  my.other.setting = "hello"
+  // plus myapp1 and myapp2 subtrees
+
+while in the second one, only the “akka” subtree is lifted, with the following
+result::
+
+  akka.loglevel = ERROR
+  my.own.setting = 42
+  my.other.setting = "hello"
+  // plus myapp1 and myapp2 subtrees
+
+.. note::
+
+  The configuration library is really powerful, explaining all features exceeds
+  the scope affordable here. In particular not covered are how to include other
+  configuration files within other files (see a small example at `Including
+  files`_) and copying parts of the configuration tree by way of path
+  substitutions.
+
+You may also specify and parse the configuration programmatically in other ways when instantiating
+the ``ActorSystem``.
+
+.. includecode:: code/akka/docs/config/ConfigDocSpec.scala
+   :include: imports,custom-config
+
+Reading configuration from a custom location
+--------------------------------------------
+
+You can replace or supplement ``application.conf`` either in code
+or using system properties.
+
+If you're using ``ConfigFactory.load()`` (which Akka does by
+default) you can replace ``application.conf`` by defining
+``-Dconfig.resource=whatever``, ``-Dconfig.file=whatever``, or
+``-Dconfig.url=whatever``.
+
+From inside your replacement file specified with
+``-Dconfig.resource`` and friends, you can ``include
+"application"`` if you still want to use
+``application.{conf,json,properties}`` as well.  Settings
+specified before ``include "application"`` would be overridden by
+the included file, while those after would override the included
+file.
+
+In code, there are many customization options.
+
+There are several overloads of ``ConfigFactory.load()``; these
+allow you to specify something to be sandwiched between system
+properties (which override) and the defaults (from
+``reference.conf``), replacing the usual
+``application.{conf,json,properties}`` and replacing
+``-Dconfig.file`` and friends.
+
+The simplest variant of ``ConfigFactory.load()`` takes a resource
+basename (instead of ``application``); ``myname.conf``,
+``myname.json``, and ``myname.properties`` would then be used
+instead of ``application.{conf,json,properties}``.
+
+The most flexible variant takes a ``Config`` object, which
+you can load using any method in ``ConfigFactory``.  For example
+you could put a config string in code using
+``ConfigFactory.parseString()`` or you could make a map and
+``ConfigFactory.parseMap()``, or you could load a file.
+
+You can also combine your custom config with the usual config,
+that might look like:
+
+.. includecode:: code/akka/docs/config/ConfigDoc.java
+   :include: java-custom-config
+
+When working with ``Config`` objects, keep in mind that there are
+three "layers" in the cake:
+
+ - ``ConfigFactory.defaultOverrides()`` (system properties)
+ - the app's settings
+ - ``ConfigFactory.defaultReference()`` (reference.conf)
+
+The normal goal is to customize the middle layer while leaving the
+other two alone.
+
+ - ``ConfigFactory.load()`` loads the whole stack
+ - the overloads of ``ConfigFactory.load()`` let you specify a
+   different middle layer
+ - the ``ConfigFactory.parse()`` variations load single files or resources
+
+To stack two layers, use ``override.withFallback(fallback)``; try
+to keep system props (``defaultOverrides()``) on top and
+``reference.conf`` (``defaultReference()``) on the bottom.
+
+Do keep in mind, you can often just add another ``include``
+statement in ``application.conf`` rather than writing code.
+Includes at the top of ``application.conf`` will be overridden by
+the rest of ``application.conf``, while those at the bottom will
+override the earlier stuff.
 
 Listing of the Reference Configuration
 --------------------------------------
