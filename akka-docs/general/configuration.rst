@@ -197,12 +197,17 @@ A good practice is to place those settings in an Extension, as described in:
  * Scala API: :ref:`extending-akka-scala.settings`
  * Java API: :ref:`extending-akka-java.settings`
 
-How to structure your configuration
------------------------------------
+Configuring multiple ActorSystem
+--------------------------------
+
+If you have more than one ``ActorSystem`` (or you're writing a
+library and have an ``ActorSystem`` that may be separate from the
+application's) you may want to separate the configuration for each
+system.
 
 Given that ``ConfigFactory.load()`` merges all resources with matching name
 from the whole class path, it is easiest to utilize that functionality and
-differenciate actor systems within the hierarchy of the configuration::
+differentiate actor systems within the hierarchy of the configuration::
 
   myapp1 {
     akka.loglevel = WARNING
