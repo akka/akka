@@ -56,6 +56,75 @@ to ``application``—may be overridden using the ``config.resource`` property
   Akka-based library, keep its configuration in ``reference.conf`` at the root
   of the JAR file.
 
+
+When using JarJar, OneJar, Assembly or any jar-bundler
+------------------------------------------------------
+
+.. warning::
+
+    Akka's configuration approach relies heavily on the notion of every
+    module/jar having its own reference.conf file, all of these will be
+    discovered by the configuration and loaded. Unfortunately this also means
+    that if you put merge multiple jars into the same jar, you need to merge all the
+    reference.confs as well. Otherwise all defaults will be lost and Akka will not function.
+
+How to structure your configuration
+-----------------------------------
+
+Given that ``ConfigFactory.load()`` merges all resources with matching name
+from the whole class path, it is easiest to utilize that functionality and
+differenciate actor systems within the hierarchy of the configuration::
+
+  myapp1 {
+    akka.loglevel = WARNING
+    my.own.setting = 43
+  }
+  myapp2 {
+    akka.loglevel = ERROR
+    app2.setting = "appname"
+  }
+  my.own.setting = 42
+  my.other.setting = "hello"
+
+.. code-block:: scala
+
+  val config = ConfigFactory.load()
+  val app1 = ActorSystem("MyApp1", config.getConfig("myapp1").withFallback(config))
+  val app2 = ActorSystem("MyApp2", config.getConfig("myapp2").withOnlyPath("akka").withFallback(config))
+
+These two samples demonstrate different variations of the “lift-a-subtree”
+trick: in the first case, the configuration accessible from within the actor
+system is this
+
+.. code-block:: ruby
+
+  akka.loglevel = WARNING
+  my.own.setting = 43
+  my.other.setting = "hello"
+  // plus myapp1 and myapp2 subtrees
+
+while in the second one, only the “akka” subtree is lifted, with the following
+result::
+
+  akka.loglevel = ERROR
+  my.own.setting = 42
+  my.other.setting = "hello"
+  // plus myapp1 and myapp2 subtrees
+
+.. note::
+
+  The configuration library is really powerful, explaining all features exceeds
+  the scope affordable here. In particular not covered are how to include other
+  configuration files within other files (see a small example at `Including
+  files`_) and copying parts of the configuration tree by way of path
+  substitutions.
+
+You may also specify and parse the configuration programmatically in other ways when instantiating
+the ``ActorSystem``.
+
+.. includecode:: code/akka/docs/config/ConfigDocSpec.scala
+   :include: imports,custom-config
+
 Reading configuration from a custom location
 --------------------------------------------
 
@@ -129,74 +198,6 @@ To stack two layers, use ``override.withFallback(fallback)``; try
 to keep system props (``defaultOverrides()``) on top and
 ``reference.conf`` (``defaultReference()``) on the bottom.
 
-
-When using JarJar, OneJar, Assembly or any jar-bundler
-------------------------------------------------------
-
-.. warning::
-
-    Akka's configuration approach relies heavily on the notion of every
-    module/jar having its own reference.conf file, all of these will be
-    discovered by the configuration and loaded. Unfortunately this also means
-    that if you put merge multiple jars into the same jar, you need to merge all the
-    reference.confs as well. Otherwise all defaults will be lost and Akka will not function.
-
-How to structure your configuration
------------------------------------
-
-Given that ``ConfigFactory.load()`` merges all resources with matching name
-from the whole class path, it is easiest to utilize that functionality and
-differenciate actor systems within the hierarchy of the configuration::
-
-  myapp1 {
-    akka.loglevel = WARNING
-    my.own.setting = 43
-  }
-  myapp2 {
-    akka.loglevel = ERROR
-    app2.setting = "appname"
-  }
-  my.own.setting = 42
-  my.other.setting = "hello"
-
-.. code-block:: scala
-
-  val config = ConfigFactory.load()
-  val app1 = ActorSystem("MyApp1", config.getConfig("myapp1").withFallback(config))
-  val app2 = ActorSystem("MyApp2", config.getConfig("myapp2").withOnlyPath("akka").withFallback(config))
-
-These two samples demonstrate different variations of the “lift-a-subtree”
-trick: in the first case, the configuration accessible from within the actor
-system is this
-
-.. code-block:: ruby
-
-  akka.loglevel = WARNING
-  my.own.setting = 43
-  my.other.setting = "hello"
-  // plus myapp1 and myapp2 subtrees
-
-while in the second one, only the “akka” subtree is lifted, with the following
-result::
-
-  akka.loglevel = ERROR
-  my.own.setting = 42
-  my.other.setting = "hello"
-  // plus myapp1 and myapp2 subtrees
-
-.. note::
-
-  The configuration library is really powerful, explaining all features exceeds
-  the scope affordable here. In particular not covered are how to include other
-  configuration files within other files (see a small example at `Including
-  files`_) and copying parts of the configuration tree by way of path
-  substitutions.
-
-You may also specify and parse the configuration programmatically in other ways when instantiating
-the ``ActorSystem``.
-
-.. includecode:: code/akka/docs/config/ConfigDocSpec.scala
-   :include: imports,custom-config
 
 Custom application.conf
 -----------------------
