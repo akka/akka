@@ -932,7 +932,7 @@ final class IOManagerActor extends Actor {
       case Some(channel) ⇒
         channel.close
         channels -= handle
-        if (!handle.owner.isTerminated()) handle.owner ! IO.Closed(handle, cause)
+        if (!handle.owner.isTerminated) handle.owner ! IO.Closed(handle, cause)
       case None ⇒
     }
   }

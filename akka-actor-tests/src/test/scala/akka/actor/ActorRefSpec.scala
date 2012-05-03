@@ -374,7 +374,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       Await.result(ffive, timeout.duration) must be("five")
       Await.result(fnull, timeout.duration) must be("null")
 
-      awaitCond(ref.isTerminated(), 2000 millis)
+      awaitCond(ref.isTerminated, 2000 millis)
     }
 
     "restart when Kill:ed" in {

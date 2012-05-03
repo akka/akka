@@ -204,7 +204,7 @@ trait ExecutorServiceDelegate extends ExecutorService {
 
   def isShutdown = executor.isShutdown
 
-  def isTerminated() = executor.isTerminated
+  def isTerminated = executor.isTerminated
 
   def awaitTermination(l: Long, timeUnit: TimeUnit) = executor.awaitTermination(l, timeUnit)
 

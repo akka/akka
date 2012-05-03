@@ -117,7 +117,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * The contract is that if this method returns true, then it will never be false again.
    * But you cannot rely on that it is alive if it returns true, since this by nature is a racy method.
    */
-  def isTerminated(): Boolean
+  def isTerminated: Boolean
 
   // FIXME RK check if we should scramble the bits or whether they can stay the same
   final override def hashCode: Int = path.hashCode
@@ -161,11 +161,11 @@ trait ScalaActorRef { ref: ActorRef ⇒
  * is the only method provided on the scope.
  */
 trait ActorRefScope {
-  def isLocal(): Boolean
+  def isLocal: Boolean
 }
 
 trait LocalRef extends ActorRefScope {
-  final def isLocal() = true
+  final def isLocal = true
 }
 
 /**
@@ -208,7 +208,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
    * Scope: if this ref points to an actor which resides within the same JVM,
    * i.e. whose mailbox is directly reachable etc.
    */
-  def isLocal(): Boolean
+  def isLocal: Boolean
 }
 
 /**
@@ -259,7 +259,7 @@ private[akka] class LocalActorRef private[akka] (
    * If this method returns true, it will never return false again, but if it
    * returns false, you cannot be sure if it's alive still (race condition)
    */
-  override def isTerminated(): Boolean = actorCell.isTerminated
+  override def isTerminated: Boolean = actorCell.isTerminated
 
   /**
    * Suspends the actor so that it will not process messages until resumed. The
@@ -376,7 +376,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 
   def stop(): Unit = ()
 
-  def isTerminated() = false
+  def isTerminated = false
 
   def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
 

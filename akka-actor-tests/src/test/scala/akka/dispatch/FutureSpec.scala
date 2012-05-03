@@ -647,20 +647,20 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           one() + two()
         }
 
-        assert(List(one, two, simpleResult).forall(_.isCompleted() == false))
+        assert(List(one, two, simpleResult).forall(_.isCompleted == false))
 
         flow { one << 1 }
 
         Await.ready(one, 1 minute)
 
-        assert(one.isCompleted())
-        assert(List(two, simpleResult).forall(_.isCompleted() == false))
+        assert(one.isCompleted)
+        assert(List(two, simpleResult).forall(_.isCompleted == false))
 
         flow { two << 9 }
 
         Await.ready(two, 1 minute)
 
-        assert(List(one, two).forall(_.isCompleted() == true))
+        assert(List(one, two).forall(_.isCompleted == true))
         assert(Await.result(simpleResult, timeout.duration) === 10)
 
       }
@@ -680,7 +680,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.ready(lx, 2 seconds)
         assert(!ly.isOpen)
         assert(!lz.isOpen)
-        assert(List(x1, x2, y1, y2).forall(_.isCompleted() == false))
+        assert(List(x1, x2, y1, y2).forall(_.isCompleted == false))
 
         flow { y1 << 1 } // When this is set, it should cascade down the line
 
@@ -693,7 +693,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.ready(lz, 2 seconds)
         assert(Await.result(x2, 1 minute) === 9)
 
-        assert(List(x1, x2, y1, y2).forall(_.isCompleted()))
+        assert(List(x1, x2, y1, y2).forall(_.isCompleted))
 
         assert(Await.result(result, 1 minute) === 10)
       }
@@ -710,7 +710,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
         assert(!s1.isOpen)
         assert(!s2.isOpen)
-        assert(!result.isCompleted())
+        assert(!result.isCompleted)
         Await.ready(i1, 2 seconds)
         Await.ready(i2, 2 seconds)
         s1.open()
@@ -757,7 +757,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           Some(future()).filter(_ == "Hello")
         }
 
-        assert(!result.isCompleted())
+        assert(!result.isCompleted)
 
         latch.open()
 

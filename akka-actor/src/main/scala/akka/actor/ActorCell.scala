@@ -90,7 +90,7 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Returns the sender 'ActorRef' of the current message.
    */
-  def sender(): ActorRef
+  def sender: ActorRef
 
   /**
    * Returns all supervised children; this method returns a view onto the
@@ -422,7 +422,7 @@ private[akka] class ActorCell(
    */
   final def getDispatcher(): MessageDispatcher = dispatcher
 
-  final def isTerminated(): Boolean = mailbox.isClosed
+  final def isTerminated: Boolean = mailbox.isClosed
 
   final def start(): Unit = {
     /*
@@ -474,7 +474,7 @@ private[akka] class ActorCell(
   final def tell(message: Any, sender: ActorRef): Unit =
     dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender)(system))
 
-  final def sender(): ActorRef = currentMessage match {
+  final def sender: ActorRef = currentMessage match {
     case null                      ⇒ system.deadLetters
     case msg if msg.sender ne null ⇒ msg.sender
     case _                         ⇒ system.deadLetters

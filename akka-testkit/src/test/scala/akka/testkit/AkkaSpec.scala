@@ -114,9 +114,9 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
       val spec = new AkkaSpec(system) {
         val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
       }
-      spec.ref foreach (_.isTerminated() must not be true)
+      spec.ref foreach (_.isTerminated must not be true)
       system.shutdown()
-      spec.awaitCond(spec.ref forall (_.isTerminated()), 2 seconds)
+      spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
     }
 
     "must stop correctly when sending PoisonPill to rootGuardian" in {

@@ -95,7 +95,7 @@ abstract class OldActor extends Actor {
     @deprecated("Use context.setReceiveTimeout instead", "2.0")
     def receiveTimeout_=(timeout: Option[Long]) = setReceiveTimeout(timeout.getOrElse(0L))
 
-    @deprecated("Use self.isTerminated() instead", "2.0")
+    @deprecated("Use self.isTerminated instead", "2.0")
     def isShutdown: Boolean = self.isTerminated
 
     @deprecated("Use sender instead", "2.0")
