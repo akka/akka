@@ -39,7 +39,7 @@ class MongoBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
-class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailboxSettings) extends DurableMessageQueue(_owner) {
+class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailboxSettings) extends DurableMessageQueue(_owner, settings) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
   implicit val mailboxBSONSer = new BSONSerializableMessageQueue(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!
@@ -58,14 +58,14 @@ class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailb
     val result = Promise[Boolean]()(dispatcher)
     mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
       wr match {
-        case Right((oid, wr)) ⇒ result.success(true)
-        case Left(t)          ⇒ result.failure(t)
+        case Right((oid, wr)) ⇒ result.success(true); onAsyncSuccess()
+        case Left(t)          ⇒ result.failure(t); onAsyncFailure()
       }
     })
     Await.ready(result, settings.WriteTimeout)
   }
 
-  def dequeue(): Envelope = withErrorHandling {
+  def dequeue(): Envelope = {
     /**
      * Retrieves first item in natural order (oldest first, assuming no modification/move)
      * Waits 3 seconds for now for a message, else pops back out.
@@ -85,13 +85,22 @@ class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailb
           ()
       }
     }
-    try { Await.result(envelopePromise, settings.ReadTimeout) } catch { case _: TimeoutException ⇒ null }
+    try {
+      val result = Await.result(envelopePromise, settings.ReadTimeout)
+      onAsyncSuccess()
+      result
+    }
+    catch { case _: TimeoutException ⇒ onAsyncFailure(); null }
   }
 
   def numberOfMessages: Int = {
     val count = Promise[Int]()(dispatcher)
     mongo.count()(count.success)
-    try { Await.result(count, settings.ReadTimeout).asInstanceOf[Int] } catch { case _: Exception ⇒ -1 }
+    try {
+      val result = Await.result(count, settings.ReadTimeout).asInstanceOf[Int]
+      onAsyncSuccess()
+      result
+    } catch { case _: Exception ⇒ onAsyncFailure(); -1 }
   }
 
   //TODO review find other solution, this will be very expensive

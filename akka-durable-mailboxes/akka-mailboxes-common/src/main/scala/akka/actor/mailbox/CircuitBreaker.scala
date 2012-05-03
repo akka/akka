@@ -3,12 +3,11 @@ package akka.actor.mailbox
 import java.lang.Throwable
 import java.util.concurrent.Semaphore
 import akka.util.duration._
-import akka.dispatch.ExecutionContext
 import java.util.concurrent.atomic.{ AtomicReference, AtomicLong, AtomicInteger }
 import akka.actor.Scheduler
-import collection.mutable.Stack
 import akka.util.{ Duration, Deadline }
 import akka.AkkaException
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * akka.actor.mailbox
@@ -16,7 +15,7 @@ import akka.AkkaException
  * Time: 11:07 AM
  */
 
-class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)(implicit ec: ExecutionContext) {
+class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration) { //(implicit ec: ExecutionContext) {
 
   private val currentState: AtomicReference[CircuitBreakerState] = new AtomicReference(CircuitBreakerClosed)
 
@@ -39,6 +38,14 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
   def withCircuitBreaker[T](body: ⇒ T): T = {
     currentState.get().onCall(body)
+  }
+
+  def onAsyncSuccess() {
+    currentState.get().callSucceeds()
+  }
+
+  def onAsyncFailure() {
+    currentState.get().callFails()
   }
 
   private def tripBreaker() {
@@ -70,24 +77,53 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
   trait CircuitBreakerState {
 
+    private val lock = new ReentrantLock()
     private var listeners = List[ScalaObject]()
 
     def addListener[T](listener: () ⇒ T) {
-      listeners = listener :: listeners
+      lock.lock()
+      try
+        listeners = listener :: listeners
+      finally
+        lock.unlock()
     }
 
     def notifyTransitionListeners() {
-      listeners.foreach(l ⇒ {
-        scheduler.scheduleOnce(Duration.Zero) {
-          l.asInstanceOf[() ⇒ _]()
-        }
-      })
+      lock.lock()
+      try
+        listeners.foreach(l ⇒ {
+          scheduler.scheduleOnce(Duration.Zero) {
+            l.asInstanceOf[() ⇒ _]()
+          }
+        })
+      finally
+        lock.unlock()
     }
 
     def exceedsDeadline[T](body: ⇒ T): (T, Boolean) = {
       val deadline = callTimeout.fromNow
       val result = body
       (result, deadline.isOverdue())
+    }
+
+    def callThrough[T] (body: => T): T = {
+      try {
+        val (result, deadlineExceeded) = exceedsDeadline {
+          body
+        }
+
+        if (deadlineExceeded)
+          callFails()
+        else
+          callSucceeds()
+
+        result
+      } catch {
+        case e: Throwable ⇒ {
+          callFails()
+          throw e
+        }
+      }
     }
 
     def onCall[T](body: ⇒ T): T
@@ -102,10 +138,10 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
   object CircuitBreakerOpen extends CircuitBreakerState {
 
-    val openAsOf = new AtomicLong(0)
+    private val openAsOf = new AtomicLong(0)
 
     def onCall[T](body: ⇒ T): T = {
-      throw CircuitBreakerOpenException(remainingTimeout().timeLeft)
+      throw new CircuitBreakerOpenException(remainingTimeout().timeLeft)
     }
 
     def remainingTimeout(): Deadline = openAsOf.get() match {
@@ -135,21 +171,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
       if (!halfOpenSemaphore.tryAcquire())
         throw new CircuitBreakerHalfOpenException(CircuitBreakerOpen.remainingTimeout().timeLeft)
       try {
-        val (result, deadlineExceeded) = exceedsDeadline {
-          body
-        }
-
-        if (deadlineExceeded)
-          callFails()
-        else
-          callSucceeds()
-
-        result
-      } catch {
-        case e: Throwable ⇒ {
-          callFails()
-          throw e
-        }
+        callThrough(body)
       } finally {
         halfOpenSemaphore.release()
       }
@@ -173,23 +195,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
     val failureCount = new AtomicInteger(0)
 
     def onCall[T](body: ⇒ T): T = {
-      try {
-        val (result, deadlineExceeded) = exceedsDeadline {
-          body
-        }
-
-        if (deadlineExceeded)
-          callFails()
-        else
-          callSucceeds()
-
-        result
-      } catch {
-        case e: Throwable ⇒ {
-          callFails()
-          throw e
-        }
-      }
+      callThrough(body)
     }
 
     def callSucceeds() {
@@ -216,9 +222,5 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
 case class CircuitBreakerOpenException(remainingDuration: Duration) extends AkkaException
 
-object CircuitBreakerOpenException
-
 class CircuitBreakerHalfOpenException(override val remainingDuration: Duration) extends CircuitBreakerOpenException(remainingDuration)
-
-object CircuitBreakerHalfOpenException
 

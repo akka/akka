@@ -23,7 +23,7 @@ class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config)
   }
 }
 
-class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailboxSettings) extends DurableMessageQueue(_owner, settings) with DurableMessageSerialization {
 
   val log = Logging(system, "FileBasedMessageQueue")
 
@@ -41,24 +41,26 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
       throw e
   }
 
-  def enqueue(receiver: ActorRef, envelope: Envelope) {
+  def enqueue(receiver: ActorRef, envelope: Envelope) = withCircuitBreaker {
     queue.add(serialize(envelope))
   }
 
-  def dequeue(): Envelope = try {
-    val item = queue.remove
-    if (item.isDefined) {
-      queue.confirmRemove(item.get.xid)
-      deserialize(item.get.data)
-    } else null
-  } catch {
-    case e: java.util.NoSuchElementException ⇒ null
-    case e: Exception ⇒
-      log.error(e, "Couldn't dequeue from file-based mailbox")
-      throw e
+  def dequeue(): Envelope = withCircuitBreaker {
+    try {
+      val item = queue.remove
+      if (item.isDefined) {
+        queue.confirmRemove(item.get.xid)
+        deserialize(item.get.data)
+      } else null
+    } catch {
+      case e: java.util.NoSuchElementException ⇒ null
+      case e: Exception ⇒
+        log.error(e, "Couldn't dequeue from file-based mailbox")
+        throw e
+    }
   }
 
-  def numberOfMessages: Int = {
+  def numberOfMessages: Int = withCircuitBreaker {
     queue.length.toInt
   }
 

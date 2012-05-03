@@ -27,7 +27,7 @@ class ZooKeeperBasedMailboxType(systemSettings: ActorSystem.Settings, config: Co
   }
 }
 
-class ZooKeeperBasedMessageQueue(_owner: ActorContext, val settings: ZooKeeperBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+class ZooKeeperBasedMessageQueue(_owner: ActorContext, val settings: ZooKeeperBasedMailboxSettings) extends DurableMessageQueue(_owner, settings) with DurableMessageSerialization {
 
   val queueNode = "/queues"
   val queuePathTemplate = queueNode + "/%s"
@@ -40,23 +40,25 @@ class ZooKeeperBasedMessageQueue(_owner: ActorContext, val settings: ZooKeeperBa
     settings.ConnectionTimeout)
   private val queue = new ZooKeeperQueue[Array[Byte]](zkClient, queuePathTemplate.format(name), true)
 
-  def enqueue(receiver: ActorRef, envelope: Envelope) {
+  def enqueue(receiver: ActorRef, envelope: Envelope) = withCircuitBreaker {
     queue.enqueue(serialize(envelope))
   }
 
-  def dequeue: Envelope = try {
-    deserialize(queue.dequeue.asInstanceOf[Array[Byte]])
-  } catch {
-    case e: java.util.NoSuchElementException ⇒ null
-    case e: InterruptedException             ⇒ null
-    case NonFatal(e) ⇒
-      log.error(e, "Couldn't dequeue from ZooKeeper-based mailbox, due to: " + e.getMessage)
-      throw e
+  def dequeue: Envelope = withCircuitBreaker {
+    try {
+      deserialize(queue.dequeue.asInstanceOf[Array[Byte]])
+    } catch {
+      case e: java.util.NoSuchElementException ⇒ null
+      case e: InterruptedException             ⇒ null
+      case NonFatal(e) ⇒
+        log.error(e, "Couldn't dequeue from ZooKeeper-based mailbox, due to: " + e.getMessage)
+        throw e
+    }
   }
 
-  def numberOfMessages: Int = queue.size
+  def numberOfMessages: Int = withCircuitBreaker { queue.size }
 
-  def hasMessages: Boolean = !queue.isEmpty
+  def hasMessages: Boolean = withCircuitBreaker { !queue.isEmpty }
 
   def clear(): Boolean = try {
     queue.clear

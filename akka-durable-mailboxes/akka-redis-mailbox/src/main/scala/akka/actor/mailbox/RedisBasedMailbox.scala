@@ -26,14 +26,14 @@ class RedisBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config
   }
 }
 
-class RedisBasedMessageQueue(_owner: ActorContext, val settings: RedisBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+class RedisBasedMessageQueue(_owner: ActorContext, val settings: RedisBasedMailboxSettings) extends DurableMessageQueue(_owner, settings) with DurableMessageSerialization {
 
   @volatile
   private var clients = connect() // returns a RedisClientPool for multiple asynchronous message handling
 
   val log = Logging(system, "RedisBasedMessageQueue")
 
-  def enqueue(receiver: ActorRef, envelope: Envelope) {
+  def enqueue(receiver: ActorRef, envelope: Envelope) = withCircuitBreaker {
     withErrorHandling {
       clients.withClient { client ⇒
         client.rpush(name, serialize(envelope))
@@ -41,22 +41,26 @@ class RedisBasedMessageQueue(_owner: ActorContext, val settings: RedisBasedMailb
     }
   }
 
-  def dequeue(): Envelope = withErrorHandling {
-    try {
-      import serialization.Parse.Implicits.parseByteArray
-      val item = clients.withClient { _.lpop[Array[Byte]](name).getOrElse(throw new NoSuchElementException(name + " not present")) }
-      deserialize(item)
-    } catch {
-      case e: java.util.NoSuchElementException ⇒ null
-      case NonFatal(e) ⇒
-        log.error(e, "Couldn't dequeue from Redis-based mailbox")
-        throw e
+  def dequeue(): Envelope = withCircuitBreaker {
+    withErrorHandling {
+      try {
+        import serialization.Parse.Implicits.parseByteArray
+        val item = clients.withClient { _.lpop[Array[Byte]](name).getOrElse(throw new NoSuchElementException(name + " not present")) }
+        deserialize(item)
+      } catch {
+        case e: java.util.NoSuchElementException ⇒ null
+        case NonFatal(e) ⇒
+          log.error(e, "Couldn't dequeue from Redis-based mailbox")
+          throw e
+      }
     }
   }
 
-  def numberOfMessages: Int = withErrorHandling {
-    clients.withClient { client ⇒
-      client.llen(name).getOrElse(throw new NoSuchElementException(name + " not present"))
+  def numberOfMessages: Int = withCircuitBreaker {
+    withErrorHandling {
+      clients.withClient { client ⇒
+        client.llen(name).getOrElse(throw new NoSuchElementException(name + " not present"))
+      }
     }
   }
 

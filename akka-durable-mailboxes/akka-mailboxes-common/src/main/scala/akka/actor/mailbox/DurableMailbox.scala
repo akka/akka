@@ -5,18 +5,19 @@ package akka.actor.mailbox
 
 import akka.actor.{ ActorContext, ActorRef, ExtendedActorSystem }
 import akka.remote.MessageSerializer
-import akka.remote.RemoteProtocol.{ ActorRefProtocol, RemoteMessageProtocol }
 import com.typesafe.config.Config
 import akka.actor.ActorSystem
 import akka.util.duration._
 import akka.util.Duration
 import akka.dispatch.{ ExecutionContext, Envelope, MessageQueue }
+import akka.remote.RemoteProtocol.{RemoteMessageProtocol, ActorRefProtocol}
+import java.util.concurrent.TimeUnit
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
 }
 
-abstract class DurableMessageQueue(val owner: ActorContext) extends MessageQueue {
+abstract class DurableMessageQueue(val owner: ActorContext, val _settings: DurableMailboxSettings) extends MessageQueue {
   import DurableExecutableMailboxConfig._
 
   def system: ExtendedActorSystem = owner.system.asInstanceOf[ExtendedActorSystem]
@@ -24,13 +25,13 @@ abstract class DurableMessageQueue(val owner: ActorContext) extends MessageQueue
   val ownerPathString = ownerPath.elements.mkString("/")
   val name = "mailbox_" + Name.replaceAllIn(ownerPathString, "_")
 
-  // TODO: Arbitrary defaults for now
-  val circuitBreakerMaxFailures: Int = 5
-  val circuitBreakerResetTimeout: Duration = 10 seconds
-  val circuitBreakerCallTimeout: Duration = 1 seconds
+  private val circuitBreakerSettings = _settings.circuitBreakerSettings
 
-  val circuitBreaker = new CircuitBreaker(system.scheduler, circuitBreakerMaxFailures, circuitBreakerCallTimeout, circuitBreakerResetTimeout)(ExecutionContext.defaultExecutionContext(system))
-  def withCircuitBreaker[T](body: ⇒ T): T = circuitBreaker.withCircuitBreaker(body)
+  private val circuitBreaker = new CircuitBreaker(system.scheduler, circuitBreakerSettings.circuitBreakerMaxFailures ,
+                                          circuitBreakerSettings.circuitBreakerCallTimeout, circuitBreakerSettings.circuitBreakerResetTimeout)
+  protected def withCircuitBreaker[T](body: ⇒ T): T = circuitBreaker.withCircuitBreaker(body)
+  protected def onAsyncSuccess() { circuitBreaker.onAsyncSuccess() }
+  protected def onAsyncFailure() { circuitBreaker.onAsyncFailure() }
 }
 
 trait DurableMessageSerialization { this: DurableMessageQueue ⇒
@@ -107,9 +108,55 @@ trait DurableMailboxSettings {
   /**
    * Obtain default extracted mailbox config section from userConfig and system.
    */
-  def initialize: Config =
-    if (userConfig.hasPath(name))
-      userConfig.getConfig(name).withFallback(systemSettings.config.getConfig("akka.actor.mailbox." + name))
-    else systemSettings.config.getConfig("akka.actor.mailbox." + name)
+  def initialize: Config = {
+    val config =
+      if (userConfig.hasPath(name))
+        userConfig.getConfig(name).withFallback(systemSettings.config.getConfig("akka.actor.mailbox." + name))
+      else systemSettings.config.getConfig("akka.actor.mailbox." + name)
+    circuitBreakerSettings = CircuitBreakerSettings(config)
+    config
+  }
+
+  var circuitBreakerSettings : CircuitBreakerSettings = null
 }
 
+/**
+ * Settings for circuit-breaker:
+ *
+ * {{{
+ * my-durable-dispatcher {
+ *   ...
+ *   my-durable-mailbox {
+ *     circuit-breaker {
+ *       max-failures = 3
+ *       reset-timeout = 10 seconds
+ *       call-timeout = 30 seconds
+ *     }
+ *     ... (other mailbox settings) ...
+ *   }
+ * }
+ * }}}
+ *
+ * where name=“my-durable-mailbox” in this example.
+ *
+ */
+case class CircuitBreakerSettings(config: Config) {
+
+  import config._
+
+  /**
+   * circuitBreakerMaxFailure (max-failures): Maximum number of consecutive failures before opening the breaker
+   */
+  val circuitBreakerMaxFailures: Int = getInt("circuit-breaker.max-failures") // 5
+
+  /**
+   * circuitBreakerResetTimeout (reset-timeout): Amount of time that must elapse in open state before transitioning to half-open state
+   */
+  val circuitBreakerResetTimeout: Duration = Duration(getMilliseconds("circuit-breaker.reset-timeout"), TimeUnit.MILLISECONDS) // 10 seconds
+
+  /**
+   * circuitBreakerCallTimeout (call-timeout): Any calls which exceed this amount of time are considered failures and not successes, counting towards the maxFailures number
+   */
+  val circuitBreakerCallTimeout: Duration = Duration(getMilliseconds("circuit-breaker.call-timeout"), TimeUnit.MILLISECONDS) //1 seconds
+
+}
