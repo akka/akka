@@ -132,11 +132,19 @@ You can replace or supplement ``application.conf`` either in code
 or using system properties.
 
 If you're using ``ConfigFactory.load()`` (which Akka does by
-default) it allows you to override ``application.conf`` by
-defining ``-Dconfig.resource=whatever``,
-``-Dconfig.file=whatever``, or ``-Dconfig.url=whatever``.
+default) you can replace ``application.conf`` by defining
+``-Dconfig.resource=whatever``, ``-Dconfig.file=whatever``, or
+``-Dconfig.url=whatever``.
 
-In code, there are many options.
+From inside your replacement file specified with
+``-Dconfig.resource`` and friends, you can ``include
+"application"`` if you still want to use
+``application.{conf,json,properties}`` as well.  Settings
+specified before ``include "application"`` would be overridden by
+the included file, while those after would override the included
+file.
+
+In code, there are many customization options.
 
 There are several overloads of ``ConfigFactory.load()``; these
 allow you to specify something to be sandwiched between system
@@ -180,6 +188,12 @@ other two alone.
 To stack two layers, use ``override.withFallback(fallback)``; try
 to keep system props (``defaultOverrides()``) on top and
 ``reference.conf`` (``defaultReference()``) on the bottom.
+
+Do keep in mind, you can often just add another ``include``
+statement in ``application.conf`` rather than writing code.
+Includes at the top of ``application.conf`` will be overridden by
+the rest of ``application.conf``, while those at the bottom will
+override the earlier stuff.
 
 Custom application.conf
 -----------------------
