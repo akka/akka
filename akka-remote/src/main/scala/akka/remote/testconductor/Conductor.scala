@@ -21,6 +21,7 @@ import scala.util.control.NoStackTrace
 import akka.event.LoggingReceive
 import akka.actor.Address
 import java.net.InetSocketAddress
+import akka.dispatch.Future
 
 trait Conductor extends RunControl with FailureInject { this: TestConductorExt ⇒
 
@@ -32,55 +33,63 @@ trait Conductor extends RunControl with FailureInject { this: TestConductorExt �
     case x    ⇒ x
   }
 
-  override def startController() {
+  override def startController(): Future[Int] = {
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
     _controller = system.actorOf(Props[Controller], "controller")
     import Settings.BarrierTimeout
-    startClient(Await.result(controller ? GetPort mapTo, Duration.Inf))
+    controller ? GetPort flatMap { case port: Int ⇒ startClient(port) map (_ ⇒ port) }
   }
 
-  override def port: Int = {
+  override def port: Future[Int] = {
     import Settings.QueryTimeout
-    Await.result(controller ? GetPort mapTo, Duration.Inf)
+    controller ? GetPort mapTo
   }
 
-  override def throttle(node: String, target: String, direction: Direction, rateMBit: Float) {
-    controller ! Throttle(node, target, direction, rateMBit)
-  }
-
-  override def blackhole(node: String, target: String, direction: Direction) {
-    controller ! Throttle(node, target, direction, 0f)
-  }
-
-  override def disconnect(node: String, target: String) {
-    controller ! Disconnect(node, target, false)
-  }
-
-  override def abort(node: String, target: String) {
-    controller ! Disconnect(node, target, true)
-  }
-
-  override def shutdown(node: String, exitValue: Int) {
-    controller ! Terminate(node, exitValue)
-  }
-
-  override def kill(node: String) {
-    controller ! Terminate(node, -1)
-  }
-
-  override def getNodes = {
+  override def throttle(node: String, target: String, direction: Direction, rateMBit: Double): Future[Done] = {
     import Settings.QueryTimeout
-    Await.result(controller ? GetNodes mapTo manifest[List[String]], Duration.Inf)
+    controller ? Throttle(node, target, direction, rateMBit.toFloat) mapTo
   }
 
-  override def removeNode(node: String) {
-    controller ! Remove(node)
+  override def blackhole(node: String, target: String, direction: Direction): Future[Done] = {
+    import Settings.QueryTimeout
+    controller ? Throttle(node, target, direction, 0f) mapTo
+  }
+
+  override def disconnect(node: String, target: String): Future[Done] = {
+    import Settings.QueryTimeout
+    controller ? Disconnect(node, target, false) mapTo
+  }
+
+  override def abort(node: String, target: String): Future[Done] = {
+    import Settings.QueryTimeout
+    controller ? Disconnect(node, target, true) mapTo
+  }
+
+  override def shutdown(node: String, exitValue: Int): Future[Done] = {
+    import Settings.QueryTimeout
+    controller ? Terminate(node, exitValue) mapTo
+  }
+
+  override def kill(node: String): Future[Done] = {
+    import Settings.QueryTimeout
+    controller ? Terminate(node, -1) mapTo
+  }
+
+  override def getNodes: Future[List[String]] = {
+    import Settings.QueryTimeout
+    controller ? GetNodes mapTo
+  }
+
+  override def removeNode(node: String): Future[Done] = {
+    import Settings.QueryTimeout
+    controller ? Remove(node) mapTo
   }
 
 }
 
 class ConductorHandler(system: ActorSystem, controller: ActorRef, log: LoggingAdapter) extends SimpleChannelUpstreamHandler {
 
+  @volatile
   var clients = Map[Channel, ActorRef]()
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
@@ -102,7 +111,7 @@ class ConductorHandler(system: ActorSystem, controller: ActorRef, log: LoggingAd
     val channel = event.getChannel
     log.debug("message from {}: {}", getAddrString(channel), event.getMessage)
     event.getMessage match {
-      case msg: Wrapper if msg.getAllFields.size == 1 ⇒
+      case msg: NetworkOp ⇒
         clients(channel) ! msg
       case msg ⇒
         log.info("client {} sent garbage '{}', disconnecting", getAddrString(channel), msg)
@@ -116,28 +125,26 @@ object ServerFSM {
   sealed trait State
   case object Initial extends State
   case object Ready extends State
-
-  case class Send(msg: Wrapper)
 }
 
-class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor with LoggingFSM[ServerFSM.State, Null] {
+class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor with LoggingFSM[ServerFSM.State, Option[ActorRef]] {
   import ServerFSM._
   import akka.actor.FSM._
   import Controller._
 
-  startWith(Initial, null)
+  startWith(Initial, None)
 
   when(Initial, stateTimeout = 10 seconds) {
-    case Event(msg: Wrapper, _) ⇒
-      if (msg.hasHello) {
-        val hello = msg.getHello
-        controller ! ClientConnected(hello.getName, hello.getAddress)
-        goto(Ready)
-      } else {
-        log.warning("client {} sent no Hello in first message, disconnecting", getAddrString(channel))
-        channel.close()
-        stop()
-      }
+    case Event(Hello(name, addr), _) ⇒
+      controller ! ClientConnected(name, addr)
+      goto(Ready)
+    case Event(x: NetworkOp, _) ⇒
+      log.warning("client {} sent no Hello in first message (instead {}), disconnecting", getAddrString(channel), x)
+      channel.close()
+      stop()
+    case Event(Send(msg), _) ⇒
+      log.warning("cannot send {} in state Initial", msg)
+      stay
     case Event(StateTimeout, _) ⇒
       log.info("closing channel to {} because of Hello timeout", getAddrString(channel))
       channel.close()
@@ -145,20 +152,24 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
   }
 
   when(Ready) {
-    case Event(msg: Wrapper, _) ⇒
-      if (msg.hasBarrier) {
-        val barrier = msg.getBarrier
-        controller ! EnterBarrier(barrier.getName)
-      } else {
-        log.warning("client {} sent unsupported message {}", getAddrString(channel), msg)
-      }
+    case Event(msg: EnterBarrier, _) ⇒
+      controller ! msg
       stay
-    case Event(Send(msg), _) ⇒
+    case Event(d: Done, Some(s)) ⇒
+      s ! d
+      stay using None
+    case Event(msg: NetworkOp, _) ⇒
+      log.warning("client {} sent unsupported message {}", getAddrString(channel), msg)
+      channel.close()
+      stop()
+    case Event(Send(msg: EnterBarrier), _) ⇒
       channel.write(msg)
       stay
-    case Event(EnterBarrier(name), _) ⇒
-      val barrier = TestConductorProtocol.EnterBarrier.newBuilder.setName(name).build
-      channel.write(Wrapper.newBuilder.setBarrier(barrier).build)
+    case Event(Send(msg), None) ⇒
+      channel.write(msg)
+      stay using Some(sender)
+    case Event(Send(msg), _) ⇒
+      log.warning("cannot send {} while waiting for previous ACK", msg)
       stay
   }
 
@@ -185,7 +196,6 @@ class Controller extends Actor {
   var nodes = Map[String, NodeInfo]()
 
   override def receive = LoggingReceive {
-    case "ready?" ⇒ sender ! "yes"
     case ClientConnected(name, addr) ⇒
       nodes += name -> NodeInfo(name, addr, sender)
       barrier forward ClientConnected
@@ -198,28 +208,15 @@ class Controller extends Actor {
       barrier forward e
     case Throttle(node, target, direction, rateMBit) ⇒
       val t = nodes(target)
-      val throttle =
-        InjectFailure.newBuilder
-          .setFailure(FailType.Throttle)
-          .setDirection(TestConductorProtocol.Direction.valueOf(direction.toString))
-          .setAddress(t.addr)
-          .setRateMBit(rateMBit)
-          .build
-      nodes(node).fsm ! ServerFSM.Send(Wrapper.newBuilder.setFailure(throttle).build)
+      nodes(node).fsm forward Send(ThrottleMsg(t.addr, direction, rateMBit))
     case Disconnect(node, target, abort) ⇒
       val t = nodes(target)
-      val disconnect =
-        InjectFailure.newBuilder
-          .setFailure(if (abort) FailType.Abort else FailType.Disconnect)
-          .setAddress(t.addr)
-          .build
-      nodes(node).fsm ! ServerFSM.Send(Wrapper.newBuilder.setFailure(disconnect).build)
+      nodes(node).fsm forward Send(DisconnectMsg(t.addr, abort))
     case Terminate(node, exitValueOrKill) ⇒
       if (exitValueOrKill < 0) {
         // TODO: kill via SBT
       } else {
-        val shutdown = InjectFailure.newBuilder.setFailure(FailType.Shutdown).setExitValue(exitValueOrKill).build
-        nodes(node).fsm ! ServerFSM.Send(Wrapper.newBuilder.setFailure(shutdown).build)
+        nodes(node).fsm forward Send(TerminateMsg(exitValueOrKill))
       }
     // TODO: properly remove node from BarrierCoordinator
     //    case Remove(node) =>
@@ -269,7 +266,7 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
       if (name != barrier) throw new IllegalStateException("trying enter barrier '" + name + "' while barrier '" + barrier + "' is active")
       val together = sender :: arrived
       if (together.size == num) {
-        together foreach (_ ! e)
+        together foreach (_ ! Send(e))
         goto(Idle) using Data(num, "", Nil)
       } else {
         stay using d.copy(arrived = together)
@@ -280,7 +277,7 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
       val expected = num - 1
       if (arrived.size == expected) {
         val e = EnterBarrier(barrier)
-        sender :: arrived foreach (_ ! e)
+        sender :: arrived foreach (_ ! Send(e))
         goto(Idle) using Data(expected, "", Nil)
       } else {
         stay using d.copy(clients = expected)

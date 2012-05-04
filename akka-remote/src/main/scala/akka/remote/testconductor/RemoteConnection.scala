@@ -17,7 +17,8 @@ class TestConductorPipelineFactory(handler: ChannelUpstreamHandler) extends Chan
   def getPipeline: ChannelPipeline = {
     val encap = List(new LengthFieldPrepender(4), new LengthFieldBasedFrameDecoder(10000, 0, 4, 0, 4))
     val proto = List(new ProtobufEncoder, new ProtobufDecoder(TestConductorProtocol.Wrapper.getDefaultInstance))
-    new StaticChannelPipeline(encap ::: proto ::: handler :: Nil: _*)
+    val msg = List(new MsgEncoder, new MsgDecoder)
+    new StaticChannelPipeline(encap ::: proto ::: msg ::: handler :: Nil: _*)
   }
 }
 

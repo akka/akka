@@ -87,10 +87,12 @@ public final class TestConductorProtocol {
       implements com.google.protobuf.ProtocolMessageEnum {
     Send(0, 1),
     Receive(1, 2),
+    Both(2, 3),
     ;
     
     public static final int Send_VALUE = 1;
     public static final int Receive_VALUE = 2;
+    public static final int Both_VALUE = 3;
     
     
     public final int getNumber() { return value; }
@@ -99,6 +101,7 @@ public final class TestConductorProtocol {
       switch (value) {
         case 1: return Send;
         case 2: return Receive;
+        case 3: return Both;
         default: return null;
       }
     }
@@ -129,7 +132,7 @@ public final class TestConductorProtocol {
     }
     
     private static final Direction[] VALUES = {
-      Send, Receive, 
+      Send, Receive, Both, 
     };
     
     public static Direction valueOf(
@@ -169,6 +172,10 @@ public final class TestConductorProtocol {
     boolean hasFailure();
     akka.remote.testconductor.TestConductorProtocol.InjectFailure getFailure();
     akka.remote.testconductor.TestConductorProtocol.InjectFailureOrBuilder getFailureOrBuilder();
+    
+    // optional string done = 4;
+    boolean hasDone();
+    String getDone();
   }
   public static final class Wrapper extends
       com.google.protobuf.GeneratedMessage
@@ -238,10 +245,43 @@ public final class TestConductorProtocol {
       return failure_;
     }
     
+    // optional string done = 4;
+    public static final int DONE_FIELD_NUMBER = 4;
+    private java.lang.Object done_;
+    public boolean hasDone() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    public String getDone() {
+      java.lang.Object ref = done_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          done_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getDoneBytes() {
+      java.lang.Object ref = done_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        done_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
     private void initFields() {
       hello_ = akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance();
       barrier_ = akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance();
       failure_ = akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance();
+      done_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -282,6 +322,9 @@ public final class TestConductorProtocol {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeMessage(3, failure_);
       }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(4, getDoneBytes());
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -302,6 +345,10 @@ public final class TestConductorProtocol {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(3, failure_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(4, getDoneBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -448,6 +495,8 @@ public final class TestConductorProtocol {
           failureBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000004);
+        done_ = "";
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       
@@ -510,6 +559,10 @@ public final class TestConductorProtocol {
         } else {
           result.failure_ = failureBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.done_ = done_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -534,6 +587,9 @@ public final class TestConductorProtocol {
         }
         if (other.hasFailure()) {
           mergeFailure(other.getFailure());
+        }
+        if (other.hasDone()) {
+          setDone(other.getDone());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -609,6 +665,11 @@ public final class TestConductorProtocol {
               }
               input.readMessage(subBuilder, extensionRegistry);
               setFailure(subBuilder.buildPartial());
+              break;
+            }
+            case 34: {
+              bitField0_ |= 0x00000008;
+              done_ = input.readBytes();
               break;
             }
           }
@@ -885,6 +946,42 @@ public final class TestConductorProtocol {
           failure_ = null;
         }
         return failureBuilder_;
+      }
+      
+      // optional string done = 4;
+      private java.lang.Object done_ = "";
+      public boolean hasDone() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      public String getDone() {
+        java.lang.Object ref = done_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          done_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setDone(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        done_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearDone() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        done_ = getDefaultInstance().getDone();
+        onChanged();
+        return this;
+      }
+      void setDone(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000008;
+        done_ = value;
+        onChanged();
       }
       
       // @@protoc_insertion_point(builder_scope:Wrapper)
@@ -3199,20 +3296,21 @@ public final class TestConductorProtocol {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\033TestConductorProtocol.proto\"a\n\007Wrapper" +
+      "\n\033TestConductorProtocol.proto\"o\n\007Wrapper" +
       "\022\025\n\005hello\030\001 \001(\0132\006.Hello\022\036\n\007barrier\030\002 \001(\013" +
       "2\r.EnterBarrier\022\037\n\007failure\030\003 \001(\0132\016.Injec" +
-      "tFailure\"0\n\005Hello\022\014\n\004name\030\001 \002(\t\022\031\n\007addre" +
-      "ss\030\002 \002(\0132\010.Address\"\034\n\014EnterBarrier\022\014\n\004na" +
-      "me\030\001 \002(\t\"G\n\007Address\022\020\n\010protocol\030\001 \002(\t\022\016\n" +
-      "\006system\030\002 \002(\t\022\014\n\004host\030\003 \002(\t\022\014\n\004port\030\004 \002(" +
-      "\005\"\212\001\n\rInjectFailure\022\032\n\007failure\030\001 \002(\0162\t.F" +
-      "ailType\022\035\n\tdirection\030\002 \001(\0162\n.Direction\022\031" +
-      "\n\007address\030\003 \001(\0132\010.Address\022\020\n\010rateMBit\030\006 ",
-      "\001(\002\022\021\n\texitValue\030\007 \001(\005*A\n\010FailType\022\014\n\010Th" +
-      "rottle\020\001\022\016\n\nDisconnect\020\002\022\t\n\005Abort\020\003\022\014\n\010S" +
-      "hutdown\020\004*\"\n\tDirection\022\010\n\004Send\020\001\022\013\n\007Rece" +
-      "ive\020\002B\035\n\031akka.remote.testconductorH\001"
+      "tFailure\022\014\n\004done\030\004 \001(\t\"0\n\005Hello\022\014\n\004name\030" +
+      "\001 \002(\t\022\031\n\007address\030\002 \002(\0132\010.Address\"\034\n\014Ente" +
+      "rBarrier\022\014\n\004name\030\001 \002(\t\"G\n\007Address\022\020\n\010pro" +
+      "tocol\030\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\014\n\004host\030\003 \002(" +
+      "\t\022\014\n\004port\030\004 \002(\005\"\212\001\n\rInjectFailure\022\032\n\007fai" +
+      "lure\030\001 \002(\0162\t.FailType\022\035\n\tdirection\030\002 \001(\016" +
+      "2\n.Direction\022\031\n\007address\030\003 \001(\0132\010.Address\022",
+      "\020\n\010rateMBit\030\006 \001(\002\022\021\n\texitValue\030\007 \001(\005*A\n\010" +
+      "FailType\022\014\n\010Throttle\020\001\022\016\n\nDisconnect\020\002\022\t" +
+      "\n\005Abort\020\003\022\014\n\010Shutdown\020\004*,\n\tDirection\022\010\n\004" +
+      "Send\020\001\022\013\n\007Receive\020\002\022\010\n\004Both\020\003B\035\n\031akka.re" +
+      "mote.testconductorH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -3224,7 +3322,7 @@ public final class TestConductorProtocol {
           internal_static_Wrapper_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Wrapper_descriptor,
-              new java.lang.String[] { "Hello", "Barrier", "Failure", },
+              new java.lang.String[] { "Hello", "Barrier", "Failure", "Done", },
               akka.remote.testconductor.TestConductorProtocol.Wrapper.class,
               akka.remote.testconductor.TestConductorProtocol.Wrapper.Builder.class);
           internal_static_Hello_descriptor =

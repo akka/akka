@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testconductor
 
@@ -9,11 +9,9 @@ import org.jboss.netty.buffer.ChannelBuffer
 import org.jboss.netty.channel.ChannelState.BOUND
 import org.jboss.netty.channel.ChannelState.OPEN
 import org.jboss.netty.channel.Channel
-import org.jboss.netty.channel.ChannelDownstreamHandler
 import org.jboss.netty.channel.ChannelEvent
 import org.jboss.netty.channel.ChannelHandlerContext
 import org.jboss.netty.channel.ChannelStateEvent
-import org.jboss.netty.channel.ChannelUpstreamHandler
 import org.jboss.netty.channel.MessageEvent
 import akka.actor.FSM
 import akka.actor.Actor
@@ -22,23 +20,26 @@ import akka.util.Index
 import akka.actor.Address
 import akka.actor.ActorSystem
 import akka.actor.Props
+import akka.actor.ActorRef
+import akka.event.Logging
+import org.jboss.netty.channel.SimpleChannelHandler
 
-object NetworkFailureInjector {
-
-  val channels = new Index[Address, Channel](16, (c1, c2) ⇒ c1 compareTo c2)
-
-  def close(remote: Address): Unit = {
-    // channels will be cleaned up by the handler
-    for (chs ← channels.remove(remote); c ← chs) c.close()
+case class FailureInjector(sender: ActorRef, receiver: ActorRef) {
+  def refs(dir: Direction) = dir match {
+    case Direction.Send    ⇒ Seq(sender)
+    case Direction.Receive ⇒ Seq(receiver)
+    case Direction.Both    ⇒ Seq(sender, receiver)
   }
 }
 
-class NetworkFailureInjector(system: ActorSystem) extends ChannelUpstreamHandler with ChannelDownstreamHandler {
+object NetworkFailureInjector {
+  case class SetRate(rateMBit: Float)
+  case class Disconnect(abort: Boolean)
+}
 
-  import NetworkFailureInjector._
+class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
 
-  // local cache of remote address
-  private var remote: Option[Address] = None
+  val log = Logging(system, "FailureInjector")
 
   // everything goes via these Throttle actors to enable easy steering
   private val sender = system.actorOf(Props(new Throttle(_.sendDownstream(_))))
@@ -54,8 +55,8 @@ class NetworkFailureInjector(system: ActorSystem) extends ChannelUpstreamHandler
 
   private case class Data(ctx: ChannelHandlerContext, rateMBit: Float, queue: Queue[MessageEvent])
 
-  private case class SetRate(rateMBit: Float)
   private case class Send(ctx: ChannelHandlerContext, msg: MessageEvent)
+  private case class SetContext(ctx: ChannelHandlerContext)
   private case object Tick
 
   private class Throttle(send: (ChannelHandlerContext, MessageEvent) ⇒ Unit) extends Actor with FSM[State, Data] {
@@ -65,6 +66,7 @@ class NetworkFailureInjector(system: ActorSystem) extends ChannelUpstreamHandler
 
     when(PassThrough) {
       case Event(Send(ctx, msg), d) ⇒
+        log.debug("sending msg (PassThrough): {}", msg)
         send(ctx, msg)
         stay
     }
@@ -77,26 +79,37 @@ class NetworkFailureInjector(system: ActorSystem) extends ChannelUpstreamHandler
         stay using d.copy(ctx = ctx, queue = d.queue.enqueue(msg))
       case Event(Tick, d) ⇒
         val (msg, queue) = d.queue.dequeue
+        log.debug("sending msg (Tick, {}/{} left): {}", d.queue.size, queue.size, msg)
         send(d.ctx, msg)
-        if (queue.nonEmpty) setTimer("send", Tick, (size(queue.head) / d.rateMBit) microseconds, false)
+        if (queue.nonEmpty) {
+          val time = (size(queue.head) / d.rateMBit).microseconds
+          log.debug("scheduling next Tick in {}", time)
+          setTimer("send", Tick, time, false)
+        }
         stay using d.copy(queue = queue)
     }
 
     onTransition {
       case Throttle -> PassThrough ⇒
-        stateData.queue foreach (send(stateData.ctx, _))
+        stateData.queue foreach { msg ⇒
+          log.debug("sending msg (Transition): {}")
+          send(stateData.ctx, msg)
+        }
         cancelTimer("send")
       case Throttle -> Blackhole ⇒
         cancelTimer("send")
     }
 
     when(Blackhole) {
-      case Event(Send(_, _), _) ⇒
+      case Event(Send(_, msg), _) ⇒
+        log.debug("dropping msg {}", msg)
         stay
     }
 
     whenUnhandled {
-      case Event(SetRate(rate), d) ⇒
+      case Event(SetContext(ctx), d) ⇒ stay using d.copy(ctx = ctx)
+      case Event(NetworkFailureInjector.SetRate(rate), d) ⇒
+        sender ! "ok"
         if (rate > 0) {
           goto(Throttle) using d.copy(rateMBit = rate, queue = Queue())
         } else if (rate == 0) {
@@ -104,6 +117,11 @@ class NetworkFailureInjector(system: ActorSystem) extends ChannelUpstreamHandler
         } else {
           goto(PassThrough)
         }
+      case Event(NetworkFailureInjector.Disconnect(abort), Data(ctx, _, _)) ⇒
+        sender ! "ok"
+        // TODO implement abort
+        ctx.getChannel.disconnect()
+        stay
     }
 
     initialize
@@ -114,45 +132,41 @@ class NetworkFailureInjector(system: ActorSystem) extends ChannelUpstreamHandler
     }
   }
 
-  def throttleSend(rateMBit: Float) {
-    sender ! SetRate(rateMBit)
+  private var remote: Option[Address] = None
+
+  override def messageReceived(ctx: ChannelHandlerContext, msg: MessageEvent) {
+    log.debug("upstream(queued): {}", msg)
+    receiver ! Send(ctx, msg)
   }
 
-  def throttleReceive(rateMBit: Float) {
-    receiver ! SetRate(rateMBit)
-  }
-
-  override def handleUpstream(ctx: ChannelHandlerContext, evt: ChannelEvent) {
-    evt match {
-      case msg: MessageEvent ⇒
-        receiver ! Send(ctx, msg)
-      case state: ChannelStateEvent ⇒
-        state.getState match {
-          case BOUND ⇒
-            state.getValue match {
-              case null ⇒
-                remote = remote flatMap { a ⇒ channels.remove(a, state.getChannel); None }
-              case a: InetSocketAddress ⇒
-                val addr = Address("akka", "XXX", a.getHostName, a.getPort)
-                channels.put(addr, state.getChannel)
-                remote = Some(addr)
-            }
-          case OPEN if state.getValue == false ⇒
-            remote = remote flatMap { a ⇒ channels.remove(a, state.getChannel); None }
+  override def channelConnected(ctx: ChannelHandlerContext, state: ChannelStateEvent) {
+    state.getValue match {
+      case a: InetSocketAddress ⇒
+        val addr = Address("akka", "", a.getHostName, a.getPort)
+        log.debug("connected to {}", addr)
+        TestConductor(system).failureInjectors.put(addr, FailureInjector(sender, receiver)) match {
+          case null ⇒ // okay
+          case fi   ⇒ system.log.error("{} already registered for address {}", fi, addr)
         }
-        ctx.sendUpstream(evt)
-      case _ ⇒
-        ctx.sendUpstream(evt)
+        remote = Some(addr)
+        sender ! SetContext(ctx)
+      case x ⇒ throw new IllegalArgumentException("unknown address type: " + x)
     }
   }
 
-  override def handleDownstream(ctx: ChannelHandlerContext, evt: ChannelEvent) {
-    evt match {
-      case msg: MessageEvent ⇒
-        sender ! Send(ctx, msg)
-      case _ ⇒
-        ctx.sendUpstream(evt)
+  override def channelDisconnected(ctx: ChannelHandlerContext, state: ChannelStateEvent) {
+    log.debug("disconnected from {}", remote)
+    remote = remote flatMap { addr ⇒
+      TestConductor(system).failureInjectors.remove(addr)
+      system.stop(sender)
+      system.stop(receiver)
+      None
     }
+  }
+
+  override def writeRequested(ctx: ChannelHandlerContext, msg: MessageEvent) {
+    log.debug("downstream(queued): {}", msg)
+    sender ! Send(ctx, msg)
   }
 
 }

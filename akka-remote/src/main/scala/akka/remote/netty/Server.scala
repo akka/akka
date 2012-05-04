@@ -30,22 +30,18 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
     Executors.newCachedThreadPool(netty.system.threadFactory),
     Executors.newCachedThreadPool(netty.system.threadFactory))
 
-  private val executionHandler = new ExecutionHandler(netty.executor)
-
   // group of open channels, used for clean-up
   private val openChannels: ChannelGroup = new DefaultDisposableChannelGroup("akka-remote-server")
 
   private val bootstrap = {
     val b = new ServerBootstrap(factory)
-    b.setPipelineFactory(makePipeline())
+    b.setPipelineFactory(netty.mkPipeline(new RemoteServerHandler(openChannels, netty), false))
     b.setOption("backlog", settings.Backlog)
     b.setOption("tcpNoDelay", true)
     b.setOption("child.keepAlive", true)
     b.setOption("reuseAddress", true)
     b
   }
-
-  protected def makePipeline(): ChannelPipelineFactory = new RemoteServerPipelineFactory(openChannels, executionHandler, netty)
 
   @volatile
   private[akka] var channel: Channel = _
@@ -76,26 +72,6 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
     } catch {
       case e: Exception ⇒ netty.notifyListeners(RemoteServerError(e, netty))
     }
-  }
-}
-
-class RemoteServerPipelineFactory(
-  val openChannels: ChannelGroup,
-  val executionHandler: ExecutionHandler,
-  val netty: NettyRemoteTransport) extends ChannelPipelineFactory {
-
-  import netty.settings
-
-  def getPipeline: ChannelPipeline = {
-    val lenDec = new LengthFieldBasedFrameDecoder(settings.MessageFrameSize, 0, 4, 0, 4)
-    val lenPrep = new LengthFieldPrepender(4)
-    val messageDec = new RemoteMessageDecoder
-    val messageEnc = new RemoteMessageEncoder(netty)
-
-    val authenticator = if (settings.RequireCookie) new RemoteServerAuthenticationHandler(settings.SecureCookie) :: Nil else Nil
-    val remoteServer = new RemoteServerHandler(openChannels, netty)
-    val stages: List[ChannelHandler] = lenDec :: messageDec :: lenPrep :: messageEnc :: executionHandler :: authenticator ::: remoteServer :: Nil
-    new StaticChannelPipeline(stages: _*)
   }
 }
 

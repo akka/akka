@@ -112,8 +112,6 @@ class ActiveRemoteClient private[akka] (
   private var connection: ChannelFuture = _
   @volatile
   private[remote] var openChannels: DefaultChannelGroup = _
-  @volatile
-  private var executionHandler: ExecutionHandler = _
 
   @volatile
   private var reconnectionTimeWindowStart = 0L
@@ -156,9 +154,8 @@ class ActiveRemoteClient private[akka] (
     runSwitch switchOn {
       openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
 
-      executionHandler = new ExecutionHandler(netty.executor)
       val b = new ClientBootstrap(netty.clientChannelFactory)
-      b.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, b, executionHandler, remoteAddress, localAddress, this))
+      b.setPipelineFactory(netty.mkPipeline(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, netty.timer, this), true))
       b.setOption("tcpNoDelay", true)
       b.setOption("keepAlive", true)
       b.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
@@ -206,7 +203,6 @@ class ActiveRemoteClient private[akka] (
         if (openChannels ne null) openChannels.close.awaitUninterruptibly()
       } finally {
         connection = null
-        executionHandler = null
       }
     }
 
@@ -316,31 +312,6 @@ class ActiveRemoteClientHandler(
     val cause = if (event.getCause ne null) event.getCause else new Exception("Unknown cause")
     client.notifyListeners(RemoteClientError(cause, client.netty, client.remoteAddress))
     event.getChannel.close()
-  }
-}
-
-class ActiveRemoteClientPipelineFactory(
-  name: String,
-  bootstrap: ClientBootstrap,
-  executionHandler: ExecutionHandler,
-  remoteAddress: Address,
-  localAddress: Address,
-  client: ActiveRemoteClient) extends ChannelPipelineFactory {
-
-  import client.netty.settings
-
-  def getPipeline: ChannelPipeline = {
-    val timeout = new IdleStateHandler(client.netty.timer,
-      settings.ReadTimeout.toSeconds.toInt,
-      settings.WriteTimeout.toSeconds.toInt,
-      settings.AllTimeout.toSeconds.toInt)
-    val lenDec = new LengthFieldBasedFrameDecoder(settings.MessageFrameSize, 0, 4, 0, 4)
-    val lenPrep = new LengthFieldPrepender(4)
-    val messageDec = new RemoteMessageDecoder
-    val messageEnc = new RemoteMessageEncoder(client.netty)
-    val remoteClient = new ActiveRemoteClientHandler(name, bootstrap, remoteAddress, localAddress, client.netty.timer, client)
-
-    new StaticChannelPipeline(timeout, lenDec, messageDec, lenPrep, messageEnc, executionHandler, remoteClient)
   }
 }
 

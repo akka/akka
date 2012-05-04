@@ -6,20 +6,20 @@ package akka.remote.testconductor
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
 import RemoteConnection.getAddrString
 import akka.util.duration._
-import TestConductorProtocol._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
 import com.eaio.uuid.UUID
 import com.typesafe.config.ConfigFactory
 import akka.util.Timeout
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.pattern.ask
+import akka.pattern.{ ask, pipe }
 import akka.dispatch.Await
 import scala.util.control.NoStackTrace
 import akka.actor.Status
 import akka.event.LoggingAdapter
 import akka.actor.PoisonPill
 import akka.event.Logging
+import akka.dispatch.Future
 
 trait Player extends BarrierSync { this: TestConductorExt ⇒
 
@@ -29,7 +29,7 @@ trait Player extends BarrierSync { this: TestConductorExt ⇒
     case x    ⇒ x
   }
 
-  def startClient(port: Int) {
+  def startClient(port: Int): Future[Done] = {
     import ClientFSM._
     import akka.actor.FSM._
     import Settings.BarrierTimeout
@@ -40,21 +40,21 @@ trait Player extends BarrierSync { this: TestConductorExt ⇒
       var waiting: ActorRef = _
       def receive = {
         case fsm: ActorRef                        ⇒ waiting = sender; fsm ! SubscribeTransitionCallBack(self)
-        case Transition(_, Connecting, Connected) ⇒ waiting ! "okay"
+        case Transition(_, Connecting, Connected) ⇒ waiting ! Done
         case t: Transition[_]                     ⇒ waiting ! Status.Failure(new RuntimeException("unexpected transition: " + t))
-        case CurrentState(_, Connected)           ⇒ waiting ! "okay"
+        case CurrentState(_, Connected)           ⇒ waiting ! Done
         case _: CurrentState[_]                   ⇒
       }
     }))
 
-    Await.result(a ? client, Duration.Inf)
+    a ? client mapTo
   }
 
   override def enter(name: String*) {
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
     name foreach { b ⇒
       import Settings.BarrierTimeout
-      Await.result(client ? EnterBarrier(b), Duration.Inf)
+      Await.result(client ? Send(EnterBarrier(b)), Duration.Inf)
       system.log.debug("passed barrier {}", b)
     }
   }
@@ -84,8 +84,7 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
     case Event(msg: ClientOp, _) ⇒
       stay replying Status.Failure(new IllegalStateException("not connected yet"))
     case Event(Connected, d @ Data(channel, _)) ⇒
-      val hello = Hello.newBuilder.setName(settings.name).setAddress(TestConductor().address).build
-      channel.write(Wrapper.newBuilder.setHello(hello).build)
+      channel.write(Hello(settings.name, TestConductor().address))
       goto(Connected)
     case Event(_: ConnectionFailure, _) ⇒
       // System.exit(1)
@@ -100,19 +99,41 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
     case Event(Disconnected, _) ⇒
       log.info("disconnected from TestConductor")
       throw new ConnectionFailure("disconnect")
-    case Event(msg: EnterBarrier, Data(channel, _)) ⇒
-      sendMsg(channel)(msg)
+    case Event(Send(msg: EnterBarrier), Data(channel, None)) ⇒
+      channel.write(msg)
       stay using Data(channel, Some(msg.name, sender))
-    case Event(msg: Wrapper, Data(channel, Some((barrier, sender)))) if msg.getAllFields.size == 1 ⇒
-      if (msg.hasBarrier) {
-        val b = msg.getBarrier.getName
-        if (b != barrier) {
-          sender ! Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
-        } else {
-          sender ! b
-        }
+    case Event(Send(d: Done), Data(channel, _)) ⇒
+      channel.write(d)
+      stay
+    case Event(Send(x), _) ⇒
+      log.warning("cannot send message {}", x)
+      stay
+    case Event(EnterBarrier(b), Data(channel, Some((barrier, sender)))) ⇒
+      if (b != barrier) {
+        sender ! Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
+      } else {
+        sender ! b
       }
       stay using Data(channel, None)
+    case Event(ThrottleMsg(target, dir, rate), _) ⇒
+      import settings.QueryTimeout
+      import context.dispatcher
+      TestConductor().failureInjectors.get(target.copy(system = "")) match {
+        case null ⇒ log.warning("cannot throttle unknown address {}", target)
+        case inj ⇒
+          Future.sequence(inj.refs(dir) map (_ ? NetworkFailureInjector.SetRate(rate))) map (_ ⇒ Send(Done)) pipeTo self
+      }
+      stay
+    case Event(DisconnectMsg(target, abort), _) ⇒
+      import settings.QueryTimeout
+      TestConductor().failureInjectors.get(target.copy(system = "")) match {
+        case null ⇒ log.warning("cannot disconnect unknown address {}", target)
+        case inj  ⇒ inj.sender ? NetworkFailureInjector.Disconnect(abort) map (_ ⇒ Send(Done)) pipeTo self
+      }
+      stay
+    case Event(TerminateMsg(exit), _) ⇒
+      System.exit(exit)
+      stay // needed because Java doesn’t have Nothing
   }
 
   onTermination {
@@ -121,14 +142,6 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
   }
 
   initialize
-
-  private def sendMsg(channel: Channel)(msg: ClientOp) {
-    msg match {
-      case EnterBarrier(name) ⇒
-        val enter = TestConductorProtocol.EnterBarrier.newBuilder.setName(name).build
-        channel.write(Wrapper.newBuilder.setBarrier(enter).build)
-    }
-  }
 
 }
 
@@ -152,7 +165,7 @@ class PlayerHandler(fsm: ActorRef, log: LoggingAdapter) extends SimpleChannelUps
     val channel = event.getChannel
     log.debug("message from {}: {}", getAddrString(channel), event.getMessage)
     event.getMessage match {
-      case msg: Wrapper if msg.getAllFields.size == 1 ⇒
+      case msg: NetworkOp ⇒
         fsm ! msg
       case msg ⇒
         log.info("server {} sent garbage '{}', disconnecting", getAddrString(channel), msg)

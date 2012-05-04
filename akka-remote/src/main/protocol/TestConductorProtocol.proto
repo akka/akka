@@ -15,6 +15,7 @@ message Wrapper {
   optional Hello hello = 1;
   optional EnterBarrier barrier = 2;
   optional InjectFailure failure = 3;
+  optional string done = 4;
 }
 
 message Hello {
@@ -42,6 +43,7 @@ enum FailType {
 enum Direction {
   Send = 1;
   Receive = 2;
+  Both = 3;
 }
 message InjectFailure {
   required FailType failure = 1;

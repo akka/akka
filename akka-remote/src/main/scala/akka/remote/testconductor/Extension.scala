@@ -7,9 +7,14 @@ import akka.remote.RemoteActorRefProvider
 import akka.actor.ActorContext
 import akka.util.{ Duration, Timeout }
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import akka.actor.ActorRef
+import java.util.concurrent.ConcurrentHashMap
+import akka.actor.Address
 
 object TestConductor extends ExtensionKey[TestConductorExt] {
+
   def apply()(implicit ctx: ActorContext): TestConductorExt = apply(ctx.system)
+
 }
 
 class TestConductorExt(val system: ExtendedActorSystem) extends Extension with Conductor with Player {
@@ -27,5 +32,7 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
 
   val transport = system.provider.asInstanceOf[RemoteActorRefProvider].transport
   val address = transport.address
+
+  val failureInjectors = new ConcurrentHashMap[Address, FailureInjector]
 
 }

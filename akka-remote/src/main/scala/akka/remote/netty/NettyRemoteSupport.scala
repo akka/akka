@@ -22,6 +22,13 @@ import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
 import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
 import akka.util.NonFatal
+import org.jboss.netty.channel.StaticChannelPipeline
+import org.jboss.netty.channel.ChannelHandler
+import org.jboss.netty.handler.codec.frame.LengthFieldPrepender
+import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder
+import org.jboss.netty.handler.timeout.IdleStateHandler
+import org.jboss.netty.channel.ChannelPipelineFactory
+import org.jboss.netty.handler.execution.ExecutionHandler
 
 /**
  * Provides the implementation of the Netty remote support
@@ -34,19 +41,53 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
   // TODO replace by system.scheduler
   val timer: HashedWheelTimer = new HashedWheelTimer(system.threadFactory)
 
-  // TODO make configurable
-  lazy val executor = new OrderedMemoryAwareThreadPoolExecutor(
-    settings.ExecutionPoolSize,
-    settings.MaxChannelMemorySize,
-    settings.MaxTotalMemorySize,
-    settings.ExecutionPoolKeepalive.length,
-    settings.ExecutionPoolKeepalive.unit,
-    system.threadFactory)
-
   // TODO make configurable/shareable with server socket factory
   val clientChannelFactory = new NioClientSocketChannelFactory(
     Executors.newCachedThreadPool(system.threadFactory),
     Executors.newCachedThreadPool(system.threadFactory))
+
+  object PipelineFactory {
+    def apply(handlers: Seq[ChannelHandler]): StaticChannelPipeline = new StaticChannelPipeline(handlers: _*)
+    def apply(endpoint: ⇒ Seq[ChannelHandler], withTimeout: Boolean): ChannelPipelineFactory =
+      new ChannelPipelineFactory {
+        def getPipeline = apply(defaultStack(withTimeout) ++ endpoint)
+      }
+
+    def defaultStack(withTimeout: Boolean): Seq[ChannelHandler] =
+      (if (withTimeout) timeout :: Nil else Nil) :::
+        msgFormat :::
+        authenticator :::
+        executionHandler ::
+        Nil
+
+    def timeout = new IdleStateHandler(timer,
+      settings.ReadTimeout.toSeconds.toInt,
+      settings.WriteTimeout.toSeconds.toInt,
+      settings.AllTimeout.toSeconds.toInt)
+
+    def msgFormat = new LengthFieldBasedFrameDecoder(settings.MessageFrameSize, 0, 4, 0, 4) ::
+      new LengthFieldPrepender(4) ::
+      new RemoteMessageDecoder ::
+      new RemoteMessageEncoder(NettyRemoteTransport.this) ::
+      Nil
+
+    val executionHandler = new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(
+      settings.ExecutionPoolSize,
+      settings.MaxChannelMemorySize,
+      settings.MaxTotalMemorySize,
+      settings.ExecutionPoolKeepalive.length,
+      settings.ExecutionPoolKeepalive.unit,
+      system.threadFactory))
+
+    def authenticator = if (settings.RequireCookie) new RemoteServerAuthenticationHandler(settings.SecureCookie) :: Nil else Nil
+  }
+
+  /**
+   * This method is factored out to provide an extension point in case the
+   * pipeline shall be changed. It is recommended to use
+   */
+  def mkPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean): ChannelPipelineFactory =
+    PipelineFactory(Seq(endpoint), withTimeout)
 
   private val remoteClients = new HashMap[Address, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock
@@ -105,11 +146,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
         try {
           timer.stop()
         } finally {
-          try {
-            clientChannelFactory.releaseExternalResources()
-          } finally {
-            executor.shutdown()
-          }
+          clientChannelFactory.releaseExternalResources()
         }
       }
     }
