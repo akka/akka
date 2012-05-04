@@ -191,7 +191,7 @@ object MessageDispatcher {
       val c = println(d + " inhabitants: " + d.inhabitants)
       a ← actors.valueIterator(d)
     } {
-      val status = if (a.isTerminated()) " (terminated)" else " (alive)"
+      val status = if (a.isTerminated) " (terminated)" else " (alive)"
       val messages = a match {
         case l: LocalActorRef ⇒ " " + l.underlying.mailbox.numberOfMessages + " messages"
         case _                ⇒ " " + a.getClass

@@ -231,7 +231,7 @@ trait Actor {
    * Is defined if the message was sent from another Actor,
    * else `deadLetters` in [[akka.actor.ActorSystem]].
    */
-  final def sender(): ActorRef = context.sender
+  final def sender: ActorRef = context.sender
 
   /**
    * This defines the initial actor behavior, it must return a partial function

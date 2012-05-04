@@ -172,7 +172,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
   "no router" must {
     "be started when constructed" in {
       val routedActor = system.actorOf(Props[TestActor].withRouter(NoRouter))
-      routedActor.isTerminated() must be(false)
+      routedActor.isTerminated must be(false)
     }
 
     "send message to connection" in {
@@ -200,7 +200,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
   "round robin router" must {
     "be started when constructed" in {
       val routedActor = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(nrOfInstances = 1)))
-      routedActor.isTerminated() must be(false)
+      routedActor.isTerminated must be(false)
     }
 
     //In this test a bunch of actors are created and each actor has its own counter.
@@ -281,7 +281,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
     "be started when constructed" in {
       val routedActor = system.actorOf(Props[TestActor].withRouter(RandomRouter(nrOfInstances = 1)))
-      routedActor.isTerminated() must be(false)
+      routedActor.isTerminated must be(false)
     }
 
     "deliver a broadcast message" in {
@@ -318,7 +318,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
   "smallest mailbox router" must {
     "be started when constructed" in {
       val routedActor = system.actorOf(Props[TestActor].withRouter(SmallestMailboxRouter(nrOfInstances = 1)))
-      routedActor.isTerminated() must be(false)
+      routedActor.isTerminated must be(false)
     }
 
     "deliver messages to idle actor" in {
@@ -373,7 +373,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
   "broadcast router" must {
     "be started when constructed" in {
       val routedActor = system.actorOf(Props[TestActor].withRouter(BroadcastRouter(nrOfInstances = 1)))
-      routedActor.isTerminated() must be(false)
+      routedActor.isTerminated must be(false)
     }
 
     "broadcast message using !" in {
@@ -442,7 +442,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     "be started when constructed" in {
       val routedActor = system.actorOf(Props[TestActor].withRouter(
         ScatterGatherFirstCompletedRouter(routees = List(newActor(0)), within = 1 seconds)))
-      routedActor.isTerminated() must be(false)
+      routedActor.isTerminated must be(false)
     }
 
     "deliver a broadcast message using the !" in {
@@ -525,14 +525,14 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
     "support custom router" in {
       val myrouter = system.actorOf(Props().withRouter(FromConfig), "myrouter")
-      myrouter.isTerminated() must be(false)
+      myrouter.isTerminated must be(false)
     }
   }
 
   "custom router" must {
     "be started when constructed" in {
       val routedActor = system.actorOf(Props[TestActor].withRouter(VoteCountRouter()))
-      routedActor.isTerminated() must be(false)
+      routedActor.isTerminated must be(false)
     }
 
     "count votes as intended - not as in Florida" in {

@@ -71,7 +71,7 @@ trait AskSupport {
    * [see [[akka.dispatch.Future]] for a description of `flow`]
    */
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef match {
-    case ref: InternalActorRef if ref.isTerminated() ⇒
+    case ref: InternalActorRef if ref.isTerminated ⇒
       actorRef.tell(message)
       Promise.failed(new AskTimeoutException("sending to terminated ref breaks promises"))(ref.provider.dispatcher)
     case ref: InternalActorRef ⇒
@@ -234,7 +234,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
     case _            ⇒
   }
 
-  override def isTerminated() = state match {
+  override def isTerminated = state match {
     case Stopped | _: StoppedWithPath ⇒ true
     case _                            ⇒ false
   }
@@ -242,7 +242,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   @tailrec
   override def stop(): Unit = {
     def ensurePromiseCompleted(): Unit =
-      if (!result.isCompleted()) result.tryComplete(Left(new ActorKilledException("Stopped")))
+      if (!result.isCompleted) result.tryComplete(Left(new ActorKilledException("Stopped")))
     state match {
       case null ⇒
         // if path was never queried nobody can possibly be watching us, so we don't have to publish termination either

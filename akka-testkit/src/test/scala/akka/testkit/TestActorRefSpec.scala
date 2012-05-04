@@ -173,7 +173,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         expectMsgPF(5 seconds) {
           case Terminated(`a`) ⇒ true
         }
-        a.isTerminated() must be(true)
+        a.isTerminated must be(true)
         assertThread
       }
     }
@@ -249,7 +249,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     "proxy receive for the underlying actor" in {
       val ref = TestActorRef[WorkerActor]
       ref.receive("work")
-      ref.isTerminated() must be(true)
+      ref.isTerminated must be(true)
     }
 
   }
