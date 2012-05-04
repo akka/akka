@@ -443,10 +443,10 @@ trait FSM[S, D] extends Listeners {
           timeoutFuture = None
         }
         generation += 1
-        processMsg(msg, t)
         if (!repeat) {
           timers -= name
         }
+        processMsg(msg, t)
       }
     case SubscribeTransitionCallBack(actorRef) ⇒
       // TODO use DeathWatch to clean up list
