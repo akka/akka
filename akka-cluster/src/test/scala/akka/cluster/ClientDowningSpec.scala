@@ -15,6 +15,7 @@ import com.typesafe.config._
 import java.net.InetSocketAddress
 
 class ClientDowningSpec extends ClusterSpec("akka.cluster.auto-down = off") with ImplicitSender {
+  val portPrefix = 1
 
   var node1: Cluster = _
   var node2: Cluster = _
@@ -34,8 +35,8 @@ class ClientDowningSpec extends ClusterSpec("akka.cluster.auto-down = off") with
         .parseString("""
           akka {
             actor.provider = "akka.remote.RemoteActorRefProvider"
-            remote.netty.port = 5550
-          }""")
+            remote.netty.port = %d550
+          }""".format(portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
@@ -48,9 +49,9 @@ class ClientDowningSpec extends ClusterSpec("akka.cluster.auto-down = off") with
         .parseString("""
           akka {
             actor.provider = "akka.remote.RemoteActorRefProvider"
-            remote.netty.port = 5551
-            cluster.node-to-join = "akka://system1@localhost:5550"
-          }""")
+            remote.netty.port = %d551
+            cluster.node-to-join = "akka://system1@localhost:%d550"
+          }""".format(portPrefix, portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
@@ -63,9 +64,9 @@ class ClientDowningSpec extends ClusterSpec("akka.cluster.auto-down = off") with
         .parseString("""
           akka {
             actor.provider = "akka.remote.RemoteActorRefProvider"
-            remote.netty.port = 5552
-            cluster.node-to-join = "akka://system1@localhost:5550"
-          }""")
+            remote.netty.port = %d552
+            cluster.node-to-join = "akka://system1@localhost:%d550"
+          }""".format(portPrefix, portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote3 = system3.provider.asInstanceOf[RemoteActorRefProvider]
@@ -78,9 +79,9 @@ class ClientDowningSpec extends ClusterSpec("akka.cluster.auto-down = off") with
         .parseString("""
           akka {
             actor.provider = "akka.remote.RemoteActorRefProvider"
-            remote.netty.port = 5553
-            cluster.node-to-join = "akka://system1@localhost:5550"
-          }""")
+            remote.netty.port = %d553
+            cluster.node-to-join = "akka://system1@localhost:%d550"
+          }""".format(portPrefix, portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote4 = system4.provider.asInstanceOf[RemoteActorRefProvider]

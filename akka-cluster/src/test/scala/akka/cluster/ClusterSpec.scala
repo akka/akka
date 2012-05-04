@@ -39,6 +39,14 @@ object ClusterSpec {
 }
 
 abstract class ClusterSpec(_system: ActorSystem) extends AkkaSpec(_system) {
+  case class PortPrefix(port: Int) {
+    def withPortPrefix: Int = (portPrefix.toString + port.toString).toInt
+  }
+
+  implicit def intToPortPrefix(port: Int) = PortPrefix(port)
+
+  def portPrefix: Int
+
   def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName, config.withFallback(ClusterSpec.testConf)))
 
   def this(s: String) = this(ConfigFactory.parseString(s))

@@ -14,6 +14,7 @@ import akka.util.duration._
 import com.typesafe.config._
 
 class NodeMembershipSpec extends ClusterSpec with ImplicitSender {
+  val portPrefix = 7
 
   var node0: Cluster = _
   var node1: Cluster = _
@@ -32,8 +33,8 @@ class NodeMembershipSpec extends ClusterSpec with ImplicitSender {
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty.port=5550
-            }""")
+              remote.netty.port = %d550
+          }""".format(portPrefix))
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
@@ -44,9 +45,9 @@ class NodeMembershipSpec extends ClusterSpec with ImplicitSender {
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty.port=5551
-              cluster.node-to-join = "akka://system0@localhost:5550"
-            }""")
+              remote.netty.port = %d551
+              cluster.node-to-join = "akka://system0@localhost:%d550"
+            }""".format(portPrefix, portPrefix))
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
@@ -57,16 +58,16 @@ class NodeMembershipSpec extends ClusterSpec with ImplicitSender {
 
         val members0 = node0.latestGossip.members.toArray
         members0.size must be(2)
-        members0(0).address.port.get must be(5550)
+        members0(0).address.port.get must be(550.withPortPrefix)
         members0(0).status must be(MemberStatus.Up)
-        members0(1).address.port.get must be(5551)
+        members0(1).address.port.get must be(551.withPortPrefix)
         members0(1).status must be(MemberStatus.Up)
 
         val members1 = node1.latestGossip.members.toArray
         members1.size must be(2)
-        members1(0).address.port.get must be(5550)
+        members1(0).address.port.get must be(550.withPortPrefix)
         members1(0).status must be(MemberStatus.Up)
-        members1(1).address.port.get must be(5551)
+        members1(1).address.port.get must be(551.withPortPrefix)
         members1(1).status must be(MemberStatus.Up)
       }
 
@@ -77,9 +78,9 @@ class NodeMembershipSpec extends ClusterSpec with ImplicitSender {
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty.port=5552
-              cluster.node-to-join = "akka://system0@localhost:5550"
-            }""")
+              remote.netty.port = %d552
+              cluster.node-to-join = "akka://system0@localhost:%d550"
+            }""".format(portPrefix, portPrefix))
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
@@ -90,29 +91,29 @@ class NodeMembershipSpec extends ClusterSpec with ImplicitSender {
         val members0 = node0.latestGossip.members.toArray
         val version = node0.latestGossip.version
         members0.size must be(3)
-        members0(0).address.port.get must be(5550)
+        members0(0).address.port.get must be(550.withPortPrefix)
         members0(0).status must be(MemberStatus.Up)
-        members0(1).address.port.get must be(5551)
+        members0(1).address.port.get must be(551.withPortPrefix)
         members0(1).status must be(MemberStatus.Up)
-        members0(2).address.port.get must be(5552)
+        members0(2).address.port.get must be(552.withPortPrefix)
         members0(2).status must be(MemberStatus.Up)
 
         val members1 = node1.latestGossip.members.toArray
         members1.size must be(3)
-        members1(0).address.port.get must be(5550)
+        members1(0).address.port.get must be(550.withPortPrefix)
         members1(0).status must be(MemberStatus.Up)
-        members1(1).address.port.get must be(5551)
+        members1(1).address.port.get must be(551.withPortPrefix)
         members1(1).status must be(MemberStatus.Up)
-        members1(2).address.port.get must be(5552)
+        members1(2).address.port.get must be(552.withPortPrefix)
         members1(2).status must be(MemberStatus.Up)
 
         val members2 = node2.latestGossip.members.toArray
         members2.size must be(3)
-        members2(0).address.port.get must be(5550)
+        members2(0).address.port.get must be(550.withPortPrefix)
         members2(0).status must be(MemberStatus.Up)
-        members2(1).address.port.get must be(5551)
+        members2(1).address.port.get must be(551.withPortPrefix)
         members2(1).status must be(MemberStatus.Up)
-        members2(2).address.port.get must be(5552)
+        members2(2).address.port.get must be(552.withPortPrefix)
         members2(2).status must be(MemberStatus.Up)
       }
     }

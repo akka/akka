@@ -17,6 +17,7 @@ import scala.collection.immutable.SortedSet
 import com.typesafe.config._
 
 class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
+  val portPrefix = 6
 
   var node0: Cluster = _
   var node1: Cluster = _
@@ -33,8 +34,8 @@ class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty.port=5550
-            }""")
+              remote.netty.port = %d550
+            }""".format(portPrefix))
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
@@ -44,9 +45,9 @@ class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty.port=5551
-              cluster.node-to-join = "akka://system0@localhost:5550"
-            }""")
+              remote.netty.port=%d551
+              cluster.node-to-join = "akka://system0@localhost:%d550"
+            }""".format(portPrefix, portPrefix))
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
@@ -81,9 +82,9 @@ class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
           .parseString("""
             akka {
               actor.provider = "akka.remote.RemoteActorRefProvider"
-              remote.netty.port=5552
-              cluster.node-to-join = "akka://system0@localhost:5550"
-            }""")
+              remote.netty.port=%d552
+              cluster.node-to-join = "akka://system0@localhost:%d550"
+            }""".format(portPrefix, portPrefix))
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
