@@ -21,7 +21,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
     halfOpenLatch = new CountDownLatch(1)
     openLatch = new CountDownLatch(1)
     closedLatch = new CountDownLatch(1)
-    cb = new CircuitBreaker(system.scheduler, 1, 50 millis, 50 millis)
+    cb = new CircuitBreaker(system.scheduler, 1, 150 millis, 50 millis)
       .onClose(() ⇒ { closedLatch.countDown() })
       .onHalfOpen(() ⇒ { halfOpenLatch.countDown() })
       .onOpen(() ⇒ { openLatch.countDown() })
@@ -110,7 +110,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
     }
 
     "increment failure count on timeout" in {
-      cb.withCircuitBreaker({ Thread.sleep(100L) })
+      cb.withCircuitBreaker({ Thread.sleep(150L) })
       assert(1 == cb.currentFailureCount())
     }
   }

@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock
  * Time: 11:07 AM
  */
 
-class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration) { //(implicit ec: ExecutionContext) {
+class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration) {
 
   private val currentState: AtomicReference[CircuitBreakerState] = new AtomicReference(CircuitBreakerClosed)
 
@@ -37,18 +37,25 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   def currentFailureCount() = CircuitBreakerClosed.failureCount.get()
 
   def withCircuitBreaker[T](body: ⇒ T): T = {
-    currentState.get().onCall(body)
+    currentState.get().onCall(body, false)
+  }
+
+  def withAsyncCircuitBreaker[T](body: ⇒ T): T = {
+    currentState.get().onCall(body, true)
   }
 
   def onAsyncSuccess() {
-    currentState.get().callSucceeds()
+    if (currentState.get().exceedsAsyncDeadline)
+      currentState.get().callFails()
+    else
+      currentState.get().callSucceeds()
   }
 
   def onAsyncFailure() {
     currentState.get().callFails()
   }
 
-  private def tripBreaker() {
+  private[this] def tripBreaker() {
     currentState.get() match {
       case CircuitBreakerOpen ⇒ throw new IllegalStateException("TripBreaker transition not valid from Open state")
       case _                  ⇒
@@ -57,7 +64,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
     CircuitBreakerOpen.enter()
   }
 
-  private def resetBreaker() {
+  private[this] def resetBreaker() {
     currentState.get() match {
       case CircuitBreakerHalfOpen ⇒
       case _                      ⇒ throw new IllegalStateException("ResetBreaker transition only valid from Half-Open state")
@@ -66,7 +73,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
     CircuitBreakerClosed.enter()
   }
 
-  private def attemptReset() {
+  private[this] def attemptReset() {
     currentState.get() match {
       case CircuitBreakerOpen ⇒
       case _                  ⇒ throw new IllegalStateException("AttemptReset transition only valid from Open state")
@@ -79,6 +86,14 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
     private val lock = new ReentrantLock()
     private var listeners = List[ScalaObject]()
+    private val asyncDeadline = new AtomicReference[Option[Deadline]](None)
+
+    def exceedsAsyncDeadline = {
+      asyncDeadline.get() match {
+        case None    ⇒ false
+        case Some(d) ⇒ d.isOverdue()
+      }
+    }
 
     def addListener[T](listener: () ⇒ T) {
       lock.lock()
@@ -106,16 +121,22 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
       (result, deadline.isOverdue())
     }
 
-    def callThrough[T] (body: => T): T = {
+    def callThrough[T](body: ⇒ T, async: Boolean): T = {
       try {
+        if (async)
+          asyncDeadline.set(Some(callTimeout.fromNow))
+        else
+          asyncDeadline.set(None)
+
         val (result, deadlineExceeded) = exceedsDeadline {
           body
         }
 
-        if (deadlineExceeded)
-          callFails()
-        else
-          callSucceeds()
+        if (!async)
+          if (deadlineExceeded)
+            callFails()
+          else
+            callSucceeds()
 
         result
       } catch {
@@ -126,7 +147,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
       }
     }
 
-    def onCall[T](body: ⇒ T): T
+    def onCall[T](body: ⇒ T, async: Boolean): T
 
     def callSucceeds()
 
@@ -140,7 +161,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
     private val openAsOf = new AtomicLong(0)
 
-    def onCall[T](body: ⇒ T): T = {
+    def onCall[T](body: ⇒ T, async: Boolean): T = {
       throw new CircuitBreakerOpenException(remainingTimeout().timeLeft)
     }
 
@@ -167,11 +188,11 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
     private val halfOpenSemaphore = new Semaphore(1)
 
-    def onCall[T](body: ⇒ T): T = {
+    def onCall[T](body: ⇒ T, async: Boolean): T = {
       if (!halfOpenSemaphore.tryAcquire())
         throw new CircuitBreakerHalfOpenException(CircuitBreakerOpen.remainingTimeout().timeLeft)
       try {
-        callThrough(body)
+        callThrough(body, async)
       } finally {
         halfOpenSemaphore.release()
       }
@@ -194,8 +215,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
     val failureCount = new AtomicInteger(0)
 
-    def onCall[T](body: ⇒ T): T = {
-      callThrough(body)
+    def onCall[T](body: ⇒ T, async: Boolean): T = {
+      callThrough(body, async)
     }
 
     def callSucceeds() {

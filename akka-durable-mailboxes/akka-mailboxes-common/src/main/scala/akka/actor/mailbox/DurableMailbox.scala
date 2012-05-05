@@ -10,7 +10,7 @@ import akka.actor.ActorSystem
 import akka.util.duration._
 import akka.util.Duration
 import akka.dispatch.{ ExecutionContext, Envelope, MessageQueue }
-import akka.remote.RemoteProtocol.{RemoteMessageProtocol, ActorRefProtocol}
+import akka.remote.RemoteProtocol.{ RemoteMessageProtocol, ActorRefProtocol }
 import java.util.concurrent.TimeUnit
 
 private[akka] object DurableExecutableMailboxConfig {
@@ -27,9 +27,10 @@ abstract class DurableMessageQueue(val owner: ActorContext, val _settings: Durab
 
   private val circuitBreakerSettings = _settings.circuitBreakerSettings
 
-  private val circuitBreaker = new CircuitBreaker(system.scheduler, circuitBreakerSettings.circuitBreakerMaxFailures ,
-                                          circuitBreakerSettings.circuitBreakerCallTimeout, circuitBreakerSettings.circuitBreakerResetTimeout)
+  private val circuitBreaker = new CircuitBreaker(system.scheduler, circuitBreakerSettings.circuitBreakerMaxFailures,
+    circuitBreakerSettings.circuitBreakerCallTimeout, circuitBreakerSettings.circuitBreakerResetTimeout)
   protected def withCircuitBreaker[T](body: ⇒ T): T = circuitBreaker.withCircuitBreaker(body)
+  protected def withAsyncCircuitBreaker[T](body: ⇒ T): T = circuitBreaker.withAsyncCircuitBreaker(body)
   protected def onAsyncSuccess() { circuitBreaker.onAsyncSuccess() }
   protected def onAsyncFailure() { circuitBreaker.onAsyncFailure() }
 }
@@ -117,7 +118,7 @@ trait DurableMailboxSettings {
     config
   }
 
-  var circuitBreakerSettings : CircuitBreakerSettings = null
+  var circuitBreakerSettings: CircuitBreakerSettings = null
 }
 
 /**
