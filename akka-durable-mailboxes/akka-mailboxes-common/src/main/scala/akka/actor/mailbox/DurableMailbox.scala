@@ -30,9 +30,7 @@ abstract class DurableMessageQueue(val owner: ActorContext, val _settings: Durab
   private val circuitBreaker = new CircuitBreaker(system.scheduler, circuitBreakerSettings.circuitBreakerMaxFailures,
     circuitBreakerSettings.circuitBreakerCallTimeout, circuitBreakerSettings.circuitBreakerResetTimeout)
   protected def withCircuitBreaker[T](body: ⇒ T): T = circuitBreaker.withCircuitBreaker(body)
-  protected def withAsyncCircuitBreaker[T](body: ⇒ T): T = circuitBreaker.withAsyncCircuitBreaker(body)
-  protected def onAsyncSuccess() { circuitBreaker.onAsyncSuccess() }
-  protected def onAsyncFailure() { circuitBreaker.onAsyncFailure() }
+  protected def newAsyncCircuitBreakerHandle(): AsyncCircuitBreakerHandle = circuitBreaker.createAsyncHandle()
 }
 
 trait DurableMessageSerialization { this: DurableMessageQueue ⇒

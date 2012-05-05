@@ -8,6 +8,9 @@ import akka.actor.Scheduler
 import akka.util.{ Duration, Deadline }
 import akka.AkkaException
 import java.util.concurrent.locks.ReentrantLock
+import java.util.UUID
+import collection.mutable.HashMap
+import scala.Boolean
 
 /**
  * akka.actor.mailbox
@@ -15,7 +18,15 @@ import java.util.concurrent.locks.ReentrantLock
  * Time: 11:07 AM
  */
 
+trait AsyncCircuitBreakerHandle {
+  def withCircuitBreaker[T](body: ⇒ T): T
+  def onAsyncSuccess()
+  def onAsyncFailure()
+}
+
 class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration) {
+
+  case class AsyncDeadlineToken(id: UUID = UUID.randomUUID())
 
   private val currentState: AtomicReference[CircuitBreakerState] = new AtomicReference(CircuitBreakerClosed)
 
@@ -37,22 +48,40 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   def currentFailureCount() = CircuitBreakerClosed.failureCount.get()
 
   def withCircuitBreaker[T](body: ⇒ T): T = {
-    currentState.get().onCall(body, false)
+    currentState.get().onCall(body, None)
   }
 
-  def withAsyncCircuitBreaker[T](body: ⇒ T): T = {
-    currentState.get().onCall(body, true)
+  def createAsyncHandle(): AsyncCircuitBreakerHandle = {
+    class InternalAsyncHandle(token: AsyncDeadlineToken) extends AsyncCircuitBreakerHandle {
+      def withCircuitBreaker[T](body: ⇒ T): T = {
+        _withAsyncCircuitBreaker(body, token)
+      }
+      def onAsyncSuccess() {
+        _onAsyncSuccess(token)
+      }
+      def onAsyncFailure() {
+        _onAsyncFailure(token)
+      }
+    }
+    val token = AsyncDeadlineToken()
+    new InternalAsyncHandle(token)
   }
 
-  def onAsyncSuccess() {
-    if (currentState.get().exceedsAsyncDeadline)
+  private[this] def _withAsyncCircuitBreaker[T](body: ⇒ T, token: AsyncDeadlineToken): T = {
+    currentState.get().onCall(body, Some(token))
+  }
+
+  private[this] def _onAsyncSuccess(token: AsyncDeadlineToken) {
+    if (currentState.get().exceedsAsyncDeadline(token))
       currentState.get().callFails()
     else
       currentState.get().callSucceeds()
+    currentState.get().cleanUpToken(token)
   }
 
-  def onAsyncFailure() {
+  private[this] def _onAsyncFailure(token: AsyncDeadlineToken) {
     currentState.get().callFails()
+    currentState.get().cleanUpToken(token)
   }
 
   private[this] def tripBreaker() {
@@ -84,35 +113,21 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
   trait CircuitBreakerState {
 
-    private val lock = new ReentrantLock()
+    private val listenerLock = new ReentrantLock()
     private var listeners = List[ScalaObject]()
-    private val asyncDeadline = new AtomicReference[Option[Deadline]](None)
 
-    def exceedsAsyncDeadline = {
-      asyncDeadline.get() match {
-        case None    ⇒ false
-        case Some(d) ⇒ d.isOverdue()
-      }
-    }
+    private val deadlineMapLock = new ReentrantLock()
+    private val asyncDeadline = new HashMap[AsyncDeadlineToken, Deadline]()
 
-    def addListener[T](listener: () ⇒ T) {
-      lock.lock()
+    def exceedsAsyncDeadline(token: AsyncDeadlineToken) = {
+      deadlineMapLock.lock()
       try
-        listeners = listener :: listeners
+        asyncDeadline.get(token) match {
+          case None    ⇒ false
+          case Some(d) ⇒ d.isOverdue()
+        }
       finally
-        lock.unlock()
-    }
-
-    def notifyTransitionListeners() {
-      lock.lock()
-      try
-        listeners.foreach(l ⇒ {
-          scheduler.scheduleOnce(Duration.Zero) {
-            l.asInstanceOf[() ⇒ _]()
-          }
-        })
-      finally
-        lock.unlock()
+        deadlineMapLock.unlock()
     }
 
     def exceedsDeadline[T](body: ⇒ T): (T, Boolean) = {
@@ -121,18 +136,49 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
       (result, deadline.isOverdue())
     }
 
-    def callThrough[T](body: ⇒ T, async: Boolean): T = {
+    def cleanUpToken(token: AsyncDeadlineToken) {
+      deadlineMapLock.lock()
+      try
+        asyncDeadline.remove(token)
+      finally
+        deadlineMapLock.unlock()
+    }
+
+    def addListener[T](listener: () ⇒ T) {
+      listenerLock.lock()
+      try
+        listeners = listener :: listeners
+      finally
+        listenerLock.unlock()
+    }
+
+    def notifyTransitionListeners() {
+      listenerLock.lock()
+      try
+        listeners.foreach(l ⇒ {
+          scheduler.scheduleOnce(Duration.Zero) {
+            l.asInstanceOf[() ⇒ _]()
+          }
+        })
+      finally
+        listenerLock.unlock()
+    }
+
+    def callThrough[T](body: ⇒ T, token: Option[AsyncDeadlineToken]): T = {
       try {
-        if (async)
-          asyncDeadline.set(Some(callTimeout.fromNow))
-        else
-          asyncDeadline.set(None)
+        if (token.isDefined) {
+          deadlineMapLock.lock()
+          try
+            asyncDeadline.put(token.get, callTimeout.fromNow)
+          finally
+            deadlineMapLock.unlock()
+        }
 
         val (result, deadlineExceeded) = exceedsDeadline {
           body
         }
 
-        if (!async)
+        if (token.isEmpty)
           if (deadlineExceeded)
             callFails()
           else
@@ -147,7 +193,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
       }
     }
 
-    def onCall[T](body: ⇒ T, async: Boolean): T
+    def onCall[T](body: ⇒ T, token: Option[AsyncDeadlineToken]): T
 
     def callSucceeds()
 
@@ -161,7 +207,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
     private val openAsOf = new AtomicLong(0)
 
-    def onCall[T](body: ⇒ T, async: Boolean): T = {
+    def onCall[T](body: ⇒ T, token: Option[AsyncDeadlineToken]): T = {
       throw new CircuitBreakerOpenException(remainingTimeout().timeLeft)
     }
 
@@ -188,11 +234,11 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
     private val halfOpenSemaphore = new Semaphore(1)
 
-    def onCall[T](body: ⇒ T, async: Boolean): T = {
+    def onCall[T](body: ⇒ T, token: Option[AsyncDeadlineToken]): T = {
       if (!halfOpenSemaphore.tryAcquire())
         throw new CircuitBreakerHalfOpenException(CircuitBreakerOpen.remainingTimeout().timeLeft)
       try {
-        callThrough(body, async)
+        callThrough(body, token)
       } finally {
         halfOpenSemaphore.release()
       }
@@ -215,8 +261,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
     val failureCount = new AtomicInteger(0)
 
-    def onCall[T](body: ⇒ T, async: Boolean): T = {
-      callThrough(body, async)
+    def onCall[T](body: ⇒ T, token: Option[AsyncDeadlineToken]): T = {
+      callThrough(body, token)
     }
 
     def callSucceeds() {

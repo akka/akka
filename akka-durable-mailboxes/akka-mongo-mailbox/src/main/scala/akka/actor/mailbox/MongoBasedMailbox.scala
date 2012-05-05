@@ -51,21 +51,22 @@ class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailb
   @volatile
   private var mongo = connect()
 
-  def enqueue(receiver: ActorRef, envelope: Envelope) = withAsyncCircuitBreaker {
+  def enqueue(receiver: ActorRef, envelope: Envelope) = {
+    val asyncHandle = newAsyncCircuitBreakerHandle()
     /* TODO - Test if a BSON serializer is registered for the message and only if not, use toByteString? */
     val durableMessage = MongoDurableMessage(ownerPathString, envelope.message, envelope.sender)
     // todo - do we need to filter the actor name at all for safe collection naming?
     val result = Promise[Boolean]()(dispatcher)
     mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
       wr match {
-        case Right((oid, wr)) ⇒ onAsyncSuccess(); result.success(true)
-        case Left(t)          ⇒ onAsyncFailure(); result.failure(t)
+        case Right((oid, wr)) ⇒ asyncHandle.onAsyncSuccess(); result.success(true)
+        case Left(t)          ⇒ asyncHandle.onAsyncFailure(); result.failure(t)
       }
     })
     Await.ready(result, settings.WriteTimeout)
   }
 
-  def dequeue(): Envelope = withAsyncCircuitBreaker {
+  def dequeue(): Envelope = {
     /**
      * Retrieves first item in natural order (oldest first, assuming no modification/move)
      * Waits 3 seconds for now for a message, else pops back out.
@@ -73,6 +74,7 @@ class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailb
      * TODO - Should we have a specific query in place? Which way do we sort?
      * TODO - Error handling version!
      */
+    val asyncHandle = newAsyncCircuitBreakerHandle()
     val envelopePromise = Promise[Envelope]()(dispatcher)
     mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
       doc match {
@@ -87,19 +89,20 @@ class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailb
     }
     try {
       val result = Await.result(envelopePromise, settings.ReadTimeout)
-      onAsyncSuccess()
+      asyncHandle.onAsyncSuccess()
       result
-    } catch { case _: TimeoutException ⇒ onAsyncFailure(); null }
+    } catch { case _: TimeoutException ⇒ asyncHandle.onAsyncFailure(); null }
   }
 
   def numberOfMessages: Int = {
+    val asyncHandle = newAsyncCircuitBreakerHandle()
     val count = Promise[Int]()(dispatcher)
     mongo.count()(count.success)
     try {
       val result = Await.result(count, settings.ReadTimeout).asInstanceOf[Int]
-      onAsyncSuccess()
+      asyncHandle.onAsyncSuccess()
       result
-    } catch { case _: Exception ⇒ onAsyncFailure(); -1 }
+    } catch { case _: Exception ⇒ asyncHandle.onAsyncFailure(); -1 }
   }
 
   //TODO review find other solution, this will be very expensive
