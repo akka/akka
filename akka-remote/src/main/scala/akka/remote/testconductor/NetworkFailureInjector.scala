@@ -23,6 +23,13 @@ import akka.actor.Props
 import akka.actor.ActorRef
 import akka.event.Logging
 import org.jboss.netty.channel.SimpleChannelHandler
+import scala.annotation.tailrec
+import akka.util.Duration
+import akka.actor.LoggingFSM
+import org.jboss.netty.channel.Channels
+import org.jboss.netty.channel.ChannelFuture
+import org.jboss.netty.channel.ChannelFutureListener
+import org.jboss.netty.channel.ChannelFuture
 
 case class FailureInjector(sender: ActorRef, receiver: ActorRef) {
   def refs(dir: Direction) = dir match {
@@ -42,8 +49,10 @@ class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
   val log = Logging(system, "FailureInjector")
 
   // everything goes via these Throttle actors to enable easy steering
-  private val sender = system.actorOf(Props(new Throttle(_.sendDownstream(_))))
-  private val receiver = system.actorOf(Props(new Throttle(_.sendUpstream(_))))
+  private val sender = system.actorOf(Props(new Throttle(Direction.Send)))
+  private val receiver = system.actorOf(Props(new Throttle(Direction.Receive)))
+
+  private val packetSplitThreshold = TestConductor(system).Settings.PacketSplitThreshold
 
   /*
    * State, Data and Messages for the internal Throttle actor
@@ -53,47 +62,40 @@ class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
   private case object Throttle extends State
   private case object Blackhole extends State
 
-  private case class Data(ctx: ChannelHandlerContext, rateMBit: Float, queue: Queue[MessageEvent])
+  private case class Data(lastSent: Long, rateMBit: Float, queue: Queue[Send])
 
-  private case class Send(ctx: ChannelHandlerContext, msg: MessageEvent)
+  private case class Send(ctx: ChannelHandlerContext, future: Option[ChannelFuture], msg: AnyRef)
   private case class SetContext(ctx: ChannelHandlerContext)
   private case object Tick
 
-  private class Throttle(send: (ChannelHandlerContext, MessageEvent) ⇒ Unit) extends Actor with FSM[State, Data] {
+  private class Throttle(dir: Direction) extends Actor with LoggingFSM[State, Data] {
     import FSM._
 
-    startWith(PassThrough, Data(null, -1, Queue()))
+    var channelContext: ChannelHandlerContext = _
+
+    startWith(PassThrough, Data(0, -1, Queue()))
 
     when(PassThrough) {
-      case Event(Send(ctx, msg), d) ⇒
+      case Event(s @ Send(_, _, msg), _) ⇒
         log.debug("sending msg (PassThrough): {}", msg)
-        send(ctx, msg)
+        send(s)
         stay
     }
 
     when(Throttle) {
-      case Event(Send(ctx, msg), d) ⇒
-        if (!timerActive_?("send")) {
-          setTimer("send", Tick, (size(msg) / d.rateMBit) microseconds, false)
-        }
-        stay using d.copy(ctx = ctx, queue = d.queue.enqueue(msg))
-      case Event(Tick, d) ⇒
-        val (msg, queue) = d.queue.dequeue
-        log.debug("sending msg (Tick, {}/{} left): {}", d.queue.size, queue.size, msg)
-        send(d.ctx, msg)
-        if (queue.nonEmpty) {
-          val time = (size(queue.head) / d.rateMBit).microseconds
-          log.debug("scheduling next Tick in {}", time)
-          setTimer("send", Tick, time, false)
-        }
-        stay using d.copy(queue = queue)
+      case Event(s: Send, d @ Data(_, _, Queue())) ⇒
+        stay using sendThrottled(d.copy(lastSent = System.nanoTime, queue = Queue(s)))
+      case Event(s: Send, data) ⇒
+        stay using sendThrottled(data.copy(queue = data.queue.enqueue(s)))
+      case Event(Tick, data) ⇒
+        stay using sendThrottled(data)
     }
 
     onTransition {
       case Throttle -> PassThrough ⇒
-        stateData.queue foreach { msg ⇒
-          log.debug("sending msg (Transition): {}")
-          send(stateData.ctx, msg)
+        for (s ← stateData.queue) {
+          log.debug("sending msg (Transition): {}", s.msg)
+          send(s)
         }
         cancelTimer("send")
       case Throttle -> Blackhole ⇒
@@ -101,32 +103,95 @@ class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
     }
 
     when(Blackhole) {
-      case Event(Send(_, msg), _) ⇒
+      case Event(Send(_, _, msg), _) ⇒
         log.debug("dropping msg {}", msg)
         stay
     }
 
     whenUnhandled {
-      case Event(SetContext(ctx), d) ⇒ stay using d.copy(ctx = ctx)
       case Event(NetworkFailureInjector.SetRate(rate), d) ⇒
         sender ! "ok"
         if (rate > 0) {
-          goto(Throttle) using d.copy(rateMBit = rate, queue = Queue())
+          goto(Throttle) using d.copy(lastSent = System.nanoTime, rateMBit = rate, queue = Queue())
         } else if (rate == 0) {
           goto(Blackhole)
         } else {
           goto(PassThrough)
         }
+      case Event(SetContext(ctx), _) ⇒ channelContext = ctx; stay
       case Event(NetworkFailureInjector.Disconnect(abort), Data(ctx, _, _)) ⇒
         sender ! "ok"
         // TODO implement abort
-        ctx.getChannel.disconnect()
+        channelContext.getChannel.disconnect()
         stay
     }
 
     initialize
 
-    private def size(msg: MessageEvent) = msg.getMessage() match {
+    private def sendThrottled(d: Data): Data = {
+      val (data, toSend, toTick) = schedule(d)
+      for (s ← toSend) {
+        log.debug("sending msg (Tick): {}", s.msg)
+        send(s)
+      }
+      for (time ← toTick) {
+        log.debug("scheduling next Tick in {}", time)
+        setTimer("send", Tick, time, false)
+      }
+      data
+    }
+
+    private def send(s: Send): Unit = dir match {
+      case Direction.Send    ⇒ Channels.write(s.ctx, s.future getOrElse Channels.future(s.ctx.getChannel), s.msg)
+      case Direction.Receive ⇒ Channels.fireMessageReceived(s.ctx, s.msg)
+      case _                 ⇒
+    }
+
+    private def schedule(d: Data): (Data, Seq[Send], Option[Duration]) = {
+      val now = System.nanoTime
+      @tailrec def rec(d: Data, toSend: Seq[Send]): (Data, Seq[Send], Option[Duration]) = {
+        if (d.queue.isEmpty) (d, toSend, None)
+        else {
+          val timeForPacket = d.lastSent + (1000 * size(d.queue.head.msg) / d.rateMBit).toLong
+          if (timeForPacket <= now) rec(Data(timeForPacket, d.rateMBit, d.queue.tail), toSend :+ d.queue.head)
+          else {
+            val deadline = now + packetSplitThreshold.toNanos
+            if (timeForPacket <= deadline) (d, toSend, Some((timeForPacket - now).nanos))
+            else {
+              val micros = (deadline - d.lastSent) / 1000
+              val (s1, s2) = split(d.queue.head, (micros * d.rateMBit / 8).toInt)
+              (d.copy(queue = s1 +: s2 +: d.queue.tail), toSend, Some(packetSplitThreshold))
+            }
+          }
+        }
+      }
+      rec(d, Seq())
+    }
+
+    private def split(s: Send, bytes: Int): (Send, Send) = {
+      s.msg match {
+        case buf: ChannelBuffer ⇒
+          val f = s.future map { f ⇒
+            val newF = Channels.future(s.ctx.getChannel)
+            newF.addListener(new ChannelFutureListener {
+              def operationComplete(future: ChannelFuture) {
+                if (future.isCancelled) f.cancel()
+                else future.getCause match {
+                  case null ⇒
+                  case thr  ⇒ f.setFailure(thr)
+                }
+              }
+            })
+            newF
+          }
+          val b = buf.slice()
+          b.writerIndex(b.readerIndex + bytes)
+          buf.readerIndex(buf.readerIndex + bytes)
+          (Send(s.ctx, f, b), Send(s.ctx, s.future, buf))
+      }
+    }
+
+    private def size(msg: AnyRef) = msg match {
       case b: ChannelBuffer ⇒ b.readableBytes() * 8
       case _                ⇒ throw new UnsupportedOperationException("NetworkFailureInjector only supports ChannelBuffer messages")
     }
@@ -136,7 +201,7 @@ class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
 
   override def messageReceived(ctx: ChannelHandlerContext, msg: MessageEvent) {
     log.debug("upstream(queued): {}", msg)
-    receiver ! Send(ctx, msg)
+    receiver ! Send(ctx, Option(msg.getFuture), msg.getMessage)
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, state: ChannelStateEvent) {
@@ -166,7 +231,7 @@ class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
 
   override def writeRequested(ctx: ChannelHandlerContext, msg: MessageEvent) {
     log.debug("downstream(queued): {}", msg)
-    sender ! Send(ctx, msg)
+    sender ! Send(ctx, Option(msg.getFuture), msg.getMessage)
   }
 
 }

@@ -24,6 +24,7 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
 
     implicit val BarrierTimeout = Timeout(Duration(config.getMilliseconds("akka.testconductor.barrier-timeout"), MILLISECONDS))
     implicit val QueryTimeout = Timeout(Duration(config.getMilliseconds("akka.testconductor.query-timeout"), MILLISECONDS))
+    val PacketSplitThreshold = Duration(config.getMilliseconds("akka.testconductor.packet-split-threshold"), MILLISECONDS)
 
     val name = config.getString("akka.testconductor.name")
     val host = config.getString("akka.testconductor.host")

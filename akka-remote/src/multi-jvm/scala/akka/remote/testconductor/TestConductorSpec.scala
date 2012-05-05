@@ -62,7 +62,7 @@ class TestConductorMultiJvmNode1 extends AkkaRemoteSpec(TestConductorMultiJvmSpe
 
   "throttling" in {
     expectMsg("start")
-    tc.throttle("node1", "node0", Direction.Send, 0.016).await
+    tc.throttle("node1", "node0", Direction.Send, 0.01).await
     tc.enter("throttled_send")
     within(1 second, 2 seconds) {
       receiveN(10) must be(0 to 9)
@@ -70,7 +70,7 @@ class TestConductorMultiJvmNode1 extends AkkaRemoteSpec(TestConductorMultiJvmSpe
     tc.enter("throttled_send2")
     tc.throttle("node1", "node0", Direction.Send, -1).await
     
-    tc.throttle("node1", "node0", Direction.Receive, 0.016).await
+    tc.throttle("node1", "node0", Direction.Receive, 0.01).await
     tc.enter("throttled_recv")
     receiveN(10, 500 millis) must be(10 to 19)
     tc.enter("throttled_recv2")
