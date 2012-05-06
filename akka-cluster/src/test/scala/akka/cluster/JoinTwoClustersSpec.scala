@@ -15,6 +15,7 @@ import com.typesafe.config._
 import java.net.InetSocketAddress
 
 class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.threshold = 5") with ImplicitSender {
+  val portPrefix = 3
 
   var node1: Cluster = _
   var node2: Cluster = _
@@ -37,8 +38,9 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system1 = ActorSystem("system1", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port = 5551
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port = %d551
+          }""".format(portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       node1 = Cluster(system1)
@@ -47,9 +49,10 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system2 = ActorSystem("system2", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port = 5552
-            cluster.node-to-join = "akka://system1@localhost:5551"
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port = %d552
+            cluster.node-to-join = "akka://system1@localhost:%d551"
+          }""".format(portPrefix, portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       node2 = Cluster(system2)
@@ -58,8 +61,9 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system3 = ActorSystem("system3", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port = 5553
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port = %d553
+          }""".format(portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       node3 = Cluster(system3)
@@ -68,9 +72,10 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system4 = ActorSystem("system4", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port = 5554
-            cluster.node-to-join = "akka://system3@localhost:5553"
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port = %d554
+            cluster.node-to-join = "akka://system3@localhost:%d553"
+          }""".format(portPrefix, portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       node4 = Cluster(system4)
@@ -79,8 +84,9 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system5 = ActorSystem("system5", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port = 5555
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port = %d555
+          }""".format(portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       node5 = Cluster(system5)
@@ -89,9 +95,10 @@ class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.thr
       system6 = ActorSystem("system6", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port = 5556
-            cluster.node-to-join = "akka://system5@localhost:5555"
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port = %d556
+            cluster.node-to-join = "akka://system5@localhost:%d555"
+          }""".format(portPrefix, portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       node6 = Cluster(system6)

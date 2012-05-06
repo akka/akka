@@ -7,7 +7,10 @@ package akka.actor
 import akka.util.Duration
 import com.typesafe.config._
 import akka.routing._
-import java.util.concurrent.{ TimeUnit, ConcurrentHashMap }
+import java.util.concurrent.{ TimeUnit }
+import akka.util.WildcardTree
+import java.util.concurrent.atomic.AtomicReference
+import annotation.tailrec
 
 /**
  * This class represents deployment configuration for a given actor path. It is
@@ -98,22 +101,32 @@ case object NoScopeGiven extends NoScopeGiven {
  *
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAccess) {
+private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAccess) {
 
   import scala.collection.JavaConverters._
 
-  private val deployments = new ConcurrentHashMap[String, Deploy]
+  private val deployments = new AtomicReference(WildcardTree[Deploy]())
   private val config = settings.config.getConfig("akka.actor.deployment")
   protected val default = config.getConfig("default")
+
   config.root.asScala flatMap {
     case ("default", _)             ⇒ None
     case (key, value: ConfigObject) ⇒ parseConfig(key, value.toConfig)
     case _                          ⇒ None
   } foreach deploy
 
-  def lookup(path: String): Option[Deploy] = Option(deployments.get(path))
+  def lookup(path: ActorPath): Option[Deploy] = lookup(path.elements.drop(1).iterator)
 
-  def deploy(d: Deploy): Unit = deployments.put(d.path, d)
+  def lookup(path: Iterable[String]): Option[Deploy] = lookup(path.iterator)
+
+  def lookup(path: Iterator[String]): Option[Deploy] = deployments.get().find(path).data
+
+  def deploy(d: Deploy): Unit = {
+    @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree[Deploy] = deployments.get): Unit =
+      if (!deployments.compareAndSet(w, w.insert(path.iterator, d))) add(path, d)
+
+    add(d.path.split("/").drop(1), d)
+  }
 
   protected def parseConfig(key: String, config: Config): Option[Deploy] = {
 

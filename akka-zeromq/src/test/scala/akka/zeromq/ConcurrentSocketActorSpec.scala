@@ -7,8 +7,11 @@ import org.scalatest.matchers.MustMatchers
 import akka.testkit.{ TestProbe, DefaultTimeout, AkkaSpec }
 import akka.util.duration._
 import akka.actor.{ Cancellable, Actor, Props, ActorRef }
+import akka.util.Timeout
 
-class ConcurrentSocketActorSpec extends AkkaSpec with DefaultTimeout {
+class ConcurrentSocketActorSpec extends AkkaSpec {
+
+  implicit val timeout: Timeout = Timeout(15 seconds)
 
   def checkZeroMQInstallation =
     try {

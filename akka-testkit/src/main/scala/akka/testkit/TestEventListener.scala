@@ -8,6 +8,8 @@ import akka.actor.{ DeadLetter, ActorSystem, Terminated, UnhandledMessage }
 import akka.dispatch.{ SystemMessage, Terminate }
 import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug, LoggerInitialized }
 import akka.event.Logging
+import java.lang.{ Iterable ⇒ JIterable }
+import scala.collection.JavaConverters
 import akka.util.Duration
 
 /**
@@ -34,11 +36,21 @@ object TestEvent {
   object Mute {
     def apply(filter: EventFilter, filters: EventFilter*): Mute = new Mute(filter +: filters.toSeq)
   }
-  case class Mute(filters: Seq[EventFilter]) extends TestEvent
+  case class Mute(filters: Seq[EventFilter]) extends TestEvent {
+    /**
+     * Java API
+     */
+    def this(filters: JIterable[EventFilter]) = this(JavaConverters.iterableAsScalaIterableConverter(filters).asScala.toSeq)
+  }
   object UnMute {
     def apply(filter: EventFilter, filters: EventFilter*): UnMute = new UnMute(filter +: filters.toSeq)
   }
-  case class UnMute(filters: Seq[EventFilter]) extends TestEvent
+  case class UnMute(filters: Seq[EventFilter]) extends TestEvent {
+    /**
+     * Java API
+     */
+    def this(filters: JIterable[EventFilter]) = this(JavaConverters.iterableAsScalaIterableConverter(filters).asScala.toSeq)
+  }
 }
 
 /**

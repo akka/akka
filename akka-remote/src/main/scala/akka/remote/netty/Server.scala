@@ -26,9 +26,14 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   val ip = InetAddress.getByName(settings.Hostname)
 
-  private val factory = new NioServerSocketChannelFactory(
-    Executors.newCachedThreadPool(netty.system.threadFactory),
-    Executors.newCachedThreadPool(netty.system.threadFactory))
+  private val factory =
+    settings.UseDispatcherForIO match {
+      case Some(id) ⇒
+        val d = netty.system.dispatchers.lookup(id)
+        new NioServerSocketChannelFactory(d, d)
+      case None ⇒
+        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
+    }
 
   private val executionHandler = new ExecutionHandler(netty.executor)
 
@@ -122,10 +127,6 @@ class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends Si
         }
       }
   }
-}
-
-object ChannelLocalSystem extends ChannelLocal[ActorSystemImpl] {
-  override def initialValue(ch: Channel): ActorSystemImpl = null
 }
 
 @ChannelHandler.Sharable

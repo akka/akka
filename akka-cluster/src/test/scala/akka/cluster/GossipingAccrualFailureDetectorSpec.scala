@@ -14,6 +14,7 @@ import com.typesafe.config._
 import java.net.InetSocketAddress
 
 class GossipingAccrualFailureDetectorSpec extends ClusterSpec with ImplicitSender {
+  val portPrefix = 2
 
   var node1: Cluster = _
   var node2: Cluster = _
@@ -28,7 +29,11 @@ class GossipingAccrualFailureDetectorSpec extends ClusterSpec with ImplicitSende
 
       // ======= NODE 1 ========
       system1 = ActorSystem("system1", ConfigFactory
-        .parseString("akka.remote.netty.port=5550")
+        .parseString("""
+          akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port=%d550
+          }""".format(portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
@@ -40,9 +45,10 @@ class GossipingAccrualFailureDetectorSpec extends ClusterSpec with ImplicitSende
       system2 = ActorSystem("system2", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port=5551
-            cluster.node-to-join = "akka://system1@localhost:5550"
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port=%d551
+            cluster.node-to-join = "akka://system1@localhost:%d550"
+          }""".format(portPrefix, portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote2 = system2.provider.asInstanceOf[RemoteActorRefProvider]
@@ -54,9 +60,10 @@ class GossipingAccrualFailureDetectorSpec extends ClusterSpec with ImplicitSende
       system3 = ActorSystem("system3", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port=5552
-            cluster.node-to-join = "akka://system1@localhost:5550"
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port=%d552
+            cluster.node-to-join = "akka://system1@localhost:%d550"
+          }""".format(portPrefix, portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote3 = system3.provider.asInstanceOf[RemoteActorRefProvider]

@@ -1,5 +1,7 @@
 package akka.actor.mailbox
 
+import akka.dispatch.Mailbox
+
 object RedisBasedMailboxSpec {
   val config = """
     Redis-dispatcher {
@@ -40,5 +42,5 @@ class RedisBasedMailboxSpec extends DurableMailboxSpec("Redis", RedisBasedMailbo
   }
 
   override def atTermination(): Unit = redisServer.destroy()
-
+  def isDurableMailbox(m: Mailbox): Boolean = m.messageQueue.isInstanceOf[RedisBasedMessageQueue]
 }

@@ -509,14 +509,7 @@ private[akka] class ActorCell(
         checkReceiveTimeout
         if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
       } catch {
-        case NonFatal(e) ⇒
-          try {
-            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
-            // prevent any further messages to be processed until the actor has been restarted
-            dispatcher.suspend(this)
-          } finally {
-            parent.tell(Failed(ActorInitializationException(self, "exception during creation", e)), self)
-          }
+        case NonFatal(e) ⇒ throw ActorInitializationException(self, "exception during creation", e)
       }
     }
 
@@ -529,7 +522,7 @@ private[akka] class ActorCell(
           try {
             if (failedActor.context ne null) failedActor.preRestart(cause, if (c ne null) Some(c.message) else None)
           } finally {
-            clearActorFields()
+            clearActorFields(failedActor)
           }
         }
         childrenRefs match {
@@ -537,16 +530,10 @@ private[akka] class ActorCell(
             childrenRefs = ct.copy(reason = Recreation(cause))
             dispatcher suspend this
           case _ ⇒
-            doRecreate(cause)
+            doRecreate(cause, failedActor)
         }
       } catch {
-        case NonFatal(e) ⇒ try {
-          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
-          // prevent any further messages to be processed until the actor has been restarted
-          dispatcher.suspend(this)
-        } finally {
-          parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
-        }
+        case NonFatal(e) ⇒ throw ActorInitializationException(self, "exception during creation", e)
       }
     }
 
@@ -601,48 +588,34 @@ private[akka] class ActorCell(
         case ChildTerminated(child) ⇒ handleChildTerminated(child)
       }
     } catch {
-      case NonFatal(e) ⇒
-        dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while processing " + message), e))
-        throw e
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(e, "error while processing " + message)
     }
   }
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
-  final def invoke(messageHandle: Envelope) {
-    try {
-      currentMessage = messageHandle
-      try {
-        try {
-          cancelReceiveTimeout() // FIXME: leave this here???
-          messageHandle.message match {
-            case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-            case msg                      ⇒ actor(msg)
-          }
-          currentMessage = null // reset current message after successful invocation
-        } catch {
-          case e: InterruptedException ⇒
-            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
-            // prevent any further messages to be processed until the actor has been restarted
-            dispatcher.suspend(this)
-            // make sure that InterruptedException does not leave this thread
-            val ex = ActorInterruptedException(e)
-            actor.supervisorStrategy.handleSupervisorFailing(self, children)
-            parent.tell(Failed(ex), self)
-            throw e //Re-throw InterruptedExceptions as expected
-          case NonFatal(e) ⇒
-            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
-            // prevent any further messages to be processed until the actor has been restarted
-            dispatcher.suspend(this)
-            if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
-            parent.tell(Failed(e), self)
-        } finally {
-          checkReceiveTimeout // Reschedule receive timeout
-        }
-      } catch {
-        case NonFatal(e) ⇒
-          dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), e.getMessage), e))
-          throw e
-      }
+  final def invoke(messageHandle: Envelope): Unit = try {
+    currentMessage = messageHandle
+    cancelReceiveTimeout() // FIXME: leave this here???
+    messageHandle.message match {
+      case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
+      case msg                      ⇒ actor(msg)
+    }
+    currentMessage = null // reset current message after successful invocation
+  } catch {
+    case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(e, e.getMessage)
+  } finally {
+    checkReceiveTimeout // Reschedule receive timeout
+  }
+
+  private final def handleInvokeFailure(t: Throwable, message: String): Unit = try {
+    dispatcher.reportFailure(new LogEventException(Error(t, self.path.toString, clazz(actor), message), t))
+    // prevent any further messages to be processed until the actor has been restarted
+    dispatcher.suspend(this)
+    if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
+  } finally {
+    t match { // Wrap InterruptedExceptions and rethrow
+      case _: InterruptedException ⇒ parent.tell(Failed(ActorInterruptedException(t)), self); throw t
+      case _                       ⇒ parent.tell(Failed(t), self)
     }
   }
 
@@ -696,18 +669,19 @@ private[akka] class ActorCell(
           system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped"))
       } finally {
         if (a ne null) a.clearBehaviorStack()
-        clearActorFields()
+        clearActorFields(a)
         actor = null
       }
     }
   }
 
-  private def doRecreate(cause: Throwable): Unit = try {
+  private def doRecreate(cause: Throwable, failedActor: Actor): Unit = try {
     // after all killed children have terminated, recreate the rest, then go on to start the new instance
     actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
 
     val freshActor = newActor()
     actor = freshActor // this must happen before postRestart has a chance to fail
+    if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
 
     freshActor.postRestart(cause)
     if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
@@ -719,6 +693,7 @@ private[akka] class ActorCell(
       // prevent any further messages to be processed until the actor has been restarted
       dispatcher.suspend(this)
       actor.supervisorStrategy.handleSupervisorFailing(self, children)
+      clearActorFields(actor) // If this fails, we need to ensure that preRestart isn't called.
     } finally {
       parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
     }
@@ -736,7 +711,7 @@ private[akka] class ActorCell(
         childrenRefs = n
         actor.supervisorStrategy.handleChildTerminated(this, child, children)
         if (!n.isInstanceOf[TerminatingChildrenContainer]) reason match {
-          case Recreation(cause) ⇒ doRecreate(cause)
+          case Recreation(cause) ⇒ doRecreate(cause, actor) // doRecreate since this is the continuation of "recreate"
           case Termination       ⇒ doTerminate()
           case _                 ⇒
         }
@@ -775,12 +750,12 @@ private[akka] class ActorCell(
     }
   }
 
-  final def clearActorFields(): Unit = {
-    setActorFields(context = null, self = system.deadLetters)
+  final def clearActorFields(actorInstance: Actor): Unit = {
+    setActorFields(actorInstance, context = null, self = system.deadLetters)
     currentMessage = null
   }
 
-  final def setActorFields(context: ActorContext, self: ActorRef) {
+  final def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef) {
     @tailrec
     def lookupAndSetField(clazz: Class[_], actor: Actor, name: String, value: Any): Boolean = {
       val success = try {
@@ -799,10 +774,9 @@ private[akka] class ActorCell(
         lookupAndSetField(parent, actor, name, value)
       }
     }
-    val a = actor
-    if (a ne null) {
-      lookupAndSetField(a.getClass, a, "context", context)
-      lookupAndSetField(a.getClass, a, "self", self)
+    if (actorInstance ne null) {
+      lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
+      lookupAndSetField(actorInstance.getClass, actorInstance, "self", self)
     }
   }
 

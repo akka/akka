@@ -3,10 +3,10 @@ package akka.actor.mailbox
 import akka.actor.Actor
 import akka.cluster.zookeeper._
 import org.I0Itec.zkclient._
-import akka.dispatch.MessageDispatcher
 import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
 import akka.util.duration._
+import akka.dispatch.{ Mailbox, MessageDispatcher }
 
 object ZooKeeperBasedMailboxSpec {
   val config = """
@@ -31,7 +31,7 @@ class ZooKeeperBasedMailboxSpec extends DurableMailboxSpec("ZooKeeper", ZooKeepe
   }
 
   var zkServer: ZkServer = _
-
+  def isDurableMailbox(m: Mailbox): Boolean = m.messageQueue.isInstanceOf[ZooKeeperBasedMessageQueue]
   override def atStartup() {
     zkServer = AkkaZooKeeper.startLocalServer(dataPath, logPath)
     super.atStartup()

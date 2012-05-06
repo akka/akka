@@ -15,6 +15,7 @@ import com.typesafe.config._
 import java.net.InetSocketAddress
 
 class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
+  val portPrefix = 5
 
   var node1: Cluster = _
   var node2: Cluster = _
@@ -31,8 +32,9 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
       system1 = ActorSystem("system1", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port = 5550
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port = %d550
+          }""".format(portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       node1 = Cluster(system1)
@@ -42,9 +44,10 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
       system2 = ActorSystem("system2", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port = 5551
-            cluster.node-to-join = "akka://system1@localhost:5550"
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port = %d551
+            cluster.node-to-join = "akka://system1@localhost:%d550"
+          }""".format(portPrefix, portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       node2 = Cluster(system2)
@@ -54,9 +57,10 @@ class LeaderElectionSpec extends ClusterSpec with ImplicitSender {
       system3 = ActorSystem("system3", ConfigFactory
         .parseString("""
           akka {
-            remote.netty.port = 5552
-            cluster.node-to-join = "akka://system1@localhost:5550"
-          }""")
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port = %d552
+            cluster.node-to-join = "akka://system1@localhost:%d550"
+          }""".format(portPrefix, portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       node3 = Cluster(system3)

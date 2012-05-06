@@ -22,6 +22,7 @@ object Slf4jEventHandlerSpec {
     akka {
       loglevel = INFO
       event-handlers = ["akka.event.slf4j.Slf4jEventHandler"]
+      event-handler-startup-timeout = 30s
     }
     """
 

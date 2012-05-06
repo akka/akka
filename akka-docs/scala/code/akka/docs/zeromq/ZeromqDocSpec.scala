@@ -118,12 +118,12 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
 
     //#pub-socket
     import akka.zeromq.ZeroMQExtension
-    val pubSocket = ZeroMQExtension(system).newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:1234"))
+    val pubSocket = ZeroMQExtension(system).newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:21231"))
     //#pub-socket
 
     //#pub-socket2
     import akka.zeromq._
-    val pubSocket2 = system.newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:1234"))
+    val pubSocket2 = system.newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:21232"))
     //#pub-socket2
 
     //#sub-socket
@@ -135,11 +135,11 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
         case _             ⇒ //...
       }
     }))
-    val subSocket = system.newSocket(SocketType.Sub, Listener(listener), Connect("tcp://127.0.0.1:1234"), SubscribeAll)
+    val subSocket = system.newSocket(SocketType.Sub, Listener(listener), Connect("tcp://127.0.0.1:21231"), SubscribeAll)
     //#sub-socket
 
     //#sub-topic-socket
-    val subTopicSocket = system.newSocket(SocketType.Sub, Listener(listener), Connect("tcp://127.0.0.1:1234"), Subscribe("foo.bar"))
+    val subTopicSocket = system.newSocket(SocketType.Sub, Listener(listener), Connect("tcp://127.0.0.1:21231"), Subscribe("foo.bar"))
     //#sub-topic-socket
 
     //#unsub-topic-socket
@@ -151,11 +151,14 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
     pubSocket ! ZMQMessage(Seq(Frame("foo.bar"), Frame(payload)))
     //#pub-topic
 
+    system.stop(subSocket)
+    system.stop(subTopicSocket)
+
     //#high-watermark
     val highWatermarkSocket = system.newSocket(
       SocketType.Router,
       Listener(listener),
-      Bind("tcp://127.0.0.1:1234"),
+      Bind("tcp://127.0.0.1:21233"),
       HighWatermark(50000))
     //#high-watermark
   }

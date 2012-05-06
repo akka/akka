@@ -14,6 +14,7 @@ import akka.util.duration._
 import com.typesafe.config._
 
 class NodeStartupSpec extends ClusterSpec with ImplicitSender {
+  val portPrefix = 8
 
   var node0: Cluster = _
   var node1: Cluster = _
@@ -23,7 +24,11 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
   try {
     "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
       system0 = ActorSystem("system0", ConfigFactory
-        .parseString("akka.remote.netty.port=5550")
+        .parseString("""
+          akka {
+            actor.provider = "akka.remote.RemoteActorRefProvider"
+            remote.netty.port=%d550
+          }""".format(portPrefix))
         .withFallback(system.settings.config))
         .asInstanceOf[ActorSystemImpl]
       val remote0 = system0.provider.asInstanceOf[RemoteActorRefProvider]
@@ -36,7 +41,7 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
 
       "be in 'Joining' phase when started up" taggedAs LongRunningTest in {
         val members = node0.latestGossip.members
-        val joiningMember = members find (_.address.port.get == 5550)
+        val joiningMember = members find (_.address.port.get == 550.withPortPrefix)
         joiningMember must be('defined)
         joiningMember.get.status must be(MemberStatus.Joining)
       }
@@ -47,9 +52,10 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
         system1 = ActorSystem("system1", ConfigFactory
           .parseString("""
             akka {
-              remote.netty.port=5551
-              cluster.node-to-join = "akka://system0@localhost:5550"
-            }""")
+              actor.provider = "akka.remote.RemoteActorRefProvider"
+              remote.netty.port=%d551
+              cluster.node-to-join = "akka://system0@localhost:%d550"
+            }""".format(portPrefix, portPrefix))
           .withFallback(system.settings.config))
           .asInstanceOf[ActorSystemImpl]
         val remote1 = system1.provider.asInstanceOf[RemoteActorRefProvider]
@@ -57,7 +63,7 @@ class NodeStartupSpec extends ClusterSpec with ImplicitSender {
 
         Thread.sleep(10.seconds.dilated.toMillis) // give enough time for node1 to JOIN node0 and leader to move him to UP
         val members = node0.latestGossip.members
-        val joiningMember = members find (_.address.port.get == 5551)
+        val joiningMember = members find (_.address.port.get == 551.withPortPrefix)
         joiningMember must be('defined)
         joiningMember.get.status must be(MemberStatus.Up)
       }

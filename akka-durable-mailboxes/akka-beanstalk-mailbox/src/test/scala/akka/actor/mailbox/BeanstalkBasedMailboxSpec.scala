@@ -1,5 +1,7 @@
 package akka.actor.mailbox
 
+import akka.dispatch.Mailbox
+
 object BeanstalkBasedMailboxSpec {
   val config = """
     Beanstalkd-dispatcher {
@@ -25,6 +27,6 @@ class BeanstalkBasedMailboxSpec extends DurableMailboxSpec("Beanstalkd", Beansta
   }
 
   override def atTermination(): Unit = beanstalkd.destroy()
-
+  def isDurableMailbox(m: Mailbox): Boolean = m.messageQueue.isInstanceOf[BeanstalkBasedMessageQueue]
 }
 
