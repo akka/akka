@@ -122,6 +122,70 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   }
 
   /**
+   * Get a single Byte from this iterator. Identical to next().
+   */
+  def getByte = next()
+
+  /**
+   * Get a single Short from this iterator.
+   */
+  def getShort(byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): Short = {
+    if (byteOrder == ByteOrder.BIG_ENDIAN)
+      ((next() & 0xff) << 8 | (next() & 0xff) << 0).toShort
+    else if (byteOrder == ByteOrder.LITTLE_ENDIAN)
+      ((next() & 0xff) << 0 | (next() & 0xff) << 8).toShort
+    else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
+  }
+
+  /**
+   * Get a single Int from this iterator.
+   */
+  def getInt(byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): Int = {
+    if (byteOrder == ByteOrder.BIG_ENDIAN)
+      ((next() & 0xff) << 24
+        | (next() & 0xff) << 16
+        | (next() & 0xff) << 8
+        | (next() & 0xff) << 0)
+    else if (byteOrder == ByteOrder.LITTLE_ENDIAN)
+      ((next() & 0xff) << 0
+        | (next() & 0xff) << 8
+        | (next() & 0xff) << 16
+        | (next() & 0xff) << 24)
+    else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
+  }
+
+  /**
+   * Get a single Long from this iterator.
+   */
+  def getLong(byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): Long = {
+    if (byteOrder == ByteOrder.BIG_ENDIAN)
+      ((next().toLong & 0xff) << 56
+        | (next().toLong & 0xff) << 48
+        | (next().toLong & 0xff) << 40
+        | (next().toLong & 0xff) << 32
+        | (next().toLong & 0xff) << 24
+        | (next().toLong & 0xff) << 16
+        | (next().toLong & 0xff) << 8
+        | (next().toLong & 0xff) << 0)
+    else if (byteOrder == ByteOrder.LITTLE_ENDIAN)
+      ((next().toLong & 0xff) << 0
+        | (next().toLong & 0xff) << 8
+        | (next().toLong & 0xff) << 16
+        | (next().toLong & 0xff) << 24
+        | (next().toLong & 0xff) << 32
+        | (next().toLong & 0xff) << 40
+        | (next().toLong & 0xff) << 48
+        | (next().toLong & 0xff) << 56)
+    else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
+  }
+
+  def getFloat(byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): Float =
+    java.lang.Float.intBitsToFloat(getInt(byteOrder))
+
+  def getDouble(byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): Double =
+    java.lang.Double.longBitsToDouble(getLong(byteOrder))
+
+  /**
    * Get a specific number of Bytes from this iterator. In contrast to
    * copyToArray, this method will fail if length < n or if (xs.length - offset) < n.
    */
