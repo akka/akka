@@ -72,7 +72,7 @@ public class FaultHandlingDocSample {
           log.info("That's all, shutting down");
           getContext().system().shutdown();
         }
-      } else if (msg == Actors.receiveTimeout()) {
+      } else if (msg == ReceiveTimeout.getInstance()) {
         // No progress within 15 seconds, ServiceUnavailable
         log.error("Shutting down due to unavailable service");
         getContext().system().shutdown();

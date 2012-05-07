@@ -217,8 +217,8 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * @param timeout state timeout for the initial state, overriding the default timeout for that state
    */
   protected final def startWith(stateName: S,
-    stateData: D,
-    timeout: Timeout = None): Unit =
+                                stateData: D,
+                                timeout: Timeout = None): Unit =
     currentState = FSM.State(stateName, stateData, timeout)
 
   /**
