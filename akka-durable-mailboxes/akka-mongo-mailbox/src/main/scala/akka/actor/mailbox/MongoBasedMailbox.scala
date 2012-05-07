@@ -18,8 +18,10 @@ import akka.config.ConfigurationException
 import akka.dispatch.MessageQueue
 import akka.actor.ActorSystem
 
+@deprecated("MongoBasedMailbox will be removed in Akka 2.1", "2.0.2")
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
 
+@deprecated("MongoBasedMailbox will be removed in Akka 2.1", "2.0.2")
 class MongoBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new MongoBasedMailboxSettings(systemSettings, config)
   override def create(owner: Option[ActorContext]): MessageQueue = owner match {
@@ -39,6 +41,7 @@ class MongoBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
+@deprecated("MongoBasedMailbox will be removed in Akka 2.1", "2.0.2")
 class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailboxSettings) extends DurableMessageQueue(_owner) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
   implicit val mailboxBSONSer = new BSONSerializableMessageQueue(system)

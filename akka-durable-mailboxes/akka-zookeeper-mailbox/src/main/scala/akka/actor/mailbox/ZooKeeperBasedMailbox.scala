@@ -16,9 +16,9 @@ import akka.util.NonFatal
 import akka.config.ConfigurationException
 import akka.dispatch.MessageQueue
 import akka.actor.ActorSystem
-
+@deprecated("ZooKeeperBasedMailbox will be removed in Akka 2.1", "2.0.2")
 class ZooKeeperBasedMailboxException(message: String) extends AkkaException(message)
-
+@deprecated("ZooKeeperBasedMailbox will be removed in Akka 2.1", "2.0.2")
 class ZooKeeperBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new ZooKeeperBasedMailboxSettings(systemSettings, config)
   override def create(owner: Option[ActorContext]): MessageQueue = owner match {
@@ -26,7 +26,7 @@ class ZooKeeperBasedMailboxType(systemSettings: ActorSystem.Settings, config: Co
     case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
-
+@deprecated("ZooKeeperBasedMailbox will be removed in Akka 2.1", "2.0.2")
 class ZooKeeperBasedMessageQueue(_owner: ActorContext, val settings: ZooKeeperBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
   val queueNode = "/queues"
