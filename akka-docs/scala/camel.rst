@@ -5,6 +5,8 @@
  Camel
 #######
 
+Additional Resources
+====================
 For an introduction to akka-camel 2, see also the Peter Gabryanczyk's talk `Migrating akka-camel module to Akka 2.x`_.
 
 For an introduction to akka-camel 1, see also the `Appendix E - Akka and Camel`_
@@ -32,7 +34,9 @@ actor API, actors can now exchange messages with other systems over large number
 of protocols and APIs such as HTTP, SOAP, TCP, FTP, SMTP or JMS, to mention a
 few. At the moment, approximately 80 protocols and APIs are supported.
 
-The akka-camel module is based on `Apache Camel`_, a powerful and leight-weight
+Apache Camel
+------------
+The akka-camel module is based on `Apache Camel`_, a powerful and light-weight
 integration framework for the JVM. For an introduction to Apache Camel you may
 want to read this `Apache Camel article`_. Camel comes with a
 large number of `components`_ that provide bindings to different protocols and
@@ -43,6 +47,8 @@ APIs. The `camel-extra`_ project provides further components.
 .. _components: http://camel.apache.org/components.html
 .. _camel-extra: http://code.google.com/p/camel-extra/
 
+Consumer
+--------
 Usage of Camel's integration components in Akka is essentially a
 one-liner. Here's an example.
 
@@ -60,16 +66,20 @@ component`_), only the actor's endpointUri method must be changed.
 
 .. includecode:: code/akka/docs/camel/Introduction.scala#Consumer
 
+Producer
+--------
 Actors can also trigger message exchanges with external systems i.e. produce to
 Camel endpoints.
 
 .. includecode:: code/akka/docs/camel/Introduction.scala
                 :include: imports,Producer
 
-In the above example, any message sent to this actor will be added (produced) to
-the example JMS queue. Producer actors may choose from the same set of Camel
+In the above example, any message sent to this actor will be sent to
+the JMS queue ``orders``. Producer actors may choose from the same set of Camel
 components as Consumer actors do.
 
+CamelMessage
+------------
 The number of Camel components is constantly increasing. The akka-camel module
 can support these in a plug-and-play manner. Just add them to your application's
 classpath, define a component-specific endpoint URI and use it to exchange
@@ -83,3 +93,66 @@ representations which are used by Consumer and Producer actors for pattern
 matching, transformation, serialization or storage.
 
 __ https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/Message.java
+
+
+Dependencies
+============
+
+SBT
+---
+.. code-block:: scala
+
+    "com.typesafe.akka" % "akka-camel" % "2.1-SNAPSHOT"
+
+Maven
+-----
+.. code-block:: xml
+
+    <dependency>
+        <groupId>com.typesafe.akka</groupId>
+        <artifactId>akka-camel</artifactId>
+        <version>2.1-SNAPSHOT</version>
+    </dependency>
+
+.. _camel-consumer-actors:
+
+
+Consumer Actors
+================
+
+For objects to receive messages, they must mixin the `Consumer`_
+trait. For example, the following actor class (Consumer1) implements the
+endpointUri method, which is declared in the Consumer trait, in order to receive
+messages from the ``file:data/input/actor`` Camel endpoint.
+
+.. _Consumer: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/Consumer.scala
+
+.. includecode:: code/akka/docs/camel/Consumers.scala#Consumer1
+
+Whenever a file is put into the data/input/actor directory, its content is
+picked up by the Camel `file component`_ and sent as message to the
+actor. Messages consumed by actors from Camel endpoints are of type
+`CamelMessage`_. These are immutable representations of Camel messages.
+
+.. _file component: http://camel.apache.org/file2.html
+.. _Message: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/CamelMessage.scala
+
+
+Here's another example that sets the endpointUri to
+``jetty:http://localhost:8877/camel/default``. It causes Camel's `Jetty
+component`_ to start an embedded `Jetty`_ server, accepting HTTP connections
+from localhost on port 8877.
+
+.. _Jetty component: http://camel.apache.org/jetty.html
+.. _Jetty: http://www.eclipse.org/jetty/
+
+.. includecode:: code/akka/docs/camel/Consumers.scala#Consumer2
+
+After starting the actor, clients can send messages to that actor by POSTing to
+``http://localhost:8877/camel/default``. The actor sends a response by using the
+self.reply method (Scala). For returning a message body and headers to the HTTP
+client the response type should be `Message`_. For any other response type, a
+new Message object is created by akka-camel with the actor response as message
+body.
+
+.. _Message: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/CamelMessage.scala
