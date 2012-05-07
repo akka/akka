@@ -511,7 +511,14 @@ private[akka] class ActorCell(
       } catch {
         case NonFatal(e) ⇒
           try {
-            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
+            val errorMessage =
+              if (e.isInstanceOf[InstantiationException])
+                """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
+                   a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new UntypedActorFactory ... )
+                   or is missing an appropriate, reachable no-args constructor."""
+              else "error while creating actor"
+
+            dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), errorMessage), e))
             // prevent any further messages to be processed until the actor has been restarted
             dispatcher.suspend(this)
           } finally {
