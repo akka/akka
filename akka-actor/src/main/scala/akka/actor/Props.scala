@@ -43,14 +43,14 @@ object Props {
    * Scala API.
    */
   def apply[T <: Actor: ClassManifest]: Props =
-    default.withCreator(implicitly[ClassManifest[T]].erasure.asInstanceOf[Class[_ <: Actor]].newInstance)
+    default.withCreator(implicitly[ClassManifest[T]].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance
    * of the supplied class using the default constructor.
    */
   def apply(actorClass: Class[_ <: Actor]): Props =
-    default.withCreator(actorClass.newInstance)
+    default.withCreator(actorClass)
 
   /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance
@@ -70,7 +70,6 @@ object Props {
 
   def apply(behavior: ActorContext ⇒ Actor.Receive): Props =
     apply(new Actor { def receive = behavior(context) })
-
 }
 
 /**
