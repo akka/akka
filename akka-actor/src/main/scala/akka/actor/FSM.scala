@@ -253,6 +253,9 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    */
   protected final def stop(reason: Reason, stateData: D): State = stay using stateData withStopReason (reason)
 
+  protected final def transform(func: StateFunction)(andThen: PartialFunction[State, State]): StateFunction =
+    func andThen (andThen orElse { case x ⇒ x })
+
   /**
    * Schedule named timer to deliver message after given delay, possibly repeating.
    * @param name identifier to be used with cancelTimer()
