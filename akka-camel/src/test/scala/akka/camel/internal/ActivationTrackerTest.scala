@@ -35,7 +35,7 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     anotherAwaiting.verifyActivated()
   }
 
-  "ActivationTracker send activation message even if activation happened earlier" in {
+  "ActivationTracker send activation message even if activation happened earlier" taggedAs TimingTest in {
     publish(EndpointActivated(actor.ref))
     Thread.sleep(50)
     awaiting.awaitActivation()
@@ -43,7 +43,7 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     awaiting.verifyActivated()
   }
 
-  "ActivationTracker send activation message even if actor is already deactivated" in {
+  "ActivationTracker send activation message even if actor is already deactivated" taggedAs TimingTest in {
     publish(EndpointActivated(actor.ref))
     publish(EndpointDeActivated(actor.ref))
     Thread.sleep(50)
@@ -52,7 +52,7 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     awaiting.verifyActivated()
   }
 
-  "ActivationTracker forwards de-activation message to all awaiting parties" in {
+  "ActivationTracker forwards de-activation message to all awaiting parties" taggedAs TimingTest in {
     given("Actor is activated")
     publish(EndpointActivated(actor.ref))
     given("Actor is deactivated")
@@ -67,7 +67,7 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     anotherAwaiting.verifyDeActivated()
   }
 
-  "ActivationTracker forwards de-activation message even if deactivation happened earlier" in {
+  "ActivationTracker forwards de-activation message even if deactivation happened earlier" taggedAs TimingTest in {
     given("Actor is activated")
     publish(EndpointActivated(actor.ref))
 
@@ -81,7 +81,7 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     awaiting.verifyDeActivated()
   }
 
-  "ActivationTracker forwards de-activation message even if someone awaits de-activation even before activation happens" in {
+  "ActivationTracker forwards de-activation message even if someone awaits de-activation even before activation happens" taggedAs TimingTest in {
     given("Someone is awaiting de-activation")
     val awaiting = new Awaiting(actor)
     awaiting.awaitDeActivation()
@@ -96,14 +96,14 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     awaiting.verifyDeActivated()
   }
 
-  "ActivationTracker sends activation failure when failed to activate" in {
+  "ActivationTracker sends activation failure when failed to activate" taggedAs TimingTest in {
     awaiting.awaitActivation()
     publish(EndpointFailedToActivate(actor.ref, cause))
 
     awaiting.verifyFailedToActivate()
   }
 
-  "ActivationTracker sends de-activation failure when failed to de-activate" in {
+  "ActivationTracker sends de-activation failure when failed to de-activate" taggedAs TimingTest in {
     publish(EndpointActivated(actor.ref))
     awaiting.awaitDeActivation()
     publish(EndpointFailedToDeActivate(actor.ref, cause))
@@ -111,7 +111,7 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     awaiting.verifyFailedToDeActivate()
   }
 
-  "ActivationTracker sends activation message even if it failed to de-activate" in {
+  "ActivationTracker sends activation message even if it failed to de-activate" taggedAs TimingTest in {
     publish(EndpointActivated(actor.ref))
     publish(EndpointFailedToDeActivate(actor.ref, cause))
     awaiting.awaitActivation()
