@@ -93,10 +93,8 @@ trait ProducerSupport { this: Actor ⇒
       routeResponse(res.failure)
       throw new AkkaCamelException(res.failure.cause, res.failure.headers)
     case msg ⇒
-      if (oneway)
-        produce(transformOutgoingMessage(msg), ExchangePattern.InOnly)
-      else
-        produce(transformOutgoingMessage(msg), ExchangePattern.InOut)
+      val exchangePattern = if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut
+      produce(transformOutgoingMessage(msg), exchangePattern)
   }
 
   /**

@@ -10,6 +10,9 @@ import akka.camel.{ Failure, AkkaCamelException, CamelMessage }
 /**
  *  For internal use only.
  *  Adapter for converting an [[org.apache.camel.Exchange]] to and from [[akka.camel.CamelMessage]] and [[akka.camel.Failure]] objects.
+ *  The org.apache.camel.Message is mutable and not suitable to be used directly as messages between Actors.
+ *  This adapter is used to convert to immutable messages to be used with Actors, and convert the immutable messages back
+ *  to org.apache.camel.Message when using Camel.
  *
  * @author Martin Krasser
  */
@@ -43,18 +46,24 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
   def setFailure(msg: Failure) { exchange.setException(msg.cause) }
 
   /**
-   * Creates a CamelMessage object from Exchange.getIn.
+   * Creates an immutable CamelMessage object from Exchange.getIn so it can be used with Actors.
    */
   def toRequestMessage: CamelMessage = toRequestMessage(Map.empty)
 
   /**
-   * Depending on the exchange pattern, creates a CamelMessage object from Exchange.getIn or Exchange.getOut.
+   * Depending on the exchange pattern, creates an immutable CamelMessage object from Exchange.getIn or Exchange.getOut so it can be used with Actors.
    * If the exchange is out-capable then the Exchange.getOut is set, otherwise Exchange.getIn.
    */
   def toResponseMessage: CamelMessage = toResponseMessage(Map.empty)
 
   /**
    * Creates an AkkaCamelException object from the adapted Exchange.
+   * The cause of the AkkaCamelException is set to the exception on the adapted Exchange.
+   *
+   * Depending on the exchange pattern, puts the headers from Exchange.getIn or Exchange.getOut
+   * on the AkkaCamelException.
+   *
+   * If the exchange is out-capable then the headers of Exchange.getOut are used, otherwise the headers of Exchange.getIn are used.
    *
    * @see AkkaCamelException
    */
@@ -62,9 +71,15 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
 
   /**
    * Creates an AkkaCamelException object from the adapted Exchange.
+   * The cause of the AkkaCamelException is set to the exception on the adapted Exchange.
    *
-   * @param headers additional headers to set on the created CamelMessage in addition to those
-   *                in the Camel message.
+   * Depending on the exchange pattern, adds the supplied headers and the headers from Exchange.getIn or Exchange.getOut
+   * together and passes these to the AkkaCamelException.
+   *
+   * If the exchange is out-capable then the headers of Exchange.getOut are used, otherwise the headers of Exchange.getIn are used.
+   *
+   * @param headers additional headers to set on the exception in addition to those
+   *                in the exchange.
    *
    * @see AkkaCamelException
    */
@@ -72,14 +87,14 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
     new AkkaCamelException(exchange.getException, headers ++ response.getHeaders)
 
   /**
-   * Creates a Failure object from the adapted Exchange.
+   * Creates an immutable Failure object from the adapted Exchange so it can be used with Actors.
    *
    * @see Failure
    */
   def toFailureMessage: Failure = toFailureMessage(Map.empty)
 
   /**
-   * Creates a Failure object from the adapted Exchange.
+   * Creates an immutable Failure object from the adapted Exchange so it can be used with Actors.
    *
    * @param headers additional headers to set on the created CamelMessage in addition to those
    *                in the Camel message.
@@ -89,7 +104,7 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
   def toFailureMessage(headers: Map[String, Any]): Failure = Failure(exchange.getException, headers ++ response.getHeaders)
 
   /**
-   * Creates a CamelMessage object from Exchange.getIn.
+   * Creates an immutable CamelMessage object from Exchange.getIn so it can be used with Actors.
    *
    * @param headers additional headers to set on the created CamelMessage in addition to those
    *                in the Camel message.
@@ -97,7 +112,7 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
   def toRequestMessage(headers: Map[String, Any]): CamelMessage = CamelMessage.from(request, headers)
 
   /**
-   * Depending on the exchange pattern, creates a CamelMessage object from Exchange.getIn or Exchange.getOut.
+   * Depending on the exchange pattern, creates an immutable CamelMessage object from Exchange.getIn or Exchange.getOut so it can be used with Actors.
    * If the exchange is out-capable then the Exchange.getOut is set, otherwise Exchange.getIn.
    *
    * @param headers additional headers to set on the created CamelMessage in addition to those
