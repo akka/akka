@@ -460,7 +460,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(BuilderParent parent) {
+      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1242,7 +1242,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(BuilderParent parent) {
+      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1750,7 +1750,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(BuilderParent parent) {
+      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2255,7 +2255,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(BuilderParent parent) {
+      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2861,7 +2861,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(BuilderParent parent) {
+      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
