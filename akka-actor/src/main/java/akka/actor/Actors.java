@@ -7,6 +7,7 @@ package akka.actor;
 /**
  * JAVA API for - creating actors, - creating remote actors, - locating actors
  */
+@Deprecated("Will be removed in 2.1, all methods have been superceded.", "2.0.2")
 public class Actors {
   /**
    * The message that is sent when an Actor gets a receive timeout.
@@ -19,6 +20,7 @@ public class Actors {
    * 
    * @return the single instance of ReceiveTimeout
    */
+  @Deprecated("Will be replaced by ReceiveTimeout.getInstance() in 2.1", "2.0.2")
   public final static ReceiveTimeout$ receiveTimeout() {
     return ReceiveTimeout$.MODULE$;
   }
@@ -32,6 +34,7 @@ public class Actors {
    * 
    * @return the single instance of Kill
    */
+  @Deprecated("Will be replaced by Kill.getInstance() in 2.1", "2.0.2")
   public final static Kill$ kill() {
     return Kill$.MODULE$;
   }
@@ -45,6 +48,7 @@ public class Actors {
    * 
    * @return the single instance of PoisonPill
    */
+  @Deprecated("Will be replaced by PoisonPill.getInstance() in 2.1", "2.0.2")
   public final static PoisonPill$ poisonPill() {
     return PoisonPill$.MODULE$;
   }
