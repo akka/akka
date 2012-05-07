@@ -10,13 +10,12 @@ import org.bson.collection._
 import akka.actor.ActorContext
 import akka.event.Logging
 import akka.actor.ActorRef
-import akka.dispatch.{ Await, Promise, Envelope }
 import java.util.concurrent.TimeoutException
-import akka.dispatch.MailboxType
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
-import akka.dispatch.MessageQueue
 import akka.actor.ActorSystem
+import akka.dispatch._
+import scala.{ Some, None }
 
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
 
@@ -57,13 +56,15 @@ class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailb
     val durableMessage = MongoDurableMessage(ownerPathString, envelope.message, envelope.sender)
     // todo - do we need to filter the actor name at all for safe collection naming?
     val result = Promise[Boolean]()(dispatcher)
-    mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
-      wr match {
-        case Right((oid, wr)) ⇒ asyncHandle.onAsyncSuccess(); result.success(true)
-        case Left(t)          ⇒ asyncHandle.onAsyncFailure(); result.failure(t)
-      }
-    })
-    Await.ready(result, settings.WriteTimeout)
+    asyncHandle.withCircuitBreaker {
+      mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
+        wr match {
+          case Right((oid, wr)) ⇒ asyncHandle.onAsyncSuccess(); result.success(true)
+          case Left(t)          ⇒ asyncHandle.onAsyncFailure(); result.failure(t)
+        }
+      })
+      Await.ready(result, settings.WriteTimeout)
+    }
   }
 
   def dequeue(): Envelope = {
@@ -76,15 +77,17 @@ class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailb
      */
     val asyncHandle = newAsyncCircuitBreakerHandle()
     val envelopePromise = Promise[Envelope]()(dispatcher)
-    mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
-      doc match {
-        case Some(msg) ⇒
-          envelopePromise.success(msg.envelope(system))
-          ()
-        case None ⇒
-          log.info("No matching document found. Not an error, just an empty queue.")
-          envelopePromise.success(null)
-          ()
+    asyncHandle.withCircuitBreaker {
+      mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
+        doc match {
+          case Some(msg) ⇒
+            envelopePromise.success(msg.envelope(system))
+            ()
+          case None ⇒
+            log.info("No matching document found. Not an error, just an empty queue.")
+            envelopePromise.success(null)
+            ()
+        }
       }
     }
     try {
@@ -97,7 +100,7 @@ class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailb
   def numberOfMessages: Int = {
     val asyncHandle = newAsyncCircuitBreakerHandle()
     val count = Promise[Int]()(dispatcher)
-    mongo.count()(count.success)
+    asyncHandle.withCircuitBreaker(mongo.count()(count.success))
     try {
       val result = Await.result(count, settings.ReadTimeout).asInstanceOf[Int]
       asyncHandle.onAsyncSuccess()
