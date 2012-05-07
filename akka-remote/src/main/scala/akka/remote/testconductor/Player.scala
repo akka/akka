@@ -40,7 +40,8 @@ trait Player extends BarrierSync { this: TestConductorExt ⇒
       var waiting: ActorRef = _
       def receive = {
         case fsm: ActorRef                        ⇒ waiting = sender; fsm ! SubscribeTransitionCallBack(self)
-        case Transition(_, Connecting, Connected) ⇒ waiting ! Done
+        case Transition(_, Connecting, AwaitDone) ⇒ // step 1, not there yet
+        case Transition(_, AwaitDone, Connected)  ⇒ waiting ! Done
         case t: Transition[_]                     ⇒ waiting ! Status.Failure(new RuntimeException("unexpected transition: " + t))
         case CurrentState(_, Connected)           ⇒ waiting ! Done
         case _: CurrentState[_]                   ⇒
@@ -63,6 +64,7 @@ trait Player extends BarrierSync { this: TestConductorExt ⇒
 object ClientFSM {
   sealed trait State
   case object Connecting extends State
+  case object AwaitDone extends State
   case object Connected extends State
 
   case class Data(channel: Channel, barrier: Option[(String, ActorRef)])
@@ -85,10 +87,22 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
       stay replying Status.Failure(new IllegalStateException("not connected yet"))
     case Event(Connected, d @ Data(channel, _)) ⇒
       channel.write(Hello(settings.name, TestConductor().address))
-      goto(Connected)
+      goto(AwaitDone)
     case Event(_: ConnectionFailure, _) ⇒
       // System.exit(1)
       stop
+    case Event(StateTimeout, _) ⇒
+      log.error("connect timeout to TestConductor")
+      // System.exit(1)
+      stop
+  }
+
+  when(AwaitDone, stateTimeout = settings.BarrierTimeout.duration) {
+    case Event(Done, _) ⇒
+      log.debug("received Done: starting test")
+      goto(Connected)
+    case Event(msg: ClientOp, _) ⇒
+      stay replying Status.Failure(new IllegalStateException("not connected yet"))
     case Event(StateTimeout, _) ⇒
       log.error("connect timeout to TestConductor")
       // System.exit(1)

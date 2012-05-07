@@ -57,7 +57,7 @@ trait RunControl {
   /**
    * Start the server port, returns the port number.
    */
-  def startController(): Future[Int]
+  def startController(participants: Int): Future[Int]
 
   /**
    * Get the actual port used by the server.

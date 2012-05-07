@@ -53,11 +53,8 @@ class TestConductorMultiJvmNode1 extends AkkaRemoteSpec(TestConductorMultiJvmSpe
   }), "echo")
 
   "running a test with barrier" in {
-    tc.startController().await
-    barrier("start")
-    barrier("first")
+    tc.startController(2).await
     tc.enter("begin")
-    barrier("end")
   }
 
   "throttling" in {
@@ -89,11 +86,8 @@ class TestConductorMultiJvmNode2 extends AkkaRemoteSpec(TestConductorMultiJvmSpe
   val echo = system.actorFor("akka://" + akkaSpec(0) + "/user/echo")
 
   "running a test with barrier" in {
-    barrier("start")
     tc.startClient(4712).await
-    barrier("first")
     tc.enter("begin")
-    barrier("end")
   }
 
   "throttling" in {

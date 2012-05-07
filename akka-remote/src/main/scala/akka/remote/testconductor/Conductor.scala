@@ -33,9 +33,9 @@ trait Conductor extends RunControl with FailureInject { this: TestConductorExt �
     case x    ⇒ x
   }
 
-  override def startController(): Future[Int] = {
+  override def startController(participants: Int): Future[Int] = {
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
-    _controller = system.actorOf(Props[Controller], "controller")
+    _controller = system.actorOf(Props(new Controller(participants)), "controller")
     import Settings.BarrierTimeout
     controller ? GetPort flatMap { case port: Int ⇒ startClient(port) map (_ ⇒ port) }
   }
@@ -162,7 +162,7 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
       log.warning("client {} sent unsupported message {}", getAddrString(channel), msg)
       channel.close()
       stop()
-    case Event(Send(msg: EnterBarrier), _) ⇒
+    case Event(Send(msg @ (_: EnterBarrier | _: Done)), _) ⇒
       channel.write(msg)
       stay
     case Event(Send(msg), None) ⇒
@@ -185,8 +185,10 @@ object Controller {
   case class NodeInfo(name: String, addr: Address, fsm: ActorRef)
 }
 
-class Controller extends Actor {
+class Controller(_participants: Int) extends Actor {
   import Controller._
+
+  var initialParticipants = _participants
 
   val settings = TestConductor().Settings
   val connection = RemoteConnection(Server, settings.host, settings.port,
@@ -199,8 +201,11 @@ class Controller extends Actor {
     case ClientConnected(name, addr) ⇒
       nodes += name -> NodeInfo(name, addr, sender)
       barrier forward ClientConnected
-    case ClientConnected ⇒
-      barrier forward ClientConnected
+      if (initialParticipants <= 0) sender ! Done
+      else if (nodes.size == initialParticipants) {
+        for (NodeInfo(_, _, client) ← nodes.values) client ! Send(Done)
+        initialParticipants = 0
+      }
     case ClientDisconnected(name) ⇒
       nodes -= name
       barrier forward ClientDisconnected
