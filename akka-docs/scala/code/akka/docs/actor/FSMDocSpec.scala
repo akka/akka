@@ -128,7 +128,7 @@ class FSMDocSpec extends AkkaSpec {
         when(SomeState)(transform {
           case Event(bytes: Array[Byte], read) ⇒ stay using (read + bytes.length)
           case Event(bytes: List[Byte], read)  ⇒ stay using (read + bytes.size)
-        } {
+        } using {
           case s @ FSM.State(state, read, timeout, stopReason, replies) if read > 1000 ⇒
             goto(Processing)
         })
@@ -143,7 +143,7 @@ class FSMDocSpec extends AkkaSpec {
         when(SomeState)(transform {
           case Event(bytes: Array[Byte], read) ⇒ stay using (read + bytes.length)
           case Event(bytes: List[Byte], read)  ⇒ stay using (read + bytes.size)
-        }(processingTrigger))
+        } using processingTrigger)
         //#alt-transform-syntax
 
         //#termination-syntax

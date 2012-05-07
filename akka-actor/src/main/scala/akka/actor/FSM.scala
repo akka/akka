@@ -217,8 +217,8 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * @param timeout state timeout for the initial state, overriding the default timeout for that state
    */
   protected final def startWith(stateName: S,
-                                stateData: D,
-                                timeout: Timeout = None): Unit =
+    stateData: D,
+    timeout: Timeout = None): Unit =
     currentState = FSM.State(stateName, stateData, timeout)
 
   /**
@@ -253,8 +253,12 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    */
   protected final def stop(reason: Reason, stateData: D): State = stay using stateData withStopReason (reason)
 
-  protected final def transform(func: StateFunction)(andThen: PartialFunction[State, State]): StateFunction =
-    func andThen (andThen orElse { case x ⇒ x })
+  protected final class TransformHelper(func: StateFunction) {
+    def using(andThen: PartialFunction[State, State]): StateFunction =
+      func andThen (andThen orElse { case x ⇒ x })
+  }
+
+  protected final def transform(func: StateFunction): TransformHelper = new TransformHelper(func)
 
   /**
    * Schedule named timer to deliver message after given delay, possibly repeating.

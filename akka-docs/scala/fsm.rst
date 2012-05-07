@@ -329,8 +329,6 @@ be used several times, e.g. when applying the same transformation to several
 .. includecode:: code/akka/docs/actor/FSMDocSpec.scala
    :include: alt-transform-syntax
 
-The parentheses are required by Scala’s syntax rules.
-
 Timers
 ------
 

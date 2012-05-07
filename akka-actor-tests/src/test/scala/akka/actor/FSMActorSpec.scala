@@ -268,7 +268,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
         startWith(0, 0)
         when(0)(transform {
           case Event("go", _) ⇒ stay
-        } {
+        } using {
           case x ⇒ goto(1)
         })
         when(1) {
