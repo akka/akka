@@ -819,7 +819,7 @@ trait Promise[T] extends Future[T] {
     }
     fr
   }
-
+  @deprecated("Was never officially supported or documented, will be removed in Akka 2.1", "2.0.2")
   final def <<(stream: PromiseStreamOut[T]): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] ⇒ Future[Any]) ⇒
     val fr = Promise[Any]()
     val f = stream.dequeue(this)
