@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.util.continuations._
 import scala.annotation.tailrec
 import akka.util.Timeout
-
+@deprecated("Was never officially supported or documented, will be removed in Akka 2.1", "2.0.2")
 object PromiseStream {
   def apply[A]()(implicit dispatcher: MessageDispatcher, timeout: Timeout): PromiseStream[A] = new PromiseStream[A]
   def apply[A](timeout: Long)(implicit dispatcher: MessageDispatcher): PromiseStream[A] = new PromiseStream[A]()(dispatcher, Timeout(timeout))
@@ -18,7 +18,7 @@ object PromiseStream {
   private case object Pending extends State
   private case object Busy extends State
 }
-
+@deprecated("Was never officially supported or documented, will be removed in Akka 2.1", "2.0.2")
 trait PromiseStreamOut[A] {
   self ⇒
 
@@ -43,7 +43,7 @@ trait PromiseStreamOut[A] {
   }
 
 }
-
+@deprecated("Was never officially supported or documented, will be removed in Akka 2.1", "2.0.2")
 trait PromiseStreamIn[A] {
 
   def enqueue(elem: A): Unit
@@ -102,7 +102,7 @@ trait PromiseStreamIn[A] {
   def <<<(elems: Future[Traversable[A]]): PromiseStreamIn[A] @cps[Future[Any]]
 
 }
-
+@deprecated("Was never officially supported or documented, will be removed in Akka 2.1", "2.0.2")
 class PromiseStream[A](implicit val dispatcher: MessageDispatcher, val timeout: Timeout) extends PromiseStreamOut[A] with PromiseStreamIn[A] {
   import PromiseStream.{ State, Normal, Pending, Busy }
 
