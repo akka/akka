@@ -328,7 +328,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * Convenience wrapper for using a total function instead of a partial
    * function literal. To be used with onTransition.
    */
-  implicit protected final def total2pf(transitionHandler: (S, S) ⇒ Unit) =
+  implicit protected final def total2pf(transitionHandler: (S, S) ⇒ Unit): TransitionHandler =
     new TransitionHandler {
       def isDefinedAt(in: (S, S)) = true
       def apply(in: (S, S)) { transitionHandler(in._1, in._2) }
@@ -337,7 +337,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   /**
    * Set handler which is called upon termination of this FSM actor.
    */
-  protected final def onTermination(terminationHandler: PartialFunction[StopEvent[S, D], Unit]): Unit =
+  protected final def onTermination(terminationHandler: PartialFunction[StopEvent, Unit]): Unit =
     terminateEvent = terminationHandler
 
   /**
@@ -416,7 +416,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   /*
    * termination handling
    */
-  private var terminateEvent: PartialFunction[StopEvent[S, D], Unit] = NullFunction
+  private var terminateEvent: PartialFunction[StopEvent, Unit] = NullFunction
 
   /*
    * transition handling
@@ -539,7 +539,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
 
   case class Event(event: Any, stateData: D)
 
-  case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D)
+  case class StopEvent(reason: Reason, currentState: S, stateData: D)
 }
 
 /**
