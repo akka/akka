@@ -417,6 +417,12 @@ prints the result and shuts down the ``ActorSystem``.
 
 .. includecode:: ../../akka-tutorials/akka-tutorial-first/src/main/scala/akka/tutorial/first/scala/Pi.scala#result-listener
 
+Please note that shutting down the actor system should be done by that part of
+the application which can safely determine that everything has been said and
+done. In this case, it is the Listener actor, but in other scenarios it might
+be the main thread or some other external service. It is by no means required
+to call ``system.shutdown()`` from within that system.
+
 Bootstrap the calculation
 =========================
 
