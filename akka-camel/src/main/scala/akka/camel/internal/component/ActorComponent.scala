@@ -170,7 +170,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 
   }
   private def forwardResponseTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
-    case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure);
+    case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure)
     case Right(msg)                   ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
     case Left(e: TimeoutException)    ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
     case Left(throwable)              ⇒ exchange.setFailure(CamelFailure(throwable))

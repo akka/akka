@@ -10,6 +10,7 @@ import scala.collection.JavaConversions._
 
 import akka.japi.{ Function ⇒ JFunction }
 import org.apache.camel.{ CamelContext, Message ⇒ JCamelMessage }
+import akka.AkkaException
 
 /**
  * An immutable representation of a Camel message.
@@ -274,3 +275,12 @@ case class Failure(val cause: Throwable, val headers: Map[String, Any] = Map.emp
    */
   def getHeaders: JMap[String, Any] = headers
 }
+
+/**
+ * An exception indicating that the exchange to the camel endpoint failed.
+ * It contains the failure cause obtained from Exchange.getException and the headers from either the Exchange.getIn
+ * message or Exchange.getOut message, depending on the exchange pattern.
+ *
+ */
+class AkkaCamelException private[akka] (cause: Throwable, val headers: Map[String, Any] = Map.empty)
+  extends AkkaException(cause.getMessage, cause)

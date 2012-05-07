@@ -5,7 +5,7 @@ import scala.collection.JavaConversions._
 import org.apache.camel.util.ExchangeHelper
 
 import org.apache.camel.{ Exchange, Message ⇒ JCamelMessage }
-import akka.camel.{ Failure, CamelMessage }
+import akka.camel.{ Failure, AkkaCamelException, CamelMessage }
 
 /**
  *  For internal use only.
@@ -54,11 +54,39 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
   def toResponseMessage: CamelMessage = toResponseMessage(Map.empty)
 
   /**
+   * Creates an AkkaCamelException object from the adapted Exchange.
+   *
+   * @see AkkaCamelException
+   */
+  def toAkkaCamelException: AkkaCamelException = toAkkaCamelException(Map.empty)
+
+  /**
+   * Creates an AkkaCamelException object from the adapted Exchange.
+   *
+   * @param headers additional headers to set on the created CamelMessage in addition to those
+   *                in the Camel message.
+   *
+   * @see AkkaCamelException
+   */
+  def toAkkaCamelException(headers: Map[String, Any]): AkkaCamelException =
+    new AkkaCamelException(exchange.getException, headers ++ response.getHeaders)
+
+  /**
    * Creates a Failure object from the adapted Exchange.
    *
    * @see Failure
    */
   def toFailureMessage: Failure = toFailureMessage(Map.empty)
+
+  /**
+   * Creates a Failure object from the adapted Exchange.
+   *
+   * @param headers additional headers to set on the created CamelMessage in addition to those
+   *                in the Camel message.
+   *
+   * @see Failure
+   */
+  def toFailureMessage(headers: Map[String, Any]): Failure = Failure(exchange.getException, headers ++ response.getHeaders)
 
   /**
    * Creates a CamelMessage object from Exchange.getIn.
@@ -76,17 +104,6 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
    *                in the Camel message.
    */
   def toResponseMessage(headers: Map[String, Any]): CamelMessage = CamelMessage.from(response, headers)
-
-  /**
-   * Creates a Failure object from the adapted Exchange.
-   *
-   * @param headers additional headers to set on the created CamelMessage in addition to those
-   *                in the Camel message.
-   *
-   * @see Failure
-   */
-  def toFailureMessage(headers: Map[String, Any]): Failure =
-    Failure(exchange.getException, headers ++ response.getHeaders)
 
   private def request = exchange.getIn
 

@@ -89,13 +89,14 @@ trait ProducerSupport { this: Actor ⇒
    */
   protected def produce: Receive = {
     case res: MessageResult ⇒ routeResponse(res.message)
-    case res: FailureResult ⇒ routeResponse(res.failure)
-    case msg ⇒ {
+    case res: FailureResult ⇒
+      routeResponse(res.failure)
+      throw new AkkaCamelException(res.failure.cause, res.failure.headers)
+    case msg ⇒
       if (oneway)
         produce(transformOutgoingMessage(msg), ExchangePattern.InOnly)
       else
         produce(transformOutgoingMessage(msg), ExchangePattern.InOut)
-    }
   }
 
   /**
