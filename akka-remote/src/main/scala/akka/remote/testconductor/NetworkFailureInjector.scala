@@ -83,8 +83,8 @@ class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
     }
 
     when(Throttle) {
-      case Event(s: Send, d @ Data(_, _, Queue())) ⇒
-        stay using sendThrottled(d.copy(lastSent = System.nanoTime, queue = Queue(s)))
+      case Event(s: Send, data @ Data(_, _, Queue())) ⇒
+        stay using sendThrottled(data.copy(lastSent = System.nanoTime, queue = Queue(s)))
       case Event(s: Send, data) ⇒
         stay using sendThrottled(data.copy(queue = data.queue.enqueue(s)))
       case Event(Tick, data) ⇒
@@ -134,10 +134,11 @@ class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
         log.debug("sending msg (Tick): {}", s.msg)
         send(s)
       }
-      for (time ← toTick) {
-        log.debug("scheduling next Tick in {}", time)
-        setTimer("send", Tick, time, false)
-      }
+      if (!timerActive_?("send"))
+        for (time ← toTick) {
+          log.debug("scheduling next Tick in {}", time)
+          setTimer("send", Tick, time, false)
+        }
       data
     }
 
@@ -155,12 +156,12 @@ class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
           val timeForPacket = d.lastSent + (1000 * size(d.queue.head.msg) / d.rateMBit).toLong
           if (timeForPacket <= now) rec(Data(timeForPacket, d.rateMBit, d.queue.tail), toSend :+ d.queue.head)
           else {
-            val deadline = now + packetSplitThreshold.toNanos
-            if (timeForPacket <= deadline) (d, toSend, Some((timeForPacket - now).nanos))
+            val splitThreshold = d.lastSent + packetSplitThreshold.toNanos
+            if (now < splitThreshold) (d, toSend, Some((timeForPacket - now).nanos min (splitThreshold - now).nanos))
             else {
-              val micros = (deadline - d.lastSent) / 1000
-              val (s1, s2) = split(d.queue.head, (micros * d.rateMBit / 8).toInt)
-              (d.copy(queue = s1 +: s2 +: d.queue.tail), toSend, Some(packetSplitThreshold))
+              val microsToSend = (now - d.lastSent) / 1000
+              val (s1, s2) = split(d.queue.head, (microsToSend * d.rateMBit / 8).toInt)
+              (d.copy(queue = s2 +: d.queue.tail), toSend :+ s1, Some((timeForPacket - now).nanos min packetSplitThreshold))
             }
           }
         }
