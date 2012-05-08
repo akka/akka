@@ -19,7 +19,8 @@ import akka.util.Timeout;
 //#import-future
 
 //#import-actors
-import static akka.actor.Actors.*;
+import akka.actor.PoisonPill;
+import akka.actor.Kill;
 //#import-actors
 
 //#import-procedure
@@ -158,7 +159,7 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
     //#poison-pill
-    myActor.tell(poisonPill());
+    myActor.tell(PoisonPill.getInstance());
     //#poison-pill
     system.shutdown();
   }
@@ -168,7 +169,7 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef victim = system.actorOf(new Props(MyUntypedActor.class));
     //#kill
-    victim.tell(kill());
+    victim.tell(Kill.getInstance());
     //#kill
     system.shutdown();
   }

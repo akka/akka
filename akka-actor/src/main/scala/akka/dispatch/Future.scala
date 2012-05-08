@@ -819,21 +819,6 @@ trait Promise[T] extends Future[T] {
     }
     fr
   }
-
-  final def <<(stream: PromiseStreamOut[T]): Future[T] @cps[Future[Any]] = shift { cont: (Future[T] ⇒ Future[Any]) ⇒
-    val fr = Promise[Any]()
-    val f = stream.dequeue(this)
-    f.onComplete { _ ⇒
-      try {
-        fr completeWith cont(f)
-      } catch {
-        case NonFatal(e) ⇒
-          executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
-          fr failure e
-      }
-    }
-    fr
-  }
 }
 
 //Companion object to FState, just to provide a cheap, immutable default entry

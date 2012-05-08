@@ -8,12 +8,14 @@ import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Timeout, NonFatal }
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
-import akka.serialization.{ Serialization, SerializationExtension }
 import akka.dispatch._
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.lang.IllegalStateException
 import akka.util.Duration
+import akka.actor.TypedActor.TypedActorInvocationHandler
+import akka.serialization.{ JavaSerializer, Serialization, SerializationExtension }
+import java.io.ObjectStreamException
 
 trait TypedActorFactory {
 
@@ -124,7 +126,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       }
     } catch { case i: InvocationTargetException ⇒ throw i.getTargetException }
 
-    private def writeReplace(): AnyRef = parameters match {
+    @throws(classOf[ObjectStreamException]) private def writeReplace(): AnyRef = parameters match {
       case null                 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, null)
       case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array())
       case ps ⇒
@@ -148,7 +150,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
 
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
-    private def readResolve(): AnyRef = {
+    @throws(classOf[ObjectStreamException]) private def readResolve(): AnyRef = {
       val system = akka.serialization.JavaSerializer.currentSystem.value
       if (system eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
@@ -369,9 +371,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     def postRestart(reason: Throwable): Unit
   }
 
-  private[akka] class TypedActorInvocationHandler(val extension: TypedActorExtension, val actorVar: AtomVar[ActorRef], val timeout: Timeout) extends InvocationHandler {
+  private[akka] class TypedActorInvocationHandler(@transient val extension: TypedActorExtension, @transient val actorVar: AtomVar[ActorRef], @transient val timeout: Timeout) extends InvocationHandler with Serializable {
     def actor = actorVar.get
-
     @throws(classOf[Throwable])
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
       case "toString" ⇒ actor.toString
@@ -392,6 +393,17 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration).asInstanceOf[AnyRef]
         }
     }
+    @throws(classOf[ObjectStreamException]) private def writeReplace(): AnyRef = SerializedTypedActorInvocationHandler(actor, timeout.duration)
+  }
+
+  private[akka] case class SerializedTypedActorInvocationHandler(val actor: ActorRef, val timeout: Duration) {
+    @throws(classOf[ObjectStreamException]) private def readResolve(): AnyRef = JavaSerializer.currentSystem.value match {
+      case null ⇒ throw new IllegalStateException("SerializedTypedActorInvocationHandler.readResolve requires that JavaSerializer.currentSystem.value is set to a non-null value")
+      case some ⇒ toTypedActorInvocationHandler(some)
+    }
+
+    def toTypedActorInvocationHandler(system: ActorSystem): TypedActorInvocationHandler =
+      new TypedActorInvocationHandler(TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
   }
 }
 

@@ -5,7 +5,6 @@
 package akka.transactor;
 
 import akka.actor.ActorRef;
-import akka.actor.Actors;
 import akka.actor.UntypedActor;
 import scala.concurrent.stm.Ref;
 import scala.concurrent.stm.japi.STM;

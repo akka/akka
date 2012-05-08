@@ -4,27 +4,22 @@
 package akka.docs.dispatcher;
 
 //#imports
+import akka.actor.*;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.dispatch.MessageDispatcher;
-
+import akka.actor.UntypedActor;
+import akka.actor.UntypedActorFactory;
 //#imports
 
 //#imports-prio
-import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
-import akka.actor.Actors;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
 //#imports-prio
 
 //#imports-prio-mailbox
-import akka.actor.ActorContext;
 import akka.dispatch.PriorityGenerator;
 import akka.dispatch.UnboundedPriorityMailbox;
-import akka.dispatch.MailboxType;
-import akka.dispatch.MessageQueue;
 import com.typesafe.config.Config;
 
 //#imports-prio-mailbox
@@ -37,7 +32,6 @@ import static org.junit.Assert.*;
 
 import com.typesafe.config.ConfigFactory;
 
-import akka.actor.ActorSystem;
 import akka.docs.actor.MyUntypedActor;
 import akka.docs.actor.UntypedActorDocTestBase.MyActor;
 import akka.testkit.AkkaSpec;
@@ -93,7 +87,7 @@ public class DispatcherDocTestBase {
                 getSelf().tell("pigdog2");
                 getSelf().tell("pigdog3");
                 getSelf().tell("highpriority");
-                getSelf().tell(Actors.poisonPill());
+                getSelf().tell(PoisonPill.getInstance());
               }
 
               public void onReceive(Object message) {
@@ -133,7 +127,7 @@ public class DispatcherDocTestBase {
             return 0; // 'highpriority messages should be treated first if possible
           else if (message.equals("lowpriority"))
             return 2; // 'lowpriority messages should be treated last if possible
-          else if (message.equals(Actors.poisonPill()))
+          else if (message.equals(PoisonPill.getInstance()))
             return 3; // PoisonPill when no other left
           else
             return 1; // By default they go between high and low prio

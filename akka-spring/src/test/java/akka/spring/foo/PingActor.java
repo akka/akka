@@ -1,6 +1,5 @@
 package akka.spring.foo;
 
-import static akka.actor.Actors.*;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 

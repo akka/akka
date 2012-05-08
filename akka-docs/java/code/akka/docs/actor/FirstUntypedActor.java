@@ -5,7 +5,7 @@ package akka.docs.actor;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import static akka.actor.Actors.*;
+import akka.actor.PoisonPill;
 import akka.actor.UntypedActor;
 
 //#context-actorOf
@@ -16,6 +16,6 @@ public class FirstUntypedActor extends UntypedActor {
 
   public void onReceive(Object message) {
     myActor.forward(message, getContext());
-    myActor.tell(poisonPill());
+    myActor.tell(PoisonPill.getInstance());
   }
 }

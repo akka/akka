@@ -172,7 +172,7 @@ object FSM {
  *   timerActive_? ("tock")
  * </pre>
  */
-trait FSM[S, D] extends Listeners {
+trait FSM[S, D] extends Listeners with ActorLogging {
   this: Actor ⇒
 
   import FSM._
@@ -185,8 +185,6 @@ trait FSM[S, D] extends Listeners {
   // “import” so that it is visible without an import
   val -> = FSM.->
   val StateTimeout = FSM.StateTimeout
-
-  val log = Logging(context.system, this)
 
   /**
    * ****************************************
@@ -254,6 +252,13 @@ trait FSM[S, D] extends Listeners {
    * Produce change descriptor to stop this FSM actor including specified reason.
    */
   protected final def stop(reason: Reason, stateData: D): State = stay using stateData withStopReason (reason)
+
+  protected final class TransformHelper(func: StateFunction) {
+    def using(andThen: PartialFunction[State, State]): StateFunction =
+      func andThen (andThen orElse { case x ⇒ x })
+  }
+
+  protected final def transform(func: StateFunction): TransformHelper = new TransformHelper(func)
 
   /**
    * Schedule named timer to deliver message after given delay, possibly repeating.
@@ -327,7 +332,7 @@ trait FSM[S, D] extends Listeners {
    * Convenience wrapper for using a total function instead of a partial
    * function literal. To be used with onTransition.
    */
-  implicit protected final def total2pf(transitionHandler: (S, S) ⇒ Unit) =
+  implicit protected final def total2pf(transitionHandler: (S, S) ⇒ Unit): TransitionHandler =
     new TransitionHandler {
       def isDefinedAt(in: (S, S)) = true
       def apply(in: (S, S)) { transitionHandler(in._1, in._2) }
@@ -336,7 +341,7 @@ trait FSM[S, D] extends Listeners {
   /**
    * Set handler which is called upon termination of this FSM actor.
    */
-  protected final def onTermination(terminationHandler: PartialFunction[StopEvent[S, D], Unit]): Unit =
+  protected final def onTermination(terminationHandler: PartialFunction[StopEvent, Unit]): Unit =
     terminateEvent = terminationHandler
 
   /**
@@ -415,7 +420,7 @@ trait FSM[S, D] extends Listeners {
   /*
    * termination handling
    */
-  private var terminateEvent: PartialFunction[StopEvent[S, D], Unit] = NullFunction
+  private var terminateEvent: PartialFunction[StopEvent, Unit] = NullFunction
 
   /*
    * transition handling
@@ -443,10 +448,10 @@ trait FSM[S, D] extends Listeners {
           timeoutFuture = None
         }
         generation += 1
-        processMsg(msg, t)
         if (!repeat) {
           timers -= name
         }
+        processMsg(msg, t)
       }
     case SubscribeTransitionCallBack(actorRef) ⇒
       // TODO use DeathWatch to clean up list
@@ -538,7 +543,7 @@ trait FSM[S, D] extends Listeners {
 
   case class Event(event: Any, stateData: D)
 
-  case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D)
+  case class StopEvent(reason: Reason, currentState: S, stateData: D)
 }
 
 /**

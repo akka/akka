@@ -262,6 +262,25 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       expectMsg(1 second, IndexedSeq(LogEntry(1, 1, "log"), LogEntry(1, 1, "count"), LogEntry(1, 2, "log")))
     }
 
+    "allow transforming of state results" in {
+      import akka.actor.FSM._
+      val fsmref = system.actorOf(Props(new Actor with FSM[Int, Int] {
+        startWith(0, 0)
+        when(0)(transform {
+          case Event("go", _) ⇒ stay
+        } using {
+          case x ⇒ goto(1)
+        })
+        when(1) {
+          case _ ⇒ stay
+        }
+      }))
+      fsmref ! SubscribeTransitionCallBack(testActor)
+      fsmref ! "go"
+      expectMsg(CurrentState(fsmref, 0))
+      expectMsg(Transition(fsmref, 0, 1))
+    }
+
   }
 
 }

@@ -1,11 +1,11 @@
 package akka.docs.camel
 
-object wrapper {
+object Introduction {
   {
     //#Consumer-mina
     import akka.camel.{ CamelMessage, Consumer }
 
-    class MyActor extends Consumer {
+    class MinaClient extends Consumer {
       def endpointUri = "mina:tcp://localhost:6200?textline=true"
 
       def receive = {
@@ -18,14 +18,14 @@ object wrapper {
     import akka.actor.{ ActorSystem, Props }
 
     val sys = ActorSystem("camel")
-    val myActor = sys.actorOf(Props[MyActor])
+    val mina = sys.actorOf(Props[MinaClient])
     //#Consumer-mina
   }
   {
     //#Consumer
     import akka.camel.{ CamelMessage, Consumer }
 
-    class MyActor extends Consumer {
+    class JettyAdapter extends Consumer {
       def endpointUri = "jetty:http://localhost:8877/example"
 
       def receive = {
@@ -39,10 +39,16 @@ object wrapper {
     //#Producer
     import akka.actor.Actor
     import akka.camel.{ Producer, Oneway }
+    import akka.actor.{ ActorSystem, Props }
 
-    class MyActor extends Actor with Producer with Oneway {
-      def endpointUri = "jms:queue:example"
+    class Orders extends Actor with Producer with Oneway {
+      def endpointUri = "jms:queue:Orders"
     }
+
+    val sys = ActorSystem("camel")
+    val orders = sys.actorOf(Props[Orders])
+
+    orders ! <order amount="100" currency="PLN" itemId="12345"/>
     //#Producer
   }
 }
