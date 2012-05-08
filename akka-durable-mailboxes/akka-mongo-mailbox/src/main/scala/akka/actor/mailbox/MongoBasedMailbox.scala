@@ -10,13 +10,12 @@ import org.bson.collection._
 import akka.actor.ActorContext
 import akka.event.Logging
 import akka.actor.ActorRef
-import akka.dispatch.{ Await, Promise, Envelope }
 import java.util.concurrent.TimeoutException
-import akka.dispatch.MailboxType
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
-import akka.dispatch.MessageQueue
 import akka.actor.ActorSystem
+import akka.dispatch._
+import scala.{ Some, None }
 
 class MongoBasedMailboxException(message: String) extends AkkaException(message)
 
@@ -39,7 +38,7 @@ class MongoBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
-class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailboxSettings) extends DurableMessageQueue(_owner) {
+class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailboxSettings) extends DurableMessageQueue(_owner, settings) {
   // this implicit object provides the context for reading/writing things as MongoDurableMessage
   implicit val mailboxBSONSer = new BSONSerializableMessageQueue(system)
   implicit val safeWrite = WriteConcern.Safe // TODO - Replica Safe when appropriate!
@@ -51,21 +50,24 @@ class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailb
   @volatile
   private var mongo = connect()
 
-  def enqueue(receiver: ActorRef, envelope: Envelope) {
+  def enqueue(receiver: ActorRef, envelope: Envelope) = {
+    val asyncHandle = newAsyncCircuitBreakerHandle()
     /* TODO - Test if a BSON serializer is registered for the message and only if not, use toByteString? */
     val durableMessage = MongoDurableMessage(ownerPathString, envelope.message, envelope.sender)
     // todo - do we need to filter the actor name at all for safe collection naming?
     val result = Promise[Boolean]()(dispatcher)
-    mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
-      wr match {
-        case Right((oid, wr)) ⇒ result.success(true)
-        case Left(t)          ⇒ result.failure(t)
-      }
-    })
-    Await.ready(result, settings.WriteTimeout)
+    asyncHandle.withCircuitBreaker {
+      mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
+        wr match {
+          case Right((oid, wr)) ⇒ asyncHandle.onAsyncSuccess(); result.success(true)
+          case Left(t)          ⇒ asyncHandle.onAsyncFailure(); result.failure(t)
+        }
+      })
+      Await.ready(result, settings.WriteTimeout)
+    }
   }
 
-  def dequeue(): Envelope = withErrorHandling {
+  def dequeue(): Envelope = {
     /**
      * Retrieves first item in natural order (oldest first, assuming no modification/move)
      * Waits 3 seconds for now for a message, else pops back out.
@@ -73,25 +75,37 @@ class MongoBasedMessageQueue(_owner: ActorContext, val settings: MongoBasedMailb
      * TODO - Should we have a specific query in place? Which way do we sort?
      * TODO - Error handling version!
      */
+    val asyncHandle = newAsyncCircuitBreakerHandle()
     val envelopePromise = Promise[Envelope]()(dispatcher)
-    mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
-      doc match {
-        case Some(msg) ⇒
-          envelopePromise.success(msg.envelope(system))
-          ()
-        case None ⇒
-          log.info("No matching document found. Not an error, just an empty queue.")
-          envelopePromise.success(null)
-          ()
+    asyncHandle.withCircuitBreaker {
+      mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
+        doc match {
+          case Some(msg) ⇒
+            envelopePromise.success(msg.envelope(system))
+            ()
+          case None ⇒
+            log.info("No matching document found. Not an error, just an empty queue.")
+            envelopePromise.success(null)
+            ()
+        }
       }
     }
-    try { Await.result(envelopePromise, settings.ReadTimeout) } catch { case _: TimeoutException ⇒ null }
+    try {
+      val result = Await.result(envelopePromise, settings.ReadTimeout)
+      asyncHandle.onAsyncSuccess()
+      result
+    } catch { case _: TimeoutException ⇒ asyncHandle.onAsyncFailure(); null }
   }
 
   def numberOfMessages: Int = {
+    val asyncHandle = newAsyncCircuitBreakerHandle()
     val count = Promise[Int]()(dispatcher)
-    mongo.count()(count.success)
-    try { Await.result(count, settings.ReadTimeout).asInstanceOf[Int] } catch { case _: Exception ⇒ -1 }
+    asyncHandle.withCircuitBreaker(mongo.count()(count.success))
+    try {
+      val result = Await.result(count, settings.ReadTimeout).asInstanceOf[Int]
+      asyncHandle.onAsyncSuccess()
+      result
+    } catch { case _: Exception ⇒ asyncHandle.onAsyncFailure(); -1 }
   }
 
   //TODO review find other solution, this will be very expensive

@@ -29,7 +29,7 @@ class BeanstalkBasedMailboxType(systemSettings: ActorSystem.Settings, config: Co
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class BeanstalkBasedMessageQueue(_owner: ActorContext, val settings: BeanstalkMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+class BeanstalkBasedMessageQueue(_owner: ActorContext, val settings: BeanstalkMailboxSettings) extends DurableMessageQueue(_owner, settings) with DurableMessageSerialization {
 
   private val messageSubmitDelaySeconds = settings.MessageSubmitDelay.toSeconds.toInt
   private val messageTimeToLiveSeconds = settings.MessageTimeToLive.toSeconds.toInt
@@ -40,19 +40,21 @@ class BeanstalkBasedMessageQueue(_owner: ActorContext, val settings: BeanstalkMa
 
   // ===== For MessageQueue =====
 
-  def enqueue(receiver: ActorRef, envelope: Envelope) {
+  def enqueue(receiver: ActorRef, envelope: Envelope) = withCircuitBreaker {
     queue.get.put(65536, messageSubmitDelaySeconds, messageTimeToLiveSeconds, serialize(envelope)).toInt
   }
 
   def dequeue(): Envelope = try {
-    val job = queue.get.reserve(null)
-    if (job eq null) null: Envelope
-    else {
-      val bytes = job.getData
-      if (bytes ne null) {
-        queue.get.delete(job.getJobId)
-        deserialize(bytes)
-      } else null: Envelope
+    withCircuitBreaker {
+      val job = queue.get.reserve(null)
+      if (job eq null) null: Envelope
+      else {
+        val bytes = job.getData
+        if (bytes ne null) {
+          queue.get.delete(job.getJobId)
+          deserialize(bytes)
+        } else null: Envelope
+      }
     }
   } catch {
     case e: Exception ⇒
@@ -73,7 +75,7 @@ class BeanstalkBasedMessageQueue(_owner: ActorContext, val settings: BeanstalkMa
     }
   }
 
-  def numberOfMessages: Int = {
+  def numberOfMessages: Int = withCircuitBreaker {
     val item = queue.get.reserve(0)
     if (item eq null) 0 else 1
   }
