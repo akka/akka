@@ -428,6 +428,31 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       }
     }
 
+    "be able to serialize and deserialize proxies" in {
+      import java.io._
+      JavaSerializer.currentSystem.withValue(system.asInstanceOf[ExtendedActorSystem]) {
+        val t = newFooBar(Duration(2, "s"))
+
+        t.optionPigdog() must be === Some("Pigdog")
+
+        val baos = new ByteArrayOutputStream(8192 * 4)
+        val out = new ObjectOutputStream(baos)
+
+        out.writeObject(t)
+        out.close()
+
+        val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
+
+        val tNew = in.readObject().asInstanceOf[Foo]
+
+        tNew must be === t
+
+        tNew.optionPigdog() must be === Some("Pigdog")
+
+        mustStop(t)
+      }
+    }
+
     "be able to override lifecycle callbacks" in {
       val latch = new CountDownLatch(16)
       val ta = TypedActor(system)
