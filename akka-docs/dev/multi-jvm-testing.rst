@@ -168,9 +168,6 @@ Your tests should now be named ``{TestName}ClusterTest{NodeName}``.
 Configuration of the JVM instances
 ==================================
 
-Setting JVM options
--------------------
-
 You can define specific JVM options for each of the spawned JVMs. You do that by creating
 a file named after the node in the test with suffix ``.opts`` and put them in the same
 directory as the test.
@@ -189,30 +186,6 @@ let's create three ``*.opts`` files and add the options to them.
 ``SampleMultiJvmNode3.opts``::
 
     -Dakka.remote.port=9993
-
-
-Overriding configuration options
---------------------------------
-
-You can also override the options in the :ref:`configuration` file with different options for each
-spawned JVM. You do that by creating a file named after the node in the test with suffix
-``.conf`` and put them in the same  directory as the test .
-
-For example, to override the configuration option ``akka.cluster.name`` let's create three
-``*.conf`` files and add the option to them.
-
-``SampleMultiJvmNode1.conf``::
-
-    akka.remote.port = 9991
-
-``SampleMultiJvmNode2.conf``::
-
-    akka.remote.port = 9992
-
-``SampleMultiJvmNode3.conf``::
-
-    akka.remote.port = 9993
-
 
 ScalaTest
 =========
@@ -263,7 +236,10 @@ There are 2 implementations of the barrier: one is used for coordinating JVMs
 running on a single machine and is based on local files, another used in a distributed
 scenario (see below) and is based on apache ZooKeeper. These two cases
 are differentiated with ``test.hosts`` property defined. The choice for a proper barrier
-implementation is made in ``AkkaRemoteSpec`` which is a base class for all multi-JVM tests.
+implementation is made in `AkkaRemoteSpec`_ which is a base class for all multi-JVM tests
+in Akka.
+
+.. _AkkaRemoteSpec: https://github.com/akka/akka/blob/master/akka-remote/src/multi-jvm/scala/akka/remote/AkkaRemoteSpec.scala
 
 When creating a barrier you pass it a name. You can also pass a timeout. The default
 timeout is 60 seconds.
@@ -323,28 +299,6 @@ something in coordination::
         }
       }
     }
-
-
-NetworkFailureTest
-==================
-
-You can use the ``NetworkFailureTest`` trait to test network failure. See the
-``RemoteErrorHandlingNetworkTest`` test. Your tests needs to end with
-``NetworkTest``. They are disabled by default. To run them you need to enable a
-flag.
-
-Example::
-
-   project akka-remote
-   set akka.test.network true
-   test-only akka.actor.remote.RemoteErrorHandlingNetworkTest
-
-It uses ``ipfw`` for network management. Mac OSX comes with it installed but if
-you are on another platform you might need to install it yourself. Here is a
-port:
-
-http://info.iet.unipi.it/~luigi/dummynet
-
 
 Running tests on many machines
 ==============================
