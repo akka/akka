@@ -445,6 +445,8 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
         val tNew = in.readObject().asInstanceOf[Foo]
 
+        tNew must be === t
+
         tNew.optionPigdog() must be === Some("Pigdog")
 
         mustStop(t)
