@@ -13,7 +13,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory
 class TestConductorTransport(_remoteSettings: RemoteSettings, _system: ActorSystemImpl, _provider: RemoteActorRefProvider)
   extends NettyRemoteTransport(_remoteSettings, _system, _provider) {
 
-  override def mkPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean): ChannelPipelineFactory =
+  override def createPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean): ChannelPipelineFactory =
     new ChannelPipelineFactory {
       def getPipeline = PipelineFactory(new NetworkFailureInjector(system) +: PipelineFactory.defaultStack(withTimeout) :+ endpoint)
     }

@@ -86,7 +86,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
    * This method is factored out to provide an extension point in case the
    * pipeline shall be changed. It is recommended to use
    */
-  def mkPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean): ChannelPipelineFactory =
+  def createPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean): ChannelPipelineFactory =
     PipelineFactory(Seq(endpoint), withTimeout)
 
   private val remoteClients = new HashMap[Address, RemoteClient]
@@ -98,13 +98,13 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   /**
    * Override this method to inject a subclass of NettyRemoteServer instead of
-   * the normal one, e.g. for altering the pipeline.
+   * the normal one, e.g. for inserting security hooks.
    */
   protected def createServer(): NettyRemoteServer = new NettyRemoteServer(this)
 
   /**
    * Override this method to inject a subclass of RemoteClient instead of
-   * the normal one, e.g. for altering the pipeline. Get this transport’s
+   * the normal one, e.g. for inserting security hooks. Get this transport’s
    * address from `this.address`.
    */
   protected def createClient(recipient: Address): RemoteClient = new ActiveRemoteClient(this, recipient, address)

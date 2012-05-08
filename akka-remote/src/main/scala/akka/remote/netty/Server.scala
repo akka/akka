@@ -35,7 +35,7 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   private val bootstrap = {
     val b = new ServerBootstrap(factory)
-    b.setPipelineFactory(netty.mkPipeline(new RemoteServerHandler(openChannels, netty), false))
+    b.setPipelineFactory(netty.createPipeline(new RemoteServerHandler(openChannels, netty), false))
     b.setOption("backlog", settings.Backlog)
     b.setOption("tcpNoDelay", true)
     b.setOption("child.keepAlive", true)
