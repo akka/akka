@@ -4,7 +4,6 @@
 
 package akka.actor.mailbox
 
-import org.apache.commons.io.FileUtils
 import akka.actor.ActorContext
 import akka.dispatch.{ Envelope, MessageQueue }
 import akka.event.Logging
@@ -30,7 +29,11 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
   val queuePath = settings.QueuePath
 
   private val queue = try {
-    try { FileUtils.forceMkdir(new java.io.File(queuePath)) } catch { case NonFatal(_) ⇒ {} }
+    (new java.io.File(queuePath)) match {
+      case dir if dir.exists && !dir.isDirectory ⇒ throw new IllegalStateException("Path already occupied by non-directory " + dir)
+      case dir if !dir.exists                    ⇒ if (!dir.mkdirs() && !dir.isDirectory) throw new IllegalStateException("Creation of directory failed " + dir)
+      case _                                     ⇒ //All good
+    }
     val queue = new filequeue.PersistentQueue(queuePath, name, settings, log)
     queue.setup // replays journal
     queue.discardExpired

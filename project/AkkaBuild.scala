@@ -133,22 +133,13 @@ object AkkaBuild extends Build {
     )
   )
 
-  // lazy val amqp = Project(
-  //   id = "akka-amqp",
-  //   base = file("akka-amqp"),
-  //   dependencies = Seq(actor, testkit % "test->test"),
-  //   settings = defaultSettings ++ Seq(
-  //     libraryDependencies ++= Dependencies.amqp
-  //   )
-  // )
-
   val testMailbox = SettingKey[Boolean]("test-mailbox")
 
   lazy val mailboxes = Project(
     id = "akka-durable-mailboxes",
     base = file("akka-durable-mailboxes"),
     settings = parentSettings,
-    aggregate = Seq(mailboxesCommon, fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox)
+    aggregate = Seq(mailboxesCommon, fileMailbox)
   )
 
   lazy val mailboxesCommon = Project(
@@ -157,18 +148,6 @@ object AkkaBuild extends Build {
     dependencies = Seq(remote, testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes
-    )
-  )
-
-  val testBeanstalkMailbox = SettingKey[Boolean]("test-beanstalk-mailbox")
-
-  lazy val beanstalkMailbox = Project(
-    id = "akka-beanstalk-mailbox",
-    base = file("akka-durable-mailboxes/akka-beanstalk-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.beanstalkMailbox,
-      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
     )
   )
 
@@ -181,37 +160,6 @@ object AkkaBuild extends Build {
     )
   )
 
-  lazy val redisMailbox = Project(
-    id = "akka-redis-mailbox",
-    base = file("akka-durable-mailboxes/akka-redis-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.redisMailbox,
-      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
-    )
-  )
-
-  lazy val zookeeperMailbox = Project(
-    id = "akka-zookeeper-mailbox",
-    base = file("akka-durable-mailboxes/akka-zookeeper-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings  ++ Seq(
-      libraryDependencies ++= Dependencies.zookeeperMailbox
-    )
-  )
-
-  lazy val mongoMailbox = Project(
-    id = "akka-mongo-mailbox",
-    base = file("akka-durable-mailboxes/akka-mongo-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.mongoMailbox,
-      ivyXML := Dependencies.mongoMailboxExcludes,
-      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
-    )
-  )
-
-
   lazy val zeroMQ = Project(
     id = "akka-zeromq",
     base = file("akka-zeromq"),
@@ -220,16 +168,6 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.zeroMQ
     )
   )
-
-
-  // lazy val spring = Project(
-  //   id = "akka-spring",
-  //   base = file("akka-spring"),
-  //   dependencies = Seq(cluster, camel),
-  //   settings = defaultSettings ++ Seq(
-  //     libraryDependencies ++= Dependencies.spring
-  //   )
-  // )
 
   lazy val kernel = Project(
     id = "akka-kernel",
@@ -319,8 +257,7 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", remote, cluster, slf4j, agent, transactor,
-        fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox, zeroMQ, camel),
+    dependencies = Seq(actor, testkit % "test->test", remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel),
     settings = defaultSettings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -332,7 +269,6 @@ object AkkaBuild extends Build {
 
   override lazy val settings = super.settings ++ buildSettings ++ Seq(
       resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
-      resolvers += "Twitter Public Repo" at "http://maven.twttr.com", // This will be going away with com.mongodb.async's next release
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
     )
 
@@ -440,40 +376,13 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val amqp = Seq(rabbit, commonsIo, protobuf)
-
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
-  val fileMailbox = Seq(commonsIo, Test.scalatest, Test.junit)
-
-  val beanstalkMailbox = Seq(beanstalk, Test.junit)
-
-  val redisMailbox = Seq(slf4jApi, redis, Test.junit)
-
-  val mongoMailbox = Seq(slf4jApi, commonsPool, mongoAsync, twttrUtilCore, Test.junit)
-
-  val mongoMailboxExcludes = {
-    <dependencies>
-      <dependency org="com.mongodb.async" name="bson-driver_2.9.0-1" rev="0.2.9-1" >
-        <exclude module="netty"/>
-      </dependency>
-      <dependency org="com.mongodb.async" name="mongo-driver_2.9.0-1" rev="0.2.9-1" >
-        <exclude module="netty"/>
-      </dependency>
-    </dependencies>
-  }
-
-  val zookeeperMailbox = Seq(zkClient, zookeeper, commonsIo, Test.junit)
-
-  val spring = Seq(springBeans, springContext, Test.junit, Test.scalatest)
+  val fileMailbox = Seq(Test.commonsIo, Test.scalatest, Test.junit)
 
   val kernel = Seq(jmxClient, Test.scalatest, Test.junit)
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
-
-  // TODO: resolve Jetty version conflict
-  // val sampleCamel = Seq(camelCore, camelSpring, commonsCodec, Runtime.camelJms, Runtime.activemq, Runtime.springJms,
-  //   Test.junit, Test.scalatest, Test.logback)
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
@@ -491,59 +400,38 @@ object Dependency {
     val Logback      = "0.9.28"
     val Netty        = "3.3.0.Final"
     val Protobuf     = "2.4.1"
-    val Rabbit       = "2.3.1"
     val ScalaStm     = "0.5"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.4"
-    val Spring       = "3.0.5.RELEASE"
-    val Zookeeper    = "3.4.0"
   }
 
   // Compile
 
-  val beanstalk     = "beanstalk"                   % "beanstalk_client"       % "1.4.5"      // New BSD
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
-  val camelSpring   = "org.apache.camel"            % "camel-spring"           % V.Camel      // ApacheV2
-  val commonsCodec  = "commons-codec"               % "commons-codec"          % "1.4"        // ApacheV2
-  val commonsIo     = "commons-io"                  % "commons-io"             % "2.0.1"      // ApacheV2
-  val commonsPool   = "commons-pool"                % "commons-pool"           % "1.5.6"      // ApacheV2
   val jmxClient     = "cmdline-jmxclient"           % "cmdline-jmxclient"      % "0.10.3"     // LGPL
-  val mongoAsync    = "com.mongodb.async"           % "mongo-driver_2.9.0-1"   % "0.2.9-1"    // ApacheV2
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
-  val rabbit        = "com.rabbitmq"                % "amqp-client"            % V.Rabbit     // Mozilla Public License
-  val redis         = "net.debasishg"               % "redisclient_2.9.1"      % "2.4.0"      // ApacheV2
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
-  val springBeans   = "org.springframework"         % "spring-beans"           % V.Spring     // ApacheV2
-  val springContext = "org.springframework"         % "spring-context"         % V.Spring     // ApacheV2
-  val twttrUtilCore = "com.twitter"                 % "util-core"              % "1.8.1"      // ApacheV2
-  val zkClient      = "zkclient"                    % "zkclient"               % "0.3"        // ApacheV2
-  val zookeeper     = "org.apache.hadoop.zookeeper" % "zookeeper"              % V.Zookeeper  // ApacheV2
-  val zookeeperLock = "org.apache.hadoop.zookeeper" % "zookeeper-recipes-lock" % V.Zookeeper  // ApacheV2
   val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.5" // ApacheV2
 
   // Runtime
 
   object Runtime {
-    val activemq   = "org.apache.activemq" % "activemq-core"   % "5.4.2"      % "runtime" // ApacheV2
-    val camelJetty = "org.apache.camel"    % "camel-jetty"     % V.Camel      % "runtime" // ApacheV2
-    val camelJms   = "org.apache.camel"    % "camel-jms"       % V.Camel      % "runtime" // ApacheV2
     val logback    = "ch.qos.logback"      % "logback-classic" % V.Logback    % "runtime" // MIT
-    val springJms  = "org.springframework" % "spring-jms"      % V.Spring     % "runtime" // ApacheV2
   }
 
   // Test
 
   object Test {
-    val commonsColl = "commons-collections"         % "commons-collections" % "3.2.1"      % "test" // ApacheV2
     val commonsMath = "org.apache.commons"          % "commons-math"        % "2.1"        % "test" // ApacheV2
+    val commonsIo     = "commons-io"                % "commons-io"          % "2.0.1"      % "test"// ApacheV2
     val junit       = "junit"                       % "junit"               % "4.5"        % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"         % "1.8.1"      % "test" // MIT
     val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
     val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
-    val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % V.Zookeeper  % "test" // ApacheV2
+    val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % "3.4.0"      % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }
 }
