@@ -22,6 +22,8 @@ import akka.event.LoggingReceive
 import akka.actor.Address
 import java.net.InetSocketAddress
 import akka.dispatch.Future
+import akka.actor.OneForOneStrategy
+import akka.actor.SupervisorStrategy
 
 trait Conductor extends RunControl with FailureInject { this: TestConductorExt ⇒
 
@@ -194,6 +196,15 @@ class Controller(_participants: Int) extends Actor {
   val connection = RemoteConnection(Server, settings.host, settings.port,
     new ConductorHandler(context.system, self, Logging(context.system, "ConductorHandler")))
 
+  override def supervisorStrategy = OneForOneStrategy() {
+    case e: BarrierCoordinator.BarrierTimeoutException ⇒ SupervisorStrategy.Resume
+    case e: BarrierCoordinator.WrongBarrierException ⇒
+      // I think we are lacking a means of communication here: this is not correct!
+      for (i ← 1 to e.data.clients) barrier ! ClientConnected
+      for (c ← e.data.arrived) c ! BarrierFailed(e.barrier)
+      SupervisorStrategy.Restart
+  }
+
   val barrier = context.actorOf(Props[BarrierCoordinator], "barriers")
   var nodes = Map[String, NodeInfo]()
 
@@ -240,7 +251,8 @@ object BarrierCoordinator {
   case object Waiting extends State
 
   case class Data(clients: Int, barrier: String, arrived: List[ActorRef])
-  class BarrierTimeoutException(msg: String) extends RuntimeException(msg) with NoStackTrace
+  class BarrierTimeoutException(val data: Data) extends RuntimeException(data.barrier) with NoStackTrace
+  class WrongBarrierException(val barrier: String, val client: ActorRef, val data: Data) extends RuntimeException(barrier) with NoStackTrace
 }
 
 class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State, BarrierCoordinator.Data] {
@@ -262,13 +274,13 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
   }
 
   onTransition {
-    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, 30 seconds, false)
+    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, TestConductor().Settings.BarrierTimeout.duration, false)
     case Waiting -> Idle ⇒ cancelTimer("Timeout")
   }
 
   when(Waiting) {
     case Event(e @ EnterBarrier(name), d @ Data(num, barrier, arrived)) ⇒
-      if (name != barrier) throw new IllegalStateException("trying enter barrier '" + name + "' while barrier '" + barrier + "' is active")
+      if (name != barrier) throw new WrongBarrierException(barrier, sender, d)
       val together = sender :: arrived
       if (together.size == num) {
         together foreach (_ ! Send(e))
@@ -287,8 +299,8 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
       } else {
         stay using d.copy(clients = expected)
       }
-    case Event(StateTimeout, Data(num, barrier, arrived)) ⇒
-      throw new BarrierTimeoutException("only " + arrived.size + " of " + num + " arrived at barrier " + barrier)
+    case Event(StateTimeout, data) ⇒
+      throw new BarrierTimeoutException(data)
   }
 
   initialize

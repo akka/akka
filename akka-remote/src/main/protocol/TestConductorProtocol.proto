@@ -25,6 +25,7 @@ message Hello {
 
 message EnterBarrier {
   required string name = 1;
+  optional bool failed = 2;
 }
 
 message Address {

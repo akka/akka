@@ -19,6 +19,7 @@ sealed trait NetworkOp // messages sent over the wire
 
 case class Hello(name: String, addr: Address) extends NetworkOp
 case class EnterBarrier(name: String) extends ClientOp with ServerOp with NetworkOp
+case class BarrierFailed(name: String) extends NetworkOp
 case class Throttle(node: String, target: String, direction: Direction, rateMBit: Float) extends ServerOp
 case class ThrottleMsg(target: Address, direction: Direction, rateMBit: Float) extends NetworkOp
 case class Disconnect(node: String, target: String, abort: Boolean) extends ServerOp
@@ -41,6 +42,8 @@ class MsgEncoder extends OneToOneEncoder {
           w.setHello(TCP.Hello.newBuilder.setName(name).setAddress(addr))
         case EnterBarrier(name) ⇒
           w.setBarrier(TCP.EnterBarrier.newBuilder.setName(name))
+        case BarrierFailed(name) ⇒
+          w.setBarrier(TCP.EnterBarrier.newBuilder.setName(name).setFailed(true))
         case ThrottleMsg(target, dir, rate) ⇒
           w.setFailure(TCP.InjectFailure.newBuilder.setAddress(target)
             .setFailure(TCP.FailType.Throttle).setDirection(dir).setRateMBit(rate))
@@ -64,7 +67,9 @@ class MsgDecoder extends OneToOneDecoder {
         val h = w.getHello
         Hello(h.getName, h.getAddress)
       } else if (w.hasBarrier) {
-        EnterBarrier(w.getBarrier.getName)
+        val barrier = w.getBarrier
+        if (barrier.hasFailed && barrier.getFailed) BarrierFailed(barrier.getName)
+        else EnterBarrier(w.getBarrier.getName)
       } else if (w.hasFailure) {
         val f = w.getFailure
         import TCP.{ FailType ⇒ FT }

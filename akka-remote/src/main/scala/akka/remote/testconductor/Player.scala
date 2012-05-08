@@ -129,6 +129,9 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
         sender ! b
       }
       stay using Data(channel, None)
+    case Event(BarrierFailed(b), Data(channel, Some((_, sender)))) ⇒
+      sender ! Status.Failure(new RuntimeException("barrier failed: " + b))
+      stay using Data(channel, None)
     case Event(ThrottleMsg(target, dir, rate), _) ⇒
       import settings.QueryTimeout
       import context.dispatcher
