@@ -32,7 +32,7 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, camel, amqp, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -65,6 +65,15 @@ object AkkaBuild extends Build {
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
       scalacOptions += "-P:continuations:enable",
       libraryDependencies ++= Dependencies.actorTests
+    )
+  )
+
+  lazy val amqp = Project(
+    id = "akka-amqp",
+    base = file("akka-amqp"),
+    dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.amqp
     )
   )
 
@@ -440,7 +449,7 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val amqp = Seq(rabbit, commonsIo, protobuf)
+  val amqp = Seq(rabbit, Test.scalatest, Test.mockito)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
@@ -491,7 +500,7 @@ object Dependency {
     val Logback      = "0.9.28"
     val Netty        = "3.3.0.Final"
     val Protobuf     = "2.4.1"
-    val Rabbit       = "2.3.1"
+    val Rabbit       = "2.8.0"
     val ScalaStm     = "0.5"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.4"
