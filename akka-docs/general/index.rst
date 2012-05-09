@@ -12,3 +12,4 @@ General
    jmm
    message-send-semantics
    configuration
+   howdoi
