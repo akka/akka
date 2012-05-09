@@ -364,6 +364,12 @@ routing is not so important (i.e. no consistent hashing or round-robin is
 required); this enables newly created routees to pick up work immediately by
 stealing it from their siblings.
 
+.. note::
+
+   If you provide a collection of actors to route to, then they will still use the same dispatcher
+   that was configured for them in their ``Props``, it is not possible to change an actors dispatcher
+   after it has been created.
+
 The “head” router, of course, cannot run on the same balancing dispatcher,
 because it does not process the same messages, hence this special actor does
 not use the dispatcher configured in :class:`Props`, but takes the
