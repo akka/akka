@@ -123,7 +123,6 @@ class NettyRemoteTransport(_system: ExtendedActorSystem, _provider: RemoteActorR
                 case Some(client) ⇒ client //If already populated by other writer
                 case None ⇒ //Populate map
                   val client = new ActiveRemoteClient(this, recipientAddress, address)
-                  client.connect()
                   remoteClients += recipientAddress -> client
                   client
               }
@@ -134,6 +133,7 @@ class NettyRemoteTransport(_system: ExtendedActorSystem, _provider: RemoteActorR
             clientsLock.writeLock.unlock
           }
       }
+      client.connect() // this will literally do nothing after the first time
       client.send(message, senderOption, recipient)
     } finally {
       clientsLock.readLock.unlock
