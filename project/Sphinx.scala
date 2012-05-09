@@ -20,7 +20,7 @@ object Sphinx {
   val sphinx = TaskKey[File]("sphinx", "Build all Sphinx documentation (HTML and PDF combined).")
 
   lazy val settings = Seq(
-    sphinxDocs <<= baseDirectory / "akka-docs",
+    sphinxDocs <<= baseDirectory,
     sphinxTarget <<= crossTarget / "sphinx",
     sphinxPygmentsDir <<= sphinxDocs { _ / "_sphinx" / "pygments" },
     sphinxTags in sphinxHtml := Seq.empty,
@@ -62,7 +62,9 @@ object Sphinx {
           val changes = in.modified
           if (!changes.isEmpty) {
             IO.delete(target)
-            s.log.info("Building Sphinx %s documentation..." format builder)
+            val tagList = if (tags.isEmpty) "" else tags.mkString(" (", ", ", ")")
+            val desc = "%s%s" format (builder, tagList)
+            s.log.info("Building Sphinx %s documentation..." format desc)
             changes.foreach(file => s.log.debug("Changed documentation source: " + file))
             val logger = newLogger(s)
             val tagOptions = tags flatMap (Seq("-t", _))
@@ -70,8 +72,8 @@ object Sphinx {
             val env = "PYTHONPATH" -> pygments.absolutePath
             s.log.debug("Command: " + command.mkString(" "))
             val exitCode = Process(command, docs, env) ! logger
-            if (exitCode != 0) sys.error("Failed to build Sphinx %s documentation." format builder)
-            s.log.info("Sphinx %s documentation created: %s" format (builder, target))
+            if (exitCode != 0) sys.error("Failed to build Sphinx %s documentation." format desc)
+            s.log.info("Sphinx %s documentation created: %s" format (desc, target))
             target.descendentsExcept("*", "").get.toSet
           } else Set.empty
         }
