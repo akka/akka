@@ -27,7 +27,7 @@ public class SettingsExtensionDocTestBase {
     public final Duration CIRCUIT_BREAKER_TIMEOUT;
 
     public SettingsImpl(Config config) {
-      DB_URI = config.getString(config.getString("myapp.db.uri"));
+      DB_URI = config.getString("myapp.db.uri");
       CIRCUIT_BREAKER_TIMEOUT = Duration.create(config.getMilliseconds("myapp.circuit-breaker.timeout"),
           TimeUnit.MILLISECONDS);
     }
