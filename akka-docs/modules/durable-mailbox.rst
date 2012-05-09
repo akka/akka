@@ -30,22 +30,19 @@ it, that the message could be lost.
 The durable mailboxes currently supported are:
 
   - ``FileBasedMailbox`` -- backed by a journaling transaction log on the local file system
-  - ``RedisBasedMailbox`` -- backed by Redis
-  - ``ZooKeeperBasedMailbox`` -- backed by ZooKeeper
-  - ``BeanstalkBasedMailbox`` -- backed by Beanstalkd
-  - ``MongoBasedMailbox`` -- backed by MongoDB
+  - **DEPRECATED** ``RedisBasedMailbox`` -- backed by Redis
+  - **DEPRECATED** ``ZooKeeperBasedMailbox`` -- backed by ZooKeeper
+  - **DEPRECATED** ``BeanstalkBasedMailbox`` -- backed by Beanstalkd
+  - **DEPRECATED** ``MongoBasedMailbox`` -- backed by MongoDB
+
+.. warning:: **IMPORTANT**
+
+   In order to streamline the distribution, we have deprecated all durable mailboxes except for the FileBasedMailbox,
+   which will serve as a blueprint for how to implement new ones and to serve as the default durable mailbox implementation.
 
 We'll walk through each one of these in detail in the sections below.
 
 You can easily implement your own mailbox. Look at the existing implementations for inspiration.
-
-We are also discussing adding some of these durable mailboxes:
-
-  - ``AmqpBasedMailbox`` -- AMQP based mailbox (default RabbitMQ)
-  - ``JmsBasedMailbox`` -- JMS based mailbox (default ActiveMQ)
-  - ``CassandraBasedMailbox`` -- Cassandra based mailbox
-  - ``CamelBasedMailbox`` -- Camel based mailbox
-  - ``SqlBasedMailbox`` -- SQL based mailbox for general RDBMS (Postgres, MySQL, Oracle etc.)
 
 Let us know if you have a wish for a certain priority order.
 
@@ -109,6 +106,11 @@ the ``akka.actor.mailbox.file-based`` section in the :ref:`configuration`.
 Redis-based durable mailbox
 ===========================
 
+.. warning:: **IMPORTANT**
+
+   In order to streamline the distribution, we have deprecated all durable mailboxes except for the FileBasedMailbox,
+   which will serve as a blueprint for how to implement new ones and to serve as the default durable mailbox implementation.
+
 This mailbox is backed by a Redis queue. `Redis <http://redis.io>`_ Is a very
 fast NOSQL database that has a wide range of data structure abstractions, one of
 them is a queue which is what we are using in this implementation. This means
@@ -133,6 +135,11 @@ the ``akka.actor.mailbox.redis`` section in the :ref:`configuration`.
 
 ZooKeeper-based durable mailbox
 ===============================
+
+.. warning:: **IMPORTANT**
+
+   In order to streamline the distribution, we have deprecated all durable mailboxes except for the FileBasedMailbox,
+   which will serve as a blueprint for how to implement new ones and to serve as the default durable mailbox implementation.
 
 This mailbox is backed by `ZooKeeper <http://zookeeper.apache.org/>`_. ZooKeeper
 is a centralized service for maintaining configuration information, naming,
@@ -159,6 +166,11 @@ done in the ``akka.actor.mailbox.zookeeper`` section in the :ref:`configuration`
 Beanstalk-based durable mailbox
 ===============================
 
+.. warning:: **IMPORTANT**
+
+   In order to streamline the distribution, we have deprecated all durable mailboxes except for the FileBasedMailbox,
+   which will serve as a blueprint for how to implement new ones and to serve as the default durable mailbox implementation.
+
 This mailbox is backed by `Beanstalkd <http://kr.github.com/beanstalkd/>`_.
 Beanstalk is a simple, fast work queue. This means that you have to start up a
 Beanstalk server that can host these durable mailboxes. Read more in the
@@ -182,6 +194,11 @@ server. This is done in the ``akka.actor.mailbox.beanstalk`` section in the
 
 MongoDB-based Durable Mailboxes
 ===============================
+
+.. warning:: **IMPORTANT**
+
+   In order to streamline the distribution, we have deprecated all durable mailboxes except for the FileBasedMailbox,
+   which will serve as a blueprint for how to implement new ones and to serve as the default durable mailbox implementation.
 
 This mailbox is backed by `MongoDB <http://mongodb.org>`_.
 MongoDB is a fast, lightweight and scalable document-oriented database.  It contains a number of

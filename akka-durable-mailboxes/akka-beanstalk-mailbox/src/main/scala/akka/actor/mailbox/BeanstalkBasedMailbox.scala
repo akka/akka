@@ -16,8 +16,9 @@ import akka.config.ConfigurationException
 import akka.dispatch.MessageQueue
 import akka.actor.ActorSystem
 
+@deprecated("BeanstalkBasedMailbox will be removed in Akka 2.1", "2.0.2")
 class BeanstalkBasedMailboxException(message: String) extends AkkaException(message) {}
-
+@deprecated("BeanstalkBasedMailbox will be removed in Akka 2.1", "2.0.2")
 class BeanstalkBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new BeanstalkMailboxSettings(systemSettings, config)
   override def create(owner: Option[ActorContext]): MessageQueue = owner match {
@@ -29,6 +30,7 @@ class BeanstalkBasedMailboxType(systemSettings: ActorSystem.Settings, config: Co
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
+@deprecated("BeanstalkBasedMailbox will be removed in Akka 2.1", "2.0.2")
 class BeanstalkBasedMessageQueue(_owner: ActorContext, val settings: BeanstalkMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
   private val messageSubmitDelaySeconds = settings.MessageSubmitDelay.toSeconds.toInt
