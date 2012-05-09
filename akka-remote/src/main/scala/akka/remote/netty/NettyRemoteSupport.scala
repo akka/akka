@@ -112,7 +112,7 @@ class NettyRemoteTransport(_system: ExtendedActorSystem, _provider: RemoteActorR
     clientsLock.readLock.lock
     try {
       val client = remoteClients.get(recipientAddress) match {
-        case Some(client) ⇒ client
+        case Some(client) ⇒ Right(client)
         case None ⇒
           clientsLock.readLock.unlock
           clientsLock.writeLock.lock //Lock upgrade, not supported natively
@@ -120,12 +120,11 @@ class NettyRemoteTransport(_system: ExtendedActorSystem, _provider: RemoteActorR
             try {
               remoteClients.get(recipientAddress) match {
                 //Recheck for addition, race between upgrades
-                case Some(client) ⇒ client //If already populated by other writer
+                case Some(client) ⇒ Right(client) //If already populated by other writer
                 case None ⇒ //Populate map
                   val client = new ActiveRemoteClient(this, recipientAddress, address)
-                  client.connect()
                   remoteClients += recipientAddress -> client
-                  client
+                  Left(client) // signal that it must still be connect()ed
               }
             } finally {
               clientsLock.readLock.lock
@@ -134,7 +133,7 @@ class NettyRemoteTransport(_system: ExtendedActorSystem, _provider: RemoteActorR
             clientsLock.writeLock.unlock
           }
       }
-      client.send(message, senderOption, recipient)
+      client.fold(c ⇒ { c.connect(); c }, c ⇒ c).send(message, senderOption, recipient)
     } finally {
       clientsLock.readLock.unlock
     }

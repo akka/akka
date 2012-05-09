@@ -24,6 +24,7 @@ import org.jboss.netty.util.TimerTask
 import org.jboss.netty.util.Timeout
 import java.util.concurrent.TimeUnit
 import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
+import java.util.concurrent.CountDownLatch
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
@@ -66,11 +67,14 @@ abstract class RemoteClient private[akka] (
     throw exception
   }
 
+  protected def awaitStartup(): Unit = {}
+
   /**
    * Sends the message across the wire
    */
   private def send(request: (Any, Option[ActorRef], ActorRef)): Unit = {
     try {
+      awaitStartup()
       val channel = currentChannel
       val f = channel.write(request)
       f.addListener(
@@ -122,6 +126,14 @@ class ActiveRemoteClient private[akka] (
 
   def currentChannel = connection.getChannel
 
+  @volatile
+  private var startupLatch = new CountDownLatch(1)
+
+  override protected def awaitStartup(): Unit = startupLatch match {
+    case null ⇒ // okay
+    case l    ⇒ l.await()
+  }
+
   /**
    * Connect to remote server.
    */
@@ -171,6 +183,9 @@ class ActiveRemoteClient private[akka] (
       connection = bootstrap.connect(new InetSocketAddress(remoteIP, remoteAddress.port.get))
 
       openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
+
+      startupLatch.countDown()
+      startupLatch = null
 
       if (!connection.isSuccess) {
         notifyListeners(RemoteClientError(connection.getCause, netty, remoteAddress))
