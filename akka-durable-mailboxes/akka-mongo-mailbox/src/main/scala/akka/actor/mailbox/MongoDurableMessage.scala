@@ -25,6 +25,7 @@ import akka.dispatch.Envelope
  *
  * @author <a href="http://evilmonkeylabs.com">Brendan W. McAdams</a>
  */
+@deprecated("MailboxBasedMailbox will be removed in Akka 2.1", "2.0.2")
 case class MongoDurableMessage(
   val ownerPath: String,
   val message: Any,

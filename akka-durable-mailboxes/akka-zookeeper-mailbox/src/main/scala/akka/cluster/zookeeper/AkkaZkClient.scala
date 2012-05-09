@@ -11,6 +11,7 @@ import akka.util.Duration
 /**
  * ZooKeeper client. Holds the ZooKeeper connection and manages its session.
  */
+@deprecated("ZooKeeperBasedMailbox will be removed in Akka 2.1", "2.0.2")
 class AkkaZkClient(zkServers: String,
                    sessionTimeout: Duration,
                    connectionTimeout: Duration,

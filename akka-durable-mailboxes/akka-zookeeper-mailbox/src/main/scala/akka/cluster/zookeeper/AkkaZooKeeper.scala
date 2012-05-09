@@ -6,7 +6,7 @@ package akka.cluster.zookeeper
 import org.I0Itec.zkclient._
 import org.apache.commons.io.FileUtils
 import java.io.File
-
+@deprecated("ZooKeeperBasedMailbox will be removed in Akka 2.1", "2.0.2")
 object AkkaZooKeeper {
   /**
    * Starts up a local ZooKeeper server. Should only be used for testing purposes.
