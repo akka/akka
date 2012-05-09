@@ -28,7 +28,7 @@ object Dist {
     distLibJars <<= (thisProjectRef, buildStructure, distExclude) flatMap aggregated(packageBin.task in Compile),
     distSrcJars <<= (thisProjectRef, buildStructure, distExclude) flatMap aggregated(packageSrc.task in Compile),
     distDocJars <<= (thisProjectRef, buildStructure, distExclude) flatMap aggregated(packageDoc.task in Compile),
-    distSources <<= (distDependencies, distLibJars,  distSrcJars, distDocJars, Unidoc.unidoc, Rstdoc.rstdoc) map DistSources,
+    distSources <<= (distDependencies, distLibJars,  distSrcJars, distDocJars, Unidoc.unidoc, Sphinx.sphinx) map DistSources,
     distDirectory <<= crossTarget / "dist",
     distUnzipped <<= distDirectory / "unzipped",
     distFile <<= (distDirectory, version) { (dir, v) => dir / ("akka-" + v + ".zip") },

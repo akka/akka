@@ -25,7 +25,7 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Sphinx.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
