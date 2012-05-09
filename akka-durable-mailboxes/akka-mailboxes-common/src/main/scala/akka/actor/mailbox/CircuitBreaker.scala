@@ -7,10 +7,10 @@ import java.util.concurrent.atomic.{ AtomicReference, AtomicLong, AtomicInteger 
 import akka.actor.Scheduler
 import akka.util.{ Duration, Deadline }
 import akka.AkkaException
-import java.util.concurrent.locks.ReentrantLock
 import java.util.UUID
 import collection.mutable.HashMap
 import scala.Boolean
+import java.util.concurrent.locks.{ Lock, ReentrantLock }
 
 /**
  * akka.actor.mailbox
@@ -29,6 +29,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   case class AsyncDeadlineToken(id: UUID = UUID.randomUUID())
 
   private val currentState: AtomicReference[CircuitBreakerState] = new AtomicReference(CircuitBreakerClosed)
+  private val currentStateLock: Lock = new ReentrantLock()
 
   def onOpen[T](func: () ⇒ T): CircuitBreaker = {
     CircuitBreakerOpen.addListener(func)
@@ -67,48 +68,68 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
     new InternalAsyncHandle(token)
   }
 
+  private[this] def withCurrentState(body: (CircuitBreakerState) ⇒ Unit) {
+    try {
+      currentStateLock.lock()
+      val state = currentState.get()
+      body(state)
+    } finally {
+      currentStateLock.unlock()
+    }
+  }
+
   private[this] def _withAsyncCircuitBreaker[T](body: ⇒ T, token: AsyncDeadlineToken): T = {
     currentState.get().onCall(body, Some(token))
   }
 
   private[this] def _onAsyncSuccess(token: AsyncDeadlineToken) {
-    if (currentState.get().exceedsAsyncDeadline(token))
-      currentState.get().callFails()
-    else
-      currentState.get().callSucceeds()
-    currentState.get().cleanUpToken(token)
+    withCurrentState { state ⇒
+      if (state.exceedsAsyncDeadline(token))
+        state.callFails()
+      else
+        state.callSucceeds()
+      state.cleanUpToken(token)
+    }
   }
 
   private[this] def _onAsyncFailure(token: AsyncDeadlineToken) {
-    currentState.get().callFails()
-    currentState.get().cleanUpToken(token)
+    withCurrentState { state ⇒
+      state.callFails()
+      state.cleanUpToken(token)
+    }
   }
 
   private[this] def tripBreaker() {
-    currentState.get() match {
-      case CircuitBreakerOpen ⇒ throw new IllegalStateException("TripBreaker transition not valid from Open state")
-      case _                  ⇒
+    withCurrentState { state ⇒
+      state match {
+        case CircuitBreakerOpen ⇒ throw new IllegalStateException("TripBreaker transition not valid from Open state")
+        case _                  ⇒
+      }
+      currentState.set(CircuitBreakerOpen)
+      CircuitBreakerOpen.enter()
     }
-    currentState.set(CircuitBreakerOpen)
-    CircuitBreakerOpen.enter()
   }
 
   private[this] def resetBreaker() {
-    currentState.get() match {
-      case CircuitBreakerHalfOpen ⇒
-      case _                      ⇒ throw new IllegalStateException("ResetBreaker transition only valid from Half-Open state")
+    withCurrentState { state ⇒
+      state match {
+        case CircuitBreakerHalfOpen ⇒
+        case _                      ⇒ throw new IllegalStateException("ResetBreaker transition only valid from Half-Open state")
+      }
+      currentState.set(CircuitBreakerClosed)
+      CircuitBreakerClosed.enter()
     }
-    currentState.set(CircuitBreakerClosed)
-    CircuitBreakerClosed.enter()
   }
 
   private[this] def attemptReset() {
-    currentState.get() match {
-      case CircuitBreakerOpen ⇒
-      case _                  ⇒ throw new IllegalStateException("AttemptReset transition only valid from Open state")
+    withCurrentState { state ⇒
+      state match {
+        case CircuitBreakerOpen ⇒
+        case _                  ⇒ throw new IllegalStateException("AttemptReset transition only valid from Open state")
+      }
+      currentState.set(CircuitBreakerHalfOpen)
+      CircuitBreakerHalfOpen.enter()
     }
-    currentState.set(CircuitBreakerHalfOpen)
-    CircuitBreakerHalfOpen.enter()
   }
 
   trait CircuitBreakerState {
