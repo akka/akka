@@ -39,7 +39,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -192,13 +192,6 @@ object AkkaBuild extends Build {
      settings = defaultSettings ++ Seq(
        libraryDependencies ++= Dependencies.camel
      )
-  )
-
-  lazy val actorMigration = Project(
-    id = "akka-actor-migration",
-    base = file("akka-actor-migration"),
-    dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings
   )
 
   lazy val akkaSbtPlugin = Project(
