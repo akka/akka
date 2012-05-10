@@ -21,7 +21,13 @@ import akka.actor.PoisonPill
 import akka.event.Logging
 import akka.dispatch.Future
 
-trait Player extends BarrierSync { this: TestConductorExt ⇒
+/**
+ * The Player is the client component of the
+ * [[akka.remote.testconductor.TestConductorExt]] extension. It registers with
+ * the [[akka.remote.testconductor.Conductor]]’s [[akka.remote.testconductor.Controller]]
+ * in order to participate in barriers and enable network failure injection.
+ */
+trait Player { this: TestConductorExt ⇒
 
   private var _client: ActorRef = _
   private def client = _client match {
@@ -29,6 +35,14 @@ trait Player extends BarrierSync { this: TestConductorExt ⇒
     case x    ⇒ x
   }
 
+  /**
+   * Connect to the conductor on the given port (the host is taken from setting
+   * `akka.testconductor.host`). The connection is made asynchronously, but you
+   * should await completion of the returned Future because that implies that
+   * all expected participants of this test have successfully connected (i.e.
+   * this is a first barrier in itself). The number of expected participants is
+   * set in [[akka.remote.testconductor.Conductor]]`.startController()`.
+   */
   def startClient(port: Int): Future[Done] = {
     import ClientFSM._
     import akka.actor.FSM._
@@ -51,7 +65,11 @@ trait Player extends BarrierSync { this: TestConductorExt ⇒
     a ? client mapTo
   }
 
-  override def enter(name: String*) {
+  /**
+   * Enter the named barriers, one after the other, in the order given. Will
+   * throw an exception in case of timeouts or other errors.
+   */
+  def enter(name: String*) {
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
     name foreach { b ⇒
       import Settings.BarrierTimeout
@@ -73,6 +91,15 @@ object ClientFSM {
   case object Disconnected
 }
 
+/**
+ * This is the controlling entity on the [[akka.remote.testconductor.Player]]
+ * side: in a first step it registers itself with a symbolic name and its remote
+ * address at the [[akka.remote.testconductor.Controller]], then waits for the
+ * `Done` message which signals that all other expected test participants have
+ * done the same. After that, it will pass barrier requests to and from the
+ * coordinator and react to the [[akka.remote.testconductor.Conductor]]’s
+ * requests for failure injection.
+ */
 class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
   import ClientFSM._
 
@@ -162,6 +189,9 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
 
 }
 
+/**
+ * This handler only forwards messages received from the conductor to the [[akka.remote.testconductor.ClientFSM]].
+ */
 class PlayerHandler(fsm: ActorRef, log: LoggingAdapter) extends SimpleChannelUpstreamHandler {
 
   import ClientFSM._

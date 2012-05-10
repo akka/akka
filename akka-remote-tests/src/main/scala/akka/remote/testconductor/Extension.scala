@@ -11,12 +11,28 @@ import akka.actor.ActorRef
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.Address
 
+/**
+ * Access to the [[akka.remote.testconductor.TestConductorExt]] extension:
+ * 
+ * {{{
+ * val tc = TestConductor(system)
+ * tc.startController(numPlayers)
+ * // OR
+ * tc.startClient(conductorPort)
+ * }}}
+ */
 object TestConductor extends ExtensionKey[TestConductorExt] {
 
   def apply()(implicit ctx: ActorContext): TestConductorExt = apply(ctx.system)
 
 }
 
+/**
+ * This binds together the [[akka.remote.testconductor.Conductor]] and
+ * [[akka.remote.testconductor.Player]] roles inside an Akka
+ * [[akka.actor.Extension]]. Please follow the aforementioned links for
+ * more information.
+ */
 class TestConductorExt(val system: ExtendedActorSystem) extends Extension with Conductor with Player {
 
   object Settings {
