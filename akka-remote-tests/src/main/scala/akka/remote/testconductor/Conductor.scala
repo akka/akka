@@ -24,6 +24,7 @@ import java.net.InetSocketAddress
 import akka.dispatch.Future
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy
+import java.util.concurrent.ConcurrentHashMap
 
 trait Conductor extends RunControl with FailureInject { this: TestConductorExt ⇒
 
@@ -91,22 +92,21 @@ trait Conductor extends RunControl with FailureInject { this: TestConductorExt �
 
 class ConductorHandler(system: ActorSystem, controller: ActorRef, log: LoggingAdapter) extends SimpleChannelUpstreamHandler {
 
-  @volatile
-  var clients = Map[Channel, ActorRef]()
+  val clients = new ConcurrentHashMap[Channel, ActorRef]()
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
     log.debug("connection from {}", getAddrString(channel))
     val fsm = system.actorOf(Props(new ServerFSM(controller, channel)))
-    clients += channel -> fsm
+    clients.put(channel, fsm)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
     log.debug("disconnect from {}", getAddrString(channel))
-    val fsm = clients(channel)
+    val fsm = clients.get(channel)
     fsm ! PoisonPill
-    clients -= channel
+    clients.remove(channel)
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = {
@@ -114,7 +114,7 @@ class ConductorHandler(system: ActorSystem, controller: ActorRef, log: LoggingAd
     log.debug("message from {}: {}", getAddrString(channel), event.getMessage)
     event.getMessage match {
       case msg: NetworkOp ⇒
-        clients(channel) ! msg
+        clients.get(channel) ! msg
       case msg ⇒
         log.info("client {} sent garbage '{}', disconnecting", getAddrString(channel), msg)
         channel.close()

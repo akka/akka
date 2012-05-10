@@ -87,6 +87,24 @@ object AkkaBuild extends Build {
     )
   ) configs (MultiJvm)
 
+  lazy val remoteTests = Project(
+    id = "akka-remote-tests",
+    base = file("akka-remote-tests"),
+    dependencies = Seq(remote % "compile;test->test;multi-jvm->multi-jvm", actorTests % "test->test", testkit % "test->test"),
+    settings = defaultSettings ++ multiJvmSettings ++ schoirSettings ++ Seq(
+      // disable parallel tests
+      parallelExecution in Test := false,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      },
+      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      jvmOptions in MultiJvm := {
+        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
+      },
+      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+    )
+  ) configs (MultiJvm)
+
   lazy val cluster = Project(
     id = "akka-cluster",
     base = file("akka-cluster"),
@@ -438,7 +456,7 @@ object Dependencies {
     Test.zookeeper, Test.log4j // needed for ZkBarrier in multi-jvm tests
   )
 
- val cluster = Seq(Test.junit, Test.scalatest)
+  val cluster = Seq(Test.junit, Test.scalatest)
 
   val slf4j = Seq(slf4jApi, Test.logback)
 
