@@ -24,13 +24,15 @@ object Introduction {
   {
     //#Consumer
     import akka.camel.{ CamelMessage, Consumer }
-
     class JettyAdapter extends Consumer {
-      def endpointUri = "jetty:http://localhost:8877/example"
+      def endpointUri = "jetty:http://localhost:8877/hello"
+
+      // Open http://localhost:8877/hello?name=Bob and see what's going to happen.
 
       def receive = {
-        case msg: CamelMessage ⇒ { /* ... */ }
-        case _                 ⇒ { /* ... */ }
+        case CamelMessage(body, headers) =>
+          val name: Any = headers.get("name").getOrElse("Stranger")
+          sender ! <html><body>{"Hello %s" format name}</body></html>
       }
     }
     //#Consumer

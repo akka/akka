@@ -156,3 +156,29 @@ new Message object is created by akka-camel with the actor response as message
 body.
 
 .. _Message: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/CamelMessage.scala
+
+.. _camel-publishing:
+
+Consumer publishing
+-------------------
+
+Publishing a consumer actor at its Camel endpoint occurs when the actor is
+started.
+
+.. code-block:: scala
+
+    val sys = ActorSystem("camel")
+    val mina = sys.actorOf(Props[MinaConsumer]) // create actor and activate endpoint in background
+
+Publication is done asynchronously; setting up an endpoint (more
+precisely, the route from that endpoint to the actor) may still be in progress
+after the ``actorOf`` method returned.
+
+Awaiting for activation
+~~~~~~~~~~~~~~~~~~~~~~~
+In order to make sure the endpoint is fully activated the ``awaitActivation`` method of ``CamelExtension`` can be used.
+
+.. code-block:: scala
+
+    val mina = sys.actorOf(Props[MinaConsumer)
+    CamelExtension(sys).awaitActivation(mina, 10 seconds)
