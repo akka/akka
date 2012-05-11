@@ -215,10 +215,9 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
 
   @tailrec private final def addInhabitants(add: Long): Long = {
-    val u = Unsafe.instance
-    val c = u.getLongVolatile(this, inhabitantsOffset)
+    val c = inhabitants
     val r = c + add
-    if (u.compareAndSwapLong(this, inhabitantsOffset, c, r)) r else addInhabitants(add)
+    if (Unsafe.instance.compareAndSwapLong(this, inhabitantsOffset, c, r)) r else addInhabitants(add)
   }
 
   final def inhabitants: Long = Unsafe.instance.getLongVolatile(this, inhabitantsOffset)

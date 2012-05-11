@@ -42,7 +42,7 @@ object Publish {
       <connection>scm:git:git@github.com:akka/akka.git</connection>
     </scm>) ++ makeDevelopersXml(Map(
         "jboner" -> "Jonas Boner",
-        "legendofklang" -> "Viktor Klang",
+        "viktorklang" -> "Viktor Klang",
         "rkuhn" -> "Roland Kuhn",
         "pvlugter" -> "Peter Vlugter"
         // TODO - More than the names in the last 10 commits
