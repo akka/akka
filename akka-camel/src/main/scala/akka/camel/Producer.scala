@@ -7,6 +7,7 @@ package akka.camel
 import akka.actor.Actor
 import internal.CamelExchangeAdapter
 import org.apache.camel.{ Exchange, ExchangePattern, AsyncCallback }
+import akka.actor.Status.Failure
 
 /**
  * Support trait for producing messages to Camel endpoints.
@@ -75,7 +76,7 @@ trait ProducerSupport { this: Actor ⇒
       val originalSender = sender
       // Ignoring doneSync, sending back async uniformly.
       def done(doneSync: Boolean): Unit = producer.tell(
-        if (exchange.isFailed) FailureResult(exchange.toFailureMessage(cmsg.headers(headersToCopy)))
+        if (exchange.isFailed) exchange.toFailureResult(cmsg.headers(headersToCopy))
         else MessageResult(exchange.toResponseMessage(cmsg.headers(headersToCopy))), originalSender)
     })
   }
@@ -89,13 +90,13 @@ trait ProducerSupport { this: Actor ⇒
    */
   protected def produce: Receive = {
     case res: MessageResult ⇒ routeResponse(res.message)
-    case res: FailureResult ⇒ routeResponse(res.failure)
-    case msg ⇒ {
-      if (oneway)
-        produce(transformOutgoingMessage(msg), ExchangePattern.InOnly)
-      else
-        produce(transformOutgoingMessage(msg), ExchangePattern.InOut)
-    }
+    case res: FailureResult ⇒
+      val e = new AkkaCamelException(res.cause, res.headers)
+      routeResponse(Failure(e))
+      throw e
+    case msg ⇒
+      val exchangePattern = if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut
+      produce(transformOutgoingMessage(msg), exchangePattern)
   }
 
   /**
@@ -144,7 +145,7 @@ private case class MessageResult(message: CamelMessage)
 /**
  * @author Martin Krasser
  */
-private case class FailureResult(failure: Failure)
+private case class FailureResult(cause: Throwable, headers: Map[String, Any] = Map.empty)
 
 /**
  * A one-way producer.
