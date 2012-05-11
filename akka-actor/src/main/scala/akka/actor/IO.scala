@@ -170,7 +170,9 @@ object IO {
    * [[akka.actor.IO.SocketOption]] to set the SO_RCVBUF option for this
    * [[akka.actor.IO.SocketHandle]].
    */
-  case class ReceiveBufferSize(size: Int) extends SocketOption with ServerSocketOption
+  case class ReceiveBufferSize(size: Int) extends SocketOption with ServerSocketOption {
+    require(size > 0, "Receive buffer size must be greater than 0")
+  }
 
   /**
    * [[akka.actor.IO.SocketOption]] to enable or disable SO_REUSEADDR
@@ -181,19 +183,25 @@ object IO {
    * [[akka.actor.IO.SocketOption]] to set the SO_SNDBUF option for this
    * [[akka.actor.IO.SocketHandle]].
    */
-  case class SendBufferSize(size: Int) extends SocketOption
+  case class SendBufferSize(size: Int) extends SocketOption {
+    require(size > 0, "Send buffer size must be greater than 0")
+  }
 
   /**
    * [[akka.actor.IO.SocketOption]] to enable or disable SO_LINGER with the
-   * specified linger time rounded down to the nearest second.
+   * specified linger time in seconds.
    */
-  case class SoLinger(on: Boolean, linger: Duration) extends SocketOption
+  case class SoLinger(linger: Option[Int]) extends SocketOption {
+    if (linger.isDefined) require(linger.get >= 0, "linger must not be negative if on")
+  }
 
   /**
    * [[akka.actor.IO.SocketOption]] to enable or disable SO_TIMEOUT with the
    * specified timeout rounded down to the nearest millisecond.
    */
-  case class SoTimeout(timeout: Duration) extends SocketOption
+  case class SoTimeout(timeout: Duration) extends SocketOption {
+    require(timeout.toMillis >= 0, "SoTimeout must be >= 0ms")
+  }
 
   /**
    * [[akka.actor.IO.SocketOption]] to enable or disable TCP_NODELAY
@@ -963,7 +971,7 @@ final class IOManagerActor extends Actor with ActorLogging {
       case IO.ReceiveBufferSize(size) ⇒ socket.setReceiveBufferSize(size)
       case IO.ReuseAddress(on)        ⇒ socket.setReuseAddress(on)
       case IO.SendBufferSize(size)    ⇒ socket.setSendBufferSize(size)
-      case IO.SoLinger(on, linger)    ⇒ socket.setSoLinger(on, linger.toSeconds.toInt)
+      case IO.SoLinger(linger)        ⇒ socket.setSoLinger(linger.isDefined, math.max(0, linger.getOrElse(socket.getSoLinger)))
       case IO.SoTimeout(timeout)      ⇒ socket.setSoTimeout(timeout.toMillis.toInt)
       case IO.TcpNoDelay(on)          ⇒ socket.setTcpNoDelay(on)
       case IO.TrafficClass(tc)        ⇒ socket.setTrafficClass(tc)
