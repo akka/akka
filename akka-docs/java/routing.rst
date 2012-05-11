@@ -339,6 +339,19 @@ If you are interested in how to use the VoteCountRouter it looks like this:
 
 .. includecode:: code/akka/docs/jrouting/CustomRouterDocTestBase.java#crTest
 
+.. caution::
+
+   When creating a cutom router the resulting RoutedActorRef optimizes the
+   sending of the message so that it does NOT go through the router’s mailbox
+   unless the route returns an empty recipient set.
+
+   This means that the ``route`` function defined in the ``RouterConfig``
+   or the function returned from ``CreateCustomRoute`` in
+   ``CustomRouterConfig`` is evaluated concurrently without protection by
+   the RoutedActorRef: either provide a reentrant (i.e. pure) implementation
+   or do the locking yourself!
+
+
 Configured Custom Router
 ************************
 
