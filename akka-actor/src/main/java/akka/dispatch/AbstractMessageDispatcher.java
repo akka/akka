@@ -4,15 +4,21 @@
 
 package akka.dispatch;
 
+import akka.util.Unsafe;
+
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 abstract class AbstractMessageDispatcher {
-    private volatile int _shutdownSchedule; // not initialized because this is faster: 0 == UNSCHEDULED
-    protected final static AtomicIntegerFieldUpdater<AbstractMessageDispatcher> shutdownScheduleUpdater =
-      AtomicIntegerFieldUpdater.newUpdater(AbstractMessageDispatcher.class, "_shutdownSchedule");
+    final static long shutdownScheduleOffset;
+    final static long inhabitantsOffset;
 
-    private volatile long _inhabitants; // not initialized because this is faster
-    protected final static AtomicLongFieldUpdater<AbstractMessageDispatcher> inhabitantsUpdater =
-      AtomicLongFieldUpdater.newUpdater(AbstractMessageDispatcher.class, "_inhabitants");
+    static {
+        try {
+          shutdownScheduleOffset = Unsafe.instance.objectFieldOffset(MessageDispatcher.class.getDeclaredField("_shutdownScheduleDoNotCallMeDirectly"));
+          inhabitantsOffset = Unsafe.instance.objectFieldOffset(MessageDispatcher.class.getDeclaredField("_inhabitantsDoNotCallMeDirectly"));
+        } catch(Throwable t){
+            throw new ExceptionInInitializerError(t);
+        }
+    }
 }
