@@ -5,7 +5,7 @@ import scala.collection.JavaConversions._
 import org.apache.camel.util.ExchangeHelper
 
 import org.apache.camel.{ Exchange, Message ⇒ JCamelMessage }
-import akka.camel.{ Failure, AkkaCamelException, CamelMessage }
+import akka.camel.{ FailureResult, AkkaCamelException, CamelMessage }
 
 /**
  *  For internal use only.
@@ -40,10 +40,10 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
   def setResponse(msg: CamelMessage) { msg.copyContentTo(response) }
 
   /**
-   * Sets Exchange.getException from the given Failure message. Headers of the Failure message
+   * Sets Exchange.getException from the given FailureResult message. Headers of the FailureResult message
    * are ignored.
    */
-  def setFailure(msg: Failure) { exchange.setException(msg.cause) }
+  def setFailure(msg: FailureResult) { exchange.setException(msg.cause) }
 
   /**
    * Creates an immutable CamelMessage object from Exchange.getIn so it can be used with Actors.
@@ -87,21 +87,21 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
     new AkkaCamelException(exchange.getException, headers ++ response.getHeaders)
 
   /**
-   * Creates an immutable Failure object from the adapted Exchange so it can be used with Actors.
+   * Creates an immutable Failure object from the adapted Exchange so it can be used internally between Actors.
    *
    * @see Failure
    */
-  def toFailureMessage: Failure = toFailureMessage(Map.empty)
+  def toFailureMessage: FailureResult = toFailureResult(Map.empty)
 
   /**
-   * Creates an immutable Failure object from the adapted Exchange so it can be used with Actors.
+   * Creates an immutable FailureResult object from the adapted Exchange so it can be used internally between Actors.
    *
    * @param headers additional headers to set on the created CamelMessage in addition to those
    *                in the Camel message.
    *
    * @see Failure
    */
-  def toFailureMessage(headers: Map[String, Any]): Failure = Failure(exchange.getException, headers ++ response.getHeaders)
+  def toFailureResult(headers: Map[String, Any]): FailureResult = FailureResult(exchange.getException, headers ++ response.getHeaders)
 
   /**
    * Creates an immutable CamelMessage object from Exchange.getIn so it can be used with Actors.

@@ -17,7 +17,7 @@ import akka.util.duration._
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import akka.camel.internal.CamelExchangeAdapter
 import akka.util.{ NonFatal, Duration, Timeout }
-import akka.camel.{ ActorNotRegisteredException, DefaultConsumerConfig, ConsumerConfig, Camel, Ack, Failure ⇒ CamelFailure, CamelMessage }
+import akka.camel.{ ActorNotRegisteredException, DefaultConsumerConfig, ConsumerConfig, Camel, Ack, FailureResult, CamelMessage }
 
 /**
  * For internal use only.
@@ -170,18 +170,18 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 
   }
   private def forwardResponseTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
-    case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure)
+    case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
     case Right(msg)                   ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
-    case Left(e: TimeoutException)    ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
-    case Left(throwable)              ⇒ exchange.setFailure(CamelFailure(throwable))
+    case Left(e: TimeoutException)    ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+    case Left(throwable)              ⇒ exchange.setFailure(FailureResult(throwable))
   }
 
   private def forwardAckTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
     case Right(Ack)                   ⇒ { /* no response message to set */ }
-    case Right(failure: CamelFailure) ⇒ exchange.setFailure(failure)
-    case Right(msg)                   ⇒ exchange.setFailure(CamelFailure(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
-    case Left(e: TimeoutException)    ⇒ exchange.setFailure(CamelFailure(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
-    case Left(throwable)              ⇒ exchange.setFailure(CamelFailure(throwable))
+    case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
+    case Right(msg)                   ⇒ exchange.setFailure(FailureResult(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
+    case Left(e: TimeoutException)    ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+    case Left(throwable)              ⇒ exchange.setFailure(FailureResult(throwable))
   }
 
   private def sendAsync(message: CamelMessage, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
@@ -199,7 +199,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
     try {
       actorFor(endpoint.path) ! message
     } catch {
-      case e ⇒ exchange.setFailure(new CamelFailure(e))
+      case e ⇒ exchange.setFailure(new FailureResult(e))
     }
   }
 

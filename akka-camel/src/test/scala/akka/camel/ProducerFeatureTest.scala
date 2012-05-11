@@ -7,7 +7,7 @@ package akka.camel
 import org.apache.camel.{ Exchange, Processor }
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
-import akka.dispatch.{ Future, Await }
+import akka.dispatch.Await
 import akka.camel.TestSupport.SharedCamelSystem
 import akka.actor.SupervisorStrategy.Stop
 import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
@@ -71,18 +71,16 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
           case _: AkkaCamelException ⇒ Stop
         }
       }))
-      val producer = Await.result[ActorRef](supervisor.ask(Props(new TestProducer("direct:producer-test-2"))).asInstanceOf[Future[ActorRef]], timeoutDuration)
+      val producer = Await.result[ActorRef](supervisor.ask(Props(new TestProducer("direct:producer-test-2"))).mapTo[ActorRef], timeoutDuration)
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
-      val future = producer.ask(message)(timeoutDuration)
-      Await.result(future, timeoutDuration) match {
-        case result: Failure ⇒
+      val future = producer.ask(message)(timeoutDuration).failed
+      Await.ready(future, timeoutDuration).value match {
+        case Some(Right(e: AkkaCamelException)) ⇒
           then("a failure response must have been returned by the producer")
-          val expectedFailureText = result.cause.getMessage
-          val expectedHeaders = result.headers
-          assert(expectedFailureText === "failure")
-          assert(expectedHeaders === Map(CamelMessage.MessageExchangeId -> "123"))
+          e.getMessage must be("failure")
+          e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
       then("an AkkaCamelException must have been thrown, which can be used for supervision")
@@ -130,7 +128,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
         case result: CamelMessage ⇒
           then("a normal response must have been returned by the producer")
           val expected = CamelMessage("received test", Map(CamelMessage.MessageExchangeId -> "123"))
-          assert(result === expected)
+          result must be(expected)
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
     }
@@ -141,14 +139,13 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
-      val future = producer.ask(message)(timeoutDuration)
-      Await.result(future, timeoutDuration) match {
-        case result: Failure ⇒
+
+      val future = producer.ask(message)(timeoutDuration).failed
+      Await.ready(future, timeoutDuration).value match {
+        case Some(Right(e: AkkaCamelException)) ⇒
           then("a failure response must have been returned by the producer")
-          val expectedFailureText = result.cause.getMessage
-          val expectedHeaders = result.headers
-          assert(expectedFailureText === "failure")
-          assert(expectedHeaders === Map(CamelMessage.MessageExchangeId -> "123"))
+          e.getMessage must be("failure")
+          e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
     }
@@ -166,7 +163,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
         case result: CamelMessage ⇒
           then("a normal response must have been returned by the forward target")
           val expected = CamelMessage("received test", Map(CamelMessage.MessageExchangeId -> "123", "test" -> "result"))
-          assert(result === expected)
+          result must be(expected)
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
     }
@@ -178,14 +175,12 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
 
       when("a test message causing an exception is sent to the producer with ?")
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
-      val future = producer.ask(message)(timeoutDuration)
-      Await.result(future, timeoutDuration) match {
-        case failure: Failure ⇒
+      val future = producer.ask(message)(timeoutDuration).failed
+      Await.ready(future, timeoutDuration).value match {
+        case Some(Right(e: AkkaCamelException)) ⇒
           then("a failure response must have been returned by the forward target")
-          val expectedFailureText = failure.cause.getMessage
-          val expectedHeaders = failure.headers
-          assert(expectedFailureText === "failure")
-          assert(expectedHeaders === Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
+          e.getMessage must be("failure")
+          e.headers must be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
     }
@@ -211,7 +206,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
 
       when("a test message causing an exception is sent to the producer with !")
       mockEndpoint.expectedMessageCount(1)
-      mockEndpoint.message(0).body().isInstanceOf(classOf[Failure])
+      mockEndpoint.message(0).body().isInstanceOf(classOf[akka.actor.Status.Failure])
       producer.tell(CamelMessage("fail", Map()), producer)
 
       then("a failure response must have been produced by the forward target")
@@ -232,7 +227,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       Await.result(future, timeoutDuration) match {
         case message: CamelMessage ⇒
           val expected = CamelMessage("received test", Map(CamelMessage.MessageExchangeId -> "123", "test" -> "result"))
-          assert(message === expected)
+          message must be(expected)
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
     }
@@ -244,14 +239,12 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
 
       when("a test message causing an exception is sent to the producer with ask")
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
-      val future = producer.ask(message)(timeoutDuration)
-      Await.result(future, timeoutDuration) match {
-        case failure: Failure ⇒
+      val future = producer.ask(message)(timeoutDuration).failed
+      Await.ready(future, timeoutDuration).value match {
+        case Some(Right(e: AkkaCamelException)) ⇒
           then("a failure response must have been returned by the forward target")
-          val expectedFailureText = failure.cause.getMessage
-          val expectedHeaders = failure.headers
-          assert(expectedFailureText === "failure")
-          assert(expectedHeaders === Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
+          e.getMessage must be("failure")
+          e.headers must be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
     }
@@ -276,7 +269,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
 
       when("a test message causing an exception is sent to the producer with !")
       mockEndpoint.expectedMessageCount(1)
-      mockEndpoint.message(0).body().isInstanceOf(classOf[Failure])
+      mockEndpoint.message(0).body().isInstanceOf(classOf[akka.actor.Status.Failure])
       producer.tell(CamelMessage("fail", Map()), producer)
 
       then("a failure response must have been produced by the forward target")
@@ -303,13 +296,15 @@ object ProducerFeatureTest {
   class TestForwarder(uri: String, target: ActorRef) extends Actor with Producer {
     def endpointUri = uri
 
-    override protected def routeResponse(msg: Any): Unit = target forward msg
+    override def headersToCopy = Set(CamelMessage.MessageExchangeId, "test")
+
+    override def routeResponse(msg: Any): Unit = target forward msg
   }
 
   class TestResponder extends Actor {
     protected def receive = {
       case msg: CamelMessage ⇒ msg.body match {
-        case "fail" ⇒ context.sender ! (Failure(new Exception("failure"), msg.headers))
+        case "fail" ⇒ context.sender ! akka.actor.Status.Failure(new AkkaCamelException(new Exception("failure"), msg.headers))
         case _ ⇒
           context.sender ! (msg.mapBody {
             body: String ⇒ "received %s" format body
@@ -322,8 +317,10 @@ object ProducerFeatureTest {
     protected def receive = {
       case msg: CamelMessage ⇒
         context.sender ! (msg.addHeader("test" -> "result"))
-      case msg: Failure ⇒
-        context.sender ! (Failure(msg.cause, msg.headers + ("test" -> "failure")))
+      case msg: akka.actor.Status.Failure ⇒
+        msg.cause match {
+          case e: AkkaCamelException ⇒ context.sender ! Status.Failure(new AkkaCamelException(e, e.headers + ("test" -> "failure")))
+        }
     }
   }
 
