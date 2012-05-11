@@ -543,7 +543,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   /**
    * Add a single Short to this builder.
    */
-  def putShort(x: Short, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type = {
+  def putShort(x: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type = {
     if (byteOrder == ByteOrder.BIG_ENDIAN) {
       this += (x >>> 8).toByte
       this += (x >>> 0).toByte
@@ -556,7 +556,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   /**
    * Add a single Int to this builder.
    */
-  def putInt(x: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type = {
+  def putInt(x: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type = {
     fillArray(4) {
       case (target, offset) ⇒ {
         if (byteOrder == ByteOrder.BIG_ENDIAN) {
@@ -578,7 +578,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   /**
    * Add a single Long to this builder.
    */
-  def putLong(x: Long, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type = {
+  def putLong(x: Long)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type = {
     fillArray(8) {
       case (target, offset) ⇒ {
         if (byteOrder == ByteOrder.BIG_ENDIAN) {
@@ -608,14 +608,14 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   /**
    * Add a single Float to this builder.
    */
-  def putFloat(x: Float, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
-    putInt(java.lang.Float.floatToRawIntBits(x), byteOrder)
+  def putFloat(x: Float)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+    putInt(java.lang.Float.floatToRawIntBits(x))(byteOrder)
 
   /**
    * Add a single Double to this builder.
    */
-  def putDouble(x: Double, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
-    putLong(java.lang.Double.doubleToRawLongBits(x), byteOrder)
+  def putDouble(x: Double)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+    putLong(java.lang.Double.doubleToRawLongBits(x))(byteOrder)
 
   /**
    * Add a number of Bytes from an array to this builder.
@@ -626,31 +626,31 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   /**
    * Add a number of Shorts from an array to this builder.
    */
-  def putShorts(array: Array[Short], start: Int, len: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+  def putShorts(array: Array[Short], start: Int, len: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
     fillByteBuffer(len * 2, byteOrder) { _.asShortBuffer.put(array, start, len) }
 
   /**
    * Add a number of Ints from an array to this builder.
    */
-  def putInts(array: Array[Int], start: Int, len: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+  def putInts(array: Array[Int], start: Int, len: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
     fillByteBuffer(len * 4, byteOrder) { _.asIntBuffer.put(array, start, len) }
 
   /**
    * Add a number of Longs from an array to this builder.
    */
-  def putLongs(array: Array[Long], start: Int, len: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+  def putLongs(array: Array[Long], start: Int, len: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
     fillByteBuffer(len * 8, byteOrder) { _.asLongBuffer.put(array, start, len) }
 
   /**
    * Add a number of Floats from an array to this builder.
    */
-  def putFloats(array: Array[Float], start: Int, len: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+  def putFloats(array: Array[Float], start: Int, len: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
     fillByteBuffer(len * 4, byteOrder) { _.asFloatBuffer.put(array, start, len) }
 
   /**
    * Add a number of Doubles from an array to this builder.
    */
-  def putDoubles(array: Array[Double], start: Int, len: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+  def putDoubles(array: Array[Double], start: Int, len: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
     fillByteBuffer(len * 8, byteOrder) { _.asDoubleBuffer.put(array, start, len) }
 
   def clear() {
