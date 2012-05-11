@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.testconductor
 
@@ -100,7 +100,7 @@ trait Conductor { this: TestConductorExt ⇒
    * on average), but that is countered by using the actual execution time for
    * determining how much to send, leading to the correct output rate, but with
    * increased latency.
-   * 
+   *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be throttled
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
@@ -116,7 +116,7 @@ trait Conductor { this: TestConductorExt ⇒
    * sending and/or receiving: it will just drop all messages right before
    * submitting them to the Socket or right after receiving them from the
    * Socket.
-   * 
+   *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
@@ -130,7 +130,7 @@ trait Conductor { this: TestConductorExt ⇒
    * Tell the remote support to shutdown the connection to the given remote
    * peer. It works regardless of whether the recipient was initiator or
    * responder.
-   * 
+   *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    */
@@ -143,7 +143,7 @@ trait Conductor { this: TestConductorExt ⇒
    * Tell the remote support to TCP_RESET the connection to the given remote
    * peer. It works regardless of whether the recipient was initiator or
    * responder.
-   * 
+   *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    */
@@ -155,7 +155,7 @@ trait Conductor { this: TestConductorExt ⇒
   /**
    * Tell the remote node to shut itself down using System.exit with the given
    * exitValue.
-   * 
+   *
    * @param node is the symbolic name of the node which is to be affected
    * @param exitValue is the return code which shall be given to System.exit
    */
@@ -166,7 +166,7 @@ trait Conductor { this: TestConductorExt ⇒
 
   /**
    * Tell the SBT plugin to forcibly terminate the given remote node using Process.destroy.
-   * 
+   *
    * @param node is the symbolic name of the node which is to be affected
    */
   def kill(node: String): Future[Done] = {
@@ -177,7 +177,7 @@ trait Conductor { this: TestConductorExt ⇒
   /**
    * Obtain the list of remote host names currently registered.
    */
-  def getNodes: Future[List[String]] = {
+  def getNodes: Future[Iterable[String]] = {
     import Settings.QueryTimeout
     controller ? GetNodes mapTo
   }
@@ -187,7 +187,7 @@ trait Conductor { this: TestConductorExt ⇒
    * pass subsequent barriers. This must be done before the client connection
    * breaks down in order to affect an “orderly” removal (i.e. without failing
    * present and future barriers).
-   * 
+   *
    * @param node is the symbolic name of the node which is to be removed
    */
   def removeNode(node: String): Future[Done] = {
@@ -330,22 +330,32 @@ object Controller {
  * [[akka.remote.testconductor.BarrierCoordinator]], its child) and allowing
  * network and other failures to be injected at the test nodes.
  */
-class Controller(_participants: Int) extends Actor {
+class Controller(private var initialParticipants: Int) extends Actor {
   import Controller._
-
-  var initialParticipants = _participants
+  import BarrierCoordinator._
 
   val settings = TestConductor().Settings
   val connection = RemoteConnection(Server, settings.host, settings.port,
     new ConductorHandler(context.system, self, Logging(context.system, "ConductorHandler")))
 
+  /*
+   * Supervision of the BarrierCoordinator means to catch all his bad emotions
+   * and sometimes console him (BarrierEmpty, BarrierTimeout), sometimes tell
+   * him to hate the world (WrongBarrier, DuplicateNode, ClientLost). The latter shall help
+   * terminate broken tests as quickly as possible (i.e. without awaiting
+   * BarrierTimeouts in the players).
+   */
   override def supervisorStrategy = OneForOneStrategy() {
-    case e: BarrierCoordinator.BarrierTimeoutException ⇒ SupervisorStrategy.Resume
-    case e: BarrierCoordinator.WrongBarrierException ⇒
-      for (NodeInfo(c, _, _) ← e.data.clients; info ← nodes get c)
-        barrier ! NodeInfo(c, info.addr, info.fsm)
-      for (c ← e.data.arrived) c ! BarrierFailed(e.barrier)
-      SupervisorStrategy.Restart
+    case BarrierTimeout(data)             ⇒ SupervisorStrategy.Resume
+    case BarrierEmpty(data, msg)          ⇒ SupervisorStrategy.Resume
+    case WrongBarrier(name, client, data) ⇒ client ! Send(BarrierFailed(name)); failBarrier(data)
+    case ClientLost(data, node)           ⇒ failBarrier(data)
+    case DuplicateNode(data, node)        ⇒ failBarrier(data)
+  }
+
+  def failBarrier(data: Data): SupervisorStrategy.Directive = {
+    for (c ← data.arrived) c ! Send(BarrierFailed(data.barrier))
+    SupervisorStrategy.Restart
   }
 
   val barrier = context.actorOf(Props[BarrierCoordinator], "barriers")
@@ -353,12 +363,20 @@ class Controller(_participants: Int) extends Actor {
 
   override def receive = LoggingReceive {
     case c @ NodeInfo(name, addr, fsm) ⇒
-      nodes += name -> c
       barrier forward c
-      if (initialParticipants <= 0) sender ! Done
-      else if (nodes.size == initialParticipants) {
-        for (NodeInfo(_, _, client) ← nodes.values) client ! Send(Done)
-        initialParticipants = 0
+      if (nodes contains name) {
+        if (initialParticipants > 0) {
+          for (NodeInfo(_, _, client) ← nodes.values) client ! Send(BarrierFailed("initial startup"))
+          initialParticipants = 0
+        }
+        fsm ! Send(BarrierFailed("initial startup"))
+      } else {
+        nodes += name -> c
+        if (initialParticipants <= 0) fsm ! Send(Done)
+        else if (nodes.size == initialParticipants) {
+          for (NodeInfo(_, _, client) ← nodes.values) client ! Send(Done)
+          initialParticipants = 0
+        }
       }
     case c @ ClientDisconnected(name) ⇒
       nodes -= name
@@ -396,8 +414,16 @@ object BarrierCoordinator {
   case class RemoveClient(name: String)
 
   case class Data(clients: Set[Controller.NodeInfo], barrier: String, arrived: List[ActorRef])
-  class BarrierTimeoutException(val data: Data) extends RuntimeException(data.barrier) with NoStackTrace
-  class WrongBarrierException(val barrier: String, val client: ActorRef, val data: Data) extends RuntimeException(barrier) with NoStackTrace
+
+  trait Printer { this: Product with Throwable with NoStackTrace ⇒
+    override def toString = productPrefix + productIterator.mkString("(", ", ", ")")
+  }
+
+  case class BarrierTimeout(data: Data) extends RuntimeException(data.barrier) with NoStackTrace with Printer
+  case class DuplicateNode(data: Data, node: Controller.NodeInfo) extends RuntimeException with NoStackTrace with Printer
+  case class WrongBarrier(barrier: String, client: ActorRef, data: Data) extends RuntimeException(barrier) with NoStackTrace with Printer
+  case class BarrierEmpty(data: Data, msg: String) extends RuntimeException(msg) with NoStackTrace with Printer
+  case class ClientLost(data: Data, client: String) extends RuntimeException with NoStackTrace with Printer
 }
 
 /**
@@ -426,26 +452,28 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
 
   whenUnhandled {
     case Event(n: NodeInfo, d @ Data(clients, _, _)) ⇒
+      if (clients.find(_.name == n.name).isDefined) throw new DuplicateNode(d, n)
       stay using d.copy(clients = clients + n)
+    case Event(ClientDisconnected(name), d @ Data(clients, _, arrived)) ⇒
+      if (clients.isEmpty) throw BarrierEmpty(d, "no client to disconnect")
+      (clients find (_.name == name)) match {
+        case None    ⇒ stay
+        case Some(c) ⇒ throw ClientLost(d.copy(clients = clients - c, arrived = arrived filterNot (_ == c.fsm)), name)
+      }
   }
 
   when(Idle) {
-    case Event(EnterBarrier(name), d @ Data(clients, _, _)) ⇒
-      if (clients.isEmpty) throw new IllegalStateException("no client expected yet")
+    case Event(e @ EnterBarrier(name), d @ Data(clients, _, _)) ⇒
       if (failed)
-        stay replying BarrierFailed(name)
+        stay replying Send(BarrierFailed(name))
+      else if (clients.map(_.fsm) == Set(sender))
+        stay replying Send(e)
+      else if (clients.find(_.fsm == sender).isEmpty)
+        stay replying Send(BarrierFailed(name))
       else
         goto(Waiting) using d.copy(barrier = name, arrived = sender :: Nil)
-    case Event(ClientDisconnected(name), d @ Data(clients, _, _)) ⇒
-      if (clients.isEmpty) throw new IllegalStateException("no client to disconnect")
-      (clients filterNot (_.name == name)) match {
-        case `clients` ⇒ stay
-        case c ⇒
-          failed = true
-          stay using d.copy(clients = c)
-      }
     case Event(RemoveClient(name), d @ Data(clients, _, _)) ⇒
-      if (clients.isEmpty) throw new IllegalStateException("no client to remove")
+      if (clients.isEmpty) throw BarrierEmpty(d, "no client to remove")
       stay using d.copy(clients = clients filterNot (_.name == name))
   }
 
@@ -456,36 +484,33 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
 
   when(Waiting) {
     case Event(e @ EnterBarrier(name), d @ Data(clients, barrier, arrived)) ⇒
-      if (name != barrier) throw new WrongBarrierException(barrier, sender, d)
+      if (name != barrier || clients.find(_.fsm == sender).isEmpty) throw WrongBarrier(name, sender, d)
       val together = sender :: arrived
       handleBarrier(d.copy(arrived = together))
     case Event(RemoveClient(name), d @ Data(clients, barrier, arrived)) ⇒
-      val newClients = clients filterNot (_.name == name)
-      val newArrived = arrived filterNot (_ == name)
-      handleBarrier(d.copy(clients = newClients, arrived = newArrived))
-    case Event(ClientDisconnected(name), d @ Data(clients, barrier, arrived)) ⇒
-      (clients filterNot (_.name == name)) match {
-        case `clients` ⇒ stay
-        case c ⇒
-          val f = BarrierFailed(barrier)
-          arrived foreach (_ ! Send(f))
-          failed = true
-          goto(Idle) using Data(c, "", Nil)
+      clients find (_.name == name) match {
+        case None ⇒ stay
+        case Some(client) ⇒
+          handleBarrier(d.copy(clients = clients - client, arrived = arrived filterNot (_ == client.fsm)))
       }
     case Event(StateTimeout, data) ⇒
-      throw new BarrierTimeoutException(data)
+      throw BarrierTimeout(data)
   }
 
   initialize
 
-  def handleBarrier(data: Data): State =
-    if ((data.clients.map(_.fsm) -- data.arrived).isEmpty) {
+  def handleBarrier(data: Data): State = {
+    log.debug("handleBarrier({})", data)
+    if (data.arrived.isEmpty) {
+      goto(Idle) using data.copy(barrier = "")
+    } else if ((data.clients.map(_.fsm) -- data.arrived).isEmpty) {
       val e = EnterBarrier(data.barrier)
       data.arrived foreach (_ ! Send(e))
       goto(Idle) using data.copy(barrier = "", arrived = Nil)
     } else {
       stay using data
     }
+  }
 
 }
 

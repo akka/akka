@@ -55,9 +55,9 @@ trait Player { this: TestConductorExt ⇒
       def receive = {
         case fsm: ActorRef                        ⇒ waiting = sender; fsm ! SubscribeTransitionCallBack(self)
         case Transition(_, Connecting, AwaitDone) ⇒ // step 1, not there yet
-        case Transition(_, AwaitDone, Connected)  ⇒ waiting ! Done
-        case t: Transition[_]                     ⇒ waiting ! Status.Failure(new RuntimeException("unexpected transition: " + t))
-        case CurrentState(_, Connected)           ⇒ waiting ! Done
+        case Transition(_, AwaitDone, Connected)  ⇒ waiting ! Done; context stop self
+        case t: Transition[_]                     ⇒ waiting ! Status.Failure(new RuntimeException("unexpected transition: " + t)); context stop self
+        case CurrentState(_, Connected)           ⇒ waiting ! Done; context stop self
         case _: CurrentState[_]                   ⇒
       }
     }))
@@ -84,6 +84,7 @@ object ClientFSM {
   case object Connecting extends State
   case object AwaitDone extends State
   case object Connected extends State
+  case object Failed extends State
 
   case class Data(channel: Channel, barrier: Option[(String, ActorRef)])
 
@@ -116,24 +117,24 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
       channel.write(Hello(settings.name, TestConductor().address))
       goto(AwaitDone)
     case Event(_: ConnectionFailure, _) ⇒
-      // System.exit(1)
-      stop
+      goto(Failed)
     case Event(StateTimeout, _) ⇒
       log.error("connect timeout to TestConductor")
-      // System.exit(1)
-      stop
+      goto(Failed)
   }
 
   when(AwaitDone, stateTimeout = settings.BarrierTimeout.duration) {
     case Event(Done, _) ⇒
       log.debug("received Done: starting test")
       goto(Connected)
+    case Event(msg: NetworkOp, _) ⇒
+      log.error("received {} instead of Done", msg)
+      goto(Failed)
     case Event(msg: ClientOp, _) ⇒
       stay replying Status.Failure(new IllegalStateException("not connected yet"))
     case Event(StateTimeout, _) ⇒
       log.error("connect timeout to TestConductor")
-      // System.exit(1)
-      stop
+      goto(Failed)
   }
 
   when(Connected) {
@@ -178,6 +179,14 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
     case Event(TerminateMsg(exit), _) ⇒
       System.exit(exit)
       stay // needed because Java doesn’t have Nothing
+  }
+
+  when(Failed) {
+    case Event(msg: ClientOp, _) ⇒
+      stay replying Status.Failure(new RuntimeException("cannot do " + msg + " while Failed"))
+    case Event(msg: NetworkOp, _) ⇒
+      log.warning("ignoring network message {} while Failed", msg)
+      stay
   }
 
   onTermination {

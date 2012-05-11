@@ -13,7 +13,7 @@ import akka.actor.Address
 
 /**
  * Access to the [[akka.remote.testconductor.TestConductorExt]] extension:
- * 
+ *
  * {{{
  * val tc = TestConductor(system)
  * tc.startController(numPlayers)
