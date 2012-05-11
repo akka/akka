@@ -1,9 +1,8 @@
 
 .. _microkernel:
 
-#############
- Microkernel (Java)
-#############
+Microkernel (Java)
+==================
 
 The Akka Microkernel is included in the Akka download found at `downloads`_.
 
