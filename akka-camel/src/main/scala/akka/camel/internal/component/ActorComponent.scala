@@ -17,7 +17,7 @@ import akka.util.duration._
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import akka.camel.internal.CamelExchangeAdapter
 import akka.util.{ NonFatal, Duration, Timeout }
-import akka.camel.{ ActorNotRegisteredException, DefaultConsumerConfig, ConsumerConfig, Camel, Ack, FailureResult, CamelMessage }
+import akka.camel.{ ActorNotRegisteredException, ConsumerConfig, Camel, Ack, FailureResult, CamelMessage }
 
 /**
  * For internal use only.
@@ -229,20 +229,22 @@ private[camel] object DurationTypeConverter extends TypeConverter {
  * @param actorPath the String representation of the path to the actor
  */
 private[camel] case class ActorEndpointPath private (actorPath: String) {
+  import ActorEndpointPath._
   require(actorPath != null)
   require(actorPath.length() > 0)
-  def toCamelPath(config: ConsumerConfig = DefaultConsumerConfig): String = "actor://path:%s?%s" format (actorPath, config.toCamelParameters)
+  def toCamelPath(config: ConsumerConfig = consumerConfig): String = "actor://path:%s?%s" format (actorPath, config.toCamelParameters)
 
   def findActorIn(system: ActorSystem): Option[ActorRef] = {
     val ref = system.actorFor(actorPath)
     if (ref.isTerminated) None else Some(ref)
   }
 }
-
 /**
  * For internal use only. Companion of `ActorEndpointPath`
  */
 private[camel] object ActorEndpointPath {
+  private val consumerConfig = new ConsumerConfig {}
+
   def apply(actorRef: ActorRef) = new ActorEndpointPath(actorRef.path.toString)
 
   /**

@@ -235,7 +235,7 @@ object CamelMessage {
  */
 case object Ack {
   /** Java API to get the Ack singleton */
-  def ack = this
+  def getInstance = this
 }
 
 /**
