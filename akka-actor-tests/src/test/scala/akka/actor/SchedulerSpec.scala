@@ -52,12 +52,12 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
 
       // run immediately and then every 100 milliseconds
       collectCancellable(system.scheduler.schedule(0 milliseconds, 100 milliseconds, actor, "msg"))
-      expectNoMsg(1 second)
+      expectMsg("msg")
 
       // stop the actor and, hence, the continuous messaging from happening
       actor ! PoisonPill
 
-      expectMsg("msg")
+      expectNoMsg(1 second)
     }
 
     "schedule once" in {
