@@ -401,4 +401,45 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       }
     }
   }
+
+  "support mixin message handlers" in {
+    // "override" mixin that runs other handlers second
+    trait HandlesA extends Actor {
+      override def aroundReceive = ({
+        case 'A' ⇒ sender ! 1
+      }: Receive) orElse super.aroundReceive
+    }
+    // "fallback" mixin that runs other handlers first
+    trait HandlesB extends Actor {
+      override def aroundReceive = super.aroundReceive orElse ({
+        case 'B' ⇒ sender ! 2
+        case 'C' ⇒ sender ! 42 // not reached, HandlesC filters
+      }: Receive)
+    }
+    // this is a completely unmodified actor other
+    // than having "with HandlesA with HandlesB",
+    // it doesn't have to worry about chaining up
+    // or anything like that.
+    class HandlesC extends Actor with HandlesA with HandlesB {
+      def receive = {
+        case 'C' ⇒ sender ! 3
+        case 'A' ⇒ sender ! 42 // not reached, HandlesA filters
+      }
+    }
+
+    val timeout = Timeout(20000)
+    val ref = system.actorOf(Props(new HandlesC))
+
+    val one = (ref.ask('A')(timeout)).mapTo[Int]
+    val two = (ref.ask('B')(timeout)).mapTo[Int]
+    val three = (ref.ask('C')(timeout)).mapTo[Int]
+
+    ref ! PoisonPill
+
+    Await.result(one, timeout.duration) must be(1)
+    Await.result(two, timeout.duration) must be(2)
+    Await.result(three, timeout.duration) must be(3)
+
+    awaitCond(ref.isTerminated, 2000 millis)
+  }
 }

@@ -240,6 +240,26 @@ trait Actor {
   final def sender: ActorRef = context.sender
 
   /**
+   * This allows traits and subclasses to mix in actor behavior;
+   * by default it chains to receive(), so you _must_ chain up
+   * if you override this! If you want your mixin's message
+   * handling to run before other handlers, chain up
+   * _after_ you run your own message-handling code:
+   * <p/>
+   * {{{
+   *   trait Mixin extends Actor {
+   *     override def aroundReceive = ({
+   *       case CustomMessage =>
+   *     }: Receive) orElse super.aroundReceive
+   *   }
+   * }}}
+   * If you want your mixin to provide a fallback after
+   * the subtype's handlers run, then chain up first and
+   * fall back to your own code second.
+   */
+  protected def aroundReceive: Receive = receive
+
+  /**
    * This defines the initial actor behavior, it must return a partial function
    * with the actor logic.
    */
@@ -339,6 +359,6 @@ trait Actor {
   private[akka] def clearBehaviorStack(): Unit =
     behaviorStack = Stack.empty[Receive].push(behaviorStack.last)
 
-  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(receive)
+  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(aroundReceive)
 }
 

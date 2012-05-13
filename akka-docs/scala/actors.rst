@@ -656,15 +656,22 @@ state of the failing actor instance is lost if you don't store and restore it in
 ``preRestart`` and ``postRestart`` callbacks.
 
 
-Extending Actors using PartialFunction chaining
+Extending Actors using aroundReceive and PartialFunction chaining
 ===============================================
 
-A bit advanced but very useful way of defining a base message handler and then
-extend that, either through inheritance or delegation, is to use
-``PartialFunction.orElse`` chaining.
+You can create "mixin" traits or abstract classes using the
+``aroundReceive`` method on ``Actor``. By default,
+``aroundReceive`` simply calls ``receive``; the difference is that
+when overriding ``aroundReceive``, you are required to chain up to
+``super.aroundReceive`` with ``PartialFunction.orElse``:
+
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-aroundReceive
+
+Multiple traits that extend ``aroundReceive`` in this way can be
+mixed in to the same concrete class. The concrete class need not
+do anything special, it implements ``receive`` as usual.
+
+``PartialFunction.orElse`` chaining can also be used for more
+complex scenarios, like dynamic runtime registration of handlers:
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-orElse
-
-Or:
-
-.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-orElse2
