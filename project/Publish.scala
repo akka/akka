@@ -13,7 +13,7 @@ object Publish {
   lazy val settings = Seq(
     crossPaths := false,
     pomExtra := akkaPomExtra,
-    publishTo <<= sonatypePublishTo,
+    publishTo <<= akkaPublishTo,
     credentials ++= akkaCredentials,
     organizationName := "Typesafe Inc.",
     organizationHomepage := Some(url("http://www.typesafe.com")),
