@@ -150,6 +150,8 @@ object IO {
 
   /**
    * [[akka.actor.IO.SocketOption]] to enable or disable SO_KEEPALIVE
+   *
+   * For more information see [[java.net.Socket#setKeepAlive]]
    */
   case class KeepAlive(on: Boolean) extends SocketOption
 
@@ -157,18 +159,24 @@ object IO {
    * [[akka.actor.IO.SocketOption]] to enable or disable OOBINLINE (receipt
    * of TCP urgent data) By default, this option is disabled and TCP urgent
    * data received on a [[akka.actor.IO.SocketHandle]] is silently discarded.
+   *
+   * For more information see [[java.net.Socket#setOOBInline]]
    */
   case class OOBInline(on: Boolean) extends SocketOption
 
   /**
    * [[akka.actor.IO.SocketOption]] to set performance preferences for this
    * [[akka.actor.IO.SocketHandle]].
+   *
+   * For more information see [[java.net.Socket#setPerformancePreferences]]
    */
   case class PerformancePreferences(connectionTime: Int, latency: Int, bandwidth: Int) extends SocketOption with ServerSocketOption
 
   /**
    * [[akka.actor.IO.SocketOption]] to set the SO_RCVBUF option for this
    * [[akka.actor.IO.SocketHandle]].
+   *
+   * For more information see [[java.net.Socket#setReceiveBufferSize]]
    */
   case class ReceiveBufferSize(size: Int) extends SocketOption with ServerSocketOption {
     require(size > 0, "Receive buffer size must be greater than 0")
@@ -176,12 +184,16 @@ object IO {
 
   /**
    * [[akka.actor.IO.SocketOption]] to enable or disable SO_REUSEADDR
+   *
+   * For more information see [[java.net.Socket#setReuseAddress]]
    */
   case class ReuseAddress(on: Boolean) extends SocketOption with ServerSocketOption
 
   /**
    * [[akka.actor.IO.SocketOption]] to set the SO_SNDBUF option for this
    * [[akka.actor.IO.SocketHandle]].
+   *
+   * For more information see [[java.net.Socket#setSendBufferSize]]
    */
   case class SendBufferSize(size: Int) extends SocketOption {
     require(size > 0, "Send buffer size must be greater than 0")
@@ -190,6 +202,8 @@ object IO {
   /**
    * [[akka.actor.IO.SocketOption]] to enable or disable SO_LINGER with the
    * specified linger time in seconds.
+   *
+   * For more information see [[java.net.Socket#setSoLinger]]
    */
   case class SoLinger(linger: Option[Int]) extends SocketOption {
     if (linger.isDefined) require(linger.get >= 0, "linger must not be negative if on")
@@ -198,6 +212,8 @@ object IO {
   /**
    * [[akka.actor.IO.SocketOption]] to enable or disable SO_TIMEOUT with the
    * specified timeout rounded down to the nearest millisecond.
+   *
+   * For more information see [[java.net.Socket#setSoTimeout]]
    */
   case class SoTimeout(timeout: Duration) extends SocketOption {
     require(timeout.toMillis >= 0, "SoTimeout must be >= 0ms")
@@ -206,6 +222,8 @@ object IO {
   /**
    * [[akka.actor.IO.SocketOption]] to enable or disable TCP_NODELAY
    * (disable or enable Nagle's algorithm)
+   *
+   * For more information see [[java.net.Socket#setTcpNoDelay]]
    */
   case class TcpNoDelay(on: Boolean) extends SocketOption
 
@@ -213,6 +231,8 @@ object IO {
    * [[akka.actor.IO.SocketOption]] to set the traffic class or
    * type-of-service octet in the IP header for packets sent from this
    * [[akka.actor.IO.SocketHandle]].
+   *
+   * For more information see [[java.net.Socket#setTrafficClass]]
    */
   case class TrafficClass(tc: Int) extends SocketOption
 
