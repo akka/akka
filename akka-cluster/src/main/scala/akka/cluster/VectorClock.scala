@@ -105,7 +105,7 @@ object VectorClock {
   object Timestamp {
     private val counter = new AtomicLong(newTimestamp)
 
-    def zero(): Timestamp = Timestamp(0L)
+    val zero: Timestamp = Timestamp(0L)
 
     def apply(): Timestamp = {
       var newTime: Long = 0L
