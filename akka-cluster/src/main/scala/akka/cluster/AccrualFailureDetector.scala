@@ -22,7 +22,12 @@ import java.util.concurrent.atomic.AtomicReference
  * <p/>
  * Default threshold is 8, but can be configured in the Akka config.
  */
-class AccrualFailureDetector(system: ActorSystem, address: Address, val threshold: Int = 8, val maxSampleSize: Int = 1000, val timeMachine: () ⇒ Long = System.currentTimeMillis) {
+class AccrualFailureDetector(
+  system: ActorSystem,
+  address: Address,
+  val threshold: Int = 8,
+  val maxSampleSize: Int = 1000,
+  val timeMachine: () ⇒ Long = System.currentTimeMillis) {
 
   private final val PhiFactor = 1.0 / math.log(10.0)
 
@@ -40,7 +45,7 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
   private case class State(
     version: Long = 0L,
     failureStats: Map[Address, FailureStats] = Map.empty[Address, FailureStats],
-    intervalHistory: Map[Address, Vector[Long]] = Map.empty[Address, Vector[Long]],
+    intervalHistory: Map[Address, IndexedSeq[Long]] = Map.empty[Address, IndexedSeq[Long]],
     timestamps: Map[Address, Long] = Map.empty[Address, Long],
     explicitRemovals: Set[Address] = Set.empty[Address])
 
@@ -60,26 +65,17 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
     log.debug("Node [{}] - Heartbeat from connection [{}] ", address, connection)
 
     val oldState = state.get
-    val oldFailureStats = oldState.failureStats
-    val oldTimestamps = oldState.timestamps
     val latestTimestamp = oldState.timestamps.get(connection)
-    val explicitRemovals = oldState.explicitRemovals
 
     if (latestTimestamp.isEmpty) {
-
       // this is heartbeat from a new connection
       // add starter records for this new connection
-      val newFailureStats = oldFailureStats + (connection -> FailureStats())
-      val newIntervalHistory = oldState.intervalHistory + (connection -> Vector.empty[Long])
-      val newTimestamps = oldTimestamps + (connection -> timeMachine())
-      val newExplicitRemovals = explicitRemovals - connection
-
       val newState = oldState copy (
         version = oldState.version + 1,
-        failureStats = newFailureStats,
-        intervalHistory = newIntervalHistory,
-        timestamps = newTimestamps,
-        explicitRemovals = newExplicitRemovals)
+        failureStats = oldState.failureStats + (connection -> FailureStats()),
+        intervalHistory = oldState.intervalHistory + (connection -> IndexedSeq.empty[Long]),
+        timestamps = oldState.timestamps + (connection -> timeMachine()),
+        explicitRemovals = oldState.explicitRemovals - connection)
 
       // if we won the race then update else try again
       if (!state.compareAndSet(oldState, newState)) heartbeat(connection) // recur
@@ -89,26 +85,21 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
       val timestamp = timeMachine()
       val interval = timestamp - latestTimestamp.get
 
-      val newTimestamps = oldTimestamps + (connection -> timestamp) // record new timestamp
-
-      var newIntervalsForConnection = (oldState.intervalHistory.get(connection) match {
+      val newIntervalsForConnection = (oldState.intervalHistory.get(connection) match {
+        case Some(history) if history.size >= maxSampleSize ⇒
+          // reached max history, drop first interval
+          history drop 1
         case Some(history) ⇒ history
-        case _             ⇒ Vector.empty[Long]
+        case _             ⇒ IndexedSeq.empty[Long]
       }) :+ interval
-
-      if (newIntervalsForConnection.size > maxSampleSize) {
-        // reached max history, drop first interval
-        newIntervalsForConnection = newIntervalsForConnection drop 0
-      }
 
       val newFailureStats =
         if (newIntervalsForConnection.size > 1) {
 
           val newMean: Double = newIntervalsForConnection.sum / newIntervalsForConnection.size.toDouble
 
-          val oldConnectionFailureStats = oldState.failureStats.get(connection) match {
-            case Some(stats) ⇒ stats
-            case _           ⇒ throw new IllegalStateException("Can't calculate new failure statistics due to missing heartbeat history")
+          val oldConnectionFailureStats = oldState.failureStats.get(connection).getOrElse {
+            throw new IllegalStateException("Can't calculate new failure statistics due to missing heartbeat history")
           }
 
           val deviationSum =
@@ -120,21 +111,17 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
           val newDeviation: Double = math.sqrt(newVariance)
 
           val newFailureStats = oldConnectionFailureStats copy (mean = newMean, deviation = newDeviation, variance = newVariance)
-          oldFailureStats + (connection -> newFailureStats)
+          oldState.failureStats + (connection -> newFailureStats)
 
         } else {
-          oldFailureStats
+          oldState.failureStats
         }
-
-      val newIntervalHistory = oldState.intervalHistory + (connection -> newIntervalsForConnection)
-
-      val newExplicitRemovals = explicitRemovals - connection
 
       val newState = oldState copy (version = oldState.version + 1,
         failureStats = newFailureStats,
-        intervalHistory = newIntervalHistory,
-        timestamps = newTimestamps,
-        explicitRemovals = newExplicitRemovals)
+        intervalHistory = oldState.intervalHistory + (connection -> newIntervalsForConnection),
+        timestamps = oldState.timestamps + (connection -> timestamp), // record new timestamp,
+        explicitRemovals = oldState.explicitRemovals - connection)
 
       // if we won the race then update else try again
       if (!state.compareAndSet(oldState, newState)) heartbeat(connection) // recur
@@ -184,16 +171,11 @@ class AccrualFailureDetector(system: ActorSystem, address: Address, val threshol
     val oldState = state.get
 
     if (oldState.failureStats.contains(connection)) {
-      val failureStats = oldState.failureStats - connection
-      val intervalHistory = oldState.intervalHistory - connection
-      val timestamps = oldState.timestamps - connection
-      val explicitRemovals = oldState.explicitRemovals + connection
-
       val newState = oldState copy (version = oldState.version + 1,
-        failureStats = failureStats,
-        intervalHistory = intervalHistory,
-        timestamps = timestamps,
-        explicitRemovals = explicitRemovals)
+        failureStats = oldState.failureStats - connection,
+        intervalHistory = oldState.intervalHistory - connection,
+        timestamps = oldState.timestamps - connection,
+        explicitRemovals = oldState.explicitRemovals + connection)
 
       // if we won the race then update else try again
       if (!state.compareAndSet(oldState, newState)) remove(connection) // recur
