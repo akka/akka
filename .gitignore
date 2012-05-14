@@ -65,3 +65,4 @@ worker*.log
 mongoDB/
 redis/
 beanstalk/
+.scalastyle
