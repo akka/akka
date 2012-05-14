@@ -155,7 +155,7 @@ public class HashedWheelTimer implements Timer {
         ticksPerWheel = normalizeTicksPerWheel(ticksPerWheel);
         Set<HashedWheelTimeout>[] wheel = new Set[ticksPerWheel];
         for (int i = 0; i < wheel.length; i ++) {
-            wheel[i] = new MapBackedSet<HashedWheelTimeout>(new ConcurrentIdentityHashMap<HashedWheelTimeout, Boolean>(16, 0.95f, 4));
+            wheel[i] = Collections.newSetFromMap(new ConcurrentIdentityHashMap<HashedWheelTimeout, Boolean>(16, 0.95f, 4));
         }
         return wheel;
     }
