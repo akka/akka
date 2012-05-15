@@ -10,32 +10,30 @@ import akka.dispatch._
 import akka.pattern.ask
 import org.jboss.netty.akka.util.HashedWheelTimer
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
 import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import java.io.Closeable
-import akka.dispatch.Await.Awaitable
-import akka.dispatch.Await.CanAwait
+import akka.dispatch.Await.{ Awaitable, CanAwait }
 import akka.util._
 import collection.immutable.Stack
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 
 object ActorSystem {
 
-  val Version = "2.1-SNAPSHOT"
+  val Version: String = "2.1-SNAPSHOT"
 
-  val EnvHome = System.getenv("AKKA_HOME") match {
+  val EnvHome: Option[String] = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
     case value           ⇒ Some(value)
   }
 
-  val SystemHome = System.getProperty("akka.home") match {
+  val SystemHome: Option[String] = System.getProperty("akka.home") match {
     case null | "" ⇒ None
     case value     ⇒ Some(value)
   }
 
-  val GlobalHome = SystemHome orElse EnvHome
+  val GlobalHome: Option[String] = SystemHome orElse EnvHome
 
   /**
    * Creates a new ActorSystem with the name "default",
@@ -102,8 +100,16 @@ object ActorSystem {
    */
   def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem = new ActorSystemImpl(name, config, classLoader).start()
 
+  /**
+   * Settings are the overall ActorSystem Settings which also provides a convenient access to the Config object.
+   *
+   * For more detailed information about the different possible configuration options, look in the Akka Documentation under "Configuration"
+   */
   class Settings(classLoader: ClassLoader, cfg: Config, final val name: String) {
 
+    /**
+     * The backing Config of this ActorSystem's Settings
+     */
     final val config: Config = {
       val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
       config.checkValid(ConfigFactory.defaultReference(classLoader), "akka")
@@ -114,11 +120,9 @@ object ActorSystem {
     import config._
 
     final val ConfigVersion = getString("akka.version")
-
     final val ProviderClass = getString("akka.actor.provider")
-
     final val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
-    final val ReaperInterval = Duration(getMilliseconds("akka.actor.reaper-interval"), MILLISECONDS)
+
     final val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
     final val SerializeAllCreators = getBoolean("akka.actor.serialize-creators")
 
@@ -148,11 +152,14 @@ object ActorSystem {
     if (ConfigVersion != Version)
       throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
 
+    /**
+     * Returns the String representation of the Config that this Settings is backed by
+     */
     override def toString: String = config.root.render
   }
 
   /**
-   * INTERNAL
+   * INTERNAL USE ONLY
    */
   private[akka] def findClassLoader(): ClassLoader = {
     def findCaller(get: Int ⇒ Class[_]): ClassLoader =
@@ -422,6 +429,8 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def dynamicAccess: DynamicAccess
 }
 
+//FIXME This should most probably not be protected[akka] right? - √
+//FIXME We also need to decide whether this should be supported API or not - √
 class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Config, classLoader: ClassLoader) extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-]*$"""))
@@ -475,7 +484,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
 
   def logConfiguration(): Unit = log.info(settings.toString)
 
-  protected def systemImpl = this
+  protected def systemImpl: ActorSystemImpl = this
 
   private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
@@ -539,6 +548,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
 
   def deadLetters: ActorRef = provider.deadLetters
 
+  //FIXME Why do we need this at all?
   val deadLetterQueue: MessageQueue = new MessageQueue {
     def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
     def dequeue() = null
@@ -546,7 +556,7 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
     def numberOfMessages = 0
     def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
   }
-
+  //FIXME Why do we need this at all?
   val deadLetterMailbox: Mailbox = new Mailbox(null, deadLetterQueue) {
     becomeClosed()
     def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit = deadLetters ! DeadLetter(handle, receiver, receiver)

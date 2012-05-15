@@ -21,32 +21,43 @@ final case class Address private (protocol: String, system: String, host: Option
   def this(protocol: String, system: String) = this(protocol, system, None, None)
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
 
+  /**
+   * Returns the canonical String representation of this Address formatted as:
+   *
+   * <protocol>://<system>@<host>:<port>
+   */
   @transient
   override lazy val toString: String = {
-    val sb = new StringBuilder(protocol)
-    sb.append("://")
-    sb.append(system)
-    if (host.isDefined) {
-      sb.append('@')
-      sb.append(host.get)
-    }
-    if (port.isDefined) {
-      sb.append(':')
-      sb.append(port.get)
-    }
+    val sb = (new StringBuilder(protocol)).append("://").append(system)
+
+    if (host.isDefined) sb.append('@').append(host.get)
+    if (port.isDefined) sb.append(':').append(port.get)
+
     sb.toString
   }
 
-  def hostPort: String = toString.substring(protocol.length() + 3)
+  /**
+   * Returns a String representation formatted as:
+   *
+   * <system>@<host>:<port>
+   */
+  def hostPort: String = toString.substring(protocol.length + 3)
 }
 
 object Address {
+  /**
+   * Constructs a new Address with the specified protocol and system name
+   */
   def apply(protocol: String, system: String) = new Address(protocol, system)
+
+  /**
+   * Constructs a new Address with the specified protocol, system name, host and port
+   */
   def apply(protocol: String, system: String, host: String, port: Int) = new Address(protocol, system, Some(host), Some(port))
 }
 
 private[akka] trait PathUtils {
-  def split(s: String): List[String] = {
+  protected def split(s: String): List[String] = {
     @tailrec
     def rec(pos: Int, acc: List[String]): List[String] = {
       val from = s.lastIndexOf('/', pos - 1)
@@ -94,7 +105,7 @@ object AddressFromURIString {
    */
   def apply(addr: String): Address = addr match {
     case AddressFromURIString(address) ⇒ address
-    case _                             ⇒ throw new MalformedURLException
+    case _                             ⇒ throw new MalformedURLException(addr)
   }
 
   /**
@@ -103,6 +114,7 @@ object AddressFromURIString {
   def parse(addr: String): Address = apply(addr)
 }
 
+//FIXME is this public API? - √
 object ActorPathExtractor extends PathUtils {
   def unapply(addr: String): Option[(Address, Iterable[String])] =
     try {

@@ -305,11 +305,10 @@ private[akka] class LocalActorRef private[akka] (
     def rec(ref: InternalActorRef, name: Iterator[String]): InternalActorRef =
       ref match {
         case l: LocalActorRef ⇒
-          val n = name.next()
-          val next = n match {
+          val next = name.next() match {
             case ".." ⇒ l.getParent
             case ""   ⇒ l
-            case _    ⇒ l.getSingleChild(n)
+            case any  ⇒ l.getSingleChild(any)
           }
           if (next == Nobody || name.isEmpty) next else rec(next, name)
         case _ ⇒
@@ -324,7 +323,7 @@ private[akka] class LocalActorRef private[akka] (
 
   protected[akka] def underlying: ActorCell = actorCell
 
-  override def sendSystemMessage(message: SystemMessage) { underlying.dispatcher.systemDispatch(underlying, message) }
+  override def sendSystemMessage(message: SystemMessage): Unit = underlying.dispatcher.systemDispatch(underlying, message)
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
 
