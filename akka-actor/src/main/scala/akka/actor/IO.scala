@@ -115,27 +115,11 @@ object IO {
      * @return a new SocketHandle that can be used to perform actions on the
      *         new connection's SocketChannel.
      */
-    def accept(options: Seq[SocketOption])(implicit socketOwner: ActorRef): SocketHandle = {
+    def accept(options: Seq[SocketOption] = Seq.empty)(implicit socketOwner: ActorRef): SocketHandle = {
       val socket = SocketHandle(socketOwner, ioManager)
       ioManager ! Accept(socket, this, options)
       socket
     }
-
-    /**
-     * Sends a request to the [[akka.actor.IOManager]] to accept an incoming
-     * connection to the ServerSocketChannel associated with this
-     * [[akka.actor.IO.Handle]].
-     *
-     * This can also be performed by creating a new [[akka.actor.IO.SocketHandle]]
-     * and sending it within an [[akka.actor.IO.Accept]] to the [[akka.actor.IOManager]].
-     *
-     * @param socketOwner the [[akka.actor.ActorRef]] that should receive events
-     *                    associated with the SocketChannel. The ActorRef for the
-     *                    current Actor will be used implicitly.
-     * @return a new SocketHandle that can be used to perform actions on the
-     *         new connection's SocketChannel.
-     */
-    def accept()(implicit socketOwner: ActorRef): SocketHandle = accept(Seq.empty)
   }
 
   /**
@@ -843,21 +827,8 @@ final class IOManager private (system: ActorSystem) extends Extension {
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
-  def listen(host: String, port: Int, options: Seq[IO.ServerSocketOption])(implicit owner: ActorRef): IO.ServerHandle =
+  def listen(host: String, port: Int, options: Seq[IO.ServerSocketOption] = Seq.empty)(implicit owner: ActorRef): IO.ServerHandle =
     listen(new InetSocketAddress(host, port), options)(owner)
-
-  /**
-   * Create a ServerSocketChannel listening on a host and port. Messages will
-   * be sent from the [[akka.actor.IOManagerActor]] to the owner
-   * [[akka.actor.ActorRef]].
-   *
-   * @param host the hostname or IP to listen on
-   * @param port the port to listen on
-   * @param options Seq of [[akka.actor.IO.ServerSocketOption]] to setup on socket
-   * @param owner the ActorRef that will receive messages from the IOManagerActor
-   * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
-   */
-  def listen(host: String, port: Int)(implicit owner: ActorRef): IO.ServerHandle = listen(new InetSocketAddress(host, port), Seq.empty)(owner)
 
   /**
    * Create a SocketChannel connecting to an address. Messages will be
@@ -869,22 +840,11 @@ final class IOManager private (system: ActorSystem) extends Extension {
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
    */
-  def connect(address: SocketAddress, options: Seq[IO.SocketOption])(implicit owner: ActorRef): IO.SocketHandle = {
+  def connect(address: SocketAddress, options: Seq[IO.SocketOption] = Seq.empty)(implicit owner: ActorRef): IO.SocketHandle = {
     val socket = IO.SocketHandle(owner, actor)
     actor ! IO.Connect(socket, address, options)
     socket
   }
-
-  /**
-   * Create a SocketChannel connecting to an address. Messages will be
-   * sent from the [[akka.actor.IOManagerActor]] to the owner
-   * [[akka.actor.ActorRef]].
-   *
-   * @param address the address to connect to
-   * @param owner the ActorRef that will receive messages from the IOManagerActor
-   * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
-   */
-  def connect(address: SocketAddress)(implicit owner: ActorRef): IO.SocketHandle = connect(address, Seq.empty)
 
   /**
    * Create a SocketChannel connecting to a host and port. Messages will
