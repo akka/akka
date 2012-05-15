@@ -9,6 +9,7 @@ import akka.remote.MessageSerializer
 import akka.remote.RemoteProtocol.{ ActorRefProtocol, RemoteMessageProtocol }
 import com.typesafe.config.Config
 import akka.actor.ActorSystem
+import akka.serialization.Serialization
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
@@ -26,9 +27,10 @@ abstract class DurableMessageQueue(val owner: ActorContext) extends MessageQueue
 
 trait DurableMessageSerialization { this: DurableMessageQueue ⇒
 
-  def serialize(durableMessage: Envelope): Array[Byte] = {
+  import akka.serialization.ProtobufSerializer.serializeActorRef
+  import akka.serialization.ProtobufSerializer.deserializeActorRef
 
-    def serializeActorRef(ref: ActorRef): ActorRefProtocol = ActorRefProtocol.newBuilder.setPath(ref.path.toString).build
+  def serialize(durableMessage: Envelope): Array[Byte] = {
 
     val message = MessageSerializer.serialize(system, durableMessage.message.asInstanceOf[AnyRef])
     val builder = RemoteMessageProtocol.newBuilder
@@ -41,11 +43,9 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
 
   def deserialize(bytes: Array[Byte]): Envelope = {
 
-    def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = system.actorFor(refProtocol.getPath)
-
     val durableMessage = RemoteMessageProtocol.parseFrom(bytes)
     val message = MessageSerializer.deserialize(system, durableMessage.getMessage)
-    val sender = deserializeActorRef(durableMessage.getSender)
+    val sender = deserializeActorRef(system, durableMessage.getSender)
 
     new Envelope(message, sender)(system)
   }
