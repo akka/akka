@@ -210,8 +210,9 @@ object IO {
   }
 
   /**
-   * [[akka.actor.IO.SocketOption]] to enable or disable SO_TIMEOUT with the
-   * specified timeout rounded down to the nearest millisecond.
+   * [[akka.actor.IO.SocketOption]] to set SO_TIMEOUT to the specified
+   * timeout rounded down to the nearest millisecond. A timeout of
+   * zero is treated as infinant.
    *
    * For more information see [[java.net.Socket#setSoTimeout]]
    */
