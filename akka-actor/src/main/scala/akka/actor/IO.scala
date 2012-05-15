@@ -988,19 +988,32 @@ final class IOManagerActor extends Actor with ActorLogging {
     lastSelect = 0
   }
 
+  private def forwardFailure(f: ⇒ Unit): Unit = {
+    try { f } catch { case t: Throwable ⇒ sender ! Status.Failure(t) }
+  }
+
   private def setSocketOptions(socket: java.net.Socket, options: Seq[IO.SocketOption]) {
     options foreach {
-      case IO.KeepAlive(on)           ⇒ socket.setKeepAlive(on)
-      case IO.OOBInline(on)           ⇒ socket.setOOBInline(on)
-      case IO.ReceiveBufferSize(size) ⇒ socket.setReceiveBufferSize(size)
-      case IO.ReuseAddress(on)        ⇒ socket.setReuseAddress(on)
-      case IO.SendBufferSize(size)    ⇒ socket.setSendBufferSize(size)
-      case IO.SoLinger(linger)        ⇒ socket.setSoLinger(linger.isDefined, math.max(0, linger.getOrElse(socket.getSoLinger)))
-      case IO.SoTimeout(timeout)      ⇒ socket.setSoTimeout(timeout.toMillis.toInt)
-      case IO.TcpNoDelay(on)          ⇒ socket.setTcpNoDelay(on)
-      case IO.TrafficClass(tc)        ⇒ socket.setTrafficClass(tc)
+      case IO.KeepAlive(on) ⇒
+        forwardFailure(socket.setKeepAlive(on))
+      case IO.OOBInline(on) ⇒
+        forwardFailure(socket.setOOBInline(on))
+      case IO.ReceiveBufferSize(size) ⇒
+        forwardFailure(socket.setReceiveBufferSize(size))
+      case IO.ReuseAddress(on) ⇒
+        forwardFailure(socket.setReuseAddress(on))
+      case IO.SendBufferSize(size) ⇒
+        forwardFailure(socket.setSendBufferSize(size))
+      case IO.SoLinger(linger) ⇒
+        forwardFailure(socket.setSoLinger(linger.isDefined, math.max(0, linger.getOrElse(socket.getSoLinger))))
+      case IO.SoTimeout(timeout) ⇒
+        forwardFailure(socket.setSoTimeout(timeout.toMillis.toInt))
+      case IO.TcpNoDelay(on) ⇒
+        forwardFailure(socket.setTcpNoDelay(on))
+      case IO.TrafficClass(tc) ⇒
+        forwardFailure(socket.setTrafficClass(tc))
       case IO.PerformancePreferences(connTime, latency, bandwidth) ⇒
-        socket.setPerformancePreferences(connTime, latency, bandwidth)
+        forwardFailure(socket.setPerformancePreferences(connTime, latency, bandwidth))
     }
   }
 
@@ -1016,10 +1029,12 @@ final class IOManagerActor extends Actor with ActorLogging {
 
       val sock = channel.socket
       options foreach {
-        case IO.ReceiveBufferSize(size) ⇒ sock.setReceiveBufferSize(size)
-        case IO.ReuseAddress(on)        ⇒ sock.setReuseAddress(on)
+        case IO.ReceiveBufferSize(size) ⇒
+          forwardFailure(sock.setReceiveBufferSize(size))
+        case IO.ReuseAddress(on) ⇒
+          forwardFailure(sock.setReuseAddress(on))
         case IO.PerformancePreferences(connTime, latency, bandwidth) ⇒
-          sock.setPerformancePreferences(connTime, latency, bandwidth)
+          forwardFailure(sock.setPerformancePreferences(connTime, latency, bandwidth))
       }
 
       channel.socket bind (address, 1000) // TODO: make backlog configurable
