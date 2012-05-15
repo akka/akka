@@ -6,17 +6,6 @@ import scala.annotation.tailrec
 import java.net.MalformedURLException
 
 object ActorPath {
-  def split(s: String): List[String] = {
-    @tailrec
-    def rec(pos: Int, acc: List[String]): List[String] = {
-      val from = s.lastIndexOf('/', pos - 1)
-      val sub = s.substring(from + 1, pos)
-      val l = sub :: acc
-      if (from == -1) l else rec(from, l)
-    }
-    rec(s.length, Nil)
-  }
-
   /**
    * Parse string as actor path; throws java.net.MalformedURLException if unable to do so.
    */
