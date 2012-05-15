@@ -134,10 +134,17 @@ trait ActorContext extends ActorRefFactory {
    */
   def unwatch(subject: ActorRef): ActorRef
 
+  /**
+   * ActorContexts shouldn't be Serializable
+   */
   final protected def writeObject(o: ObjectOutputStream): Unit =
     throw new NotSerializableException("ActorContext is not serializable!")
 }
 
+/**
+ * UntypedActorContext is the UntypedActor equivalent of ActorContext,
+ * containing the Java API
+ */
 trait UntypedActorContext extends ActorContext {
 
   /**
@@ -178,7 +185,7 @@ private[akka] object ActorCell {
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
 
-  trait SuspendReason
+  sealed trait SuspendReason
   case object UserRequest extends SuspendReason
   case class Recreation(cause: Throwable) extends SuspendReason
   case object Termination extends SuspendReason
@@ -749,13 +756,11 @@ private[akka] class ActorCell(
 
   }
 
-  final def cancelReceiveTimeout() {
-    //Only cancel if
+  final def cancelReceiveTimeout(): Unit =
     if (receiveTimeoutData._2 ne emptyCancellable) {
       receiveTimeoutData._2.cancel()
       receiveTimeoutData = (receiveTimeoutData._1, emptyCancellable)
     }
-  }
 
   final def clearActorFields(actorInstance: Actor): Unit = {
     setActorFields(actorInstance, context = null, self = system.deadLetters)
