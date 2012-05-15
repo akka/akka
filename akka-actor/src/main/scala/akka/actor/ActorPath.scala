@@ -14,6 +14,9 @@ object ActorPath {
     case _                               ⇒ throw new MalformedURLException("cannot parse as ActorPath: " + s)
   }
 
+  /**
+   * This Regular Expression is used to validate a path element (Actor Name)
+   */
   val ElementRegex = """[-\w:@&=+,.!~*'_;][-\w:@&=+,.!~*'$_;]*""".r
 }
 
@@ -101,21 +104,21 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 final case class RootActorPath(address: Address, name: String = "/") extends ActorPath {
 
-  def parent: ActorPath = this
+  override def parent: ActorPath = this
 
-  def root: RootActorPath = this
+  override def root: RootActorPath = this
 
-  def /(child: String): ActorPath = new ChildActorPath(this, child)
+  override def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  val elements: Iterable[String] = List("")
+  override val elements: Iterable[String] = List("")
 
-  override val toString = address + name
+  override val toString: String = address + name
 
-  def toStringWithAddress(addr: Address): String =
+  override def toStringWithAddress(addr: Address): String =
     if (address.host.isDefined) address + name
     else addr + name
 
-  def compareTo(other: ActorPath) = other match {
+  override def compareTo(other: ActorPath): Int = other match {
     case r: RootActorPath  ⇒ toString compareTo r.toString
     case c: ChildActorPath ⇒ 1
   }
@@ -125,11 +128,11 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 final class ChildActorPath(val parent: ActorPath, val name: String) extends ActorPath {
   if (name.indexOf('/') != -1) throw new IllegalArgumentException("/ is a path separator and is not legal in ActorPath names: [%s]" format name)
 
-  def address: Address = root.address
+  override def address: Address = root.address
 
-  def /(child: String): ActorPath = new ChildActorPath(this, child)
+  override def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  def elements: Iterable[String] = {
+  override def elements: Iterable[String] = {
     @tailrec
     def rec(p: ActorPath, acc: List[String]): Iterable[String] = p match {
       case r: RootActorPath ⇒ acc
@@ -138,7 +141,7 @@ final class ChildActorPath(val parent: ActorPath, val name: String) extends Acto
     rec(this, Nil)
   }
 
-  def root = {
+  override def root: RootActorPath = {
     @tailrec
     def rec(p: ActorPath): RootActorPath = p match {
       case r: RootActorPath ⇒ r
@@ -198,7 +201,7 @@ final class ChildActorPath(val parent: ActorPath, val name: String) extends Acto
     finalizeHash(rec(this, startHash(42), startMagicA, startMagicB))
   }
 
-  def compareTo(other: ActorPath) = {
+  override def compareTo(other: ActorPath): Int = {
     @tailrec
     def rec(left: ActorPath, right: ActorPath): Int =
       if (left eq right) 0
