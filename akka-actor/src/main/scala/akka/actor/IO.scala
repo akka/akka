@@ -4,7 +4,7 @@
 package akka.actor
 
 import akka.dispatch.{ Future, ExecutionContext }
-import akka.util.{ ByteString, Duration }
+import akka.util.{ ByteString, Duration, NonFatal }
 import java.net.{ SocketAddress, InetSocketAddress }
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -949,7 +949,7 @@ final class IOManagerActor extends Actor with ActorLogging {
   }
 
   private def forwardFailure(f: ⇒ Unit): Unit = {
-    try { f } catch { case t: Throwable ⇒ sender ! Status.Failure(t) }
+    try { f } catch { case NonFatal(e) ⇒ sender ! Status.Failure(e) }
   }
 
   private def setSocketOptions(socket: java.net.Socket, options: Seq[IO.SocketOption]) {
