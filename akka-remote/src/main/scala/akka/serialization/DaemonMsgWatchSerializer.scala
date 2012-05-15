@@ -17,7 +17,7 @@ class DaemonMsgWatchSerializer(val system: ExtendedActorSystem) extends Serializ
   import ProtobufSerializer.serializeActorRef
   import ProtobufSerializer.deserializeActorRef
 
-  def includeManifest: Boolean = true
+  def includeManifest: Boolean = false
   def identifier = 4
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {

@@ -35,7 +35,7 @@ class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Seriali
   import ProtobufSerializer.serializeActorRef
   import ProtobufSerializer.deserializeActorRef
 
-  def includeManifest: Boolean = true
+  def includeManifest: Boolean = false
   def identifier = 3
   lazy val serialization = SerializationExtension(system)
 

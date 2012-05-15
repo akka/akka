@@ -11,6 +11,11 @@ import akka.actor.ActorSystem
 import akka.actor.ActorRef
 
 object ProtobufSerializer {
+
+  /**
+   * Helper to serialize an [[akka.actor.ActorRef]] to Akka's
+   * protobuf representation.
+   */
   def serializeActorRef(ref: ActorRef): ActorRefProtocol = {
     val identifier: String = Serialization.currentTransportAddress.value match {
       case null    ⇒ ref.path.toString
@@ -19,6 +24,11 @@ object ProtobufSerializer {
     ActorRefProtocol.newBuilder.setPath(identifier).build
   }
 
+  /**
+   * Helper to materialize (lookup) an [[akka.actor.ActorRef]]
+   * from Akka's protobuf representation in the supplied
+   * [[akka.actor.ActorSystem].
+   */
   def deserializeActorRef(system: ActorSystem, refProtocol: ActorRefProtocol): ActorRef =
     system.actorFor(refProtocol.getPath)
 }
