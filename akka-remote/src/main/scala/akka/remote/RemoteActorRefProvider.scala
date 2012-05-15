@@ -256,9 +256,9 @@ private[akka] class RemoteActorRef private[akka] (
   private def writeReplace(): AnyRef = SerializedActorRef(path)
 }
 
-class RemoteDeathWatch(val local: LocalDeathWatch, val provider: RemoteActorRefProvider) extends DeathWatch {
+class RemoteDeathWatch(val local: DeathWatch, val provider: RemoteActorRefProvider) extends DeathWatch {
 
-  def subscribe(watcher: ActorRef, watched: ActorRef): Boolean = watched match {
+  override def subscribe(watcher: ActorRef, watched: ActorRef): Boolean = watched match {
     case r: RemoteRef ⇒
       val ret = local.subscribe(watcher, watched)
       provider.actorFor(r.path.root / "remote") ! DaemonMsgWatch(watcher, watched)
@@ -270,10 +270,10 @@ class RemoteDeathWatch(val local: LocalDeathWatch, val provider: RemoteActorRefP
       false
   }
 
-  def unsubscribe(watcher: ActorRef, watched: ActorRef): Boolean = local.unsubscribe(watcher, watched)
+  override def unsubscribe(watcher: ActorRef, watched: ActorRef): Boolean = local.unsubscribe(watcher, watched)
 
-  def unsubscribe(watcher: ActorRef): Unit = local.unsubscribe(watcher)
+  override def unsubscribe(watcher: ActorRef): Unit = local.unsubscribe(watcher)
 
-  def publish(event: Terminated): Unit = local.publish(event)
+  override def publish(event: Terminated): Unit = local.publish(event)
 
 }
