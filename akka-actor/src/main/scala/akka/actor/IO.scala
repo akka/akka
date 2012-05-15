@@ -235,7 +235,10 @@ object IO {
    *
    * For more information see [[java.net.Socket#setTrafficClass]]
    */
-  case class TrafficClass(tc: Int) extends SocketOption
+  case class TrafficClass(tc: Int) extends SocketOption {
+    require(tc >= 0, "Traffic class must be >= 0")
+    require(tc <= 255, "Traffic class must be <= 255")
+  }
 
   /**
    * Messages used to communicate with an [[akka.actor.IOManager]].
