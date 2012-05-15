@@ -92,10 +92,11 @@ message DaemonMsgCreateProtocol {
  * Serialization of akka.actor.Props
  */
 message PropsProtocol {
-  required bytes creator = 1;
-  required string dispatcher = 2;
-  required DeployProtocol deploy = 3;
-  optional bytes routerConfig = 4;
+  required string dispatcher = 1;
+  required DeployProtocol deploy = 2;
+  optional string fromClassCreator = 3;
+  optional bytes creator = 4;
+  optional bytes routerConfig = 5;
 }
 
 /**

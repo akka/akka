@@ -5,11 +5,9 @@
 package akka.serialization
 
 import java.io.Serializable
-
 import com.google.protobuf.ByteString
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Deploy
@@ -24,12 +22,14 @@ import akka.remote.RemoteProtocol.DeployProtocol
 import akka.remote.RemoteProtocol.PropsProtocol
 import akka.routing.NoRouter
 import akka.routing.RouterConfig
+import akka.actor.FromClassCreator
 
 /**
  * Serializes akka's internal DaemonMsgCreate using protobuf
  * for the core structure of DaemonMsgCreate, Props and Deploy.
- * Serialization of contained RouterConfig, Config, Scope, and creator (scala.Function0)
- * is done with configured serializer for those classes, by default java.io.Serializable.
+ * Serialization of contained RouterConfig, Config, and Scope
+ * is done with configured serializer for those classes, by
+ * default java.io.Serializable.
  */
 class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Serializer {
   import ProtobufSerializer.serializeActorRef
@@ -55,9 +55,12 @@ class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Seriali
 
       def propsProto = {
         val builder = PropsProtocol.newBuilder.
-          setCreator(serialize(props.creator)).
           setDispatcher(props.dispatcher).
           setDeploy(deployProto(props.deploy))
+        props.creator match {
+          case FromClassCreator(clazz) ⇒ builder.setFromClassCreator(clazz.getName)
+          case creator                 ⇒ builder.setCreator(serialize(creator))
+        }
         if (props.routerConfig != NoRouter)
           builder.setRouterConfig(serialize(props.routerConfig))
         builder.build
@@ -92,11 +95,22 @@ class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Seriali
     }
 
     def props = {
+      val creator =
+        if (proto.getProps.hasFromClassCreator) {
+          system.dynamicAccess.getClassFor(proto.getProps.getFromClassCreator) match {
+            case Right(clazz) ⇒ FromClassCreator(clazz)
+            case Left(e)      ⇒ throw e
+          }
+        } else {
+          deserialize(proto.getProps.getCreator, classOf[() ⇒ Actor])
+        }
+
       val routerConfig =
         if (proto.getProps.hasRouterConfig) deserialize(proto.getProps.getRouterConfig, classOf[RouterConfig])
         else NoRouter
+
       Props(
-        creator = deserialize(proto.getProps.getCreator, classOf[() ⇒ Actor]),
+        creator = creator,
         dispatcher = proto.getProps.getDispatcher,
         routerConfig = routerConfig,
         deploy = deploy(proto.getProps.getDeploy))
@@ -124,7 +138,6 @@ class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Seriali
       case Left(e) ⇒
         // Fallback to the java serializer, because some interfaces don't implement java.io.Serializable,
         // but the impl instance does. This could be optimized by adding java serializers in reference.conf:
-        // scala.Function0 (the creator)
         // com.typesafe.config.Config
         // akka.routing.RouterConfig
         // akka.actor.Scope

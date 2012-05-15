@@ -127,7 +127,7 @@ case class Props(
    * Java API.
    */
   def this(actorClass: Class[_ <: Actor]) = this(
-    creator = () ⇒ actorClass.newInstance,
+    creator = FromClassCreator(actorClass),
     dispatcher = Dispatchers.DefaultDispatcherId,
     routerConfig = Props.defaultRoutedProps)
 
@@ -150,7 +150,7 @@ case class Props(
    *
    * Java API.
    */
-  def withCreator(c: Class[_ <: Actor]): Props = copy(creator = () ⇒ c.newInstance)
+  def withCreator(c: Class[_ <: Actor]): Props = copy(creator = FromClassCreator(c))
 
   /**
    * Returns a new Props with the specified dispatcher set.
@@ -166,4 +166,13 @@ case class Props(
    * Returns a new Props with the specified deployment configuration.
    */
   def withDeploy(d: Deploy): Props = copy(deploy = d)
+
+}
+
+/**
+ * Used when creating an Actor from a class. Special Function0 to be
+ * able to optimize serialization.
+ */
+private[akka] case class FromClassCreator(clazz: Class[_ <: Actor]) extends Function0[Actor] {
+  def apply(): Actor = clazz.newInstance
 }
