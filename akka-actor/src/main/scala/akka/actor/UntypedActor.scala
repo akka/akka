@@ -116,7 +116,7 @@ abstract class UntypedActor extends Actor {
    * User overridable definition the strategy to use for supervising
    * child actors.
    */
-  override def supervisorStrategy(): SupervisorStrategy = super.supervisorStrategy()
+  override def supervisorStrategy: SupervisorStrategy = super.supervisorStrategy
 
   /**
    * User overridable callback.
