@@ -154,7 +154,9 @@ object AkkaBuild extends Build {
     base = file("akka-durable-mailboxes/akka-mailboxes-common"),
     dependencies = Seq(remote, testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.mailboxes
+      libraryDependencies ++= Dependencies.mailboxes,
+      // DurableMailboxSpec published in akka-mailboxes-common-test
+      publishArtifact in Test := true
     )
   )
 
@@ -257,7 +259,8 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel),
+    dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
+      remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel),
     settings = defaultSettings ++ Sphinx.settings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
