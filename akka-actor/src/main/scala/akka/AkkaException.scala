@@ -4,8 +4,6 @@
 
 package akka
 
-import akka.actor.newUuid
-
 object AkkaException {
 
   def toStringWithStackTrace(throwable: Throwable): String = throwable match {
@@ -34,7 +32,7 @@ object AkkaException {
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 class AkkaException(message: String = "", cause: Throwable = null) extends RuntimeException(message, cause) with Serializable {
-  lazy val uuid = newUuid.toString
+  lazy val uuid = java.util.UUID.randomUUID().toString
 
   override lazy val toString =
     "%s:%s\n[%s]".format(getClass.getName, message, uuid)
@@ -42,7 +40,7 @@ class AkkaException(message: String = "", cause: Throwable = null) extends Runti
   lazy val toLongString =
     "%s:%s\n[%s]\n%s".format(getClass.getName, message, uuid, stackTraceToString)
 
-  def this(msg: String) = this(msg, null);
+  def this(msg: String) = this(msg, null)
 
   def stackTraceToString = AkkaException.stackTraceToString(this)
 }

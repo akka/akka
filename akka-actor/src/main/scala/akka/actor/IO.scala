@@ -21,8 +21,7 @@ import java.nio.channels.{
 import scala.collection.mutable
 import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
-import com.eaio.uuid.UUID
-
+import java.util.UUID
 /**
  * IO messages and iteratees.
  *
@@ -89,7 +88,7 @@ object IO {
    * created by [[akka.actor.IOManager]].connect() and
    * [[akka.actor.IO.ServerHandle]].accept().
    */
-  case class SocketHandle(owner: ActorRef, ioManager: ActorRef, uuid: UUID = new UUID()) extends ReadHandle with WriteHandle {
+  case class SocketHandle(owner: ActorRef, ioManager: ActorRef, uuid: UUID = UUID.randomUUID()) extends ReadHandle with WriteHandle {
     override def asSocket = this
   }
 
@@ -97,7 +96,7 @@ object IO {
    * A [[akka.actor.IO.Handle]] to a ServerSocketChannel. Instances are
    * normally created by [[akka.actor.IOManager]].listen().
    */
-  case class ServerHandle(owner: ActorRef, ioManager: ActorRef, uuid: UUID = new UUID()) extends Handle {
+  case class ServerHandle(owner: ActorRef, ioManager: ActorRef, uuid: UUID = UUID.randomUUID()) extends Handle {
     override def asServer = this
 
     /**
