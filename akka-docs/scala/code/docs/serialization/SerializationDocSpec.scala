@@ -5,13 +5,17 @@ package docs.serialization
 
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
-import akka.actor.{ ActorRef, ActorSystem }
-
 //#imports
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.serialization._
 import com.typesafe.config.ConfigFactory
 
 //#imports
+import akka.actor.ExtensionKey
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
+import akka.actor.Address
+import akka.remote.RemoteActorRefProvider
 
 //#my-own-serializer
 class MyOwnSerializer extends Serializer {
@@ -176,5 +180,38 @@ class SerializationDocSpec extends AkkaSpec {
     val deserializedActorRef = theActorSystem actorFor identifier
     // Then just use the ActorRef
     //#actorref-serializer
+
+    //#external-address
+    object ExternalAddress extends ExtensionKey[ExternalAddressExt]
+
+    class ExternalAddressExt(system: ExtendedActorSystem) extends Extension {
+      def addressFor(remoteAddr: Address): Address =
+        system.provider.getExternalAddressFor(remoteAddr) getOrElse
+          (throw new UnsupportedOperationException("cannot send to " + remoteAddr))
+    }
+
+    def serializeTo(ref: ActorRef, remote: Address): String =
+      ref.path.toStringWithAddress(ExternalAddress(theActorSystem).addressFor(remote))
+    //#external-address
+  }
+
+  "demonstrate how to do default Akka serialization of ActorRef" in {
+    val theActorSystem: ActorSystem = system
+
+    //#external-address-default
+    object ExternalAddress extends ExtensionKey[ExternalAddressExt]
+
+    class ExternalAddressExt(system: ExtendedActorSystem) extends Extension {
+      def addressForAkka: Address = system.provider match {
+        case r: RemoteActorRefProvider ⇒ r.transport.address
+        case _ ⇒
+          throw new UnsupportedOperationException(
+            "this method requires the RemoteActorRefProvider to be configured")
+      }
+    }
+
+    def serializeAkkaDefault(ref: ActorRef): String =
+      ref.path.toStringWithAddress(ExternalAddress(theActorSystem).addressForAkka)
+    //#external-address-default
   }
 }
