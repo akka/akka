@@ -14,9 +14,15 @@ import akka.actor.ActorContext
 import com.typesafe.config.Config
 import akka.actor.ActorSystem
 
+/**
+ * This exception normally is thrown when a bounded mailbox is over capacity
+ */
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
-object Mailbox {
+/**
+ * INTERNAL USE ONLY
+ */
+private[akka] object Mailbox {
 
   type Status = Int
 
@@ -244,6 +250,10 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
     }
 }
 
+/**
+ * A MessageQueue is one of the core components in forming an Akka Mailbox.
+ * The MessageQueue is where the normal messages that are sent to Actors will be enqueued (and subsequently dequeued)
+ */
 trait MessageQueue {
   /**
    * Try to enqueue the message to this queue, or throw an exception.
@@ -277,7 +287,7 @@ trait MessageQueue {
 }
 
 /**
- * Internal mailbox implementation detail.
+ * INTERNAL USE ONLY
  */
 private[akka] trait SystemMessageQueue {
   /**
@@ -294,7 +304,7 @@ private[akka] trait SystemMessageQueue {
 }
 
 /**
- * Internal mailbox implementation detail.
+ * INTERNAL USE ONLY
  */
 private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
 
@@ -325,6 +335,9 @@ private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
   def hasSystemMessages: Boolean = systemQueueGet ne null
 }
 
+/**
+ * A QueueBasedMessageQueue is a MessageQueue which is backed by a java.util.Queue
+ */
 trait QueueBasedMessageQueue extends MessageQueue {
   def queue: Queue[Envelope]
   def numberOfMessages = queue.size
@@ -340,11 +353,18 @@ trait QueueBasedMessageQueue extends MessageQueue {
   }
 }
 
+/**
+ * UnboundedMessageQueueSemantics adds the enqueue/dequeue operations for unbounded java.util.Queues
+ */
 trait UnboundedMessageQueueSemantics extends QueueBasedMessageQueue {
   def enqueue(receiver: ActorRef, handle: Envelope): Unit = queue add handle
   def dequeue(): Envelope = queue.poll()
 }
 
+/**
+ * BoundedMessageQueueSemantics adds the enqueue/dequeue operations for bounded java.util.Queues,
+ * and it also forces the java.util.Queue to extend java.util.BlockingQueue
+ */
 trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   def pushTimeOut: Duration
   override def queue: BlockingQueue[Envelope]
@@ -360,17 +380,27 @@ trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   def dequeue(): Envelope = queue.poll()
 }
 
+/**
+ * DequeBasedMessageQueue forces the underlying java.util.Queue extend java.util.Deque
+ */
 trait DequeBasedMessageQueue extends QueueBasedMessageQueue {
   def queue: Deque[Envelope]
   def enqueueFirst(receiver: ActorRef, handle: Envelope): Unit
 }
 
+/**
+ * UnboundedMessageQueueSemantics adds the enqueue/dequeue operations for unbounded java.util.Deque
+ */
 trait UnboundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
   def enqueue(receiver: ActorRef, handle: Envelope): Unit = queue add handle
   def enqueueFirst(receiver: ActorRef, handle: Envelope): Unit = queue addFirst handle
   def dequeue(): Envelope = queue.poll()
 }
 
+/**
+ * BoundedMessageQueueSemantics adds the enqueue/dequeue operations for bounded java.util.Deque,
+ * and it also forces the java.util.Queue to extend java.util.BlockingQueue
+ */
 trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
   def pushTimeOut: Duration
   override def queue: BlockingDeque[Envelope]
@@ -393,14 +423,14 @@ trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
 }
 
 /**
- * Mailbox configuration.
+ * MailboxType is used to construct a Messagequeue given an optional ActorContext owner.
  */
 trait MailboxType {
   def create(owner: Option[ActorContext]): MessageQueue
 }
 
 /**
- * It's a case class for Java (new UnboundedMailbox)
+ * UnboundedMailbox is the standard issue Akka Mailbox as it is unbounded and has quite good performance
  */
 case class UnboundedMailbox() extends MailboxType {
 
@@ -412,6 +442,9 @@ case class UnboundedMailbox() extends MailboxType {
     }
 }
 
+/**
+ * BoundedMailbox is the default bounded mailbox
+ */
 case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
@@ -452,6 +485,9 @@ class BoundedPriorityMailbox( final val cmp: Comparator[Envelope], final val cap
     }
 }
 
+/**
+ * This is the default mailbox for Deques, which is unbounded
+ */
 case class UnboundedDequeBasedMailbox() extends MailboxType {
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
@@ -462,6 +498,9 @@ case class UnboundedDequeBasedMailbox() extends MailboxType {
     }
 }
 
+/**
+ * This is the default mailbox for Deques, which is bounded
+ */
 case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
