@@ -121,7 +121,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
                        log: LoggingAdapter,
                        dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
 
-  def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable = {
+  override def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
@@ -136,7 +136,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         initialDelay))
   }
 
-  def schedule(initialDelay: Duration, delay: Duration)(f: ⇒ Unit): Cancellable = {
+  override def schedule(initialDelay: Duration, delay: Duration)(f: ⇒ Unit): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
@@ -150,7 +150,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         initialDelay))
   }
 
-  def schedule(initialDelay: Duration, delay: Duration, runnable: Runnable): Cancellable = {
+  override def schedule(initialDelay: Duration, delay: Duration, runnable: Runnable): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
@@ -163,7 +163,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         initialDelay))
   }
 
-  def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable =
+  override def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable =
     new DefaultCancellable(
       hashedWheelTimer.newTimeout(
         new TimerTask() {
@@ -171,7 +171,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         },
         delay))
 
-  def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable =
+  override def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable =
     new DefaultCancellable(
       hashedWheelTimer.newTimeout(
         new TimerTask {
@@ -179,7 +179,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         },
         delay))
 
-  def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable =
+  override def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable =
     new DefaultCancellable(
       hashedWheelTimer.newTimeout(
         new TimerTask with Runnable {
@@ -201,7 +201,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
     }
   }
 
-  def close(): Unit = {
+  override def close(): Unit = {
     import scala.collection.JavaConverters._
     hashedWheelTimer.stop().asScala foreach execDirectly
   }
