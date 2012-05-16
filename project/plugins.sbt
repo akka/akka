@@ -7,6 +7,8 @@ addSbtPlugin("com.typesafe.schoir" % "schoir" % "0.1.2")
 
 addSbtPlugin("com.typesafe.sbtscalariform" % "sbtscalariform" % "0.3.1")
 
+addSbtPlugin("com.typesafe.sbtosgi" % "sbtosgi" % "0.2.0")
+
 resolvers ++= Seq(
   "less is" at "http://repo.lessis.me",
   "coda" at "http://repo.codahale.com")

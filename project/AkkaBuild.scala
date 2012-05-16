@@ -11,6 +11,8 @@ import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOpti
 import com.typesafe.schoir.SchoirPlugin.schoirSettings
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
+import com.typesafe.sbtosgi.OsgiPlugin.osgiSettings
+import com.typesafe.sbtosgi.OsgiKeys
 import java.lang.Boolean.getBoolean
 import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags }
 
@@ -45,7 +47,7 @@ object AkkaBuild extends Build {
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.actor ++ Seq(
       autoCompilerPlugins := true,
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
       scalacOptions += "-P:continuations:enable",
@@ -79,7 +81,7 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ schoirSettings ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ schoirSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -98,7 +100,7 @@ object AkkaBuild extends Build {
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remote % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ schoirSettings ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ schoirSettings ++ OSGi.cluster ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -117,7 +119,7 @@ object AkkaBuild extends Build {
     id = "akka-slf4j",
     base = file("akka-slf4j"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.slf4j ++ Seq(
       libraryDependencies ++= Dependencies.slf4j
     )
   )
@@ -126,7 +128,7 @@ object AkkaBuild extends Build {
     id = "akka-agent",
     base = file("akka-agent"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.agent ++ Seq(
       libraryDependencies ++= Dependencies.agent
     )
   )
@@ -135,7 +137,7 @@ object AkkaBuild extends Build {
     id = "akka-transactor",
     base = file("akka-transactor"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.transactor ++ Seq(
       libraryDependencies ++= Dependencies.transactor
     )
   )
@@ -153,7 +155,7 @@ object AkkaBuild extends Build {
     id = "akka-mailboxes-common",
     base = file("akka-durable-mailboxes/akka-mailboxes-common"),
     dependencies = Seq(remote, testkit % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.mailboxesCommon ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes
     )
   )
@@ -162,7 +164,7 @@ object AkkaBuild extends Build {
     id = "akka-file-mailbox",
     base = file("akka-durable-mailboxes/akka-file-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.fileMailbox ++ Seq(
       libraryDependencies ++= Dependencies.fileMailbox
     )
   )
@@ -171,7 +173,7 @@ object AkkaBuild extends Build {
     id = "akka-zeromq",
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.zeroMQ ++ Seq(
       libraryDependencies ++= Dependencies.zeroMQ
     )
   )
@@ -189,7 +191,7 @@ object AkkaBuild extends Build {
      id = "akka-camel",
      base = file("akka-camel"),
      dependencies = Seq(actor, slf4j, testkit % "test->test"),
-     settings = defaultSettings ++ Seq(
+     settings = defaultSettings ++ OSGi.camel ++ Seq(
        libraryDependencies ++= Dependencies.camel
      )
   )
@@ -434,4 +436,56 @@ object Dependency {
     val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % "3.4.0"      % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }
+}
+
+// OSGi settings
+
+object OSGi {
+
+  val actor = osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("akka*", "com.typesafe.config.*", "com.eaio.*", "org.jboss.netty.akka.util"),
+    OsgiKeys.importPackage := Seq(scalaImport(), "*;resolution:=optional"),
+    OsgiKeys.privatePackage := Seq("org.jboss.netty.akka.util.internal")
+  )
+
+  val agent = osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("akka.agent.*")
+  )
+
+  val camel = osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("akka.camel.*", "akka.camelexamples"),
+    OsgiKeys.importPackage := Seq(scalaImport(), akkaImport(), "org.apache.camel.*")
+  )
+
+  val cluster = osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("akka.cluster.*")
+  )
+
+  val fileMailbox = osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("akka.actor.mailbox.*")
+  )
+
+  val mailboxesCommon = osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("akka.actor.mailbox.*")
+  )
+
+  val remote = osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*")
+  )
+
+  val slf4j = osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("akka.event.slf4j.*")
+  )
+
+  val transactor = osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("akka.transactor.*")
+  )
+
+  val zeroMQ = osgiSettings ++ Seq(
+    OsgiKeys.exportPackage := Seq("akka.zeromq.*")
+  )
+
+  def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.1,2.10)\"".format(packageName)
+  def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,3)\"".format(packageName)
+
 }
