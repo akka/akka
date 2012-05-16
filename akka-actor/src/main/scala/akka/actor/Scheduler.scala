@@ -5,7 +5,7 @@
 package akka.actor
 
 import akka.util.Duration
-import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout }
+import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout, Timer }
 import akka.event.LoggingAdapter
 import akka.dispatch.MessageDispatcher
 import java.io.Closeable
@@ -207,14 +207,23 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
   }
 }
 
+private[akka] object ContinuousCancellable {
+  val initial: HWTimeout = new HWTimeout {
+    override def getTimer: Timer = null
+    override def getTask: TimerTask = null
+    override def isExpired: Boolean = false
+    override def isCancelled: Boolean = false
+    override def cancel: Unit = ()
+  }
+}
 /**
  * Wrapper of a [[org.jboss.netty.akka.util.Timeout]] that delegates all
  * methods. Needed to be able to cancel continuous tasks,
  * since they create new Timeout for each tick.
  */
-private[akka] class ContinuousCancellable extends AtomicReference[HWTimeout] with Cancellable {
+private[akka] class ContinuousCancellable extends AtomicReference[HWTimeout](ContinuousCancellable.initial) with Cancellable {
   private[akka] def init(initialTimeout: HWTimeout): this.type = {
-    assert(compareAndSet(null, initialTimeout))
+    compareAndSet(ContinuousCancellable.initial, initialTimeout)
     this
   }
 
