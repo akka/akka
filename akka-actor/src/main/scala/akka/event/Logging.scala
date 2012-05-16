@@ -275,8 +275,8 @@ object LogSource {
 
   // this one unfortunately does not work as implicit, because existential types have some weird behavior
   val fromClass: LogSource[Class[_]] = new LogSource[Class[_]] {
-    def genString(c: Class[_]) = simpleName(c)
-    override def genString(c: Class[_], system: ActorSystem) = simpleName(c) + "(" + system + ")"
+    def genString(c: Class[_]) = Logging.simpleName(c)
+    override def genString(c: Class[_], system: ActorSystem) = genString(c) + "(" + system + ")"
     override def getClazz(c: Class[_]) = c
   }
   implicit def fromAnyClass[T]: LogSource[Class[T]] = fromClass.asInstanceOf[LogSource[Class[T]]]
@@ -310,7 +310,7 @@ object LogSource {
       case a: Actor    ⇒ apply(a)
       case a: ActorRef ⇒ apply(a)
       case s: String   ⇒ apply(s)
-      case x           ⇒ (simpleName(x), x.getClass)
+      case x           ⇒ (Logging.simpleName(x), x.getClass)
     }
 
   /**
@@ -324,7 +324,7 @@ object LogSource {
       case a: Actor    ⇒ apply(a)
       case a: ActorRef ⇒ apply(a)
       case s: String   ⇒ apply(s)
-      case x           ⇒ (simpleName(x) + "(" + system + ")", x.getClass)
+      case x           ⇒ (Logging.simpleName(x) + "(" + system + ")", x.getClass)
     }
 }
 
@@ -362,6 +362,14 @@ object LogSource {
  * </code></pre>
  */
 object Logging {
+
+  def simpleName(obj: AnyRef): String = simpleName(obj.getClass)
+
+  def simpleName(clazz: Class[_]): String = {
+    val n = clazz.getName
+    val i = n.lastIndexOf('.')
+    n.substring(i + 1)
+  }
 
   object Extension extends ExtensionKey[LogExt]
 

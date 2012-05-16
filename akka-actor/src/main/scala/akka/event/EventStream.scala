@@ -3,7 +3,8 @@
  */
 package akka.event
 
-import akka.actor.{ ActorRef, ActorSystem, simpleName }
+import akka.actor.{ ActorRef, ActorSystem }
+import akka.event.Logging.simpleName
 import akka.util.Subclassification
 
 object EventStream {

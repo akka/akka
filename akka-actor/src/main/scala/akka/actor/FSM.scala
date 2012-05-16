@@ -6,8 +6,9 @@ package akka.actor
 import akka.util._
 
 import scala.collection.mutable
-import akka.event.Logging
 import akka.routing.{ Deafen, Listen, Listeners }
+
+//FIXME: Roland, could you go through this file?
 
 object FSM {
 

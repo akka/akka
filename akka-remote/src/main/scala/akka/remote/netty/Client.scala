@@ -3,27 +3,22 @@
  */
 package akka.remote.netty
 
-import java.net.InetSocketAddress
-import org.jboss.netty.util.HashedWheelTimer
+import java.util.concurrent.TimeUnit
+import java.net.{ InetAddress, InetSocketAddress }
+import org.jboss.netty.util.{ Timeout, TimerTask, HashedWheelTimer }
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel.group.DefaultChannelGroup
-import org.jboss.netty.channel.{ ChannelHandler, StaticChannelPipeline, SimpleChannelUpstreamHandler, MessageEvent, ExceptionEvent, ChannelStateEvent, ChannelPipelineFactory, ChannelPipeline, ChannelHandlerContext, ChannelFuture, Channel }
+import org.jboss.netty.channel.{ ChannelFutureListener, ChannelHandler, StaticChannelPipeline, MessageEvent, ExceptionEvent, ChannelStateEvent, ChannelPipelineFactory, ChannelPipeline, ChannelHandlerContext, ChannelFuture, Channel }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.execution.ExecutionHandler
+import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
+
 import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
-import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, RemoteClientStarted, RemoteClientShutdown, RemoteClientException, RemoteClientError, RemoteClientDisconnected, RemoteClientConnected }
-import akka.actor.{ simpleName, Address }
+import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, RemoteClientStarted, RemoteClientShutdown, RemoteClientException, RemoteClientError, RemoteClientDisconnected, RemoteClientConnected, RemoteClientWriteFailed }
+import akka.actor.{ Address, ActorRef }
 import akka.AkkaException
 import akka.event.Logging
 import akka.util.Switch
-import akka.actor.ActorRef
-import org.jboss.netty.channel.ChannelFutureListener
-import akka.remote.RemoteClientWriteFailed
-import java.net.InetAddress
-import org.jboss.netty.util.TimerTask
-import org.jboss.netty.util.Timeout
-import java.util.concurrent.TimeUnit
-import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
 
 class RemoteClientMessageBufferException(message: String, cause: Throwable) extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
@@ -40,7 +35,7 @@ abstract class RemoteClient private[akka] (
 
   val log = Logging(netty.system, "RemoteClient")
 
-  val name = simpleName(this) + "@" + remoteAddress
+  val name = Logging.simpleName(this) + "@" + remoteAddress
 
   private[remote] val runSwitch = new Switch()
 

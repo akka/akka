@@ -9,8 +9,13 @@ import scala.collection.JavaConversions._
 import java.lang.{ Iterable ⇒ JIterable }
 import akka.util.Duration
 
+/**
+ * ChildRestartStats is the statistics kept by every parent Actor for every child Actor
+ * and is used for SupervisorStrategies to know how to deal with problems that occur for the children.
+ */
 case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L) {
 
+  //FIXME How about making ChildRestartStats immutable and then move these methods into the actual supervisor strategies?
   def requestRestartPermission(retriesWindow: (Option[Int], Option[Int])): Boolean =
     retriesWindow match {
       case (Some(retries), _) if retries < 1 ⇒ false
@@ -160,19 +165,19 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   def makeDecider(flat: Iterable[CauseDirective]): Decider = {
     val directives = sort(flat)
 
-    {
-      case x ⇒ directives find (_._1 isInstance x) map (_._2) getOrElse Escalate
-    }
+    { case x ⇒ directives find (_._1 isInstance x) map (_._2) getOrElse Escalate }
   }
 
-  def makeDecider(func: JDecider): Decider = {
-    case x ⇒ func(x)
-  }
+  /**
+   * Converts a Java Decider into a Scala Decider
+   */
+  def makeDecider(func: JDecider): Decider = { case x ⇒ func(x) }
 
   /**
    * Sort so that subtypes always precede their supertypes, but without
    * obeying any order between unrelated subtypes (insert sort).
    */
+  //FIXME Should this really be public API?
   def sort(in: Iterable[CauseDirective]): Seq[CauseDirective] =
     (new ArrayBuffer[CauseDirective](in.size) /: in) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
@@ -184,14 +189,21 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 
   private[akka] def withinTimeRangeOption(withinTimeRange: Duration): Option[Duration] =
     if (withinTimeRange.isFinite && withinTimeRange >= Duration.Zero) Some(withinTimeRange) else None
+
   private[akka] def maxNrOfRetriesOption(maxNrOfRetries: Int): Option[Int] =
     if (maxNrOfRetries < 0) None else Some(maxNrOfRetries)
 }
 
+/**
+ * An Akka SupervisorStrategy is
+ */
 abstract class SupervisorStrategy {
 
   import SupervisorStrategy._
 
+  /**
+   * Returns the Decider that is associated with this SupervisorStrategy
+   */
   def decider: Decider
 
   /**
@@ -204,21 +216,19 @@ abstract class SupervisorStrategy {
    */
   def processFailure(context: ActorContext, restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit
 
-  def handleSupervisorFailing(supervisor: ActorRef, children: Iterable[ActorRef]): Unit = {
-    if (children.nonEmpty)
-      children.foreach(_.asInstanceOf[InternalActorRef].suspend())
-  }
+  //FIXME docs
+  def handleSupervisorFailing(supervisor: ActorRef, children: Iterable[ActorRef]): Unit =
+    if (children.nonEmpty) children.foreach(_.asInstanceOf[InternalActorRef].suspend())
 
-  def handleSupervisorRestarted(cause: Throwable, supervisor: ActorRef, children: Iterable[ActorRef]): Unit = {
-    if (children.nonEmpty)
-      children.foreach(_.asInstanceOf[InternalActorRef].restart(cause))
-  }
+  //FIXME docs
+  def handleSupervisorRestarted(cause: Throwable, supervisor: ActorRef, children: Iterable[ActorRef]): Unit =
+    if (children.nonEmpty) children.foreach(_.asInstanceOf[InternalActorRef].restart(cause))
 
   /**
    * Returns whether it processed the failure or not
    */
   def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
-    val directive = if (decider.isDefinedAt(cause)) decider(cause) else Escalate
+    val directive = if (decider.isDefinedAt(cause)) decider(cause) else Escalate //FIXME applyOrElse in Scala 2.10
     directive match {
       case Resume   ⇒ child.asInstanceOf[InternalActorRef].resume(); true
       case Restart  ⇒ processFailure(context, true, child, cause, stats, children); true
@@ -242,6 +252,8 @@ abstract class SupervisorStrategy {
 case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration = Duration.Inf)(val decider: SupervisorStrategy.Decider)
   extends SupervisorStrategy {
 
+  import SupervisorStrategy._
+
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
 
@@ -256,9 +268,7 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration
    *  every call to requestRestartPermission, assuming that strategies are shared
    *  across actors and thus this field does not take up much space
    */
-  private val retriesWindow = (
-    SupervisorStrategy.maxNrOfRetriesOption(maxNrOfRetries),
-    SupervisorStrategy.withinTimeRangeOption(withinTimeRange).map(_.toMillis.toInt))
+  private val retriesWindow = (maxNrOfRetriesOption(maxNrOfRetries), withinTimeRangeOption(withinTimeRange).map(_.toMillis.toInt))
 
   def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = {}
 
