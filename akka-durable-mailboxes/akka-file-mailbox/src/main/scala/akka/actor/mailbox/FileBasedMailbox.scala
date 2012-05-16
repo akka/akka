@@ -11,7 +11,7 @@ import akka.actor.ActorRef
 import akka.dispatch.MailboxType
 import com.typesafe.config.Config
 import akka.util.NonFatal
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import akka.actor.ActorSystem
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {

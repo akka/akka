@@ -4,12 +4,10 @@
 package akka.event
 
 import akka.actor._
-import akka.AkkaException
+import akka.{ ConfigurationException, AkkaException }
 import akka.actor.ActorSystem.Settings
-import akka.config.ConfigurationException
-import akka.util.ReentrantGuard
+import akka.util.{ Timeout, ReentrantGuard }
 import akka.util.duration._
-import akka.util.Timeout
 import java.util.concurrent.atomic.AtomicInteger
 import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException

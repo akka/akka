@@ -85,7 +85,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   /**
    * Returns the Serializer configured for the given object, returns the NullSerializer if it's null.
    *
-   * @throws akka.config.ConfigurationException if no `serialization-bindings` is configured for the
+   * @throws akka.ConfigurationException if no `serialization-bindings` is configured for the
    *   class of the object
    */
   def findSerializerFor(o: AnyRef): Serializer = o match {

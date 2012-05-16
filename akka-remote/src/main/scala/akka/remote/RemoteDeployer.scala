@@ -6,7 +6,7 @@ package akka.remote
 import akka.actor._
 import akka.routing._
 import com.typesafe.config._
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 
 case class RemoteScope(node: Address) extends Scope {
   def withFallback(other: Scope): Scope = this

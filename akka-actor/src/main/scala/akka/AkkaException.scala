@@ -44,3 +44,10 @@ class AkkaException(message: String = "", cause: Throwable = null) extends Runti
 
   def stackTraceToString = AkkaException.stackTraceToString(this)
 }
+
+/**
+ * This exception is thrown when Akka detects a problem with the provided configuration
+ */
+class ConfigurationException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
+  def this(msg: String) = this(msg, null)
+}

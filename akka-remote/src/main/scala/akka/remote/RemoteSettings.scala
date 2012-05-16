@@ -7,7 +7,7 @@ import com.typesafe.config.Config
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.net.InetAddress
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import scala.collection.JavaConverters._
 import akka.actor.Address
 import akka.actor.AddressFromURIString

@@ -6,7 +6,7 @@ package akka.routing
 import akka.actor._
 import akka.util.Duration
 import akka.util.duration._
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import akka.pattern.pipe
 import akka.pattern.AskSupport
 import com.typesafe.config.Config

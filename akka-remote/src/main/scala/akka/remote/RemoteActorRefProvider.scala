@@ -9,7 +9,7 @@ import akka.actor._
 import akka.dispatch._
 import akka.event.{ DeathWatch, Logging, LoggingAdapter }
 import akka.event.EventStream
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import java.util.concurrent.{ TimeoutException }
 import com.typesafe.config.Config
 import akka.serialization.Serialization

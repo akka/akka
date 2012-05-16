@@ -4,7 +4,6 @@
 
 package akka.actor
 
-import akka.config.ConfigurationException
 import akka.event._
 import akka.dispatch._
 import akka.pattern.ask
@@ -150,7 +149,7 @@ object ActorSystem {
     final val JvmExitOnFatalError = getBoolean("akka.jvm-exit-on-fatal-error")
 
     if (ConfigVersion != Version)
-      throw new ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
+      throw new akka.ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
 
     /**
      * Returns the String representation of the Config that this Settings is backed by
