@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorCell
 import akka.util.Duration
 import java.util.concurrent._
+import akka.event.Logging
 
 /**
  * The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a
@@ -38,18 +39,27 @@ class Dispatcher(
   protected val executorService = new AtomicReference[ExecutorServiceDelegate](
     new ExecutorServiceDelegate { lazy val executor = executorServiceFactory.createExecutorService })
 
+  /**
+   * INTERNAL USE ONLY
+   */
   protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
     val mbox = receiver.mailbox
     mbox.enqueue(receiver.self, invocation)
     registerForExecution(mbox, true, false)
   }
 
+  /**
+   * INTERNAL USE ONLY
+   */
   protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage) = {
     val mbox = receiver.mailbox
     mbox.systemEnqueue(receiver.self, invocation)
     registerForExecution(mbox, false, true)
   }
 
+  /**
+   * INTERNAL USE ONLY
+   */
   protected[akka] def executeTask(invocation: TaskInvocation) {
     try {
       executorService.get() execute invocation
@@ -65,8 +75,14 @@ class Dispatcher(
     }
   }
 
+  /**
+   * INTERNAL USE ONLY
+   */
   protected[akka] def createMailbox(actor: ActorCell): Mailbox = new Mailbox(actor, mailboxType.create(Some(actor))) with DefaultSystemMessageQueue
 
+  /**
+   * INTERNAL USE ONLY
+   */
   protected[akka] def shutdown: Unit =
     Option(executorService.getAndSet(new ExecutorServiceDelegate {
       lazy val executor = executorServiceFactory.createExecutorService
@@ -74,6 +90,8 @@ class Dispatcher(
 
   /**
    * Returns if it was registered
+   *
+   * INTERNAL USE ONLY
    */
   protected[akka] override def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
     if (mbox.canBeScheduledForExecution(hasMessageHint, hasSystemMessageHint)) { //This needs to be here to ensure thread safety and no races
@@ -97,7 +115,7 @@ class Dispatcher(
     } else false
   }
 
-  override val toString = getClass.getSimpleName + "[" + id + "]"
+  override val toString = Logging.simpleName(this) + "[" + id + "]"
 }
 
 object PriorityGenerator {
