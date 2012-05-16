@@ -18,12 +18,24 @@ import akka.routing._
  */
 object Props {
 
+  /**
+   * The defaultCreator, simply throws an UnsupportedOperationException when applied, which is used when creating a Props
+   */
   final val defaultCreator: () ⇒ Actor = () ⇒ throw new UnsupportedOperationException("No actor creator specified!")
 
+  /**
+   * The defaultRoutedProps is NoRouter which is used when creating a Props
+   */
   final val defaultRoutedProps: RouterConfig = NoRouter
 
+  /**
+   * The default Deploy instance which is used when creating a Props
+   */
   final val defaultDeploy = Deploy()
 
+  /**
+   * A Props instance whose creator will create an actor that doesn't respond to any message
+   */
   final val empty = new Props(() ⇒ new Actor { def receive = Actor.emptyBehavior })
 
   /**
@@ -49,8 +61,7 @@ object Props {
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance
    * of the supplied class using the default constructor.
    */
-  def apply(actorClass: Class[_ <: Actor]): Props =
-    default.withCreator(actorClass)
+  def apply(actorClass: Class[_ <: Actor]): Props = default.withCreator(actorClass)
 
   /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance
@@ -58,18 +69,18 @@ object Props {
    *
    * Scala API.
    */
-  def apply(creator: ⇒ Actor): Props =
-    default.withCreator(creator)
+  def apply(creator: ⇒ Actor): Props = default.withCreator(creator)
 
   /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance
    * using the supplied thunk.
    */
-  def apply(creator: Creator[_ <: Actor]): Props =
-    default.withCreator(creator.create)
+  def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
 
-  def apply(behavior: ActorContext ⇒ Actor.Receive): Props =
-    apply(new Actor { def receive = behavior(context) })
+  /**
+   * Returns a new Props whose creator will instantiate an Actor that has the behavior specified
+   */
+  def apply(behavior: ActorContext ⇒ Actor.Receive): Props = apply(new Actor { def receive = behavior(context) })
 }
 
 /**
