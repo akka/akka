@@ -548,6 +548,18 @@ termination of several actors:
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#gracefulStop
 
+When ``gracefulStop()`` returns successfully, the actor’s ``postStop()`` hook
+will have been executed: there exists a happens-before edge between the end of
+``postStop()`` and the return of ``gracefulStop()``.
+
+.. warning::
+
+  Keep in mind that an actor stopping and its name being deregistered are
+  separate events which happen asynchronously from each other. Therefore it may
+  be that you will find the name still in use after ``gracefulStop()``
+  returned. In order to guarantee proper deregistration, only reuse names from
+  within a supervisor you control and only in response to a :class:`Terminated`
+  message, i.e. not for top-level actors.
 
 .. _Actor.HotSwap:
 
