@@ -129,7 +129,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   /**
    * Get a single Short from this iterator.
    */
-  def getShort(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): Short = {
+  def getShort(implicit byteOrder: ByteOrder): Short = {
     if (byteOrder == ByteOrder.BIG_ENDIAN)
       ((next() & 0xff) << 8 | (next() & 0xff) << 0).toShort
     else if (byteOrder == ByteOrder.LITTLE_ENDIAN)
@@ -140,7 +140,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   /**
    * Get a single Int from this iterator.
    */
-  def getInt(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): Int = {
+  def getInt(implicit byteOrder: ByteOrder): Int = {
     if (byteOrder == ByteOrder.BIG_ENDIAN)
       ((next() & 0xff) << 24
         | (next() & 0xff) << 16
@@ -157,7 +157,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   /**
    * Get a single Long from this iterator.
    */
-  def getLong(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): Long = {
+  def getLong(implicit byteOrder: ByteOrder): Long = {
     if (byteOrder == ByteOrder.BIG_ENDIAN)
       ((next().toLong & 0xff) << 56
         | (next().toLong & 0xff) << 48
@@ -179,11 +179,17 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
   }
 
-  def getFloat(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): Float =
+  def getFloat(implicit byteOrder: ByteOrder): Float =
     java.lang.Float.intBitsToFloat(getInt(byteOrder))
 
-  def getDouble(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): Double =
+  def getDouble(implicit byteOrder: ByteOrder): Double =
     java.lang.Double.longBitsToDouble(getLong(byteOrder))
+
+  /**
+   * Get a specific number of Bytes from this iterator. In contrast to
+   * copyToArray, this method will fail if this.len < xs.length.
+   */
+  def getBytes(xs: Array[Byte]): this.type = getBytes(xs, 0, xs.length)
 
   /**
    * Get a specific number of Bytes from this iterator. In contrast to
@@ -194,27 +200,57 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   /**
    * Get a number of Shorts from this iterator.
    */
-  def getShorts(xs: Array[Short], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type
+  def getShorts(xs: Array[Short])(implicit byteOrder: ByteOrder): this.type =
+    getShorts(xs, 0, xs.length)(byteOrder)
+
+  /**
+   * Get a number of Shorts from this iterator.
+   */
+  def getShorts(xs: Array[Short], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type
 
   /**
    * Get a number of Ints from this iterator.
    */
-  def getInts(xs: Array[Int], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type
+  def getInts(xs: Array[Int])(implicit byteOrder: ByteOrder): this.type =
+    getInts(xs, 0, xs.length)(byteOrder)
+
+  /**
+   * Get a number of Ints from this iterator.
+   */
+  def getInts(xs: Array[Int], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type
 
   /**
    * Get a number of Longs from this iterator.
    */
-  def getLongs(xs: Array[Long], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type
+  def getLongs(xs: Array[Long])(implicit byteOrder: ByteOrder): this.type =
+    getLongs(xs, 0, xs.length)(byteOrder)
+
+  /**
+   * Get a number of Longs from this iterator.
+   */
+  def getLongs(xs: Array[Long], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type
 
   /**
    * Get a number of Floats from this iterator.
    */
-  def getFloats(xs: Array[Float], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type
+  def getFloats(xs: Array[Float])(implicit byteOrder: ByteOrder): this.type =
+    getFloats(xs, 0, xs.length)(byteOrder)
+
+  /**
+   * Get a number of Floats from this iterator.
+   */
+  def getFloats(xs: Array[Float], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type
 
   /**
    * Get a number of Doubles from this iterator.
    */
-  def getDoubles(xs: Array[Double], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type
+  def getDoubles(xs: Array[Double])(implicit byteOrder: ByteOrder): this.type =
+    getDoubles(xs, 0, xs.length)(byteOrder)
+
+  /**
+   * Get a number of Doubles from this iterator.
+   */
+  def getDoubles(xs: Array[Double], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type
 
   /**
    * Copy as many bytes as possible to a ByteBuffer, starting from it's
@@ -342,19 +378,19 @@ class ByteArrayIterator private (private var array: Array[Byte], private var fro
     } else Iterator.empty.next
   }
 
-  def getShorts(xs: Array[Short], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+  def getShorts(xs: Array[Short], offset: Int, n: Int)(implicit byteOrder: ByteOrder) =
     { toByteString.asByteBuffer.order(byteOrder).asShortBuffer.get(xs, offset, n); drop(2 * n) }
 
-  def getInts(xs: Array[Int], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+  def getInts(xs: Array[Int], offset: Int, n: Int)(implicit byteOrder: ByteOrder) =
     { toByteString.asByteBuffer.order(byteOrder).asIntBuffer.get(xs, offset, n); drop(4 * n) }
 
-  def getLongs(xs: Array[Long], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+  def getLongs(xs: Array[Long], offset: Int, n: Int)(implicit byteOrder: ByteOrder) =
     { toByteString.asByteBuffer.order(byteOrder).asLongBuffer.get(xs, offset, n); drop(8 * n) }
 
-  def getFloats(xs: Array[Float], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+  def getFloats(xs: Array[Float], offset: Int, n: Int)(implicit byteOrder: ByteOrder) =
     { toByteString.asByteBuffer.order(byteOrder).asFloatBuffer.get(xs, offset, n); drop(4 * n) }
 
-  def getDoubles(xs: Array[Double], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+  def getDoubles(xs: Array[Double], offset: Int, n: Int)(implicit byteOrder: ByteOrder) =
     { toByteString.asByteBuffer.order(byteOrder).asDoubleBuffer.get(xs, offset, n); drop(8 * n) }
 
   def copyToBuffer(buffer: ByteBuffer): Int = {
@@ -525,19 +561,19 @@ class MultiByteArrayIterator private (private var iterators: List[ByteArrayItera
   def getBytes(xs: Array[Byte], offset: Int, n: Int) =
     getToArray(xs, offset, n, 1) { getByte } { getBytes(_, _, _) }
 
-  def getShorts(xs: Array[Short], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+  def getShorts(xs: Array[Short], offset: Int, n: Int)(implicit byteOrder: ByteOrder) =
     getToArray(xs, offset, n, 2) { getShort(byteOrder) } { current.getShorts(_, _, _)(byteOrder) }
 
-  def getInts(xs: Array[Int], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+  def getInts(xs: Array[Int], offset: Int, n: Int)(implicit byteOrder: ByteOrder) =
     getToArray(xs, offset, n, 4) { getInt(byteOrder) } { current.getInts(_, _, _)(byteOrder) }
 
-  def getLongs(xs: Array[Long], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+  def getLongs(xs: Array[Long], offset: Int, n: Int)(implicit byteOrder: ByteOrder) =
     getToArray(xs, offset, n, 8) { getLong(byteOrder) } { current.getLongs(_, _, _)(byteOrder) }
 
-  def getFloats(xs: Array[Float], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+  def getFloats(xs: Array[Float], offset: Int, n: Int)(implicit byteOrder: ByteOrder) =
     getToArray(xs, offset, n, 8) { getFloat(byteOrder) } { current.getFloats(_, _, _)(byteOrder) }
 
-  def getDoubles(xs: Array[Double], offset: Int, n: Int)(implicit byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+  def getDoubles(xs: Array[Double], offset: Int, n: Int)(implicit byteOrder: ByteOrder) =
     getToArray(xs, offset, n, 8) { getDouble(byteOrder) } { current.getDoubles(_, _, _)(byteOrder) }
 
   def copyToBuffer(buffer: ByteBuffer): Int = {
