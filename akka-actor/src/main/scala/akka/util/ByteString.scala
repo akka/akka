@@ -536,6 +536,88 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   }
 
   /**
+   * Add a single Byte to this builder.
+   */
+  def putByte(x: Byte): this.type = this += x
+
+  /**
+   * Add a single Short to this builder.
+   */
+  def putShort(x: Short, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type = {
+    if (byteOrder == ByteOrder.BIG_ENDIAN) {
+      this += (x >>> 8).toByte
+      this += (x >>> 0).toByte
+    } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+      this += (x >>> 0).toByte
+      this += (x >>> 8).toByte
+    } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
+  }
+
+  /**
+   * Add a single Int to this builder.
+   */
+  def putInt(x: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type = {
+    fillArray(4) {
+      case (target, offset) ⇒ {
+        if (byteOrder == ByteOrder.BIG_ENDIAN) {
+          target(offset + 0) = (x >>> 24).toByte
+          target(offset + 1) = (x >>> 16).toByte
+          target(offset + 2) = (x >>> 8).toByte
+          target(offset + 3) = (x >>> 0).toByte
+        } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+          target(offset + 0) = (x >>> 0).toByte
+          target(offset + 1) = (x >>> 8).toByte
+          target(offset + 2) = (x >>> 16).toByte
+          target(offset + 3) = (x >>> 24).toByte
+        } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
+      }
+    }
+    this
+  }
+
+  /**
+   * Add a single Long to this builder.
+   */
+  def putLong(x: Long, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type = {
+    fillArray(8) {
+      case (target, offset) ⇒ {
+        if (byteOrder == ByteOrder.BIG_ENDIAN) {
+          target(offset + 0) = (x >>> 56).toByte
+          target(offset + 1) = (x >>> 48).toByte
+          target(offset + 2) = (x >>> 40).toByte
+          target(offset + 3) = (x >>> 32).toByte
+          target(offset + 4) = (x >>> 24).toByte
+          target(offset + 5) = (x >>> 16).toByte
+          target(offset + 6) = (x >>> 8).toByte
+          target(offset + 7) = (x >>> 0).toByte
+        } else if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
+          target(offset + 0) = (x >>> 0).toByte
+          target(offset + 1) = (x >>> 8).toByte
+          target(offset + 2) = (x >>> 16).toByte
+          target(offset + 3) = (x >>> 24).toByte
+          target(offset + 4) = (x >>> 32).toByte
+          target(offset + 5) = (x >>> 40).toByte
+          target(offset + 6) = (x >>> 48).toByte
+          target(offset + 7) = (x >>> 56).toByte
+        } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
+      }
+    }
+    this
+  }
+
+  /**
+   * Add a single Float to this builder.
+   */
+  def putFloat(x: Float, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+    putInt(java.lang.Float.floatToRawIntBits(x), byteOrder)
+
+  /**
+   * Add a single Double to this builder.
+   */
+  def putDouble(x: Double, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+    putLong(java.lang.Double.doubleToRawLongBits(x), byteOrder)
+
+  /**
    * Add a number of Bytes from an array to this builder.
    */
   def putBytes(array: Array[Byte], start: Int, len: Int): this.type =
