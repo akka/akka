@@ -4,7 +4,7 @@
 
 package akka.util
 
-import java.nio.ByteBuffer
+import java.nio.{ ByteBuffer, ByteOrder }
 
 import scala.collection.IndexedSeqOptimized
 import scala.collection.mutable.{ Builder, WrappedArray }
@@ -448,6 +448,23 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   private var _tempLength = 0
   private var _tempCapacity = 0
 
+  protected def fillArray(len: Int)(fill: (Array[Byte], Int) ⇒ Unit): this.type = {
+    ensureTempSize(_tempLength + len)
+    fill(_temp, _tempLength)
+    _tempLength += len
+    _length += len
+    this
+  }
+
+  protected def fillByteBuffer(len: Int, byteOrder: ByteOrder)(fill: ByteBuffer ⇒ Unit): this.type = {
+    fillArray(len) {
+      case (array, start) ⇒
+        val buffer = ByteBuffer.wrap(array, start, len)
+        buffer.order(byteOrder)
+        fill(buffer)
+    }
+  }
+
   def this(initialSize: Int) = {
     this()
     if (initialSize > 0) sizeHint(initialSize)
@@ -517,6 +534,42 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     }
     this
   }
+
+  /**
+   * Add a number of Bytes from an array to this builder.
+   */
+  def putBytes(array: Array[Byte], start: Int, len: Int): this.type =
+    fillArray(len) { case (target, targetOffset) ⇒ Array.copy(array, start, target, targetOffset, len) }
+
+  /**
+   * Add a number of Shorts from an array to this builder.
+   */
+  def putShorts(array: Array[Short], start: Int, len: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+    fillByteBuffer(len * 2, byteOrder) { _.asShortBuffer.put(array, start, len) }
+
+  /**
+   * Add a number of Ints from an array to this builder.
+   */
+  def putInts(array: Array[Int], start: Int, len: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+    fillByteBuffer(len * 4, byteOrder) { _.asIntBuffer.put(array, start, len) }
+
+  /**
+   * Add a number of Longs from an array to this builder.
+   */
+  def putLongs(array: Array[Long], start: Int, len: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+    fillByteBuffer(len * 8, byteOrder) { _.asLongBuffer.put(array, start, len) }
+
+  /**
+   * Add a number of Floats from an array to this builder.
+   */
+  def putFloats(array: Array[Float], start: Int, len: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+    fillByteBuffer(len * 4, byteOrder) { _.asFloatBuffer.put(array, start, len) }
+
+  /**
+   * Add a number of Doubles from an array to this builder.
+   */
+  def putDoubles(array: Array[Double], start: Int, len: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type =
+    fillByteBuffer(len * 8, byteOrder) { _.asDoubleBuffer.put(array, start, len) }
 
   def clear() {
     _builder.clear
