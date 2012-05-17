@@ -444,7 +444,7 @@ object OSGi {
 
   val actor = osgiSettings ++ Seq(
     OsgiKeys.exportPackage := Seq("akka*", "com.typesafe.config.*", "com.eaio.*", "org.jboss.netty.akka.util"),
-    OsgiKeys.importPackage := Seq(scalaImport(), "*;resolution:=optional"),
+    OsgiKeys.importPackage := Seq("!sun.misc", scalaImport()),
     OsgiKeys.privatePackage := Seq("org.jboss.netty.akka.util.internal")
   )
 
