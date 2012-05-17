@@ -85,7 +85,9 @@ object ByteString {
     def decodeString(charset: String): String = new String(bytes, charset)
 
     def ++(that: ByteString): ByteString =
-      if (!that.isEmpty) toByteString1 ++ that else this
+      if (that.isEmpty) this
+      else if (this.isEmpty) that
+      else toByteString1 ++ that
 
     override def slice(from: Int, until: Int): ByteString =
       if ((from != 0) || (until != length)) toByteString1.slice(from, until)
@@ -129,14 +131,18 @@ object ByteString {
     def decodeString(charset: String): String =
       new String(if (length == bytes.length) bytes else toArray, charset)
 
-    def ++(that: ByteString): ByteString = that match {
-      case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
-      case b: ByteString1 ⇒ {
-        if ((bytes eq b.bytes) && (startIndex + length == b.startIndex))
-          new ByteString1(bytes, startIndex, length + b.length)
-        else ByteStrings(this, b)
+    def ++(that: ByteString): ByteString = {
+      if (that.isEmpty) this
+      else if (this.isEmpty) that
+      else that match {
+        case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
+        case b: ByteString1 ⇒ {
+          if ((bytes eq b.bytes) && (startIndex + length == b.startIndex))
+            new ByteString1(bytes, startIndex, length + b.length)
+          else ByteStrings(this, b)
+        }
+        case bs: ByteStrings ⇒ ByteStrings(this, bs)
       }
-      case bs: ByteStrings ⇒ ByteStrings(this, bs)
     }
   }
 
@@ -199,10 +205,14 @@ object ByteString {
 
     override def iterator = MultiByteArrayIterator(bytestrings.toList.map { _.iterator })
 
-    def ++(that: ByteString): ByteString = that match {
-      case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
-      case b: ByteString1  ⇒ ByteStrings(this, b)
-      case bs: ByteStrings ⇒ ByteStrings(this, bs)
+    def ++(that: ByteString): ByteString = {
+      if (that.isEmpty) this
+      else if (this.isEmpty) that
+      else that match {
+        case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
+        case b: ByteString1  ⇒ ByteStrings(this, b)
+        case bs: ByteStrings ⇒ ByteStrings(this, bs)
+      }
     }
 
     def contiguous = compact
