@@ -4,7 +4,7 @@
 
 package akka.util
 
-import java.nio.ByteBuffer
+import java.nio.{ ByteBuffer, ByteOrder }
 
 import scala.collection.IndexedSeqOptimized
 import scala.collection.mutable.{ Builder, WrappedArray }
@@ -120,6 +120,37 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     copyToArray(target)
     target
   }
+
+  /**
+   * Get a specific number of Bytes from this iterator. In contrast to
+   * copyToArray, this method will fail if length < n or if (xs.length - offset) < n.
+   */
+  def getBytes(xs: Array[Byte], offset: Int, n: Int): this.type
+
+  /**
+   * Get a number of Shorts from this iterator.
+   */
+  def getShorts(xs: Array[Short], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type
+
+  /**
+   * Get a number of Ints from this iterator.
+   */
+  def getInts(xs: Array[Int], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type
+
+  /**
+   * Get a number of Longs from this iterator.
+   */
+  def getLongs(xs: Array[Long], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type
+
+  /**
+   * Get a number of Floats from this iterator.
+   */
+  def getFloats(xs: Array[Float], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type
+
+  /**
+   * Get a number of Doubles from this iterator.
+   */
+  def getDoubles(xs: Array[Double], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN): this.type
 
   /**
    * Copy as many bytes as possible to a ByteBuffer, starting from it's
@@ -239,6 +270,28 @@ class ByteArrayIterator private (private var array: Array[Byte], private var fro
     clear()
     result
   }
+
+  def getBytes(xs: Array[Byte], offset: Int, n: Int) = {
+    if (n <= this.len) {
+      Array.copy(this.array, this.from, xs, offset, n)
+      this
+    } else Iterator.empty.next
+  }
+
+  def getShorts(xs: Array[Short], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+    { toByteString.asByteBuffer.order(byteOrder).asShortBuffer.get(xs, offset, n); drop(2 * n) }
+
+  def getInts(xs: Array[Int], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+    { toByteString.asByteBuffer.order(byteOrder).asIntBuffer.get(xs, offset, n); drop(4 * n) }
+
+  def getLongs(xs: Array[Long], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+    { toByteString.asByteBuffer.order(byteOrder).asLongBuffer.get(xs, offset, n); drop(8 * n) }
+
+  def getFloats(xs: Array[Float], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+    { toByteString.asByteBuffer.order(byteOrder).asFloatBuffer.get(xs, offset, n); drop(4 * n) }
+
+  def getDoubles(xs: Array[Double], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+    { toByteString.asByteBuffer.order(byteOrder).asDoubleBuffer.get(xs, offset, n); drop(8 * n) }
 
   def copyToBuffer(buffer: ByteBuffer): Int = {
     val copyLength = math.min(buffer.remaining, len)
@@ -390,6 +443,38 @@ class MultiByteArrayIterator private (private var iterators: List[ByteArrayItera
     clear()
     result
   }
+
+  @tailrec protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: ⇒ A)(getMult: (Array[A], Int, Int) ⇒ Unit): this.type = if (n <= 0) this else {
+    if (isEmpty) Iterator.empty.next
+    val nDone = if (current.len >= elemSize) {
+      val nCurrent = math.min(elemSize, current.len / elemSize)
+      getMult(xs, offset, nCurrent)
+      nCurrent
+    } else {
+      xs(offset) = getSingle
+      1
+    }
+    normalize()
+    getToArray(xs, offset + nDone, n - nDone, elemSize)(getSingle)(getMult)
+  }
+
+  def getBytes(xs: Array[Byte], offset: Int, n: Int) =
+    getToArray(xs, offset, n, 1) { getByte } { getBytes(_, _, _) }
+
+  def getShorts(xs: Array[Short], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+    getToArray(xs, offset, n, 2) { getShort(byteOrder) } { current.getShorts(_, _, _)(byteOrder) }
+
+  def getInts(xs: Array[Int], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+    getToArray(xs, offset, n, 4) { getInt(byteOrder) } { current.getInts(_, _, _)(byteOrder) }
+
+  def getLongs(xs: Array[Long], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+    getToArray(xs, offset, n, 8) { getLong(byteOrder) } { current.getLongs(_, _, _)(byteOrder) }
+
+  def getFloats(xs: Array[Float], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+    getToArray(xs, offset, n, 8) { getFloat(byteOrder) } { current.getFloats(_, _, _)(byteOrder) }
+
+  def getDoubles(xs: Array[Double], offset: Int, n: Int, byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN) =
+    getToArray(xs, offset, n, 8) { getDouble(byteOrder) } { current.getDoubles(_, _, _)(byteOrder) }
 
   def copyToBuffer(buffer: ByteBuffer): Int = {
     val n = iterators.foldLeft(0) { _ + _.copyToBuffer(buffer) }
