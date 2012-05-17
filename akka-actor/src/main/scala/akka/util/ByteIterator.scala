@@ -26,8 +26,10 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   protected def clear(): Unit
 
-  def ++(that: TraversableOnce[Byte]): ByteIterator =
-    ByteArrayIterator(that.toArray)
+  def ++(that: TraversableOnce[Byte]): ByteIterator = {
+    if (that.isEmpty) this
+    else ByteArrayIterator(that.toArray)
+  }
 
   // *must* be overridden by derived classes
   override def clone: ByteIterator = null
@@ -146,20 +148,25 @@ class ByteArrayIterator private (private var array: Array[Byte], private var fro
   final override def length = { val l = len; clear(); l }
 
   final override def ++(that: TraversableOnce[Byte]) = that match {
-    case that: ByteArrayIterator ⇒ {
-      if (this.isEmpty) that
-      else if ((this.array eq that.array) && (this.until == that.from)) {
-        this.until = that.until
-        that.clear()
-        this
-      } else {
-        val result = MultiByteArrayIterator(List(this, that))
-        this.clear()
-        result
+    case that: ByteIterator ⇒ {
+      if (that.isEmpty) this
+      else if (this.isEmpty) that
+      else that match {
+        case that: ByteArrayIterator ⇒ {
+          if ((this.array eq that.array) && (this.until == that.from)) {
+            this.until = that.until
+            that.clear()
+            this
+          } else {
+            val result = MultiByteArrayIterator(List(this, that))
+            this.clear()
+            result
+          }
+        }
+        case that: MultiByteArrayIterator ⇒ this +: that
       }
     }
-    case that: MultiByteArrayIterator ⇒ if (this.isEmpty) that else (this +: that)
-    case _                            ⇒ super.++(that)
+    case _ ⇒ super.++(that)
   }
 
   final override def clone = new ByteArrayIterator(array, from, until)
@@ -267,15 +274,23 @@ class MultiByteArrayIterator private (private var iterators: List[ByteArrayItera
   }
 
   final override def ++(that: TraversableOnce[Byte]) = that match {
-    case that: ByteArrayIterator ⇒ if (this.isEmpty) that else {
-      iterators = iterators :+ that
-      that.clear()
-      this
-    }
-    case that: MultiByteArrayIterator ⇒ if (this.isEmpty) that else {
-      iterators = this.iterators ++ that.iterators
-      that.clear()
-      this
+    case that: ByteIterator ⇒ {
+      if (that.isEmpty) this
+      else if (this.isEmpty) that
+      else {
+        that match {
+          case that: ByteArrayIterator ⇒ {
+            iterators = this.iterators :+ that
+            that.clear()
+            this
+          }
+          case that: MultiByteArrayIterator ⇒ {
+            iterators = this.iterators ++ that.iterators
+            that.clear()
+            this
+          }
+        }
+      }
     }
     case _ ⇒ super.++(that)
   }
