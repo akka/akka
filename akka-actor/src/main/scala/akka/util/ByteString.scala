@@ -100,6 +100,7 @@ object ByteString {
 
   private[akka] object ByteString1 {
     def apply(bytes: Array[Byte]) = new ByteString1(bytes)
+    def apply(bytes: Array[Byte], startIndex: Int, length: Int) = new ByteString1(bytes, startIndex, length)
   }
 
   /**
