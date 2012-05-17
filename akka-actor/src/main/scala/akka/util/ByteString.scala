@@ -119,8 +119,10 @@ object ByteString {
 
     override def clone: CompactByteString = ByteString1C(toArray)
 
+    def isCompact = (length == bytes.length)
+
     def compact: CompactByteString =
-      if (length == bytes.length) ByteString1C(bytes) else clone
+      if (isCompact) ByteString1C(bytes) else clone
 
     def asByteBuffer: ByteBuffer = {
       val buffer = ByteBuffer.wrap(bytes, startIndex, length).asReadOnlyBuffer
@@ -191,6 +193,7 @@ object ByteString {
    * A ByteString with 2 or more fragments.
    */
   final class ByteStrings private (val bytestrings: Vector[ByteString1], val length: Int) extends ByteString {
+    if (bytestrings.isEmpty) throw new IllegalArgumentException("bytestrings must not be empty")
 
     def apply(idx: Int): Byte =
       if (0 <= idx && idx < length) {
@@ -215,15 +218,29 @@ object ByteString {
       }
     }
 
-    def contiguous = compact
-    def compact: CompactByteString = {
-      val ar = new Array[Byte](length)
-      var pos = 0
-      bytestrings foreach { b ⇒
-        b.copyToArray(ar, pos, b.length)
-        pos += b.length
+    def isContiguous = (bytestrings.length == 1)
+
+    def contiguous = {
+      if (isContiguous) bytestrings.head
+      else compact
+    }
+
+    def isCompact = {
+      if (bytestrings.length == 1) bytestrings.head.isCompact
+      else false
+    }
+
+    def compact = {
+      if (isCompact) bytestrings.head.compact
+      else {
+        val ar = new Array[Byte](length)
+        var pos = 0
+        bytestrings foreach { b ⇒
+          b.copyToArray(ar, pos, b.length)
+          pos += b.length
+        }
+        ByteString1C(ar)
       }
-      ByteString1C(ar)
     }
 
     def asByteBuffer: ByteBuffer = compact.asByteBuffer
@@ -297,10 +314,22 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   def contiguous: ContByteString
 
   /**
+   * Check whether this ByteString is contiguous in memory
+   * (i.e. represented by a single section of a byte array).
+   */
+  def isContiguous: Boolean
+
+  /**
    * Create a new ByteString with all contents compacted into a single,
    * full byte array.
    */
   def compact: CompactByteString
+
+  /**
+   * Check whether this ByteString is compact in memory
+   * (i.e. represented by a single, full byte array).
+   */
+  def isCompact: Boolean
 
   /**
    * Returns a read-only ByteBuffer that directly wraps this ByteString
@@ -409,6 +438,7 @@ object CompactByteString {
  * operations more efficient than on chunked ByteString instances.
  */
 sealed abstract class ContByteString extends ByteString {
+  def isContiguous = true
   def contiguous = this
 }
 
@@ -419,6 +449,7 @@ sealed abstract class ContByteString extends ByteString {
  * as much memory as required for its contents.
  */
 sealed abstract class CompactByteString extends ContByteString with Serializable {
+  def isCompact = true
   def compact = this
 }
 
