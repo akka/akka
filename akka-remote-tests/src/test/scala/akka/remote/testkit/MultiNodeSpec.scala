@@ -16,6 +16,50 @@ import akka.dispatch.Await
 import akka.util.Duration
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
+import akka.remote.testconductor.RoleName
+
+/**
+ * Configure the role names and participants of the test, including configuration settings.
+ */
+abstract class MultiNodeConfig {
+
+  private var _commonConf: Option[Config] = None
+  private var _nodeConf = Map[RoleName, Config]()
+  private var _roles = Seq[RoleName]()
+
+  /**
+   * Register a common base config for all test participants, if so desired.
+   */
+  def commonConfig(config: Config): Unit = _commonConf = Some(config)
+
+  /**
+   * Register a config override for a specific participant.
+   */
+  def nodeConfig(role: RoleName, config: Config): Unit = _nodeConf += role -> config
+
+  /**
+   * Construct a RoleName and return it, to be used as an identifier in the
+   * test. Registration of a role name creates a role which then needs to be
+   * filled.
+   */
+  def role(name: String): RoleName = {
+    if (_roles exists (_.name == name)) throw new IllegalArgumentException("non-unique role name " + name)
+    val r = RoleName(name)
+    _roles :+= r
+    r
+  }
+
+  private[testkit] lazy val mySelf: RoleName = {
+    require(_roles.size > MultiNodeSpec.selfIndex, "not enough roles declared for this test")
+    _roles(MultiNodeSpec.selfIndex)
+  }
+
+  private[testkit] def config: Config = {
+    val configs = (_nodeConf get mySelf).toList ::: _commonConf.toList ::: MultiNodeSpec.nodeConfig :: AkkaSpec.testConf :: Nil
+    configs reduce (_ withFallback _)
+  }
+
+}
 
 object MultiNodeSpec {
 
@@ -52,18 +96,11 @@ object MultiNodeSpec {
 
 }
 
-abstract class MultiNodeSpec(_system: ActorSystem) extends AkkaSpec(_system) {
+abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem) extends AkkaSpec(_system) {
 
   import MultiNodeSpec._
 
-  def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName,
-    MultiNodeSpec.nodeConfig.withFallback(config.withFallback(AkkaSpec.testConf))))
-
-  def this(s: String) = this(ConfigFactory.parseString(s))
-
-  def this(configMap: Map[String, _]) = this(AkkaSpec.mapToConfig(configMap))
-
-  def this() = this(AkkaSpec.testConf)
+  def this(config: MultiNodeConfig) = this(config.mySelf, ActorSystem(AkkaSpec.getCallerName, config.config))
 
   /*
    * Test Class Interface
@@ -90,38 +127,16 @@ abstract class MultiNodeSpec(_system: ActorSystem) extends AkkaSpec(_system) {
   val testConductor: TestConductorExt = TestConductor(system)
 
   /**
-   * TO BE DEFINED BY USER: The test class must define a set of role names to
-   * be used throughout the run, e.g. in naming nodes in failure injections.
-   * These will be mapped to the available nodes such that the first name will
-   * be the Controller, i.e. on this one you can do failure injection.
-   *
-   * Should be a lazy val due to initialization order:
-   * {{{
-   * lazy val roles = Seq("master", "slave")
-   * }}}
-   */
-  def roles: Seq[String]
-
-  require(roles.size >= initialParticipants, "not enough roles for initialParticipants")
-  require(roles.size <= nodeNames.size, "not enough nodes for number of roles")
-  require(roles.distinct.size == roles.size, "role names must be distinct")
-
-  val mySelf = {
-    if (selfIndex >= roles.size) System.exit(0)
-    roles(selfIndex)
-  }
-
-  /**
    * Execute the given block of code only on the given nodes (names according
    * to the `roleMap`).
    */
-  def runOn(nodes: String*)(thunk: ⇒ Unit): Unit = {
+  def runOn(nodes: RoleName*)(thunk: ⇒ Unit): Unit = {
     if (nodes exists (_ == mySelf)) {
       thunk
     }
   }
 
-  def ifNode[T](nodes: String*)(yes: ⇒ T)(no: ⇒ T): T = {
+  def ifNode[T](nodes: RoleName*)(yes: ⇒ T)(no: ⇒ T): T = {
     if (nodes exists (_ == mySelf)) yes else no
   }
 
@@ -133,7 +148,7 @@ abstract class MultiNodeSpec(_system: ActorSystem) extends AkkaSpec(_system) {
    * val serviceA = system.actorFor(node("master") / "user" / "serviceA")
    * }}}
    */
-  def node(name: String): ActorPath = RootActorPath(testConductor.getAddressFor(name).await)
+  def node(role: RoleName): ActorPath = RootActorPath(testConductor.getAddressFor(role).await)
 
   /**
    * Enrich `.await()` onto all Awaitables, using BarrierTimeout.
@@ -149,9 +164,9 @@ abstract class MultiNodeSpec(_system: ActorSystem) extends AkkaSpec(_system) {
 
   private val controllerAddr = new InetSocketAddress(nodeNames(0), 4711)
   if (selfIndex == 0) {
-    testConductor.startController(initialParticipants, roles(0), controllerAddr).await
+    testConductor.startController(initialParticipants, mySelf, controllerAddr).await
   } else {
-    testConductor.startClient(roles(selfIndex), controllerAddr).await
+    testConductor.startClient(mySelf, controllerAddr).await
   }
 
 }

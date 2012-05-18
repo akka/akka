@@ -50,7 +50,7 @@ trait Player { this: TestConductorExt ⇒
    * this is a first barrier in itself). The number of expected participants is
    * set in [[akka.remote.testconductor.Conductor]]`.startController()`.
    */
-  def startClient(name: String, controllerAddr: InetSocketAddress): Future[Done] = {
+  def startClient(name: RoleName, controllerAddr: InetSocketAddress): Future[Done] = {
     import ClientFSM._
     import akka.actor.FSM._
     import Settings.BarrierTimeout
@@ -88,7 +88,7 @@ trait Player { this: TestConductorExt ⇒
   /**
    * Query remote transport address of named node.
    */
-  def getAddressFor(name: String): Future[Address] = {
+  def getAddressFor(name: RoleName): Future[Address] = {
     import Settings.BarrierTimeout
     client ? ToServer(GetAddress(name)) mapTo
   }
@@ -117,7 +117,7 @@ object ClientFSM {
  * coordinator and react to the [[akka.remote.testconductor.Conductor]]’s
  * requests for failure injection.
  */
-class ClientFSM(name: String, controllerAddr: InetSocketAddress) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
+class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
   import ClientFSM._
 
   val settings = TestConductor().Settings
@@ -131,7 +131,7 @@ class ClientFSM(name: String, controllerAddr: InetSocketAddress) extends Actor w
     case Event(msg: ClientOp, _) ⇒
       stay replying Status.Failure(new IllegalStateException("not connected yet"))
     case Event(Connected(channel), _) ⇒
-      channel.write(Hello(name, TestConductor().address))
+      channel.write(Hello(name.name, TestConductor().address))
       goto(AwaitDone) using Data(Some(channel), None)
     case Event(_: ConnectionFailure, _) ⇒
       goto(Failed)
@@ -165,7 +165,7 @@ class ClientFSM(name: String, controllerAddr: InetSocketAddress) extends Actor w
       channel.write(msg)
       val token = msg match {
         case EnterBarrier(barrier) ⇒ barrier
-        case GetAddress(node)      ⇒ node
+        case GetAddress(node)      ⇒ node.name
       }
       stay using d.copy(runningOp = Some(token, sender))
     case Event(ToServer(op), Data(channel, Some((token, _)))) ⇒

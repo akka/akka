@@ -11,6 +11,8 @@ import com.google.protobuf.Message
 import akka.actor.Address
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder
 
+case class RoleName(name: String)
+
 case class ToClient(msg: ClientOp with NetworkOp)
 case class ToServer(msg: ServerOp with NetworkOp)
 
@@ -29,24 +31,24 @@ case class Hello(name: String, addr: Address) extends NetworkOp
 case class EnterBarrier(name: String) extends ServerOp with NetworkOp
 case class BarrierResult(name: String, success: Boolean) extends UnconfirmedClientOp with NetworkOp
 
-case class Throttle(node: String, target: String, direction: Direction, rateMBit: Float) extends CommandOp
+case class Throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Float) extends CommandOp
 case class ThrottleMsg(target: Address, direction: Direction, rateMBit: Float) extends ConfirmedClientOp with NetworkOp
 
-case class Disconnect(node: String, target: String, abort: Boolean) extends CommandOp
+case class Disconnect(node: RoleName, target: RoleName, abort: Boolean) extends CommandOp
 case class DisconnectMsg(target: Address, abort: Boolean) extends ConfirmedClientOp with NetworkOp
 
-case class Terminate(node: String, exitValueOrKill: Int) extends CommandOp
+case class Terminate(node: RoleName, exitValueOrKill: Int) extends CommandOp
 case class TerminateMsg(exitValue: Int) extends ConfirmedClientOp with NetworkOp
 
-case class GetAddress(node: String) extends ServerOp with NetworkOp
-case class AddressReply(node: String, addr: Address) extends UnconfirmedClientOp with NetworkOp
+case class GetAddress(node: RoleName) extends ServerOp with NetworkOp
+case class AddressReply(node: RoleName, addr: Address) extends UnconfirmedClientOp with NetworkOp
 
 abstract class Done extends ServerOp with UnconfirmedClientOp with NetworkOp
 case object Done extends Done {
   def getInstance: Done = this
 }
 
-case class Remove(node: String) extends CommandOp
+case class Remove(node: RoleName) extends CommandOp
 
 class MsgEncoder extends OneToOneEncoder {
   def encode(ctx: ChannelHandlerContext, ch: Channel, msg: AnyRef): AnyRef = msg match {
@@ -68,9 +70,9 @@ class MsgEncoder extends OneToOneEncoder {
         case TerminateMsg(exitValue) ⇒
           w.setFailure(TCP.InjectFailure.newBuilder.setFailure(TCP.FailType.Shutdown).setExitValue(exitValue))
         case GetAddress(node) ⇒
-          w.setAddr(TCP.AddressRequest.newBuilder.setNode(node))
+          w.setAddr(TCP.AddressRequest.newBuilder.setNode(node.name))
         case AddressReply(node, addr) ⇒
-          w.setAddr(TCP.AddressRequest.newBuilder.setNode(node).setAddr(addr))
+          w.setAddr(TCP.AddressRequest.newBuilder.setNode(node.name).setAddr(addr))
         case _: Done ⇒
           w.setDone("")
       }
@@ -100,8 +102,8 @@ class MsgDecoder extends OneToOneDecoder {
         }
       } else if (w.hasAddr) {
         val a = w.getAddr
-        if (a.hasAddr) AddressReply(a.getNode, a.getAddr)
-        else GetAddress(a.getNode)
+        if (a.hasAddr) AddressReply(RoleName(a.getNode), a.getAddr)
+        else GetAddress(RoleName(a.getNode))
       } else if (w.hasDone) {
         Done
       } else {

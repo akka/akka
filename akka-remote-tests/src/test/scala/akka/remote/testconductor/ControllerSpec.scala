@@ -23,16 +23,19 @@ object ControllerSpec {
 
 class ControllerSpec extends AkkaSpec(ControllerSpec.config) with ImplicitSender {
 
+  val A = RoleName("a")
+  val B = RoleName("b")
+
   "A Controller" must {
 
     "publish its nodes" in {
       val c = system.actorOf(Props(new Controller(1, new InetSocketAddress(InetAddress.getLocalHost, 0))))
-      c ! NodeInfo("a", AddressFromURIString("akka://sys"), testActor)
+      c ! NodeInfo(A, AddressFromURIString("akka://sys"), testActor)
       expectMsg(ToClient(Done))
-      c ! NodeInfo("b", AddressFromURIString("akka://sys"), testActor)
+      c ! NodeInfo(B, AddressFromURIString("akka://sys"), testActor)
       expectMsg(ToClient(Done))
       c ! Controller.GetNodes
-      expectMsgType[Iterable[String]].toSet must be(Set("a", "b"))
+      expectMsgType[Iterable[RoleName]].toSet must be(Set(A, B))
     }
 
   }

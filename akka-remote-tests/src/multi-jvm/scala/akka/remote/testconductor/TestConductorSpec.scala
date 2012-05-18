@@ -13,9 +13,10 @@ import akka.testkit.ImplicitSender
 import java.net.InetSocketAddress
 import java.net.InetAddress
 import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.MultiNodeConfig
 
-object TestConductorMultiJvmSpec {
-  def commonConfig = ConfigFactory.parseString("""
+object TestConductorMultiJvmSpec extends MultiNodeConfig {
+  commonConfig(ConfigFactory.parseString("""
     akka.loglevel = DEBUG
     akka.remote {
       log-received-messages = on
@@ -25,18 +26,22 @@ object TestConductorMultiJvmSpec {
       receive = on
       fsm = on
     }
-  """)
+  """))
+  
+  val master = role("master")
+  val slave = role("slave")
 }
 
 class TestConductorMultiJvmNode1 extends TestConductorSpec
 class TestConductorMultiJvmNode2 extends TestConductorSpec
 
-class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec.commonConfig) with ImplicitSender {
+class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ImplicitSender {
+  
+  import TestConductorMultiJvmSpec._
 
   def initialParticipants = 2
-  lazy val roles = Seq("master", "slave")
 
-  runOn("master") {
+  runOn(master) {
     system.actorOf(Props(new Actor {
       def receive = {
         case x ⇒ testActor ! x; sender ! x
@@ -44,7 +49,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec.commonCo
     }), "echo")
   }
 
-  val echo = system.actorFor(node("master") / "user" / "echo")
+  val echo = system.actorFor(node(master) / "user" / "echo")
 
   "A TestConductor" must {
 
@@ -54,20 +59,20 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec.commonCo
 
     "support throttling of network connections" in {
 
-      runOn("slave") {
+      runOn(slave) {
         // start remote network connection so that it can be throttled
         echo ! "start"
       }
 
       expectMsg("start")
 
-      runOn("master") {
-        testConductor.throttle("slave", "master", Direction.Send, rateMBit = 0.01).await
+      runOn(master) {
+        testConductor.throttle(slave, master, Direction.Send, rateMBit = 0.01).await
       }
 
       testConductor.enter("throttled_send")
 
-      runOn("slave") {
+      runOn(slave) {
         for (i ← 0 to 9) echo ! i
       }
 
@@ -78,19 +83,19 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec.commonCo
 
       testConductor.enter("throttled_send2")
 
-      runOn("master") {
-        testConductor.throttle("slave", "master", Direction.Send, -1).await
-        testConductor.throttle("slave", "master", Direction.Receive, rateMBit = 0.01).await
+      runOn(master) {
+        testConductor.throttle(slave, master, Direction.Send, -1).await
+        testConductor.throttle(slave, master, Direction.Receive, rateMBit = 0.01).await
       }
 
       testConductor.enter("throttled_recv")
 
-      runOn("slave") {
+      runOn(slave) {
         for (i ← 10 to 19) echo ! i
       }
 
       val (min, max) =
-        ifNode("master") {
+        ifNode(master) {
           (0 seconds, 500 millis)
         } {
           (0.6 seconds, 2 seconds)
@@ -103,8 +108,8 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec.commonCo
 
       testConductor.enter("throttled_recv2")
 
-      runOn("master") {
-        testConductor.throttle("slave", "master", Direction.Receive, -1).await
+      runOn(master) {
+        testConductor.throttle(slave, master, Direction.Receive, -1).await
       }
     }
 

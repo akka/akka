@@ -71,7 +71,7 @@ trait Conductor { this: TestConductorExt ⇒
    * @param participants gives the number of participants which shall connect
    * before any of their startClient() operations complete.
    */
-  def startController(participants: Int, name: String, controllerPort: InetSocketAddress): Future[InetSocketAddress] = {
+  def startController(participants: Int, name: RoleName, controllerPort: InetSocketAddress): Future[InetSocketAddress] = {
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
     _controller = system.actorOf(Props(new Controller(participants, controllerPort)), "controller")
     import Settings.BarrierTimeout
@@ -106,7 +106,7 @@ trait Conductor { this: TestConductorExt ⇒
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
    * @param rateMBit is the maximum data rate in MBit
    */
-  def throttle(node: String, target: String, direction: Direction, rateMBit: Double): Future[Done] = {
+  def throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Double): Future[Done] = {
     import Settings.QueryTimeout
     controller ? Throttle(node, target, direction, rateMBit.toFloat) mapTo
   }
@@ -121,7 +121,7 @@ trait Conductor { this: TestConductorExt ⇒
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
    */
-  def blackhole(node: String, target: String, direction: Direction): Future[Done] = {
+  def blackhole(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
     import Settings.QueryTimeout
     controller ? Throttle(node, target, direction, 0f) mapTo
   }
@@ -134,7 +134,7 @@ trait Conductor { this: TestConductorExt ⇒
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    */
-  def disconnect(node: String, target: String): Future[Done] = {
+  def disconnect(node: RoleName, target: RoleName): Future[Done] = {
     import Settings.QueryTimeout
     controller ? Disconnect(node, target, false) mapTo
   }
@@ -147,7 +147,7 @@ trait Conductor { this: TestConductorExt ⇒
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    */
-  def abort(node: String, target: String): Future[Done] = {
+  def abort(node: RoleName, target: RoleName): Future[Done] = {
     import Settings.QueryTimeout
     controller ? Disconnect(node, target, true) mapTo
   }
@@ -159,7 +159,7 @@ trait Conductor { this: TestConductorExt ⇒
    * @param node is the symbolic name of the node which is to be affected
    * @param exitValue is the return code which shall be given to System.exit
    */
-  def shutdown(node: String, exitValue: Int): Future[Done] = {
+  def shutdown(node: RoleName, exitValue: Int): Future[Done] = {
     import Settings.QueryTimeout
     controller ? Terminate(node, exitValue) mapTo
   }
@@ -169,7 +169,7 @@ trait Conductor { this: TestConductorExt ⇒
    *
    * @param node is the symbolic name of the node which is to be affected
    */
-  def kill(node: String): Future[Done] = {
+  def kill(node: RoleName): Future[Done] = {
     import Settings.QueryTimeout
     controller ? Terminate(node, -1) mapTo
   }
@@ -177,7 +177,7 @@ trait Conductor { this: TestConductorExt ⇒
   /**
    * Obtain the list of remote host names currently registered.
    */
-  def getNodes: Future[Iterable[String]] = {
+  def getNodes: Future[Iterable[RoleName]] = {
     import Settings.QueryTimeout
     controller ? GetNodes mapTo
   }
@@ -190,7 +190,7 @@ trait Conductor { this: TestConductorExt ⇒
    *
    * @param node is the symbolic name of the node which is to be removed
    */
-  def removeNode(node: String): Future[Done] = {
+  def removeNode(node: RoleName): Future[Done] = {
     import Settings.QueryTimeout
     controller ? Remove(node) mapTo
   }
@@ -274,7 +274,7 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
 
   when(Initial, stateTimeout = 10 seconds) {
     case Event(Hello(name, addr), _) ⇒
-      controller ! NodeInfo(name, addr, self)
+      controller ! NodeInfo(RoleName(name), addr, self)
       goto(Ready)
     case Event(x: NetworkOp, _) ⇒
       log.warning("client {} sent no Hello in first message (instead {}), disconnecting", getAddrString(channel), x)
@@ -318,11 +318,11 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
 }
 
 object Controller {
-  case class ClientDisconnected(name: String)
+  case class ClientDisconnected(name: RoleName)
   case object GetNodes
   case object GetSockAddr
 
-  case class NodeInfo(name: String, addr: Address, fsm: ActorRef)
+  case class NodeInfo(name: RoleName, addr: Address, fsm: ActorRef)
 }
 
 /**
@@ -359,10 +359,10 @@ class Controller(private var initialParticipants: Int, controllerPort: InetSocke
   }
 
   val barrier = context.actorOf(Props[BarrierCoordinator], "barriers")
-  var nodes = Map[String, NodeInfo]()
+  var nodes = Map[RoleName, NodeInfo]()
 
   // map keeping unanswered queries for node addresses (enqueued upon GetAddress, serviced upon NodeInfo)
-  var addrInterest = Map[String, Set[ActorRef]]()
+  var addrInterest = Map[RoleName, Set[ActorRef]]()
 
   override def receive = LoggingReceive {
     case c @ NodeInfo(name, addr, fsm) ⇒
@@ -423,7 +423,7 @@ object BarrierCoordinator {
   case object Idle extends State
   case object Waiting extends State
 
-  case class RemoveClient(name: String)
+  case class RemoveClient(name: RoleName)
 
   case class Data(clients: Set[Controller.NodeInfo], barrier: String, arrived: List[ActorRef])
 
@@ -435,7 +435,7 @@ object BarrierCoordinator {
   case class DuplicateNode(data: Data, node: Controller.NodeInfo) extends RuntimeException with NoStackTrace with Printer
   case class WrongBarrier(barrier: String, client: ActorRef, data: Data) extends RuntimeException(barrier) with NoStackTrace with Printer
   case class BarrierEmpty(data: Data, msg: String) extends RuntimeException(msg) with NoStackTrace with Printer
-  case class ClientLost(data: Data, client: String) extends RuntimeException with NoStackTrace with Printer
+  case class ClientLost(data: Data, client: RoleName) extends RuntimeException with NoStackTrace with Printer
 }
 
 /**
