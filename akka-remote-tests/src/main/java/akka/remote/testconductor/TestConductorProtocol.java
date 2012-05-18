@@ -176,6 +176,11 @@ public final class TestConductorProtocol {
     // optional string done = 4;
     boolean hasDone();
     String getDone();
+    
+    // optional .AddressRequest addr = 5;
+    boolean hasAddr();
+    akka.remote.testconductor.TestConductorProtocol.AddressRequest getAddr();
+    akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder getAddrOrBuilder();
   }
   public static final class Wrapper extends
       com.google.protobuf.GeneratedMessage
@@ -277,11 +282,25 @@ public final class TestConductorProtocol {
       }
     }
     
+    // optional .AddressRequest addr = 5;
+    public static final int ADDR_FIELD_NUMBER = 5;
+    private akka.remote.testconductor.TestConductorProtocol.AddressRequest addr_;
+    public boolean hasAddr() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    public akka.remote.testconductor.TestConductorProtocol.AddressRequest getAddr() {
+      return addr_;
+    }
+    public akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder getAddrOrBuilder() {
+      return addr_;
+    }
+    
     private void initFields() {
       hello_ = akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance();
       barrier_ = akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance();
       failure_ = akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance();
       done_ = "";
+      addr_ = akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -306,6 +325,12 @@ public final class TestConductorProtocol {
           return false;
         }
       }
+      if (hasAddr()) {
+        if (!getAddr().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -324,6 +349,9 @@ public final class TestConductorProtocol {
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeBytes(4, getDoneBytes());
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeMessage(5, addr_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -349,6 +377,10 @@ public final class TestConductorProtocol {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(4, getDoneBytes());
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(5, addr_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -460,7 +492,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -469,6 +501,7 @@ public final class TestConductorProtocol {
           getHelloFieldBuilder();
           getBarrierFieldBuilder();
           getFailureFieldBuilder();
+          getAddrFieldBuilder();
         }
       }
       private static Builder create() {
@@ -497,6 +530,12 @@ public final class TestConductorProtocol {
         bitField0_ = (bitField0_ & ~0x00000004);
         done_ = "";
         bitField0_ = (bitField0_ & ~0x00000008);
+        if (addrBuilder_ == null) {
+          addr_ = akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance();
+        } else {
+          addrBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
       
@@ -563,6 +602,14 @@ public final class TestConductorProtocol {
           to_bitField0_ |= 0x00000008;
         }
         result.done_ = done_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        if (addrBuilder_ == null) {
+          result.addr_ = addr_;
+        } else {
+          result.addr_ = addrBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -591,6 +638,9 @@ public final class TestConductorProtocol {
         if (other.hasDone()) {
           setDone(other.getDone());
         }
+        if (other.hasAddr()) {
+          mergeAddr(other.getAddr());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -610,6 +660,12 @@ public final class TestConductorProtocol {
         }
         if (hasFailure()) {
           if (!getFailure().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasAddr()) {
+          if (!getAddr().isInitialized()) {
             
             return false;
           }
@@ -670,6 +726,15 @@ public final class TestConductorProtocol {
             case 34: {
               bitField0_ |= 0x00000008;
               done_ = input.readBytes();
+              break;
+            }
+            case 42: {
+              akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder subBuilder = akka.remote.testconductor.TestConductorProtocol.AddressRequest.newBuilder();
+              if (hasAddr()) {
+                subBuilder.mergeFrom(getAddr());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setAddr(subBuilder.buildPartial());
               break;
             }
           }
@@ -984,6 +1049,96 @@ public final class TestConductorProtocol {
         onChanged();
       }
       
+      // optional .AddressRequest addr = 5;
+      private akka.remote.testconductor.TestConductorProtocol.AddressRequest addr_ = akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.remote.testconductor.TestConductorProtocol.AddressRequest, akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder, akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder> addrBuilder_;
+      public boolean hasAddr() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      public akka.remote.testconductor.TestConductorProtocol.AddressRequest getAddr() {
+        if (addrBuilder_ == null) {
+          return addr_;
+        } else {
+          return addrBuilder_.getMessage();
+        }
+      }
+      public Builder setAddr(akka.remote.testconductor.TestConductorProtocol.AddressRequest value) {
+        if (addrBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          addr_ = value;
+          onChanged();
+        } else {
+          addrBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      public Builder setAddr(
+          akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder builderForValue) {
+        if (addrBuilder_ == null) {
+          addr_ = builderForValue.build();
+          onChanged();
+        } else {
+          addrBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      public Builder mergeAddr(akka.remote.testconductor.TestConductorProtocol.AddressRequest value) {
+        if (addrBuilder_ == null) {
+          if (((bitField0_ & 0x00000010) == 0x00000010) &&
+              addr_ != akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance()) {
+            addr_ =
+              akka.remote.testconductor.TestConductorProtocol.AddressRequest.newBuilder(addr_).mergeFrom(value).buildPartial();
+          } else {
+            addr_ = value;
+          }
+          onChanged();
+        } else {
+          addrBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      public Builder clearAddr() {
+        if (addrBuilder_ == null) {
+          addr_ = akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance();
+          onChanged();
+        } else {
+          addrBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000010);
+        return this;
+      }
+      public akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder getAddrBuilder() {
+        bitField0_ |= 0x00000010;
+        onChanged();
+        return getAddrFieldBuilder().getBuilder();
+      }
+      public akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder getAddrOrBuilder() {
+        if (addrBuilder_ != null) {
+          return addrBuilder_.getMessageOrBuilder();
+        } else {
+          return addr_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.remote.testconductor.TestConductorProtocol.AddressRequest, akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder, akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder> 
+          getAddrFieldBuilder() {
+        if (addrBuilder_ == null) {
+          addrBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              akka.remote.testconductor.TestConductorProtocol.AddressRequest, akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder, akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder>(
+                  addr_,
+                  getParentForChildren(),
+                  isClean());
+          addr_ = null;
+        }
+        return addrBuilder_;
+      }
+      
       // @@protoc_insertion_point(builder_scope:Wrapper)
     }
     
@@ -1242,7 +1397,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1544,9 +1699,9 @@ public final class TestConductorProtocol {
     boolean hasName();
     String getName();
     
-    // optional bool failed = 2;
-    boolean hasFailed();
-    boolean getFailed();
+    // optional bool status = 2;
+    boolean hasStatus();
+    boolean getStatus();
   }
   public static final class EnterBarrier extends
       com.google.protobuf.GeneratedMessage
@@ -1609,19 +1764,19 @@ public final class TestConductorProtocol {
       }
     }
     
-    // optional bool failed = 2;
-    public static final int FAILED_FIELD_NUMBER = 2;
-    private boolean failed_;
-    public boolean hasFailed() {
+    // optional bool status = 2;
+    public static final int STATUS_FIELD_NUMBER = 2;
+    private boolean status_;
+    public boolean hasStatus() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    public boolean getFailed() {
-      return failed_;
+    public boolean getStatus() {
+      return status_;
     }
     
     private void initFields() {
       name_ = "";
-      failed_ = false;
+      status_ = false;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1643,7 +1798,7 @@ public final class TestConductorProtocol {
         output.writeBytes(1, getNameBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBool(2, failed_);
+        output.writeBool(2, status_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -1660,7 +1815,7 @@ public final class TestConductorProtocol {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(2, failed_);
+          .computeBoolSize(2, status_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1772,7 +1927,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1788,7 +1943,7 @@ public final class TestConductorProtocol {
         super.clear();
         name_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
-        failed_ = false;
+        status_ = false;
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
@@ -1835,7 +1990,7 @@ public final class TestConductorProtocol {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.failed_ = failed_;
+        result.status_ = status_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1855,8 +2010,8 @@ public final class TestConductorProtocol {
         if (other.hasName()) {
           setName(other.getName());
         }
-        if (other.hasFailed()) {
-          setFailed(other.getFailed());
+        if (other.hasStatus()) {
+          setStatus(other.getStatus());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1900,7 +2055,7 @@ public final class TestConductorProtocol {
             }
             case 16: {
               bitField0_ |= 0x00000002;
-              failed_ = input.readBool();
+              status_ = input.readBool();
               break;
             }
           }
@@ -1945,23 +2100,23 @@ public final class TestConductorProtocol {
         onChanged();
       }
       
-      // optional bool failed = 2;
-      private boolean failed_ ;
-      public boolean hasFailed() {
+      // optional bool status = 2;
+      private boolean status_ ;
+      public boolean hasStatus() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public boolean getFailed() {
-        return failed_;
+      public boolean getStatus() {
+        return status_;
       }
-      public Builder setFailed(boolean value) {
+      public Builder setStatus(boolean value) {
         bitField0_ |= 0x00000002;
-        failed_ = value;
+        status_ = value;
         onChanged();
         return this;
       }
-      public Builder clearFailed() {
+      public Builder clearStatus() {
         bitField0_ = (bitField0_ & ~0x00000002);
-        failed_ = false;
+        status_ = false;
         onChanged();
         return this;
       }
@@ -1975,6 +2130,544 @@ public final class TestConductorProtocol {
     }
     
     // @@protoc_insertion_point(class_scope:EnterBarrier)
+  }
+  
+  public interface AddressRequestOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required string node = 1;
+    boolean hasNode();
+    String getNode();
+    
+    // optional .Address addr = 2;
+    boolean hasAddr();
+    akka.remote.testconductor.TestConductorProtocol.Address getAddr();
+    akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder getAddrOrBuilder();
+  }
+  public static final class AddressRequest extends
+      com.google.protobuf.GeneratedMessage
+      implements AddressRequestOrBuilder {
+    // Use AddressRequest.newBuilder() to construct.
+    private AddressRequest(Builder builder) {
+      super(builder);
+    }
+    private AddressRequest(boolean noInit) {}
+    
+    private static final AddressRequest defaultInstance;
+    public static AddressRequest getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public AddressRequest getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.remote.testconductor.TestConductorProtocol.internal_static_AddressRequest_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.remote.testconductor.TestConductorProtocol.internal_static_AddressRequest_fieldAccessorTable;
+    }
+    
+    private int bitField0_;
+    // required string node = 1;
+    public static final int NODE_FIELD_NUMBER = 1;
+    private java.lang.Object node_;
+    public boolean hasNode() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public String getNode() {
+      java.lang.Object ref = node_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          node_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getNodeBytes() {
+      java.lang.Object ref = node_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        node_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
+    // optional .Address addr = 2;
+    public static final int ADDR_FIELD_NUMBER = 2;
+    private akka.remote.testconductor.TestConductorProtocol.Address addr_;
+    public boolean hasAddr() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public akka.remote.testconductor.TestConductorProtocol.Address getAddr() {
+      return addr_;
+    }
+    public akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder getAddrOrBuilder() {
+      return addr_;
+    }
+    
+    private void initFields() {
+      node_ = "";
+      addr_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasNode()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (hasAddr()) {
+        if (!getAddr().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBytes(1, getNodeBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeMessage(2, addr_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(1, getNodeBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(2, addr_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+    
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static akka.remote.testconductor.TestConductorProtocol.AddressRequest parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.remote.testconductor.TestConductorProtocol.AddressRequest prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.remote.testconductor.TestConductorProtocol.internal_static_AddressRequest_descriptor;
+      }
+      
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.remote.testconductor.TestConductorProtocol.internal_static_AddressRequest_fieldAccessorTable;
+      }
+      
+      // Construct using akka.remote.testconductor.TestConductorProtocol.AddressRequest.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getAddrFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+      
+      public Builder clear() {
+        super.clear();
+        node_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        if (addrBuilder_ == null) {
+          addr_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
+        } else {
+          addrBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDescriptor();
+      }
+      
+      public akka.remote.testconductor.TestConductorProtocol.AddressRequest getDefaultInstanceForType() {
+        return akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance();
+      }
+      
+      public akka.remote.testconductor.TestConductorProtocol.AddressRequest build() {
+        akka.remote.testconductor.TestConductorProtocol.AddressRequest result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+      
+      private akka.remote.testconductor.TestConductorProtocol.AddressRequest buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.remote.testconductor.TestConductorProtocol.AddressRequest result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return result;
+      }
+      
+      public akka.remote.testconductor.TestConductorProtocol.AddressRequest buildPartial() {
+        akka.remote.testconductor.TestConductorProtocol.AddressRequest result = new akka.remote.testconductor.TestConductorProtocol.AddressRequest(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.node_ = node_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        if (addrBuilder_ == null) {
+          result.addr_ = addr_;
+        } else {
+          result.addr_ = addrBuilder_.build();
+        }
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof akka.remote.testconductor.TestConductorProtocol.AddressRequest) {
+          return mergeFrom((akka.remote.testconductor.TestConductorProtocol.AddressRequest)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(akka.remote.testconductor.TestConductorProtocol.AddressRequest other) {
+        if (other == akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance()) return this;
+        if (other.hasNode()) {
+          setNode(other.getNode());
+        }
+        if (other.hasAddr()) {
+          mergeAddr(other.getAddr());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public final boolean isInitialized() {
+        if (!hasNode()) {
+          
+          return false;
+        }
+        if (hasAddr()) {
+          if (!getAddr().isInitialized()) {
+            
+            return false;
+          }
+        }
+        return true;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              onChanged();
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                onChanged();
+                return this;
+              }
+              break;
+            }
+            case 10: {
+              bitField0_ |= 0x00000001;
+              node_ = input.readBytes();
+              break;
+            }
+            case 18: {
+              akka.remote.testconductor.TestConductorProtocol.Address.Builder subBuilder = akka.remote.testconductor.TestConductorProtocol.Address.newBuilder();
+              if (hasAddr()) {
+                subBuilder.mergeFrom(getAddr());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setAddr(subBuilder.buildPartial());
+              break;
+            }
+          }
+        }
+      }
+      
+      private int bitField0_;
+      
+      // required string node = 1;
+      private java.lang.Object node_ = "";
+      public boolean hasNode() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      public String getNode() {
+        java.lang.Object ref = node_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          node_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setNode(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        node_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearNode() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        node_ = getDefaultInstance().getNode();
+        onChanged();
+        return this;
+      }
+      void setNode(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000001;
+        node_ = value;
+        onChanged();
+      }
+      
+      // optional .Address addr = 2;
+      private akka.remote.testconductor.TestConductorProtocol.Address addr_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> addrBuilder_;
+      public boolean hasAddr() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public akka.remote.testconductor.TestConductorProtocol.Address getAddr() {
+        if (addrBuilder_ == null) {
+          return addr_;
+        } else {
+          return addrBuilder_.getMessage();
+        }
+      }
+      public Builder setAddr(akka.remote.testconductor.TestConductorProtocol.Address value) {
+        if (addrBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          addr_ = value;
+          onChanged();
+        } else {
+          addrBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      public Builder setAddr(
+          akka.remote.testconductor.TestConductorProtocol.Address.Builder builderForValue) {
+        if (addrBuilder_ == null) {
+          addr_ = builderForValue.build();
+          onChanged();
+        } else {
+          addrBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      public Builder mergeAddr(akka.remote.testconductor.TestConductorProtocol.Address value) {
+        if (addrBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+              addr_ != akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance()) {
+            addr_ =
+              akka.remote.testconductor.TestConductorProtocol.Address.newBuilder(addr_).mergeFrom(value).buildPartial();
+          } else {
+            addr_ = value;
+          }
+          onChanged();
+        } else {
+          addrBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      public Builder clearAddr() {
+        if (addrBuilder_ == null) {
+          addr_ = akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance();
+          onChanged();
+        } else {
+          addrBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      public akka.remote.testconductor.TestConductorProtocol.Address.Builder getAddrBuilder() {
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return getAddrFieldBuilder().getBuilder();
+      }
+      public akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder getAddrOrBuilder() {
+        if (addrBuilder_ != null) {
+          return addrBuilder_.getMessageOrBuilder();
+        } else {
+          return addr_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> 
+          getAddrFieldBuilder() {
+        if (addrBuilder_ == null) {
+          addrBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder>(
+                  addr_,
+                  getParentForChildren(),
+                  isClean());
+          addr_ = null;
+        }
+        return addrBuilder_;
+      }
+      
+      // @@protoc_insertion_point(builder_scope:AddressRequest)
+    }
+    
+    static {
+      defaultInstance = new AddressRequest(true);
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:AddressRequest)
   }
   
   public interface AddressOrBuilder
@@ -2312,7 +3005,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -2918,7 +3611,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3335,6 +4028,11 @@ public final class TestConductorProtocol {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_EnterBarrier_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_AddressRequest_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_AddressRequest_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
     internal_static_Address_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -3353,21 +4051,24 @@ public final class TestConductorProtocol {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\033TestConductorProtocol.proto\"o\n\007Wrapper" +
-      "\022\025\n\005hello\030\001 \001(\0132\006.Hello\022\036\n\007barrier\030\002 \001(\013" +
-      "2\r.EnterBarrier\022\037\n\007failure\030\003 \001(\0132\016.Injec" +
-      "tFailure\022\014\n\004done\030\004 \001(\t\"0\n\005Hello\022\014\n\004name\030" +
-      "\001 \002(\t\022\031\n\007address\030\002 \002(\0132\010.Address\",\n\014Ente" +
-      "rBarrier\022\014\n\004name\030\001 \002(\t\022\016\n\006failed\030\002 \001(\010\"G" +
-      "\n\007Address\022\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030\002 " +
-      "\002(\t\022\014\n\004host\030\003 \002(\t\022\014\n\004port\030\004 \002(\005\"\212\001\n\rInje" +
-      "ctFailure\022\032\n\007failure\030\001 \002(\0162\t.FailType\022\035\n" +
-      "\tdirection\030\002 \001(\0162\n.Direction\022\031\n\007address\030",
-      "\003 \001(\0132\010.Address\022\020\n\010rateMBit\030\006 \001(\002\022\021\n\texi" +
-      "tValue\030\007 \001(\005*A\n\010FailType\022\014\n\010Throttle\020\001\022\016" +
-      "\n\nDisconnect\020\002\022\t\n\005Abort\020\003\022\014\n\010Shutdown\020\004*" +
-      ",\n\tDirection\022\010\n\004Send\020\001\022\013\n\007Receive\020\002\022\010\n\004B" +
-      "oth\020\003B\035\n\031akka.remote.testconductorH\001"
+      "\n\033TestConductorProtocol.proto\"\216\001\n\007Wrappe" +
+      "r\022\025\n\005hello\030\001 \001(\0132\006.Hello\022\036\n\007barrier\030\002 \001(" +
+      "\0132\r.EnterBarrier\022\037\n\007failure\030\003 \001(\0132\016.Inje" +
+      "ctFailure\022\014\n\004done\030\004 \001(\t\022\035\n\004addr\030\005 \001(\0132\017." +
+      "AddressRequest\"0\n\005Hello\022\014\n\004name\030\001 \002(\t\022\031\n" +
+      "\007address\030\002 \002(\0132\010.Address\",\n\014EnterBarrier" +
+      "\022\014\n\004name\030\001 \002(\t\022\016\n\006status\030\002 \001(\010\"6\n\016Addres" +
+      "sRequest\022\014\n\004node\030\001 \002(\t\022\026\n\004addr\030\002 \001(\0132\010.A" +
+      "ddress\"G\n\007Address\022\020\n\010protocol\030\001 \002(\t\022\016\n\006s" +
+      "ystem\030\002 \002(\t\022\014\n\004host\030\003 \002(\t\022\014\n\004port\030\004 \002(\005\"",
+      "\212\001\n\rInjectFailure\022\032\n\007failure\030\001 \002(\0162\t.Fai" +
+      "lType\022\035\n\tdirection\030\002 \001(\0162\n.Direction\022\031\n\007" +
+      "address\030\003 \001(\0132\010.Address\022\020\n\010rateMBit\030\006 \001(" +
+      "\002\022\021\n\texitValue\030\007 \001(\005*A\n\010FailType\022\014\n\010Thro" +
+      "ttle\020\001\022\016\n\nDisconnect\020\002\022\t\n\005Abort\020\003\022\014\n\010Shu" +
+      "tdown\020\004*,\n\tDirection\022\010\n\004Send\020\001\022\013\n\007Receiv" +
+      "e\020\002\022\010\n\004Both\020\003B\035\n\031akka.remote.testconduct" +
+      "orH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -3379,7 +4080,7 @@ public final class TestConductorProtocol {
           internal_static_Wrapper_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Wrapper_descriptor,
-              new java.lang.String[] { "Hello", "Barrier", "Failure", "Done", },
+              new java.lang.String[] { "Hello", "Barrier", "Failure", "Done", "Addr", },
               akka.remote.testconductor.TestConductorProtocol.Wrapper.class,
               akka.remote.testconductor.TestConductorProtocol.Wrapper.Builder.class);
           internal_static_Hello_descriptor =
@@ -3395,11 +4096,19 @@ public final class TestConductorProtocol {
           internal_static_EnterBarrier_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_EnterBarrier_descriptor,
-              new java.lang.String[] { "Name", "Failed", },
+              new java.lang.String[] { "Name", "Status", },
               akka.remote.testconductor.TestConductorProtocol.EnterBarrier.class,
               akka.remote.testconductor.TestConductorProtocol.EnterBarrier.Builder.class);
-          internal_static_Address_descriptor =
+          internal_static_AddressRequest_descriptor =
             getDescriptor().getMessageTypes().get(3);
+          internal_static_AddressRequest_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_AddressRequest_descriptor,
+              new java.lang.String[] { "Node", "Addr", },
+              akka.remote.testconductor.TestConductorProtocol.AddressRequest.class,
+              akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder.class);
+          internal_static_Address_descriptor =
+            getDescriptor().getMessageTypes().get(4);
           internal_static_Address_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Address_descriptor,
@@ -3407,7 +4116,7 @@ public final class TestConductorProtocol {
               akka.remote.testconductor.TestConductorProtocol.Address.class,
               akka.remote.testconductor.TestConductorProtocol.Address.Builder.class);
           internal_static_InjectFailure_descriptor =
-            getDescriptor().getMessageTypes().get(4);
+            getDescriptor().getMessageTypes().get(5);
           internal_static_InjectFailure_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_InjectFailure_descriptor,

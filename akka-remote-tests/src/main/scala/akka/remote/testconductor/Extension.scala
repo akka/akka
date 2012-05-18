@@ -38,13 +38,13 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
   object Settings {
     val config = system.settings.config
 
+    val ConnectTimeout = Duration(config.getMilliseconds("akka.testconductor.connect-timeout"), MILLISECONDS)
+    val ClientReconnects = config.getInt("akka.testconductor.client-reconnects")
+    val ReconnectBackoff = Duration(config.getMilliseconds("akka.testconductor.reconnect-backoff"), MILLISECONDS)
+
     implicit val BarrierTimeout = Timeout(Duration(config.getMilliseconds("akka.testconductor.barrier-timeout"), MILLISECONDS))
     implicit val QueryTimeout = Timeout(Duration(config.getMilliseconds("akka.testconductor.query-timeout"), MILLISECONDS))
     val PacketSplitThreshold = Duration(config.getMilliseconds("akka.testconductor.packet-split-threshold"), MILLISECONDS)
-
-    val name = config.getString("akka.testconductor.name")
-    val host = config.getString("akka.testconductor.host")
-    val port = config.getInt("akka.testconductor.port")
   }
 
   val transport = system.provider.asInstanceOf[RemoteActorRefProvider].transport

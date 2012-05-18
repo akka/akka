@@ -27,8 +27,7 @@ case object Client extends Role
 case object Server extends Role
 
 object RemoteConnection {
-  def apply(role: Role, host: String, port: Int, handler: ChannelUpstreamHandler): Channel = {
-    val sockaddr = new InetSocketAddress(host, port)
+  def apply(role: Role, sockaddr: InetSocketAddress, handler: ChannelUpstreamHandler): Channel = {
     role match {
       case Client ⇒
         val socketfactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool)

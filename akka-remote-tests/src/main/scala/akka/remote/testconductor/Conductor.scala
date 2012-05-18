@@ -71,11 +71,11 @@ trait Conductor { this: TestConductorExt ⇒
    * @param participants gives the number of participants which shall connect
    * before any of their startClient() operations complete.
    */
-  def startController(participants: Int): Future[Int] = {
+  def startController(participants: Int, name: String, controllerPort: InetSocketAddress): Future[InetSocketAddress] = {
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
-    _controller = system.actorOf(Props(new Controller(participants)), "controller")
+    _controller = system.actorOf(Props(new Controller(participants, controllerPort)), "controller")
     import Settings.BarrierTimeout
-    controller ? GetPort flatMap { case port: Int ⇒ startClient(port) map (_ ⇒ port) }
+    controller ? GetSockAddr flatMap { case sockAddr: InetSocketAddress ⇒ startClient(name, sockAddr) map (_ ⇒ sockAddr) }
   }
 
   /**
@@ -83,9 +83,9 @@ trait Conductor { this: TestConductorExt ⇒
    * will deviate from the configuration in `akka.testconductor.port` in case
    * that was given as zero.
    */
-  def port: Future[Int] = {
+  def sockAddr: Future[InetSocketAddress] = {
     import Settings.QueryTimeout
-    controller ? GetPort mapTo
+    controller ? GetSockAddr mapTo
   }
 
   /**
@@ -280,7 +280,7 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
       log.warning("client {} sent no Hello in first message (instead {}), disconnecting", getAddrString(channel), x)
       channel.close()
       stop()
-    case Event(Send(msg), _) ⇒
+    case Event(ToClient(msg), _) ⇒
       log.warning("cannot send {} in state Initial", msg)
       stay
     case Event(StateTimeout, _) ⇒
@@ -290,22 +290,22 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
   }
 
   when(Ready) {
-    case Event(msg: EnterBarrier, _) ⇒
-      controller ! msg
-      stay
     case Event(d: Done, Some(s)) ⇒
       s ! d
       stay using None
+    case Event(op: ServerOp, _) ⇒
+      controller ! op
+      stay
     case Event(msg: NetworkOp, _) ⇒
       log.warning("client {} sent unsupported message {}", getAddrString(channel), msg)
       stop()
-    case Event(Send(msg @ (_: EnterBarrier | _: Done)), _) ⇒
+    case Event(ToClient(msg: UnconfirmedClientOp), _) ⇒
       channel.write(msg)
       stay
-    case Event(Send(msg), None) ⇒
+    case Event(ToClient(msg), None) ⇒
       channel.write(msg)
       stay using Some(sender)
-    case Event(Send(msg), _) ⇒
+    case Event(ToClient(msg), _) ⇒
       log.warning("cannot send {} while waiting for previous ACK", msg)
       stay
   }
@@ -320,7 +320,7 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
 object Controller {
   case class ClientDisconnected(name: String)
   case object GetNodes
-  case object GetPort
+  case object GetSockAddr
 
   case class NodeInfo(name: String, addr: Address, fsm: ActorRef)
 }
@@ -330,12 +330,12 @@ object Controller {
  * [[akka.remote.testconductor.BarrierCoordinator]], its child) and allowing
  * network and other failures to be injected at the test nodes.
  */
-class Controller(private var initialParticipants: Int) extends Actor {
+class Controller(private var initialParticipants: Int, controllerPort: InetSocketAddress) extends Actor {
   import Controller._
   import BarrierCoordinator._
 
   val settings = TestConductor().Settings
-  val connection = RemoteConnection(Server, settings.host, settings.port,
+  val connection = RemoteConnection(Server, controllerPort,
     new ConductorHandler(context.system, self, Logging(context.system, "ConductorHandler")))
 
   /*
@@ -348,61 +348,73 @@ class Controller(private var initialParticipants: Int) extends Actor {
   override def supervisorStrategy = OneForOneStrategy() {
     case BarrierTimeout(data)             ⇒ SupervisorStrategy.Resume
     case BarrierEmpty(data, msg)          ⇒ SupervisorStrategy.Resume
-    case WrongBarrier(name, client, data) ⇒ client ! Send(BarrierFailed(name)); failBarrier(data)
+    case WrongBarrier(name, client, data) ⇒ client ! ToClient(BarrierResult(name, false)); failBarrier(data)
     case ClientLost(data, node)           ⇒ failBarrier(data)
     case DuplicateNode(data, node)        ⇒ failBarrier(data)
   }
 
   def failBarrier(data: Data): SupervisorStrategy.Directive = {
-    for (c ← data.arrived) c ! Send(BarrierFailed(data.barrier))
+    for (c ← data.arrived) c ! ToClient(BarrierResult(data.barrier, false))
     SupervisorStrategy.Restart
   }
 
   val barrier = context.actorOf(Props[BarrierCoordinator], "barriers")
   var nodes = Map[String, NodeInfo]()
 
+  // map keeping unanswered queries for node addresses (enqueued upon GetAddress, serviced upon NodeInfo)
+  var addrInterest = Map[String, Set[ActorRef]]()
+
   override def receive = LoggingReceive {
     case c @ NodeInfo(name, addr, fsm) ⇒
       barrier forward c
       if (nodes contains name) {
         if (initialParticipants > 0) {
-          for (NodeInfo(_, _, client) ← nodes.values) client ! Send(BarrierFailed("initial startup"))
+          for (NodeInfo(_, _, client) ← nodes.values) client ! ToClient(BarrierResult("initial startup", false))
           initialParticipants = 0
         }
-        fsm ! Send(BarrierFailed("initial startup"))
+        fsm ! ToClient(BarrierResult("initial startup", false))
       } else {
         nodes += name -> c
-        if (initialParticipants <= 0) fsm ! Send(Done)
+        if (initialParticipants <= 0) fsm ! ToClient(Done)
         else if (nodes.size == initialParticipants) {
-          for (NodeInfo(_, _, client) ← nodes.values) client ! Send(Done)
+          for (NodeInfo(_, _, client) ← nodes.values) client ! ToClient(Done)
           initialParticipants = 0
+        }
+        if (addrInterest contains name) {
+          addrInterest(name) foreach (_ ! ToClient(AddressReply(name, addr)))
+          addrInterest -= name
         }
       }
     case c @ ClientDisconnected(name) ⇒
       nodes -= name
       barrier forward c
-    case e @ EnterBarrier(name) ⇒
-      barrier forward e
-    case Throttle(node, target, direction, rateMBit) ⇒
-      val t = nodes(target)
-      nodes(node).fsm forward Send(ThrottleMsg(t.addr, direction, rateMBit))
-    case Disconnect(node, target, abort) ⇒
-      val t = nodes(target)
-      nodes(node).fsm forward Send(DisconnectMsg(t.addr, abort))
-    case Terminate(node, exitValueOrKill) ⇒
-      if (exitValueOrKill < 0) {
-        // TODO: kill via SBT
-      } else {
-        nodes(node).fsm forward Send(TerminateMsg(exitValueOrKill))
+    case op: ServerOp ⇒
+      op match {
+        case _: EnterBarrier ⇒ barrier forward op
+        case GetAddress(node) ⇒
+          if (nodes contains node) sender ! ToClient(AddressReply(node, nodes(node).addr))
+          else addrInterest += node -> ((addrInterest get node getOrElse Set()) + sender)
       }
-    case Remove(node) ⇒
-      nodes -= node
-      barrier ! BarrierCoordinator.RemoveClient(node)
-    case GetNodes ⇒ sender ! nodes.keys
-    case GetPort ⇒
-      sender ! (connection.getLocalAddress match {
-        case inet: InetSocketAddress ⇒ inet.getPort
-      })
+    case op: CommandOp ⇒
+      op match {
+        case Throttle(node, target, direction, rateMBit) ⇒
+          val t = nodes(target)
+          nodes(node).fsm forward ToClient(ThrottleMsg(t.addr, direction, rateMBit))
+        case Disconnect(node, target, abort) ⇒
+          val t = nodes(target)
+          nodes(node).fsm forward ToClient(DisconnectMsg(t.addr, abort))
+        case Terminate(node, exitValueOrKill) ⇒
+          if (exitValueOrKill < 0) {
+            // TODO: kill via SBT
+          } else {
+            nodes(node).fsm forward ToClient(TerminateMsg(exitValueOrKill))
+          }
+        case Remove(node) ⇒
+          nodes -= node
+          barrier ! BarrierCoordinator.RemoveClient(node)
+      }
+    case GetNodes    ⇒ sender ! nodes.keys
+    case GetSockAddr ⇒ sender ! connection.getLocalAddress
   }
 }
 
@@ -463,13 +475,13 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
   }
 
   when(Idle) {
-    case Event(e @ EnterBarrier(name), d @ Data(clients, _, _)) ⇒
+    case Event(EnterBarrier(name), d @ Data(clients, _, _)) ⇒
       if (failed)
-        stay replying Send(BarrierFailed(name))
+        stay replying ToClient(BarrierResult(name, false))
       else if (clients.map(_.fsm) == Set(sender))
-        stay replying Send(e)
+        stay replying ToClient(BarrierResult(name, true))
       else if (clients.find(_.fsm == sender).isEmpty)
-        stay replying Send(BarrierFailed(name))
+        stay replying ToClient(BarrierResult(name, false))
       else
         goto(Waiting) using d.copy(barrier = name, arrived = sender :: Nil)
     case Event(RemoveClient(name), d @ Data(clients, _, _)) ⇒
@@ -483,7 +495,7 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
   }
 
   when(Waiting) {
-    case Event(e @ EnterBarrier(name), d @ Data(clients, barrier, arrived)) ⇒
+    case Event(EnterBarrier(name), d @ Data(clients, barrier, arrived)) ⇒
       if (name != barrier || clients.find(_.fsm == sender).isEmpty) throw WrongBarrier(name, sender, d)
       val together = sender :: arrived
       handleBarrier(d.copy(arrived = together))
@@ -504,8 +516,7 @@ class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State,
     if (data.arrived.isEmpty) {
       goto(Idle) using data.copy(barrier = "")
     } else if ((data.clients.map(_.fsm) -- data.arrived).isEmpty) {
-      val e = EnterBarrier(data.barrier)
-      data.arrived foreach (_ ! Send(e))
+      data.arrived foreach (_ ! ToClient(BarrierResult(data.barrier, true)))
       goto(Idle) using data.copy(barrier = "", arrived = Nil)
     } else {
       stay using data

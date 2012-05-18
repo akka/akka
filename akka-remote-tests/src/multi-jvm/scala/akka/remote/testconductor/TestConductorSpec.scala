@@ -10,14 +10,15 @@ import akka.dispatch.Await.Awaitable
 import akka.util.Duration
 import akka.util.duration._
 import akka.testkit.ImplicitSender
+import java.net.InetSocketAddress
+import java.net.InetAddress
+import akka.remote.testkit.MultiNodeSpec
 
 object TestConductorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   override def NrOfNodes = 2
   override def commonConfig = ConfigFactory.parseString("""
     akka.loglevel = DEBUG
-    akka.actor.provider = akka.remote.RemoteActorRefProvider
     akka.remote {
-      transport = akka.remote.testconductor.TestConductorTransport
       log-received-messages = on
       log-sent-messages = on
     }
@@ -25,87 +26,96 @@ object TestConductorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
       receive = on
       fsm = on
     }
-    akka.testconductor {
-      host = localhost
-      port = 4712
-    }
   """)
-  def nameConfig(n: Int) = ConfigFactory.parseString("akka.testconductor.name = node" + n).withFallback(nodeConfigs(n))
+}
 
-  implicit def awaitHelper[T](w: Awaitable[T]) = new AwaitHelper(w)
-  class AwaitHelper[T](w: Awaitable[T]) {
-    def await: T = Await.result(w, Duration.Inf)
+object H {
+  def apply(x: Int) = {
+    System.setProperty("multinode.hosts", "localhost,localhost")
+    System.setProperty("multinode.index", x.toString)
   }
 }
 
-class TestConductorMultiJvmNode1 extends AkkaRemoteSpec(TestConductorMultiJvmSpec.nameConfig(0)) {
+class TestConductorMultiJvmNode1 extends { val dummy = H(0) } with TestConductorSpec
+class TestConductorMultiJvmNode2 extends { val dummy = H(1) } with TestConductorSpec
 
-  import TestConductorMultiJvmSpec._
+class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec.commonConfig) with ImplicitSender {
 
-  val nodes = NrOfNodes
+  def initialParticipants = 2
+  lazy val roles = Seq("master", "slave")
 
-  val tc = TestConductor(system)
-
-  val echo = system.actorOf(Props(new Actor {
-    def receive = {
-      case x ⇒ testActor ! x; sender ! x
-    }
-  }), "echo")
-
-  "running a test with barrier" in {
-    tc.startController(2).await
-    tc.enter("begin")
+  runOn("master") {
+    system.actorOf(Props(new Actor {
+      def receive = {
+        case x ⇒ testActor ! x; sender ! x
+      }
+    }), "echo")
   }
 
-  "throttling" in {
-    expectMsg("start")
-    tc.throttle("node1", "node0", Direction.Send, 0.01).await
-    tc.enter("throttled_send")
-    within(0.6 seconds, 2 seconds) {
-      receiveN(10) must be(0 to 9)
+  val echo = system.actorFor(node("master") / "user" / "echo")
+
+  "A TestConductor" must {
+
+    "enter a barrier" in {
+      testConductor.enter("name")
     }
-    tc.enter("throttled_send2")
-    tc.throttle("node1", "node0", Direction.Send, -1).await
-    
-    tc.throttle("node1", "node0", Direction.Receive, 0.01).await
-    tc.enter("throttled_recv")
-    receiveN(10, 500 millis) must be(10 to 19)
-    tc.enter("throttled_recv2")
-    tc.throttle("node1", "node0", Direction.Receive, -1).await
-  }
-}
 
-class TestConductorMultiJvmNode2 extends AkkaRemoteSpec(TestConductorMultiJvmSpec.nameConfig(1)) with ImplicitSender {
+    "support throttling of network connections" in {
 
-  import TestConductorMultiJvmSpec._
+      runOn("slave") {
+        // start remote network connection so that it can be throttled
+        echo ! "start"
+      }
 
-  val nodes = NrOfNodes
+      expectMsg("start")
 
-  val tc = TestConductor(system)
-  
-  val echo = system.actorFor("akka://" + akkaSpec(0) + "/user/echo")
+      runOn("master") {
+        testConductor.throttle("slave", "master", Direction.Send, rateMBit = 0.01).await
+      }
 
-  "running a test with barrier" in {
-    tc.startClient(4712).await
-    tc.enter("begin")
-  }
+      testConductor.enter("throttled_send")
 
-  "throttling" in {
-    echo ! "start"
-    expectMsg("start")
-    tc.enter("throttled_send")
-    for (i <- 0 to 9) echo ! i
-    expectMsg(500 millis, 0)
-    within(0.6 seconds, 2 seconds) {
-      receiveN(9) must be(1 to 9)
+      runOn("slave") {
+        for (i ← 0 to 9) echo ! i
+      }
+
+      within(0.6 seconds, 2 seconds) {
+        expectMsg(500 millis, 0)
+        receiveN(9) must be(1 to 9)
+      }
+
+      testConductor.enter("throttled_send2")
+
+      runOn("master") {
+        testConductor.throttle("slave", "master", Direction.Send, -1).await
+        testConductor.throttle("slave", "master", Direction.Receive, rateMBit = 0.01).await
+      }
+
+      testConductor.enter("throttled_recv")
+
+      runOn("slave") {
+        for (i ← 10 to 19) echo ! i
+      }
+
+      val (min, max) =
+        ifNode("master") {
+          (0 seconds, 500 millis)
+        } {
+          (0.6 seconds, 2 seconds)
+        }
+
+      within(min, max) {
+        expectMsg(500 millis, 10)
+        receiveN(9) must be(11 to 19)
+      }
+
+      testConductor.enter("throttled_recv2")
+
+      runOn("master") {
+        testConductor.throttle("slave", "master", Direction.Receive, -1).await
+      }
     }
-    tc.enter("throttled_send2", "throttled_recv")
-    for (i <- 10 to 19) echo ! i
-    expectMsg(500 millis, 10)
-    within(0.6 seconds, 2 seconds) {
-      receiveN(9) must be(11 to 19)
-    }
-    tc.enter("throttled_recv2")
+
   }
 
 }
