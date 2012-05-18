@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.CopyOnWriteArrayList
-
 import akka.AkkaException
 import akka.actor.Scheduler
 import akka.dispatch.Future
@@ -18,6 +17,7 @@ import akka.util.Deadline
 import akka.util.Duration
 import akka.util.duration._
 import akka.util.NonFatal
+import java.util.concurrent.atomic.AtomicBoolean
 
 class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration) {
 
@@ -40,43 +40,46 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
       Duration.Zero)
   }
 
-  def onOpen(callback: ⇒ Unit): CircuitBreaker = {
+  def onOpen[T](callback: ⇒ T): CircuitBreaker = {
     CircuitBreakerOpen.addListener({ () ⇒ callback })
     this
   }
 
-  def onHalfOpen(callback: ⇒ Unit): CircuitBreaker = {
+  def onHalfOpen[T](callback: ⇒ T): CircuitBreaker = {
     CircuitBreakerHalfOpen.addListener({ () ⇒ callback })
     this
   }
 
-  def onClose(callback: ⇒ Unit): CircuitBreaker = {
+  def onClose[T](callback: ⇒ T): CircuitBreaker = {
     CircuitBreakerClosed.addListener({ () ⇒ callback })
     this
   }
 
   def currentFailureCount: Int = CircuitBreakerClosed.failureCount.get
 
-  private def tripBreaker()(implicit executor: ExecutionContext): Unit = {
-    if (currentState.compareAndSet(CircuitBreakerClosed, CircuitBreakerOpen) ||
-      currentState.compareAndSet(CircuitBreakerHalfOpen, CircuitBreakerOpen))
-      CircuitBreakerOpen.enter()
+  private def transition(fromState: CircuitBreakerState, toState: CircuitBreakerState)(implicit executor: ExecutionContext): Unit = {
+    if (currentState.compareAndSet(fromState, toState))
+      toState.enter()
+    else
+      throw new IllegalStateException("Illegal transition attempted from: " + fromState + " to " + toState)
+  }
+
+  private def tripBreaker(fromState: CircuitBreakerState)(implicit executor: ExecutionContext): Unit = {
+    transition(fromState, CircuitBreakerOpen)
   }
 
   private def resetBreaker()(implicit executor: ExecutionContext): Unit = {
-    if (currentState.compareAndSet(CircuitBreakerHalfOpen, CircuitBreakerClosed))
-      CircuitBreakerClosed.enter()
+    transition(CircuitBreakerHalfOpen, CircuitBreakerClosed)
   }
 
   private def attemptReset()(implicit executor: ExecutionContext): Unit = {
-    if (currentState.compareAndSet(CircuitBreakerOpen, CircuitBreakerHalfOpen))
-      CircuitBreakerHalfOpen.enter()
+    transition(CircuitBreakerOpen, CircuitBreakerHalfOpen)
   }
 
   trait CircuitBreakerState {
     private val listeners = new CopyOnWriteArrayList[() ⇒ _]
 
-    def addListener(listener: () ⇒ Unit) {
+    def addListener[T](listener: () ⇒ T) {
       listeners add listener
     }
 
@@ -96,7 +99,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
       val deadline = callTimeout.fromNow
       val bodyFuture = try body catch { case NonFatal(t) ⇒ Promise.failed(t) }
       bodyFuture onFailure {
-        case t: Throwable ⇒ callFails()
+        case _ ⇒ callFails()
       } onSuccess {
         case _ ⇒
           if (deadline.isOverdue) callFails()
@@ -110,8 +113,12 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
     def callFails()(implicit executor: ExecutionContext): Unit
 
-    def enter()(implicit executor: ExecutionContext): Unit
+    def enter()(implicit executor: ExecutionContext): Unit = {
+      _enter()
+      notifyTransitionListeners()
+    }
 
+    def _enter()(implicit executor: ExecutionContext): Unit
   }
 
   private object CircuitBreakerClosed extends CircuitBreakerState {
@@ -124,28 +131,31 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
     def callSucceeds()(implicit executor: ExecutionContext): Unit = failureCount.set(0)
 
     def callFails()(implicit executor: ExecutionContext): Unit = {
-      val count = failureCount.incrementAndGet()
-      if (count >= maxFailures) tripBreaker()
+      if (failureCount.incrementAndGet() == maxFailures) tripBreaker(CircuitBreakerClosed)
     }
 
-    def enter()(implicit executor: ExecutionContext): Unit = {
+    def _enter()(implicit executor: ExecutionContext): Unit = {
       failureCount.set(0)
-      notifyTransitionListeners()
     }
   }
 
   private object CircuitBreakerHalfOpen extends CircuitBreakerState {
 
+    private val singleAttempt = new AtomicBoolean(true)
+
     override def invoke[T](body: ⇒ Future[T])(implicit executor: ExecutionContext): Future[T] = {
+      if (!singleAttempt.compareAndSet(true, false))
+        throw new CircuitBreakerOpenException(Duration.Zero)
       callThrough(body)
     }
 
     override def callSucceeds()(implicit executor: ExecutionContext): Unit = resetBreaker()
 
-    override def callFails()(implicit executor: ExecutionContext): Unit = tripBreaker()
+    override def callFails()(implicit executor: ExecutionContext): Unit = tripBreaker(CircuitBreakerHalfOpen)
 
-    override def enter()(implicit executor: ExecutionContext): Unit =
-      notifyTransitionListeners()
+    override def _enter()(implicit executor: ExecutionContext): Unit = {
+      singleAttempt.set(true)
+    }
 
   }
 
@@ -165,9 +175,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
 
     override def callFails()(implicit executor: ExecutionContext): Unit = {}
 
-    override def enter()(implicit executor: ExecutionContext): Unit = {
+    override def _enter()(implicit executor: ExecutionContext): Unit = {
       openAsOf.set(System.currentTimeMillis)
-      notifyTransitionListeners()
       scheduler.scheduleOnce(resetTimeout) {
         attemptReset()
       }
