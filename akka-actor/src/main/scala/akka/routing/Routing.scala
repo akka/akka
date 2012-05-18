@@ -8,12 +8,10 @@ import akka.util.Duration
 import akka.util.duration._
 import akka.ConfigurationException
 import akka.pattern.pipe
-import akka.pattern.AskSupport
 import com.typesafe.config.Config
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
 import akka.jsr166y.ThreadLocalRandom
 import akka.util.Unsafe
 import akka.dispatch.Dispatchers
