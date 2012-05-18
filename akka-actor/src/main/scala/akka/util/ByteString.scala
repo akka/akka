@@ -206,7 +206,7 @@ object ByteString {
         bytestrings(pos)(idx - seen)
       } else throw new IndexOutOfBoundsException(idx.toString)
 
-    override def iterator = MultiByteArrayIterator(bytestrings.toList.map { _.iterator })
+    override def iterator = MultiByteArrayIterator(bytestrings.map(_.iterator)(collection.breakOut))
 
     def ++(that: ByteString): ByteString = {
       if (that.isEmpty) this
