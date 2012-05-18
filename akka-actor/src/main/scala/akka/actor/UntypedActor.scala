@@ -93,11 +93,17 @@ import akka.japi.{ Creator }
 abstract class UntypedActor extends Actor {
 
   /**
-   * To be implemented by concrete UntypedActor. Defines the message handler.
+   * To be implemented by concrete UntypedActor, this defines the behavior of the
+   * UntypedActor.
    */
   @throws(classOf[Exception])
   def onReceive(message: Any): Unit
 
+  /**
+   * Returns this UntypedActor's UntypedActorContext
+   * The UntypedActorContext is not thread safe so do not expose it outside of the
+   * UntypedActor.
+   */
   def getContext(): UntypedActorContext = context.asInstanceOf[UntypedActorContext]
 
   /**
@@ -150,9 +156,7 @@ abstract class UntypedActor extends Actor {
    */
   override def postRestart(reason: Throwable): Unit = super.postRestart(reason)
 
-  final protected def receive = {
-    case msg ⇒ onReceive(msg)
-  }
+  final protected def receive = { case msg ⇒ onReceive(msg) }
 }
 
 /**

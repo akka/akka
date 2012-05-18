@@ -7,17 +7,12 @@ package akka.util
 import java.util.concurrent.locks.{ ReentrantLock }
 import java.util.concurrent.atomic.{ AtomicBoolean }
 
-final class ReentrantGuard {
-  final val lock = new ReentrantLock
+final class ReentrantGuard extends ReentrantLock {
 
   @inline
   final def withGuard[T](body: ⇒ T): T = {
-    lock.lock
-    try {
-      body
-    } finally {
-      lock.unlock
-    }
+    lock()
+    try body finally unlock()
   }
 }
 
@@ -104,19 +99,13 @@ class Switch(startAsOn: Boolean = false) {
    * Executes the provided action and returns its value if the switch is on, waiting for any pending changes to happen before (locking)
    * Be careful of longrunning or blocking within the provided action as it can lead to deadlocks or bad performance
    */
-  def whileOnYield[T](action: ⇒ T): Option[T] = synchronized {
-    if (switch.get) Some(action)
-    else None
-  }
+  def whileOnYield[T](action: ⇒ T): Option[T] = synchronized { if (switch.get) Some(action) else None }
 
   /**
    * Executes the provided action and returns its value if the switch is off, waiting for any pending changes to happen before (locking)
    * Be careful of longrunning or blocking within the provided action as it can lead to deadlocks or bad performance
    */
-  def whileOffYield[T](action: ⇒ T): Option[T] = synchronized {
-    if (!switch.get) Some(action)
-    else None
-  }
+  def whileOffYield[T](action: ⇒ T): Option[T] = synchronized { if (!switch.get) Some(action) else None }
 
   /**
    * Executes the provided action and returns if the action was executed or not, if the switch is on, waiting for any pending changes to happen before (locking)
@@ -144,9 +133,7 @@ class Switch(startAsOn: Boolean = false) {
    * Executes the provided callbacks depending on if the switch is either on or off waiting for any pending changes to happen before (locking)
    * Be careful of longrunning or blocking within the provided action as it can lead to deadlocks or bad performance
    */
-  def fold[T](on: ⇒ T)(off: ⇒ T) = synchronized {
-    if (switch.get) on else off
-  }
+  def fold[T](on: ⇒ T)(off: ⇒ T): T = synchronized { if (switch.get) on else off }
 
   /**
    * Executes the given code while holding this switch’s lock, i.e. protected from concurrent modification of the switch status.
