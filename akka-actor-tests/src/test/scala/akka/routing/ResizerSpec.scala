@@ -128,7 +128,8 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       current.routees.size must be(2)
     }
 
-    "resize when busy" in {
+    // FIXME this test violates the rule that you can not use a BalancingDispatcher with any kind of Router - now throws a ConfigurationException in verification process
+    "resize when busy" ignore {
 
       val busy = new TestLatch(1)
 
