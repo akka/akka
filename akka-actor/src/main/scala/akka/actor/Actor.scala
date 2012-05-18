@@ -240,24 +240,60 @@ trait Actor {
   final def sender: ActorRef = context.sender
 
   /**
-   * This allows traits and subclasses to mix in actor behavior;
-   * by default it chains to receive(), so you _must_ chain up
-   * if you override this! If you want your mixin's message
-   * handling to run before other handlers, chain up
-   * _after_ you run your own message-handling code:
-   * <p/>
+   * This method allows traits and subclasses to mix in actor behavior;
+   * the provided partial function, if any, will receive the message
+   * before `receive` and have a chance to intercept it.
+   * To allow multiple mixin traits, implementations of this
+   * method should chain up to `super.preReceive` and
+   * combine their own handler with any pre-existing handler
+   * using `PartialFunction.orElse`.
+   *
    * {{{
-   *   trait Mixin extends Actor {
-   *     override def aroundReceive = ({
-   *       case CustomMessage =>
-   *     }: Receive) orElse super.aroundReceive
+   *   override def preReceive = {
+   *     val handler: Receive = {
+   *       case "MyMessage" ⇒
+   *     }
+   *     Some(super.preReceive.foldRight(handler)(_ orElse _))
    *   }
    * }}}
-   * If you want your mixin to provide a fallback after
-   * the subtype's handlers run, then chain up first and
-   * fall back to your own code second.
+   *
+   * Using `foldRight` runs your handler after the supertype's handler
+   * if any, which means mixin traits run from left to right. This
+   * is a good convention to follow.
+   *
+   * Note that `preReceive` is only invoked once each time the Actor's
+   * behavior changes (for example on actor creation, and when someone
+   * calls `become`). The `preReceive` handler is not recreated for every message.
    */
-  protected def aroundReceive: Receive = receive
+  protected def preReceive: Option[Receive] = None
+
+  /**
+   * This method allows traits and subclasses to mix in actor behavior;
+   * the provided partial function, if any, will receive the message
+   * after `receive()` if `receive()` does not handle it.
+   * To allow multiple mixin traits, implementations of this
+   * method should chain up to `super.postReceive` and
+   * combine their own handler with any pre-existing handler
+   * using `PartialFunction.orElse`.
+   *
+   * {{{
+   *   override def postReceive = {
+   *     val handler: Receive = {
+   *       case "MyMessage" ⇒
+   *     }
+   *     Some(super.postReceive.foldRight(handler)(_ orElse _))
+   *   }
+   * }}}
+   *
+   * Using `foldRight` runs your handler after the supertype's handler
+   * if any, which means mixin traits run from left to right. This
+   * is a good convention to follow.
+   *
+   * Note that `postReceive` is only invoked once each time the Actor's
+   * behavior changes (for example on actor creation, and when someone
+   * calls `become`). The `postReceive` handler is not recreated for every message.
+   */
+  protected def postReceive: Option[Receive] = None
 
   /**
    * This defines the initial actor behavior, it must return a partial function
@@ -337,11 +373,16 @@ trait Actor {
     if (head.isDefinedAt(msg)) head.apply(msg) else unhandled(msg)
   }
 
+  private def wrapBehavior(behavior: Receive): Receive = {
+    val chain = Seq(preReceive, Some(behavior), postReceive).flatMap(_.toSeq)
+    chain.reduce(_ orElse _)
+  }
+
   /**
    * For Akka internal use only.
    */
   private[akka] def pushBehavior(behavior: Receive): Unit = {
-    behaviorStack = behaviorStack.push(behavior)
+    behaviorStack = behaviorStack.push(wrapBehavior(behavior))
   }
 
   /**
@@ -359,6 +400,6 @@ trait Actor {
   private[akka] def clearBehaviorStack(): Unit =
     behaviorStack = Stack.empty[Receive].push(behaviorStack.last)
 
-  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(aroundReceive)
+  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(wrapBehavior(receive))
 }
 

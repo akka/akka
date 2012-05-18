@@ -402,43 +402,79 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
     }
   }
 
-  "support mixin message handlers" in {
-    // "override" mixin that runs other handlers second
-    trait HandlesA extends Actor {
-      override def aroundReceive = ({
-        case 'A' ⇒ sender ! 1
-      }: Receive) orElse super.aroundReceive
+  "support mixin message handlers and execute in proper order" in {
+    // "pre" mixin that runs other handlers second
+    trait HandlesA1 extends Actor {
+      override def preReceive = {
+        val handler: Receive = {
+          case "A1" ⇒ sender ! "HandlesA1"
+        }
+        Some(super.preReceive.foldRight(handler)(_ orElse _))
+      }
     }
-    // "fallback" mixin that runs other handlers first
-    trait HandlesB extends Actor {
-      override def aroundReceive = super.aroundReceive orElse ({
-        case 'B' ⇒ sender ! 2
-        case 'C' ⇒ sender ! 42 // not reached, HandlesC filters
-      }: Receive)
+
+    // another "pre" mixin
+    trait HandlesA2 extends Actor {
+      override def preReceive = {
+        val handler: Receive = {
+          case "A2" ⇒ sender ! "HandlesA2"
+          case "A1" ⇒ sender ! "HandlesA2" // not reached, HandlesA1 filters
+        }
+        Some(super.preReceive.foldRight(handler)(_ orElse _))
+      }
     }
+
+    // "post" mixin that runs other handlers first
+    trait HandlesB1 extends Actor {
+      override def postReceive = {
+        val handler: Receive = {
+          case "B1" ⇒ sender ! "HandlesB1"
+          case "C"  ⇒ sender ! "HandlesB1" // not reached, HandlesC filters
+        }
+        Some(super.postReceive.foldRight(handler)(_ orElse _))
+      }
+    }
+
+    // another "post" mixin
+    trait HandlesB2 extends Actor {
+      override def postReceive = {
+        val handler: Receive = {
+          case "B2" ⇒ sender ! "HandlesB2"
+          case "B1" ⇒ sender ! "HandlesB2" // not reached, HandlesB1 filters
+          case "C"  ⇒ sender ! "HandlesB2" // not reached, HandlesC filters
+        }
+        Some(super.postReceive.foldRight(handler)(_ orElse _))
+      }
+    }
+
     // this is a completely unmodified actor other
     // than having "with HandlesA with HandlesB",
     // it doesn't have to worry about chaining up
     // or anything like that.
-    class HandlesC extends Actor with HandlesA with HandlesB {
+    class HandlesC extends Actor with HandlesA1 with HandlesA2 with HandlesB1 with HandlesB2 {
       def receive = {
-        case 'C' ⇒ sender ! 3
-        case 'A' ⇒ sender ! 42 // not reached, HandlesA filters
+        case "C"  ⇒ sender ! "HandlesC"
+        case "A1" ⇒ sender ! "HandlesC" // not reached, HandlesA1 filters
+        case "A2" ⇒ sender ! "HandlesC" // not reached, HandlesA2 filters
       }
     }
 
     val timeout = Timeout(20000)
     val ref = system.actorOf(Props(new HandlesC))
 
-    val one = (ref.ask('A')(timeout)).mapTo[Int]
-    val two = (ref.ask('B')(timeout)).mapTo[Int]
-    val three = (ref.ask('C')(timeout)).mapTo[Int]
+    val a1 = (ref.ask("A1")(timeout)).mapTo[String]
+    val a2 = (ref.ask("A2")(timeout)).mapTo[String]
+    val c = (ref.ask("C")(timeout)).mapTo[String]
+    val b1 = (ref.ask("B1")(timeout)).mapTo[String]
+    val b2 = (ref.ask("B2")(timeout)).mapTo[String]
 
     ref ! PoisonPill
 
-    Await.result(one, timeout.duration) must be(1)
-    Await.result(two, timeout.duration) must be(2)
-    Await.result(three, timeout.duration) must be(3)
+    Await.result(a1, timeout.duration) must be("HandlesA1")
+    Await.result(a2, timeout.duration) must be("HandlesA2")
+    Await.result(c, timeout.duration) must be("HandlesC")
+    Await.result(b1, timeout.duration) must be("HandlesB1")
+    Await.result(b2, timeout.duration) must be("HandlesB2")
 
     awaitCond(ref.isTerminated, 2000 millis)
   }

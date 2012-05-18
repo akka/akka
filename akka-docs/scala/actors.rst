@@ -668,20 +668,24 @@ state of the failing actor instance is lost if you don't store and restore it in
 ``preRestart`` and ``postRestart`` callbacks.
 
 
-Extending Actors using aroundReceive and PartialFunction chaining
-===============================================
+Extending Actors using preReceive, postReceive, and PartialFunction chaining
+============================================================================
 
 You can create "mixin" traits or abstract classes using the
-``aroundReceive`` method on ``Actor``. By default,
-``aroundReceive`` simply calls ``receive``; the difference is that
-when overriding ``aroundReceive``, you are required to chain up to
-``super.aroundReceive`` with ``PartialFunction.orElse``:
+``preReceive`` and ``postReceive`` methods on ``Actor``. These
+return an ``Option[Receive]]``, ``None`` by default. If you
+override them to return a handler, it will run before or after the
+standard actor behavior as defined by ``receive`` or ``become``.
+To allow multiple traits to be mixed in to one actor, when you
+override ``preReceive`` or ``postReceive`` you should always chain
+up and combine your handler with other handlers using ``orElse``:
 
-.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-aroundReceive
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-preReceive
 
-Multiple traits that extend ``aroundReceive`` in this way can be
-mixed in to the same concrete class. The concrete class need not
-do anything special, it implements ``receive`` as usual.
+Multiple traits that implement ``preReceive`` or ``postReceive``
+in this way can be mixed in to the same concrete class. The
+concrete class need not do anything special, it implements
+``receive`` as usual.
 
 ``PartialFunction.orElse`` chaining can also be used for more
 complex scenarios, like dynamic runtime registration of handlers:

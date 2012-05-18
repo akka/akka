@@ -114,7 +114,7 @@ object SwapperApp extends App {
 }
 //#swapper
 
-//#receive-aroundReceive
+//#receive-preReceive
 
 // trait providing a generic fallback message handler
 trait GenericActor extends Actor {
@@ -123,12 +123,12 @@ trait GenericActor extends Actor {
     case event ⇒ printf("generic: %s\n", event)
   }
 
-  // You could reverse the order of your
-  // handler and super.aroundReceive to
-  // override rather than fall back, of course.
-  // The default Actor.aroundReceive forwards
-  // to receive.
-  override def aroundReceive = super.aroundReceive orElse genericMessageHandler
+  // you'd do preReceive in exactly the same way.
+  // foldRight (rather than foldLeft) means if you
+  // mix in two traits, the one written on the left
+  // will get messages first.
+  override def postReceive =
+    Some(super.postReceive.foldRight(genericMessageHandler)(_ orElse _))
 }
 
 class SpecificActor extends GenericActor {
@@ -138,19 +138,31 @@ class SpecificActor extends GenericActor {
 }
 
 case class MyMsg(subject: String)
-//#receive-aroundReceive
+//#receive-preReceive
 
 //#receive-orElse
 trait ComposableActor extends Actor {
   private var receives: List[Receive] = List()
+  private var composedReceives: Receive = Map.empty // in Scala 2.10, PartialFunction.empty
+
   protected def registerReceive(receive: Receive) {
+    // keep a list (allows unregistration)
     receives = receive :: receives
+    // cache the composition of all receives
+    composedReceives = receives reduce { _ orElse _ }
   }
 
-  // Runs dynamically-registered handlers before
-  // default handler (default aroundReceive forwards
-  // to receive)
-  override def aroundReceive = (receives reduce { _ orElse _ }) orElse super.aroundReceive
+  // this indirection is because preReceive is only called
+  // once, but we want to allow registration post-construct,
+  // so we need a constant Receive that forwards to our
+  // dynamic Receive
+  private def handleRegisteredReceives: Receive = new PartialFunction[Any, Unit]() {
+    override def apply(x: Any) = composedReceives.apply(x)
+    override def isDefinedAt(x: Any) = composedReceives.isDefinedAt(x)
+  }
+
+  override def preReceive =
+    Some(super.preReceive.foldRight(handleRegisteredReceives)(_ orElse _))
 }
 
 class MyComposableActor extends ComposableActor {
@@ -166,7 +178,7 @@ class MyComposableActor extends ComposableActor {
   }
 
   // Runs after the dynamically-registered handlers,
-  // which are run in aroundReceive
+  // which are added with preReceive
   def receive = {
     case "baz" ⇒
   }
