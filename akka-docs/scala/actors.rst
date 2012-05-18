@@ -668,21 +668,19 @@ state of the failing actor instance is lost if you don't store and restore it in
 ``preRestart`` and ``postRestart`` callbacks.
 
 
-Extending Actors using preReceive, postReceive, and PartialFunction chaining
-============================================================================
+Extending Actors using mapBehavior and PartialFunction chaining
+===============================================================
 
 You can create "mixin" traits or abstract classes using the
-``preReceive`` and ``postReceive`` methods on ``Actor``. These
-return an ``Option[Receive]]``, ``None`` by default. If you
-override them to return a handler, it will run before or after the
+``mapBehavior`` method on ``Actor``. This method modifies the
 standard actor behavior as defined by ``receive`` or ``become``.
 To allow multiple traits to be mixed in to one actor, when you
-override ``preReceive`` or ``postReceive`` you should always chain
-up and combine your handler with other handlers using ``orElse``:
+override ``mapBehavior`` you should always chain
+up and allow supertypes to run their ``mapBehavior`` as well.
 
-.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-preReceive
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-mapBehavior
 
-Multiple traits that implement ``preReceive`` or ``postReceive``
+Multiple traits that implement ``mapBehavior``
 in this way can be mixed in to the same concrete class. The
 concrete class need not do anything special, it implements
 ``receive`` as usual.

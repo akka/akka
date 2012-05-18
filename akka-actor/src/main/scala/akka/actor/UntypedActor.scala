@@ -168,9 +168,11 @@ abstract class UntypedActor extends Actor {
 
   // this isn't final so mixins can work, but
   // overriding it in Java is not expected.
-  override protected def preReceive = {
-    val chain = Seq(super.preReceive, onPreReceive.asScala.map(_.asScala)).flatMap(_.toSeq)
-    chain.reduceLeftOption(_ orElse _)
+  override protected def mapBehavior(behavior: Receive): Receive = {
+    val chain = Seq(onPreReceive.asScala.map(_.asScala),
+      Some(behavior),
+      onPostReceive.asScala.map(_.asScala)).flatMap(_.toSeq)
+    super.mapBehavior(chain.reduce(_ orElse _))
   }
 
   /**
@@ -180,13 +182,6 @@ abstract class UntypedActor extends Actor {
    * regular `onReceive` handler.
    */
   protected def onPreReceive: japi.Option[japi.PartialProcedure[Any]] = japi.Option.none
-
-  // this isn't final so mixins can work, but
-  // overriding it in Java is not expected.
-  override protected def postReceive = {
-    val chain = Seq(super.postReceive, onPostReceive.asScala.map(_.asScala)).flatMap(_.toSeq)
-    chain.reduceLeftOption(_ orElse _)
-  }
 
   /**
    * User overridable callback: by default it returns None.

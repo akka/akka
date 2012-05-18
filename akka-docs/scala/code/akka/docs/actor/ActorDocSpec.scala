@@ -114,7 +114,7 @@ object SwapperApp extends App {
 }
 //#swapper
 
-//#receive-preReceive
+//#receive-mapBehavior
 
 // trait providing a generic fallback message handler
 trait GenericActor extends Actor {
@@ -123,12 +123,10 @@ trait GenericActor extends Actor {
     case event ⇒ printf("generic: %s\n", event)
   }
 
-  // you'd do preReceive in exactly the same way.
-  // foldRight (rather than foldLeft) means if you
-  // mix in two traits, the one written on the left
-  // will get messages first.
-  override def postReceive =
-    Some(super.postReceive.foldRight(genericMessageHandler)(_ orElse _))
+  // because we chain up to super.mapBehavior,
+  // multiple traits like this can be mixed in.
+  override def mapBehavior(behavior: Receive): Receive =
+    super.mapBehavior(behavior orElse genericMessageHandler)
 }
 
 class SpecificActor extends GenericActor {
@@ -138,7 +136,7 @@ class SpecificActor extends GenericActor {
 }
 
 case class MyMsg(subject: String)
-//#receive-preReceive
+//#receive-mapBehavior
 
 //#receive-orElse
 trait ComposableActor extends Actor {
@@ -161,8 +159,8 @@ trait ComposableActor extends Actor {
     override def isDefinedAt(x: Any) = composedReceives.isDefinedAt(x)
   }
 
-  override def preReceive =
-    Some(super.preReceive.foldRight(handleRegisteredReceives)(_ orElse _))
+  override def mapBehavior(behavior: Receive) =
+    super.mapBehavior(behavior orElse handleRegisteredReceives)
 }
 
 class MyComposableActor extends ComposableActor {
