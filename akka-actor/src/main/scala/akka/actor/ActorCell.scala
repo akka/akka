@@ -357,19 +357,7 @@ private[akka] class ActorCell(
     case _ ⇒ true
   }
 
-  private def verifyActorConfiguration(system: ActorSystem, props: Props, actorName: String): Unit = {
-    import akka.config.ConfigurationException
-    import akka.routing.NoRouter
-    // verify that a BalancingDispatcher is not used with a Router
-    if (system.dispatchers.lookup(props.dispatcher).isInstanceOf[BalancingDispatcher] && props.routerConfig != NoRouter)
-      throw new ConfigurationException(
-        "Configuration for actor [" + actorName +
-          "] is invalid - you can not use a 'BalancingDispatcher' together with any type of 'Router'")
-  }
-
   private def _actorOf(props: Props, name: String): ActorRef = {
-    verifyActorConfiguration(systemImpl, props, name)
-
     if (system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
       val ser = SerializationExtension(system)
       ser.serialize(props.creator) match {
