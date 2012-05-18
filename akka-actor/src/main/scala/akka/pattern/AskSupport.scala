@@ -272,9 +272,7 @@ private[akka] object PromiseActorRef {
     val result = Promise[Any]()(provider.dispatcher)
     val a = new PromiseActorRef(provider, result)
     val f = provider.scheduler.scheduleOnce(timeout.duration) { result.tryComplete(Left(new AskTimeoutException("Timed out"))) }
-    result onComplete { _ ⇒
-      try a.stop() finally f.cancel()
-    }
+    result onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a
   }
 }
