@@ -5,7 +5,7 @@
 package akka.util
 
 import java.security.{ MessageDigest, SecureRandom }
-
+//FIXME DOCS
 object Crypt {
   val hex = "0123456789ABCDEF"
   val lineSeparator = System.getProperty("line.separator")
@@ -32,7 +32,7 @@ object Crypt {
   }
 
   def hexify(bytes: Array[Byte]): String = {
-    val builder = new StringBuilder
+    val builder = new StringBuilder(bytes.length * 2)
     bytes.foreach { byte ⇒ builder.append(hex.charAt((byte & 0xF0) >> 4)).append(hex.charAt(byte & 0xF)) }
     builder.toString
   }

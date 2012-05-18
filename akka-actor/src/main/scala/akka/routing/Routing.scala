@@ -47,12 +47,11 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     ref: InternalActorRef,
     props: Props,
     supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration]): ActorCell =
-    {
-      val cell = super.newActorCell(system, ref, props, supervisor, receiveTimeout)
-      Unsafe.instance.monitorEnter(cell)
-      cell
-    }
+    receiveTimeout: Option[Duration]): ActorCell = {
+    val cell = super.newActorCell(system, ref, props, supervisor, receiveTimeout)
+    Unsafe.instance.monitorEnter(cell)
+    cell
+  }
 
   private[akka] val routerConfig = _props.routerConfig
   private[akka] val routeeProps = _props.copy(routerConfig = NoRouter)
@@ -303,8 +302,8 @@ trait Router extends Actor {
   final def receive = ({
 
     case Router.Resize ⇒
-      try ref.routerConfig.resizer foreach (_.resize(ref.routeeProps, ref.routeeProvider))
-      finally assert(ref.resizeInProgress.getAndSet(false))
+      val ab = ref.resizeInProgress
+      if (ab.get) try ref.routerConfig.resizer foreach (_.resize(ref.routeeProps, ref.routeeProvider)) finally ab.set(false)
 
     case Terminated(child) ⇒
       ref.removeRoutees(IndexedSeq(child))
@@ -319,6 +318,9 @@ trait Router extends Actor {
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private object Router {
 
   case object Resize
@@ -372,9 +374,9 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 abstract class NoRouter extends RouterConfig
 case object NoRouter extends NoRouter {
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null // FIXME, null, really??
   def routerDispatcher: String = ""
-  def supervisorStrategy = null
+  def supervisorStrategy = null // FIXME null, really??
   override def withFallback(other: RouterConfig): RouterConfig = other
 
   /**
@@ -404,9 +406,7 @@ case object FromConfig extends FromConfig {
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig
-  with Product
-  with Serializable
-  with Equals {
+  with Serializable {
 
   def this() = this(Dispatchers.DefaultDispatcherId)
 
@@ -414,38 +414,6 @@ class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
     throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
 
   def supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy
-
-  // open-coded case class to preserve binary compatibility, all deprecated for 2.1
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  override def productPrefix = "FromConfig"
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  def productArity = 1
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  def productElement(x: Int) = x match {
-    case 0 ⇒ routerDispatcher
-    case _ ⇒ throw new IndexOutOfBoundsException(x.toString)
-  }
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  def copy(d: String = Dispatchers.DefaultDispatcherId): FromConfig = new FromConfig(d)
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  def canEqual(o: Any) = o.isInstanceOf[FromConfig]
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  override def hashCode = ScalaRunTime._hashCode(this)
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  override def toString = "FromConfig(" + routerDispatcher + ")"
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  override def equals(other: Any): Boolean = other match {
-    case FromConfig(x) ⇒ x == routerDispatcher
-    case _             ⇒ false
-  }
-
 }
 
 object RoundRobinRouter {
@@ -510,9 +478,7 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int) = {
-    this(nrOfInstances = nr)
-  }
+  def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
    * Constructor that sets the routees to be used.
@@ -520,9 +486,7 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(routeePaths))
-  }
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -533,13 +497,13 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
   /**
    * Java API for setting routerDispatcher
    */
-  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+  def withDispatcher(dispatcherId: String): RoundRobinRouter = copy(routerDispatcher = dispatcherId)
 
   /**
    * Java API for setting the supervisor strategy to be used for the “head”
    * Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): RoundRobinRouter = copy(supervisorStrategy = strategy)
 }
 
 trait RoundRobinLike { this: RouterConfig ⇒
@@ -630,9 +594,7 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int) = {
-    this(nrOfInstances = nr)
-  }
+  def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
    * Constructor that sets the routees to be used.
@@ -640,9 +602,7 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(routeePaths))
-  }
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -653,13 +613,13 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
   /**
    * Java API for setting routerDispatcher
    */
-  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+  def withDispatcher(dispatcherId: String): RandomRouter = copy(routerDispatcher = dispatcherId)
 
   /**
    * Java API for setting the supervisor strategy to be used for the “head”
    * Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): RandomRouter = copy(supervisorStrategy = strategy)
 }
 
 trait RandomLike { this: RouterConfig ⇒
@@ -756,9 +716,7 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int) = {
-    this(nrOfInstances = nr)
-  }
+  def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
    * Constructor that sets the routees to be used.
@@ -766,9 +724,7 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(routeePaths))
-  }
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -779,19 +735,16 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
   /**
    * Java API for setting routerDispatcher
    */
-  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+  def withDispatcher(dispatcherId: String): SmallestMailboxRouter = copy(routerDispatcher = dispatcherId)
 
   /**
    * Java API for setting the supervisor strategy to be used for the “head”
    * Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): SmallestMailboxRouter = copy(supervisorStrategy = strategy)
 }
 
 trait SmallestMailboxLike { this: RouterConfig ⇒
-
-  import java.security.SecureRandom
-
   def nrOfInstances: Int
 
   def routees: Iterable[String]
@@ -954,9 +907,7 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int) = {
-    this(nrOfInstances = nr)
-  }
+  def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
    * Constructor that sets the routees to be used.
@@ -964,9 +915,7 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(routeePaths))
-  }
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -977,13 +926,13 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
   /**
    * Java API for setting routerDispatcher
    */
-  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+  def withDispatcher(dispatcherId: String): BroadcastRouter = copy(routerDispatcher = dispatcherId)
 
   /**
    * Java API for setting the supervisor strategy to be used for the “head”
    * Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): BroadcastRouter = copy(supervisorStrategy = strategy)
 }
 
 trait BroadcastLike { this: RouterConfig ⇒
@@ -1069,9 +1018,7 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int, w: Duration) = {
-    this(nrOfInstances = nr, within = w)
-  }
+  def this(nr: Int, w: Duration) = this(nrOfInstances = nr, within = w)
 
   /**
    * Constructor that sets the routees to be used.
@@ -1079,9 +1026,8 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String], w: Duration) = {
+  def this(routeePaths: java.lang.Iterable[String], w: Duration) =
     this(routees = iterableAsScalaIterable(routeePaths), within = w)
-  }
 
   /**
    * Constructor that sets the resizer to be used.
@@ -1150,7 +1096,7 @@ trait Resizer {
    * This method is invoked only in the context of the Router actor in order to safely
    * create/stop children.
    */
-  def resize(props: Props, routeeProvider: RouteeProvider)
+  def resize(props: Props, routeeProvider: RouteeProvider): Unit
 }
 
 case object DefaultResizer {
@@ -1166,6 +1112,7 @@ case object DefaultResizer {
       messagesPerResize = resizerConfig.getInt("messages-per-resize"))
 }
 
+//FIXME DOCUMENT ME
 case class DefaultResizer(
   /**
    * The fewest number of routees the router should ever have.
@@ -1240,7 +1187,7 @@ case class DefaultResizer(
 
   def isTimeForResize(messageCounter: Long): Boolean = (messageCounter % messagesPerResize == 0)
 
-  def resize(props: Props, routeeProvider: RouteeProvider) {
+  def resize(props: Props, routeeProvider: RouteeProvider): Unit = {
     val currentRoutees = routeeProvider.routees
     val requestedCapacity = capacity(currentRoutees)
 
@@ -1258,7 +1205,7 @@ case class DefaultResizer(
    * Give concurrent messages a chance to be placed in mailbox before
    * sending PoisonPill.
    */
-  protected def delayedStop(scheduler: Scheduler, abandon: IndexedSeq[ActorRef]) {
+  protected def delayedStop(scheduler: Scheduler, abandon: IndexedSeq[ActorRef]): Unit = {
     if (abandon.nonEmpty) {
       if (stopDelay <= Duration.Zero) {
         abandon foreach (_ ! PoisonPill)
@@ -1327,9 +1274,7 @@ case class DefaultResizer(
    * @param capacity current number of routees
    * @return proposed change in the capacity
    */
-  def filter(pressure: Int, capacity: Int): Int = {
-    rampup(pressure, capacity) + backoff(pressure, capacity)
-  }
+  def filter(pressure: Int, capacity: Int): Int = rampup(pressure, capacity) + backoff(pressure, capacity)
 
   /**
    * Computes a proposed positive (or zero) capacity delta using

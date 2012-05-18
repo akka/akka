@@ -11,6 +11,7 @@ import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
 
+//FIXME MORE DOCS
 object ByteString {
 
   /**
@@ -53,15 +54,16 @@ object ByteString {
 
   val empty: ByteString = CompactByteString(Array.empty[Byte])
 
-  def newBuilder = new ByteStringBuilder
+  def newBuilder: ByteStringBuilder = new ByteStringBuilder
 
-  implicit def canBuildFrom = new CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] {
-    def apply(from: TraversableOnce[Byte]) = newBuilder
-    def apply() = newBuilder
-  }
+  implicit val canBuildFrom: CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] =
+    new CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] {
+      def apply(ignore: TraversableOnce[Byte]): ByteStringBuilder = newBuilder
+      def apply(): ByteStringBuilder = newBuilder
+    }
 
   private[akka] object ByteString1C {
-    def apply(bytes: Array[Byte]) = new ByteString1C(bytes)
+    def apply(bytes: Array[Byte]): ByteString1C = new ByteString1C(bytes)
   }
 
   /**
@@ -71,7 +73,7 @@ object ByteString {
   final class ByteString1C private (private val bytes: Array[Byte]) extends CompactByteString {
     def apply(idx: Int): Byte = bytes(idx)
 
-    override def length = bytes.length
+    override def length: Int = bytes.length
 
     def toArray: Array[Byte] = bytes.clone
 
@@ -81,13 +83,11 @@ object ByteString {
 
     def compact: ByteString1C = this
 
-    def asByteBuffer: ByteBuffer =
-      toByteString1.asByteBuffer
+    def asByteBuffer: ByteBuffer = toByteString1.asByteBuffer
 
     def decodeString(charset: String): String = new String(bytes, charset)
 
-    def ++(that: ByteString): ByteString =
-      if (!that.isEmpty) toByteString1 ++ that else this
+    def ++(that: ByteString): ByteString = if (!that.isEmpty) toByteString1 ++ that else this
 
     override def slice(from: Int, until: Int): ByteString =
       if ((from != 0) || (until != length)) toByteString1.slice(from, until)
@@ -96,12 +96,11 @@ object ByteString {
     override def copyToArray[A >: Byte](xs: Array[A], start: Int, len: Int): Unit =
       toByteString1.copyToArray(xs, start, len)
 
-    def copyToBuffer(buffer: ByteBuffer): Int =
-      toByteString1.copyToBuffer(buffer)
+    def copyToBuffer(buffer: ByteBuffer): Int = toByteString1.copyToBuffer(buffer)
   }
 
   private[akka] object ByteString1 {
-    def apply(bytes: Array[Byte]) = new ByteString1(bytes)
+    def apply(bytes: Array[Byte]): ByteString1 = new ByteString1(bytes)
   }
 
   /**
@@ -113,7 +112,7 @@ object ByteString {
 
     def apply(idx: Int): Byte = bytes(checkRangeConvert(idx))
 
-    private def checkRangeConvert(index: Int) = {
+    private def checkRangeConvert(index: Int): Int = {
       if (0 <= index && length > index)
         index + startIndex
       else
@@ -128,8 +127,7 @@ object ByteString {
 
     override def clone: CompactByteString = ByteString1C(toArray)
 
-    def compact: CompactByteString =
-      if (length == bytes.length) ByteString1C(bytes) else clone
+    def compact: CompactByteString = if (length == bytes.length) ByteString1C(bytes) else clone
 
     def asByteBuffer: ByteBuffer = {
       val buffer = ByteBuffer.wrap(bytes, startIndex, length).asReadOnlyBuffer
@@ -161,7 +159,6 @@ object ByteString {
       if (copyLength > 0) buffer.put(bytes, startIndex, copyLength)
       copyLength
     }
-
   }
 
   private[akka] object ByteStrings {
@@ -198,10 +195,11 @@ object ByteString {
     }
 
     // 0: both empty, 1: 2nd empty, 2: 1st empty, 3: neither empty
+    // Using length to check emptiness is prohibited by law
     def compare(b1: ByteString, b2: ByteString): Int =
-      if (b1.length == 0)
-        if (b2.length == 0) 0 else 2
-      else if (b2.length == 0) 1 else 3
+      if (b1.isEmpty)
+        if (b2.isEmpty) 0 else 2
+      else if (b2.isEmpty) 1 else 3
 
   }
 
@@ -439,7 +437,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   private var _tempLength = 0
   private var _tempCapacity = 0
 
-  private def clearTemp() {
+  private def clearTemp(): Unit = {
     if (_tempLength > 0) {
       val arr = new Array[Byte](_tempLength)
       Array.copy(_temp, 0, arr, 0, _tempLength)
@@ -448,14 +446,14 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     }
   }
 
-  private def resizeTemp(size: Int) {
+  private def resizeTemp(size: Int): Unit = {
     val newtemp = new Array[Byte](size)
     if (_tempLength > 0) Array.copy(_temp, 0, newtemp, 0, _tempLength)
     _temp = newtemp
     _tempCapacity = _temp.length
   }
 
-  private def ensureTempSize(size: Int) {
+  private def ensureTempSize(size: Int): Unit = {
     if (_tempCapacity < size || _tempCapacity == 0) {
       var newSize = if (_tempCapacity == 0) 16 else _tempCapacity * 2
       while (newSize < size) newSize *= 2
@@ -498,7 +496,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     this
   }
 
-  def clear() {
+  def clear(): Unit = {
     _builder.clear
     _length = 0
     _tempLength = 0

@@ -24,9 +24,7 @@ class Switch(startAsOn: Boolean = false) {
 
   protected def transcend(from: Boolean, action: ⇒ Unit): Boolean = synchronized {
     if (switch.compareAndSet(from, !from)) {
-      try {
-        action
-      } catch {
+      try action catch {
         case e ⇒
           switch.compareAndSet(!from, from) // revert status
           throw e
@@ -62,18 +60,12 @@ class Switch(startAsOn: Boolean = false) {
   /**
    * Executes the provided action and returns its value if the switch is IMMEDIATELY on (i.e. no lock involved)
    */
-  def ifOnYield[T](action: ⇒ T): Option[T] = {
-    if (switch.get) Some(action)
-    else None
-  }
+  def ifOnYield[T](action: ⇒ T): Option[T] = if (switch.get) Some(action) else None
 
   /**
    * Executes the provided action and returns its value if the switch is IMMEDIATELY off (i.e. no lock involved)
    */
-  def ifOffYield[T](action: ⇒ T): Option[T] = {
-    if (!switch.get) Some(action)
-    else None
-  }
+  def ifOffYield[T](action: ⇒ T): Option[T] = if (!switch.get) Some(action) else None
 
   /**
    * Executes the provided action and returns if the action was executed or not, if the switch is IMMEDIATELY on (i.e. no lock involved)
@@ -138,15 +130,15 @@ class Switch(startAsOn: Boolean = false) {
   /**
    * Executes the given code while holding this switch’s lock, i.e. protected from concurrent modification of the switch status.
    */
-  def locked[T](code: ⇒ T) = synchronized { code }
+  def locked[T](code: ⇒ T): T = synchronized { code }
 
   /**
    * Returns whether the switch is IMMEDIATELY on (no locking)
    */
-  def isOn = switch.get
+  def isOn: Boolean = switch.get
 
   /**
    * Returns whether the switch is IMMEDDIATELY off (no locking)
    */
-  def isOff = !isOn
+  def isOff: Boolean = !isOn
 }

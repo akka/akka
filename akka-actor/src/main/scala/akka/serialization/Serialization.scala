@@ -14,8 +14,6 @@ import akka.util.NonFatal
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
 
-case class NoSerializerFoundException(m: String) extends AkkaException(m)
-
 object Serialization {
 
   /**
@@ -120,9 +118,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
             possibilities(0)._2
         }
         serializerMap.putIfAbsent(clazz, ser) match {
-          case null ⇒
-            log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName)
-            ser
+          case null ⇒ log.debug("Using serializer[{}] for message [{}]", ser.getClass.getName, clazz.getName); ser
           case some ⇒ some
         }
       case ser ⇒ ser
@@ -140,10 +136,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * A Map of serializer from alias to implementation (class implementing akka.serialization.Serializer)
    * By default always contains the following mapping: "java" -> akka.serialization.JavaSerializer
    */
-  private val serializers: Map[String, Serializer] = {
-    for ((k: String, v: String) ← settings.Serializers)
-      yield k -> serializerOf(v).fold(throw _, identity)
-  }
+  private val serializers: Map[String, Serializer] =
+    for ((k: String, v: String) ← settings.Serializers) yield k -> serializerOf(v).fold(throw _, identity)
 
   /**
    *  bindings is a Seq of tuple representing the mapping from Class to Serializer.

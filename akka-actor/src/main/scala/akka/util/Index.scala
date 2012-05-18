@@ -91,7 +91,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
   /**
    * Applies the supplied function to all keys and their values
    */
-  def foreach(fun: (K, V) ⇒ Unit) {
+  def foreach(fun: (K, V) ⇒ Unit): Unit = {
     import scala.collection.JavaConversions._
     container.entrySet foreach { e ⇒ e.getValue.foreach(fun(e.getKey, _)) }
   }
@@ -112,7 +112,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
   /**
    * Returns the key set.
    */
-  def keys = scala.collection.JavaConversions.collectionAsScalaIterable(container.keySet)
+  def keys: Iterable[K] = scala.collection.JavaConversions.collectionAsScalaIterable(container.keySet)
 
   /**
    * Disassociates the value of type V from the key of type K
