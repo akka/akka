@@ -15,7 +15,7 @@ import akka.testkit.TestEvent.Mute
 import scala.concurrent.stm._
 import scala.util.Random.{ nextInt ⇒ random }
 import java.util.concurrent.CountDownLatch
-import akka.pattern.ask
+import akka.pattern.{ AskTimeoutException, ask }
 
 object FickleFriends {
   case class FriendlyIncrement(friends: Seq[ActorRef], timeout: Timeout, latch: CountDownLatch)
@@ -120,7 +120,7 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
       val ignoreExceptions = Seq(
         EventFilter[ExpectedFailureException](),
         EventFilter[CoordinatedTransactionException](),
-        EventFilter[ActorTimeoutException]())
+        EventFilter[AskTimeoutException]())
       system.eventStream.publish(Mute(ignoreExceptions))
       val (counters, coordinator) = actorOfs
       val latch = new CountDownLatch(1)

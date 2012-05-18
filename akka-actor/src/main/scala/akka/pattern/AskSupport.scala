@@ -46,7 +46,7 @@ trait AskSupport {
    * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
    * holding the eventual reply message; this means that the target actor
    * needs to send the result to the `sender` reference provided. The Future
-   * will be completed with an [[akka.actor.AskTimeoutException]] after the
+   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
    * `Await.result(..., timeout)`).
@@ -96,7 +96,7 @@ trait AskSupport {
      * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
      * holding the eventual reply message; this means that the target actor
      * needs to send the result to the `sender` reference provided. The Future
-     * will be completed with an [[akka.actor.AskTimeoutException]] after the
+     * will be completed with an [[akka.pattern.AskTimeoutException]] after the
      * given timeout has expired; this is independent from any timeout applied
      * while awaiting a result for this future (i.e. in
      * `Await.result(..., timeout)`).
@@ -126,7 +126,7 @@ trait AskSupport {
      * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
      * holding the eventual reply message; this means that the target actor
      * needs to send the result to the `sender` reference provided. The Future
-     * will be completed with an [[akka.actor.AskTimeoutException]] after the
+     * will be completed with an [[akka.pattern.AskTimeoutException]] after the
      * given timeout has expired; this is independent from any timeout applied
      * while awaiting a result for this future (i.e. in
      * `Await.result(..., timeout)`).

@@ -18,7 +18,7 @@ trait GracefulStopSupport {
    * which should only be done outside of the ActorSystem as blocking inside Actors is discouraged.
    *
    * If the target actor isn't terminated within the timeout the [[akka.dispatch.Future]]
-   * is completed with failure [[akka.actor.ActorTimeoutException]].
+   * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
     if (target.isTerminated) {

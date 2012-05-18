@@ -36,7 +36,7 @@ import static akka.pattern.Patterns.gracefulStop;
 import akka.dispatch.Future;
 import akka.dispatch.Await;
 import akka.util.Duration;
-import akka.actor.ActorTimeoutException;
+import akka.pattern.AskTimeoutException;
 //#import-gracefulStop
 
 //#import-askPipe
@@ -207,7 +207,7 @@ public class UntypedActorDocTestBase {
       Future<Boolean> stopped = gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), system);
       Await.result(stopped, Duration.create(6, TimeUnit.SECONDS));
       // the actor has been stopped
-    } catch (ActorTimeoutException e) {
+    } catch (AskTimeoutException e) {
       // the actor wasn't stopped within 5 seconds
     }
     //#gracefulStop
