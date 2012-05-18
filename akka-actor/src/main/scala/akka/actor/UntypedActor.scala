@@ -5,6 +5,7 @@
 package akka.actor
 
 import akka.japi.{ Creator }
+import akka.japi
 
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
@@ -98,6 +99,19 @@ abstract class UntypedActor extends Actor {
   @throws(classOf[Exception])
   def onReceive(message: Any): Unit
 
+  /**
+   * By default, `onReceivePartial` forwards to `onReceive`; if you need to
+   * avoid handling some messages (for example to allow a `postReceive` handler
+   * to run) then you could override `onReceivePartial` rather than `onReceive`.
+   * If you override `onReceivePartial` then `onReceive` will not be called
+   * unless you call it yourself.
+   */
+  @throws(classOf[Exception])
+  def onReceivePartial: japi.PartialProcedure[Any] = new japi.PartialProcedure[Any]() {
+    override def apply(x: Any) = onReceive(x)
+    override def isDefinedAt(x: Any) = true
+  }
+
   def getContext(): UntypedActorContext = context.asInstanceOf[UntypedActorContext]
 
   /**
@@ -150,9 +164,42 @@ abstract class UntypedActor extends Actor {
    */
   override def postRestart(reason: Throwable): Unit = super.postRestart(reason)
 
-  final protected def receive = {
-    case msg ⇒ onReceive(msg)
+  final protected def receive = onReceivePartial.asScala
+
+  // this isn't final so mixins can work, but
+  // overriding it in Java is not expected.
+  override protected def preReceive = {
+    val chain = Seq(super.preReceive, onPreReceive.asScala.map(_.asScala)).flatMap(_.toSeq)
+    chain.reduceLeftOption(_ orElse _)
   }
+
+  /**
+   * User overridable callback: by default it returns None.
+   * <p/>
+   * If you provide a handler, it will filter messages before the
+   * regular `onReceive` handler.
+   */
+  protected def onPreReceive: japi.Option[japi.PartialProcedure[Any]] = japi.Option.none
+
+  // this isn't final so mixins can work, but
+  // overriding it in Java is not expected.
+  override protected def postReceive = {
+    val chain = Seq(super.postReceive, onPostReceive.asScala.map(_.asScala)).flatMap(_.toSeq)
+    chain.reduceLeftOption(_ orElse _)
+  }
+
+  /**
+   * User overridable callback: by default it returns None.
+   * <p/>
+   * If you provide a handler, it will handle messages not matched by
+   * the regular `onReceivePartial` handler. Note that by default,
+   * `onReceivePartial` matches ALL messages by forwarding them to
+   * `onReceive`. Therefore, by default no `onPostReceive` handler
+   * will ever be used; only actors which override `onReceivePartial`
+   * to leave some messages unhandled can benefit from an
+   * `onPostReceive`.
+   */
+  protected def onPostReceive: japi.Option[japi.PartialProcedure[Any]] = japi.Option.none
 }
 
 /**

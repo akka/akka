@@ -35,6 +35,22 @@ trait Procedure2[T1, T2] {
 }
 
 /**
+ * A PartialProcedure abstract class. Used to create partial functions
+ * that return void in Java.
+ */
+abstract class PartialProcedure[T] {
+  def apply(param: T): Unit
+  def isDefinedAt(param: T): Boolean
+
+  private class DelegatingPartialFunction[T](val delegate: PartialProcedure[T]) extends scala.PartialFunction[T, Unit] {
+    override def apply(param: T) = delegate.apply(param)
+    override def isDefinedAt(param: T) = delegate.isDefinedAt(param)
+  }
+
+  def asScala: scala.PartialFunction[T, Unit] = new DelegatingPartialFunction(this)
+}
+
+/**
  * An executable piece of code that takes no parameters and doesn't return any value.
  */
 trait SideEffect {
