@@ -27,7 +27,6 @@ trait GracefulStopSupport {
       case e: ExtendedActorSystem ⇒
         val ref = PromiseActorRef(e.provider, Timeout(timeout))
         e.deathWatch.subscribe(ref, target)
-        ref.result onComplete { case x ⇒ println(x) }
         ref.result onComplete {
           case Right(Terminated(`target`)) ⇒ () // Ignore
           case _                           ⇒ e.deathWatch.unsubscribe(ref, target)
