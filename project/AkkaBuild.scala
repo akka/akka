@@ -443,9 +443,9 @@ object Dependency {
 object OSGi {
 
   val actor = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka*", "com.typesafe.config.*", "com.eaio.*", "org.jboss.netty.akka.util"),
+    OsgiKeys.exportPackage := Seq("akka*", "com.typesafe.config.*"),
     OsgiKeys.importPackage := Seq("!sun.misc", scalaImport()),
-    OsgiKeys.privatePackage := Seq("org.jboss.netty.akka.util.internal")
+    OsgiKeys.privatePackage := Seq("org.jboss.netty.akka.util.*", "com.eaio.*")
   )
 
   val agent = osgiSettings ++ Seq(
@@ -486,6 +486,6 @@ object OSGi {
   )
 
   def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.1,2.10)\"".format(packageName)
-  def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,3)\"".format(packageName)
+  def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
 
 }
