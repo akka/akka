@@ -14,9 +14,8 @@ import java.net.InetSocketAddress
 import java.net.InetAddress
 import akka.remote.testkit.MultiNodeSpec
 
-object TestConductorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
-  override def NrOfNodes = 2
-  override def commonConfig = ConfigFactory.parseString("""
+object TestConductorMultiJvmSpec {
+  def commonConfig = ConfigFactory.parseString("""
     akka.loglevel = DEBUG
     akka.remote {
       log-received-messages = on
@@ -29,15 +28,8 @@ object TestConductorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
   """)
 }
 
-object H {
-  def apply(x: Int) = {
-    System.setProperty("multinode.hosts", "localhost,localhost")
-    System.setProperty("multinode.index", x.toString)
-  }
-}
-
-class TestConductorMultiJvmNode1 extends { val dummy = H(0) } with TestConductorSpec
-class TestConductorMultiJvmNode2 extends { val dummy = H(1) } with TestConductorSpec
+class TestConductorMultiJvmNode1 extends TestConductorSpec
+class TestConductorMultiJvmNode2 extends TestConductorSpec
 
 class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec.commonConfig) with ImplicitSender {
 
