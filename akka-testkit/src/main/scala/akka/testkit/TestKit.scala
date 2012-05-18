@@ -12,6 +12,7 @@ import atomic.AtomicInteger
 import scala.annotation.tailrec
 import akka.actor.ActorSystem
 import akka.util.Timeout
+import akka.util.BoxedType
 
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
@@ -347,7 +348,7 @@ class TestKit(_system: ActorSystem) {
   private def expectMsgClass_internal[C](max: Duration, c: Class[C]): C = {
     val o = receiveOne(max)
     assert(o ne null, "timeout (" + max + ") during expectMsgClass waiting for " + c)
-    assert(c isInstance o, "expected " + c + ", found " + o.getClass)
+    assert(BoxedType(c) isInstance o, "expected " + c + ", found " + o.getClass)
     o.asInstanceOf[C]
   }
 
@@ -389,7 +390,7 @@ class TestKit(_system: ActorSystem) {
   private def expectMsgAnyClassOf_internal[C](max: Duration, obj: Class[_ <: C]*): C = {
     val o = receiveOne(max)
     assert(o ne null, "timeout (" + max + ") during expectMsgAnyClassOf waiting for " + obj.mkString("(", ", ", ")"))
-    assert(obj exists (_ isInstance o), "found unexpected " + o)
+    assert(obj exists (c ⇒ BoxedType(c) isInstance o), "found unexpected " + o)
     o.asInstanceOf[C]
   }
 
@@ -437,8 +438,8 @@ class TestKit(_system: ActorSystem) {
 
   private def expectMsgAllClassOf_internal[T](max: Duration, obj: Class[_ <: T]*): Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
-    obj foreach (x ⇒ assert(recv exists (_.getClass eq x), "not found " + x))
-    recv foreach (x ⇒ assert(obj exists (_ eq x.getClass), "found non-matching object " + x))
+    obj foreach (x ⇒ assert(recv exists (_.getClass eq BoxedType(x)), "not found " + x))
+    recv foreach (x ⇒ assert(obj exists (c ⇒ BoxedType(c) eq x.getClass), "found non-matching object " + x))
     recv.asInstanceOf[Seq[T]]
   }
 
@@ -462,8 +463,8 @@ class TestKit(_system: ActorSystem) {
 
   private def expectMsgAllConformingOf_internal[T](max: Duration, obj: Class[_ <: T]*): Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
-    obj foreach (x ⇒ assert(recv exists (x isInstance _), "not found " + x))
-    recv foreach (x ⇒ assert(obj exists (_ isInstance x), "found non-matching object " + x))
+    obj foreach (x ⇒ assert(recv exists (BoxedType(x) isInstance _), "not found " + x))
+    recv foreach (x ⇒ assert(obj exists (c ⇒ BoxedType(c) isInstance x), "found non-matching object " + x))
     recv.asInstanceOf[Seq[T]]
   }
 

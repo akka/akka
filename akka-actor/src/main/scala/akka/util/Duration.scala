@@ -46,7 +46,11 @@ object Duration {
     }
   }
 
-  def fromNanos(nanos: Double): FiniteDuration = fromNanos((nanos + 0.5).asInstanceOf[Long])
+  def fromNanos(nanos: Double): FiniteDuration = {
+    if (nanos > Long.MaxValue || nanos < Long.MinValue)
+      throw new IllegalArgumentException("trying to construct too large duration with " + nanos + "ns")
+    fromNanos((nanos + 0.5).asInstanceOf[Long])
+  }
 
   /**
    * Construct a Duration by parsing a String. In case of a format error, a
@@ -65,7 +69,7 @@ object Duration {
     }
   }
 
-  private val RE = ("""^\s*(\d+(?:\.\d+)?)\s*""" + // length part
+  private val RE = ("""^\s*(-?\d+(?:\.\d+)?)\s*""" + // length part
     "(?:" + // units are distinguished in separate match groups
     "(d|day|days)|" +
     "(h|hour|hours)|" +
@@ -282,6 +286,25 @@ object FiniteDuration {
 class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   import Duration._
 
+  require {
+    unit match {
+      /*
+       * sorted so that the first cases should be most-used ones, because enum
+       * is checked one after the other.
+       */
+      case NANOSECONDS  ⇒ true
+      case MICROSECONDS ⇒ length <= 9223372036854775L && length >= -9223372036854775L
+      case MILLISECONDS ⇒ length <= 9223372036854L && length >= -9223372036854L
+      case SECONDS      ⇒ length <= 9223372036L && length >= -9223372036L
+      case MINUTES      ⇒ length <= 153722867L && length >= -153722867L
+      case HOURS        ⇒ length <= 2562047L && length >= -2562047L
+      case DAYS         ⇒ length <= 106751L && length >= -106751L
+      case _ ⇒
+        val v = unit.convert(length, DAYS)
+        v <= 106751L && v >= -106751L
+    }
+  }
+
   def this(length: Long, unit: String) = this(length, Duration.timeUnit(unit))
 
   def toNanos = unit.toNanos(length)
@@ -319,12 +342,18 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
       if (me > o) 1 else if (me < o) -1 else 0
     } else -other.compare(this)
 
+  private def add(a: Long, b: Long): Long = {
+    val c = a + b
+    // check if the signs of the top bit of both summands differ from the sum
+    if (((a ^ c) & (b ^ c)) < 0) throw new IllegalArgumentException("")
+    else c
+  }
+
   def +(other: Duration) = {
     if (!other.finite_?) {
       other
     } else {
-      val nanos = toNanos + other.asInstanceOf[FiniteDuration].toNanos
-      fromNanos(nanos)
+      fromNanos(add(toNanos, other.toNanos))
     }
   }
 
@@ -332,8 +361,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     if (!other.finite_?) {
       other
     } else {
-      val nanos = toNanos - other.asInstanceOf[FiniteDuration].toNanos
-      fromNanos(nanos)
+      fromNanos(add(toNanos, -other.toNanos))
     }
   }
 
@@ -351,7 +379,10 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
     (other.asInstanceOf[AnyRef] eq this) || other.isInstanceOf[FiniteDuration] &&
       toNanos == other.asInstanceOf[FiniteDuration].toNanos
 
-  override def hashCode = toNanos.asInstanceOf[Int]
+  override def hashCode = {
+    val nanos = toNanos
+    (nanos ^ (nanos >> 32)).asInstanceOf[Int]
+  }
 }
 
 class DurationInt(n: Int) {

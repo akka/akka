@@ -247,6 +247,30 @@ Summary: ``actorOf`` vs. ``actorFor``
   - ``actorFor`` only ever looks up an existing actor, i.e. does not create
     one.
 
+Reusing Actor Paths
+-------------------
+
+When an actor is terminated, its path will point to the dead letter mailbox,
+DeathWatch will publish its final transition and in general it is not expected
+to come back to life again (since the actor life cycle does not allow this).
+While it is possible to create an actor at a later time with an identical
+path—simply due to it being impossible to enforce the opposite without keeping
+the set of all actors ever created available—this is not good practice: remote
+actor references which “died” suddenly start to work again, but without any
+guarantee of ordering between this transition and any other event, hence the
+new inhabitant of the path may receive messages which were destined for the
+previous tenant.
+
+It may be the right thing to do in very specific circumstances, but make sure
+to confine the handling of this precisely to the actor’s supervisor, because
+that is the only actor which can reliably detect proper deregistration of the
+name, before which creation of the new child will fail.
+
+It may also be required during testing, when the test subject depends on being
+instantiated at a specific path. In that case it is best to mock its supervisor
+so that it will forward the Terminated message to the appropriate point in the
+test procedure, enabling the latter to await proper deregistration of the name.
+
 The Interplay with Remote Deployment
 ------------------------------------
 
