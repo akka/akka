@@ -3,7 +3,6 @@
 # ============== Akka Cluster Administration Tool ==============
 #
 # This script is meant to be used from within the Akka distribution.
-# Requires setting $AKKA_HOME to the root of the distribution.
 #
 # Add these options to the sbt or startup script:
 #   java \
@@ -15,9 +14,12 @@
 
 # FIXME support authentication? if so add: -Dcom.sun.management.jmxremote.password.file=<path to file> AND tweak this script to support it (arg need 'user:passwd' instead of '-')
 
-# NOTE: The 'cmdline-jmxclient' JAR is available as part of the Akka distribution.
-#       Provided by Typesafe Maven Repository: http://repo.typesafe.com/typesafe/releases/cmdline-jmxclient.
-JMX_CLIENT="java -jar $AKKA_HOME/lib/akka/cmdline-jmxclient-0.10.3.jar -"
+declare AKKA_HOME="$(cd "$(cd "$(dirname "$0")"; pwd -P)"/..; pwd)"
+
+[ -n "$JMX_CLIENT_CLASSPATH" ] || JMX_CLIENT_CLASSPATH="$AKKA_HOME/lib/akka/akka-kernel-*"
+
+# NOTE: The 'cmdline-jmxclient' is available as part of the Akka distribution.
+JMX_CLIENT="java -cp $JMX_CLIENT_CLASSPATH org.archive.jmx.Client -"
 
 SELF=`basename $0` # script name
 HOST=$1            # cluster node:port to talk to through JMX
@@ -168,7 +170,7 @@ case "$2" in
         ;;
 
     *)
-        printf "Usage: $SELF <node-hostname:jmx-port> <command> ...\n"
+        printf "Usage: bin/$SELF <node-hostname:jmx-port> <command> ...\n"
         printf "\n"
         printf "Supported commands are:\n"
         printf "%26s - %s\n" "join <actor-system-url>"   "Sends request a JOIN node with the specified URL"
@@ -183,9 +185,9 @@ case "$2" in
         printf "%26s - %s\n" has-convergence             "Checks if there is a cluster convergence"
         printf "Where the <actor-system-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
         printf "\n"
-        printf "Examples: $SELF localhost:9999 is-available\n"
-        printf "          $SELF localhost:9999 join akka://MySystem@darkstar:2552\n"
-        printf "          $SELF localhost:9999 cluster-status\n"
+        printf "Examples: bin/$SELF localhost:9999 is-available\n"
+        printf "          bin/$SELF localhost:9999 join akka://MySystem@darkstar:2552\n"
+        printf "          bin/$SELF localhost:9999 cluster-status\n"
         exit 1
         ;;
 esac

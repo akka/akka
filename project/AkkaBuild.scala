@@ -380,7 +380,7 @@ object Dependencies {
 
   val fileMailbox = Seq(Test.commonsIo, Test.scalatest, Test.junit)
 
-  val kernel = Seq(jmxClient, Test.scalatest, Test.junit)
+  val kernel = Seq(Test.scalatest, Test.junit)
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
@@ -408,7 +408,6 @@ object Dependency {
   // Compile
 
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
-  val jmxClient     = "cmdline-jmxclient"           % "cmdline-jmxclient"      % "0.10.3"     // LGPL
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
