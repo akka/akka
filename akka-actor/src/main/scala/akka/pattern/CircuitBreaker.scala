@@ -3,12 +3,12 @@
  */
 package akka.pattern
 
-import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong, AtomicReference, AtomicBoolean }
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong, AtomicBoolean }
 import java.util.concurrent.CopyOnWriteArrayList
 import akka.AkkaException
 import akka.actor.Scheduler
 import akka.dispatch.{ Future, ExecutionContext, Await, Promise }
-import akka.util.{ Deadline, Duration, NonFatal }
+import akka.util.{ Deadline, Duration, NonFatal, Unsafe }
 import akka.util.duration._
 import util.control.NoStackTrace
 
@@ -48,12 +48,33 @@ private object CircuitBreaker {
  * @param callTimeout [[akka.util.Duration]] of time after which to consider a call a failure
  * @param resetTimeout [[akka.util.Duration]] of time after which to attempt to close the circuit
  */
-class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration) {
+class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration) extends AbstractCircuitBreaker {
 
   /**
    * Holds reference to current state of CircuitBreaker
    */
-  private val currentState: AtomicReference[State] = new AtomicReference(Closed)
+  @volatile
+  private[this] var _currentStateDoNotCallMeDirectly: State = Closed
+
+  /**
+   * Helper method for access to underlying state via Unsafe
+   *
+   * @param oldState Previous state on transition
+   * @param newState Next state on transition
+   * @return Whether the previous state matched correctly
+   */
+  @inline
+  private def swapState(oldState: State, newState: State): Boolean =
+    Unsafe.instance.compareAndSwapObject(this, AbstractCircuitBreaker.stateOffset, oldState, newState)
+
+  /**
+   * Helper method for accessing underlying state via Unsafe
+   *
+   * @return Reference to current state
+   */
+  @inline
+  private def currentState: State =
+    Unsafe.instance.getObjectVolatile(this, AbstractCircuitBreaker.stateOffset).asInstanceOf[State]
 
   /**
    * Wraps invocations of asynchronous calls that need to be protected
@@ -64,7 +85,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
    * @return [[akka.dispatch.Future]] containing the call result
    */
   def withCircuitBreaker[T](body: ⇒ Future[T])(implicit executor: ExecutionContext): Future[T] = {
-    currentState.get.invoke(body)
+    currentState.invoke(body)
   }
 
   /**
@@ -158,7 +179,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
    * @throws IllegalStateException if an invalid transition is attempted
    */
   private def transition(fromState: State, toState: State)(implicit executor: ExecutionContext): Unit = {
-    if (currentState.compareAndSet(fromState, toState))
+    if (swapState(fromState, toState))
       toState.enter()
     else
       throw new IllegalStateException("Illegal transition attempted from: " + fromState + " to " + toState)
@@ -342,6 +363,15 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
     def _enter()(implicit executor: ExecutionContext): Unit = {
       set(0)
     }
+
+    /**
+     * Override for more descriptive toString
+     *
+     * @return
+     */
+    override def toString(): String = {
+      "Closed with failure count = " + get()
+    }
   }
 
   /**
@@ -390,6 +420,14 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
       set(true)
     }
 
+    /**
+     * Override for more descriptive toString
+     *
+     * @return
+     */
+    override def toString(): String = {
+      "Half-Open currently testing call for success = " + get()
+    }
   }
 
   /**
@@ -454,6 +492,14 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
       }
     }
 
+    /**
+     * Override for more descriptive toString
+     *
+     * @return
+     */
+    override def toString(): String = {
+      "Open"
+    }
   }
 
 }
@@ -465,7 +511,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
  *                          currently in half-open state.
  * @param message Defaults to "Circuit Breaker is open; calls are failing fast"
  */
-class CircuitBreakerOpenException (
+class CircuitBreakerOpenException(
   val remainingDuration: Duration,
   message: String = "Circuit Breaker is open; calls are failing fast")
   extends AkkaException(message) with NoStackTrace
