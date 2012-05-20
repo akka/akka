@@ -46,7 +46,7 @@ class Dispatcher(
   /**
    * INTERNAL USE ONLY
    */
-  protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope) = {
+  protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope): Unit = {
     val mbox = receiver.mailbox
     mbox.enqueue(receiver.self, invocation)
     registerForExecution(mbox, true, false)
@@ -55,7 +55,7 @@ class Dispatcher(
   /**
    * INTERNAL USE ONLY
    */
-  protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage) = {
+  protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage): Unit = {
     val mbox = receiver.mailbox
     mbox.systemEnqueue(receiver.self, invocation)
     registerForExecution(mbox, false, true)
@@ -124,7 +124,7 @@ class Dispatcher(
     } else false
   }
 
-  override val toString = Logging.simpleName(this) + "[" + id + "]"
+  override val toString: String = Logging.simpleName(this) + "[" + id + "]"
 }
 
 object PriorityGenerator {
