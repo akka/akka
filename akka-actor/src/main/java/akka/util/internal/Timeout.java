@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package org.jboss.netty.akka.util;
+package akka.util.internal;
 
 /**
  * A handle associated with a {@link TimerTask} that is returned by a
