@@ -5,14 +5,14 @@
 package akka.actor.mailbox
 
 import akka.actor.ActorContext
-import akka.dispatch.{ Envelope, MessageQueue }
 import akka.event.Logging
 import akka.actor.ActorRef
-import akka.dispatch.MailboxType
 import com.typesafe.config.Config
-import akka.util.NonFatal
 import akka.config.ConfigurationException
 import akka.actor.ActorSystem
+import akka.pattern.CircuitBreaker
+import akka.dispatch._
+import akka.util.{ Duration, NonFatal }
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)
@@ -23,6 +23,9 @@ class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config)
 }
 
 class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+
+  implicit val cbExecutionContext: ExecutionContext = _owner.dispatcher
+  val breaker = new CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
 
   val log = Logging(system, "FileBasedMessageQueue")
 
@@ -45,24 +48,27 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
   }
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    queue.add(serialize(envelope))
+    breaker.withSyncCircuitBreaker(queue.add(serialize(envelope)))
   }
 
-  def dequeue(): Envelope = try {
-    val item = queue.remove
-    if (item.isDefined) {
-      queue.confirmRemove(item.get.xid)
-      deserialize(item.get.data)
-    } else null
-  } catch {
-    case e: java.util.NoSuchElementException ⇒ null
-    case e: Exception ⇒
-      log.error(e, "Couldn't dequeue from file-based mailbox")
-      throw e
+  def dequeue(): Envelope = {
+    breaker.withSyncCircuitBreaker(
+      try {
+        val item = queue.remove
+        if (item.isDefined) {
+          queue.confirmRemove(item.get.xid)
+          deserialize(item.get.data)
+        } else null
+      } catch {
+        case e: java.util.NoSuchElementException ⇒ null
+        case e: Exception ⇒
+          log.error(e, "Couldn't dequeue from file-based mailbox")
+          throw e
+      })
   }
 
   def numberOfMessages: Int = {
-    queue.length.toInt
+    breaker.withSyncCircuitBreaker(queue.length.toInt)
   }
 
   def hasMessages: Boolean = numberOfMessages > 0
