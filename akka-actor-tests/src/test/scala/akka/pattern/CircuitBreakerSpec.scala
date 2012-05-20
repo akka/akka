@@ -2,9 +2,8 @@
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.circuitbreaker
+package akka.pattern
 
-import akka.testkit.AkkaSpec
 import akka.util.duration._
 import akka.testkit._
 import org.scalatest.BeforeAndAfter
@@ -12,11 +11,14 @@ import akka.dispatch.Future
 import akka.dispatch.Await
 
 object CircuitBreakerSpec {
+
   class TestException extends RuntimeException
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
+
   import CircuitBreakerSpec.TestException
 
   val awaitTimeout = 2.seconds.dilated
@@ -64,6 +66,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
   }
 
   def throwException() = throw new TestException
+
   def sayHi = "hi"
 
   "A synchronous circuit breaker that is open" must {
@@ -133,7 +136,9 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
     }
 
     "increment failure count on callTimeout" in {
-      breakers.shortCallTimeoutCb.withSyncCircuitBreaker({ 100.millis.dilated.sleep() })
+      breakers.shortCallTimeoutCb.withSyncCircuitBreaker({
+        100.millis.dilated.sleep()
+      })
       breakers.shortCallTimeoutCb.currentFailureCount must be(1)
     }
   }
