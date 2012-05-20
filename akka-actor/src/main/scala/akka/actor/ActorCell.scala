@@ -78,7 +78,8 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack.
+   * The new behavior will be transformed by the actor's `Actor.whenBecoming` method.
    */
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
 

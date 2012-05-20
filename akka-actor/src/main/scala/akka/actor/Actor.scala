@@ -241,27 +241,31 @@ trait Actor {
 
   /**
    * This method allows traits and subclasses to mix in actor behavior.
-   * Whenever an actor pushes a new behavior, it will be mapped
-   * using `mapBehavior`. (The default behavior is
-   * from the `receive` method but it can be replaced using the
-   * `become` method.)
+   * Whenever an actor pushes a new behavior, it will be sent
+   * through `whenBecoming`. The initial behavior of the actor on creation,
+   * as defined by the `receive` method, goes through `whenBecoming`; any
+   * new behavior set by the `ActorContext.become` method also does.
    * <p/>
    * To allow multiple mixin traits, implementations of this
-   * method should chain up to `super.mapBehavior` in order
+   * method should chain up to `super.whenBecoming` in order
    * to apply the customizations from supertypes.
    * <p/>
-   * The simplest usage is to run some handler before the
+   * A simple example use-case is to run some handler before the
    * actor's normal behavior:
    * {{{
-   *   override def mapBehavior(behavior: Receive) = {
+   *   override def whenBecoming(behavior: Receive) = {
    *     val handler: Receive = {
+   *       // our mixin trait adds support for the "MyMessage" message
    *       case "MyMessage" ⇒
    *     }
-   *     super.mapBehavior(handler orElse behavior)
+   *     super.whenBecoming(handler orElse behavior)
    *   }
    * }}}
+   * <p/>
+   * The default implementation of `whenBecoming` leaves the
+   * passed-in behavior unmodified.
    */
-  protected def mapBehavior(behavior: Receive): Receive = behavior
+  protected def whenBecoming(behavior: Receive): Receive = behavior
 
   /**
    * This defines the initial actor behavior, it must return a partial function
@@ -345,7 +349,7 @@ trait Actor {
    * For Akka internal use only.
    */
   private[akka] def pushBehavior(behavior: Receive): Unit = {
-    behaviorStack = behaviorStack.push(mapBehavior(behavior))
+    behaviorStack = behaviorStack.push(whenBecoming(behavior))
   }
 
   /**
@@ -363,6 +367,6 @@ trait Actor {
   private[akka] def clearBehaviorStack(): Unit =
     behaviorStack = Stack.empty[Receive].push(behaviorStack.last)
 
-  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(mapBehavior(receive))
+  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(whenBecoming(receive))
 }
 

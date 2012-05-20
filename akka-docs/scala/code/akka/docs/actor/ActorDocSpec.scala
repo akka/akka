@@ -114,7 +114,7 @@ object SwapperApp extends App {
 }
 //#swapper
 
-//#receive-mapBehavior
+//#receive-whenBecoming
 
 // trait providing a generic fallback message handler
 trait GenericActor extends Actor {
@@ -123,10 +123,10 @@ trait GenericActor extends Actor {
     case event ⇒ printf("generic: %s\n", event)
   }
 
-  // because we chain up to super.mapBehavior,
+  // because we chain up to super.whenBecoming,
   // multiple traits like this can be mixed in.
-  override def mapBehavior(behavior: Receive): Receive =
-    super.mapBehavior(behavior orElse genericMessageHandler)
+  override def whenBecoming(behavior: Receive): Receive =
+    super.whenBecoming(behavior orElse genericMessageHandler)
 }
 
 class SpecificActor extends GenericActor {
@@ -136,7 +136,7 @@ class SpecificActor extends GenericActor {
 }
 
 case class MyMsg(subject: String)
-//#receive-mapBehavior
+//#receive-whenBecoming
 
 //#receive-orElse
 trait ComposableActor extends Actor {
@@ -150,7 +150,7 @@ trait ComposableActor extends Actor {
     composedReceives = receives reduce { _ orElse _ }
   }
 
-  // this indirection is because preReceive is only called
+  // this indirection is because whenBecoming is only called
   // once, but we want to allow registration post-construct,
   // so we need a constant Receive that forwards to our
   // dynamic Receive
@@ -159,8 +159,8 @@ trait ComposableActor extends Actor {
     override def isDefinedAt(x: Any) = composedReceives.isDefinedAt(x)
   }
 
-  override def mapBehavior(behavior: Receive) =
-    super.mapBehavior(behavior orElse handleRegisteredReceives)
+  override def whenBecoming(behavior: Receive) =
+    super.whenBecoming(behavior orElse handleRegisteredReceives)
 }
 
 class MyComposableActor extends ComposableActor {

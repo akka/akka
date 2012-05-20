@@ -668,22 +668,21 @@ state of the failing actor instance is lost if you don't store and restore it in
 ``preRestart`` and ``postRestart`` callbacks.
 
 
-Extending Actors using mapBehavior and PartialFunction chaining
+Extending Actors using whenBecoming and PartialFunction chaining
 ===============================================================
 
 You can create "mixin" traits or abstract classes using the
-``mapBehavior`` method on ``Actor``. This method modifies the
+``whenBecoming`` method on ``Actor``. This method modifies the
 standard actor behavior as defined by ``receive`` or ``become``.
 To allow multiple traits to be mixed in to one actor, when you
-override ``mapBehavior`` you should always chain
-up and allow supertypes to run their ``mapBehavior`` as well.
+override ``whenBecoming`` you should always chain up and allow
+supertypes to run their ``whenBecoming`` as well.
 
-.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-mapBehavior
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-whenBecoming
 
-Multiple traits that implement ``mapBehavior``
-in this way can be mixed in to the same concrete class. The
-concrete class need not do anything special, it implements
-``receive`` as usual.
+Multiple traits that implement ``whenBecoming`` in this way can be
+mixed in to the same concrete class. The concrete class need not
+do anything special, it implements ``receive`` as usual.
 
 ``PartialFunction.orElse`` chaining can also be used for more
 complex scenarios, like dynamic runtime registration of handlers:

@@ -168,11 +168,11 @@ abstract class UntypedActor extends Actor {
 
   // this isn't final so mixins can work, but
   // overriding it in Java is not expected.
-  override protected def mapBehavior(behavior: Receive): Receive = {
+  override protected def whenBecoming(behavior: Receive): Receive = {
     val chain = Seq(onPreReceive.asScala.map(_.asScala),
       Some(behavior),
       onPostReceive.asScala.map(_.asScala)).flatMap(_.toSeq)
-    super.mapBehavior(chain.reduce(_ orElse _))
+    super.whenBecoming(chain.reduce(_ orElse _))
   }
 
   /**

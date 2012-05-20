@@ -405,45 +405,45 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
   "support mixin message handlers and execute in proper order" in {
     // "pre" mixin that runs other handlers second
     trait HandlesA1 extends Actor {
-      override def mapBehavior(behavior: Receive) = {
+      override def whenBecoming(behavior: Receive) = {
         val handler: Receive = {
           case "A1" ⇒ sender ! "HandlesA1"
         }
-        super.mapBehavior(handler orElse behavior)
+        super.whenBecoming(handler orElse behavior)
       }
     }
 
     // another "pre" mixin
     trait HandlesA2 extends Actor {
-      override def mapBehavior(behavior: Receive) = {
+      override def whenBecoming(behavior: Receive) = {
         val handler: Receive = {
           case "A2" ⇒ sender ! "HandlesA2"
           case "A1" ⇒ sender ! "HandlesA2" // not reached, HandlesA1 filters
         }
-        super.mapBehavior(handler orElse behavior)
+        super.whenBecoming(handler orElse behavior)
       }
     }
 
     // "post" mixin that runs other handlers first
     trait HandlesB1 extends Actor {
-      override def mapBehavior(behavior: Receive) = {
+      override def whenBecoming(behavior: Receive) = {
         val handler: Receive = {
           case "B1" ⇒ sender ! "HandlesB1"
           case "C"  ⇒ sender ! "HandlesB1" // not reached, HandlesC filters
         }
-        super.mapBehavior(behavior orElse handler)
+        super.whenBecoming(behavior orElse handler)
       }
     }
 
     // another "post" mixin
     trait HandlesB2 extends Actor {
-      override def mapBehavior(behavior: Receive) = {
+      override def whenBecoming(behavior: Receive) = {
         val handler: Receive = {
           case "B2" ⇒ sender ! "HandlesB2"
           case "B1" ⇒ sender ! "HandlesB2" // not reached, HandlesB1 filters
           case "C"  ⇒ sender ! "HandlesB2" // not reached, HandlesC filters
         }
-        super.mapBehavior(behavior orElse handler)
+        super.whenBecoming(behavior orElse handler)
       }
     }
 
