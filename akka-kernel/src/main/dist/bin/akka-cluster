@@ -19,7 +19,7 @@ declare AKKA_HOME="$(cd "$(cd "$(dirname "$0")"; pwd -P)"/..; pwd)"
 [ -n "$JMX_CLIENT_CLASSPATH" ] || JMX_CLIENT_CLASSPATH="$AKKA_HOME/lib/akka/akka-kernel-*"
 
 # NOTE: The 'cmdline-jmxclient' is available as part of the Akka distribution.
-JMX_CLIENT="java -cp $JMX_CLIENT_CLASSPATH org.archive.jmx.Client -"
+JMX_CLIENT="java -cp $JMX_CLIENT_CLASSPATH akka.jmx.Client -"
 
 SELF=`basename $0` # script name
 HOST=$1            # cluster node:port to talk to through JMX
