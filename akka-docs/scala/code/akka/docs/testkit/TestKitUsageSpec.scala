@@ -36,8 +36,8 @@ class TestKitUsageSpec
   val filterRef = system.actorOf(Props(new FilteringActor(testActor)))
   val randomHead = Random.nextInt(6)
   val randomTail = Random.nextInt(10)
-  val headList = List().padTo(randomHead, "0")
-  val tailList = List().padTo(randomTail, "1")
+  val headList = Seq().padTo(randomHead, "0")
+  val tailList = Seq().padTo(randomTail, "1")
   val seqRef = system.actorOf(Props(new SequencingActor(testActor, headList, tailList)))
 
   override def afterAll {
@@ -62,7 +62,7 @@ class TestKitUsageSpec
   }
   "A FilteringActor" should {
     "Filter all messages, except expected messagetypes it receives" in {
-      var messages = List[String]()
+      var messages = Seq[String]()
       within(500 millis) {
         filterRef ! "test"
         expectMsg("test")
@@ -75,11 +75,11 @@ class TestKitUsageSpec
         filterRef ! 1
 
         receiveWhile(500 millis) {
-          case msg: String ⇒ messages = msg :: messages
+          case msg: String ⇒ messages = msg +: messages
         }
       }
       messages.length should be(3)
-      messages.reverse should be(List("some", "more", "text"))
+      messages.reverse should be(Seq("some", "more", "text"))
     }
   }
   "A SequencingActor" should {
@@ -142,13 +142,13 @@ object TestKitUsageSpec {
    * like to test that the interesting value is received and that you cant
    * be bothered with the rest
    */
-  class SequencingActor(next: ActorRef, head: List[String], tail: List[String])
+  class SequencingActor(next: ActorRef, head: Seq[String], tail: Seq[String])
     extends Actor {
     def receive = {
       case msg ⇒ {
-        head map (next ! _)
+        head foreach { next ! _ }
         next ! msg
-        tail map (next ! _)
+        tail foreach { next ! _ }
       }
     }
   }
