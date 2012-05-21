@@ -7,16 +7,15 @@ package akka.actor
 import akka.event._
 import akka.dispatch._
 import akka.pattern.ask
-import org.jboss.netty.akka.util.HashedWheelTimer
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
-import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap
 import java.io.Closeable
 import akka.dispatch.Await.{ Awaitable, CanAwait }
 import akka.util._
+import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
 import collection.immutable.Stack
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 object ActorSystem {
 

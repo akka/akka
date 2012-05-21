@@ -5,12 +5,13 @@
 package akka.actor
 
 import akka.util.Duration
-import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout, Timer }
+import akka.util.internal.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout, Timer }
 import akka.event.LoggingAdapter
 import akka.dispatch.MessageDispatcher
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
+import akka.util.internal._
 
 //#scheduler
 /**

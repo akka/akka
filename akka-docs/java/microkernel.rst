@@ -4,6 +4,10 @@
 Microkernel (Java)
 ==================
 
+The purpose of the Akka Microkernel is to offer a bundling mechanism so that you can distribute
+an Akka application as a single payload, without the need to run in a Java Application Server or manually
+having to create a launcher script.
+
 The Akka Microkernel is included in the Akka download found at `downloads`_.
 
 .. _downloads: http://akka.io/downloads

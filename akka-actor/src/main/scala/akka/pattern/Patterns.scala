@@ -18,7 +18,7 @@ object Patterns {
    * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
    * holding the eventual reply message; this means that the target actor
    * needs to send the result to the `sender` reference provided. The Future
-   * will be completed with an [[akka.actor.AskTimeoutException]] after the
+   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
    * `Await.result(..., timeout)`).
@@ -49,7 +49,7 @@ object Patterns {
    * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
    * holding the eventual reply message; this means that the target actor
    * needs to send the result to the `sender` reference provided. The Future
-   * will be completed with an [[akka.actor.AskTimeoutException]] after the
+   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
    * `Await.result(..., timeout)`).
@@ -100,7 +100,7 @@ object Patterns {
    * Useful when you need to wait for termination or compose ordered termination of several actors.
    *
    * If the target actor isn't terminated within the timeout the [[akka.dispatch.Future]]
-   * is completed with failure [[akka.actor.ActorTimeoutException]].
+   * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: Duration, system: ActorSystem): Future[java.lang.Boolean] =
     scalaGracefulStop(target, timeout)(system).asInstanceOf[Future[java.lang.Boolean]]

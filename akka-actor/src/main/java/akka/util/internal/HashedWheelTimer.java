@@ -13,12 +13,10 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package org.jboss.netty.akka.util;
+package akka.util.internal;
 
 import akka.event.LoggingAdapter;
 import akka.util.Duration;
-import org.jboss.netty.akka.util.internal.ConcurrentIdentityHashMap;
-import org.jboss.netty.akka.util.internal.ReusableIterator;
 
 import java.util.*;
 import java.util.concurrent.ThreadFactory;
@@ -34,7 +32,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * <h3>Tick Duration</h3>
  *
  * As described with 'approximated', this timer does not execute the scheduled
- * {@link TimerTask} on time.  {@link org.jboss.netty.akka.util.HashedWheelTimer}, on every tick, will
+ * {@link TimerTask} on time.  {@link HashedWheelTimer}, on every tick, will
  * check if there are any {@link TimerTask}s behind the schedule and execute
  * them.
  * <p>
@@ -46,7 +44,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * <h3>Ticks per Wheel (Wheel Size)</h3>
  *
- * {@link org.jboss.netty.akka.util.HashedWheelTimer} maintains a data structure called 'wheel'.
+ * {@link HashedWheelTimer} maintains a data structure called 'wheel'.
  * To put simply, a wheel is a hash table of {@link TimerTask}s whose hash
  * function is 'dead line of the task'.  The default number of ticks per wheel
  * (i.e. the size of the wheel) is 512.  You could specify a larger value
@@ -54,7 +52,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * <h3>Do not create many instances.</h3>
  *
- * {@link org.jboss.netty.akka.util.HashedWheelTimer} creates a new thread whenever it is instantiated and
+ * {@link HashedWheelTimer} creates a new thread whenever it is instantiated and
  * started.  Therefore, you should make sure to create only one instance and
  * share it across your application.  One of the common mistakes, that makes
  * your application unresponsive, is to create a new instance in
@@ -63,7 +61,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * <h3>Implementation Details</h3>
  *
- * {@link org.jboss.netty.akka.util.HashedWheelTimer} is based on
+ * {@link HashedWheelTimer} is based on
  * <a href="http://cseweb.ucsd.edu/users/varghese/">George Varghese</a> and
  * Tony Lauck's paper,
  * <a href="http://cseweb.ucsd.edu/users/varghese/PAPERS/twheel.ps.Z">'Hashed

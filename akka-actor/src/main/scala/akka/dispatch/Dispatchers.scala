@@ -97,6 +97,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     }
   }
 
+  //INTERNAL API
   private def config(id: String): Config = {
     import scala.collection.JavaConverters._
     def simpleName = id.substring(id.lastIndexOf('.') + 1)
@@ -106,6 +107,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       .withFallback(defaultDispatcherConfig)
   }
 
+  //INTERNAL API
   private def idConfig(id: String): Config = {
     import scala.collection.JavaConverters._
     ConfigFactory.parseMap(Map("id" -> id).asJava)
@@ -123,9 +125,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    *
    * INTERNAL USE ONLY
    */
-  private[akka] def from(cfg: Config): MessageDispatcher = {
-    configuratorFrom(cfg).dispatcher()
-  }
+  private[akka] def from(cfg: Config): MessageDispatcher = configuratorFrom(cfg).dispatcher()
 
   /**
    * Creates a MessageDispatcherConfigurator from a Config.

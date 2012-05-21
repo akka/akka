@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package org.jboss.netty.akka.util;
+package akka.util.internal;
 
 import akka.util.Duration;
 import java.util.Set;
@@ -45,7 +45,7 @@ public interface Timer {
     Timeout newTimeout(TimerTask task, Duration delay);
 
     /**
-     * Releases all resources acquired by this {@link org.jboss.netty.akka.util.Timer} and cancels all
+     * Releases all resources acquired by this {@link Timer} and cancels all
      * tasks which were scheduled but not executed yet.
      *
      * @return the handles associated with the tasks which were canceled by

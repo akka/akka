@@ -129,12 +129,6 @@ case class ActorInitializationException private[akka] (actor: ActorRef, message:
   def this(msg: String) = this(null, msg, null)
 }
 
-//FIXME: Only used by gracefulStop we should remove this if possible
-class ActorTimeoutException private[akka] (message: String, cause: Throwable = null)
-  extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null)
-}
-
 /**
  * InvalidMessageException is thrown when an invalid message is sent to an Actor.
  * Technically it's only "null" which is an InvalidMessageException but who knows,

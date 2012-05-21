@@ -350,7 +350,7 @@ class LocalActorRefProvider(
 
   private val tempNode = rootPath / "temp"
 
-  override def tempPath() = tempNode / tempName()
+  override def tempPath(): ActorPath = tempNode / tempName()
 
   /**
    * Top-level anchor for the supervision hierarchy of this actor system. Will

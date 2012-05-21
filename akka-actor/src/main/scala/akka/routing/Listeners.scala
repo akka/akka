@@ -5,8 +5,7 @@
 package akka.routing
 
 import akka.actor.{ Actor, ActorRef }
-import java.util.concurrent.ConcurrentSkipListSet
-import scala.collection.JavaConversions._
+import java.util.{ Set, TreeSet }
 
 sealed trait ListenerMessage
 case class Listen(listener: ActorRef) extends ListenerMessage
@@ -25,13 +24,29 @@ case class WithListeners(f: (ActorRef) ⇒ Unit) extends ListenerMessage
  * Send <code>WithListeners(fun)</code> to traverse the current listeners.
  */
 trait Listeners { self: Actor ⇒
-  protected val listeners = new ConcurrentSkipListSet[ActorRef]
+  protected val listeners: Set[ActorRef] = new TreeSet[ActorRef]
 
+  /**
+   * Chain this into the receive function.
+   *
+   * {{ def receive = listenerManagement orElse … }}
+   */
   protected def listenerManagement: Actor.Receive = {
-    case Listen(l)        ⇒ listeners add l
-    case Deafen(l)        ⇒ listeners remove l
-    case WithListeners(f) ⇒ listeners foreach f
+    case Listen(l) ⇒ listeners add l
+    case Deafen(l) ⇒ listeners remove l
+    case WithListeners(f) ⇒
+      val i = listeners.iterator
+      while (i.hasNext) f(i.next)
   }
 
-  protected def gossip(msg: Any) = listeners foreach (_ ! msg)
+  /**
+   * Sends the supplied message to all current listeners using the provided sender as sender.
+   *
+   * @param msg
+   * @param sender
+   */
+  protected def gossip(msg: Any)(implicit sender: ActorRef = null): Unit = {
+    val i = listeners.iterator
+    while (i.hasNext) i.next ! msg
+  }
 }

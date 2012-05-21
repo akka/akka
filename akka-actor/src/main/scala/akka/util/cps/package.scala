@@ -7,6 +7,7 @@ package akka.util
 import scala.util.continuations._
 import akka.dispatch.MessageDispatcher
 
+//FIXME Needs docs
 package object cps {
   def matchC[A, B, C, D](in: A)(pf: PartialFunction[A, B @cpsParam[C, D]]): B @cpsParam[C, D] = pf(in)
 

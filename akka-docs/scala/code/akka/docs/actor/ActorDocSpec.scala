@@ -326,14 +326,13 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#gracefulStop
     import akka.pattern.gracefulStop
     import akka.dispatch.Await
-    import akka.actor.ActorTimeoutException
 
     try {
       val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds)(system)
       Await.result(stopped, 6 seconds)
       // the actor has been stopped
     } catch {
-      case e: ActorTimeoutException ⇒ // the actor wasn't stopped within 5 seconds
+      case e: akka.pattern.AskTimeoutException ⇒ // the actor wasn't stopped within 5 seconds
     }
     //#gracefulStop
   }
