@@ -530,7 +530,7 @@ object Logging {
    * Artificial exception injected into Error events if no Throwable is
    * supplied; used for getting a stack dump of error locations.
    */
-  class EventHandlerException extends AkkaException
+  class EventHandlerException extends AkkaException("")
 
   /**
    * Exception that wraps a LogEvent.
