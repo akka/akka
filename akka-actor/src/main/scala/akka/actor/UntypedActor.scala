@@ -5,6 +5,7 @@
 package akka.actor
 
 import akka.japi.{ Creator }
+import akka.japi
 
 /**
  * Actor base trait that should be extended by or mixed to create an Actor with the semantics of the 'Actor Model':
@@ -98,6 +99,19 @@ abstract class UntypedActor extends Actor {
   @throws(classOf[Exception])
   def onReceive(message: Any): Unit
 
+  /**
+   * By default, `onReceivePartial` forwards to `onReceive`; if you need to
+   * avoid handling some messages (for example to allow a `postReceive` handler
+   * to run) then you could override `onReceivePartial` rather than `onReceive`.
+   * If you override `onReceivePartial` then `onReceive` will not be called
+   * unless you call it yourself.
+   */
+  @throws(classOf[Exception])
+  def onReceivePartial: japi.PartialProcedure[Any] = new japi.PartialProcedure[Any]() {
+    override def apply(x: Any) = onReceive(x)
+    override def isDefinedAt(x: Any) = true
+  }
+
   def getContext(): UntypedActorContext = context.asInstanceOf[UntypedActorContext]
 
   /**
@@ -150,9 +164,29 @@ abstract class UntypedActor extends Actor {
    */
   override def postRestart(reason: Throwable): Unit = super.postRestart(reason)
 
-  final protected def receive = {
-    case msg ⇒ onReceive(msg)
+  final protected def receive = onReceivePartial.asScala
+
+  // this isn't final so mixins can work, but
+  // overriding it in Java is not really expected.
+  override protected def whenBecoming(behavior: Receive): Receive = {
+    onWhenBecoming(japi.PartialProcedure.fromScalaPartialFunction(super.whenBecoming(behavior))).asScala
   }
+
+  /**
+   * User overridable callback invoked whenever the actor gets a behavior, whether
+   * its initial behavior or a new dynamic behavior. By default this method just returns
+   * its parameter.
+   * <p/>
+   * onWhenBecoming() can be used to transform the behavior of the actor to
+   * handle more messages, or to modify messages before the original
+   * behavior receives them.
+   * <p/>
+   * When overriding this, be sure to chain
+   * up to `super.onWhenBecoming` to allow superclasses to apply
+   * any modifications that they expected to add.
+   */
+  def onWhenBecoming(behavior: japi.PartialProcedure[Any]): japi.PartialProcedure[Any] =
+    behavior
 }
 
 /**
