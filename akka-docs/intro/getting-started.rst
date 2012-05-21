@@ -67,7 +67,8 @@ The Akka distribution includes the microkernel. To run the microkernel put your
 application jar in the ``deploy`` directory and use the scripts in the ``bin``
 directory.
 
-More information is available in the documentation of the :ref:`microkernel`.
+More information is available in the documentation of the
+:ref:`microkernel-scala` / :ref:`microkernel-java`.
 
 Using a build tool
 ------------------
@@ -136,12 +137,17 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 Using Akka with Eclipse
 -----------------------
 
-Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate Eclipse project.
+Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate a Eclipse project.
 
 Using Akka with IntelliJ IDEA
 -----------------------------
 
-Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate IntelliJ IDEA project.
+Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate a IntelliJ IDEA project.
+
+Using Akka with NetBeans
+------------------------
+
+Setup SBT project and then use `sbt-netbeans-plugin <https://github.com/remeniuk/sbt-netbeans-plugin>`_ to generate a NetBeans project.
 
 Build from sources
 ------------------
