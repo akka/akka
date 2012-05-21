@@ -40,7 +40,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       val slaveProps = Props(new Actor {
 
-        protected def receive = {
+        def receive = {
           case Ping  ⇒ countDownLatch.countDown()
           case Crash ⇒ throw new Exception("Crashing...")
         }
@@ -83,7 +83,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       val slaveProps = Props(new Actor {
 
-        protected def receive = {
+        def receive = {
           case Crash ⇒ throw new Exception("Crashing...")
         }
 
@@ -110,7 +110,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       val slaveProps = Props(new Actor {
 
-        protected def receive = {
+        def receive = {
           case Ping ⇒
             if (!pingLatch.isOpen) pingLatch.open else secondPingLatch.open
           case Crash ⇒ throw new Exception("Crashing...")
@@ -166,7 +166,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       val slaveProps = Props(new Actor {
 
-        protected def receive = {
+        def receive = {
           case Ping  ⇒ countDownLatch.countDown()
           case Crash ⇒ throw new Exception("Crashing...")
         }
@@ -221,7 +221,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       val slaveProps = Props(new Actor {
 
-        protected def receive = {
+        def receive = {
           case Ping  ⇒ countDownLatch.countDown()
           case Crash ⇒ throw new Exception("Crashing...")
         }

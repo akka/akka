@@ -185,6 +185,8 @@ private[akka] object ActorCell {
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
 
+  final val behaviorStackPlaceHolder: Stack[Actor.Receive] = Stack.empty.push(Actor.emptyBehavior)
+
   sealed trait SuspendReason
   case object UserRequest extends SuspendReason
   case class Recreation(cause: Throwable) extends SuspendReason
@@ -409,6 +411,8 @@ private[akka] class ActorCell(
 
   var actor: Actor = _
 
+  private var behaviorStack: Stack[Actor.Receive] = Stack.empty
+
   @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
 
@@ -489,14 +493,20 @@ private[akka] class ActorCell(
 
   //This method is in charge of setting up the contextStack and create a new instance of the Actor
   protected def newActor(): Actor = {
-    val stackBefore = contextStack.get
-    contextStack.set(stackBefore.push(this))
+    contextStack.set(contextStack.get.push(this))
     try {
+      import ActorCell.behaviorStackPlaceHolder
+
+      behaviorStack = behaviorStackPlaceHolder
       val instance = props.creator()
 
       if (instance eq null)
         throw ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
+      behaviorStack = behaviorStack match {
+        case `behaviorStackPlaceHolder` ⇒ Stack.empty.push(instance.receive)
+        case newBehaviors               ⇒ Stack.empty.push(instance.receive).pushAll(newBehaviors.reverse.drop(1))
+      }
       instance
     } finally {
       val stackAfter = contextStack.get
@@ -612,7 +622,7 @@ private[akka] class ActorCell(
     cancelReceiveTimeout() // FIXME: leave this here???
     messageHandle.message match {
       case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-      case msg                      ⇒ actor(msg)
+      case msg                      ⇒ receiveMessage(msg)
     }
     currentMessage = null // reset current message after successful invocation
   } catch {
@@ -628,14 +638,14 @@ private[akka] class ActorCell(
     if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
   } finally {
     t match { // Wrap InterruptedExceptions and rethrow
-      case _: InterruptedException ⇒ parent.tell(Failed(ActorInterruptedException(t)), self); throw t
+      case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t)), self); throw t
       case _                       ⇒ parent.tell(Failed(t), self)
     }
   }
 
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit = {
     if (discardOld) unbecome()
-    actor.pushBehavior(behavior)
+    behaviorStack = behaviorStack.push(behavior)
   }
 
   /**
@@ -646,14 +656,16 @@ private[akka] class ActorCell(
   /*
    * UntypedActorContext impl
    */
-  def become(behavior: Procedure[Any], discardOld: Boolean): Unit = {
-    def newReceive: Actor.Receive = { case msg ⇒ behavior.apply(msg) }
-    become(newReceive, discardOld)
+  def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
+    become({ case msg ⇒ behavior.apply(msg) }: Actor.Receive, discardOld)
+
+  def unbecome(): Unit = {
+    val original = behaviorStack
+    val popped = original.pop
+    behaviorStack = if (popped.isEmpty) original else popped
   }
 
-  def unbecome(): Unit = actor.popBehavior()
-
-  def autoReceiveMessage(msg: Envelope) {
+  def autoReceiveMessage(msg: Envelope): Unit = {
     if (system.settings.DebugAutoReceive)
       system.eventStream.publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
@@ -665,6 +677,12 @@ private[akka] class ActorCell(
       case SelectChildName(name, m) ⇒ for (c ← childrenRefs getByName name) c.child.tell(m, msg.sender)
       case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
+  }
+
+  final def receiveMessage(msg: Any): Unit = {
+    //FIXME replace with behaviorStack.head.applyOrElse(msg, unhandled) + "-optimize"
+    val head = behaviorStack.head
+    if (head.isDefinedAt(msg)) head.apply(msg) else actor.unhandled(msg)
   }
 
   private def doTerminate() {
@@ -682,7 +700,7 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle)
           system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped"))
       } finally {
-        if (a ne null) a.clearBehaviorStack()
+        behaviorStack = ActorCell.behaviorStackPlaceHolder
         clearActorFields(a)
         actor = null
       }
@@ -692,7 +710,6 @@ private[akka] class ActorCell(
   private def doRecreate(cause: Throwable, failedActor: Actor): Unit = try {
     // after all killed children have terminated, recreate the rest, then go on to start the new instance
     actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
-
     val freshActor = newActor()
     actor = freshActor // this must happen before postRestart has a chance to fail
     if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.

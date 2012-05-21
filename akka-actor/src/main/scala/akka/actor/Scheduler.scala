@@ -216,6 +216,14 @@ private[akka] object ContinuousCancellable {
     override def isCancelled: Boolean = false
     override def cancel: Unit = ()
   }
+
+  val cancelled: HWTimeout = new HWTimeout {
+    override def getTimer: Timer = null
+    override def getTask: TimerTask = null
+    override def isExpired: Boolean = false
+    override def isCancelled: Boolean = true
+    override def cancel: Unit = ()
+  }
 }
 /**
  * Wrapper of a [[org.jboss.netty.akka.util.Timeout]] that delegates all
@@ -229,24 +237,15 @@ private[akka] class ContinuousCancellable extends AtomicReference[HWTimeout](Con
   }
 
   @tailrec private[akka] final def swap(newTimeout: HWTimeout): Unit = get match {
-    case null                     ⇒ newTimeout.cancel()
-    case some if some.isCancelled ⇒ cancel(); newTimeout.cancel()
+    case some if some.isCancelled ⇒ try cancel() finally newTimeout.cancel()
     case some                     ⇒ if (!compareAndSet(some, newTimeout)) swap(newTimeout)
   }
 
-  def isCancelled(): Boolean = get match {
-    case null ⇒ true
-    case some ⇒ isCancelled()
-  }
-
-  def cancel(): Unit =
-    getAndSet(null) match {
-      case null ⇒
-      case some ⇒ some.cancel()
-    }
+  def isCancelled(): Boolean = get().isCancelled()
+  def cancel(): Unit = getAndSet(ContinuousCancellable.cancelled).cancel()
 }
 
-private[akka] class DefaultCancellable(val timeout: HWTimeout) extends Cancellable {
-  override def cancel(): Unit = timeout.cancel()
-  override def isCancelled: Boolean = timeout.isCancelled
+private[akka] class DefaultCancellable(timeout: HWTimeout) extends AtomicReference[HWTimeout](timeout) with Cancellable {
+  override def cancel(): Unit = getAndSet(ContinuousCancellable.cancelled).cancel()
+  override def isCancelled: Boolean = get().isCancelled
 }

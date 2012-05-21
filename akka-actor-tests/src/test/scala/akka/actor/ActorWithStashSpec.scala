@@ -131,7 +131,7 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
       val hasMsgLatch = new TestLatch
 
       val slaveProps = myProps(new Actor with Stash {
-        protected def receive = {
+        def receive = {
           case "crash" ⇒
             throw new Exception("Crashing...")
 

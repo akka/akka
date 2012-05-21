@@ -14,6 +14,9 @@ import akka.actor.ActorContext
 import com.typesafe.config.Config
 import akka.actor.ActorSystem
 
+/**
+ * This exception normally is thrown when a bounded mailbox is over capacity
+ */
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
 /**
@@ -249,7 +252,8 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
 }
 
 /**
- * A MessageQueue is the user-message "lane" of an Akka Mailbox.
+ * A MessageQueue is one of the core components in forming an Akka Mailbox.
+ * The MessageQueue is where the normal messages that are sent to Actors will be enqueued (and subsequently dequeued)
  * It needs to atleast support N producers and 1 consumer thread-safely.
  */
 trait MessageQueue {
@@ -285,7 +289,7 @@ trait MessageQueue {
 }
 
 /**
- * Internal mailbox implementation detail.
+ * INTERNAL USE ONLY
  */
 private[akka] trait SystemMessageQueue {
   /**
@@ -302,7 +306,7 @@ private[akka] trait SystemMessageQueue {
 }
 
 /**
- * Internal mailbox implementation detail.
+ * INTERNAL USE ONLY
  */
 private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
 

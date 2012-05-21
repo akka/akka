@@ -987,7 +987,7 @@ final class IOManagerActor extends Actor with ActorLogging {
     }
   }
 
-  protected def receive = {
+  def receive = {
     case Select ⇒
       select()
       if (running) self ! Select

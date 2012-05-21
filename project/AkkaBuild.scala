@@ -154,7 +154,9 @@ object AkkaBuild extends Build {
     base = file("akka-durable-mailboxes/akka-mailboxes-common"),
     dependencies = Seq(remote, testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.mailboxes
+      libraryDependencies ++= Dependencies.mailboxes,
+      // DurableMailboxSpec published in akka-mailboxes-common-test
+      publishArtifact in Test := true
     )
   )
 
@@ -257,7 +259,8 @@ object AkkaBuild extends Build {
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test", remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel),
+    dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
+      remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel),
     settings = defaultSettings ++ Sphinx.settings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -380,7 +383,7 @@ object Dependencies {
 
   val fileMailbox = Seq(Test.commonsIo, Test.scalatest, Test.junit)
 
-  val kernel = Seq(jmxClient, Test.scalatest, Test.junit)
+  val kernel = Seq(Test.scalatest, Test.junit)
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
@@ -408,7 +411,6 @@ object Dependency {
   // Compile
 
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
-  val jmxClient     = "cmdline-jmxclient"           % "cmdline-jmxclient"      % "0.10.3"     // LGPL
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)

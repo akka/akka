@@ -176,9 +176,10 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   /**
    * Sort so that subtypes always precede their supertypes, but without
    * obeying any order between unrelated subtypes (insert sort).
+   *
+   * INTERNAL API
    */
-  //FIXME Should this really be public API?
-  def sort(in: Iterable[CauseDirective]): Seq[CauseDirective] =
+  private[akka] def sort(in: Iterable[CauseDirective]): Seq[CauseDirective] =
     (new ArrayBuffer[CauseDirective](in.size) /: in) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
         case -1 ⇒ buf append ca
@@ -195,7 +196,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 }
 
 /**
- * An Akka SupervisorStrategy is
+ * An Akka SupervisorStrategy is the policy to apply for crashing children
  */
 abstract class SupervisorStrategy {
 

@@ -437,7 +437,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    *       Main actor receive() method
    * *******************************************
    */
-  override final protected def receive: Receive = {
+  override final def receive: Receive = {
     case TimeoutMarker(gen) ⇒
       if (generation == gen) {
         processMsg(StateTimeout, "state timeout")

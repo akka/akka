@@ -393,7 +393,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
               override def postRestart(reason: Throwable) = latch.countDown()
             }))
 
-          protected def receive = { case "sendKill" ⇒ ref ! Kill }
+          def receive = { case "sendKill" ⇒ ref ! Kill }
         }))
 
         boss ! "sendKill"

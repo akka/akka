@@ -335,9 +335,10 @@ private[akka] class LocalActorRef private[akka] (
 
 /**
  * Memento pattern for serializing ActorRefs transparently
+ * INTERNAL API
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class SerializedActorRef private (path: String) {
+private[akka] case class SerializedActorRef private (path: String) {
   import akka.serialization.JavaSerializer.currentSystem
 
   @throws(classOf[java.io.ObjectStreamException])
@@ -350,8 +351,11 @@ case class SerializedActorRef private (path: String) {
       someSystem.actorFor(path)
   }
 }
-//FIXME: Should SerializedActorRef be private[akka] ?
-object SerializedActorRef {
+
+/**
+ * INTERNAL API
+ */
+private[akka] object SerializedActorRef {
   def apply(path: ActorPath): SerializedActorRef = {
     Serialization.currentTransportAddress.value match {
       case null ⇒ new SerializedActorRef(path.toString)

@@ -28,6 +28,9 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
 
   def serialize(durableMessage: Envelope): Array[Byte] = {
 
+    // It's alright to use ref.path.toString here
+    // When the sender is a LocalActorRef it should be local when deserialized also.
+    // When the sender is a RemoteActorRef the path.toString already contains remote address information.
     def serializeActorRef(ref: ActorRef): ActorRefProtocol = ActorRefProtocol.newBuilder.setPath(ref.path.toString).build
 
     val message = MessageSerializer.serialize(system, durableMessage.message.asInstanceOf[AnyRef])

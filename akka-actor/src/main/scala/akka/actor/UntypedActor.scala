@@ -156,7 +156,7 @@ abstract class UntypedActor extends Actor {
    */
   override def postRestart(reason: Throwable): Unit = super.postRestart(reason)
 
-  final protected def receive = { case msg ⇒ onReceive(msg) }
+  final def receive = { case msg ⇒ onReceive(msg) }
 }
 
 /**

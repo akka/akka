@@ -16,7 +16,7 @@ package akka
 class AkkaException(message: String, cause: Throwable) extends RuntimeException(message, cause) with Serializable {
   def this(msg: String) = this(msg, null)
 
-  lazy val uuid = java.util.UUID.randomUUID().toString
+  lazy val uuid: String = java.util.UUID.randomUUID().toString
 
   override def getMessage(): String = "[" + uuid + "] " + super.getMessage
 }
