@@ -126,7 +126,7 @@ trait GenericActor extends Actor {
   // because we chain up to super.whenBecoming,
   // multiple traits like this can be mixed in.
   override def whenBecoming(behavior: Receive): Receive =
-    super.whenBecoming(behavior orElse genericMessageHandler)
+    super.whenBecoming(behavior) orElse genericMessageHandler
 }
 
 class SpecificActor extends GenericActor {

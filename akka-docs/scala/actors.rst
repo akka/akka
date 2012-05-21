@@ -684,6 +684,10 @@ Multiple traits that implement ``whenBecoming`` in this way can be
 mixed in to the same concrete class. The concrete class need not
 do anything special, it implements ``receive`` as usual.
 
+There are more ways to use ``whenBecoming``; for example you could
+intercept some messages and transform them before passing the
+transformed messages on to the original behavior.
+
 ``PartialFunction.orElse`` chaining can also be used for more
 complex scenarios, like dynamic runtime registration of handlers:
 

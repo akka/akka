@@ -420,6 +420,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
           case "A2" ⇒ sender ! "HandlesA2"
           case "A1" ⇒ sender ! "HandlesA2" // not reached, HandlesA1 filters
         }
+        // prepend ourselves and then chain up to A1, so A1
+        // "wins" if we both handle the same message
         super.whenBecoming(handler orElse behavior)
       }
     }
@@ -431,7 +433,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
           case "B1" ⇒ sender ! "HandlesB1"
           case "C"  ⇒ sender ! "HandlesB1" // not reached, HandlesC filters
         }
-        super.whenBecoming(behavior orElse handler)
+        super.whenBecoming(behavior) orElse handler
       }
     }
 
@@ -443,7 +445,9 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
           case "B1" ⇒ sender ! "HandlesB2" // not reached, HandlesB1 filters
           case "C"  ⇒ sender ! "HandlesB2" // not reached, HandlesC filters
         }
-        super.whenBecoming(behavior orElse handler)
+        // append B1 and then ourselves, so B1 "wins"
+        // if we both handle the same message
+        super.whenBecoming(behavior) orElse handler
       }
     }
 

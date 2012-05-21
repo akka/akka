@@ -246,6 +246,9 @@ trait Actor {
    * as defined by the `receive` method, goes through `whenBecoming`; any
    * new behavior set by the `ActorContext.become` method also does.
    * <p/>
+   * The default implementation of `whenBecoming` leaves the
+   * passed-in behavior unmodified.
+   * <p/>
    * To allow multiple mixin traits, implementations of this
    * method should chain up to `super.whenBecoming` in order
    * to apply the customizations from supertypes.
@@ -262,8 +265,26 @@ trait Actor {
    *   }
    * }}}
    * <p/>
-   * The default implementation of `whenBecoming` leaves the
-   * passed-in behavior unmodified.
+   * Of course you could also run a handler after:
+   * {{{
+   *   override def whenBecoming(behavior: Receive) = {
+   *     val handler: Receive = {
+   *       // our mixin trait adds support for the "MyMessage" message
+   *       case "MyMessage" ⇒
+   *     }
+   *     super.whenBecoming(behavior) orElse handler
+   *   }
+   * }}}
+   * <p/>
+   * When prepending handlers, `super.whenBecoming(handler orElse behavior)`
+   * means that superclasses (or leftmost traits) get priority, while
+   * when appending handlers, `super.whenBecoming(behavior) orElse handler`
+   * keeps the proper priorities.
+   * This only matters if you mix in multiple traits that
+   * handle the same messages.
+   * <p/>
+   * Another use of this method could be to create a `Receive` that modifies
+   * messages before passing them on to the actor's normal behavior.
    */
   protected def whenBecoming(behavior: Receive): Receive = behavior
 
