@@ -41,7 +41,7 @@ class Dispatcher(
   @volatile private var executorServiceDelegate: LazyExecutorServiceDelegate =
     new LazyExecutorServiceDelegate(executorServiceFactoryProvider.createExecutorServiceFactory(id, prerequisites.threadFactory))
 
-  protected final def executorService: ExecutorService = executorServiceDelegate
+  protected final def executorService: ExecutorServiceDelegate = executorServiceDelegate
 
   /**
    * INTERNAL USE ONLY

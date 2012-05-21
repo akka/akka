@@ -87,7 +87,7 @@ class BalancingDispatcher(
     @tailrec def scheduleOne(i: Iterator[ActorCell] = team.iterator): Unit =
       if (messageQueue.hasMessages
         && i.hasNext
-        && (executorService match {
+        && (executorService.executor match {
           case lm: LoadMetrics ⇒ lm.atFullThrottle == false
           case other           ⇒ true
         })
