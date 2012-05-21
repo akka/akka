@@ -128,36 +128,6 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       current.routees.size must be(2)
     }
 
-    // FIXME this test violates the rule that you can not use a BalancingDispatcher with any kind of Router - now throws a ConfigurationException in verification process
-    "resize when busy" ignore {
-
-      val busy = new TestLatch(1)
-
-      val resizer = DefaultResizer(
-        lowerBound = 1,
-        upperBound = 3,
-        pressureThreshold = 0,
-        messagesPerResize = 1)
-
-      val router = system.actorOf(Props[BusyActor].withRouter(RoundRobinRouter(resizer = Some(resizer))).withDispatcher("bal-disp"))
-
-      val latch1 = new TestLatch(1)
-      router ! (latch1, busy)
-      Await.ready(latch1, 2 seconds)
-
-      val latch2 = new TestLatch(1)
-      router ! (latch2, busy)
-      Await.ready(latch2, 2 seconds)
-
-      val latch3 = new TestLatch(1)
-      router ! (latch3, busy)
-      Await.ready(latch3, 2 seconds)
-
-      Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(3)
-
-      busy.countDown()
-    }
-
     "grow as needed under pressure" in {
       // make sure the pool starts at the expected lower limit and grows to the upper as needed
       // as influenced by the backlog of blocking pooled actors
