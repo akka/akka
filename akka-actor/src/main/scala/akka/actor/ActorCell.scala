@@ -185,6 +185,8 @@ private[akka] object ActorCell {
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
 
+  final val behaviorStackPlaceHolder: Stack[Actor.Receive] = Stack.empty.push(Actor.emptyBehavior)
+
   sealed trait SuspendReason
   case object UserRequest extends SuspendReason
   case class Recreation(cause: Throwable) extends SuspendReason
@@ -493,11 +495,18 @@ private[akka] class ActorCell(
   protected def newActor(): Actor = {
     contextStack.set(contextStack.get.push(this))
     try {
+      import ActorCell.behaviorStackPlaceHolder
+
+      behaviorStack = behaviorStackPlaceHolder
       val instance = props.creator()
 
       if (instance eq null)
         throw ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
+      behaviorStack = behaviorStack match {
+        case `behaviorStackPlaceHolder` ⇒ Stack.empty.push(instance.receive)
+        case newBehaviors               ⇒ Stack.empty.push(instance.receive).pushAll(newBehaviors.reverse.drop(1))
+      }
       instance
     } finally {
       val stackAfter = contextStack.get
@@ -512,7 +521,6 @@ private[akka] class ActorCell(
     def create(): Unit = if (isNormal) {
       try {
         val created = newActor()
-        behaviorStack = Stack.empty.push(created.receive)
         actor = created
         created.preStart()
         checkReceiveTimeout
@@ -648,10 +656,8 @@ private[akka] class ActorCell(
   /*
    * UntypedActorContext impl
    */
-  def become(behavior: Procedure[Any], discardOld: Boolean): Unit = {
-    def newReceive: Actor.Receive = { case msg ⇒ behavior.apply(msg) }
-    become(newReceive, discardOld)
-  }
+  def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
+    become({ case msg ⇒ behavior.apply(msg) }: Actor.Receive, discardOld)
 
   def unbecome(): Unit = {
     val original = behaviorStack
@@ -694,7 +700,7 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle)
           system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped"))
       } finally {
-        behaviorStack = Stack.empty
+        behaviorStack = ActorCell.behaviorStackPlaceHolder
         clearActorFields(a)
         actor = null
       }
@@ -704,9 +710,7 @@ private[akka] class ActorCell(
   private def doRecreate(cause: Throwable, failedActor: Actor): Unit = try {
     // after all killed children have terminated, recreate the rest, then go on to start the new instance
     actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
-
     val freshActor = newActor()
-    behaviorStack = Stack.empty.push(freshActor.receive)
     actor = freshActor // this must happen before postRestart has a chance to fail
     if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
 
