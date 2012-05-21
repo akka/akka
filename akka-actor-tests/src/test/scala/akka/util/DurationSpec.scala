@@ -6,6 +6,7 @@ package akka.util
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import duration._
+import java.util.concurrent.TimeUnit._
 
 class DurationSpec extends WordSpec with MustMatchers {
 
@@ -48,6 +49,35 @@ class DurationSpec extends WordSpec with MustMatchers {
       assert(minf != inf)
       assert(one != inf)
       assert(minf != one)
+    }
+
+    "check its range" in {
+      for (unit ← Seq(DAYS, HOURS, MINUTES, SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS)) {
+        val x = unit.convert(Long.MaxValue, NANOSECONDS)
+        val dur = Duration(x, unit)
+        val mdur = Duration(-x, unit)
+        -mdur must be(dur)
+        intercept[IllegalArgumentException] { Duration(x + 10000000d, unit) }
+        intercept[IllegalArgumentException] { Duration(-x - 10000000d, unit) }
+        if (unit != NANOSECONDS) {
+          intercept[IllegalArgumentException] { Duration(x + 1, unit) }
+          intercept[IllegalArgumentException] { Duration(-x - 1, unit) }
+        }
+        intercept[IllegalArgumentException] { dur + 1.day }
+        intercept[IllegalArgumentException] { mdur - 1.day }
+        intercept[IllegalArgumentException] { dur * 1.1 }
+        intercept[IllegalArgumentException] { mdur * 1.1 }
+        intercept[IllegalArgumentException] { dur * 2.1 }
+        intercept[IllegalArgumentException] { mdur * 2.1 }
+        intercept[IllegalArgumentException] { dur / 0.9 }
+        intercept[IllegalArgumentException] { mdur / 0.9 }
+        intercept[IllegalArgumentException] { dur / 0.4 }
+        intercept[IllegalArgumentException] { mdur / 0.4 }
+        Duration(x + unit.toString.toLowerCase)
+        Duration("-" + x + unit.toString.toLowerCase)
+        intercept[IllegalArgumentException] { Duration("%.0f".format(x + 10000000d) + unit.toString.toLowerCase) }
+        intercept[IllegalArgumentException] { Duration("-%.0f".format(x + 10000000d) + unit.toString.toLowerCase) }
+      }
     }
 
     "support fromNow" in {

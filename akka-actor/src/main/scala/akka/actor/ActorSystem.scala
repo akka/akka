@@ -295,8 +295,9 @@ abstract class ActorSystem extends ActorRefFactory {
    * Default dispatcher as configured. This dispatcher is used for all actors
    * in the actor system which do not have a different dispatcher configured
    * explicitly.
+   * Importing this member will place the default MessageDispatcher in scope.
    */
-  def dispatcher: MessageDispatcher
+  implicit def dispatcher: MessageDispatcher
 
   /**
    * Register a block of code (callback) to run after all actors in this actor system have
