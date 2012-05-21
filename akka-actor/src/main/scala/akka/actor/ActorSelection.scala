@@ -52,7 +52,7 @@ object ActorSelection {
    */
   def apply(anchor: ActorRef, path: String): ActorSelection = {
     val elems = path.split("/+").dropWhile(_.isEmpty)
-    val compiled: Array[AnyRef] = elems map (x ⇒ if (x.contains('?') || x.contains('*')) Helpers.makePattern(x) else x)
+    val compiled: Array[AnyRef] = elems map (x ⇒ if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) Helpers.makePattern(x) else x)
     new ActorSelection with ScalaActorSelection {
       def target = anchor
       def path = compiled
