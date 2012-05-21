@@ -18,7 +18,7 @@ class AkkaException(message: String, cause: Throwable) extends RuntimeException(
 
   lazy val uuid: String = java.util.UUID.randomUUID().toString
 
-  override def getMessage(): String = "[" + uuid + "] " + super.getMessage
+  override def toString(): String = uuid + super.toString()
 }
 
 /**
