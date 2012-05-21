@@ -4,9 +4,8 @@
 package akka.docs.actor.mailbox;
 
 //#imports
-import akka.actor.UntypedActorFactory;
-import akka.actor.UntypedActor;
 import akka.actor.Props;
+import akka.actor.ActorRef;
 
 //#imports
 
@@ -16,8 +15,8 @@ import org.junit.Test;
 
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;
-import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.UntypedActor;
 
 import static org.junit.Assert.*;
 
@@ -39,12 +38,8 @@ public class DurableMailboxDocTestBase {
   @Test
   public void configDefinedDispatcher() {
     //#dispatcher-config-use
-    ActorRef myActor = system.actorOf(
-        new Props().withDispatcher("my-dispatcher").withCreator(new UntypedActorFactory() {
-          public UntypedActor create() {
-            return new MyUntypedActor();
-          }
-        }), "myactor");
+    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class).
+        withDispatcher("my-dispatcher"), "myactor");
     //#dispatcher-config-use
     myActor.tell("test");
   }
