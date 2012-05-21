@@ -334,7 +334,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   }
 
   def echoActor = system.actorOf(Props(new Actor {
-    protected def receive = {
+    def receive = {
       case msg ⇒ sender ! "received " + msg
     }
   }))

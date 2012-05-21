@@ -138,7 +138,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
       }
     }
 
-    protected def receive = {
+    def receive = {
       case _ ⇒
         val payload = "%s".format(messageNumber)
         messageNumber += 1

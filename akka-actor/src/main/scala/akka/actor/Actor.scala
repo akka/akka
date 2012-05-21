@@ -152,7 +152,7 @@ case class DeathPactException private[akka] (dead: ActorRef)
  * When an InterruptedException is thrown inside an Actor, it is wrapped as an ActorInterruptedException as to
  * avoid cascading interrupts to other threads than the originally interrupted one.
  */
-case class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaException(cause.getMessage, cause) with NoStackTrace
+class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaException(cause.getMessage, cause) with NoStackTrace
 
 /**
  * This message is published to the EventStream whenever an Actor receives a message it doesn't understand
@@ -173,6 +173,7 @@ object Status {
 
   /**
    * This class/message type is preferably used to indicate failure of some operation performed.
+   * As an example, it is used to signal failure with AskSupport is used (ask/?).
    */
   case class Failure(cause: Throwable) extends Status
 }
@@ -317,7 +318,7 @@ trait Actor {
    * This defines the initial actor behavior, it must return a partial function
    * with the actor logic.
    */
-  protected def receive: Receive
+  def receive: Receive
 
   /**
    * User overridable definition the strategy to use for supervising
@@ -377,45 +378,5 @@ trait Actor {
       case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender, self))
     }
   }
-
-  // =========================================
-  // ==== INTERNAL IMPLEMENTATION DETAILS ====
-  // =========================================
-
-  /**
-   * For Akka internal use only.
-   */
-  private[akka] final def apply(msg: Any) = {
-    //FIXME replace with behaviorStack.head.applyOrElse(msg, unhandled) + "-optimize"
-    val head = behaviorStack.head
-    if (head.isDefinedAt(msg)) head.apply(msg) else unhandled(msg)
-  }
-
-  /**
-   * For Akka internal use only.
-   */
-  private[akka] def pushBehavior(behavior: Receive): Unit = {
-    behaviorStack = behaviorStack.push(behavior)
-  }
-
-  /**
-   * For Akka internal use only.
-   */
-  private[akka] def popBehavior(): Unit = {
-    val original = behaviorStack
-    val popped = original.pop
-    behaviorStack = if (popped.isEmpty) original else popped
-  }
-
-  /**
-   * For Akka internal use only.
-   */
-  private[akka] def clearBehaviorStack(): Unit =
-    behaviorStack = Stack.empty[Receive].push(behaviorStack.last)
-
-  /**
-   * For Akka internal use only.
-   */
-  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(receive)
 }
 

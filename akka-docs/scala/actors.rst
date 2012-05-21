@@ -443,7 +443,7 @@ An Actor has to implement the ``receive`` method to receive messages:
 
 .. code-block:: scala
 
-  protected def receive: PartialFunction[Any, Unit]
+  def receive: PartialFunction[Any, Unit]
 
 Note: Akka has an alias to the ``PartialFunction[Any, Unit]`` type called
 ``Receive`` (``akka.actor.Actor.Receive``), so you can use this type instead for

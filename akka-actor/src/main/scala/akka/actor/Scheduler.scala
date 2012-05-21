@@ -236,7 +236,7 @@ private[akka] class ContinuousCancellable extends AtomicReference[HWTimeout](Con
 
   def isCancelled(): Boolean = get match {
     case null ⇒ true
-    case some ⇒ isCancelled()
+    case some ⇒ some.isCancelled()
   }
 
   def cancel(): Unit =

@@ -409,6 +409,8 @@ private[akka] class ActorCell(
 
   var actor: Actor = _
 
+  private var behaviorStack: Stack[Actor.Receive] = Stack.empty
+
   @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
 
@@ -489,8 +491,7 @@ private[akka] class ActorCell(
 
   //This method is in charge of setting up the contextStack and create a new instance of the Actor
   protected def newActor(): Actor = {
-    val stackBefore = contextStack.get
-    contextStack.set(stackBefore.push(this))
+    contextStack.set(contextStack.get.push(this))
     try {
       val instance = props.creator()
 
@@ -511,6 +512,7 @@ private[akka] class ActorCell(
     def create(): Unit = if (isNormal) {
       try {
         val created = newActor()
+        behaviorStack = Stack.empty.push(created.receive)
         actor = created
         created.preStart()
         checkReceiveTimeout
@@ -612,7 +614,7 @@ private[akka] class ActorCell(
     cancelReceiveTimeout() // FIXME: leave this here???
     messageHandle.message match {
       case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-      case msg                      ⇒ actor(msg)
+      case msg                      ⇒ receiveMessage(msg)
     }
     currentMessage = null // reset current message after successful invocation
   } catch {
@@ -628,14 +630,14 @@ private[akka] class ActorCell(
     if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
   } finally {
     t match { // Wrap InterruptedExceptions and rethrow
-      case _: InterruptedException ⇒ parent.tell(Failed(ActorInterruptedException(t)), self); throw t
+      case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t)), self); throw t
       case _                       ⇒ parent.tell(Failed(t), self)
     }
   }
 
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit = {
     if (discardOld) unbecome()
-    actor.pushBehavior(behavior)
+    behaviorStack = behaviorStack.push(behavior)
   }
 
   /**
@@ -651,9 +653,13 @@ private[akka] class ActorCell(
     become(newReceive, discardOld)
   }
 
-  def unbecome(): Unit = actor.popBehavior()
+  def unbecome(): Unit = {
+    val original = behaviorStack
+    val popped = original.pop
+    behaviorStack = if (popped.isEmpty) original else popped
+  }
 
-  def autoReceiveMessage(msg: Envelope) {
+  def autoReceiveMessage(msg: Envelope): Unit = {
     if (system.settings.DebugAutoReceive)
       system.eventStream.publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
@@ -665,6 +671,12 @@ private[akka] class ActorCell(
       case SelectChildName(name, m) ⇒ for (c ← childrenRefs getByName name) c.child.tell(m, msg.sender)
       case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
+  }
+
+  final def receiveMessage(msg: Any): Unit = {
+    //FIXME replace with behaviorStack.head.applyOrElse(msg, unhandled) + "-optimize"
+    val head = behaviorStack.head
+    if (head.isDefinedAt(msg)) head.apply(msg) else actor.unhandled(msg)
   }
 
   private def doTerminate() {
@@ -682,7 +694,7 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle)
           system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped"))
       } finally {
-        if (a ne null) a.clearBehaviorStack()
+        behaviorStack = Stack.empty
         clearActorFields(a)
         actor = null
       }
@@ -694,6 +706,7 @@ private[akka] class ActorCell(
     actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
 
     val freshActor = newActor()
+    behaviorStack = Stack.empty.push(freshActor.receive)
     actor = freshActor // this must happen before postRestart has a chance to fail
     if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
 

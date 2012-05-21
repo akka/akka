@@ -244,7 +244,7 @@ object ProducerFeatureTest {
   }
 
   class TestResponder extends Actor {
-    protected def receive = {
+    def receive = {
       case msg: CamelMessage ⇒ msg.body match {
         case "fail" ⇒ context.sender ! akka.actor.Status.Failure(new AkkaCamelException(new Exception("failure"), msg.headers))
         case _ ⇒
@@ -256,7 +256,7 @@ object ProducerFeatureTest {
   }
 
   class ReplyingForwardTarget extends Actor {
-    protected def receive = {
+    def receive = {
       case msg: CamelMessage ⇒
         context.sender ! (msg.addHeader("test" -> "result"))
       case msg: akka.actor.Status.Failure ⇒
