@@ -401,4 +401,138 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       }
     }
   }
+
+  "support mixin message handlers and execute in proper order" in {
+    // "pre" mixin that runs other handlers second
+    trait HandlesA1 extends Actor {
+      override def aroundReceive(behavior: Receive) = {
+        val handler: Receive = {
+          case "A1" ⇒ sender ! "HandlesA1"
+        }
+        super.aroundReceive(handler orElse behavior)
+      }
+    }
+
+    // another "pre" mixin
+    trait HandlesA2 extends Actor {
+      override def aroundReceive(behavior: Receive) = {
+        val handler: Receive = {
+          case "A2" ⇒ sender ! "HandlesA2"
+          case "A1" ⇒ sender ! "HandlesA2" // not reached, HandlesA1 filters
+        }
+        // prepend ourselves and then chain up to A1, so A1
+        // "wins" if we both handle the same message
+        super.aroundReceive(handler orElse behavior)
+      }
+    }
+
+    // "post" mixin that runs other handlers first
+    trait HandlesB1 extends Actor {
+      override def aroundReceive(behavior: Receive) = {
+        val handler: Receive = {
+          case "B1" ⇒ sender ! "HandlesB1"
+          case "C"  ⇒ sender ! "HandlesB1" // not reached, HandlesC filters
+        }
+        super.aroundReceive(behavior) orElse handler
+      }
+    }
+
+    // another "post" mixin
+    trait HandlesB2 extends Actor {
+      override def aroundReceive(behavior: Receive) = {
+        val handler: Receive = {
+          case "B2" ⇒ sender ! "HandlesB2"
+          case "B1" ⇒ sender ! "HandlesB2" // not reached, HandlesB1 filters
+          case "C"  ⇒ sender ! "HandlesB2" // not reached, HandlesC filters
+        }
+        // append B1 and then ourselves, so B1 "wins"
+        // if we both handle the same message
+        super.aroundReceive(behavior) orElse handler
+      }
+    }
+
+    // this is a completely unmodified actor other
+    // than having "with HandlesA with HandlesB",
+    // it doesn't have to worry about chaining up
+    // or anything like that.
+    class HandlesC extends Actor with HandlesA1 with HandlesA2 with HandlesB1 with HandlesB2 {
+      def receive = {
+        case "C"  ⇒ sender ! "HandlesC"
+        case "A1" ⇒ sender ! "HandlesC" // not reached, HandlesA1 filters
+        case "A2" ⇒ sender ! "HandlesC" // not reached, HandlesA2 filters
+      }
+    }
+
+    val timeout = Timeout(20000)
+    val ref = system.actorOf(Props(new HandlesC))
+
+    val a1 = (ref.ask("A1")(timeout)).mapTo[String]
+    val a2 = (ref.ask("A2")(timeout)).mapTo[String]
+    val c = (ref.ask("C")(timeout)).mapTo[String]
+    val b1 = (ref.ask("B1")(timeout)).mapTo[String]
+    val b2 = (ref.ask("B2")(timeout)).mapTo[String]
+
+    ref ! PoisonPill
+
+    Await.result(a1, timeout.duration) must be("HandlesA1")
+    Await.result(a2, timeout.duration) must be("HandlesA2")
+    Await.result(c, timeout.duration) must be("HandlesC")
+    Await.result(b1, timeout.duration) must be("HandlesB1")
+    Await.result(b2, timeout.duration) must be("HandlesB2")
+
+    awaitCond(ref.isTerminated, 2000 millis)
+  }
+
+  "mixin behavior retained across become() and unbecome()" in {
+    trait HandlesA1 extends Actor {
+      override def aroundReceive(behavior: Receive) = {
+        val handler: Receive = {
+          case "A1" ⇒ sender ! "HandlesA1"
+        }
+        super.aroundReceive(handler orElse behavior)
+      }
+    }
+
+    class HandlesC extends Actor with HandlesA1 {
+      def receive = {
+        case "C"      ⇒ sender ! "HandlesC"
+        case "A1"     ⇒ sender ! "HandlesC" // not reached, HandlesA1 filters
+        case "Become" ⇒ context.become(otherBehavior, discardOld = false)
+      }
+
+      def otherBehavior: Receive = {
+        case "C"        ⇒ sender ! "HandlesCAfterBecome"
+        case "A1"       ⇒ sender ! "HandlesCAfterBecome" // not reached
+        case "Unbecome" ⇒ context.unbecome()
+      }
+    }
+
+    val timeout = Timeout(20000)
+    val ref = system.actorOf(Props(new HandlesC))
+
+    val a1 = (ref.ask("A1")(timeout)).mapTo[String]
+    val c = (ref.ask("C")(timeout)).mapTo[String]
+
+    Await.result(a1, timeout.duration) must be("HandlesA1")
+    Await.result(c, timeout.duration) must be("HandlesC")
+
+    ref ! "Become"
+
+    val a1_become = (ref.ask("A1")(timeout)).mapTo[String]
+    val c_become = (ref.ask("C")(timeout)).mapTo[String]
+
+    Await.result(a1_become, timeout.duration) must be("HandlesA1")
+    Await.result(c_become, timeout.duration) must be("HandlesCAfterBecome")
+
+    ref ! "Unbecome"
+
+    val a1_unbecome = (ref.ask("A1")(timeout)).mapTo[String]
+    val c_unbecome = (ref.ask("C")(timeout)).mapTo[String]
+
+    Await.result(a1_unbecome, timeout.duration) must be("HandlesA1")
+    Await.result(c_unbecome, timeout.duration) must be("HandlesC")
+
+    ref ! PoisonPill
+    awaitCond(ref.isTerminated, 2000 millis)
+  }
 }
