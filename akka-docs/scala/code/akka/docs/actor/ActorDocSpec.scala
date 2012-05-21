@@ -114,41 +114,58 @@ object SwapperApp extends App {
 }
 //#swapper
 
-//#receive-orElse
+//#receive-whenBecoming
 
-abstract class GenericActor extends Actor {
-  // to be defined in subclassing actor
-  def specificMessageHandler: Receive
-
+// trait providing a generic fallback message handler
+trait GenericActor extends Actor {
   // generic message handler
-  def genericMessageHandler: Receive = {
+  private def genericMessageHandler: Receive = {
     case event ⇒ printf("generic: %s\n", event)
   }
 
-  def receive = specificMessageHandler orElse genericMessageHandler
+  // because we chain up to super.whenBecoming,
+  // multiple traits like this can be mixed in.
+  override def whenBecoming(behavior: Receive): Receive =
+    super.whenBecoming(behavior) orElse genericMessageHandler
 }
 
 class SpecificActor extends GenericActor {
-  def specificMessageHandler = {
+  def receive = {
     case event: MyMsg ⇒ printf("specific: %s\n", event.subject)
   }
 }
 
 case class MyMsg(subject: String)
-//#receive-orElse
+//#receive-whenBecoming
 
-//#receive-orElse2
+//#receive-orElse
 trait ComposableActor extends Actor {
   private var receives: List[Receive] = List()
+  private var composedReceives: Receive = Map.empty // in Scala 2.10, PartialFunction.empty
+
   protected def registerReceive(receive: Receive) {
+    // keep a list (allows unregistration)
     receives = receive :: receives
+    // cache the composition of all receives
+    composedReceives = receives reduce { _ orElse _ }
   }
 
-  def receive = receives reduce { _ orElse _ }
+  // this indirection is because whenBecoming is only called
+  // once, but we want to allow registration post-construct,
+  // so we need a constant Receive that forwards to our
+  // dynamic Receive
+  private def handleRegisteredReceives: Receive = new PartialFunction[Any, Unit]() {
+    override def apply(x: Any) = composedReceives.apply(x)
+    override def isDefinedAt(x: Any) = composedReceives.isDefinedAt(x)
+  }
+
+  override def whenBecoming(behavior: Receive) =
+    super.whenBecoming(behavior orElse handleRegisteredReceives)
 }
 
 class MyComposableActor extends ComposableActor {
   override def preStart() {
+    // register some handlers dynamically
     registerReceive({
       case "foo" ⇒ /* Do something */
     })
@@ -157,9 +174,15 @@ class MyComposableActor extends ComposableActor {
       case "bar" ⇒ /* Do something */
     })
   }
+
+  // Runs after the dynamically-registered handlers,
+  // which are added with preReceive
+  def receive = {
+    case "baz" ⇒
+  }
 }
 
-//#receive-orElse2
+//#receive-orElse
 class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "import context" in {

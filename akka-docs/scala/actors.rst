@@ -668,15 +668,27 @@ state of the failing actor instance is lost if you don't store and restore it in
 ``preRestart`` and ``postRestart`` callbacks.
 
 
-Extending Actors using PartialFunction chaining
-===============================================
+Extending Actors using whenBecoming and PartialFunction chaining
+===============================================================
 
-A bit advanced but very useful way of defining a base message handler and then
-extend that, either through inheritance or delegation, is to use
-``PartialFunction.orElse`` chaining.
+You can create "mixin" traits or abstract classes using the
+``whenBecoming`` method on ``Actor``. This method modifies the
+standard actor behavior as defined by ``receive`` or ``become``.
+To allow multiple traits to be mixed in to one actor, when you
+override ``whenBecoming`` you should always chain up and allow
+supertypes to run their ``whenBecoming`` as well.
+
+.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-whenBecoming
+
+Multiple traits that implement ``whenBecoming`` in this way can be
+mixed in to the same concrete class. The concrete class need not
+do anything special, it implements ``receive`` as usual.
+
+There are more ways to use ``whenBecoming``; for example you could
+intercept some messages and transform them before passing the
+transformed messages on to the original behavior.
+
+``PartialFunction.orElse`` chaining can also be used for more
+complex scenarios, like dynamic runtime registration of handlers:
 
 .. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-orElse
-
-Or:
-
-.. includecode:: code/akka/docs/actor/ActorDocSpec.scala#receive-orElse2

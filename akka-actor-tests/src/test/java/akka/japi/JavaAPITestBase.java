@@ -46,4 +46,24 @@ public class JavaAPITestBase {
   public void shouldBeSingleton() {
     assertSame(Option.none(), Option.none());
   }
+
+  @Test
+  public void partialProcedureDoesNotDoubleWrap() {
+    PartialProcedure<Integer> p = new PartialProcedure<Integer>() {
+      @Override
+      public void apply(Integer i) {
+      }
+      @Override
+      public boolean isDefinedAt(Integer i) {
+        return i == 10;
+      }
+    };
+    scala.PartialFunction<Integer, scala.runtime.BoxedUnit> s = p.asScala();
+    assertEquals(false, p.isDefinedAt(9));
+    assertEquals(true, p.isDefinedAt(10));
+    assertEquals(false, s.isDefinedAt(9));
+    assertEquals(true, s.isDefinedAt(10));
+    scala.PartialFunction<Integer, scala.runtime.BoxedUnit> s2 = PartialProcedure.fromScalaPartialFunction(s).asScala();
+    assertTrue("original scala partial function retrieved", s == s2);
+  }
 }
