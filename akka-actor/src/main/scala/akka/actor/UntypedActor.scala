@@ -167,34 +167,26 @@ abstract class UntypedActor extends Actor {
   final protected def receive = onReceivePartial.asScala
 
   // this isn't final so mixins can work, but
-  // overriding it in Java is not expected.
+  // overriding it in Java is not really expected.
   override protected def whenBecoming(behavior: Receive): Receive = {
-    val chain = Seq(onPreReceive.asScala.map(_.asScala),
-      Some(behavior),
-      onPostReceive.asScala.map(_.asScala)).flatMap(_.toSeq)
-    super.whenBecoming(chain.reduce(_ orElse _))
+    onWhenBecoming(japi.PartialProcedure.fromScalaPartialFunction(super.whenBecoming(behavior))).asScala
   }
 
   /**
-   * User overridable callback: by default it returns None.
+   * User overridable callback invoked whenever the actor gets a behavior, whether
+   * its initial behavior or a new dynamic behavior. By default this method just returns
+   * its parameter.
    * <p/>
-   * If you provide a handler, it will filter messages before the
-   * regular `onReceive` handler.
-   */
-  protected def onPreReceive: japi.Option[japi.PartialProcedure[Any]] = japi.Option.none
-
-  /**
-   * User overridable callback: by default it returns None.
+   * onWhenBecoming() can be used to transform the behavior of the actor to
+   * handle more messages, or to modify messages before the original
+   * behavior receives them.
    * <p/>
-   * If you provide a handler, it will handle messages not matched by
-   * the regular `onReceivePartial` handler. Note that by default,
-   * `onReceivePartial` matches ALL messages by forwarding them to
-   * `onReceive`. Therefore, by default no `onPostReceive` handler
-   * will ever be used; only actors which override `onReceivePartial`
-   * to leave some messages unhandled can benefit from an
-   * `onPostReceive`.
+   * When overriding this, be sure to chain
+   * up to `super.onWhenBecoming` to allow superclasses to apply
+   * any modifications that they expected to add.
    */
-  protected def onPostReceive: japi.Option[japi.PartialProcedure[Any]] = japi.Option.none
+  def onWhenBecoming(behavior: japi.PartialProcedure[Any]): japi.PartialProcedure[Any] =
+    behavior
 }
 
 /**

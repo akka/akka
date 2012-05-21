@@ -22,8 +22,7 @@ public class JavaAPIPrePostActor extends UntypedActor {
     return handler;
   }
 
-  @Override
-  public Option<PartialProcedure<Object>> onPreReceive() {
+  private PartialProcedure<Object> preReceive() {
     PartialProcedure<Object> handler = new PartialProcedure<Object>() {
       public void apply(Object o) {
         getSender().tell("onPreReceive");
@@ -32,11 +31,10 @@ public class JavaAPIPrePostActor extends UntypedActor {
         return (o instanceof String && ((String) o).equals("onPreReceive"));
       }
     };
-    return Option.some(handler);
+    return handler;
   }
 
-  @Override
-    public Option<PartialProcedure<Object>> onPostReceive() {
+  private PartialProcedure<Object> postReceive() {
     PartialProcedure<Object> handler = new PartialProcedure<Object>() {
       public void apply(Object o) {
         getSender().tell("onPostReceive");
@@ -45,6 +43,11 @@ public class JavaAPIPrePostActor extends UntypedActor {
         return (o instanceof String && ((String) o).equals("onPostReceive"));
       }
     };
-    return Option.some(handler);
+    return handler;
+  }
+
+  @Override
+  public PartialProcedure<Object> onWhenBecoming(PartialProcedure<Object> behavior) {
+    return super.onWhenBecoming(preReceive().orElse(behavior.orElse(postReceive())));
   }
 }

@@ -39,15 +39,41 @@ trait Procedure2[T1, T2] {
  * that return void in Java.
  */
 abstract class PartialProcedure[T] {
+  @throws(classOf[Exception])
   def apply(param: T): Unit
   def isDefinedAt(param: T): Boolean
 
-  private class DelegatingPartialFunction[T](val delegate: PartialProcedure[T]) extends scala.PartialFunction[T, Unit] {
+  def asScala: scala.PartialFunction[T, Unit] =
+    PartialProcedure.java2ScalaPartialFunction(this)
+
+  def orElse(that: PartialProcedure[T]): PartialProcedure[T] =
+    asScala.orElse(that.asScala)
+}
+
+object PartialProcedure {
+  private final class WrapsJava[T](val delegate: PartialProcedure[T])
+    extends scala.PartialFunction[T, Unit] {
     override def apply(param: T) = delegate.apply(param)
     override def isDefinedAt(param: T) = delegate.isDefinedAt(param)
   }
 
-  def asScala: scala.PartialFunction[T, Unit] = new DelegatingPartialFunction(this)
+  private final class WrapsScala[T](val delegate: PartialFunction[T, Unit])
+    extends PartialProcedure[T] {
+    override def apply(param: T) = delegate.apply(param)
+    override def isDefinedAt(param: T) = delegate.isDefinedAt(param)
+    // this avoids "nested wrappers": WrapsScala(p).asScala eq p
+    override def asScala = delegate
+  }
+
+  // this can be imported by Scala as an implicit, or used explicitly
+  // maybe from Java
+  implicit def fromScalaPartialFunction[T](p: scala.PartialFunction[T, Unit]): PartialProcedure[T] =
+    new WrapsScala(p)
+
+  // this is available as asScala on PartialProcedure instances so
+  // wouldn't be invoked explicitly most likely
+  implicit def java2ScalaPartialFunction[T](p: PartialProcedure[T]): scala.PartialFunction[T, Unit] =
+    new WrapsJava(p)
 }
 
 /**

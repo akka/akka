@@ -74,7 +74,7 @@ public class JavaAPI {
   }
 
   @Test
-  public void mustSupportPreAndPostReceive() throws Exception {
+  public void mustSupportWhenBecoming() throws Exception {
     ActorRef ref = system.actorOf(new Props(JavaAPIPrePostActor.class));
     assertNotNull(ref);
     Timeout timeout = new Timeout(Duration.parse("1 second"));
