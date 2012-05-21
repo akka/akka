@@ -501,7 +501,7 @@ private[akka] class ActorCell(
       val instance = props.creator()
 
       if (instance eq null)
-        throw ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
+        throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
       behaviorStack = behaviorStack match {
         case `behaviorStackPlaceHolder` ⇒ Stack.empty.push(instance.receive)
@@ -527,13 +527,13 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
       } catch {
         case NonFatal(i: InstantiationException) ⇒
-          throw ActorInitializationException(self,
+          throw new ActorInitializationException(self,
             """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new UntypedActorFactory ... )
                or is missing an appropriate, reachable no-args constructor.
             """, i.getCause)
         case NonFatal(e) ⇒
-          throw ActorInitializationException(self, "exception during creation", e)
+          throw new ActorInitializationException(self, "exception during creation", e)
       }
     }
 
@@ -557,7 +557,7 @@ private[akka] class ActorCell(
             doRecreate(cause, failedActor)
         }
       } catch {
-        case NonFatal(e) ⇒ throw ActorInitializationException(self, "exception during creation", e)
+        case NonFatal(e) ⇒ throw new ActorInitializationException(self, "exception during creation", e)
       }
     }
 
@@ -726,7 +726,7 @@ private[akka] class ActorCell(
       actor.supervisorStrategy.handleSupervisorFailing(self, children)
       clearActorFields(actor) // If this fails, we need to ensure that preRestart isn't called.
     } finally {
-      parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
+      parent.tell(Failed(new ActorInitializationException(self, "exception during re-creation", e)), self)
     }
   }
 

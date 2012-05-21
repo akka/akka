@@ -123,10 +123,10 @@ case class InvalidActorNameException(message: String) extends AkkaException(mess
 /**
  * An ActorInitializationException is thrown when the the initialization logic for an Actor fails.
  */
-case class ActorInitializationException private[akka] (actor: ActorRef, message: String, cause: Throwable = null)
-  extends AkkaException(message, cause)
-  with NoStackTrace {
+class ActorInitializationException private[akka] (actor: ActorRef, message: String, cause: Throwable)
+  extends AkkaException(message, cause) /*with NoStackTrace*/ {
   def this(msg: String) = this(null, msg, null)
+  def this(actor: ActorRef, msg: String) = this(actor, msg, null)
 }
 
 /**
