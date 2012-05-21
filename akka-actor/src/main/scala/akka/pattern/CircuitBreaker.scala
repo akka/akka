@@ -4,13 +4,13 @@
 package akka.pattern
 
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong, AtomicBoolean }
-import java.util.concurrent.CopyOnWriteArrayList
 import akka.AkkaException
 import akka.actor.Scheduler
 import akka.dispatch.{ Future, ExecutionContext, Await, Promise }
 import akka.util.{ Deadline, Duration, NonFatal, Unsafe }
 import akka.util.duration._
 import util.control.NoStackTrace
+import java.util.concurrent.{ Callable, CopyOnWriteArrayList }
 
 /**
  * Companion object containing reusable functionality
@@ -88,6 +88,17 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   }
 
   /**
+   * Java API for withCircuitBreaker
+   *
+   * @param body Call needing protected
+   * @tparam T return type from call
+   * @return [[akka.dispatch.Future]] containing the call result
+   */
+  def withCircuitBreaker[T](body: Callable[Future[T]]): Future[T] = {
+    withCircuitBreaker(body.call)
+  }
+
+  /**
    * Wraps invocations of synchronous calls that need to be protected
    *
    * Calls are run in caller's thread
@@ -102,11 +113,27 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
     // execute the body in caller's thread
     implicit val executor = syncExecutionContext
     Await.result(withCircuitBreaker(
-      try Promise.successful(body) catch {
-        case NonFatal(t) ⇒ Promise.failed(t)
-      }),
+      {
+        try
+          Promise.successful(body)
+        catch {
+          case NonFatal(t) ⇒ Promise.failed(t)
+        }
+      }.asInstanceOf[Future[T]]),
       Duration.Zero)
   }
+
+  /**
+   * Java API for withSyncCircuitBreaker
+   *
+   * @param body Call needing protected
+   * @tparam T return type from call
+   * @return The result of the call
+   */
+  /*
+  def withSyncCircuitBreaker[T](body: Callable[T]): T = {
+    withSyncCircuitBreaker(body.call)
+  }*/
 
   /**
    * Adds a callback to execute when circuit breaker opens
@@ -124,6 +151,17 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   def onOpen[T](callback: ⇒ T): CircuitBreaker = {
     Open.addListener(() ⇒ callback)
     this
+  }
+
+  /**
+   * Java API for onOpen
+   *
+   * @param callback Handler to be invoked on state change
+   * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
+   * @return CircuitBreaker for fluent usage
+   */
+  def onOpen[T](callback: Callable[T]): CircuitBreaker = {
+    onOpen(callback.call)
   }
 
   /**
@@ -145,6 +183,17 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   }
 
   /**
+   * JavaAPI for onHalfOpen
+   *
+   * @param callback Handler to be invoked on state change
+   * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
+   * @return CircuitBreaker for fluent usage
+   */
+  def onHalfOpen[T](callback: Callable[T]): CircuitBreaker = {
+    onHalfOpen(callback.call)
+  }
+
+  /**
    * Adds a callback to execute when circuit breaker state closes
    *
    * For asynchronous circuit breaker, the callback is run asynchrnonously in implicitly supplied [[akka.dispatch.ExecutionContext]]
@@ -163,11 +212,22 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   }
 
   /**
+   * JavaAPI for onClose
+   *
+   * @param callback Handler to be invoked on state change
+   * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
+   * @return CircuitBreaker for fluent usage
+   */
+  def onClose[T](callback: Callable[T]): CircuitBreaker = {
+    onClose(callback.call)
+  }
+
+  /**
    * Retrieves current failure count.
    *
    * @return count
    */
-  def currentFailureCount: Int = Closed.get
+  private[akka] def currentFailureCount: Int = Closed.get
 
   /**
    * Implements consistent transition between states
