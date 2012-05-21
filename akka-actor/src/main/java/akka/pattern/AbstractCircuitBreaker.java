@@ -7,7 +7,7 @@ import akka.util.Unsafe;
  * Date: 5/20/12
  * Time: 1:34 PM
  */
-public class AbstractCircuitBreaker {
+class AbstractCircuitBreaker {
     protected final static long stateOffset;
 
     static {
