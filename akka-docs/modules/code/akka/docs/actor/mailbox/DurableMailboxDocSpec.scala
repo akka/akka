@@ -73,13 +73,19 @@ class MyMessageQueue(_owner: ActorContext)
 
   def dequeue(): Envelope = {
     val data: Option[Array[Byte]] = storage.pull()
-    data.map(deserialize(_)).getOrElse(null)
+    data.map(deserialize).orNull
   }
 
   def hasMessages: Boolean = !storage.isEmpty
 
   def numberOfMessages: Int = storage.size
 
+  /**
+   * Called when the mailbox is disposed.
+   * An ordinary mailbox would send remaining messages to deadLetters,
+   * but the purpose of a durable mailbox is to continue
+   * with the same message queue when the actor is started again.
+   */
   def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
 
 }

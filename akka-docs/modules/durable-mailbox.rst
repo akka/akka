@@ -9,7 +9,7 @@
 Overview
 ========
 
-A durable mailbox is a replacement for the standard actor mailbox that is durable.
+A durable mailbox is a mailbox which stores the messages on durable storage.
 What this means in practice is that if there are pending messages in the actor's
 mailbox when the node of the actor resides on crashes, then when you restart the
 node, the actor will be able to continue processing as if nothing had happened;
@@ -29,7 +29,7 @@ Open Source projects, such as:
 * `AMQP Durable Mailbox <https://github.com/drexin/akka-amqp-mailbox>`_
 
 
-A durable mailbox typically doesn't implements transactions for current message. It's possible
+A durable mailbox is like any other mailbox not likely to be transactional. It's possible
 if the actor crashes after receiving a message, but before completing processing of
 it, that the message could be lost.
 
@@ -98,4 +98,5 @@ Add this dependency::
   "com.typesafe.akka" % "akka-mailboxes-common-test" % "2.1-SNAPSHOT"
 
 For more inspiration you can look at the old implementations based on Redis, MongoDB, Beanstalk,
-and ZooKeeper, which can be found in Akka git repository tag v2.0.1.
+and ZooKeeper, which can be found in Akka git repository tag
+`v2.0.1 <https://github.com/akka/akka/tree/v2.0.1/akka-durable-mailboxes>`_.
