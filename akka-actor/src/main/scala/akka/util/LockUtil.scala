@@ -20,7 +20,7 @@ final class ReentrantGuard extends ReentrantLock {
  * An atomic switch that can be either on or off
  */
 class Switch(startAsOn: Boolean = false) {
-  private val switch = new AtomicBoolean(startAsOn)
+  private val switch = new AtomicBoolean(startAsOn) // FIXME switch to AQS
 
   protected def transcend(from: Boolean, action: ⇒ Unit): Boolean = synchronized {
     if (switch.compareAndSet(from, !from)) {
