@@ -96,18 +96,18 @@ object Agent {
  * }}}
  */
 class Agent[T](initialValue: T, system: ActorSystem) {
-  private[akka] val ref = Ref(initialValue)
-  private[akka] val updater = system.actorOf(Props(new AgentUpdater(this))).asInstanceOf[LocalActorRef] //TODO can we avoid this somehow?
+  private val ref = Ref(initialValue)
+  private val updater = system.actorOf(Props(new AgentUpdater(this, ref))).asInstanceOf[LocalActorRef] //TODO can we avoid this somehow?
 
   /**
    * Read the internal state of the agent.
    */
-  def get() = ref.single.get
+  def get(): T = ref.single.get
 
   /**
    * Read the internal state of the agent.
    */
-  def apply() = get
+  def apply(): T = get
 
   /**
    * Dispatch a function to update the internal state.
@@ -154,7 +154,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
   def sendOff(f: T ⇒ T): Unit = {
     send((value: T) ⇒ {
       suspend()
-      val threadBased = system.actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher("akka.agent.send-off-dispatcher"))
+      val threadBased = system.actorOf(Props(new ThreadBasedAgentUpdater(this, ref)).withDispatcher("akka.agent.send-off-dispatcher"))
       threadBased ! Update(f)
       value
     })
@@ -171,7 +171,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
     val result = Promise[T]()(system.dispatcher)
     send((value: T) ⇒ {
       suspend()
-      val threadBased = system.actorOf(Props(new ThreadBasedAgentUpdater(this)).withDispatcher("akka.agent.alter-off-dispatcher"))
+      val threadBased = system.actorOf(Props(new ThreadBasedAgentUpdater(this, ref)).withDispatcher("akka.agent.alter-off-dispatcher"))
       result completeWith ask(threadBased, Alter(f))(timeout).asInstanceOf[Future[T]]
       value
     })
@@ -209,18 +209,18 @@ class Agent[T](initialValue: T, system: ActorSystem) {
   /**
    * Suspends processing of `send` actions for the agent.
    */
-  def suspend() = updater.suspend()
+  def suspend(): Unit = updater.suspend()
 
   /**
    * Resumes processing of `send` actions for the agent.
    */
-  def resume() = updater.resume()
+  def resume(): Unit = updater.resume()
 
   /**
    * Closes the agents and makes it eligible for garbage collection.
    * A closed agent cannot accept any `send` actions.
    */
-  def close() = updater.stop()
+  def close(): Unit = updater.stop()
 
   // ---------------------------------------------
   // Support for Java API Functions and Procedures
@@ -281,8 +281,10 @@ class Agent[T](initialValue: T, system: ActorSystem) {
 
 /**
  * Agent updater actor. Used internally for `send` actions.
+ *
+ * INTERNAL API
  */
-class AgentUpdater[T](agent: Agent[T]) extends Actor {
+private[akka] class AgentUpdater[T](agent: Agent[T], ref: Ref[T]) extends Actor {
   def receive = {
     case u: Update[_] ⇒ update(u.function.asInstanceOf[T ⇒ T])
     case a: Alter[_]  ⇒ sender ! update(a.function.asInstanceOf[T ⇒ T])
@@ -290,13 +292,15 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
     case _            ⇒
   }
 
-  def update(function: T ⇒ T): T = agent.ref.single.transformAndGet(function)
+  def update(function: T ⇒ T): T = ref.single.transformAndGet(function)
 }
 
 /**
  * Thread-based agent updater actor. Used internally for `sendOff` actions.
+ *
+ * INTERNAL API
  */
-class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
+private[akka] class ThreadBasedAgentUpdater[T](agent: Agent[T], ref: Ref[T]) extends Actor {
   def receive = {
     case u: Update[_] ⇒ try {
       update(u.function.asInstanceOf[T ⇒ T])
@@ -313,5 +317,5 @@ class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
     case _ ⇒ context.stop(self)
   }
 
-  def update(function: T ⇒ T): T = agent.ref.single.transformAndGet(function)
+  def update(function: T ⇒ T): T = ref.single.transformAndGet(function)
 }
