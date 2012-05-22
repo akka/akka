@@ -498,7 +498,7 @@ private[akka] class ActorCell(
       import ActorCell.behaviorStackPlaceHolder
 
       behaviorStack = behaviorStackPlaceHolder
-      val instance = props.creator()
+      val instance = props.creator.apply()
 
       if (instance eq null)
         throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
@@ -532,8 +532,7 @@ private[akka] class ActorCell(
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new UntypedActorFactory ... )
                or is missing an appropriate, reachable no-args constructor.
             """, i.getCause)
-        case NonFatal(e) ⇒
-          throw new ActorInitializationException(self, "exception during creation", e)
+        case NonFatal(e) ⇒ throw new ActorInitializationException(self, "exception during creation", e)
       }
     }
 
@@ -557,7 +556,10 @@ private[akka] class ActorCell(
             doRecreate(cause, failedActor)
         }
       } catch {
-        case NonFatal(e) ⇒ throw new ActorInitializationException(self, "exception during creation", e)
+        case NonFatal(e) ⇒ throw new ActorInitializationException(self, "exception during creation", e match {
+          case i: InstantiationException => i.getCause
+          case other => other
+        })
       }
     }
 

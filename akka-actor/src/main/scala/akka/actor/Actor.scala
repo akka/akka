@@ -118,7 +118,7 @@ class ActorKilledException private[akka] (message: String, cause: Throwable)
  * An InvalidActorNameException is thrown when you try to convert something, usually a String, to an Actor name
  * which doesn't validate.
  */
-case class InvalidActorNameException(message: String) extends AkkaException(message)
+class InvalidActorNameException(message: String) extends AkkaException(message)
 
 /**
  * An ActorInitializationException is thrown when the the initialization logic for an Actor fails.
