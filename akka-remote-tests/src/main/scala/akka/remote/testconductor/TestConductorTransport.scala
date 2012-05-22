@@ -10,7 +10,10 @@ import akka.remote.RemoteActorRefProvider
 import org.jboss.netty.channel.ChannelHandler
 import org.jboss.netty.channel.ChannelPipelineFactory
 
-class TestConductorTransport(_remoteSettings: RemoteSettings, _system: ActorSystemImpl, _provider: RemoteActorRefProvider)
+/**
+ * INTERNAL API.
+ */
+private[akka] class TestConductorTransport(_remoteSettings: RemoteSettings, _system: ActorSystemImpl, _provider: RemoteActorRefProvider)
   extends NettyRemoteTransport(_remoteSettings, _system, _provider) {
 
   override def createPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean): ChannelPipelineFactory =

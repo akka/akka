@@ -32,6 +32,9 @@ object TestConductor extends ExtensionKey[TestConductorExt] {
  * [[akka.remote.testconductor.Player]] roles inside an Akka
  * [[akka.actor.Extension]]. Please follow the aforementioned links for
  * more information.
+ *
+ * <b>This extension requires the `akka.actor.provider`
+ * to be a [[akka.remote.RemoteActorRefProvider]].</b>
  */
 class TestConductorExt(val system: ExtendedActorSystem) extends Extension with Conductor with Player {
 
@@ -47,9 +50,22 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
     val PacketSplitThreshold = Duration(config.getMilliseconds("akka.testconductor.packet-split-threshold"), MILLISECONDS)
   }
 
+  /**
+   * Remote transport used by the actor ref provider.
+   */
   val transport = system.provider.asInstanceOf[RemoteActorRefProvider].transport
+
+  /**
+   * Transport address of this Netty-like remote transport.
+   */
   val address = transport.address
 
-  val failureInjectors = new ConcurrentHashMap[Address, FailureInjector]
+  /**
+   * INTERNAL API.
+   *
+   * [[akka.remote.testconductor.FailureInjector]]s register themselves here so that
+   * failures can be injected.
+   */
+  private[akka] val failureInjectors = new ConcurrentHashMap[Address, FailureInjector]
 
 }

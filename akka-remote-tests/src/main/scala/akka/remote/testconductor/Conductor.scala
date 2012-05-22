@@ -50,7 +50,7 @@ trait Conductor { this: TestConductorExt ⇒
 
   private var _controller: ActorRef = _
   private def controller: ActorRef = _controller match {
-    case null ⇒ throw new RuntimeException("TestConductorServer was not started")
+    case null ⇒ throw new IllegalStateException("TestConductorServer was not started")
     case x    ⇒ x
   }
 
@@ -169,10 +169,11 @@ trait Conductor { this: TestConductorExt ⇒
    *
    * @param node is the symbolic name of the node which is to be affected
    */
-  def kill(node: RoleName): Future[Done] = {
-    import Settings.QueryTimeout
-    controller ? Terminate(node, -1) mapTo
-  }
+  // TODO: uncomment (and implement in Controller) if really needed
+  //  def kill(node: RoleName): Future[Done] = {
+  //    import Settings.QueryTimeout
+  //    controller ? Terminate(node, -1) mapTo
+  //  }
 
   /**
    * Obtain the list of remote host names currently registered.
@@ -201,8 +202,10 @@ trait Conductor { this: TestConductorExt ⇒
  * This handler is installed at the end of the controller’s netty pipeline. Its only
  * purpose is to dispatch incoming messages to the right ServerFSM actor. There is
  * one shared instance of this class for all connections accepted by one Controller.
+ *
+ * INTERNAL API.
  */
-class ConductorHandler(system: ActorSystem, controller: ActorRef, log: LoggingAdapter) extends SimpleChannelUpstreamHandler {
+private[akka] class ConductorHandler(system: ActorSystem, controller: ActorRef, log: LoggingAdapter) extends SimpleChannelUpstreamHandler {
 
   val clients = new ConcurrentHashMap[Channel, ActorRef]()
 
@@ -235,7 +238,10 @@ class ConductorHandler(system: ActorSystem, controller: ActorRef, log: LoggingAd
 
 }
 
-object ServerFSM {
+/**
+ * INTERNAL API.
+ */
+private[akka] object ServerFSM {
   sealed trait State
   case object Initial extends State
   case object Ready extends State
@@ -253,8 +259,10 @@ object ServerFSM {
  * [[akka.remote.testconductor.Done]] message, and there can be only one such
  * request outstanding at a given time (i.e. a Send fails if the previous has
  * not yet been acknowledged).
+ *
+ * INTERNAL API.
  */
-class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor with LoggingFSM[ServerFSM.State, Option[ActorRef]] {
+private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor with LoggingFSM[ServerFSM.State, Option[ActorRef]] {
   import ServerFSM._
   import akka.actor.FSM._
   import Controller._
@@ -317,7 +325,10 @@ class ServerFSM(val controller: ActorRef, val channel: Channel) extends Actor wi
   }
 }
 
-object Controller {
+/**
+ * INTERNAL API.
+ */
+private[akka] object Controller {
   case class ClientDisconnected(name: RoleName)
   case object GetNodes
   case object GetSockAddr
@@ -329,8 +340,10 @@ object Controller {
  * This controls test execution by managing barriers (delegated to
  * [[akka.remote.testconductor.BarrierCoordinator]], its child) and allowing
  * network and other failures to be injected at the test nodes.
+ *
+ * INTERNAL API.
  */
-class Controller(private var initialParticipants: Int, controllerPort: InetSocketAddress) extends Actor {
+private[akka] class Controller(private var initialParticipants: Int, controllerPort: InetSocketAddress) extends Actor {
   import Controller._
   import BarrierCoordinator._
 
@@ -418,7 +431,10 @@ class Controller(private var initialParticipants: Int, controllerPort: InetSocke
   }
 }
 
-object BarrierCoordinator {
+/**
+ * INTERNAL API.
+ */
+private[akka] object BarrierCoordinator {
   sealed trait State
   case object Idle extends State
   case object Waiting extends State
@@ -447,8 +463,10 @@ object BarrierCoordinator {
  * EnterBarrier return message. In case of planned removals, this may just happen
  * earlier, in case of failures the current barrier (and all subsequent ones) will
  * be failed by sending BarrierFailed responses.
+ *
+ * INTERNAL API.
  */
-class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State, BarrierCoordinator.Data] {
+private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoordinator.State, BarrierCoordinator.Data] {
   import BarrierCoordinator._
   import akka.actor.FSM._
   import Controller._

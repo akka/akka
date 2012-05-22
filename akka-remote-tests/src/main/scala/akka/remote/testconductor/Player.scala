@@ -94,7 +94,10 @@ trait Player { this: TestConductorExt ⇒
   }
 }
 
-object ClientFSM {
+/**
+ * INTERNAL API.
+ */
+private[akka] object ClientFSM {
   sealed trait State
   case object Connecting extends State
   case object AwaitDone extends State
@@ -116,8 +119,10 @@ object ClientFSM {
  * done the same. After that, it will pass barrier requests to and from the
  * coordinator and react to the [[akka.remote.testconductor.Conductor]]’s
  * requests for failure injection.
+ *
+ * INTERNAL API.
  */
-class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
+private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
   import ClientFSM._
 
   val settings = TestConductor().Settings
@@ -236,8 +241,10 @@ class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor
 
 /**
  * This handler only forwards messages received from the conductor to the [[akka.remote.testconductor.ClientFSM]].
+ *
+ * INTERNAL API.
  */
-class PlayerHandler(
+private[akka] class PlayerHandler(
   server: InetSocketAddress,
   private var reconnects: Int,
   backoff: Duration,

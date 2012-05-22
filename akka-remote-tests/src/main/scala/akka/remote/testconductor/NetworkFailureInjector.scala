@@ -31,7 +31,10 @@ import org.jboss.netty.channel.ChannelFuture
 import org.jboss.netty.channel.ChannelFutureListener
 import org.jboss.netty.channel.ChannelFuture
 
-case class FailureInjector(sender: ActorRef, receiver: ActorRef) {
+/**
+ * INTERNAL API.
+ */
+private[akka] case class FailureInjector(sender: ActorRef, receiver: ActorRef) {
   def refs(dir: Direction) = dir match {
     case Direction.Send    ⇒ Seq(sender)
     case Direction.Receive ⇒ Seq(receiver)
@@ -39,12 +42,27 @@ case class FailureInjector(sender: ActorRef, receiver: ActorRef) {
   }
 }
 
-object NetworkFailureInjector {
+/**
+ * INTERNAL API.
+ */
+private[akka] object NetworkFailureInjector {
   case class SetRate(rateMBit: Float)
   case class Disconnect(abort: Boolean)
 }
 
-class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
+/**
+ * Brief overview: all network traffic passes through the `sender`/`receiver` FSMs, which can
+ * pass through requests immediately, drop them or throttle to a desired rate. The FSMs are
+ * registered in the TestConductorExt.failureInjectors so that settings can be applied from
+ * the ClientFSMs.
+ *
+ * I found that simply forwarding events using ctx.sendUpstream/sendDownstream does not work,
+ * it deadlocks and gives strange errors; in the end I just trusted the Netty docs which
+ * recommend to prefer `Channels.write()` and `Channels.fireMessageReceived()`.
+ *
+ * INTERNAL API.
+ */
+private[akka] class NetworkFailureInjector(system: ActorSystem) extends SimpleChannelHandler {
 
   val log = Logging(system, "FailureInjector")
 

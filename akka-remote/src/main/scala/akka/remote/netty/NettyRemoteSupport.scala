@@ -46,13 +46,31 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
     Executors.newCachedThreadPool(system.threadFactory),
     Executors.newCachedThreadPool(system.threadFactory))
 
+  /**
+   * Backing scaffolding for the default implementation of NettyRemoteSupport.createPipeline.
+   */
   object PipelineFactory {
+    /**
+     * Construct a StaticChannelPipeline from a sequence of handlers; to be used
+     * in implementations of ChannelPipelineFactory.
+     */
     def apply(handlers: Seq[ChannelHandler]): StaticChannelPipeline = new StaticChannelPipeline(handlers: _*)
+
+    /**
+     * Constructs the NettyRemoteTransport default pipeline with the give “head” handler, which
+     * is taken by-name to allow it not to be shared across pipelines.
+     *
+     * @param withTimeout determines whether an IdleStateHandler shall be included
+     */
     def apply(endpoint: ⇒ Seq[ChannelHandler], withTimeout: Boolean): ChannelPipelineFactory =
       new ChannelPipelineFactory {
         def getPipeline = apply(defaultStack(withTimeout) ++ endpoint)
       }
 
+    /**
+     * Construct a default protocol stack, excluding the “head” handler (i.e. the one which
+     * actually dispatches the received messages to the local target actors).
+     */
     def defaultStack(withTimeout: Boolean): Seq[ChannelHandler] =
       (if (withTimeout) timeout :: Nil else Nil) :::
         msgFormat :::
@@ -60,17 +78,28 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
         executionHandler ::
         Nil
 
+    /**
+     * Construct an IdleStateHandler which uses [[akka.remote.netty.NettyRemoteTransport]].timer.
+     */
     def timeout = new IdleStateHandler(timer,
       settings.ReadTimeout.toSeconds.toInt,
       settings.WriteTimeout.toSeconds.toInt,
       settings.AllTimeout.toSeconds.toInt)
 
+    /**
+     * Construct frame&protobuf encoder/decoder.
+     */
     def msgFormat = new LengthFieldBasedFrameDecoder(settings.MessageFrameSize, 0, 4, 0, 4) ::
       new LengthFieldPrepender(4) ::
       new RemoteMessageDecoder ::
       new RemoteMessageEncoder(NettyRemoteTransport.this) ::
       Nil
 
+    /**
+     * Construct an ExecutionHandler which is used to ensure that message dispatch does not
+     * happen on a netty thread (that could be bad if re-sending over the network for
+     * remote-deployed actors).
+     */
     val executionHandler = new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(
       settings.ExecutionPoolSize,
       settings.MaxChannelMemorySize,
@@ -79,6 +108,11 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
       settings.ExecutionPoolKeepalive.unit,
       system.threadFactory))
 
+    /**
+     * Construct and authentication handler which uses the SecureCookie to somewhat
+     * protect the TCP port from unauthorized use (don’t rely on it too much, though,
+     * as this is NOT a cryptographic feature).
+     */
     def authenticator = if (settings.RequireCookie) new RemoteServerAuthenticationHandler(settings.SecureCookie) :: Nil else Nil
   }
 
@@ -98,7 +132,8 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   /**
    * Override this method to inject a subclass of NettyRemoteServer instead of
-   * the normal one, e.g. for inserting security hooks.
+   * the normal one, e.g. for inserting security hooks. If this method throws
+   * an exception, the transport will shut itself down and re-throw.
    */
   protected def createServer(): NettyRemoteServer = new NettyRemoteServer(this)
 

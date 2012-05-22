@@ -13,7 +13,10 @@ import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutExceptio
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
-class TestConductorPipelineFactory(handler: ChannelUpstreamHandler) extends ChannelPipelineFactory {
+/**
+ * INTERNAL API.
+ */
+private[akka] class TestConductorPipelineFactory(handler: ChannelUpstreamHandler) extends ChannelPipelineFactory {
   def getPipeline: ChannelPipeline = {
     val encap = List(new LengthFieldPrepender(4), new LengthFieldBasedFrameDecoder(10000, 0, 4, 0, 4))
     val proto = List(new ProtobufEncoder, new ProtobufDecoder(TestConductorProtocol.Wrapper.getDefaultInstance))
@@ -22,11 +25,23 @@ class TestConductorPipelineFactory(handler: ChannelUpstreamHandler) extends Chan
   }
 }
 
-sealed trait Role
-case object Client extends Role
-case object Server extends Role
+/**
+ * INTERNAL API.
+ */
+private[akka] sealed trait Role
+/**
+ * INTERNAL API.
+ */
+private[akka] case object Client extends Role
+/**
+ * INTERNAL API.
+ */
+private[akka] case object Server extends Role
 
-object RemoteConnection {
+/**
+ * INTERNAL API.
+ */
+private[akka] object RemoteConnection {
   def apply(role: Role, sockaddr: InetSocketAddress, handler: ChannelUpstreamHandler): Channel = {
     role match {
       case Client ⇒
