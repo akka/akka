@@ -181,13 +181,13 @@ object Status {
 /**
  * Mix in ActorLogging into your Actor to easily obtain a reference to a logger, which is available under the name "log".
  *
- * {{
+ * {{{
  * class MyActor extends Actor with ActorLogging {
  *   def receive = {
  *     case "pigdog" => log.info("We've got yet another pigdog on our hands")
  *   }
  * }
- * }}
+ * }}}
  */
 trait ActorLogging { this: Actor ⇒
   val log = akka.event.Logging(context.system, this)
