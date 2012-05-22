@@ -29,7 +29,7 @@ object RoutingProgrammaticallyExample extends App {
   val actor2 = system.actorOf(Props[ExampleActor1])
   val actor3 = system.actorOf(Props[ExampleActor1])
   val routees = Vector[ActorRef](actor1, actor2, actor3)
-  val router2 = system.actorOf(Props[ExampleActor1].withRouter(
+  val router2 = system.actorOf(Props().withRouter(
     RoundRobinRouter(routees = routees)))
   //#programmaticRoutingRoutees
   1 to 6 foreach { i ⇒ router2 ! Message1(i) }
