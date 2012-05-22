@@ -10,7 +10,7 @@ import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
 import akka.util.Duration
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import com.typesafe.config.ConfigFactory
 import akka.pattern.ask
 import java.util.concurrent.ConcurrentHashMap

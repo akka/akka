@@ -134,7 +134,7 @@ trait Producer extends ProducerSupport { this: Actor ⇒
    * Default implementation of Actor.receive. Any messages received by this actors
    * will be produced to the endpoint specified by <code>endpointUri</code>.
    */
-  protected def receive = produce
+  def receive = produce
 }
 
 /**

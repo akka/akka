@@ -147,7 +147,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       object Hello
       object Bye
       val tester = system.actorOf(Props(new Actor {
-        protected def receive = {
+        def receive = {
           case Hello   ⇒ lock ! "hello"
           case "world" ⇒ answerLatch.open
           case Bye     ⇒ lock ! "bye"

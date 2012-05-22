@@ -5,17 +5,15 @@
 package akka.dispatch
 
 import java.util.concurrent.{ ConcurrentHashMap, TimeUnit, ThreadFactory }
-
-import scala.collection.JavaConverters.mapAsJavaMapConverter
-
 import com.typesafe.config.{ ConfigFactory, Config }
-
-import Dispatchers.DefaultDispatcherId
 import akka.actor.{ Scheduler, DynamicAccess, ActorSystem }
 import akka.event.Logging.Warning
 import akka.event.EventStream
 import akka.util.Duration
 
+/**
+ * DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher
+ */
 trait DispatcherPrerequisites {
   def threadFactory: ThreadFactory
   def eventStream: EventStream
@@ -25,7 +23,10 @@ trait DispatcherPrerequisites {
   def settings: ActorSystem.Settings
 }
 
-case class DefaultDispatcherPrerequisites(
+/**
+ * INTERNAL USE ONLY
+ */
+private[akka] case class DefaultDispatcherPrerequisites(
   val threadFactory: ThreadFactory,
   val eventStream: EventStream,
   val deadLetterMailbox: Mailbox,
@@ -96,6 +97,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
     }
   }
 
+  //INTERNAL API
   private def config(id: String): Config = {
     import scala.collection.JavaConverters._
     def simpleName = id.substring(id.lastIndexOf('.') + 1)
@@ -105,12 +107,13 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       .withFallback(defaultDispatcherConfig)
   }
 
+  //INTERNAL API
   private def idConfig(id: String): Config = {
     import scala.collection.JavaConverters._
     ConfigFactory.parseMap(Map("id" -> id).asJava)
   }
 
-  /*
+  /**
    * Creates a dispatcher from a Config. Internal test purpose only.
    *
    * ex: from(config.getConfig(id))
@@ -119,18 +122,20 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    *
    * Throws: IllegalArgumentException if the value of "type" is not valid
    *         IllegalArgumentException if it cannot create the MessageDispatcherConfigurator
+   *
+   * INTERNAL USE ONLY
    */
-  private[akka] def from(cfg: Config): MessageDispatcher = {
-    configuratorFrom(cfg).dispatcher()
-  }
+  private[akka] def from(cfg: Config): MessageDispatcher = configuratorFrom(cfg).dispatcher()
 
-  /*
+  /**
    * Creates a MessageDispatcherConfigurator from a Config.
    *
    * The Config must also contain a `id` property, which is the identifier of the dispatcher.
    *
    * Throws: IllegalArgumentException if the value of "type" is not valid
    *         IllegalArgumentException if it cannot create the MessageDispatcherConfigurator
+   *
+   * INTERNAL USE ONLY
    */
   private def configuratorFrom(cfg: Config): MessageDispatcherConfigurator = {
     if (!cfg.hasPath("id")) throw new IllegalArgumentException("Missing dispatcher 'id' property in config: " + cfg.root.render)
@@ -208,7 +213,7 @@ class BalancingDispatcherConfigurator(config: Config, prerequisites: DispatcherP
 class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
   extends MessageDispatcherConfigurator(config, prerequisites) {
 
-  val threadPoolConfig: ThreadPoolConfig = configureExecutor() match {
+  private val threadPoolConfig: ThreadPoolConfig = configureExecutor() match {
     case e: ThreadPoolExecutorConfigurator ⇒ e.threadPoolConfig
     case other ⇒
       prerequisites.eventStream.publish(

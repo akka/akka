@@ -46,7 +46,7 @@ trait AskSupport {
    * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
    * holding the eventual reply message; this means that the target actor
    * needs to send the result to the `sender` reference provided. The Future
-   * will be completed with an [[akka.actor.AskTimeoutException]] after the
+   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
    * `Await.result(..., timeout)`).
@@ -96,7 +96,7 @@ trait AskSupport {
      * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
      * holding the eventual reply message; this means that the target actor
      * needs to send the result to the `sender` reference provided. The Future
-     * will be completed with an [[akka.actor.AskTimeoutException]] after the
+     * will be completed with an [[akka.pattern.AskTimeoutException]] after the
      * given timeout has expired; this is independent from any timeout applied
      * while awaiting a result for this future (i.e. in
      * `Await.result(..., timeout)`).
@@ -126,7 +126,7 @@ trait AskSupport {
      * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
      * holding the eventual reply message; this means that the target actor
      * needs to send the result to the `sender` reference provided. The Future
-     * will be completed with an [[akka.actor.AskTimeoutException]] after the
+     * will be completed with an [[akka.pattern.AskTimeoutException]] after the
      * given timeout has expired; this is independent from any timeout applied
      * while awaiting a result for this future (i.e. in
      * `Await.result(..., timeout)`).
@@ -157,6 +157,8 @@ trait AskSupport {
 /**
  * Akka private optimized representation of the temporary actor spawned to
  * receive the reply to an "ask" operation.
+ *
+ * INTERNAL API
  */
 private[akka] final class PromiseActorRef private (val provider: ActorRefProvider, val result: Promise[Any])
   extends MinimalActorRef {
@@ -182,14 +184,12 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   private def state: AnyRef = Unsafe.instance.getObjectVolatile(this, stateOffset)
 
   @inline
-  private def updateState(oldState: AnyRef, newState: AnyRef): Boolean =
-    Unsafe.instance.compareAndSwapObject(this, stateOffset, oldState, newState)
+  private def updateState(oldState: AnyRef, newState: AnyRef): Boolean = Unsafe.instance.compareAndSwapObject(this, stateOffset, oldState, newState)
 
   @inline
-  private def setState(newState: AnyRef): Unit =
-    Unsafe.instance.putObjectVolatile(this, stateOffset, newState)
+  private def setState(newState: AnyRef): Unit = Unsafe.instance.putObjectVolatile(this, stateOffset, newState)
 
-  override def getParent = provider.tempContainer
+  override def getParent: InternalActorRef = provider.tempContainer
 
   /**
    * Contract of this method:
@@ -234,7 +234,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
     case _            ⇒
   }
 
-  override def isTerminated = state match {
+  override def isTerminated: Boolean = state match {
     case Stopped | _: StoppedWithPath ⇒ true
     case _                            ⇒ false
   }
@@ -263,6 +263,9 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] object PromiseActorRef {
   private case object Registering
   private case object Stopped
@@ -272,9 +275,7 @@ private[akka] object PromiseActorRef {
     val result = Promise[Any]()(provider.dispatcher)
     val a = new PromiseActorRef(provider, result)
     val f = provider.scheduler.scheduleOnce(timeout.duration) { result.tryComplete(Left(new AskTimeoutException("Timed out"))) }
-    result onComplete { _ ⇒
-      try a.stop() finally f.cancel()
-    }
+    result onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a
   }
 }

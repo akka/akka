@@ -10,7 +10,7 @@ import akka.actor.ActorSystemImpl
 import akka.actor.Deploy
 import akka.actor.InternalActorRef
 import akka.actor.Props
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import akka.remote.RemoteScope
 import akka.actor.AddressFromURIString
 import akka.actor.SupervisorStrategy

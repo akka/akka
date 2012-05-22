@@ -56,7 +56,7 @@ trait Stash {
 
   /* The capacity of the stash. Configured in the actor's dispatcher config.
    */
-  private val capacity = {
+  private val capacity: Int = {
     val dispatcher = context.system.settings.config.getConfig(context.props.dispatcher)
     val config = dispatcher.withFallback(context.system.settings.config.getConfig("akka.actor.default-dispatcher"))
     config.getInt("stash-capacity")
@@ -125,4 +125,7 @@ An (unbounded) deque-based mailbox can be configured as follows:
 
 }
 
+/**
+ * Is thrown when the size of the Stash exceeds the capacity of the Stash
+ */
 class StashOverflowException(message: String, cause: Throwable = null) extends AkkaException(message, cause)

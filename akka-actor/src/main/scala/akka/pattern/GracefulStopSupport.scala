@@ -4,9 +4,9 @@
 
 package akka.pattern
 
-import akka.actor.{ ActorRef, Actor, ActorSystem, Props, PoisonPill, Terminated, ReceiveTimeout, ActorTimeoutException }
 import akka.dispatch.{ Promise, Future }
-import akka.util.Duration
+import akka.actor._
+import akka.util.{ Timeout, Duration }
 
 trait GracefulStopSupport {
   /**
@@ -14,34 +14,39 @@ trait GracefulStopSupport {
    * existing messages of the target actor has been processed and the actor has been
    * terminated.
    *
-   * Useful when you need to wait for termination or compose ordered termination of several actors.
+   * Useful when you need to wait for termination or compose ordered termination of several actors,
+   * which should only be done outside of the ActorSystem as blocking inside Actors is discouraged.
+   *
+   * <b>IMPORTANT NOTICE:</b> the actor being terminated and its supervisor
+   * being informed of the availability of the deceased actor’s name are two
+   * distinct operations, which do not obey any reliable ordering. Especially
+   * the following will NOT work:
+   *
+   * {{{
+   * def receive = {
+   *   case msg =>
+   *     Await.result(gracefulStop(someChild, timeout), timeout)
+   *     context.actorOf(Props(...), "someChild") // assuming that that was someChild’s name, this will NOT work
+   * }
+   * }}}
    *
    * If the target actor isn't terminated within the timeout the [[akka.dispatch.Future]]
-   * is completed with failure [[akka.actor.ActorTimeoutException]].
+   * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
     if (target.isTerminated) {
       Promise.successful(true)
-    } else {
-      val result = Promise[Boolean]()
-      system.actorOf(Props(new Actor {
-        // Terminated will be received when target has been stopped
-        context watch target
+    } else system match {
+      case e: ExtendedActorSystem ⇒
+        val ref = PromiseActorRef(e.provider, Timeout(timeout))
+        e.deathWatch.subscribe(ref, target)
+        ref.result onComplete {
+          case Right(Terminated(`target`)) ⇒ () // Ignore
+          case _                           ⇒ e.deathWatch.unsubscribe(ref, target)
+        } // Just making sure we're not leaking here
         target ! PoisonPill
-        // ReceiveTimeout will be received if nothing else is received within the timeout
-        context setReceiveTimeout timeout
-
-        def receive = {
-          case Terminated(a) if a == target ⇒
-            result success true
-            context stop self
-          case ReceiveTimeout ⇒
-            result failure new ActorTimeoutException(
-              "Failed to stop [%s] within [%s]".format(target.path, context.receiveTimeout))
-            context stop self
-        }
-      }))
-      result
+        ref.result map { case Terminated(`target`) ⇒ true }
+      case s ⇒ throw new IllegalArgumentException("Unknown ActorSystem implementation: '" + s + "'")
     }
   }
 }

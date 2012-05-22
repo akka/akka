@@ -19,7 +19,7 @@ object EventStreamSpec {
         loglevel = INFO
         event-handlers = ["akka.event.EventStreamSpec$MyLog", "%s"]
       }
-      """.format(Logging.StandardOutLoggerName))
+      """.format(Logging.StandardOutLogger.getClass.getName))
 
   val configUnhandled = ConfigFactory.parseString("""
       akka {

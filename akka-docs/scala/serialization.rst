@@ -84,7 +84,7 @@ Customization
 =============
 
 So, lets say that you want to create your own ``Serializer``,
-you saw the ``akka.docs.serialization.MyOwnSerializer`` in the config example above?
+you saw the ``docs.serialization.MyOwnSerializer`` in the config example above?
 
 Creating new Serializers
 ------------------------

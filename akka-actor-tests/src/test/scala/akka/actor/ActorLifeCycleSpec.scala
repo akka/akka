@@ -13,6 +13,7 @@ import akka.util.duration._
 import java.util.concurrent.atomic._
 import akka.dispatch.Await
 import akka.pattern.ask
+import java.util.UUID.{ randomUUID ⇒ newUuid }
 
 object ActorLifeCycleSpec {
 
@@ -35,7 +36,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
 
     "invoke preRestart, preStart, postRestart when using OneForOneStrategy" in {
       filterException[ActorKilledException] {
-        val id = newUuid().toString
+        val id = newUuid.toString
         val supervisor = system.actorOf(Props(new Supervisor(
           OneForOneStrategy(maxNrOfRetries = 3)(List(classOf[Exception])))))
         val gen = new AtomicInteger(0)
