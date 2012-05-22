@@ -8,6 +8,8 @@ import akka.actor.Props
 import akka.testkit.ImplicitSender
 import akka.remote.testconductor.Controller.NodeInfo
 import akka.actor.AddressFromURIString
+import java.net.InetSocketAddress
+import java.net.InetAddress
 
 object ControllerSpec {
   val config = """
@@ -21,16 +23,19 @@ object ControllerSpec {
 
 class ControllerSpec extends AkkaSpec(ControllerSpec.config) with ImplicitSender {
 
+  val A = RoleName("a")
+  val B = RoleName("b")
+
   "A Controller" must {
 
     "publish its nodes" in {
-      val c = system.actorOf(Props(new Controller(1)))
-      c ! NodeInfo("a", AddressFromURIString("akka://sys"), testActor)
-      expectMsg(Send(Done))
-      c ! NodeInfo("b", AddressFromURIString("akka://sys"), testActor)
-      expectMsg(Send(Done))
+      val c = system.actorOf(Props(new Controller(1, new InetSocketAddress(InetAddress.getLocalHost, 0))))
+      c ! NodeInfo(A, AddressFromURIString("akka://sys"), testActor)
+      expectMsg(ToClient(Done))
+      c ! NodeInfo(B, AddressFromURIString("akka://sys"), testActor)
+      expectMsg(ToClient(Done))
       c ! Controller.GetNodes
-      expectMsgType[Iterable[String]].toSet must be(Set("a", "b"))
+      expectMsgType[Iterable[RoleName]].toSet must be(Set(A, B))
     }
 
   }

@@ -20,6 +20,13 @@ import akka.event.LoggingAdapter
 import akka.actor.PoisonPill
 import akka.event.Logging
 import akka.dispatch.Future
+import java.net.InetSocketAddress
+import akka.actor.Address
+import org.jboss.netty.channel.ExceptionEvent
+import org.jboss.netty.channel.WriteCompletionEvent
+import java.net.ConnectException
+import akka.util.Deadline
+import akka.actor.Scheduler
 
 /**
  * The Player is the client component of the
@@ -43,13 +50,13 @@ trait Player { this: TestConductorExt ⇒
    * this is a first barrier in itself). The number of expected participants is
    * set in [[akka.remote.testconductor.Conductor]]`.startController()`.
    */
-  def startClient(port: Int): Future[Done] = {
+  def startClient(name: RoleName, controllerAddr: InetSocketAddress): Future[Done] = {
     import ClientFSM._
     import akka.actor.FSM._
     import Settings.BarrierTimeout
 
     if (_client ne null) throw new IllegalStateException("TestConductorClient already started")
-    _client = system.actorOf(Props(new ClientFSM(port)), "TestConductorClient")
+    _client = system.actorOf(Props(new ClientFSM(name, controllerAddr)), "TestConductorClient")
     val a = system.actorOf(Props(new Actor {
       var waiting: ActorRef = _
       def receive = {
@@ -73,9 +80,17 @@ trait Player { this: TestConductorExt ⇒
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
     name foreach { b ⇒
       import Settings.BarrierTimeout
-      Await.result(client ? Send(EnterBarrier(b)), Duration.Inf)
+      Await.result(client ? ToServer(EnterBarrier(b)), Duration.Inf)
       system.log.debug("passed barrier {}", b)
     }
+  }
+
+  /**
+   * Query remote transport address of named node.
+   */
+  def getAddressFor(name: RoleName): Future[Address] = {
+    import Settings.BarrierTimeout
+    client ? ToServer(GetAddress(name)) mapTo
   }
 }
 
@@ -86,9 +101,10 @@ object ClientFSM {
   case object Connected extends State
   case object Failed extends State
 
-  case class Data(channel: Channel, barrier: Option[(String, ActorRef)])
+  case class Data(channel: Option[Channel], runningOp: Option[(String, ActorRef)])
 
-  class ConnectionFailure(msg: String) extends RuntimeException(msg) with NoStackTrace
+  case class Connected(channel: Channel)
+  case class ConnectionFailure(msg: String) extends RuntimeException(msg) with NoStackTrace
   case object Disconnected
 }
 
@@ -101,21 +117,22 @@ object ClientFSM {
  * coordinator and react to the [[akka.remote.testconductor.Conductor]]’s
  * requests for failure injection.
  */
-class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
+class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
   import ClientFSM._
 
   val settings = TestConductor().Settings
 
-  val handler = new PlayerHandler(self, Logging(context.system, "PlayerHandler"))
+  val handler = new PlayerHandler(controllerAddr, settings.ClientReconnects, settings.ReconnectBackoff,
+    self, Logging(context.system, "PlayerHandler"), context.system.scheduler)
 
-  startWith(Connecting, Data(RemoteConnection(Client, settings.host, port, handler), None))
+  startWith(Connecting, Data(None, None))
 
-  when(Connecting, stateTimeout = 10 seconds) {
+  when(Connecting, stateTimeout = settings.ConnectTimeout) {
     case Event(msg: ClientOp, _) ⇒
       stay replying Status.Failure(new IllegalStateException("not connected yet"))
-    case Event(Connected, d @ Data(channel, _)) ⇒
-      channel.write(Hello(settings.name, TestConductor().address))
-      goto(AwaitDone)
+    case Event(Connected(channel), _) ⇒
+      channel.write(Hello(name.name, TestConductor().address))
+      goto(AwaitDone) using Data(Some(channel), None)
     case Event(_: ConnectionFailure, _) ⇒
       goto(Failed)
     case Event(StateTimeout, _) ⇒
@@ -130,7 +147,7 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
     case Event(msg: NetworkOp, _) ⇒
       log.error("received {} instead of Done", msg)
       goto(Failed)
-    case Event(msg: ClientOp, _) ⇒
+    case Event(msg: ServerOp, _) ⇒
       stay replying Status.Failure(new IllegalStateException("not connected yet"))
     case Event(StateTimeout, _) ⇒
       log.error("connect timeout to TestConductor")
@@ -141,44 +158,63 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
     case Event(Disconnected, _) ⇒
       log.info("disconnected from TestConductor")
       throw new ConnectionFailure("disconnect")
-    case Event(Send(msg: EnterBarrier), Data(channel, None)) ⇒
+    case Event(ToServer(Done), Data(Some(channel), _)) ⇒
+      channel.write(Done)
+      stay
+    case Event(ToServer(msg), d @ Data(Some(channel), None)) ⇒
       channel.write(msg)
-      stay using Data(channel, Some(msg.name, sender))
-    case Event(Send(d: Done), Data(channel, _)) ⇒
-      channel.write(d)
-      stay
-    case Event(Send(x), _) ⇒
-      log.warning("cannot send message {}", x)
-      stay
-    case Event(EnterBarrier(b), Data(channel, Some((barrier, sender)))) ⇒
-      if (b != barrier) {
-        sender ! Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
-      } else {
-        sender ! b
+      val token = msg match {
+        case EnterBarrier(barrier) ⇒ barrier
+        case GetAddress(node)      ⇒ node.name
       }
-      stay using Data(channel, None)
-    case Event(BarrierFailed(b), Data(channel, Some((_, sender)))) ⇒
-      sender ! Status.Failure(new RuntimeException("barrier failed: " + b))
-      stay using Data(channel, None)
-    case Event(ThrottleMsg(target, dir, rate), _) ⇒
-      import settings.QueryTimeout
-      import context.dispatcher
-      TestConductor().failureInjectors.get(target.copy(system = "")) match {
-        case null ⇒ log.warning("cannot throttle unknown address {}", target)
-        case inj ⇒
-          Future.sequence(inj.refs(dir) map (_ ? NetworkFailureInjector.SetRate(rate))) map (_ ⇒ Send(Done)) pipeTo self
-      }
+      stay using d.copy(runningOp = Some(token, sender))
+    case Event(ToServer(op), Data(channel, Some((token, _)))) ⇒
+      log.error("cannot write {} while waiting for {}", op, token)
       stay
-    case Event(DisconnectMsg(target, abort), _) ⇒
-      import settings.QueryTimeout
-      TestConductor().failureInjectors.get(target.copy(system = "")) match {
-        case null ⇒ log.warning("cannot disconnect unknown address {}", target)
-        case inj  ⇒ inj.sender ? NetworkFailureInjector.Disconnect(abort) map (_ ⇒ Send(Done)) pipeTo self
+    case Event(op: ClientOp, d @ Data(Some(channel), runningOp)) ⇒
+      op match {
+        case BarrierResult(b, success) ⇒
+          runningOp match {
+            case Some((barrier, requester)) ⇒
+              if (b != barrier) {
+                requester ! Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
+              } else if (!success) {
+                requester ! Status.Failure(new RuntimeException("barrier failed: " + b))
+              } else {
+                requester ! b
+              }
+            case None ⇒
+              log.warning("did not expect {}", op)
+          }
+          stay using d.copy(runningOp = None)
+        case AddressReply(node, addr) ⇒
+          runningOp match {
+            case Some((_, requester)) ⇒
+              requester ! addr
+            case None ⇒
+              log.warning("did not expect {}", op)
+          }
+          stay using d.copy(runningOp = None)
+        case ThrottleMsg(target, dir, rate) ⇒
+          import settings.QueryTimeout
+          import context.dispatcher
+          TestConductor().failureInjectors.get(target.copy(system = "")) match {
+            case null ⇒ log.warning("cannot throttle unknown address {}", target)
+            case inj ⇒
+              Future.sequence(inj.refs(dir) map (_ ? NetworkFailureInjector.SetRate(rate))) map (_ ⇒ ToServer(Done)) pipeTo self
+          }
+          stay
+        case DisconnectMsg(target, abort) ⇒
+          import settings.QueryTimeout
+          TestConductor().failureInjectors.get(target.copy(system = "")) match {
+            case null ⇒ log.warning("cannot disconnect unknown address {}", target)
+            case inj  ⇒ inj.sender ? NetworkFailureInjector.Disconnect(abort) map (_ ⇒ ToServer(Done)) pipeTo self
+          }
+          stay
+        case TerminateMsg(exit) ⇒
+          System.exit(exit)
+          stay // needed because Java doesn’t have Nothing
       }
-      stay
-    case Event(TerminateMsg(exit), _) ⇒
-      System.exit(exit)
-      stay // needed because Java doesn’t have Nothing
   }
 
   when(Failed) {
@@ -190,7 +226,7 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
   }
 
   onTermination {
-    case StopEvent(_, _, Data(channel, _)) ⇒
+    case StopEvent(_, _, Data(Some(channel), _)) ⇒
       channel.close()
   }
 
@@ -201,14 +237,46 @@ class ClientFSM(port: Int) extends Actor with LoggingFSM[ClientFSM.State, Client
 /**
  * This handler only forwards messages received from the conductor to the [[akka.remote.testconductor.ClientFSM]].
  */
-class PlayerHandler(fsm: ActorRef, log: LoggingAdapter) extends SimpleChannelUpstreamHandler {
+class PlayerHandler(
+  server: InetSocketAddress,
+  private var reconnects: Int,
+  backoff: Duration,
+  fsm: ActorRef,
+  log: LoggingAdapter,
+  scheduler: Scheduler)
+  extends SimpleChannelUpstreamHandler {
 
   import ClientFSM._
 
+  reconnect()
+
+  var nextAttempt: Deadline = _
+
+  override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) = log.debug("channel {} open", event.getChannel)
+  override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = log.debug("channel {} closed", event.getChannel)
+  override def channelBound(ctx: ChannelHandlerContext, event: ChannelStateEvent) = log.debug("channel {} bound", event.getChannel)
+  override def channelUnbound(ctx: ChannelHandlerContext, event: ChannelStateEvent) = log.debug("channel {} unbound", event.getChannel)
+  override def writeComplete(ctx: ChannelHandlerContext, event: WriteCompletionEvent) = log.debug("channel {} written {}", event.getChannel, event.getWrittenAmount)
+
+  override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
+    log.debug("channel {} exception {}", event.getChannel, event.getCause)
+    event.getCause match {
+      case c: ConnectException if reconnects > 0 ⇒
+        reconnects -= 1
+        scheduler.scheduleOnce(nextAttempt.timeLeft)(reconnect())
+      case e ⇒ fsm ! ConnectionFailure(e.getMessage)
+    }
+  }
+
+  private def reconnect(): Unit = {
+    nextAttempt = Deadline.now + backoff
+    RemoteConnection(Client, server, this)
+  }
+
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    val channel = event.getChannel
-    log.debug("connected to {}", getAddrString(channel))
-    fsm ! Connected
+    val ch = event.getChannel
+    log.debug("connected to {}", getAddrString(ch))
+    fsm ! Connected(ch)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {

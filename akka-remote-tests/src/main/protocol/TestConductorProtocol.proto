@@ -16,6 +16,7 @@ message Wrapper {
   optional EnterBarrier barrier = 2;
   optional InjectFailure failure = 3;
   optional string done = 4;
+  optional AddressRequest addr = 5;
 }
 
 message Hello {
@@ -25,7 +26,12 @@ message Hello {
 
 message EnterBarrier {
   required string name = 1;
-  optional bool failed = 2;
+  optional bool status = 2;
+}
+
+message AddressRequest {
+  required string node = 1;
+  optional Address addr = 2;
 }
 
 message Address {
