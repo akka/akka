@@ -17,6 +17,19 @@ trait GracefulStopSupport {
    * Useful when you need to wait for termination or compose ordered termination of several actors,
    * which should only be done outside of the ActorSystem as blocking inside Actors is discouraged.
    *
+   * <b>IMPORTANT NOTICE:</b> the actor being terminated and its supervisor
+   * being informed of the availability of the deceased actor’s name are two
+   * distinct operations, which do not obey any reliable ordering. Especially
+   * the following will NOT work:
+   *
+   * {{{
+   * def receive = {
+   *   case msg =>
+   *     Await.result(gracefulStop(someChild, timeout), timeout)
+   *     context.actorOf(Props(...), "someChild") // assuming that that was someChild’s name, this will NOT work
+   * }
+   * }}}
+   *
    * If the target actor isn't terminated within the timeout the [[akka.dispatch.Future]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
