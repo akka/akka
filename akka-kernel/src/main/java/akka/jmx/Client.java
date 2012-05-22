@@ -201,12 +201,10 @@ public class Client {
      * @param password
      * @return Credentials as map for RMI.
      */
-    protected Map formatCredentials(final String login,
+    protected Map<String, Object> formatCredentials(final String login,
             final String password) {
-        Map env = null;
-        String[] creds = new String[] {login, password};
-        env = new HashMap(1);
-        env.put(JMXConnector.CREDENTIALS, creds);
+        Map<String, Object> env = new HashMap<String,Object>(1);
+        env.put(JMXConnector.CREDENTIALS, new String[] {login, password});
         return env;
     }
 
@@ -214,10 +212,8 @@ public class Client {
             final String login, final String password)
     throws IOException {
         // Make up the jmx rmi URL and get a connector.
-        JMXServiceURL rmiurl = new JMXServiceURL("service:jmx:rmi://"
-            + hostport + "/jndi/rmi://" + hostport + "/jmxrmi");
-        return JMXConnectorFactory.connect(rmiurl,
-            formatCredentials(login, password));
+        JMXServiceURL rmiurl = new JMXServiceURL("service:jmx:rmi://"+hostport+"/jndi/rmi://"+hostport+"/jmxrmi");
+        return JMXConnectorFactory.connect(rmiurl,formatCredentials(login, password));
     }
 
     protected ObjectName getObjectName(final String beanname)
