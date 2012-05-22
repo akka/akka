@@ -1,11 +1,13 @@
 
 resolvers += Classpaths.typesafeResolver
 
-addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.1.9")
+addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.2.0-M1")
 
 addSbtPlugin("com.typesafe.sbtscalariform" % "sbtscalariform" % "0.4.0")
 
 resolvers ++= Seq(
+  // needed for sbt-assembly, which comes with sbt-multi-jvm
+  Resolver.url("sbtonline", url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases"))(Resolver.ivyStylePatterns),
   "less is" at "http://repo.lessis.me",
   "coda" at "http://repo.codahale.com")
 

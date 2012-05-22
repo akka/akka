@@ -38,7 +38,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -80,6 +80,24 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.remote,
+      // disable parallel tests
+      parallelExecution in Test := false,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      },
+      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      jvmOptions in MultiJvm := {
+        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
+      },
+      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+    )
+  ) configs (MultiJvm)
+
+  lazy val remoteTests = Project(
+    id = "akka-remote-tests",
+    base = file("akka-remote-tests"),
+    dependencies = Seq(remote % "compile;test->test;multi-jvm->multi-jvm", actorTests % "test->test", testkit % "test->test"),
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
