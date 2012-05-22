@@ -557,8 +557,8 @@ private[akka] class ActorCell(
         }
       } catch {
         case NonFatal(e) ⇒ throw new ActorInitializationException(self, "exception during creation", e match {
-          case i: InstantiationException => i.getCause
-          case other => other
+          case i: InstantiationException ⇒ i.getCause
+          case other                     ⇒ other
         })
       }
     }
