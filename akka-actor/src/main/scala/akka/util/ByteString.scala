@@ -261,8 +261,10 @@ object ByteString {
 sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
   override protected[this] def newBuilder = ByteString.newBuilder
 
-  // *must* be overridden by derived classes
-  override def iterator: ByteIterator = null
+  // *must* be overridden by derived classes. This construction is necessary
+  // to specialize the return type, as the method is already implemented in
+  // a parent trait.
+  override def iterator: ByteIterator = throw new UnsupportedOperationException("Method iterator is not implemented in ByteString")
 
   @inline final override def head: Byte = this(0)
   @inline final override def tail: ByteString = this.drop(1)

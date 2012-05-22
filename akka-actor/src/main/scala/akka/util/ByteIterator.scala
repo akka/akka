@@ -368,25 +368,35 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     else ByteIterator.ByteArrayIterator(that.toArray)
   }
 
-  // *must* be overridden by derived classes
-  override def clone: ByteIterator = null
+  // *must* be overridden by derived classes. This construction is necessary
+  // to specialize the return type, as the method is already implemented in
+  // the parent class.
+  override def clone: ByteIterator = throw new UnsupportedOperationException("Method clone is not implemented in ByteIterator")
 
   final override def duplicate = (this, clone)
 
-  // *must* be overridden by derived classes
-  override def take(n: Int): this.type = null
+  // *must* be overridden by derived classes. This construction is necessary
+  // to specialize the return type, as the method is already implemented in
+  // the parent class.
+  override def take(n: Int): this.type = throw new UnsupportedOperationException("Method take is not implemented in ByteIterator")
 
-  // *must* be overridden by derived classes
-  override def drop(n: Int): this.type = null
+  // *must* be overridden by derived classes. This construction is necessary
+  // to specialize the return type, as the method is already implemented in
+  // the parent class.
+  override def drop(n: Int): this.type = throw new UnsupportedOperationException("Method drop is not implemented in ByteIterator")
 
   final override def slice(from: Int, until: Int): this.type =
     drop(from).take(until - from)
 
-  // *must* be overridden by derived classes
-  override def takeWhile(p: Byte ⇒ Boolean): this.type = null
+  // *must* be overridden by derived classes. This construction is necessary
+  // to specialize the return type, as the method is already implemented in
+  // the parent class.
+  override def takeWhile(p: Byte ⇒ Boolean): this.type = throw new UnsupportedOperationException("Method takeWhile is not implemented in ByteIterator")
 
-  // *must* be overridden by derived classes
-  override def dropWhile(p: Byte ⇒ Boolean): this.type = null
+  // *must* be overridden by derived classes. This construction is necessary
+  // to specialize the return type, as the method is already implemented in
+  // the parent class.
+  override def dropWhile(p: Byte ⇒ Boolean): this.type = throw new UnsupportedOperationException("Method dropWhile is not implemented in ByteIterator")
 
   final override def span(p: Byte ⇒ Boolean): (ByteIterator, ByteIterator) = {
     val that = clone
