@@ -55,7 +55,7 @@ public class RouterViaProgramExample {
     ActorRef actor2 = system.actorOf(new Props(ExampleActor.class));
     ActorRef actor3 = system.actorOf(new Props(ExampleActor.class));
     Iterable<ActorRef> routees = Arrays.asList(new ActorRef[] { actor1, actor2, actor3 });
-    ActorRef router2 = system.actorOf(new Props(ExampleActor.class).withRouter(RoundRobinRouter.create(routees)));
+    ActorRef router2 = system.actorOf(new Props().withRouter(RoundRobinRouter.create(routees)));
     //#programmaticRoutingRoutees
     for (int i = 1; i <= 6; i++) {
       router2.tell(new ExampleActor.Message(i));
