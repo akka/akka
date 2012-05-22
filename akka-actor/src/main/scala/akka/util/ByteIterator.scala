@@ -352,6 +352,10 @@ object ByteIterator {
   }
 }
 
+/**
+ * An iterator over a ByteString.
+ */
+
 abstract class ByteIterator extends BufferedIterator[Byte] {
   def isIdenticalTo(that: Iterator[Byte]): Boolean
 
