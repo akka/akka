@@ -1,20 +1,20 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.router
 
-import akka.actor.{ Actor, ActorRef, Props }
-import akka.remote.AkkaRemoteSpec
-import akka.remote.AbstractRemoteActorMultiJvmSpec
-import akka.remote.RemoteActorRef
-import akka.remote.testconductor.TestConductor
-import akka.testkit._
-import akka.dispatch.Await
-import akka.pattern.ask
-import akka.util.Duration
+import com.typesafe.config.ConfigFactory
 
-object DirectRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
-  override def NrOfNodes = 2
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.pattern.ask
+import akka.remote.RemoteActorRef
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.testkit.MultiNodeSpec
+import akka.testkit._
+
+object DirectRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
@@ -23,68 +23,62 @@ object DirectRoutedRemoteActorMultiJvmSpec extends AbstractRemoteActorMultiJvmSp
   }
 
   import com.typesafe.config.ConfigFactory
-  override def commonConfig = ConfigFactory.parseString("""
-      akka {
-        loglevel = INFO
-        actor {
-          provider = akka.remote.RemoteActorRefProvider
-          deployment {
-            /service-hello.remote = %s
-          }
-          debug {
-            receive = on
-            fsm = on
-          }
-        }
-        remote {
-          transport = akka.remote.testconductor.TestConductorTransport
-          log-received-messages = on
-          log-sent-messages = on
-        }
-        testconductor {
-          host = localhost
-          port = 4712
-        }
-      }""" format akkaURIs(1))
-
-  def nameConfig(n: Int) = ConfigFactory.parseString("akka.testconductor.name = node" + n).withFallback(nodeConfigs(n))
-}
-
-class DirectRoutedRemoteActorMultiJvmNode1 extends AkkaRemoteSpec(DirectRoutedRemoteActorMultiJvmSpec.nameConfig(0)) {
-  import DirectRoutedRemoteActorMultiJvmSpec._
-  val nodes = NrOfNodes
-  val tc = TestConductor(system)
-
-  "A new remote actor configured with a Direct router" must {
-    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
-      Await.result(tc.startController(2), Duration.Inf)
-      tc.enter("begin", "done")
+  commonConfig(ConfigFactory.parseString("""
+    akka.loglevel = DEBUG
+    akka.remote {
+      log-received-messages = on
+      log-sent-messages = on
     }
-  }
+    akka.actor.debug {
+      receive = on
+      fsm = on
+    }
+  """))
+
+  val master = role("master")
+  val slave = role("slave")
+
+  nodeConfig(master, ConfigFactory.parseString("""
+    akka.actor {
+      deployment {
+        /service-hello.remote = "akka://MultiNodeSpec@%s"
+      }
+    }
+    # FIXME When using NettyRemoteTransport instead of TestConductorTransport it works
+    # akka.remote.transport = "akka.remote.netty.NettyRemoteTransport"
+  """.format("localhost:2553"))) // FIXME is there a way to avoid hardcoding the host:port here?
+
+  nodeConfig(slave, ConfigFactory.parseString("""
+    akka.remote.netty.port = 2553
+  """))
 
 }
 
-class DirectRoutedRemoteActorMultiJvmNode2 extends AkkaRemoteSpec(DirectRoutedRemoteActorMultiJvmSpec.nameConfig(1))
-  with ImplicitSender with DefaultTimeout {
+class DirectRoutedRemoteActorMultiJvmNode1 extends DirectRoutedRemoteActorSpec
+class DirectRoutedRemoteActorMultiJvmNode2 extends DirectRoutedRemoteActorSpec
 
+class DirectRoutedRemoteActorSpec extends MultiNodeSpec(DirectRoutedRemoteActorMultiJvmSpec)
+  with ImplicitSender with DefaultTimeout {
   import DirectRoutedRemoteActorMultiJvmSpec._
-  val nodes = NrOfNodes
-  val tc = TestConductor(system)
+
+  def initialParticipants = 2
 
   "A new remote actor configured with a Direct router" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
-      Await.result(tc.startClient(4712), Duration.Inf)
-      tc.enter("begin")
 
-      val actor = system.actorOf(Props[SomeActor], "service-hello")
-      actor.isInstanceOf[RemoteActorRef] must be(true)
+      runOn(master) {
+        val actor = system.actorOf(Props[SomeActor], "service-hello")
+        actor.isInstanceOf[RemoteActorRef] must be(true)
 
-      Await.result(actor ? "identify", timeout.duration).asInstanceOf[ActorRef].path.address.hostPort must equal(akkaSpec(0))
+        val slaveAddress = testConductor.getAddressFor(slave).await
+        (actor ? "identify").await.asInstanceOf[ActorRef].path.address must equal(slaveAddress)
 
-      // shut down the actor before we let the other node(s) shut down so we don't try to send
-      // "Terminate" to a shut down node
-      system.stop(actor)
-      tc.enter("done")
+        // shut down the actor before we let the other node(s) shut down so we don't try to send
+        // "Terminate" to a shut down node
+        system.stop(actor)
+      }
+
+      testConductor.enter("done")
     }
   }
 }

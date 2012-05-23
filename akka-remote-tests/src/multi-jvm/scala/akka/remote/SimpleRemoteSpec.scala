@@ -1,21 +1,19 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.dispatch.Await
 import akka.pattern.ask
-import akka.remote.testconductor.TestConductor
-import akka.testkit.DefaultTimeout
-import akka.testkit.ImplicitSender
-import akka.util.Duration
-import com.typesafe.config.ConfigFactory
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.testkit.MultiNodeSpec
+import akka.testkit._
 
-object SimpleRemoteMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
-  override def NrOfNodes = 2
+object SimpleRemoteMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
@@ -23,60 +21,47 @@ object SimpleRemoteMultiJvmSpec extends AbstractRemoteActorMultiJvmSpec {
     }
   }
 
-  override def commonConfig = ConfigFactory.parseString("""
-      akka {
-        loglevel = INFO
-        actor {
-          provider = akka.remote.RemoteActorRefProvider
-          debug {
-            receive = on
-            fsm = on
-          }
-        }
-        remote {
-          transport = akka.remote.testconductor.TestConductorTransport
-          log-received-messages = on
-          log-sent-messages = on
-        }
-        testconductor {
-          host = localhost
-          port = 4712
-        }
-      }""")
+  commonConfig(ConfigFactory.parseString("""
+    akka.loglevel = DEBUG
+    akka.remote {
+      log-received-messages = on
+      log-sent-messages = on
+    }
+    akka.actor.debug {
+      receive = on
+      fsm = on
+    }
+  """))
 
-  def nameConfig(n: Int) = ConfigFactory.parseString("akka.testconductor.name = node" + n).withFallback(nodeConfigs(n))
-}
-
-class SimpleRemoteMultiJvmNode1 extends AkkaRemoteSpec(SimpleRemoteMultiJvmSpec.nameConfig(0)) {
-  import SimpleRemoteMultiJvmSpec._
-  val nodes = NrOfNodes
-  val tc = TestConductor(system)
-
-  "lookup remote actor" in {
-    Await.result(tc.startController(2), Duration.Inf)
-    system.actorOf(Props[SomeActor], "service-hello")
-    tc.enter("begin", "done")
-  }
+  val master = role("master")
+  val slave = role("slave")
 
 }
 
-class SimpleRemoteMultiJvmNode2 extends AkkaRemoteSpec(SimpleRemoteMultiJvmSpec.nameConfig(1))
+class SimpleRemoteMultiJvmNode1 extends SimpleRemoteSpec
+class SimpleRemoteMultiJvmNode2 extends SimpleRemoteSpec
+
+class SimpleRemoteSpec extends MultiNodeSpec(SimpleRemoteMultiJvmSpec)
   with ImplicitSender with DefaultTimeout {
-
   import SimpleRemoteMultiJvmSpec._
-  val nodes = NrOfNodes
-  val tc = TestConductor(system)
 
-  "lookup remote actor" in {
-    Await.result(tc.startClient(4712), Duration.Inf)
-    tc.enter("begin")
-    log.info("### begin ok")
-    val actor = system.actorFor("akka://" + akkaSpec(0) + "/user/service-hello")
-    log.info("### actor lookup " + akkaSpec(0) + "/service-hello")
-    actor.isInstanceOf[RemoteActorRef] must be(true)
-    Await.result(actor ? "identify", timeout.duration).asInstanceOf[ActorRef].path.address.hostPort must equal(akkaSpec(0))
-    log.info("### actor ok")
-    tc.enter("done")
+  def initialParticipants = 2
+
+  runOn(master) {
+    system.actorOf(Props[SomeActor], "service-hello")
+  }
+
+  "Remoting" must {
+    "lookup remote actor" in {
+      runOn(slave) {
+        val hello = system.actorFor(node(master) / "user" / "service-hello")
+        hello.isInstanceOf[RemoteActorRef] must be(true)
+        val masterAddress = testConductor.getAddressFor(master).await
+        (hello ? "identify").await.asInstanceOf[ActorRef].path.address must equal(masterAddress)
+      }
+      testConductor.enter("done")
+    }
   }
 
 }
+
