@@ -67,7 +67,8 @@ class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) with Implic
     "join the other node cluster when sending a Join command" taggedAs LongRunningTest in {
       runOn(second) {
         // start cluster on second node, and join
-        Cluster(system)
+        val secondNode = Cluster(system)
+        awaitCond(secondNode.convergence.isDefined)
       }
 
       runOn(first) {
@@ -78,6 +79,7 @@ class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) with Implic
           }
         }
         firstNode.latestGossip.members.size must be(2)
+        awaitCond(firstNode.convergence.isDefined)
       }
 
       testConductor.enter("done")
