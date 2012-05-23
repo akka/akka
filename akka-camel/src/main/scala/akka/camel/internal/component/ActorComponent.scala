@@ -207,11 +207,20 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
  * For internal use only. Converts Strings to [[akka.util.Duration]]s
  */
 private[camel] object DurationTypeConverter extends TypeConverter {
-  def convertTo[T](`type`: Class[T], value: AnyRef) = Duration(value.toString).asInstanceOf[T] //FIXME WTF
+  override def convertTo[T](`type`: Class[T], value: AnyRef): T = `type`.cast(try {
+    val d = Duration(value.toString)
+    if (`type`.isInstance(d)) d else null
+  } catch {
+    case NonFatal(_) ⇒ null
+  })
+
   def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef): T = convertTo(`type`, value)
-  def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef) = convertTo(`type`, value)
-  def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
-  def toString(duration: Duration) = duration.toNanos + " nanos"
+  def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef): T = convertTo(`type`, value) match {
+    case null ⇒ throw new NoTypeConversionAvailableException(value, `type`)
+    case some ⇒ some
+  }
+  def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef): T = mandatoryConvertTo(`type`, value)
+  def toString(duration: Duration): String = duration.toNanos + " nanos"
 }
 
 /**
