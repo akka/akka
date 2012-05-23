@@ -114,7 +114,7 @@ object AkkaBuild extends Build {
   lazy val cluster = Project(
     id = "akka-cluster",
     base = file("akka-cluster"),
-    dependencies = Seq(remote, remote % "test->test", testkit % "test->test"),
+    dependencies = Seq(remote, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
