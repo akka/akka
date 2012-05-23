@@ -59,9 +59,9 @@ trait Bootable {
  * Main class for running the microkernel.
  */
 object Main {
-  val quiet = getBoolean("akka.kernel.quiet")
+  private val quiet = getBoolean("akka.kernel.quiet")
 
-  def log(s: String) = if (!quiet) println(s)
+  private def log(s: String) = if (!quiet) println(s)
 
   def main(args: Array[String]) = {
     if (args.isEmpty) {
@@ -90,7 +90,7 @@ object Main {
     log("Successfully started Akka")
   }
 
-  def createClassLoader(): ClassLoader = {
+  private def createClassLoader(): ClassLoader = {
     if (ActorSystem.GlobalHome.isDefined) {
       val home = ActorSystem.GlobalHome.get
       val deploy = new File(home, "deploy")
@@ -106,7 +106,7 @@ object Main {
     }
   }
 
-  def loadDeployJars(deploy: File): ClassLoader = {
+  private def loadDeployJars(deploy: File): ClassLoader = {
     val jars = deploy.listFiles.filter(_.getName.endsWith(".jar"))
 
     val nestedJars = jars flatMap { jar ⇒
@@ -122,7 +122,7 @@ object Main {
     new URLClassLoader(urls, Thread.currentThread.getContextClassLoader)
   }
 
-  def addShutdownHook(bootables: Seq[Bootable]): Unit = {
+  private def addShutdownHook(bootables: Seq[Bootable]): Unit = {
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       def run = {
         log("")
@@ -138,7 +138,7 @@ object Main {
     }))
   }
 
-  def banner = """
+  private def banner = """
 ==============================================================================
 
                                                    ZZ:
