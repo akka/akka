@@ -135,3 +135,11 @@ representation into a real reference. :class:`DynamicVariable` is a
 thread-local variable, so be sure to have it set while deserializing anything
 which might contain actor references.
 
+
+External Akka Serializers
+=========================
+
+`Akka-protostuff by Roman Levenstein<https://github.com/romix/akka-protostuff-serialization>`_
+
+
+`Akka-quickser by Roman Levenstein<https://github.com/romix/akka-quickser-serialization>`_
