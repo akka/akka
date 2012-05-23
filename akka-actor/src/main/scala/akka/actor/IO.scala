@@ -1,10 +1,10 @@
 /**
- * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
 import akka.dispatch.{ Future, ExecutionContext }
-import akka.util.ByteString
+import akka.util.{ ByteString, Duration, NonFatal }
 import java.net.{ SocketAddress, InetSocketAddress }
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -108,17 +108,120 @@ object IO {
      * This can also be performed by creating a new [[akka.actor.IO.SocketHandle]]
      * and sending it within an [[akka.actor.IO.Accept]] to the [[akka.actor.IOManager]].
      *
+     * @param options Seq of [[akka.actor.IO.SocketOptions]] to set on accepted socket
      * @param socketOwner the [[akka.actor.ActorRef]] that should receive events
      *                    associated with the SocketChannel. The ActorRef for the
      *                    current Actor will be used implicitly.
      * @return a new SocketHandle that can be used to perform actions on the
      *         new connection's SocketChannel.
      */
-    def accept()(implicit socketOwner: ActorRef): SocketHandle = {
+    def accept(options: Seq[SocketOption] = Seq.empty)(implicit socketOwner: ActorRef): SocketHandle = {
       val socket = SocketHandle(socketOwner, ioManager)
-      ioManager ! Accept(socket, this)
+      ioManager ! Accept(socket, this, options)
       socket
     }
+  }
+
+  /**
+   * Options to be set when setting up a [[akka.actor.IO.SocketHandle]]
+   */
+  sealed trait SocketOption
+
+  /**
+   * Options to be set when setting up a [[akka.actor.IO.ServerHandle]]
+   */
+  sealed trait ServerSocketOption
+
+  /**
+   * [[akka.actor.IO.SocketOption]] to enable or disable SO_KEEPALIVE
+   *
+   * For more information see [[java.net.Socket#setKeepAlive]]
+   */
+  case class KeepAlive(on: Boolean) extends SocketOption
+
+  /**
+   * [[akka.actor.IO.SocketOption]] to enable or disable OOBINLINE (receipt
+   * of TCP urgent data) By default, this option is disabled and TCP urgent
+   * data received on a [[akka.actor.IO.SocketHandle]] is silently discarded.
+   *
+   * For more information see [[java.net.Socket#setOOBInline]]
+   */
+  case class OOBInline(on: Boolean) extends SocketOption
+
+  /**
+   * [[akka.actor.IO.SocketOption]] to set performance preferences for this
+   * [[akka.actor.IO.SocketHandle]].
+   *
+   * For more information see [[java.net.Socket#setPerformancePreferences]]
+   */
+  case class PerformancePreferences(connectionTime: Int, latency: Int, bandwidth: Int) extends SocketOption with ServerSocketOption
+
+  /**
+   * [[akka.actor.IO.SocketOption]] to set the SO_RCVBUF option for this
+   * [[akka.actor.IO.SocketHandle]].
+   *
+   * For more information see [[java.net.Socket#setReceiveBufferSize]]
+   */
+  case class ReceiveBufferSize(size: Int) extends SocketOption with ServerSocketOption {
+    require(size > 0, "Receive buffer size must be greater than 0")
+  }
+
+  /**
+   * [[akka.actor.IO.SocketOption]] to enable or disable SO_REUSEADDR
+   *
+   * For more information see [[java.net.Socket#setReuseAddress]]
+   */
+  case class ReuseAddress(on: Boolean) extends SocketOption with ServerSocketOption
+
+  /**
+   * [[akka.actor.IO.SocketOption]] to set the SO_SNDBUF option for this
+   * [[akka.actor.IO.SocketHandle]].
+   *
+   * For more information see [[java.net.Socket#setSendBufferSize]]
+   */
+  case class SendBufferSize(size: Int) extends SocketOption {
+    require(size > 0, "Send buffer size must be greater than 0")
+  }
+
+  /**
+   * [[akka.actor.IO.SocketOption]] to enable or disable SO_LINGER with the
+   * specified linger time in seconds.
+   *
+   * For more information see [[java.net.Socket#setSoLinger]]
+   */
+  case class SoLinger(linger: Option[Int]) extends SocketOption {
+    if (linger.isDefined) require(linger.get >= 0, "linger must not be negative if on")
+  }
+
+  /**
+   * [[akka.actor.IO.SocketOption]] to set SO_TIMEOUT to the specified
+   * timeout rounded down to the nearest millisecond. A timeout of
+   * zero is treated as infinant.
+   *
+   * For more information see [[java.net.Socket#setSoTimeout]]
+   */
+  case class SoTimeout(timeout: Duration) extends SocketOption {
+    require(timeout.toMillis >= 0, "SoTimeout must be >= 0ms")
+  }
+
+  /**
+   * [[akka.actor.IO.SocketOption]] to enable or disable TCP_NODELAY
+   * (disable or enable Nagle's algorithm)
+   *
+   * For more information see [[java.net.Socket#setTcpNoDelay]]
+   */
+  case class TcpNoDelay(on: Boolean) extends SocketOption
+
+  /**
+   * [[akka.actor.IO.SocketOption]] to set the traffic class or
+   * type-of-service octet in the IP header for packets sent from this
+   * [[akka.actor.IO.SocketHandle]].
+   *
+   * For more information see [[java.net.Socket#setTrafficClass]]
+   */
+  case class TrafficClass(tc: Int) extends SocketOption {
+    require(tc >= 0, "Traffic class must be >= 0")
+    require(tc <= 255, "Traffic class must be <= 255")
   }
 
   /**
@@ -128,11 +231,12 @@ object IO {
 
   /**
    * Message to an [[akka.actor.IOManager]] to create a ServerSocketChannel
-   * listening on the provided address.
+   * listening on the provided address with the given
+   * [[akka.actor.IO.ServerSocketOption]]s.
    *
    * Normally sent using IOManager.listen()
    */
-  case class Listen(server: ServerHandle, address: SocketAddress) extends IOMessage
+  case class Listen(server: ServerHandle, address: SocketAddress, options: Seq[ServerSocketOption] = Seq.empty) extends IOMessage
 
   /**
    * Message from an [[akka.actor.IOManager]] that the ServerSocketChannel is
@@ -149,19 +253,20 @@ object IO {
   case class NewClient(server: ServerHandle) extends IOMessage
 
   /**
-   * Message to an [[akka.actor.IOManager]] to accept a new connection.
+   * Message to an [[akka.actor.IOManager]] to accept a new connection with the
+   * given [[akka.actor.IO.SocketOption]]s.
    *
    * Normally sent using [[akka.actor.IO.ServerHandle]].accept()
    */
-  case class Accept(socket: SocketHandle, server: ServerHandle) extends IOMessage
+  case class Accept(socket: SocketHandle, server: ServerHandle, options: Seq[SocketOption] = Seq.empty) extends IOMessage
 
   /**
    * Message to an [[akka.actor.IOManager]] to create a SocketChannel connected
-   * to the provided address.
+   * to the provided address with the given [[akka.actor.IO.SocketOption]]s.
    *
    * Normally sent using IOManager.connect()
    */
-  case class Connect(socket: SocketHandle, address: SocketAddress) extends IOMessage
+  case class Connect(socket: SocketHandle, address: SocketAddress, options: Seq[SocketOption] = Seq.empty) extends IOMessage
 
   /**
    * Message from an [[akka.actor.IOManager]] that the SocketChannel has
@@ -691,13 +796,25 @@ final class IOManager private (system: ActorSystem) extends Extension {
    *
    * @param address the address to listen on
    * @param owner the ActorRef that will receive messages from the IOManagerActor
+   * @param option Seq of [[akka.actor.IO.ServerSocketOptions]] to setup on socket
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
-  def listen(address: SocketAddress)(implicit owner: ActorRef): IO.ServerHandle = {
+  def listen(address: SocketAddress, options: Seq[IO.ServerSocketOption])(implicit owner: ActorRef): IO.ServerHandle = {
     val server = IO.ServerHandle(owner, actor)
-    actor ! IO.Listen(server, address)
+    actor ! IO.Listen(server, address, options)
     server
   }
+
+  /**
+   * Create a ServerSocketChannel listening on an address. Messages will be
+   * sent from the [[akka.actor.IOManagerActor]] to the owner
+   * [[akka.actor.ActorRef]].
+   *
+   * @param address the address to listen on
+   * @param owner the ActorRef that will receive messages from the IOManagerActor
+   * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
+   */
+  def listen(address: SocketAddress)(implicit owner: ActorRef): IO.ServerHandle = listen(address, Seq.empty)
 
   /**
    * Create a ServerSocketChannel listening on a host and port. Messages will
@@ -706,11 +823,12 @@ final class IOManager private (system: ActorSystem) extends Extension {
    *
    * @param host the hostname or IP to listen on
    * @param port the port to listen on
+   * @param options Seq of [[akka.actor.IO.ServerSocketOption]] to setup on socket
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
-  def listen(host: String, port: Int)(implicit owner: ActorRef): IO.ServerHandle =
-    listen(new InetSocketAddress(host, port))(owner)
+  def listen(host: String, port: Int, options: Seq[IO.ServerSocketOption] = Seq.empty)(implicit owner: ActorRef): IO.ServerHandle =
+    listen(new InetSocketAddress(host, port), options)(owner)
 
   /**
    * Create a SocketChannel connecting to an address. Messages will be
@@ -718,12 +836,13 @@ final class IOManager private (system: ActorSystem) extends Extension {
    * [[akka.actor.ActorRef]].
    *
    * @param address the address to connect to
+   * @param options Seq of [[akka.actor.IO.SocketOption]] to setup on established socket
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
    */
-  def connect(address: SocketAddress)(implicit owner: ActorRef): IO.SocketHandle = {
+  def connect(address: SocketAddress, options: Seq[IO.SocketOption] = Seq.empty)(implicit owner: ActorRef): IO.SocketHandle = {
     val socket = IO.SocketHandle(owner, actor)
-    actor ! IO.Connect(socket, address)
+    actor ! IO.Connect(socket, address, options)
     socket
   }
 
@@ -734,6 +853,7 @@ final class IOManager private (system: ActorSystem) extends Extension {
    *
    * @param host the hostname or IP to connect to
    * @param port the port to connect to
+   * @param options Seq of [[akka.actor.IO.SocketOption]] to setup on established socket
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
    */
@@ -752,7 +872,7 @@ object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
  *
  * Use [[akka.actor.IOManager]] to retrieve an instance of this Actor.
  */
-final class IOManagerActor extends Actor {
+final class IOManagerActor extends Actor with ActorLogging {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
 
   private val bufferSize = 8192 // TODO: make buffer size configurable
@@ -828,32 +948,65 @@ final class IOManagerActor extends Actor {
     lastSelect = 0
   }
 
+  private def forwardFailure(f: ⇒ Unit): Unit = {
+    try { f } catch { case NonFatal(e) ⇒ sender ! Status.Failure(e) }
+  }
+
+  private def setSocketOptions(socket: java.net.Socket, options: Seq[IO.SocketOption]) {
+    options foreach {
+      case IO.KeepAlive(on)           ⇒ forwardFailure(socket.setKeepAlive(on))
+      case IO.OOBInline(on)           ⇒ forwardFailure(socket.setOOBInline(on))
+      case IO.ReceiveBufferSize(size) ⇒ forwardFailure(socket.setReceiveBufferSize(size))
+      case IO.ReuseAddress(on)        ⇒ forwardFailure(socket.setReuseAddress(on))
+      case IO.SendBufferSize(size)    ⇒ forwardFailure(socket.setSendBufferSize(size))
+      case IO.SoLinger(linger)        ⇒ forwardFailure(socket.setSoLinger(linger.isDefined, math.max(0, linger.getOrElse(socket.getSoLinger))))
+      case IO.SoTimeout(timeout)      ⇒ forwardFailure(socket.setSoTimeout(timeout.toMillis.toInt))
+      case IO.TcpNoDelay(on)          ⇒ forwardFailure(socket.setTcpNoDelay(on))
+      case IO.TrafficClass(tc)        ⇒ forwardFailure(socket.setTrafficClass(tc))
+      case IO.PerformancePreferences(connTime, latency, bandwidth) ⇒
+        forwardFailure(socket.setPerformancePreferences(connTime, latency, bandwidth))
+    }
+  }
+
   protected def receive = {
     case Select ⇒
       select()
       if (running) self ! Select
       selectSent = running
 
-    case IO.Listen(server, address) ⇒
+    case IO.Listen(server, address, options) ⇒
       val channel = ServerSocketChannel open ()
       channel configureBlocking false
+
+      val sock = channel.socket
+      options foreach {
+        case IO.ReceiveBufferSize(size) ⇒ forwardFailure(sock.setReceiveBufferSize(size))
+        case IO.ReuseAddress(on)        ⇒ forwardFailure(sock.setReuseAddress(on))
+        case IO.PerformancePreferences(connTime, latency, bandwidth) ⇒
+          forwardFailure(sock.setPerformancePreferences(connTime, latency, bandwidth))
+      }
+
       channel.socket bind (address, 1000) // TODO: make backlog configurable
       channels update (server, channel)
       channel register (selector, OP_ACCEPT, server)
       server.owner ! IO.Listening(server, channel.socket.getLocalSocketAddress())
       run()
 
-    case IO.Connect(socket, address) ⇒
+    case IO.Connect(socket, address, options) ⇒
       val channel = SocketChannel open ()
       channel configureBlocking false
       channel connect address
+      setSocketOptions(channel.socket, options)
       channels update (socket, channel)
       channel register (selector, OP_CONNECT | OP_READ, socket)
       run()
 
-    case IO.Accept(socket, server) ⇒
+    case IO.Accept(socket, server, options) ⇒
       val queue = accepted(server)
       val channel = queue.dequeue()
+
+      channel match { case socketChannel: SocketChannel ⇒ setSocketOptions(socketChannel.socket, options) }
+
       channels update (socket, channel)
       channel register (selector, OP_READ, socket)
       run()

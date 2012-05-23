@@ -295,8 +295,9 @@ abstract class ActorSystem extends ActorRefFactory {
    * Default dispatcher as configured. This dispatcher is used for all actors
    * in the actor system which do not have a different dispatcher configured
    * explicitly.
+   * Importing this member will place the default MessageDispatcher in scope.
    */
-  def dispatcher: MessageDispatcher
+  implicit def dispatcher: MessageDispatcher
 
   /**
    * Register a block of code (callback) to run after all actors in this actor system have
@@ -436,11 +437,27 @@ class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Conf
   protected def uncaughtExceptionHandler: Thread.UncaughtExceptionHandler =
     new Thread.UncaughtExceptionHandler() {
       def uncaughtException(thread: Thread, cause: Throwable): Unit = {
-        log.error(cause, "Uncaught error from thread [{}]", thread.getName)
         cause match {
-          case NonFatal(_) | _: InterruptedException ⇒
-          case _ if settings.JvmExitOnFatalError     ⇒ System.exit(-1)
-          case _                                     ⇒ shutdown()
+          case NonFatal(_) | _: InterruptedException ⇒ log.error(cause, "Uncaught error from thread [{}]", thread.getName)
+          case _ ⇒
+            if (settings.JvmExitOnFatalError) {
+              try {
+                log.error(cause, "Uncaught error from thread [{}] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled", thread.getName)
+                import System.err
+                err.print("Uncaught error from thread [")
+                err.print(thread.getName)
+                err.print("] shutting down JVM since 'akka.jvm-exit-on-fatal-error' is enabled for ActorSystem[")
+                err.print(name)
+                err.println("]")
+                cause.printStackTrace(System.err)
+                System.err.flush()
+              } finally {
+                System.exit(-1)
+              }
+            } else {
+              log.error(cause, "Uncaught fatal error from thread [{}] shutting down ActorSystem [{}]", thread.getName, name)
+              shutdown()
+            }
         }
       }
     }

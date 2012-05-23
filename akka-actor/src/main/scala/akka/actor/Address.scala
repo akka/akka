@@ -21,16 +21,10 @@ final case class Address private (protocol: String, system: String, host: Option
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
 
   @transient
-  override lazy val toString = {
+  override lazy val toString: String = {
     val sb = new StringBuilder(protocol)
     sb.append("://")
-    sb.append(hostPort)
-    sb.toString
-  }
-
-  @transient
-  lazy val hostPort = {
-    val sb = new StringBuilder(system)
+    sb.append(system)
     if (host.isDefined) {
       sb.append('@')
       sb.append(host.get)
@@ -41,6 +35,8 @@ final case class Address private (protocol: String, system: String, host: Option
     }
     sb.toString
   }
+
+  def hostPort: String = toString.substring(protocol.length() + 3)
 }
 
 object Address {

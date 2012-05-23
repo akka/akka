@@ -20,7 +20,7 @@ trait Activation {
 
   def system: ActorSystem
 
-  private val activationTracker = system.actorOf(Props[ActivationTracker])
+  private val activationTracker = system.actorOf(Props[ActivationTracker], "camelActivationTracker")
 
   /**
    * Awaits for endpoint to be activated. It blocks until the endpoint is registered in camel context or timeout expires.

@@ -21,6 +21,7 @@ import akka.camel.TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 import org.mockito.{ ArgumentMatcher, Matchers, Mockito }
 import org.scalatest.matchers.MustMatchers
+import akka.actor.Status.Failure
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
 
@@ -33,7 +34,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
           producer = given(actor = null)
           producer.processExchangeAdapter(exchange)
 
-          verify(exchange).setFailure(any[Failure])
+          verify(exchange).setFailure(any[FailureResult])
         }
       }
 
@@ -82,7 +83,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
           "set failure message to timeout" in {
             process()
-            verify(exchange).setFailure(any[Failure])
+            verify(exchange).setFailure(any[FailureResult])
           }
         }
 
@@ -97,7 +98,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
       def verifyFailureIsSet {
         producer.processExchangeAdapter(exchange, asyncCallback)
         asyncCallback.awaitCalled()
-        verify(exchange).setFailure(any[Failure])
+        verify(exchange).setFailure(any[FailureResult])
       }
 
       "out-capable" when {
@@ -130,7 +131,8 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
         "response is Failure" must {
           "set an exception on exchange" in {
-            val failure = Failure(new RuntimeException("some failure"))
+            val exception = new RuntimeException("some failure")
+            val failure = Failure(exception)
 
             producer = given(outCapable = true)
 
@@ -142,7 +144,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
               asyncCallback.awaitCalled(remaining)
             }
 
-            verify(exchange).setFailure(failure)
+            verify(exchange).setFailure(FailureResult(exception))
           }
         }
 
@@ -151,8 +153,8 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
             producer = given(outCapable = true, replyTimeout = 10 millis)
             producer.processExchangeAdapter(exchange, asyncCallback)
             asyncCallback.awaitCalled(100 millis)
-            verify(exchange).setFailure(Matchers.argThat(new ArgumentMatcher[Failure] {
-              def matches(failure: AnyRef) = { failure.asInstanceOf[Failure].getCause must be(anInstanceOf[TimeoutException]); true }
+            verify(exchange).setFailure(Matchers.argThat(new ArgumentMatcher[FailureResult] {
+              def matches(failure: AnyRef) = { failure.asInstanceOf[FailureResult].cause must be(anInstanceOf[TimeoutException]); true }
 
             }))
           }
@@ -213,7 +215,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
                 asyncCallback.expectDoneAsyncWithin(remaining); info("async callback called")
               }
               verify(exchange, never()).setResponse(any[CamelMessage]); info("no response forwarded to exchange")
-              verify(exchange).setFailure(any[Failure]); info("failure set")
+              verify(exchange).setFailure(any[FailureResult]); info("failure set")
 
             }
           }
@@ -224,7 +226,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
 
               producer.processExchangeAdapter(exchange, asyncCallback)
               asyncCallback.awaitCalled(100 millis)
-              verify(exchange).setFailure(any[Failure])
+              verify(exchange).setFailure(any[FailureResult])
 
             }
           }
@@ -242,7 +244,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
                 asyncCallback.awaitCalled(remaining);
               }
               verify(exchange, never()).setResponse(any[CamelMessage]); info("no response forwarded to exchange")
-              verify(exchange).setFailure(any[Failure]); info("failure set")
+              verify(exchange).setFailure(any[FailureResult]); info("failure set")
             }
           }
         }

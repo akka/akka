@@ -39,10 +39,10 @@ class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem with Mess
 
   test("mustSetExceptionFromFailureMessage") {
     val e1 = sampleInOnly
-    e1.setFailure(Failure(new Exception("test1")))
+    e1.setFailure(FailureResult(new Exception("test1")))
     assert(e1.getException.getMessage === "test1")
     val e2 = sampleInOut
-    e2.setFailure(Failure(new Exception("test2")))
+    e2.setFailure(FailureResult(new Exception("test2")))
     assert(e2.getException.getMessage === "test2")
   }
 
@@ -64,6 +64,8 @@ class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem with Mess
   test("mustCreateFailureMessageFromExceptionAndInMessage") {
     val e1 = sampleInOnly
     e1.setException(new Exception("test1"))
+    assert(e1.toAkkaCamelException.getMessage === "test1")
+    assert(e1.toAkkaCamelException.headers("key-in") === "val-in")
     assert(e1.toFailureMessage.cause.getMessage === "test1")
     assert(e1.toFailureMessage.headers("key-in") === "val-in")
   }
@@ -71,6 +73,8 @@ class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem with Mess
   test("mustCreateFailureMessageFromExceptionAndOutMessage") {
     val e1 = sampleInOut
     e1.setException(new Exception("test2"))
+    assert(e1.toAkkaCamelException.getMessage === "test2")
+    assert(e1.toAkkaCamelException.headers("key-out") === "val-out")
     assert(e1.toFailureMessage.cause.getMessage === "test2")
     assert(e1.toFailureMessage.headers("key-out") === "val-out")
   }
@@ -93,19 +97,29 @@ class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem with Mess
   test("mustCreateFailureMessageFromExceptionAndInMessageWithAdditionalHeader") {
     val e1 = sampleInOnly
     e1.setException(new Exception("test1"))
-    assert(e1.toFailureMessage.cause.getMessage === "test1")
-    val headers = e1.toFailureMessage(Map("x" -> "y")).headers
+    assert(e1.toAkkaCamelException.getMessage === "test1")
+    val headers = e1.toAkkaCamelException(Map("x" -> "y")).headers
     assert(headers("key-in") === "val-in")
     assert(headers("x") === "y")
+
+    assert(e1.toFailureMessage.cause.getMessage === "test1")
+    val failureHeaders = e1.toFailureResult(Map("x" -> "y")).headers
+    assert(failureHeaders("key-in") === "val-in")
+    assert(failureHeaders("x") === "y")
+
   }
 
   test("mustCreateFailureMessageFromExceptionAndOutMessageWithAdditionalHeader") {
     val e1 = sampleInOut
     e1.setException(new Exception("test2"))
-    assert(e1.toFailureMessage.cause.getMessage === "test2")
-    val headers = e1.toFailureMessage(Map("x" -> "y")).headers
+    assert(e1.toAkkaCamelException.getMessage === "test2")
+    val headers = e1.toAkkaCamelException(Map("x" -> "y")).headers
     assert(headers("key-out") === "val-out")
     assert(headers("x") === "y")
+    assert(e1.toFailureMessage.cause.getMessage === "test2")
+    val failureHeaders = e1.toFailureResult(Map("x" -> "y")).headers
+    assert(failureHeaders("key-out") === "val-out")
+    assert(failureHeaders("x") === "y")
   }
 
   private def sampleInOnly = sampleExchange(ExchangePattern.InOnly)

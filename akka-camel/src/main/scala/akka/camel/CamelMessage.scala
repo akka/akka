@@ -10,6 +10,7 @@ import scala.collection.JavaConversions._
 
 import akka.japi.{ Function ⇒ JFunction }
 import org.apache.camel.{ CamelContext, Message ⇒ JCamelMessage }
+import akka.AkkaException
 
 /**
  * An immutable representation of a Camel message.
@@ -234,43 +235,14 @@ object CamelMessage {
  */
 case object Ack {
   /** Java API to get the Ack singleton */
-  def ack = this
+  def getInstance = this
 }
 
 /**
- * An immutable representation of a failed Camel exchange. It contains the failure cause
- * obtained from Exchange.getException and the headers from either the Exchange.getIn
+ * An exception indicating that the exchange to the camel endpoint failed.
+ * It contains the failure cause obtained from Exchange.getException and the headers from either the Exchange.getIn
  * message or Exchange.getOut message, depending on the exchange pattern.
  *
- * @author Martin Krasser
  */
-case class Failure(val cause: Throwable, val headers: Map[String, Any] = Map.empty) {
-
-  /**
-   * Creates a Failure with cause body and empty headers map.
-   */
-  def this(cause: Throwable) = this(cause, Map.empty[String, Any])
-
-  /**
-   * Creates a Failure with given cause and headers map. A copy of the headers map is made.
-   * <p>
-   * Java API
-   */
-  def this(cause: Throwable, headers: JMap[String, Any]) = this(cause, headers.toMap)
-
-  /**
-   * Returns the cause of this Failure.
-   * <p>
-   * Java API.
-   */
-  def getCause = cause
-
-  /**
-   * Returns all headers from this failure message. The returned headers map is backed up by
-   * this message's immutable headers map. Any attempt to modify the returned map will throw
-   * an exception.
-   * <p>
-   * Java API
-   */
-  def getHeaders: JMap[String, Any] = headers
-}
+class AkkaCamelException private[akka] (cause: Throwable, val headers: Map[String, Any] = Map.empty)
+  extends AkkaException(cause.getMessage, cause)

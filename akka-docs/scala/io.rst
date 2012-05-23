@@ -19,7 +19,7 @@ A primary goal of Akka's IO module is to only communicate between actors with im
 
 ``ByteString`` is a `Rope-like <http://en.wikipedia.org/wiki/Rope_(computer_science)>`_ data structure that is immutable and efficient. When 2 ``ByteString``\s are concatenated together they are both stored within the resulting ``ByteString`` instead of copying both to a new ``Array``. Operations such as ``drop`` and ``take`` return ``ByteString``\s that still reference the original ``Array``, but just change the offset and length that is visible. Great care has also been taken to make sure that the internal ``Array`` cannot be modified. Whenever a potentially unsafe ``Array`` is used to create a new ``ByteString`` a defensive copy is created.
 
-``ByteString`` inherits all methods from ``IndexedSeq``, and it also has some new ones. For more information, look up the ``akka.util.ByteString`` class and it's companion object in the `ScalaDoc <scaladoc>`_.
+``ByteString`` inherits all methods from ``IndexedSeq``, and it also has some new ones. For more information, look up the ``akka.util.ByteString`` class and it's companion object in the ScalaDoc.
 
 IO.Handle
 ^^^^^^^^^
@@ -93,7 +93,7 @@ This ``Iteratee`` implementation is much more basic then what is usually found. 
 
 ``Iteratee``\s work by processing the data that it is given and returning either the result (with any unused input) or a continuation if more input is needed. They are monadic, so methods like ``flatMap`` can be used to pass the result of an ``Iteratee`` to another.
 
-The basic ``Iteratee``\s included in the IO module can all be found in the `ScalaDoc <scaladoc>`_ under ``akka.actor.IO``, and some of them are covered in the example below.
+The basic ``Iteratee``\s included in the IO module can all be found in the ScalaDoc under ``akka.actor.IO``, and some of them are covered in the example below.
 
 Examples
 --------

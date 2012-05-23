@@ -16,7 +16,11 @@ object Publish {
     publishTo <<= akkaPublishTo,
     credentials ++= akkaCredentials,
     organizationName := "Typesafe Inc.",
-    organizationHomepage := Some(url("http://www.typesafe.com"))
+    organizationHomepage := Some(url("http://www.typesafe.com")),
+    publishMavenStyle := true,
+    // Maven central cannot allow other repos.  
+    // TODO - Make sure all artifacts are on central.
+    pomIncludeRepository := { x => false }
   )
 
   lazy val versionSettings = Seq(
@@ -24,7 +28,7 @@ object Publish {
   )
 
   def akkaPomExtra = {
-    <inceptionYear>2009</inceptionYear>
+    (<inceptionYear>2009</inceptionYear>
     <url>http://akka.io</url>
     <licenses>
       <license>
@@ -33,6 +37,33 @@ object Publish {
         <distribution>repo</distribution>
       </license>
     </licenses>
+    <scm>
+      <url>git://github.com/akka/akka.git</url>
+      <connection>scm:git:git@github.com:akka/akka.git</connection>
+    </scm>) ++ makeDevelopersXml(Map(
+        "jboner" -> "Jonas Boner",
+        "viktorklang" -> "Viktor Klang",
+        "rkuhn" -> "Roland Kuhn",
+        "pvlugter" -> "Peter Vlugter"
+        // TODO - More than the names in the last 10 commits
+      ))
+  }
+
+
+  private[this] def makeDevelopersXml(users: Map[String,String]) =
+    <developers>
+      { 
+        for((id, user) <- users)
+        yield <developer><id>{id}</id><name>{user}</name></developer>
+      }
+    </developers>
+
+  def sonatypePublishTo: Initialize[Option[Resolver]] = {
+    version { v: String =>
+      val nexus = "https://oss.sonatype.org/"
+      if (v.trim.endsWith("SNAPSHOT")) Some("snapshots" at nexus + "content/repositories/snapshots")
+      else                             Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    }
   }
 
   def akkaPublishTo: Initialize[Option[Resolver]] = {

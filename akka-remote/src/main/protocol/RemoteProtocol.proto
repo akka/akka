@@ -45,23 +45,6 @@ enum CommandType {
 }
 
 /**
- * Defines the type of the ReplicationStorage
- */
-enum ReplicationStorageType {
-  TRANSIENT = 1;
-  TRANSACTION_LOG = 2;
-  DATA_GRID = 3;
-}
-
-/**
- * Defines the type of the ReplicationStrategy
- */
-enum ReplicationStrategyType {
-  WRITE_THROUGH = 1;
-  WRITE_BEHIND = 2;
-}
-
-/**
  * Defines a remote ActorRef that "remembers" and uses its original Actor instance
  * on the original node.
  */
@@ -96,18 +79,40 @@ message AddressProtocol {
 }
 
 /**
- * Defines an exception.
+ * Defines akka.remote.DaemonMsgCreate
  */
-message ExceptionProtocol {
-  required string classname  = 1;
-  required string message = 2;
+message DaemonMsgCreateProtocol {
+  required PropsProtocol props = 1;
+  required DeployProtocol deploy = 2;
+  required string path = 3;
+  required ActorRefProtocol supervisor = 4;
 }
 
 /**
- * Defines the durable mailbox message.
+ * Serialization of akka.actor.Props
  */
-message DurableMailboxMessageProtocol {
-  required ActorRefProtocol recipient= 1;
-  optional ActorRefProtocol sender = 2;
-  required bytes message = 3;
+message PropsProtocol {
+  required string dispatcher = 1;
+  required DeployProtocol deploy = 2;
+  optional string fromClassCreator = 3;
+  optional bytes creator = 4;
+  optional bytes routerConfig = 5;
+}
+
+/**
+ * Serialization of akka.actor.Deploy
+ */
+message DeployProtocol {
+  required string path = 1;
+  optional bytes config = 2;
+  optional bytes routerConfig = 3;
+  optional bytes scope = 4;
+}
+
+/**
+ * Serialization of akka.remote.DaemonMsgWatch
+ */
+message DaemonMsgWatchProtocol {
+  required ActorRefProtocol watcher = 1;
+  required ActorRefProtocol watched = 2;
 }

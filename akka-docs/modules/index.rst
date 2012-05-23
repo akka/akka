@@ -7,4 +7,3 @@ Modules
    durable-mailbox
    http
    camel
-   spring

@@ -36,7 +36,7 @@ of the class path to form the fallback configuration, i.e. it internally uses
 .. code-block:: scala
 
   appConfig.withFallback(ConfigFactory.defaultReference(classLoader))
-  
+
 The philosophy is that code never contains default values, but instead relies
 upon their presence in the ``reference.conf`` supplied with the library in
 question.
@@ -370,32 +370,8 @@ akka-zeromq
 .. literalinclude:: ../../akka-zeromq/src/main/resources/reference.conf
    :language: none
 
-akka-beanstalk-mailbox
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-durable-mailboxes/akka-beanstalk-mailbox/src/main/resources/reference.conf
-   :language: none
-
 akka-file-mailbox
 ~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
-   :language: none
-
-akka-mongo-mailbox
-~~~~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-durable-mailboxes/akka-mongo-mailbox/src/main/resources/reference.conf
-   :language: none
-
-akka-redis-mailbox
-~~~~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-durable-mailboxes/akka-redis-mailbox/src/main/resources/reference.conf
-   :language: none
-
-akka-zookeeper-mailbox
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. literalinclude:: ../../akka-durable-mailboxes/akka-zookeeper-mailbox/src/main/resources/reference.conf
    :language: none

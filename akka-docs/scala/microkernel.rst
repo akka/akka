@@ -1,9 +1,8 @@
 
-.. _microkernel:
+.. _microkernel-scala:
 
-#############
- Microkernel (Scala)
-#############
+Microkernel (Scala)
+===================
 
 The Akka Microkernel is included in the Akka download found at `downloads`_.
 

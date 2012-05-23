@@ -339,6 +339,19 @@ All in all the custom router looks like this:
 If you are interested in how to use the VoteCountRouter you can have a look at the test class
 `RoutingSpec <https://github.com/akka/akka/blob/master/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala>`_
 
+.. caution::
+
+   When creating a cutom router the resulting RoutedActorRef optimizes the
+   sending of the message so that it does NOT go through the router’s mailbox
+   unless the route returns an empty recipient set.
+
+   This means that the ``route`` function defined in the ``RouterConfig``
+   or the function returned from ``CreateCustomRoute`` in
+   ``CustomRouterConfig`` is evaluated concurrently without protection by
+   the RoutedActorRef: either provide a reentrant (i.e. pure) implementation
+   or do the locking yourself!
+
+
 Configured Custom Router
 ************************
 
@@ -362,7 +375,15 @@ The dispatcher for created children of the router will be taken from
 makes sense to configure the :class:`BalancingDispatcher` if the precise
 routing is not so important (i.e. no consistent hashing or round-robin is
 required); this enables newly created routees to pick up work immediately by
-stealing it from their siblings.
+stealing it from their siblings. Note that you can **not** use a ``BalancingDispatcher``
+together with any kind of ``Router``, trying to do so will make your actor fail verification.
+
+
+.. note::
+
+   If you provide a collection of actors to route to, then they will still use the same dispatcher
+   that was configured for them in their ``Props``, it is not possible to change an actors dispatcher
+   after it has been created.
 
 The “head” router, of course, cannot run on the same balancing dispatcher,
 because it does not process the same messages, hence this special actor does

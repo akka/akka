@@ -34,6 +34,7 @@ endif
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  pygments   to locally install the custom pygments styles"
+	@echo "  epub       to make an epub"
 	@echo "  html       to make standalone HTML files"
 	@echo "  singlehtml to make a single large HTML file"
 	@echo "  latex      to make LaTeX files, you can set PAPER=a4 or PAPER=letter"
@@ -52,6 +53,11 @@ pygments:
 
 $(LOCALPACKAGES):
 	$(MAKE) pygments
+
+epub: $(LOCALPACKAGES)
+	$(SPHINXBUILD) $(SPHINXFLAGS) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
+	@echo
+	@echo "Build finished. The epub file is in $(BUILDDIR)/epub."
 
 html: $(LOCALPACKAGES)
 	$(SPHINXBUILD) $(SPHINXFLAGS) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html

@@ -9,13 +9,10 @@ import akka.camel._
 import org.apache.camel.{ ProducerTemplate, CamelContext }
 
 /**
- *  Java-friendly Consumer.
- *
- * @see UntypedConsumerActor
- *
- * @author Martin Krasser
+ * Subclass this abstract class to create an MDB-style untyped consumer actor. This
+ * class is meant to be used from Java.
  */
-trait UntypedConsumer extends Consumer { self: UntypedActor ⇒
+abstract class UntypedConsumerActor extends UntypedActor with Consumer {
   final def endpointUri = getEndpointUri
 
   /**
@@ -23,13 +20,6 @@ trait UntypedConsumer extends Consumer { self: UntypedActor ⇒
    */
   def getEndpointUri(): String
 
-}
-
-/**
- * Subclass this abstract class to create an MDB-style untyped consumer actor. This
- * class is meant to be used from Java.
- */
-abstract class UntypedConsumerActor extends UntypedActor with UntypedConsumer {
   /**
    * Returns the [[org.apache.camel.CamelContext]]
    * @return the CamelContext

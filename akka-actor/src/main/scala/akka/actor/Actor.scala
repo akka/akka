@@ -195,6 +195,9 @@ trait Actor {
    * Stores the context for this actor, including self, and sender.
    * It is implicit to support operations such as `forward`.
    *
+   * WARNING: Only valid within the Actor itself, so do not close over it and
+   * publish it to other threads!
+   *
    * [[akka.actor.ActorContext]] is the Scala API. `getContext` returns a
    * [[akka.actor.UntypedActorContext]], which is the Java API of the actor
    * context.
@@ -230,6 +233,9 @@ trait Actor {
    * The reference sender Actor of the last received message.
    * Is defined if the message was sent from another Actor,
    * else `deadLetters` in [[akka.actor.ActorSystem]].
+   *
+   * WARNING: Only valid within the Actor itself, so do not close over it and
+   * publish it to other threads!
    */
   final def sender: ActorRef = context.sender
 

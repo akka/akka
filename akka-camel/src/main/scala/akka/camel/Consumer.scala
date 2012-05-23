@@ -26,11 +26,6 @@ trait Consumer extends Actor with ConsumerConfig {
   camel.registerConsumer(endpointUri, this, activationTimeout)
 }
 
-/**
- * For internal use only.
- */
-private[camel] object DefaultConsumerConfig extends ConsumerConfig
-
 trait ConsumerConfig {
 
   /**

@@ -86,9 +86,5 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       intercept[TimeoutException] { Await.ready(timeoutLatch, 1 second) }
       system.stop(timeoutActor)
     }
-
-    "have ReceiveTimeout eq to Actors ReceiveTimeout" in {
-      akka.actor.Actors.receiveTimeout must be theSameInstanceAs (ReceiveTimeout)
-    }
   }
 }
