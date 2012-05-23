@@ -6,8 +6,9 @@ package akka.camel
 
 import akka.actor.Actor
 import internal.CamelExchangeAdapter
-import org.apache.camel.{ Exchange, ExchangePattern, AsyncCallback }
 import akka.actor.Status.Failure
+import org.apache.camel.{ Endpoint, Exchange, ExchangePattern, AsyncCallback }
+import org.apache.camel.processor.SendProcessor
 
 /**
  * Support trait for producing messages to Camel endpoints.
@@ -15,19 +16,19 @@ import akka.actor.Status.Failure
  * @author Martin Krasser
  */
 trait ProducerSupport { this: Actor ⇒
-  protected[this] implicit def camel = CamelExtension(context.system)
+  protected[this] implicit def camel = CamelExtension(context.system) // FIXME This is duplicated from Consumer, create a common base-trait?
 
   /**
    * camelContext implicit is useful when using advanced methods of CamelMessage.
    */
-  protected[this] implicit def camelContext = camel.context
+  protected[this] implicit def camelContext = camel.context // FIXME This is duplicated from Consumer, create a common base-trait?
 
-  protected[this] lazy val (endpoint, processor) = camel.registerProducer(self, endpointUri)
+  protected[this] lazy val (endpoint: Endpoint, processor: SendProcessor) = camel.registerProducer(self, endpointUri)
 
   /**
    * CamelMessage headers to copy by default from request message to response-message.
    */
-  private val headersToCopyDefault = Set(CamelMessage.MessageExchangeId)
+  private val headersToCopyDefault: Set[String] = Set(CamelMessage.MessageExchangeId)
 
   /**
    * If set to false (default), this producer expects a response message from the Camel endpoint.
@@ -64,20 +65,21 @@ trait ProducerSupport { this: Actor ⇒
    * @param pattern exchange pattern
    */
   protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
-    implicit def toExchangeAdapter(exchange: Exchange): CamelExchangeAdapter = new CamelExchangeAdapter(exchange)
+    // Need copies of sender reference here since the callback could be done
+    // later by another thread.
+    val producer = self
+    val originalSender = sender
 
     val cmsg = CamelMessage.canonicalize(msg)
-    val exchange = endpoint.createExchange(pattern)
-    exchange.setRequest(cmsg)
-    processor.process(exchange, new AsyncCallback {
-      val producer = self
-      // Need copies of sender reference here since the callback could be done
-      // later by another thread.
-      val originalSender = sender
+    val xchg = new CamelExchangeAdapter(endpoint.createExchange(pattern))
+
+    xchg.setRequest(cmsg)
+
+    processor.process(xchg.exchange, new AsyncCallback {
       // Ignoring doneSync, sending back async uniformly.
       def done(doneSync: Boolean): Unit = producer.tell(
-        if (exchange.isFailed) exchange.toFailureResult(cmsg.headers(headersToCopy))
-        else MessageResult(exchange.toResponseMessage(cmsg.headers(headersToCopy))), originalSender)
+        if (xchg.exchange.isFailed) xchg.toFailureResult(cmsg.headers(headersToCopy))
+        else MessageResult(xchg.toResponseMessage(cmsg.headers(headersToCopy))), originalSender)
     })
   }
 
@@ -94,9 +96,7 @@ trait ProducerSupport { this: Actor ⇒
       val e = new AkkaCamelException(res.cause, res.headers)
       routeResponse(Failure(e))
       throw e
-    case msg ⇒
-      val exchangePattern = if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut
-      produce(transformOutgoingMessage(msg), exchangePattern)
+    case msg ⇒ produce(transformOutgoingMessage(msg), if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
   }
 
   /**
@@ -134,7 +134,7 @@ trait Producer extends ProducerSupport { this: Actor ⇒
    * Default implementation of Actor.receive. Any messages received by this actors
    * will be produced to the endpoint specified by <code>endpointUri</code>.
    */
-  def receive = produce
+  def receive: Actor.Receive = produce
 }
 
 /**
@@ -153,6 +153,6 @@ private case class FailureResult(cause: Throwable, headers: Map[String, Any] = M
  * @author Martin Krasser
  */
 trait Oneway extends Producer { this: Actor ⇒
-  override def oneway = true
+  override def oneway: Boolean = true
 }
 

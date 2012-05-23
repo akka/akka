@@ -31,15 +31,15 @@ private[akka] object Mailbox {
    */
 
   // primary status: only first three
-  final val Open = 0 // _status is not initialized in AbstractMailbox, so default must be zero!
-  final val Suspended = 1
-  final val Closed = 2
+  final val Open = 0 // _status is not initialized in AbstractMailbox, so default must be zero! Deliberately without type ascription to make it a compile-time constant
+  final val Suspended = 1 // Deliberately without type ascription to make it a compile-time constant
+  final val Closed = 2 // Deliberately without type ascription to make it a compile-time constant
   // secondary status: Scheduled bit may be added to Open/Suspended
-  final val Scheduled = 4
+  final val Scheduled = 4 // Deliberately without type ascription to make it a compile-time constant
 
   // mailbox debugging helper using println (see below)
   // since this is a compile-time constant, scalac will elide code behind if (Mailbox.debug) (RK checked with 2.9.1)
-  final val debug = false
+  final val debug = false // Deliberately without type ascription to make it a compile-time constant
 }
 
 /**

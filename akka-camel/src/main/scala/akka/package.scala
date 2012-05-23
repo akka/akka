@@ -7,5 +7,6 @@ package akka
 import org.apache.camel.model.ProcessorDefinition
 
 package object camel {
+  //TODO Why do I exist?
   implicit def toActorRouteDefinition(definition: ProcessorDefinition[_]) = new ActorRouteDefinition(definition)
 }

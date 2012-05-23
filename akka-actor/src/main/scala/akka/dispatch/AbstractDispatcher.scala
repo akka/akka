@@ -214,7 +214,7 @@ private[akka] object MessageDispatcher {
 
   // dispatcher debugging helper using println (see below)
   // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
-  final val debug = false
+  final val debug = false // Deliberately without type ascription to make it a compile-time constant
   lazy val actors = new Index[MessageDispatcher, ActorRef](16, _ compareTo _)
   def printActors: Unit = if (debug) {
     for {
