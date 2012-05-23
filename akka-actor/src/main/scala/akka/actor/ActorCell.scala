@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.event.Logging.{ Debug, Warning, Error }
 import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
+import akka.japi.PartialProcedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
 import akka.util.NonFatal
@@ -78,7 +79,8 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack.
+   * The new behavior will be transformed by the actor's `Actor.whenBecoming` method.
    */
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
 
@@ -159,6 +161,18 @@ trait UntypedActorContext extends ActorContext {
    */
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit
 
+  /**
+   * Changes the Actor's behavior to become the new 'PartialProcedure' handler.
+   * Puts the behavior on top of the hotswap stack.
+   */
+  def become(behavior: PartialProcedure[Any]): Unit
+
+  /**
+   * Changes the Actor's behavior to become the new 'PartialProcedure' handler.
+   * Puts the behavior on top of the hotswap stack.
+   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   */
+  def become(behavior: PartialProcedure[Any], discardOld: Boolean): Unit
 }
 
 /**
@@ -643,6 +657,12 @@ private[akka] class ActorCell(
     def newReceive: Actor.Receive = { case msg ⇒ behavior.apply(msg) }
     become(newReceive, discardOld)
   }
+
+  def become(behavior: PartialProcedure[Any]): Unit =
+    become(behavior.asScala, false)
+
+  def become(behavior: PartialProcedure[Any], discardOld: Boolean): Unit =
+    become(behavior.asScala, discardOld)
 
   def unbecome(): Unit = actor.popBehavior()
 

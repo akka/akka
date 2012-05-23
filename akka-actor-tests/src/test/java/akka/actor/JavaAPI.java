@@ -8,6 +8,10 @@ import akka.routing.CurrentRoutees;
 import akka.routing.FromConfig;
 import akka.routing.NoRouter;
 import akka.testkit.AkkaSpec;
+import static akka.pattern.Patterns.ask;
+import akka.dispatch.*;
+import akka.util.Duration;
+import akka.util.Timeout;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -67,5 +71,18 @@ public class JavaAPI {
     ActorRef ref = system.actorOf(new Props(JavaAPITestActor.class));
     ref.tell("hallo");
     ref.tell("hallo", ref);
+  }
+
+  @Test
+  public void mustSupportWhenBecoming() throws Exception {
+    ActorRef ref = system.actorOf(new Props(JavaAPIPrePostActor.class));
+    assertNotNull(ref);
+    Timeout timeout = new Timeout(Duration.parse("1 second"));
+    String pre =  (String) Await.result(ask(ref, "onPreReceive", timeout), timeout.duration());
+    String middle = (String) Await.result(ask(ref, "onReceivePartial", timeout), timeout.duration());
+    String post = (String) Await.result(ask(ref, "onPostReceive", timeout), timeout.duration());
+    assertEquals(pre, "onPreReceive");
+    assertEquals(middle, "onReceivePartial");
+    assertEquals(post, "onPostReceive");
   }
 }
