@@ -7,6 +7,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 //#imports
 import akka.actor.*;
+import akka.remote.RemoteActorRefProvider;
 import akka.serialization.*;
 import com.typesafe.config.*;
 
@@ -78,32 +79,118 @@ public class SerializationDocTestBase {
         //#actorref-serializer
         theActorSystem.shutdown();
     }
+    
+    //#external-address
+    public static class ExternalAddressExt implements Extension {
+      private final ExtendedActorSystem system;
 
+      public ExternalAddressExt(ExtendedActorSystem system) {
+        this.system = system;
+      }
 
-    @Test public void demonstrateTheProgrammaticAPI() {
-      //#programmatic
-      ActorSystem system = ActorSystem.create("example");
-
-      // Get the Serialization Extension
-      Serialization serialization = SerializationExtension.get(system);
-
-      // Have something to serialize
-      String original = "woohoo";
-
-      // Find the Serializer for it
-      Serializer serializer = serialization.findSerializerFor(original);
-
-      // Turn it into bytes
-      byte[] bytes = serializer.toBinary(original);
-
-      // Turn it back into an object,
-      // the nulls are for the class manifest and for the classloader
-      String back = (String)serializer.fromBinary(bytes);
-
-      // Voilá!
-      assertEquals(original, back);
-
-      //#programmatic
-      system.shutdown();
+      public Address getAddressFor(Address remoteAddress) {
+        final scala.Option<Address> optAddr = system.provider()
+            .getExternalAddressFor(remoteAddress);
+        if (optAddr.isDefined()) {
+          return optAddr.get();
+        } else {
+          throw new UnsupportedOperationException(
+              "cannot send to remote address " + remoteAddress);
+        }
+      }
     }
+
+    public static class ExternalAddress extends
+        AbstractExtensionId<ExternalAddressExt> implements ExtensionIdProvider {
+      public static final ExternalAddress ID = new ExternalAddress();
+
+      public ExternalAddress lookup() {
+        return ID;
+      }
+
+      public ExternalAddressExt createExtension(ExtendedActorSystem system) {
+        return new ExternalAddressExt(system);
+      }
+    }
+    
+    //#external-address
+
+    public void demonstrateExternalAddress() {
+      // this is not meant to be run, only to be compiled
+      final ActorSystem system = ActorSystem.create();
+      final Address remoteAddr = new Address("", "");
+      // #external-address
+      final Address addr = ExternalAddress.ID.get(system).getAddressFor(remoteAddr);
+      // #external-address
+    }
+
+  //#external-address-default
+  public static class DefaultAddressExt implements Extension {
+    private final ExtendedActorSystem system;
+
+    public DefaultAddressExt(ExtendedActorSystem system) {
+      this.system = system;
+    }
+
+    public Address getAddress() {
+      final ActorRefProvider provider = system.provider();
+      if (provider instanceof RemoteActorRefProvider) {
+        return ((RemoteActorRefProvider) provider).transport().address();
+      } else {
+        throw new UnsupportedOperationException("need RemoteActorRefProvider");
+      }
+    }
+  }
+
+  public static class DefaultAddress extends
+      AbstractExtensionId<DefaultAddressExt> implements ExtensionIdProvider {
+    public static final DefaultAddress ID = new DefaultAddress();
+
+    public DefaultAddress lookup() {
+      return ID;
+    }
+
+    public DefaultAddressExt createExtension(ExtendedActorSystem system) {
+      return new DefaultAddressExt(system);
+    }
+  }
+  
+  //#external-address-default
+
+  public void demonstrateDefaultAddress() {
+    // this is not meant to be run, only to be compiled
+    final ActorSystem system = ActorSystem.create();
+    final Address remoteAddr = new Address("", "");
+    // #external-address-default
+    final Address addr = DefaultAddress.ID.get(system).getAddress();
+    // #external-address-default
+  }
+
+  @Test
+  public void demonstrateTheProgrammaticAPI() {
+    // #programmatic
+    ActorSystem system = ActorSystem.create("example");
+
+    // Get the Serialization Extension
+    Serialization serialization = SerializationExtension.get(system);
+
+    // Have something to serialize
+    String original = "woohoo";
+
+    // Find the Serializer for it
+    Serializer serializer = serialization.findSerializerFor(original);
+
+    // Turn it into bytes
+    byte[] bytes = serializer.toBinary(original);
+
+    // Turn it back into an object,
+    // the nulls are for the class manifest and for the classloader
+    String back = (String) serializer.fromBinary(bytes);
+
+    // Voilá!
+    assertEquals(original, back);
+
+    // #programmatic
+    system.shutdown();
+  }
 }
