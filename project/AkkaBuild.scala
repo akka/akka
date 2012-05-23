@@ -89,7 +89,7 @@ object AkkaBuild extends Build {
       jvmOptions in MultiJvm := {
         if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
       },
-      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
   ) configs (MultiJvm)
 
@@ -107,7 +107,7 @@ object AkkaBuild extends Build {
       jvmOptions in MultiJvm := {
         if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
       },
-      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
   ) configs (MultiJvm)
 
@@ -126,7 +126,7 @@ object AkkaBuild extends Build {
       jvmOptions in MultiJvm := {
         if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
       },
-      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
   ) configs (MultiJvm)
 
