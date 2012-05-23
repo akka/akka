@@ -24,8 +24,7 @@ class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config)
 
 class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
-  implicit val cbExecutionContext: ExecutionContext = _owner.dispatcher
-  val breaker = new CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
+  val breaker = CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
 
   val log = Logging(system, "FileBasedMessageQueue")
 

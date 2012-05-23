@@ -55,6 +55,31 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       .onClose(closedLatch.countDown())
       .onHalfOpen(halfOpenLatch.countDown())
       .onOpen(openLatch.countDown())
+
+    val shortCallTimeoutSyncCb = CircuitBreaker(system.scheduler, 1, 50.millis.dilated, 500.millis.dilated)
+      .onClose(closedLatch.countDown())
+      .onHalfOpen(halfOpenLatch.countDown())
+      .onOpen(openLatch.countDown())
+
+    val shortResetTimeoutSyncCb = CircuitBreaker(system.scheduler, 1, 1000.millis.dilated, 50.millis.dilated)
+      .onClose(closedLatch.countDown())
+      .onHalfOpen(halfOpenLatch.countDown())
+      .onOpen(openLatch.countDown())
+
+    val longCallTimeoutSyncCb = CircuitBreaker(system.scheduler, 1, 5 seconds, 500.millis.dilated)
+      .onClose(closedLatch.countDown())
+      .onHalfOpen(halfOpenLatch.countDown())
+      .onOpen(openLatch.countDown())
+
+    val longResetTimeoutSyncCb = CircuitBreaker(system.scheduler, 1, 100.millis.dilated, 5 seconds)
+      .onClose(closedLatch.countDown())
+      .onHalfOpen(halfOpenLatch.countDown())
+      .onOpen(openLatch.countDown())
+
+    val multiFailureSyncCb = CircuitBreaker(system.scheduler, 5, 200.millis.dilated, 500.millis.dilated)
+      .onClose(closedLatch.countDown())
+      .onHalfOpen(halfOpenLatch.countDown())
+      .onOpen(openLatch.countDown())
   }
 
   before {
@@ -73,18 +98,18 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
     "throw exceptions when called before reset timeout" in {
 
       intercept[TestException] {
-        breakers.longResetTimeoutCb.withSyncCircuitBreaker(throwException)
+        breakers.longResetTimeoutSyncCb.withSyncCircuitBreaker(throwException)
       }
       checkLatch(breakers.openLatch)
 
       intercept[CircuitBreakerOpenException] {
-        breakers.longResetTimeoutCb.withSyncCircuitBreaker(sayHi)
+        breakers.longResetTimeoutSyncCb.withSyncCircuitBreaker(sayHi)
       }
     }
 
     "transition to half-open on reset timeout" in {
       intercept[TestException] {
-        breakers.shortResetTimeoutCb.withSyncCircuitBreaker(throwException)
+        breakers.shortResetTimeoutSyncCb.withSyncCircuitBreaker(throwException)
       }
       checkLatch(breakers.halfOpenLatch)
     }
@@ -93,20 +118,20 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
   "A synchronous circuit breaker that is half-open" must {
     "pass through next call and close on success" in {
       intercept[TestException] {
-        breakers.shortResetTimeoutCb.withSyncCircuitBreaker(throwException)
+        breakers.shortResetTimeoutSyncCb.withSyncCircuitBreaker(throwException)
       }
       checkLatch(breakers.halfOpenLatch)
-      assert("hi" == breakers.shortResetTimeoutCb.withSyncCircuitBreaker(sayHi))
+      assert("hi" == breakers.shortResetTimeoutSyncCb.withSyncCircuitBreaker(sayHi))
       checkLatch(breakers.closedLatch)
     }
 
     "open on exception in call" in {
       intercept[TestException] {
-        breakers.shortResetTimeoutCb.withSyncCircuitBreaker(throwException)
+        breakers.shortResetTimeoutSyncCb.withSyncCircuitBreaker(throwException)
       }
       checkLatch(breakers.halfOpenLatch)
       intercept[TestException] {
-        breakers.shortResetTimeoutCb.withSyncCircuitBreaker(throwException)
+        breakers.shortResetTimeoutSyncCb.withSyncCircuitBreaker(throwException)
       }
       checkLatch(breakers.openLatch)
     }
@@ -114,32 +139,32 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
 
   "A synchronous circuit breaker that is closed" must {
     "allow calls through" in {
-      breakers.longCallTimeoutCb.withSyncCircuitBreaker(sayHi) must be("hi")
+      breakers.longCallTimeoutSyncCb.withSyncCircuitBreaker(sayHi) must be("hi")
     }
 
     "increment failure count on failure" in {
       intercept[TestException] {
-        breakers.longCallTimeoutCb.withSyncCircuitBreaker(throwException)
+        breakers.longCallTimeoutSyncCb.withSyncCircuitBreaker(throwException)
       }
       checkLatch(breakers.openLatch)
-      breakers.longCallTimeoutCb.currentFailureCount must be(1)
+      breakers.longCallTimeoutSyncCb.currentFailureCount must be(1)
     }
 
     "reset failure count after success" in {
       intercept[TestException] {
-        breakers.multiFailureCb.withSyncCircuitBreaker(throwException)
+        breakers.multiFailureSyncCb.withSyncCircuitBreaker(throwException)
       }
 
-      breakers.multiFailureCb.currentFailureCount must be(1)
-      breakers.multiFailureCb.withSyncCircuitBreaker(sayHi)
-      breakers.multiFailureCb.currentFailureCount must be(0)
+      breakers.multiFailureSyncCb.currentFailureCount must be(1)
+      breakers.multiFailureSyncCb.withSyncCircuitBreaker(sayHi)
+      breakers.multiFailureSyncCb.currentFailureCount must be(0)
     }
 
     "increment failure count on callTimeout" in {
-      breakers.shortCallTimeoutCb.withSyncCircuitBreaker({
+      breakers.shortCallTimeoutSyncCb.withSyncCircuitBreaker({
         100.millis.dilated.sleep()
       })
-      breakers.shortCallTimeoutCb.currentFailureCount must be(1)
+      breakers.shortCallTimeoutSyncCb.currentFailureCount must be(1)
     }
   }
 
