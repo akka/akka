@@ -29,6 +29,11 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder
 import org.jboss.netty.handler.timeout.IdleStateHandler
 import org.jboss.netty.channel.ChannelPipelineFactory
 import org.jboss.netty.handler.execution.ExecutionHandler
+import org.jboss.netty.channel.ChannelLocal
+
+object ChannelAddress extends ChannelLocal[Option[Address]] {
+  override def initialValue(ch: Channel): Option[Address] = None
+}
 
 /**
  * Provides the implementation of the Netty remote support

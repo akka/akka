@@ -102,18 +102,10 @@ class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends Si
   }
 }
 
-object ChannelLocalSystem extends ChannelLocal[ActorSystemImpl] {
-  override def initialValue(ch: Channel): ActorSystemImpl = null
-}
-
 @ChannelHandler.Sharable
 class RemoteServerHandler(
   val openChannels: ChannelGroup,
   val netty: NettyRemoteTransport) extends SimpleChannelUpstreamHandler {
-
-  val channelAddress = new ChannelLocal[Option[Address]](false) {
-    override def initialValue(channel: Channel) = None
-  }
 
   import netty.settings
 
@@ -138,16 +130,16 @@ class RemoteServerHandler(
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = ()
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    netty.notifyListeners(RemoteServerClientDisconnected(netty, channelAddress.get(ctx.getChannel)))
+    netty.notifyListeners(RemoteServerClientDisconnected(netty, ChannelAddress.get(ctx.getChannel)))
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    val address = channelAddress.get(ctx.getChannel)
+    val address = ChannelAddress.get(ctx.getChannel)
     if (address.isDefined && settings.UsePassiveConnections)
       netty.unbindClient(address.get)
 
     netty.notifyListeners(RemoteServerClientClosed(netty, address))
-    channelAddress.remove(ctx.getChannel)
+    ChannelAddress.remove(ctx.getChannel)
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = try {
@@ -161,7 +153,7 @@ class RemoteServerHandler(
           case CommandType.CONNECT ⇒
             val origin = instruction.getOrigin
             val inbound = Address("akka", origin.getSystem, origin.getHostname, origin.getPort)
-            channelAddress.set(event.getChannel, Option(inbound))
+            ChannelAddress.set(event.getChannel, Option(inbound))
 
             //If we want to reuse the inbound connections as outbound we need to get busy
             if (settings.UsePassiveConnections)

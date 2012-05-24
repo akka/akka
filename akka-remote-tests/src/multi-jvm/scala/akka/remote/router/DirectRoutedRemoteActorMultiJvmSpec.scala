@@ -24,7 +24,7 @@ object DirectRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   import com.typesafe.config.ConfigFactory
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    # akka.loglevel = DEBUG
     akka.remote {
       log-received-messages = on
       log-sent-messages = on

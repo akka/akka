@@ -17,7 +17,7 @@ import akka.remote.testkit.MultiNodeConfig
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
+    # akka.loglevel = DEBUG
     akka.remote {
       log-received-messages = on
       log-sent-messages = on

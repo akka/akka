@@ -601,7 +601,7 @@ object Logging {
     import java.text.SimpleDateFormat
     import java.util.Date
 
-    val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.S")
+    val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
 
     def timestamp = dateFormat.format(new Date)
 

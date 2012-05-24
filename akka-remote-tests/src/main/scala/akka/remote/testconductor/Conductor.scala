@@ -27,12 +27,26 @@ import akka.actor.SupervisorStrategy
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.Status
 
-sealed trait Direction
+sealed trait Direction {
+  def includes(other: Direction): Boolean
+}
 
 object Direction {
-  case object Send extends Direction
-  case object Receive extends Direction
-  case object Both extends Direction
+  case object Send extends Direction {
+    override def includes(other: Direction): Boolean = other match {
+      case Send ⇒ true
+      case _    ⇒ false
+    }
+  }
+  case object Receive extends Direction {
+    override def includes(other: Direction): Boolean = other match {
+      case Receive ⇒ true
+      case _       ⇒ false
+    }
+  }
+  case object Both extends Direction {
+    override def includes(other: Direction): Boolean = true
+  }
 }
 
 /**
@@ -202,14 +216,15 @@ trait Conductor { this: TestConductorExt ⇒
  * purpose is to dispatch incoming messages to the right ServerFSM actor. There is
  * one shared instance of this class for all connections accepted by one Controller.
  */
-class ConductorHandler(system: ActorSystem, controller: ActorRef, log: LoggingAdapter) extends SimpleChannelUpstreamHandler {
+class ConductorHandler(_createTimeout: Timeout, controller: ActorRef, log: LoggingAdapter) extends SimpleChannelUpstreamHandler {
 
+  implicit val createTimeout = _createTimeout
   val clients = new ConcurrentHashMap[Channel, ActorRef]()
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
     log.debug("connection from {}", getAddrString(channel))
-    val fsm = system.actorOf(Props(new ServerFSM(controller, channel)))
+    val fsm: ActorRef = Await.result(controller ? Controller.CreateServerFSM(channel) mapTo, Duration.Inf)
     clients.put(channel, fsm)
   }
 
@@ -321,6 +336,7 @@ object Controller {
   case class ClientDisconnected(name: RoleName)
   case object GetNodes
   case object GetSockAddr
+  case class CreateServerFSM(channel: Channel)
 
   case class NodeInfo(name: RoleName, addr: Address, fsm: ActorRef)
 }
@@ -336,7 +352,7 @@ class Controller(private var initialParticipants: Int, controllerPort: InetSocke
 
   val settings = TestConductor().Settings
   val connection = RemoteConnection(Server, controllerPort,
-    new ConductorHandler(context.system, self, Logging(context.system, "ConductorHandler")))
+    new ConductorHandler(settings.QueryTimeout, self, Logging(context.system, "ConductorHandler")))
 
   /*
    * Supervision of the BarrierCoordinator means to catch all his bad emotions
@@ -363,8 +379,15 @@ class Controller(private var initialParticipants: Int, controllerPort: InetSocke
 
   // map keeping unanswered queries for node addresses (enqueued upon GetAddress, serviced upon NodeInfo)
   var addrInterest = Map[RoleName, Set[ActorRef]]()
+  val generation = Iterator from 1
 
   override def receive = LoggingReceive {
+    case CreateServerFSM(channel) ⇒
+      val (ip, port) = channel.getRemoteAddress match {
+        case s: InetSocketAddress ⇒ (s.getHostString, s.getPort)
+      }
+      val name = ip + ":" + port + "-server" + generation.next
+      sender ! context.actorOf(Props(new ServerFSM(self, channel)), name)
     case c @ NodeInfo(name, addr, fsm) ⇒
       barrier forward c
       if (nodes contains name) {

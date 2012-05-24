@@ -10,6 +10,8 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.ActorRef
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.Address
+import akka.actor.ActorSystemImpl
+import akka.actor.Props
 
 /**
  * Access to the [[akka.remote.testconductor.TestConductorExt]] extension:
@@ -50,6 +52,6 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
   val transport = system.provider.asInstanceOf[RemoteActorRefProvider].transport
   val address = transport.address
 
-  val failureInjectors = new ConcurrentHashMap[Address, FailureInjector]
+  val failureInjector = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props[FailureInjector], "FailureInjector")
 
 }
