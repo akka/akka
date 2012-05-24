@@ -41,29 +41,25 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
 
   override def initialParticipants = 2
 
-  var node: Cluster = _
+  def node() = Cluster(system)
 
   after {
     testConductor.enter("after")
-  }
-
-  runOn(first) {
-    node = Cluster(system)
   }
 
   "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
 
     "be a singleton cluster when started up" in {
       runOn(first) {
-        awaitCond(node.isSingletonCluster)
+        awaitCond(node().isSingletonCluster)
         // FIXME #2117 singletonCluster should reach convergence
-        //awaitCond(firstNode.convergence.isDefined)
+        //awaitCond(node().convergence.isDefined)
       }
     }
 
     "be in 'Joining' phase when started up" in {
       runOn(first) {
-        val members = node.latestGossip.members
+        val members = node().latestGossip.members
         members.size must be(1)
         val firstAddress = testConductor.getAddressFor(first).await
         val joiningMember = members find (_.address == firstAddress)
@@ -75,26 +71,16 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
 
   "A second cluster node with a 'node-to-join' config defined" must {
     "join the other node cluster when sending a Join command" in {
-      val secondAddress = testConductor.getAddressFor(second).await
 
-      def awaitSecondUp = awaitCond {
+      // runOn all
+      val secondAddress = testConductor.getAddressFor(second).await
+      awaitCond {
         node.latestGossip.members.exists { member ⇒
           member.address == secondAddress && member.status == MemberStatus.Up
         }
       }
-
-      runOn(second) {
-        // start cluster on second node, and join
-        node = Cluster(system)
-        awaitSecondUp
-        node.convergence.isDefined
-      }
-
-      runOn(first) {
-        awaitSecondUp
-        node.latestGossip.members.size must be(2)
-        node.convergence.isDefined
-      }
+      node().latestGossip.members.size must be(2)
+      awaitCond(node().convergence.isDefined)
     }
   }
 
