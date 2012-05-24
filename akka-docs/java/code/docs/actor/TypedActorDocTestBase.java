@@ -5,6 +5,7 @@ package docs.actor;
 
 //#imports
 
+import akka.actor.TypedActor;
 import akka.dispatch.*;
 import akka.actor.*;
 import akka.japi.*;
@@ -150,6 +151,21 @@ public class TypedActorDocTestBase {
 //Ignore
     }
   }
+
+    @Test public void createHierarchies() {
+        try {
+            //#typed-actor-hierarchy
+            Squarer childSquarer =
+                    TypedActor.get(TypedActor.context()).
+                               typedActorOf(
+                                       new TypedProps<SquarerImpl>(Squarer.class, SquarerImpl.class)
+                               );
+            //Use "childSquarer" as a Squarer
+            //#typed-actor-hierarchy
+        } catch (Exception e) {
+            //dun care
+        }
+    }
 
  @Test public void proxyAnyActorRef() {
     try {

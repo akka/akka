@@ -54,7 +54,7 @@ package docs.serialization {
     // using the type hint (if any, see "includeManifest" above)
     // into the optionally provided classLoader.
     def fromBinary(bytes: Array[Byte],
-      clazz: Option[Class[_]]): AnyRef = {
+                   clazz: Option[Class[_]]): AnyRef = {
       // Put your code that deserializes here
       //#...
       null

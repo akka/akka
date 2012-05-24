@@ -151,6 +151,18 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#typed-actor-remote
   }
 
+  "create hierarchies" in {
+    try {
+      //#typed-actor-hierarchy
+      //Inside your Typed Actor
+      val childSquarer: Squarer = TypedActor(TypedActor.context).typedActorOf(TypedProps[SquarerImpl]())
+      //Use "childSquarer" as a Squarer
+      //#typed-actor-hierarchy
+    } catch {
+      case e: Exception ⇒ //ignore
+    }
+  }
+
   "supercharge" in {
     //#typed-actor-supercharge-usage
     val awesomeFooBar: Foo with Bar = TypedActor(system).typedActorOf(TypedProps[FooBar]())
