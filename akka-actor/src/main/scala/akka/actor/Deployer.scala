@@ -135,7 +135,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
     add(d.path.split("/").drop(1), d)
   }
 
-  protected def parseConfig(key: String, config: Config): Option[Deploy] = {
+  def parseConfig(key: String, config: Config): Option[Deploy] = {
 
     val deployment = config.withFallback(default)
 

@@ -4,7 +4,7 @@
 package akka.remote.testkit
 
 import akka.testkit.AkkaSpec
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.remote.testconductor.TestConductor
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -17,6 +17,8 @@ import akka.util.Duration
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
 import akka.remote.testconductor.RoleName
+import akka.actor.Deploy
+import com.typesafe.config.ConfigObject
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -25,7 +27,9 @@ abstract class MultiNodeConfig {
 
   private var _commonConf: Option[Config] = None
   private var _nodeConf = Map[RoleName, Config]()
-  private var _roles = Seq[RoleName]()
+  private var _roles = Vector[RoleName]()
+  private var _deployments = Map[RoleName, Seq[String]]()
+  private var _allDeploy = Vector[String]()
 
   /**
    * Register a common base config for all test participants, if so desired.
@@ -68,6 +72,11 @@ abstract class MultiNodeConfig {
     r
   }
 
+  def deployOn(role: RoleName, deployment: String): Unit =
+    _deployments += role -> ((_deployments get role getOrElse Vector()) :+ deployment)
+
+  def deployOnAll(deployment: String): Unit = _allDeploy :+= deployment
+
   private[testkit] lazy val mySelf: RoleName = {
     require(_roles.size > MultiNodeSpec.selfIndex, "not enough roles declared for this test")
     _roles(MultiNodeSpec.selfIndex)
@@ -77,6 +86,10 @@ abstract class MultiNodeConfig {
     val configs = (_nodeConf get mySelf).toList ::: _commonConf.toList ::: MultiNodeSpec.nodeConfig :: AkkaSpec.testConf :: Nil
     configs reduce (_ withFallback _)
   }
+
+  private[testkit] def deployments(node: RoleName): Seq[String] = (_deployments get node getOrElse Nil) ++ _allDeploy
+
+  private[testkit] def roles: Seq[RoleName] = _roles
 
 }
 
@@ -115,11 +128,13 @@ object MultiNodeSpec {
 
 }
 
-abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem) extends AkkaSpec(_system) {
+abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem, roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
+  extends AkkaSpec(_system) {
 
   import MultiNodeSpec._
 
-  def this(config: MultiNodeConfig) = this(config.mySelf, ActorSystem(AkkaSpec.getCallerName, config.config))
+  def this(config: MultiNodeConfig) =
+    this(config.mySelf, ActorSystem(AkkaSpec.getCallerName, config.config), config.roles, config.deployments)
 
   /*
    * Test Class Interface
@@ -186,6 +201,30 @@ abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem) extends
     testConductor.startController(initialParticipants, mySelf, controllerAddr).await
   } else {
     testConductor.startClient(mySelf, controllerAddr).await
+  }
+
+  // now add deployments, if so desired
+
+  private case class Replacement(tag: String, role: RoleName) {
+    lazy val addr = node(role).address.toString
+  }
+  private val replacements = roles map (r ⇒ Replacement("@" + r.name + "@", r))
+  private val deployer = system.asInstanceOf[ExtendedActorSystem].provider.deployer
+  deployments(mySelf) foreach { str ⇒
+    val deployString = (str /: replacements) {
+      case (base, r @ Replacement(tag, _)) ⇒
+        base.indexOf(tag) match {
+          case -1    ⇒ base
+          case start ⇒ base.replace(tag, r.addr)
+        }
+    }
+    import scala.collection.JavaConverters._
+    ConfigFactory.parseString(deployString).root.asScala foreach {
+      case (key, value: ConfigObject) ⇒
+        deployer.parseConfig(key, value.toConfig) foreach deployer.deploy
+      case (key, x) ⇒
+        throw new IllegalArgumentException("key " + key + " must map to deployment section, not simple value " + x)
+    }
   }
 
 }
