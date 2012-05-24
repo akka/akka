@@ -70,7 +70,8 @@ The Akka distribution includes the microkernel. To run the microkernel put your
 application jar in the ``deploy`` directory and use the scripts in the ``bin``
 directory.
 
-More information is available in the documentation of the :ref:`microkernel`.
+More information is available in the documentation of the microkernel
+(:ref:`microkernel-java`, :ref:`microkernel-scala`).
 
 Using a build tool
 ------------------
