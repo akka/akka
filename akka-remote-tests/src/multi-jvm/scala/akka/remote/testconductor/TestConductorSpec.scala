@@ -1,3 +1,6 @@
+/**
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.testconductor
 
 import akka.remote.AkkaRemoteSpec
@@ -16,18 +19,8 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
-  commonConfig(ConfigFactory.parseString("""
-    # akka.loglevel = DEBUG
-    akka.remote {
-      log-received-messages = on
-      log-sent-messages = on
-    }
-    akka.actor.debug {
-      receive = on
-      fsm = on
-    }
-  """))
-  
+  commonConfig(debugConfig(on = true))
+
   val master = role("master")
   val slave = role("slave")
 }
@@ -36,7 +29,7 @@ class TestConductorMultiJvmNode1 extends TestConductorSpec
 class TestConductorMultiJvmNode2 extends TestConductorSpec
 
 class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ImplicitSender {
-  
+
   import TestConductorMultiJvmSpec._
 
   def initialParticipants = 2
