@@ -50,7 +50,7 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
 
   override def initialParticipants = 3
 
-  var node: Cluster = _
+  def node(): Cluster = Cluster(system)
 
   after {
     testConductor.enter("after")
@@ -64,36 +64,31 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
     "(when two systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
 
       runOn(first, second) {
-        node = Cluster(system)
         val latch = TestLatch()
-        node.registerListener(new MembershipChangeListener {
+        node().registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
             if (members.size == 2 && members.forall(_.status == MemberStatus.Up))
               latch.countDown()
           }
         })
         latch.await
-        node.convergence.isDefined must be(true)
+        node().convergence.isDefined must be(true)
       }
 
     }
 
     "(when three systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
 
-      runOn(third) {
-        node = Cluster(system)
-      }
-
       // runOn all
       val latch = TestLatch()
-      node.registerListener(new MembershipChangeListener {
+      node().registerListener(new MembershipChangeListener {
         def notify(members: SortedSet[Member]) {
           if (members.size == 3 && members.forall(_.status == MemberStatus.Up))
             latch.countDown()
         }
       })
       latch.await
-      node.convergence.isDefined must be(true)
+      node().convergence.isDefined must be(true)
 
     }
   }
