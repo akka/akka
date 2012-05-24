@@ -72,12 +72,7 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
 
       awaitUpConvergence(numberOfMembers = 2)
 
-      runOn(a1, b1, c1) {
-        node().isLeader must be(true)
-      }
-      runOn(a2, b2, c2) {
-        node().isLeader must be(false)
-      }
+      node().isLeader must be(ifNode(a1, b1, c1)(true)(false))
 
       runOn(b2) {
         node().join(a1Address)
@@ -87,12 +82,7 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
         awaitUpConvergence(numberOfMembers = 4)
       }
 
-      runOn(a1, c1) {
-        node().isLeader must be(true)
-      }
-      runOn(a2, b1, b2, c2) {
-        node().isLeader must be(false)
-      }
+      node().isLeader must be(ifNode(a1, c1)(true)(false))
 
     }
 
@@ -104,12 +94,7 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
 
       awaitUpConvergence(numberOfMembers = 6)
 
-      runOn(a1) {
-        node().isLeader must be(true)
-      }
-      runOn(a2, b1, b2, c1, c2) {
-        node().isLeader must be(false)
-      }
+      node().isLeader must be(ifNode(a1)(true)(false))
     }
   }
 
