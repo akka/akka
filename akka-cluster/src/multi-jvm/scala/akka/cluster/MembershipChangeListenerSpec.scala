@@ -24,21 +24,6 @@ object MembershipChangeListenerMultiJvmSpec extends MultiNodeConfig {
     }
     """)))
 
-  nodeConfig(first, ConfigFactory.parseString("""
-    # FIXME get rid of this hardcoded port
-    akka.remote.netty.port=2603
-    """))
-
-  nodeConfig(second, ConfigFactory.parseString("""
-    # FIXME get rid of this hardcoded host:port
-    akka.cluster.node-to-join = "akka://MultiNodeSpec@localhost:2603"
-    """))
-
-  nodeConfig(third, ConfigFactory.parseString("""
-    # FIXME get rid of this hardcoded host:port
-    akka.cluster.node-to-join = "akka://MultiNodeSpec@localhost:2603"
-    """))
-
 }
 
 class MembershipChangeListenerMultiJvmNode1 extends MembershipChangeListenerSpec
@@ -64,6 +49,7 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
     "(when two systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
 
       runOn(first, second) {
+        node().join(firstAddress)
         val latch = TestLatch()
         node().registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
@@ -78,6 +64,10 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
     }
 
     "(when three systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
+
+      runOn(third) {
+        node().join(firstAddress)
+      }
 
       // runOn all
       val latch = TestLatch()
