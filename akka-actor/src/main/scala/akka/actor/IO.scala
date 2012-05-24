@@ -320,7 +320,7 @@ object IO {
   }
 
   object Chunk {
-    val empty = new Chunk(ByteString.empty)
+    val empty: Chunk = new Chunk(ByteString.empty)
   }
 
   /**
@@ -344,7 +344,7 @@ object IO {
    * Iteratee.recover() in order to handle it properly.
    */
   case class EOF(cause: Option[Exception]) extends Input {
-    final override def ++(that: Input) = that
+    final override def ++(that: Input): Input = that
   }
 
   object Iteratee {

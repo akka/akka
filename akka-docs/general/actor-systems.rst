@@ -14,6 +14,11 @@ which means that we need not concern ourselves with their emotional state or
 moral issues). The result can then serve as a mental scaffolding for building
 the software implementation.
 
+.. note::
+
+   An ActorSystem is a heavyweight structure that will allocate 1…N Threads,
+   so create one per logical application.
+
 Hierarchical Structure
 ----------------------
 

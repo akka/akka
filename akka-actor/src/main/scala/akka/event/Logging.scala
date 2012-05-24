@@ -276,9 +276,9 @@ object LogSource {
 
   // this one unfortunately does not work as implicit, because existential types have some weird behavior
   val fromClass: LogSource[Class[_]] = new LogSource[Class[_]] {
-    def genString(c: Class[_]) = Logging.simpleName(c)
-    override def genString(c: Class[_], system: ActorSystem) = genString(c) + "(" + system + ")"
-    override def getClazz(c: Class[_]) = c
+    def genString(c: Class[_]): String = Logging.simpleName(c)
+    override def genString(c: Class[_], system: ActorSystem): String = genString(c) + "(" + system + ")"
+    override def getClazz(c: Class[_]): Class[_] = c
   }
   implicit def fromAnyClass[T]: LogSource[Class[T]] = fromClass.asInstanceOf[LogSource[Class[T]]]
 

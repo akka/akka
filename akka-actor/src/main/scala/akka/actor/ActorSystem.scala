@@ -428,9 +428,7 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def dynamicAccess: DynamicAccess
 }
 
-//FIXME This should most probably not be protected[akka] right? - √
-//FIXME We also need to decide whether this should be supported API or not - √
-class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Config, classLoader: ClassLoader) extends ExtendedActorSystem {
+private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader) extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-]*$"""))
     throw new IllegalArgumentException(

@@ -114,7 +114,9 @@ object AddressFromURIString {
   def parse(addr: String): Address = apply(addr)
 }
 
-//FIXME is this public API? - √
+/**
+ * Given an ActorPath it returns the Address and the path elements if the path is well-formed
+ */
 object ActorPathExtractor extends PathUtils {
   def unapply(addr: String): Option[(Address, Iterable[String])] =
     try {
