@@ -38,6 +38,25 @@ abstract class MultiNodeConfig {
   def nodeConfig(role: RoleName, config: Config): Unit = _nodeConf += role -> config
 
   /**
+   * Include for verbose debug logging
+   * @param on when `true` debug Config is returned, otherwise empty Config
+   */
+  def debugConfig(on: Boolean): Config =
+    if (on)
+      ConfigFactory.parseString("""
+        akka.loglevel = DEBUG
+        akka.remote {
+          log-received-messages = on
+          log-sent-messages = on
+        }
+        akka.actor.debug {
+          receive = on
+          fsm = on
+        }
+        """)
+    else ConfigFactory.empty
+
+  /**
    * Construct a RoleName and return it, to be used as an identifier in the
    * test. Registration of a role name creates a role which then needs to be
    * filled.
