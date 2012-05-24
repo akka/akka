@@ -127,7 +127,7 @@ object ActorSystem {
     final val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
     final val EventHandlerStartTimeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
     final val LogConfigOnStart = config.getBoolean("akka.log-config-on-start")
-    
+
     final val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
     final val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
     final val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
