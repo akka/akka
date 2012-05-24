@@ -59,7 +59,7 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _re
   extends RouteeProvider(_context, _resizer) {
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
-  private val nodeAddressIter = Stream.continually(nodes).flatten.iterator
+  private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
 
   override def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
     (nrOfInstances, routees, nodes) match {

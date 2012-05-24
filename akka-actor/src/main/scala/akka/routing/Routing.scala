@@ -174,7 +174,7 @@ trait RouterConfig {
 
   def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route
 
-  def createRouteeProvider(context: ActorContext) = new RouteeProvider(context, resizer)
+  def createRouteeProvider(context: ActorContext): RouteeProvider = new RouteeProvider(context, resizer)
 
   def createActor(): Router = new Router {
     override def supervisorStrategy: SupervisorStrategy = RouterConfig.this.supervisorStrategy
@@ -195,7 +195,8 @@ trait RouterConfig {
    */
   def withFallback(other: RouterConfig): RouterConfig = this
 
-  protected def toAll(sender: ActorRef, routees: Iterable[ActorRef]): Iterable[Destination] = routees.map(Destination(sender, _))
+  protected def toAll(sender: ActorRef, routees: Iterable[ActorRef]): Iterable[Destination] =
+    routees.map(Destination(sender, _))
 
   /**
    * Routers with dynamically resizable number of routees return the [[akka.routing.Resizer]]
@@ -218,9 +219,7 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
    * Not thread safe, but intended to be called from protected points, such as
    * `RouterConfig.createRoute` and `Resizer.resize`.
    */
-  def registerRoutees(routees: IndexedSeq[ActorRef]): Unit = {
-    routedRef.addRoutees(routees)
-  }
+  def registerRoutees(routees: IndexedSeq[ActorRef]): Unit = routedRef.addRoutees(routees)
 
   /**
    * Adds the routees to the router.
@@ -240,9 +239,7 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`.
    */
-  def unregisterRoutees(routees: IndexedSeq[ActorRef]): Unit = {
-    routedRef.removeRoutees(routees)
-  }
+  def unregisterRoutees(routees: IndexedSeq[ActorRef]): Unit = routedRef.removeRoutees(routees)
 
   def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
     (nrOfInstances, routees) match {
@@ -253,11 +250,8 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
       case (_, xs)  ⇒ xs.map(context.actorFor(_))(scala.collection.breakOut)
     }
 
-  def createAndRegisterRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): Unit = {
-    if (resizer.isEmpty) {
-      registerRoutees(createRoutees(props, nrOfInstances, routees))
-    }
-  }
+  def createAndRegisterRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): Unit =
+    if (resizer.isEmpty) registerRoutees(createRoutees(props, nrOfInstances, routees))
 
   /**
    * All routees of the router
@@ -265,7 +259,6 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
   def routees: IndexedSeq[ActorRef] = routedRef.routees
 
   private def routedRef = context.self.asInstanceOf[RoutedActorRef]
-
 }
 
 /**
@@ -423,7 +416,11 @@ class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
 }
 
 object RoundRobinRouter {
-  def apply(routees: Iterable[ActorRef]) = new RoundRobinRouter(routees = routees map (_.path.toString))
+  /**
+   * Creates a new RoundRobinRouter, routing to the specified routees
+   */
+  def apply(routees: Iterable[ActorRef]): RoundRobinRouter =
+    new RoundRobinRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
@@ -539,7 +536,10 @@ trait RoundRobinLike { this: RouterConfig ⇒
 }
 
 object RandomRouter {
-  def apply(routees: Iterable[ActorRef]) = new RandomRouter(routees = routees map (_.path.toString))
+  /**
+   * Creates a new RandomRouter, routing to the specified routees
+   */
+  def apply(routees: Iterable[ActorRef]): RandomRouter = new RandomRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
@@ -652,7 +652,11 @@ trait RandomLike { this: RouterConfig ⇒
 }
 
 object SmallestMailboxRouter {
-  def apply(routees: Iterable[ActorRef]) = new SmallestMailboxRouter(routees = routees map (_.path.toString))
+  /**
+   * Creates a new SmallestMailboxRouter, routing to the specified routees
+   */
+  def apply(routees: Iterable[ActorRef]): SmallestMailboxRouter =
+    new SmallestMailboxRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
@@ -852,7 +856,10 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
 }
 
 object BroadcastRouter {
-  def apply(routees: Iterable[ActorRef]) = new BroadcastRouter(routees = routees map (_.path.toString))
+  /**
+   * Creates a new BroadcastRouter, routing to the specified routees
+   */
+  def apply(routees: Iterable[ActorRef]): BroadcastRouter = new BroadcastRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
@@ -957,7 +964,11 @@ trait BroadcastLike { this: RouterConfig ⇒
 }
 
 object ScatterGatherFirstCompletedRouter {
-  def apply(routees: Iterable[ActorRef], within: Duration) = new ScatterGatherFirstCompletedRouter(routees = routees map (_.path.toString), within = within)
+  /**
+   * Creates a new ScatterGatherFirstCompletedRouter, routing to the specified routees, timing out after the specified Duration
+   */
+  def apply(routees: Iterable[ActorRef], within: Duration): ScatterGatherFirstCompletedRouter =
+    new ScatterGatherFirstCompletedRouter(routees = routees map (_.path.toString), within = within)
 
   /**
    * Java API to create router with the supplied 'routees' actors.
@@ -1106,6 +1117,10 @@ trait Resizer {
 }
 
 case object DefaultResizer {
+
+  /**
+   * Creates a new DefaultResizer from the given configuration
+   */
   def apply(resizerConfig: Config): DefaultResizer =
     DefaultResizer(
       lowerBound = resizerConfig.getInt("lower-bound"),
