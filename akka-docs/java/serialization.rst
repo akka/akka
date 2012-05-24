@@ -21,12 +21,12 @@ For Akka to know which ``Serializer`` to use for what, you need edit your :ref:`
 in the "akka.actor.serializers"-section you bind names to implementations of the ``akka.serialization.Serializer``
 you wish to use, like this:
 
-.. includecode:: ../scala/code/akka/docs/serialization/SerializationDocSpec.scala#serialize-serializers-config
+.. includecode:: ../scala/code/docs/serialization/SerializationDocSpec.scala#serialize-serializers-config
 
 After you've bound names to different implementations of ``Serializer`` you need to wire which classes
 should be serialized using which ``Serializer``, this is done in the "akka.actor.serialization-bindings"-section:
 
-.. includecode:: ../scala/code/akka/docs/serialization/SerializationDocSpec.scala#serialization-bindings-config
+.. includecode:: ../scala/code/docs/serialization/SerializationDocSpec.scala#serialization-bindings-config
 
 You only need to specify the name of an interface or abstract base class of the
 messages. In case of ambiguity, i.e. the message implements several of the
@@ -53,7 +53,7 @@ Verification
 
 If you want to verify that your messages are serializable you can enable the following config option:
 
-.. includecode:: ../scala/code/akka/docs/serialization/SerializationDocSpec.scala#serialize-messages-config
+.. includecode:: ../scala/code/docs/serialization/SerializationDocSpec.scala#serialize-messages-config
 
 .. warning::
 
@@ -62,7 +62,7 @@ If you want to verify that your messages are serializable you can enable the fol
 
 If you want to verify that your ``Props`` are serializable you can enable the following config option:
 
-.. includecode:: ../scala/code/akka/docs/serialization/SerializationDocSpec.scala#serialize-creators-config
+.. includecode:: ../scala/code/docs/serialization/SerializationDocSpec.scala#serialize-creators-config
 
 .. warning::
 
@@ -75,7 +75,7 @@ Programmatic
 If you want to programmatically serialize/deserialize using Akka Serialization,
 here's some examples:
 
-.. includecode:: code/akka/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: imports,programmatic
 
 For more information, have a look at the ``ScalaDoc`` for ``akka.serialization._``
@@ -93,7 +93,7 @@ Creating new Serializers
 First you need to create a class definition of your ``Serializer``,
 which is done by extending ``akka.serialization.JSerializer``, like this:
 
-.. includecode:: code/akka/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: imports,my-own-serializer
    :exclude: ...
 
@@ -106,7 +106,7 @@ Serializing ActorRefs
 All ActorRefs are serializable using JavaSerializer, but in case you are writing your own serializer,
 you might want to know how to serialize and deserialize them properly, here's the magic incantation:
 
-.. includecode:: code/akka/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: imports,actorref-serializer
 
 .. note::
@@ -131,7 +131,7 @@ address which shall be the recipient of the serialized information. Use
 :meth:`ActorRefProvider.getExternalAddressFor(remoteAddr)` to query the system
 for the appropriate address to use when sending to ``remoteAddr``:
 
-.. includecode:: code/akka/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: external-address
 
 This requires that you know at least which type of address will be supported by
@@ -144,7 +144,7 @@ There is a possible simplification available if you are just using the default
 :class:`NettyRemoteTransport` with the :meth:`RemoteActorRefProvider`, which is
 enabled by the fact that this combination has just a single remote address:
 
-.. includecode:: code/akka/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: external-address-default
 
 This solution has to be adapted once other providers are used (like the planned

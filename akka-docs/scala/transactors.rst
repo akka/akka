@@ -63,9 +63,9 @@ Here is an example of coordinating two simple counter Actors so that they both
 increment together in coordinated transactions. If one of them was to fail to
 increment, the other would also fail.
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#coordinated-example
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#coordinated-example
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#run-coordinated-example
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#run-coordinated-example
 
 Note that creating a ``Coordinated`` object requires a ``Timeout`` to be
 specified for the coordinated transaction. This can be done implicitly, by
@@ -73,36 +73,36 @@ having an implicit ``Timeout`` in scope, or explicitly, by passing the timeout
 when creating a a ``Coordinated`` object. Here's an example of specifying an
 implicit timeout:
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#implicit-timeout
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#implicit-timeout
 
 To start a new coordinated transaction that you will also participate in, just
 create a ``Coordinated`` object (this assumes an implicit timeout):
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#create-coordinated
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#create-coordinated
 
 To start a coordinated transaction that you won't participate in yourself you
 can create a ``Coordinated`` object with a message and send it directly to an
 actor. The recipient of the message will be the first member of the coordination
 set:
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#send-coordinated
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#send-coordinated
 
 To receive a coordinated message in an actor simply match it in a case
 statement:
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#receive-coordinated
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#receive-coordinated
    :exclude: coordinated-atomic
 
 To include another actor in the same coordinated transaction that you've created
 or received, use the apply method on that object. This will increment the number
 of parties involved by one and create a new ``Coordinated`` object to be sent.
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#include-coordinated
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#include-coordinated
 
 To enter the coordinated transaction use the atomic method of the coordinated
 object:
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#coordinated-atomic
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#coordinated-atomic
 
 The coordinated transaction will wait for the other transactions before
 committing. If any of the coordinated transactions fail then they all fail.
@@ -125,7 +125,7 @@ transactions, using the explicit coordination described above.
 Here's an example of a simple transactor that will join a coordinated
 transaction:
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#counter-example
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#counter-example
 
 You could send this Counter transactor a ``Coordinated(Increment)`` message. If
 you were to send it just an ``Increment`` message it will create its own
@@ -141,16 +141,16 @@ allows you to specify both the actor to send to, and the message to send.
 
 Example of coordinating an increment:
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#friendly-counter-example
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#friendly-counter-example
 
 Using ``include`` to include more than one transactor:
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#coordinate-include
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#coordinate-include
 
 Using ``sendTo`` to coordinate transactions but pass-on a different message than
 the one that was received:
 
-.. includecode:: code/akka/docs/transactor/TransactorDocSpec.scala#coordinate-sendto
+.. includecode:: code/docs/transactor/TransactorDocSpec.scala#coordinate-sendto
 
 To execute directly before or after the coordinated transaction, override the
 ``before`` and ``after`` methods. These methods also expect partial functions

@@ -11,7 +11,7 @@ How to Log
 Create a ``LoggingAdapter`` and use the ``error``, ``warning``, ``info``, or ``debug`` methods,
 as illustrated in this example:
 
-.. includecode:: code/akka/docs/event/LoggingDocSpec.scala
+.. includecode:: code/docs/event/LoggingDocSpec.scala
    :include: my-actor
 
 For convenience you can mixin the ``log`` member into actors, instead of defining it as above.
@@ -37,7 +37,7 @@ placeholders results in a warning being appended to the log statement (i.e. on
 the same line with the same severity). You may pass a Java array as the only
 substitution argument to have its elements be treated individually:
 
-.. includecode:: code/akka/docs/event/LoggingDocSpec.scala#array
+.. includecode:: code/docs/event/LoggingDocSpec.scala#array
 
 The Java :class:`Class` of the log source is also included in the generated
 :class:`LogEvent`. In case of a simple string this is replaced with a “marker”
@@ -176,7 +176,7 @@ using implicit parameters and thus fully customizable: simply create your own
 instance of :class:`LogSource[T]` and have it in scope when creating the
 logger.
 
-.. includecode:: code/akka/docs/event/LoggingDocSpec.scala#my-source
+.. includecode:: code/docs/event/LoggingDocSpec.scala#my-source
 
 This example creates a log source which mimics traditional usage of Java
 loggers, which are based upon the originating object’s class name as log
@@ -217,7 +217,7 @@ event handler available in the 'akka-slf4j' module.
 
 Example of creating a listener:
 
-.. includecode:: code/akka/docs/event/LoggingDocSpec.scala
+.. includecode:: code/docs/event/LoggingDocSpec.scala
    :include: my-event-listener
 
 .. _slf4j-scala:

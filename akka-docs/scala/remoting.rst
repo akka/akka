@@ -116,15 +116,15 @@ precedence.
 
 With these imports:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocSpec.scala#import
+.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#import
 
 and a remote address like this:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocSpec.scala#make-address
+.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#make-address
 
 you can advise the system to create a child on that remote node like so:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
+.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
 
 Serialization
 ^^^^^^^^^^^^^
