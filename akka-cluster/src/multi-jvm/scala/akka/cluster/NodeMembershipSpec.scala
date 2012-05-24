@@ -3,15 +3,12 @@
  */
 package akka.cluster
 
-import java.net.InetSocketAddress
-
-import akka.testkit._
-import akka.dispatch._
-import akka.actor._
-import akka.remote._
-import akka.util.duration._
-
-import com.typesafe.config._
+import akka.actor.ActorSystem
+import akka.actor.ActorSystemImpl
+import akka.remote.RemoteActorRefProvider
+import akka.testkit.ImplicitSender
+import akka.testkit.LongRunningTest
+import com.typesafe.config.ConfigFactory
 
 class NodeMembershipSpec extends ClusterSpec with ImplicitSender {
   val portPrefix = 7
