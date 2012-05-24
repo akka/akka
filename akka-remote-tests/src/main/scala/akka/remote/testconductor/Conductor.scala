@@ -397,7 +397,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   override def receive = LoggingReceive {
     case CreateServerFSM(channel) ⇒
       val (ip, port) = channel.getRemoteAddress match {
-        case s: InetSocketAddress ⇒ (s.getHostString, s.getPort)
+        case s: InetSocketAddress ⇒ (s.getHostName, s.getPort)
       }
       val name = ip + ":" + port + "-server" + generation.next
       sender ! context.actorOf(Props(new ServerFSM(self, channel)), name)

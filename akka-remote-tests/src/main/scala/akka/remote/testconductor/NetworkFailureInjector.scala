@@ -135,7 +135,7 @@ private[akka] object NetworkFailureInjector {
 }
 
 /**
- * Brief overview: all network traffic passes through the `sender`/`receiver` FSMs managed 
+ * Brief overview: all network traffic passes through the `sender`/`receiver` FSMs managed
  * by the FailureInjector of the TestConductor extension. These can
  * pass through requests immediately, drop them or throttle to a desired rate. The FSMs are
  * registered in the TestConductorExt.failureInjector so that settings can be applied from
