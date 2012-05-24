@@ -647,7 +647,7 @@ object Logging {
     import java.text.SimpleDateFormat
     import java.util.Date
 
-    private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.S")
+    private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
     private val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
     private val errorFormatWithoutCause = "[ERROR] [%s] [%s] [%s] %s".intern
     private val warningFormat = "[WARN] [%s] [%s] [%s] %s".intern

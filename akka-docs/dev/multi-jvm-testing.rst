@@ -334,3 +334,10 @@ same machine at the same time.
 The machines that are used for testing (slaves) should have ssh access to the outside world and be able to talk
 to each other with the internal addresses given. On the master machine ssh client is required. Obviosly git
 and sbt should be installed on both master and slave machines.
+
+The Test Conductor Extension
+============================
+
+The Test Conductor Extension is aimed at enhancing the multi JVM and multi node testing facilities.
+
+.. image:: ../images/akka-remote-testconductor.png

@@ -38,7 +38,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -86,17 +86,31 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
-      jvmOptions in MultiJvm := {
-        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
+      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
+    )
+  ) configs (MultiJvm)
+
+  lazy val remoteTests = Project(
+    id = "akka-remote-tests",
+    base = file("akka-remote-tests"),
+    dependencies = Seq(remote % "compile;test->test;multi-jvm->multi-jvm", actorTests % "test->test", testkit % "test->test"),
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      // disable parallel tests
+      parallelExecution in Test := false,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
+      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
   ) configs (MultiJvm)
 
   lazy val cluster = Project(
     id = "akka-cluster",
     base = file("akka-cluster"),
-    dependencies = Seq(remote, remote % "test->test", testkit % "test->test"),
+    dependencies = Seq(remote, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
@@ -105,10 +119,8 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
-      jvmOptions in MultiJvm := {
-        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
-      },
-      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
+      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
   ) configs (MultiJvm)
 
@@ -285,6 +297,14 @@ object AkkaBuild extends Build {
   val includeTestTags = SettingKey[Seq[String]]("include-test-tags")
 
   val defaultExcludedTags = Seq("timing", "long-running")
+
+  val defaultMultiJvmOptions: Seq[String] = {
+    (System.getProperty("akka.test.timefactor") match {
+      case null => Nil
+      case x => List("-Dakka.test.timefactor=" + x)
+    }) :::
+    (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
+  }
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",

@@ -127,6 +127,8 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
    */
   private[akka] def from(cfg: Config): MessageDispatcher = configuratorFrom(cfg).dispatcher()
 
+  private[akka] def isBalancingDispatcher(id: String): Boolean = settings.config.hasPath(id) && config(id).getString("type") == "BalancingDispatcher"
+
   /**
    * Creates a MessageDispatcherConfigurator from a Config.
    *

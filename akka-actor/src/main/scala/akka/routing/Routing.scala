@@ -29,11 +29,17 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     _supervisor,
     _path) {
 
+  // verify that a BalancingDispatcher is not used with a Router
+  if (_system.dispatchers.isBalancingDispatcher(_props.dispatcher) && _props.routerConfig != NoRouter)
+    throw new ConfigurationException(
+      "Configuration for actor [" + _path.toString +
+        "] is invalid - you can not use a 'BalancingDispatcher' together with any type of 'Router'")
+
   /*
    * CAUTION: RoutedActorRef is PROBLEMATIC
    * ======================================
-   * 
-   * We are constructing/assembling the children outside of the scope of the 
+   *
+   * We are constructing/assembling the children outside of the scope of the
    * Router actor, inserting them in its childrenRef list, which is not at all
    * synchronized. This is done exactly once at start-up, all other accesses
    * are done from the Router actor. This means that the only thing which is

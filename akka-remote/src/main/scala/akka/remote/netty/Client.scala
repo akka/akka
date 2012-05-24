@@ -100,8 +100,6 @@ private[akka] class ActiveRemoteClient private[akka] (
   private var connection: ChannelFuture = _
   @volatile
   private[remote] var openChannels: DefaultChannelGroup = _
-  @volatile
-  private var executionHandler: ExecutionHandler = _
 
   @volatile
   private var reconnectionTimeWindowStart = 0L
@@ -144,9 +142,8 @@ private[akka] class ActiveRemoteClient private[akka] (
     runSwitch switchOn {
       openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
 
-      executionHandler = new ExecutionHandler(netty.executor)
       val b = new ClientBootstrap(netty.clientChannelFactory)
-      b.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, b, executionHandler, remoteAddress, localAddress, this))
+      b.setPipelineFactory(netty.createPipeline(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, netty.timer, this), true))
       b.setOption("tcpNoDelay", true)
       b.setOption("keepAlive", true)
       b.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
@@ -164,6 +161,7 @@ private[akka] class ActiveRemoteClient private[akka] (
         notifyListeners(RemoteClientError(connection.getCause, netty, remoteAddress))
         false
       } else {
+        ChannelAddress.set(connection.getChannel, Some(remoteAddress))
         sendSecureCookie(connection)
         notifyListeners(RemoteClientStarted(netty, remoteAddress))
         true
@@ -187,14 +185,15 @@ private[akka] class ActiveRemoteClient private[akka] (
 
     notifyListeners(RemoteClientShutdown(netty, remoteAddress))
     try {
-      if ((connection ne null) && (connection.getChannel ne null))
+      if ((connection ne null) && (connection.getChannel ne null)) {
+        ChannelAddress.remove(connection.getChannel)
         connection.getChannel.close()
+      }
     } finally {
       try {
         if (openChannels ne null) openChannels.close.awaitUninterruptibly()
       } finally {
         connection = null
-        executionHandler = null
       }
     }
 
@@ -307,35 +306,9 @@ private[akka] class ActiveRemoteClientHandler(
   }
 }
 
-private[akka] class ActiveRemoteClientPipelineFactory(
-  name: String,
-  bootstrap: ClientBootstrap,
-  executionHandler: ExecutionHandler,
-  remoteAddress: Address,
-  localAddress: Address,
-  client: ActiveRemoteClient) extends ChannelPipelineFactory {
-
-  import client.netty.settings
-
-  def getPipeline: ChannelPipeline = {
-    val timeout = new IdleStateHandler(client.netty.timer,
-      settings.ReadTimeout.toSeconds.toInt,
-      settings.WriteTimeout.toSeconds.toInt,
-      settings.AllTimeout.toSeconds.toInt)
-    val lenDec = new LengthFieldBasedFrameDecoder(settings.MessageFrameSize, 0, 4, 0, 4)
-    val lenPrep = new LengthFieldPrepender(4)
-    val messageDec = new RemoteMessageDecoder
-    val messageEnc = new RemoteMessageEncoder(client.netty)
-    val remoteClient = new ActiveRemoteClientHandler(name, bootstrap, remoteAddress, localAddress, client.netty.timer, client)
-
-    new StaticChannelPipeline(timeout, lenDec, messageDec, lenPrep, messageEnc, executionHandler, remoteClient)
-  }
-}
-
 private[akka] class PassiveRemoteClient(val currentChannel: Channel,
                                         netty: NettyRemoteTransport,
-                                        remoteAddress: Address)
-  extends RemoteClient(netty, remoteAddress) {
+                                        remoteAddress: Address) extends RemoteClient(netty, remoteAddress) {
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {
     netty.notifyListeners(RemoteClientStarted(netty, remoteAddress))

@@ -35,14 +35,12 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
         new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
     }
 
-  private val executionHandler = new ExecutionHandler(netty.executor)
-
   // group of open channels, used for clean-up
   private val openChannels: ChannelGroup = new DefaultDisposableChannelGroup("akka-remote-server")
 
   private val bootstrap = {
     val b = new ServerBootstrap(factory)
-    b.setPipelineFactory(new RemoteServerPipelineFactory(openChannels, executionHandler, netty))
+    b.setPipelineFactory(netty.createPipeline(new RemoteServerHandler(openChannels, netty), false))
     b.setOption("backlog", settings.Backlog)
     b.setOption("tcpNoDelay", true)
     b.setOption("child.keepAlive", true)
@@ -82,26 +80,6 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
   }
 }
 
-private[akka] class RemoteServerPipelineFactory(
-  val openChannels: ChannelGroup,
-  val executionHandler: ExecutionHandler,
-  val netty: NettyRemoteTransport) extends ChannelPipelineFactory {
-
-  import netty.settings
-
-  def getPipeline: ChannelPipeline = {
-    val lenDec = new LengthFieldBasedFrameDecoder(settings.MessageFrameSize, 0, 4, 0, 4)
-    val lenPrep = new LengthFieldPrepender(4)
-    val messageDec = new RemoteMessageDecoder
-    val messageEnc = new RemoteMessageEncoder(netty)
-
-    val authenticator = if (settings.RequireCookie) new RemoteServerAuthenticationHandler(settings.SecureCookie) :: Nil else Nil
-    val remoteServer = new RemoteServerHandler(openChannels, netty)
-    val stages: List[ChannelHandler] = lenDec :: messageDec :: lenPrep :: messageEnc :: executionHandler :: authenticator ::: remoteServer :: Nil
-    new StaticChannelPipeline(stages: _*)
-  }
-}
-
 @ChannelHandler.Sharable
 private[akka] class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends SimpleChannelUpstreamHandler {
   val authenticated = new AnyRef
@@ -134,10 +112,6 @@ private[akka] class RemoteServerHandler(
   val openChannels: ChannelGroup,
   val netty: NettyRemoteTransport) extends SimpleChannelUpstreamHandler {
 
-  val channelAddress = new ChannelLocal[Option[Address]](false) {
-    override def initialValue(channel: Channel) = None
-  }
-
   import netty.settings
 
   private var addressToSet = true
@@ -161,16 +135,16 @@ private[akka] class RemoteServerHandler(
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = ()
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    netty.notifyListeners(RemoteServerClientDisconnected(netty, channelAddress.get(ctx.getChannel)))
+    netty.notifyListeners(RemoteServerClientDisconnected(netty, ChannelAddress.get(ctx.getChannel)))
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    val address = channelAddress.get(ctx.getChannel)
+    val address = ChannelAddress.get(ctx.getChannel)
     if (address.isDefined && settings.UsePassiveConnections)
       netty.unbindClient(address.get)
 
     netty.notifyListeners(RemoteServerClientClosed(netty, address))
-    channelAddress.remove(ctx.getChannel)
+    ChannelAddress.remove(ctx.getChannel)
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = try {
@@ -184,7 +158,7 @@ private[akka] class RemoteServerHandler(
           case CommandType.CONNECT ⇒
             val origin = instruction.getOrigin
             val inbound = Address("akka", origin.getSystem, origin.getHostname, origin.getPort)
-            channelAddress.set(event.getChannel, Option(inbound))
+            ChannelAddress.set(event.getChannel, Option(inbound))
 
             //If we want to reuse the inbound connections as outbound we need to get busy
             if (settings.UsePassiveConnections)
