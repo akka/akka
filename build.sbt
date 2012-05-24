@@ -1,8 +1,10 @@
-  seq(lsSettings:_*)
+// ls-sbt is not published for 0.11.3
 
-  (LsKeys.tags in LsKeys.lsync) := Seq("actors", "stm", "concurrency", "distributed", "fault-tolerance", "scala", "java", "futures", "dataflow", "remoting")
+//  seq(lsSettings:_*)
 
-  (externalResolvers in LsKeys.lsync) := Seq("Akka Repository" at "http://akka.io/repository/")
+//  (LsKeys.tags in LsKeys.lsync) := Seq("actors", "stm", "concurrency", "distributed", "fault-tolerance", "scala", "java", "futures", "dataflow", "remoting")
 
-  (description in LsKeys.lsync) := "Akka is the platform for the next generation of event-driven, scalable and fault-tolerant architectures on the JVM."
+//  (externalResolvers in LsKeys.lsync) := Seq("Akka Repository" at "http://akka.io/repository/")
+
+//  (description in LsKeys.lsync) := "Akka is the platform for the next generation of event-driven, scalable and fault-tolerant architectures on the JVM."
 
