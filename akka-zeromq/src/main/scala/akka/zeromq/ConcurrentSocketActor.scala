@@ -205,11 +205,6 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   }
 
   private val listenerOpt = params collectFirst { case Listener(l) ⇒ l }
-  private def watchListener() {
-    listenerOpt foreach context.watch
-  }
-
-  private def notifyListener(message: Any) {
-    listenerOpt foreach { _ ! message }
-  }
+  private def watchListener(): Unit = listenerOpt foreach context.watch
+  private def notifyListener(message: Any): Unit = listenerOpt foreach { _ ! message }
 }

@@ -255,7 +255,9 @@ case class Linger(value: Long) extends SocketOption
 /**
  * Gets the linger option @see [[akka.zeromq.Linger]]
  */
-object Linger extends SocketOptionQuery
+object Linger extends SocketOptionQuery {
+  val no: Linger = Linger(0)
+}
 
 /**
  * Sets the recovery interval for multicast transports using the specified socket.
