@@ -22,7 +22,7 @@ object ByteIterator {
   final class InputStreamWrapper(val iterator: ByteIterator) extends java.io.InputStream {
     override def available = iterator.len
 
-    def read = iterator.next.toInt
+    def read = if (iterator.hasNext) (iterator.next.toInt & 0xff) else -1
 
     override def read(b: Array[Byte], off: Int, len: Int) = {
       val nRead = math.min(iterator.len, len - off)
