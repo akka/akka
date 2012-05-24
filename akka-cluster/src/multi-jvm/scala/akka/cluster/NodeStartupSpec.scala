@@ -50,7 +50,8 @@ class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) with Implic
     "be a singleton cluster when started up" in {
       runOn(first) {
         awaitCond(firstNode.isSingletonCluster)
-        firstNode.convergence must be(None)
+        // FIXME #2117 singletonCluster should reach convergence
+        //awaitCond(firstNode.convergence.isDefined)
       }
     }
 
