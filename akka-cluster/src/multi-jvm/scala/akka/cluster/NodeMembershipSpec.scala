@@ -19,15 +19,8 @@ object NodeMembershipMultiJvmSpec extends MultiNodeConfig {
       gossip-frequency = 200 ms
       leader-actions-frequency = 200 ms
       periodic-tasks-initial-delay = 300 ms
-      # FIXME get rid of this hardcoded host:port
-      node-to-join = "akka://MultiNodeSpec@localhost:2602"
     }
     """)))
-
-  nodeConfig(first, ConfigFactory.parseString("""
-    # FIXME get rid of this hardcoded port
-    akka.remote.netty.port=2602
-    """))
 
 }
 
@@ -55,6 +48,7 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
     "(when two systems) start gossiping to each other so that both systems gets the same gossip info" in {
 
       runOn(first, second) {
+        node().join(firstAddress)
         awaitCond(node().latestGossip.members.size == 2)
         val members = node().latestGossip.members.toIndexedSeq
         members.size must be(2)
@@ -69,6 +63,10 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
     }
 
     "(when three systems) start gossiping to each other so that both systems gets the same gossip info" in {
+
+      runOn(third) {
+        node().join(firstAddress)
+      }
 
       // runOn all
       awaitCond(node().latestGossip.members.size == 3)

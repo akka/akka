@@ -21,16 +21,6 @@ object NodeStartupMultiJvmSpec extends MultiNodeConfig {
     }
     """)))
 
-  nodeConfig(first, ConfigFactory.parseString("""
-    # FIXME get rid of this hardcoded port
-    akka.remote.netty.port=2601
-    """))
-
-  nodeConfig(second, ConfigFactory.parseString("""
-    # FIXME get rid of this hardcoded host:port
-    akka.cluster.node-to-join = "akka://MultiNodeSpec@localhost:2601"
-    """))
-
 }
 
 class NodeStartupMultiJvmNode1 extends NodeStartupSpec
@@ -47,6 +37,8 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
     testConductor.enter("after")
   }
 
+  val firstAddress = testConductor.getAddressFor(first).await
+
   "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
 
     "be a singleton cluster when started up" in {
@@ -61,7 +53,7 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
       runOn(first) {
         val members = node().latestGossip.members
         members.size must be(1)
-        val firstAddress = testConductor.getAddressFor(first).await
+
         val joiningMember = members find (_.address == firstAddress)
         joiningMember must not be (None)
         joiningMember.get.status must be(MemberStatus.Joining)
@@ -69,8 +61,12 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
     }
   }
 
-  "A second cluster node with a 'node-to-join' config defined" must {
+  "A second cluster node" must {
     "join the other node cluster when sending a Join command" in {
+
+      runOn(second) {
+        node().join(firstAddress)
+      }
 
       // runOn all
       val secondAddress = testConductor.getAddressFor(second).await
