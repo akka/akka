@@ -141,7 +141,7 @@ trait ActorRefProvider {
 }
 
 /**
- * Interface implemented by ActorSystem and AkkaContext, the only two places
+ * Interface implemented by ActorSystem and ActorContext, the only two places
  * from which you can get fresh actors.
  */
 trait ActorRefFactory {
@@ -150,7 +150,10 @@ trait ActorRefFactory {
 
   protected def provider: ActorRefProvider
 
-  protected def dispatcher: MessageDispatcher
+  /**
+   * The dispatcher (MessageDispatcher) used by this ActorSystem or ActorContext.
+   */
+  implicit def dispatcher: MessageDispatcher
 
   /**
    * Father of all children created by this interface.
