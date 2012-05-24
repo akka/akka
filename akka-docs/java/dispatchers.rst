@@ -18,7 +18,7 @@ Setting the dispatcher for an Actor
 
 So in case you want to give your ``Actor`` a different dispatcher than the default, you need to do two things, of which the first is:
 
-.. includecode:: ../java/code/akka/docs/dispatcher/DispatcherDocTestBase.java#defining-dispatcher
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTestBase.java#defining-dispatcher
 
 .. note::
     The "dispatcherId" you specify in withDispatcher is in fact a path into your configuration.
@@ -27,11 +27,11 @@ So in case you want to give your ``Actor`` a different dispatcher than the defau
 
 And then you just need to configure that dispatcher in your configuration:
 
-.. includecode:: ../scala/code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-dispatcher-config
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-dispatcher-config
 
 And here's another example that uses the "thread-pool-executor":
 
-.. includecode:: ../scala/code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-thread-pool-dispatcher-config
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-thread-pool-dispatcher-config
 
 For more options, see the default-dispatcher section of the :ref:`configuration`.
 
@@ -106,11 +106,11 @@ More dispatcher configuration examples
 
 Configuring a ``PinnedDispatcher``:
 
-.. includecode:: ../scala/code/akka/docs/dispatcher/DispatcherDocSpec.scala#my-pinned-dispatcher-config
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#my-pinned-dispatcher-config
 
 And then using it:
 
-.. includecode:: ../java/code/akka/docs/dispatcher/DispatcherDocTestBase.java#defining-pinned-dispatcher
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTestBase.java#defining-pinned-dispatcher
 
 Mailboxes
 ---------
@@ -162,15 +162,15 @@ Mailbox configuration examples
 
 How to create a PriorityMailbox:
 
-.. includecode:: ../java/code/akka/docs/dispatcher/DispatcherDocTestBase.java#prio-mailbox
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTestBase.java#prio-mailbox
 
 And then add it to the configuration:
 
-.. includecode:: ../scala/code/akka/docs/dispatcher/DispatcherDocSpec.scala#prio-dispatcher-config
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#prio-dispatcher-config
 
 And then an example on how you would use it:
 
-.. includecode:: ../java/code/akka/docs/dispatcher/DispatcherDocTestBase.java#prio-dispatcher
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTestBase.java#prio-dispatcher
 
 .. note::
 

@@ -25,22 +25,22 @@ So let's create a sample extension that just lets us count the number of times s
 
 First, we define what our ``Extension`` should do:
 
-.. includecode:: code/akka/docs/extension/ExtensionDocTestBase.java
+.. includecode:: code/docs/extension/ExtensionDocTestBase.java
    :include: imports,extension
 
 Then we need to create an ``ExtensionId`` for our extension so we can grab ahold of it.
 
-.. includecode:: code/akka/docs/extension/ExtensionDocTestBase.java
+.. includecode:: code/docs/extension/ExtensionDocTestBase.java
    :include: imports,extensionid
 
 Wicked! Now all we need to do is to actually use it:
 
-.. includecode:: code/akka/docs/extension/ExtensionDocTestBase.java
+.. includecode:: code/docs/extension/ExtensionDocTestBase.java
    :include: extension-usage
 
 Or from inside of an Akka Actor:
 
-.. includecode:: code/akka/docs/extension/ExtensionDocTestBase.java
+.. includecode:: code/docs/extension/ExtensionDocTestBase.java
    :include: extension-usage-actor
 
 That's all there is to it!
@@ -72,17 +72,17 @@ The :ref:`configuration` can be used for application specific settings. A good p
 
 Sample configuration:
 
-.. includecode:: ../scala/code/akka/docs/extension/SettingsExtensionDocSpec.scala
+.. includecode:: ../scala/code/docs/extension/SettingsExtensionDocSpec.scala
    :include: config
 
 The ``Extension``:
 
-.. includecode:: code/akka/docs/extension/SettingsExtensionDocTestBase.java
+.. includecode:: code/docs/extension/SettingsExtensionDocTestBase.java
    :include: imports,extension,extensionid
 
 
 Use it:
 
-.. includecode:: code/akka/docs/extension/SettingsExtensionDocTestBase.java
+.. includecode:: code/docs/extension/SettingsExtensionDocTestBase.java
    :include: extension-usage-actor
 

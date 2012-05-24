@@ -158,7 +158,7 @@ Classification`_ which enables registering to related sets of channels (as is
 used for :class:`RemoteLifeCycleMessage`). The following example demonstrates
 how a simple subscription works:
 
-.. includecode:: code/akka/docs/event/LoggingDocSpec.scala#deadletters
+.. includecode:: code/docs/event/LoggingDocSpec.scala#deadletters
 
 Default Handlers
 ----------------

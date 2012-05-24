@@ -19,7 +19,7 @@ which is very similar to a ``java.util.concurrent.Executor``. if you have an ``A
 it will use its default dispatcher as the ``ExecutionContext``, or you can use the factory methods provided
 by the ``ExecutionContext`` companion object to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: diy-execution-context
 
 Use With Actors
@@ -30,7 +30,7 @@ which only works if the original sender was an ``Actor``) and the second is thro
 
 Using an ``Actor``\'s ``?`` method to send a message will return a Future. To wait for and retrieve the actual result the simplest method is:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: ask-blocking
 
 This will cause the current thread to block and wait for the ``Actor`` to 'complete' the ``Future`` with it's reply.
@@ -40,7 +40,7 @@ Alternatives to blocking are discussed further within this documentation. Also n
 an ``Actor`` is a ``Future[Any]`` since an ``Actor`` is dynamic. That is why the ``asInstanceOf`` is used in the above sample.
 When using non-blocking it is better to use the ``mapTo`` method to safely try to cast a ``Future`` to an expected type:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: map-to
 
 The ``mapTo`` method will return a new ``Future`` that contains the result if the cast was successful,
@@ -53,7 +53,7 @@ A common use case within Akka is to have some computation performed concurrently
 If you find yourself creating a pool of ``Actor``\s for the sole reason of performing a calculation in parallel,
 there is an easier (and faster) way:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: future-eval
 
 In the above code the block passed to ``Future`` will be executed by the default ``Dispatcher``,
@@ -63,12 +63,12 @@ and we also avoid the overhead of managing an ``Actor``.
 
 You can also create already completed Futures using the ``Promise`` companion, which can be either successes:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: successful
 
 Or failures:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: failed
 
 Functional Futures
@@ -84,7 +84,7 @@ The first method for working with ``Future`` functionally is ``map``. This metho
 which performs some operation on the result of the ``Future``, and returning a new result.
 The return value of the ``map`` method is another ``Future`` that will contain the new result:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: map
 
 In this example we are joining two strings together within a ``Future``. Instead of waiting for this to complete,
@@ -97,12 +97,12 @@ string "HelloWorld" and is unaffected by the ``map``.
 The ``map`` method is fine if we are modifying a single ``Future``,
 but if 2 or more ``Future``\s are involved ``map`` will not allow you to combine them together:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: wrong-nested-map
 
 ``f3`` is a ``Future[Future[Int]]`` instead of the desired ``Future[Int]``. Instead, the ``flatMap`` method should be used:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: flat-map
 
 Composing futures using nested combinators it can sometimes become quite complicated and hard read, in these cases using Scala's
@@ -110,7 +110,7 @@ Composing futures using nested combinators it can sometimes become quite complic
 
 If you need to do conditional propagation, you can use ``filter``:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: filter
 
 For Comprehensions
@@ -118,7 +118,7 @@ For Comprehensions
 
 Since ``Future`` has a ``map``, ``filter`` and ``flatMap`` method it can be easily used in a 'for comprehension':
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: for-comprehension
 
 Something to keep in mind when doing this is even though it looks like parts of the above example can run in parallel,
@@ -134,14 +134,14 @@ A common use case for this is combining the replies of several ``Actor``\s into 
 without resorting to calling ``Await.result`` or ``Await.ready`` to block for each result.
 First an example of using ``Await.result``:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: composing-wrong
 
 Here we wait for the results from the first 2 ``Actor``\s before sending that result to the third ``Actor``.
 We called ``Await.result`` 3 times, which caused our little program to block 3 times before getting our final result.
 Now compare that to this example:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: composing
 
 Here we have 2 actors processing a single message each. Once the 2 results are available
@@ -153,7 +153,7 @@ The ``sequence`` and ``traverse`` helper methods can make it easier to handle mo
 Both of these methods are ways of turning, for a subclass ``T`` of ``Traversable``, ``T[Future[A]]`` into a ``Future[T[A]]``.
 For example:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: sequence-ask
 
 To better explain what happened in the example, ``Future.sequence`` is taking the ``List[Future[Int]]``
@@ -163,12 +163,12 @@ and we find the sum of the ``List``.
 The ``traverse`` method is similar to ``sequence``, but it takes a ``T[A]`` and a function ``A => Future[B]`` to return a ``Future[T[B]]``,
 where ``T`` is again a subclass of Traversable. For example, to use ``traverse`` to sum the first 100 odd numbers:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: traverse
 
 This is the same result as this example:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: sequence
 
 But it may be faster to use ``traverse`` as it doesn't have to create an intermediate ``List[Future[Int]]``.
@@ -178,7 +178,7 @@ from the type of the start-value and the type of the futures and returns somethi
 and then applies the function to all elements in the sequence of futures, asynchronously,
 the execution will start when the last of the Futures is completed.
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: fold
 
 That's all it takes!
@@ -188,7 +188,7 @@ If the sequence passed to ``fold`` is empty, it will return the start-value, in 
 In some cases you don't have a start-value and you're able to use the value of the first completing Future in the sequence
 as the start-value, you can use ``reduce``, it works like this:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: reduce
 
 Same as with ``fold``, the execution will be done asynchronously when the last of the Future is completed,
@@ -200,13 +200,13 @@ Callbacks
 Sometimes you just want to listen to a ``Future`` being completed, and react to that not by creating a new Future, but by side-effecting.
 For this Akka supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which the latter two are specializations of the first.
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: onSuccess
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: onFailure
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: onComplete
 
 Define Ordering
@@ -218,7 +218,7 @@ But there's a solution and it's name is ``andThen``. It creates a new ``Future``
 the specified callback, a ``Future`` that will have the same result as the ``Future`` it's called on,
 which allows for ordering like in the following sample:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: and-then
 
 Auxiliary Methods
@@ -227,13 +227,13 @@ Auxiliary Methods
 ``Future`` ``fallbackTo`` combines 2 Futures into a new ``Future``, and will hold the successful value of the second ``Future``
 if the first ``Future`` fails.
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: fallback-to
 
 You can also combine two Futures into a new ``Future`` that will hold a tuple of the two Futures successful results,
 using the ``zip`` operation.
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: zip
 
 Exceptions
@@ -247,7 +247,7 @@ If a ``Future`` does contain an ``Exception``, calling ``Await.result`` will cau
 It is also possible to handle an ``Exception`` by returning a different result.
 This is done with the ``recover`` method. For example:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: recover
 
 In this example, if the actor replied with a ``akka.actor.Status.Failure`` containing the ``ArithmeticException``,
@@ -258,6 +258,6 @@ it will behave as if we hadn't used the ``recover`` method.
 You can also use the ``recoverWith`` method, which has the same relationship to ``recover`` as ``flatMap`` has to ``map``,
 and is use like this:
 
-.. includecode:: code/akka/docs/future/FutureDocSpec.scala
+.. includecode:: code/docs/future/FutureDocSpec.scala
    :include: try-recover
 
