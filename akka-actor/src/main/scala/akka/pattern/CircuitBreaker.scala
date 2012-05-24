@@ -26,6 +26,11 @@ private object CircuitBreaker {
     def reportFailure(t: Throwable) {}
   }
 
+  def apply(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration): CircuitBreaker =
+    new CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)(syncExecutionContext)
+
+  def create(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration): CircuitBreaker =
+    apply(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)
 }
 
 /**
@@ -138,11 +143,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   /**
    * Adds a callback to execute when circuit breaker opens
    *
-   * For asynchronous circuit breaker, the callback is run asynchrnonously in implicitly supplied [[akka.dispatch.ExecutionContext]]
-   * to `withCircuitBreaker`
-   *
-   * For synchronous circuit breaker, the callback is run in the caller's thread invoking `withSyncCircuitBreaker`.  The
-   * callback will be invoked before `withSyncCircuitBreaker` returns
+   * The callback is run in the [[akka.dispatch.ExecutionContext]] supplied in the constructor.
    *
    * @param callback Handler to be invoked on state change
    * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
@@ -167,11 +168,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   /**
    * Adds a callback to execute when circuit breaker transitions to half-open
    *
-   * For asynchronous circuit breaker, the callback is run asynchrnonously in implicitly supplied [[akka.dispatch.ExecutionContext]]
-   * to `withCircuitBreaker`
-   *
-   * For synchronous circuit breaker, the callback is run in the caller's thread invoking `withSyncCircuitBreaker`.  The
-   * callback will be invoked before `withSyncCircuitBreaker` returns
+   * The callback is run in the [[akka.dispatch.ExecutionContext]] supplied in the constructor.
    *
    * @param callback Handler to be invoked on state change
    * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
@@ -196,11 +193,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   /**
    * Adds a callback to execute when circuit breaker state closes
    *
-   * For asynchronous circuit breaker, the callback is run asynchrnonously in implicitly supplied [[akka.dispatch.ExecutionContext]]
-   * to `withCircuitBreaker`
-   *
-   * For synchronous circuit breaker, the callback is run in the caller's thread invoking `withSyncCircuitBreaker`.  The
-   * callback will be invoked before `withSyncCircuitBreaker` returns
+   * The callback is run in the [[akka.dispatch.ExecutionContext]] supplied in the constructor.
    *
    * @param callback Handler to be invoked on state change
    * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation

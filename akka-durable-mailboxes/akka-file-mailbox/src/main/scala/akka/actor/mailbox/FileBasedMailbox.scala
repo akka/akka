@@ -10,9 +10,9 @@ import akka.actor.ActorRef
 import com.typesafe.config.Config
 import akka.ConfigurationException
 import akka.actor.ActorSystem
-import akka.pattern.CircuitBreaker
 import akka.dispatch._
 import akka.util.{ Duration, NonFatal }
+import akka.pattern.{CircuitBreakerOpenException, CircuitBreaker}
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)
@@ -49,13 +49,23 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
     breaker.withSyncCircuitBreaker(queue.add(serialize(envelope)))
   }
 
-  def dequeue(): Envelope = try {
-    queue.remove.map(item ⇒ { queue.confirmRemove(item.xid); deserialize(item.data) }).orNull
-  } catch {
-    case _: java.util.NoSuchElementException ⇒ null
-    case NonFatal(e) ⇒
-      log.error(e, "Couldn't dequeue from file-based mailbox")
-      throw e
+  def dequeue(): Envelope = {
+    breaker.withSyncCircuitBreaker(
+      try {
+        val item = queue.remove
+        if (item.isDefined) {
+          queue.confirmRemove(item.get.xid)
+          deserialize(item.get.data)
+        } else null
+      } catch {
+        case e: java.util.NoSuchElementException ⇒ null
+        case e: CircuitBreakerOpenException =>
+          log.debug("Circuit breaker is currently failing-fast",e)
+          throw e
+        case e: Exception ⇒
+          log.error(e, "Couldn't dequeue from file-based mailbox")
+          throw e
+      })
   }
 
   def numberOfMessages: Int = {
