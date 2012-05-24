@@ -10,7 +10,7 @@ import akka.actor.ActorSystemImpl
 import akka.actor.Deploy
 import akka.actor.InternalActorRef
 import akka.actor.Props
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import akka.remote.RemoteScope
 import akka.actor.AddressFromURIString
 import akka.actor.SupervisorStrategy
@@ -59,7 +59,7 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _re
   extends RouteeProvider(_context, _resizer) {
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
-  private val nodeAddressIter = Stream.continually(nodes).flatten.iterator
+  private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
 
   override def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
     (nrOfInstances, routees, nodes) match {

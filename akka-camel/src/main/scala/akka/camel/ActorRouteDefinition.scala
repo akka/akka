@@ -29,7 +29,8 @@ class ActorRouteDefinition(definition: ProcessorDefinition[_]) {
    * @param actorRef the consumer with a default configuration.
    * @return the path to the actor, as a camel uri String
    */
-  def to(actorRef: ActorRef) = definition.to(ActorEndpointPath(actorRef).toCamelPath())
+  def to(actorRef: ActorRef) = //FIXME What is the return type of this?
+    definition.to(ActorEndpointPath(actorRef).toCamelPath())
 
   /**
    * Sends the message to an ActorRef endpoint
@@ -37,6 +38,7 @@ class ActorRouteDefinition(definition: ProcessorDefinition[_]) {
    * @param consumerConfig the configuration for the consumer
    * @return the path to the actor, as a camel uri String
    */
-  def to(actorRef: ActorRef, consumerConfig: ConsumerConfig) = definition.to(ActorEndpointPath(actorRef).toCamelPath(consumerConfig))
+  def to(actorRef: ActorRef, consumerConfig: ConsumerConfig) = //FIXME What is the return type of this?
+    definition.to(ActorEndpointPath(actorRef).toCamelPath(consumerConfig))
 }
 

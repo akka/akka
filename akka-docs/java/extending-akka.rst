@@ -54,7 +54,7 @@ in the "akka.extensions" section of the config you provide to your ``ActorSystem
 ::
 
     akka {
-      extensions = ["akka.docs.extension.ExtensionDocTestBase.CountExtension"]
+      extensions = ["docs.extension.ExtensionDocTestBase.CountExtension"]
     }
 
 Applicability

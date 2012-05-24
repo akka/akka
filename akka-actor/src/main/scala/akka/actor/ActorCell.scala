@@ -134,10 +134,17 @@ trait ActorContext extends ActorRefFactory {
    */
   def unwatch(subject: ActorRef): ActorRef
 
+  /**
+   * ActorContexts shouldn't be Serializable
+   */
   final protected def writeObject(o: ObjectOutputStream): Unit =
     throw new NotSerializableException("ActorContext is not serializable!")
 }
 
+/**
+ * UntypedActorContext is the UntypedActor equivalent of ActorContext,
+ * containing the Java API
+ */
 trait UntypedActorContext extends ActorContext {
 
   /**
@@ -178,7 +185,9 @@ private[akka] object ActorCell {
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
 
-  trait SuspendReason
+  final val behaviorStackPlaceHolder: Stack[Actor.Receive] = Stack.empty.push(Actor.emptyBehavior)
+
+  sealed trait SuspendReason
   case object UserRequest extends SuspendReason
   case class Recreation(cause: Throwable) extends SuspendReason
   case object Termination extends SuspendReason
@@ -402,6 +411,8 @@ private[akka] class ActorCell(
 
   var actor: Actor = _
 
+  private var behaviorStack: Stack[Actor.Receive] = Stack.empty
+
   @volatile //This must be volatile since it isn't protected by the mailbox status
   var mailbox: Mailbox = _
 
@@ -482,14 +493,20 @@ private[akka] class ActorCell(
 
   //This method is in charge of setting up the contextStack and create a new instance of the Actor
   protected def newActor(): Actor = {
-    val stackBefore = contextStack.get
-    contextStack.set(stackBefore.push(this))
+    contextStack.set(contextStack.get.push(this))
     try {
-      val instance = props.creator()
+      import ActorCell.behaviorStackPlaceHolder
+
+      behaviorStack = behaviorStackPlaceHolder
+      val instance = props.creator.apply()
 
       if (instance eq null)
-        throw ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
+        throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
+      behaviorStack = behaviorStack match {
+        case `behaviorStackPlaceHolder` ⇒ Stack.empty.push(instance.receive)
+        case newBehaviors               ⇒ Stack.empty.push(instance.receive).pushAll(newBehaviors.reverse.drop(1))
+      }
       instance
     } finally {
       val stackAfter = contextStack.get
@@ -510,13 +527,12 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
       } catch {
         case NonFatal(i: InstantiationException) ⇒
-          throw ActorInitializationException(self,
+          throw new ActorInitializationException(self,
             """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new UntypedActorFactory ... )
                or is missing an appropriate, reachable no-args constructor.
             """, i.getCause)
-        case NonFatal(e) ⇒
-          throw ActorInitializationException(self, "exception during creation", e)
+        case NonFatal(e) ⇒ throw new ActorInitializationException(self, "exception during creation", e)
       }
     }
 
@@ -540,7 +556,10 @@ private[akka] class ActorCell(
             doRecreate(cause, failedActor)
         }
       } catch {
-        case NonFatal(e) ⇒ throw ActorInitializationException(self, "exception during creation", e)
+        case NonFatal(e) ⇒ throw new ActorInitializationException(self, "exception during creation", e match {
+          case i: InstantiationException ⇒ i.getCause
+          case other                     ⇒ other
+        })
       }
     }
 
@@ -605,7 +624,7 @@ private[akka] class ActorCell(
     cancelReceiveTimeout() // FIXME: leave this here???
     messageHandle.message match {
       case msg: AutoReceivedMessage ⇒ autoReceiveMessage(messageHandle)
-      case msg                      ⇒ actor(msg)
+      case msg                      ⇒ receiveMessage(msg)
     }
     currentMessage = null // reset current message after successful invocation
   } catch {
@@ -621,14 +640,14 @@ private[akka] class ActorCell(
     if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
   } finally {
     t match { // Wrap InterruptedExceptions and rethrow
-      case _: InterruptedException ⇒ parent.tell(Failed(ActorInterruptedException(t)), self); throw t
+      case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t)), self); throw t
       case _                       ⇒ parent.tell(Failed(t), self)
     }
   }
 
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit = {
     if (discardOld) unbecome()
-    actor.pushBehavior(behavior)
+    behaviorStack = behaviorStack.push(behavior)
   }
 
   /**
@@ -639,14 +658,16 @@ private[akka] class ActorCell(
   /*
    * UntypedActorContext impl
    */
-  def become(behavior: Procedure[Any], discardOld: Boolean): Unit = {
-    def newReceive: Actor.Receive = { case msg ⇒ behavior.apply(msg) }
-    become(newReceive, discardOld)
+  def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
+    become({ case msg ⇒ behavior.apply(msg) }: Actor.Receive, discardOld)
+
+  def unbecome(): Unit = {
+    val original = behaviorStack
+    val popped = original.pop
+    behaviorStack = if (popped.isEmpty) original else popped
   }
 
-  def unbecome(): Unit = actor.popBehavior()
-
-  def autoReceiveMessage(msg: Envelope) {
+  def autoReceiveMessage(msg: Envelope): Unit = {
     if (system.settings.DebugAutoReceive)
       system.eventStream.publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
@@ -658,6 +679,12 @@ private[akka] class ActorCell(
       case SelectChildName(name, m) ⇒ for (c ← childrenRefs getByName name) c.child.tell(m, msg.sender)
       case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
+  }
+
+  final def receiveMessage(msg: Any): Unit = {
+    //FIXME replace with behaviorStack.head.applyOrElse(msg, unhandled) + "-optimize"
+    val head = behaviorStack.head
+    if (head.isDefinedAt(msg)) head.apply(msg) else actor.unhandled(msg)
   }
 
   private def doTerminate() {
@@ -675,7 +702,7 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle)
           system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped"))
       } finally {
-        if (a ne null) a.clearBehaviorStack()
+        behaviorStack = ActorCell.behaviorStackPlaceHolder
         clearActorFields(a)
         actor = null
       }
@@ -685,7 +712,6 @@ private[akka] class ActorCell(
   private def doRecreate(cause: Throwable, failedActor: Actor): Unit = try {
     // after all killed children have terminated, recreate the rest, then go on to start the new instance
     actor.supervisorStrategy.handleSupervisorRestarted(cause, self, children)
-
     val freshActor = newActor()
     actor = freshActor // this must happen before postRestart has a chance to fail
     if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
@@ -702,7 +728,7 @@ private[akka] class ActorCell(
       actor.supervisorStrategy.handleSupervisorFailing(self, children)
       clearActorFields(actor) // If this fails, we need to ensure that preRestart isn't called.
     } finally {
-      parent.tell(Failed(ActorInitializationException(self, "exception during re-creation", e)), self)
+      parent.tell(Failed(new ActorInitializationException(self, "exception during re-creation", e)), self)
     }
   }
 
@@ -749,13 +775,11 @@ private[akka] class ActorCell(
 
   }
 
-  final def cancelReceiveTimeout() {
-    //Only cancel if
+  final def cancelReceiveTimeout(): Unit =
     if (receiveTimeoutData._2 ne emptyCancellable) {
       receiveTimeoutData._2.cancel()
       receiveTimeoutData = (receiveTimeoutData._1, emptyCancellable)
     }
-  }
 
   final def clearActorFields(actorInstance: Actor): Unit = {
     setActorFields(actorInstance, context = null, self = system.deadLetters)

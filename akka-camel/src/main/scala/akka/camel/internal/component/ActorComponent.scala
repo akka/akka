@@ -35,10 +35,8 @@ private[camel] class ActorComponent(camel: Camel) extends DefaultComponent {
   /**
    * @see org.apache.camel.Component
    */
-  def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint = {
-    val path = ActorEndpointPath.fromCamelPath(remaining)
-    new ActorEndpoint(uri, this, path, camel)
-  }
+  def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint =
+    new ActorEndpoint(uri, this, ActorEndpointPath.fromCamelPath(remaining), camel)
 }
 
 /**
@@ -92,7 +90,7 @@ private[camel] class ActorEndpoint(uri: String,
 private[camel] trait ActorEndpointConfig {
   def path: ActorEndpointPath
 
-  @BeanProperty var replyTimeout: Duration = 1 minute
+  @BeanProperty var replyTimeout: Duration = 1 minute // FIXME default should be in config, not code
 
   /**
    * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
@@ -117,7 +115,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
    * Calls the asynchronous version of the method and waits for the result (blocking).
    * @param exchange the exchange to process
    */
-  def process(exchange: Exchange) { processExchangeAdapter(new CamelExchangeAdapter(exchange)) }
+  def process(exchange: Exchange): Unit = processExchangeAdapter(new CamelExchangeAdapter(exchange))
 
   /**
    * Processes the message exchange. the caller supports having the exchange asynchronously processed.
@@ -129,13 +127,15 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
    *        The callback should therefore be careful of starting recursive loop.
    * @return (doneSync) true to continue execute synchronously, false to continue being executed asynchronously
    */
-  def process(exchange: Exchange, callback: AsyncCallback): Boolean = { processExchangeAdapter(new CamelExchangeAdapter(exchange), callback) }
+  def process(exchange: Exchange, callback: AsyncCallback): Boolean = processExchangeAdapter(new CamelExchangeAdapter(exchange), callback)
 
   /**
    * For internal use only. Processes the [[akka.camel.internal.CamelExchangeAdapter]]
    * @param exchange the [[akka.camel.internal.CamelExchangeAdapter]]
+   *
+   * WARNING UNBOUNDED BLOCKING AWAITS
    */
-  private[camel] def processExchangeAdapter(exchange: CamelExchangeAdapter) {
+  private[camel] def processExchangeAdapter(exchange: CamelExchangeAdapter): Unit = {
     val isDone = new CountDownLatch(1)
     processExchangeAdapter(exchange, new AsyncCallback { def done(doneSync: Boolean) { isDone.countDown() } })
     isDone.await() // this should never wait forever as the process(exchange, callback) method guarantees that.
@@ -151,10 +151,10 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
   private[camel] def processExchangeAdapter(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
 
     // these notify methods are just a syntax sugar
-    def notifyDoneSynchronously[A](a: A = null) = callback.done(true)
-    def notifyDoneAsynchronously[A](a: A = null) = callback.done(false)
+    def notifyDoneSynchronously[A](a: A = null): Unit = callback.done(true)
+    def notifyDoneAsynchronously[A](a: A = null): Unit = callback.done(false)
 
-    def message = messageFor(exchange)
+    def message: CamelMessage = messageFor(exchange)
 
     if (exchange.isOutCapable) { //InOut
       sendAsync(message, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
@@ -186,42 +186,41 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 
   private def sendAsync(message: CamelMessage, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
     try {
-      val actor = actorFor(endpoint.path)
-      val future = actor.ask(message)(new Timeout(endpoint.replyTimeout))
-      future.onComplete(onComplete)
+      actorFor(endpoint.path).ask(message)(Timeout(endpoint.replyTimeout)).onComplete(onComplete)
     } catch {
       case NonFatal(e) ⇒ onComplete(Left(e))
     }
     false // Done async
   }
 
-  private def fireAndForget(message: CamelMessage, exchange: CamelExchangeAdapter) {
-    try {
-      actorFor(endpoint.path) ! message
-    } catch {
-      case e ⇒ exchange.setFailure(new FailureResult(e))
-    }
-  }
+  private def fireAndForget(message: CamelMessage, exchange: CamelExchangeAdapter): Unit =
+    try { actorFor(endpoint.path) ! message } catch { case NonFatal(e) ⇒ exchange.setFailure(new FailureResult(e)) }
 
   private[this] def actorFor(path: ActorEndpointPath): ActorRef =
     path.findActorIn(camel.system) getOrElse (throw new ActorNotRegisteredException(path.actorPath))
 
   private[this] def messageFor(exchange: CamelExchangeAdapter) =
     exchange.toRequestMessage(Map(CamelMessage.MessageExchangeId -> exchange.getExchangeId))
-
 }
 
 /**
  * For internal use only. Converts Strings to [[akka.util.Duration]]s
  */
 private[camel] object DurationTypeConverter extends TypeConverter {
-  def convertTo[T](`type`: Class[T], value: AnyRef) = {
-    Duration(value.toString).asInstanceOf[T]
+  override def convertTo[T](`type`: Class[T], value: AnyRef): T = `type`.cast(try {
+    val d = Duration(value.toString)
+    if (`type`.isInstance(d)) d else null
+  } catch {
+    case NonFatal(_) ⇒ null
+  })
+
+  def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef): T = convertTo(`type`, value)
+  def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef): T = convertTo(`type`, value) match {
+    case null ⇒ throw new NoTypeConversionAvailableException(value, `type`)
+    case some ⇒ some
   }
-  def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
-  def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef) = convertTo(`type`, value)
-  def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef) = convertTo(`type`, value)
-  def toString(duration: Duration) = duration.toNanos + " nanos"
+  def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef): T = mandatoryConvertTo(`type`, value)
+  def toString(duration: Duration): String = duration.toNanos + " nanos"
 }
 
 /**
@@ -243,15 +242,15 @@ private[camel] case class ActorEndpointPath private (actorPath: String) {
  * For internal use only. Companion of `ActorEndpointPath`
  */
 private[camel] object ActorEndpointPath {
-  private val consumerConfig = new ConsumerConfig {}
+  private val consumerConfig: ConsumerConfig = new ConsumerConfig {}
 
-  def apply(actorRef: ActorRef) = new ActorEndpointPath(actorRef.path.toString)
+  def apply(actorRef: ActorRef): ActorEndpointPath = new ActorEndpointPath(actorRef.path.toString)
 
   /**
    * Creates an [[akka.camel.internal.component.ActorEndpointPath]] from the remaining part of the endpoint URI (the part after the scheme, without the parameters of the URI).
    * Expects the remaining part of the URI (the actor path) in a format: path:%s
    */
-  def fromCamelPath(camelPath: String) = camelPath match {
+  def fromCamelPath(camelPath: String): ActorEndpointPath = camelPath match {
     case id if id startsWith "path:" ⇒ new ActorEndpointPath(id substring 5)
     case _                           ⇒ throw new IllegalArgumentException("Invalid path: [%s] - should be path:<actorPath>" format camelPath)
   }

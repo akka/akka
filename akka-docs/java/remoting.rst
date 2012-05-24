@@ -294,3 +294,63 @@ which holds the transport used (RemoteTransport) and optionally the address that
 To intercept when an inbound remote client has been closed you listen to ``RemoteServerClientClosed``
 which holds the transport used (RemoteTransport) and optionally the address of the remote client that was closed (Option<Address>).
 
+Remote Security
+^^^^^^^^^^^^^^^
+
+Akka provides a couple of ways to enhance security between remote nodes (client/server):
+
+* Untrusted Mode
+* Security Cookie Handshake
+
+Untrusted Mode
+--------------
+
+You can enable untrusted mode for preventing system messages to be send by clients, e.g. messages like.
+This will prevent the client to send these messages to the server:
+
+* ``Create``
+* ``Recreate``
+* ``Suspend``
+* ``Resume``
+* ``Terminate``
+* ``Supervise``
+* ``ChildTerminated``
+* ``Link``
+* ``Unlink``
+
+Here is how to turn it on in the config::
+
+    akka {
+      actor {
+        remote {
+          untrusted-mode = on
+        }
+      }
+    }
+
+Secure Cookie Handshake
+-----------------------
+
+Akka remoting also allows you to specify a secure cookie that will be exchanged and ensured to be identical
+in the connection handshake between the client and the server. If they are not identical then the client
+will be refused to connect to the server.
+
+The secure cookie can be any kind of string. But the recommended approach is to generate a cryptographically
+secure cookie using this script ``$AKKA_HOME/scripts/generate_config_with_secure_cookie.sh`` or from code
+using the ``akka.util.Crypt.generateSecureCookie()`` utility method.
+
+You have to ensure that both the connecting client and the server have the same secure cookie as well
+as the ``require-cookie`` option turned on.
+
+Here is an example config::
+
+    akka {
+      actor {
+        remote {
+          netty {
+            secure-cookie = "090A030E0F0A05010900000A0C0E0C0B03050D05"
+            require-cookie = on
+          }
+        }
+      }
+    }

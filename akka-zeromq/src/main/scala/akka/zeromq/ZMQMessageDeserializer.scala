@@ -20,5 +20,5 @@ case class Frame(payload: Seq[Byte]) {
  * Deserializes ZeroMQ messages into an immutable sequence of frames
  */
 class ZMQMessageDeserializer extends Deserializer {
-  def apply(frames: Seq[Frame]) = ZMQMessage(frames)
+  def apply(frames: Seq[Frame]): ZMQMessage = ZMQMessage(frames)
 }

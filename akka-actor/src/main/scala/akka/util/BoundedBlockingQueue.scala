@@ -8,6 +8,12 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.{ TimeUnit, BlockingQueue }
 import java.util.{ AbstractQueue, Queue, Collection, Iterator }
 
+/**
+ * BoundedBlockingQueue wraps any Queue and turns the result into a BlockingQueue with a limited capacity
+ * @param maxCapacity - the maximum capacity of this Queue, needs to be > 0
+ * @param backing - the backing Queue
+ * @tparam E - The type of the contents of this Queue
+ */
 class BoundedBlockingQueue[E <: AnyRef](
   val maxCapacity: Int, private val backing: Queue[E]) extends AbstractQueue[E] with BlockingQueue[E] {
 
@@ -22,7 +28,7 @@ class BoundedBlockingQueue[E <: AnyRef](
       require(maxCapacity > 0)
   }
 
-  protected val lock = new ReentrantLock(false)
+  protected val lock = new ReentrantLock(false) // TODO might want to switch to ReentrantReadWriteLock
 
   private val notEmpty = lock.newCondition()
   private val notFull = lock.newCondition()

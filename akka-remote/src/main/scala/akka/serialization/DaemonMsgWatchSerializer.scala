@@ -12,8 +12,10 @@ import akka.actor.ExtendedActorSystem
 
 /**
  * Serializes akka's internal DaemonMsgWatch using protobuf.
+ *
+ * INTERNAL API
  */
-class DaemonMsgWatchSerializer(val system: ExtendedActorSystem) extends Serializer {
+private[akka] class DaemonMsgWatchSerializer(val system: ExtendedActorSystem) extends Serializer {
   import ProtobufSerializer.serializeActorRef
   import ProtobufSerializer.deserializeActorRef
 

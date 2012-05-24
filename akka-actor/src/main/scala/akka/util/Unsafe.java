@@ -7,6 +7,9 @@ package akka.util;
 
 import java.lang.reflect.Field;
 
+/**
+ * INTERNAL API
+ */
 public final class Unsafe {
     public final static sun.misc.Unsafe instance;
     static {

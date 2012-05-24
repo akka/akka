@@ -18,7 +18,12 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
   }
 
   override def afterEach {
-    while (cancellables.peek() ne null) { Option(cancellables.poll()).foreach(_.cancel()) }
+    while (cancellables.peek() ne null) {
+      for (c ← Option(cancellables.poll())) {
+        c.cancel()
+        c.isCancelled must be === true
+      }
+    }
   }
 
   "A Scheduler" must {

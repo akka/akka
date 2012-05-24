@@ -12,7 +12,7 @@ import akka.actor._
  * A failed subscribe should also only mean that the Classifier (ActorRef) that is listened to is already shut down
  * See LocalDeathWatch for semantics
  */
-trait DeathWatch extends ActorEventBus with ActorClassifier {
+abstract class DeathWatch extends ActorEventBus with ActorClassifier {
   type Event = Terminated
 
   protected final def classify(event: Event): Classifier = event.actor

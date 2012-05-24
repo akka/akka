@@ -30,8 +30,10 @@ import akka.actor.FromClassCreator
  * Serialization of contained RouterConfig, Config, and Scope
  * is done with configured serializer for those classes, by
  * default java.io.Serializable.
+ *
+ * INTERNAL API
  */
-class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Serializer {
+private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Serializer {
   import ProtobufSerializer.serializeActorRef
   import ProtobufSerializer.deserializeActorRef
 
@@ -81,7 +83,7 @@ class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Seriali
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
     val proto = DaemonMsgCreateProtocol.parseFrom(bytes)
 
-    def deploy(protoDeploy: DeployProtocol) = {
+    def deploy(protoDeploy: DeployProtocol): Deploy = {
       val config =
         if (protoDeploy.hasConfig) deserialize(protoDeploy.getConfig, classOf[Config])
         else ConfigFactory.empty
@@ -146,7 +148,5 @@ class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Seriali
           case _ ⇒ throw e // the first exception
         }
     }
-
   }
-
 }

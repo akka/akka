@@ -33,6 +33,11 @@ You can also give the router already created routees as in:
 
 .. includecode:: code/akka/docs/jrouting/RouterViaProgramExample.java#programmaticRoutingRoutees
 
+It should be noted that no actor factory or class needs to be provided in this
+case, as the ``Router`` will not create any children on its own (which is not
+true anymore when using a resizer). The routees can also be specified by giving
+their path strings.
+
 When you create a router programmatically you define the number of routees *or* you pass already created routees to it.
 If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.
 
@@ -48,7 +53,7 @@ Once you have the router actor it is just to send messages to it as you would to
 
   router.tell(new MyMsg());
 
-The router will apply its behavior to the message it receives and forward it to the routees.
+The router will forward the message to its routees according to its routing policy.
 
 Remotely Deploying Routees
 **************************
@@ -375,7 +380,8 @@ The dispatcher for created children of the router will be taken from
 makes sense to configure the :class:`BalancingDispatcher` if the precise
 routing is not so important (i.e. no consistent hashing or round-robin is
 required); this enables newly created routees to pick up work immediately by
-stealing it from their siblings.
+stealing it from their siblings. Note that you can **not** use a ``BalancingDispatcher``
+together with any kind of ``Router``, trying to do so will make your actor fail verification.
 
 The “head” router, of course, cannot run on the same balancing dispatcher,
 because it does not process the same messages, hence this special actor does

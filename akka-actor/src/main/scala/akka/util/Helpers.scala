@@ -45,18 +45,13 @@ object Helpers {
     else base64(next, sb)
   }
 
-  def ignore[E: Manifest](body: ⇒ Unit) {
-    try {
-      body
-    } catch {
-      case e if manifest[E].erasure.isAssignableFrom(e.getClass) ⇒ ()
-    }
-  }
+  //FIXME docs
+  def ignore[E: Manifest](body: ⇒ Unit): Unit =
+    try body catch { case e if manifest[E].erasure.isAssignableFrom(e.getClass) ⇒ () }
 
-  def withPrintStackTraceOnError(body: ⇒ Unit) {
-    try {
-      body
-    } catch {
+  //FIXME docs
+  def withPrintStackTraceOnError(body: ⇒ Unit): Unit = {
+    try body catch {
       case e: Throwable ⇒
         val sw = new java.io.StringWriter()
         var root = e

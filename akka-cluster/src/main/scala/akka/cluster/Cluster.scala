@@ -13,7 +13,7 @@ import akka.dispatch.Await
 import akka.pattern.ask
 import akka.util._
 import akka.util.duration._
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import java.util.concurrent.TimeUnit._

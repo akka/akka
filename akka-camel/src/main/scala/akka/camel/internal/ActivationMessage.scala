@@ -20,7 +20,7 @@ private[camel] abstract class ActivationMessage(val actor: ActorRef)
  *
  */
 private[camel] object ActivationMessage {
-  def unapply(msg: ActivationMessage): Option[ActorRef] = Some(msg.actor)
+  def unapply(msg: ActivationMessage): Option[ActorRef] = Option(msg.actor)
 }
 
 /**

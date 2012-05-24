@@ -96,17 +96,15 @@ private[akka] final class ActivationTracker extends Actor with ActorLogging {
   /**
    * Subscribes self to messages of type <code>ActivationMessage</code>
    */
-  override def preStart() {
-    context.system.eventStream.subscribe(self, classOf[ActivationMessage])
-  }
+  override def preStart(): Unit = context.system.eventStream.subscribe(self, classOf[ActivationMessage])
 
   override def receive = {
     case msg @ ActivationMessage(ref) ⇒
-      val state = activations.getOrElseUpdate(ref, new ActivationStateMachine)
-      (state.receive orElse logStateWarning(ref))(msg)
+      (activations.getOrElseUpdate(ref, new ActivationStateMachine).receive orElse logStateWarning(ref))(msg)
   }
 
-  private[this] def logStateWarning(actorRef: ActorRef): Receive = { case msg ⇒ log.warning("Message [{}] not expected in current state of actor [{}]", msg, actorRef) }
+  private[this] def logStateWarning(actorRef: ActorRef): Receive =
+    { case msg ⇒ log.warning("Message [{}] not expected in current state of actor [{}]", msg, actorRef) }
 }
 
 /**

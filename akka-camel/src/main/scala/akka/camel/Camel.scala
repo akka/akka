@@ -50,13 +50,13 @@ object CamelExtension extends ExtensionId[Camel] with ExtensionIdProvider {
   /**
    * Creates a new instance of Camel and makes sure it gets stopped when the actor system is shutdown.
    */
-  def createExtension(system: ExtendedActorSystem) = {
+  override def createExtension(system: ExtendedActorSystem): Camel = {
     val camel = new DefaultCamel(system).start
     system.registerOnTermination(camel.shutdown())
     camel
   }
 
-  def lookup(): ExtensionId[Camel] = CamelExtension
+  override def lookup(): ExtensionId[Camel] = CamelExtension
 
   override def get(system: ActorSystem): Camel = super.get(system)
 }

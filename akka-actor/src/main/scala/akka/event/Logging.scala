@@ -4,12 +4,10 @@
 package akka.event
 
 import akka.actor._
-import akka.AkkaException
+import akka.{ ConfigurationException, AkkaException }
 import akka.actor.ActorSystem.Settings
-import akka.config.ConfigurationException
-import akka.util.ReentrantGuard
+import akka.util.{ Timeout, ReentrantGuard }
 import akka.util.duration._
-import akka.util.Timeout
 import java.util.concurrent.atomic.AtomicInteger
 import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException
@@ -31,7 +29,7 @@ trait LoggingBus extends ActorEventBus {
 
   import Logging._
 
-  private val guard = new ReentrantGuard
+  private val guard = new ReentrantGuard //Switch to ReentrantReadWrite
   private var loggers = Seq.empty[ActorRef]
   private var _logLevel: LogLevel = _
 
@@ -99,7 +97,7 @@ trait LoggingBus extends ActorEventBus {
       val myloggers =
         for {
           loggerName ← defaultLoggers
-          if loggerName != StandardOutLoggerName
+          if loggerName != StandardOutLogger.getClass.getName
         } yield {
           try {
             system.dynamicAccess.getClassFor[Actor](loggerName) match {
@@ -131,7 +129,7 @@ trait LoggingBus extends ActorEventBus {
         case _: InvalidActorNameException ⇒ // ignore if it is already running
       }
       publish(Debug(logName, this.getClass, "Default Loggers started"))
-      if (!(defaultLoggers contains StandardOutLoggerName)) {
+      if (!(defaultLoggers contains StandardOutLogger.getClass.getName)) {
         unsubscribe(StandardOutLogger)
       }
     } catch {
@@ -165,6 +163,9 @@ trait LoggingBus extends ActorEventBus {
     publish(Debug(simpleName(this), this.getClass, "all default loggers stopped"))
   }
 
+  /**
+   * INTERNAL API
+   */
   private def addLogger(system: ActorSystemImpl, clazz: Class[_ <: Actor], level: LogLevel, logName: String): ActorRef = {
     val name = "log" + Extension(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz), name)
@@ -275,9 +276,9 @@ object LogSource {
 
   // this one unfortunately does not work as implicit, because existential types have some weird behavior
   val fromClass: LogSource[Class[_]] = new LogSource[Class[_]] {
-    def genString(c: Class[_]) = simpleName(c)
-    override def genString(c: Class[_], system: ActorSystem) = simpleName(c) + "(" + system + ")"
-    override def getClazz(c: Class[_]) = c
+    def genString(c: Class[_]): String = Logging.simpleName(c)
+    override def genString(c: Class[_], system: ActorSystem): String = genString(c) + "(" + system + ")"
+    override def getClazz(c: Class[_]): Class[_] = c
   }
   implicit def fromAnyClass[T]: LogSource[Class[T]] = fromClass.asInstanceOf[LogSource[Class[T]]]
 
@@ -310,7 +311,7 @@ object LogSource {
       case a: Actor    ⇒ apply(a)
       case a: ActorRef ⇒ apply(a)
       case s: String   ⇒ apply(s)
-      case x           ⇒ (simpleName(x), x.getClass)
+      case x           ⇒ (Logging.simpleName(x), x.getClass)
     }
 
   /**
@@ -324,7 +325,7 @@ object LogSource {
       case a: Actor    ⇒ apply(a)
       case a: ActorRef ⇒ apply(a)
       case s: String   ⇒ apply(s)
-      case x           ⇒ (simpleName(x) + "(" + system + ")", x.getClass)
+      case x           ⇒ (Logging.simpleName(x) + "(" + system + ")", x.getClass)
     }
 }
 
@@ -363,9 +364,33 @@ object LogSource {
  */
 object Logging {
 
-  object Extension extends ExtensionKey[LogExt]
+  /**
+   * Returns a 'safe' getSimpleName for the provided object's Class
+   * @param obj
+   * @return the simple name of the given object's Class
+   */
+  def simpleName(obj: AnyRef): String = simpleName(obj.getClass)
 
-  class LogExt(system: ExtendedActorSystem) extends Extension {
+  /**
+   * Returns a 'safe' getSimpleName for the provided Class
+   * @param obj
+   * @return the simple name of the given Class
+   */
+  def simpleName(clazz: Class[_]): String = {
+    val n = clazz.getName
+    val i = n.lastIndexOf('.')
+    n.substring(i + 1)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] object Extension extends ExtensionKey[LogExt]
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] class LogExt(system: ExtendedActorSystem) extends Extension {
     private val loggerId = new AtomicInteger
     def id() = loggerId.incrementAndGet()
   }
@@ -424,12 +449,6 @@ object Logging {
 
   // these type ascriptions/casts are necessary to avoid CCEs during construction while retaining correct type
   val AllLogLevels = Seq(ErrorLevel: AnyRef, WarningLevel, InfoLevel, DebugLevel).asInstanceOf[Seq[LogLevel]]
-
-  val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
-  val errorFormatWithoutCause = "[ERROR] [%s] [%s] [%s] %s".intern
-  val warningFormat = "[WARN] [%s] [%s] [%s] %s".intern
-  val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
-  val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
 
   /**
    * Obtain LoggingAdapter for the given actor system and source object. This
@@ -511,7 +530,7 @@ object Logging {
    * Artificial exception injected into Error events if no Throwable is
    * supplied; used for getting a stack dump of error locations.
    */
-  class EventHandlerException extends AkkaException
+  class EventHandlerException extends AkkaException("")
 
   /**
    * Exception that wraps a LogEvent.
@@ -618,27 +637,34 @@ object Logging {
   // weird return type due to binary compatibility
   def loggerInitialized(): LoggerInitialized.type = LoggerInitialized
 
+  /**
+   * LoggerInitializationException is thrown to indicate that there was a problem initializing a logger
+   * @param msg
+   */
   class LoggerInitializationException(msg: String) extends AkkaException(msg)
 
   trait StdOutLogger {
     import java.text.SimpleDateFormat
     import java.util.Date
 
-    val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.S")
+    private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
+    private val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
+    private val errorFormatWithoutCause = "[ERROR] [%s] [%s] [%s] %s".intern
+    private val warningFormat = "[WARN] [%s] [%s] [%s] %s".intern
+    private val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
+    private val debugFormat = "[DEBUG] [%s] [%s] [%s] %s".intern
 
-    def timestamp = dateFormat.format(new Date)
+    def timestamp(): String = synchronized { dateFormat.format(new Date) } // SDF isn't threadsafe
 
-    def print(event: Any) {
-      event match {
-        case e: Error   ⇒ error(e)
-        case e: Warning ⇒ warning(e)
-        case e: Info    ⇒ info(e)
-        case e: Debug   ⇒ debug(e)
-        case e          ⇒ warning(Warning(simpleName(this), this.getClass, "received unexpected event of class " + e.getClass + ": " + e))
-      }
+    def print(event: Any): Unit = event match {
+      case e: Error   ⇒ error(e)
+      case e: Warning ⇒ warning(e)
+      case e: Info    ⇒ info(e)
+      case e: Debug   ⇒ debug(e)
+      case e          ⇒ warning(Warning(simpleName(this), this.getClass, "received unexpected event of class " + e.getClass + ": " + e))
     }
 
-    def error(event: Error) = {
+    def error(event: Error): Unit = {
       val f = if (event.cause == Error.NoCause) errorFormatWithoutCause else errorFormat
       println(f.format(
         timestamp,
@@ -648,21 +674,21 @@ object Logging {
         stackTraceFor(event.cause)))
     }
 
-    def warning(event: Warning) =
+    def warning(event: Warning): Unit =
       println(warningFormat.format(
         timestamp,
         event.thread.getName,
         event.logSource,
         event.message))
 
-    def info(event: Info) =
+    def info(event: Info): Unit =
       println(infoFormat.format(
         timestamp,
         event.thread.getName,
         event.logSource,
         event.message))
 
-    def debug(event: Debug) =
+    def debug(event: Debug): Unit =
       println(debugFormat.format(
         timestamp,
         event.thread.getName,
@@ -683,8 +709,8 @@ object Logging {
     override val toString = "StandardOutLogger"
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = print(message)
   }
+
   val StandardOutLogger = new StandardOutLogger
-  val StandardOutLoggerName = StandardOutLogger.getClass.getName
 
   /**
    * Actor wrapper around the standard output logger. If
@@ -702,7 +728,7 @@ object Logging {
    * Returns the StackTrace for the given Throwable as a String
    */
   def stackTraceFor(e: Throwable): String = e match {
-    case null | Error.NoCause ⇒ ""
+    case null | Error.NoCause | _: NoStackTrace ⇒ ""
     case other ⇒
       val sw = new java.io.StringWriter
       val pw = new java.io.PrintWriter(sw)
@@ -746,51 +772,51 @@ trait LoggingAdapter {
    * These actually implement the passing on of the messages to be logged.
    * Will not be called if is...Enabled returned false.
    */
-  protected def notifyError(message: String)
-  protected def notifyError(cause: Throwable, message: String)
-  protected def notifyWarning(message: String)
-  protected def notifyInfo(message: String)
-  protected def notifyDebug(message: String)
+  protected def notifyError(message: String): Unit
+  protected def notifyError(cause: Throwable, message: String): Unit
+  protected def notifyWarning(message: String): Unit
+  protected def notifyInfo(message: String): Unit
+  protected def notifyDebug(message: String): Unit
 
   /*
    * The rest is just the widening of the API for the user's convenience.
    */
 
-  def error(cause: Throwable, message: String) { if (isErrorEnabled) notifyError(cause, message) }
-  def error(cause: Throwable, template: String, arg1: Any) { if (isErrorEnabled) notifyError(cause, format1(template, arg1)) }
-  def error(cause: Throwable, template: String, arg1: Any, arg2: Any) { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2)) }
-  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any) { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3)) }
-  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3, arg4)) }
+  def error(cause: Throwable, message: String): Unit = { if (isErrorEnabled) notifyError(cause, message) }
+  def error(cause: Throwable, template: String, arg1: Any): Unit = { if (isErrorEnabled) notifyError(cause, format1(template, arg1)) }
+  def error(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2)) }
+  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3)) }
+  def error(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isErrorEnabled) notifyError(cause, format(template, arg1, arg2, arg3, arg4)) }
 
-  def error(message: String) { if (isErrorEnabled) notifyError(message) }
-  def error(template: String, arg1: Any) { if (isErrorEnabled) notifyError(format1(template, arg1)) }
-  def error(template: String, arg1: Any, arg2: Any) { if (isErrorEnabled) notifyError(format(template, arg1, arg2)) }
-  def error(template: String, arg1: Any, arg2: Any, arg3: Any) { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3)) }
-  def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4)) }
+  def error(message: String): Unit = { if (isErrorEnabled) notifyError(message) }
+  def error(template: String, arg1: Any): Unit = { if (isErrorEnabled) notifyError(format1(template, arg1)) }
+  def error(template: String, arg1: Any, arg2: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2)) }
+  def error(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3)) }
+  def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4)) }
 
-  def warning(message: String) { if (isWarningEnabled) notifyWarning(message) }
-  def warning(template: String, arg1: Any) { if (isWarningEnabled) notifyWarning(format1(template, arg1)) }
-  def warning(template: String, arg1: Any, arg2: Any) { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2)) }
-  def warning(template: String, arg1: Any, arg2: Any, arg3: Any) { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3)) }
-  def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4)) }
+  def warning(message: String): Unit = { if (isWarningEnabled) notifyWarning(message) }
+  def warning(template: String, arg1: Any): Unit = { if (isWarningEnabled) notifyWarning(format1(template, arg1)) }
+  def warning(template: String, arg1: Any, arg2: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2)) }
+  def warning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3)) }
+  def warning(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isWarningEnabled) notifyWarning(format(template, arg1, arg2, arg3, arg4)) }
 
   def info(message: String) { if (isInfoEnabled) notifyInfo(message) }
-  def info(template: String, arg1: Any) { if (isInfoEnabled) notifyInfo(format1(template, arg1)) }
-  def info(template: String, arg1: Any, arg2: Any) { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2)) }
-  def info(template: String, arg1: Any, arg2: Any, arg3: Any) { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3)) }
-  def info(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3, arg4)) }
+  def info(template: String, arg1: Any): Unit = { if (isInfoEnabled) notifyInfo(format1(template, arg1)) }
+  def info(template: String, arg1: Any, arg2: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2)) }
+  def info(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3)) }
+  def info(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isInfoEnabled) notifyInfo(format(template, arg1, arg2, arg3, arg4)) }
 
   def debug(message: String) { if (isDebugEnabled) notifyDebug(message) }
-  def debug(template: String, arg1: Any) { if (isDebugEnabled) notifyDebug(format1(template, arg1)) }
-  def debug(template: String, arg1: Any, arg2: Any) { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2)) }
-  def debug(template: String, arg1: Any, arg2: Any, arg3: Any) { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3)) }
-  def debug(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3, arg4)) }
+  def debug(template: String, arg1: Any): Unit = { if (isDebugEnabled) notifyDebug(format1(template, arg1)) }
+  def debug(template: String, arg1: Any, arg2: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2)) }
+  def debug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3)) }
+  def debug(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3, arg4)) }
 
   def log(level: Logging.LogLevel, message: String) { if (isEnabled(level)) notifyLog(level, message) }
-  def log(level: Logging.LogLevel, template: String, arg1: Any) { if (isEnabled(level)) notifyLog(level, format1(template, arg1)) }
-  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any) { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2)) }
-  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any) { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3)) }
-  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any) { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3, arg4)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any): Unit = { if (isEnabled(level)) notifyLog(level, format1(template, arg1)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3)) }
+  def log(level: Logging.LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isEnabled(level)) notifyLog(level, format(template, arg1, arg2, arg3, arg4)) }
 
   final def isEnabled(level: Logging.LogLevel): Boolean = level match {
     case Logging.ErrorLevel   ⇒ isErrorEnabled
@@ -806,14 +832,14 @@ trait LoggingAdapter {
     case Logging.DebugLevel   ⇒ if (isDebugEnabled) notifyDebug(message)
   }
 
-  private def format1(t: String, arg: Any) = arg match {
+  private def format1(t: String, arg: Any): String = arg match {
     case a: Array[_] if !a.getClass.getComponentType.isPrimitive ⇒ format(t, a: _*)
     case a: Array[_] ⇒ format(t, (a map (_.asInstanceOf[AnyRef]): _*))
     case x ⇒ format(t, x)
   }
 
-  def format(t: String, arg: Any*) = {
-    val sb = new StringBuilder
+  def format(t: String, arg: Any*): String = {
+    val sb = new StringBuilder //FIXME add some decent size hint here
     var p = 0
     var rest = t
     while (p < arg.length) {
@@ -823,17 +849,15 @@ trait LoggingAdapter {
         rest = ""
         p = arg.length
       } else {
-        sb.append(rest.substring(0, index))
-        sb.append(arg(p))
+        sb.append(rest.substring(0, index)).append(arg(p))
         rest = rest.substring(index + 2)
         p += 1
       }
     }
-    sb.append(rest)
-    sb.toString
+    sb.append(rest).toString
   }
 }
-
+//FIXME DOCUMENT
 class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class[_]) extends LoggingAdapter {
 
   import Logging._
@@ -843,14 +867,9 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
   def isInfoEnabled = bus.logLevel >= InfoLevel
   def isDebugEnabled = bus.logLevel >= DebugLevel
 
-  protected def notifyError(message: String) { bus.publish(Error(logSource, logClass, message)) }
-
-  protected def notifyError(cause: Throwable, message: String) { bus.publish(Error(cause, logSource, logClass, message)) }
-
-  protected def notifyWarning(message: String) { bus.publish(Warning(logSource, logClass, message)) }
-
-  protected def notifyInfo(message: String) { bus.publish(Info(logSource, logClass, message)) }
-
-  protected def notifyDebug(message: String) { bus.publish(Debug(logSource, logClass, message)) }
-
+  protected def notifyError(message: String): Unit = bus.publish(Error(logSource, logClass, message))
+  protected def notifyError(cause: Throwable, message: String): Unit = bus.publish(Error(cause, logSource, logClass, message))
+  protected def notifyWarning(message: String): Unit = bus.publish(Warning(logSource, logClass, message))
+  protected def notifyInfo(message: String): Unit = bus.publish(Info(logSource, logClass, message))
+  protected def notifyDebug(message: String): Unit = bus.publish(Debug(logSource, logClass, message))
 }

@@ -8,7 +8,6 @@ import sbt._
 import sbt.Keys._
 import com.typesafe.sbtmultijvm.MultiJvmPlugin
 import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
-import com.typesafe.schoir.SchoirPlugin.schoirSettings
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.osgiSettings
@@ -41,7 +40,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -81,7 +80,7 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ schoirSettings ++ OSGi.remote ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -89,18 +88,32 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
-      jvmOptions in MultiJvm := {
-        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
+      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
+    )
+  ) configs (MultiJvm)
+
+  lazy val remoteTests = Project(
+    id = "akka-remote-tests",
+    base = file("akka-remote-tests"),
+    dependencies = Seq(remote % "compile;test->test;multi-jvm->multi-jvm", actorTests % "test->test", testkit % "test->test"),
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      // disable parallel tests
+      parallelExecution in Test := false,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
+      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
   ) configs (MultiJvm)
 
   lazy val cluster = Project(
     id = "akka-cluster",
     base = file("akka-cluster"),
-    dependencies = Seq(remote, remote % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ schoirSettings ++ OSGi.cluster ++ Seq(
+    dependencies = Seq(remote, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
+    settings = defaultSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -108,10 +121,8 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
-      jvmOptions in MultiJvm := {
-        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
-      },
-      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
+      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
   ) configs (MultiJvm)
 
@@ -289,6 +300,14 @@ object AkkaBuild extends Build {
 
   val defaultExcludedTags = Seq("timing", "long-running")
 
+  val defaultMultiJvmOptions: Seq[String] = {
+    (System.getProperty("akka.test.timefactor") match {
+      case null => Nil
+      case x => List("-Dakka.test.timefactor=" + x)
+    }) :::
+    (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
+  }
+
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
 
@@ -444,50 +463,33 @@ object Dependency {
 
 object OSGi {
 
-  val actor = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka*", "com.typesafe.config.*"),
-    OsgiKeys.importPackage := Seq("!sun.misc", scalaImport()),
-    OsgiKeys.privatePackage := Seq("org.jboss.netty.akka.util.*", "com.eaio.*")
+  val actor = exports(Seq("akka*"))
+
+  val agent = exports(Seq("akka.agent.*"))
+
+  val camel = exports(Seq("akka.camel.*", "akka.camelexamples"))
+
+  val cluster = exports(Seq("akka.cluster.*"))
+
+  val fileMailbox = exports(Seq("akka.actor.mailbox.*"))
+
+  val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
+
+  val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
+
+  val slf4j = exports(Seq("akka.event.slf4j.*"))
+
+  val transactor = exports(Seq("akka.transactor.*"))
+
+  val zeroMQ = exports(Seq("akka.zeromq.*"))
+
+  def exports(packages: Seq[String]) = osgiSettings ++ Seq(
+    OsgiKeys.importPackage := Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*"),
+    OsgiKeys.exportPackage := packages
   )
 
-  val agent = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka.agent.*")
-  )
-
-  val camel = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka.camel.*", "akka.camelexamples"),
-    OsgiKeys.importPackage := Seq(scalaImport(), akkaImport(), "org.apache.camel.*")
-  )
-
-  val cluster = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka.cluster.*")
-  )
-
-  val fileMailbox = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka.actor.mailbox.*")
-  )
-
-  val mailboxesCommon = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka.actor.mailbox.*")
-  )
-
-  val remote = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*")
-  )
-
-  val slf4j = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka.event.slf4j.*")
-  )
-
-  val transactor = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka.transactor.*")
-  )
-
-  val zeroMQ = osgiSettings ++ Seq(
-    OsgiKeys.exportPackage := Seq("akka.zeromq.*")
-  )
-
-  def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.1,2.10)\"".format(packageName)
   def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
+  def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4,0.5)\"".format(packageName)
+  def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.2,2.10)\"".format(packageName)
 
 }

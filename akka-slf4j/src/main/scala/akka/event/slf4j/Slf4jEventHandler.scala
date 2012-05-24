@@ -18,12 +18,29 @@ trait SLF4JLogging {
   lazy val log = Logger(this.getClass.getName)
 }
 
+/**
+ * Logger is a factory for obtaining SLF4J-Loggers
+ */
 object Logger {
+  /**
+   * @param logger - which logger
+   * @return a Logger that corresponds for the given logger name
+   */
   def apply(logger: String): SLFLogger = SLFLoggerFactory getLogger logger
+
+  /**
+   * @param logClass - the class to log for
+   * @param logSource - the textual representation of the source of this log stream
+   * @return a Logger for the specified parameters
+   */
   def apply(logClass: Class[_], logSource: String): SLFLogger = logClass match {
     case c if c == classOf[DummyClassForStringSources] ⇒ apply(logSource)
     case _ ⇒ SLFLoggerFactory getLogger logClass
   }
+
+  /**
+   * Returns the SLF4J Root Logger
+   */
   def root: SLFLogger = apply(SLFLogger.ROOT_LOGGER_NAME)
 }
 

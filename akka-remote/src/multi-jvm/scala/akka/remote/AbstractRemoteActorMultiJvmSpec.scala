@@ -1,6 +1,7 @@
 package akka.remote
 
 import com.typesafe.config.{Config, ConfigFactory}
+import akka.actor.Address
 
 trait AbstractRemoteActorMultiJvmSpec {
   def NrOfNodes: Int
@@ -8,7 +9,6 @@ trait AbstractRemoteActorMultiJvmSpec {
 
   def PortRangeStart = 1990
   def NodeRange = 1 to NrOfNodes
-  def PortRange = PortRangeStart to NrOfNodes
 
   private[this] val remotes: IndexedSeq[String] = {
     val nodesOpt = Option(AkkaRemoteSpec.testNodes).map(_.split(",").toIndexedSeq)
