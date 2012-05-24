@@ -3,18 +3,18 @@
  */
 package akka.cluster
 
-import akka.testkit._
-import akka.dispatch._
-import akka.actor._
-import akka.remote._
-import akka.util.duration._
-
-import java.net.InetSocketAddress
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
-
+import akka.actor.ActorSystem
+import akka.actor.ActorSystemImpl
+import akka.remote.RemoteActorRefProvider
+import akka.testkit.ImplicitSender
+import akka.testkit.LongRunningTest
+import akka.testkit.duration2TestDuration
+import akka.util.duration.intToDurationInt
+import com.typesafe.config.ConfigFactory
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import scala.annotation.tailrec
 import scala.collection.immutable.SortedSet
-
-import com.typesafe.config._
 
 class MembershipChangeListenerSpec extends ClusterSpec with ImplicitSender {
   val portPrefix = 6
