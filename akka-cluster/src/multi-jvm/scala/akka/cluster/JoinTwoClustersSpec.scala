@@ -4,15 +4,13 @@
 
 package akka.cluster
 
-import akka.testkit._
-import akka.dispatch._
-import akka.actor._
-import akka.remote._
-import akka.util.duration._
-
-import com.typesafe.config._
-
-import java.net.InetSocketAddress
+import akka.actor.ActorSystem
+import akka.actor.ActorSystemImpl
+import akka.testkit.ImplicitSender
+import akka.testkit.LongRunningTest
+import akka.testkit.duration2TestDuration
+import akka.util.duration.intToDurationInt
+import com.typesafe.config.ConfigFactory
 
 class JoinTwoClustersSpec extends ClusterSpec("akka.cluster.failure-detector.threshold = 5") with ImplicitSender {
   val portPrefix = 3
