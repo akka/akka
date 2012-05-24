@@ -33,19 +33,15 @@ object NodeStartupMultiJvmSpec extends MultiNodeConfig {
 
 }
 
-class NodeStartupMultiJvmNode1 extends NodeStartupSpec {
-  override var node: Cluster = _
-}
-class NodeStartupMultiJvmNode2 extends NodeStartupSpec {
-  override var node: Cluster = _
-}
+class NodeStartupMultiJvmNode1 extends NodeStartupSpec
+class NodeStartupMultiJvmNode2 extends NodeStartupSpec
 
 abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) with ImplicitSender with BeforeAndAfter {
   import NodeStartupMultiJvmSpec._
 
   override def initialParticipants = 2
 
-  var node: Cluster
+  var node: Cluster = _
 
   after {
     testConductor.enter("after")

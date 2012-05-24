@@ -31,22 +31,16 @@ object NodeMembershipMultiJvmSpec extends MultiNodeConfig {
 
 }
 
-class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec {
-  override var node: Cluster = _
-}
-class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec {
-  override var node: Cluster = _
-}
-class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec {
-  override var node: Cluster = _
-}
+class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec
+class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec
+class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec
 
 abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSpec) with ImplicitSender with BeforeAndAfter {
   import NodeMembershipMultiJvmSpec._
 
   override def initialParticipants = 3
 
-  var node: Cluster
+  var node: Cluster = _
 
   after {
     testConductor.enter("after")
