@@ -5,6 +5,7 @@ package akka.remote.netty
 
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
+import java.io.FileNotFoundException
 import scala.Option.option2Iterable
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.ChannelHandler.Sharable
@@ -12,19 +13,25 @@ import org.jboss.netty.channel.group.ChannelGroup
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.execution.ExecutionHandler
-import akka.event.Logging
 import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
 import akka.remote.{ RemoteServerShutdown, RemoteServerError, RemoteServerClientDisconnected, RemoteServerClientConnected, RemoteServerClientClosed, RemoteProtocol, RemoteMessage }
 import akka.actor.Address
 import java.net.InetAddress
 import akka.actor.ActorSystemImpl
 import org.jboss.netty.channel._
+import org.jboss.netty.handler.ssl.SslHandler
+import java.security.{ SecureRandom, KeyStore, GeneralSecurityException }
+import javax.net.ssl.{ KeyManagerFactory, SSLContext }
+import java.io.FileInputStream
+import akka.event.{ LoggingAdapter, Logging }
 
 private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   import netty.settings
 
   val ip = InetAddress.getByName(settings.Hostname)
+
+  lazy val log = Logging(netty.system, "NettyRemoteServer(" + ip + ")")
 
   private val factory =
     settings.UseDispatcherForIO match {
@@ -76,6 +83,81 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
       netty.notifyListeners(RemoteServerShutdown(netty))
     } catch {
       case e: Exception ⇒ netty.notifyListeners(RemoteServerError(e, netty))
+    }
+  }
+}
+
+class RemoteServerPipelineFactory(
+  val openChannels: ChannelGroup,
+  val executionHandler: ExecutionHandler,
+  val netty: NettyRemoteTransport,
+  val log: LoggingAdapter) extends ChannelPipelineFactory {
+
+  import netty.settings
+
+  def initTLS(keyStorePath: String, keyStorePassword: String): Option[SSLContext] = {
+    if (keyStorePath != null && keyStorePassword != null) {
+      try {
+        val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
+        val stream = new FileInputStream(keyStorePath)
+        keyStore.load(stream, keyStorePassword.toCharArray)
+        factory.init(keyStore, keyStorePassword.toCharArray)
+        val sslContext = SSLContext.getInstance(settings.SSLProtocol.get)
+        sslContext.init(factory.getKeyManagers, null, new SecureRandom())
+        Some(sslContext)
+      } catch {
+        case e: FileNotFoundException ⇒ {
+          log.error(e, "TLS connection could not be established because keystore could not be loaded")
+          None
+        }
+        case e: GeneralSecurityException ⇒ {
+          log.error(e, "TLS connection could not be established")
+          None
+        }
+      }
+    } else {
+      log.error("TLS connection could not be established because key store details are missing")
+      None
+    }
+  }
+
+  def getSSLHandler_? : Option[SslHandler] = {
+    val sslContext: Option[SSLContext] = {
+      if (settings.EnableSSL) {
+        log.debug("SSL is enabled, initialising...")
+        initTLS(settings.SSLKeyStore.get, settings.SSLKeyStorePassword.get)
+      } else {
+        None
+      }
+    }
+    if (sslContext.isDefined) {
+      log.debug("Using SSL context to create SSLEngine...")
+      val sslEngine = sslContext.get.createSSLEngine
+      sslEngine.setUseClientMode(false)
+      sslEngine.setEnabledCipherSuites(settings.SSLSupportedAlgorithms.toArray.map(_.toString))
+      Some(new SslHandler(sslEngine))
+    } else {
+      None
+    }
+  }
+
+  def getPipeline: ChannelPipeline = {
+    val sslHandler = getSSLHandler_?
+    val lenDec = new LengthFieldBasedFrameDecoder(settings.MessageFrameSize, 0, 4, 0, 4)
+    val lenPrep = new LengthFieldPrepender(4)
+    val messageDec = new RemoteMessageDecoder
+    val messageEnc = new RemoteMessageEncoder(netty)
+
+    val authenticator = if (settings.RequireCookie) new RemoteServerAuthenticationHandler(settings.SecureCookie) :: Nil else Nil
+    val remoteServer = new RemoteServerHandler(openChannels, netty)
+    val stages: List[ChannelHandler] = lenDec :: messageDec :: lenPrep :: messageEnc :: executionHandler :: authenticator ::: remoteServer :: Nil
+    if (sslHandler.isDefined) {
+      log.debug("Creating pipeline with SSL handler...")
+      new StaticChannelPipeline(sslHandler.get :: stages: _*)
+    } else {
+      log.debug("Creating pipeline without SSL handler...")
+      new StaticChannelPipeline(stages: _*)
     }
   }
 }
