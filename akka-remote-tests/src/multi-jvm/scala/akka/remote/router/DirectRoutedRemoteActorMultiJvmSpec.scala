@@ -27,20 +27,9 @@ object DirectRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
   val master = role("master")
   val slave = role("slave")
 
-  nodeConfig(master, ConfigFactory.parseString("""
-    akka.actor {
-      deployment {
-        /service-hello.remote = "akka://MultiNodeSpec@%s"
-      }
-    }
-    # FIXME When using NettyRemoteTransport instead of TestConductorTransport it works
-    # akka.remote.transport = "akka.remote.netty.NettyRemoteTransport"
-  """.format("localhost:2553"))) // FIXME is there a way to avoid hardcoding the host:port here?
-
-  nodeConfig(slave, ConfigFactory.parseString("""
-    akka.remote.netty.port = 2553
-  """))
-
+  deployOn(master, """/service-hello.remote = "@slave@" """)
+  
+  deployOnAll("""/service-hello2.remote = "@slave@" """)
 }
 
 class DirectRoutedRemoteActorMultiJvmNode1 extends DirectRoutedRemoteActorSpec
@@ -60,7 +49,26 @@ class DirectRoutedRemoteActorSpec extends MultiNodeSpec(DirectRoutedRemoteActorM
         actor.isInstanceOf[RemoteActorRef] must be(true)
 
         val slaveAddress = testConductor.getAddressFor(slave).await
-        (actor ? "identify").await.asInstanceOf[ActorRef].path.address must equal(slaveAddress)
+        actor ! "identify"
+        expectMsgType[ActorRef].path.address must equal(slaveAddress)
+
+        // shut down the actor before we let the other node(s) shut down so we don't try to send
+        // "Terminate" to a shut down node
+        system.stop(actor)
+      }
+
+      testConductor.enter("done")
+    }
+
+    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef (with deployOnAll)" in {
+
+      runOn(master) {
+        val actor = system.actorOf(Props[SomeActor], "service-hello2")
+        actor.isInstanceOf[RemoteActorRef] must be(true)
+
+        val slaveAddress = testConductor.getAddressFor(slave).await
+        actor ! "identify"
+        expectMsgType[ActorRef].path.address must equal(slaveAddress)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node
