@@ -51,5 +51,5 @@ Step        Description
 Full Source Code of the Fault Tolerance Sample (Scala)
 ------------------------------------------------------
 
-.. includecode:: code/akka/docs/actor/FaultHandlingDocSample.scala#all
+.. includecode:: code/docs/actor/FaultHandlingDocSample.scala#all
 

@@ -36,22 +36,22 @@ Creating and stopping Agents
 Agents are created by invoking ``Agent(value)`` passing in the Agent's initial
 value:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#create
+.. includecode:: code/docs/agent/AgentDocSpec.scala#create
 
 Note that creating an Agent requires an implicit ``ActorSystem`` (for creating
 the underlying actors). See :ref:`actor-systems` for more information about
 actor systems. An ActorSystem can be in implicit scope when creating an Agent:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#create-implicit-system
+.. includecode:: code/docs/agent/AgentDocSpec.scala#create-implicit-system
 
 Or the ActorSystem can be passed explicitly when creating an Agent:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#create-explicit-system
+.. includecode:: code/docs/agent/AgentDocSpec.scala#create-explicit-system
 
 An Agent will be running until you invoke ``close`` on it. Then it will be
 eligible for garbage collection (unless you hold on to it in some way).
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#close
+.. includecode:: code/docs/agent/AgentDocSpec.scala#close
 
 
 Updating Agents
@@ -65,7 +65,7 @@ the update will be applied but dispatches to an Agent from a single thread will
 occur in order. You apply a value or a function by invoking the ``send``
 function.
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#send
+.. includecode:: code/docs/agent/AgentDocSpec.scala#send
 
 You can also dispatch a function to update the internal state but on its own
 thread. This does not use the reactive thread pool and can be used for
@@ -73,7 +73,7 @@ long-running or blocking operations. You do this with the ``sendOff``
 method. Dispatches using either ``sendOff`` or ``send`` will still be executed
 in order.
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#send-off
+.. includecode:: code/docs/agent/AgentDocSpec.scala#send-off
 
 
 Reading an Agent's value
@@ -82,11 +82,11 @@ Reading an Agent's value
 Agents can be dereferenced (you can get an Agent's value) by invoking the Agent
 with parentheses like this:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#read-apply
+.. includecode:: code/docs/agent/AgentDocSpec.scala#read-apply
 
 Or by using the get method:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#read-get
+.. includecode:: code/docs/agent/AgentDocSpec.scala#read-get
 
 Reading an Agent's current value does not involve any message passing and
 happens immediately. So while updates to an Agent are asynchronous, reading the
@@ -99,12 +99,12 @@ Awaiting an Agent's value
 It is also possible to read the value after all currently queued sends have
 completed. You can do this with ``await``:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#read-await
+.. includecode:: code/docs/agent/AgentDocSpec.scala#read-await
 
 You can also get a ``Future`` to this value, that will be completed after the
 currently queued updates have completed:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#read-future
+.. includecode:: code/docs/agent/AgentDocSpec.scala#read-future
 
 
 Transactional Agents
@@ -115,7 +115,7 @@ that transaction. If you send to an Agent within a transaction then the dispatch
 to the Agent will be held until that transaction commits, and discarded if the
 transaction is aborted. Here's an example:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#transfer-example
+.. includecode:: code/docs/agent/AgentDocSpec.scala#transfer-example
 
 
 Monadic usage
@@ -128,4 +128,4 @@ as-is. They are so-called 'persistent'.
 
 Example of monadic usage:
 
-.. includecode:: code/akka/docs/agent/AgentDocSpec.scala#monadic-example
+.. includecode:: code/docs/agent/AgentDocSpec.scala#monadic-example

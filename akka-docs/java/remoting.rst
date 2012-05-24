@@ -82,11 +82,11 @@ The "app" in this case refers to the name of the ``ActorSystem`` (only showing d
 Logical path lookup is supported on the node you are on, i.e. to use the
 actor created above you would do the following:
 
-.. includecode:: code/akka/docs/remoting/RemoteActorExample.java#localNodeActor
+.. includecode:: code/docs/remoting/RemoteActorExample.java#localNodeActor
 
 This will obtain an ``ActorRef`` on a remote node:
 
-.. includecode:: code/akka/docs/remoting/RemoteActorExample.java#remoteNodeActor
+.. includecode:: code/docs/remoting/RemoteActorExample.java#remoteNodeActor
 
 As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
 
@@ -103,15 +103,15 @@ precedence.
 
 With these imports:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocTestBase.java#import
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#import
 
 and a remote address like this:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocTestBase.java#make-address
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#make-address
 
 you can advise the system to create a child on that remote node like so:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocTestBase.java#deploy
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#deploy
 
 Serialization
 ^^^^^^^^^^^^^

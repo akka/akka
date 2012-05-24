@@ -63,22 +63,22 @@ Here is an example of coordinating two simple counter UntypedActors so that they
 both increment together in coordinated transactions. If one of them was to fail
 to increment, the other would also fail.
 
-.. includecode:: code/akka/docs/transactor/Increment.java#class
+.. includecode:: code/docs/transactor/Increment.java#class
    :language: java
 
-.. includecode:: code/akka/docs/transactor/CoordinatedCounter.java#class
+.. includecode:: code/docs/transactor/CoordinatedCounter.java#class
    :language: java
 
-.. includecode:: code/akka/docs/transactor/TransactorDocTest.java#imports
+.. includecode:: code/docs/transactor/TransactorDocTest.java#imports
    :language: java
 
-.. includecode:: code/akka/docs/transactor/TransactorDocTest.java#coordinated-example
+.. includecode:: code/docs/transactor/TransactorDocTest.java#coordinated-example
    :language: java
 
 To start a new coordinated transaction that you will also participate in, create
 a ``Coordinated`` object, passing in a ``Timeout``:
 
-.. includecode:: code/akka/docs/transactor/TransactorDocTest.java#create-coordinated
+.. includecode:: code/docs/transactor/TransactorDocTest.java#create-coordinated
    :language: java
 
 To start a coordinated transaction that you won't participate in yourself you
@@ -86,7 +86,7 @@ can create a ``Coordinated`` object with a message and send it directly to an
 actor. The recipient of the message will be the first member of the coordination
 set:
 
-.. includecode:: code/akka/docs/transactor/TransactorDocTest.java#send-coordinated
+.. includecode:: code/docs/transactor/TransactorDocTest.java#send-coordinated
    :language: java
 
 To include another actor in the same coordinated transaction that you've created
@@ -94,13 +94,13 @@ or received, use the ``coordinate`` method on that object. This will increment
 the number of parties involved by one and create a new ``Coordinated`` object to
 be sent.
 
-.. includecode:: code/akka/docs/transactor/TransactorDocTest.java#include-coordinated
+.. includecode:: code/docs/transactor/TransactorDocTest.java#include-coordinated
    :language: java
 
 To enter the coordinated transaction use the atomic method of the coordinated
 object, passing in a ``java.lang.Runnable``.
 
-.. includecode:: code/akka/docs/transactor/Coordinator.java#coordinated-atomic
+.. includecode:: code/docs/transactor/Coordinator.java#coordinated-atomic
    :language: java
 
 The coordinated transaction will wait for the other transactions before
@@ -124,7 +124,7 @@ coordinating transactions, using the explicit coordination described above.
 Here's an example of a simple untyped transactor that will join a coordinated
 transaction:
 
-.. includecode:: code/akka/docs/transactor/Counter.java#class
+.. includecode:: code/docs/transactor/Counter.java#class
    :language: java
 
 You could send this Counter transactor a ``Coordinated(Increment)`` message. If
@@ -140,7 +140,7 @@ to easily coordinate with other transactors.
 Here's an example of coordinating an increment, using an untyped transactor,
 similar to the explicitly coordinated example above.
 
-.. includecode:: code/akka/docs/transactor/FriendlyCounter.java#class
+.. includecode:: code/docs/transactor/FriendlyCounter.java#class
    :language: java
 
 To execute directly before or after the coordinated transaction, override the
