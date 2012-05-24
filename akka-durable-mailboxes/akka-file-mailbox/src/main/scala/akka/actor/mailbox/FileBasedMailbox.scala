@@ -10,9 +10,9 @@ import akka.actor.ActorRef
 import com.typesafe.config.Config
 import akka.config.ConfigurationException
 import akka.actor.ActorSystem
-import akka.pattern.CircuitBreaker
 import akka.dispatch._
 import akka.util.{ Duration, NonFatal }
+import akka.pattern.{CircuitBreakerOpenException, CircuitBreaker}
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)
@@ -60,6 +60,9 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
         } else null
       } catch {
         case e: java.util.NoSuchElementException ⇒ null
+        case e: CircuitBreakerOpenException =>
+          log.debug("Circuit breaker is currently failing-fast",e)
+          throw e
         case e: Exception ⇒
           log.error(e, "Couldn't dequeue from file-based mailbox")
           throw e
