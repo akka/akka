@@ -86,9 +86,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
-      jvmOptions in MultiJvm := {
-        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
-      },
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
       test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
   ) configs (MultiJvm)
@@ -104,9 +102,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
-      jvmOptions in MultiJvm := {
-        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
-      },
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
       test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
   ) configs (MultiJvm)
@@ -123,9 +119,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
-      jvmOptions in MultiJvm := {
-        if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
-      },
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
       test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
   ) configs (MultiJvm)
@@ -303,6 +297,14 @@ object AkkaBuild extends Build {
   val includeTestTags = SettingKey[Seq[String]]("include-test-tags")
 
   val defaultExcludedTags = Seq("timing", "long-running")
+
+  val defaultMultiJvmOptions: Seq[String] = {
+    (System.getProperty("akka.test.timefactor") match {
+      case null => Nil
+      case x => List("-Dakka.test.timefactor=" + x)
+    }) :::
+    (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
+  }
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
