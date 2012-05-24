@@ -16,17 +16,16 @@ import org.jboss.netty.channel.{ ChannelHandlerContext, Channel }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufEncoder, ProtobufDecoder }
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor
 import org.jboss.netty.util.HashedWheelTimer
-import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
-import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
+import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
 import akka.util.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
 
 /**
  * Provides the implementation of the Netty remote support
  */
-class NettyRemoteTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) with RemoteMarshallingOps {
+private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
 
   import provider.remoteSettings
 
@@ -192,7 +191,7 @@ class NettyRemoteTransport(_system: ExtendedActorSystem, _provider: RemoteActorR
 
 }
 
-class RemoteMessageEncoder(remoteSupport: NettyRemoteTransport) extends ProtobufEncoder {
+private[akka] class RemoteMessageEncoder(remoteSupport: NettyRemoteTransport) extends ProtobufEncoder {
   override def encode(ctx: ChannelHandlerContext, channel: Channel, msg: AnyRef): AnyRef = {
     msg match {
       case (message: Any, sender: Option[_], recipient: ActorRef) ⇒
@@ -207,9 +206,9 @@ class RemoteMessageEncoder(remoteSupport: NettyRemoteTransport) extends Protobuf
   }
 }
 
-class RemoteMessageDecoder extends ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
+private[akka] class RemoteMessageDecoder extends ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
 
-class DefaultDisposableChannelGroup(name: String) extends DefaultChannelGroup(name) {
+private[akka] class DefaultDisposableChannelGroup(name: String) extends DefaultChannelGroup(name) {
   protected val guard = new ReentrantReadWriteLock
   protected val open = new AtomicBoolean(true)
 

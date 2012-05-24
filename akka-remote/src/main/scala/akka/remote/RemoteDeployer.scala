@@ -12,8 +12,7 @@ case class RemoteScope(node: Address) extends Scope {
   def withFallback(other: Scope): Scope = this
 }
 
-class RemoteDeployer(_settings: ActorSystem.Settings, _pm: DynamicAccess) extends Deployer(_settings, _pm) {
-
+private[akka] class RemoteDeployer(_settings: ActorSystem.Settings, _pm: DynamicAccess) extends Deployer(_settings, _pm) {
   override protected def parseConfig(path: String, config: Config): Option[Deploy] = {
     import scala.collection.JavaConverters._
 
@@ -30,5 +29,4 @@ class RemoteDeployer(_settings: ActorSystem.Settings, _pm: DynamicAccess) extend
       case None ⇒ None
     }
   }
-
 }

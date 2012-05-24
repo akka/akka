@@ -12,7 +12,6 @@ import org.jboss.netty.channel.{ ChannelFutureListener, ChannelHandler, StaticCh
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.execution.ExecutionHandler
 import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
-
 import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
 import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, RemoteClientStarted, RemoteClientShutdown, RemoteClientException, RemoteClientError, RemoteClientDisconnected, RemoteClientConnected, RemoteClientWriteFailed }
 import akka.actor.{ Address, ActorRef }
@@ -20,18 +19,12 @@ import akka.AkkaException
 import akka.event.Logging
 import akka.util.Switch
 
-class RemoteClientMessageBufferException(message: String, cause: Throwable) extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null)
-}
-
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
  * ActiveRemoteClient, but others could be feasible, like a PassiveRemoteClient that
  * reuses an already established connection.
  */
-abstract class RemoteClient private[akka] (
-  val netty: NettyRemoteTransport,
-  val remoteAddress: Address) {
+private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteTransport, val remoteAddress: Address) {
 
   val log = Logging(netty.system, "RemoteClient")
 
@@ -92,7 +85,7 @@ abstract class RemoteClient private[akka] (
 /**
  * RemoteClient represents a connection to an Akka node. Is used to send messages to remote actors on the node.
  */
-class ActiveRemoteClient private[akka] (
+private[akka] class ActiveRemoteClient private[akka] (
   netty: NettyRemoteTransport,
   remoteAddress: Address,
   localAddress: Address)
@@ -225,7 +218,7 @@ class ActiveRemoteClient private[akka] (
 }
 
 @ChannelHandler.Sharable
-class ActiveRemoteClientHandler(
+private[akka] class ActiveRemoteClientHandler(
   val name: String,
   val bootstrap: ClientBootstrap,
   val remoteAddress: Address,
@@ -314,7 +307,7 @@ class ActiveRemoteClientHandler(
   }
 }
 
-class ActiveRemoteClientPipelineFactory(
+private[akka] class ActiveRemoteClientPipelineFactory(
   name: String,
   bootstrap: ClientBootstrap,
   executionHandler: ExecutionHandler,
@@ -339,9 +332,9 @@ class ActiveRemoteClientPipelineFactory(
   }
 }
 
-class PassiveRemoteClient(val currentChannel: Channel,
-                          netty: NettyRemoteTransport,
-                          remoteAddress: Address)
+private[akka] class PassiveRemoteClient(val currentChannel: Channel,
+                                        netty: NettyRemoteTransport,
+                                        remoteAddress: Address)
   extends RemoteClient(netty, remoteAddress) {
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {

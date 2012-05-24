@@ -20,7 +20,7 @@ import java.net.InetAddress
 import akka.actor.ActorSystemImpl
 import org.jboss.netty.channel._
 
-class NettyRemoteServer(val netty: NettyRemoteTransport) {
+private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   import netty.settings
 
@@ -82,7 +82,7 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
   }
 }
 
-class RemoteServerPipelineFactory(
+private[akka] class RemoteServerPipelineFactory(
   val openChannels: ChannelGroup,
   val executionHandler: ExecutionHandler,
   val netty: NettyRemoteTransport) extends ChannelPipelineFactory {
@@ -103,7 +103,7 @@ class RemoteServerPipelineFactory(
 }
 
 @ChannelHandler.Sharable
-class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends SimpleChannelUpstreamHandler {
+private[akka] class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends SimpleChannelUpstreamHandler {
   val authenticated = new AnyRef
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = secureCookie match {
@@ -130,7 +130,7 @@ class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends Si
 }
 
 @ChannelHandler.Sharable
-class RemoteServerHandler(
+private[akka] class RemoteServerHandler(
   val openChannels: ChannelGroup,
   val netty: NettyRemoteTransport) extends SimpleChannelUpstreamHandler {
 

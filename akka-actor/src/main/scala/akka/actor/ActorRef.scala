@@ -154,17 +154,16 @@ trait ScalaActorRef { ref: ActorRef ⇒
 
 }
 
-//FIXME should ActorScope be private[akka], me thinks so - √
 /**
  * All ActorRefs have a scope which describes where they live. Since it is
  * often necessary to distinguish between local and non-local references, this
  * is the only method provided on the scope.
  */
-trait ActorRefScope {
+private[akka] trait ActorRefScope {
   def isLocal: Boolean
 }
 
-trait LocalRef extends ActorRefScope {
+private[akka] trait LocalRef extends ActorRefScope {
   final def isLocal = true
 }
 
