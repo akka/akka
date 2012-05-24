@@ -153,7 +153,7 @@ trait ActorRefFactory {
   /**
    * The dispatcher (MessageDispatcher) used by this ActorSystem or ActorContext.
    */
-  def dispatcher: MessageDispatcher
+  implicit def dispatcher: MessageDispatcher
 
   /**
    * Father of all children created by this interface.
