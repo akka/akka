@@ -19,8 +19,8 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
-  commonConfig(debugConfig(on = true))
-
+  commonConfig(debugConfig(on = false))
+  
   val master = role("master")
   val slave = role("slave")
 }

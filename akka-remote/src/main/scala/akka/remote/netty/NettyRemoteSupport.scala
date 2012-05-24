@@ -12,7 +12,7 @@ import java.util.concurrent.Executors
 import scala.collection.mutable.HashMap
 import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroupFuture }
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
-import org.jboss.netty.channel.{ ChannelHandlerContext, Channel, StaticChannelPipeline, ChannelHandler, ChannelPipelineFactory }
+import org.jboss.netty.channel.{ ChannelHandlerContext, Channel, StaticChannelPipeline, ChannelHandler, ChannelPipelineFactory, ChannelLocal }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufEncoder, ProtobufDecoder }
 import org.jboss.netty.handler.execution.{ ExecutionHandler, OrderedMemoryAwareThreadPoolExecutor }
@@ -24,6 +24,10 @@ import akka.remote.RemoteProtocol.AkkaRemoteProtocol
 import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
 import akka.util.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
+
+object ChannelAddress extends ChannelLocal[Option[Address]] {
+  override def initialValue(ch: Channel): Option[Address] = None
+}
 
 /**
  * Provides the implementation of the Netty remote support

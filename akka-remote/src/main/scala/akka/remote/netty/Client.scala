@@ -173,6 +173,7 @@ class ActiveRemoteClient private[akka] (
         notifyListeners(RemoteClientError(connection.getCause, netty, remoteAddress))
         false
       } else {
+        ChannelAddress.set(connection.getChannel, Some(remoteAddress))
         sendSecureCookie(connection)
         notifyListeners(RemoteClientStarted(netty, remoteAddress))
         true
@@ -196,8 +197,10 @@ class ActiveRemoteClient private[akka] (
 
     notifyListeners(RemoteClientShutdown(netty, remoteAddress))
     try {
-      if ((connection ne null) && (connection.getChannel ne null))
+      if ((connection ne null) && (connection.getChannel ne null)) {
+        ChannelAddress.remove(connection.getChannel)
         connection.getChannel.close()
+      }
     } finally {
       try {
         if (openChannels ne null) openChannels.close.awaitUninterruptibly()
