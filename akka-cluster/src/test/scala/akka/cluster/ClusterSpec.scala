@@ -47,11 +47,11 @@ abstract class ClusterSpec(_system: ActorSystem) extends AkkaSpec(_system) {
 
   def portPrefix: Int
 
-  def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName, config.withFallback(ClusterSpec.testConf)))
+  def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(classOf[ClusterSpec]), config.withFallback(ClusterSpec.testConf)))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
-  def this() = this(ActorSystem(AkkaSpec.getCallerName, ClusterSpec.testConf))
+  def this() = this(ActorSystem(AkkaSpec.getCallerName(classOf[ClusterSpec]), ClusterSpec.testConf))
 
   def awaitConvergence(nodes: Iterable[Cluster], maxWaitTime: Duration = 60 seconds) {
     val deadline = maxWaitTime.fromNow

@@ -119,7 +119,7 @@ abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem) extends
 
   import MultiNodeSpec._
 
-  def this(config: MultiNodeConfig) = this(config.mySelf, ActorSystem(AkkaSpec.getCallerName, config.config))
+  def this(config: MultiNodeConfig) = this(config.mySelf, ActorSystem(AkkaSpec.getCallerName(classOf[MultiNodeSpec]), config.config))
 
   /*
    * Test Class Interface
