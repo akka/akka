@@ -88,6 +88,8 @@ There are 4 different types of message dispatchers:
                "thread-pool-executor" or the FQCN of
                an ``akka.dispatcher.ExecutorServiceConfigurator``
 
+  - Note that you can **not** use a ``BalancingDispatcher`` as a **Router Dispatcher**. (You can however use it for the **Routees**)
+
 * CallingThreadDispatcher
 
   - This dispatcher runs invocations on the current thread only. This dispatcher does not create any new threads, 
@@ -114,9 +116,8 @@ And then using it:
 
 .. includecode:: ../scala/code/akka/docs/dispatcher/DispatcherDocSpec.scala#defining-pinned-dispatcher
 
-Note that ``thread-pool-executor`` configuration as per the above ``my-thread-pool-dispatcher`` exmaple is 
-NOT applicable. This is because every actor will have its own thread pool when using ``PinnedDispatcher``, 
-and that pool will have only one thread.
+Note that ``thread-pool-executor`` configuration as per the above ``my-thread-pool-dispatcher`` example is
+NOT applicable. This is because every actor will have its own thread pool when using ``PinnedDispatcher``,
 
 Mailboxes
 ---------

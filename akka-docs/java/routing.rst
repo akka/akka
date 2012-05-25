@@ -356,7 +356,8 @@ The dispatcher for created children of the router will be taken from
 makes sense to configure the :class:`BalancingDispatcher` if the precise
 routing is not so important (i.e. no consistent hashing or round-robin is
 required); this enables newly created routees to pick up work immediately by
-stealing it from their siblings.
+stealing it from their siblings. Note that you can **not** use a ``BalancingDispatcher`` as a **Router Dispatcher**.
+(You can however use it for the **Routees**)
 
 The “head” router cannot always run on the same dispatcher, because it
 does not process the same type of messages, hence this special actor does

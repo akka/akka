@@ -87,6 +87,8 @@ There are 4 different types of message dispatchers:
                "thread-pool-executor" or the FQCN of
                an ``akka.dispatcher.ExecutorServiceConfigurator``
 
+  - Note that you can **not** use a ``BalancingDispatcher`` as a **Router Dispatcher**. (You can however use it for the **Routees**)
+
 * CallingThreadDispatcher
 
   - This dispatcher runs invocations on the current thread only. This dispatcher does not create any new threads, 
