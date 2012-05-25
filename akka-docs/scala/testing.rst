@@ -684,11 +684,15 @@ Some `Specs2 <http://specs2.org>`_ users have contributed examples of how to wor
   with :class:`org.specs2.specification.Scope`.
 * The Specification traits provide a :class:`Duration` DSL which uses partly
   the same method names as :class:`akka.util.Duration`, resulting in ambiguous
-  implicits if ``akka.util.duration._`` is imported. The work-around is to use
-  the Specification variants and supply an implicit conversion to the Akka
-  Duration. This conversion is not supplied with the Akka distribution because
-  that would mean that our JAR files would dependon Specs2, which is not
-  justified by this little feature.
+  implicits if ``akka.util.duration._`` is imported. There are two work-arounds:
+
+  * either use the Specification variant of Duration and supply an implicit
+    conversion to the Akka Duration. This conversion is not supplied with the
+    Akka distribution because that would mean that our JAR files would dependon
+    Specs2, which is not justified by this little feature.
+
+  * or mix :class:`org.specs2.time.NoTimeConversions` into the Specification.
+
 * Specifications are by default executed concurrently, which requires some care
   when writing the tests or alternatively the ``sequential`` keyword.
 

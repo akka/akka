@@ -163,7 +163,7 @@ Typed Actor Hierarchies
 Since you can obtain a contextual Typed Actor Extension by passing in an ``ActorContext``
 you can create child Typed Actors by invoking ``typedActorOf(..)`` on that:
 
-.. includecode:: code/akka/docs/actor/TypedActorDocSpec.scala
+.. includecode:: code/docs/actor/TypedActorDocSpec.scala
    :include: typed-actor-hierarchy
 
 You can also create a child Typed Actor in regular Akka Actors by giving the ``ActorContext``
