@@ -368,3 +368,32 @@ implement the method in a suitable way.
 
 .. includecode:: code/akka/docs/jrouting/CustomRouterDocTestBase.java#dispatchers
 
+At first glance there seems to be an overlap between the
+:class:`BalancingDispatcher` and Routers, but they are complement each other.
+The balancing dispatcher is in charge of running the actors while the routers
+are in charge of deciding which message goes where. A router can also have
+children that span multiple actor systems, even remote ones, but a dispatcher
+lives insidea a single actor system.
+
+A common pattern is to configure a :class:`RoundRobinRouter` with a
+:class:`BalancingDispatcher`. In this context the round robin router is only
+a logical grouping of the actors since they all share a single :class:`Mailbox`
+for their messages. This setup is used more as a convenience since all the
+newly created routees of the round robin router will get the same dispatcher
+as the router.
+
+When using them together there are some configuration settings
+to take into account.
+
+- There can only be ``nr-of-instances`` messages being processed at the same
+  time no matter how many threads are configured for the
+  :class:`BalancingDispatcher`.
+
+- Having ``throughput`` set to a low number makes no sense since you will only
+  be handing off to another actor that processes the same :class:`MailBox`
+  as yourself, which can be costly. Either the message just got into the
+  mailbox and you can receive it as well as anybody else, or everybody else
+  is busy and you are the only one available to receive the message.
+
+- Resizing the number of routees only introduce inertia, since resizing
+  is performed at specified intervals, but work stealing is instantaneous.
