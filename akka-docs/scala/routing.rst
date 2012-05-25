@@ -364,8 +364,8 @@ stealing it from their siblings.
    that was configured for them in their ``Props``, it is not possible to change an actors dispatcher
    after it has been created.
 
-The “head” router, of course, cannot run on the same balancing dispatcher,
-because it does not process the same messages, hence this special actor does
+The “head” router cannot run on the same balancing dispatcher, because it
+does not process the same type of messages, hence this special actor does
 not use the dispatcher configured in :class:`Props`, but takes the
 ``routerDispatcher`` from the :class:`RouterConfig` instead, which defaults to
 the actor system’s default dispatcher. All standard routers allow setting this
@@ -373,6 +373,13 @@ property in their constructor or factory method, custom routers have to
 implement the method in a suitable way.
 
 .. includecode:: code/akka/docs/routing/RouterDocSpec.scala#dispatchers
+
+
+.. note::
+
+   It is not allowed to configure the ``routerDispatcher`` to be a
+   :class:`BalancingDispatcher` since the messages ment for the special
+   router actor cannot be processed by any other actor.
 
 At first glance there seems to be an overlap between the
 :class:`BalancingDispatcher` and Routers, but they complement each other.
