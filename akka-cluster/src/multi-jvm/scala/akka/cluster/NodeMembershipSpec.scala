@@ -14,13 +14,7 @@ object NodeMembershipMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-    akka.cluster {
-      gossip-frequency = 200 ms
-      leader-actions-frequency = 200 ms
-      periodic-tasks-initial-delay = 300 ms
-    }
-    """)))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -28,12 +22,10 @@ class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec
 class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec
 class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec
 
-abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSpec) with ImplicitSender with BeforeAndAfter {
+abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSpec) with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
   import NodeMembershipMultiJvmSpec._
 
   override def initialParticipants = 3
-
-  def cluster: Cluster = Cluster(system)
 
   after {
     testConductor.enter("after")
@@ -50,11 +42,7 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
       runOn(first, second) {
         cluster.join(firstAddress)
         awaitCond(cluster.latestGossip.members.size == 2)
-        val members = cluster.latestGossip.members.toIndexedSeq
-        members.size must be(2)
-        val sortedAddresses = IndexedSeq(firstAddress, secondAddress).sortBy(_.toString)
-        members(0).address must be(sortedAddresses(0))
-        members(1).address must be(sortedAddresses(1))
+        assertMembers(cluster.latestGossip.members, firstAddress, secondAddress)
         awaitCond {
           cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
         }
@@ -69,14 +57,8 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
         cluster.join(firstAddress)
       }
 
-      // runOn all
       awaitCond(cluster.latestGossip.members.size == 3)
-      val members = cluster.latestGossip.members.toIndexedSeq
-      members.size must be(3)
-      val sortedAddresses = IndexedSeq(firstAddress, secondAddress, thirdAddress).sortBy(_.toString)
-      members(0).address must be(sortedAddresses(0))
-      members(1).address must be(sortedAddresses(1))
-      members(2).address must be(sortedAddresses(2))
+      assertMembers(cluster.latestGossip.members, firstAddress, secondAddress, thirdAddress)
       awaitCond {
         cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
       }
