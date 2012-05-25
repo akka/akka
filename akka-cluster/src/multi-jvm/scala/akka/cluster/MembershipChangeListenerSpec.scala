@@ -8,8 +8,7 @@ import org.scalatest.BeforeAndAfter
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.testkit.ImplicitSender
-import akka.testkit.TestLatch
+import akka.testkit._
 
 object MembershipChangeListenerMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -39,7 +38,7 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
     val firstAddress = node(first).address
     val secondAddress = node(second).address
 
-    "(when two systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
+    "(when two systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 
       runOn(first, second) {
         cluster.join(firstAddress)
@@ -56,7 +55,7 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
 
     }
 
-    "(when three systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
+    "(when three systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 
       runOn(third) {
         cluster.join(firstAddress)

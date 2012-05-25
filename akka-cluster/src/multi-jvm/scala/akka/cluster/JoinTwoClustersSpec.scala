@@ -8,7 +8,7 @@ import org.scalatest.BeforeAndAfter
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.testkit.ImplicitSender
+import akka.testkit._
 
 object JoinTwoClustersMultiJvmSpec extends MultiNodeConfig {
   val a1 = role("a1")
@@ -44,7 +44,7 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
 
   "Three different clusters (A, B and C)" must {
 
-    "be able to 'elect' a single leader after joining (A -> B)" in {
+    "be able to 'elect' a single leader after joining (A -> B)" taggedAs LongRunningTest in {
 
       runOn(a1, a2) {
         cluster.join(a1Address)
@@ -75,7 +75,7 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
 
     }
 
-    "be able to 'elect' a single leader after joining (C -> A + B)" in {
+    "be able to 'elect' a single leader after joining (C -> A + B)" taggedAs LongRunningTest in {
 
       runOn(b2) {
         cluster.join(c1Address)

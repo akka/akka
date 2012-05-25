@@ -34,7 +34,7 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
 
   "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
 
-    "be a singleton cluster when started up" in {
+    "be a singleton cluster when started up" taggedAs LongRunningTest in {
       runOn(first) {
         awaitCond(cluster.isSingletonCluster)
         // FIXME #2117 singletonCluster should reach convergence
@@ -42,7 +42,7 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
       }
     }
 
-    "be in 'Joining' phase when started up" in {
+    "be in 'Joining' phase when started up" taggedAs LongRunningTest in {
       runOn(first) {
         val members = cluster.latestGossip.members
         members.size must be(1)
@@ -55,7 +55,7 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
   }
 
   "A second cluster node" must {
-    "join the other node cluster when sending a Join command" in {
+    "join the other node cluster when sending a Join command" taggedAs LongRunningTest in {
 
       runOn(second) {
         cluster.join(firstAddress)
