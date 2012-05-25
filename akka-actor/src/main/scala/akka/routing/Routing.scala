@@ -30,7 +30,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     _path) {
 
   // verify that a BalancingDispatcher is not used with a Router
-  if (_system.dispatchers.isBalancingDispatcher(_props.dispatcher) && _props.routerConfig != NoRouter)
+  if (_props.routerConfig != NoRouter && _system.dispatchers.isBalancingDispatcher(_props.routerConfig.routerDispatcher))
     throw new ConfigurationException(
       "Configuration for actor [" + _path.toString +
         "] is invalid - you can not use a 'BalancingDispatcher' together with any type of 'Router'")
