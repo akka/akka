@@ -648,7 +648,7 @@ object Logging {
     import java.util.Date
 
     private val dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss.SSS")
-    private val errorFormat = "[ERROR] [%s] [%s] [%s] %s\n%s".intern
+    private val errorFormat = "[ERROR] [%s] [%s] [%s] %s%s".intern
     private val errorFormatWithoutCause = "[ERROR] [%s] [%s] [%s] %s".intern
     private val warningFormat = "[WARN] [%s] [%s] [%s] %s".intern
     private val infoFormat = "[INFO] [%s] [%s] [%s] %s".intern
@@ -728,10 +728,12 @@ object Logging {
    * Returns the StackTrace for the given Throwable as a String
    */
   def stackTraceFor(e: Throwable): String = e match {
-    case null | Error.NoCause | _: NoStackTrace ⇒ ""
+    case null | Error.NoCause ⇒ ""
+    case _: NoStackTrace      ⇒ " (" + e.getClass.getName + ")"
     case other ⇒
       val sw = new java.io.StringWriter
       val pw = new java.io.PrintWriter(sw)
+      pw.append('\n')
       other.printStackTrace(pw)
       sw.toString
   }
