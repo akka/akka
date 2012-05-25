@@ -18,13 +18,7 @@ object JoinTwoClustersMultiJvmSpec extends MultiNodeConfig {
   val c1 = role("c1")
   val c2 = role("c2")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-    akka.cluster {
-      gossip-frequency = 200 ms
-      leader-actions-frequency = 200 ms
-      periodic-tasks-initial-delay = 300 ms
-    }
-    """)))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -35,12 +29,10 @@ class JoinTwoClustersMultiJvmNode4 extends JoinTwoClustersSpec
 class JoinTwoClustersMultiJvmNode5 extends JoinTwoClustersSpec
 class JoinTwoClustersMultiJvmNode6 extends JoinTwoClustersSpec
 
-abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvmSpec) with ImplicitSender with BeforeAndAfter {
+abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvmSpec) with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
   import JoinTwoClustersMultiJvmSpec._
 
   override def initialParticipants = 6
-
-  def cluster: Cluster = Cluster(system)
 
   after {
     testConductor.enter("after")
@@ -49,12 +41,6 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
   val a1Address = node(a1).address
   val b1Address = node(b1).address
   val c1Address = node(c1).address
-
-  def awaitUpConvergence(numberOfMembers: Int): Unit = {
-    awaitCond(cluster.latestGossip.members.size == numberOfMembers)
-    awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
-    awaitCond(cluster.convergence.isDefined)
-  }
 
   "Three different clusters (A, B and C)" must {
 
@@ -72,7 +58,9 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
 
       awaitUpConvergence(numberOfMembers = 2)
 
-      cluster.isLeader must be(ifNode(a1, b1, c1)(true)(false))
+      assertLeader(a1, a2)
+      assertLeader(b1, b2)
+      assertLeader(c1, c2)
 
       runOn(b2) {
         cluster.join(a1Address)
@@ -82,7 +70,8 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
         awaitUpConvergence(numberOfMembers = 4)
       }
 
-      cluster.isLeader must be(ifNode(a1, c1)(true)(false))
+      assertLeader(a1, a2, b1, b2)
+      assertLeader(c1, c2)
 
     }
 
@@ -94,7 +83,7 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
 
       awaitUpConvergence(numberOfMembers = 6)
 
-      cluster.isLeader must be(ifNode(a1)(true)(false))
+      assertLeader(a1, a2, b1, b2, c1, c2)
     }
   }
 

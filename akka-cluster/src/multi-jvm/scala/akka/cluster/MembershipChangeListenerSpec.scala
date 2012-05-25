@@ -16,13 +16,7 @@ object MembershipChangeListenerMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-    akka.cluster {
-      gossip-frequency = 200 ms
-      leader-actions-frequency = 200 ms
-      periodic-tasks-initial-delay = 300 ms
-    }
-    """)))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -30,12 +24,11 @@ class MembershipChangeListenerMultiJvmNode1 extends MembershipChangeListenerSpec
 class MembershipChangeListenerMultiJvmNode2 extends MembershipChangeListenerSpec
 class MembershipChangeListenerMultiJvmNode3 extends MembershipChangeListenerSpec
 
-abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChangeListenerMultiJvmSpec) with ImplicitSender with BeforeAndAfter {
+abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChangeListenerMultiJvmSpec)
+  with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
   import MembershipChangeListenerMultiJvmSpec._
 
   override def initialParticipants = 3
-
-  def cluster: Cluster = Cluster(system)
 
   after {
     testConductor.enter("after")

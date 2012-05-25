@@ -13,25 +13,17 @@ object NodeStartupMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-    akka.cluster {
-      gossip-frequency = 200 ms
-      leader-actions-frequency = 200 ms
-      periodic-tasks-initial-delay = 300 ms
-    }
-    """)))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
 class NodeStartupMultiJvmNode1 extends NodeStartupSpec
 class NodeStartupMultiJvmNode2 extends NodeStartupSpec
 
-abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) with ImplicitSender with BeforeAndAfter {
+abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
   import NodeStartupMultiJvmSpec._
 
   override def initialParticipants = 2
-
-  def cluster: Cluster = Cluster(system)
 
   after {
     testConductor.enter("after")
