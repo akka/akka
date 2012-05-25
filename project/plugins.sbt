@@ -5,6 +5,10 @@ addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.1.9")
 
 addSbtPlugin("com.typesafe.sbtscalariform" % "sbtscalariform" % "0.4.0")
 
+resolvers += Resolver.url("sbt-plugin-releases", new URL("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases/"))(Resolver.ivyStylePatterns)
+
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.2")
+
 // ls-sbt is not published for 0.11.3
 
 //resolvers ++= Seq(
