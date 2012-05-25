@@ -378,7 +378,7 @@ implement the method in a suitable way.
 .. note::
 
    It is not allowed to configure the ``routerDispatcher`` to be a
-   :class:`BalancingDispatcher` since the messages ment for the special
+   :class:`BalancingDispatcher` since the messages meant for the special
    router actor cannot be processed by any other actor.
 
 At first glance there seems to be an overlap between the
@@ -386,17 +386,10 @@ At first glance there seems to be an overlap between the
 The balancing dispatcher is in charge of running the actors while the routers
 are in charge of deciding which message goes where. A router can also have
 children that span multiple actor systems, even remote ones, but a dispatcher
-lives insidea a single actor system.
+lives inside a single actor system.
 
-A common pattern is to configure a :class:`RoundRobinRouter` with a
-:class:`BalancingDispatcher`. In this context the round robin router is only
-a logical grouping of the actors since they all share a single :class:`Mailbox`
-for their messages. This setup is used more as a convenience since all the
-newly created routees of the round robin router will get the same dispatcher
-as the router.
-
-When using them together there are some configuration settings
-to take into account.
+When using a :class:`RoundRobinRouter` with a :class:`BalancingDispatcher`
+there are some configuration settings to take into account.
 
 - There can only be ``nr-of-instances`` messages being processed at the same
   time no matter how many threads are configured for the
