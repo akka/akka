@@ -173,6 +173,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * Sort so that subtypes always precede their supertypes, but without
    * obeying any order between unrelated subtypes (insert sort).
    */
+  @deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
   def sort(in: Iterable[CauseDirective]): Seq[CauseDirective] =
     (new ArrayBuffer[CauseDirective](in.size) /: in) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {

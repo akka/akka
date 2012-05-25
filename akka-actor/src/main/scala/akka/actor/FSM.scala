@@ -27,8 +27,11 @@ object FSM {
   case class Failure(cause: Any) extends Reason
 
   case object StateTimeout
+
+  @deprecated("Will become private in 2.1, this is not user-api", "2.0.2")
   case class TimeoutMarker(generation: Long)
 
+  @deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
   case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit system: ActorSystem) {
     private var ref: Option[Cancellable] = _
 

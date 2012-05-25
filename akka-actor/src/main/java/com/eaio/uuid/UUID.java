@@ -52,6 +52,7 @@ import com.eaio.util.lang.Hex;
  * @author <a href="mailto:jb@eaio.de">Johann Burkard</a>
  * @version $Id: UUID.java 1888 2009-03-15 12:43:24Z johann $
  */
+@Deprecated
 public class UUID implements Comparable<UUID>, Serializable, Cloneable {
 
     /**

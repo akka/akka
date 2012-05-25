@@ -35,6 +35,7 @@ class BalancingDispatcher(
   attemptTeamWork: Boolean)
   extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 
+  @deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
   val team = new ConcurrentSkipListSet[ActorCell](
     Helpers.identityHashComparator(new Comparator[ActorCell] {
       def compare(l: ActorCell, r: ActorCell) = l.self.path compareTo r.self.path
@@ -75,6 +76,7 @@ class BalancingDispatcher(
   }
 }
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class SharingMailbox(_actor: ActorCell, _messageQueue: MessageQueue)
   extends Mailbox(_actor, _messageQueue) with DefaultSystemMessageQueue {
 

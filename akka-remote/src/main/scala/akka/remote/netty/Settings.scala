@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit._
 import java.net.InetAddress
 import akka.config.ConfigurationException
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class NettySettings(config: Config, val systemName: String) {
 
   import config._

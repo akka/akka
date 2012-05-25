@@ -20,6 +20,7 @@ import java.net.InetAddress
 import akka.actor.ActorSystemImpl
 import org.jboss.netty.channel._
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   import netty.settings
@@ -98,6 +99,7 @@ class RemoteServerPipelineFactory(
 }
 
 @ChannelHandler.Sharable
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends SimpleChannelUpstreamHandler {
   val authenticated = new AnyRef
 
@@ -124,11 +126,13 @@ class RemoteServerAuthenticationHandler(secureCookie: Option[String]) extends Si
   }
 }
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 object ChannelLocalSystem extends ChannelLocal[ActorSystemImpl] {
   override def initialValue(ch: Channel): ActorSystemImpl = null
 }
 
 @ChannelHandler.Sharable
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class RemoteServerHandler(
   val openChannels: ChannelGroup,
   val netty: NettyRemoteTransport) extends SimpleChannelUpstreamHandler {

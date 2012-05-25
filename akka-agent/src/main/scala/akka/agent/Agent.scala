@@ -282,6 +282,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
 /**
  * Agent updater actor. Used internally for `send` actions.
  */
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class AgentUpdater[T](agent: Agent[T]) extends Actor {
   def receive = {
     case u: Update[_] ⇒ update(u.function.asInstanceOf[T ⇒ T])
@@ -296,6 +297,7 @@ class AgentUpdater[T](agent: Agent[T]) extends Actor {
 /**
  * Thread-based agent updater actor. Used internally for `sendOff` actions.
  */
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class ThreadBasedAgentUpdater[T](agent: Agent[T]) extends Actor {
   def receive = {
     case u: Update[_] ⇒ try {

@@ -34,6 +34,7 @@ class RemoteClientMessageBufferException(message: String, cause: Throwable) exte
  * ActiveRemoteClient, but others could be feasible, like a PassiveRemoteClient that
  * reuses an already established connection.
  */
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 abstract class RemoteClient private[akka] (
   val netty: NettyRemoteTransport,
   val remoteAddress: Address) {
@@ -97,6 +98,7 @@ abstract class RemoteClient private[akka] (
 /**
  * RemoteClient represents a connection to an Akka node. Is used to send messages to remote actors on the node.
  */
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class ActiveRemoteClient private[akka] (
   netty: NettyRemoteTransport,
   remoteAddress: Address,
@@ -230,6 +232,7 @@ class ActiveRemoteClient private[akka] (
 }
 
 @ChannelHandler.Sharable
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class ActiveRemoteClientHandler(
   val name: String,
   val bootstrap: ClientBootstrap,
@@ -344,6 +347,7 @@ class ActiveRemoteClientPipelineFactory(
   }
 }
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class PassiveRemoteClient(val currentChannel: Channel,
                           netty: NettyRemoteTransport,
                           remoteAddress: Address)

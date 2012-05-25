@@ -26,6 +26,7 @@ import akka.util.NonFatal
 /**
  * Provides the implementation of the Netty remote support
  */
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: ActorSystemImpl, val provider: RemoteActorRefProvider)
   extends RemoteTransport with RemoteMarshallingOps {
 
@@ -191,6 +192,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
 }
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class RemoteMessageEncoder(remoteSupport: NettyRemoteTransport) extends ProtobufEncoder {
   override def encode(ctx: ChannelHandlerContext, channel: Channel, msg: AnyRef): AnyRef = {
     msg match {
@@ -206,8 +208,10 @@ class RemoteMessageEncoder(remoteSupport: NettyRemoteTransport) extends Protobuf
   }
 }
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class RemoteMessageDecoder extends ProtobufDecoder(AkkaRemoteProtocol.getDefaultInstance)
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class DefaultDisposableChannelGroup(name: String) extends DefaultChannelGroup(name) {
   protected val guard = new ReentrantReadWriteLock
   protected val open = new AtomicBoolean(true)

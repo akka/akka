@@ -144,6 +144,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
+  @deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
   case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializedParameters: Array[(Int, Class[_], Array[Byte])]) {
 
     //TODO implement writeObject and readObject to serialize

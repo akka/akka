@@ -25,6 +25,7 @@ trait DispatcherPrerequisites {
   def settings: ActorSystem.Settings
 }
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class DefaultDispatcherPrerequisites(
   val threadFactory: ThreadFactory,
   val eventStream: EventStream,

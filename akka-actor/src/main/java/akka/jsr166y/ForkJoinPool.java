@@ -123,6 +123,7 @@ import akka.util.Unsafe;
  * @since 1.7
  * @author Doug Lea
  */
+@Deprecated
 public class ForkJoinPool extends AbstractExecutorService {
 
     /*

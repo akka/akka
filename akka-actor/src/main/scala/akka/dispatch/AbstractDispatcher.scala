@@ -35,6 +35,7 @@ final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorS
   }
 }
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 object SystemMessage {
   @tailrec
   final def size(list: SystemMessage, acc: Int = 0): Int = {
@@ -63,18 +64,28 @@ object SystemMessage {
  *
  * ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
  */
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 sealed trait SystemMessage extends PossiblyHarmful {
   @transient
   var next: SystemMessage = _
 }
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class Create() extends SystemMessage // send to self from Dispatcher.register
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class Recreate(cause: Throwable) extends SystemMessage // sent to self from ActorCell.restart
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class Suspend() extends SystemMessage // sent to self from ActorCell.suspend
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class Resume() extends SystemMessage // sent to self from ActorCell.resume
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class Supervise(child: ActorRef) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to supervisor from ActorCell.doTerminate
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.watch
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.unwatch
 
 final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Runnable {

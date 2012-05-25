@@ -9,6 +9,7 @@ import com.google.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializationExtension
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 object MessageSerializer {
 
   def deserialize(system: ExtendedActorSystem, messageProtocol: MessageProtocol): AnyRef = {

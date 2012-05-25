@@ -13,6 +13,7 @@ import java.util.regex.Pattern
 /**
  * Marker trait to show which Messages are automatically handled by Akka
  */
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 trait AutoReceivedMessage extends Serializable
 
 /**
@@ -26,6 +27,7 @@ trait PossiblyHarmful
  */
 trait NoSerializationVerificationNeeded
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
 abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful
@@ -59,9 +61,13 @@ case object ReceiveTimeout extends ReceiveTimeout {
  * nested path descriptions whenever using ! on them, the idea being that the
  * message is delivered by active routing of the various actors involved.
  */
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 sealed trait SelectionPath extends AutoReceivedMessage
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class SelectChildName(name: String, next: Any) extends SelectionPath
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class SelectChildPattern(pattern: Pattern, next: Any) extends SelectionPath
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class SelectParent(next: Any) extends SelectionPath
 
 // Exceptions for Actors
@@ -84,6 +90,7 @@ case class ActorInitializationException private[akka] (actor: ActorRef, message:
   def this(msg: String) = this(null, msg, null);
 }
 
+@deprecated("Will be superceded by akka.pattern.AskTimeoutException", "2.0.2")
 class ActorTimeoutException private[akka] (message: String, cause: Throwable = null)
   extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null);

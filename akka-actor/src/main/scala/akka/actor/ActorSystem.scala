@@ -416,6 +416,7 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def dynamicAccess: DynamicAccess
 }
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class ActorSystemImpl protected[akka] (val name: String, applicationConfig: Config, classLoader: ClassLoader) extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-]*$"""))

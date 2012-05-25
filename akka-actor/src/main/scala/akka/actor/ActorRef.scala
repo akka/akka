@@ -160,10 +160,12 @@ trait ScalaActorRef { ref: ActorRef ⇒
  * often necessary to distinguish between local and non-local references, this
  * is the only method provided on the scope.
  */
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 trait ActorRefScope {
   def isLocal: Boolean
 }
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 trait LocalRef extends ActorRefScope {
   final def isLocal = true
 }
@@ -335,6 +337,7 @@ private[akka] class LocalActorRef private[akka] (
  * Memento pattern for serializing ActorRefs transparently
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 case class SerializedActorRef private (path: String) {
   import akka.serialization.JavaSerializer.currentSystem
 

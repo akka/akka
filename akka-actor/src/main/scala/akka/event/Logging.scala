@@ -348,8 +348,10 @@ object LogSource {
  */
 object Logging {
 
+  @deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
   object Extension extends ExtensionKey[LogExt]
 
+  @deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
   class LogExt(system: ExtendedActorSystem) extends Extension {
     private val loggerId = new AtomicInteger
     def id() = loggerId.incrementAndGet()

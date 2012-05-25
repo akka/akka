@@ -16,6 +16,7 @@ import akka.actor.ActorSystem
 
 class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
 
+@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 object Mailbox {
 
   type Status = Int
