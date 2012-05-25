@@ -17,18 +17,12 @@ object ClientDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
   val third  = role("third")
   val fourth = role("fourth")
 
-  val waitForConvergence = 20 seconds
-
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-    akka {
-      #loglevel        = "DEBUG"
-      #stdout-loglevel = "DEBUG"
-      cluster {
-        gossip-frequency             = 100 ms
-        leader-actions-frequency     = 100 ms
-        periodic-tasks-initial-delay = 300 ms
-        auto-down                    = off
-      }
+    akka.cluster {
+      gossip-frequency             = 100 ms
+      leader-actions-frequency     = 100 ms
+      periodic-tasks-initial-delay = 300 ms
+      auto-down                    = off
     }
     """)))
 }
@@ -46,9 +40,9 @@ class ClientDowningNodeThatIsUnreachableSpec extends MultiNodeSpec(ClientDowning
   def node = Cluster(system)
 
   def assertMemberRing(nrOfMembers: Int, canNotBePartOfRing: Seq[Address] = Seq.empty[Address]): Unit = {
-    awaitCond(node.latestGossip.members.size == nrOfMembers, waitForConvergence)
-    awaitCond(node.latestGossip.members.forall(_.status == MemberStatus.Up), waitForConvergence)
-    awaitCond(canNotBePartOfRing forall (address => !(node.latestGossip.members exists (_.address == address))), waitForConvergence)
+    awaitCond(node.latestGossip.members.size == nrOfMembers)
+    awaitCond(node.latestGossip.members.forall(_.status == MemberStatus.Up))
+    awaitCond(canNotBePartOfRing forall (address => !(node.latestGossip.members exists (_.address == address))))
   }
 
   "Client of a 4 node cluster" must {
