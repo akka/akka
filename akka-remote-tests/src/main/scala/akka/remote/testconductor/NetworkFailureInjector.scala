@@ -139,26 +139,29 @@ private[akka] class FailureInjector extends Actor with ActorLogging {
           if (direction includes Direction.Receive) rcv ! s
         case None ⇒
           // don’t do reverse lookup at first
-          val (ipaddr, ip, port) = ctx.getChannel.getRemoteAddress match {
-            case s: InetSocketAddress ⇒ (s.getAddress, s.getAddress.getHostAddress, s.getPort)
+          ctx.getChannel.getRemoteAddress match {
+            case sockAddr: InetSocketAddress ⇒
+              val (ipaddr, ip, port) = (sockAddr.getAddress, sockAddr.getAddress.getHostAddress, sockAddr.getPort)
+              val addr = ChannelAddress.get(ctx.getChannel) orElse {
+                settings collect { case (a @ Address("akka", _, Some(`ip`), Some(`port`)), _) ⇒ a } headOption
+              } orElse {
+                // only if raw IP failed, try with hostname
+                val name = ipaddr.getHostName
+                if (name == ip) None
+                else settings collect { case (a @ Address("akka", _, Some(`name`), Some(`port`)), _) ⇒ a } headOption
+              } getOrElse Address("akka", "", ip, port)
+              /*
+               * ^- the above last resort will not match later requests directly, but be 
+               * picked up by retrieveTargetSettings, so that throttle ops are
+               * applied to the right throttle actors, assuming that there can
+               * be only one actor system per host:port.
+               */
+              val inj = ingestContextAddress(ctx, addr)
+              if (direction includes Direction.Send) inj.sender ! s
+              if (direction includes Direction.Receive) inj.receiver ! s
+            case null ⇒
+              log.debug("sending {} in direction {} when socket {} already closed, dropping", msg, direction, ctx.getChannel)
           }
-          val addr = ChannelAddress.get(ctx.getChannel) orElse {
-            settings collect { case (a @ Address("akka", _, Some(`ip`), Some(`port`)), _) ⇒ a } headOption
-          } orElse {
-            // only if raw IP failed, try with hostname
-            val name = ipaddr.getHostName
-            if (name == ip) None
-            else settings collect { case (a @ Address("akka", _, Some(`name`), Some(`port`)), _) ⇒ a } headOption
-          } getOrElse Address("akka", "", ip, port)
-          /*
-           * ^- the above last resort will not match later requests directly, but be 
-           * picked up by retrieveTargetSettings, so that throttle ops are
-           * applied to the right throttle actors, assuming that there can
-           * be only one actor system per host:port.
-           */
-          val inj = ingestContextAddress(ctx, addr)
-          if (direction includes Direction.Send) inj.sender ! s
-          if (direction includes Direction.Receive) inj.receiver ! s
       }
   }
 }
