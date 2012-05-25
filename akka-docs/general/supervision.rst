@@ -55,6 +55,8 @@ actors cannot be orphaned or attached to supervisors from the outside, which
 might otherwise catch them unawares. In addition, this yields a natural and
 clean shutdown procedure for (sub-trees of) actor applications.
 
+.. _supervision-restart:
+
 What Restarting Means
 ---------------------
 
