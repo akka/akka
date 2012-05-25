@@ -369,7 +369,7 @@ implement the method in a suitable way.
 .. includecode:: code/akka/docs/jrouting/CustomRouterDocTestBase.java#dispatchers
 
 At first glance there seems to be an overlap between the
-:class:`BalancingDispatcher` and Routers, but they are complement each other.
+:class:`BalancingDispatcher` and Routers, but they complement each other.
 The balancing dispatcher is in charge of running the actors while the routers
 are in charge of deciding which message goes where. A router can also have
 children that span multiple actor systems, even remote ones, but a dispatcher
