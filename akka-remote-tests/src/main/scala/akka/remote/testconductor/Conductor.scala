@@ -468,11 +468,16 @@ private[akka] object BarrierCoordinator {
     override def toString = productPrefix + productIterator.mkString("(", ", ", ")")
   }
 
-  case class BarrierTimeout(data: Data) extends RuntimeException(data.barrier) with NoStackTrace with Printer
-  case class DuplicateNode(data: Data, node: Controller.NodeInfo) extends RuntimeException with NoStackTrace with Printer
-  case class WrongBarrier(barrier: String, client: ActorRef, data: Data) extends RuntimeException(barrier) with NoStackTrace with Printer
+  case class BarrierTimeout(data: Data)
+    extends RuntimeException("timeout while waiting for barrier '" + data.barrier + "'") with NoStackTrace with Printer
+  case class DuplicateNode(data: Data, node: Controller.NodeInfo)
+    extends RuntimeException(node.toString) with NoStackTrace with Printer
+  case class WrongBarrier(barrier: String, client: ActorRef, data: Data)
+    extends RuntimeException(data.clients.find(_.fsm == client).map(_.name.toString).getOrElse(client.toString) +
+      " tried to enter '" + barrier + "' while we were waiting for '" + data.barrier + "'") with NoStackTrace with Printer
   case class BarrierEmpty(data: Data, msg: String) extends RuntimeException(msg) with NoStackTrace with Printer
-  case class ClientLost(data: Data, client: RoleName) extends RuntimeException with NoStackTrace with Printer
+  case class ClientLost(data: Data, client: RoleName)
+    extends RuntimeException("unannounced disconnect of " + client) with NoStackTrace with Printer
 }
 
 /**
@@ -506,7 +511,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       if (clients.find(_.name == n.name).isDefined) throw new DuplicateNode(d, n)
       stay using d.copy(clients = clients + n)
     case Event(ClientDisconnected(name), d @ Data(clients, _, arrived)) ⇒
-      if (clients.isEmpty) throw BarrierEmpty(d, "no client to disconnect")
+      if (clients.isEmpty) throw BarrierEmpty(d, "cannot disconnect " + name + ": no client to disconnect")
       (clients find (_.name == name)) match {
         case None    ⇒ stay
         case Some(c) ⇒ throw ClientLost(d.copy(clients = clients - c, arrived = arrived filterNot (_ == c.fsm)), name)
@@ -524,7 +529,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       else
         goto(Waiting) using d.copy(barrier = name, arrived = sender :: Nil)
     case Event(RemoveClient(name), d @ Data(clients, _, _)) ⇒
-      if (clients.isEmpty) throw BarrierEmpty(d, "no client to remove")
+      if (clients.isEmpty) throw BarrierEmpty(d, "cannot remove " + name + ": no client to remove")
       stay using d.copy(clients = clients filterNot (_.name == name))
   }
 
