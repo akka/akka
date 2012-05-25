@@ -35,7 +35,7 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
 
   override def initialParticipants = 3
 
-  def node(): Cluster = Cluster(system)
+  def cluster: Cluster = Cluster(system)
 
   after {
     testConductor.enter("after")
@@ -43,22 +43,22 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
 
   "A set of connected cluster systems" must {
 
-    val firstAddress = testConductor.getAddressFor(first).await
-    val secondAddress = testConductor.getAddressFor(second).await
+    val firstAddress = node(first).address
+    val secondAddress = node(second).address
 
     "(when two systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
 
       runOn(first, second) {
-        node().join(firstAddress)
+        cluster.join(firstAddress)
         val latch = TestLatch()
-        node().registerListener(new MembershipChangeListener {
+        cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
             if (members.size == 2 && members.forall(_.status == MemberStatus.Up))
               latch.countDown()
           }
         })
         latch.await
-        node().convergence.isDefined must be(true)
+        cluster.convergence.isDefined must be(true)
       }
 
     }
@@ -66,19 +66,18 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
     "(when three systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" in {
 
       runOn(third) {
-        node().join(firstAddress)
+        cluster.join(firstAddress)
       }
 
-      // runOn all
       val latch = TestLatch()
-      node().registerListener(new MembershipChangeListener {
+      cluster.registerListener(new MembershipChangeListener {
         def notify(members: SortedSet[Member]) {
           if (members.size == 3 && members.forall(_.status == MemberStatus.Up))
             latch.countDown()
         }
       })
       latch.await
-      node().convergence.isDefined must be(true)
+      cluster.convergence.isDefined must be(true)
 
     }
   }
