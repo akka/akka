@@ -109,7 +109,7 @@ Here is an example:
 
   You might be tempted at times to offer an ``Actor`` factory which always
   returns the same instance, e.g. by using a ``lazy val`` or an
-  ``object ... extends Actor``. This is not supported, as it works against the
+  ``object ... extends Actor``. This is not supported, as it goes against the
   meaning of an actor restart, which is described here:
   :ref:`supervision-restart`.
 

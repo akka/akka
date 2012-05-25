@@ -119,7 +119,7 @@ This way of creating the Actor is also great for integrating with Dependency Inj
 
   You might be tempted at times to offer an ``UntypedActor`` factory which
   always returns the same instance, e.g. by using a static field. This is not
-  supported, as it works against the meaning of an actor restart, which is
+  supported, as it goes against the meaning of an actor restart, which is
   described here: :ref:`supervision-restart`.
 
 UntypedActor API
