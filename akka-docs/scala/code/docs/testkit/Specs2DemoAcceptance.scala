@@ -1,7 +1,7 @@
 package docs.testkit
 
-import org.specs2._
-import org.specs2.specification.Scope
+import org.specs2.Specification
+import org.specs2.specification.{ Step, Scope }
 
 import akka.actor.{ Props, ActorSystem, Actor }
 import akka.testkit.{ TestKit, ImplicitSender }
@@ -13,10 +13,12 @@ class Specs2DemoAcceptance extends Specification {
       p ^
       "A TestKit should" ^
       "work properly with Specs2 acceptance tests" ! e1 ^
-      "correctly convert durations" ! e2
+      "correctly convert durations" ! e2 ^
+      Step(system.shutdown()) ^ end // do not forget to shutdown!
 
   val system = ActorSystem()
 
+  // an alternative to mixing in NoTimeConversions
   implicit def d2d(d: org.specs2.time.Duration): akka.util.FiniteDuration =
     akka.util.Duration(d.inMilliseconds, "millis")
 
