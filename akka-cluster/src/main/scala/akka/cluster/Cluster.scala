@@ -100,11 +100,12 @@ class Member(val address: Address, val status: MemberStatus) extends ClusterMess
 object Member {
   import MemberStatus._
 
+  /**
+   * Sort Address by host and port
+   */
   implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) ⇒
-    if (a.protocol != b.protocol) a.protocol.compareTo(b.protocol) < 0
-    else if (a.system != b.system) a.system.compareTo(b.system) < 0
-    else if (a.host.getOrElse("") != b.host.getOrElse("")) a.host.getOrElse("").compareTo(b.host.getOrElse("")) < 0
-    else if (a.port.getOrElse(0) != b.port.getOrElse(0)) a.port.getOrElse(0) < b.port.getOrElse(0)
+    if (a.host != b.host) a.host.getOrElse("").compareTo(b.host.getOrElse("")) < 0
+    else if (a.port != b.port) a.port.getOrElse(0) < b.port.getOrElse(0)
     else false
   }
 

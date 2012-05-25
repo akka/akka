@@ -16,14 +16,14 @@ class MemberSpec extends WordSpec with MustMatchers {
 
     "be sorted by address correctly" in {
       import Member.ordering
+      // sorting should be done on host and port, only
       val m1 = Member(Address("akka", "sys1", "host1", 9000), MemberStatus.Up)
       val m2 = Member(Address("akka", "sys1", "host1", 10000), MemberStatus.Up)
-      val m3 = Member(Address("cluster", "sys1", "host1", 10000), MemberStatus.Up)
-      val m4 = Member(Address("cluster", "sys1", "host2", 10000), MemberStatus.Up)
-      val m5 = Member(Address("cluster", "sys2", "host2", 10000), MemberStatus.Up)
-      val m6 = Member(Address("cluster", "sys2", "host3", 8000), MemberStatus.Up)
+      val m3 = Member(Address("cluster", "sys2", "host2", 8000), MemberStatus.Up)
+      val m4 = Member(Address("cluster", "sys2", "host2", 9000), MemberStatus.Up)
+      val m5 = Member(Address("cluster", "sys1", "host2", 10000), MemberStatus.Up)
 
-      val expected = IndexedSeq(m1, m2, m3, m4, m5, m6)
+      val expected = IndexedSeq(m1, m2, m3, m4, m5)
       val shuffled = Random.shuffle(expected)
       shuffled.sorted must be(expected)
     }
