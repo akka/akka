@@ -52,8 +52,9 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
         awaitCond(cluster.latestGossip.members.size == 2)
         val members = cluster.latestGossip.members.toIndexedSeq
         members.size must be(2)
-        members(0).address must be(firstAddress)
-        members(1).address must be(secondAddress)
+        val sortedAddresses = IndexedSeq(firstAddress, secondAddress).sortBy(_.toString)
+        members(0).address must be(sortedAddresses(0))
+        members(1).address must be(sortedAddresses(1))
         awaitCond {
           cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
         }
@@ -72,9 +73,10 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
       awaitCond(cluster.latestGossip.members.size == 3)
       val members = cluster.latestGossip.members.toIndexedSeq
       members.size must be(3)
-      members(0).address must be(firstAddress)
-      members(1).address must be(secondAddress)
-      members(2).address must be(thirdAddress)
+      val sortedAddresses = IndexedSeq(firstAddress, secondAddress, thirdAddress).sortBy(_.toString)
+      members(0).address must be(sortedAddresses(0))
+      members(1).address must be(sortedAddresses(1))
+      members(2).address must be(sortedAddresses(2))
       awaitCond {
         cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
       }
