@@ -9,7 +9,7 @@ import akka.testkit.TestEvent._
 import akka.util.duration._
 import akka.routing._
 import org.scalatest.BeforeAndAfterEach
-import akka.ConfigurationException
+import akka.config.ConfigurationException
 
 object ActorConfigurationVerificationSpec {
 
