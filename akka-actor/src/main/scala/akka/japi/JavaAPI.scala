@@ -38,6 +38,9 @@ trait Effect {
  * A constructor/factory, takes no parameters but creates a new value of type T every call.
  */
 trait Creator[T] {
+  /**
+   * This method must return a different instance upon every call.
+   */
   def create(): T
 }
 

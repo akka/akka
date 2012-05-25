@@ -87,6 +87,8 @@ object Props {
  * Props is a ActorRef configuration object, that is thread safe and fully sharable.
  * Used when creating new actors through; <code>ActorSystem.actorOf</code> and <code>ActorContext.actorOf</code>.
  *
+ * In case of providing code which creates the actual Actor instance, that must not return the same instance multiple times.
+ *
  * Examples on Scala API:
  * {{{
  *  val props = Props[MyActor]
@@ -144,6 +146,8 @@ case class Props(
 
   /**
    * Returns a new Props with the specified creator set.
+   * 
+   * The creator must not return the same instance multiple times.
    *
    * Scala API.
    */
@@ -151,6 +155,8 @@ case class Props(
 
   /**
    * Returns a new Props with the specified creator set.
+   *
+   * The creator must not return the same instance multiple times.
    *
    * Java API.
    */
