@@ -358,7 +358,7 @@ routing is not so important (i.e. no consistent hashing or round-robin is
 required); this enables newly created routees to pick up work immediately by
 stealing it from their siblings.
 
-The “head” router cannot run on the same balancing dispatcher, because it
+The “head” router cannot always run on the same dispatcher, because it
 does not process the same type of messages, hence this special actor does
 not use the dispatcher configured in :class:`Props`, but takes the
 ``routerDispatcher`` from the :class:`RouterConfig` instead, which defaults to

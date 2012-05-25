@@ -364,7 +364,7 @@ stealing it from their siblings.
    that was configured for them in their ``Props``, it is not possible to change an actors dispatcher
    after it has been created.
 
-The “head” router cannot run on the same balancing dispatcher, because it
+The “head” router cannot always run on the same dispatcher, because it
 does not process the same type of messages, hence this special actor does
 not use the dispatcher configured in :class:`Props`, but takes the
 ``routerDispatcher`` from the :class:`RouterConfig` instead, which defaults to
