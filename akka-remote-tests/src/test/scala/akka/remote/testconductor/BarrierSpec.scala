@@ -54,7 +54,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       EventFilter[BarrierEmpty](occurrences = 1) intercept {
         b ! RemoveClient(A)
       }
-      expectMsg(Failed(b, BarrierEmpty(Data(Set(), "", Nil), "no client to remove")))
+      expectMsg(Failed(b, BarrierEmpty(Data(Set(), "", Nil), "cannot remove RoleName(a): no client to remove")))
     }
 
     "register clients and disconnect them" in {
@@ -68,7 +68,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       EventFilter[BarrierEmpty](occurrences = 1) intercept {
         b ! ClientDisconnected(A)
       }
-      expectMsg(Failed(b, BarrierEmpty(Data(Set(), "", Nil), "no client to disconnect")))
+      expectMsg(Failed(b, BarrierEmpty(Data(Set(), "", Nil), "cannot disconnect RoleName(a): no client to disconnect")))
     }
 
     "fail entering barrier when nobody registered" in {
@@ -187,7 +187,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       EventFilter[BarrierEmpty](occurrences = 1) intercept {
         barrier ! RemoveClient(A)
       }
-      expectMsg(Failed(barrier, BarrierEmpty(Data(Set(), "", Nil), "no client to remove")))
+      expectMsg(Failed(barrier, BarrierEmpty(Data(Set(), "", Nil), "cannot remove RoleName(a): no client to remove")))
       barrier ! NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
       a.send(barrier, EnterBarrier("right"))
       a.expectMsg(ToClient(BarrierResult("right", false)))

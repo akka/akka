@@ -188,7 +188,7 @@ which might contain actor references.
 External Akka Serializers
 =========================
 
-`Akka-protostuff by Roman Levenstein<https://github.com/romix/akka-protostuff-serialization>`_
+`Akka-protostuff by Roman Levenstein <https://github.com/romix/akka-protostuff-serialization>`_
 
 
-`Akka-quickser by Roman Levenstein<https://github.com/romix/akka-quickser-serialization>`_
+`Akka-quickser by Roman Levenstein <https://github.com/romix/akka-quickser-serialization>`_

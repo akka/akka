@@ -2,20 +2,19 @@ package docs.testkit
 
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
+import org.specs2.time.NoTimeConversions
 
 import akka.actor.{ Props, ActorSystem, Actor }
 import akka.testkit.{ TestKit, ImplicitSender }
+import akka.util.duration._
 
-class Specs2DemoUnitSpec extends Specification {
+class Specs2DemoUnitSpec extends Specification with NoTimeConversions {
 
   val system = ActorSystem()
 
-  implicit def d2d(d: org.specs2.time.Duration): akka.util.FiniteDuration =
-    akka.util.Duration(d.inMilliseconds, "millis")
-
   /*
    * this is needed if different test cases would clash when run concurrently,
-   * e.g. when creating specifically named top-level actors
+   * e.g. when creating specifically named top-level actors; leave out otherwise
    */
   sequential
 
@@ -31,4 +30,6 @@ class Specs2DemoUnitSpec extends Specification {
         }
       }
   }
+
+  step(system.shutdown) // do not forget to shutdown!
 }
