@@ -31,27 +31,28 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
 
   override def initialParticipants = 2
 
-  def node() = Cluster(system)
+  def cluster: Cluster = Cluster(system)
 
   after {
     testConductor.enter("after")
   }
 
-  val firstAddress = testConductor.getAddressFor(first).await
+  val firstAddress = node(first).address
+  val secondAddress = node(second).address
 
   "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
 
     "be a singleton cluster when started up" in {
       runOn(first) {
-        awaitCond(node().isSingletonCluster)
+        awaitCond(cluster.isSingletonCluster)
         // FIXME #2117 singletonCluster should reach convergence
-        //awaitCond(node().convergence.isDefined)
+        //awaitCond(cluster.convergence.isDefined)
       }
     }
 
     "be in 'Joining' phase when started up" in {
       runOn(first) {
-        val members = node().latestGossip.members
+        val members = cluster.latestGossip.members
         members.size must be(1)
 
         val joiningMember = members find (_.address == firstAddress)
@@ -65,18 +66,16 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
     "join the other node cluster when sending a Join command" in {
 
       runOn(second) {
-        node().join(firstAddress)
+        cluster.join(firstAddress)
       }
 
-      // runOn all
-      val secondAddress = testConductor.getAddressFor(second).await
       awaitCond {
-        node.latestGossip.members.exists { member ⇒
+        cluster.latestGossip.members.exists { member ⇒
           member.address == secondAddress && member.status == MemberStatus.Up
         }
       }
-      node().latestGossip.members.size must be(2)
-      awaitCond(node().convergence.isDefined)
+      cluster.latestGossip.members.size must be(2)
+      awaitCond(cluster.convergence.isDefined)
     }
   }
 

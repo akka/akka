@@ -33,31 +33,31 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
 
   override def initialParticipants = 3
 
-  def node() = Cluster(system)
+  def cluster: Cluster = Cluster(system)
 
   after {
     testConductor.enter("after")
   }
 
-  "A set of connected cluster systems" must {
+  val firstAddress = node(first).address
+  val secondAddress = node(second).address
+  val thirdAddress = node(third).address
 
-    val firstAddress = testConductor.getAddressFor(first).await
-    val secondAddress = testConductor.getAddressFor(second).await
-    val thirdAddress = testConductor.getAddressFor(third).await
+  "A set of connected cluster systems" must {
 
     "(when two systems) start gossiping to each other so that both systems gets the same gossip info" in {
 
       runOn(first, second) {
-        node().join(firstAddress)
-        awaitCond(node().latestGossip.members.size == 2)
-        val members = node().latestGossip.members.toIndexedSeq
+        cluster.join(firstAddress)
+        awaitCond(cluster.latestGossip.members.size == 2)
+        val members = cluster.latestGossip.members.toIndexedSeq
         members.size must be(2)
         members(0).address must be(firstAddress)
         members(1).address must be(secondAddress)
         awaitCond {
-          node().latestGossip.members.forall(_.status == MemberStatus.Up)
+          cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
         }
-        awaitCond(node().convergence.isDefined)
+        awaitCond(cluster.convergence.isDefined)
       }
 
     }
@@ -65,20 +65,20 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
     "(when three systems) start gossiping to each other so that both systems gets the same gossip info" in {
 
       runOn(third) {
-        node().join(firstAddress)
+        cluster.join(firstAddress)
       }
 
       // runOn all
-      awaitCond(node().latestGossip.members.size == 3)
-      val members = node().latestGossip.members.toIndexedSeq
+      awaitCond(cluster.latestGossip.members.size == 3)
+      val members = cluster.latestGossip.members.toIndexedSeq
       members.size must be(3)
       members(0).address must be(firstAddress)
       members(1).address must be(secondAddress)
       members(2).address must be(thirdAddress)
       awaitCond {
-        node().latestGossip.members.forall(_.status == MemberStatus.Up)
+        cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
       }
-      awaitCond(node().convergence.isDefined)
+      awaitCond(cluster.convergence.isDefined)
 
     }
   }
