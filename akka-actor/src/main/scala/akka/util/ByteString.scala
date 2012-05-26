@@ -73,7 +73,7 @@ object ByteString {
 
     override def length = bytes.length
 
-    override def iterator = ByteArrayIterator(bytes, 0, bytes.length)
+    override def iterator = ByteIterator.ByteArrayIterator(bytes, 0, bytes.length)
 
     def toByteString1: ByteString1 = ByteString1(bytes)
 
@@ -108,7 +108,7 @@ object ByteString {
 
     def apply(idx: Int): Byte = bytes(checkRangeConvert(idx))
 
-    override def iterator = ByteArrayIterator(bytes, startIndex, startIndex + length)
+    override def iterator = ByteIterator.ByteArrayIterator(bytes, startIndex, startIndex + length)
 
     private def checkRangeConvert(index: Int) = {
       if (0 <= index && length > index)
@@ -206,7 +206,7 @@ object ByteString {
         bytestrings(pos)(idx - seen)
       } else throw new IndexOutOfBoundsException(idx.toString)
 
-    override def iterator = MultiByteArrayIterator(bytestrings.map(_.iterator)(collection.breakOut))
+    override def iterator = ByteIterator.MultiByteArrayIterator(bytestrings.map(_.iterator)(collection.breakOut))
 
     def ++(that: ByteString): ByteString = {
       if (that.isEmpty) this
