@@ -6,7 +6,7 @@ package akka.util
 
 import java.nio.{ ByteBuffer, ByteOrder }
 
-import scala.collection.IndexedSeqOptimized
+import scala.collection.{ LinearSeq, IndexedSeqOptimized }
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
@@ -181,16 +181,16 @@ object ByteIterator {
 
     val empty: MultiByteArrayIterator = new MultiByteArrayIterator(Nil)
 
-    protected[akka] def apply(iterators: List[ByteArrayIterator]): MultiByteArrayIterator =
+    protected[akka] def apply(iterators: LinearSeq[ByteArrayIterator]): MultiByteArrayIterator =
       new MultiByteArrayIterator(iterators)
   }
 
-  class MultiByteArrayIterator private (private var iterators: List[ByteArrayIterator]) extends ByteIterator {
+  class MultiByteArrayIterator private (private var iterators: LinearSeq[ByteArrayIterator]) extends ByteIterator {
     // After normalization:
     // * iterators.isEmpty == false
     // * (!iterator.head.isEmpty || iterators.tail.isEmpty) == true
     private def normalize(): this.type = {
-      @tailrec def norm(xs: List[ByteArrayIterator]): List[ByteArrayIterator] = {
+      @tailrec def norm(xs: LinearSeq[ByteArrayIterator]): LinearSeq[ByteArrayIterator] = {
         if (xs.isEmpty) MultiByteArrayIterator.clearedList
         else if (xs.head.isEmpty) norm(xs.tail)
         else xs
@@ -251,7 +251,10 @@ object ByteIterator {
       case _ ⇒ super.++(that)
     }
 
-    final override def clone: MultiByteArrayIterator = new MultiByteArrayIterator(iterators map { _.clone })
+    final override def clone: MultiByteArrayIterator = {
+      val clonedIterators: List[ByteArrayIterator] = iterators.map(_.clone)(collection.breakOut)
+      new MultiByteArrayIterator(clonedIterators)
+    }
 
     final override def take(n: Int): this.type = {
       var rest = n
