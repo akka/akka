@@ -314,6 +314,11 @@ object ByteIterator {
       normalize()
     }
 
+    override def foreach[@specialized U](f: Byte ⇒ U): Unit = {
+      iterators foreach { _ foreach f }
+      clear()
+    }
+
     final override def toByteString: ByteString = {
       if (iterators.tail isEmpty) iterators.head.toByteString
       else {
@@ -474,12 +479,12 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   override def toSeq: ByteString = toByteString
 
-  @inline final override def foreach[@specialized U](f: Byte ⇒ U): Unit =
+  override def foreach[@specialized U](f: Byte ⇒ U): Unit =
     while (hasNext) f(next())
 
   final override def foldLeft[@specialized B](z: B)(op: (B, Byte) ⇒ B): B = {
     var acc = z
-    while (hasNext) acc = op(acc, next())
+    foreach { byte ⇒ acc = op(acc, byte) }
     acc
   }
 
