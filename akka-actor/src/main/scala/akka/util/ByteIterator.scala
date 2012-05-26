@@ -312,9 +312,12 @@ object ByteIterator {
     }
 
     final override def toByteString: ByteString = {
-      val result = iterators.foldLeft(ByteString.empty) { _ ++ _.toByteString }
-      clear()
-      result
+      if (iterators.tail isEmpty) iterators.head.toByteString
+      else {
+        val result = iterators.foldLeft(ByteString.empty) { _ ++ _.toByteString }
+        clear()
+        result
+      }
     }
 
     @tailrec protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: ⇒ A)(getMult: (Array[A], Int, Int) ⇒ Unit): this.type = if (n <= 0) this else {
