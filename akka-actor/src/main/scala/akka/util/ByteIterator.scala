@@ -444,9 +444,9 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   override def span(p: Byte ⇒ Boolean): (ByteIterator, ByteIterator) = {
     val that = clone
-    that.takeWhile(p)
-    drop(that.len)
-    (that, this)
+    this.takeWhile(p)
+    that.drop(this.len)
+    (this, that)
   }
 
   final override def indexWhere(p: Byte ⇒ Boolean): Int = {
