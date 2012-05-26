@@ -435,25 +435,14 @@ sealed abstract class CompactByteString extends ByteString with Serializable {
   def compact: this.type = this
 }
 
-object ByteStringBuilder {
-  def apply(initialSize: Int = 0): ByteStringBuilder = new ByteStringBuilder(initialSize)
-
-  /**
-   * An OutputStream that directly wraps a ByteStringBuilder.
-   */
-  class OutputStreamWrapper(val builder: ByteStringBuilder) extends java.io.OutputStream {
-    def write(b: Int): Unit = builder += b.toByte
-
-    override def write(b: Array[Byte], off: Int, len: Int): Unit = { builder.putBytes(b, off, len) }
-  }
-}
-
 /**
  * A mutable builder for efficiently creating a [[akka.util.ByteString]].
  *
  * The created ByteString is not automatically compacted.
  */
 final class ByteStringBuilder extends Builder[Byte, ByteString] {
+  builder ⇒
+
   import ByteString.{ ByteString1C, ByteString1, ByteStrings }
   private var _length: Int = 0
   private val _builder: VectorBuilder[ByteString1] = new VectorBuilder[ByteString1]()
@@ -476,11 +465,6 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
         buffer.order(byteOrder)
         fill(buffer)
     }
-  }
-
-  def this(initialSize: Int) = {
-    this()
-    if (initialSize > 0) sizeHint(initialSize)
   }
 
   def length: Int = _length
@@ -719,9 +703,15 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
         ByteStrings(bytestrings, _length)
     }
 
+  private val outputStreamWrapper: java.io.OutputStream = new java.io.OutputStream {
+    def write(b: Int): Unit = builder += b.toByte
+
+    override def write(b: Array[Byte], off: Int, len: Int): Unit = { builder.putBytes(b, off, len) }
+  }
+
   /**
    * Directly wraps this ByteStringBuilder in an OutputStream. Write
    * operations on the stream are forwarded to the builder.
    */
-  def asOutputStream: java.io.OutputStream = new ByteStringBuilder.OutputStreamWrapper(this)
+  def asOutputStream: java.io.OutputStream = outputStreamWrapper
 }
