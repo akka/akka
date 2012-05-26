@@ -311,12 +311,16 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   /**
    * Create a new ByteString with all contents compacted into a single,
    * full byte array.
+   * If isCompact returns true, compact is an O(1) operation, but
+   * might return a different object with an optimized implementation.
    */
   def compact: CompactByteString
 
   /**
-   * Check whether this ByteString is compact in memory
-   * (i.e. represented by a single, full byte array).
+   * Check whether this ByteString is compact in memory.
+   * If the ByteString is compact, it might, however, not be represented
+   * by an object that takes full adventage of that fact. Use compact to
+   * get such an object.
    */
   def isCompact: Boolean
 
