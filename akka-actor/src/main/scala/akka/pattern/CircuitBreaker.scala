@@ -15,20 +15,38 @@ import java.util.concurrent.{ Callable, CopyOnWriteArrayList }
 /**
  * Companion object containing reusable functionality
  */
-private object CircuitBreaker {
+object CircuitBreaker {
 
   /**
-   * Synchronous execution context to run in caller's thread - for consistency of interface between async and sync
+   * Synchronous execution context to run in caller's thread - used by companion object factor methods
    */
-  val syncExecutionContext = new ExecutionContext {
+  private val syncExecutionContext = new ExecutionContext {
     def execute(runnable: Runnable) { runnable.run() }
 
     def reportFailure(t: Throwable) {}
   }
 
+  /**
+   * Callbacks run in caller's thread when using withSyncCircuitBreaker, and in same ExecutionContext as the passed
+   * in Future when using withCircuitBreaker. To use another ExecutionContext for the callbacks you can specify the
+   * executor in the constructor.
+   *
+   * @param scheduler Reference to Akka scheduler
+   * @param maxFailures Maximum number of failures before opening the circuit
+   * @param callTimeout [[akka.util.Duration]] of time after which to consider a call a failure
+   * @param resetTimeout [[akka.util.Duration]] of time after which to attempt to close the circuit
+   */
   def apply(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration): CircuitBreaker =
     new CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)(syncExecutionContext)
 
+  /**
+   * Alias for apply
+   *
+   * @param scheduler Reference to Akka scheduler
+   * @param maxFailures Maximum number of failures before opening the circuit
+   * @param callTimeout [[akka.util.Duration]] of time after which to consider a call a failure
+   * @param resetTimeout [[akka.util.Duration]] of time after which to attempt to close the circuit
+   */
   def create(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration): CircuitBreaker =
     apply(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)
 }
