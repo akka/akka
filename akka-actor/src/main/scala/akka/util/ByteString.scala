@@ -102,7 +102,7 @@ object ByteString {
   /**
    * An unfragmented ByteString.
    */
-  final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int) extends ContByteString {
+  final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int) extends ByteString {
 
     private def this(bytes: Array[Byte]) = this(bytes, 0, bytes.length)
 
@@ -218,13 +218,6 @@ object ByteString {
       }
     }
 
-    def isContiguous = (bytestrings.length == 1)
-
-    def contiguous = {
-      if (isContiguous) bytestrings.head
-      else compact
-    }
-
     def isCompact = {
       if (bytestrings.length == 1) bytestrings.head.isCompact
       else false
@@ -308,18 +301,6 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * @return the number of bytes actually copied
    */
   def copyToBuffer(buffer: ByteBuffer): Int = iterator.copyToBuffer(buffer)
-
-  /**
-   * Create a new ByteString with all contents contiguous in memory
-   * (in a single section of a byte array).
-   */
-  def contiguous: ContByteString
-
-  /**
-   * Check whether this ByteString is contiguous in memory
-   * (i.e. represented by a single section of a byte array).
-   */
-  def isContiguous: Boolean
 
   /**
    * Create a new ByteString with all contents compacted into a single,
@@ -434,23 +415,12 @@ object CompactByteString {
 }
 
 /**
- * A contiguous (i.e. non-fragmented) ByteString.
+ * A compact ByteString.
  *
- * The ByteString is guarantieed to be contiguous in memory, making certain
- * operations more efficient than on chunked ByteString instances.
- */
-sealed abstract class ContByteString extends ByteString {
-  def isContiguous = true
-  def contiguous = this
-}
-
-/**
- * A compact and contiguous ByteString.
- *
- * The ByteString is guarantied to be contiguous in memory and to blocks only
+ * The ByteString is guarantied to be contiguous in memory and to use only
  * as much memory as required for its contents.
  */
-sealed abstract class CompactByteString extends ContByteString with Serializable {
+sealed abstract class CompactByteString extends ByteString with Serializable {
   def isCompact = true
   def compact = this
 }
