@@ -5,7 +5,7 @@ package akka.testkit
 
 import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ActorSystemImpl }
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.duration._
@@ -72,7 +72,7 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   final override def afterAll {
     system.shutdown()
-    try system.awaitTermination(5 seconds) catch {
+    try Await.ready(system.asInstanceOf[ActorSystemImpl].terminationFuture, 5 seconds) catch {
       case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }
     atTermination()

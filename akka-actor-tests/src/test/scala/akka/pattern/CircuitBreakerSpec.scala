@@ -1,3 +1,60 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
@@ -220,7 +277,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
     "reset failure count after success" in {
       breakers.multiFailureCb.withCircuitBreaker(Future(sayHi))
       val latch = TestLatch(4)
-      for (n ← 1 to 4) breakers.multiFailureCb.withCircuitBreaker(Future(throwException))
+      for (n ? 1 to 4) breakers.multiFailureCb.withCircuitBreaker(Future(throwException))
       awaitCond(breakers.multiFailureCb.currentFailureCount == 4, awaitTimeout)
       breakers.multiFailureCb.withCircuitBreaker(Future(sayHi))
       awaitCond(breakers.multiFailureCb.currentFailureCount == 0, awaitTimeout)

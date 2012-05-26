@@ -106,7 +106,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
    * @tparam T return type from call
    * @return [[akka.dispatch.Future]] containing the call result
    */
-  def withCircuitBreaker[T](body: ⇒ Future[T]): Future[T] = {
+  def withCircuitBreaker[T](body: ? Future[T]): Future[T] = {
     currentState.invoke(body)
   }
 
@@ -130,7 +130,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
    * @tparam T return type from call
    * @return The result of the call
    */
-  def withSyncCircuitBreaker[T](body: ⇒ T): T = {
+  def withSyncCircuitBreaker[T](body: ? T): T = {
     import CircuitBreaker.syncExecutionContext
 
     // execute the body in caller's thread
@@ -140,7 +140,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
         try
           Promise.successful(body)
         catch {
-          case NonFatal(t) ⇒ Promise.failed(t)
+          case NonFatal(t) ? Promise.failed(t)
         }
       }.asInstanceOf[Future[T]]),
       Duration.Zero)
@@ -167,8 +167,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
    * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
    * @return CircuitBreaker for fluent usage
    */
-  def onOpen[T](callback: ⇒ T): CircuitBreaker = {
-    Open.addListener(() ⇒ callback)
+  def onOpen[T](callback: ? T): CircuitBreaker = {
+    Open.addListener(() ? callback)
     this
   }
 
@@ -192,8 +192,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
    * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
    * @return CircuitBreaker for fluent usage
    */
-  def onHalfOpen[T](callback: ⇒ T): CircuitBreaker = {
-    HalfOpen.addListener(() ⇒ callback)
+  def onHalfOpen[T](callback: ? T): CircuitBreaker = {
+    HalfOpen.addListener(() ? callback)
     this
   }
 
@@ -217,8 +217,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
    * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
    * @return CircuitBreaker for fluent usage
    */
-  def onClose[T](callback: ⇒ T): CircuitBreaker = {
-    Closed.addListener(() ⇒ callback)
+  def onClose[T](callback: ? T): CircuitBreaker = {
+    Closed.addListener(() ? callback)
     this
   }
 
@@ -283,7 +283,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
    * Internal state abstraction
    */
   private sealed trait State {
-    private val listeners = new CopyOnWriteArrayList[() ⇒ _]
+    private val listeners = new CopyOnWriteArrayList[() ? _]
 
     /**
      * Add a listener function which is invoked on state entry
@@ -291,7 +291,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
      * @param listener listener implementation
      * @tparam T return type of listener, not used - but supplied for type inference purposes
      */
-    def addListener[T](listener: () ⇒ T) {
+    def addListener[T](listener: () ? T) {
       listeners add listener
     }
 
@@ -325,15 +325,15 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
      * @tparam T Return type of the call's implementation
      * @return Future containing the result of the call
      */
-    def callThrough[T](body: ⇒ Future[T]): Future[T] = {
+    def callThrough[T](body: ? Future[T]): Future[T] = {
       val deadline = callTimeout.fromNow
       val bodyFuture = try body catch {
-        case NonFatal(t) ⇒ Promise.failed(t)
+        case NonFatal(t) ? Promise.failed(t)
       }
       bodyFuture onFailure {
-        case _ ⇒ callFails()
+        case _ ? callFails()
       } onSuccess {
-        case _ ⇒
+        case _ ?
           if (deadline.isOverdue()) callFails()
           else callSucceeds()
       }
@@ -346,7 +346,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
      * @tparam T Return type of protected call
      * @return Future containing result of protected call
      */
-    def invoke[T](body: ⇒ Future[T]): Future[T]
+    def invoke[T](body: ? Future[T]): Future[T]
 
     /**
      * Invoked when call succeeds
@@ -389,7 +389,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
      * @tparam T Return type of protected call
      * @return Future containing result of protected call
      */
-    override def invoke[T](body: ⇒ Future[T]): Future[T] = {
+    override def invoke[T](body: ? Future[T]): Future[T] = {
       callThrough(body)
     }
 
@@ -442,7 +442,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
      * @tparam T Return type of protected call
      * @return Future containing result of protected call
      */
-    override def invoke[T](body: ⇒ Future[T]): Future[T] = {
+    override def invoke[T](body: ? Future[T]): Future[T] = {
       if (!compareAndSet(true, false))
         throw new CircuitBreakerOpenException(Duration.Zero)
       callThrough(body)
@@ -493,7 +493,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
      * @tparam T Return type of protected call
      * @return Future containing result of protected call
      */
-    override def invoke[T](body: ⇒ Future[T]): Future[T] = {
+    override def invoke[T](body: ? Future[T]): Future[T] = {
       Promise.failed[T](new CircuitBreakerOpenException(remainingTimeout().timeLeft))
     }
 
@@ -503,8 +503,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
      * @return [[akka.util.Deadline]] to when the breaker will attempt a reset by transitioning to half-open
      */
     private def remainingTimeout(): Deadline = get match {
-      case 0L ⇒ Deadline.now
-      case t  ⇒ (t.millis + resetTimeout).fromNow
+      case 0L ? Deadline.now
+      case t  ? (t.millis + resetTimeout).fromNow
     }
 
     /**

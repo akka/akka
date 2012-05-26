@@ -26,8 +26,7 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
   // TODO Is it reasonable for all FileBasedMailboxes to have their own logger?
   private val log = Logging(system, "FileBasedMessageQueue")
 
-  implicit val cbExecutionContext: ExecutionContext = _owner.dispatcher
-  val breaker = new CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
+  val breaker = CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
 
   private val queue = try {
     (new java.io.File(settings.QueuePath)) match {

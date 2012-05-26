@@ -32,17 +32,19 @@ class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileBasedMailboxSp
     }
   }
 
-  def clean() {
+  def isDurableMailbox(m: Mailbox): Boolean = m.messageQueue.isInstanceOf[FileBasedMessageQueue]
+
+  def clean {
     FileUtils.deleteDirectory(new java.io.File(settings.QueuePath))
   }
 
   override def atStartup() {
-    clean()
+    clean
     super.atStartup()
   }
 
   override def atTermination() {
-    clean()
+    clean
     super.atTermination()
   }
 }
