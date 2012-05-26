@@ -187,10 +187,10 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
       // Have to used toList instead of toSeq here, iterator.span (new in
       // Scala-2.9) seems to be broken in combination with toSeq for the
       // scala.collection default Iterator (see Scala issue SI-5838).
-      "calling span" in { check { (a: ByteString, b: Byte) ⇒ likeVecIt(a)({ _.span(_ == b) match { case (a, b) ⇒ (a.toList, b.toList) } }, strict = false) } }
+      "calling span" in { check { (a: ByteString, b: Byte) ⇒ likeVecIt(a)({ _.span(_ != b) match { case (a, b) ⇒ (a.toList, b.toList) } }, strict = false) } }
 
-      "calling takeWhile" in { check { (a: ByteString, b: Byte) ⇒ likeVecIt(a)({ _.takeWhile(_ == b).toSeq }, strict = false) } }
-      "calling dropWhile" in { check { (a: ByteString, b: Byte) ⇒ likeVecIt(a) { _.dropWhile(_ == b).toSeq } } }
+      "calling takeWhile" in { check { (a: ByteString, b: Byte) ⇒ likeVecIt(a)({ _.takeWhile(_ != b).toSeq }, strict = false) } }
+      "calling dropWhile" in { check { (a: ByteString, b: Byte) ⇒ likeVecIt(a) { _.dropWhile(_ != b).toSeq } } }
       "calling indexWhere" in { check { (a: ByteString, b: Byte) ⇒ likeVecIt(a) { _.indexWhere(_ == b) } } }
       "calling indexOf" in { check { (a: ByteString, b: Byte) ⇒ likeVecIt(a) { _.indexOf(b) } } }
       "calling toSeq" in { check { a: ByteString ⇒ likeVecIt(a) { _.toSeq } } }
