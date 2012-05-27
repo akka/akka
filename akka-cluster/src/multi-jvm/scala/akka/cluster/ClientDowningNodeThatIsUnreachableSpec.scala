@@ -40,9 +40,9 @@ class ClientDowningNodeThatIsUnreachableSpec
       runOn(first) {
         cluster.self
         awaitUpConvergence(nrOfMembers = 4)
-        testConductor.enter("all-up")
 
         val thirdAddress = node(third).address
+        testConductor.enter("all-up")
 
         // kill 'third' node
         testConductor.shutdown(third, 0)
@@ -66,11 +66,11 @@ class ClientDowningNodeThatIsUnreachableSpec
 
       runOn(second, fourth) {
         cluster.join(node(first).address)
-
         awaitUpConvergence(nrOfMembers = 4)
-        testConductor.enter("all-up")
 
         val thirdAddress = node(third).address
+        testConductor.enter("all-up")
+
         testConductor.enter("down-third-node")
 
         awaitUpConvergence(nrOfMembers = 3, canNotBePartOfRing = Seq(thirdAddress))

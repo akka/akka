@@ -40,9 +40,9 @@ class ClientDowningNodeThatIsUpSpec
       runOn(first) {
         cluster.self
         awaitUpConvergence(nrOfMembers = 4)
-        testConductor.enter("all-up")
 
         val thirdAddress = node(third).address
+        testConductor.enter("all-up")
 
         // mark 'third' node as DOWN
         testConductor.removeNode(third)
@@ -56,18 +56,17 @@ class ClientDowningNodeThatIsUpSpec
 
       runOn(third) {
         cluster.join(node(first).address)
-
         awaitUpConvergence(nrOfMembers = 4)
         testConductor.enter("all-up")
       }
 
       runOn(second, fourth) {
         cluster.join(node(first).address)
-
         awaitUpConvergence(nrOfMembers = 4)
-        testConductor.enter("all-up")
 
         val thirdAddress = node(third).address
+        testConductor.enter("all-up")
+
         testConductor.enter("down-third-node")
 
         awaitUpConvergence(nrOfMembers = 3, canNotBePartOfRing = Seq(thirdAddress))
