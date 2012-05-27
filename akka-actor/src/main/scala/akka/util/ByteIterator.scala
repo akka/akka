@@ -453,19 +453,9 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     if (found) index else -1
   }
 
-  final def indexOf(elem: Byte): Int = {
-    var index = 0
-    var found = false
-    while (!found && hasNext) if (elem == next()) { found = true } else { index += 1 }
-    if (found) index else -1
-  }
+  final def indexOf(elem: Byte): Int = indexWhere { _ == elem }
 
-  final override def indexOf[B >: Byte](elem: B): Int = {
-    var index = 0
-    var found = false
-    while (!found && hasNext) if (elem == next()) { found = true } else { index += 1 }
-    if (found) index else -1
-  }
+  final override def indexOf[B >: Byte](elem: B): Int = indexWhere { _ == elem }
 
   def toByteString: ByteString
 
