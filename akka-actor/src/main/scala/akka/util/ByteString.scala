@@ -195,7 +195,7 @@ object ByteString {
   /**
    * A ByteString with 2 or more fragments.
    */
-  final class ByteStrings private (val bytestrings: Vector[ByteString1], val length: Int) extends ByteString {
+  final class ByteStrings private (private[akka] val bytestrings: Vector[ByteString1], val length: Int) extends ByteString {
     if (bytestrings.isEmpty) throw new IllegalArgumentException("bytestrings must not be empty")
 
     def apply(idx: Int): Byte =
