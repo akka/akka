@@ -12,7 +12,7 @@ import akka.ConfigurationException
 import akka.actor.ActorSystem
 import akka.dispatch._
 import akka.util.{ Duration, NonFatal }
-import akka.pattern.{CircuitBreakerOpenException, CircuitBreaker}
+import akka.pattern.{ CircuitBreakerOpenException, CircuitBreaker }
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)
@@ -28,8 +28,6 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
 
   implicit val cbExecutionContext: ExecutionContext = _owner.dispatcher
   val breaker = new CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
-
-  val log = Logging(system, "FileBasedMessageQueue")
 
   val queuePath = settings.QueuePath
 
@@ -56,11 +54,11 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
   def dequeue(): Envelope = {
     breaker.withSyncCircuitBreaker(
       try {
-    queue.remove.map(item ⇒ { queue.confirmRemove(item.xid); deserialize(item.data) }).orNull
+        queue.remove.map(item ⇒ { queue.confirmRemove(item.xid); deserialize(item.data) }).orNull
       } catch {
         case e: java.util.NoSuchElementException ⇒ null
-        case e: CircuitBreakerOpenException =>
-          log.debug("Circuit breaker is currently failing-fast",e)
+        case e: CircuitBreakerOpenException ⇒
+          log.debug("Circuit breaker is currently failing-fast", e)
           throw e
         case e: Exception ⇒
           log.error(e, "Couldn't dequeue from file-based mailbox")
