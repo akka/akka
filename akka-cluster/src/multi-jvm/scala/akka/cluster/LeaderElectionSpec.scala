@@ -33,15 +33,14 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
 
   override def initialParticipants = 4
 
-  val firstAddress = node(first).address
-  val myAddress = node(mySelf).address
+  lazy val firstAddress = node(first).address
 
   // sorted in the order used by the cluster
-  val roles = Seq(first, second, third, forth).sorted
+  lazy val roles = Seq(first, second, third, forth).sorted
 
-  "A cluster of three nodes" must {
+  "A cluster of four nodes" must {
 
-    "be able to 'elect' a single leader" in {
+    "be able to 'elect' a single leader" taggedAs LongRunningTest in {
       // make sure that the first cluster is started before other join
       runOn(first) {
         cluster
@@ -91,11 +90,11 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
       testConductor.enter("after")
     }
 
-    "be able to 're-elect' a single leader after leader has left" in {
+    "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 0)
     }
 
-    "be able to 're-elect' a single leader after leader has left (again)" in {
+    "be able to 're-elect' a single leader after leader has left (again)" taggedAs LongRunningTest in {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 1)
     }
   }
