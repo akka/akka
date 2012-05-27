@@ -67,7 +67,7 @@ object ByteString {
   }
 
   /**
-   * A compact (unsliced) and unfragmented ByteString, implementaton of ByteString1C.
+   * A compact (unsliced) and unfragmented ByteString, implementation of ByteString1C.
    */
   @SerialVersionUID(3956956327691936932L)
   final class ByteString1C private (private val bytes: Array[Byte]) extends CompactByteString {
@@ -319,7 +319,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   /**
    * Check whether this ByteString is compact in memory.
    * If the ByteString is compact, it might, however, not be represented
-   * by an object that takes full adventage of that fact. Use compact to
+   * by an object that takes full advantage of that fact. Use compact to
    * get such an object.
    */
   def isCompact: Boolean
