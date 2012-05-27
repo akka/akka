@@ -51,8 +51,7 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
   }
 
   /**
-   * Wait until the expected number of members has status Up
-   * and convergence has been reached.
+   * Wait until the expected number of members has status Up and convergence has been reached.
    */
   def awaitUpConvergence(numberOfMembers: Int): Unit = {
     awaitCond(cluster.latestGossip.members.size == numberOfMembers)
@@ -60,4 +59,13 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
     awaitCond(cluster.convergence.isDefined, 10 seconds)
   }
 
+  /**
+   * Wait until the expected number of members has status Up and convergence has been reached.
+   * Also asserts that nodes in the 'canNotBePartOfRing' are *not* part of the cluster ring.
+   */
+  def awaitUpConvergence(nrOfMembers: Int, canNotBePartOfRing: Seq[Address] = Seq.empty[Address]): Unit = {
+    awaitCond(cluster.latestGossip.members.size == nrOfMembers)
+    awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
+    awaitCond(canNotBePartOfRing forall (address => !(cluster.latestGossip.members exists (_.address.port == address.port))))
+  }
 }

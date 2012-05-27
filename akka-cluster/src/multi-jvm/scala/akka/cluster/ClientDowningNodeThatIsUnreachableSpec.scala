@@ -8,7 +8,6 @@ import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.util.duration._
 import akka.actor.Address
 
 object ClientDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
@@ -17,14 +16,9 @@ object ClientDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
   val third  = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-    akka.cluster {
-      gossip-frequency             = 100 ms
-      leader-actions-frequency     = 100 ms
-      periodic-tasks-initial-delay = 300 ms
-      auto-down                    = off
-    }
-    """)))
+  commonConfig(debugConfig(on = false).
+    withFallback(ConfigFactory.parseString("akka.cluster.auto-down = off")).
+    withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class ClientDowningNodeThatIsUnreachableMultiJvmNode1 extends ClientDowningNodeThatIsUnreachableSpec
@@ -32,25 +26,20 @@ class ClientDowningNodeThatIsUnreachableMultiJvmNode2 extends ClientDowningNodeT
 class ClientDowningNodeThatIsUnreachableMultiJvmNode3 extends ClientDowningNodeThatIsUnreachableSpec
 class ClientDowningNodeThatIsUnreachableMultiJvmNode4 extends ClientDowningNodeThatIsUnreachableSpec
 
-class ClientDowningNodeThatIsUnreachableSpec extends MultiNodeSpec(ClientDowningNodeThatIsUnreachableMultiJvmSpec) with ImplicitSender with BeforeAndAfter {
+class ClientDowningNodeThatIsUnreachableSpec
+  extends MultiNodeSpec(ClientDowningNodeThatIsUnreachableMultiJvmSpec)
+  with MultiNodeClusterSpec
+  with ImplicitSender with BeforeAndAfter {
   import ClientDowningNodeThatIsUnreachableMultiJvmSpec._
 
   override def initialParticipants = 4
-
-  def node = Cluster(system)
-
-  def assertMemberRing(nrOfMembers: Int, canNotBePartOfRing: Seq[Address] = Seq.empty[Address]): Unit = {
-    awaitCond(node.latestGossip.members.size == nrOfMembers)
-    awaitCond(node.latestGossip.members.forall(_.status == MemberStatus.Up))
-    awaitCond(canNotBePartOfRing forall (address => !(node.latestGossip.members exists (_.address == address))))
-  }
 
   "Client of a 4 node cluster" must {
 
     "be able to DOWN a node that is UNREACHABLE (killed)" taggedAs LongRunningTest in {
       runOn(first) {
-        node.self
-        assertMemberRing(nrOfMembers = 4)
+        cluster.self
+        awaitUpConvergence(nrOfMembers = 4)
         testConductor.enter("all-up")
 
         val thirdAddress = node(third).address
@@ -60,44 +49,31 @@ class ClientDowningNodeThatIsUnreachableSpec extends MultiNodeSpec(ClientDowning
         testConductor.removeNode(third)
 
         // mark 'third' node as DOWN
-        node.down(thirdAddress)
+        cluster.down(thirdAddress)
         testConductor.enter("down-third-node")
 
-        assertMemberRing(nrOfMembers = 3, canNotBePartOfRing = Seq(thirdAddress))
-        node.latestGossip.members.exists(_.address == thirdAddress) must be(false)
-        testConductor.enter("await-completion")
-      }
-
-      runOn(second) {
-        node.join(node(first).address)
-
-        assertMemberRing(nrOfMembers = 4)
-        testConductor.enter("all-up")
-
-        val thirdAddress = node(third).address
-        testConductor.enter("down-third-node")
-
-        assertMemberRing(nrOfMembers = 3, canNotBePartOfRing = Seq(thirdAddress))
+        awaitUpConvergence(nrOfMembers = 3, canNotBePartOfRing = Seq(thirdAddress))
+        cluster.latestGossip.members.exists(_.address == thirdAddress) must be(false)
         testConductor.enter("await-completion")
       }
 
       runOn(third) {
-        node.join(node(first).address)
+        cluster.join(node(first).address)
 
-        assertMemberRing(nrOfMembers = 4)
+        awaitUpConvergence(nrOfMembers = 4)
         testConductor.enter("all-up")
       }
 
-      runOn(fourth) {
-        node.join(node(first).address)
+      runOn(second, fourth) {
+        cluster.join(node(first).address)
 
-        assertMemberRing(nrOfMembers = 4)
+        awaitUpConvergence(nrOfMembers = 4)
         testConductor.enter("all-up")
 
         val thirdAddress = node(third).address
         testConductor.enter("down-third-node")
 
-        assertMemberRing(nrOfMembers = 3, canNotBePartOfRing = Seq(thirdAddress))
+        awaitUpConvergence(nrOfMembers = 3, canNotBePartOfRing = Seq(thirdAddress))
         testConductor.enter("await-completion")
       }
     }
