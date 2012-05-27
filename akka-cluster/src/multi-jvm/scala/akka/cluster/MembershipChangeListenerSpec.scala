@@ -33,12 +33,18 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
     testConductor.enter("after")
   }
 
+  lazy val firstAddress = node(first).address
+  lazy val secondAddress = node(second).address
+
   "A set of connected cluster systems" must {
 
-    val firstAddress = node(first).address
-    val secondAddress = node(second).address
-
     "(when two systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
+
+      // make sure that the node-to-join is started before other join
+      runOn(first) {
+        cluster
+      }
+      testConductor.enter("first-started")
 
       runOn(first, second) {
         cluster.join(firstAddress)

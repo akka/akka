@@ -38,13 +38,18 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
     testConductor.enter("after")
   }
 
-  val a1Address = node(a1).address
-  val b1Address = node(b1).address
-  val c1Address = node(c1).address
+  lazy val a1Address = node(a1).address
+  lazy val b1Address = node(b1).address
+  lazy val c1Address = node(c1).address
 
   "Three different clusters (A, B and C)" must {
 
     "be able to 'elect' a single leader after joining (A -> B)" taggedAs LongRunningTest in {
+      // make sure that the node-to-join is started before other join
+      runOn(a1, b1, c1) {
+        cluster
+      }
+      testConductor.enter("first-started")
 
       runOn(a1, a2) {
         cluster.join(a1Address)

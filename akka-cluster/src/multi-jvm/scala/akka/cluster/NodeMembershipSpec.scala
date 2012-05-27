@@ -31,13 +31,19 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
     testConductor.enter("after")
   }
 
-  val firstAddress = node(first).address
-  val secondAddress = node(second).address
-  val thirdAddress = node(third).address
+  lazy val firstAddress = node(first).address
+  lazy val secondAddress = node(second).address
+  lazy val thirdAddress = node(third).address
 
   "A set of connected cluster systems" must {
 
     "(when two systems) start gossiping to each other so that both systems gets the same gossip info" taggedAs LongRunningTest in {
+
+      // make sure that the node-to-join is started before other join
+      runOn(first) {
+        cluster
+      }
+      testConductor.enter("first-started")
 
       runOn(first, second) {
         cluster.join(firstAddress)

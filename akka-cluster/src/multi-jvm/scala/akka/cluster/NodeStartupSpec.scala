@@ -29,8 +29,8 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
     testConductor.enter("after")
   }
 
-  val firstAddress = node(first).address
-  val secondAddress = node(second).address
+  lazy val firstAddress = node(first).address
+  lazy val secondAddress = node(second).address
 
   "A first cluster node with a 'node-to-join' config set to empty string (singleton cluster)" must {
 
