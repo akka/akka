@@ -58,11 +58,11 @@ object ByteIterator {
     final override def length: Int = { val l = len; clear(); l }
 
     final override def ++(that: TraversableOnce[Byte]): ByteIterator = that match {
-      case that: ByteIterator ⇒ {
+      case that: ByteIterator ⇒
         if (that.isEmpty) this
         else if (this.isEmpty) that
         else that match {
-          case that: ByteArrayIterator ⇒ {
+          case that: ByteArrayIterator ⇒
             if ((this.array eq that.array) && (this.until == that.from)) {
               this.until = that.until
               that.clear()
@@ -72,10 +72,8 @@ object ByteIterator {
               this.clear()
               result
             }
-          }
           case that: MultiByteArrayIterator ⇒ this +: that
         }
-      }
       case _ ⇒ super.++(that)
     }
 
@@ -230,24 +228,21 @@ object ByteIterator {
     }
 
     final override def ++(that: TraversableOnce[Byte]): ByteIterator = that match {
-      case that: ByteIterator ⇒ {
+      case that: ByteIterator ⇒
         if (that.isEmpty) this
         else if (this.isEmpty) that
         else {
           that match {
-            case that: ByteArrayIterator ⇒ {
+            case that: ByteArrayIterator ⇒
               iterators = this.iterators :+ that
               that.clear()
               this
-            }
-            case that: MultiByteArrayIterator ⇒ {
+            case that: MultiByteArrayIterator ⇒
               iterators = this.iterators ++ that.iterators
               that.clear()
               this
-            }
           }
         }
-      }
       case _ ⇒ super.++(that)
     }
 
@@ -410,10 +405,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   protected def clear(): Unit
 
-  def ++(that: TraversableOnce[Byte]): ByteIterator = {
-    if (that.isEmpty) this
-    else ByteIterator.ByteArrayIterator(that.toArray)
-  }
+  def ++(that: TraversableOnce[Byte]): ByteIterator = if (that.isEmpty) this else ByteIterator.ByteArrayIterator(that.toArray)
 
   // *must* be overridden by derived classes. This construction is necessary
   // to specialize the return type, as the method is already implemented in

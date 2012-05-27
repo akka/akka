@@ -142,11 +142,10 @@ object ByteString {
       else if (this.isEmpty) that
       else that match {
         case b: ByteString1C ⇒ ByteStrings(this, b.toByteString1)
-        case b: ByteString1 ⇒ {
+        case b: ByteString1 ⇒
           if ((bytes eq b.bytes) && (startIndex + length == b.startIndex))
             new ByteString1(bytes, startIndex, length + b.length)
           else ByteStrings(this, b)
-        }
         case bs: ByteStrings ⇒ ByteStrings(this, bs)
       }
     }
@@ -223,10 +222,7 @@ object ByteString {
       }
     }
 
-    def isCompact: Boolean = {
-      if (bytestrings.length == 1) bytestrings.head.isCompact
-      else false
-    }
+    def isCompact: Boolean = if (bytestrings.length == 1) bytestrings.head.isCompact else false
 
     def compact: CompactByteString = {
       if (isCompact) bytestrings.head.compact
@@ -555,7 +551,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
    */
   def putInt(x: Int)(implicit byteOrder: ByteOrder): this.type = {
     fillArray(4) {
-      case (target, offset) ⇒ {
+      case (target, offset) ⇒
         if (byteOrder == ByteOrder.BIG_ENDIAN) {
           target(offset + 0) = (x >>> 24).toByte
           target(offset + 1) = (x >>> 16).toByte
@@ -567,7 +563,6 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
           target(offset + 2) = (x >>> 16).toByte
           target(offset + 3) = (x >>> 24).toByte
         } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
-      }
     }
     this
   }
@@ -577,7 +572,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
    */
   def putLong(x: Long)(implicit byteOrder: ByteOrder): this.type = {
     fillArray(8) {
-      case (target, offset) ⇒ {
+      case (target, offset) ⇒
         if (byteOrder == ByteOrder.BIG_ENDIAN) {
           target(offset + 0) = (x >>> 56).toByte
           target(offset + 1) = (x >>> 48).toByte
@@ -597,7 +592,6 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
           target(offset + 6) = (x >>> 48).toByte
           target(offset + 7) = (x >>> 56).toByte
         } else throw new IllegalArgumentException("Unknown byte order " + byteOrder)
-      }
     }
     this
   }
