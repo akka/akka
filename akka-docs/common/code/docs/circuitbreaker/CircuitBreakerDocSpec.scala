@@ -9,6 +9,7 @@ import akka.util.duration._  // small d is important here
 import akka.pattern.CircuitBreaker
 import akka.actor.Actor
 import akka.dispatch.Future
+import akka.event.Logging
 
 //#imports1
 

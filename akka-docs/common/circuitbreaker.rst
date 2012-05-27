@@ -4,23 +4,52 @@
 Circuit Breaker
 ###############
 
+==================
+Why are they used?
+==================
 A circuit breaker is used to provide stability and prevent cascading failures in distributed
 systems.  These should be used in conjunction with judicious timeouts at the interfaces between
 remote systems to prevent the failure of a single component from bringing down all components.
 
+As an example, we have a web application interacting with a remote third party web service.  
+Let's say the third party has oversold their capacity and their database melts down under load.  
+Assume that the database fails in such a way that it takes a very long time to hand back an
+error to the third party web service.  This in turn makes calls fail after a long period of 
+time.  Back to our web application, the users have noticed that their form submissions take
+much longer seeming to hang.  Well the users do what they know to do which is use the refresh
+button, adding more requests to their already running requests.  This eventually causes the 
+failure of the web application due to resource exhaustion.  This will affect all users, even
+those who are not using functionality dependent on this third party web service.
+
+Introducing circuit breakers on the web service call would cause the requests to begin to 
+fail-fast, letting the user know that something is wrong and that they need not refresh 
+their request.  This also confines the failure behavior to only those users that are using
+functionality dependent on the third party, other users are no longer affected as there is no
+resource exhaustion.  Circuit breakers can also allow savvy developers to mark portions of
+the site that use the functionality unavailable, or perhaps show some cached content as 
+appropriate while the breaker is open.
+
 The Akka library provides an implementation of a circuit breaker called 
 :class:`akka.pattern.CircuitBreaker` which has the behavior described below.
 
-During normal operation, a circuit breaker is in the `Closed` state.  Exceptions or calls
-exceeding the configured `callTimeout` increment a failure counter.  When that failure counter 
-reaches a `maxFailures` count, the breaker is tripped into `Open` state.  While in `Open` state 
-all calls fail-fast with a :class:`CircuitBreakerOpenException`.  After the configured 
-`resetTimeout`, the circuit breaker enters a `Half-Open` state.  In this state, the first call
-attempted is allowed through without failing fast.  All other calls fail-fast with an exception
-just as in `Open` state.  If the first call succeeds, the breaker is reset back to `Closed` 
-state.  Otherwise, the breaker is tripped again into the `Open` state for another full 
-`resetTimeout`.  Callbacks are provided for every state entry (`onOpen`, `onClose`, 
-`onHalfOpen`).  These are executed in the :class:`ExecutionContext` provided. 
+=================
+What do they do?
+=================
+* During normal operation, a circuit breaker is in the `Closed` state:
+	* Exceptions or calls exceeding the configured `callTimeout` increment a failure counter
+	* Successes reset the failure count to zero 
+	* When the failure counter reaches a `maxFailures` count, the breaker is tripped into `Open` state
+* While in `Open` state:
+	* All calls fail-fast with a :class:`CircuitBreakerOpenException`
+	* After the configured `resetTimeout`, the circuit breaker enters a `Half-Open` state
+* In `Half-Open` state:
+	* The first call attempted is allowed through without failing fast
+	* All other calls fail-fast with an exception just as in `Open` state
+	* If the first call succeeds, the breaker is reset back to `Closed` state
+	* If the first call fails, the breaker is tripped again into the `Open` state for another full `resetTimeout`
+* State transition listeners: 
+	* Callbacks can be provided for every state entry via `onOpen`, `onClose`, and `onHalfOpen`
+	* These are executed in the :class:`ExecutionContext` provided. 
 
 .. graphviz::
 
@@ -45,63 +74,53 @@ state.  Otherwise, the breaker is tripped again into the `Open` state for anothe
 		Open -> "Half-Open" [ label = "Attempt Reset" ];
 	}
 
-Here's how a :class:`CircuitBreaker` would be configured for 5 maximum failures, a call timeout of 10 seconds and a reset timeout of 1 minute, first in Scala:
+========
+Examples
+========
+
+--------------
+Initialization
+--------------
+
+Here's how a :class:`CircuitBreaker` would be configured for:
+  * 5 maximum failures
+  * a call timeout of 10 seconds 
+  * a reset timeout of 1 minute
+
+^^^^^^^
+Scala
+^^^^^^^
 
 .. includecode:: code/docs/circuitbreaker/CircuitBreakerDocSpec.scala
    :include: imports1,circuit-breaker-initialization
 
-Then in Java:
+^^^^^^^
+Java
+^^^^^^^
 
-.. code-block:: java
+.. includecode:: code/docs/circuitbreaker/CircuitBreakerDocSample.java
+   :include: imports1,circuit-breaker-initialization
 
-  import akka.util.Duration;
-  import akka.pattern.CircuitBreaker;
-
-  ActorSystem system;
-  ExecutionContext execCtx;
-
-  // After initialization of system and execCtx
-  CircuitBreaker breaker = new CircuitBreaker(execCtx, system.getScheduler(), 5, 
-  	Duration.parse("10s"), Duration.parse("1m"))
-
+---------------
+Call Protection
+---------------
 
 Here's how the :class:`CircuitBreaker` would be used to protect an asynchronous
-call as well as a synchronous one, first in Scala:
+call as well as a synchronous one:
+
+^^^^^^^
+Scala
+^^^^^^^
 
 .. includecode:: code/docs/circuitbreaker/CircuitBreakerDocSpec.scala
    :include: circuit-breaker-usage
 
-Then in Java:
+^^^^^^
+Java
+^^^^^^
 
-.. code-block:: java
-
-	import akka.dispatch.Future;
-	import akka.pattern.CircuitBreaker;
-
-	CircuitBreaker breaker; // needs initialization
-	ExecutionContext execCtx; // needs initialization
-
-	private <T> T dangerousCall() {
-		// Implementation of dangerous call
-	}
-
-  breaker.callWithCircuitBreaker(new Callable<Future<T>>() {
-  	public Future<T> call() throws Exception
-  	{
-  		return Futures.future(new Callable<T>() {
-  			public T call() throws Exception {
-  				return dangerousCall();
-  			}
-  		}, execCtx );
-  	}
-  });
-
-  breaker.callWithSyncCircuitBreaker(new Callable<T>() {
-			public T call() throws Exception {
-				return dangerousCall();
-			}
- 		}
-  });
+.. includecode:: code/docs/circuitbreaker/CircuitBreakerDocSample.java
+   :include: circuit-breaker-usage
 
 .. note::
 
