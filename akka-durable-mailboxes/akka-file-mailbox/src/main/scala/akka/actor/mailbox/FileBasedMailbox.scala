@@ -58,10 +58,10 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
       } catch {
         case e: java.util.NoSuchElementException ⇒ null
         case e: CircuitBreakerOpenException ⇒
-          log.debug("Circuit breaker is currently failing-fast", e)
+          log.debug(e.getMessage())
           throw e
         case e: Exception ⇒
-          log.error(e, "Couldn't dequeue from file-based mailbox")
+          log.error(e, "Couldn't dequeue from file-based mailbox, due to [{}]", e.getMessage())
           throw e
       })
   }
