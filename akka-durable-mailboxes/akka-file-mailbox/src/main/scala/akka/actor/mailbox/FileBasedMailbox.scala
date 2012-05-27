@@ -5,14 +5,14 @@
 package akka.actor.mailbox
 
 import akka.actor.ActorContext
-import akka.dispatch.{ Envelope, MessageQueue }
 import akka.event.Logging
 import akka.actor.ActorRef
-import akka.dispatch.MailboxType
 import com.typesafe.config.Config
-import akka.util.NonFatal
 import akka.ConfigurationException
 import akka.actor.ActorSystem
+import akka.dispatch._
+import akka.util.{ Duration, NonFatal }
+import akka.pattern.{CircuitBreakerOpenException, CircuitBreaker}
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)
@@ -25,6 +25,13 @@ class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config)
 class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
   // TODO Is it reasonable for all FileBasedMailboxes to have their own logger?
   private val log = Logging(system, "FileBasedMessageQueue")
+
+  implicit val cbExecutionContext: ExecutionContext = _owner.dispatcher
+  val breaker = new CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
+
+  val log = Logging(system, "FileBasedMessageQueue")
+
+  val queuePath = settings.QueuePath
 
   private val queue = try {
     (new java.io.File(settings.QueuePath)) match {
@@ -42,18 +49,28 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
       throw e
   }
 
-  def enqueue(receiver: ActorRef, envelope: Envelope): Unit = queue.add(serialize(envelope))
-
-  def dequeue(): Envelope = try {
-    queue.remove.map(item ⇒ { queue.confirmRemove(item.xid); deserialize(item.data) }).orNull
-  } catch {
-    case _: java.util.NoSuchElementException ⇒ null
-    case NonFatal(e) ⇒
-      log.error(e, "Couldn't dequeue from file-based mailbox")
-      throw e
+  def enqueue(receiver: ActorRef, envelope: Envelope) {
+    breaker.withSyncCircuitBreaker(queue.add(serialize(envelope)))
   }
 
-  def numberOfMessages: Int = queue.length.toInt
+  def dequeue(): Envelope = {
+    breaker.withSyncCircuitBreaker(
+      try {
+    queue.remove.map(item ⇒ { queue.confirmRemove(item.xid); deserialize(item.data) }).orNull
+      } catch {
+        case e: java.util.NoSuchElementException ⇒ null
+        case e: CircuitBreakerOpenException =>
+          log.debug("Circuit breaker is currently failing-fast",e)
+          throw e
+        case e: Exception ⇒
+          log.error(e, "Couldn't dequeue from file-based mailbox")
+          throw e
+      })
+  }
+
+  def numberOfMessages: Int = {
+    breaker.withSyncCircuitBreaker(queue.length.toInt)
+  }
 
   def hasMessages: Boolean = numberOfMessages > 0
 
