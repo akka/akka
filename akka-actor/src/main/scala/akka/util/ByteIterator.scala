@@ -142,24 +142,26 @@ object ByteIterator {
     def getBytes(xs: Array[Byte], offset: Int, n: Int): this.type = {
       if (n <= this.len) {
         Array.copy(this.array, this.from, xs, offset, n)
-        this
+        this.drop(n)
       } else Iterator.empty.next
     }
 
+    private def wrappedByteBuffer: ByteBuffer = ByteBuffer.wrap(array, from, len).asReadOnlyBuffer
+
     def getShorts(xs: Array[Short], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type =
-      { toByteString.asByteBuffer.order(byteOrder).asShortBuffer.get(xs, offset, n); drop(2 * n) }
+      { wrappedByteBuffer.order(byteOrder).asShortBuffer.get(xs, offset, n); drop(2 * n) }
 
     def getInts(xs: Array[Int], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type =
-      { toByteString.asByteBuffer.order(byteOrder).asIntBuffer.get(xs, offset, n); drop(4 * n) }
+      { wrappedByteBuffer.order(byteOrder).asIntBuffer.get(xs, offset, n); drop(4 * n) }
 
     def getLongs(xs: Array[Long], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type =
-      { toByteString.asByteBuffer.order(byteOrder).asLongBuffer.get(xs, offset, n); drop(8 * n) }
+      { wrappedByteBuffer.order(byteOrder).asLongBuffer.get(xs, offset, n); drop(8 * n) }
 
     def getFloats(xs: Array[Float], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type =
-      { toByteString.asByteBuffer.order(byteOrder).asFloatBuffer.get(xs, offset, n); drop(4 * n) }
+      { wrappedByteBuffer.order(byteOrder).asFloatBuffer.get(xs, offset, n); drop(4 * n) }
 
     def getDoubles(xs: Array[Double], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type =
-      { toByteString.asByteBuffer.order(byteOrder).asDoubleBuffer.get(xs, offset, n); drop(8 * n) }
+      { wrappedByteBuffer.order(byteOrder).asDoubleBuffer.get(xs, offset, n); drop(8 * n) }
 
     def copyToBuffer(buffer: ByteBuffer): Int = {
       val copyLength = math.min(buffer.remaining, len)
@@ -315,7 +317,7 @@ object ByteIterator {
     @tailrec protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: ⇒ A)(getMult: (Array[A], Int, Int) ⇒ Unit): this.type = if (n <= 0) this else {
       if (isEmpty) Iterator.empty.next
       val nDone = if (current.len >= elemSize) {
-        val nCurrent = math.min(elemSize, current.len / elemSize)
+        val nCurrent = math.min(n, current.len / elemSize)
         getMult(xs, offset, nCurrent)
         nCurrent
       } else {
@@ -327,7 +329,7 @@ object ByteIterator {
     }
 
     def getBytes(xs: Array[Byte], offset: Int, n: Int): this.type =
-      getToArray(xs, offset, n, 1) { getByte } { getBytes(_, _, _) }
+      getToArray(xs, offset, n, 1) { getByte } { current.getBytes(_, _, _) }
 
     def getShorts(xs: Array[Short], offset: Int, n: Int)(implicit byteOrder: ByteOrder): this.type =
       getToArray(xs, offset, n, 2) { getShort(byteOrder) } { current.getShorts(_, _, _)(byteOrder) }
