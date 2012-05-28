@@ -87,7 +87,7 @@ object AkkaBuild extends Build {
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
       test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
@@ -103,7 +103,7 @@ object AkkaBuild extends Build {
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
       test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
@@ -120,7 +120,7 @@ object AkkaBuild extends Build {
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
       test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
@@ -300,12 +300,37 @@ object AkkaBuild extends Build {
 
   val defaultExcludedTags = Seq("timing", "long-running")
 
-  val defaultMultiJvmOptions: Seq[String] = {
+  lazy val defaultMultiJvmOptions: Seq[String] = {
     (System.getProperty("akka.test.timefactor") match {
       case null => Nil
       case x => List("-Dakka.test.timefactor=" + x)
     }) :::
     (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
+  }
+
+  // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
+  lazy val defaultExcludeTestNames: Seq[String] = {
+    val exclude = System.getProperty("akka.test.names.exclude", "")
+    if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
+  }
+
+  // for excluding tests by tag (or use system property: -Dakka.test.tags.exclude=timing)
+  lazy val defaultExcludeTestTags: Seq[String] = {
+    val exclude = System.getProperty("akka.test.tags.exclude", "")
+    if (exclude.isEmpty) defaultExcludedTags else exclude.split(",").toSeq
+  }
+
+  // for including tests by tag (or use system property: -Dakka.test.tags.include=timing)
+  lazy val defaultIncludeTestTags: Seq[String] = {
+    val include = System.getProperty("akka.test.tags.include", "")
+    if (include.isEmpty) Seq.empty else include.split(",").toSeq
+  }
+
+  lazy val defaultMultiJvmScalatestOptions: Seq[String] = {
+    val excludeTags = (defaultExcludeTestTags.toSet -- defaultIncludeTestTags.toSet).toSeq
+    Seq("-r", "org.scalatest.akka.QuietReporter") ++
+    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", excludeTags.mkString(" "))) ++
+    (if (defaultIncludeTestTags.isEmpty) Seq.empty else Seq("-n", defaultIncludeTestTags.mkString(" ")))
   }
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
@@ -320,23 +345,9 @@ object AkkaBuild extends Build {
 
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
 
-    // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
-    excludeTestNames := {
-      val exclude = System.getProperty("akka.test.names.exclude", "")
-      if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
-    },
-
-    // for excluding tests by tag (or use system property: -Dakka.test.tags.exclude=timing)
-    excludeTestTags := {
-      val exclude = System.getProperty("akka.test.tags.exclude", "")
-      if (exclude.isEmpty) defaultExcludedTags else exclude.split(",").toSeq
-    },
-
-    // for including tests by tag (or use system property: -Dakka.test.tags.include=timing)
-    includeTestTags := {
-      val include = System.getProperty("akka.test.tags.include", "")
-      if (include.isEmpty) Seq.empty else include.split(",").toSeq
-    },
+    excludeTestNames := defaultExcludeTestNames,
+    excludeTestTags := defaultExcludeTestTags,
+    includeTestTags := defaultIncludeTestTags,
 
     // add filters for tests excluded by name
     testOptions in Test <++= excludeTestNames map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) },

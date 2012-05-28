@@ -8,14 +8,17 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.Address
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeSpec
+import akka.testkit._
 import akka.util.duration._
+import akka.util.Duration
 
 object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.cluster {
-      gossip-frequency = 200 ms
-      leader-actions-frequency = 200 ms
-      periodic-tasks-initial-delay = 300 ms
+      gossip-frequency                   = 200 ms
+      leader-actions-frequency           = 200 ms
+      unreachable-nodes-reaper-frequency = 200 ms
+      periodic-tasks-initial-delay       = 300 ms
     }
     akka.test {
       single-expect-default = 5 s
@@ -45,19 +48,41 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
    */
   def assertLeader(nodesInCluster: RoleName*): Unit = if (nodesInCluster.contains(mySelf)) {
     nodesInCluster.length must not be (0)
-    import Member.addressOrdering
-    val expectedLeader = nodesInCluster.map(role ⇒ (role, node(role).address)).sortBy(_._2).head._1
+    val expectedLeader = roleOfLeader(nodesInCluster)
     cluster.isLeader must be(ifNode(expectedLeader)(true)(false))
   }
 
   /**
-   * Wait until the expected number of members has status Up
-   * and convergence has been reached.
+   * Wait until the expected number of members has status Up and convergence has been reached.
+   * Also asserts that nodes in the 'canNotBePartOfMemberRing' are *not* part of the cluster ring.
    */
-  def awaitUpConvergence(numberOfMembers: Int): Unit = {
-    awaitCond(cluster.latestGossip.members.size == numberOfMembers)
-    awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
-    awaitCond(cluster.convergence.isDefined, 10 seconds)
+  def awaitUpConvergence(
+    numberOfMembers: Int,
+    canNotBePartOfMemberRing: Seq[Address] = Seq.empty[Address],
+    timeout: Duration = 10.seconds.dilated): Unit = {
+    awaitCond(cluster.latestGossip.members.size == numberOfMembers, timeout)
+    awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up), timeout)
+    awaitCond(cluster.convergence.isDefined, timeout)
+    if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
+      awaitCond(
+        canNotBePartOfMemberRing forall (address ⇒ !(cluster.latestGossip.members exists (_.address == address))),
+        timeout)
   }
 
+  def roleOfLeader(nodesInCluster: Seq[RoleName]): RoleName = {
+    nodesInCluster.length must not be (0)
+    nodesInCluster.sorted.head
+  }
+
+  /**
+   * Sort the roles in the order used by the cluster.
+   */
+  implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
+    import Member.addressOrdering
+    def compare(x: RoleName, y: RoleName) = addressOrdering.compare(node(x).address, node(y).address)
+  }
+
+  def roleName(address: Address): Option[RoleName] = {
+    testConductor.getNodes.await.find(node(_).address == address)
+  }
 }

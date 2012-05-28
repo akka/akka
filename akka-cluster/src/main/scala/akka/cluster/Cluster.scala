@@ -806,6 +806,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
    * @return 'true' if it gossiped to a "deputy" member.
    */
   private def gossipToRandomNodeOf(addresses: Iterable[Address]): Boolean = {
+    log.debug("Cluster Node [{}] - Selecting random node to gossip to [{}]", remoteAddress, addresses.mkString(", "))
     if (addresses.isEmpty) false
     else {
       val peers = addresses filter (_ != remoteAddress) // filter out myself
