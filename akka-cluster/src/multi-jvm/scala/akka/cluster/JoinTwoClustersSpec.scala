@@ -47,7 +47,7 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
     "be able to 'elect' a single leader after joining (A -> B)" taggedAs LongRunningTest in {
       // make sure that the node-to-join is started before other join
       runOn(a1, b1, c1) {
-        cluster
+        cluster.self
       }
       testConductor.enter("first-started")
 

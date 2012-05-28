@@ -15,6 +15,7 @@ import akka.util.Duration
 object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.cluster {
+      auto-down                          = off
       gossip-frequency                   = 200 ms
       leader-actions-frequency           = 200 ms
       unreachable-nodes-reaper-frequency = 200 ms

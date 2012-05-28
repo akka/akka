@@ -16,11 +16,7 @@ object LeaderElectionMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
-        akka.cluster.auto-down = off
-        """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -45,7 +41,7 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
     "be able to 'elect' a single leader" taggedAs LongRunningTest in {
       // make sure that the node-to-join is started before other join
       runOn(first) {
-        cluster
+        cluster.self
       }
       testConductor.enter("first-started")
 
