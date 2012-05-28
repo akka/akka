@@ -5,6 +5,8 @@ addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.2.0-M1")
 
 addSbtPlugin("com.typesafe.sbtscalariform" % "sbtscalariform" % "0.4.0")
 
+addSbtPlugin("com.typesafe.sbtosgi" % "sbtosgi" % "0.2.0")
+
 resolvers ++= Seq(
   // needed for sbt-assembly, which comes with sbt-multi-jvm
   Resolver.url("sbtonline", url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases"))(Resolver.ivyStylePatterns),
