@@ -380,9 +380,7 @@ The dispatcher for created children of the router will be taken from
 makes sense to configure the :class:`BalancingDispatcher` if the precise
 routing is not so important (i.e. no consistent hashing or round-robin is
 required); this enables newly created routees to pick up work immediately by
-stealing it from their siblings. Note that you can **not** use a ``BalancingDispatcher``
-together with any kind of ``Router``, trying to do so will make your actor fail verification.
-
+stealing it from their siblings.
 
 .. note::
 
@@ -390,8 +388,8 @@ together with any kind of ``Router``, trying to do so will make your actor fail 
    that was configured for them in their ``Props``, it is not possible to change an actors dispatcher
    after it has been created.
 
-The “head” router, of course, cannot run on the same balancing dispatcher,
-because it does not process the same messages, hence this special actor does
+The “head” router cannot always run on the same dispatcher, because it
+does not process the same type of messages, hence this special actor does
 not use the dispatcher configured in :class:`Props`, but takes the
 ``routerDispatcher`` from the :class:`RouterConfig` instead, which defaults to
 the actor system’s default dispatcher. All standard routers allow setting this
@@ -400,3 +398,31 @@ implement the method in a suitable way.
 
 .. includecode:: code/docs/routing/RouterDocSpec.scala#dispatchers
 
+.. note::
+
+   It is not allowed to configure the ``routerDispatcher`` to be a
+   :class:`BalancingDispatcher` since the messages meant for the special
+   router actor cannot be processed by any other actor.
+
+At first glance there seems to be an overlap between the
+:class:`BalancingDispatcher` and Routers, but they complement each other.
+The balancing dispatcher is in charge of running the actors while the routers
+are in charge of deciding which message goes where. A router can also have
+children that span multiple actor systems, even remote ones, but a dispatcher
+lives inside a single actor system.
+
+When using a :class:`RoundRobinRouter` with a :class:`BalancingDispatcher`
+there are some configuration settings to take into account.
+
+- There can only be ``nr-of-instances`` messages being processed at the same
+  time no matter how many threads are configured for the
+  :class:`BalancingDispatcher`.
+
+- Having ``throughput`` set to a low number makes no sense since you will only
+  be handing off to another actor that processes the same :class:`MailBox`
+  as yourself, which can be costly. Either the message just got into the
+  mailbox and you can receive it as well as anybody else, or everybody else
+  is busy and you are the only one available to receive the message.
+
+- Resizing the number of routees only introduce inertia, since resizing
+  is performed at specified intervals, but work stealing is instantaneous.

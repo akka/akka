@@ -45,8 +45,7 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
    */
   def assertLeader(nodesInCluster: RoleName*): Unit = if (nodesInCluster.contains(mySelf)) {
     nodesInCluster.length must not be (0)
-    import Member.addressOrdering
-    val expectedLeader = nodesInCluster.map(role ⇒ (role, node(role).address)).sortBy(_._2).head._1
+    val expectedLeader = roleOfLeader(nodesInCluster)
     cluster.isLeader must be(ifNode(expectedLeader)(true)(false))
   }
 
@@ -66,6 +65,23 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
   def awaitUpConvergence(nrOfMembers: Int, canNotBePartOfRing: Seq[Address] = Seq.empty[Address]): Unit = {
     awaitCond(cluster.latestGossip.members.size == nrOfMembers)
     awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
-    awaitCond(canNotBePartOfRing forall (address => !(cluster.latestGossip.members exists (_.address.port == address.port))))
+    awaitCond(canNotBePartOfRing forall (address ⇒ !(cluster.latestGossip.members exists (_.address == address))))
+  }
+
+  def roleOfLeader(nodesInCluster: Seq[RoleName]): RoleName = {
+    nodesInCluster.length must not be (0)
+    nodesInCluster.sorted.head
+  }
+
+  /**
+   * Sort the roles in the order used by the cluster.
+   */
+  implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
+    import Member.addressOrdering
+    def compare(x: RoleName, y: RoleName) = addressOrdering.compare(node(x).address, node(y).address)
+  }
+
+  def roleName(address: Address): Option[RoleName] = {
+    testConductor.getNodes.await.find(node(_).address == address)
   }
 }

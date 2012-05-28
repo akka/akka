@@ -28,3 +28,4 @@ Scala API
    zeromq
    microkernel
    camel
+   howto

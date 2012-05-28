@@ -72,6 +72,8 @@ There are 4 different types of message dispatchers:
 
   - This is an executor based event driven dispatcher that will try to redistribute work from busy actors to idle actors.
 
+  - All the actors share a single Mailbox that they get their messages from.
+
   - It is assumed that all actors using the same instance of this dispatcher can process all messages that have been sent to one of the actors; i.e. the actors belong to a pool of actors, and to the client there is no guarantee about which actor instance actually processes a given message.
 
   - Sharability: Actors of the same type only
@@ -85,7 +87,7 @@ There are 4 different types of message dispatchers:
                "thread-pool-executor" or the FQCN of
                an ``akka.dispatcher.ExecutorServiceConfigurator``
 
-  - Note that you can **not** use a ``BalancingDispatcher`` together with any kind of ``Router``, trying to do so will make your actor fail verification.
+  - Note that you can **not** use a ``BalancingDispatcher`` as a **Router Dispatcher**. (You can however use it for the **Routees**)
 
 * CallingThreadDispatcher
 

@@ -10,6 +10,8 @@ import com.typesafe.sbtmultijvm.MultiJvmPlugin
 import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
+import com.typesafe.sbtosgi.OsgiPlugin.osgiSettings
+import com.typesafe.sbtosgi.OsgiKeys
 import java.lang.Boolean.getBoolean
 import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags }
 
@@ -44,7 +46,7 @@ object AkkaBuild extends Build {
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.actor ++ Seq(
       autoCompilerPlugins := true,
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
       scalacOptions += "-P:continuations:enable",
@@ -78,14 +80,14 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
       test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
@@ -101,7 +103,7 @@ object AkkaBuild extends Build {
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
       test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
@@ -111,14 +113,14 @@ object AkkaBuild extends Build {
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      scalatestOptions in MultiJvm := Seq("-r", "org.scalatest.akka.QuietReporter"),
+      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
       test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
     )
@@ -128,7 +130,7 @@ object AkkaBuild extends Build {
     id = "akka-slf4j",
     base = file("akka-slf4j"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.slf4j ++ Seq(
       libraryDependencies ++= Dependencies.slf4j
     )
   )
@@ -137,7 +139,7 @@ object AkkaBuild extends Build {
     id = "akka-agent",
     base = file("akka-agent"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.agent ++ Seq(
       libraryDependencies ++= Dependencies.agent
     )
   )
@@ -146,7 +148,7 @@ object AkkaBuild extends Build {
     id = "akka-transactor",
     base = file("akka-transactor"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.transactor ++ Seq(
       libraryDependencies ++= Dependencies.transactor
     )
   )
@@ -164,7 +166,7 @@ object AkkaBuild extends Build {
     id = "akka-mailboxes-common",
     base = file("akka-durable-mailboxes/akka-mailboxes-common"),
     dependencies = Seq(remote, testkit % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.mailboxesCommon ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes,
       // DurableMailboxSpec published in akka-mailboxes-common-test
       publishArtifact in Test := true
@@ -175,7 +177,7 @@ object AkkaBuild extends Build {
     id = "akka-file-mailbox",
     base = file("akka-durable-mailboxes/akka-file-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.fileMailbox ++ Seq(
       libraryDependencies ++= Dependencies.fileMailbox
     )
   )
@@ -184,7 +186,7 @@ object AkkaBuild extends Build {
     id = "akka-zeromq",
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.zeroMQ ++ Seq(
       libraryDependencies ++= Dependencies.zeroMQ
     )
   )
@@ -202,7 +204,7 @@ object AkkaBuild extends Build {
      id = "akka-camel",
      base = file("akka-camel"),
      dependencies = Seq(actor, slf4j, testkit % "test->test"),
-     settings = defaultSettings ++ Seq(
+     settings = defaultSettings ++ OSGi.camel ++ Seq(
        libraryDependencies ++= Dependencies.camel
      )
   )
@@ -298,12 +300,37 @@ object AkkaBuild extends Build {
 
   val defaultExcludedTags = Seq("timing", "long-running")
 
-  val defaultMultiJvmOptions: Seq[String] = {
+  lazy val defaultMultiJvmOptions: Seq[String] = {
     (System.getProperty("akka.test.timefactor") match {
       case null => Nil
       case x => List("-Dakka.test.timefactor=" + x)
     }) :::
     (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
+  }
+
+  // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
+  lazy val defaultExcludeTestNames: Seq[String] = {
+    val exclude = System.getProperty("akka.test.names.exclude", "")
+    if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
+  }
+
+  // for excluding tests by tag (or use system property: -Dakka.test.tags.exclude=timing)
+  lazy val defaultExcludeTestTags: Seq[String] = {
+    val exclude = System.getProperty("akka.test.tags.exclude", "")
+    if (exclude.isEmpty) defaultExcludedTags else exclude.split(",").toSeq
+  }
+
+  // for including tests by tag (or use system property: -Dakka.test.tags.include=timing)
+  lazy val defaultIncludeTestTags: Seq[String] = {
+    val include = System.getProperty("akka.test.tags.include", "")
+    if (include.isEmpty) Seq.empty else include.split(",").toSeq
+  }
+
+  lazy val defaultMultiJvmScalatestOptions: Seq[String] = {
+    val excludeTags = (defaultExcludeTestTags.toSet -- defaultIncludeTestTags.toSet).toSeq
+    Seq("-r", "org.scalatest.akka.QuietReporter") ++
+    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", excludeTags.mkString(" "))) ++
+    (if (defaultIncludeTestTags.isEmpty) Seq.empty else Seq("-n", defaultIncludeTestTags.mkString(" ")))
   }
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
@@ -318,23 +345,9 @@ object AkkaBuild extends Build {
 
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
 
-    // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
-    excludeTestNames := {
-      val exclude = System.getProperty("akka.test.names.exclude", "")
-      if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
-    },
-
-    // for excluding tests by tag (or use system property: -Dakka.test.tags.exclude=timing)
-    excludeTestTags := {
-      val exclude = System.getProperty("akka.test.tags.exclude", "")
-      if (exclude.isEmpty) defaultExcludedTags else exclude.split(",").toSeq
-    },
-
-    // for including tests by tag (or use system property: -Dakka.test.tags.include=timing)
-    includeTestTags := {
-      val include = System.getProperty("akka.test.tags.include", "")
-      if (include.isEmpty) Seq.empty else include.split(",").toSeq
-    },
+    excludeTestNames := defaultExcludeTestNames,
+    excludeTestTags := defaultExcludeTestTags,
+    includeTestTags := defaultIncludeTestTags,
 
     // add filters for tests excluded by name
     testOptions in Test <++= excludeTestNames map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
@@ -456,4 +469,39 @@ object Dependency {
     val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % "3.4.0"      % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }
+}
+
+// OSGi settings
+
+object OSGi {
+
+  val actor = exports(Seq("akka*"))
+
+  val agent = exports(Seq("akka.agent.*"))
+
+  val camel = exports(Seq("akka.camel.*", "akka.camelexamples"))
+
+  val cluster = exports(Seq("akka.cluster.*"))
+
+  val fileMailbox = exports(Seq("akka.actor.mailbox.*"))
+
+  val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
+
+  val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
+
+  val slf4j = exports(Seq("akka.event.slf4j.*"))
+
+  val transactor = exports(Seq("akka.transactor.*"))
+
+  val zeroMQ = exports(Seq("akka.zeromq.*"))
+
+  def exports(packages: Seq[String]) = osgiSettings ++ Seq(
+    OsgiKeys.importPackage := Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*"),
+    OsgiKeys.exportPackage := packages
+  )
+
+  def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
+  def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4,0.5)\"".format(packageName)
+  def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.2,2.10)\"".format(packageName)
+
 }
