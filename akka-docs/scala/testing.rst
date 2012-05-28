@@ -194,8 +194,6 @@ is a whole set of examination methods, e.g. receiving all consecutive messages
 matching certain criteria, receiving a whole sequence of fixed messages or
 classes, receiving nothing for some time, etc.
 
-The ActorSystem passed in to the constructor of TestKit is accessible with
-the the :obj:`system` member.
 Remember to shut down the actor system after the test is finished (also in case
 of failure) so that all actors—including the test actor—are stopped.
 

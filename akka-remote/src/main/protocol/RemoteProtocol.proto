@@ -79,40 +79,10 @@ message AddressProtocol {
 }
 
 /**
- * Defines akka.remote.DaemonMsgCreate
+ * Defines the durable mailbox message.
  */
-message DaemonMsgCreateProtocol {
-  required PropsProtocol props = 1;
-  required DeployProtocol deploy = 2;
-  required string path = 3;
-  required ActorRefProtocol supervisor = 4;
-}
-
-/**
- * Serialization of akka.actor.Props
- */
-message PropsProtocol {
-  required string dispatcher = 1;
-  required DeployProtocol deploy = 2;
-  optional string fromClassCreator = 3;
-  optional bytes creator = 4;
-  optional bytes routerConfig = 5;
-}
-
-/**
- * Serialization of akka.actor.Deploy
- */
-message DeployProtocol {
-  required string path = 1;
-  optional bytes config = 2;
-  optional bytes routerConfig = 3;
-  optional bytes scope = 4;
-}
-
-/**
- * Serialization of akka.remote.DaemonMsgWatch
- */
-message DaemonMsgWatchProtocol {
-  required ActorRefProtocol watcher = 1;
-  required ActorRefProtocol watched = 2;
+message DurableMailboxMessageProtocol {
+  required ActorRefProtocol recipient= 1;
+  optional ActorRefProtocol sender = 2;
+  required bytes message = 3;
 }

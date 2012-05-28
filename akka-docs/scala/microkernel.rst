@@ -1,5 +1,5 @@
 
-.. _microkernel-scala:
+.. _microkernel:
 
 Microkernel (Scala)
 ===================

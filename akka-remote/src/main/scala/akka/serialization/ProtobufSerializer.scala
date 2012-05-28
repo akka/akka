@@ -6,32 +6,6 @@ package akka.serialization
 
 import com.google.protobuf.Message
 import akka.actor.DynamicAccess
-import akka.remote.RemoteProtocol.ActorRefProtocol
-import akka.actor.ActorSystem
-import akka.actor.ActorRef
-
-object ProtobufSerializer {
-
-  /**
-   * Helper to serialize an [[akka.actor.ActorRef]] to Akka's
-   * protobuf representation.
-   */
-  def serializeActorRef(ref: ActorRef): ActorRefProtocol = {
-    val identifier: String = Serialization.currentTransportAddress.value match {
-      case null    ⇒ ref.path.toString
-      case address ⇒ ref.path.toStringWithAddress(address)
-    }
-    ActorRefProtocol.newBuilder.setPath(identifier).build
-  }
-
-  /**
-   * Helper to materialize (lookup) an [[akka.actor.ActorRef]]
-   * from Akka's protobuf representation in the supplied
-   * [[akka.actor.ActorSystem].
-   */
-  def deserializeActorRef(system: ActorSystem, refProtocol: ActorRefProtocol): ActorRef =
-    system.actorFor(refProtocol.getPath)
-}
 
 /**
  * This Serializer serializes `com.google.protobuf.Message`s

@@ -8,7 +8,7 @@ import sys, os
 # -- General configuration -----------------------------------------------------
 
 sys.path.append(os.path.abspath('_sphinx/exts'))
-extensions = ['sphinx.ext.todo', 'includecode']
+extensions = ['sphinx.ext.todo', 'includecode', 'sphinx.ext.graphviz']
 
 templates_path = ['_templates']
 source_suffix = '.rst'
@@ -51,14 +51,6 @@ html_add_permalinks = ''
 html_context = {
   'include_analytics': 'online' in tags
 }
-
-# -- Options for EPUB output ---------------------------------------------------
-epub_author = "Typesafe Inc"
-epub_language = "en"
-epub_publisher = epub_author
-epub_identifier = "http://doc.akka.io/docs/akka/snapshot/"
-epub_scheme = "URL"
-epub_cover = ("_sphinx/static/akka.png", "")
 
 # -- Options for LaTeX output --------------------------------------------------
 

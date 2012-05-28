@@ -1,5 +1,5 @@
 
-.. _microkernel-java:
+.. _microkernel:
 
 Microkernel (Java)
 ==================
