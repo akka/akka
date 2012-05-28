@@ -10,6 +10,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
 object LeaderElectionMultiJvmSpec extends MultiNodeConfig {
+  val controller = role("controller")
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -27,11 +28,12 @@ class LeaderElectionMultiJvmNode1 extends LeaderElectionSpec
 class LeaderElectionMultiJvmNode2 extends LeaderElectionSpec
 class LeaderElectionMultiJvmNode3 extends LeaderElectionSpec
 class LeaderElectionMultiJvmNode4 extends LeaderElectionSpec
+class LeaderElectionMultiJvmNode5 extends LeaderElectionSpec
 
 abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSpec) with MultiNodeClusterSpec {
   import LeaderElectionMultiJvmSpec._
 
-  override def initialParticipants = 4
+  override def initialParticipants = 5
 
   lazy val firstAddress = node(first).address
 
@@ -47,47 +49,51 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
       }
       testConductor.enter("first-started")
 
-      cluster.join(firstAddress)
-      awaitUpConvergence(numberOfMembers = roles.size)
-      cluster.isLeader must be(mySelf == roles.head)
+      if (mySelf != controller) {
+        cluster.join(firstAddress)
+        awaitUpConvergence(numberOfMembers = roles.size)
+        cluster.isLeader must be(mySelf == roles.head)
+      }
       testConductor.enter("after")
     }
 
     def shutdownLeaderAndVerifyNewLeader(alreadyShutdown: Int): Unit = {
       val currentRoles = roles.drop(alreadyShutdown)
       currentRoles.size must be >= (2)
+      val leader = currentRoles.head
+      val aUser = currentRoles.last
 
-      runOn(currentRoles.head) {
-        cluster.shutdown()
-        testConductor.enter("after-shutdown")
-        testConductor.enter("after-down")
-      }
+      mySelf match {
 
-      // runOn previously shutdown cluster nodes
-      if ((roles diff currentRoles).contains(mySelf)) {
-        testConductor.enter("after-shutdown")
-        testConductor.enter("after-down")
-      }
+        case `controller` ⇒
+          testConductor.enter("before-shutdown")
+          testConductor.shutdown(leader, 0)
+          testConductor.removeNode(leader)
+          testConductor.enter("after-shutdown", "after-down", "completed")
 
-      // runOn remaining cluster nodes
-      if (currentRoles.tail.contains(mySelf)) {
+        case `leader` ⇒
+          testConductor.enter("before-shutdown")
+        // this node will be shutdown by the controller and doesn't participate in more barriers
 
-        testConductor.enter("after-shutdown")
-
-        runOn(currentRoles.last) {
+        case `aUser` ⇒
+          val leaderAddress = node(leader).address
+          testConductor.enter("before-shutdown", "after-shutdown")
           // user marks the shutdown leader as DOWN
-          val leaderAddress = node(currentRoles.head).address
           cluster.down(leaderAddress)
-        }
+          testConductor.enter("after-down", "completed")
 
-        testConductor.enter("after-down")
+        case _ if currentRoles.tail.contains(mySelf) ⇒
+          // remaining cluster nodes, not shutdown
+          testConductor.enter("before-shutdown", "after-shutdown", "after-down")
 
-        awaitUpConvergence(currentRoles.size - 1)
-        val nextExpectedLeader = currentRoles.tail.head
-        cluster.isLeader must be(mySelf == nextExpectedLeader)
+          awaitUpConvergence(currentRoles.size - 1)
+          val nextExpectedLeader = currentRoles.tail.head
+          cluster.isLeader must be(mySelf == nextExpectedLeader)
+
+          testConductor.enter("completed")
+
       }
 
-      testConductor.enter("after")
     }
 
     "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in {
