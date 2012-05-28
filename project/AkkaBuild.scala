@@ -1,4 +1,4 @@
-/**
+  /**
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
@@ -8,9 +8,10 @@ import sbt._
 import sbt.Keys._
 import com.typesafe.sbtmultijvm.MultiJvmPlugin
 import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
-import com.typesafe.schoir.SchoirPlugin.schoirSettings
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
+import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import java.lang.Boolean.getBoolean
 
 object AkkaBuild extends Build {
@@ -25,7 +26,8 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++
+      Dist.settings ++ mimaSettings ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
@@ -43,7 +45,8 @@ object AkkaBuild extends Build {
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
       scalacOptions += "-P:continuations:enable",
       // to fix scaladoc generation
-      fullClasspath in doc in Compile <<= fullClasspath in Compile
+      fullClasspath in doc in Compile <<= fullClasspath in Compile,
+      previousArtifact := akkaPreviousArtifact("akka-actor")
     )
   )
 
@@ -52,7 +55,8 @@ object AkkaBuild extends Build {
     base = file("akka-testkit"),
     dependencies = Seq(actor),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.testkit
+      libraryDependencies ++= Dependencies.testkit,
+      previousArtifact := akkaPreviousArtifact("akka-testkit")
     )
   )
 
@@ -72,7 +76,7 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ schoirSettings ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -83,7 +87,8 @@ object AkkaBuild extends Build {
       jvmOptions in MultiJvm := {
         if (getBoolean("sbt.log.noformat")) Seq("-Dakka.test.nocolor=true") else Nil
       },
-      test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+      test in Test <<= (test in Test) dependsOn (test in MultiJvm),
+      previousArtifact := akkaPreviousArtifact("akka-remote")
     )
   ) configs (MultiJvm)
 
@@ -91,7 +96,7 @@ object AkkaBuild extends Build {
   //   id = "akka-cluster",
   //   base = file("akka-cluster"),
   //   dependencies = Seq(remote, remote % "test->test", testkit % "test->test"),
-  //   settings = defaultSettings ++ multiJvmSettings ++ schoirSettings ++ Seq(
+  //   settings = defaultSettings ++ multiJvmSettings ++ Seq(
   //     libraryDependencies ++= Dependencies.cluster,
   //     // disable parallel tests
   //     parallelExecution in Test := false,
@@ -120,7 +125,8 @@ object AkkaBuild extends Build {
     base = file("akka-agent"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.agent
+      libraryDependencies ++= Dependencies.agent,
+      previousArtifact := akkaPreviousArtifact("akka-agent")
     )
   )
 
@@ -129,7 +135,8 @@ object AkkaBuild extends Build {
     base = file("akka-transactor"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.transactor
+      libraryDependencies ++= Dependencies.transactor,
+      previousArtifact := akkaPreviousArtifact("akka-transactor")
     )
   )
 
@@ -156,7 +163,8 @@ object AkkaBuild extends Build {
     base = file("akka-durable-mailboxes/akka-mailboxes-common"),
     dependencies = Seq(remote, testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.mailboxes
+      libraryDependencies ++= Dependencies.mailboxes,
+      previousArtifact := akkaPreviousArtifact("akka-mailboxes-common")
     )
   )
 
@@ -168,7 +176,8 @@ object AkkaBuild extends Build {
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.beanstalkMailbox,
-      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) },
+      previousArtifact := akkaPreviousArtifact("akka-beanstalk-mailbox")
     )
   )
 
@@ -177,7 +186,8 @@ object AkkaBuild extends Build {
     base = file("akka-durable-mailboxes/akka-file-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.fileMailbox
+      libraryDependencies ++= Dependencies.fileMailbox,
+      previousArtifact := akkaPreviousArtifact("akka-file-mailbox")
     )
   )
 
@@ -187,7 +197,8 @@ object AkkaBuild extends Build {
     dependencies = Seq(mailboxesCommon % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.redisMailbox,
-      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) },
+      previousArtifact := akkaPreviousArtifact("akka-redis-mailbox")
     )
   )
 
@@ -196,7 +207,8 @@ object AkkaBuild extends Build {
     base = file("akka-durable-mailboxes/akka-zookeeper-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
     settings = defaultSettings  ++ Seq(
-      libraryDependencies ++= Dependencies.zookeeperMailbox
+      libraryDependencies ++= Dependencies.zookeeperMailbox,
+      previousArtifact := akkaPreviousArtifact("akka-zookeeper-mailbox")
     )
   )
 
@@ -207,7 +219,8 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.mongoMailbox,
       ivyXML := Dependencies.mongoMailboxExcludes,
-      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) }
+      testOptions in Test <+= testMailbox map { test => Tests.Filter(s => test) },
+      previousArtifact := akkaPreviousArtifact("akka-mongo-mailbox")
     )
   )
 
@@ -217,7 +230,8 @@ object AkkaBuild extends Build {
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.zeroMQ
+      libraryDependencies ++= Dependencies.zeroMQ,
+      previousArtifact := akkaPreviousArtifact("akka-zeromq")
     )
   )
 
@@ -236,7 +250,8 @@ object AkkaBuild extends Build {
     base = file("akka-kernel"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.kernel
+      libraryDependencies ++= Dependencies.kernel,
+      previousArtifact := akkaPreviousArtifact("akka-kernel")
     )
   )
 
@@ -244,7 +259,9 @@ object AkkaBuild extends Build {
     id = "akka-actor-migration",
     base = file("akka-actor-migration"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq(
+      previousArtifact := akkaPreviousArtifact("akka-actor-migration")
+    )
   )
 
   lazy val akkaSbtPlugin = Project(
@@ -345,7 +362,7 @@ object AkkaBuild extends Build {
 
   val defaultExcludedTags = Seq("timing")
 
-  lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
+  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
 
     // compile options
@@ -410,6 +427,16 @@ object AkkaBuild extends Build {
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences
   )
+
+  lazy val mimaSettings = mimaDefaultSettings ++ Seq(
+    // MiMa
+    previousArtifact := None
+  )
+
+  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.0"): Option[sbt.ModuleID] = {
+    // the artifact to compare binary compatibility with
+    Some(organization % id % version)
+  }
 }
 
 // Dependencies
