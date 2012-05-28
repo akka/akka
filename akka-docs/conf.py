@@ -17,8 +17,8 @@ exclude_patterns = ['_build', 'pending', 'disabled']
 
 project = u'Akka'
 copyright = u'2011, Typesafe Inc'
-version = '2.0.2-SNAPSHOT'
-release = '2.0.2-SNAPSHOT'
+version = '2.0.2-RC1'
+release = '2.0.2-RC1'
 
 pygments_style = 'simple'
 highlight_language = 'scala'
