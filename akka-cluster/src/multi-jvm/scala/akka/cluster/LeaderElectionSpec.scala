@@ -13,7 +13,7 @@ object LeaderElectionMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
-  val forth = role("forth")
+  val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
@@ -36,19 +36,19 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
   lazy val firstAddress = node(first).address
 
   // sorted in the order used by the cluster
-  lazy val roles = Seq(first, second, third, forth).sorted
+  lazy val roles = Seq(first, second, third, fourth).sorted
 
   "A cluster of four nodes" must {
 
     "be able to 'elect' a single leader" taggedAs LongRunningTest in {
-      // make sure that the first cluster is started before other join
+      // make sure that the node-to-join is started before other join
       runOn(first) {
         cluster
       }
       testConductor.enter("first-started")
 
       cluster.join(firstAddress)
-      awaitUpConvergence(numberOfMembers = 4)
+      awaitUpConvergence(numberOfMembers = roles.size)
       cluster.isLeader must be(mySelf == roles.head)
       testConductor.enter("after")
     }
