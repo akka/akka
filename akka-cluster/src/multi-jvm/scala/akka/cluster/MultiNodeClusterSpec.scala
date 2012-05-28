@@ -67,7 +67,7 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
     awaitCond(cluster.convergence.isDefined, timeout)
     if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
       awaitCond(
-        canNotBePartOfMemberRing forall (address => !(cluster.latestGossip.members exists (_.address.port == address.port))),
+        canNotBePartOfMemberRing forall (address => !(cluster.latestGossip.members exists (_.address == address))),
         timeout)
   }
 }
