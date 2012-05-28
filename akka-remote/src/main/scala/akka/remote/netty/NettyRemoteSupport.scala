@@ -61,17 +61,18 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      *
      * @param withTimeout determines whether an IdleStateHandler shall be included
      */
-    def apply(endpoint: ⇒ Seq[ChannelHandler], withTimeout: Boolean): ChannelPipelineFactory =
+    def apply(endpoint: ⇒ Seq[ChannelHandler], withTimeout: Boolean, isClient: Boolean): ChannelPipelineFactory =
       new ChannelPipelineFactory {
-        def getPipeline = apply(defaultStack(withTimeout) ++ endpoint)
+        def getPipeline = apply(defaultStack(withTimeout, isClient) ++ endpoint)
       }
 
     /**
      * Construct a default protocol stack, excluding the “head” handler (i.e. the one which
      * actually dispatches the received messages to the local target actors).
      */
-    def defaultStack(withTimeout: Boolean): Seq[ChannelHandler] =
-      (if (withTimeout) timeout :: Nil else Nil) :::
+    def defaultStack(withTimeout: Boolean, isClient: Boolean): Seq[ChannelHandler] =
+      (if (settings.EnableSSL) NettySSLSupport(settings, NettyRemoteTransport.this, isClient) :: Nil else Nil) :::
+        (if (withTimeout) timeout :: Nil else Nil) :::
         msgFormat :::
         authenticator :::
         executionHandler ::
@@ -119,8 +120,8 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
    * This method is factored out to provide an extension point in case the
    * pipeline shall be changed. It is recommended to use
    */
-  def createPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean): ChannelPipelineFactory =
-    PipelineFactory(Seq(endpoint), withTimeout)
+  def createPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean, isClient: Boolean): ChannelPipelineFactory =
+    PipelineFactory(Seq(endpoint), withTimeout, isClient)
 
   private val remoteClients = new HashMap[Address, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock

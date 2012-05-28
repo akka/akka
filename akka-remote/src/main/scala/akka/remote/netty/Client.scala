@@ -18,19 +18,6 @@ import akka.actor.{ Address, ActorRef }
 import akka.AkkaException
 import akka.event.Logging
 import akka.util.Switch
-import akka.actor.ActorRef
-import org.jboss.netty.channel.ChannelFutureListener
-import akka.remote.RemoteClientWriteFailed
-import java.net.InetAddress
-import java.security.{ SecureRandom, KeyStore, GeneralSecurityException }
-import org.jboss.netty.util.TimerTask
-import org.jboss.netty.util.Timeout
-import java.util.concurrent.TimeUnit
-import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
-import java.security.cert.X509Certificate
-import javax.net.ssl.{ SSLContext, X509TrustManager, TrustManagerFactory, TrustManager }
-import org.jboss.netty.handler.ssl.SslHandler
-import java.io.FileInputStream
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
@@ -156,7 +143,7 @@ private[akka] class ActiveRemoteClient private[akka] (
       openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
 
       val b = new ClientBootstrap(netty.clientChannelFactory)
-      b.setPipelineFactory(netty.createPipeline(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, netty.timer, this), true))
+      b.setPipelineFactory(netty.createPipeline(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, netty.timer, this), withTimeout = true, isClient = true))
       b.setOption("tcpNoDelay", true)
       b.setOption("keepAlive", true)
       b.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
@@ -322,81 +309,6 @@ private[akka] class ActiveRemoteClientHandler(
 private[akka] class PassiveRemoteClient(val currentChannel: Channel,
                                         netty: NettyRemoteTransport,
                                         remoteAddress: Address) extends RemoteClient(netty, remoteAddress) {
-
-  import client.netty.settings
-
-  def initTLS(trustStorePath: String, trustStorePassword: String): Option[SSLContext] = {
-    if (trustStorePath != null && trustStorePassword != null)
-      try {
-        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-        val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
-        val stream = new FileInputStream(trustStorePath)
-        trustStore.load(stream, trustStorePassword.toCharArray)
-        trustManagerFactory.init(trustStore);
-        val trustManagers: Array[TrustManager] = trustManagerFactory.getTrustManagers
-
-        val sslContext = SSLContext.getInstance("TLS")
-        sslContext.init(null, trustManagers, new SecureRandom())
-        Some(sslContext)
-      } catch {
-        case e: GeneralSecurityException ⇒ {
-          client.log.error(e, "TLS connection could not be established. TLS is not used!");
-          None
-        }
-      }
-    else {
-      client.log.error("TLS connection could not be established because trust store details are missing")
-      None
-    }
-  }
-
-  def getSSLHandler_? : Option[SslHandler] = {
-    val sslContext: Option[SSLContext] = {
-      if (settings.EnableSSL) {
-        client.log.debug("Client SSL is enabled, initialising ...")
-        initTLS(settings.SSLTrustStore.get, settings.SSLTrustStorePassword.get)
-      } else {
-        None
-      }
-    }
-    if (sslContext.isDefined) {
-      client.log.debug("Client Using SSL context to create SSLEngine ...")
-      val sslEngine = sslContext.get.createSSLEngine
-      sslEngine.setUseClientMode(true)
-      sslEngine.setEnabledCipherSuites(settings.SSLSupportedAlgorithms.toArray.map(_.toString))
-      Some(new SslHandler(sslEngine))
-    } else {
-      None
-    }
-  }
-
-  def getPipeline: ChannelPipeline = {
-    val sslHandler = getSSLHandler_?
-    val timeout = new IdleStateHandler(client.netty.timer,
-      settings.ReadTimeout.toSeconds.toInt,
-      settings.WriteTimeout.toSeconds.toInt,
-      settings.AllTimeout.toSeconds.toInt)
-    val lenDec = new LengthFieldBasedFrameDecoder(settings.MessageFrameSize, 0, 4, 0, 4)
-    val lenPrep = new LengthFieldPrepender(4)
-    val messageDec = new RemoteMessageDecoder
-    val messageEnc = new RemoteMessageEncoder(client.netty)
-    val remoteClient = new ActiveRemoteClientHandler(name, bootstrap, remoteAddress, localAddress, client.netty.timer, client)
-
-    val stages: List[ChannelHandler] = timeout :: lenDec :: messageDec :: lenPrep :: messageEnc :: executionHandler :: remoteClient :: Nil
-    if (sslHandler.isDefined) {
-      client.log.debug("Client creating pipeline with SSL handler...")
-      new StaticChannelPipeline(sslHandler.get :: stages: _*)
-    } else {
-      client.log.debug("Client creating pipeline without SSL handler...")
-      new StaticChannelPipeline(stages: _*)
-    }
-  }
-}
-
-class PassiveRemoteClient(val currentChannel: Channel,
-                          netty: NettyRemoteTransport,
-                          remoteAddress: Address)
-  extends RemoteClient(netty, remoteAddress) {
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {
     netty.notifyListeners(RemoteClientStarted(netty, remoteAddress))
