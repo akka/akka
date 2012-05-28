@@ -3,25 +3,14 @@
  */
 package akka.actor.mailbox
 
-import DurableMailboxSpecActorFactory.AccumulatorActor
-import DurableMailboxSpecActorFactory.MailboxTestActor
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.LocalActorRef
-import akka.actor.Props
-import akka.actor.actorRef2Scala
-import akka.dispatch.Mailbox
-import akka.testkit.TestKit
-import akka.util.duration.intToDurationInt
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import akka.testkit.AkkaSpec
+import akka.testkit.TestLatch
+import akka.util.duration._
 import java.io.InputStream
-import java.util.concurrent.TimeoutException
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
 import scala.annotation.tailrec
+import com.typesafe.config.Config
+import akka.actor._
+import akka.dispatch.{ Mailbox, Await }
 
 object DurableMailboxSpecActorFactory {
 
@@ -39,61 +28,12 @@ object DurableMailboxSpecActorFactory {
 
 }
 
-object DurableMailboxSpec {
-  def fallbackConfig: Config = ConfigFactory.parseString("""
-      akka {
-        event-handlers = ["akka.testkit.TestEventListener"]
-        loglevel = "WARNING"
-        stdout-loglevel = "WARNING"
-      }
-      """)
-}
-
 /**
- * Reusable test fixture for durable mailboxes. Implements a few basic tests. More
- * tests can be added in concrete subclass.
- *
  * Subclass must define dispatcher in the supplied config for the specific backend.
  * The id of the dispatcher must be the same as the `<backendName>-dispatcher`.
  */
-abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
-  extends TestKit(system) with WordSpec with MustMatchers with BeforeAndAfterAll {
-
+abstract class DurableMailboxSpec(val backendName: String, config: String) extends AkkaSpec(config) {
   import DurableMailboxSpecActorFactory._
-
-  /**
-   * Subclass must define dispatcher in the supplied config for the specific backend.
-   * The id of the dispatcher must be the same as the `<backendName>-dispatcher`.
-   */
-  def this(backendName: String, config: String) = {
-    this(ActorSystem(backendName + "BasedDurableMailboxSpec",
-      ConfigFactory.parseString(config).withFallback(DurableMailboxSpec.fallbackConfig)),
-      backendName)
-  }
-
-  final override def beforeAll {
-    atStartup()
-  }
-
-  /**
-   * May be implemented in concrete subclass to do additional things once before test
-   * cases are run.
-   */
-  protected def atStartup() {}
-
-  final override def afterAll {
-    system.shutdown()
-    try system.awaitTermination(5 seconds) catch {
-      case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
-    }
-    atTermination()
-  }
-
-  /**
-   * May be implemented in concrete subclass to do additional things once after all
-   * test cases have been run.
-   */
-  def atTermination() {}
 
   protected def streamMustContain(in: InputStream, words: String): Unit = {
     val output = new Array[Byte](8192)
@@ -120,8 +60,7 @@ abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
     case some      ⇒ system.actorOf(props.withDispatcher(backendName + "-dispatcher"), some)
   }
 
-  private def isDurableMailbox(m: Mailbox): Boolean =
-    m.messageQueue.isInstanceOf[DurableMessageQueue]
+  def isDurableMailbox(m: Mailbox): Boolean
 
   "A " + backendName + " based mailbox backed actor" must {
 

@@ -19,7 +19,7 @@ object FileBasedMailboxSpec {
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileBasedMailboxSpec.config) {
 
-  val queuePath = new FileBasedMailboxSettings(system.settings, system.settings.config.getConfig("File-dispatcher")).QueuePath
+  val settings = new FileBasedMailboxSettings(system.settings, system.settings.config.getConfig("File-dispatcher"))
   val settings = new FileBasedMailboxSettings(system.settings, system.settings.config.getConfig("File-dispatcher"))
 
   "FileBasedMailboxSettings" must {
@@ -33,17 +33,19 @@ class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileBasedMailboxSp
     }
   }
 
-  def clean() {
+  def isDurableMailbox(m: Mailbox): Boolean = m.messageQueue.isInstanceOf[FileBasedMessageQueue]
+
+  def clean {
     FileUtils.deleteDirectory(new java.io.File(settings.QueuePath))
   }
 
   override def atStartup() {
-    clean()
+    clean
     super.atStartup()
   }
 
   override def atTermination() {
-    clean()
+    clean
     super.atTermination()
   }
 }

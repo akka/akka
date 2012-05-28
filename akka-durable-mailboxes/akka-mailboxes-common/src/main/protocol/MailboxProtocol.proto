@@ -1,0 +1,30 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.actor.mailbox";
+option optimize_for = SPEED;
+
+/******************************************
+  Compile with:
+  cd ./akka-durable-mailboxes/akka-mailboxes-common/src/main/protocol
+  protoc MailboxProtocol.proto --java_out ../java
+*******************************************/
+
+/**
+ * Defines the durable mailbox message.
+ */
+message DurableMailboxMessageProtocol {
+  required string ownerAddress = 1;
+  optional string senderAddress = 2;
+  optional UuidProtocol futureUuid = 3;
+  required bytes message = 4;
+}
+
+/**
+ * Defines a UUID.
+ */
+message UuidProtocol {
+  required uint64 high = 1;
+  required uint64 low = 2;
+}
