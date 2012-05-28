@@ -18,7 +18,12 @@ object LeaderDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.auto-down = on")).
+    withFallback(ConfigFactory.parseString("""
+      akka.cluster {
+        auto-down = on
+        failure-detector.threshold = 4
+      }
+    """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
@@ -60,8 +65,6 @@ class LeaderDowningNodeThatIsUnreachableSpec
         cluster.join(node(first).address)
 
         awaitUpConvergence(numberOfMembers = 4)
-
-        cluster.isLeader must be(false)
         testConductor.enter("all-up")
       }
 
@@ -102,8 +105,6 @@ class LeaderDowningNodeThatIsUnreachableSpec
         cluster.join(node(first).address)
 
         awaitUpConvergence(numberOfMembers = 3)
-
-        cluster.isLeader must be(false)
         testConductor.enter("all-up")
       }
 
