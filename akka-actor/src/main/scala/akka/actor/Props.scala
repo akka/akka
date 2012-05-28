@@ -135,7 +135,7 @@ case class Props(
 
   /**
    * Returns a new Props with the specified creator set.
-   * 
+   *
    * The creator must not return the same instance multiple times.
    *
    * Scala API.
