@@ -84,7 +84,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
       a.send(barrier, EnterBarrier("bar"))
       noMsg(a, b)
-      within(1 second) {
+      within(2 second) {
         b.send(barrier, EnterBarrier("bar"))
         a.expectMsg(ToClient(BarrierResult("bar", true)))
         b.expectMsg(ToClient(BarrierResult("bar", true)))
@@ -100,7 +100,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! NodeInfo(C, AddressFromURIString("akka://sys"), c.ref)
       b.send(barrier, EnterBarrier("bar"))
       noMsg(a, b, c)
-      within(1 second) {
+      within(2 second) {
         c.send(barrier, EnterBarrier("bar"))
         a.expectMsg(ToClient(BarrierResult("bar", true)))
         b.expectMsg(ToClient(BarrierResult("bar", true)))
@@ -119,7 +119,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! RemoveClient(A)
       barrier ! ClientDisconnected(A)
       noMsg(a, b, c)
-      b.within(1 second) {
+      b.within(2 second) {
         barrier ! RemoveClient(C)
         b.expectMsg(ToClient(BarrierResult("bar", true)))
       }
@@ -265,7 +265,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       b.expectMsg(ToClient(Done))
       a.send(barrier, EnterBarrier("bar"))
       noMsg(a, b)
-      within(1 second) {
+      within(2 second) {
         b.send(barrier, EnterBarrier("bar"))
         a.expectMsg(ToClient(BarrierResult("bar", true)))
         b.expectMsg(ToClient(BarrierResult("bar", true)))
@@ -284,7 +284,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       c.expectMsg(ToClient(Done))
       b.send(barrier, EnterBarrier("bar"))
       noMsg(a, b, c)
-      within(1 second) {
+      within(2 second) {
         c.send(barrier, EnterBarrier("bar"))
         a.expectMsg(ToClient(BarrierResult("bar", true)))
         b.expectMsg(ToClient(BarrierResult("bar", true)))
@@ -306,7 +306,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! Remove(A)
       barrier ! ClientDisconnected(A)
       noMsg(a, b, c)
-      b.within(1 second) {
+      b.within(2 second) {
         barrier ! Remove(C)
         b.expectMsg(ToClient(BarrierResult("bar", true)))
       }
