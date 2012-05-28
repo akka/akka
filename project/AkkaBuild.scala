@@ -10,6 +10,8 @@ import com.typesafe.sbtmultijvm.MultiJvmPlugin
 import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
+import com.typesafe.sbtosgi.OsgiPlugin.osgiSettings
+import com.typesafe.sbtosgi.OsgiKeys
 import java.lang.Boolean.getBoolean
 import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags }
 
@@ -44,7 +46,7 @@ object AkkaBuild extends Build {
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.actor ++ Seq(
       autoCompilerPlugins := true,
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
       scalacOptions += "-P:continuations:enable",
@@ -78,7 +80,7 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -111,7 +113,7 @@ object AkkaBuild extends Build {
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -128,7 +130,7 @@ object AkkaBuild extends Build {
     id = "akka-slf4j",
     base = file("akka-slf4j"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.slf4j ++ Seq(
       libraryDependencies ++= Dependencies.slf4j
     )
   )
@@ -137,7 +139,7 @@ object AkkaBuild extends Build {
     id = "akka-agent",
     base = file("akka-agent"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.agent ++ Seq(
       libraryDependencies ++= Dependencies.agent
     )
   )
@@ -146,7 +148,7 @@ object AkkaBuild extends Build {
     id = "akka-transactor",
     base = file("akka-transactor"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.transactor ++ Seq(
       libraryDependencies ++= Dependencies.transactor
     )
   )
@@ -164,7 +166,7 @@ object AkkaBuild extends Build {
     id = "akka-mailboxes-common",
     base = file("akka-durable-mailboxes/akka-mailboxes-common"),
     dependencies = Seq(remote, testkit % "compile;test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.mailboxesCommon ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes,
       // DurableMailboxSpec published in akka-mailboxes-common-test
       publishArtifact in Test := true
@@ -175,7 +177,7 @@ object AkkaBuild extends Build {
     id = "akka-file-mailbox",
     base = file("akka-durable-mailboxes/akka-file-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.fileMailbox ++ Seq(
       libraryDependencies ++= Dependencies.fileMailbox
     )
   )
@@ -184,7 +186,7 @@ object AkkaBuild extends Build {
     id = "akka-zeromq",
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.zeroMQ ++ Seq(
       libraryDependencies ++= Dependencies.zeroMQ
     )
   )
@@ -202,7 +204,7 @@ object AkkaBuild extends Build {
      id = "akka-camel",
      base = file("akka-camel"),
      dependencies = Seq(actor, slf4j, testkit % "test->test"),
-     settings = defaultSettings ++ Seq(
+     settings = defaultSettings ++ OSGi.camel ++ Seq(
        libraryDependencies ++= Dependencies.camel
      )
   )
@@ -456,4 +458,39 @@ object Dependency {
     val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % "3.4.0"      % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }
+}
+
+// OSGi settings
+
+object OSGi {
+
+  val actor = exports(Seq("akka*"))
+
+  val agent = exports(Seq("akka.agent.*"))
+
+  val camel = exports(Seq("akka.camel.*", "akka.camelexamples"))
+
+  val cluster = exports(Seq("akka.cluster.*"))
+
+  val fileMailbox = exports(Seq("akka.actor.mailbox.*"))
+
+  val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
+
+  val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
+
+  val slf4j = exports(Seq("akka.event.slf4j.*"))
+
+  val transactor = exports(Seq("akka.transactor.*"))
+
+  val zeroMQ = exports(Seq("akka.zeromq.*"))
+
+  def exports(packages: Seq[String]) = osgiSettings ++ Seq(
+    OsgiKeys.importPackage := Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*"),
+    OsgiKeys.exportPackage := packages
+  )
+
+  def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
+  def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4,0.5)\"".format(packageName)
+  def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.2,2.10)\"".format(packageName)
+
 }
