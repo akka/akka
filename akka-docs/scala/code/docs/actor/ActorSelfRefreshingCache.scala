@@ -12,7 +12,7 @@ object RefreshCache
 
 class CacheRefreshException(msg: String, thr: Throwable) extends RuntimeException(msg, thr)
 
-class CacheRefresher(cache: RefreshableCache[_], refreshEvery: Duration) extends Actor {
+class CacheRefresher(cache: RefreshableCache, refreshEvery: Duration) extends Actor {
 
   override def preStart() {
     self ! RefreshCache
@@ -35,9 +35,7 @@ class CacheRefresher(cache: RefreshableCache[_], refreshEvery: Duration) extends
 
 import java.util.concurrent.atomic.AtomicReference
 
-trait RefreshableCache[T] {
-  protected def cached: AtomicReference[T]
-
+trait RefreshableCache { 
   def refresh()
 }
 
@@ -48,11 +46,11 @@ trait DataCache {
   def isValid(valueToCheck: String): Boolean
 }
 
-class FromDbDataCache extends RefreshableCache[Set[String]] with DataCache {
+class FromDbDataCache extends RefreshableCache with DataCache {
 
   private val mockData = Set("valid") // just for our example
 
-  override protected val cached = new AtomicReference[Set[String]](mockData)
+  private val cached = new AtomicReference[Set[String]](mockData)
 
   override def refresh() {
     val updatedValues = { Thread.sleep(300) /* act busy */; mockData }
@@ -76,14 +74,16 @@ class FromDbDataCacheSpec(_system: ActorSystem) extends TestKit(_system)
 
   def this() = this(ActorSystem("FromDbDataCacheSpec"))
 
+  override def afterAll() {    
+    system.shutdown()
+  }
+
   it should "validate expected values" in {
     //#cache-actor-setup
     import akka.actor.Props
-    import akka.actor.ActorSystem
 
     // given
     val cache = new FromDbDataCache
-    val system = ActorSystem.create()
 
     import akka.util.duration._
     system.actorOf(
@@ -100,8 +100,5 @@ class FromDbDataCacheSpec(_system: ActorSystem) extends TestKit(_system)
     valid should be (true)
 
     //#cache-actor-setup
-
-    // finally
-    system.shutdown()
   }
 }

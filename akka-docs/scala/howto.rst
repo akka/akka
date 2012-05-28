@@ -21,12 +21,10 @@ Periodic update of a shared read-only resource using Actors
 
 The following pattern may be used in any kind of situation where you want to periodically refresh/update some otherwise read-only shared resource. We'll show an implementation using a Cache as example, but you can easily imagine other situations where this kind of pattern might prove to be useful.
 
-Our cache trait will define a refresh method, which will be called by a so-called "Refresher", and an abstact :class:`AtomicReference` field, which we will use as the holder of our "to be refreshed" data.
+Our cache trait will define a refresh method, which will be called by a so-called "Refresher":
 
 .. includecode:: code/docs/actor/ActorSelfRefreshingCache.scala
    :include: refreshable-cache-trait
-
-Using an :class:`AtomicReference` here makes it safe to share the Cache among other threads / actors. The update to the cache's state will happen atomically when the CacheRefresher triggers the :meth:`refresh()` method.
 
 The implementation of the metioned :class:`CacheRefresher` is quite simple. In the preStart method we trigger one initial refresh of the cache. Note that consequent updates will be triggered by the scheduler, or other actors sending a RefreshCache message, not by this actor by itself.
 
@@ -35,7 +33,7 @@ The implementation of the metioned :class:`CacheRefresher` is quite simple. In t
 
 It's important to note that we use Akka's :class:`NonFatal` extractor instead of just :class:`Throwable`, which will extract all but "fatal" exceptions, which would be for example :class:`OutOfMemoryError` and his friends. Other exceptions are wrapped and thrown up again - the reason for wrapping them is tha this way it's easier to define custom SupervisionStrategies, for details on this topic see: :ref:`fault-tolerance-scala`.
 
-The Cache implementation is just a class implementing the :class:`RefreshableCache`, so all it needs to do it fetch the new data when refresh is called, and update the atomic reference:
+The Cache implementation is just a class implementing the :class:`RefreshableCache`, so all it needs to do it fetch the new data when refresh is called, and update the atomic reference which we use in order to make the cache thread-safe:
 
 .. includecode:: code/docs/actor/ActorSelfRefreshingCache.scala
    :include: example-cache
