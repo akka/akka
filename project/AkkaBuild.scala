@@ -10,8 +10,7 @@ import com.typesafe.sbtmultijvm.MultiJvmPlugin
 import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
-import com.typesafe.sbtosgi.OsgiPlugin.osgiSettings
-import com.typesafe.sbtosgi.OsgiKeys
+import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
 import java.lang.Boolean.getBoolean
 import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags }
 
@@ -50,6 +49,8 @@ object AkkaBuild extends Build {
       autoCompilerPlugins := true,
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
       scalacOptions += "-P:continuations:enable",
+      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
+      artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle")),
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile
     )
