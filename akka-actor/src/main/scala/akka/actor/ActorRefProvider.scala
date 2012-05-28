@@ -163,9 +163,9 @@ trait ActorRefFactory {
    */
   protected def provider: ActorRefProvider
   /**
-   * INTERNAL USE ONLY
+   * Returns the default MessageDispatcher used by this ActorRefFactory
    */
-  protected def dispatcher: MessageDispatcher
+  implicit def dispatcher: MessageDispatcher
 
   /**
    * Father of all children created by this interface.
