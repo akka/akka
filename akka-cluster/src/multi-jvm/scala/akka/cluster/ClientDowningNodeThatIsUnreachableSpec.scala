@@ -11,9 +11,9 @@ import akka.testkit._
 import akka.actor.Address
 
 object ClientDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
-  val first  = role("first")
+  val first = role("first")
   val second = role("second")
-  val third  = role("third")
+  val third = role("third")
   val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).
@@ -39,7 +39,7 @@ class ClientDowningNodeThatIsUnreachableSpec
     "be able to DOWN a node that is UNREACHABLE (killed)" taggedAs LongRunningTest in {
       runOn(first) {
         cluster.self
-        awaitUpConvergence(nrOfMembers = 4)
+        awaitUpConvergence(numberOfMembers = 4)
 
         val thirdAddress = node(third).address
         testConductor.enter("all-up")
@@ -52,7 +52,7 @@ class ClientDowningNodeThatIsUnreachableSpec
         cluster.down(thirdAddress)
         testConductor.enter("down-third-node")
 
-        awaitUpConvergence(nrOfMembers = 3, canNotBePartOfRing = Seq(thirdAddress))
+        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
         cluster.latestGossip.members.exists(_.address == thirdAddress) must be(false)
         testConductor.enter("await-completion")
       }
@@ -60,20 +60,20 @@ class ClientDowningNodeThatIsUnreachableSpec
       runOn(third) {
         cluster.join(node(first).address)
 
-        awaitUpConvergence(nrOfMembers = 4)
+        awaitUpConvergence(numberOfMembers = 4)
         testConductor.enter("all-up")
       }
 
       runOn(second, fourth) {
         cluster.join(node(first).address)
-        awaitUpConvergence(nrOfMembers = 4)
+        awaitUpConvergence(numberOfMembers = 4)
 
         val thirdAddress = node(third).address
         testConductor.enter("all-up")
 
         testConductor.enter("down-third-node")
 
-        awaitUpConvergence(nrOfMembers = 3, canNotBePartOfRing = Seq(thirdAddress))
+        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
         testConductor.enter("await-completion")
       }
     }
