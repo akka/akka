@@ -409,11 +409,6 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def systemGuardian: InternalActorRef
 
   /**
-   * Implementation of the mechanism which is used for watch()/unwatch().
-   */
-  def deathWatch: DeathWatch
-
-  /**
    * A ThreadFactory that can be used if the transport needs to create any Threads
    */
   def threadFactory: ThreadFactory
@@ -570,7 +565,6 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def lookupRoot: InternalActorRef = provider.rootGuardian
   def guardian: InternalActorRef = provider.guardian
   def systemGuardian: InternalActorRef = provider.systemGuardian
-  def deathWatch: DeathWatch = provider.deathWatch
 
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path

@@ -39,11 +39,6 @@ trait ActorRefProvider {
   def deadLetters: ActorRef
 
   /**
-   * Reference to the death watch service.
-   */
-  def deathWatch: DeathWatch
-
-  /**
    * The root path for all actors within this actor system, including remote
    * address if enabled.
    */
@@ -162,10 +157,11 @@ trait ActorRefFactory {
    * INTERNAL USE ONLY
    */
   protected def provider: ActorRefProvider
+
   /**
-   * INTERNAL USE ONLY
+   * Returns the default MessageDispatcher associated with this ActorRefFactory
    */
-  protected def dispatcher: MessageDispatcher
+  implicit def dispatcher: MessageDispatcher
 
   /**
    * Father of all children created by this interface.
@@ -338,8 +334,6 @@ class LocalActorRefProvider(
   private[akka] val log: LoggingAdapter = Logging(eventStream, "LocalActorRefProvider(" + rootPath.address + ")")
 
   override val deadLetters: InternalActorRef = new DeadLetterActorRef(this, rootPath / "deadLetters", eventStream)
-
-  override val deathWatch: DeathWatch = new LocalDeathWatch(1024) //TODO make configrable
 
   /*
    * generate name for temporary actor refs
@@ -516,8 +510,8 @@ class LocalActorRefProvider(
   def init(_system: ActorSystemImpl) {
     system = _system
     // chain death watchers so that killing guardian stops the application
-    deathWatch.subscribe(systemGuardian, guardian)
-    deathWatch.subscribe(rootGuardian, systemGuardian)
+    guardian.sendSystemMessage(Watch(systemGuardian, guardian))
+    rootGuardian.sendSystemMessage(Watch(rootGuardian, systemGuardian))
     eventStream.startDefaultLoggers(_system)
   }
 
@@ -566,19 +560,3 @@ class LocalActorRefProvider(
 
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 }
-
-class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassification {
-
-  override def publish(event: Event): Unit = {
-    val monitors = dissociate(classify(event))
-    if (monitors.nonEmpty) monitors.foreach(_ ! event)
-  }
-
-  override def subscribe(subscriber: Subscriber, to: Classifier): Boolean = {
-    if (!super.subscribe(subscriber, to)) {
-      subscriber ! Terminated(to)
-      false
-    } else true
-  }
-}
-

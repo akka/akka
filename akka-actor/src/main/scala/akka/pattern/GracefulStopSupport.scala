@@ -4,9 +4,9 @@
 
 package akka.pattern
 
-import akka.dispatch.{ Promise, Future }
 import akka.actor._
 import akka.util.{ Timeout, Duration }
+import akka.dispatch.{ Unwatch, Watch, Promise, Future }
 
 trait GracefulStopSupport {
   /**
@@ -39,11 +39,11 @@ trait GracefulStopSupport {
     } else system match {
       case e: ExtendedActorSystem ⇒
         val ref = PromiseActorRef(e.provider, Timeout(timeout))
-        e.deathWatch.subscribe(ref, target)
+        ref.sendSystemMessage(Watch(target, ref))
         ref.result onComplete {
           case Right(Terminated(`target`)) ⇒ () // Ignore
-          case _                           ⇒ e.deathWatch.unsubscribe(ref, target)
-        } // Just making sure we're not leaking here
+          case _                           ⇒ ref.sendSystemMessage(Unwatch(target, ref)) // Just making sure we're not leaking here
+        }
         target ! PoisonPill
         ref.result map { case Terminated(`target`) ⇒ true }
       case s ⇒ throw new IllegalArgumentException("Unknown ActorSystem implementation: '" + s + "'")

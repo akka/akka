@@ -4,12 +4,11 @@
 package akka.pattern
 
 import java.util.concurrent.TimeoutException
-import akka.dispatch.{ Promise, Terminate, SystemMessage, Future }
-import akka.event.DeathWatch
 import akka.util.Timeout
 import annotation.tailrec
 import akka.util.Unsafe
 import akka.actor._
+import akka.dispatch._
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
@@ -229,9 +228,14 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       if (!completedJustNow) provider.deadLetters ! message
   }
 
-  override def sendSystemMessage(message: SystemMessage): Unit = message match {
-    case _: Terminate ⇒ stop()
-    case _            ⇒
+  override def sendSystemMessage(message: SystemMessage): Unit = {
+    val self = this
+    message match {
+      case _: Terminate             ⇒ stop()
+      case Watch(`self`, watcher)   ⇒ //FIXME IMPLEMENT
+      case Unwatch(`self`, watcher) ⇒ //FIXME IMPLEMENT
+      case _                        ⇒
+    }
   }
 
   override def isTerminated: Boolean = state match {
@@ -241,23 +245,22 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 
   @tailrec
   override def stop(): Unit = {
-    def ensurePromiseCompleted(): Unit =
-      if (!result.isCompleted) result.tryComplete(Left(new ActorKilledException("Stopped")))
+    def ensureCompleted(): Unit = if (!result.isCompleted) result.tryComplete(Left(new ActorKilledException("Stopped")))
     state match {
-      case null ⇒
-        // if path was never queried nobody can possibly be watching us, so we don't have to publish termination either
-        if (updateState(null, Stopped)) ensurePromiseCompleted()
-        else stop()
+      case null ⇒ // if path was never queried nobody can possibly be watching us, so we don't have to publish termination either
+        if (updateState(null, Stopped)) ensureCompleted() else stop()
       case p: ActorPath ⇒
         if (updateState(p, StoppedWithPath(p))) {
           try {
-            ensurePromiseCompleted()
-            provider.deathWatch.publish(Terminated(this))
+            ensureCompleted()
+            val termination = Terminated(this)(stopped = true)
+            // watchedBy foreach { w => w.tell(termination) }
+            // watching foreach { w.sendSystemMessage(Unwatch(w, self)) }
           } finally {
             provider.unregisterTempActor(p)
           }
         } else stop()
-      case Stopped | _: StoppedWithPath ⇒
+      case Stopped | _: StoppedWithPath ⇒ // already stopped
       case Registering                  ⇒ stop() // spin until registration is completed before stopping
     }
   }
