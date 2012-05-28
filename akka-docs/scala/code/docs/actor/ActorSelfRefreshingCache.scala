@@ -32,9 +32,6 @@ class CacheRefresher(cache: RefreshableCache, refreshEvery: Duration) extends Ac
 //#cache-actor
 
 //#refreshable-cache-trait
-
-import java.util.concurrent.atomic.AtomicReference
-
 trait RefreshableCache { 
   def refresh()
 }
@@ -42,6 +39,8 @@ trait RefreshableCache {
 //#refreshable-cache-trait
 
 //#example-cache
+import java.util.concurrent.atomic.AtomicReference
+
 trait DataCache {
   def isValid(valueToCheck: String): Boolean
 }
