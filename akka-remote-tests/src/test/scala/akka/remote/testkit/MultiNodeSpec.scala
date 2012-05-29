@@ -77,13 +77,13 @@ abstract class MultiNodeConfig {
 
   def deployOnAll(deployment: String): Unit = _allDeploy :+= deployment
 
-  private[testkit] lazy val mySelf: RoleName = {
+  private[testkit] lazy val myself: RoleName = {
     require(_roles.size > MultiNodeSpec.selfIndex, "not enough roles declared for this test")
     _roles(MultiNodeSpec.selfIndex)
   }
 
   private[testkit] def config: Config = {
-    val configs = (_nodeConf get mySelf).toList ::: _commonConf.toList ::: MultiNodeSpec.nodeConfig :: AkkaSpec.testConf :: Nil
+    val configs = (_nodeConf get myself).toList ::: _commonConf.toList ::: MultiNodeSpec.nodeConfig :: AkkaSpec.testConf :: Nil
     configs reduce (_ withFallback _)
   }
 
@@ -128,13 +128,13 @@ object MultiNodeSpec {
 
 }
 
-abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem, roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
+abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
   extends AkkaSpec(_system) {
 
   import MultiNodeSpec._
 
   def this(config: MultiNodeConfig) =
-    this(config.mySelf, ActorSystem(AkkaSpec.getCallerName, config.config), config.roles, config.deployments)
+    this(config.myself, ActorSystem(AkkaSpec.getCallerName, config.config), config.roles, config.deployments)
 
   /*
    * Test Class Interface
@@ -165,13 +165,13 @@ abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem, roles: 
    * to the `roleMap`).
    */
   def runOn(nodes: RoleName*)(thunk: ⇒ Unit): Unit = {
-    if (nodes exists (_ == mySelf)) {
+    if (nodes exists (_ == myself)) {
       thunk
     }
   }
 
   def ifNode[T](nodes: RoleName*)(yes: ⇒ T)(no: ⇒ T): T = {
-    if (nodes exists (_ == mySelf)) yes else no
+    if (nodes exists (_ == myself)) yes else no
   }
 
   /**
@@ -198,9 +198,9 @@ abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem, roles: 
 
   private val controllerAddr = new InetSocketAddress(nodeNames(0), 4711)
   if (selfIndex == 0) {
-    testConductor.startController(initialParticipants, mySelf, controllerAddr).await
+    testConductor.startController(initialParticipants, myself, controllerAddr).await
   } else {
-    testConductor.startClient(mySelf, controllerAddr).await
+    testConductor.startClient(myself, controllerAddr).await
   }
 
   // now add deployments, if so desired
@@ -210,7 +210,7 @@ abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem, roles: 
   }
   private val replacements = roles map (r ⇒ Replacement("@" + r.name + "@", r))
   private val deployer = system.asInstanceOf[ExtendedActorSystem].provider.deployer
-  deployments(mySelf) foreach { str ⇒
+  deployments(myself) foreach { str ⇒
     val deployString = (str /: replacements) {
       case (base, r @ Replacement(tag, _)) ⇒
         base.indexOf(tag) match {

@@ -16,9 +16,7 @@ object ClientDowningNodeThatIsUpMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.auto-down = off")).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class ClientDowningNodeThatIsUpMultiJvmNode1 extends ClientDowningNodeThatIsUpSpec

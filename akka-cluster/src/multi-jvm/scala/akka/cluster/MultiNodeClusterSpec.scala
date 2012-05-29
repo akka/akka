@@ -15,6 +15,7 @@ import akka.util.Duration
 object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.cluster {
+      auto-down                          = off
       gossip-frequency                   = 200 ms
       leader-actions-frequency           = 200 ms
       unreachable-nodes-reaper-frequency = 200 ms
@@ -46,7 +47,7 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
    * out of all nodes in the cluster. First
    * member in the cluster ring is expected leader.
    */
-  def assertLeader(nodesInCluster: RoleName*): Unit = if (nodesInCluster.contains(mySelf)) {
+  def assertLeader(nodesInCluster: RoleName*): Unit = if (nodesInCluster.contains(myself)) {
     nodesInCluster.length must not be (0)
     val expectedLeader = roleOfLeader(nodesInCluster)
     cluster.isLeader must be(ifNode(expectedLeader)(true)(false))
