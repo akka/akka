@@ -20,7 +20,7 @@ import akka.remote.testkit.MultiNodeConfig
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false))
-  
+
   val master = role("master")
   val slave = role("slave")
 }
@@ -34,19 +34,19 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with Im
 
   def initialParticipants = 2
 
-  runOn(master) {
-    system.actorOf(Props(new Actor {
-      def receive = {
-        case x ⇒ testActor ! x; sender ! x
-      }
-    }), "echo")
-  }
-
-  val echo = system.actorFor(node(master) / "user" / "echo")
+  lazy val echo = system.actorFor(node(master) / "user" / "echo")
 
   "A TestConductor" must {
 
     "enter a barrier" in {
+      runOn(master) {
+        system.actorOf(Props(new Actor {
+          def receive = {
+            case x ⇒ testActor ! x; sender ! x
+          }
+        }), "echo")
+      }
+
       testConductor.enter("name")
     }
 

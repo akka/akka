@@ -14,6 +14,7 @@ import com.typesafe.config.ConfigFactory
 import akka.dispatch.Await.Awaitable
 import akka.dispatch.Await
 import akka.util.Duration
+import akka.util.NonFatal
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
 import akka.remote.testconductor.RoleName
@@ -214,8 +215,20 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: 
     val deployString = (str /: replacements) {
       case (base, r @ Replacement(tag, _)) ⇒
         base.indexOf(tag) match {
-          case -1    ⇒ base
-          case start ⇒ base.replace(tag, r.addr)
+          case -1 ⇒ base
+          case start ⇒
+            val replaceWith = try
+              r.addr
+            catch {
+              case NonFatal(e) ⇒
+                // might happen if all test cases are ignored (excluded) and
+                // controller node is finished/exited before r.addr is run
+                // on the other nodes
+                val unresolved = "akka://unresolved-replacement-" + r.role.name
+                log.warning(unresolved + " due to: " + e.getMessage)
+                unresolved
+            }
+            base.replace(tag, replaceWith)
         }
     }
     import scala.collection.JavaConverters._
