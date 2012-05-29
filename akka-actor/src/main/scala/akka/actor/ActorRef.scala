@@ -421,8 +421,9 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
   }
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
-    case d: DeadLetter ⇒ // do NOT form endless loops, since deadLetters will resend!
-    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+    case DeadLetter(w: Watch, _, _) ⇒ sendSystemMessage(w)
+    case d: DeadLetter              ⇒ // do NOT form endless loops, since deadLetters will resend!
+    case _                          ⇒ eventStream.publish(DeadLetter(message, sender, this))
   }
 }
 
@@ -442,8 +443,9 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
   }
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
-    case d: DeadLetter ⇒ eventStream.publish(d)
-    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+    case DeadLetter(w: Watch, _, _) ⇒ sendSystemMessage(w)
+    case d: DeadLetter              ⇒ eventStream.publish(d)
+    case _                          ⇒ eventStream.publish(DeadLetter(message, sender, this))
   }
 
   @throws(classOf[java.io.ObjectStreamException])

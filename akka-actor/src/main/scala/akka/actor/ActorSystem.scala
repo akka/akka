@@ -542,7 +542,8 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   //FIXME Why do we need this at all?
   val deadLetterQueue: MessageQueue = new MessageQueue {
-    def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
+    def enqueue(receiver: ActorRef, envelope: Envelope): Unit =
+      deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver)
     def dequeue() = null
     def hasMessages = false
     def numberOfMessages = 0
@@ -551,7 +552,8 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   //FIXME Why do we need this at all?
   val deadLetterMailbox: Mailbox = new Mailbox(null, deadLetterQueue) {
     becomeClosed()
-    def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit = deadLetters ! DeadLetter(handle, receiver, receiver)
+    def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit =
+      deadLetters ! DeadLetter(handle, receiver, receiver)
     def systemDrain(): SystemMessage = null
     def hasSystemMessages = false
   }
