@@ -101,12 +101,12 @@ object ByteIterator {
     final override def clone: ByteArrayIterator = new ByteArrayIterator(array, from, until)
 
     final override def take(n: Int): this.type = {
-      until = until min (from + (0 max n))
+      if (n < len) until = { if (n > 0) (from + n) else from }
       this
     }
 
     final override def drop(n: Int): this.type = {
-      from = until min (from + (0 max n))
+      if (n > 0) from = { if (n < len) (from + n) else until }
       this
     }
 
@@ -389,8 +389,10 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   // the parent class.
   override def drop(n: Int): this.type = throw new UnsupportedOperationException("Method drop is not implemented in ByteIterator")
 
-  final override def slice(from: Int, until: Int): this.type =
-    drop(from).take(until - from)
+  final override def slice(from: Int, until: Int): this.type = {
+    if (from > 0) drop(from).take(until - from)
+    else take(until)
+  }
 
   // *must* be overridden by derived classes. This construction is necessary
   // to specialize the return type, as the method is already implemented in
