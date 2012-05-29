@@ -14,7 +14,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
-object DirectRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
+object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
@@ -28,20 +28,20 @@ object DirectRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
   val slave = role("slave")
 
   deployOn(master, """/service-hello.remote = "@slave@" """)
-  
+
   deployOnAll("""/service-hello2.remote = "@slave@" """)
 }
 
-class DirectRoutedRemoteActorMultiJvmNode1 extends DirectRoutedRemoteActorSpec
-class DirectRoutedRemoteActorMultiJvmNode2 extends DirectRoutedRemoteActorSpec
+class NewRemoteActorMultiJvmNode1 extends NewRemoteActorSpec
+class NewRemoteActorMultiJvmNode2 extends NewRemoteActorSpec
 
-class DirectRoutedRemoteActorSpec extends MultiNodeSpec(DirectRoutedRemoteActorMultiJvmSpec)
+class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
   with ImplicitSender with DefaultTimeout {
-  import DirectRoutedRemoteActorMultiJvmSpec._
+  import NewRemoteActorMultiJvmSpec._
 
   def initialParticipants = 2
 
-  "A new remote actor configured with a Direct router" must {
+  "A new remote actor" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       runOn(master) {
