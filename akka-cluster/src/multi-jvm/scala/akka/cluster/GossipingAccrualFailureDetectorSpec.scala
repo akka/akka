@@ -16,7 +16,7 @@ object GossipingAccrualFailureDetectorMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.failure-detector.threshold=5")).
+    withFallback(ConfigFactory.parseString("akka.cluster.failure-detector.threshold=4")).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
@@ -40,7 +40,7 @@ abstract class GossipingAccrualFailureDetectorSpec extends MultiNodeSpec(Gossipi
 
   "A Gossip-driven Failure Detector" must {
 
-    "receive gossip heartbeats so that all healthy systems in the cluster are marked 'available'" taggedAs LongRunningTest in {
+    "receive gossip heartbeats so that all member nodes in the cluster are marked 'available'" taggedAs LongRunningTest in {
       // make sure that the node-to-join is started before other join
       runOn(first) {
         cluster.self
@@ -49,25 +49,24 @@ abstract class GossipingAccrualFailureDetectorSpec extends MultiNodeSpec(Gossipi
 
       cluster.join(firstAddress)
 
-      log.info("Let the systems gossip for a while...")
-      10.seconds.dilated.sleep // let them gossip
+      5.seconds.dilated.sleep // let them gossip
       cluster.failureDetector.isAvailable(firstAddress) must be(true)
       cluster.failureDetector.isAvailable(secondAddress) must be(true)
       cluster.failureDetector.isAvailable(thirdAddress) must be(true)
     }
 
-    "mark system as 'unavailable' if a system in the cluster is shut down (and its heartbeats stops)" taggedAs LongRunningTest in {
+    "mark node as 'unavailable' if a node in the cluster is shut down (and its heartbeats stops)" taggedAs LongRunningTest in {
       runOn(first) {
         testConductor.shutdown(third, 0)
         testConductor.removeNode(third)
       }
 
       runOn(first, second) {
-        log.info("Give the remaning systems time to detect failure...")
-        15.seconds.dilated.sleep // give them time to detect failure
+        // remaning nodes should detect failure...
+        awaitCond(!cluster.failureDetector.isAvailable(thirdAddress), 10.seconds)
+        // other connections still ok
         cluster.failureDetector.isAvailable(firstAddress) must be(true)
         cluster.failureDetector.isAvailable(secondAddress) must be(true)
-        cluster.failureDetector.isAvailable(thirdAddress) must be(false)
       }
     }
   }
