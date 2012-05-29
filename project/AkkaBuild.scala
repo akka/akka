@@ -52,7 +52,8 @@ object AkkaBuild extends Build {
       packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
       artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle")),
       // to fix scaladoc generation
-      fullClasspath in doc in Compile <<= fullClasspath in Compile
+      fullClasspath in doc in Compile <<= fullClasspath in Compile,
+      libraryDependencies ++= Dependencies.actor
     )
   )
 
@@ -392,6 +393,10 @@ object AkkaBuild extends Build {
 object Dependencies {
   import Dependency._
 
+  val actor = Seq(
+    config
+  )
+
   val testkit = Seq(Test.scalatest, Test.junit)
 
   val actorTests = Seq(
@@ -442,7 +447,7 @@ object Dependency {
   }
 
   // Compile
-
+  val config        = "com.typesafe"                % "config"                 % "0.4.1"
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
@@ -502,7 +507,7 @@ object OSGi {
   )
 
   def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
-  def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4,0.5)\"".format(packageName)
+  def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
   def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.2,2.10)\"".format(packageName)
 
 }
