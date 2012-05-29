@@ -11,7 +11,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
-object SimpleRemoteMultiJvmSpec extends MultiNodeConfig {
+object LookupRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
@@ -26,12 +26,12 @@ object SimpleRemoteMultiJvmSpec extends MultiNodeConfig {
 
 }
 
-class SimpleRemoteMultiJvmNode1 extends SimpleRemoteSpec
-class SimpleRemoteMultiJvmNode2 extends SimpleRemoteSpec
+class LookupRemoteActorMultiJvmNode1 extends LookupRemoteActorSpec
+class LookupRemoteActorMultiJvmNode2 extends LookupRemoteActorSpec
 
-class SimpleRemoteSpec extends MultiNodeSpec(SimpleRemoteMultiJvmSpec)
+class LookupRemoteActorSpec extends MultiNodeSpec(LookupRemoteActorMultiJvmSpec)
   with ImplicitSender with DefaultTimeout {
-  import SimpleRemoteMultiJvmSpec._
+  import LookupRemoteActorMultiJvmSpec._
 
   def initialParticipants = 2
 

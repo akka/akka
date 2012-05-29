@@ -3,9 +3,7 @@
  */
 package akka.remote.testconductor
 
-import akka.remote.AkkaRemoteSpec
 import com.typesafe.config.ConfigFactory
-import akka.remote.AbstractRemoteActorMultiJvmSpec
 import akka.actor.Props
 import akka.actor.Actor
 import akka.dispatch.Await
@@ -20,7 +18,7 @@ import akka.remote.testkit.MultiNodeConfig
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false))
-  
+
   val master = role("master")
   val slave = role("slave")
 }
