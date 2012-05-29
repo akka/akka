@@ -129,6 +129,14 @@ object MultiNodeSpec {
 
 }
 
+/**
+ * Note: To be able to run tests with everything ignored or excluded by tags
+ * you must not use `testconductor`, or helper methods that use `testconductor`,
+ * from the constructor of your test class. Otherwise the controller node might
+ * be shutdown before other nodes have completed and you will see errors like:
+ * `AskTimeoutException: sending to terminated ref breaks promises`. Using lazy
+ * val is fine.
+ */
 abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
   extends AkkaSpec(_system) {
 
