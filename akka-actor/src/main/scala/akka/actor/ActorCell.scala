@@ -577,7 +577,7 @@ private[akka] class ActorCell(
       if (watchee == self) {
         if (!watchedBy.contains(watcher)) {
           watchedBy += watcher
-          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), self + " watched by " + watcher))
+          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + watcher))
         }
       } else if (watcher == self) {
         watch(watchee)
@@ -588,7 +588,7 @@ private[akka] class ActorCell(
       if (watchee == self) {
         if (watchedBy.contains(watcher)) {
           watchedBy -= watcher
-          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), self + " unwatched by " + watcher))
+          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + watcher))
         }
       } else if (watcher == self) {
         unwatch(watchee)
