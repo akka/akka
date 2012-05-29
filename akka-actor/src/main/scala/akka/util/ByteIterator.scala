@@ -16,27 +16,6 @@ import scala.annotation.tailrec
 import java.nio.ByteBuffer
 
 object ByteIterator {
-  /**
-   * An InputStream that directly wraps a ByteIterator without copying
-   */
-  final class InputStreamWrapper(val iterator: ByteIterator) extends java.io.InputStream {
-    override def available: Int = iterator.len
-
-    def read: Int = if (iterator.hasNext) (iterator.next.toInt & 0xff) else -1
-
-    override def read(b: Array[Byte], off: Int, len: Int): Int = {
-      val nRead = math.min(iterator.len, len - off)
-      iterator.copyToArray(b, off, nRead)
-      nRead
-    }
-
-    override def skip(n: Long): Long = {
-      val nSkip = math.min(iterator.len, n.toInt)
-      iterator.drop(nSkip)
-      nSkip
-    }
-  }
-
   object ByteArrayIterator {
     private val emptyArray: Array[Byte] = Array.ofDim[Byte](0)
 
@@ -50,6 +29,8 @@ object ByteIterator {
   }
 
   class ByteArrayIterator private (private var array: Array[Byte], private var from: Int, private var until: Int) extends ByteIterator {
+    iterator ⇒
+
     protected[util] final def internalArray = array
     protected[util] final def internalFrom = from
     protected[util] final def internalUntil = until
@@ -170,6 +151,28 @@ object ByteIterator {
         drop(copyLength)
       }
       copyLength
+    }
+
+    def asInputStream: java.io.InputStream = new java.io.InputStream {
+      override def available: Int = iterator.len
+
+      def read: Int = if (hasNext) (next().toInt & 0xff) else -1
+
+      override def read(b: Array[Byte], off: Int, len: Int): Int = {
+        if ((off < 0) || (len < 0) || (off + len > b.length)) throw new IndexOutOfBoundsException
+        if (len == 0) 0
+        else if (!isEmpty) {
+          val nRead = math.min(available, len)
+          copyToArray(b, off, nRead)
+          nRead
+        } else -1
+      }
+
+      override def skip(n: Long): Long = {
+        val nSkip = math.min(iterator.len, n.toInt)
+        iterator.drop(nSkip)
+        nSkip
+      }
     }
   }
 
@@ -350,6 +353,33 @@ object ByteIterator {
       val n = iterators.foldLeft(0) { _ + _.copyToBuffer(buffer) }
       normalize()
       n
+    }
+
+    def asInputStream: java.io.InputStream = new java.io.InputStream {
+      override def available: Int = current.len
+
+      def read: Int = if (hasNext) (next().toInt & 0xff) else -1
+
+      override def read(b: Array[Byte], off: Int, len: Int): Int = {
+        val nRead = current.asInputStream.read(b, off, len)
+        normalize()
+        nRead
+      }
+
+      override def skip(n: Long): Long = {
+        @tailrec def skipImpl(n: Long, skipped: Long): Long = if (n > 0) {
+          if (!isEmpty) {
+            val m = current.asInputStream.skip(n)
+            normalize()
+            val newN = n - m
+            val newSkipped = skipped + m
+            if (newN > 0) skipImpl(newN, newSkipped)
+            else newSkipped
+          } else 0
+        } else 0
+
+        skipImpl(n, 0)
+      }
     }
   }
 }
@@ -598,5 +628,5 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
    * Read and skip operations on the stream will advance the iterator
    * accordingly.
    */
-  def asInputStream: java.io.InputStream = new ByteIterator.InputStreamWrapper(this)
+  def asInputStream: java.io.InputStream
 }
