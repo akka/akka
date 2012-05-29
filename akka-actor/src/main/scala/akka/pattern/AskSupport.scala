@@ -228,14 +228,11 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       if (!completedJustNow) provider.deadLetters ! message
   }
 
-  override def sendSystemMessage(message: SystemMessage): Unit = {
-    val self = this
-    message match {
-      case _: Terminate             ⇒ stop()
-      case Watch(`self`, watcher)   ⇒ //FIXME IMPLEMENT
-      case Unwatch(`self`, watcher) ⇒ //FIXME IMPLEMENT
-      case _                        ⇒
-    }
+  override def sendSystemMessage(message: SystemMessage): Unit = message match {
+    case _: Terminate              ⇒ stop()
+    case Watch(watchee, watcher)   ⇒ //FIXME IMPLEMENT
+    case Unwatch(watchee, watcher) ⇒ //FIXME IMPLEMENT
+    case _                         ⇒
   }
 
   override def isTerminated: Boolean = state match {
@@ -254,8 +251,8 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
           try {
             ensureCompleted()
             val termination = Terminated(this)(stopped = true)
-            // watchedBy foreach { w => w.tell(termination) }
-            // watching foreach { w.sendSystemMessage(Unwatch(w, self)) }
+            // FIXME watchedBy foreach { w => w.tell(termination) }
+            // FIXME watching foreach { w.sendSystemMessage(Unwatch(w, self)) }
           } finally {
             provider.unregisterTempActor(p)
           }

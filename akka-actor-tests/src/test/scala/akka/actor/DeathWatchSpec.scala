@@ -36,7 +36,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
     "notify with one Terminated message when an Actor is stopped" in {
       val terminal = system.actorOf(Props.empty)
       startWatching(terminal) ! "hallo"
-      expectMsg("hallo") // this ensures that the DaemonMsgWatch has been received before we send the PoisonPill
+      expectMsg("hallo")
 
       terminal ! PoisonPill
 

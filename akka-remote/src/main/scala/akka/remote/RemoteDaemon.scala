@@ -12,7 +12,6 @@ import akka.dispatch.Watch
 
 private[akka] sealed trait DaemonMsg
 private[akka] case class DaemonMsgCreate(props: Props, deploy: Deploy, path: String, supervisor: ActorRef) extends DaemonMsg
-private[akka] case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMsg
 
 /**
  * Internal system "daemon" actor for remote internal communication.
@@ -67,15 +66,11 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
             case _ ⇒
               log.error("remote path does not match path from message [{}]", message)
           }
-        case DaemonMsgWatch(watcher, watched) ⇒
-          system.actorFor(watcher.path.root / "remote") match {
-            case a: InternalActorRef ⇒ a.sendSystemMessage(Watch(watched, a))
-          }
       }
 
     case Terminated(child: LocalActorRef) ⇒ removeChild(child.path.elements.drop(1).mkString("/"))
 
-    case t: Terminated                    ⇒ //FIXME system.deathWatch.publish(t)
+    case t: Terminated                    ⇒
 
     case unknown                          ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }

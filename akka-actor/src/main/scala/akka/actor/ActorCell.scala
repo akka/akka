@@ -460,28 +460,22 @@ private[akka] class ActorCell(
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   final def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
 
-  override final def watch(subject: ActorRef): ActorRef = {
-    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    subject match {
-      case a: InternalActorRef ⇒
-        if (!watching.contains(a)) {
-          watching += a
-          a.sendSystemMessage(Watch(a, self))
-        }
-    }
-    subject
+  override final def watch(subject: ActorRef): ActorRef = subject match {
+    case a: InternalActorRef ⇒
+      if (!watching.contains(a)) {
+        a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+        watching += a
+      }
+      a
   }
 
-  override final def unwatch(subject: ActorRef): ActorRef = {
-    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    subject match {
-      case a: InternalActorRef ⇒
-        if (watching.contains(a)) {
-          watching -= a
-          a.sendSystemMessage(Unwatch(a, self))
-        }
-    }
-    subject
+  override final def unwatch(subject: ActorRef): ActorRef = subject match {
+    case a: InternalActorRef ⇒
+      if (watching.contains(a)) {
+        a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+        watching -= a
+      }
+      a
   }
 
   final def children: Iterable[ActorRef] = childrenRefs.children
@@ -579,18 +573,26 @@ private[akka] class ActorCell(
 
     def resume(): Unit = if (isNormal) dispatcher resume this
 
-    def addWatcher(watcher: ActorRef): Unit = if (!isTerminating) {
-      if (!watchedBy.contains(watcher)) {
-        watchedBy += watcher
-        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), self + " watched by " + watcher))
-      }
+    def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
+      if (watchee == self) {
+        if (!watchedBy.contains(watcher)) {
+          watchedBy += watcher
+          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), self + " watched by " + watcher))
+        }
+      } else if (watcher == self) {
+        watch(watchee)
+      } else println("addNOOOOOOOOO: " + watchee + " => " + watcher)
     }
 
-    def remWatcher(watcher: ActorRef): Unit = if (!isTerminating) {
-      if (watchedBy.contains(watcher)) {
-        watchedBy -= watcher
-        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), self + " unwatched by " + watcher))
-      }
+    def remWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
+      if (watchee == self) {
+        if (watchedBy.contains(watcher)) {
+          watchedBy -= watcher
+          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), self + " unwatched by " + watcher))
+        }
+      } else if (watcher == self) {
+        unwatch(watchee)
+      } else println("remNOOOOOOOOO: " + watchee + " => " + watcher)
     }
 
     def terminate() {
@@ -617,17 +619,15 @@ private[akka] class ActorCell(
 
     try {
       message match {
-        case Create()                 ⇒ create()
-        case Recreate(cause)          ⇒ recreate(cause)
-        case Watch(`self`, watcher)   ⇒ addWatcher(watcher)
-        case Watch(watchee, `self`)   ⇒ watch(watchee)
-        case Unwatch(`self`, watcher) ⇒ remWatcher(watcher)
-        case Unwatch(watchee, `self`) ⇒ unwatch(watchee)
-        case Suspend()                ⇒ suspend()
-        case Resume()                 ⇒ resume()
-        case Terminate()              ⇒ terminate()
-        case Supervise(child)         ⇒ supervise(child)
-        case ChildTerminated(child)   ⇒ handleChildTerminated(child)
+        case Create()                  ⇒ create()
+        case Recreate(cause)           ⇒ recreate(cause)
+        case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
+        case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
+        case Suspend()                 ⇒ suspend()
+        case Resume()                  ⇒ resume()
+        case Terminate()               ⇒ terminate()
+        case Supervise(child)          ⇒ supervise(child)
+        case ChildTerminated(child)    ⇒ handleChildTerminated(child)
       }
     } catch {
       case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(e, "error while processing " + message)
@@ -714,27 +714,33 @@ private[akka] class ActorCell(
     } finally {
       try {
         parent.sendSystemMessage(ChildTerminated(self))
+
         if (!watchedBy.isEmpty) {
           val terminated = Terminated(self)(stopped = true)
-          watchedBy foreach {
-            watcher ⇒
-              try watcher.tell(terminated) catch {
-                case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
-              }
-          }
+          try {
+            watchedBy foreach {
+              watcher ⇒
+                try watcher.tell(terminated, self) catch {
+                  case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
+                }
+            }
+          } finally watchedBy = emptyActorRefSet
         }
+
         if (!watching.isEmpty) {
-          watching foreach {
-            watchee ⇒
-              try watchee.tell(Unwatch(watchee, self)) catch {
-                case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
-              }
-          }
+          try {
+            watching foreach {
+              case watchee: InternalActorRef ⇒
+                try watchee.sendSystemMessage(Unwatch(watchee, self)) catch {
+                  case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
+                }
+            }
+          } finally watching = emptyActorRefSet
         }
         if (system.settings.DebugLifecycle)
-          system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped"))
+          system.eventStream.publish(Debug(self.path.toString, clazz(a), "stopped"))
       } finally {
-        behaviorStack = ActorCell.behaviorStackPlaceHolder
+        behaviorStack = behaviorStackPlaceHolder
         clearActorFields(a)
         actor = null
       }

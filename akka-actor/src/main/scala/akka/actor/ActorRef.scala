@@ -409,12 +409,16 @@ private[akka] object DeadLetterActorRef {
  *
  * INTERNAL API
  */
-private[akka] class EmptyLocalActorRef(
-  override val provider: ActorRefProvider,
-  override val path: ActorPath,
-  val eventStream: EventStream) extends MinimalActorRef {
+private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
+                                       override val path: ActorPath,
+                                       val eventStream: EventStream) extends MinimalActorRef {
 
   override def isTerminated(): Boolean = true
+
+  override def sendSystemMessage(message: SystemMessage): Unit = message match {
+    case Watch(maybeThis, watcher) if maybeThis == this ⇒ watcher ! Terminated(this)(stopped = false)
+    case _ ⇒
+  }
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
     case d: DeadLetter ⇒ // do NOT form endless loops, since deadLetters will resend!
@@ -428,8 +432,15 @@ private[akka] class EmptyLocalActorRef(
  *
  * INTERNAL API
  */
-private[akka] class DeadLetterActorRef(_provider: ActorRefProvider, _path: ActorPath, _eventStream: EventStream)
-  extends EmptyLocalActorRef(_provider, _path, _eventStream) {
+private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
+                                       _path: ActorPath,
+                                       _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
+
+  override def sendSystemMessage(message: SystemMessage): Unit = message match {
+    case Watch(maybeThis, watcher) if maybeThis == this ⇒
+    case Watch(other, watcher) ⇒ watcher ! Terminated(other)(stopped = false)
+    case _ ⇒
+  }
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
     case d: DeadLetter ⇒ eventStream.publish(d)
