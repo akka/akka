@@ -295,11 +295,11 @@ object AkkaBuild extends Build {
   )
 
   val excludeTestNames = SettingKey[Seq[String]]("exclude-test-names")
-  val excludeTestTags = SettingKey[Seq[String]]("exclude-test-tags")
-  val includeTestTags = SettingKey[Seq[String]]("include-test-tags")
-  val onlyTestTags = SettingKey[Seq[String]]("only-test-tags")
+  val excludeTestTags = SettingKey[Set[String]]("exclude-test-tags")
+  val includeTestTags = SettingKey[Set[String]]("include-test-tags")
+  val onlyTestTags = SettingKey[Set[String]]("only-test-tags")
 
-  val defaultExcludedTags = Seq("timing", "long-running")
+  val defaultExcludedTags = Set("timing", "long-running")
 
   lazy val defaultMultiJvmOptions: Seq[String] = {
     (System.getProperty("akka.test.timefactor") match {
@@ -315,28 +315,28 @@ object AkkaBuild extends Build {
 
   // for excluding tests by tag use system property: -Dakka.test.tags.exclude=<tag name>
   // note that it will not be used if you specify -Dakka.test.tags.only
-  lazy val useExcludeTestTags: Seq[String] = {
-    if (useOnlyTestTags.isEmpty) systemPropertyAsSeq("akka.test.tags.exclude", defaultExcludedTags)
-    else Seq.empty
+  lazy val useExcludeTestTags: Set[String] = {
+    if (useOnlyTestTags.isEmpty) defaultExcludedTags ++ systemPropertyAsSeq("akka.test.tags.exclude").toSet
+    else Set.empty
   }
 
   // for including tests by tag use system property: -Dakka.test.tags.include=<tag name>
   // note that it will not be used if you specify -Dakka.test.tags.only
-  lazy val useIncludeTestTags: Seq[String] = {
-    if (useOnlyTestTags.isEmpty) systemPropertyAsSeq("akka.test.tags.include")
-    else Seq.empty
+  lazy val useIncludeTestTags: Set[String] = {
+    if (useOnlyTestTags.isEmpty) systemPropertyAsSeq("akka.test.tags.include").toSet
+    else Set.empty
   }
 
   // for running only tests by tag use system property: -Dakka.test.tags.only=<tag name>
-  lazy val useOnlyTestTags: Seq[String] = systemPropertyAsSeq("akka.test.tags.only")
+  lazy val useOnlyTestTags: Set[String] = systemPropertyAsSeq("akka.test.tags.only").toSet
 
-  def systemPropertyAsSeq(name: String, default: Seq[String] = Seq.empty): Seq[String] = {
+  def systemPropertyAsSeq(name: String): Seq[String] = {
     val prop = System.getProperty(name, "")
-    if (prop.isEmpty) default else prop.split(",").toSeq
+    if (prop.isEmpty) Seq.empty else prop.split(",").toSeq
   }
 
   lazy val defaultMultiJvmScalatestOptions: Seq[String] = {
-    val excludeTags = (useExcludeTestTags.toSet -- useIncludeTestTags.toSet).toSeq
+    val excludeTags = (useExcludeTestTags -- useIncludeTestTags).toSeq
     Seq("-r", "org.scalatest.akka.QuietReporter") ++
     (if (excludeTags.isEmpty) Seq.empty else Seq("-l", excludeTags.mkString(" "))) ++
     (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", useOnlyTestTags.mkString(" ")))
@@ -364,7 +364,7 @@ object AkkaBuild extends Build {
 
     // add arguments for tests excluded by tag - includes override excludes (opposite to scalatest)
     testOptions in Test <++= (excludeTestTags, includeTestTags) map { (excludes, includes) =>
-      val tags = (excludes.toSet -- includes.toSet).toSeq
+      val tags = (excludes -- includes)
       if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
     },
 
