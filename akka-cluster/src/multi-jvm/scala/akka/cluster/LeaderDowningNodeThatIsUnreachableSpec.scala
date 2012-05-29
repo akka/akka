@@ -12,9 +12,9 @@ import akka.actor.Address
 import akka.util.duration._
 
 object LeaderDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
-  val first  = role("first")
+  val first = role("first")
   val second = role("second")
-  val third  = role("third")
+  val third = role("third")
   val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).

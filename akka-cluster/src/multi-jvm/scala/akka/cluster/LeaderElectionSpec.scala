@@ -16,11 +16,7 @@ object LeaderElectionMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
-        akka.cluster.auto-down = off
-        """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 
@@ -45,14 +41,14 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
     "be able to 'elect' a single leader" taggedAs LongRunningTest in {
       // make sure that the node-to-join is started before other join
       runOn(first) {
-        cluster
+        cluster.self
       }
       testConductor.enter("first-started")
 
-      if (mySelf != controller) {
+      if (myself != controller) {
         cluster.join(firstAddress)
         awaitUpConvergence(numberOfMembers = roles.size)
-        cluster.isLeader must be(mySelf == roles.head)
+        cluster.isLeader must be(myself == roles.head)
       }
       testConductor.enter("after")
     }
@@ -63,7 +59,7 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
       val leader = currentRoles.head
       val aUser = currentRoles.last
 
-      mySelf match {
+      myself match {
 
         case `controller` ⇒
           testConductor.enter("before-shutdown")
@@ -82,13 +78,13 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
           cluster.down(leaderAddress)
           testConductor.enter("after-down", "completed")
 
-        case _ if currentRoles.tail.contains(mySelf) ⇒
+        case _ if currentRoles.tail.contains(myself) ⇒
           // remaining cluster nodes, not shutdown
           testConductor.enter("before-shutdown", "after-shutdown", "after-down")
 
           awaitUpConvergence(currentRoles.size - 1)
           val nextExpectedLeader = currentRoles.tail.head
-          cluster.isLeader must be(mySelf == nextExpectedLeader)
+          cluster.isLeader must be(myself == nextExpectedLeader)
 
           testConductor.enter("completed")
 

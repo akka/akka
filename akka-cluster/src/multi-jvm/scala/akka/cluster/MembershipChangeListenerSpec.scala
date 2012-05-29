@@ -42,7 +42,7 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
 
       // make sure that the node-to-join is started before other join
       runOn(first) {
-        cluster
+        cluster.self
       }
       testConductor.enter("first-started")
 
