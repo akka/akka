@@ -31,7 +31,7 @@ Modules
 
 Akka is very modular and has many JARs for containing different features.
 
-- ``akka-actor-2.1-SNAPSHOT.jar`` -- Classic Actors, Typed Actors, IO Actor etc. Has ZERO dependencies.
+- ``akka-actor-2.1-SNAPSHOT.jar`` -- Classic Actors, Typed Actors, IO Actor etc.
 - ``akka-remote-2.1-SNAPSHOT.jar`` -- Remote Actors
 - ``akka-testkit-2.1-SNAPSHOT.jar`` -- Toolkit for testing Actor systems
 - ``akka-kernel-2.1-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server
@@ -43,8 +43,7 @@ Akka is very modular and has many JARs for containing different features.
 - ``akka-<storage-system>-mailbox-2.1-SNAPSHOT.jar`` -- Akka durable mailboxes
 
 How to see the JARs dependencies of each Akka module is described in the
-:ref:`dependencies` section. Worth noting is that ``akka-actor`` has zero
-external dependencies (apart from the ``scala-library.jar`` JAR).
+:ref:`dependencies` section.
 
 Using a release distribution
 ----------------------------

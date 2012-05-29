@@ -44,17 +44,12 @@ object Props {
   final val default = new Props()
 
   /**
-   * Returns a cached default implementation of Props.
-   */
-  def apply(): Props = default
-
-  /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance
    * of the supplied type using the default constructor.
    *
    * Scala API.
    */
-  def apply[T <: Actor: ClassManifest]: Props =
+  def apply[T <: Actor: ClassManifest](): Props =
     default.withCreator(implicitly[ClassManifest[T]].erasure.asInstanceOf[Class[_ <: Actor]])
 
   /**
