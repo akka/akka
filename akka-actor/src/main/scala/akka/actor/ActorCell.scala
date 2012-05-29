@@ -574,23 +574,29 @@ private[akka] class ActorCell(
     def resume(): Unit = if (isNormal) dispatcher resume this
 
     def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
-      if (watchee == self) {
+      val watcheeSelf = watchee == self
+      val watcherSelf = watcher == self
+
+      if (watcheeSelf && !watcherSelf) {
         if (!watchedBy.contains(watcher)) {
           watchedBy += watcher
           if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + watcher))
         }
-      } else if (watcher == self) {
+      } else if (!watcheeSelf && watcherSelf) {
         watch(watchee)
       } else println("addNOOOOOOOOO: " + watchee + " => " + watcher)
     }
 
     def remWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
-      if (watchee == self) {
+      val watcheeSelf = watchee == self
+      val watcherSelf = watcher == self
+
+      if (watcheeSelf && !watcherSelf) {
         if (watchedBy.contains(watcher)) {
           watchedBy -= watcher
           if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + watcher))
         }
-      } else if (watcher == self) {
+      } else if (!watcheeSelf && watcherSelf) {
         unwatch(watchee)
       } else println("remNOOOOOOOOO: " + watchee + " => " + watcher)
     }
