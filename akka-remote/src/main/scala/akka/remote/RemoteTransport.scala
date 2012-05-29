@@ -287,13 +287,10 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
       case l: LocalRef ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received local message {}", remoteMessage)
         remoteMessage.payload match {
-          case msg: SystemMessage ⇒
-            if (useUntrustedMode)
-              throw new SecurityException("RemoteModule server is operating is untrusted mode, can not send system message")
-            else l.sendSystemMessage(msg)
-          case _: AutoReceivedMessage if (useUntrustedMode) ⇒
-            throw new SecurityException("RemoteModule server is operating is untrusted mode, can not pass on a AutoReceivedMessage to the remote actor")
-          case m ⇒ l.!(m)(remoteMessage.sender)
+          case _: SystemMessage if useUntrustedMode       ⇒ log.warning("operating in UntrustedMode, dropping inbound system message")
+          case _: AutoReceivedMessage if useUntrustedMode ⇒ log.warning("operating in UntrustedMode, dropping inbound AutoReceivedMessage")
+          case msg: SystemMessage                         ⇒ l.sendSystemMessage(msg)
+          case msg                                        ⇒ l.!(msg)(remoteMessage.sender)
         }
       case r: RemoteRef ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", remoteMessage)

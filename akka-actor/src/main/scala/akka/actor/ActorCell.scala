@@ -725,7 +725,7 @@ private[akka] class ActorCell(
       dispatcher.reportFailure(new LogEventException(Error(e, self.path.toString, clazz(actor), "error while creating actor"), e))
       // prevent any further messages to be processed until the actor has been restarted
       dispatcher.suspend(this)
-      actor.supervisorStrategy.handleSupervisorFailing(self, children)
+      actor.supervisorStrategy.handleSupervisorFailing(self, children) // FIXME Should this be called on actor or failedActor?
       clearActorFields(actor) // If this fails, we need to ensure that preRestart isn't called.
     } finally {
       parent.tell(Failed(new ActorInitializationException(self, "exception during re-creation", e)), self)

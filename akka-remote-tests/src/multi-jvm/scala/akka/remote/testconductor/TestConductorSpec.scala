@@ -3,9 +3,7 @@
  */
 package akka.remote.testconductor
 
-import akka.remote.AkkaRemoteSpec
 import com.typesafe.config.ConfigFactory
-import akka.remote.AbstractRemoteActorMultiJvmSpec
 import akka.actor.Props
 import akka.actor.Actor
 import akka.dispatch.Await
@@ -20,7 +18,7 @@ import akka.remote.testkit.MultiNodeConfig
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false))
-  
+
   val master = role("master")
   val slave = role("slave")
 }
@@ -34,19 +32,19 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with Im
 
   def initialParticipants = 2
 
-  runOn(master) {
-    system.actorOf(Props(new Actor {
-      def receive = {
-        case x ⇒ testActor ! x; sender ! x
-      }
-    }), "echo")
-  }
-
-  val echo = system.actorFor(node(master) / "user" / "echo")
+  lazy val echo = system.actorFor(node(master) / "user" / "echo")
 
   "A TestConductor" must {
 
     "enter a barrier" in {
+      runOn(master) {
+        system.actorOf(Props(new Actor {
+          def receive = {
+            case x ⇒ testActor ! x; sender ! x
+          }
+        }), "echo")
+      }
+
       testConductor.enter("name")
     }
 

@@ -82,22 +82,17 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ OSGi.remote ++ Seq(
+    settings = defaultSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
-      parallelExecution in Test := false,
-      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
-      },
-      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      jvmOptions in MultiJvm := defaultMultiJvmOptions
+      parallelExecution in Test := false
     )
-  ) configs (MultiJvm)
+  )
 
   lazy val remoteTests = Project(
     id = "akka-remote-tests",
     base = file("akka-remote-tests"),
-    dependencies = Seq(remote % "compile;test->test;multi-jvm->multi-jvm", actorTests % "test->test", testkit % "test->test"),
+    dependencies = Seq(remote, actorTests % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
       // disable parallel tests
       parallelExecution in Test := false,
@@ -416,8 +411,7 @@ object Dependencies {
   )
 
   val remote = Seq(
-    netty, protobuf, Test.junit, Test.scalatest,
-    Test.zookeeper, Test.log4j // needed for ZkBarrier in multi-jvm tests
+    netty, protobuf, Test.junit, Test.scalatest
   )
 
   val cluster = Seq(Test.junit, Test.scalatest)
@@ -483,8 +477,6 @@ object Dependency {
     val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
     val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
     val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
-    val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % "3.4.0"      % "test" // ApacheV2
-    val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }
 }
 
