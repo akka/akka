@@ -52,7 +52,7 @@ class ScatterGatherRoutedRemoteActorSpec extends MultiNodeSpec(ScatterGatherRout
   def initialParticipants = 4
 
   "A new remote actor configured with a ScatterGatherFirstCompleted router" must {
-    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
+    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
 
       runOn(first, second, third) {
         testConductor.enter("start", "broadcast-end", "end", "done")

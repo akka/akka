@@ -40,7 +40,7 @@ class LookupRemoteActorSpec extends MultiNodeSpec(LookupRemoteActorMultiJvmSpec)
   }
 
   "Remoting" must {
-    "lookup remote actor" in {
+    "lookup remote actor" taggedAs LongRunningTest in {
       runOn(slave) {
         val hello = system.actorFor(node(master) / "user" / "service-hello")
         hello.isInstanceOf[RemoteActorRef] must be(true)

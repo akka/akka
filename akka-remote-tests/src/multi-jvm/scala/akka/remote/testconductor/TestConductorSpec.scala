@@ -11,6 +11,7 @@ import akka.dispatch.Await.Awaitable
 import akka.util.Duration
 import akka.util.duration._
 import akka.testkit.ImplicitSender
+import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress
 import java.net.InetAddress
 import akka.remote.testkit.MultiNodeSpec
@@ -36,7 +37,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with Im
 
   "A TestConductor" must {
 
-    "enter a barrier" in {
+    "enter a barrier" taggedAs LongRunningTest in {
       runOn(master) {
         system.actorOf(Props(new Actor {
           def receive = {
@@ -48,7 +49,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with Im
       testConductor.enter("name")
     }
 
-    "support throttling of network connections" in {
+    "support throttling of network connections" taggedAs LongRunningTest in {
 
       runOn(slave) {
         // start remote network connection so that it can be throttled
