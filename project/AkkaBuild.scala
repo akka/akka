@@ -209,6 +209,15 @@ object AkkaBuild extends Build {
      )
   )
 
+  lazy val osgi = Project(
+    id = "akka-osgi",
+    base = file("akka-osgi"),
+    dependencies = Seq(actor),
+    settings = defaultSettings ++ OSGi.osgi ++ Seq(
+      libraryDependencies ++= Dependencies.osgi
+    )
+  )
+
   lazy val akkaSbtPlugin = Project(
     id = "akka-sbt-plugin",
     base = file("akka-sbt-plugin"),
@@ -419,6 +428,8 @@ object Dependencies {
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
+  val osgi = Seq(osgiCore, Test.pojosr, Test.scalatest, Test.junit)
+
   val tutorials = Seq(Test.scalatest, Test.junit)
 
   val docs = Seq(Test.scalatest, Test.junit, Test.specs2)
@@ -434,6 +445,7 @@ object Dependency {
     val Camel        = "2.8.0"
     val Logback      = "0.9.28"
     val Netty        = "3.3.0.Final"
+    val OSGi         = "4.2.0"
     val Protobuf     = "2.4.1"
     val ScalaStm     = "0.5"
     val Scalatest    = "1.6.1"
@@ -444,6 +456,7 @@ object Dependency {
 
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
+  val osgiCore      = "org.osgi"                    % "org.osgi.core"          % V.OSGi       // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
@@ -463,6 +476,7 @@ object Dependency {
     val junit       = "junit"                       % "junit"               % "4.5"        % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"         % "1.8.1"      % "test" // MIT
+    val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.8"   % "test" // ApacheV2
     val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
     val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
     val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
@@ -486,6 +500,8 @@ object OSGi {
   val fileMailbox = exports(Seq("akka.actor.mailbox.*"))
 
   val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
+
+  val osgi = exports(Seq("akka.osgi.*"))
 
   val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
 
