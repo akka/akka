@@ -7,7 +7,7 @@ package akka
 import sbt._
 import sbt.Keys._
 import com.typesafe.sbtmultijvm.MultiJvmPlugin
-import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
+import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeTest }
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
@@ -100,8 +100,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
+      jvmOptions in MultiJvm := defaultMultiJvmOptions
     )
   ) configs (MultiJvm)
 
@@ -117,8 +116,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
+      jvmOptions in MultiJvm := defaultMultiJvmOptions
     )
   ) configs (MultiJvm)
 
@@ -334,8 +332,8 @@ object AkkaBuild extends Build {
   lazy val defaultMultiJvmScalatestOptions: Seq[String] = {
     val excludeTags = (useExcludeTestTags -- useIncludeTestTags).toSeq
     Seq("-r", "org.scalatest.akka.QuietReporter") ++
-    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", excludeTags.mkString(" "))) ++
-    (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", useOnlyTestTags.mkString(" ")))
+    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", excludeTags.mkString("\"", " ", "\""))) ++
+    (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", useOnlyTestTags.mkString("\"", " ", "\"")))
   }
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
@@ -361,12 +359,12 @@ object AkkaBuild extends Build {
     // add arguments for tests excluded by tag - includes override excludes (opposite to scalatest)
     testOptions in Test <++= (excludeTestTags, includeTestTags) map { (excludes, includes) =>
       val tags = (excludes -- includes)
-      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
+      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString("\"", " ", "\"")))
     },
 
     // add arguments for running only tests by tag
     testOptions in Test <++= onlyTestTags map { tags =>
-      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
+      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString("\"", " ", "\"")))
     },
 
     // show full stack traces
@@ -388,7 +386,11 @@ object AkkaBuild extends Build {
 
   lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
-    ScalariformKeys.preferences in MultiJvm := formattingPreferences
+    ScalariformKeys.preferences in MultiJvm := formattingPreferences,
+    if (java.lang.Boolean.getBoolean("akka.test.multi-node"))
+      test in Test <<= ((test in Test), (multiNodeTest in MultiJvm)) map { case x => x }
+    else
+      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
   )
 }
 
