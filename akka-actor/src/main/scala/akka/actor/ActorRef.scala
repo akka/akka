@@ -416,8 +416,8 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
   override def isTerminated(): Boolean = true
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
-    case Watch(maybeThis, watcher) if maybeThis == this ⇒ watcher ! Terminated(this)(stopped = false)
-    case _ ⇒
+    case Watch(watchee, watcher) ⇒ if (watchee == this && watcher != this) watcher ! Terminated(watchee)(stopped = false)
+    case _                       ⇒
   }
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
@@ -437,9 +437,8 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
                                        _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
-    case Watch(maybeThis, watcher) if maybeThis == this ⇒
-    case Watch(other, watcher) ⇒ watcher ! Terminated(other)(stopped = false)
-    case _ ⇒
+    case Watch(watchee, watcher) ⇒ if (watchee != this && watcher != this) watcher ! Terminated(watchee)(stopped = false)
+    case _                       ⇒
   }
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
