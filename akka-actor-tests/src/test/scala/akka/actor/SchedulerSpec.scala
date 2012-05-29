@@ -48,7 +48,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       assert(countDownLatch2.await(2, TimeUnit.SECONDS))
     }
 
-    "should stop continuous scheduling if the receiving actor has been terminated" taggedAs TimingTest in {
+    "stop continuous scheduling if the receiving actor has been terminated" taggedAs TimingTest in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
           case x ⇒ testActor ! x
