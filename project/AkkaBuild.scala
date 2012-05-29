@@ -329,11 +329,13 @@ object AkkaBuild extends Build {
     if (prop.isEmpty) Seq.empty else prop.split(",").toSeq
   }
 
+  val multiNodeEnabled = java.lang.Boolean.getBoolean("akka.test.multi-node")
+
   lazy val defaultMultiJvmScalatestOptions: Seq[String] = {
     val excludeTags = (useExcludeTestTags -- useIncludeTestTags).toSeq
     Seq("-r", "org.scalatest.akka.QuietReporter") ++
-    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", excludeTags.mkString(" "))) ++
-    (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", useOnlyTestTags.mkString(" ")))
+    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", if (multiNodeEnabled) excludeTags.mkString("\"", " ", "\"") else excludeTags.mkString(" "))) ++
+    (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
   }
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
@@ -387,7 +389,7 @@ object AkkaBuild extends Build {
   lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences,
-    if (java.lang.Boolean.getBoolean("akka.test.multi-node"))
+    if (multiNodeEnabled)
       test in Test <<= ((test in Test), (multiNodeTest in MultiJvm)) map { case x => x }
     else
       test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
