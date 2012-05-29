@@ -324,7 +324,7 @@ trait Actor {
    * User overridable definition the strategy to use for supervising
    * child actors.
    */
-  def supervisorStrategy(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
+  def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   /**
    * User overridable callback.
