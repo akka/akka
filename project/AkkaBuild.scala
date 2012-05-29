@@ -332,8 +332,8 @@ object AkkaBuild extends Build {
   lazy val defaultMultiJvmScalatestOptions: Seq[String] = {
     val excludeTags = (useExcludeTestTags -- useIncludeTestTags).toSeq
     Seq("-r", "org.scalatest.akka.QuietReporter") ++
-    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", excludeTags.mkString("\"", " ", "\""))) ++
-    (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", useOnlyTestTags.mkString("\"", " ", "\"")))
+    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", excludeTags.mkString(" "))) ++
+    (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", useOnlyTestTags.mkString(" ")))
   }
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
@@ -359,12 +359,12 @@ object AkkaBuild extends Build {
     // add arguments for tests excluded by tag - includes override excludes (opposite to scalatest)
     testOptions in Test <++= (excludeTestTags, includeTestTags) map { (excludes, includes) =>
       val tags = (excludes -- includes)
-      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString("\"", " ", "\"")))
+      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
     },
 
     // add arguments for running only tests by tag
     testOptions in Test <++= onlyTestTags map { tags =>
-      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString("\"", " ", "\"")))
+      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
     },
 
     // show full stack traces
