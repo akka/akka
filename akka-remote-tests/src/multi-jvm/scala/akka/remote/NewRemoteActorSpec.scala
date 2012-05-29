@@ -1,7 +1,7 @@
 /**
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.remote.router
+package akka.remote
 
 import com.typesafe.config.ConfigFactory
 
@@ -9,7 +9,6 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
-import akka.remote.RemoteActorRef
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._

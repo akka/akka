@@ -15,13 +15,14 @@ import akka.routing.ScatterGatherFirstCompletedRouter
 import akka.routing.RoutedActorRef
 import akka.testkit._
 import akka.util.duration._
+import akka.actor.PoisonPill
+import akka.actor.Address
 
 object ScatterGatherRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
       case "hit" ⇒ sender ! self
-      case "end" ⇒ context.stop(self)
     }
   }
 
@@ -65,23 +66,22 @@ class ScatterGatherRoutedRemoteActorSpec extends MultiNodeSpec(ScatterGatherRout
         val connectionCount = 3
         val iterationCount = 10
 
-        for (i ← 0 until iterationCount) {
-          for (k ← 0 until connectionCount) {
-            actor ! "hit"
-          }
+        for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
+          actor ! "hit"
         }
 
-        val replies = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
-          case ref: ActorRef ⇒ (ref.path.address, 1)
+        val replies: Map[Address, Int] = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
+          case ref: ActorRef ⇒ ref.path.address
         }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
-          case (m, (n, c)) ⇒ m + (n -> (m(n) + c))
+          case (replyMap, address) ⇒ replyMap + (address -> (replyMap(address) + 1))
         }
 
         testConductor.enter("broadcast-end")
-        actor ! Broadcast("end")
+        actor ! Broadcast(PoisonPill)
 
         testConductor.enter("end")
         replies.values.sum must be === connectionCount * iterationCount
+        replies.get(node(fourth).address) must be(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node
