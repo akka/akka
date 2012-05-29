@@ -1,7 +1,7 @@
 /**
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.remote.router
+package akka.remote
 
 import com.typesafe.config.ConfigFactory
 
@@ -9,12 +9,11 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
-import akka.remote.RemoteActorRef
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 
-object DirectRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
+object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor with Serializable {
     def receive = {
@@ -28,21 +27,21 @@ object DirectRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
   val slave = role("slave")
 
   deployOn(master, """/service-hello.remote = "@slave@" """)
-  
+
   deployOnAll("""/service-hello2.remote = "@slave@" """)
 }
 
-class DirectRoutedRemoteActorMultiJvmNode1 extends DirectRoutedRemoteActorSpec
-class DirectRoutedRemoteActorMultiJvmNode2 extends DirectRoutedRemoteActorSpec
+class NewRemoteActorMultiJvmNode1 extends NewRemoteActorSpec
+class NewRemoteActorMultiJvmNode2 extends NewRemoteActorSpec
 
-class DirectRoutedRemoteActorSpec extends MultiNodeSpec(DirectRoutedRemoteActorMultiJvmSpec)
+class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
   with ImplicitSender with DefaultTimeout {
-  import DirectRoutedRemoteActorMultiJvmSpec._
+  import NewRemoteActorMultiJvmSpec._
 
   def initialParticipants = 2
 
-  "A new remote actor configured with a Direct router" must {
-    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
+  "A new remote actor" must {
+    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
 
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello")
@@ -60,7 +59,7 @@ class DirectRoutedRemoteActorSpec extends MultiNodeSpec(DirectRoutedRemoteActorM
       testConductor.enter("done")
     }
 
-    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef (with deployOnAll)" in {
+    "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef (with deployOnAll)" taggedAs LongRunningTest in {
 
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello2")
