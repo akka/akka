@@ -582,6 +582,8 @@ private[akka] class ActorCell(
         }
       } else if (!watcheeSelf && watcherSelf) {
         watch(watchee)
+      } else {
+        system.eventStream.publish(Warning(self.path.toString, clazz(actor), "BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, self)))
       }
     }
 
@@ -596,6 +598,8 @@ private[akka] class ActorCell(
         }
       } else if (!watcheeSelf && watcherSelf) {
         unwatch(watchee)
+      } else {
+        system.eventStream.publish(Warning(self.path.toString, clazz(actor), "BUG: illegal Unwatch(%s,%s) for %s".format(watchee, watcher, self)))
       }
     }
 
