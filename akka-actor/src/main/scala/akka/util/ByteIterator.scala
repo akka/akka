@@ -31,13 +31,9 @@ object ByteIterator {
   class ByteArrayIterator private (private var array: Array[Byte], private var from: Int, private var until: Int) extends ByteIterator {
     iterator ⇒
 
-    protected[util] final def internalArray = array
-    protected[util] final def internalFrom = from
-    protected[util] final def internalUntil = until
-
     final def isIdenticalTo(that: Iterator[Byte]): Boolean = that match {
       case that: ByteArrayIterator ⇒
-        ((this.array) eq (that.internalArray)) &&
+        ((this.array) eq (that.array)) &&
           ((this.from) == (that.from)) && ((this.until) == (that.until))
       case _ ⇒ false
     }
