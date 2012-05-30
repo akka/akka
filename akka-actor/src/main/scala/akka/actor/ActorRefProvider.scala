@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.dispatch._
 import akka.routing._
 import akka.AkkaException
-import akka.util.{ Switch, Helpers }
 import akka.event._
+import akka.util.{ NonFatal, Switch, Helpers }
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -373,9 +373,9 @@ class LocalActorRefProvider(
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
-        case Supervise(child)       ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
-        case ChildTerminated(child) ⇒ stop()
-        case _                      ⇒ log.error(this + " received unexpected system message [" + message + "]")
+        case Supervise(_)       ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case ChildTerminated(_) ⇒ stop()
+        case _                  ⇒ log.error(this + " received unexpected system message [" + message + "]")
       }
     }
   }
@@ -403,8 +403,8 @@ class LocalActorRefProvider(
 
     def receive = {
       case Terminated(_)                ⇒ context.stop(self)
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
       case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
