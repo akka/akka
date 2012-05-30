@@ -462,7 +462,7 @@ private[akka] class ActorCell(
 
   override final def watch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
-      if (!watching.contains(a)) {
+      if (a != self && !watching.contains(a)) {
         a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
         watching += a
       }
@@ -471,7 +471,7 @@ private[akka] class ActorCell(
 
   override final def unwatch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
-      if (watching.contains(a)) {
+      if (a != self && watching.contains(a)) {
         a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
         watching -= a
       }
@@ -582,7 +582,7 @@ private[akka] class ActorCell(
         }
       } else if (!watcheeSelf && watcherSelf) {
         watch(watchee)
-      } else println("addNOOOOOOOOO: " + watchee + " => " + watcher)
+      }
     }
 
     def remWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
@@ -596,7 +596,7 @@ private[akka] class ActorCell(
         }
       } else if (!watcheeSelf && watcherSelf) {
         unwatch(watchee)
-      } else println("remNOOOOOOOOO: " + watchee + " => " + watcher)
+      }
     }
 
     def terminate() {

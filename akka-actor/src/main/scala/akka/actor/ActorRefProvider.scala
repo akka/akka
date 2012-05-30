@@ -474,18 +474,10 @@ class LocalActorRefProvider(
 
   lazy val rootGuardian: InternalActorRef =
     new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
-      object Extra {
-        def unapply(s: String): Option[InternalActorRef] = extraNames.get(s)
-      }
-
       override def getParent: InternalActorRef = this
-
-      override def getSingleChild(name: String): InternalActorRef = {
-        name match {
-          case "temp"   ⇒ tempContainer
-          case Extra(e) ⇒ e
-          case _        ⇒ super.getSingleChild(name)
-        }
+      override def getSingleChild(name: String): InternalActorRef = name match {
+        case "temp" ⇒ tempContainer
+        case other  ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
       }
     }
 
@@ -510,8 +502,10 @@ class LocalActorRefProvider(
   def init(_system: ActorSystemImpl) {
     system = _system
     // chain death watchers so that killing guardian stops the application
-    guardian.sendSystemMessage(Watch(systemGuardian, guardian))
-    rootGuardian.sendSystemMessage(Watch(rootGuardian, systemGuardian))
+    //guardian.sendSystemMessage(Watch(systemGuardian, guardian))
+    //rootGuardian.sendSystemMessage(Watch(rootGuardian, systemGuardian))
+    guardian.sendSystemMessage(Watch(guardian, systemGuardian))
+    rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))
     eventStream.startDefaultLoggers(_system)
   }
 
