@@ -79,8 +79,6 @@ object ByteString {
 
     private[akka] def toByteString1: ByteString1 = ByteString1(bytes)
 
-    override def clone: ByteString1C = new ByteString1C(toArray)
-
     def asByteBuffer: ByteBuffer =
       toByteString1.asByteBuffer
 
@@ -121,12 +119,10 @@ object ByteString {
         throw new IndexOutOfBoundsException(index.toString)
     }
 
-    override def clone: CompactByteString = ByteString1C(toArray)
-
     def isCompact: Boolean = (length == bytes.length)
 
     def compact: CompactByteString =
-      if (isCompact) ByteString1C(bytes) else clone
+      if (isCompact) ByteString1C(bytes) else ByteString1C(toArray)
 
     def asByteBuffer: ByteBuffer = {
       val buffer = ByteBuffer.wrap(bytes, startIndex, length).asReadOnlyBuffer
