@@ -31,13 +31,6 @@ object ByteIterator {
   class ByteArrayIterator private (private var array: Array[Byte], private var from: Int, private var until: Int) extends ByteIterator {
     iterator ⇒
 
-    final def isIdenticalTo(that: Iterator[Byte]): Boolean = that match {
-      case that: ByteArrayIterator ⇒
-        ((this.array) eq (that.array)) &&
-          ((this.from) == (that.from)) && ((this.until) == (that.until))
-      case _ ⇒ false
-    }
-
     @inline final def len: Int = until - from
 
     @inline final def hasNext: Boolean = from < until
@@ -197,8 +190,6 @@ object ByteIterator {
     @inline private def current: ByteArrayIterator = iterators.head
     @inline private def dropCurrent(): Unit = { iterators = iterators.tail }
     @inline def clear(): Unit = { iterators = MultiByteArrayIterator.empty.iterators }
-
-    final def isIdenticalTo(that: Iterator[Byte]): Boolean = false
 
     @inline final def hasNext: Boolean = current.hasNext
 
@@ -391,8 +382,6 @@ object ByteIterator {
  */
 
 abstract class ByteIterator extends BufferedIterator[Byte] {
-  def isIdenticalTo(that: Iterator[Byte]): Boolean
-
   def len: Int
 
   def head: Byte
