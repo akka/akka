@@ -25,7 +25,7 @@ object ByteIterator {
     protected[akka] def apply(array: Array[Byte], from: Int, until: Int): ByteArrayIterator =
       new ByteArrayIterator(array, from, until)
 
-    val empty: ByteArrayIterator = apply(Array.empty[Byte])
+    val empty: ByteArrayIterator = apply(emptyArray)
   }
 
   class ByteArrayIterator private (private var array: Array[Byte], private var from: Int, private var until: Int) extends ByteIterator {
