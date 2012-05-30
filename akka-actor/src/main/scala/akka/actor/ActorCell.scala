@@ -727,10 +727,9 @@ private[akka] class ActorCell(
           val terminated = Terminated(self)(stopped = true)
           try {
             watchedBy foreach {
-              watcher ⇒
-                try watcher.tell(terminated, self) catch {
-                  case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
-                }
+              watcher ⇒ try watcher.tell(terminated, self) catch {
+                case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
+              }
             }
           } finally watchedBy = emptyActorRefSet
         }
@@ -738,10 +737,9 @@ private[akka] class ActorCell(
         if (!watching.isEmpty) {
           try {
             watching foreach {
-              case watchee: InternalActorRef ⇒
-                try watchee.sendSystemMessage(Unwatch(watchee, self)) catch {
-                  case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
-                }
+              case watchee: InternalActorRef ⇒ try watchee.sendSystemMessage(Unwatch(watchee, self)) catch {
+                case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
+              }
             }
           } finally watching = emptyActorRefSet
         }
