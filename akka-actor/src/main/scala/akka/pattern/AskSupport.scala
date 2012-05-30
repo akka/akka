@@ -283,9 +283,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       case null ⇒ // if path was never queried nobody can possibly be watching us, so we don't have to publish termination either
         if (updateState(null, Stopped)) ensureCompleted() else stop()
       case p: ActorPath ⇒
-        if (updateState(p, StoppedWithPath(p))) {
-          try ensureCompleted() finally provider.unregisterTempActor(p)
-        } else stop()
+        if (updateState(p, StoppedWithPath(p))) { try ensureCompleted() finally provider.unregisterTempActor(p) } else stop()
       case Stopped | _: StoppedWithPath ⇒ // already stopped
       case Registering                  ⇒ stop() // spin until registration is completed before stopping
     }
