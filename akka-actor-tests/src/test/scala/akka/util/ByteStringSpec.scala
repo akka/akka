@@ -163,7 +163,9 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     "be sequential" when {
       "taking" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).take(a.size) == a) }
       "dropping" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).drop(a.size) == b) }
-
+    }
+    "be equal to the original" when {
+      "compacting" in { check { xs: ByteString ⇒ val ys = xs.compact; (xs == ys) && ys.isCompact } }
       "recombining" in {
         check { (xs: ByteString, from: Int, until: Int) ⇒
           val (tmp, c) = xs.splitAt(until)
