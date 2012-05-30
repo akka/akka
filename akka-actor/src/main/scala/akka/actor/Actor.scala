@@ -59,7 +59,7 @@ case object Kill extends Kill {
 /**
  * When Death Watch is used, the watcher will receive a Terminated(watched) message when watched is terminated.
  */
-case class Terminated(@BeanProperty actor: ActorRef)(@BeanProperty stopped: Boolean) extends PossiblyHarmful
+case class Terminated(@BeanProperty actor: ActorRef)(@BeanProperty stopped: Boolean)
 
 abstract class ReceiveTimeout extends PossiblyHarmful
 
