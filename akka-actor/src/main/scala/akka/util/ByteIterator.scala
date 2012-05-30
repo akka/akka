@@ -68,7 +68,7 @@ object ByteIterator {
               this.clear()
               result
             }
-          case that: MultiByteArrayIterator ⇒ this +: that
+          case that: MultiByteArrayIterator ⇒ this ++: that
         }
       case _ ⇒ super.++(that)
     }
@@ -218,7 +218,7 @@ object ByteIterator {
       result
     }
 
-    def +:(that: ByteArrayIterator): this.type = {
+    private[akka] def ++:(that: ByteArrayIterator): this.type = {
       iterators = that +: iterators
       this
     }

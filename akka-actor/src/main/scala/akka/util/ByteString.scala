@@ -77,7 +77,7 @@ object ByteString {
 
     override def iterator: ByteIterator.ByteArrayIterator = ByteIterator.ByteArrayIterator(bytes, 0, bytes.length)
 
-    def toByteString1: ByteString1 = ByteString1(bytes)
+    private[akka] def toByteString1: ByteString1 = ByteString1(bytes)
 
     override def clone: ByteString1C = new ByteString1C(toArray)
 
