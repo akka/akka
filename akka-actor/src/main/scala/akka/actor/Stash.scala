@@ -15,7 +15,8 @@ import akka.AkkaException
  *    class ActorWithProtocol extends Actor with Stash {
  *      def receive = {
  *        case "open" ⇒
- *          unstashAll {
+ *          unstashAll()
+ *          context.become {
  *            case "write" ⇒ // do writing...
  *            case "close" ⇒
  *              unstashAll()
