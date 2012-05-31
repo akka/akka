@@ -4,7 +4,6 @@
 
 package akka.cluster
 
-import org.scalatest.BeforeAndAfter
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -29,14 +28,10 @@ class JoinTwoClustersMultiJvmNode4 extends JoinTwoClustersSpec
 class JoinTwoClustersMultiJvmNode5 extends JoinTwoClustersSpec
 class JoinTwoClustersMultiJvmNode6 extends JoinTwoClustersSpec
 
-abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvmSpec) with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
+abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvmSpec) with MultiNodeClusterSpec with ImplicitSender {
   import JoinTwoClustersMultiJvmSpec._
 
   override def initialParticipants = 6
-
-  after {
-    testConductor.enter("after")
-  }
 
   lazy val a1Address = node(a1).address
   lazy val b1Address = node(b1).address
@@ -67,6 +62,8 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
       assertLeader(b1, b2)
       assertLeader(c1, c2)
 
+      testConductor.enter("two-members")
+
       runOn(b2) {
         cluster.join(a1Address)
       }
@@ -77,6 +74,8 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
 
       assertLeader(a1, a2, b1, b2)
       assertLeader(c1, c2)
+
+      testConductor.enter("four-members")
 
     }
 
@@ -89,6 +88,8 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
       awaitUpConvergence(numberOfMembers = 6)
 
       assertLeader(a1, a2, b1, b2, c1, c2)
+
+      testConductor.enter("six-members")
     }
   }
 
