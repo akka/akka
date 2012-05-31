@@ -7,11 +7,12 @@ package akka
 import sbt._
 import sbt.Keys._
 import com.typesafe.sbtmultijvm.MultiJvmPlugin
-import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeTest }
+import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests }
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
 import java.lang.Boolean.getBoolean
+import sbt.Tests
 import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags }
 
 object AkkaBuild extends Build {
@@ -390,9 +391,17 @@ object AkkaBuild extends Build {
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences,
     if (multiNodeEnabled)
-      test in Test <<= ((test in Test), (multiNodeTest in MultiJvm)) map { case x => x }
+      executeTests in Test <<= ((executeTests in Test), (multiNodeExecuteTests in MultiJvm)) map {
+        case (tr, mr) =>
+          val r = tr._2 ++ mr._2
+          (Tests.overall(r.values), r)
+      }
     else
-      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
+      executeTests in Test <<= ((executeTests in Test), (executeTests in MultiJvm)) map {
+        case (tr, mr) =>
+          val r = tr._2 ++ mr._2
+          (Tests.overall(r.values), r)
+      }
   )
 }
 
