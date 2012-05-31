@@ -37,19 +37,8 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
     "be a singleton cluster when started up" taggedAs LongRunningTest in {
       runOn(first) {
         awaitCond(cluster.isSingletonCluster)
-        // FIXME #2117 singletonCluster should reach convergence
-        //awaitCond(cluster.convergence.isDefined)
-      }
-    }
-
-    "be in 'Joining' phase when started up" taggedAs LongRunningTest in {
-      runOn(first) {
-        val members = cluster.latestGossip.members
-        members.size must be(1)
-
-        val joiningMember = members find (_.address == firstAddress)
-        joiningMember must not be (None)
-        joiningMember.get.status must be(MemberStatus.Joining)
+        awaitUpConvergence(numberOfMembers = 1)
+        cluster.isLeader must be(true)
       }
     }
   }
