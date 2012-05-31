@@ -266,6 +266,16 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
         }
       }
 
+      "calling take and drop" in {
+        check { slice: ByteStringSlice ⇒
+          slice match {
+            case (xs, from, until) ⇒ likeVecIt(xs)({
+              _.drop(from).take(until - from).toSeq
+            }, strict = false)
+          }
+        }
+      }
+
       "calling copyToArray" in {
         check { slice: ByteStringSlice ⇒
           slice match {
@@ -318,6 +328,18 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
           (output.toSeq.drop(a) == bytes.drop(a)) &&
             (input.asInputStream.read() == -1) &&
             ((output.length < 1) || (input.asInputStream.read(output, 0, 1) == -1))
+        }
+      }
+
+      "calling copyToBuffer" in {
+        check { bytes: ByteString ⇒
+          import java.nio.ByteBuffer
+          val buffer = ByteBuffer.allocate(bytes.size)
+          bytes.copyToBuffer(buffer)
+          buffer.flip()
+          val array = Array.ofDim[Byte](bytes.size)
+          buffer.get(array)
+          bytes == array.toSeq
         }
       }
     }
