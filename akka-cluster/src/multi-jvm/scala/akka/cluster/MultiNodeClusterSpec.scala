@@ -60,14 +60,15 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
   def awaitUpConvergence(
     numberOfMembers: Int,
     canNotBePartOfMemberRing: Seq[Address] = Seq.empty[Address],
-    timeout: Duration = 10.seconds.dilated): Unit = {
-    awaitCond(cluster.latestGossip.members.size == numberOfMembers, timeout)
-    awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up), timeout)
-    awaitCond(cluster.convergence.isDefined, timeout)
-    if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
-      awaitCond(
-        canNotBePartOfMemberRing forall (address ⇒ !(cluster.latestGossip.members exists (_.address == address))),
-        timeout)
+    timeout: Duration = 20.seconds): Unit = {
+    within(timeout) {
+      awaitCond(cluster.latestGossip.members.size == numberOfMembers)
+      awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
+      awaitCond(cluster.convergence.isDefined)
+      if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
+        awaitCond(
+          canNotBePartOfMemberRing forall (address ⇒ !(cluster.latestGossip.members exists (_.address == address))))
+    }
   }
 
   def roleOfLeader(nodesInCluster: Seq[RoleName]): RoleName = {

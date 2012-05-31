@@ -18,7 +18,7 @@ import akka.ConfigurationException
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import java.util.concurrent.TimeUnit._
 import java.util.concurrent.TimeoutException
-import java.security.SecureRandom
+import akka.jsr166y.ThreadLocalRandom
 
 import java.lang.management.ManagementFactory
 import javax.management._
@@ -402,7 +402,6 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
 
   private val isRunning = new AtomicBoolean(true)
   private val log = Logging(system, "Node")
-  private val random = SecureRandom.getInstance("SHA1PRNG")
 
   private val mBeanServer = ManagementFactory.getPlatformMBeanServer
   private val clusterMBeanName = new ObjectName("akka:type=Cluster")
@@ -842,7 +841,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
       // 2. gossip to unreachable members
       if (localUnreachableSize > 0) {
         val probability: Double = localUnreachableSize / (localMembersSize + 1)
-        if (random.nextDouble() < probability) gossipToRandomNodeOf(localUnreachableMembers.map(_.address))
+        if (ThreadLocalRandom.current.nextDouble() < probability) gossipToRandomNodeOf(localUnreachableMembers.map(_.address))
       }
 
       // 3. gossip to a deputy nodes for facilitating partition healing
@@ -851,7 +850,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
         if (localMembersSize == 0) gossipToRandomNodeOf(deputies)
         else {
           val probability = 1.0 / localMembersSize + localUnreachableSize
-          if (random.nextDouble() <= probability) gossipToRandomNodeOf(deputies)
+          if (ThreadLocalRandom.current.nextDouble() <= probability) gossipToRandomNodeOf(deputies)
         }
       }
     }
@@ -1052,7 +1051,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
    */
   private def deputyNodes: Iterable[Address] = state.get.latestGossip.members.toIterable map (_.address) drop 1 take nrOfDeputyNodes filter (_ != remoteAddress)
 
-  private def selectRandomNode(addresses: Iterable[Address]): Address = addresses.toSeq(random nextInt addresses.size)
+  private def selectRandomNode(addresses: Iterable[Address]): Address = addresses.toSeq(ThreadLocalRandom.current nextInt addresses.size)
 
   private def isSingletonCluster(currentState: State): Boolean = currentState.latestGossip.members.size == 1
 
