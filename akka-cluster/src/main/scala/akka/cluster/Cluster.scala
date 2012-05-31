@@ -816,9 +816,12 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   private def gossip(): Unit = {
     val localState = state.get
 
-    if (!isSingletonCluster(localState) && isAvailable(localState)) {
-      // only gossip if we are a non-singleton cluster and available
+    if (isSingletonCluster(localState)) {
+      // gossip to myself
+      // TODO could perhaps be optimized, no need to gossip to myself when Up?
+      gossipTo(remoteAddress)
 
+    } else if (isAvailable(localState)) {
       log.debug("Cluster Node [{}] - Initiating new round of gossip", remoteAddress)
 
       val localGossip = localState.latestGossip
