@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
+
+    <service interface="org.apache.aries.blueprint.NamespaceHandler">
+        <service-properties>
+            <entry key="osgi.service.blueprint.namespace">
+                <array>
+                    <value>http://akka.io/xmlns/blueprint/v1.0.0</value>
+                </array>
+            </entry>
+        </service-properties>
+        <bean class="akka.osgi.blueprint.aries.NamespaceHandler"/>
+    </service>
+
+</blueprint>

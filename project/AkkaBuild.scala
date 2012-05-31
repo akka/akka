@@ -428,7 +428,7 @@ object Dependencies {
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
-  val osgi = Seq(osgiCore, Test.pojosr, Test.scalatest, Test.junit)
+  val osgi = Seq(osgiCore, ariesBlueprint, Runtime.logback, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
@@ -454,6 +454,7 @@ object Dependency {
 
   // Compile
 
+  val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint" % "0.3.1"  // ApacheV2
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
   val osgiCore      = "org.osgi"                    % "org.osgi.core"          % V.OSGi       // ApacheV2
@@ -480,6 +481,7 @@ object Dependency {
     val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
     val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
     val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
+    val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"         % "1.0.0"      % "test" // ApacheV2
     val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % "3.4.0"      % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }

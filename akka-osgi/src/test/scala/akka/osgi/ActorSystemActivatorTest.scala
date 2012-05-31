@@ -29,10 +29,7 @@ class ActorSystemActivatorTest extends FlatSpec {
 
   lazy val context: BundleContext = {
     val config = new HashMap[String, AnyRef]();
-    config.put(PojoServiceRegistryFactory.BUNDLE_DESCRIPTORS, new ClasspathScanner().scanForBundles());
-
     val loader = ServiceLoader.load(classOf[PojoServiceRegistryFactory]);
-
     val registry = loader.iterator().next().newPojoServiceRegistry(config);
     registry.getBundleContext
   }

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+-->
+
+<!-- $Rev: 699828 $ $Date: 2008-09-28 16:35:27 +0200 (Sun, 28 Sep 2008) $ -->
+
+<xsd:schema xmlns="http://akka.io/xmlns/blueprint/v1.0.0"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:bp="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+            targetNamespace="http://akka.io/xmlns/blueprint/v1.0.0"
+            elementFormDefault="qualified"
+            attributeFormDefault="unqualified">
+
+    <xsd:import namespace="http://www.osgi.org/xmlns/blueprint/v1.0.0"/>
+
+    <xsd:annotation>
+        <xsd:documentation>
+            Defines the configuration elements for setting up Akka with Blueprint
+        </xsd:documentation>
+    </xsd:annotation>
+
+    <xsd:element name="actor-system">
+        <xsd:complexType>
+            <xsd:annotation>
+                <xsd:documentation>
+                    Defines an Akka ActorSystem
+                </xsd:documentation>
+            </xsd:annotation>
+            <xsd:sequence>
+                <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                    <xsd:element ref="actor"/>
+                </xsd:choice>
+            </xsd:sequence>
+            <xsd:attribute name="name" type="xsd:string" use="optional"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="actor">
+        <xsd:complexType>
+            <xsd:annotation>
+                <xsd:documentation>
+                    Defines an Akka Actor
+                </xsd:documentation>
+            </xsd:annotation>
+            <xsd:attribute name="id" type="xsd:ID"/>
+            <xsd:attribute name="name" type="xsd:string" use="optional"/>
+            <xsd:attribute name="class" type="xsd:string" use="optional"/>
+        </xsd:complexType>
+    </xsd:element>
+
+</xsd:schema>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+           xmlns:akka="http://akka.io/xmlns/blueprint/aries/v1.0.0">
+
+    <akka:actor-system name="test">
+        <akka:actor/>
+    </akka:actor-system>
+
+</blueprint>
