@@ -48,6 +48,10 @@ html_show_copyright = True
 htmlhelp_basename = 'Akkadoc'
 html_add_permalinks = ''
 
+html_context = {
+  'include_analytics': 'online' in tags
+}
+
 # -- Options for LaTeX output --------------------------------------------------
 
 def setup(app):

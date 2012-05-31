@@ -13,6 +13,7 @@ import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import java.lang.Boolean.getBoolean
+import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -26,13 +27,19 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Rstdoc.settings ++ Publish.versionSettings ++
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Sphinx.settings ++ Publish.versionSettings ++
       Dist.settings ++ mimaSettings ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
-      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id)
+      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id),
+      // online version of docs
+      sphinxDocs <<= baseDirectory / "akka-docs",
+      sphinxTags in sphinxHtml += "online",
+      sphinxPygments <<= sphinxPygments in LocalProject(docs.id),
+      sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
+      sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
@@ -336,7 +343,7 @@ object AkkaBuild extends Build {
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test", remote, slf4j, agent, transactor,
         fileMailbox, mongoMailbox, redisMailbox, beanstalkMailbox, zookeeperMailbox, zeroMQ),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ Sphinx.settings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
