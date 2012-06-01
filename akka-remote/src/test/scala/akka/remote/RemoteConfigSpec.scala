@@ -57,6 +57,7 @@ class RemoteConfigSpec extends AkkaSpec(
       AllTimeout must be(0 millis)
       ReconnectionTimeWindow must be(10 minutes)
       WriteBufferHighWaterMark must be(None)
+      WriteBufferLowWaterMark must be(None)
       SendBufferSize must be(None)
       ReceiveBufferSize must be(None)
     }

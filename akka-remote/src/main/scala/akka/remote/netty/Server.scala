@@ -48,6 +48,7 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
     settings.ReceiveBufferSize.foreach(sz ⇒ b.setOption("receiveBufferSize", sz))
     settings.SendBufferSize.foreach(sz ⇒ b.setOption("sendBufferSize", sz))
     settings.WriteBufferHighWaterMark.foreach(sz ⇒ b.setOption("writeBufferHighWaterMark", sz))
+    settings.WriteBufferLowWaterMark.foreach(sz ⇒ b.setOption("writeBufferLowWaterMark", sz))
     b
   }
 

@@ -48,6 +48,7 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
   }
 
   val WriteBufferHighWaterMark: Option[Int] = optionSize("write-buffer-high-water-mark")
+  val WriteBufferLowWaterMark: Option[Int] = optionSize("write-buffer-low-water-mark")
   val SendBufferSize: Option[Int] = optionSize("send-buffer-size")
   val ReceiveBufferSize: Option[Int] = optionSize("receive-buffer-size")
 
