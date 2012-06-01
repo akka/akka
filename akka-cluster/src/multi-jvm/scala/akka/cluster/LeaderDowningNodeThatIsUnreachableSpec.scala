@@ -17,7 +17,7 @@ object LeaderDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).
+  commonConfig(debugConfig(on = true).
     withFallback(ConfigFactory.parseString("""
       akka.cluster {
         auto-down = on
