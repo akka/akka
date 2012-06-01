@@ -219,6 +219,13 @@ echolog "Creating gzipped tar download..."
 try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka-${version}.tgz akka-${version}
 echolog "Successfully created local release"
 
+# check binary compatibility for dry run
+if [ $dry_run ]; then
+  echodry "Running migration manager report..."
+  sbt mima-report-binary-issues
+  echodry "Finished migration manager report"
+fi
+
 # commit and tag this release
 echolog "Committing and tagging..."
 try git add .
