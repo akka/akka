@@ -71,6 +71,17 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
     }
   }
 
+  /**
+   * Wait until the specified nodes have seen the same gossip overview.
+   */
+  def awaitSeenSameState(addresses: Seq[Address]): Unit = {
+    awaitCond {
+      val seen = cluster.latestGossip.overview.seen
+      val seenVectorClocks = addresses.flatMap(seen.get(_))
+      seenVectorClocks.size == addresses.size && seenVectorClocks.toSet.size == 1
+    }
+  }
+
   def roleOfLeader(nodesInCluster: Seq[RoleName]): RoleName = {
     nodesInCluster.length must not be (0)
     nodesInCluster.sorted.head
