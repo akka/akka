@@ -246,22 +246,25 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = state match {
     case Stopped | _: StoppedWithPath ⇒ provider.deadLetters ! message
-    case _ ⇒
-      val completedJustNow = result.tryComplete {
-        message match {
-          case Status.Success(r) ⇒ Right(r)
-          case Status.Failure(f) ⇒ Left(f)
-          case other             ⇒ Right(other)
-        }
+    case _ ⇒ if (!(result.tryComplete {
+      message match {
+        case Status.Success(r) ⇒ Right(r)
+        case Status.Failure(f) ⇒ Left(f)
+        case other             ⇒ Right(other)
       }
-      if (!completedJustNow) provider.deadLetters ! message
+    })) provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
-    case _: Terminate              ⇒ stop()
-    case Watch(watchee, watcher)   ⇒ if (watchee == this && watcher != this && !addWatcher(watcher)) watcher ! Terminated(watchee)(stopped = true)
-    case Unwatch(watchee, watcher) ⇒ if (watchee == this && watcher != this) remWatcher(watcher)
-    case _                         ⇒
+    case _: Terminate ⇒ stop()
+    case Watch(watchee, watcher) ⇒
+      if (watchee == this && watcher != this) {
+        if (!addWatcher(watcher)) watcher ! Terminated(watchee)(stopped = true)
+      } else System.err.println("BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, this))
+    case Unwatch(watchee, watcher) ⇒
+      if (watchee == this && watcher != this) remWatcher(watcher)
+      else System.err.println("BUG: illegal Unwatch(%s,%s) for %s".format(watchee, watcher, this))
+    case _ ⇒
   }
 
   override def isTerminated: Boolean = state match {
