@@ -33,7 +33,7 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec extends MultiNodeSpec(No
   lazy val secondAddress = node(second).address
   lazy val thirdAddress = node(third).address
 
-  val reaperWaitingTime = 30 seconds
+  val reaperWaitingTime = 30.seconds.dilated
 
   "A node that is LEAVING a non-singleton cluster" must {
 
