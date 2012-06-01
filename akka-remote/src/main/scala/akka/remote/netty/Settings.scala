@@ -37,7 +37,19 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
   val WriteTimeout: Duration = Duration(getMilliseconds("write-timeout"), MILLISECONDS)
   val AllTimeout: Duration = Duration(getMilliseconds("all-timeout"), MILLISECONDS)
   val ReconnectDelay: Duration = Duration(getMilliseconds("reconnect-delay"), MILLISECONDS)
+
   val MessageFrameSize: Int = getBytes("message-frame-size").toInt
+
+  private[this] def optionSize(s: String): Option[Int] = getBytes(s).toInt match {
+    case 0 ⇒ None
+    case x if x < 0 ⇒
+      throw new ConfigurationException("Setting '%s' must be 0 or positive (and fit in an Int)" format s)
+    case other ⇒ Some(other)
+  }
+
+  val WriteBufferHighWaterMark: Option[Int] = optionSize("write-buffer-high-water-mark")
+  val SendBufferSize: Option[Int] = optionSize("send-buffer-size")
+  val ReceiveBufferSize: Option[Int] = optionSize("receive-buffer-size")
 
   val Hostname: String = getString("hostname") match {
     case ""    ⇒ InetAddress.getLocalHost.getHostAddress

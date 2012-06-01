@@ -147,6 +147,12 @@ private[akka] class ActiveRemoteClient private[akka] (
       b.setOption("tcpNoDelay", true)
       b.setOption("keepAlive", true)
       b.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
+      if (settings.ReceiveBufferSize.isDefined)
+        b.setOption("receiveBufferSize", settings.ReceiveBufferSize.get)
+      if (settings.SendBufferSize.isDefined)
+        b.setOption("sendBufferSize", settings.SendBufferSize.get)
+      if (settings.WriteBufferHighWaterMark.isDefined)
+        b.setOption("writeBufferHighWaterMark", settings.WriteBufferHighWaterMark.get)
       settings.OutboundLocalAddress.foreach(s ⇒ b.setOption("localAddress", new InetSocketAddress(s, 0)))
       bootstrap = b
 
