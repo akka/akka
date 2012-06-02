@@ -38,7 +38,7 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
       runOn(first) {
         awaitCond(cluster.isSingletonCluster)
         awaitUpConvergence(numberOfMembers = 1)
-        cluster.isLeader must be(true)
+        assertLeader(first)
       }
     }
   }
@@ -57,6 +57,7 @@ abstract class NodeStartupSpec extends MultiNodeSpec(NodeStartupMultiJvmSpec) wi
       }
       cluster.latestGossip.members.size must be(2)
       awaitCond(cluster.convergence.isDefined)
+      assertLeader(first, second)
     }
   }
 

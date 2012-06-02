@@ -51,6 +51,7 @@ abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) 
       }
       awaitUpConvergence(numberOfMembers = 2)
       cluster.isSingletonCluster must be(false)
+      assertLeader(first, second)
     }
 
     "become singleton cluster when one node is shutdown" taggedAs LongRunningTest in {
@@ -60,7 +61,7 @@ abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) 
         testConductor.removeNode(second)
         awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Seq(secondAddress), 30.seconds)
         cluster.isSingletonCluster must be(true)
-        cluster.isLeader must be(true)
+        assertLeader(first)
       }
 
     }
