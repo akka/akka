@@ -18,7 +18,8 @@ object NodeLeavingMultiJvmSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
     .withFallback(ConfigFactory.parseString("""
-        akka.cluster.unreachable-nodes-reaper-frequency = 30000 # turn "off" reaping to unreachable node set
+        akka.cluster.leader-actions-frequency           = 5000 ms
+        akka.cluster.unreachable-nodes-reaper-frequency = 30000 ms # turn "off" reaping to unreachable node set
       """))
     .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
