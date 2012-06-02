@@ -502,8 +502,6 @@ class LocalActorRefProvider(
   def init(_system: ActorSystemImpl) {
     system = _system
     // chain death watchers so that killing guardian stops the application
-    //guardian.sendSystemMessage(Watch(systemGuardian, guardian))
-    //rootGuardian.sendSystemMessage(Watch(rootGuardian, systemGuardian))
     guardian.sendSystemMessage(Watch(guardian, systemGuardian))
     rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))
     eventStream.startDefaultLoggers(_system)
