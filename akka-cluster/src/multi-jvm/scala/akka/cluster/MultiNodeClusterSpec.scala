@@ -42,15 +42,20 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
     expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address must be(a) }
   }
 
+  def assertLeader(nodesInCluster: RoleName*): Unit = if (nodesInCluster.contains(myself)) {
+    assertLeaderIn(nodesInCluster)
+  }
+
   /**
    * Assert that the cluster has elected the correct leader
    * out of all nodes in the cluster. First
    * member in the cluster ring is expected leader.
    */
-  def assertLeader(nodesInCluster: RoleName*): Unit = if (nodesInCluster.contains(myself)) {
+  def assertLeaderIn(nodesInCluster: Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
     nodesInCluster.length must not be (0)
     val expectedLeader = roleOfLeader(nodesInCluster)
     cluster.isLeader must be(ifNode(expectedLeader)(true)(false))
+    cluster.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
   }
 
   /**
