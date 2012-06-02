@@ -73,7 +73,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       watch(router)
       watch(c2)
       system.stop(c2)
-      expectMsg(Terminated(c2)(stopped = true))
+      expectMsg(Terminated(c2)(existenceConfirmed = true))
       // it might take a while until the Router has actually processed the Terminated message
       awaitCond {
         router ! ""
@@ -84,7 +84,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         res == Seq(c1, c1)
       }
       system.stop(c1)
-      expectMsg(Terminated(router)(stopped = true))
+      expectMsg(Terminated(router)(existenceConfirmed = true))
     }
 
     "be able to send their routees" in {

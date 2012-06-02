@@ -12,7 +12,6 @@ import akka.util.duration._
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.PoisonPill
-import akka.actor.CreateChild
 import akka.actor.DeadLetter
 import java.util.concurrent.TimeoutException
 import akka.dispatch.{ Await, MessageDispatcher }
