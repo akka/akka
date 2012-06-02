@@ -5,7 +5,7 @@
 package docs.circuitbreaker
 
 //#imports1
-import akka.util.duration._  // small d is important here
+import akka.util.duration._ // small d is important here
 import akka.pattern.CircuitBreaker
 import akka.actor.Actor
 import akka.dispatch.Future
@@ -13,7 +13,7 @@ import akka.event.Logging
 
 //#imports1
 
-class CircuitBreakerDocSpec { }
+class CircuitBreakerDocSpec {}
 
 //#circuit-breaker-initialization
 class DangerousActor extends Actor {
@@ -26,18 +26,18 @@ class DangerousActor extends Actor {
 
   def notifyMeOnOpen =
     log.warning("My CircuitBreaker is now open, and will not close for one minute")
-//#circuit-breaker-initialization
+  //#circuit-breaker-initialization
 
-//#circuit-breaker-usage
+  //#circuit-breaker-usage
   def dangerousCall: String = "This really isn't that dangerous of a call after all"
 
   def receive = {
-    case "is my middle name" =>
+    case "is my middle name" ⇒
       sender ! breaker.withCircuitBreaker(Future(dangerousCall))
-    case "block for me" =>
+    case "block for me" ⇒
       sender ! breaker.withSyncCircuitBreaker(dangerousCall)
   }
-//#circuit-breaker-usage
+  //#circuit-breaker-usage
 
 }
 

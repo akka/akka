@@ -142,7 +142,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
         catch {
           case NonFatal(t) ⇒ Promise.failed(t)(CircuitBreaker.syncExecutionContext)
         }
-      }),callTimeout)
+      }), callTimeout)
   }
 
   /**
