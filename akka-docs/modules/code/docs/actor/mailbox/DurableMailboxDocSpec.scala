@@ -69,21 +69,21 @@ class MyMessageQueue(_owner: ActorContext)
   val storage = new QueueStorage
   // A real-world implmentation would use configuration to set the last 
   // three parameters below
-  val breaker = CircuitBreaker(_owner.system.scheduler,5,30.seconds,1.minute)
+  val breaker = CircuitBreaker(_owner.system.scheduler, 5, 30.seconds, 1.minute)
 
   def enqueue(receiver: ActorRef, envelope: Envelope): Unit = breaker.withSyncCircuitBreaker {
     val data: Array[Byte] = serialize(envelope)
     storage.push(data)
   }
 
-  def dequeue(): Envelope  = breaker.withSyncCircuitBreaker {
+  def dequeue(): Envelope = breaker.withSyncCircuitBreaker {
     val data: Option[Array[Byte]] = storage.pull()
     data.map(deserialize).orNull
   }
 
   def hasMessages: Boolean = breaker.withSyncCircuitBreaker { !storage.isEmpty }
 
-  def numberOfMessages: Int =  breaker.withSyncCircuitBreaker { storage.size }
+  def numberOfMessages: Int = breaker.withSyncCircuitBreaker { storage.size }
 
   /**
    * Called when the mailbox is disposed.
