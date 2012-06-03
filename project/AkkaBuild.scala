@@ -525,9 +525,6 @@ object Dependency {
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.6" // ApacheV2
-  val guava         = "com.google.guava"            % "guava"                  % "12.0" // ApacheV2 
-  val fest_reflect  = "org.easytesting"             % "fest-reflect"           % "1.3" // ApacheV2 
-  val asm           = "asm"                         % "asm-commons"            % "3.3.1" // Custom OSS
 
   // Runtime
 
