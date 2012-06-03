@@ -3,16 +3,16 @@ package akka.remote.netty.rcl
 import akka.remote.netty.NettyRemoteTransport
 import org.jboss.netty.channel._
 import org.jboss.netty.handler.execution._
-import akka.remote.{RemoteMessage, RemoteActorRefProvider}
+import akka.remote.{ RemoteMessage, RemoteActorRefProvider }
 import com.google.protobuf.ByteString
-import akka.remote.RemoteProtocol.{RemoteMessageProtocol, AkkaRemoteProtocol}
+import akka.remote.RemoteProtocol.{ RemoteMessageProtocol, AkkaRemoteProtocol }
 import collection.immutable.HashSet
 import collection.mutable.HashMap
 import akka.dispatch.Await
 import java.net.URL
-import akka.actor.{Props, Actor, ActorRef, ExtendedActorSystem}
+import akka.actor.{ Props, Actor, ActorRef, ExtendedActorSystem }
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import akka.event.{LoggingAdapter, Logging}
+import akka.event.{ LoggingAdapter, Logging }
 
 class RemoteClassLoadingTransport(system: ExtendedActorSystem, provider: RemoteActorRefProvider) extends NettyRemoteTransport(system, provider) {
 
@@ -244,7 +244,7 @@ object RclMetadata {
     val rmp: RemoteMessageProtocol = rm.input
     import scala.collection.JavaConversions._
     rmp.getMetadataList.collectFirst({
-      case entry if entry.getKey == "origin" => entry.getValue
+      case entry if entry.getKey == "origin" ⇒ entry.getValue
     }).orNull
   }
 
@@ -259,7 +259,7 @@ class RclActor(val cl: ClassLoader) extends Actor {
       log.debug("Recived bytecode request for {} from {}.", fqn, sender.path.address)
       getBytecode(fqn) match {
         case bytecode: Array[Byte] ⇒ sender ! ByteCodeFor(fqn, bytecode)
-        case _ ⇒ sender ! ByteCodeNotAvailable(fqn)
+        case _                     ⇒ sender ! ByteCodeNotAvailable(fqn)
       }
     }
 
@@ -271,7 +271,7 @@ class RclActor(val cl: ClassLoader) extends Actor {
     val resourceName = fqn.replaceAll("\\.", "/") + ".class"
     cl.getResource(resourceName) match {
       case url: URL ⇒ IOUtil.toByteArray(url)
-      case _ ⇒ null
+      case _        ⇒ null
     }
   }
 
