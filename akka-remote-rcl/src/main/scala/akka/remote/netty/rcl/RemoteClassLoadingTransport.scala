@@ -3,16 +3,16 @@ package akka.remote.netty.rcl
 import akka.remote.netty.NettyRemoteTransport
 import org.jboss.netty.channel._
 import org.jboss.netty.handler.execution._
-import akka.remote.{ RemoteMessage, RemoteActorRefProvider }
+import akka.remote.{RemoteMessage, RemoteActorRefProvider}
 import com.google.protobuf.ByteString
-import akka.remote.RemoteProtocol.{ RemoteMessageProtocol, AkkaRemoteProtocol }
+import akka.remote.RemoteProtocol.{RemoteMessageProtocol, AkkaRemoteProtocol}
 import collection.immutable.HashSet
 import collection.mutable.HashMap
 import akka.dispatch.Await
 import java.net.URL
-import akka.actor.{ Props, Actor, ActorRef, ExtendedActorSystem }
+import akka.actor.{Props, Actor, ActorRef, ExtendedActorSystem}
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import akka.event.{ LoggingAdapter, Logging }
+import akka.event.{LoggingAdapter, Logging}
 
 class RemoteClassLoadingTransport(system: ExtendedActorSystem, provider: RemoteActorRefProvider) extends NettyRemoteTransport(system, provider) {
 
@@ -167,11 +167,11 @@ class RemoteClassLoadingTransport(system: ExtendedActorSystem, provider: RemoteA
             RclMetadata.addOrigin(pb, rcl.originAddress)
           }
           case cl: ClassLoader ⇒ {
-            if (systemClassLoaderChain.find(_ == cl).isDefined) {
+            if (systemClassLoaderChain.contains(cl)) {
               log.debug("Tagging message loaded in our CL with id {}.\n{}", originAddressByteString.toStringUtf8, message)
               RclMetadata.addOrigin(pb, originAddressByteString)
             } else {
-              log.warning("Sending message {} from unknown classloader", message)
+              log.warning("Remote Class Loading does not support sending messages loaded outside Actor System's classloader.\n{}", message)
             }
           }
           case null ⇒ // null ClassLoader e.g. java.lang.String this is fine
@@ -194,6 +194,7 @@ class RemoteClassLoader(parent: ClassLoader, origin: ActorRef, val originAddress
   // normally it is not possible to block in here as this will in fact block the netty dispatcher i.e. no new stuff on this channel
   // but we are using a special thread just for this so this is safe
   override def findClass(fqn: String): Class[_] = {
+    // todo: refacture optimize with class references
     log.debug("Requesting bytecode for class {} from {}.", fqn, origin.path.address)
     try {
       Await.result(origin ? GiveMeByteCodeFor(fqn), timeout.duration) match {
@@ -242,10 +243,9 @@ object RclMetadata {
   def getOrigin(rm: RemoteMessage): ByteString = {
     val rmp: RemoteMessageProtocol = rm.input
     import scala.collection.JavaConversions._
-    rmp.getMetadataList.find(_.getKey.equals("origin")) match {
-      case Some(e) ⇒ e.getValue
-      case _       ⇒ null
-    }
+    rmp.getMetadataList.collectFirst({
+      case entry if entry.getKey == "origin" => entry.getValue
+    }).orNull
   }
 
 }
@@ -259,7 +259,7 @@ class RclActor(val cl: ClassLoader) extends Actor {
       log.debug("Recived bytecode request for {} from {}.", fqn, sender.path.address)
       getBytecode(fqn) match {
         case bytecode: Array[Byte] ⇒ sender ! ByteCodeFor(fqn, bytecode)
-        case _                     ⇒ sender ! ByteCodeNotAvailable(fqn)
+        case _ ⇒ sender ! ByteCodeNotAvailable(fqn)
       }
     }
 
@@ -271,7 +271,7 @@ class RclActor(val cl: ClassLoader) extends Actor {
     val resourceName = fqn.replaceAll("\\.", "/") + ".class"
     cl.getResource(resourceName) match {
       case url: URL ⇒ IOUtil.toByteArray(url)
-      case _        ⇒ null
+      case _ ⇒ null
     }
   }
 
