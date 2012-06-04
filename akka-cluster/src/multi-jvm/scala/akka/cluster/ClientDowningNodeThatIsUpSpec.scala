@@ -26,8 +26,8 @@ class ClientDowningNodeThatIsUpMultiJvmNode4 extends ClientDowningNodeThatIsUpSp
 
 class ClientDowningNodeThatIsUpSpec
   extends MultiNodeSpec(ClientDowningNodeThatIsUpMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender with BeforeAndAfter {
+  with MultiNodeClusterSpec {
+
   import ClientDowningNodeThatIsUpMultiJvmSpec._
 
   override def initialParticipants = 4
@@ -36,7 +36,7 @@ class ClientDowningNodeThatIsUpSpec
 
     "be able to DOWN a node that is UP (healthy and available)" taggedAs LongRunningTest in {
       runOn(first) {
-        cluster.self
+        startClusterNode()
         awaitUpConvergence(numberOfMembers = 4)
 
         val thirdAddress = node(third).address

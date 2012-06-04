@@ -15,11 +15,11 @@ import akka.util.Duration
 object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.cluster {
-      auto-down                          = off
-      gossip-frequency                   = 200 ms
-      leader-actions-frequency           = 200 ms
-      unreachable-nodes-reaper-frequency = 200 ms
-      periodic-tasks-initial-delay       = 300 ms
+      auto-down                         = off
+      gossip-interval                   = 200 ms
+      leader-actions-interval           = 200 ms
+      unreachable-nodes-reaper-interval = 200 ms
+      periodic-tasks-initial-delay      = 300 ms
     }
     akka.test {
       single-expect-default = 5 s
@@ -29,7 +29,15 @@ object MultiNodeClusterSpec {
 
 trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
 
+  /**
+   * Create a cluster node using 'Cluster(system)'.
+   */
   def cluster: Cluster = Cluster(system)
+
+  /**
+   * Use this method instead of 'cluster.self'.
+   */
+  def startClusterNode(): Unit = cluster.self
 
   /**
    * Assert that the member addresses match the expected addresses in the

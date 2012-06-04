@@ -22,7 +22,11 @@ class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec
 class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec
 class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec
 
-abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSpec) with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
+abstract class NodeMembershipSpec
+  extends MultiNodeSpec(NodeMembershipMultiJvmSpec)
+  with MultiNodeClusterSpec
+  with ImplicitSender with BeforeAndAfter {
+
   import NodeMembershipMultiJvmSpec._
 
   override def initialParticipants = 3
@@ -41,7 +45,7 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
 
       // make sure that the node-to-join is started before other join
       runOn(first) {
-        cluster.self
+        startClusterNode()
       }
       testConductor.enter("first-started")
 

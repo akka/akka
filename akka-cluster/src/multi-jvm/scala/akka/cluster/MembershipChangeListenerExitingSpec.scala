@@ -20,8 +20,8 @@ object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
     debugConfig(on = false)
     .withFallback(ConfigFactory.parseString("""
         akka.cluster {
-          leader-actions-frequency           = 5000 ms  # increase the leader action task frequency
-          unreachable-nodes-reaper-frequency = 30000 ms # turn "off" reaping to unreachable node set
+          leader-actions-interval           = 5 s  # increase the leader action task interval
+          unreachable-nodes-reaper-interval = 30 s # turn "off" reaping to unreachable node set
         }
       """)
     .withFallback(MultiNodeClusterSpec.clusterConfig)))
@@ -31,8 +31,10 @@ class MembershipChangeListenerExitingMultiJvmNode1 extends MembershipChangeListe
 class MembershipChangeListenerExitingMultiJvmNode2 extends MembershipChangeListenerExitingSpec
 class MembershipChangeListenerExitingMultiJvmNode3 extends MembershipChangeListenerExitingSpec
 
-abstract class MembershipChangeListenerExitingSpec extends MultiNodeSpec(MembershipChangeListenerExitingMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
+abstract class MembershipChangeListenerExitingSpec
+  extends MultiNodeSpec(MembershipChangeListenerExitingMultiJvmSpec)
+  with MultiNodeClusterSpec {
+
   import MembershipChangeListenerExitingMultiJvmSpec._
 
   override def initialParticipants = 3
@@ -45,7 +47,7 @@ abstract class MembershipChangeListenerExitingSpec extends MultiNodeSpec(Members
     "be notified when new node is EXITING" taggedAs LongRunningTest in {
 
       runOn(first) {
-        cluster.self
+        startClusterNode()
       }
       testConductor.enter("first-started")
 
@@ -55,19 +57,25 @@ abstract class MembershipChangeListenerExitingSpec extends MultiNodeSpec(Members
       awaitUpConvergence(numberOfMembers = 3)
       testConductor.enter("rest-started")
 
+      runOn(first) {
+        testConductor.enter("registered-listener")
+        cluster.leave(secondAddress)
+      }
+
+      runOn(second) {
+        testConductor.enter("registered-listener")
+      }
+
       runOn(third) {
         val exitingLatch = TestLatch()
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
-            if (members.size == 3 && members.exists(_.status == MemberStatus.Exiting))
+            if (members.size == 3 && members.exists( m => m.address == secondAddress && m.status == MemberStatus.Exiting))
               exitingLatch.countDown()
           }
         })
+        testConductor.enter("registered-listener")
         exitingLatch.await
-      }
-
-      runOn(first) {
-        cluster.leave(secondAddress)
       }
 
       testConductor.enter("finished")

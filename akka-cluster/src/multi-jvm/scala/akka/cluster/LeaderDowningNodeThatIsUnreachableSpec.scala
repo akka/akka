@@ -34,8 +34,8 @@ class LeaderDowningNodeThatIsUnreachableMultiJvmNode4 extends LeaderDowningNodeT
 
 class LeaderDowningNodeThatIsUnreachableSpec
   extends MultiNodeSpec(LeaderDowningNodeThatIsUnreachableMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender with BeforeAndAfter {
+  with MultiNodeClusterSpec {
+
   import LeaderDowningNodeThatIsUnreachableMultiJvmSpec._
 
   override def initialParticipants = 4
@@ -44,7 +44,7 @@ class LeaderDowningNodeThatIsUnreachableSpec
 
     "be able to DOWN a 'last' node that is UNREACHABLE" taggedAs LongRunningTest in {
       runOn(first) {
-        cluster.self
+        startClusterNode()
         awaitUpConvergence(numberOfMembers = 4)
 
         val fourthAddress = node(fourth).address

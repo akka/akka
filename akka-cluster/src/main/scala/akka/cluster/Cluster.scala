@@ -380,9 +380,9 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   private val vclockNode = VectorClock.Node(selfAddress.toString)
 
   private val periodicTasksInitialDelay = clusterSettings.PeriodicTasksInitialDelay
-  private val gossipFrequency = clusterSettings.GossipFrequency
-  private val leaderActionsFrequency = clusterSettings.LeaderActionsFrequency
-  private val unreachableNodesReaperFrequency = clusterSettings.UnreachableNodesReaperFrequency
+  private val gossipInterval = clusterSettings.GossipInterval
+  private val leaderActionsInterval = clusterSettings.LeaderActionsInterval
+  private val unreachableNodesReaperInterval = clusterSettings.UnreachableNodesReaperInterval
 
   implicit private val defaultTimeout = Timeout(remoteSettings.RemoteSystemDaemonAckTimeout)
 
@@ -424,17 +424,17 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   // ========================================================
 
   // start periodic gossip to random nodes in cluster
-  private val gossipCanceller = system.scheduler.schedule(periodicTasksInitialDelay, gossipFrequency) {
+  private val gossipCanceller = system.scheduler.schedule(periodicTasksInitialDelay, gossipInterval) {
     gossip()
   }
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  private val failureDetectorReaperCanceller = system.scheduler.schedule(periodicTasksInitialDelay, unreachableNodesReaperFrequency) {
+  private val failureDetectorReaperCanceller = system.scheduler.schedule(periodicTasksInitialDelay, unreachableNodesReaperInterval) {
     reapUnreachableMembers()
   }
 
   // start periodic leader action management (only applies for the current leader)
-  private val leaderActionsCanceller = system.scheduler.schedule(periodicTasksInitialDelay, leaderActionsFrequency) {
+  private val leaderActionsCanceller = system.scheduler.schedule(periodicTasksInitialDelay, leaderActionsInterval) {
     leaderActions()
   }
 

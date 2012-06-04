@@ -18,8 +18,8 @@ object NodeLeavingMultiJvmSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
     .withFallback(ConfigFactory.parseString("""
-        akka.cluster.leader-actions-frequency           = 5 s
-        akka.cluster.unreachable-nodes-reaper-frequency = 30 s # turn "off" reaping to unreachable node set
+        akka.cluster.leader-actions-interval           = 5 s
+        akka.cluster.unreachable-nodes-reaper-interval = 30 s # turn "off" reaping to unreachable node set
       """))
     .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
@@ -43,7 +43,7 @@ abstract class NodeLeavingSpec extends MultiNodeSpec(NodeLeavingMultiJvmSpec)
     "be marked as LEAVING in the converged membership table" taggedAs LongRunningTest in {
 
       runOn(first) {
-        cluster.self
+        startClusterNode()
       }
       testConductor.enter("first-started")
 

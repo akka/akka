@@ -40,7 +40,7 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec extends MultiNodeSpec(No
     "be moved to EXITING and then to REMOVED by the reaper" taggedAs LongRunningTest in {
 
       runOn(first) {
-        cluster.self
+        startClusterNode()
       }
       testConductor.enter("first-started")
 
