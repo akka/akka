@@ -210,7 +210,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val probe = TestProbe()
     val future = probe.ref ? "hello"
     probe.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
-    probe.sender ! "world"
+    probe.reply("world")
     assert(future.isCompleted && future.value == Some(Right("world")))
     //#test-probe-reply
   }
@@ -253,20 +253,20 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     }
     //#event-filter
   }
-  
+
   "demonstrate TestKitBase" in {
     //#test-kit-base
     import akka.testkit.TestKitBase
-    
+
     class MyTest extends TestKitBase {
       implicit lazy val system = ActorSystem()
-      
+
       //#put-your-test-code-here
       val probe = TestProbe()
       probe.send(testActor, "hello")
-      try expectMsg("hello") catch { case NonFatal(e) => system.shutdown(); throw e }
+      try expectMsg("hello") catch { case NonFatal(e) ⇒ system.shutdown(); throw e }
       //#put-your-test-code-here
-      
+
       system.shutdown()
     }
     //#test-kit-base

@@ -642,21 +642,22 @@ class TestProbe(_application: ActorSystem) extends TestKit(_application) {
    * Replies will be available for inspection with all of TestKit's assertion
    * methods.
    */
-  def send(actor: ActorRef, msg: AnyRef) = {
-    actor.!(msg)(testActor)
-  }
+  def send(actor: ActorRef, msg: Any): Unit = actor.!(msg)(testActor)
 
   /**
    * Forward this message as if in the TestActor's receive method with self.forward.
    */
-  def forward(actor: ActorRef, msg: AnyRef = lastMessage.msg) {
-    actor.!(msg)(lastMessage.sender)
-  }
+  def forward(actor: ActorRef, msg: Any = lastMessage.msg): Unit = actor.!(msg)(lastMessage.sender)
 
   /**
    * Get sender of last received message.
    */
   def sender = lastMessage.sender
+
+  /**
+   * Send message to the sender of the last dequeued message.
+   */
+  def reply(msg: Any): Unit = sender.!(msg)(ref)
 
 }
 
