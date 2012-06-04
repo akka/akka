@@ -52,15 +52,13 @@ class BalancingDispatcher(
     override def cleanUp(): Unit = {
       val dlq = actor.systemImpl.deadLetterMailbox
       //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
-      while (hasSystemMessages) {
-        var message = systemDrain()
-        while (message ne null) {
-          // message must be “virgin” before being able to systemEnqueue again
-          val next = message.next
-          message.next = null
-          dlq.systemEnqueue(actor.self, message)
-          message = next
-        }
+      var message = systemDrain(NoMessage)
+      while (message ne null) {
+        // message must be “virgin” before being able to systemEnqueue again
+        val next = message.next
+        message.next = null
+        dlq.systemEnqueue(actor.self, message)
+        message = next
       }
     }
   }

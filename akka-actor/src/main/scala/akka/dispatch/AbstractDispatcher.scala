@@ -107,6 +107,10 @@ private[akka] case class Watch(watchee: ActorRef, watcher: ActorRef) extends Sys
  * INTERNAL API
  */
 private[akka] case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
+/**
+ * INTERNAL API
+ */
+private[akka] case object NoMessage extends SystemMessage // switched into the mailbox to signal termination
 
 final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Runnable {
   def run(): Unit =
