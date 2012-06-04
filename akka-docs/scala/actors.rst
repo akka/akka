@@ -415,7 +415,7 @@ taken from one of the following locations in order of precedence:
 See :ref:`futures-scala` for more information on how to await or query a
 future.
 
-The ``onComplete``, ``onResult``, or ``onTimeout`` methods of the ``Future`` can be
+The ``onComplete``, ``onSuccess``, or ``onFailure`` methods of the ``Future`` can be
 used to register a callback to get a notification when the Future completes.
 Gives you a way to avoid blocking.
 

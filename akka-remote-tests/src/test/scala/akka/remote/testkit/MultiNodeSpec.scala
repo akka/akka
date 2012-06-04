@@ -44,7 +44,7 @@ abstract class MultiNodeConfig {
 
   /**
    * Include for verbose debug logging
-   * @param on when `true` debug Config is returned, otherwise empty Config
+   * @param on when `true` debug Config is returned, otherwise config with info logging
    */
   def debugConfig(on: Boolean): Config =
     if (on)
@@ -59,7 +59,8 @@ abstract class MultiNodeConfig {
           fsm = on
         }
         """)
-    else ConfigFactory.empty
+    else
+      ConfigFactory.parseString("akka.loglevel = INFO")
 
   /**
    * Construct a RoleName and return it, to be used as an identifier in the
@@ -247,5 +248,8 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: 
         throw new IllegalArgumentException("key " + key + " must map to deployment section, not simple value " + x)
     }
   }
+
+  // useful to see which jvm is running which role
+  log.info("Role [{}] started", myself.name)
 
 }

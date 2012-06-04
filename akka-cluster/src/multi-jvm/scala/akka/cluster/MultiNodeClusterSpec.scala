@@ -42,15 +42,20 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
     expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address must be(a) }
   }
 
+  def assertLeader(nodesInCluster: RoleName*): Unit = if (nodesInCluster.contains(myself)) {
+    assertLeaderIn(nodesInCluster)
+  }
+
   /**
    * Assert that the cluster has elected the correct leader
    * out of all nodes in the cluster. First
    * member in the cluster ring is expected leader.
    */
-  def assertLeader(nodesInCluster: RoleName*): Unit = if (nodesInCluster.contains(myself)) {
+  def assertLeaderIn(nodesInCluster: Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
     nodesInCluster.length must not be (0)
     val expectedLeader = roleOfLeader(nodesInCluster)
     cluster.isLeader must be(ifNode(expectedLeader)(true)(false))
+    cluster.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
   }
 
   /**
@@ -60,14 +65,15 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
   def awaitUpConvergence(
     numberOfMembers: Int,
     canNotBePartOfMemberRing: Seq[Address] = Seq.empty[Address],
-    timeout: Duration = 10.seconds.dilated): Unit = {
-    awaitCond(cluster.latestGossip.members.size == numberOfMembers, timeout)
-    awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up), timeout)
-    awaitCond(cluster.convergence.isDefined, timeout)
-    if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
-      awaitCond(
-        canNotBePartOfMemberRing forall (address ⇒ !(cluster.latestGossip.members exists (_.address == address))),
-        timeout)
+    timeout: Duration = 20.seconds): Unit = {
+    within(timeout) {
+      awaitCond(cluster.latestGossip.members.size == numberOfMembers)
+      awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
+      awaitCond(cluster.convergence.isDefined)
+      if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
+        awaitCond(
+          canNotBePartOfMemberRing forall (address ⇒ !(cluster.latestGossip.members exists (_.address == address))))
+    }
   }
 
   def roleOfLeader(nodesInCluster: Seq[RoleName]): RoleName = {

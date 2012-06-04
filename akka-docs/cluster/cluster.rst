@@ -5,7 +5,8 @@
  Cluster Specification
 ######################
 
-.. note:: *This document describes the new clustering coming in Akka 2.1 (not 2.0)*
+.. note:: *This document describes the new clustering coming in Akka Coltrane and
+is not available in the latest stable release)*
 
 Intro
 =====
@@ -69,16 +70,6 @@ A cluster is made up of a set of member nodes. The identifier for each node is a
 each node hosting some part of the application. Cluster membership and
 partitioning of the application are decoupled. A node could be a member of a
 cluster without hosting any actors.
-
-
-Singleton Cluster
------------------
-
-If a node does not have a preconfigured contact point to join in the Akka
-configuration, then it is considered a singleton cluster (single node cluster)
-and will automatically transition from ``joining`` to ``up``. Singleton clusters
-can later explicitly send a ``Join`` message to another node to form a N-node
-cluster. It is also possible to link multiple N-node clusters by ``joining`` them.
 
 
 Singleton Cluster
