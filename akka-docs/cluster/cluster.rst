@@ -5,7 +5,8 @@
  Cluster Specification
 ######################
 
-.. note:: *This document describes the new clustering coming in Akka 2.1 (not 2.0)*
+.. note:: *This document describes the new clustering coming in Akka Coltrane and
+is not available in the latest stable release)*
 
 Intro
 =====
