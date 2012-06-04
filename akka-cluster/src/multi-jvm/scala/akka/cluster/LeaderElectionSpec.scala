@@ -66,7 +66,6 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
         case `controller` ⇒
           testConductor.enter("before-shutdown")
           testConductor.shutdown(leader, 0)
-          testConductor.removeNode(leader)
           testConductor.enter("after-shutdown", "after-down", "completed")
 
         case `leader` ⇒
