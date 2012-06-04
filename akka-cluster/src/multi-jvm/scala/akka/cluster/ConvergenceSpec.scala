@@ -4,7 +4,6 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -33,14 +32,10 @@ class ConvergenceMultiJvmNode4 extends ConvergenceSpec
 
 abstract class ConvergenceSpec
   extends MultiNodeSpec(ConvergenceMultiJvmSpec)
-  with MultiNodeClusterSpec with BeforeAndAfter {
+  with MultiNodeClusterSpec {
   import ConvergenceMultiJvmSpec._
 
   override def initialParticipants = 4
-
-  after {
-    testConductor.enter("after")
-  }
 
   "A cluster of 3 members" must {
 
@@ -58,6 +53,8 @@ abstract class ConvergenceSpec
       runOn(fourth) {
         // doesn't join immediately
       }
+
+      testConductor.enter("after-1")
     }
 
     "not reach convergence while any nodes are unreachable" taggedAs LongRunningTest in {
@@ -67,14 +64,13 @@ abstract class ConvergenceSpec
       runOn(first) {
         // kill 'third' node
         testConductor.shutdown(third, 0)
-        testConductor.removeNode(third)
       }
 
       runOn(first, second) {
         val firstAddress = node(first).address
         val secondAddress = node(second).address
 
-        within(30 seconds) {
+        within(25 seconds) {
           // third becomes unreachable
           awaitCond(cluster.latestGossip.overview.unreachable.size == 1)
           awaitCond(cluster.latestGossip.members.size == 2)
@@ -89,6 +85,7 @@ abstract class ConvergenceSpec
         }
       }
 
+      testConductor.enter("after-2")
     }
 
     "not move a new joining node to Up while there is no convergence" taggedAs LongRunningTest in {
@@ -126,6 +123,7 @@ abstract class ConvergenceSpec
         }
       }
 
+      testConductor.enter("after-3")
     }
   }
 }
