@@ -62,16 +62,16 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
 }
 
 /**
- * Implementation trait behind the [[akka.testkit.TestKit]] class: you may use 
+ * Implementation trait behind the [[akka.testkit.TestKit]] class: you may use
  * this if inheriting from a concrete class is not possible.
  *
- * <b>Use of the trait is discouraged because of potential issues with binary 
+ * <b>Use of the trait is discouraged because of potential issues with binary
  * backwards compatibility in the future, use at own risk.</b>
- * 
- * This trait requires the concrete class mixing it in to provide an 
+ *
+ * This trait requires the concrete class mixing it in to provide an
  * [[akka.actor.ActorSystem]] which is available before this traits’s
  * constructor is run. The recommended way is this:
- * 
+ *
  * {{{
  * class MyTest extends TestKitBase {
  *   implicit lazy val system = ActorSystem() // may add arguments here
