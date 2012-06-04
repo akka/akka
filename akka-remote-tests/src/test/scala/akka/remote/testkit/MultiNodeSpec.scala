@@ -249,4 +249,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: 
     }
   }
 
+  // useful to see which jvm is running which role
+  log.info("Role [{}] started", myself.name)
+
 }
