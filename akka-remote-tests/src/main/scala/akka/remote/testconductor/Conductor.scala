@@ -444,7 +444,6 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
             nodes(node).fsm forward ToClient(TerminateMsg(exitValueOrKill))
           }
         case Remove(node) ⇒
-          nodes -= node
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
     case GetNodes    ⇒ sender ! nodes.keys
@@ -540,8 +539,8 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
 
   when(Waiting) {
     case Event(EnterBarrier(name), d @ Data(clients, barrier, arrived)) ⇒
-      if (name != barrier || clients.find(_.fsm == sender).isEmpty) throw WrongBarrier(name, sender, d)
-      val together = sender :: arrived
+      if (name != barrier) throw WrongBarrier(name, sender, d)
+      val together = if (clients.find(_.fsm == sender).isDefined) sender :: arrived else arrived
       handleBarrier(d.copy(arrived = together))
     case Event(RemoveClient(name), d @ Data(clients, barrier, arrived)) ⇒
       clients find (_.name == name) match {

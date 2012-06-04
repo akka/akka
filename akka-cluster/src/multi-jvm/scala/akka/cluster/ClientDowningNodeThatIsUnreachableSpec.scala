@@ -43,8 +43,8 @@ class ClientDowningNodeThatIsUnreachableSpec
         testConductor.enter("all-up")
 
         // kill 'third' node
-        testConductor.shutdown(third, 0)
         testConductor.removeNode(third)
+        testConductor.shutdown(third, 0)
 
         // mark 'third' node as DOWN
         cluster.down(thirdAddress)
