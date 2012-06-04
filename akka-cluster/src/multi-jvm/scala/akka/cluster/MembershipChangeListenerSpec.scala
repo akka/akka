@@ -4,7 +4,6 @@
 package akka.cluster
 
 import scala.collection.immutable.SortedSet
-import org.scalatest.BeforeAndAfter
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -24,14 +23,10 @@ class MembershipChangeListenerMultiJvmNode2 extends MembershipChangeListenerSpec
 class MembershipChangeListenerMultiJvmNode3 extends MembershipChangeListenerSpec
 
 abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChangeListenerMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
+  with MultiNodeClusterSpec {
   import MembershipChangeListenerMultiJvmSpec._
 
   override def initialParticipants = 3
-
-  after {
-    testConductor.enter("after")
-  }
 
   lazy val firstAddress = node(first).address
   lazy val secondAddress = node(second).address
@@ -59,6 +54,8 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
         cluster.convergence.isDefined must be(true)
       }
 
+      testConductor.enter("after-1")
+
     }
 
     "(when three systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
@@ -76,6 +73,8 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
       })
       latch.await
       cluster.convergence.isDefined must be(true)
+
+      testConductor.enter("after-2")
 
     }
   }

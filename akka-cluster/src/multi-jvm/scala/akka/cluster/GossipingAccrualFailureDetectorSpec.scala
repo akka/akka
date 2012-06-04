@@ -3,7 +3,6 @@
  */
 package akka.cluster
 
-import org.scalatest.BeforeAndAfter
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -25,7 +24,7 @@ class GossipingAccrualFailureDetectorMultiJvmNode2 extends GossipingAccrualFailu
 class GossipingAccrualFailureDetectorMultiJvmNode3 extends GossipingAccrualFailureDetectorSpec
 
 abstract class GossipingAccrualFailureDetectorSpec extends MultiNodeSpec(GossipingAccrualFailureDetectorMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
+  with MultiNodeClusterSpec {
   import GossipingAccrualFailureDetectorMultiJvmSpec._
 
   override def initialParticipants = 3
@@ -33,10 +32,6 @@ abstract class GossipingAccrualFailureDetectorSpec extends MultiNodeSpec(Gossipi
   lazy val firstAddress = node(first).address
   lazy val secondAddress = node(second).address
   lazy val thirdAddress = node(third).address
-
-  after {
-    testConductor.enter("after")
-  }
 
   "A Gossip-driven Failure Detector" must {
 
@@ -53,6 +48,8 @@ abstract class GossipingAccrualFailureDetectorSpec extends MultiNodeSpec(Gossipi
       cluster.failureDetector.isAvailable(firstAddress) must be(true)
       cluster.failureDetector.isAvailable(secondAddress) must be(true)
       cluster.failureDetector.isAvailable(thirdAddress) must be(true)
+
+      testConductor.enter("after-1")
     }
 
     "mark node as 'unavailable' if a node in the cluster is shut down (and its heartbeats stops)" taggedAs LongRunningTest in {
@@ -68,6 +65,8 @@ abstract class GossipingAccrualFailureDetectorSpec extends MultiNodeSpec(Gossipi
         cluster.failureDetector.isAvailable(firstAddress) must be(true)
         cluster.failureDetector.isAvailable(secondAddress) must be(true)
       }
+
+      testConductor.enter("after-2")
     }
   }
 

@@ -4,7 +4,6 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -28,14 +27,10 @@ object NodeShutdownMultiJvmSpec extends MultiNodeConfig {
 class NodeShutdownMultiJvmNode1 extends NodeShutdownSpec
 class NodeShutdownMultiJvmNode2 extends NodeShutdownSpec
 
-abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
+abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) with MultiNodeClusterSpec {
   import NodeShutdownMultiJvmSpec._
 
   override def initialParticipants = 2
-
-  after {
-    testConductor.enter("after")
-  }
 
   "A cluster of 2 nodes" must {
 
@@ -52,6 +47,8 @@ abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) 
       awaitUpConvergence(numberOfMembers = 2)
       cluster.isSingletonCluster must be(false)
       assertLeader(first, second)
+
+      testConductor.enter("after-1")
     }
 
     "become singleton cluster when one node is shutdown" taggedAs LongRunningTest in {
@@ -64,6 +61,7 @@ abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) 
         assertLeader(first)
       }
 
+      testConductor.enter("after-2")
     }
   }
 

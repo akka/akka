@@ -4,7 +4,6 @@
 package akka.cluster
 
 import scala.collection.immutable.SortedSet
-import org.scalatest.BeforeAndAfter
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -18,13 +17,13 @@ object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-    .withFallback(ConfigFactory.parseString("""
+      .withFallback(ConfigFactory.parseString("""
         akka.cluster {
           leader-actions-frequency           = 5 s  # increase the leader action task frequency to make sure we get a chance to test the LEAVING state
           unreachable-nodes-reaper-frequency = 30 s # turn "off" reaping to unreachable node set
         }
       """)
-    .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
 class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec
@@ -32,7 +31,7 @@ class NodeLeavingAndExitingMultiJvmNode2 extends NodeLeavingAndExitingSpec
 class NodeLeavingAndExitingMultiJvmNode3 extends NodeLeavingAndExitingSpec
 
 abstract class NodeLeavingAndExitingSpec extends MultiNodeSpec(NodeLeavingAndExitingMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
+  with MultiNodeClusterSpec {
   import NodeLeavingAndExitingMultiJvmSpec._
 
   override def initialParticipants = 3

@@ -4,7 +4,6 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -26,8 +25,7 @@ class ClientDowningNodeThatIsUnreachableMultiJvmNode4 extends ClientDowningNodeT
 
 class ClientDowningNodeThatIsUnreachableSpec
   extends MultiNodeSpec(ClientDowningNodeThatIsUnreachableMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender with BeforeAndAfter {
+  with MultiNodeClusterSpec {
   import ClientDowningNodeThatIsUnreachableMultiJvmSpec._
 
   override def initialParticipants = 4
