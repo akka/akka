@@ -40,12 +40,15 @@ trait GracefulStopSupport {
         val internalTarget = target.asInstanceOf[InternalActorRef]
         val ref = PromiseActorRef(e.provider, Timeout(timeout))
         internalTarget.sendSystemMessage(Watch(target, ref))
-        val result = ref.result map {
-          case Terminated(`target`) ⇒ true
-          case _                    ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref)); false // Just making sure we're not leaking here
+        ref.result onComplete { // Just making sure we're not leaking here
+          case Right(Terminated(`target`)) ⇒ ()
+          case _                           ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
         }
         target ! PoisonPill
-        result
+        ref.result map {
+          case Terminated(`target`) ⇒ true
+          case _                    ⇒ false
+        }
       case s ⇒ throw new IllegalArgumentException("Unknown ActorSystem implementation: '" + s + "'")
     }
   }

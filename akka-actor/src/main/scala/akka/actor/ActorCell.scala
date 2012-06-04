@@ -740,7 +740,7 @@ private[akka] class ActorCell(
         parent.sendSystemMessage(ChildTerminated(self))
 
         if (!watchedBy.isEmpty) {
-          val terminated = Terminated(self)(stopped = true)
+          val terminated = Terminated(self)(existenceConfirmed = true)
           try {
             watchedBy foreach {
               watcher ⇒
@@ -753,11 +753,10 @@ private[akka] class ActorCell(
 
         if (!watching.isEmpty) {
           try {
-            watching foreach {
-              case watchee: InternalActorRef ⇒
-                try watchee.sendSystemMessage(Unwatch(watchee, self)) catch {
-                  case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
-                }
+            watching foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+              case watchee: InternalActorRef ⇒ try watchee.sendSystemMessage(Unwatch(watchee, self)) catch {
+                case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
+              }
             }
           } finally watching = emptyActorRefSet
         }

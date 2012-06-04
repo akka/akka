@@ -424,10 +424,11 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
 
   protected def specialHandle(msg: Any): Boolean = msg match {
     case w: Watch ⇒
-      if (w.watchee == this && w.watcher != this) w.watcher ! Terminated(w.watchee)(stopped = false)
+      if (w.watchee == this && w.watcher != this)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
 
       true
-    case w: Unwatch ⇒ true // Just ignore
+    case _: Unwatch ⇒ true // Just ignore
     case _          ⇒ false
   }
 }
@@ -449,7 +450,7 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
 
   override protected def specialHandle(msg: Any): Boolean = msg match {
     case w: Watch ⇒
-      if (w.watchee != this && w.watcher != this) w.watcher ! Terminated(w.watchee)(stopped = false)
+      if (w.watchee != this && w.watcher != this) w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
 
       true
     case w: Unwatch ⇒ true // Just ignore

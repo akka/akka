@@ -192,7 +192,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   @tailrec // Returns false if the Promise is already completed
   private[this] final def addWatcher(watcher: ActorRef): Boolean = watchedBy match {
     case null  ⇒ false
-    case other ⇒ if (updateWatchedBy(other, other + watcher)) true else addWatcher(watcher)
+    case other ⇒ updateWatchedBy(other, other + watcher) || addWatcher(watcher)
   }
 
   @tailrec
@@ -259,7 +259,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
     case _: Terminate ⇒ stop()
     case Watch(watchee, watcher) ⇒
       if (watchee == this && watcher != this) {
-        if (!addWatcher(watcher)) watcher ! Terminated(watchee)(stopped = true)
+        if (!addWatcher(watcher)) watcher ! Terminated(watchee)(existenceConfirmed = true)
       } else System.err.println("BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, this))
     case Unwatch(watchee, watcher) ⇒
       if (watchee == this && watcher != this) remWatcher(watcher)
@@ -278,7 +278,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       if (!result.isCompleted) result.tryComplete(Left(new ActorKilledException("Stopped")))
       val watchers = clearWatchers()
       if (!watchers.isEmpty) {
-        val termination = Terminated(this)(stopped = true)
+        val termination = Terminated(this)(existenceConfirmed = true)
         watchers foreach { w ⇒ try w.tell(termination, this) catch { case NonFatal(t) ⇒ /* FIXME LOG THIS */ } }
       }
     }

@@ -403,8 +403,8 @@ class LocalActorRefProvider(
 
     def receive = {
       case Terminated(_)                ⇒ context.stop(self)
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ Status.Failure(e) })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ Status.Failure(e) })
       case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
@@ -435,8 +435,8 @@ class LocalActorRefProvider(
 
     def receive = {
       case Terminated(_)                ⇒ eventStream.stopDefaultLoggers(); context.stop(self)
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ Status.Failure(e) })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ Status.Failure(e) })
       case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
@@ -502,8 +502,10 @@ class LocalActorRefProvider(
   def init(_system: ActorSystemImpl) {
     system = _system
     // chain death watchers so that killing guardian stops the application
-    guardian.sendSystemMessage(Watch(guardian, systemGuardian))
+    systemGuardian.sendSystemMessage(Watch(guardian, systemGuardian))
     rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))
+    //guardian.sendSystemMessage(Watch(guardian, systemGuardian))
+    //rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))
     eventStream.startDefaultLoggers(_system)
   }
 
