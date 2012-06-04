@@ -49,7 +49,6 @@ class LeaderDowningNodeThatIsUnreachableSpec
         testConductor.enter("all-up")
 
         // kill 'fourth' node
-        testConductor.removeNode(fourth)
         testConductor.shutdown(fourth, 0)
         testConductor.enter("down-fourth-node")
 
@@ -89,7 +88,6 @@ class LeaderDowningNodeThatIsUnreachableSpec
         testConductor.enter("all-up")
 
         // kill 'second' node
-        testConductor.removeNode(second)
         testConductor.shutdown(second, 0)
         testConductor.enter("down-second-node")
 

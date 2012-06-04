@@ -41,7 +41,6 @@ class ClientDowningNodeThatIsUnreachableSpec
         testConductor.enter("all-up")
 
         // kill 'third' node
-        testConductor.removeNode(third)
         testConductor.shutdown(third, 0)
 
         // mark 'third' node as DOWN

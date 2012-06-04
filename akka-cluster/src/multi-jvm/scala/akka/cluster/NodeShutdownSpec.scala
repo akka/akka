@@ -54,7 +54,6 @@ abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) 
     "become singleton cluster when one node is shutdown" taggedAs LongRunningTest in {
       runOn(first) {
         val secondAddress = node(second).address
-        testConductor.removeNode(second)
         testConductor.shutdown(second, 0)
         awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Seq(secondAddress), 30.seconds)
         cluster.isSingletonCluster must be(true)

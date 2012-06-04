@@ -168,7 +168,8 @@ trait Conductor { this: TestConductorExt ⇒
 
   /**
    * Tell the remote node to shut itself down using System.exit with the given
-   * exitValue.
+   * exitValue. The node will also be removed, so that the remaining nodes may still
+   * pass subsequent barriers.
    *
    * @param node is the symbolic name of the node which is to be affected
    * @param exitValue is the return code which shall be given to System.exit
@@ -441,6 +442,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
           if (exitValueOrKill < 0) {
             // TODO: kill via SBT
           } else {
+            barrier ! BarrierCoordinator.RemoveClient(node)
             nodes(node).fsm forward ToClient(TerminateMsg(exitValueOrKill))
           }
         case Remove(node) ⇒

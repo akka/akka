@@ -54,7 +54,6 @@ abstract class GossipingAccrualFailureDetectorSpec extends MultiNodeSpec(Gossipi
 
     "mark node as 'unavailable' if a node in the cluster is shut down (and its heartbeats stops)" taggedAs LongRunningTest in {
       runOn(first) {
-        testConductor.removeNode(third)
         testConductor.shutdown(third, 0)
       }
 
