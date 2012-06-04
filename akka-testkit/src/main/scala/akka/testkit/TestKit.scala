@@ -101,11 +101,11 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
  * @author Roland Kuhn
  * @since 1.1
  */
-class TestKit(_system: ActorSystem) {
+trait TestKitBase {
 
   import TestActor.{ Message, RealMessage, NullMessage }
 
-  implicit val system = _system
+  implicit val system: ActorSystem
   val testKitSettings = TestKitExtension(system)
 
   private val queue = new LinkedBlockingDeque[Message]()
@@ -578,6 +578,8 @@ class TestKit(_system: ActorSystem) {
 
   private def format(u: TimeUnit, d: Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
 }
+
+class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
 
 object TestKit {
   private[testkit] val testActorId = new AtomicInteger(0)
