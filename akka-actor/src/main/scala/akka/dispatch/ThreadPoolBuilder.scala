@@ -157,7 +157,8 @@ case class ThreadPoolConfigBuilder(config: ThreadPoolConfig) {
   def setQueueFactory(newQueueFactory: QueueFactory): ThreadPoolConfigBuilder =
     this.copy(config = config.copy(queueFactory = newQueueFactory))
 
-  def configure(fs: Option[Function[ThreadPoolConfigBuilder, ThreadPoolConfigBuilder]]*): ThreadPoolConfigBuilder = fs.foldLeft(this)((c, f) ⇒ f.map(_(c)).getOrElse(c))
+  def configure(fs: Option[Function[ThreadPoolConfigBuilder, ThreadPoolConfigBuilder]]*): ThreadPoolConfigBuilder =
+    fs.foldLeft(this)((c, f) ⇒ f.map(_(c)).getOrElse(c))
 }
 
 object MonitorableThreadFactory {
