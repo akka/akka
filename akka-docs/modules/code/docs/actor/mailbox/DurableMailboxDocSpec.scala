@@ -50,6 +50,8 @@ import akka.dispatch.MailboxType
 import akka.dispatch.MessageQueue
 import akka.actor.mailbox.DurableMessageQueue
 import akka.actor.mailbox.DurableMessageSerialization
+import akka.pattern.CircuitBreaker
+import akka.util.duration._
 
 class MyMailboxType(systemSettings: ActorSystem.Settings, config: Config)
   extends MailboxType {
@@ -65,20 +67,23 @@ class MyMessageQueue(_owner: ActorContext)
   extends DurableMessageQueue(_owner) with DurableMessageSerialization {
 
   val storage = new QueueStorage
+  // A real-world implmentation would use configuration to set the last 
+  // three parameters below
+  val breaker = CircuitBreaker(_owner.system.scheduler, 5, 30.seconds, 1.minute)
 
-  def enqueue(receiver: ActorRef, envelope: Envelope) {
+  def enqueue(receiver: ActorRef, envelope: Envelope): Unit = breaker.withSyncCircuitBreaker {
     val data: Array[Byte] = serialize(envelope)
     storage.push(data)
   }
 
-  def dequeue(): Envelope = {
+  def dequeue(): Envelope = breaker.withSyncCircuitBreaker {
     val data: Option[Array[Byte]] = storage.pull()
     data.map(deserialize).orNull
   }
 
-  def hasMessages: Boolean = !storage.isEmpty
+  def hasMessages: Boolean = breaker.withSyncCircuitBreaker { !storage.isEmpty }
 
-  def numberOfMessages: Int = storage.size
+  def numberOfMessages: Int = breaker.withSyncCircuitBreaker { storage.size }
 
   /**
    * Called when the mailbox is disposed.

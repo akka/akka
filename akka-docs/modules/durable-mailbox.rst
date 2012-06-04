@@ -80,7 +80,9 @@ a configurator (MailboxType) and a queue implementation (DurableMessageQueue).
 The envelope contains the message sent to the actor, and information about sender. It is the
 envelope that needs to be stored. As a help utility you can mixin DurableMessageSerialization
 to serialize and deserialize the envelope using the ordinary :ref:`serialization-scala`
-mechanism. This optional and you may store the envelope data in any way you like.
+mechanism. This optional and you may store the envelope data in any way you like. Durable
+mailboxes are an excellent fit for usage of circuit breakers.  These are described in the 
+:ref:`circuit-breaker` documentation.
 
 .. includecode:: code/docs/actor/mailbox/DurableMailboxDocSpec.scala
    :include: custom-mailbox

@@ -20,8 +20,8 @@ object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
     debugConfig(on = false)
     .withFallback(ConfigFactory.parseString("""
         akka.cluster {
-          leader-actions-frequency           = 5000 ms  # increase the leader action task frequency
-          unreachable-nodes-reaper-frequency = 30000 ms # turn "off" reaping to unreachable node set
+          leader-actions-frequency           = 5 s  # increase the leader action task frequency to make sure we get a chance to test the LEAVING state
+          unreachable-nodes-reaper-frequency = 30 s # turn "off" reaping to unreachable node set
         }
       """)
     .withFallback(MultiNodeClusterSpec.clusterConfig)))
@@ -64,6 +64,8 @@ abstract class NodeLeavingAndExitingSpec extends MultiNodeSpec(NodeLeavingAndExi
       runOn(first, third) {
 
         // 1. Verify that 'second' node is set to LEAVING
+        //   We have set the 'leader-actions-frequency' to 5 seconds to make sure that we get a
+        //   chance to test the LEAVING state before the leader moves the node to EXITING
         awaitCond(cluster.latestGossip.members.exists(_.status == MemberStatus.Leaving)) // wait on LEAVING
         val hasLeft = cluster.latestGossip.members.find(_.status == MemberStatus.Leaving) // verify node that left
         hasLeft must be('defined)
