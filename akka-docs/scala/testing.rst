@@ -685,6 +685,11 @@ The ``implicit lazy val system`` must be declared exactly like that (you can 
 course pass arguments to the actor system factory as needed) because trait
 :class:`TestKitBase` needs the system during its construction.
 
+.. warning::
+
+  Use of the trait is discouraged because of potential issues with binary
+  backwards compatibility in the future, use at own risk.
+
 Specs2
 ------
 
