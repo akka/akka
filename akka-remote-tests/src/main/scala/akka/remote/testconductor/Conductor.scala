@@ -540,7 +540,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   when(Waiting) {
     case Event(EnterBarrier(name), d @ Data(clients, barrier, arrived)) ⇒
       if (name != barrier) throw WrongBarrier(name, sender, d)
-      val together = if (clients.find(_.fsm == sender).isDefined) sender :: arrived else arrived
+      val together = if (clients.exists(_.fsm == sender)) sender :: arrived else arrived
       handleBarrier(d.copy(arrived = together))
     case Event(RemoveClient(name), d @ Data(clients, barrier, arrived)) ⇒
       clients find (_.name == name) match {
