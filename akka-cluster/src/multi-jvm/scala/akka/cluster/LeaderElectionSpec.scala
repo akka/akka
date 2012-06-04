@@ -17,7 +17,6 @@ object LeaderElectionMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
-
 }
 
 class LeaderElectionMultiJvmNode1 extends LeaderElectionSpec
@@ -69,7 +68,6 @@ abstract class LeaderElectionSpec
         case `controller` ⇒
           testConductor.enter("before-shutdown")
           testConductor.shutdown(leader, 0)
-          testConductor.removeNode(leader)
           testConductor.enter("after-shutdown", "after-down", "completed")
 
         case `leader` ⇒
@@ -95,7 +93,6 @@ abstract class LeaderElectionSpec
           testConductor.enter("completed")
 
       }
-
     }
 
     "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in {
@@ -106,5 +103,4 @@ abstract class LeaderElectionSpec
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 1)
     }
   }
-
 }

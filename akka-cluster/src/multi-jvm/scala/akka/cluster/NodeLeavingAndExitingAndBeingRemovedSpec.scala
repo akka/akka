@@ -4,7 +4,6 @@
 package akka.cluster
 
 import scala.collection.immutable.SortedSet
-import org.scalatest.BeforeAndAfter
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -23,8 +22,10 @@ class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode1 extends NodeLeavingAndEx
 class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode2 extends NodeLeavingAndExitingAndBeingRemovedSpec
 class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode3 extends NodeLeavingAndExitingAndBeingRemovedSpec
 
-abstract class NodeLeavingAndExitingAndBeingRemovedSpec extends MultiNodeSpec(NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
+abstract class NodeLeavingAndExitingAndBeingRemovedSpec
+  extends MultiNodeSpec(NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec)
+  with MultiNodeClusterSpec {
+
   import NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec._
 
   override def initialParticipants = 3

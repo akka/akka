@@ -671,6 +671,25 @@ This section contains a collection of known gotchas with some other frameworks,
 which is by no means exhaustive and does not imply endorsement or special
 support.
 
+When you need it to be a trait
+------------------------------
+
+If for some reason it is a problem to inherit from :class:`TestKit` due to it
+being a concrete class instead of a trait, there’s :class:`TestKitBase`:
+
+.. includecode:: code/docs/testkit/TestkitDocSpec.scala
+   :include: test-kit-base
+   :exclude: put-your-test-code-here
+
+The ``implicit lazy val system`` must be declared exactly like that (you can of
+course pass arguments to the actor system factory as needed) because trait
+:class:`TestKitBase` needs the system during its construction.
+
+.. warning::
+
+  Use of the trait is discouraged because of potential issues with binary
+  backwards compatibility in the future, use at own risk.
+
 Specs2
 ------
 

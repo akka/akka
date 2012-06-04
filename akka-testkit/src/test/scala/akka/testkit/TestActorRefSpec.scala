@@ -246,10 +246,17 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       a.underlying.dispatcher.getClass must be(classOf[Dispatcher])
     }
 
-    "proxy receive for the underlying actor" in {
+    "proxy receive for the underlying actor without sender" in {
       val ref = TestActorRef[WorkerActor]
       ref.receive("work")
       ref.isTerminated must be(true)
+    }
+
+    "proxy receive for the underlying actor with sender" in {
+      val ref = TestActorRef[WorkerActor]
+      ref.receive("work", testActor)
+      ref.isTerminated must be(true)
+      expectMsg("workDone")
     }
 
   }

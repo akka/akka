@@ -168,7 +168,8 @@ trait Conductor { this: TestConductorExt ⇒
 
   /**
    * Tell the remote node to shut itself down using System.exit with the given
-   * exitValue.
+   * exitValue. The node will also be removed, so that the remaining nodes may still
+   * pass subsequent barriers.
    *
    * @param node is the symbolic name of the node which is to be affected
    * @param exitValue is the return code which shall be given to System.exit
@@ -441,10 +442,10 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
           if (exitValueOrKill < 0) {
             // TODO: kill via SBT
           } else {
+            barrier ! BarrierCoordinator.RemoveClient(node)
             nodes(node).fsm forward ToClient(TerminateMsg(exitValueOrKill))
           }
         case Remove(node) ⇒
-          nodes -= node
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
     case GetNodes    ⇒ sender ! nodes.keys
@@ -540,8 +541,8 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
 
   when(Waiting) {
     case Event(EnterBarrier(name), d @ Data(clients, barrier, arrived)) ⇒
-      if (name != barrier || clients.find(_.fsm == sender).isEmpty) throw WrongBarrier(name, sender, d)
-      val together = sender :: arrived
+      if (name != barrier) throw WrongBarrier(name, sender, d)
+      val together = if (clients.exists(_.fsm == sender)) sender :: arrived else arrived
       handleBarrier(d.copy(arrived = together))
     case Event(RemoveClient(name), d @ Data(clients, barrier, arrived)) ⇒
       clients find (_.name == name) match {

@@ -4,7 +4,6 @@
 package akka.cluster
 
 import scala.collection.immutable.SortedSet
-import org.scalatest.BeforeAndAfter
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -17,11 +16,10 @@ object NodeLeavingMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-    .withFallback(ConfigFactory.parseString("""
-        akka.cluster.leader-actions-interval           = 5 s
-        akka.cluster.unreachable-nodes-reaper-interval = 30 s # turn "off" reaping to unreachable node set
+      .withFallback(ConfigFactory.parseString("""
+        akka.cluster.unreachable-nodes-reaper-frequency = 30 s
       """))
-    .withFallback(MultiNodeClusterSpec.clusterConfig))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class NodeLeavingMultiJvmNode1 extends NodeLeavingSpec
@@ -29,7 +27,7 @@ class NodeLeavingMultiJvmNode2 extends NodeLeavingSpec
 class NodeLeavingMultiJvmNode3 extends NodeLeavingSpec
 
 abstract class NodeLeavingSpec extends MultiNodeSpec(NodeLeavingMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender with BeforeAndAfter {
+  with MultiNodeClusterSpec {
   import NodeLeavingMultiJvmSpec._
 
   override def initialParticipants = 3

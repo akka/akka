@@ -4,7 +4,6 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -52,7 +51,6 @@ class LeaderDowningNodeThatIsUnreachableSpec
 
         // kill 'fourth' node
         testConductor.shutdown(fourth, 0)
-        testConductor.removeNode(fourth)
         testConductor.enter("down-fourth-node")
 
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
@@ -92,7 +90,6 @@ class LeaderDowningNodeThatIsUnreachableSpec
 
         // kill 'second' node
         testConductor.shutdown(second, 0)
-        testConductor.removeNode(second)
         testConductor.enter("down-second-node")
 
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---

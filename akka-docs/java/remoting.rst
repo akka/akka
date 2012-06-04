@@ -92,6 +92,14 @@ As you can see from the example above the following pattern is used to find an `
 
     akka://<actorsystemname>@<hostname>:<port>/<actor path>
 
+.. note::
+
+  In order to ensure serializability of ``Props`` when passing constructor
+  arguments to the actor being created, do not make the factory a non-static
+  inner class: this will inherently capture a reference to its enclosing
+  object, which in most cases is not serializable. It is best to make a static
+  inner class which implements :class:`UntypedActorFactory`.
+
 Programmatic Remote Deployment
 ------------------------------
 

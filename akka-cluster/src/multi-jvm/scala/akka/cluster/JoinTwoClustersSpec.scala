@@ -78,7 +78,6 @@ abstract class JoinTwoClustersSpec
       assertLeader(c1, c2)
 
       testConductor.enter("four-members")
-
     }
 
     "be able to 'elect' a single leader after joining (C -> A + B)" taggedAs LongRunningTest in {
@@ -94,5 +93,4 @@ abstract class JoinTwoClustersSpec
       testConductor.enter("six-members")
     }
   }
-
 }

@@ -4,7 +4,6 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -15,7 +14,6 @@ object NodeMembershipMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
-
 }
 
 class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec
@@ -24,16 +22,11 @@ class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec
 
 abstract class NodeMembershipSpec
   extends MultiNodeSpec(NodeMembershipMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender with BeforeAndAfter {
+  with MultiNodeClusterSpec {
 
   import NodeMembershipMultiJvmSpec._
 
   override def initialParticipants = 3
-
-  after {
-    testConductor.enter("after")
-  }
 
   lazy val firstAddress = node(first).address
   lazy val secondAddress = node(second).address
@@ -59,6 +52,7 @@ abstract class NodeMembershipSpec
         awaitCond(cluster.convergence.isDefined)
       }
 
+      testConductor.enter("after-1")
     }
 
     "(when three nodes) start gossiping to each other so that all nodes gets the same gossip info" taggedAs LongRunningTest in {
@@ -74,7 +68,7 @@ abstract class NodeMembershipSpec
       }
       awaitCond(cluster.convergence.isDefined)
 
+      testConductor.enter("after-2")
     }
   }
-
 }
