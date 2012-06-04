@@ -235,7 +235,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
   protected[dispatch] def cleanUp(): Unit =
     if (actor ne null) { // actor is null for the deadLetterMailbox
       val dlm = actor.systemImpl.deadLetterMailbox
-      if (hasSystemMessages) {
+      while (hasSystemMessages) {
         var message = systemDrain()
         while (message ne null) {
           // message must be “virgin” before being able to systemEnqueue again

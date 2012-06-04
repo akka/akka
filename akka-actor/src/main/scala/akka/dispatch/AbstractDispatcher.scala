@@ -310,16 +310,14 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     case 0 ⇒
       shutdownSchedule match {
         case UNSCHEDULED ⇒
-          if (updateShutdownSchedule(UNSCHEDULED, SCHEDULED)) {
-            scheduleShutdownAction()
-            ()
-          } else ifSensibleToDoSoThenScheduleShutdown()
+          if (updateShutdownSchedule(UNSCHEDULED, SCHEDULED)) scheduleShutdownAction()
+          else ifSensibleToDoSoThenScheduleShutdown()
         case SCHEDULED ⇒
           if (updateShutdownSchedule(SCHEDULED, RESCHEDULED)) ()
           else ifSensibleToDoSoThenScheduleShutdown()
-        case RESCHEDULED ⇒ ()
+        case RESCHEDULED ⇒
       }
-    case _ ⇒ ()
+    case _ ⇒
   }
 
   private def scheduleShutdownAction(): Unit = {
@@ -349,9 +347,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   protected[akka] def unregister(actor: ActorCell) {
     if (debug) actors.remove(this, actor.self)
     addInhabitants(-1)
-    val mailBox = actor.mailbox
+    val mailBox = actor.swapMailbox(deadLetterMailbox)
     mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up
-    actor.mailbox = deadLetterMailbox
     mailBox.cleanUp()
   }
 
@@ -359,7 +356,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     @tailrec
     final def run() {
       shutdownSchedule match {
-        case UNSCHEDULED ⇒ ()
         case SCHEDULED ⇒
           try {
             if (inhabitants == 0) shutdown() //Warning, racy
@@ -369,6 +365,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
         case RESCHEDULED ⇒
           if (updateShutdownSchedule(RESCHEDULED, SCHEDULED)) scheduleShutdownAction()
           else run()
+        case UNSCHEDULED ⇒
       }
     }
   }

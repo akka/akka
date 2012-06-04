@@ -9,13 +9,12 @@ import scala.annotation.tailrec
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.event.Logging.{ Debug, Warning, Error }
-import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
-import akka.util.NonFatal
 import akka.event.Logging.LogEventException
 import collection.immutable.{ TreeSet, Stack, TreeMap }
+import akka.util.{ Unsafe, Duration, Helpers, NonFatal }
 
 //TODO: everything here for current compatibility - could be limited more
 
@@ -319,7 +318,7 @@ private[akka] class ActorCell(
   val props: Props,
   @volatile var parent: InternalActorRef,
   /*no member*/ _receiveTimeout: Option[Duration]) extends UntypedActorContext {
-
+  import AbstractActorCell.mailboxOffset
   import ActorCell._
 
   final def systemImpl = system
@@ -412,8 +411,7 @@ private[akka] class ActorCell(
   var currentMessage: Envelope = _
   var actor: Actor = _
   private var behaviorStack: Stack[Actor.Receive] = Stack.empty
-  @volatile //This must be volatile since it isn't protected by the mailbox status
-  var mailbox: Mailbox = _
+  @volatile var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
   var nextNameSequence: Long = 0
   var watching: Set[ActorRef] = emptyActorRefSet
   var watchedBy: Set[ActorRef] = emptyActorRefSet
@@ -429,6 +427,24 @@ private[akka] class ActorCell(
   final val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
 
   /**
+   * INTERNAL API
+   *
+   * Returns a reference to the current mailbox
+   */
+  @inline final def mailbox: Mailbox = Unsafe.instance.getObjectVolatile(this, mailboxOffset).asInstanceOf[Mailbox]
+
+  /**
+   * INTERNAL API
+   *
+   * replaces the current mailbox using getAndSet semantics
+   */
+  @tailrec final def swapMailbox(newMailbox: Mailbox): Mailbox = {
+    val oldMailbox = mailbox
+    if (!Unsafe.instance.compareAndSwapObject(this, mailboxOffset, oldMailbox, newMailbox)) swapMailbox(newMailbox)
+    else oldMailbox
+  }
+
+  /**
    * UntypedActorContext impl
    */
   final def getDispatcher(): MessageDispatcher = dispatcher
@@ -440,7 +456,7 @@ private[akka] class ActorCell(
      * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
      */
-    mailbox = dispatcher.createMailbox(this)
+    swapMailbox(dispatcher.createMailbox(this))
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     mailbox.systemEnqueue(self, Create())
 
