@@ -7,7 +7,7 @@
 http://www.springframework.org/schema/beans
 http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
 http://akka.io/schema/akka
-http://akka.io/akka-2.0.2-SNAPSHOT.xsd">
+http://akka.io/akka-2.0.2.xsd">
 
 
   <akka:typed-actor id="typed-actor-with-dispatcher"
