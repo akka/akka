@@ -879,7 +879,6 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
 
       val localGossip = localState.latestGossip
       val localOverview = localGossip.overview
-      val localSeen = localOverview.seen
       val localMembers = localGossip.members
       val localUnreachableMembers = localGossip.overview.unreachable
 
