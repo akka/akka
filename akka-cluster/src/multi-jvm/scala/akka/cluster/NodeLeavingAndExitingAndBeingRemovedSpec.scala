@@ -22,8 +22,10 @@ class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode1 extends NodeLeavingAndEx
 class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode2 extends NodeLeavingAndExitingAndBeingRemovedSpec
 class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode3 extends NodeLeavingAndExitingAndBeingRemovedSpec
 
-abstract class NodeLeavingAndExitingAndBeingRemovedSpec extends MultiNodeSpec(NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec)
+abstract class NodeLeavingAndExitingAndBeingRemovedSpec
+  extends MultiNodeSpec(NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec)
   with MultiNodeClusterSpec {
+
   import NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec._
 
   override def initialParticipants = 3
@@ -39,7 +41,7 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec extends MultiNodeSpec(No
     "be moved to EXITING and then to REMOVED by the reaper" taggedAs LongRunningTest in {
 
       runOn(first) {
-        cluster.self
+        startClusterNode()
       }
       testConductor.enter("first-started")
 

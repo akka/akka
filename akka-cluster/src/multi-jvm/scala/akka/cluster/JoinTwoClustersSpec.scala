@@ -27,7 +27,10 @@ class JoinTwoClustersMultiJvmNode4 extends JoinTwoClustersSpec
 class JoinTwoClustersMultiJvmNode5 extends JoinTwoClustersSpec
 class JoinTwoClustersMultiJvmNode6 extends JoinTwoClustersSpec
 
-abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvmSpec) with MultiNodeClusterSpec with ImplicitSender {
+abstract class JoinTwoClustersSpec
+  extends MultiNodeSpec(JoinTwoClustersMultiJvmSpec)
+  with MultiNodeClusterSpec {
+
   import JoinTwoClustersMultiJvmSpec._
 
   override def initialParticipants = 6
@@ -41,7 +44,7 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
     "be able to 'elect' a single leader after joining (A -> B)" taggedAs LongRunningTest in {
       // make sure that the node-to-join is started before other join
       runOn(a1, b1, c1) {
-        cluster.self
+        startClusterNode()
       }
       testConductor.enter("first-started")
 
@@ -75,7 +78,6 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
       assertLeader(c1, c2)
 
       testConductor.enter("four-members")
-
     }
 
     "be able to 'elect' a single leader after joining (C -> A + B)" taggedAs LongRunningTest in {
@@ -91,5 +93,4 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
       testConductor.enter("six-members")
     }
   }
-
 }

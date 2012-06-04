@@ -17,7 +17,6 @@ object LeaderElectionMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
-
 }
 
 class LeaderElectionMultiJvmNode1 extends LeaderElectionSpec
@@ -26,7 +25,10 @@ class LeaderElectionMultiJvmNode3 extends LeaderElectionSpec
 class LeaderElectionMultiJvmNode4 extends LeaderElectionSpec
 class LeaderElectionMultiJvmNode5 extends LeaderElectionSpec
 
-abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class LeaderElectionSpec
+  extends MultiNodeSpec(LeaderElectionMultiJvmSpec)
+  with MultiNodeClusterSpec {
+
   import LeaderElectionMultiJvmSpec._
 
   override def initialParticipants = 5
@@ -41,7 +43,7 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
     "be able to 'elect' a single leader" taggedAs LongRunningTest in {
       // make sure that the node-to-join is started before other join
       runOn(first) {
-        cluster.self
+        startClusterNode()
       }
       testConductor.enter("first-started")
 
@@ -91,7 +93,6 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
           testConductor.enter("completed")
 
       }
-
     }
 
     "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in {
@@ -102,5 +103,4 @@ abstract class LeaderElectionSpec extends MultiNodeSpec(LeaderElectionMultiJvmSp
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 1)
     }
   }
-
 }

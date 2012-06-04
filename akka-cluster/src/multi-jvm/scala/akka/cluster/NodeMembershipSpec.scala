@@ -14,14 +14,16 @@ object NodeMembershipMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
-
 }
 
 class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec
 class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec
 class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec
 
-abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class NodeMembershipSpec
+  extends MultiNodeSpec(NodeMembershipMultiJvmSpec)
+  with MultiNodeClusterSpec {
+
   import NodeMembershipMultiJvmSpec._
 
   override def initialParticipants = 3
@@ -36,7 +38,7 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
 
       // make sure that the node-to-join is started before other join
       runOn(first) {
-        cluster.self
+        startClusterNode()
       }
       testConductor.enter("first-started")
 
@@ -51,7 +53,6 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
       }
 
       testConductor.enter("after-1")
-
     }
 
     "(when three nodes) start gossiping to each other so that all nodes gets the same gossip info" taggedAs LongRunningTest in {
@@ -68,8 +69,6 @@ abstract class NodeMembershipSpec extends MultiNodeSpec(NodeMembershipMultiJvmSp
       awaitCond(cluster.convergence.isDefined)
 
       testConductor.enter("after-2")
-
     }
   }
-
 }

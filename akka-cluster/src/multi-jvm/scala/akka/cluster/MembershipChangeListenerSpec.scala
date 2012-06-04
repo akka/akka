@@ -15,7 +15,6 @@ object MembershipChangeListenerMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
-
 }
 
 class MembershipChangeListenerMultiJvmNode1 extends MembershipChangeListenerSpec
@@ -55,7 +54,6 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
       }
 
       testConductor.enter("after-1")
-
     }
 
     "(when three systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
@@ -75,8 +73,6 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
       cluster.convergence.isDefined must be(true)
 
       testConductor.enter("after-2")
-
     }
   }
-
 }
