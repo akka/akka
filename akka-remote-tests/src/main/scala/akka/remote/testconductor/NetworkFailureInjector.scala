@@ -28,7 +28,7 @@ private[akka] class FailureInjector extends Actor with ActorLogging {
     ctx: Option[ChannelHandlerContext] = None,
     throttleSend: Option[SetRate] = None,
     throttleReceive: Option[SetRate] = None)
-  case class Injectors(sender: ActorRef, receiver: ActorRef)
+  case class Injectors(sender: ActorRef, receiver: ActorRef, known: Boolean)
 
   var channels = Map[ChannelHandlerContext, Injectors]()
   var settings = Map[Address, ChannelSettings]()
@@ -37,12 +37,13 @@ private[akka] class FailureInjector extends Actor with ActorLogging {
   /**
    * Only for a NEW ctx, start ThrottleActors, prime them and update all maps.
    */
-  def ingestContextAddress(ctx: ChannelHandlerContext, addr: Address): Injectors = {
+  def ingestContextAddress(ctx: ChannelHandlerContext, addr: Address, known: Boolean,
+                           snd: Option[ActorRef] = None, rcv: Option[ActorRef] = None): Injectors = {
     val gen = generation.next
     val name = addr.host.get + ":" + addr.port.get
-    val thrSend = context.actorOf(Props(new ThrottleActor(ctx)), name + "-snd" + gen)
-    val thrRecv = context.actorOf(Props(new ThrottleActor(ctx)), name + "-rcv" + gen)
-    val injectors = Injectors(thrSend, thrRecv)
+    val thrSend = snd getOrElse context.actorOf(Props(new ThrottleActor(ctx)), name + "-snd" + gen)
+    val thrRecv = rcv getOrElse context.actorOf(Props(new ThrottleActor(ctx)), name + "-rcv" + gen)
+    val injectors = Injectors(thrSend, thrRecv, known)
     channels += ctx -> injectors
     settings += addr -> (settings get addr map {
       case c @ ChannelSettings(prevCtx, ts, tr) ⇒
@@ -134,7 +135,10 @@ private[akka] class FailureInjector extends Actor with ActorLogging {
      */
     case s @ Send(ctx, direction, future, msg) ⇒
       channels get ctx match {
-        case Some(Injectors(snd, rcv)) ⇒
+        case Some(Injectors(snd, rcv, known)) ⇒
+          // if the system registered with an empty name then check if we know it now
+          if (!known) ChannelAddress.get(ctx.getChannel).foreach(addr ⇒
+            ingestContextAddress(ctx, addr, true, Some(snd), Some(rcv)))
           if (direction includes Direction.Send) snd ! s
           if (direction includes Direction.Receive) rcv ! s
         case None ⇒
@@ -142,21 +146,24 @@ private[akka] class FailureInjector extends Actor with ActorLogging {
           ctx.getChannel.getRemoteAddress match {
             case sockAddr: InetSocketAddress ⇒
               val (ipaddr, ip, port) = (sockAddr.getAddress, sockAddr.getAddress.getHostAddress, sockAddr.getPort)
-              val addr = ChannelAddress.get(ctx.getChannel) orElse {
+              val (addr, known) = ChannelAddress.get(ctx.getChannel) orElse {
                 settings collect { case (a @ Address("akka", _, Some(`ip`), Some(`port`)), _) ⇒ a } headOption
               } orElse {
                 // only if raw IP failed, try with hostname
                 val name = ipaddr.getHostName
                 if (name == ip) None
                 else settings collect { case (a @ Address("akka", _, Some(`name`), Some(`port`)), _) ⇒ a } headOption
-              } getOrElse Address("akka", "", ip, port)
+              } match {
+                case Some(a) ⇒ (a, true)
+                case None    ⇒ (Address("akka", "", ip, port), false)
+              }
               /*
                * ^- the above last resort will not match later requests directly, but be 
                * picked up by retrieveTargetSettings, so that throttle ops are
                * applied to the right throttle actors, assuming that there can
                * be only one actor system per host:port.
                */
-              val inj = ingestContextAddress(ctx, addr)
+              val inj = ingestContextAddress(ctx, addr, known)
               if (direction includes Direction.Send) inj.sender ! s
               if (direction includes Direction.Receive) inj.receiver ! s
             case null ⇒
