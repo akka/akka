@@ -3,23 +3,16 @@
  */
 package akka.remote.testkit
 
-import akka.testkit.AkkaSpec
-import akka.actor.{ ActorSystem, ExtendedActorSystem }
-import akka.remote.testconductor.TestConductor
-import java.net.InetAddress
 import java.net.InetSocketAddress
-import akka.remote.testconductor.TestConductorExt
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import akka.dispatch.Await.Awaitable
+
+import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
+
+import akka.actor.{ RootActorPath, Deploy, ActorPath, ActorSystem, ExtendedActorSystem }
 import akka.dispatch.Await
-import akka.util.Duration
-import akka.util.NonFatal
-import akka.actor.ActorPath
-import akka.actor.RootActorPath
-import akka.remote.testconductor.RoleName
-import akka.actor.Deploy
-import com.typesafe.config.ConfigObject
+import akka.dispatch.Await.Awaitable
+import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
+import akka.testkit.AkkaSpec
+import akka.util.{ NonFatal, Duration }
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -144,7 +137,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: 
   import MultiNodeSpec._
 
   def this(config: MultiNodeConfig) =
-    this(config.myself, ActorSystem(AkkaSpec.getCallerName, config.config), config.roles, config.deployments)
+    this(config.myself, ActorSystem(AkkaSpec.getCallerName(classOf[MultiNodeSpec]), config.config), config.roles, config.deployments)
 
   /*
    * Test Class Interface

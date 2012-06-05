@@ -105,6 +105,14 @@ Once you have configured the properties above you would do the following in code
 ``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
 
+.. note::
+
+  In order to ensure serializability of ``Props`` when passing constructor
+  arguments to the actor being created, do not make the factory an inner class:
+  this will inherently capture a reference to its enclosing object, which in
+  most cases is not serializable. It is best to create a factory method in the
+  companion object of the actor’s class.
+
 Programmatic Remote Deployment
 ------------------------------
 

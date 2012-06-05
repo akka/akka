@@ -37,7 +37,7 @@ abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) 
     "not be singleton cluster when joined" taggedAs LongRunningTest in {
       // make sure that the node-to-join is started before other join
       runOn(first) {
-        cluster.self
+        startClusterNode()
       }
       testConductor.enter("first-started")
 
@@ -63,5 +63,4 @@ abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) 
       testConductor.enter("after-2")
     }
   }
-
 }
