@@ -481,7 +481,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   /**
    * Checks if we have a cluster convergence.
    *
-   * @returns Some(convergedGossip) if convergence have been reached and None if not
+   * @return Some(convergedGossip) if convergence have been reached and None if not
    */
   def convergence: Option[Gossip] = convergence(latestGossip)
 
