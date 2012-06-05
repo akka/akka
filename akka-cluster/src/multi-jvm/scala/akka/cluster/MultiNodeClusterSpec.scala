@@ -40,10 +40,21 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
    */
   def startClusterNode(): Unit = cluster.self
 
+  /**
+   * Initialize the cluster with the specified member
+   * nodes (roles). First node will be started first
+   * and others will join the first.
+   */
   def startCluster(roles: RoleName*): Unit = {
     awaitStartCluster(false, roles.toSeq)
   }
 
+  /**
+   * Initialize the cluster of the specified member
+   * nodes (roles) and wait until all joined and `Up`.
+   * First node will be started first  and others will join
+   * the first.
+   */
   def awaitClusterUp(roles: RoleName*): Unit = {
     awaitStartCluster(true, roles.toSeq)
   }
