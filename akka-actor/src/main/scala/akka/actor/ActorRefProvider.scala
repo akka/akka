@@ -504,8 +504,6 @@ class LocalActorRefProvider(
     // chain death watchers so that killing guardian stops the application
     systemGuardian.sendSystemMessage(Watch(guardian, systemGuardian))
     rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))
-    //guardian.sendSystemMessage(Watch(guardian, systemGuardian))
-    //rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))
     eventStream.startDefaultLoggers(_system)
   }
 
