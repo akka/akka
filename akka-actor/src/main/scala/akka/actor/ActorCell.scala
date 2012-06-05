@@ -671,7 +671,7 @@ private[akka] class ActorCell(
     checkReceiveTimeout // Reschedule receive timeout
   }
 
-  private final def handleInvokeFailure(t: Throwable, message: String): Unit = try {
+  final def handleInvokeFailure(t: Throwable, message: String): Unit = try {
     dispatcher.reportFailure(new LogEventException(Error(t, self.path.toString, clazz(actor), message), t))
     // prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)
