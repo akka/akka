@@ -180,7 +180,7 @@ case class GossipOverview(
  */
 case class Gossip(
   overview: GossipOverview = GossipOverview(),
-  members: SortedSet[Member], // sorted set of members with their status, sorted by name
+  members: SortedSet[Member], // sorted set of members with their status, sorted by address
   meta: Map[String, Array[Byte]] = Map.empty[String, Array[Byte]],
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
@@ -214,12 +214,8 @@ case class Gossip(
     // 1. merge vector clocks
     val mergedVClock = this.version merge that.version
 
-    // 2. group all members by Address => Vector[Member]
-    var membersGroupedByAddress = Map.empty[Address, Vector[Member]]
-    (this.members ++ that.members) foreach { m ⇒
-      val ms = membersGroupedByAddress.get(m.address).getOrElse(Vector.empty[Member])
-      membersGroupedByAddress += (m.address -> (ms :+ m))
-    }
+    // 2. group all members by Address => Seq[Member]
+    val membersGroupedByAddress = (this.members.toSeq ++ that.members.toSeq).groupBy(_.address)
 
     // 3. merge members by selecting the single Member with highest MemberStatus out of the Member groups
     val mergedMembers =
@@ -252,10 +248,9 @@ case class Gossip(
  * Manages routing of the different cluster commands.
  * Instantiated as a single instance for each Cluster - e.g. commands are serialized to Cluster message after message.
  */
-final class ClusterCommandDaemon extends Actor {
+private[akka] final class ClusterCommandDaemon(cluster: Cluster) extends Actor {
   import ClusterAction._
 
-  val cluster = Cluster(context.system)
   val log = Logging(context.system, this)
 
   def receive = {
@@ -273,9 +268,8 @@ final class ClusterCommandDaemon extends Actor {
  * Pooled and routed with N number of configurable instances.
  * Concurrent access to Cluster.
  */
-final class ClusterGossipDaemon extends Actor {
+private[akka] final class ClusterGossipDaemon(cluster: Cluster) extends Actor {
   val log = Logging(context.system, this)
-  val cluster = Cluster(context.system)
 
   def receive = {
     case GossipEnvelope(sender, gossip) ⇒ cluster.receive(sender, gossip)
@@ -287,13 +281,13 @@ final class ClusterGossipDaemon extends Actor {
 /**
  * Supervisor managing the different Cluster daemons.
  */
-final class ClusterDaemonSupervisor extends Actor {
+private[akka] final class ClusterDaemonSupervisor(cluster: Cluster) extends Actor {
   val log = Logging(context.system, this)
-  val cluster = Cluster(context.system)
 
-  private val commands = context.actorOf(Props[ClusterCommandDaemon], "commands")
+  private val commands = context.actorOf(Props(new ClusterCommandDaemon(cluster)), "commands")
   private val gossip = context.actorOf(
-    Props[ClusterGossipDaemon].withRouter(RoundRobinRouter(cluster.clusterSettings.NrOfGossipDaemons)), "gossip")
+    Props(new ClusterGossipDaemon(cluster)).withRouter(
+      RoundRobinRouter(cluster.clusterSettings.NrOfGossipDaemons)), "gossip")
 
   def receive = Actor.emptyBehavior
 
@@ -396,7 +390,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
 
   // create superisor for daemons under path "/system/cluster"
   private val clusterDaemons = {
-    val createChild = CreateChild(Props[ClusterDaemonSupervisor], "cluster")
+    val createChild = CreateChild(Props(new ClusterDaemonSupervisor(this)), "cluster")
     Await.result(system.systemGuardian ? createChild, defaultTimeout.duration) match {
       case a: ActorRef  ⇒ a
       case e: Exception ⇒ throw e
@@ -794,9 +788,11 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   }
 
   /**
+   * INTERNAL API
+   *
    * Gossips latest gossip to an address.
    */
-  private def gossipTo(address: Address): Unit = {
+  protected def gossipTo(address: Address): Unit = {
     val connection = clusterGossipConnectionFor(address)
     log.debug("Cluster Node [{}] - Gossiping to [{}]", selfAddress, connection)
     connection ! GossipEnvelope(self, latestGossip)
@@ -805,23 +801,43 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   /**
    * Gossips latest gossip to a random member in the set of members passed in as argument.
    *
-   * @return 'true' if it gossiped to a "deputy" member.
+   * @return the used [[akka.actor.Address] if any
    */
-  private def gossipToRandomNodeOf(addresses: Iterable[Address]): Boolean = {
+  private def gossipToRandomNodeOf(addresses: IndexedSeq[Address]): Option[Address] = {
     log.debug("Cluster Node [{}] - Selecting random node to gossip to [{}]", selfAddress, addresses.mkString(", "))
-    if (addresses.isEmpty) false
-    else {
-      val peers = addresses filter (_ != selfAddress) // filter out myself
-      val peer = selectRandomNode(peers)
-      gossipTo(peer)
-      deputyNodes exists (peer == _)
+    val peers = addresses filterNot (_ == selfAddress) // filter out myself
+    val peer = selectRandomNode(peers)
+    peer foreach gossipTo
+    peer
+  }
+
+  /**
+   * INTERNAL API
+   */
+  protected[akka] def gossipToUnreachableProbablity(membersSize: Int, unreachableSize: Int): Double =
+    (membersSize + unreachableSize) match {
+      case 0   ⇒ 0.0
+      case sum ⇒ unreachableSize.toDouble / sum
+    }
+
+  /**
+   * INTERNAL API
+   */
+  protected[akka] def gossipToDeputyProbablity(membersSize: Int, unreachableSize: Int, nrOfDeputyNodes: Int): Double = {
+    if (nrOfDeputyNodes > membersSize) 1.0
+    else if (nrOfDeputyNodes == 0) 0.0
+    else (membersSize + unreachableSize) match {
+      case 0   ⇒ 0.0
+      case sum ⇒ (nrOfDeputyNodes + unreachableSize).toDouble / sum
     }
   }
 
   /**
+   * INTERNAL API
+   *
    * Initates a new round of gossip.
    */
-  private def gossip(): Unit = {
+  private[akka] def gossip(): Unit = {
     val localState = state.get
 
     if (isSingletonCluster(localState)) {
@@ -833,38 +849,42 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
       log.debug("Cluster Node [{}] - Initiating new round of gossip", selfAddress)
 
       val localGossip = localState.latestGossip
-      val localMembers = localGossip.members
+      // important to not accidentally use `map` of the SortedSet, since the original order is not preserved
+      val localMembers = localGossip.members.toIndexedSeq
       val localMembersSize = localMembers.size
+      val localMemberAddresses = localMembers map { _.address }
 
-      val localUnreachableMembers = localGossip.overview.unreachable
+      val localUnreachableMembers = localGossip.overview.unreachable.toIndexedSeq
       val localUnreachableSize = localUnreachableMembers.size
 
       // 1. gossip to alive members
-      val gossipedToDeputy = gossipToRandomNodeOf(localMembers map { _.address })
+      val gossipedToAlive = gossipToRandomNodeOf(localMemberAddresses)
 
       // 2. gossip to unreachable members
       if (localUnreachableSize > 0) {
-        val probability: Double = localUnreachableSize / (localMembersSize + 1)
-        if (ThreadLocalRandom.current.nextDouble() < probability) gossipToRandomNodeOf(localUnreachableMembers.map(_.address))
+        val probability = gossipToUnreachableProbablity(localMembersSize, localUnreachableSize)
+        if (ThreadLocalRandom.current.nextDouble() < probability)
+          gossipToRandomNodeOf(localUnreachableMembers.map(_.address))
       }
 
       // 3. gossip to a deputy nodes for facilitating partition healing
-      val deputies = deputyNodes
-      if ((!gossipedToDeputy || localMembersSize < 1) && deputies.nonEmpty) {
-        if (localMembersSize == 0) gossipToRandomNodeOf(deputies)
-        else {
-          val probability = 1.0 / localMembersSize + localUnreachableSize
-          if (ThreadLocalRandom.current.nextDouble() <= probability) gossipToRandomNodeOf(deputies)
-        }
+      val deputies = deputyNodes(localMemberAddresses)
+      val alreadyGossipedToDeputy = gossipedToAlive.map(deputies.contains(_)).getOrElse(false)
+      if ((!alreadyGossipedToDeputy || localMembersSize < NrOfDeputyNodes) && deputies.nonEmpty) {
+        val probability = gossipToDeputyProbablity(localMembersSize, localUnreachableSize, NrOfDeputyNodes)
+        if (ThreadLocalRandom.current.nextDouble() < probability)
+          gossipToRandomNodeOf(deputies)
       }
     }
   }
 
   /**
+   * INTERNAL API
+   *
    * Reaps the unreachable members (moves them to the 'unreachable' list in the cluster overview) according to the failure detector's verdict.
    */
   @tailrec
-  final private def reapUnreachableMembers(): Unit = {
+  final private[akka] def reapUnreachableMembers(): Unit = {
     val localState = state.get
 
     if (!isSingletonCluster(localState) && isAvailable(localState)) {
@@ -905,10 +925,12 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   }
 
   /**
+   * INTERNAL API
+   *
    * Runs periodic leader actions, such as auto-downing unreachable nodes, assigning partitions etc.
    */
   @tailrec
-  final private def leaderActions(): Unit = {
+  final private[akka] def leaderActions(): Unit = {
     val localState = state.get
     val localGossip = localState.latestGossip
     val localMembers = localGossip.members
@@ -1082,11 +1104,17 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   private def clusterGossipConnectionFor(address: Address): ActorRef = system.actorFor(RootActorPath(address) / "system" / "cluster" / "gossip")
 
   /**
-   * Gets an Iterable with the addresses of a all the 'deputy' nodes - excluding this node if part of the group.
+   * Gets the addresses of a all the 'deputy' nodes - excluding this node if part of the group.
    */
-  private def deputyNodes: Iterable[Address] = state.get.latestGossip.members.toIterable map (_.address) drop 1 take NrOfDeputyNodes filter (_ != selfAddress)
+  private def deputyNodes(addresses: IndexedSeq[Address]): IndexedSeq[Address] =
+    addresses drop 1 take NrOfDeputyNodes filterNot (_ == selfAddress)
 
-  private def selectRandomNode(addresses: Iterable[Address]): Address = addresses.toSeq(ThreadLocalRandom.current nextInt addresses.size)
+  /**
+   * INTERNAL API
+   */
+  protected def selectRandomNode(addresses: IndexedSeq[Address]): Option[Address] =
+    if (addresses.isEmpty) None
+    else Some(addresses(ThreadLocalRandom.current nextInt addresses.size))
 
   private def isSingletonCluster(currentState: State): Boolean = currentState.latestGossip.members.size == 1
 
