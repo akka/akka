@@ -39,7 +39,7 @@ private[akka] class FailureInjector extends Actor with ActorLogging {
    */
   def ingestContextAddress(ctx: ChannelHandlerContext, addr: Address, known: Boolean,
                            snd: Option[ActorRef] = None, rcv: Option[ActorRef] = None): Injectors = {
-    val gen = generation.next
+    lazy val gen = generation.next
     val name = addr.host.get + ":" + addr.port.get
     val thrSend = snd getOrElse context.actorOf(Props(new ThrottleActor(ctx)), name + "-snd" + gen)
     val thrRecv = rcv getOrElse context.actorOf(Props(new ThrottleActor(ctx)), name + "-rcv" + gen)
