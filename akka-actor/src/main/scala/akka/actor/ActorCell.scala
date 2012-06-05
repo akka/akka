@@ -316,8 +316,7 @@ private[akka] class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
   val props: Props,
-  @volatile var parent: InternalActorRef,
-  /*no member*/ _receiveTimeout: Option[Duration]) extends UntypedActorContext {
+  @volatile var parent: InternalActorRef) extends UntypedActorContext {
   import AbstractActorCell.mailboxOffset
   import ActorCell._
 
@@ -351,8 +350,7 @@ private[akka] class ActorCell(
   /**
    * In milliseconds
    */
-  var receiveTimeoutData: (Long, Cancellable) =
-    if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
+  var receiveTimeoutData: (Long, Cancellable) = emptyReceiveTimeoutData
 
   @volatile
   var childrenRefs: ChildrenContainer = EmptyChildrenContainer

@@ -53,9 +53,8 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     system: ActorSystemImpl,
     ref: InternalActorRef,
     props: Props,
-    supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration]): ActorCell = {
-    val cell = super.newActorCell(system, ref, props, supervisor, receiveTimeout)
+    supervisor: InternalActorRef): ActorCell = {
+    val cell = super.newActorCell(system, ref, props, supervisor)
     Unsafe.instance.monitorEnter(cell)
     cell
   }
