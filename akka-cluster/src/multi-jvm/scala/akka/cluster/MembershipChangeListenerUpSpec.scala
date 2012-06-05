@@ -36,15 +36,6 @@ abstract class MembershipChangeListenerUpSpec
     "be notified when new node is marked as UP by the leader" taggedAs LongRunningTest in {
 
       runOn(first) {
-        startClusterNode()
-      }
-
-      runOn(second) {
-        testConductor.enter("registered-listener")
-        cluster.join(firstAddress)
-      }
-
-      runOn(first) {
         val upLatch = TestLatch()
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
@@ -56,6 +47,11 @@ abstract class MembershipChangeListenerUpSpec
 
         upLatch.await
         awaitUpConvergence(numberOfMembers = 2)
+      }
+
+      runOn(second) {
+        testConductor.enter("registered-listener")
+        cluster.join(firstAddress)
       }
 
       testConductor.enter("after")

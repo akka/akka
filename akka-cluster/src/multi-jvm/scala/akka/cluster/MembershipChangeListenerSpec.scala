@@ -32,13 +32,9 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
 
   "A set of connected cluster systems" must {
 
-    "(when two systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
+    "(when two nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 
-      // make sure that the node-to-join is started before other join
-      runOn(first) {
-        cluster.self
-      }
-      testConductor.enter("first-started")
+      awaitClusterUp(first)
 
       runOn(first, second) {
         cluster.join(firstAddress)
@@ -56,7 +52,7 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
       testConductor.enter("after-1")
     }
 
-    "(when three systems) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
+    "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 
       runOn(third) {
         cluster.join(firstAddress)

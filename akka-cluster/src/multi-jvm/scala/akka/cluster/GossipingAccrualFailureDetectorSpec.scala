@@ -36,13 +36,7 @@ abstract class GossipingAccrualFailureDetectorSpec extends MultiNodeSpec(Gossipi
   "A Gossip-driven Failure Detector" must {
 
     "receive gossip heartbeats so that all member nodes in the cluster are marked 'available'" taggedAs LongRunningTest in {
-      // make sure that the node-to-join is started before other join
-      runOn(first) {
-        startClusterNode()
-      }
-      testConductor.enter("first-started")
-
-      cluster.join(firstAddress)
+      awaitClusterUp(first, second, third)
 
       5.seconds.dilated.sleep // let them gossip
       cluster.failureDetector.isAvailable(firstAddress) must be(true)

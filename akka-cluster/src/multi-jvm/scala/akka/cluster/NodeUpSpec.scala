@@ -28,21 +28,10 @@ abstract class NodeUpSpec
 
   override def initialParticipants = 2
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-
   "A cluster node that is joining another cluster" must {
     "be moved to UP by the leader after a convergence" taggedAs LongRunningTest in {
 
-      runOn(first) {
-        startClusterNode()
-      }
-
-      runOn(second) {
-        cluster.join(firstAddress)
-      }
-
-      awaitUpConvergence(numberOfMembers = 2)
+      awaitClusterUp(first, second)
 
       testConductor.enter("after")
     }

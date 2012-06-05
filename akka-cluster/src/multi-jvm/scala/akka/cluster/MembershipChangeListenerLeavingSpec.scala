@@ -17,11 +17,11 @@ object MembershipChangeListenerLeavingMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-    .withFallback(ConfigFactory.parseString("""
+      .withFallback(ConfigFactory.parseString("""
         akka.cluster.leader-actions-interval           = 5 s
         akka.cluster.unreachable-nodes-reaper-interval = 30 s
       """))
-    .withFallback(MultiNodeClusterSpec.clusterConfig))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class MembershipChangeListenerLeavingMultiJvmNode1 extends MembershipChangeListenerLeavingSpec
@@ -43,16 +43,7 @@ abstract class MembershipChangeListenerLeavingSpec
   "A registered MembershipChangeListener" must {
     "be notified when new node is LEAVING" taggedAs LongRunningTest in {
 
-      runOn(first) {
-        startClusterNode()
-      }
-      testConductor.enter("first-started")
-
-      runOn(second, third) {
-        cluster.join(firstAddress)
-      }
-      awaitUpConvergence(numberOfMembers = 3)
-      testConductor.enter("rest-started")
+      awaitClusterUp(first, second, third)
 
       runOn(first) {
         testConductor.enter("registered-listener")
@@ -67,7 +58,7 @@ abstract class MembershipChangeListenerLeavingSpec
         val latch = TestLatch()
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
-            if (members.size == 3 && members.exists( m => m.address == secondAddress && m.status == MemberStatus.Leaving))
+            if (members.size == 3 && members.exists(m ⇒ m.address == secondAddress && m.status == MemberStatus.Leaving))
               latch.countDown()
           }
         })

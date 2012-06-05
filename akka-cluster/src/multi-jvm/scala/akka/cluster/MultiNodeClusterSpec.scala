@@ -30,14 +30,49 @@ object MultiNodeClusterSpec {
 trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
 
   /**
-   * Create a cluster node using 'Cluster(system)'.
+   * Get or create a cluster node using 'Cluster(system)' extension.
    */
   def cluster: Cluster = Cluster(system)
 
   /**
-   * Use this method instead of 'cluster.self'.
+   * Use this method instead of 'cluster.self'
+   * for the initial startup of the cluster node.
    */
   def startClusterNode(): Unit = cluster.self
+
+  /**
+   * Initialize the cluster with the specified member
+   * nodes (roles). First node will be started first
+   * and others will join the first.
+   */
+  def startCluster(roles: RoleName*): Unit = {
+    awaitStartCluster(false, roles.toSeq)
+  }
+
+  /**
+   * Initialize the cluster of the specified member
+   * nodes (roles) and wait until all joined and `Up`.
+   * First node will be started first  and others will join
+   * the first.
+   */
+  def awaitClusterUp(roles: RoleName*): Unit = {
+    awaitStartCluster(true, roles.toSeq)
+  }
+
+  private def awaitStartCluster(upConvergence: Boolean = true, roles: Seq[RoleName]): Unit = {
+    runOn(roles.head) {
+      // make sure that the node-to-join is started before other join
+      startClusterNode()
+    }
+    testConductor.enter(roles.head.name + "-started")
+    if (roles.tail.contains(myself)) {
+      cluster.join(node(roles.head).address)
+    }
+    if (upConvergence && roles.contains(myself)) {
+      awaitUpConvergence(numberOfMembers = roles.length)
+    }
+    testConductor.enter(roles.map(_.name).mkString("-") + "-joined")
+  }
 
   /**
    * Assert that the member addresses match the expected addresses in the

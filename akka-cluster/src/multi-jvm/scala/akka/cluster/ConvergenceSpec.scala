@@ -40,15 +40,7 @@ abstract class ConvergenceSpec
   "A cluster of 3 members" must {
 
     "reach initial convergence" taggedAs LongRunningTest in {
-      runOn(first) {
-        cluster.self
-        awaitUpConvergence(numberOfMembers = 3)
-      }
-
-      runOn(second, third) {
-        cluster.join(node(first).address)
-        awaitUpConvergence(numberOfMembers = 3)
-      }
+      awaitClusterUp(first, second, third)
 
       runOn(fourth) {
         // doesn't join immediately
@@ -70,7 +62,7 @@ abstract class ConvergenceSpec
         val firstAddress = node(first).address
         val secondAddress = node(second).address
 
-        within(25 seconds) {
+        within(28 seconds) {
           // third becomes unreachable
           awaitCond(cluster.latestGossip.overview.unreachable.size == 1)
           awaitCond(cluster.latestGossip.members.size == 2)

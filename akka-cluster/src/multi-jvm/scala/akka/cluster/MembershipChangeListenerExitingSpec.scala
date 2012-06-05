@@ -18,13 +18,13 @@ object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-    .withFallback(ConfigFactory.parseString("""
+      .withFallback(ConfigFactory.parseString("""
         akka.cluster {
           leader-actions-interval           = 5 s  # increase the leader action task interval
           unreachable-nodes-reaper-interval = 30 s # turn "off" reaping to unreachable node set
         }
       """)
-    .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
 class MembershipChangeListenerExitingMultiJvmNode1 extends MembershipChangeListenerExitingSpec
@@ -46,16 +46,7 @@ abstract class MembershipChangeListenerExitingSpec
   "A registered MembershipChangeListener" must {
     "be notified when new node is EXITING" taggedAs LongRunningTest in {
 
-      runOn(first) {
-        startClusterNode()
-      }
-      testConductor.enter("first-started")
-
-      runOn(second, third) {
-        cluster.join(firstAddress)
-      }
-      awaitUpConvergence(numberOfMembers = 3)
-      testConductor.enter("rest-started")
+      awaitClusterUp(first, second, third)
 
       runOn(first) {
         testConductor.enter("registered-listener")
@@ -70,7 +61,7 @@ abstract class MembershipChangeListenerExitingSpec
         val exitingLatch = TestLatch()
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
-            if (members.size == 3 && members.exists( m => m.address == secondAddress && m.status == MemberStatus.Exiting))
+            if (members.size == 3 && members.exists(m ⇒ m.address == secondAddress && m.status == MemberStatus.Exiting))
               exitingLatch.countDown()
           }
         })
