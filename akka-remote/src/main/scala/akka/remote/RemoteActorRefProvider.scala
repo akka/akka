@@ -6,7 +6,7 @@ package akka.remote
 
 import akka.actor._
 import akka.dispatch._
-import akka.event.{ DeathWatch, Logging, LoggingAdapter }
+import akka.event.{ Logging, LoggingAdapter }
 import akka.event.EventStream
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
@@ -33,8 +33,6 @@ private[akka] class RemoteActorRefProvider(
 
   override def rootPath: ActorPath = local.rootPath
   override def deadLetters: InternalActorRef = local.deadLetters
-
-  override val deathWatch: DeathWatch = new RemoteDeathWatch(local.deathWatch, this)
 
   // these are only available after init()
   override def rootGuardian: InternalActorRef = local.rootGuardian
@@ -246,25 +244,4 @@ private[akka] class RemoteActorRef private[akka] (
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef(path)
-}
-
-private[akka] class RemoteDeathWatch(val local: DeathWatch, val provider: RemoteActorRefProvider) extends DeathWatch {
-
-  override def subscribe(watcher: ActorRef, watched: ActorRef): Boolean = watched match {
-    case r: RemoteRef ⇒
-      val ret = local.subscribe(watcher, watched)
-      provider.actorFor(r.path.root / "remote") ! DaemonMsgWatch(watcher, watched)
-      ret
-    case l: LocalRef ⇒
-      local.subscribe(watcher, watched)
-    case _ ⇒
-      provider.log.error("unknown ActorRef type {} as DeathWatch target", watched.getClass)
-      false
-  }
-
-  override def unsubscribe(watcher: ActorRef, watched: ActorRef): Boolean = local.unsubscribe(watcher, watched)
-
-  override def unsubscribe(watcher: ActorRef): Unit = local.unsubscribe(watcher)
-
-  override def publish(event: Terminated): Unit = local.publish(event)
 }

@@ -8,10 +8,10 @@ import scala.annotation.tailrec
 
 import akka.actor.{ VirtualPathContainer, Terminated, Deploy, Props, Nobody, LocalActorRef, InternalActorRef, Address, ActorSystemImpl, ActorRef, ActorPathExtractor, ActorPath, Actor }
 import akka.event.LoggingAdapter
+import akka.dispatch.Watch
 
 private[akka] sealed trait DaemonMsg
 private[akka] case class DaemonMsgCreate(props: Props, deploy: Deploy, path: String, supervisor: ActorRef) extends DaemonMsg
-private[akka] case class DaemonMsgWatch(watcher: ActorRef, watched: ActorRef) extends DaemonMsg
 
 /**
  * Internal system "daemon" actor for remote internal communication.
@@ -62,18 +62,15 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
               val actor = system.provider.actorOf(system, props, supervisor.asInstanceOf[InternalActorRef],
                 path, false, Some(deploy), true)
               addChild(subpath.mkString("/"), actor)
-              system.deathWatch.subscribe(this, actor)
+              this.sendSystemMessage(Watch(actor, this))
             case _ ⇒
               log.error("remote path does not match path from message [{}]", message)
           }
-        case DaemonMsgWatch(watcher, watched) ⇒
-          val other = system.actorFor(watcher.path.root / "remote")
-          system.deathWatch.subscribe(other, watched)
       }
 
     case Terminated(child: LocalActorRef) ⇒ removeChild(child.path.elements.drop(1).mkString("/"))
 
-    case t: Terminated                    ⇒ system.deathWatch.publish(t)
+    case t: Terminated                    ⇒
 
     case unknown                          ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }

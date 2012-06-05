@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.dispatch._
 import akka.routing._
 import akka.AkkaException
-import akka.util.{ Switch, Helpers }
 import akka.event._
+import akka.util.{ NonFatal, Switch, Helpers }
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -37,11 +37,6 @@ trait ActorRefProvider {
    * Dead letter destination for this provider.
    */
   def deadLetters: ActorRef
-
-  /**
-   * Reference to the death watch service.
-   */
-  def deathWatch: DeathWatch
 
   /**
    * The root path for all actors within this actor system, including remote
@@ -162,8 +157,9 @@ trait ActorRefFactory {
    * INTERNAL USE ONLY
    */
   protected def provider: ActorRefProvider
+
   /**
-   * Returns the default MessageDispatcher used by this ActorRefFactory
+   * Returns the default MessageDispatcher associated with this ActorRefFactory
    */
   implicit def dispatcher: MessageDispatcher
 
@@ -339,8 +335,6 @@ class LocalActorRefProvider(
 
   override val deadLetters: InternalActorRef = new DeadLetterActorRef(this, rootPath / "deadLetters", eventStream)
 
-  override val deathWatch: DeathWatch = new LocalDeathWatch(1024) //TODO make configrable
-
   /*
    * generate name for temporary actor refs
    */
@@ -379,9 +373,9 @@ class LocalActorRefProvider(
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
-        case Supervise(child)       ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
-        case ChildTerminated(child) ⇒ stop()
-        case _                      ⇒ log.error(this + " received unexpected system message [" + message + "]")
+        case Supervise(_)       ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case ChildTerminated(_) ⇒ stop()
+        case _                  ⇒ log.error(this + " received unexpected system message [" + message + "]")
       }
     }
   }
@@ -409,8 +403,8 @@ class LocalActorRefProvider(
 
     def receive = {
       case Terminated(_)                ⇒ context.stop(self)
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ Status.Failure(e) })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ Status.Failure(e) })
       case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
@@ -441,8 +435,8 @@ class LocalActorRefProvider(
 
     def receive = {
       case Terminated(_)                ⇒ eventStream.stopDefaultLoggers(); context.stop(self)
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case e: Exception ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case e: Exception ⇒ e }) // FIXME shouldn't this use NonFatal & Status.Failure?
+      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ Status.Failure(e) })
+      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ Status.Failure(e) })
       case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
@@ -480,18 +474,10 @@ class LocalActorRefProvider(
 
   lazy val rootGuardian: InternalActorRef =
     new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
-      object Extra {
-        def unapply(s: String): Option[InternalActorRef] = extraNames.get(s)
-      }
-
       override def getParent: InternalActorRef = this
-
-      override def getSingleChild(name: String): InternalActorRef = {
-        name match {
-          case "temp"   ⇒ tempContainer
-          case Extra(e) ⇒ e
-          case _        ⇒ super.getSingleChild(name)
-        }
+      override def getSingleChild(name: String): InternalActorRef = name match {
+        case "temp" ⇒ tempContainer
+        case other  ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
       }
     }
 
@@ -516,8 +502,8 @@ class LocalActorRefProvider(
   def init(_system: ActorSystemImpl) {
     system = _system
     // chain death watchers so that killing guardian stops the application
-    deathWatch.subscribe(systemGuardian, guardian)
-    deathWatch.subscribe(rootGuardian, systemGuardian)
+    systemGuardian.sendSystemMessage(Watch(guardian, systemGuardian))
+    rootGuardian.sendSystemMessage(Watch(systemGuardian, rootGuardian))
     eventStream.startDefaultLoggers(_system)
   }
 
@@ -566,19 +552,3 @@ class LocalActorRefProvider(
 
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 }
-
-class LocalDeathWatch(val mapSize: Int) extends DeathWatch with ActorClassification {
-
-  override def publish(event: Event): Unit = {
-    val monitors = dissociate(classify(event))
-    if (monitors.nonEmpty) monitors.foreach(_ ! event)
-  }
-
-  override def subscribe(subscriber: Subscriber, to: Classifier): Boolean = {
-    if (!super.subscribe(subscriber, to)) {
-      subscriber ! Terminated(to)
-      false
-    } else true
-  }
-}
-

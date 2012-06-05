@@ -4,9 +4,9 @@
 
 package akka.pattern
 
-import akka.dispatch.{ Promise, Future }
 import akka.actor._
 import akka.util.{ Timeout, Duration }
+import akka.dispatch.{ Unwatch, Watch, Promise, Future }
 
 trait GracefulStopSupport {
   /**
@@ -34,18 +34,21 @@ trait GracefulStopSupport {
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
-    if (target.isTerminated) {
-      Promise.successful(true)
-    } else system match {
+    if (target.isTerminated) Promise.successful(true)
+    else system match {
       case e: ExtendedActorSystem ⇒
+        val internalTarget = target.asInstanceOf[InternalActorRef]
         val ref = PromiseActorRef(e.provider, Timeout(timeout))
-        e.deathWatch.subscribe(ref, target)
-        ref.result onComplete {
-          case Right(Terminated(`target`)) ⇒ () // Ignore
-          case _                           ⇒ e.deathWatch.unsubscribe(ref, target)
-        } // Just making sure we're not leaking here
+        internalTarget.sendSystemMessage(Watch(target, ref))
+        ref.result onComplete { // Just making sure we're not leaking here
+          case Right(Terminated(`target`)) ⇒ ()
+          case _                           ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
+        }
         target ! PoisonPill
-        ref.result map { case Terminated(`target`) ⇒ true }
+        ref.result map {
+          case Terminated(`target`) ⇒ true
+          case _                    ⇒ false
+        }
       case s ⇒ throw new IllegalArgumentException("Unknown ActorSystem implementation: '" + s + "'")
     }
   }
