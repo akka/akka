@@ -77,7 +77,7 @@ object Dist {
         zip(unzipped, zipFile)
       }
     }
-  }
+  } dependsOn (Keys.`package` in Compile)
 
   def copyDirectory(source: File, target: File, overwrite: Boolean = false, preserveLastModified: Boolean = false, setExecutable: Boolean = false): Set[File] = {
     val sources = (source ***) x rebase(source, target)
