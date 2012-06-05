@@ -40,16 +40,7 @@ abstract class NodeLeavingSpec extends MultiNodeSpec(NodeLeavingMultiJvmSpec)
 
     "be marked as LEAVING in the converged membership table" taggedAs LongRunningTest in {
 
-      runOn(first) {
-        startClusterNode()
-      }
-      testConductor.enter("first-started")
-
-      runOn(second, third) {
-        cluster.join(firstAddress)
-      }
-      awaitUpConvergence(numberOfMembers = 3)
-      testConductor.enter("rest-started")
+      awaitClusterUp(first, second, third)
 
       runOn(first) {
         cluster.leave(secondAddress)

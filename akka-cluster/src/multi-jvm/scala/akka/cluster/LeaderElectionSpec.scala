@@ -33,26 +33,19 @@ abstract class LeaderElectionSpec
 
   override def initialParticipants = 5
 
-  lazy val firstAddress = node(first).address
-
   // sorted in the order used by the cluster
   lazy val roles = Seq(first, second, third, fourth).sorted
 
   "A cluster of four nodes" must {
 
     "be able to 'elect' a single leader" taggedAs LongRunningTest in {
-      // make sure that the node-to-join is started before other join
-      runOn(first) {
-        startClusterNode()
-      }
-      testConductor.enter("first-started")
+      awaitClusterUp(first, second, third, fourth)
 
       if (myself != controller) {
-        cluster.join(firstAddress)
-        awaitUpConvergence(numberOfMembers = roles.size)
         cluster.isLeader must be(myself == roles.head)
         assertLeaderIn(roles)
       }
+
       testConductor.enter("after")
     }
 
@@ -71,7 +64,7 @@ abstract class LeaderElectionSpec
           testConductor.enter("after-shutdown", "after-down", "completed")
 
         case `leader` ⇒
-          testConductor.enter("before-shutdown")
+          testConductor.enter("before-shutdown", "after-shutdown")
         // this node will be shutdown by the controller and doesn't participate in more barriers
 
         case `aUser` ⇒

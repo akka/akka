@@ -40,16 +40,7 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
 
     "be moved to EXITING and then to REMOVED by the reaper" taggedAs LongRunningTest in {
 
-      runOn(first) {
-        startClusterNode()
-      }
-      testConductor.enter("first-started")
-
-      runOn(second, third) {
-        cluster.join(firstAddress)
-      }
-      awaitUpConvergence(numberOfMembers = 3)
-      testConductor.enter("rest-started")
+      awaitClusterUp(first, second, third)
 
       runOn(first) {
         cluster.leave(secondAddress)

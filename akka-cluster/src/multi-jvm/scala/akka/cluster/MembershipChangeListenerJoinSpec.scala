@@ -17,12 +17,12 @@ object MembershipChangeListenerJoinMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-    .withFallback(ConfigFactory.parseString("""
+      .withFallback(ConfigFactory.parseString("""
         akka.cluster {
           leader-actions-interval = 5 s # increase the leader action task interval to allow time checking for JOIN before leader moves it to UP
         }
       """)
-    .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
 class MembershipChangeListenerJoinMultiJvmNode1 extends MembershipChangeListenerJoinSpec
@@ -43,15 +43,6 @@ abstract class MembershipChangeListenerJoinSpec
     "be notified when new node is JOINING" taggedAs LongRunningTest in {
 
       runOn(first) {
-        startClusterNode()
-      }
-
-      runOn(second) {
-        testConductor.enter("registered-listener")
-        cluster.join(firstAddress)
-      }
-
-      runOn(first) {
         val joinLatch = TestLatch()
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
@@ -63,6 +54,11 @@ abstract class MembershipChangeListenerJoinSpec
 
         joinLatch.await
         cluster.convergence.isDefined must be(true)
+      }
+
+      runOn(second) {
+        testConductor.enter("registered-listener")
+        cluster.join(firstAddress)
       }
 
       testConductor.enter("after")

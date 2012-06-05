@@ -34,42 +34,29 @@ class ClientDowningNodeThatIsUpSpec
   "Client of a 4 node cluster" must {
 
     "be able to DOWN a node that is UP (healthy and available)" taggedAs LongRunningTest in {
+      val thirdAddress = node(third).address
+      awaitClusterUp(first, second, third, fourth)
+
       runOn(first) {
-        startClusterNode()
-        awaitUpConvergence(numberOfMembers = 4)
-
-        val thirdAddress = node(third).address
-        testConductor.enter("all-up")
-
         // mark 'third' node as DOWN
         cluster.down(thirdAddress)
         testConductor.enter("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
         cluster.latestGossip.members.exists(_.address == thirdAddress) must be(false)
-        testConductor.enter("await-completion")
       }
 
       runOn(third) {
-        cluster.join(node(first).address)
-        awaitUpConvergence(numberOfMembers = 4)
-        testConductor.enter("all-up")
         testConductor.enter("down-third-node")
-        testConductor.enter("await-completion")
       }
 
       runOn(second, fourth) {
-        cluster.join(node(first).address)
-        awaitUpConvergence(numberOfMembers = 4)
-
-        val thirdAddress = node(third).address
-        testConductor.enter("all-up")
-
         testConductor.enter("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
-        testConductor.enter("await-completion")
       }
+
+      testConductor.enter("await-completion")
     }
   }
 }

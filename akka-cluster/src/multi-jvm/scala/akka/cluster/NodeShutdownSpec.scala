@@ -35,16 +35,7 @@ abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) 
   "A cluster of 2 nodes" must {
 
     "not be singleton cluster when joined" taggedAs LongRunningTest in {
-      // make sure that the node-to-join is started before other join
-      runOn(first) {
-        startClusterNode()
-      }
-      testConductor.enter("first-started")
-
-      runOn(second) {
-        cluster.join(node(first).address)
-      }
-      awaitUpConvergence(numberOfMembers = 2)
+      awaitClusterUp(first, second)
       cluster.isSingletonCluster must be(false)
       assertLeader(first, second)
 

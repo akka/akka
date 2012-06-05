@@ -42,13 +42,10 @@ class LeaderDowningNodeThatIsUnreachableSpec
   "The Leader in a 4 node cluster" must {
 
     "be able to DOWN a 'last' node that is UNREACHABLE" taggedAs LongRunningTest in {
+      val fourthAddress = node(fourth).address
+      awaitClusterUp(first, second, third, fourth)
+
       runOn(first) {
-        startClusterNode()
-        awaitUpConvergence(numberOfMembers = 4)
-
-        val fourthAddress = node(fourth).address
-        testConductor.enter("all-up")
-
         // kill 'fourth' node
         testConductor.shutdown(fourth, 0)
         testConductor.enter("down-fourth-node")
@@ -56,38 +53,26 @@ class LeaderDowningNodeThatIsUnreachableSpec
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(fourthAddress), 30.seconds)
-        testConductor.enter("await-completion")
       }
 
       runOn(fourth) {
-        cluster.join(node(first).address)
-
-        awaitUpConvergence(numberOfMembers = 4)
-        testConductor.enter("all-up")
+        testConductor.enter("down-fourth-node")
       }
 
       runOn(second, third) {
-        cluster.join(node(first).address)
-        awaitUpConvergence(numberOfMembers = 4)
-
-        val fourthAddress = node(fourth).address
-        testConductor.enter("all-up")
-
         testConductor.enter("down-fourth-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(fourthAddress), 30.seconds)
-        testConductor.enter("await-completion")
       }
+
+      testConductor.enter("await-completion-1")
     }
 
     "be able to DOWN a 'middle' node that is UNREACHABLE" taggedAs LongRunningTest in {
+      val secondAddress = node(second).address
+      testConductor.enter("before-down-second-node")
+
       runOn(first) {
-        cluster.self
-        awaitUpConvergence(numberOfMembers = 3)
-
-        val secondAddress = node(second).address
-        testConductor.enter("all-up")
-
         // kill 'second' node
         testConductor.shutdown(second, 0)
         testConductor.enter("down-second-node")
@@ -95,28 +80,19 @@ class LeaderDowningNodeThatIsUnreachableSpec
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
 
         awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = Seq(secondAddress), 30.seconds)
-        testConductor.enter("await-completion")
       }
 
       runOn(second) {
-        cluster.join(node(first).address)
-
-        awaitUpConvergence(numberOfMembers = 3)
-        testConductor.enter("all-up")
+        testConductor.enter("down-second-node")
       }
 
       runOn(third) {
-        cluster.join(node(first).address)
-        awaitUpConvergence(numberOfMembers = 3)
-
-        val secondAddress = node(second).address
-        testConductor.enter("all-up")
-
         testConductor.enter("down-second-node")
 
         awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = Seq(secondAddress), 30 seconds)
-        testConductor.enter("await-completion")
       }
+
+      testConductor.enter("await-completion-2")
     }
   }
 }
