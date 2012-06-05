@@ -46,16 +46,7 @@ abstract class NodeLeavingAndExitingSpec
 
     "be moved to EXITING by the leader" taggedAs LongRunningTest in {
 
-      runOn(first) {
-        startClusterNode()
-      }
-      testConductor.enter("first-started")
-
-      runOn(second, third) {
-        cluster.join(firstAddress)
-      }
-      awaitUpConvergence(numberOfMembers = 3)
-      testConductor.enter("rest-started")
+      awaitClusterUp(first, second, third)
 
       runOn(first) {
         cluster.leave(secondAddress)
