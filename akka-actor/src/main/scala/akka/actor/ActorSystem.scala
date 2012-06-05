@@ -479,18 +479,24 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   protected def systemImpl: ActorSystemImpl = this
 
   private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
-    implicit val timeout = settings.CreationTimeout
-    Await.result((systemGuardian ? CreateChild(props, name)).mapTo[ActorRef], timeout.duration)
+    systemGuardian match {
+      case g: LocalActorRef ⇒ g.underlying.actorOf(props, name)
+      case s                ⇒ throw new UnsupportedOperationException("unknown systemGuardian type " + s.getClass)
+    }
   }
 
   def actorOf(props: Props, name: String): ActorRef = {
-    implicit val timeout = settings.CreationTimeout
-    Await.result((guardian ? CreateChild(props, name)).mapTo[ActorRef], timeout.duration)
+    guardian match {
+      case g: LocalActorRef ⇒ g.underlying.actorOf(props, name)
+      case s                ⇒ throw new UnsupportedOperationException("unknown guardian type " + s.getClass)
+    }
   }
 
   def actorOf(props: Props): ActorRef = {
-    implicit val timeout = settings.CreationTimeout
-    Await.result((guardian ? CreateRandomNameChild(props)).mapTo[ActorRef], timeout.duration)
+    guardian match {
+      case g: LocalActorRef ⇒ g.underlying.actorOf(props)
+      case s                ⇒ throw new UnsupportedOperationException("unknown guardian type " + s.getClass)
+    }
   }
 
   def stop(actor: ActorRef): Unit = {
