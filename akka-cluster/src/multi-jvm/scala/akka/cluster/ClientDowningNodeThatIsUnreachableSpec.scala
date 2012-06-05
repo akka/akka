@@ -26,6 +26,7 @@ class ClientDowningNodeThatIsUnreachableMultiJvmNode4 extends ClientDowningNodeT
 class ClientDowningNodeThatIsUnreachableSpec
   extends MultiNodeSpec(ClientDowningNodeThatIsUnreachableMultiJvmSpec)
   with MultiNodeClusterSpec {
+
   import ClientDowningNodeThatIsUnreachableMultiJvmSpec._
 
   override def initialParticipants = 4
@@ -34,7 +35,7 @@ class ClientDowningNodeThatIsUnreachableSpec
 
     "be able to DOWN a node that is UNREACHABLE (killed)" taggedAs LongRunningTest in {
       runOn(first) {
-        cluster.self
+        startClusterNode()
         awaitUpConvergence(numberOfMembers = 4)
 
         val thirdAddress = node(third).address
