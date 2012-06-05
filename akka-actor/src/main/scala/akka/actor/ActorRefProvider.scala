@@ -482,10 +482,10 @@ class LocalActorRefProvider(
     }
 
   lazy val guardian: InternalActorRef =
-    actorOf(system, guardianProps, rootGuardian, rootPath / "user", true, None, false)
+    actorOf(system, guardianProps, rootGuardian, rootPath / "user", systemService = true, None, false)
 
   lazy val systemGuardian: InternalActorRef =
-    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true, None, false)
+    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", systemService = true, None, false)
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
