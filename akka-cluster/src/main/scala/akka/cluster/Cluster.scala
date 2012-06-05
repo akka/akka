@@ -372,24 +372,17 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
 
   val remoteSettings = new RemoteSettings(system.settings.config, system.name)
   val clusterSettings = new ClusterSettings(system.settings.config, system.name)
+  import clusterSettings._
 
   val selfAddress = remote.transport.address
   val failureDetector = new AccrualFailureDetector(
-    system, selfAddress, clusterSettings.FailureDetectorThreshold, clusterSettings.FailureDetectorMaxSampleSize)
+    system, selfAddress, FailureDetectorThreshold, FailureDetectorMaxSampleSize)
 
   private val vclockNode = VectorClock.Node(selfAddress.toString)
 
-  private val periodicTasksInitialDelay = clusterSettings.PeriodicTasksInitialDelay
-  private val gossipInterval = clusterSettings.GossipInterval
-  private val leaderActionsInterval = clusterSettings.LeaderActionsInterval
-  private val unreachableNodesReaperInterval = clusterSettings.UnreachableNodesReaperInterval
-
   implicit private val defaultTimeout = Timeout(remoteSettings.RemoteSystemDaemonAckTimeout)
 
-  private val autoDown = clusterSettings.AutoDown
-  private val nrOfDeputyNodes = clusterSettings.NrOfDeputyNodes
-  private val nrOfGossipDaemons = clusterSettings.NrOfGossipDaemons
-  private val nodeToJoin: Option[Address] = clusterSettings.NodeToJoin filter (_ != selfAddress)
+  private val nodeToJoin: Option[Address] = NodeToJoin filter (_ != selfAddress)
 
   private val serialization = remote.serialization
 
@@ -424,17 +417,17 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   // ========================================================
 
   // start periodic gossip to random nodes in cluster
-  private val gossipCanceller = system.scheduler.schedule(periodicTasksInitialDelay, gossipInterval) {
+  private val gossipCanceller = system.scheduler.schedule(PeriodicTasksInitialDelay, GossipInterval) {
     gossip()
   }
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  private val failureDetectorReaperCanceller = system.scheduler.schedule(periodicTasksInitialDelay, unreachableNodesReaperInterval) {
+  private val failureDetectorReaperCanceller = system.scheduler.schedule(PeriodicTasksInitialDelay, UnreachableNodesReaperInterval) {
     reapUnreachableMembers()
   }
 
   // start periodic leader action management (only applies for the current leader)
-  private val leaderActionsCanceller = system.scheduler.schedule(periodicTasksInitialDelay, leaderActionsInterval) {
+  private val leaderActionsCanceller = system.scheduler.schedule(PeriodicTasksInitialDelay, LeaderActionsInterval) {
     leaderActions()
   }
 
@@ -983,7 +976,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
             }
           localGossip copy (members = newMembers) // update gossip
 
-        } else if (autoDown) {
+        } else if (AutoDown) {
           // we don't have convergence - so we might have unreachable nodes
           // if 'auto-down' is turned on, then try to auto-down any unreachable nodes
 
@@ -1055,7 +1048,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
       val views = Set.empty[VectorClock] ++ seen.values
 
       if (views.size == 1) {
-        log.debug("Cluster Node [{}] - Cluster convergence reached", selfAddress)
+        log.debug("Cluster Node [{}] - Cluster convergence reached: [{}]", selfAddress, gossip.members.mkString(", "))
         Some(gossip)
       } else None
     } else None
@@ -1091,7 +1084,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   /**
    * Gets an Iterable with the addresses of a all the 'deputy' nodes - excluding this node if part of the group.
    */
-  private def deputyNodes: Iterable[Address] = state.get.latestGossip.members.toIterable map (_.address) drop 1 take nrOfDeputyNodes filter (_ != selfAddress)
+  private def deputyNodes: Iterable[Address] = state.get.latestGossip.members.toIterable map (_.address) drop 1 take NrOfDeputyNodes filter (_ != selfAddress)
 
   private def selectRandomNode(addresses: Iterable[Address]): Address = addresses.toSeq(ThreadLocalRandom.current nextInt addresses.size)
 
