@@ -100,6 +100,16 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
     case protocol ⇒ Some(protocol)
   }
 
+  val SSLRandomSource = getString("ssl.sha1prng-random-source") match {
+    case ""   ⇒ None
+    case path ⇒ Some(path)
+  }
+
+  val SSLRandomNumberGenerator = getString("ssl.random-number-generator") match {
+    case ""  ⇒ None
+    case rng ⇒ Some(rng)
+  }
+
   val EnableSSL = {
     val enableSSL = getBoolean("ssl.enable")
     if (enableSSL) {

@@ -41,6 +41,8 @@ akka {
       SSLTrustStorePassword must be(Some("changeme"))
       SSLProtocol must be(Some("TLSv1"))
       SSLSupportedAlgorithms must be(java.util.Arrays.asList("TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
+      SSLRandomSource must be(None)
+      SSLRandomNumberGenerator must be(None)
     }
   }
 }

@@ -71,7 +71,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      * actually dispatches the received messages to the local target actors).
      */
     def defaultStack(withTimeout: Boolean, isClient: Boolean): Seq[ChannelHandler] =
-      (if (settings.EnableSSL) NettySSLSupport(settings, NettyRemoteTransport.this, isClient) :: Nil else Nil) :::
+      (if (settings.EnableSSL) NettySSLSupport(settings, NettyRemoteTransport.this.log, isClient) :: Nil else Nil) :::
         (if (withTimeout) timeout :: Nil else Nil) :::
         msgFormat :::
         authenticator :::
