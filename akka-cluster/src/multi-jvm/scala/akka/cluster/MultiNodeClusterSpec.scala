@@ -203,6 +203,10 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
     nodesInCluster.sorted.head
   }
 
+  def clusterSortedRoles(nodesInCluster: Seq[RoleName]): Seq[RoleName] = {
+    nodesInCluster.sorted
+  }
+
   /**
    * Sort the roles in the order used by the cluster.
    */
