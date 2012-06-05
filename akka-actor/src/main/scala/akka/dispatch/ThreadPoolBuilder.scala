@@ -29,30 +29,20 @@ object ThreadPoolConfig {
   val defaultTimeout: Duration = Duration(60000L, TimeUnit.MILLISECONDS)
   val defaultRejectionPolicy: RejectedExecutionHandler = new SaneRejectedExecutionHandler()
 
-  def scaledPoolSize(floor: Int, multiplier: Double, ceiling: Int): Int = {
-    import scala.math.{ min, max }
-    min(max((Runtime.getRuntime.availableProcessors * multiplier).ceil.toInt, floor), ceiling)
-  }
+  def scaledPoolSize(floor: Int, multiplier: Double, ceiling: Int): Int =
+    math.min(math.max((Runtime.getRuntime.availableProcessors * multiplier).ceil.toInt, floor), ceiling)
 
-  def arrayBlockingQueue(capacity: Int, fair: Boolean): QueueFactory =
-    () ⇒ new ArrayBlockingQueue[Runnable](capacity, fair)
+  def arrayBlockingQueue(capacity: Int, fair: Boolean): QueueFactory = () ⇒ new ArrayBlockingQueue[Runnable](capacity, fair)
 
-  def synchronousQueue(fair: Boolean): QueueFactory =
-    () ⇒ new SynchronousQueue[Runnable](fair)
+  def synchronousQueue(fair: Boolean): QueueFactory = () ⇒ new SynchronousQueue[Runnable](fair)
 
-  def linkedBlockingQueue(): QueueFactory =
-    () ⇒ new LinkedBlockingQueue[Runnable]()
+  def linkedBlockingQueue(): QueueFactory = () ⇒ new LinkedBlockingQueue[Runnable]()
 
-  def linkedBlockingQueue(capacity: Int): QueueFactory =
-    () ⇒ new LinkedBlockingQueue[Runnable](capacity)
+  def linkedBlockingQueue(capacity: Int): QueueFactory = () ⇒ new LinkedBlockingQueue[Runnable](capacity)
 
-  def reusableQueue(queue: BlockingQueue[Runnable]): QueueFactory =
-    () ⇒ queue
+  def reusableQueue(queue: BlockingQueue[Runnable]): QueueFactory = () ⇒ queue
 
-  def reusableQueue(queueFactory: QueueFactory): QueueFactory = {
-    val queue = queueFactory()
-    () ⇒ queue
-  }
+  def reusableQueue(queueFactory: QueueFactory): QueueFactory = reusableQueue(queueFactory())
 }
 
 /**
@@ -157,7 +147,8 @@ case class ThreadPoolConfigBuilder(config: ThreadPoolConfig) {
   def setQueueFactory(newQueueFactory: QueueFactory): ThreadPoolConfigBuilder =
     this.copy(config = config.copy(queueFactory = newQueueFactory))
 
-  def configure(fs: Option[Function[ThreadPoolConfigBuilder, ThreadPoolConfigBuilder]]*): ThreadPoolConfigBuilder = fs.foldLeft(this)((c, f) ⇒ f.map(_(c)).getOrElse(c))
+  def configure(fs: Option[Function[ThreadPoolConfigBuilder, ThreadPoolConfigBuilder]]*): ThreadPoolConfigBuilder =
+    fs.foldLeft(this)((c, f) ⇒ f.map(_(c)).getOrElse(c))
 }
 
 object MonitorableThreadFactory {

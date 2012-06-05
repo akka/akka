@@ -409,16 +409,26 @@ private[akka] object DeadLetterActorRef {
  *
  * INTERNAL API
  */
-private[akka] class EmptyLocalActorRef(
-  override val provider: ActorRefProvider,
-  override val path: ActorPath,
-  val eventStream: EventStream) extends MinimalActorRef {
+private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
+                                       override val path: ActorPath,
+                                       val eventStream: EventStream) extends MinimalActorRef {
 
   override def isTerminated(): Boolean = true
 
+  override def sendSystemMessage(message: SystemMessage): Unit = specialHandle(message)
+
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
-    case d: DeadLetter ⇒ // do NOT form endless loops, since deadLetters will resend!
-    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+    case d: DeadLetter ⇒ specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
+    case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
+  }
+
+  protected def specialHandle(msg: Any): Boolean = msg match {
+    case w: Watch ⇒
+      if (w.watchee == this && w.watcher != this)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
+      true
+    case _: Unwatch ⇒ true // Just ignore
+    case _          ⇒ false
   }
 }
 
@@ -428,12 +438,22 @@ private[akka] class EmptyLocalActorRef(
  *
  * INTERNAL API
  */
-private[akka] class DeadLetterActorRef(_provider: ActorRefProvider, _path: ActorPath, _eventStream: EventStream)
-  extends EmptyLocalActorRef(_provider, _path, _eventStream) {
+private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
+                                       _path: ActorPath,
+                                       _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
-    case d: DeadLetter ⇒ eventStream.publish(d)
-    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+    case d: DeadLetter ⇒ if (!specialHandle(d.message)) eventStream.publish(d)
+    case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
+  }
+
+  override protected def specialHandle(msg: Any): Boolean = msg match {
+    case w: Watch ⇒
+      if (w.watchee != this && w.watcher != this)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
+      true
+    case w: Unwatch ⇒ true // Just ignore
+    case _          ⇒ false
   }
 
   @throws(classOf[java.io.ObjectStreamException])

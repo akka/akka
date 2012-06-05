@@ -287,10 +287,9 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
       case l: LocalRef ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received local message {}", remoteMessage)
         remoteMessage.payload match {
-          case _: SystemMessage if useUntrustedMode       ⇒ log.warning("operating in UntrustedMode, dropping inbound system message")
-          case _: AutoReceivedMessage if useUntrustedMode ⇒ log.warning("operating in UntrustedMode, dropping inbound AutoReceivedMessage")
-          case msg: SystemMessage                         ⇒ l.sendSystemMessage(msg)
-          case msg                                        ⇒ l.!(msg)(remoteMessage.sender)
+          case msg: PossiblyHarmful if useUntrustedMode ⇒ log.warning("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type {}", msg.getClass)
+          case msg: SystemMessage                       ⇒ l.sendSystemMessage(msg)
+          case msg                                      ⇒ l.!(msg)(remoteMessage.sender)
         }
       case r: RemoteRef ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", remoteMessage)

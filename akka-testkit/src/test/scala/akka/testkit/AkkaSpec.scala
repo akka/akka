@@ -12,7 +12,6 @@ import akka.util.duration._
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.PoisonPill
-import akka.actor.CreateChild
 import akka.actor.DeadLetter
 import java.util.concurrent.TimeoutException
 import akka.dispatch.{ Await, MessageDispatcher }
@@ -115,9 +114,7 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
         "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
       val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
-      val spec = new AkkaSpec(system) {
-        val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
-      }
+      val spec = new AkkaSpec(system) { val ref = Seq(testActor, system.actorOf(Props.empty, "name")) }
       spec.ref foreach (_.isTerminated must not be true)
       system.shutdown()
       spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
