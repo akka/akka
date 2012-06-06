@@ -305,8 +305,9 @@ abstract class ActorSystem extends ActorRefFactory {
   implicit def dispatcher: MessageDispatcher
 
   /**
-   * Register a block of code (callback) to run after all actors in this actor system have
-   * been stopped. Multiple code blocks may be registered by calling this method multiple times.
+   * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
+   * all actors in this actor system have been stopped.
+   * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    *
@@ -317,8 +318,9 @@ abstract class ActorSystem extends ActorRefFactory {
   def registerOnTermination[T](code: ⇒ T): Unit
 
   /**
-   * Register a block of code (callback) to run after all actors in this actor system have
-   * been stopped. Multiple code blocks may be registered by calling this method multiple times.
+   * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
+   * all actors in this actor system have been stopped.
+   * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    *
