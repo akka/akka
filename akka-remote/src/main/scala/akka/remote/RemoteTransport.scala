@@ -78,21 +78,6 @@ case class RemoteClientShutdown(
 }
 
 /**
- * RemoteClientWriteFailed is published when a remote send of a message detectably fails (throws an exception).
- */
-case class RemoteClientWriteFailed(
-  @BeanProperty request: AnyRef,
-  @BeanProperty cause: Throwable,
-  @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
-  override def logLevel: Logging.LogLevel = Logging.WarningLevel
-  override def toString: String =
-    "RemoteClientWriteFailed@" + remoteAddress +
-      ": MessageClass[" + (if (request ne null) request.getClass.getName else "no message") +
-      "] Error[" + cause + "]"
-}
-
-/**
  *  Life-cycle events for RemoteServer.
  */
 trait RemoteServerLifeCycleEvent extends RemoteLifeCycleEvent

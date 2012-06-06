@@ -280,10 +280,6 @@ which holds the transport used (RemoteTransport) and the outbound address that i
 To intercept when an outbound client is shut down you listen to ``RemoteClientShutdown``
 which holds the transport used (RemoteTransport) and the outbound address that it was connected to (Address).
 
-To intercept when an outbound message cannot be sent, you listen to ``RemoteClientWriteFailed`` which holds
-the payload that was not written (AnyRef), the cause of the failed send (Throwable),
-the transport used (RemoteTransport) and the outbound address that was the destination (Address).
-
 For general outbound-related errors, that do not classify as any of the others, you can listen to ``RemoteClientError``,
 which holds the cause (Throwable), the transport used (RemoteTransport) and the outbound address (Address).
 

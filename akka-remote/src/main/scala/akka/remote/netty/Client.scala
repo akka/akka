@@ -13,11 +13,11 @@ import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBa
 import org.jboss.netty.handler.execution.ExecutionHandler
 import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
 import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
-import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, RemoteClientStarted, RemoteClientShutdown, RemoteClientException, RemoteClientError, RemoteClientDisconnected, RemoteClientConnected, RemoteClientWriteFailed }
-import akka.actor.{ Address, ActorRef }
+import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, RemoteClientStarted, RemoteClientShutdown, RemoteClientException, RemoteClientError, RemoteClientDisconnected, RemoteClientConnected }
 import akka.AkkaException
 import akka.event.Logging
-import akka.util.Switch
+import akka.actor.{ DeadLetter, Address, ActorRef }
+import akka.util.{ NonFatal, Switch }
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
@@ -65,7 +65,9 @@ private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteT
         new ChannelFutureListener {
           def operationComplete(future: ChannelFuture) {
             if (future.isCancelled || !future.isSuccess) {
-              netty.notifyListeners(RemoteClientWriteFailed(request, future.getCause, netty, remoteAddress))
+              netty.notifyListeners(RemoteClientError(future.getCause, netty, remoteAddress))
+              val (message, sender, recipient) = request
+              netty.system.deadLetters ! DeadLetter(message, sender.getOrElse(netty.system.deadLetters), recipient)
             }
           }
         })
@@ -75,11 +77,11 @@ private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteT
         if (backoff.length > 0 && !f.await(backoff.length, backoff.unit)) f.cancel() //Waited as long as we could, now back off
       }
     } catch {
-      case e: Exception ⇒ netty.notifyListeners(RemoteClientError(e, netty, remoteAddress))
+      case NonFatal(e) ⇒ netty.notifyListeners(RemoteClientError(e, netty, remoteAddress))
     }
   }
 
-  override def toString = name
+  override def toString: String = name
 }
 
 /**
