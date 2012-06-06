@@ -63,14 +63,13 @@ private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteT
       val f = channel.write(request)
       f.addListener(
         new ChannelFutureListener {
-          def operationComplete(future: ChannelFuture) {
-            if (future.isCancelled || !future.isSuccess) {
+          import netty.system.deadLetters
+          def operationComplete(future: ChannelFuture): Unit =
+            if (future.isCancelled || !future.isSuccess) request match {
+              case (msg, sender, recipient) ⇒ deadLetters ! DeadLetter(msg, sender.getOrElse(deadLetters), recipient)
               // We don't call notifyListeners here since we don't think failed message deliveries are errors
-              // If the connection goes down we'll get the error reporting done by the pipeline.
-              val (message, sender, recipient) = request
-              netty.system.deadLetters ! DeadLetter(message, sender.getOrElse(netty.system.deadLetters), recipient)
+              /// If the connection goes down we'll get the error reporting done by the pipeline.
             }
-          }
         })
       // Check if we should back off
       if (!channel.isWritable) {
