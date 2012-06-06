@@ -65,8 +65,8 @@ private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteT
         new ChannelFutureListener {
           def operationComplete(future: ChannelFuture) {
             if (future.isCancelled || !future.isSuccess) {
-              //FIXME Should we just _not_ notifyListeners here and just assume that the other error reporting is sufficient?
-              netty.notifyListeners(RemoteClientError(future.getCause, netty, remoteAddress))
+              // We don't call notifyListeners here since we don't think failed message deliveries are errors
+              // If the connection goes down we'll get the error reporting done by the pipeline.
               val (message, sender, recipient) = request
               netty.system.deadLetters ! DeadLetter(message, sender.getOrElse(netty.system.deadLetters), recipient)
             }
