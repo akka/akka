@@ -618,12 +618,15 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
 
     if (!state.compareAndSet(localState, newState)) leaving(address) // recur if we failed update
     else {
-      failureDetector heartbeat address // update heartbeat in failure detector
-      if (convergence(newState.latestGossip).isDefined) {
-        newState.memberMembershipChangeListeners foreach { _ notify newMembers }
-      }
+      if (address != selfAddress) failureDetector heartbeat address // update heartbeat in failure detector
+      notifyMembershipChangeListeners(localState, newState)
     }
   }
+
+  private def notifyMembershipChangeListeners(oldState: State, newState: State): Unit =
+    if (newState.latestGossip != oldState.latestGossip && convergence(newState.latestGossip).isDefined) {
+      newState.memberMembershipChangeListeners foreach { _ notify newState.latestGossip.members }
+    }
 
   /**
    * State transition to EXITING.
@@ -698,9 +701,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
 
     if (!state.compareAndSet(localState, newState)) downing(address) // recur if we fail the update
     else {
-      if (convergence(newState.latestGossip).isDefined) {
-        newState.memberMembershipChangeListeners foreach { _ notify newState.latestGossip.members }
-      }
+      notifyMembershipChangeListeners(localState, newState)
     }
   }
 
@@ -741,10 +742,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
       log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, sender.address)
 
       if (sender.address != selfAddress) failureDetector heartbeat sender.address
-
-      if (convergence(newState.latestGossip).isDefined) {
-        newState.memberMembershipChangeListeners foreach { _ notify newState.latestGossip.members }
-      }
+      notifyMembershipChangeListeners(localState, newState)
     }
   }
 
@@ -841,14 +839,14 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   private[akka] def gossip(): Unit = {
     val localState = state.get
 
+    log.debug("Cluster Node [{}] - Initiating new round of gossip", selfAddress)
+
     if (isSingletonCluster(localState)) {
       // gossip to myself
       // TODO could perhaps be optimized, no need to gossip to myself when Up?
       gossipTo(selfAddress)
 
     } else if (isAvailable(localState)) {
-      log.debug("Cluster Node [{}] - Initiating new round of gossip", selfAddress)
-
       val localGossip = localState.latestGossip
       // important to not accidentally use `map` of the SortedSet, since the original order is not preserved
       val localMembers = localGossip.members.toIndexedSeq
@@ -917,9 +915,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
         else {
           log.info("Cluster Node [{}] - Marking node(s) as UNREACHABLE [{}]", selfAddress, newlyDetectedUnreachableMembers.mkString(", "))
 
-          if (convergence(newState.latestGossip).isDefined) {
-            newState.memberMembershipChangeListeners foreach { _ notify newMembers }
-          }
+          notifyMembershipChangeListeners(localState, newState)
         }
       }
     }
@@ -1040,9 +1036,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
         // if we won the race then update else try again
         if (!state.compareAndSet(localState, newState)) leaderActions() // recur
         else {
-          if (convergence(newState.latestGossip).isDefined) {
-            newState.memberMembershipChangeListeners foreach { _ notify newGossip.members }
-          }
+          notifyMembershipChangeListeners(localState, newState)
         }
       }
     }

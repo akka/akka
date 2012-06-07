@@ -84,7 +84,7 @@ abstract class MultiNodeConfig {
 
   private[testkit] def deployments(node: RoleName): Seq[String] = (_deployments get node getOrElse Nil) ++ _allDeploy
 
-  private[testkit] def roles: Seq[RoleName] = _roles
+  def roles: Seq[RoleName] = _roles
 
 }
 
