@@ -13,11 +13,11 @@ import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBa
 import org.jboss.netty.handler.execution.ExecutionHandler
 import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
 import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
-import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, RemoteClientStarted, RemoteClientShutdown, RemoteClientException, RemoteClientError, RemoteClientDisconnected, RemoteClientConnected, RemoteClientWriteFailed }
-import akka.actor.{ Address, ActorRef }
+import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, RemoteClientStarted, RemoteClientShutdown, RemoteClientException, RemoteClientError, RemoteClientDisconnected, RemoteClientConnected }
 import akka.AkkaException
 import akka.event.Logging
-import akka.util.Switch
+import akka.actor.{ DeadLetter, Address, ActorRef }
+import akka.util.{ NonFatal, Switch }
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
@@ -63,11 +63,13 @@ private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteT
       val f = channel.write(request)
       f.addListener(
         new ChannelFutureListener {
-          def operationComplete(future: ChannelFuture) {
-            if (future.isCancelled || !future.isSuccess) {
-              netty.notifyListeners(RemoteClientWriteFailed(request, future.getCause, netty, remoteAddress))
+          import netty.system.deadLetters
+          def operationComplete(future: ChannelFuture): Unit =
+            if (future.isCancelled || !future.isSuccess) request match {
+              case (msg, sender, recipient) ⇒ deadLetters ! DeadLetter(msg, sender.getOrElse(deadLetters), recipient)
+              // We don't call notifyListeners here since we don't think failed message deliveries are errors
+              /// If the connection goes down we'll get the error reporting done by the pipeline.
             }
-          }
         })
       // Check if we should back off
       if (!channel.isWritable) {
@@ -75,11 +77,11 @@ private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteT
         if (backoff.length > 0 && !f.await(backoff.length, backoff.unit)) f.cancel() //Waited as long as we could, now back off
       }
     } catch {
-      case e: Exception ⇒ netty.notifyListeners(RemoteClientError(e, netty, remoteAddress))
+      case NonFatal(e) ⇒ netty.notifyListeners(RemoteClientError(e, netty, remoteAddress))
     }
   }
 
-  override def toString = name
+  override def toString: String = name
 }
 
 /**
