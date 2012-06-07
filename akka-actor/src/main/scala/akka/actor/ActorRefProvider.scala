@@ -473,7 +473,7 @@ class LocalActorRefProvider(
   private val guardianProps = Props(new Guardian)
 
   lazy val rootGuardian: InternalActorRef =
-    new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
+    new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, systemService = true) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
         case "temp" ⇒ tempContainer
@@ -482,10 +482,10 @@ class LocalActorRefProvider(
     }
 
   lazy val guardian: InternalActorRef =
-    actorOf(system, guardianProps, rootGuardian, rootPath / "user", true, None, false)
+    actorOf(system, guardianProps, rootGuardian, rootPath / "user", systemService = true, None, false)
 
   lazy val systemGuardian: InternalActorRef =
-    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true, None, false)
+    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", systemService = true, None, false)
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
@@ -552,3 +552,9 @@ class LocalActorRefProvider(
 
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 }
+
+private[akka] class GuardianCell(_system: ActorSystemImpl, _self: InternalActorRef, _props: Props, _parent: InternalActorRef)
+  extends ActorCell(_system, _self, _props, _parent) {
+
+}
+
