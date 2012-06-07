@@ -209,20 +209,38 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
     }
 
   final def processAllSystemMessages() {
+    var failure: Throwable = null
     var nextMessage = systemDrain(null)
-    try {
-      while ((nextMessage ne null) && !isClosed) {
-        if (debug) println(actor.self + " processing system message " + nextMessage + " with " + actor.childrenRefs)
-        actor systemInvoke nextMessage
-        nextMessage = nextMessage.next
-        // don’t ever execute normal message when system message present!
-        if (nextMessage eq null) nextMessage = systemDrain(null)
+    while ((nextMessage ne null) && !isClosed) {
+      val msg = nextMessage
+      nextMessage = nextMessage.next
+      msg.next = null
+      if (debug) println(actor.self + " processing system message " + msg + " with " + actor.childrenRefs)
+      try actor systemInvoke msg
+      catch {
+        case NonFatal(e) ⇒
+          if (failure eq null) failure = e
+          actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system message " + msg + ": " + e.getMessage))
       }
-    } catch {
-      case NonFatal(e) ⇒
-        actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
-        throw e
+      // don’t ever execute normal message when system message present!
+      if ((nextMessage eq null) && !isClosed) nextMessage = systemDrain(null)
     }
+    /*
+     * if we closed the mailbox, we must dump the remaining system messages
+     * to deadLetters (this is essential for DeathWatch) 
+     */
+    while (nextMessage ne null) {
+      val msg = nextMessage
+      nextMessage = nextMessage.next
+      msg.next = null
+      try actor.systemImpl.deadLetterMailbox.systemEnqueue(actor.self, msg)
+      catch {
+        case NonFatal(e) ⇒ actor.system.eventStream.publish(
+          Error(e, actor.self.path.toString, this.getClass, "error while enqueuing " + msg + " to deadLetters: " + e.getMessage))
+      }
+    }
+    // if something happened while processing, fail this actor (most probable: exception in supervisorStrategy)
+    if (failure ne null) actor.handleInvokeFailure(failure, failure.getMessage)
   }
 
   @inline

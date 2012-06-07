@@ -228,8 +228,7 @@ private[akka] class LocalActorRef private[akka] (
   _props: Props,
   _supervisor: InternalActorRef,
   override val path: ActorPath,
-  val systemService: Boolean = false,
-  _receiveTimeout: Option[Duration] = None)
+  val systemService: Boolean = false)
   extends InternalActorRef with LocalRef {
 
   /*
@@ -242,16 +241,11 @@ private[akka] class LocalActorRef private[akka] (
    * us to use purely factory methods for creating LocalActorRefs.
    */
   @volatile
-  private var actorCell = newActorCell(_system, this, _props, _supervisor, _receiveTimeout)
+  private var actorCell = newActorCell(_system, this, _props, _supervisor)
   actorCell.start()
 
-  protected def newActorCell(
-    system: ActorSystemImpl,
-    ref: InternalActorRef,
-    props: Props,
-    supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration]): ActorCell =
-    new ActorCell(system, ref, props, supervisor, receiveTimeout)
+  protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
+    new ActorCell(system, ref, props, supervisor)
 
   protected def actorContext: ActorContext = actorCell
 
