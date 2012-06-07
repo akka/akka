@@ -75,9 +75,11 @@ class UnreachableNodeRejoinsClusterSpec
       runOn(victim) {
         val otherAddresses = sortedRoles.collect { case x if x != victim => node(x).address }
         within(30 seconds) {
-          awaitCond(cluster.latestGossip.overview.unreachable.size == (allRoles.size - 1))
-          awaitCond(cluster.latestGossip.members.size == 1)
-          awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
+          // victim becomes all alone
+          awaitCond({ val gossip = cluster.latestGossip
+            gossip.overview.unreachable.size == (allRoles.size - 1) &&
+              gossip.members.size == 1 &&
+              gossip.members.forall(_.status == MemberStatus.Up) })
           cluster.latestGossip.overview.unreachable.map(_.address) must be(otherAddresses.toSet)
           cluster.convergence.isDefined must be(false)
         }
@@ -89,9 +91,10 @@ class UnreachableNodeRejoinsClusterSpec
         val otherAddresses = allButVictim.map(node(_).address)
         within(30 seconds) {
           // victim becomes unreachable
-          awaitCond(cluster.latestGossip.overview.unreachable.size == 1)
-          awaitCond(cluster.latestGossip.members.size == (allRoles.size - 1))
-          awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
+          awaitCond({ val gossip = cluster.latestGossip
+            gossip.overview.unreachable.size == 1 &&
+              gossip.members.size == (allRoles.size - 1) &&
+              gossip.members.forall(_.status == MemberStatus.Up) })
           awaitSeenSameState(otherAddresses)
           // still one unreachable
           cluster.latestGossip.overview.unreachable.size must be(1)
