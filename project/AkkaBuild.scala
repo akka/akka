@@ -408,20 +408,21 @@ object AkkaBuild extends Build {
   lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
-    (if (multiNodeEnabled)
-      executeTests in Test <<= ((executeTests in Test), (multiNodeExecuteTests in MultiJvm)) map {
-        case (tr, mr) =>
-          val r = tr._2 ++ mr._2
-          (Tests.overall(r.values), r)
-      }
-    else if (executeMultiJvmTests)
-      executeTests in Test <<= ((executeTests in Test), (executeTests in MultiJvm)) map {
-        case (tr, mr) =>
-          val r = tr._2 ++ mr._2
-          (Tests.overall(r.values), r)
-      }
-    else Seq.empty)
-
+    ((executeMultiJvmTests, multiNodeEnabled) match {
+      case (true, true) =>
+        executeTests in Test <<= ((executeTests in Test), (multiNodeExecuteTests in MultiJvm)) map {
+          case ((_, testResults), (_, multiNodeResults))  =>
+            val results = testResults ++ multiNodeResults
+            (Tests.overall(results.values), results)
+        }
+      case (true, false) =>
+        executeTests in Test <<= ((executeTests in Test), (executeTests in MultiJvm)) map {
+          case ((_, testResults), (_, multiNodeResults)) =>
+            val results = testResults ++ multiNodeResults
+            (Tests.overall(results.values), results)
+        }
+      case (false, _) => Seq.empty
+    })
 
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     // MiMa
