@@ -473,7 +473,7 @@ class LocalActorRefProvider(
   private val guardianProps = Props(new Guardian)
 
   lazy val rootGuardian: InternalActorRef =
-    new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath, true) {
+    new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
         case "temp" ⇒ tempContainer
@@ -541,7 +541,7 @@ class LocalActorRefProvider(
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
               systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean): InternalActorRef = {
     props.routerConfig match {
-      case NoRouter ⇒ new LocalActorRef(system, props, supervisor, path, systemService) // create a local actor
+      case NoRouter ⇒ new LocalActorRef(system, props, supervisor, path) // create a local actor
       case router ⇒
         val lookup = if (lookupDeploy) deployer.lookup(path) else None
         val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
