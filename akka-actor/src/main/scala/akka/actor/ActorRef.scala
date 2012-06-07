@@ -227,8 +227,7 @@ private[akka] class LocalActorRef private[akka] (
   _system: ActorSystemImpl,
   _props: Props,
   _supervisor: InternalActorRef,
-  override val path: ActorPath,
-  val systemService: Boolean = false)
+  override val path: ActorPath)
   extends InternalActorRef with LocalRef {
 
   /*

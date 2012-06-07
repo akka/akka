@@ -31,8 +31,7 @@ class TestActorRef[T <: Actor](
       if (_props.dispatcher == Dispatchers.DefaultDispatcherId) CallingThreadDispatcher.Id
       else _props.dispatcher),
     _supervisor,
-    _supervisor.path / name,
-    false) {
+    _supervisor.path / name) {
 
   import TestActorRef.InternalGetActor
 
