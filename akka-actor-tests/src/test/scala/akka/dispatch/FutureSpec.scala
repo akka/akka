@@ -359,6 +359,21 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.result(Future.firstCompletedOf(futures), timeout.duration) must be(5)
       }
 
+      "firstSuccessOrLastFailureOf" in {
+        // If the first to finish is a success, it should have same semantics as "firstCompletedOf".
+        val futures = Vector.fill[Future[Int]](10)(Promise[Int]()) :+ Promise.successful[Int](5)
+        Await.result(Future.firstSuccessOrLastFailureOf(futures), timeout.duration) must be(5)
+
+        // If the first to finish is an error, it should pick a later success.
+        def eventually6 = Future { Thread.sleep(500); 6 }
+        val futuresWithError = Vector.fill[Future[Int]](10)(Promise[Int]()) :+ Promise.failed[Int](new RuntimeException("foo")) :+ eventually6
+        Await.result(Future.firstSuccessOrLastFailureOf(futuresWithError), timeout.duration) must be(6)
+
+        // If they all fail, there should be an error.
+        val allErrorFutures = Vector.fill[Future[Int]](10)(Promise.failed[Int](new RuntimeException("bar")))
+        evaluating { Await.result(Future.firstSuccessOrLastFailureOf(allErrorFutures), timeout.duration) } must produce[RuntimeException]
+      }
+
       "find" in {
         val futures = for (i ← 1 to 10) yield Future { i }
         val result = Future.find[Int](futures)(_ == 3)

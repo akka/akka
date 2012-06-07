@@ -116,6 +116,14 @@ object Futures {
     Future.firstCompletedOf(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(executor)
 
   /**
+   * Java API.
+   * Returns a Future to the result of the first future in the traversable that is successful.
+   * If none of them succeed, it returns the last failure.
+   */
+  def firstSuccessOrLastFailureOf[T](futures: JIterable[Future[T]], executor: ExecutionContext): Future[T] =
+    Future.firstSuccessOrLastFailureOf(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(executor)
+
+  /**
    * Java API
    * A non-blocking fold over the specified futures, with the start value of the given zero.
    * The fold is performed on the thread where the last future is completed,
@@ -222,6 +230,24 @@ object Future {
 
     val completeFirst: Either[Throwable, T] ⇒ Unit = futureResult tryComplete _
     futures.foreach(_ onComplete completeFirst)
+
+    futureResult
+  }
+
+  /**
+   * Returns a Future to the result of the first future in the traversable that is successful.
+   * If none of them succeed, it returns the last failure.
+   */
+  def firstSuccessOrLastFailureOf[T](futures: Traversable[Future[T]])(implicit executor: ExecutionContext): Future[T] = {
+    val futureResult = Promise[T]()
+    val remainingFutures = new AtomicInteger(futures.size)
+
+    val succeedFirstOrFailLast: Either[Throwable, T] ⇒ Unit = _ match {
+      case r @ Right(_) ⇒ futureResult tryComplete r
+      case l @ Left(_)  ⇒ if (remainingFutures.decrementAndGet == 0) futureResult tryComplete l
+    }
+
+    futures.foreach(_ onComplete succeedFirstOrFailLast)
 
     futureResult
   }
