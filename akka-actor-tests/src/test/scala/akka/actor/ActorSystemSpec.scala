@@ -10,6 +10,9 @@ import akka.dispatch.Await
 import akka.util.duration._
 import scala.collection.JavaConverters
 import java.util.concurrent.{ TimeUnit, RejectedExecutionException, CountDownLatch, ConcurrentLinkedQueue }
+import akka.pattern.ask
+import akka.util.Timeout
+import akka.dispatch.Future
 
 class JavaExtensionSpec extends JavaExtension with JUnitSuite
 
@@ -20,6 +23,38 @@ object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider
 
 // Dont't place inside ActorSystemSpec object, since it will not be garbage collected and reference to system remains
 class TestExtension(val system: ExtendedActorSystem) extends Extension
+
+object ActorSystemSpec {
+
+  class Waves extends Actor {
+    var master: ActorRef = _
+
+    def receive = {
+      case n: Int ⇒
+        master = sender
+        for (i ← 1 to n) context.watch(context.system.actorOf(Props[Terminater])) ! "run"
+      case Terminated(child) if context.actorFor(child.path.parent) == self ⇒
+        if (context.children.isEmpty) {
+          master ! "done"
+          context stop self
+        }
+    }
+    
+    override def preRestart(cause: Throwable, msg: Option[Any]) {
+      if (master ne null) {
+        master ! "failed with " + cause + " while processing " + msg
+      }
+      context stop self
+    }
+  }
+
+  class Terminater extends Actor {
+    def receive = {
+      case "run" ⇒ context.stop(self)
+    }
+  }
+
+}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExtension$"]""") {
@@ -110,6 +145,13 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       intercept[RejectedExecutionException] {
         system2.registerOnTermination { println("IF YOU SEE THIS THEN THERE'S A BUG HERE") }
       }.getMessage must be("Must be called prior to system shutdown.")
+    }
+
+    "reliably create waves of actors" in {
+      import system.dispatcher
+      implicit val timeout = Timeout(30 seconds)
+      val waves = for (i ← 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
+      Await.result(Future.sequence(waves), timeout.duration + 5.seconds) must be === Seq("done", "done", "done")
     }
 
   }
