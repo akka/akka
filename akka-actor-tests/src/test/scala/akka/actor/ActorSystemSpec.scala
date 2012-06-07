@@ -28,13 +28,19 @@ object ActorSystemSpec {
 
   class Waves extends Actor {
     var master: ActorRef = _
+    var terminaters = Set[ActorRef]()
 
     def receive = {
       case n: Int ⇒
         master = sender
-        for (i ← 1 to n) context.watch(context.system.actorOf(Props[Terminater])) ! "run"
-      case Terminated(child) if context.actorFor(child.path.parent) == self ⇒
-        if (context.children.isEmpty) {
+        terminaters = Set() ++ (for (i ← 1 to n) yield {
+          val man = context.watch(context.system.actorOf(Props[Terminater]))
+          man ! "run"
+          man
+        })
+      case Terminated(child) if terminaters contains child ⇒
+        terminaters -= child
+        if (terminaters.isEmpty) {
           master ! "done"
           context stop self
         }
@@ -57,7 +63,7 @@ object ActorSystemSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExtension$"]""") {
+class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExtension$"]""") with ImplicitSender {
 
   "An ActorSystem" must {
 
@@ -152,6 +158,24 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       implicit val timeout = Timeout(30 seconds)
       val waves = for (i ← 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
       Await.result(Future.sequence(waves), timeout.duration + 5.seconds) must be === Seq("done", "done", "done")
+    }
+
+    "reliable deny creation of actors while shutting down" in {
+      val system = ActorSystem()
+      system.scheduler.scheduleOnce(200 millis) { system.shutdown() }
+      var failing = false
+      var created = Vector.empty[ActorRef]
+      while (!system.isTerminated) {
+        try {
+          val t = system.actorOf(Props[ActorSystemSpec.Terminater])
+          failing must not be true // because once failing => always failing (it’s due to shutdown)
+          created :+= t
+        } catch {
+          case e: Exception ⇒ failing = true
+        }
+      }
+      println(created.last)
+      created filter (!_.isTerminated) must be(Seq())
     }
 
   }
