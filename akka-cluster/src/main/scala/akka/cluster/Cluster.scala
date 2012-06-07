@@ -792,7 +792,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
    *
    * Gossips latest gossip to an address.
    */
-  protected def gossipTo(address: Address): Unit = {
+  private[akka] def gossipTo(address: Address): Unit = {
     val connection = clusterGossipConnectionFor(address)
     log.debug("Cluster Node [{}] - Gossiping to [{}]", selfAddress, connection)
     connection ! GossipEnvelope(self, latestGossip)
@@ -814,7 +814,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   /**
    * INTERNAL API
    */
-  protected[akka] def gossipToUnreachableProbablity(membersSize: Int, unreachableSize: Int): Double =
+  private[akka] def gossipToUnreachableProbablity(membersSize: Int, unreachableSize: Int): Double =
     (membersSize + unreachableSize) match {
       case 0   ⇒ 0.0
       case sum ⇒ unreachableSize.toDouble / sum
@@ -823,7 +823,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   /**
    * INTERNAL API
    */
-  protected[akka] def gossipToDeputyProbablity(membersSize: Int, unreachableSize: Int, nrOfDeputyNodes: Int): Double = {
+  private[akka] def gossipToDeputyProbablity(membersSize: Int, unreachableSize: Int, nrOfDeputyNodes: Int): Double = {
     if (nrOfDeputyNodes > membersSize) 1.0
     else if (nrOfDeputyNodes == 0) 0.0
     else (membersSize + unreachableSize) match {
@@ -1112,7 +1112,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   /**
    * INTERNAL API
    */
-  protected def selectRandomNode(addresses: IndexedSeq[Address]): Option[Address] =
+  private[akka] def selectRandomNode(addresses: IndexedSeq[Address]): Option[Address] =
     if (addresses.isEmpty) None
     else Some(addresses(ThreadLocalRandom.current nextInt addresses.size))
 
