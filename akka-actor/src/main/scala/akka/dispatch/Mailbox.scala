@@ -208,6 +208,13 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
       }
     }
 
+  /**
+   * Will at least try to process all queued system messages: in case of
+   * failure simply drop and go on to the next, because there is nothing to
+   * restart here (failure is in ActorCell somewhere …). In case the mailbox
+   * becomes closed (because of processing a Terminate message), dump all
+   * already dequeued message to deadLetters.
+   */
   final def processAllSystemMessages() {
     var failure: Throwable = null
     var nextMessage = systemDrain(null)
@@ -216,8 +223,9 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
       nextMessage = nextMessage.next
       msg.next = null
       if (debug) println(actor.self + " processing system message " + msg + " with " + actor.childrenRefs)
-      try actor systemInvoke msg
-      catch {
+      try {
+        actor systemInvoke msg
+      } catch {
         case NonFatal(e) ⇒
           if (failure eq null) failure = e
           actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system message " + msg + ": " + e.getMessage))
