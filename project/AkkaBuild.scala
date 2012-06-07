@@ -338,6 +338,11 @@ object AkkaBuild extends Build {
   // for running only tests by tag use system property: -Dakka.test.tags.only=<tag name>
   lazy val useOnlyTestTags: Set[String] = systemPropertyAsSeq("akka.test.tags.only").toSet
 
+  def executeMultiJvmTests: Boolean = {
+    useOnlyTestTags.contains("long-running") ||
+    !(useExcludeTestTags -- useIncludeTestTags).contains("long-running")
+  }
+
   def systemPropertyAsSeq(name: String): Seq[String] = {
     val prop = System.getProperty(name, "")
     if (prop.isEmpty) Seq.empty else prop.split(",").toSeq
@@ -402,20 +407,21 @@ object AkkaBuild extends Build {
 
   lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
-    ScalariformKeys.preferences in MultiJvm := formattingPreferences,
-    if (multiNodeEnabled)
+    ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
+    (if (multiNodeEnabled)
       executeTests in Test <<= ((executeTests in Test), (multiNodeExecuteTests in MultiJvm)) map {
         case (tr, mr) =>
           val r = tr._2 ++ mr._2
           (Tests.overall(r.values), r)
       }
-    else
+    else if (executeMultiJvmTests)
       executeTests in Test <<= ((executeTests in Test), (executeTests in MultiJvm)) map {
         case (tr, mr) =>
           val r = tr._2 ++ mr._2
           (Tests.overall(r.values), r)
       }
-  )
+    else Seq.empty)
+
 
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     // MiMa
