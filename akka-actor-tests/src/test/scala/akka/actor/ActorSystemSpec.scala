@@ -39,7 +39,7 @@ object ActorSystemSpec {
           context stop self
         }
     }
-    
+
     override def preRestart(cause: Throwable, msg: Option[Any]) {
       if (master ne null) {
         master ! "failed with " + cause + " while processing " + msg
