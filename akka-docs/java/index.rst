@@ -24,4 +24,5 @@ Java API
    extending-akka
    zeromq
    microkernel
+   testing
    howto
