@@ -5,8 +5,7 @@
  Cluster Specification
 ######################
 
-.. note:: *This document describes the new clustering coming in Akka Coltrane and
-is not available in the latest stable release)*
+.. note:: *This document describes the new clustering coming in Akka Coltrane and is not available in the latest stable release)*
 
 Intro
 =====
@@ -304,7 +303,9 @@ node from the cluster, marking it as ``removed``.
 
 A node can also be removed forcefully by moving it directly to the ``removed``
 state using the ``remove`` action. The cluster will rebalance based on the new
-cluster membership.
+cluster membership. This will also happen if you are shutting the system down
+forcefully (through an external ``SIGKILL`` signal, ``System.exit(status)`` or
+similar.
 
 If a node is unreachable then gossip convergence is not possible and therefore
 any ``leader`` actions are also not possible (for instance, allowing a node to
