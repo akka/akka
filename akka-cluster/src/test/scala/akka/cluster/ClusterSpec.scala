@@ -21,7 +21,7 @@ object ClusterSpec {
     }
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
     akka.remote.netty.port = 0
-    akka.loglevel = DEBUG
+    # akka.loglevel = DEBUG
     """
 
   case class GossipTo(address: Address)
