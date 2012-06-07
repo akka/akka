@@ -21,7 +21,7 @@ object UnreachableNodeRejoinsClusterMultiJvmSpec extends MultiNodeConfig {
   val allRoles = Seq(first, second, third, fourth)
 
   def allBut(role: RoleName, roles: Seq[RoleName] = allRoles): Seq[RoleName] = {
-    roles.filter(_ != role)
+    roles.filterNot(_ == role)
   }
 
   commonConfig(debugConfig(on = false).
@@ -45,12 +45,12 @@ class UnreachableNodeRejoinsClusterSpec
 
   override def initialParticipants = allRoles.size
 
-  val sortedRoles = clusterSortedRoles(allRoles)
-  val master = sortedRoles(0)
-  val victim = sortedRoles(1)
+  lazy val sortedRoles = clusterSortedRoles(allRoles)
+  lazy val master = sortedRoles(0)
+  lazy val victim = sortedRoles(1)
 
   var endBarrierNumber = 0
-  def endBarrier = {
+  def endBarrier: Unit = {
     endBarrierNumber += 1
     testConductor.enter("after_" + endBarrierNumber)
   }
@@ -58,16 +58,7 @@ class UnreachableNodeRejoinsClusterSpec
   "A cluster of " + allRoles.size + " members" must {
 
     "reach initial convergence" taggedAs LongRunningTest in {
-      runOn(master) {
-        cluster.self
-        awaitUpConvergence(numberOfMembers = allRoles.size)
-      }
-
-      runOn(allBut(master):_*) {
-        cluster.join(node(master).address)
-        awaitUpConvergence(numberOfMembers = allRoles.size)
-      }
-
+      awaitClusterUp(allRoles:_*)
       endBarrier
     }
 
@@ -77,15 +68,12 @@ class UnreachableNodeRejoinsClusterSpec
         allBut(victim).foreach { roleName =>
           testConductor.blackhole(victim, roleName, Direction.Both).await
         }
-        testConductor.enter("unplug_victim")
       }
 
-      runOn(allBut(first):_*) {
-        testConductor.enter("unplug_victim")
-      }
+      testConductor.enter("unplug_victim")
 
       runOn(victim) {
-        val otherAddresses = sortedRoles.filter(_ != victim).map(node(_).address)
+        val otherAddresses = sortedRoles.collect { case x if x != victim => node(x).address }
         within(30 seconds) {
           awaitCond(cluster.latestGossip.overview.unreachable.size == (allRoles.size - 1))
           awaitCond(cluster.latestGossip.members.size == 1)
@@ -96,7 +84,7 @@ class UnreachableNodeRejoinsClusterSpec
       }
 
       val allButVictim = allBut(victim)
-      runOn(allButVictim: _*) {
+      runOn(allButVictim:_*) {
         val victimAddress = node(victim).address
         val otherAddresses = allButVictim.map(node(_).address)
         within(30 seconds) {
@@ -135,12 +123,9 @@ class UnreachableNodeRejoinsClusterSpec
         allBut(victim).foreach { roleName =>
           testConductor.passThrough(victim, roleName, Direction.Both).await
         }
-        testConductor.enter("plug_in_victim")
       }
 
-      runOn(allBut(first):_*) {
-        testConductor.enter("plug_in_victim")
-      }
+      testConductor.enter("plug_in_victim")
 
       runOn(victim) {
         cluster.join(node(master).address)
