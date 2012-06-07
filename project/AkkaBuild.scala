@@ -484,7 +484,7 @@ object Dependency {
 
   object V {
     val Camel        = "2.8.0"
-    val Logback      = "0.9.28"
+    val Logback      = "1.0.0"
     val Netty        = "3.3.0.Final"
     val Protobuf     = "2.4.1"
     val ScalaStm     = "0.5"
