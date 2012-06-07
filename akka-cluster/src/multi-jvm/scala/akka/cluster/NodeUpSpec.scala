@@ -58,7 +58,7 @@ abstract class NodeUpSpec
       for (n ← 1 to 20) {
         100.millis.dilated.sleep()
         unexpected.get must be(null)
-        cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
+        cluster.latestGossip.members.forall(_.status == MemberStatus.Up) must be(true)
       }
 
       testConductor.enter("after-2")
