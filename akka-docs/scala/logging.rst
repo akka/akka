@@ -230,7 +230,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
 
   .. code-block:: scala
 
-     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.0" % "runtime"
+     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.4" % "runtime"
 
 
 You need to enable the Slf4jEventHandler in the 'event-handlers' element in

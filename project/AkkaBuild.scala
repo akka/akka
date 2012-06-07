@@ -484,7 +484,7 @@ object Dependency {
 
   object V {
     val Camel        = "2.8.0"
-    val Logback      = "1.0.0"
+    val Logback      = "1.0.4"
     val Netty        = "3.3.0.Final"
     val Protobuf     = "2.4.1"
     val ScalaStm     = "0.5"
@@ -500,12 +500,6 @@ object Dependency {
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.6" // ApacheV2
-
-  // Runtime
-
-  object Runtime {
-    val logback    = "ch.qos.logback"      % "logback-classic" % V.Logback    % "runtime" // MIT
-  }
 
   // Test
 

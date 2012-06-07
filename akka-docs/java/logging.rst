@@ -187,7 +187,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
      <dependency>
        <groupId>ch.qos.logback</groupId>
        <artifactId>logback-classic</artifactId>
-       <version>1.0.0</version>
+       <version>1.0.4</version>
        <scope>runtime</scope>
      </dependency>
 
