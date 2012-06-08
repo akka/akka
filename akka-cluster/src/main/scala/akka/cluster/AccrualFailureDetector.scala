@@ -104,10 +104,9 @@ class AccrualFailureDetector(
           throw new IllegalStateException("Can't calculate new failure statistics due to missing heartbeat history")
         }
 
-        val deviationSum =
-          newIntervalsForConnection
-            .map(_.toDouble)
-            .foldLeft(0.0)((x, y) ⇒ x + (y - newMean))
+        val deviationSum = (0.0d /: newIntervalsForConnection) { (mean, interval) ⇒
+          mean + interval.toDouble - newMean
+        }
 
         val newVariance: Double = deviationSum / newIntervalsForConnection.size
         val newDeviation: Double = math.sqrt(newVariance)
@@ -149,9 +148,7 @@ class AccrualFailureDetector(
 
         val mean = oldState.failureStats.get(connection) match {
           case Some(FailureStats(mean, _, _)) ⇒ mean
-          case _ ⇒
-            if (!oldState.intervalHistory.contains(connection)) 1000.0
-            else throw new IllegalStateException("Can't calculate Failure Detector Phi value for a node that have no heartbeat history")
+          case _                              ⇒ throw new IllegalStateException("Can't calculate Failure Detector Phi value for a node that have no heartbeat history")
         }
 
         if (mean == 0.0) 0.0
