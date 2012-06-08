@@ -77,7 +77,8 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack.
+   * The new behavior will be transformed by the actor's `Actor.aroundReceive` method.
    */
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
 
@@ -525,6 +526,7 @@ private[akka] class ActorCell(
         case `behaviorStackPlaceHolder` ⇒ Stack.empty.push(instance.receive)
         case newBehaviors               ⇒ Stack.empty.push(instance.receive).pushAll(newBehaviors.reverse.drop(1))
       }
+      behaviorStack = behaviorStack.map(instance.aroundReceive(_))
       instance
     } finally {
       val stackAfter = contextStack.get
@@ -685,7 +687,12 @@ private[akka] class ActorCell(
 
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit = {
     if (discardOld) unbecome()
-    behaviorStack = behaviorStack.push(behavior)
+    // actor is null during construction of the actor
+    val wrappedBehavior = if (actor ne null)
+      actor.aroundReceive(behavior)
+    else
+      behavior
+    behaviorStack = behaviorStack.push(wrappedBehavior)
   }
 
   /**

@@ -315,6 +315,55 @@ trait Actor {
   final def sender: ActorRef = context.sender
 
   /**
+   * This method allows traits and subclasses to mix in actor behavior.
+   * Whenever an actor pushes a new behavior, it will be sent
+   * through `aroundReceive`. The initial behavior of the actor on creation,
+   * as defined by the `receive` method, goes through `aroundReceive`; any
+   * new behavior set by the `ActorContext.become` method also does.
+   * <p/>
+   * The default implementation of `aroundReceive` leaves the
+   * passed-in behavior unmodified.
+   * <p/>
+   * To allow multiple mixin traits, implementations of this
+   * method should chain up to `super.aroundReceive` in order
+   * to apply the customizations from supertypes.
+   * <p/>
+   * A simple example use-case is to run some handler before the
+   * actor's normal behavior:
+   * {{{
+   *   override def aroundReceive(behavior: Receive) = {
+   *     val handler: Receive = {
+   *       // our mixin trait adds support for the "MyMessage" message
+   *       case "MyMessage" ⇒
+   *     }
+   *     super.aroundReceive(handler orElse behavior)
+   *   }
+   * }}}
+   * <p/>
+   * Of course you could also run a handler after:
+   * {{{
+   *   override def aroundReceive(behavior: Receive) = {
+   *     val handler: Receive = {
+   *       // our mixin trait adds support for the "MyMessage" message
+   *       case "MyMessage" ⇒
+   *     }
+   *     super.aroundReceive(behavior) orElse handler
+   *   }
+   * }}}
+   * <p/>
+   * When prepending handlers, `super.aroundReceive(handler orElse behavior)`
+   * means that superclasses (or leftmost traits) get priority, while
+   * when appending handlers, `super.aroundReceive(behavior) orElse handler`
+   * keeps the proper priorities.
+   * This only matters if you mix in multiple traits that
+   * handle the same messages.
+   * <p/>
+   * Another use of this method could be to create a `Receive` that modifies
+   * messages before passing them on to the actor's normal behavior.
+   */
+  protected[actor] def aroundReceive(behavior: Receive): Receive = behavior
+
+  /**
    * This defines the initial actor behavior, it must return a partial function
    * with the actor logic.
    */
