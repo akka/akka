@@ -84,7 +84,7 @@ abstract class MultiNodeConfig {
 
   private[testkit] def deployments(node: RoleName): Seq[String] = (_deployments get node getOrElse Nil) ++ _allDeploy
 
-  def roles: Seq[RoleName] = _roles
+  private[testkit] def roles: Seq[RoleName] = _roles
 
 }
 
@@ -131,7 +131,7 @@ object MultiNodeSpec {
  * `AskTimeoutException: sending to terminated ref breaks promises`. Using lazy
  * val is fine.
  */
-abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
+abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
   extends AkkaSpec(_system) {
 
   import MultiNodeSpec._
@@ -142,6 +142,11 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: 
   /*
    * Test Class Interface
    */
+
+  /**
+   * All registered roles
+   */
+  def roles: Seq[RoleName] = _roles
 
   /**
    * TO BE DEFINED BY USER: Defines the number of participants required for starting the test. This

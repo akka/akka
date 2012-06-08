@@ -33,8 +33,6 @@ abstract class JoinTwoClustersSpec
 
   import JoinTwoClustersMultiJvmSpec._
 
-  override def initialParticipants = 6
-
   lazy val a1Address = node(a1).address
   lazy val b1Address = node(b1).address
   lazy val c1Address = node(c1).address

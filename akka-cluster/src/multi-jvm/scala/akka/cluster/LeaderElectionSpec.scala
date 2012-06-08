@@ -31,10 +31,8 @@ abstract class LeaderElectionSpec
 
   import LeaderElectionMultiJvmSpec._
 
-  override def initialParticipants = 5
-
   // sorted in the order used by the cluster
-  lazy val roles = Seq(first, second, third, fourth).sorted
+  lazy val sortedRoles = Seq(first, second, third, fourth).sorted
 
   "A cluster of four nodes" must {
 
@@ -42,15 +40,15 @@ abstract class LeaderElectionSpec
       awaitClusterUp(first, second, third, fourth)
 
       if (myself != controller) {
-        cluster.isLeader must be(myself == roles.head)
-        assertLeaderIn(roles)
+        cluster.isLeader must be(myself == sortedRoles.head)
+        assertLeaderIn(sortedRoles)
       }
 
       testConductor.enter("after")
     }
 
     def shutdownLeaderAndVerifyNewLeader(alreadyShutdown: Int): Unit = {
-      val currentRoles = roles.drop(alreadyShutdown)
+      val currentRoles = sortedRoles.drop(alreadyShutdown)
       currentRoles.size must be >= (2)
       val leader = currentRoles.head
       val aUser = currentRoles.last

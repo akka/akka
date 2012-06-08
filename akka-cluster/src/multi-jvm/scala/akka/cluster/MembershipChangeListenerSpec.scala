@@ -25,8 +25,6 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
   with MultiNodeClusterSpec {
   import MembershipChangeListenerMultiJvmSpec._
 
-  override def initialParticipants = 3
-
   lazy val firstAddress = node(first).address
   lazy val secondAddress = node(second).address
 

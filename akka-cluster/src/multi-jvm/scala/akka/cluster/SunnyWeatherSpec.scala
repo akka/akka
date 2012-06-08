@@ -40,8 +40,6 @@ abstract class SunnyWeatherSpec
 
   import SunnyWeatherMultiJvmSpec._
 
-  override def initialParticipants = roles.size
-
   "A normal cluster" must {
     "be healthy" taggedAs LongRunningTest in {
 

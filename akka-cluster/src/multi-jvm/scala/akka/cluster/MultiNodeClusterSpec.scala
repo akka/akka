@@ -30,6 +30,8 @@ object MultiNodeClusterSpec {
 
 trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
 
+  override def initialParticipants = roles.size
+
   /**
    * Get or create a cluster node using 'Cluster(system)' extension.
    */
