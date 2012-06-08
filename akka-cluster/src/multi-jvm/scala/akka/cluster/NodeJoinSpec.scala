@@ -33,8 +33,6 @@ abstract class NodeJoinSpec
 
   import NodeJoinMultiJvmSpec._
 
-  override def initialParticipants = 2
-
   lazy val firstAddress = node(first).address
   lazy val secondAddress = node(second).address
 
