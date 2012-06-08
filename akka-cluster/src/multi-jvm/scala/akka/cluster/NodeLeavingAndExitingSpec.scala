@@ -36,8 +36,6 @@ abstract class NodeLeavingAndExitingSpec
 
   import NodeLeavingAndExitingMultiJvmSpec._
 
-  override def initialParticipants = 3
-
   lazy val firstAddress = node(first).address
   lazy val secondAddress = node(second).address
   lazy val thirdAddress = node(third).address

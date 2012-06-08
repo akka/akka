@@ -35,8 +35,6 @@ abstract class ConvergenceSpec
   with MultiNodeClusterSpec {
   import ConvergenceMultiJvmSpec._
 
-  override def initialParticipants = 4
-
   "A cluster of 3 members" must {
 
     "reach initial convergence" taggedAs LongRunningTest in {

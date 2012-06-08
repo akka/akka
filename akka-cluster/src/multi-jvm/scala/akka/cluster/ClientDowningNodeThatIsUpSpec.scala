@@ -29,8 +29,6 @@ class ClientDowningNodeThatIsUpSpec
 
   import ClientDowningNodeThatIsUpMultiJvmSpec._
 
-  override def initialParticipants = 4
-
   "Client of a 4 node cluster" must {
 
     "be able to DOWN a node that is UP (healthy and available)" taggedAs LongRunningTest in {

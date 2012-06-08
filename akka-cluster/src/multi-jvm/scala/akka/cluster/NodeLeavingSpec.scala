@@ -30,8 +30,6 @@ abstract class NodeLeavingSpec extends MultiNodeSpec(NodeLeavingMultiJvmSpec)
   with MultiNodeClusterSpec {
   import NodeLeavingMultiJvmSpec._
 
-  override def initialParticipants = 3
-
   lazy val firstAddress = node(first).address
   lazy val secondAddress = node(second).address
   lazy val thirdAddress = node(third).address

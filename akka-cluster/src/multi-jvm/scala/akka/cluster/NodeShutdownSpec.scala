@@ -30,8 +30,6 @@ class NodeShutdownMultiJvmNode2 extends NodeShutdownSpec
 abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) with MultiNodeClusterSpec {
   import NodeShutdownMultiJvmSpec._
 
-  override def initialParticipants = 2
-
   "A cluster of 2 nodes" must {
 
     "not be singleton cluster when joined" taggedAs LongRunningTest in {

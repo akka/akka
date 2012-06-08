@@ -37,8 +37,6 @@ class LeaderDowningNodeThatIsUnreachableSpec
 
   import LeaderDowningNodeThatIsUnreachableMultiJvmSpec._
 
-  override def initialParticipants = 4
-
   "The Leader in a 4 node cluster" must {
 
     "be able to DOWN a 'last' node that is UNREACHABLE" taggedAs LongRunningTest in {

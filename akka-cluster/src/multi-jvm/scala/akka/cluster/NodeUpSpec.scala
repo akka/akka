@@ -28,8 +28,6 @@ abstract class NodeUpSpec
 
   import NodeUpMultiJvmSpec._
 
-  override def initialParticipants = 2
-
   "A cluster node that is joining another cluster" must {
     "be moved to UP by the leader after a convergence" taggedAs LongRunningTest in {
 
