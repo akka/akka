@@ -42,8 +42,7 @@ abstract class NodeLeavingAndExitingSpec
 
   "A node that is LEAVING a non-singleton cluster" must {
 
-    // FIXME make it work and remove ignore
-    "be moved to EXITING by the leader" taggedAs LongRunningTest ignore {
+    "be moved to EXITING by the leader" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)
 

@@ -13,7 +13,7 @@ object NodeShutdownMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = true).
+  commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster {
         auto-down = on

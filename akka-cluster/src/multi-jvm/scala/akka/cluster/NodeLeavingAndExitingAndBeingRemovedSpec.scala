@@ -36,8 +36,7 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
 
   "A node that is LEAVING a non-singleton cluster" must {
 
-    // FIXME make it work and remove ignore
-    "be moved to EXITING and then to REMOVED by the reaper" taggedAs LongRunningTest ignore {
+    "be moved to EXITING and then to REMOVED by the reaper" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)
 
