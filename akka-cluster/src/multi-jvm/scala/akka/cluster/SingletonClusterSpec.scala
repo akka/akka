@@ -9,7 +9,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.util.duration._
 
-object NodeShutdownMultiJvmSpec extends MultiNodeConfig {
+object SingletonClusterMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
@@ -24,11 +24,11 @@ object NodeShutdownMultiJvmSpec extends MultiNodeConfig {
 
 }
 
-class NodeShutdownMultiJvmNode1 extends NodeShutdownSpec
-class NodeShutdownMultiJvmNode2 extends NodeShutdownSpec
+class SingletonClusterMultiJvmNode1 extends SingletonClusterSpec
+class SingletonClusterMultiJvmNode2 extends SingletonClusterSpec
 
-abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) with MultiNodeClusterSpec {
-  import NodeShutdownMultiJvmSpec._
+abstract class SingletonClusterSpec extends MultiNodeSpec(SingletonClusterMultiJvmSpec) with MultiNodeClusterSpec {
+  import SingletonClusterMultiJvmSpec._
 
   "A cluster of 2 nodes" must {
 

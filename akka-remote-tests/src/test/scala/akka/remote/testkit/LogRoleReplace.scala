@@ -90,6 +90,7 @@ class LogRoleReplace {
 
   private val RoleStarted = """\[([\w\-]+)\].*Role \[([\w]+)\] started""".r
   private val RemoteServerStarted = """\[([\w\-]+)\].*RemoteServerStarted@akka://.*@([\w\-\.]+):([0-9]+)""".r
+  private val ColorCode = """\[[0-9]+m"""
 
   private var replacements: Map[String, String] = Map.empty
   private var jvmToAddress: Map[String, String] = Map.empty
@@ -106,11 +107,15 @@ class LogRoleReplace {
   }
 
   def processLine(line: String): String = {
-    if (updateReplacements(line))
-      replaceLine(line)
+    val cleanLine = removeColorCodes(line)
+    if (updateReplacements(cleanLine))
+      replaceLine(cleanLine)
     else
-      line
+      cleanLine
   }
+
+  private def removeColorCodes(line: String): String =
+    line.replaceAll(ColorCode, "")
 
   private def updateReplacements(line: String): Boolean = {
     if (line.startsWith("[info] * ")) {
