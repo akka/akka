@@ -6,18 +6,11 @@ package akka.dispatch
 import akka.AkkaException
 import java.util.{ Comparator, PriorityQueue, Queue, Deque }
 import akka.util._
-import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent._
 import annotation.tailrec
 import akka.event.Logging.Error
-import akka.actor.ActorContext
 import com.typesafe.config.Config
-import akka.actor.ActorSystem
-
-/**
- * This exception normally is thrown when a bounded mailbox is over capacity
- */
-class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+import akka.actor._
 
 /**
  * INTERNAL API
@@ -401,13 +394,11 @@ trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   def pushTimeOut: Duration
   override def queue: BlockingQueue[Envelope]
 
-  def enqueue(receiver: ActorRef, handle: Envelope) {
+  def enqueue(receiver: ActorRef, handle: Envelope): Unit =
     if (pushTimeOut.length > 0) {
-      queue.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
-        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
-      }
+      if (!queue.offer(handle, pushTimeOut.length, pushTimeOut.unit))
+        receiver.asInstanceOf[InternalActorRef].provider.deadLetters ! DeadLetter(handle.message, handle.sender, receiver)
     } else queue put handle
-  }
 
   def dequeue(): Envelope = queue.poll()
 }
@@ -439,18 +430,16 @@ trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
   override def queue: BlockingDeque[Envelope]
 
   def enqueue(receiver: ActorRef, handle: Envelope): Unit =
-    if (pushTimeOut.length > 0)
-      queue.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
-        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
-      }
-    else queue put handle
+    if (pushTimeOut.length > 0) {
+      if (!queue.offer(handle, pushTimeOut.length, pushTimeOut.unit))
+        receiver.asInstanceOf[InternalActorRef].provider.deadLetters ! DeadLetter(handle.message, handle.sender, receiver)
+    } else queue put handle
 
   def enqueueFirst(receiver: ActorRef, handle: Envelope): Unit =
-    if (pushTimeOut.length > 0)
-      queue.offerFirst(handle, pushTimeOut.length, pushTimeOut.unit) || {
-        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
-      }
-    else queue putFirst handle
+    if (pushTimeOut.length > 0) {
+      if (!queue.offerFirst(handle, pushTimeOut.length, pushTimeOut.unit))
+        receiver.asInstanceOf[InternalActorRef].provider.deadLetters ! DeadLetter(handle.message, handle.sender, receiver)
+    } else queue putFirst handle
 
   def dequeue(): Envelope = queue.poll()
 }

@@ -6,9 +6,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import akka.util._
 import akka.util.duration._
 import akka.testkit.AkkaSpec
-import akka.actor.{ ActorRef, ActorContext, Props, LocalActorRef }
 import com.typesafe.config.Config
-import akka.actor.ActorSystem
+import akka.actor._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -39,9 +38,10 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       q.numberOfMessages must be === config.capacity
       q.hasMessages must be === true
 
-      intercept[MessageQueueAppendFailedException] {
-        q.enqueue(null, exampleMessage)
-      }
+      system.eventStream.subscribe(testActor, classOf[DeadLetter])
+      q.enqueue(testActor, exampleMessage)
+      expectMsg(DeadLetter(exampleMessage.message, system.deadLetters, testActor))
+      system.eventStream.unsubscribe(testActor, classOf[DeadLetter])
 
       q.dequeue must be === exampleMessage
       q.numberOfMessages must be(config.capacity - 1)
