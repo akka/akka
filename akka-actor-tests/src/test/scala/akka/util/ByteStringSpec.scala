@@ -11,6 +11,8 @@ import org.scalacheck.Gen._
 
 import java.nio.{ ByteBuffer, ShortBuffer, IntBuffer, FloatBuffer, DoubleBuffer }
 import java.nio.{ ByteOrder }, ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
+import java.lang.Float.floatToRawIntBits
+import java.lang.Double.doubleToRawLongBits
 
 class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
 
@@ -119,6 +121,36 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     (decoded.toSeq == reference.toSeq) && (input.toSeq == bytes.drop(n * elemSize))
   }
 
+  def testFloatDecoding(slice: ByteStringSlice, byteOrder: ByteOrder): Boolean = {
+    val elemSize = 4
+    val (bytes, from, until) = slice
+    val (n, a, b) = (bytes.length / elemSize, from / elemSize, until / elemSize)
+    val reference = Array.ofDim[Float](n)
+    bytes.asByteBuffer.order(byteOrder).asFloatBuffer.get(reference, 0, n)
+    val input = bytes.iterator
+    val decoded = Array.ofDim[Float](n)
+    for (i ← 0 to a - 1) decoded(i) = input.getFloat(byteOrder)
+    input.getFloats(decoded, a, b - a)(byteOrder)
+    for (i ← b to n - 1) decoded(i) = input.getFloat(byteOrder)
+    ((decoded.toSeq map floatToRawIntBits) == (reference.toSeq map floatToRawIntBits)) &&
+      (input.toSeq == bytes.drop(n * elemSize))
+  }
+
+  def testDoubleDecoding(slice: ByteStringSlice, byteOrder: ByteOrder): Boolean = {
+    val elemSize = 8
+    val (bytes, from, until) = slice
+    val (n, a, b) = (bytes.length / elemSize, from / elemSize, until / elemSize)
+    val reference = Array.ofDim[Double](n)
+    bytes.asByteBuffer.order(byteOrder).asDoubleBuffer.get(reference, 0, n)
+    val input = bytes.iterator
+    val decoded = Array.ofDim[Double](n)
+    for (i ← 0 to a - 1) decoded(i) = input.getDouble(byteOrder)
+    input.getDoubles(decoded, a, b - a)(byteOrder)
+    for (i ← b to n - 1) decoded(i) = input.getDouble(byteOrder)
+    ((decoded.toSeq map doubleToRawLongBits) == (reference.toSeq map doubleToRawLongBits)) &&
+      (input.toSeq == bytes.drop(n * elemSize))
+  }
+
   def testShortEncoding(slice: ArraySlice[Short], byteOrder: ByteOrder): Boolean = {
     val elemSize = 2
     val (data, from, until) = slice
@@ -152,6 +184,30 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     for (i ← 0 to from - 1) builder.putLong(data(i))(byteOrder)
     builder.putLongs(data, from, until - from)(byteOrder)
     for (i ← until to data.length - 1) builder.putLong(data(i))(byteOrder)
+    reference.toSeq == builder.result
+  }
+
+  def testFloatEncoding(slice: ArraySlice[Float], byteOrder: ByteOrder): Boolean = {
+    val elemSize = 4
+    val (data, from, until) = slice
+    val reference = Array.ofDim[Byte](data.length * elemSize)
+    ByteBuffer.wrap(reference).order(byteOrder).asFloatBuffer.put(data)
+    val builder = ByteString.newBuilder
+    for (i ← 0 to from - 1) builder.putFloat(data(i))(byteOrder)
+    builder.putFloats(data, from, until - from)(byteOrder)
+    for (i ← until to data.length - 1) builder.putFloat(data(i))(byteOrder)
+    reference.toSeq == builder.result
+  }
+
+  def testDoubleEncoding(slice: ArraySlice[Double], byteOrder: ByteOrder): Boolean = {
+    val elemSize = 8
+    val (data, from, until) = slice
+    val reference = Array.ofDim[Byte](data.length * elemSize)
+    ByteBuffer.wrap(reference).order(byteOrder).asDoubleBuffer.put(data)
+    val builder = ByteString.newBuilder
+    for (i ← 0 to from - 1) builder.putDouble(data(i))(byteOrder)
+    builder.putDoubles(data, from, until - from)(byteOrder)
+    for (i ← until to data.length - 1) builder.putDouble(data(i))(byteOrder)
     reference.toSeq == builder.result
   }
 
@@ -273,6 +329,10 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
       "decoding Int in little-endian" in { check { slice: ByteStringSlice ⇒ testIntDecoding(slice, LITTLE_ENDIAN) } }
       "decoding Long in big-endian" in { check { slice: ByteStringSlice ⇒ testLongDecoding(slice, BIG_ENDIAN) } }
       "decoding Long in little-endian" in { check { slice: ByteStringSlice ⇒ testLongDecoding(slice, LITTLE_ENDIAN) } }
+      "decoding Float in big-endian" in { check { slice: ByteStringSlice ⇒ testFloatDecoding(slice, BIG_ENDIAN) } }
+      "decoding Float in little-endian" in { check { slice: ByteStringSlice ⇒ testFloatDecoding(slice, LITTLE_ENDIAN) } }
+      "decoding Double in big-endian" in { check { slice: ByteStringSlice ⇒ testDoubleDecoding(slice, BIG_ENDIAN) } }
+      "decoding Double in little-endian" in { check { slice: ByteStringSlice ⇒ testDoubleDecoding(slice, LITTLE_ENDIAN) } }
     }
   }
 
@@ -310,6 +370,10 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
       "encoding Int in little-endian" in { check { slice: ArraySlice[Int] ⇒ testIntEncoding(slice, LITTLE_ENDIAN) } }
       "encoding Long in big-endian" in { check { slice: ArraySlice[Long] ⇒ testLongEncoding(slice, BIG_ENDIAN) } }
       "encoding Long in little-endian" in { check { slice: ArraySlice[Long] ⇒ testLongEncoding(slice, LITTLE_ENDIAN) } }
+      "encoding Float in big-endian" in { check { slice: ArraySlice[Float] ⇒ testFloatEncoding(slice, BIG_ENDIAN) } }
+      "encoding Float in little-endian" in { check { slice: ArraySlice[Float] ⇒ testFloatEncoding(slice, LITTLE_ENDIAN) } }
+      "encoding Double in big-endian" in { check { slice: ArraySlice[Double] ⇒ testDoubleEncoding(slice, BIG_ENDIAN) } }
+      "encoding Double in little-endian" in { check { slice: ArraySlice[Double] ⇒ testDoubleEncoding(slice, LITTLE_ENDIAN) } }
     }
   }
 }
