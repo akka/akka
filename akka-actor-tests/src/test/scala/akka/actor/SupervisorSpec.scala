@@ -339,9 +339,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 10 seconds)(classOf[Exception] :: Nil))))
 
       val dyingProps = Props(new Actor {
-        inits.incrementAndGet
-
-        if (inits.get % 2 == 0) throw new IllegalStateException("Don't wanna!")
+        if (inits.incrementAndGet % 2 == 0) throw new IllegalStateException("Don't wanna!")
 
         def receive = {
           case Ping ⇒ sender ! PongMessage
