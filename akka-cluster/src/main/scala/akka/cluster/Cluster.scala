@@ -589,10 +589,7 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
       if (!state.compareAndSet(localState, newState)) joining(node) // recur if we failed update
       else {
         if (node != selfAddress) failureDetector heartbeat node
-
-        if (convergence(newState.latestGossip).isDefined) {
-          newState.memberMembershipChangeListeners foreach { _ notify newMembers }
-        }
+        notifyMembershipChangeListeners(localState, newState)
       }
     }
   }
@@ -623,10 +620,12 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
     }
   }
 
-  private def notifyMembershipChangeListeners(oldState: State, newState: State): Unit =
-    if (newState.latestGossip != oldState.latestGossip && convergence(newState.latestGossip).isDefined) {
+  private def notifyMembershipChangeListeners(oldState: State, newState: State): Unit = {
+    val oldMembersStatus = oldState.latestGossip.members.toSeq.map(m ⇒ (m.address, m.status))
+    val newMembersStatus = newState.latestGossip.members.toSeq.map(m ⇒ (m.address, m.status))
+    if (newMembersStatus != oldMembersStatus)
       newState.memberMembershipChangeListeners foreach { _ notify newState.latestGossip.members }
-    }
+  }
 
   /**
    * State transition to EXITING.

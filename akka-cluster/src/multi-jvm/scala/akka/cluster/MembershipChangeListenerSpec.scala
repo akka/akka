@@ -37,7 +37,6 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
       awaitClusterUp(first)
 
       runOn(first, second) {
-        cluster.join(firstAddress)
         val latch = TestLatch()
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
@@ -45,18 +44,19 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
               latch.countDown()
           }
         })
+        testConductor.enter("listener-1-registered")
+        cluster.join(firstAddress)
         latch.await
-        cluster.convergence.isDefined must be(true)
+      }
+
+      runOn(third) {
+        testConductor.enter("listener-1-registered")
       }
 
       testConductor.enter("after-1")
     }
 
     "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
-
-      runOn(third) {
-        cluster.join(firstAddress)
-      }
 
       val latch = TestLatch()
       cluster.registerListener(new MembershipChangeListener {
@@ -65,8 +65,13 @@ abstract class MembershipChangeListenerSpec extends MultiNodeSpec(MembershipChan
             latch.countDown()
         }
       })
+      testConductor.enter("listener-2-registered")
+
+      runOn(third) {
+        cluster.join(firstAddress)
+      }
+
       latch.await
-      cluster.convergence.isDefined must be(true)
 
       testConductor.enter("after-2")
     }

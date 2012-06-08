@@ -52,7 +52,7 @@ abstract class SunnyWeatherSpec
       }
 
       // add a few more
-      awaitClusterUp(first, second, third, fourth, fifth)
+      awaitClusterUp(roles: _*)
       log.info("5 joined")
 
       val unexpected = new AtomicReference[SortedSet[Member]]
