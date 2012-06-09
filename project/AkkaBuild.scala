@@ -111,6 +111,33 @@ object AkkaBuild extends Build {
     )
   ) configs (MultiJvm)
 
+  lazy val remoteRcl = Project(
+    id = "akka-remote-rcl",
+    base = file("akka-remote-rcl"),
+    dependencies = Seq(remote, actorTests % "test->test", testkit % "test->test"),
+    settings = defaultSettings ++ OSGi.remote ++ Seq(
+      libraryDependencies ++= Dependencies.remote,
+      // disable parallel tests
+      parallelExecution in Test := false
+    )
+  )
+
+  lazy val remoteRclTests = Project(
+    id = "akka-remote-rcl-tests",
+    base = file("akka-remote-rcl-tests"),
+    dependencies = Seq(remoteRcl, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      // disable parallel tests
+      parallelExecution in Test := false,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      },
+      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
+      jvmOptions in MultiJvm := defaultMultiJvmOptions ++ Seq("-javaagent:" + System.getProperty("user.home") + "/.m2/repository/com/typesafe/path-hole/1.0/path-hole-1.0.jar"),
+      previousArtifact := akkaPreviousArtifact("akka-remote-rcl")
+    )
+  ) configs (MultiJvm)
+
   lazy val cluster = Project(
     id = "akka-cluster",
     base = file("akka-cluster"),
@@ -173,7 +200,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ OSGi.mailboxesCommon ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes,
       previousArtifact := akkaPreviousArtifact("akka-mailboxes-common"),
-        // DurableMailboxSpec published in akka-mailboxes-common-test
+      // DurableMailboxSpec published in akka-mailboxes-common-test
       publishArtifact in Test := true
     )
   )
@@ -209,12 +236,12 @@ object AkkaBuild extends Build {
   )
 
   lazy val camel = Project(
-     id = "akka-camel",
-     base = file("akka-camel"),
-     dependencies = Seq(actor, slf4j, testkit % "test->test"),
-     settings = defaultSettings ++ OSGi.camel ++ Seq(
-       libraryDependencies ++= Dependencies.camel
-     )
+    id = "akka-camel",
+    base = file("akka-camel"),
+    dependencies = Seq(actor, slf4j, testkit % "test->test"),
+    settings = defaultSettings ++ OSGi.camel ++ Seq(
+      libraryDependencies ++= Dependencies.camel
+    )
   )
 
   lazy val akkaSbtPlugin = Project(
@@ -292,9 +319,9 @@ object AkkaBuild extends Build {
   // Settings
 
   override lazy val settings = super.settings ++ buildSettings ++ Seq(
-      resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
-      shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
-    )
+    resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
+    shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
+  )
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
@@ -314,7 +341,7 @@ object AkkaBuild extends Build {
       case null => Nil
       case x => List("-Dakka.test.timefactor=" + x)
     }) :::
-    (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
+      (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
   }
 
   // for excluding tests by name use system property: -Dakka.test.names.exclude=TimingSpec
@@ -353,8 +380,8 @@ object AkkaBuild extends Build {
   lazy val defaultMultiJvmScalatestOptions: Seq[String] = {
     val excludeTags = (useExcludeTestTags -- useIncludeTestTags).toSeq
     Seq("-r", "org.scalatest.akka.QuietReporter") ++
-    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", if (multiNodeEnabled) excludeTags.mkString("\"", " ", "\"") else excludeTags.mkString(" "))) ++
-    (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
+      (if (excludeTags.isEmpty) Seq.empty else Seq("-l", if (multiNodeEnabled) excludeTags.mkString("\"", " ", "\"") else excludeTags.mkString(" "))) ++
+      (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
   }
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ Seq(
@@ -400,9 +427,9 @@ object AkkaBuild extends Build {
   def formattingPreferences = {
     import scalariform.formatter.preferences._
     FormattingPreferences()
-    .setPreference(RewriteArrowSymbols, true)
-    .setPreference(AlignParameters, true)
-    .setPreference(AlignSingleLineCaseStatements, true)
+      .setPreference(RewriteArrowSymbols, true)
+      .setPreference(AlignParameters, true)
+      .setPreference(AlignSingleLineCaseStatements, true)
   }
 
   lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
@@ -512,6 +539,7 @@ object Dependency {
     val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
     val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
     val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
+    val path_hole   = "com.typesafe"                % "path-hole"           % "1.0"        % "test" from "https://github.com/avrecko/path-hole/raw/master/repository/com/typesafe/path-hole/1.0/path-hole-1.0.jar"
   }
 }
 
