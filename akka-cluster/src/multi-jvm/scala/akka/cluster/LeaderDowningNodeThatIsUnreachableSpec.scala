@@ -7,7 +7,7 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.actor.Address
+import akka.actor._
 import akka.util.duration._
 
 object LeaderDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
@@ -16,12 +16,9 @@ object LeaderDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = true).
+  commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
-      akka.cluster {
-        auto-down = on
-        failure-detector.threshold = 4
-      }
+      akka.cluster.auto-down = on
     """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
@@ -37,16 +34,29 @@ class LeaderDowningNodeThatIsUnreachableSpec
 
   import LeaderDowningNodeThatIsUnreachableMultiJvmSpec._
 
+  // Set up the puppet failure detector
+  lazy val failureDetector = new FailureDetectorPuppet(system = system)
+  lazy val clusterNode = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector)
+
+  override def cluster = clusterNode
+
+  lazy val firstAddress = node(first).address
+  lazy val secondAddress = node(second).address
+  lazy val thirdAddress = node(third).address
+  lazy val fourthAddress = node(fourth).address
+
   "The Leader in a 4 node cluster" must {
 
     "be able to DOWN a 'last' node that is UNREACHABLE" taggedAs LongRunningTest in {
-      val fourthAddress = node(fourth).address
       awaitClusterUp(first, second, third, fourth)
 
       runOn(first) {
         // kill 'fourth' node
         testConductor.shutdown(fourth, 0)
         testConductor.enter("down-fourth-node")
+
+        // mark the node as unreachable in the failure detector
+        failureDetector markAsDown fourthAddress
 
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
 
@@ -67,13 +77,15 @@ class LeaderDowningNodeThatIsUnreachableSpec
     }
 
     "be able to DOWN a 'middle' node that is UNREACHABLE" taggedAs LongRunningTest in {
-      val secondAddress = node(second).address
       testConductor.enter("before-down-second-node")
 
       runOn(first) {
         // kill 'second' node
         testConductor.shutdown(second, 0)
         testConductor.enter("down-second-node")
+
+        // mark the node as unreachable in the failure detector
+        failureDetector markAsDown secondAddress
 
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
 
