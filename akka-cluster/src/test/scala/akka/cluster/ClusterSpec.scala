@@ -33,7 +33,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
 
   val deterministicRandom = new AtomicInteger
 
-  val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem]) {
+  val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem], new FailureDetectorPuppet(system)) {
 
     override def selectRandomNode(addresses: IndexedSeq[Address]): Option[Address] = {
       if (addresses.isEmpty) None
@@ -67,9 +67,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
     @volatile
     var _unavailable: Set[Address] = Set.empty
 
-    override val failureDetector = new AccrualFailureDetector(
-      system, selfAddress, clusterSettings.FailureDetectorThreshold, clusterSettings.FailureDetectorMaxSampleSize) {
-
+    override val failureDetector = new AccrualFailureDetector(system, clusterSettings) {
       override def isAvailable(connection: Address): Boolean = {
         if (_unavailable.contains(connection)) false
         else super.isAvailable(connection)
