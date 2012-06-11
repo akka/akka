@@ -19,8 +19,8 @@ object NodeUpMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class NodeUpMultiJvmNode1 extends NodeUpSpec
-class NodeUpMultiJvmNode2 extends NodeUpSpec
+class NodeUpMultiJvmNode1 extends NodeUpSpec with FailureDetectorPuppetStrategy
+class NodeUpMultiJvmNode2 extends NodeUpSpec with FailureDetectorPuppetStrategy
 
 abstract class NodeUpSpec
   extends MultiNodeSpec(NodeUpMultiJvmSpec)

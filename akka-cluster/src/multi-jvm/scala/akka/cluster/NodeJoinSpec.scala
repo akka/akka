@@ -16,16 +16,12 @@ object NodeJoinMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
-        akka.cluster {
-          leader-actions-interval = 5 s # increase the leader action task interval
-        }
-      """)
-        .withFallback(MultiNodeClusterSpec.clusterConfig)))
+      .withFallback(ConfigFactory.parseString("akka.cluster.leader-actions-interval = 5 s") // increase the leader action task interval
+      .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
-class NodeJoinMultiJvmNode1 extends NodeJoinSpec
-class NodeJoinMultiJvmNode2 extends NodeJoinSpec
+class NodeJoinMultiJvmNode1 extends NodeJoinSpec with FailureDetectorPuppetStrategy
+class NodeJoinMultiJvmNode2 extends NodeJoinSpec with FailureDetectorPuppetStrategy
 
 abstract class NodeJoinSpec
   extends MultiNodeSpec(NodeJoinMultiJvmSpec)
