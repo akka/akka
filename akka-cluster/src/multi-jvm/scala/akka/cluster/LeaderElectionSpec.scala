@@ -19,11 +19,11 @@ object LeaderElectionMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class LeaderElectionMultiJvmNode1 extends LeaderElectionSpec
-class LeaderElectionMultiJvmNode2 extends LeaderElectionSpec
-class LeaderElectionMultiJvmNode3 extends LeaderElectionSpec
-class LeaderElectionMultiJvmNode4 extends LeaderElectionSpec
-class LeaderElectionMultiJvmNode5 extends LeaderElectionSpec
+class LeaderElectionMultiJvmNode1 extends LeaderElectionSpec with AccrualFailureDetectorStrategy
+class LeaderElectionMultiJvmNode2 extends LeaderElectionSpec with AccrualFailureDetectorStrategy
+class LeaderElectionMultiJvmNode3 extends LeaderElectionSpec with AccrualFailureDetectorStrategy
+class LeaderElectionMultiJvmNode4 extends LeaderElectionSpec with AccrualFailureDetectorStrategy
+class LeaderElectionMultiJvmNode5 extends LeaderElectionSpec with AccrualFailureDetectorStrategy
 
 abstract class LeaderElectionSpec
   extends MultiNodeSpec(LeaderElectionMultiJvmSpec)

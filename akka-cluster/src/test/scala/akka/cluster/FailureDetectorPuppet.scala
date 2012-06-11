@@ -28,12 +28,12 @@ class FailureDetectorPuppet(system: ActorSystem, settings: ClusterSettings) exte
 
   private val connections = new ConcurrentHashMap[Address, Status]
 
-  def markAsDown(connection: Address): this.type = {
+  def markNodeAsUnavailable(connection: Address): this.type = {
     connections.put(connection, Down)
     this
   }
 
-  def markAsUp(connection: Address): this.type = {
+  def markNodeAsAvailable(connection: Address): this.type = {
     connections.put(connection, Up)
     this
   }

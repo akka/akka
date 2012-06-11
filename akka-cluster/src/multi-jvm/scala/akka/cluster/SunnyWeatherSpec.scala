@@ -28,11 +28,11 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
     """))
 }
 
-class SunnyWeatherMultiJvmNode1 extends SunnyWeatherSpec
-class SunnyWeatherMultiJvmNode2 extends SunnyWeatherSpec
-class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec
-class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec
-class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec
+class SunnyWeatherMultiJvmNode1 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
+class SunnyWeatherMultiJvmNode2 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
+class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
+class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
+class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
 
 abstract class SunnyWeatherSpec
   extends MultiNodeSpec(SunnyWeatherMultiJvmSpec)

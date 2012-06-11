@@ -25,10 +25,10 @@ object ConvergenceMultiJvmSpec extends MultiNodeConfig {
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class ConvergenceMultiJvmNode1 extends ConvergenceSpec
-class ConvergenceMultiJvmNode2 extends ConvergenceSpec
-class ConvergenceMultiJvmNode3 extends ConvergenceSpec
-class ConvergenceMultiJvmNode4 extends ConvergenceSpec
+class ConvergenceMultiJvmNode1 extends ConvergenceSpec with AccrualFailureDetectorStrategy
+class ConvergenceMultiJvmNode2 extends ConvergenceSpec with AccrualFailureDetectorStrategy
+class ConvergenceMultiJvmNode3 extends ConvergenceSpec with AccrualFailureDetectorStrategy
+class ConvergenceMultiJvmNode4 extends ConvergenceSpec with AccrualFailureDetectorStrategy
 
 abstract class ConvergenceSpec
   extends MultiNodeSpec(ConvergenceMultiJvmSpec)

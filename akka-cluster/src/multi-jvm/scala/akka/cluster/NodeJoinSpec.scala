@@ -24,8 +24,8 @@ object NodeJoinMultiJvmSpec extends MultiNodeConfig {
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
-class NodeJoinMultiJvmNode1 extends NodeJoinSpec
-class NodeJoinMultiJvmNode2 extends NodeJoinSpec
+class NodeJoinMultiJvmNode1 extends NodeJoinSpec with AccrualFailureDetectorStrategy
+class NodeJoinMultiJvmNode2 extends NodeJoinSpec with AccrualFailureDetectorStrategy
 
 abstract class NodeJoinSpec
   extends MultiNodeSpec(NodeJoinMultiJvmSpec)

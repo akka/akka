@@ -5,7 +5,7 @@ package akka.cluster
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import akka.actor.Address
+import akka.actor.{Address, ExtendedActorSystem}
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -28,14 +28,19 @@ object MultiNodeClusterSpec {
     """)
 }
 
-trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends FailureDetectorStrategy { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
   /**
-   * Get or create a cluster node using 'Cluster(system)' extension.
+   * The cluster node instance. Needs to be lazily created.
    */
-  def cluster: Cluster = Cluster(system)
+  private lazy val clusterNode = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector)
+
+  /**
+   * Get the cluster node to use.
+   */
+  def cluster: Cluster = clusterNode
 
   /**
    * Use this method instead of 'cluster.self'
@@ -48,9 +53,7 @@ trait MultiNodeClusterSpec { self: MultiNodeSpec ⇒
    * nodes (roles). First node will be started first
    * and others will join the first.
    */
-  def startCluster(roles: RoleName*): Unit = {
-    awaitStartCluster(false, roles.toSeq)
-  }
+  def startCluster(roles: RoleName*): Unit = awaitStartCluster(false, roles.toSeq)
 
   /**
    * Initialize the cluster of the specified member

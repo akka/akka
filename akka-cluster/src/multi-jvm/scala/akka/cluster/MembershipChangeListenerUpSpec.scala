@@ -18,8 +18,8 @@ object MembershipChangeListenerUpMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class MembershipChangeListenerUpMultiJvmNode1 extends MembershipChangeListenerUpSpec
-class MembershipChangeListenerUpMultiJvmNode2 extends MembershipChangeListenerUpSpec
+class MembershipChangeListenerUpMultiJvmNode1 extends MembershipChangeListenerUpSpec with AccrualFailureDetectorStrategy
+class MembershipChangeListenerUpMultiJvmNode2 extends MembershipChangeListenerUpSpec with AccrualFailureDetectorStrategy
 
 abstract class MembershipChangeListenerUpSpec
   extends MultiNodeSpec(MembershipChangeListenerUpMultiJvmSpec)

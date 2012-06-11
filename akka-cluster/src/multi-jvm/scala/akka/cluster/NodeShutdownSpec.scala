@@ -24,8 +24,8 @@ object NodeShutdownMultiJvmSpec extends MultiNodeConfig {
 
 }
 
-class NodeShutdownMultiJvmNode1 extends NodeShutdownSpec
-class NodeShutdownMultiJvmNode2 extends NodeShutdownSpec
+class NodeShutdownMultiJvmNode1 extends NodeShutdownSpec with AccrualFailureDetectorStrategy
+class NodeShutdownMultiJvmNode2 extends NodeShutdownSpec with AccrualFailureDetectorStrategy
 
 abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) with MultiNodeClusterSpec {
   import NodeShutdownMultiJvmSpec._

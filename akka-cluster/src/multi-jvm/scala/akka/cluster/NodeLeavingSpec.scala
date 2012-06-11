@@ -22,9 +22,9 @@ object NodeLeavingMultiJvmSpec extends MultiNodeConfig {
       .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class NodeLeavingMultiJvmNode1 extends NodeLeavingSpec
-class NodeLeavingMultiJvmNode2 extends NodeLeavingSpec
-class NodeLeavingMultiJvmNode3 extends NodeLeavingSpec
+class NodeLeavingMultiJvmNode1 extends NodeLeavingSpec with AccrualFailureDetectorStrategy
+class NodeLeavingMultiJvmNode2 extends NodeLeavingSpec with AccrualFailureDetectorStrategy
+class NodeLeavingMultiJvmNode3 extends NodeLeavingSpec with AccrualFailureDetectorStrategy
 
 abstract class NodeLeavingSpec extends MultiNodeSpec(NodeLeavingMultiJvmSpec)
   with MultiNodeClusterSpec {

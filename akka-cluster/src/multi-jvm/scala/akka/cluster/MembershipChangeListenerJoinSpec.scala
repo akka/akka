@@ -25,8 +25,8 @@ object MembershipChangeListenerJoinMultiJvmSpec extends MultiNodeConfig {
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
-class MembershipChangeListenerJoinMultiJvmNode1 extends MembershipChangeListenerJoinSpec
-class MembershipChangeListenerJoinMultiJvmNode2 extends MembershipChangeListenerJoinSpec
+class MembershipChangeListenerJoinMultiJvmNode1 extends MembershipChangeListenerJoinSpec with AccrualFailureDetectorStrategy
+class MembershipChangeListenerJoinMultiJvmNode2 extends MembershipChangeListenerJoinSpec with AccrualFailureDetectorStrategy
 
 abstract class MembershipChangeListenerJoinSpec
   extends MultiNodeSpec(MembershipChangeListenerJoinMultiJvmSpec)

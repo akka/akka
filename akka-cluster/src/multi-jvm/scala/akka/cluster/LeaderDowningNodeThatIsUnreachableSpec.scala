@@ -23,22 +23,21 @@ object LeaderDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class LeaderDowningNodeThatIsUnreachableMultiJvmNode1 extends LeaderDowningNodeThatIsUnreachableSpec
-class LeaderDowningNodeThatIsUnreachableMultiJvmNode2 extends LeaderDowningNodeThatIsUnreachableSpec
-class LeaderDowningNodeThatIsUnreachableMultiJvmNode3 extends LeaderDowningNodeThatIsUnreachableSpec
-class LeaderDowningNodeThatIsUnreachableMultiJvmNode4 extends LeaderDowningNodeThatIsUnreachableSpec
+class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode1 extends LeaderDowningNodeThatIsUnreachableSpec with FailureDetectorPuppetStrategy
+class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode2 extends LeaderDowningNodeThatIsUnreachableSpec with FailureDetectorPuppetStrategy
+class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode3 extends LeaderDowningNodeThatIsUnreachableSpec with FailureDetectorPuppetStrategy
+class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode4 extends LeaderDowningNodeThatIsUnreachableSpec with FailureDetectorPuppetStrategy
 
-class LeaderDowningNodeThatIsUnreachableSpec
+class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode1 extends LeaderDowningNodeThatIsUnreachableSpec with AccrualFailureDetectorStrategy
+class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode2 extends LeaderDowningNodeThatIsUnreachableSpec with AccrualFailureDetectorStrategy
+class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode3 extends LeaderDowningNodeThatIsUnreachableSpec with AccrualFailureDetectorStrategy
+class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode4 extends LeaderDowningNodeThatIsUnreachableSpec with AccrualFailureDetectorStrategy
+
+abstract class LeaderDowningNodeThatIsUnreachableSpec
   extends MultiNodeSpec(LeaderDowningNodeThatIsUnreachableMultiJvmSpec)
   with MultiNodeClusterSpec {
 
   import LeaderDowningNodeThatIsUnreachableMultiJvmSpec._
-
-  // Set up the puppet failure detector
-  lazy val failureDetector = new FailureDetectorPuppet(system = system)
-  lazy val clusterNode = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector)
-
-  override def cluster = clusterNode
 
   "The Leader in a 4 node cluster" must {
 
@@ -52,7 +51,7 @@ class LeaderDowningNodeThatIsUnreachableSpec
         testConductor.enter("down-fourth-node")
 
         // mark the node as unreachable in the failure detector
-        failureDetector markAsDown fourthAddress
+        markNodeAsUnavailable(fourthAddress)
 
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
 
@@ -82,7 +81,7 @@ class LeaderDowningNodeThatIsUnreachableSpec
         testConductor.enter("down-second-node")
 
         // mark the node as unreachable in the failure detector
-        failureDetector markAsDown secondAddress
+        markNodeAsUnavailable(secondAddress)
 
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
 
