@@ -4,17 +4,13 @@
 
 package akka.remote.netty
 
-import _root_.java.security.Provider
-import _root_.java.security.SecureRandom
-import _root_.java.security.Security
 import org.jboss.netty.handler.ssl.SslHandler
 import javax.net.ssl.{ KeyManagerFactory, TrustManager, TrustManagerFactory, SSLContext }
-import akka.remote.{ RemoteTransportException }
+import akka.remote.RemoteTransportException
 import akka.event.LoggingAdapter
 import java.io.{ IOException, FileNotFoundException, FileInputStream }
-import java.security.{ SecureRandom, GeneralSecurityException, KeyStore }
+import java.security.{ SecureRandom, GeneralSecurityException, KeyStore, Security }
 import akka.security.provider.AkkaProvider
-import com.sun.xml.internal.bind.v2.model.core.NonElement
 
 /**
  * Used for adding SSL support to Netty pipeline
@@ -31,50 +27,29 @@ private object NettySSLSupport {
 
   private def initialiseCustomSecureRandom(settings: NettySettings, log: LoggingAdapter): SecureRandom = {
     /**
-     * According to this bug report: http://bugs.sun.com/view_bug.do;jsessionid=ff625daf459fdffffffffcd54f1c775299e0?bug_id=6202721
+     * According to this bug report: http://bugs.sun.com/view_bug.do?bug_id=6202721
      * Using /dev/./urandom is only necessary when using SHA1PRNG on Linux
      * <quote>Use 'new SecureRandom()' instead of 'SecureRandom.getInstance("SHA1PRNG")'</quote> to avoid having problems
      */
-    settings.SSLRandomSource match {
-      case Some(path) ⇒ System.setProperty("java.security.egd", path)
-      case None       ⇒
-    }
+    settings.SSLRandomSource foreach { path ⇒ System.setProperty("java.security.egd", path) }
 
     val rng = settings.SSLRandomNumberGenerator match {
-      case Some(generator) ⇒ generator match {
-        case "AES128CounterRNGFast" ⇒ {
-          log.debug("SSL random number generator set to: AES128CounterRNGFast")
-          val akka = new AkkaProvider
-          Security.addProvider(akka)
-          SecureRandom.getInstance("AES128CounterRNGFast", akka)
-        }
-        case "AES128CounterRNGSecure" ⇒ {
-          log.debug("SSL random number generator set to: AES128CounterRNGSecure")
-          val akka = new AkkaProvider
-          Security.addProvider(akka)
-          SecureRandom.getInstance("AES128CounterRNGSecure", akka)
-        }
-        case "AES256CounterRNGSecure" ⇒ {
-          log.debug("SSL random number generator set to: AES256CounterRNGSecure")
-          val akka = new AkkaProvider
-          Security.addProvider(akka)
-          SecureRandom.getInstance("AES256CounterRNGSecure", akka)
-        }
-        case "SHA1PRNG" ⇒ {
-          log.debug("SSL random number generator set to: SHA1PRNG")
-          // This needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
-          // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
-          SecureRandom.getInstance("SHA1PRNG")
-        }
-        case _ ⇒ {
-          log.debug("SSL random number generator set to default: SecureRandom")
-          new SecureRandom
-        }
-      }
-      case None ⇒ {
-        log.debug("SSL random number generator not set. Setting to default: SecureRandom")
+      case Some(r @ ("AES128CounterRNGFast" | "AES128CounterRNGSecure" | "AES256CounterRNGSecure")) ⇒
+        log.debug("SSL random number generator set to: {}", r)
+        val akka = new AkkaProvider
+        Security.addProvider(akka)
+        SecureRandom.getInstance(r, akka)
+      case Some("SHA1PRNG") ⇒
+        log.debug("SSL random number generator set to: SHA1PRNG")
+        // This needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
+        // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
+        SecureRandom.getInstance("SHA1PRNG")
+      case Some(unknown) ⇒
+        log.debug("Unknown SSLRandomNumberGenerator [{}] falling back to SecureRandom", unknown)
         new SecureRandom
-      }
+      case None ⇒
+        log.debug("SSLRandomNumberGenerator not specified, falling back to SecureRandom")
+        new SecureRandom
     }
     // prevent stall on first access
     rng.nextInt()
