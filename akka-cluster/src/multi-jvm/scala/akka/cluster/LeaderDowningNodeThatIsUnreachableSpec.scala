@@ -40,16 +40,12 @@ class LeaderDowningNodeThatIsUnreachableSpec
 
   override def cluster = clusterNode
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-  lazy val thirdAddress = node(third).address
-  lazy val fourthAddress = node(fourth).address
-
   "The Leader in a 4 node cluster" must {
 
     "be able to DOWN a 'last' node that is UNREACHABLE" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third, fourth)
 
+      val fourthAddress = node(fourth).address
       runOn(first) {
         // kill 'fourth' node
         testConductor.shutdown(fourth, 0)
@@ -77,8 +73,9 @@ class LeaderDowningNodeThatIsUnreachableSpec
     }
 
     "be able to DOWN a 'middle' node that is UNREACHABLE" taggedAs LongRunningTest in {
-      testConductor.enter("before-down-second-node")
+      val secondAddress = node(second).address
 
+      testConductor.enter("before-down-second-node")
       runOn(first) {
         // kill 'second' node
         testConductor.shutdown(second, 0)
