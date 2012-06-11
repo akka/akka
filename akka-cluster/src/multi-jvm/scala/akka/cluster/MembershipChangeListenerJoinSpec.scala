@@ -17,16 +17,12 @@ object MembershipChangeListenerJoinMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
-        akka.cluster {
-          leader-actions-interval = 5 s # increase the leader action task interval to allow time checking for JOIN before leader moves it to UP
-        }
-      """)
-        .withFallback(MultiNodeClusterSpec.clusterConfig)))
+      .withFallback(ConfigFactory.parseString("akka.cluster.leader-actions-interval = 5 s") // increase the leader action task interval to allow time checking for JOIN before leader moves it to UP
+      .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
-class MembershipChangeListenerJoinMultiJvmNode1 extends MembershipChangeListenerJoinSpec
-class MembershipChangeListenerJoinMultiJvmNode2 extends MembershipChangeListenerJoinSpec
+class MembershipChangeListenerJoinMultiJvmNode1 extends MembershipChangeListenerJoinSpec with FailureDetectorPuppetStrategy
+class MembershipChangeListenerJoinMultiJvmNode2 extends MembershipChangeListenerJoinSpec with FailureDetectorPuppetStrategy
 
 abstract class MembershipChangeListenerJoinSpec
   extends MultiNodeSpec(MembershipChangeListenerJoinMultiJvmSpec)

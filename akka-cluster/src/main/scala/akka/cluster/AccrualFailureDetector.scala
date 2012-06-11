@@ -4,7 +4,8 @@
 
 package akka.cluster
 
-import akka.actor.{ ActorSystem, Address }
+import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
+import akka.remote.RemoteActorRefProvider
 import akka.event.Logging
 
 import scala.collection.immutable.Map
@@ -23,11 +24,20 @@ import java.util.concurrent.atomic.AtomicReference
  * Default threshold is 8, but can be configured in the Akka config.
  */
 class AccrualFailureDetector(
-  system: ActorSystem,
-  address: Address,
+  val system: ActorSystem,
   val threshold: Int = 8,
   val maxSampleSize: Int = 1000,
-  val timeMachine: () ⇒ Long = System.currentTimeMillis) {
+  val timeMachine: () ⇒ Long = System.currentTimeMillis) extends FailureDetector {
+
+  def this(
+    system: ActorSystem,
+    settings: ClusterSettings,
+    timeMachine: () ⇒ Long = System.currentTimeMillis) =
+    this(
+      system,
+      settings.FailureDetectorThreshold,
+      settings.FailureDetectorMaxSampleSize,
+      timeMachine)
 
   private final val PhiFactor = 1.0 / math.log(10.0)
 
@@ -66,8 +76,7 @@ class AccrualFailureDetector(
    */
   @tailrec
   final def heartbeat(connection: Address) {
-    // FIXME change to debug log level, when failure detector is stable
-    log.info("Node [{}] - Heartbeat from connection [{}] ", address, connection)
+    log.debug("Heartbeat from connection [{}] ", connection)
 
     val oldState = state.get
     val latestTimestamp = oldState.timestamps.get(connection)
@@ -157,7 +166,7 @@ class AccrualFailureDetector(
       }
 
     // FIXME change to debug log level, when failure detector is stable
-    log.info("Node [{}] - Phi value [{}] and threshold [{}] for connection [{}] ", address, phi, threshold, connection)
+    log.info("Phi value [{}] and threshold [{}] for connection [{}] ", phi, threshold, connection)
     phi
   }
 
@@ -165,8 +174,8 @@ class AccrualFailureDetector(
    * Removes the heartbeat management for a connection.
    */
   @tailrec
-  final def remove(connection: Address) {
-    log.debug("Node [{}] - Remove connection [{}] ", address, connection)
+  final def remove(connection: Address): Unit = {
+    log.debug("Remove connection [{}] ", connection)
     val oldState = state.get
 
     if (oldState.failureStats.contains(connection)) {
