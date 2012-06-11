@@ -364,5 +364,39 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
       system.stop(supervisor)
     }
+
+    "must not lose system messages when a NonFatal exception occurs when processing a system message" in {
+      val parent = system.actorOf(Props(new Actor {
+        override val supervisorStrategy = OneForOneStrategy()({
+          case e: IllegalStateException if e.getMessage == "OHNOES" ⇒ throw e
+          case _ ⇒ SupervisorStrategy.Restart
+        })
+        val child = context.watch(context.actorOf(Props(new Actor {
+          override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
+          def receive = {
+            case "die"  ⇒ throw new IllegalStateException("OHNOES")
+            case "test" ⇒ sender ! "child green"
+          }
+        }), "child"))
+
+        override def postRestart(reason: Throwable): Unit = testActor ! "parent restarted"
+
+        def receive = {
+          case t @ Terminated(`child`) ⇒ testActor ! "child terminated"
+          case "die"                   ⇒ child ! "die"
+          case "test"                  ⇒ sender ! "green"
+          case "testchild"             ⇒ child forward "test"
+        }
+      }))
+
+      parent ! "die"
+      parent ! "testchild"
+      expectMsg("parent restarted")
+      expectMsg("child terminated")
+      parent ! "test"
+      expectMsg("green")
+      parent ! "testchild"
+      expectMsg("child green")
+    }
   }
 }

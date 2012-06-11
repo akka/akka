@@ -9,7 +9,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.util.duration._
 
-object NodeShutdownMultiJvmSpec extends MultiNodeConfig {
+object SingletonClusterMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
@@ -24,17 +24,17 @@ object NodeShutdownMultiJvmSpec extends MultiNodeConfig {
 
 }
 
-class NodeShutdownWithFailureDetectorPuppetMultiJvmNode1 extends NodeShutdownSpec with FailureDetectorPuppetStrategy
-class NodeShutdownWithFailureDetectorPuppetMultiJvmNode2 extends NodeShutdownSpec with FailureDetectorPuppetStrategy
+class SingletonClusterWithFailureDetectorPuppetMultiJvmNode1 extends SingletonClusterSpec with FailureDetectorPuppetStrategy
+class SingletonClusterWithFailureDetectorPuppetMultiJvmNode2 extends SingletonClusterSpec with FailureDetectorPuppetStrategy
 
-class NodeShutdownWithAccrualFailureDetectorMultiJvmNode1 extends NodeShutdownSpec with AccrualFailureDetectorStrategy
-class NodeShutdownWithAccrualFailureDetectorMultiJvmNode2 extends NodeShutdownSpec with AccrualFailureDetectorStrategy
+class SingletonClusterWithAccrualFailureDetectorMultiJvmNode1 extends SingletonClusterSpec with AccrualFailureDetectorStrategy
+class SingletonClusterWithAccrualFailureDetectorMultiJvmNode2 extends SingletonClusterSpec with AccrualFailureDetectorStrategy
 
-abstract class NodeShutdownSpec
-  extends MultiNodeSpec(NodeShutdownMultiJvmSpec)
+abstract class SingletonClusterSpec
+  extends MultiNodeSpec(SingletonClusterMultiJvmSpec)
   with MultiNodeClusterSpec {
 
-  import NodeShutdownMultiJvmSpec._
+  import SingletonClusterMultiJvmSpec._
 
   "A cluster of 2 nodes" must {
 

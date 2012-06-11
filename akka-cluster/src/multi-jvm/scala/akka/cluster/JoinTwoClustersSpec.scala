@@ -17,7 +17,7 @@ object JoinTwoClustersMultiJvmSpec extends MultiNodeConfig {
   val c1 = role("c1")
   val c2 = role("c2")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = true).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class JoinTwoClustersMultiJvmNode1 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
