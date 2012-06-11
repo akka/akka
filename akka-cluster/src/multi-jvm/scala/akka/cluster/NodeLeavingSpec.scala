@@ -16,18 +16,18 @@ object NodeLeavingMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("""
-        akka.cluster.unreachable-nodes-reaper-frequency = 30 s
-      """))
+      .withFallback(ConfigFactory.parseString("akka.cluster.unreachable-nodes-reaper-frequency = 30 s"))
       .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class NodeLeavingMultiJvmNode1 extends NodeLeavingSpec
-class NodeLeavingMultiJvmNode2 extends NodeLeavingSpec
-class NodeLeavingMultiJvmNode3 extends NodeLeavingSpec
+class NodeLeavingMultiJvmNode1 extends NodeLeavingSpec with FailureDetectorPuppetStrategy
+class NodeLeavingMultiJvmNode2 extends NodeLeavingSpec with FailureDetectorPuppetStrategy
+class NodeLeavingMultiJvmNode3 extends NodeLeavingSpec with FailureDetectorPuppetStrategy
 
-abstract class NodeLeavingSpec extends MultiNodeSpec(NodeLeavingMultiJvmSpec)
+abstract class NodeLeavingSpec
+  extends MultiNodeSpec(NodeLeavingMultiJvmSpec)
   with MultiNodeClusterSpec {
+
   import NodeLeavingMultiJvmSpec._
 
   lazy val firstAddress = node(first).address

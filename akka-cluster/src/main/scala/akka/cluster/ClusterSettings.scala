@@ -15,6 +15,10 @@ class ClusterSettings(val config: Config, val systemName: String) {
   import config._
   val FailureDetectorThreshold = getInt("akka.cluster.failure-detector.threshold")
   val FailureDetectorMaxSampleSize = getInt("akka.cluster.failure-detector.max-sample-size")
+  val FailureDetectorImplementationClass: Option[String] = getString("akka.cluster.failure-detector.implementation-class") match {
+    case ""   ⇒ None
+    case fqcn ⇒ Some(fqcn)
+  }
   val NodeToJoin: Option[Address] = getString("akka.cluster.node-to-join") match {
     case ""                         ⇒ None
     case AddressFromURIString(addr) ⇒ Some(addr)

@@ -16,7 +16,7 @@ object SingletonClusterMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster {
-        auto-down = on
+        auto-down                  = on
         failure-detector.threshold = 4
       }
     """)).
@@ -24,10 +24,16 @@ object SingletonClusterMultiJvmSpec extends MultiNodeConfig {
 
 }
 
-class SingletonClusterMultiJvmNode1 extends SingletonClusterSpec
-class SingletonClusterMultiJvmNode2 extends SingletonClusterSpec
+class SingletonClusterWithFailureDetectorPuppetMultiJvmNode1 extends SingletonClusterSpec with FailureDetectorPuppetStrategy
+class SingletonClusterWithFailureDetectorPuppetMultiJvmNode2 extends SingletonClusterSpec with FailureDetectorPuppetStrategy
 
-abstract class SingletonClusterSpec extends MultiNodeSpec(SingletonClusterMultiJvmSpec) with MultiNodeClusterSpec {
+class SingletonClusterWithAccrualFailureDetectorMultiJvmNode1 extends SingletonClusterSpec with AccrualFailureDetectorStrategy
+class SingletonClusterWithAccrualFailureDetectorMultiJvmNode2 extends SingletonClusterSpec with AccrualFailureDetectorStrategy
+
+abstract class SingletonClusterSpec
+  extends MultiNodeSpec(SingletonClusterMultiJvmSpec)
+  with MultiNodeClusterSpec {
+
   import SingletonClusterMultiJvmSpec._
 
   "A cluster of 2 nodes" must {
@@ -44,6 +50,9 @@ abstract class SingletonClusterSpec extends MultiNodeSpec(SingletonClusterMultiJ
       runOn(first) {
         val secondAddress = node(second).address
         testConductor.shutdown(second, 0)
+
+        markNodeAsUnavailable(secondAddress)
+
         awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Seq(secondAddress), 30.seconds)
         cluster.isSingletonCluster must be(true)
         assertLeader(first)

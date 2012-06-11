@@ -28,7 +28,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
     }
 
     "return phi value of 0.0 on startup for each address, when no heartbeats" in {
-      val fd = new AccrualFailureDetector(system, conn)
+      val fd = new AccrualFailureDetector(system)
       fd.phi(conn) must be(0.0)
       fd.phi(conn2) must be(0.0)
     }
@@ -36,7 +36,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
     "return phi based on guess when only one heartbeat" in {
       // 1 second ticks
       val timeInterval = Vector.fill(30)(1000L)
-      val fd = new AccrualFailureDetector(system, conn,
+      val fd = new AccrualFailureDetector(system,
         timeMachine = fakeTimeGenerator(timeInterval))
 
       fd.heartbeat(conn)
@@ -52,7 +52,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 
     "return phi value using first interval after second heartbeat" in {
       val timeInterval = List[Long](0, 100, 100, 100)
-      val fd = new AccrualFailureDetector(system, conn,
+      val fd = new AccrualFailureDetector(system,
         timeMachine = fakeTimeGenerator(timeInterval))
 
       fd.heartbeat(conn)
@@ -63,7 +63,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 
     "mark node as available after a series of successful heartbeats" in {
       val timeInterval = List[Long](0, 1000, 100, 100)
-      val fd = new AccrualFailureDetector(system, conn,
+      val fd = new AccrualFailureDetector(system,
         timeMachine = fakeTimeGenerator(timeInterval))
 
       fd.heartbeat(conn)
@@ -75,7 +75,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 
     "mark node as dead after explicit removal of connection" in {
       val timeInterval = List[Long](0, 1000, 100, 100, 100)
-      val fd = new AccrualFailureDetector(system, conn,
+      val fd = new AccrualFailureDetector(system,
         timeMachine = fakeTimeGenerator(timeInterval))
 
       fd.heartbeat(conn)
@@ -89,7 +89,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 
     "mark node as available after explicit removal of connection and receiving heartbeat again" in {
       val timeInterval = List[Long](0, 1000, 100, 1100, 1100, 1100, 1100, 1100, 100)
-      val fd = new AccrualFailureDetector(system, conn,
+      val fd = new AccrualFailureDetector(system,
         timeMachine = fakeTimeGenerator(timeInterval))
 
       fd.heartbeat(conn) //0
@@ -114,7 +114,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
     "mark node as dead if heartbeat are missed" in {
       val timeInterval = List[Long](0, 1000, 100, 100, 5000)
       val ft = fakeTimeGenerator(timeInterval)
-      val fd = new AccrualFailureDetector(system, conn, threshold = 3,
+      val fd = new AccrualFailureDetector(system, threshold = 3,
         timeMachine = fakeTimeGenerator(timeInterval))
 
       fd.heartbeat(conn) //0
@@ -127,7 +127,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 
     "mark node as available if it starts heartbeat again after being marked dead due to detection of failure" in {
       val timeInterval = List[Long](0, 1000, 100, 1100, 5000, 100, 1000, 100, 100)
-      val fd = new AccrualFailureDetector(system, conn, threshold = 3,
+      val fd = new AccrualFailureDetector(system, threshold = 3,
         timeMachine = fakeTimeGenerator(timeInterval))
 
       fd.heartbeat(conn) //0
@@ -144,7 +144,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 
     "use maxSampleSize heartbeats" in {
       val timeInterval = List[Long](0, 100, 100, 100, 100, 600, 1000, 1000, 1000, 1000, 1000)
-      val fd = new AccrualFailureDetector(system, conn, maxSampleSize = 3,
+      val fd = new AccrualFailureDetector(system, maxSampleSize = 3,
         timeMachine = fakeTimeGenerator(timeInterval))
 
       // 100 ms interval
