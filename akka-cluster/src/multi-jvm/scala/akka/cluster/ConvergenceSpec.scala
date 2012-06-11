@@ -17,22 +17,24 @@ object ConvergenceMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
-      akka.cluster {
-        failure-detector.threshold = 4
-      }
-    """)).
+    withFallback(ConfigFactory.parseString("akka.cluster.failure-detector.threshold = 4")).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class ConvergenceMultiJvmNode1 extends ConvergenceSpec with AccrualFailureDetectorStrategy
-class ConvergenceMultiJvmNode2 extends ConvergenceSpec with AccrualFailureDetectorStrategy
-class ConvergenceMultiJvmNode3 extends ConvergenceSpec with AccrualFailureDetectorStrategy
-class ConvergenceMultiJvmNode4 extends ConvergenceSpec with AccrualFailureDetectorStrategy
+class ConvergenceWithFailureDetectorPuppetMultiJvmNode1 extends ConvergenceSpec with FailureDetectorPuppetStrategy
+class ConvergenceWithFailureDetectorPuppetMultiJvmNode2 extends ConvergenceSpec with FailureDetectorPuppetStrategy
+class ConvergenceWithFailureDetectorPuppetMultiJvmNode3 extends ConvergenceSpec with FailureDetectorPuppetStrategy
+class ConvergenceWithFailureDetectorPuppetMultiJvmNode4 extends ConvergenceSpec with FailureDetectorPuppetStrategy
+
+class ConvergenceWithAccrualFailureDetectorMultiJvmNode1 extends ConvergenceSpec with AccrualFailureDetectorStrategy
+class ConvergenceWithAccrualFailureDetectorMultiJvmNode2 extends ConvergenceSpec with AccrualFailureDetectorStrategy
+class ConvergenceWithAccrualFailureDetectorMultiJvmNode3 extends ConvergenceSpec with AccrualFailureDetectorStrategy
+class ConvergenceWithAccrualFailureDetectorMultiJvmNode4 extends ConvergenceSpec with AccrualFailureDetectorStrategy
 
 abstract class ConvergenceSpec
   extends MultiNodeSpec(ConvergenceMultiJvmSpec)
   with MultiNodeClusterSpec {
+
   import ConvergenceMultiJvmSpec._
 
   "A cluster of 3 members" must {
@@ -54,6 +56,7 @@ abstract class ConvergenceSpec
       runOn(first) {
         // kill 'third' node
         testConductor.shutdown(third, 0)
+        markNodeAsUnavailable(thirdAddress)
       }
 
       runOn(first, second) {

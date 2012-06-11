@@ -16,7 +16,7 @@ object NodeShutdownMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster {
-        auto-down = on
+        auto-down                  = on
         failure-detector.threshold = 4
       }
     """)).
@@ -24,10 +24,16 @@ object NodeShutdownMultiJvmSpec extends MultiNodeConfig {
 
 }
 
-class NodeShutdownMultiJvmNode1 extends NodeShutdownSpec with AccrualFailureDetectorStrategy
-class NodeShutdownMultiJvmNode2 extends NodeShutdownSpec with AccrualFailureDetectorStrategy
+class NodeShutdownWithFailureDetectorPuppetMultiJvmNode1 extends NodeShutdownSpec with FailureDetectorPuppetStrategy
+class NodeShutdownWithFailureDetectorPuppetMultiJvmNode2 extends NodeShutdownSpec with FailureDetectorPuppetStrategy
 
-abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) with MultiNodeClusterSpec {
+class NodeShutdownWithAccrualFailureDetectorMultiJvmNode1 extends NodeShutdownSpec with AccrualFailureDetectorStrategy
+class NodeShutdownWithAccrualFailureDetectorMultiJvmNode2 extends NodeShutdownSpec with AccrualFailureDetectorStrategy
+
+abstract class NodeShutdownSpec
+  extends MultiNodeSpec(NodeShutdownMultiJvmSpec)
+  with MultiNodeClusterSpec {
+
   import NodeShutdownMultiJvmSpec._
 
   "A cluster of 2 nodes" must {
@@ -44,6 +50,9 @@ abstract class NodeShutdownSpec extends MultiNodeSpec(NodeShutdownMultiJvmSpec) 
       runOn(first) {
         val secondAddress = node(second).address
         testConductor.shutdown(second, 0)
+
+        markNodeAsUnavailable(secondAddress)
+
         awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Seq(secondAddress), 30.seconds)
         cluster.isSingletonCluster must be(true)
         assertLeader(first)

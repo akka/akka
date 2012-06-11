@@ -26,9 +26,9 @@ object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
-class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec with AccrualFailureDetectorStrategy
-class NodeLeavingAndExitingMultiJvmNode2 extends NodeLeavingAndExitingSpec with AccrualFailureDetectorStrategy
-class NodeLeavingAndExitingMultiJvmNode3 extends NodeLeavingAndExitingSpec with AccrualFailureDetectorStrategy
+class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec with FailureDetectorPuppetStrategy
+class NodeLeavingAndExitingMultiJvmNode2 extends NodeLeavingAndExitingSpec with FailureDetectorPuppetStrategy
+class NodeLeavingAndExitingMultiJvmNode3 extends NodeLeavingAndExitingSpec with FailureDetectorPuppetStrategy
 
 abstract class NodeLeavingAndExitingSpec
   extends MultiNodeSpec(NodeLeavingAndExitingMultiJvmSpec)

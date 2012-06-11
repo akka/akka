@@ -16,9 +16,9 @@ object NodeMembershipMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec with AccrualFailureDetectorStrategy
-class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec with AccrualFailureDetectorStrategy
-class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec with AccrualFailureDetectorStrategy
+class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec with FailureDetectorPuppetStrategy
+class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec with FailureDetectorPuppetStrategy
+class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec with FailureDetectorPuppetStrategy
 
 abstract class NodeMembershipSpec
   extends MultiNodeSpec(NodeMembershipMultiJvmSpec)

@@ -5,21 +5,21 @@ package akka.cluster
 
 import scala.collection.immutable.SortedSet
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.util.duration._
 
 object MembershipChangeListenerUpMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
+  val third = role("third")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class MembershipChangeListenerUpMultiJvmNode1 extends MembershipChangeListenerUpSpec with AccrualFailureDetectorStrategy
-class MembershipChangeListenerUpMultiJvmNode2 extends MembershipChangeListenerUpSpec with AccrualFailureDetectorStrategy
+class MembershipChangeListenerUpMultiJvmNode1 extends MembershipChangeListenerUpSpec with FailureDetectorPuppetStrategy
+class MembershipChangeListenerUpMultiJvmNode2 extends MembershipChangeListenerUpSpec with FailureDetectorPuppetStrategy
+class MembershipChangeListenerUpMultiJvmNode3 extends MembershipChangeListenerUpSpec with FailureDetectorPuppetStrategy
 
 abstract class MembershipChangeListenerUpSpec
   extends MultiNodeSpec(MembershipChangeListenerUpMultiJvmSpec)
@@ -30,29 +30,50 @@ abstract class MembershipChangeListenerUpSpec
   lazy val firstAddress = node(first).address
   lazy val secondAddress = node(second).address
 
-  "A registered MembershipChangeListener" must {
-    "be notified when new node is marked as UP by the leader" taggedAs LongRunningTest in {
+  "A set of connected cluster systems" must {
 
-      runOn(first) {
-        val upLatch = TestLatch()
+    "(when two nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
+
+      awaitClusterUp(first)
+
+      runOn(first, second) {
+        val latch = TestLatch()
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
             if (members.size == 2 && members.forall(_.status == MemberStatus.Up))
-              upLatch.countDown()
+              latch.countDown()
           }
         })
-        testConductor.enter("registered-listener")
-
-        upLatch.await
-        awaitUpConvergence(numberOfMembers = 2)
+        testConductor.enter("listener-1-registered")
+        cluster.join(firstAddress)
+        latch.await
       }
 
-      runOn(second) {
-        testConductor.enter("registered-listener")
+      runOn(third) {
+        testConductor.enter("listener-1-registered")
+      }
+
+      testConductor.enter("after-1")
+    }
+
+    "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
+
+      val latch = TestLatch()
+      cluster.registerListener(new MembershipChangeListener {
+        def notify(members: SortedSet[Member]) {
+          if (members.size == 3 && members.forall(_.status == MemberStatus.Up))
+            latch.countDown()
+        }
+      })
+      testConductor.enter("listener-2-registered")
+
+      runOn(third) {
         cluster.join(firstAddress)
       }
 
-      testConductor.enter("after")
+      latch.await
+
+      testConductor.enter("after-2")
     }
   }
 }

@@ -21,18 +21,18 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
     akka.cluster {
-      gossip-interval = 400 ms
+      gossip-interval    = 400 ms
       nr-of-deputy-nodes = 0
     }
     akka.loglevel = INFO
     """))
 }
 
-class SunnyWeatherMultiJvmNode1 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
-class SunnyWeatherMultiJvmNode2 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
-class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
-class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
-class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
+class SunnyWeatherMultiJvmNode1 extends SunnyWeatherSpec with FailureDetectorPuppetStrategy
+class SunnyWeatherMultiJvmNode2 extends SunnyWeatherSpec with FailureDetectorPuppetStrategy
+class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec with FailureDetectorPuppetStrategy
+class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec with FailureDetectorPuppetStrategy
+class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec with FailureDetectorPuppetStrategy
 
 abstract class SunnyWeatherSpec
   extends MultiNodeSpec(SunnyWeatherMultiJvmSpec)
