@@ -12,7 +12,7 @@ import java.util.concurrent.Executors
 import scala.collection.mutable.HashMap
 import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroupFuture }
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
-import org.jboss.netty.channel.{ ChannelHandlerContext, Channel, StaticChannelPipeline, ChannelHandler, ChannelPipelineFactory, ChannelLocal }
+import org.jboss.netty.channel.{ ChannelHandlerContext, Channel, DefaultChannelPipeline, ChannelHandler, ChannelPipelineFactory, ChannelLocal }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufEncoder, ProtobufDecoder }
 import org.jboss.netty.handler.execution.{ ExecutionHandler, OrderedMemoryAwareThreadPoolExecutor }
@@ -50,10 +50,13 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
    */
   object PipelineFactory {
     /**
-     * Construct a StaticChannelPipeline from a sequence of handlers; to be used
+     * Construct a DefaultChannelPipeline from a sequence of handlers; to be used
      * in implementations of ChannelPipelineFactory.
      */
-    def apply(handlers: Seq[ChannelHandler]): StaticChannelPipeline = new StaticChannelPipeline(handlers: _*)
+    def apply(handlers: Seq[ChannelHandler]): DefaultChannelPipeline =
+      handlers.foldLeft(new DefaultChannelPipeline) {
+        (pipe, handler) ⇒ pipe.addLast(Logging.simpleName(handler.getClass), handler); pipe
+      }
 
     /**
      * Constructs the NettyRemoteTransport default pipeline with the give “head” handler, which
