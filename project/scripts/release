@@ -93,7 +93,7 @@ fi
 declare -r version=$1
 declare -r publish_path="${release_server}:${release_path}"
 
-[[ `java -version 2>&1 | grep "java version" | awk '{print $3}' | tr -d \" | awk '{split($0, array, ".")} END{print array[2]}'` -eq 6 ]] || fail "Java version is not 1.6"
+[[ `java -version 2>&1 | head -1 | cut -d ' ' -f3 | cut -d '.' -f2` -eq 6 ]] || fail "Java version is not 1.6"
 
 # check for a git command
 type -P git &> /dev/null || fail "git command not found"
