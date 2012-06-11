@@ -24,7 +24,7 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
       gossip-interval = 400 ms
       nr-of-deputy-nodes = 0
     }
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     """))
 }
 

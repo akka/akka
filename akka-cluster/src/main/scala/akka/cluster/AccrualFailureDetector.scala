@@ -66,7 +66,8 @@ class AccrualFailureDetector(
    */
   @tailrec
   final def heartbeat(connection: Address) {
-    log.debug("Node [{}] - Heartbeat from connection [{}] ", address, connection)
+    // FIXME change to debug log level, when failure detector is stable
+    log.info("Node [{}] - Heartbeat from connection [{}] ", address, connection)
 
     val oldState = state.get
     val latestTimestamp = oldState.timestamps.get(connection)
@@ -155,7 +156,8 @@ class AccrualFailureDetector(
         else PhiFactor * timestampDiff / mean
       }
 
-    log.debug("Node [{}] - Phi value [{}] and threshold [{}] for connection [{}] ", address, phi, threshold, connection)
+    // FIXME change to debug log level, when failure detector is stable
+    log.info("Node [{}] - Phi value [{}] and threshold [{}] for connection [{}] ", address, phi, threshold, connection)
     phi
   }
 
