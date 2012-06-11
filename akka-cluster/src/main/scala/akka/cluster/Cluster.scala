@@ -23,6 +23,8 @@ import javax.management._
 import scala.collection.immutable.{ Map, SortedSet }
 import scala.annotation.tailrec
 import com.google.protobuf.ByteString
+import akka.util.internal.HashedWheelTimer
+import akka.dispatch.MonitorableThreadFactory
 
 /**
  * Interface for membership change listener.
@@ -422,27 +424,34 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   // ===================== WORK DAEMONS =====================
   // ========================================================
 
+  private def hwt = new HashedWheelTimer(log,
+    MonitorableThreadFactory(system.name + "-cluster-scheduler", system.settings.Daemonicity, None), 50.millis,
+    system.settings.SchedulerTicksPerWheel)
+  private val clusterScheduler = new DefaultScheduler(hwt, log, system.dispatcher)
+
   // start periodic gossip to random nodes in cluster
-  private val gossipCanceller = system.scheduler.schedule(PeriodicTasksInitialDelay, GossipInterval) {
+  private val gossipTask = FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay, GossipInterval) {
     gossip()
   }
 
   // start periodic heartbeat to all nodes in cluster
-  private val heartbeatCanceller = system.scheduler.schedule(PeriodicTasksInitialDelay, HeartbeatInterval) {
+  private val heartbeatTask = FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay, HeartbeatInterval) {
     heartbeat()
   }
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  private val failureDetectorReaperCanceller = system.scheduler.schedule(PeriodicTasksInitialDelay, UnreachableNodesReaperInterval) {
+  private val failureDetectorReaperTask = FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay, UnreachableNodesReaperInterval) {
     reapUnreachableMembers()
   }
 
   // start periodic leader action management (only applies for the current leader)
-  private val leaderActionsCanceller = system.scheduler.schedule(PeriodicTasksInitialDelay, LeaderActionsInterval) {
+  private val leaderActionsTask = FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay, LeaderActionsInterval) {
     leaderActions()
   }
 
   createMBean()
+
+  system.registerOnTermination(shutdown())
 
   log.info("Cluster Node [{}] - has started up successfully", selfAddress)
 
@@ -507,11 +516,13 @@ class Cluster(system: ExtendedActorSystem) extends Extension { clusterNode ⇒
   def shutdown(): Unit = {
     if (isRunning.compareAndSet(true, false)) {
       log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", selfAddress)
-      gossipCanceller.cancel()
-      heartbeatCanceller.cancel()
-      failureDetectorReaperCanceller.cancel()
-      leaderActionsCanceller.cancel()
-      system.stop(clusterDaemons)
+      gossipTask.cancel()
+      heartbeatTask.cancel()
+      failureDetectorReaperTask.cancel()
+      leaderActionsTask.cancel()
+      clusterScheduler.close()
+      if (!clusterDaemons.isTerminated)
+        system.stop(clusterDaemons)
       try {
         mBeanServer.unregisterMBean(clusterMBeanName)
       } catch {
