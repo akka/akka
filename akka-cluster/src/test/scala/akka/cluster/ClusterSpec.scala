@@ -67,7 +67,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
     @volatile
     var _unavailable: Set[Address] = Set.empty
 
-    override val failureDetector = new AccrualFailureDetector(system, clusterSettings) {
+    override val failureDetector = new FailureDetectorPuppet(system) {
       override def isAvailable(connection: Address): Boolean = {
         if (_unavailable.contains(connection)) false
         else super.isAvailable(connection)

@@ -309,15 +309,14 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): Cluster = {
     val clusterSettings = new ClusterSettings(system.settings.config, system.name)
 
-    def createDefaultFD() = new AccrualFailureDetector(system, clusterSettings)
     val failureDetector = clusterSettings.FailureDetectorImplementationClass match {
-      case None ⇒ createDefaultFD()
-      case Some(fqcn) ⇒ system.dynamicAccess.createInstanceFor[FailureDetector](fqcn, Seq((classOf[ActorSystem], system), (classOf[ClusterSettings], clusterSettings))) match {
-        case Right(fd) ⇒ fd
-        case Left(e) ⇒
-          system.log.error(e, "Could not create custom failure detector - falling back to default")
-          createDefaultFD()
-      }
+      case None ⇒ new AccrualFailureDetector(system, clusterSettings)
+      case Some(fqcn) ⇒
+        system.dynamicAccess.createInstanceFor[FailureDetector](
+          fqcn, Seq((classOf[ActorSystem], system), (classOf[ClusterSettings], clusterSettings))) match {
+            case Right(fd) ⇒ fd
+            case Left(e)   ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
+          }
     }
 
     new Cluster(system, failureDetector)
