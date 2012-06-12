@@ -130,7 +130,7 @@ if needed. It will return ``None`` if a timeout occurs.
 .. includecode:: code/docs/actor/TypedActorDocTestBase.java
    :include: typed-actor-call-strict
 
-This will block for as long as the timeout that was set in the ``Props` of the Typed Actor,
+This will block for as long as the timeout that was set in the ``Props`` of the Typed Actor,
 if needed. It will throw a ``java.util.concurrent.TimeoutException`` if a timeout occurs.
 
 Request-reply-with-future message send
