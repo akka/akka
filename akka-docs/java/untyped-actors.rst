@@ -558,6 +558,48 @@ well. Use the ``getContext().unbecome`` method from within the Actor.
     if (message.equals("revert")) getContext().unbecome();
   }
 
+
+Stash
+=====
+
+The ``UntypedActorWithStash`` class enables an actor to temporarily stash away messages
+that can not or should not be handled using the actor's current
+behavior. Upon changing the actor's message handler, i.e., right
+before invoking ``getContext().become()`` or ``getContext().unbecome()``, all
+stashed messages can be "unstashed", thereby prepending them to the actor's
+mailbox. This way, the stashed messages can be processed in the same
+order as they have been received originally.
+
+.. warning::
+
+  Please note that the stash can only be used together with actors
+  that have a deque-based mailbox. For this, configure the
+  ``mailbox-type`` of the dispatcher to be a deque-based mailbox, such as
+  ``akka.dispatch.UnboundedDequeBasedMailbox`` (see :ref:`dispatchers-java`).
+
+Here is an example of the ``UntypedActorWithStash`` class in action:
+
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#stash
+
+Invoking ``stash()`` adds the current message (the message that the
+actor received last) to the actor's stash. It is typically invoked
+when handling the default case in the actor's message handler to stash
+messages that aren't handled by the other cases. It is illegal to
+stash the same message twice; to do so results in an
+``IllegalStateException`` being thrown. The stash may also be bounded
+in which case invoking ``stash()`` may lead to a capacity violation,
+which results in a ``StashOverflowException``. The capacity of the
+stash can be configured using the ``stash-capacity`` setting (an ``Int``) of the
+dispatcher's configuration.
+
+Invoking ``unstashAll()`` enqueues messages from the stash to the
+actor's mailbox until the capacity of the mailbox (if any) has been
+reached (note that messages from the stash are prepended to the
+mailbox). In case a bounded mailbox overflows, a
+``MessageQueueAppendFailedException`` is thrown.
+The stash is guaranteed to be empty after calling ``unstashAll()``.
+
+
 Killing an Actor
 ================
 

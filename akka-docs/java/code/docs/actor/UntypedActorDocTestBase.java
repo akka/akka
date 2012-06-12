@@ -50,6 +50,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 //#import-askPipe
 
+//#import-stash
+import akka.actor.UntypedActorWithStash;
+//#import-stash
+
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
@@ -345,6 +349,31 @@ public class UntypedActorDocTestBase {
   }
 
   //#hot-swap-actor
+
+  //#stash
+  public static class ActorWithProtocol extends UntypedActorWithStash {
+    private Boolean isOpen = false;
+    public void onReceive(Object msg) {
+      if (isOpen) {
+        if (msg.equals("write")) {
+          // do writing...
+        } else if (msg.equals("close")) {
+          unstashAll();
+          isOpen = false;
+        } else {
+          stash();
+        }
+      } else {
+        if (msg.equals("open")) {
+          unstashAll();
+          isOpen = true;
+        } else {
+          stash();
+        }
+      }
+    }
+  }
+  //#stash
 
   //#watch
   public static class WatchActor extends UntypedActor {
