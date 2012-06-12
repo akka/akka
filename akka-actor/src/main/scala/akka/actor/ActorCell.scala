@@ -77,7 +77,7 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * If "discardOld" is true, the current behavior is removed from the stack prior to pushing the new behavior to the stack
    */
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
 
@@ -161,7 +161,7 @@ trait UntypedActorContext extends ActorContext {
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
    * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * If "discardOld" is true, the current behavior is removed from the stack prior to pushing the new behavior to the stack
    */
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit
 
@@ -684,7 +684,8 @@ private[akka] class ActorCell(
   }
 
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit = {
-    if (discardOld) unbecome()
+    if (discardOld)
+      behaviorStack = behaviorStack.pop
     behaviorStack = behaviorStack.push(behavior)
   }
 
