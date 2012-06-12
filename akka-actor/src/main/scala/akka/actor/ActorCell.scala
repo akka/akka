@@ -184,8 +184,6 @@ private[akka] object ActorCell {
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
 
-  final val behaviorStackPlaceHolder: Stack[Actor.Receive] = Stack.empty.push(Actor.emptyBehavior)
-
   final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
 
   sealed trait SuspendReason
@@ -513,15 +511,13 @@ private[akka] class ActorCell(
   protected def newActor(): Actor = {
     contextStack.set(contextStack.get.push(this))
     try {
-      import ActorCell.behaviorStackPlaceHolder
-
-      behaviorStack = behaviorStackPlaceHolder
+      behaviorStack = Stack(null) // 'null' represents 'instance.receive'
       val instance = props.creator.apply()
 
       if (instance eq null)
         throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
-      behaviorStack = behaviorStack.map { b ⇒ if (b == Actor.emptyBehavior) instance.receive else b }
+      behaviorStack = behaviorStack.map { b ⇒ if (b == null) instance.receive else b }
       instance
     } finally {
       val stackAfter = contextStack.get
@@ -759,7 +755,7 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle)
           system.eventStream.publish(Debug(self.path.toString, clazz(a), "stopped"))
       } finally {
-        behaviorStack = behaviorStackPlaceHolder
+        behaviorStack = Stack(Actor.emptyBehavior)
         clearActorFields(a)
         actor = null
       }
