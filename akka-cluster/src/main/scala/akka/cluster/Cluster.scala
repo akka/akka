@@ -1138,24 +1138,38 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   private def convergence(gossip: Gossip): Option[Gossip] = {
     val overview = gossip.overview
     val unreachable = overview.unreachable
+    val seen = overview.seen
 
     // First check that:
-    //   1. we don't have any members that are unreachable (unreachable.isEmpty == true), or
+    //   1. we don't have any members that are unreachable, or
     //   2. all unreachable members in the set have status DOWN
     // Else we can't continue to check for convergence
     // When that is done we check that all the entries in the 'seen' table have the same vector clock version
-    if (unreachable.isEmpty || !unreachable.exists { m ⇒
-      m.status != MemberStatus.Down &&
-        m.status != MemberStatus.Removed
-    }) {
-      val seen = gossip.overview.seen
-      val views = Set.empty[VectorClock] ++ seen.values
+    // and that all members exists in seen table
+    val hasUnreachable = unreachable.nonEmpty && unreachable.exists { m ⇒
+      m.status != MemberStatus.Down && m.status != MemberStatus.Removed
+    }
+    val allMembersInSeen = gossip.members.forall(m ⇒ seen.contains(m.address))
 
-      if (views.size == 1) {
+    if (hasUnreachable) {
+      log.debug("Cluster Node [{}] - No cluster convergence, due to unreachable [{}].", selfAddress, unreachable)
+      None
+    } else if (!allMembersInSeen) {
+      log.debug("Cluster Node [{}] - No cluster convergence, due to members not in seen table [{}].", selfAddress,
+        gossip.members.map(_.address) -- seen.keySet)
+      None
+    } else {
+
+      val views = (Set.empty[VectorClock] ++ seen.values).size
+
+      if (views == 1) {
         log.debug("Cluster Node [{}] - Cluster convergence reached: [{}]", selfAddress, gossip.members.mkString(", "))
         Some(gossip)
-      } else None
-    } else None
+      } else {
+        log.debug("Cluster Node [{}] - No cluster convergence, due to [{}] different views.", selfAddress, views)
+        None
+      }
+    }
   }
 
   private def isAvailable(state: State): Boolean = !isUnavailable(state)
