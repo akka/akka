@@ -4,32 +4,39 @@
 
 package akka.cluster
 
-import java.util.concurrent.atomic.AtomicInteger
 import akka.testkit.AkkaSpec
 import akka.util.duration._
 import akka.testkit.TimingTest
+import akka.testkit.TestLatch
+import akka.dispatch.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FixedRateTaskSpec extends AkkaSpec {
 
   "Task scheduled at fixed rate" must {
     "adjust for scheduler inaccuracy" taggedAs TimingTest in {
-      val counter = new AtomicInteger
+      val startTime = System.nanoTime
+      val n = 33
+      val latch = new TestLatch(n)
       FixedRateTask(system.scheduler, 150.millis, 150.millis) {
-        counter.incrementAndGet()
+        latch.countDown()
       }
-      5000.millis.sleep()
-      counter.get must (be(33) or be(34))
+      Await.ready(latch, 6.seconds)
+      val rate = n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis
+      rate must be(6.66 plusOrMinus (0.4))
     }
 
     "compensate for long running task" taggedAs TimingTest in {
-      val counter = new AtomicInteger
+      val startTime = System.nanoTime
+      val n = 22
+      val latch = new TestLatch(n)
       FixedRateTask(system.scheduler, 225.millis, 225.millis) {
-        counter.incrementAndGet()
         80.millis.sleep()
+        latch.countDown()
       }
-      5000.millis.sleep()
-      counter.get must (be(22) or be(23))
+      Await.ready(latch, 6.seconds)
+      val rate = n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis
+      rate must be(4.4 plusOrMinus (0.3))
     }
   }
 }
