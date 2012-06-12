@@ -77,7 +77,7 @@ trait ActorContext extends ActorRefFactory {
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * If "discardOld" is true, the current behavior is removed from the stack prior to pushing the new behavior to the stack
    */
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
 
@@ -161,7 +161,7 @@ trait UntypedActorContext extends ActorContext {
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
    * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * If "discardOld" is true, the current behavior is removed from the stack prior to pushing the new behavior to the stack
    */
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit
 
@@ -183,8 +183,6 @@ private[akka] object ActorCell {
   }
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
-
-  final val behaviorStackPlaceHolder: Stack[Actor.Receive] = Stack.empty.push(Actor.emptyBehavior)
 
   final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
 
@@ -513,18 +511,13 @@ private[akka] class ActorCell(
   protected def newActor(): Actor = {
     contextStack.set(contextStack.get.push(this))
     try {
-      import ActorCell.behaviorStackPlaceHolder
-
-      behaviorStack = behaviorStackPlaceHolder
+      behaviorStack = Stack(null) // 'null' represents 'instance.receive'
       val instance = props.creator.apply()
 
       if (instance eq null)
         throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
-      behaviorStack = behaviorStack match {
-        case `behaviorStackPlaceHolder` ⇒ Stack.empty.push(instance.receive)
-        case newBehaviors               ⇒ Stack.empty.push(instance.receive).pushAll(newBehaviors.reverse.drop(1))
-      }
+      behaviorStack = behaviorStack.map { b ⇒ if (b == null) instance.receive else b }
       instance
     } finally {
       val stackAfter = contextStack.get
@@ -684,7 +677,8 @@ private[akka] class ActorCell(
   }
 
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit = {
-    if (discardOld) unbecome()
+    if (discardOld)
+      behaviorStack = behaviorStack.pop
     behaviorStack = behaviorStack.push(behavior)
   }
 
@@ -761,7 +755,7 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle)
           system.eventStream.publish(Debug(self.path.toString, clazz(a), "stopped"))
       } finally {
-        behaviorStack = behaviorStackPlaceHolder
+        behaviorStack = Stack(Actor.emptyBehavior)
         clearActorFields(a)
         actor = null
       }
