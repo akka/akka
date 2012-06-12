@@ -515,9 +515,11 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
         clearTemp()
         _builder += ByteString1(xs.array.clone)
         _length += xs.length
-      case _: collection.IndexedSeq[_] ⇒
+      case seq: collection.IndexedSeq[_] ⇒
         ensureTempSize(_tempLength + xs.size)
         xs.copyToArray(_temp, _tempLength)
+        _tempLength += seq.length
+        _length += seq.length
       case _ ⇒
         super.++=(xs)
     }
