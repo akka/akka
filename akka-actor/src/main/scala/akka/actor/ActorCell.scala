@@ -521,10 +521,7 @@ private[akka] class ActorCell(
       if (instance eq null)
         throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
-      behaviorStack = behaviorStack match {
-        case `behaviorStackPlaceHolder` ⇒ Stack.empty.push(instance.receive)
-        case newBehaviors               ⇒ Stack.empty.push(instance.receive).pushAll(newBehaviors.reverse.drop(1))
-      }
+      behaviorStack = behaviorStack.map { b ⇒ if (b == Actor.emptyBehavior) instance.receive else b }
       instance
     } finally {
       val stackAfter = contextStack.get
