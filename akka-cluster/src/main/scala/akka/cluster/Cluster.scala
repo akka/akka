@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit._
 import java.util.concurrent.TimeoutException
 import akka.jsr166y.ThreadLocalRandom
 import java.lang.management.ManagementFactory
+import java.io.Closeable
 import javax.management._
 import scala.collection.immutable.{ Map, SortedSet }
 import scala.annotation.tailrec
@@ -435,10 +436,21 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   // ===================== WORK DAEMONS =====================
   // ========================================================
 
-  private def hwt = new HashedWheelTimer(log,
-    MonitorableThreadFactory(system.name + "-cluster-scheduler", system.settings.Daemonicity, None), 50.millis,
-    system.settings.SchedulerTicksPerWheel)
-  private val clusterScheduler = new DefaultScheduler(hwt, log, system.dispatcher)
+  private def useDedicatedScheduler: Boolean = system.settings.SchedulerTickDuration > SchedulerTickDuration
+
+  private val clusterScheduler: Scheduler = {
+    if (useDedicatedScheduler) {
+      val threadFactory = system.threadFactory match {
+        case tf: MonitorableThreadFactory ⇒ tf.copy(name = tf.name + "-cluster-scheduler")
+        case tf                           ⇒ tf
+      }
+      val hwt = new HashedWheelTimer(log,
+        threadFactory,
+        SchedulerTickDuration, SchedulerTicksPerWheel)
+      new DefaultScheduler(hwt, log, system.dispatcher)
+    } else
+      system.scheduler
+  }
 
   // start periodic gossip to random nodes in cluster
   private val gossipTask = FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay, GossipInterval) {
@@ -527,13 +539,21 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   def shutdown(): Unit = {
     if (isRunning.compareAndSet(true, false)) {
       log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", selfAddress)
+
+      // cancel the periodic tasks, note that otherwise they will be run when scheduler is shutdown
       gossipTask.cancel()
       heartbeatTask.cancel()
       failureDetectorReaperTask.cancel()
       leaderActionsTask.cancel()
-      clusterScheduler.close()
+      if (useDedicatedScheduler) clusterScheduler match {
+        case x: Closeable ⇒ x.close()
+        case _            ⇒
+      }
+      // FIXME isTerminated check can be removed when ticket #2221 is fixed
+      // now it prevents logging if system is shutdown (or in progress of shutdown)
       if (!clusterDaemons.isTerminated)
         system.stop(clusterDaemons)
+
       try {
         mBeanServer.unregisterMBean(clusterMBeanName)
       } catch {

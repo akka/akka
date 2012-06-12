@@ -28,6 +28,8 @@ class ClusterConfigSpec extends AkkaSpec {
       NrOfGossipDaemons must be(4)
       NrOfDeputyNodes must be(3)
       AutoDown must be(true)
+      SchedulerTickDuration must be(33 millis)
+      SchedulerTicksPerWheel must be(512)
     }
   }
 }
