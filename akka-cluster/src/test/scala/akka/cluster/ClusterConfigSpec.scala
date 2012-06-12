@@ -22,11 +22,14 @@ class ClusterConfigSpec extends AkkaSpec {
       NodeToJoin must be(None)
       PeriodicTasksInitialDelay must be(1 seconds)
       GossipInterval must be(1 second)
+      HeartbeatInterval must be(1 second)
       LeaderActionsInterval must be(1 second)
       UnreachableNodesReaperInterval must be(1 second)
       NrOfGossipDaemons must be(4)
       NrOfDeputyNodes must be(3)
       AutoDown must be(true)
+      SchedulerTickDuration must be(33 millis)
+      SchedulerTicksPerWheel must be(512)
     }
   }
 }
