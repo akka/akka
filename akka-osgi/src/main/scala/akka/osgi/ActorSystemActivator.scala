@@ -9,10 +9,10 @@ import java.util.Properties
  * Abstract {@link BundleActivator} implementation to bootstrap and configure an {@link ActorSystem} in an
  * OSGi environment.
  */
-abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ String) extends BundleActivator {
+abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ Option[String]) extends BundleActivator {
 
-  def this() = this({ context: BundleContext ⇒ null })
-  def this(name: String) = this({ context: BundleContext ⇒ name })
+  def this() = this({ context: BundleContext ⇒ None })
+  def this(name: String) = this({ context: BundleContext ⇒ Some(name) })
 
   var system: ActorSystem = null
 
