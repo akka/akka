@@ -480,7 +480,7 @@ object Dependencies {
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
-  val osgi = Seq(osgiCore, ariesBlueprint, Runtime.logback, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
+  val osgi = Seq(osgiCore, ariesBlueprint, Runtime.logback, Test.ariesProxy, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
@@ -505,7 +505,7 @@ object Dependency {
   }
 
   // Compile
-  val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint" % "0.3.1"  // ApacheV2
+  val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint" % "0.3.2"  // ApacheV2
   val config        = "com.typesafe"                % "config"                 % "0.4.1"      // ApacheV2
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
@@ -518,12 +518,13 @@ object Dependency {
   // Test
 
   object Test {
+    val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3" % "test"  // ApacheV2
     val commonsMath = "org.apache.commons"          % "commons-math"        % "2.1"        % "test" // ApacheV2
-    val commonsIo     = "commons-io"                % "commons-io"          % "2.0.1"      % "test"// ApacheV2
+    val commonsIo   = "commons-io"                  % "commons-io"          % "2.0.1"      % "test"// ApacheV2
     val junit       = "junit"                       % "junit"               % "4.5"        % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"         % "1.8.1"      % "test" // MIT
-    val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.8"   % "test" // ApacheV2
+    val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"   % "test" // ApacheV2
     val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
     val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
     val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
@@ -548,7 +549,10 @@ object OSGi {
 
   val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
 
-  val osgi = exports(Seq("akka.osgi.*"))
+  val osgi = exports(Seq("akka.osgi.*")) ++ Seq(
+    OsgiKeys.importPackage := Seq("org.apache.aries.blueprint.*;resolution:=optional",
+                                  "org.osgi.service.blueprint.*;resolution:=optional") ++ defaultImports
+  )
 
   val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
 
@@ -559,10 +563,11 @@ object OSGi {
   val zeroMQ = exports(Seq("akka.zeromq.*"))
 
   def exports(packages: Seq[String]) = osgiSettings ++ Seq(
-    OsgiKeys.importPackage := Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*"),
+    OsgiKeys.importPackage := defaultImports,
     OsgiKeys.exportPackage := packages
   )
 
+  def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
   def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
   def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
   def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.2,2.10)\"".format(packageName)

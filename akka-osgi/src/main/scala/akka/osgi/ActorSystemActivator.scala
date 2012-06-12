@@ -41,7 +41,6 @@ abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ String) extends
   def stop(context: BundleContext) {
     if (system != null) {
       system.shutdown()
-      system.shutdown()
       system = null
     }
   }

@@ -1,4 +1,4 @@
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ Props, ActorSystem }
 import akka.osgi.ActorSystemActivator
 import org.apache.servicemix.examples.akka.Listener
 import org.apache.servicemix.examples.akka.Master

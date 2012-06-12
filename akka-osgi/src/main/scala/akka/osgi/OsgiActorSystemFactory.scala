@@ -2,9 +2,9 @@ package akka.osgi
 
 import impl.BundleDelegatingClassLoader
 import org.osgi.framework.BundleContext
-import java.util.Properties
 import akka.actor.ActorSystem
 import com.typesafe.config.{ ConfigFactory, Config }
+import java.util.{ Dictionary, Properties }
 
 /**
  * Factory class to create ActorSystem implementations in an OSGi environment.  This mainly involves dealing with
@@ -20,16 +20,18 @@ class OsgiActorSystemFactory(val context: BundleContext) {
   /**
    * Creates the ActorSystem and registers it in the OSGi Service Registry
    */
-  def createActorSystem(name: String) = {
+  def createActorSystem(name: String): ActorSystem = createActorSystem(Option(name))
+
+  def createActorSystem(name: Option[String]): ActorSystem = {
     val system = ActorSystem(actorSystemName(name), actorSystemConfig(context), classloader)
     registerService(system)
     system
   }
 
   def registerService(system: ActorSystem) {
-    val properties = new Properties();
+    val properties = new Properties()
     properties.put("name", system.name)
-    context.registerService(classOf[ActorSystem].getName, system, properties)
+    context.registerService(classOf[ActorSystem].getName, system, properties.asInstanceOf[Dictionary[String, Any]])
   }
 
   /**
@@ -44,8 +46,8 @@ class OsgiActorSystemFactory(val context: BundleContext) {
   /**
    * Determine a the ActorSystem name
    */
-  def actorSystemName(name: String): String =
-    Option(name).getOrElse("bundle-%s-ActorSystem".format(context.getBundle().getBundleId))
+  def actorSystemName(name: Option[String]): String =
+    name.getOrElse("bundle-%s-ActorSystem".format(context.getBundle().getBundleId))
 
 }
 

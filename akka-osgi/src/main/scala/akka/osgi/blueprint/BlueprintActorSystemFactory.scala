@@ -4,31 +4,39 @@ import org.osgi.framework.BundleContext
 import akka.osgi.OsgiActorSystemFactory
 import collection.mutable.Buffer
 import akka.actor.{ Actor, Props, ActorSystem }
+import com.typesafe.config.ConfigFactory
 
 /**
  * A set of helper/factory classes to build a Akka system using Blueprint
  */
 class BlueprintActorSystemFactory(context: BundleContext, name: String) extends OsgiActorSystemFactory(context) {
 
-  val systems: Buffer[ActorSystem] = Buffer()
+  var config: Option[String] = None
 
-  def this(context: BundleContext) = this(context, null)
+  lazy val system = super.createActorSystem(stringToOption(name))
 
-  def create: ActorSystem = create(null)
-  def create(name: String): ActorSystem = {
-    val system = super.createActorSystem(name)
-    systems += system
-    system
+  def setConfig(config: String) = { this.config = Some(config) }
+
+  def create = system
+
+  def destroy = system.shutdown()
+
+  def stringToOption(original: String) = if (original == null || original.isEmpty) {
+    None
+  } else {
+    Some(original)
   }
 
-  def destroy = for (system ← systems) {
-    system.shutdown()
+  /**
+   * Strategy method to create the Config for the ActorSystem, ensuring that the default/reference configuration is
+   * loaded from the akka-actor bundle.
+   */
+  override def actorSystemConfig(context: BundleContext) = {
+    config match {
+      case Some(value) ⇒ ConfigFactory.parseString(value).withFallback(super.actorSystemConfig(context))
+      case None        ⇒ super.actorSystemConfig(context)
+    }
+
   }
-}
-
-class BlueprintActorSystem(context: BundleContext, system: ActorSystem) {
-
-  def createActor(name: String) = system.actorOf(Props(context.getBundle.loadClass(name).asInstanceOf[Class[Actor]]))
-
 }
 

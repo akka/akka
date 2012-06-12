@@ -2,6 +2,12 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
            xmlns:akka="http://akka.io/xmlns/blueprint/v1.0.0">
 
-    <akka:actor-system name="simple" />
+    <akka:actor-system name="config">
+        <akka:config>
+            some.config {
+                key=value
+            }
+        </akka:config>
+    </akka:actor-system>
 
 </blueprint>

@@ -1,53 +1,28 @@
 package akka.osgi
 
-import java.util.{ ServiceLoader, HashMap }
-import de.kalpatec.pojosr.framework.launch.{ ClasspathScanner, PojoServiceRegistryFactory }
 import org.scalatest.FlatSpec
-import org.osgi.framework.BundleContext
-import akka.actor.{ Actor, Props, ActorSystem }
+import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.dispatch.Await
 import akka.util.duration._
 import akka.util.Timeout
+import de.kalpatec.pojosr.framework.launch.BundleDescriptor
+import test.TestActorSystemActivator
+import test.PingPong._
+import PojoSRTestSupport.bundle
 
 /**
  * Test cases for {@link ActorSystemActivator}
  */
-class ActorSystemActivatorTest extends FlatSpec {
+class ActorSystemActivatorTest extends FlatSpec with PojoSRTestSupport {
 
-  abstract class TestMessage
+  val TEST_BUNDLE_NAME = "akka.osgi.test.activator"
 
-  case object Ping extends TestMessage
-  case object Pong extends TestMessage
+  val testBundles: Seq[BundleDescriptor] = Seq(
+    bundle(TEST_BUNDLE_NAME).withActivator(classOf[TestActorSystemActivator]))
 
-  class PongActor extends Actor {
-    def receive = {
-      case Ping ⇒
-        sender ! Pong
-    }
-  }
-
-  lazy val context: BundleContext = {
-    val config = new HashMap[String, AnyRef]();
-    val loader = ServiceLoader.load(classOf[PojoServiceRegistryFactory]);
-    val registry = loader.iterator().next().newPojoServiceRegistry(config);
-    registry.getBundleContext
-  }
-
-  val activator = new ActorSystemActivator {
-    def configure(system: ActorSystem) {
-      system.actorOf(Props(new PongActor), name = "pong")
-    }
-  }
-
-  "ActorSystemActivator" should "start and register the ActorSystem on start" in {
-
-    activator.start(context)
-
-    val reference = context.getServiceReference(classOf[ActorSystem].getName)
-    assert(reference != null)
-
-    val system = context.getService(reference).asInstanceOf[ActorSystem]
+  "ActorSystemActivator" should "start and register the ActorSystem when bundle starts" in {
+    val system = serviceForType[ActorSystem]
     val actor = system.actorFor("/user/pong")
 
     implicit val timeout = Timeout(5 seconds)
@@ -56,14 +31,11 @@ class ActorSystemActivatorTest extends FlatSpec {
     assert(result != null)
   }
 
-  it should "stop the ActorSystem on bundle stop" in {
-    val reference = context.getServiceReference(classOf[ActorSystem].getName)
-    assert(reference != null)
-
-    val system = context.getService(reference).asInstanceOf[ActorSystem]
+  it should "stop the ActorSystem when bundle stops" in {
+    val system = serviceForType[ActorSystem]
     assert(!system.isTerminated)
 
-    activator.stop(context)
+    bundleForName(TEST_BUNDLE_NAME).stop()
 
     system.awaitTermination()
     assert(system.isTerminated)
