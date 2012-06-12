@@ -67,6 +67,17 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
   val arbitraryDoubleArray: Arbitrary[Array[Double]] = Arbitrary { Gen.sized { n ⇒ Gen.containerOfN[Array, Double](n, arbitrary[Double]) } }
   implicit val arbitraryDoubleArraySlice: Arbitrary[ArraySlice[Double]] = arbSlice(arbitraryDoubleArray)
 
+  def likeVector(bs: ByteString)(body: IndexedSeq[Byte] ⇒ Any): Boolean = {
+    val vec = Vector(bs: _*)
+    body(bs) == body(vec)
+  }
+
+  def likeVectors(bsA: ByteString, bsB: ByteString)(body: (IndexedSeq[Byte], IndexedSeq[Byte]) ⇒ Any): Boolean = {
+    val vecA = Vector(bsA: _*)
+    val vecB = Vector(bsB: _*)
+    body(bsA, bsB) == body(vecA, vecB)
+  }
+
   def likeVecIt(bs: ByteString)(body: BufferedIterator[Byte] ⇒ Any, strict: Boolean = true): Boolean = {
     val bsIterator = bs.iterator
     val vecIterator = Vector(bs: _*).iterator.buffered
@@ -228,10 +239,12 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
       "concatenating" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).size == a.size + b.size) }
       "dropping" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).drop(b.size).size == a.size) }
     }
+
     "be sequential" when {
       "taking" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).take(a.size) == a) }
       "dropping" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).drop(a.size) == b) }
     }
+
     "be equal to the original" when {
       "compacting" in { check { xs: ByteString ⇒ val ys = xs.compact; (xs == ys) && ys.isCompact } }
       "recombining" in {
@@ -239,6 +252,81 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
           val (tmp, c) = xs.splitAt(until)
           val (a, b) = tmp.splitAt(from)
           (a ++ b ++ c) == xs
+        }
+      }
+    }
+
+    "behave as expected" when {
+      "created from and decoding to String" in { check { s: String ⇒ ByteString(s, "UTF-8").decodeString("UTF-8") == s } }
+
+      "compacting" in {
+        check { a: ByteString ⇒
+          val wasCompact = a.isCompact
+          val b = a.compact
+          ((!wasCompact) || (b eq a)) &&
+            (b == a) &&
+            b.isCompact &&
+            (b.compact eq b)
+        }
+      }
+    }
+    "behave like a Vector" when {
+      "concatenating" in { check { (a: ByteString, b: ByteString) ⇒ likeVectors(a, b) { (a, b) ⇒ (a ++ b) } } }
+
+      "calling apply" in {
+        check { slice: ByteStringSlice ⇒
+          slice match {
+            case (xs, i1, i2) ⇒ likeVector(xs) { seq ⇒
+              (if ((i1 >= 0) && (i1 < seq.length)) seq(i1) else 0,
+                if ((i2 >= 0) && (i2 < seq.length)) seq(i2) else 0)
+            }
+          }
+        }
+      }
+
+      "calling head" in { check { a: ByteString ⇒ a.isEmpty || likeVector(a) { _.head } } }
+      "calling last" in { check { a: ByteString ⇒ a.isEmpty || likeVector(a) { _.last } } }
+      "calling length" in { check { a: ByteString ⇒ likeVector(a) { _.length } } }
+
+      "calling span" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a)({ _.span(_ != b) match { case (a, b) ⇒ (a, b) } }) } }
+
+      "calling takeWhile" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a)({ _.takeWhile(_ != b) }) } }
+      "calling dropWhile" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.dropWhile(_ != b) } } }
+      "calling indexWhere" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.indexWhere(_ == b) } } }
+      "calling indexOf" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a) { _.indexOf(b) } } }
+      "calling foreach" in { check { a: ByteString ⇒ likeVector(a) { it ⇒ var acc = 0; it foreach { acc += _ }; acc } } }
+      "calling foldLeft" in { check { a: ByteString ⇒ likeVector(a) { _.foldLeft(0) { _ + _ } } } }
+      "calling toArray" in { check { a: ByteString ⇒ likeVector(a) { _.toArray.toSeq } } }
+
+      "calling slice" in {
+        check { slice: ByteStringSlice ⇒
+          slice match {
+            case (xs, from, until) ⇒ likeVector(xs)({
+              _.slice(from, until)
+            })
+          }
+        }
+      }
+
+      "calling take and drop" in {
+        check { slice: ByteStringSlice ⇒
+          slice match {
+            case (xs, from, until) ⇒ likeVector(xs)({
+              _.drop(from).take(until - from)
+            })
+          }
+        }
+      }
+
+      "calling copyToArray" in {
+        check { slice: ByteStringSlice ⇒
+          slice match {
+            case (xs, from, until) ⇒ likeVector(xs)({ it ⇒
+              val array = Array.ofDim[Byte](xs.length)
+              it.slice(from, until).copyToArray(array, from, until)
+              array.toSeq
+            })
+          }
         }
       }
     }
