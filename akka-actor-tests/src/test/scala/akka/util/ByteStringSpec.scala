@@ -9,6 +9,8 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import org.scalacheck.Gen._
 
+import scala.collection.mutable.Builder
+
 import java.nio.{ ByteBuffer, ShortBuffer, IntBuffer, FloatBuffer, DoubleBuffer }
 import java.nio.{ ByteOrder }, ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 import java.lang.Float.floatToRawIntBits
@@ -77,6 +79,16 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
     val (vecAIt, vecBIt) = (Vector(a: _*).iterator.buffered, Vector(b: _*).iterator.buffered)
     (body(bsAIt, bsBIt) == body(vecAIt, vecBIt)) &&
       (!strict || (bsAIt.toSeq, bsBIt.toSeq) == (vecAIt.toSeq, vecBIt.toSeq))
+  }
+
+  def likeVecBld(body: Builder[Byte, _] ⇒ Unit): Boolean = {
+    val bsBuilder = ByteString.newBuilder
+    val vecBuilder = Vector.newBuilder[Byte]
+
+    body(bsBuilder)
+    body(vecBuilder)
+
+    bsBuilder.result == vecBuilder.result
   }
 
   def testShortDecoding(slice: ByteStringSlice, byteOrder: ByteOrder): Boolean = {
@@ -359,6 +371,19 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
   }
 
   "A ByteStringBuilder" must {
+    "function like a VectorBuilder" when {
+      "adding various contents using ++= and +=" in {
+        check { (array1: Array[Byte], array2: Array[Byte], bs1: ByteString, bs2: ByteString, bs3: ByteString) ⇒
+          likeVecBld { builder ⇒
+            builder ++= array1
+            bs1 foreach { b ⇒ builder += b }
+            builder ++= bs2
+            bs3 foreach { b ⇒ builder += b }
+            builder ++= Vector(array2: _*)
+          }
+        }
+      }
+    }
     "function as expected" when {
       "putting Bytes, using putByte and putBytes" in {
         // mixing putByte and putBytes here for more rigorous testing
