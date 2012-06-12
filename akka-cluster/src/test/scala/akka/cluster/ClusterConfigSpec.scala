@@ -18,14 +18,18 @@ class ClusterConfigSpec extends AkkaSpec {
       import settings._
       FailureDetectorThreshold must be(8)
       FailureDetectorMaxSampleSize must be(1000)
+      FailureDetectorImplementationClass must be(None)
       NodeToJoin must be(None)
       PeriodicTasksInitialDelay must be(1 seconds)
-      GossipFrequency must be(1 second)
-      LeaderActionsFrequency must be(1 second)
-      UnreachableNodesReaperFrequency must be(1 second)
+      GossipInterval must be(1 second)
+      HeartbeatInterval must be(1 second)
+      LeaderActionsInterval must be(1 second)
+      UnreachableNodesReaperInterval must be(1 second)
       NrOfGossipDaemons must be(4)
       NrOfDeputyNodes must be(3)
       AutoDown must be(true)
+      SchedulerTickDuration must be(33 millis)
+      SchedulerTicksPerWheel must be(512)
     }
   }
 }

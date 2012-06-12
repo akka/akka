@@ -6,18 +6,11 @@ package akka.dispatch
 import akka.AkkaException
 import java.util.{ Comparator, PriorityQueue, Queue, Deque }
 import akka.util._
-import akka.actor.{ ActorCell, ActorRef }
 import java.util.concurrent._
 import annotation.tailrec
 import akka.event.Logging.Error
-import akka.actor.ActorContext
 import com.typesafe.config.Config
-import akka.actor.ActorSystem
-
-/**
- * This exception normally is thrown when a bounded mailbox is over capacity
- */
-class MessageQueueAppendFailedException(message: String, cause: Throwable = null) extends AkkaException(message, cause)
+import akka.actor._
 
 /**
  * INTERNAL API
@@ -169,6 +162,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
    */
   protected final def systemQueueGet: SystemMessage =
     Unsafe.instance.getObjectVolatile(this, AbstractMailbox.systemMessageOffset).asInstanceOf[SystemMessage]
+
   protected final def systemQueuePut(_old: SystemMessage, _new: SystemMessage): Boolean =
     Unsafe.instance.compareAndSwapObject(this, AbstractMailbox.systemMessageOffset, _old, _new)
 
@@ -207,21 +201,47 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
       }
     }
 
+  /**
+   * Will at least try to process all queued system messages: in case of
+   * failure simply drop and go on to the next, because there is nothing to
+   * restart here (failure is in ActorCell somewhere …). In case the mailbox
+   * becomes closed (because of processing a Terminate message), dump all
+   * already dequeued message to deadLetters.
+   */
   final def processAllSystemMessages() {
-    var nextMessage = systemDrain()
-    try {
-      while ((nextMessage ne null) && !isClosed) {
-        if (debug) println(actor.self + " processing system message " + nextMessage + " with " + actor.childrenRefs)
-        actor systemInvoke nextMessage
-        nextMessage = nextMessage.next
-        // don’t ever execute normal message when system message present!
-        if (nextMessage eq null) nextMessage = systemDrain()
+    var failure: Throwable = null
+    var nextMessage = systemDrain(null)
+    while ((nextMessage ne null) && !isClosed) {
+      val msg = nextMessage
+      nextMessage = nextMessage.next
+      msg.next = null
+      if (debug) println(actor.self + " processing system message " + msg + " with " + actor.childrenRefs)
+      try {
+        actor systemInvoke msg
+      } catch {
+        case NonFatal(e) ⇒
+          if (failure eq null) failure = e
+          actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system message " + msg + ": " + e.getMessage))
       }
-    } catch {
-      case NonFatal(e) ⇒
-        actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system messages, dropping " + SystemMessage.size(nextMessage) + " messages!"))
-        throw e
+      // don’t ever execute normal message when system message present!
+      if ((nextMessage eq null) && !isClosed) nextMessage = systemDrain(null)
     }
+    /*
+     * if we closed the mailbox, we must dump the remaining system messages
+     * to deadLetters (this is essential for DeathWatch) 
+     */
+    while (nextMessage ne null) {
+      val msg = nextMessage
+      nextMessage = nextMessage.next
+      msg.next = null
+      try actor.systemImpl.deadLetterMailbox.systemEnqueue(actor.self, msg)
+      catch {
+        case NonFatal(e) ⇒ actor.system.eventStream.publish(
+          Error(e, actor.self.path.toString, this.getClass, "error while enqueuing " + msg + " to deadLetters: " + e.getMessage))
+      }
+    }
+    // if something happened while processing, fail this actor (most probable: exception in supervisorStrategy)
+    if (failure ne null) actor.handleInvokeFailure(failure, failure.getMessage)
   }
 
   @inline
@@ -235,15 +255,13 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
   protected[dispatch] def cleanUp(): Unit =
     if (actor ne null) { // actor is null for the deadLetterMailbox
       val dlm = actor.systemImpl.deadLetterMailbox
-      if (hasSystemMessages) {
-        var message = systemDrain()
-        while (message ne null) {
-          // message must be “virgin” before being able to systemEnqueue again
-          val next = message.next
-          message.next = null
-          dlm.systemEnqueue(actor.self, message)
-          message = next
-        }
+      var message = systemDrain(NoMessage)
+      while (message ne null) {
+        // message must be “virgin” before being able to systemEnqueue again
+        val next = message.next
+        message.next = null
+        dlm.systemEnqueue(actor.self, message)
+        message = next
       }
 
       if (messageQueue ne null) // needed for CallingThreadDispatcher, which never calls Mailbox.run()
@@ -300,7 +318,7 @@ private[akka] trait SystemMessageQueue {
   /**
    * Dequeue all messages from system queue and return them as single-linked list.
    */
-  def systemDrain(): SystemMessage
+  def systemDrain(newContents: SystemMessage): SystemMessage
 
   def hasSystemMessages: Boolean
 }
@@ -315,26 +333,30 @@ private[akka] trait DefaultSystemMessageQueue { self: Mailbox ⇒
     assert(message.next eq null)
     if (Mailbox.debug) println(actor.self + " having enqueued " + message)
     val head = systemQueueGet
-    /*
-     * this write is safely published by the compareAndSet contained within
-     * systemQueuePut; “Intra-Thread Semantics” on page 12 of the JSR133 spec
-     * guarantees that “head” uses the value obtained from systemQueueGet above.
-     * Hence, SystemMessage.next does not need to be volatile.
-     */
-    message.next = head
-    if (!systemQueuePut(head, message)) {
-      message.next = null
-      systemEnqueue(receiver, message)
+    if (head == NoMessage) actor.system.deadLetterMailbox.systemEnqueue(receiver, message)
+    else {
+      /*
+       * this write is safely published by the compareAndSet contained within
+       * systemQueuePut; “Intra-Thread Semantics” on page 12 of the JSR133 spec
+       * guarantees that “head” uses the value obtained from systemQueueGet above.
+       * Hence, SystemMessage.next does not need to be volatile.
+       */
+      message.next = head
+      if (!systemQueuePut(head, message)) {
+        message.next = null
+        systemEnqueue(receiver, message)
+      }
     }
   }
 
   @tailrec
-  final def systemDrain(): SystemMessage = {
+  final def systemDrain(newContents: SystemMessage): SystemMessage = {
     val head = systemQueueGet
-    if (systemQueuePut(head, null)) SystemMessage.reverse(head) else systemDrain()
+    if (systemQueuePut(head, newContents)) SystemMessage.reverse(head) else systemDrain(newContents)
   }
 
   def hasSystemMessages: Boolean = systemQueueGet ne null
+
 }
 
 /**
@@ -372,13 +394,11 @@ trait BoundedMessageQueueSemantics extends QueueBasedMessageQueue {
   def pushTimeOut: Duration
   override def queue: BlockingQueue[Envelope]
 
-  def enqueue(receiver: ActorRef, handle: Envelope) {
+  def enqueue(receiver: ActorRef, handle: Envelope): Unit =
     if (pushTimeOut.length > 0) {
-      queue.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
-        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
-      }
+      if (!queue.offer(handle, pushTimeOut.length, pushTimeOut.unit))
+        receiver.asInstanceOf[InternalActorRef].provider.deadLetters ! DeadLetter(handle.message, handle.sender, receiver)
     } else queue put handle
-  }
 
   def dequeue(): Envelope = queue.poll()
 }
@@ -410,18 +430,16 @@ trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
   override def queue: BlockingDeque[Envelope]
 
   def enqueue(receiver: ActorRef, handle: Envelope): Unit =
-    if (pushTimeOut.length > 0)
-      queue.offer(handle, pushTimeOut.length, pushTimeOut.unit) || {
-        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
-      }
-    else queue put handle
+    if (pushTimeOut.length > 0) {
+      if (!queue.offer(handle, pushTimeOut.length, pushTimeOut.unit))
+        receiver.asInstanceOf[InternalActorRef].provider.deadLetters ! DeadLetter(handle.message, handle.sender, receiver)
+    } else queue put handle
 
   def enqueueFirst(receiver: ActorRef, handle: Envelope): Unit =
-    if (pushTimeOut.length > 0)
-      queue.offerFirst(handle, pushTimeOut.length, pushTimeOut.unit) || {
-        throw new MessageQueueAppendFailedException("Couldn't enqueue message " + handle + " to " + receiver)
-      }
-    else queue putFirst handle
+    if (pushTimeOut.length > 0) {
+      if (!queue.offerFirst(handle, pushTimeOut.length, pushTimeOut.unit))
+        receiver.asInstanceOf[InternalActorRef].provider.deadLetters ! DeadLetter(handle.message, handle.sender, receiver)
+    } else queue putFirst handle
 
   def dequeue(): Envelope = queue.poll()
 }

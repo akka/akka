@@ -29,12 +29,6 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     _supervisor,
     _path) {
 
-  // verify that a BalancingDispatcher is not used with a Router
-  if (_props.routerConfig != NoRouter && _system.dispatchers.isBalancingDispatcher(_props.routerConfig.routerDispatcher))
-    throw new ConfigurationException(
-      "Configuration for actor [" + _path.toString +
-        "] is invalid - you can not use a 'BalancingDispatcher' as a Router's dispatcher, you can however use it for the routees.")
-
   /*
    * CAUTION: RoutedActorRef is PROBLEMATIC
    * ======================================
@@ -47,14 +41,20 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
    * before we are done with them: lock the monitor of the actor cell (hence the
    * override of newActorCell) and use that to block the Router constructor for
    * as long as it takes to setup the RoutedActorRef itself.
+   * 
+   *            ===>  I M P O R T A N T    N O T I C E  <===
+   *            
+   * DO NOT THROW ANY EXCEPTIONS BEFORE THE FOLLOWING TRY-BLOCK WITHOUT
+   * EXITING THE MONITOR OF THE actorCell!
+   * 
+   * This is important, just don’t do it! No kidding.
    */
   override def newActorCell(
     system: ActorSystemImpl,
     ref: InternalActorRef,
     props: Props,
-    supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration]): ActorCell = {
-    val cell = super.newActorCell(system, ref, props, supervisor, receiveTimeout)
+    supervisor: InternalActorRef): ActorCell = {
+    val cell = super.newActorCell(system, ref, props, supervisor)
     Unsafe.instance.monitorEnter(cell)
     cell
   }
@@ -74,6 +74,14 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
 
   val route =
     try {
+      // verify that a BalancingDispatcher is not used with a Router
+      if (_props.routerConfig != NoRouter && _system.dispatchers.isBalancingDispatcher(_props.routerConfig.routerDispatcher)) {
+        actorContext.stop(actorContext.self)
+        throw new ConfigurationException(
+          "Configuration for actor [" + _path.toString +
+            "] is invalid - you can not use a 'BalancingDispatcher' as a Router's dispatcher, you can however use it for the routees.")
+      }
+
       _routeeProvider = routerConfig.createRouteeProvider(actorContext)
       val r = routerConfig.createRoute(routeeProps, routeeProvider)
       // initial resize, before message send

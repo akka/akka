@@ -185,3 +185,6 @@ External Akka Serializers
 
 
 `Akka-quickser by Roman Levenstein <https://github.com/romix/akka-quickser-serialization>`_
+
+
+`Akka-kryo by Roman Levenstein <https://github.com/romix/akka-kryo-serialization>`_

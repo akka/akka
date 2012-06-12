@@ -102,11 +102,15 @@ private[akka] case class ChildTerminated(child: ActorRef) extends SystemMessage 
 /**
  * INTERNAL API
  */
-private[akka] case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.watch
+private[akka] case class Watch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to establish a DeathWatch
 /**
  * INTERNAL API
  */
-private[akka] case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.unwatch
+private[akka] case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
+/**
+ * INTERNAL API
+ */
+private[akka] case object NoMessage extends SystemMessage // switched into the mailbox to signal termination
 
 final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Runnable {
   def run(): Unit =
@@ -310,16 +314,14 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     case 0 ⇒
       shutdownSchedule match {
         case UNSCHEDULED ⇒
-          if (updateShutdownSchedule(UNSCHEDULED, SCHEDULED)) {
-            scheduleShutdownAction()
-            ()
-          } else ifSensibleToDoSoThenScheduleShutdown()
+          if (updateShutdownSchedule(UNSCHEDULED, SCHEDULED)) scheduleShutdownAction()
+          else ifSensibleToDoSoThenScheduleShutdown()
         case SCHEDULED ⇒
           if (updateShutdownSchedule(SCHEDULED, RESCHEDULED)) ()
           else ifSensibleToDoSoThenScheduleShutdown()
-        case RESCHEDULED ⇒ ()
+        case RESCHEDULED ⇒
       }
-    case _ ⇒ ()
+    case _ ⇒
   }
 
   private def scheduleShutdownAction(): Unit = {
@@ -349,9 +351,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   protected[akka] def unregister(actor: ActorCell) {
     if (debug) actors.remove(this, actor.self)
     addInhabitants(-1)
-    val mailBox = actor.mailbox
+    val mailBox = actor.swapMailbox(deadLetterMailbox)
     mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up
-    actor.mailbox = deadLetterMailbox
     mailBox.cleanUp()
   }
 
@@ -359,7 +360,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     @tailrec
     final def run() {
       shutdownSchedule match {
-        case UNSCHEDULED ⇒ ()
         case SCHEDULED ⇒
           try {
             if (inhabitants == 0) shutdown() //Warning, racy
@@ -369,6 +369,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
         case RESCHEDULED ⇒
           if (updateShutdownSchedule(RESCHEDULED, SCHEDULED)) scheduleShutdownAction()
           else run()
+        case UNSCHEDULED ⇒
       }
     }
   }

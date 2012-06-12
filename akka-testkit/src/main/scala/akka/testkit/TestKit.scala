@@ -62,50 +62,28 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
 }
 
 /**
- * Test kit for testing actors. Inheriting from this trait enables reception of
- * replies from actors, which are queued by an internal actor and can be
- * examined using the `expectMsg...` methods. Assertions and bounds concerning
- * timing are available in the form of `within` blocks.
+ * Implementation trait behind the [[akka.testkit.TestKit]] class: you may use
+ * this if inheriting from a concrete class is not possible.
  *
- * <pre>
- * class Test extends TestKit(ActorSystem()) {
- *     try {
+ * <b>Use of the trait is discouraged because of potential issues with binary
+ * backwards compatibility in the future, use at own risk.</b>
  *
- *       val test = system.actorOf(Props[SomeActor]
+ * This trait requires the concrete class mixing it in to provide an
+ * [[akka.actor.ActorSystem]] which is available before this traits’s
+ * constructor is run. The recommended way is this:
  *
- *       within (1 second) {
- *         test ! SomeWork
- *         expectMsg(Result1) // bounded to 1 second
- *         expectMsg(Result2) // bounded to the remainder of the 1 second
- *       }
- *
- *     } finally {
- *       system.shutdown()
- *     }
+ * {{{
+ * class MyTest extends TestKitBase {
+ *   implicit lazy val system = ActorSystem() // may add arguments here
+ *   ...
  * }
- * </pre>
- *
- * Beware of two points:
- *
- *  - the ActorSystem passed into the constructor needs to be shutdown,
- *    otherwise thread pools and memory will be leaked
- *  - this trait is not thread-safe (only one actor with one queue, one stack
- *    of `within` blocks); it is expected that the code is executed from a
- *    constructor as shown above, which makes this a non-issue, otherwise take
- *    care not to run tests within a single test class instance in parallel.
- *
- * It should be noted that for CI servers and the like all maximum Durations
- * are scaled using their Duration.dilated method, which uses the
- * TestKitExtension.Settings.TestTimeFactor settable via akka.conf entry "akka.test.timefactor".
- *
- * @author Roland Kuhn
- * @since 1.1
+ * }}}
  */
-class TestKit(_system: ActorSystem) {
+trait TestKitBase {
 
   import TestActor.{ Message, RealMessage, NullMessage }
 
-  implicit val system = _system
+  implicit val system: ActorSystem
   val testKitSettings = TestKitExtension(system)
 
   private val queue = new LinkedBlockingDeque[Message]()
@@ -579,6 +557,48 @@ class TestKit(_system: ActorSystem) {
   private def format(u: TimeUnit, d: Duration) = "%.3f %s".format(d.toUnit(u), u.toString.toLowerCase)
 }
 
+/**
+ * Test kit for testing actors. Inheriting from this trait enables reception of
+ * replies from actors, which are queued by an internal actor and can be
+ * examined using the `expectMsg...` methods. Assertions and bounds concerning
+ * timing are available in the form of `within` blocks.
+ *
+ * <pre>
+ * class Test extends TestKit(ActorSystem()) {
+ *     try {
+ *
+ *       val test = system.actorOf(Props[SomeActor]
+ *
+ *       within (1 second) {
+ *         test ! SomeWork
+ *         expectMsg(Result1) // bounded to 1 second
+ *         expectMsg(Result2) // bounded to the remainder of the 1 second
+ *       }
+ *
+ *     } finally {
+ *       system.shutdown()
+ *     }
+ * }
+ * </pre>
+ *
+ * Beware of two points:
+ *
+ *  - the ActorSystem passed into the constructor needs to be shutdown,
+ *    otherwise thread pools and memory will be leaked
+ *  - this trait is not thread-safe (only one actor with one queue, one stack
+ *    of `within` blocks); it is expected that the code is executed from a
+ *    constructor as shown above, which makes this a non-issue, otherwise take
+ *    care not to run tests within a single test class instance in parallel.
+ *
+ * It should be noted that for CI servers and the like all maximum Durations
+ * are scaled using their Duration.dilated method, which uses the
+ * TestKitExtension.Settings.TestTimeFactor settable via akka.conf entry "akka.test.timefactor".
+ *
+ * @author Roland Kuhn
+ * @since 1.1
+ */
+class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
+
 object TestKit {
   private[testkit] val testActorId = new AtomicInteger(0)
 
@@ -640,21 +660,22 @@ class TestProbe(_application: ActorSystem) extends TestKit(_application) {
    * Replies will be available for inspection with all of TestKit's assertion
    * methods.
    */
-  def send(actor: ActorRef, msg: AnyRef) = {
-    actor.!(msg)(testActor)
-  }
+  def send(actor: ActorRef, msg: Any): Unit = actor.!(msg)(testActor)
 
   /**
    * Forward this message as if in the TestActor's receive method with self.forward.
    */
-  def forward(actor: ActorRef, msg: AnyRef = lastMessage.msg) {
-    actor.!(msg)(lastMessage.sender)
-  }
+  def forward(actor: ActorRef, msg: Any = lastMessage.msg): Unit = actor.!(msg)(lastMessage.sender)
 
   /**
    * Get sender of last received message.
    */
   def sender = lastMessage.sender
+
+  /**
+   * Send message to the sender of the last dequeued message.
+   */
+  def reply(msg: Any): Unit = sender.!(msg)(ref)
 
 }
 

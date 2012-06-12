@@ -415,7 +415,7 @@ taken from one of the following locations in order of precedence:
 See :ref:`futures-scala` for more information on how to await or query a
 future.
 
-The ``onComplete``, ``onResult``, or ``onTimeout`` methods of the ``Future`` can be
+The ``onComplete``, ``onSuccess``, or ``onFailure`` methods of the ``Future`` can be
 used to register a callback to get a notification when the Future completes.
 Gives you a way to avoid blocking.
 
@@ -651,7 +651,7 @@ What happens to the Message
 ---------------------------
 
 If an exception is thrown while a message is being processed (so taken of his
-mailbox and handed over the the receive), then this message will be lost. It is
+mailbox and handed over to the receive), then this message will be lost. It is
 important to understand that it is not put back on the mailbox. So if you want
 to retry processing of a message, you need to deal with it yourself by catching
 the exception and retry your flow. Make sure that you put a bound on the number

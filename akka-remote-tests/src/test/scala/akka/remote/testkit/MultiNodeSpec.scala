@@ -3,22 +3,16 @@
  */
 package akka.remote.testkit
 
-import akka.testkit.AkkaSpec
-import akka.actor.{ ActorSystem, ExtendedActorSystem }
-import akka.remote.testconductor.TestConductor
-import java.net.InetAddress
 import java.net.InetSocketAddress
-import akka.remote.testconductor.TestConductorExt
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import akka.dispatch.Await.Awaitable
+
+import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
+
+import akka.actor.{ RootActorPath, Deploy, ActorPath, ActorSystem, ExtendedActorSystem }
 import akka.dispatch.Await
-import akka.util.Duration
-import akka.actor.ActorPath
-import akka.actor.RootActorPath
-import akka.remote.testconductor.RoleName
-import akka.actor.Deploy
-import com.typesafe.config.ConfigObject
+import akka.dispatch.Await.Awaitable
+import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
+import akka.testkit.AkkaSpec
+import akka.util.{ NonFatal, Duration }
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -43,7 +37,7 @@ abstract class MultiNodeConfig {
 
   /**
    * Include for verbose debug logging
-   * @param on when `true` debug Config is returned, otherwise empty Config
+   * @param on when `true` debug Config is returned, otherwise config with info logging
    */
   def debugConfig(on: Boolean): Config =
     if (on)
@@ -58,7 +52,8 @@ abstract class MultiNodeConfig {
           fsm = on
         }
         """)
-    else ConfigFactory.empty
+    else
+      ConfigFactory.parseString("akka.loglevel = INFO")
 
   /**
    * Construct a RoleName and return it, to be used as an identifier in the
@@ -77,13 +72,13 @@ abstract class MultiNodeConfig {
 
   def deployOnAll(deployment: String): Unit = _allDeploy :+= deployment
 
-  private[testkit] lazy val mySelf: RoleName = {
+  private[testkit] lazy val myself: RoleName = {
     require(_roles.size > MultiNodeSpec.selfIndex, "not enough roles declared for this test")
     _roles(MultiNodeSpec.selfIndex)
   }
 
   private[testkit] def config: Config = {
-    val configs = (_nodeConf get mySelf).toList ::: _commonConf.toList ::: MultiNodeSpec.nodeConfig :: AkkaSpec.testConf :: Nil
+    val configs = (_nodeConf get myself).toList ::: _commonConf.toList ::: MultiNodeSpec.nodeConfig :: AkkaSpec.testConf :: Nil
     configs reduce (_ withFallback _)
   }
 
@@ -128,17 +123,30 @@ object MultiNodeSpec {
 
 }
 
-abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem, roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
+/**
+ * Note: To be able to run tests with everything ignored or excluded by tags
+ * you must not use `testconductor`, or helper methods that use `testconductor`,
+ * from the constructor of your test class. Otherwise the controller node might
+ * be shutdown before other nodes have completed and you will see errors like:
+ * `AskTimeoutException: sending to terminated ref breaks promises`. Using lazy
+ * val is fine.
+ */
+abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
   extends AkkaSpec(_system) {
 
   import MultiNodeSpec._
 
   def this(config: MultiNodeConfig) =
-    this(config.mySelf, ActorSystem(AkkaSpec.getCallerName, config.config), config.roles, config.deployments)
+    this(config.myself, ActorSystem(AkkaSpec.getCallerName(classOf[MultiNodeSpec]), config.config), config.roles, config.deployments)
 
   /*
    * Test Class Interface
    */
+
+  /**
+   * All registered roles
+   */
+  def roles: Seq[RoleName] = _roles
 
   /**
    * TO BE DEFINED BY USER: Defines the number of participants required for starting the test. This
@@ -165,13 +173,13 @@ abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem, roles: 
    * to the `roleMap`).
    */
   def runOn(nodes: RoleName*)(thunk: ⇒ Unit): Unit = {
-    if (nodes exists (_ == mySelf)) {
+    if (nodes exists (_ == myself)) {
       thunk
     }
   }
 
   def ifNode[T](nodes: RoleName*)(yes: ⇒ T)(no: ⇒ T): T = {
-    if (nodes exists (_ == mySelf)) yes else no
+    if (nodes exists (_ == myself)) yes else no
   }
 
   /**
@@ -198,9 +206,9 @@ abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem, roles: 
 
   private val controllerAddr = new InetSocketAddress(nodeNames(0), 4711)
   if (selfIndex == 0) {
-    testConductor.startController(initialParticipants, mySelf, controllerAddr).await
+    testConductor.startController(initialParticipants, myself, controllerAddr).await
   } else {
-    testConductor.startClient(mySelf, controllerAddr).await
+    testConductor.startClient(myself, controllerAddr).await
   }
 
   // now add deployments, if so desired
@@ -210,12 +218,24 @@ abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem, roles: 
   }
   private val replacements = roles map (r ⇒ Replacement("@" + r.name + "@", r))
   private val deployer = system.asInstanceOf[ExtendedActorSystem].provider.deployer
-  deployments(mySelf) foreach { str ⇒
+  deployments(myself) foreach { str ⇒
     val deployString = (str /: replacements) {
       case (base, r @ Replacement(tag, _)) ⇒
         base.indexOf(tag) match {
-          case -1    ⇒ base
-          case start ⇒ base.replace(tag, r.addr)
+          case -1 ⇒ base
+          case start ⇒
+            val replaceWith = try
+              r.addr
+            catch {
+              case NonFatal(e) ⇒
+                // might happen if all test cases are ignored (excluded) and
+                // controller node is finished/exited before r.addr is run
+                // on the other nodes
+                val unresolved = "akka://unresolved-replacement-" + r.role.name
+                log.warning(unresolved + " due to: " + e.getMessage)
+                unresolved
+            }
+            base.replace(tag, replaceWith)
         }
     }
     import scala.collection.JavaConverters._
@@ -226,5 +246,8 @@ abstract class MultiNodeSpec(val mySelf: RoleName, _system: ActorSystem, roles: 
         throw new IllegalArgumentException("key " + key + " must map to deployment section, not simple value " + x)
     }
   }
+
+  // useful to see which jvm is running which role
+  log.info("Role [{}] started", myself.name)
 
 }

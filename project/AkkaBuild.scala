@@ -7,12 +7,14 @@ package akka
 import sbt._
 import sbt.Keys._
 import com.typesafe.sbtmultijvm.MultiJvmPlugin
-import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions }
+import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests }
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
-import com.typesafe.sbtosgi.OsgiPlugin.osgiSettings
-import com.typesafe.sbtosgi.OsgiKeys
+import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
+import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import java.lang.Boolean.getBoolean
+import sbt.Tests
 import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags }
 
 object AkkaBuild extends Build {
@@ -27,7 +29,8 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Sphinx.settings ++ Publish.versionSettings ++ Dist.settings ++ Seq(
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Sphinx.settings ++ Publish.versionSettings ++
+      Dist.settings ++ mimaSettings ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
@@ -50,8 +53,12 @@ object AkkaBuild extends Build {
       autoCompilerPlugins := true,
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
       scalacOptions += "-P:continuations:enable",
+      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
+      artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle")),
       // to fix scaladoc generation
-      fullClasspath in doc in Compile <<= fullClasspath in Compile
+      fullClasspath in doc in Compile <<= fullClasspath in Compile,
+      libraryDependencies ++= Dependencies.actor,
+      previousArtifact := akkaPreviousArtifact("akka-actor")
     )
   )
 
@@ -60,7 +67,8 @@ object AkkaBuild extends Build {
     base = file("akka-testkit"),
     dependencies = Seq(actor),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.testkit
+      libraryDependencies ++= Dependencies.testkit,
+      previousArtifact := akkaPreviousArtifact("akka-testkit")
     )
   )
 
@@ -80,23 +88,17 @@ object AkkaBuild extends Build {
     id = "akka-remote",
     base = file("akka-remote"),
     dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ OSGi.remote ++ Seq(
+    settings = defaultSettings ++ OSGi.remote ++ Seq(
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
-      parallelExecution in Test := false,
-      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
-      },
-      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
+      parallelExecution in Test := false
     )
-  ) configs (MultiJvm)
+  )
 
   lazy val remoteTests = Project(
     id = "akka-remote-tests",
     base = file("akka-remote-tests"),
-    dependencies = Seq(remote % "compile;test->test;multi-jvm->multi-jvm", actorTests % "test->test", testkit % "test->test"),
+    dependencies = Seq(remote, actorTests % "test->test", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
       // disable parallel tests
       parallelExecution in Test := false,
@@ -105,7 +107,7 @@ object AkkaBuild extends Build {
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
+      previousArtifact := akkaPreviousArtifact("akka-remote")
     )
   ) configs (MultiJvm)
 
@@ -122,7 +124,7 @@ object AkkaBuild extends Build {
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      test in Test <<= ((test in Test), (test in MultiJvm)) map { case x => x }
+      previousArtifact := akkaPreviousArtifact("akka-remote")
     )
   ) configs (MultiJvm)
 
@@ -140,7 +142,8 @@ object AkkaBuild extends Build {
     base = file("akka-agent"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ OSGi.agent ++ Seq(
-      libraryDependencies ++= Dependencies.agent
+      libraryDependencies ++= Dependencies.agent,
+      previousArtifact := akkaPreviousArtifact("akka-agent")
     )
   )
 
@@ -149,7 +152,8 @@ object AkkaBuild extends Build {
     base = file("akka-transactor"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ OSGi.transactor ++ Seq(
-      libraryDependencies ++= Dependencies.transactor
+      libraryDependencies ++= Dependencies.transactor,
+      previousArtifact := akkaPreviousArtifact("akka-transactor")
     )
   )
 
@@ -168,7 +172,8 @@ object AkkaBuild extends Build {
     dependencies = Seq(remote, testkit % "compile;test->test"),
     settings = defaultSettings ++ OSGi.mailboxesCommon ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes,
-      // DurableMailboxSpec published in akka-mailboxes-common-test
+      previousArtifact := akkaPreviousArtifact("akka-mailboxes-common"),
+        // DurableMailboxSpec published in akka-mailboxes-common-test
       publishArtifact in Test := true
     )
   )
@@ -178,7 +183,8 @@ object AkkaBuild extends Build {
     base = file("akka-durable-mailboxes/akka-file-mailbox"),
     dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
     settings = defaultSettings ++ OSGi.fileMailbox ++ Seq(
-      libraryDependencies ++= Dependencies.fileMailbox
+      libraryDependencies ++= Dependencies.fileMailbox,
+      previousArtifact := akkaPreviousArtifact("akka-file-mailbox")
     )
   )
 
@@ -187,7 +193,8 @@ object AkkaBuild extends Build {
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
     settings = defaultSettings ++ OSGi.zeroMQ ++ Seq(
-      libraryDependencies ++= Dependencies.zeroMQ
+      libraryDependencies ++= Dependencies.zeroMQ,
+      previousArtifact := akkaPreviousArtifact("akka-zeromq")
     )
   )
 
@@ -196,7 +203,8 @@ object AkkaBuild extends Build {
     base = file("akka-kernel"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.kernel
+      libraryDependencies ++= Dependencies.kernel,
+      previousArtifact := akkaPreviousArtifact("akka-kernel")
     )
   )
 
@@ -304,10 +312,11 @@ object AkkaBuild extends Build {
   )
 
   val excludeTestNames = SettingKey[Seq[String]]("exclude-test-names")
-  val excludeTestTags = SettingKey[Seq[String]]("exclude-test-tags")
-  val includeTestTags = SettingKey[Seq[String]]("include-test-tags")
+  val excludeTestTags = SettingKey[Set[String]]("exclude-test-tags")
+  val includeTestTags = SettingKey[Set[String]]("include-test-tags")
+  val onlyTestTags = SettingKey[Set[String]]("only-test-tags")
 
-  val defaultExcludedTags = Seq("timing", "long-running")
+  val defaultExcludedTags = Set("timing", "long-running")
 
   lazy val defaultMultiJvmOptions: Seq[String] = {
     (System.getProperty("akka.test.timefactor") match {
@@ -317,32 +326,47 @@ object AkkaBuild extends Build {
     (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
   }
 
-  // for excluding tests by name (or use system property: -Dakka.test.names.exclude=TimingSpec)
-  lazy val defaultExcludeTestNames: Seq[String] = {
-    val exclude = System.getProperty("akka.test.names.exclude", "")
-    if (exclude.isEmpty) Seq.empty else exclude.split(",").toSeq
+  // for excluding tests by name use system property: -Dakka.test.names.exclude=TimingSpec
+  // not supported by multi-jvm tests
+  lazy val useExcludeTestNames: Seq[String] = systemPropertyAsSeq("akka.test.names.exclude")
+
+  // for excluding tests by tag use system property: -Dakka.test.tags.exclude=<tag name>
+  // note that it will not be used if you specify -Dakka.test.tags.only
+  lazy val useExcludeTestTags: Set[String] = {
+    if (useOnlyTestTags.isEmpty) defaultExcludedTags ++ systemPropertyAsSeq("akka.test.tags.exclude").toSet
+    else Set.empty
   }
 
-  // for excluding tests by tag (or use system property: -Dakka.test.tags.exclude=timing)
-  lazy val defaultExcludeTestTags: Seq[String] = {
-    val exclude = System.getProperty("akka.test.tags.exclude", "")
-    if (exclude.isEmpty) defaultExcludedTags else exclude.split(",").toSeq
+  // for including tests by tag use system property: -Dakka.test.tags.include=<tag name>
+  // note that it will not be used if you specify -Dakka.test.tags.only
+  lazy val useIncludeTestTags: Set[String] = {
+    if (useOnlyTestTags.isEmpty) systemPropertyAsSeq("akka.test.tags.include").toSet
+    else Set.empty
   }
 
-  // for including tests by tag (or use system property: -Dakka.test.tags.include=timing)
-  lazy val defaultIncludeTestTags: Seq[String] = {
-    val include = System.getProperty("akka.test.tags.include", "")
-    if (include.isEmpty) Seq.empty else include.split(",").toSeq
+  // for running only tests by tag use system property: -Dakka.test.tags.only=<tag name>
+  lazy val useOnlyTestTags: Set[String] = systemPropertyAsSeq("akka.test.tags.only").toSet
+
+  def executeMultiJvmTests: Boolean = {
+    useOnlyTestTags.contains("long-running") ||
+    !(useExcludeTestTags -- useIncludeTestTags).contains("long-running")
   }
+
+  def systemPropertyAsSeq(name: String): Seq[String] = {
+    val prop = System.getProperty(name, "")
+    if (prop.isEmpty) Seq.empty else prop.split(",").toSeq
+  }
+
+  val multiNodeEnabled = java.lang.Boolean.getBoolean("akka.test.multi-node")
 
   lazy val defaultMultiJvmScalatestOptions: Seq[String] = {
-    val excludeTags = (defaultExcludeTestTags.toSet -- defaultIncludeTestTags.toSet).toSeq
+    val excludeTags = (useExcludeTestTags -- useIncludeTestTags).toSeq
     Seq("-r", "org.scalatest.akka.QuietReporter") ++
-    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", excludeTags.mkString(" "))) ++
-    (if (defaultIncludeTestTags.isEmpty) Seq.empty else Seq("-n", defaultIncludeTestTags.mkString(" ")))
+    (if (excludeTags.isEmpty) Seq.empty else Seq("-l", if (multiNodeEnabled) excludeTags.mkString("\"", " ", "\"") else excludeTags.mkString(" "))) ++
+    (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
   }
 
-  lazy val defaultSettings = baseSettings ++ formatSettings ++ Seq(
+  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ Seq(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
 
     // compile options
@@ -354,21 +378,22 @@ object AkkaBuild extends Build {
 
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
 
-    excludeTestNames := defaultExcludeTestNames,
-    excludeTestTags := defaultExcludeTestTags,
-    includeTestTags := defaultIncludeTestTags,
+    excludeTestNames := useExcludeTestNames,
+    excludeTestTags := useExcludeTestTags,
+    includeTestTags := useIncludeTestTags,
+    onlyTestTags := useOnlyTestTags,
 
     // add filters for tests excluded by name
     testOptions in Test <++= excludeTestNames map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
 
     // add arguments for tests excluded by tag - includes override excludes (opposite to scalatest)
     testOptions in Test <++= (excludeTestTags, includeTestTags) map { (excludes, includes) =>
-      val tags = (excludes.toSet -- includes.toSet).toSeq
+      val tags = (excludes -- includes)
       if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
     },
 
-    // add arguments for tests included by tag
-    testOptions in Test <++= includeTestTags map { tags =>
+    // add arguments for running only tests by tag
+    testOptions in Test <++= onlyTestTags map { tags =>
       if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
     },
 
@@ -391,14 +416,42 @@ object AkkaBuild extends Build {
 
   lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
-    ScalariformKeys.preferences in MultiJvm := formattingPreferences
+    ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
+    ((executeMultiJvmTests, multiNodeEnabled) match {
+      case (true, true) =>
+        executeTests in Test <<= ((executeTests in Test), (multiNodeExecuteTests in MultiJvm)) map {
+          case ((_, testResults), (_, multiNodeResults))  =>
+            val results = testResults ++ multiNodeResults
+            (Tests.overall(results.values), results)
+        }
+      case (true, false) =>
+        executeTests in Test <<= ((executeTests in Test), (executeTests in MultiJvm)) map {
+          case ((_, testResults), (_, multiNodeResults)) =>
+            val results = testResults ++ multiNodeResults
+            (Tests.overall(results.values), results)
+        }
+      case (false, _) => Seq.empty
+    })
+
+  lazy val mimaSettings = mimaDefaultSettings ++ Seq(
+    // MiMa
+    previousArtifact := None
   )
+
+  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.0"): Option[sbt.ModuleID] = {
+    // the artifact to compare binary compatibility with
+    Some(organization % id % version)
+  }
 }
 
 // Dependencies
 
 object Dependencies {
   import Dependency._
+
+  val actor = Seq(
+    config
+  )
 
   val testkit = Seq(Test.scalatest, Test.junit)
 
@@ -408,8 +461,7 @@ object Dependencies {
   )
 
   val remote = Seq(
-    netty, protobuf, Test.junit, Test.scalatest,
-    Test.zookeeper, Test.log4j // needed for ZkBarrier in multi-jvm tests
+    netty, protobuf, Test.junit, Test.scalatest
   )
 
   val cluster = Seq(Test.junit, Test.scalatest)
@@ -443,8 +495,8 @@ object Dependency {
 
   object V {
     val Camel        = "2.8.0"
-    val Logback      = "0.9.28"
-    val Netty        = "3.3.0.Final"
+    val Logback      = "1.0.4"
+    val Netty        = "3.5.0.Final"
     val OSGi         = "4.2.0"
     val Protobuf     = "2.4.1"
     val ScalaStm     = "0.5"
@@ -453,8 +505,8 @@ object Dependency {
   }
 
   // Compile
-
   val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint" % "0.3.1"  // ApacheV2
+  val config        = "com.typesafe"                % "config"                 % "0.4.1"      // ApacheV2
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
   val osgiCore      = "org.osgi"                    % "org.osgi.core"          % V.OSGi       // ApacheV2
@@ -462,12 +514,6 @@ object Dependency {
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
   val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.6" // ApacheV2
-
-  // Runtime
-
-  object Runtime {
-    val logback    = "ch.qos.logback"      % "logback-classic" % V.Logback    % "runtime" // MIT
-  }
 
   // Test
 
@@ -482,7 +528,6 @@ object Dependency {
     val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
     val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
     val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"         % "1.0.0"      % "test" // ApacheV2
-    val zookeeper   = "org.apache.hadoop.zookeeper" % "zookeeper"           % "3.4.0"      % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }
 }
@@ -519,7 +564,7 @@ object OSGi {
   )
 
   def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
-  def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4,0.5)\"".format(packageName)
+  def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
   def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.2,2.10)\"".format(packageName)
 
 }

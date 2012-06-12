@@ -307,7 +307,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     "be able to call methods returning Scala Options" in {
       val t = newFooBar(Duration(500, "ms"))
       t.optionPigdog(200).get must be("Pigdog")
-      t.optionPigdog(700) must be(None)
+      t.optionPigdog(1000) must be(None)
       mustStop(t)
     }
 

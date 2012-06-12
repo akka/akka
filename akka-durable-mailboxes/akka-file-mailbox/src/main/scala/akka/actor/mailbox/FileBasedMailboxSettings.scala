@@ -29,4 +29,7 @@ class FileBasedMailboxSettings(val systemSettings: ActorSystem.Settings, val use
   val KeepJournal: Boolean = getBoolean("keep-journal")
   val SyncJournal: Boolean = getBoolean("sync-journal")
 
+  val CircuitBreakerMaxFailures = getInt("circuit-breaker.max-failures")
+  val CircuitBreakerCallTimeout = Duration.fromNanos(getNanoseconds("circuit-breaker.call-timeout"))
+  val CircuitBreakerResetTimeout = Duration.fromNanos(getNanoseconds("circuit-breaker.reset-timeout"))
 }

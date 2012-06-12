@@ -108,11 +108,3 @@ message DeployProtocol {
   optional bytes routerConfig = 3;
   optional bytes scope = 4;
 }
-
-/**
- * Serialization of akka.remote.DaemonMsgWatch
- */
-message DaemonMsgWatchProtocol {
-  required ActorRefProtocol watcher = 1;
-  required ActorRefProtocol watched = 2;
-}

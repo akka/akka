@@ -59,7 +59,7 @@ case object Kill extends Kill {
 /**
  * When Death Watch is used, the watcher will receive a Terminated(watched) message when watched is terminated.
  */
-case class Terminated(@BeanProperty actor: ActorRef) extends PossiblyHarmful
+case class Terminated(@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean)
 
 abstract class ReceiveTimeout extends PossiblyHarmful
 
@@ -324,7 +324,7 @@ trait Actor {
    * User overridable definition the strategy to use for supervising
    * child actors.
    */
-  def supervisorStrategy(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
+  def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   /**
    * User overridable callback.
