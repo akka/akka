@@ -480,7 +480,7 @@ object Dependencies {
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
-  val osgi = Seq(osgiCore, ariesBlueprint, Runtime.logback, Test.ariesProxy, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
+  val osgi = Seq(osgiCore, ariesBlueprint, Test.logback, Test.ariesProxy, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
