@@ -194,15 +194,15 @@ object Gossip {
  * When failure detector consider a node as unavailble it will be moved from
  * `members` to `overview.unreachable`.
  *
- * When a node is downed, either manually or automatically, it is moved from `members`
- * to `overview.unreachable` (status Down). It is also removed from `overview.seen`
- * table. The node will reside as Down in the `overview.unreachable` set until joining
+ * When a node is downed, either manually or automatically, its status is changed to Down.
+ * It is also removed from `overview.seen` table.
+ * The node will reside as Down in the `overview.unreachable` set until joining
  * again and it will then go through the normal joining procedure.
  *
  * When a Gossip is received the version (vector clock) is used to determine if the
  * received Gossip is newer or older than the current local Gossip. The received Gossip
- * and local Gossip is merged in case of concurrent vector clocks, i.e. not same history.
- * When merged the seen table is cleared.
+ * and local Gossip is merged in case of conflicting version, i.e. vector clocks without
+ * same history. When merged the seen table is cleared.
  *
  * TODO document leaving, exiting and removed when that is implemented
  *
