@@ -147,7 +147,13 @@ case class GossipEnvelope(from: Address, gossip: Gossip) extends ClusterMessage
  *
  * Can be one of: Joining, Up, Leaving, Exiting and Down.
  */
-sealed trait MemberStatus extends ClusterMessage
+sealed trait MemberStatus extends ClusterMessage {
+  /**
+   * Using the same notion for 'unavailable' as 'non-convergence': DOWN and REMOVED.
+   */
+  def isUnavailable: Boolean = this == MemberStatus.Down || this == MemberStatus.Removed
+}
+
 object MemberStatus {
   case object Joining extends MemberStatus
   case object Up extends MemberStatus
@@ -155,11 +161,6 @@ object MemberStatus {
   case object Exiting extends MemberStatus
   case object Down extends MemberStatus
   case object Removed extends MemberStatus
-
-  /**
-   * Using the same notion for 'unavailable' as 'non-convergence': DOWN and REMOVED.
-   */
-  def isUnavailable(status: MemberStatus): Boolean = status == MemberStatus.Down || status == MemberStatus.Removed
 }
 
 /**
@@ -168,8 +169,6 @@ object MemberStatus {
 case class GossipOverview(
   seen: Map[Address, VectorClock] = Map.empty[Address, VectorClock],
   unreachable: Set[Member] = Set.empty[Member]) {
-
-  // FIXME document when nodes are put in 'unreachable' set and removed from 'members'
 
   override def toString =
     "GossipOverview(seen = [" + seen.mkString(", ") +
@@ -182,7 +181,31 @@ object Gossip {
 }
 
 /**
- * Represents the state of the cluster; cluster ring membership, ring convergence, meta data - all versioned by a vector clock.
+ * Represents the state of the cluster; cluster ring membership, ring convergence, meta data -
+ * all versioned by a vector clock.
+ *
+ * When a node is joining the Member, with status Joining, is added to `members`.
+ * If the joining node was downed it is moved from `overview.unreachable` (status Down)
+ * to `members` (status Joining). It cannot rejoin if not first downed.
+ *
+ * When convergence is reached the leader change status of `members` from Joining
+ * to Up.
+ *
+ * When failure detector consider a node as unavailble it will be moved from
+ * `members` to `overview.unreachable`.
+ *
+ * When a node is downed, either manually or automatically, it is moved from `members`
+ * to `overview.unreachable` (status Down). It is also removed from `overview.seen`
+ * table. The node will reside as Down in the `overview.unreachable` set until joining
+ * again and it will then go through the normal joining procedure.
+ *
+ * When a Gossip is received the version (vector clock) is used to determine if the
+ * received Gossip is newer or older than the current local Gossip. The received Gossip
+ * and local Gossip is merged in case of concurrent vector clocks, i.e. not same history.
+ * When merged the seen table is cleared.
+ *
+ * TODO document leaving, exiting and removed when that is implemented
+ *
  */
 case class Gossip(
   overview: GossipOverview = GossipOverview(),
@@ -191,6 +214,28 @@ case class Gossip(
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {
+
+  // FIXME can be disabled as optimization
+  assertInvariants
+  private def assertInvariants: Unit = {
+    val unreachableAndLive = members.intersect(overview.unreachable)
+    if (unreachableAndLive.nonEmpty)
+      throw new IllegalArgumentException("Same nodes in both members and unreachable is not allowed, got [%s]"
+        format unreachableAndLive.mkString(", "))
+
+    val allowedLiveMemberStatuses: Set[MemberStatus] = Set(MemberStatus.Joining, MemberStatus.Up, MemberStatus.Leaving, MemberStatus.Exiting)
+    def hasNotAllowedLiveMemberStatus(m: Member) = !allowedLiveMemberStatuses.contains(m.status)
+    if (members exists hasNotAllowedLiveMemberStatus)
+      throw new IllegalArgumentException("Live members must have status [%s], got [%s]"
+        format (allowedLiveMemberStatuses.mkString(", "),
+          (members filter hasNotAllowedLiveMemberStatus).mkString(", ")))
+
+    val seenButNotMember = overview.seen.keySet -- members.map(_.address) -- overview.unreachable.map(_.address)
+    if (seenButNotMember.nonEmpty)
+      throw new IllegalArgumentException("Nodes not part of cluster have marked the Gossip as seen, got [%s]"
+        format seenButNotMember.mkString(", "))
+
+  }
 
   /**
    * Increments the version for this 'Node'.
@@ -223,7 +268,7 @@ case class Gossip(
     // 2. merge meta-data
     val mergedMeta = this.meta ++ that.meta
 
-    def reduceHighestPriority(a: Seq[Member], b: Seq[Member]): Set[Member] = {
+    def pickHighestPriority(a: Seq[Member], b: Seq[Member]): Set[Member] = {
       // group all members by Address => Seq[Member]
       val groupedByAddress = (a ++ b).groupBy(_.address)
       // pick highest MemberStatus
@@ -233,11 +278,11 @@ case class Gossip(
     }
 
     // 3. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
-    val mergedUnreachable = reduceHighestPriority(this.overview.unreachable.toSeq, that.overview.unreachable.toSeq)
+    val mergedUnreachable = pickHighestPriority(this.overview.unreachable.toSeq, that.overview.unreachable.toSeq)
 
     // 4. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
     //    and exclude unreachable
-    val mergedMembers = Gossip.emptyMembers ++ reduceHighestPriority(this.members.toSeq, that.members.toSeq).
+    val mergedMembers = Gossip.emptyMembers ++ pickHighestPriority(this.members.toSeq, that.members.toSeq).
       filterNot(mergedUnreachable.contains)
 
     // 5. fresh seen table
@@ -1145,7 +1190,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localMembers = localGossip.members
     val localUnreachableMembers = localOverview.unreachable
     val isUnreachable = localUnreachableMembers exists { _.address == selfAddress }
-    val hasUnavailableMemberStatus = localMembers exists { m ⇒ (m == self) && MemberStatus.isUnavailable(m.status) }
+    val hasUnavailableMemberStatus = localMembers exists { m ⇒ (m == self) && m.status.isUnavailable }
     isUnreachable || hasUnavailableMemberStatus
   }
 
