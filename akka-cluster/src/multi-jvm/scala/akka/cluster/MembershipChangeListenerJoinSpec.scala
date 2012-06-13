@@ -38,9 +38,10 @@ abstract class MembershipChangeListenerJoinSpec
 
       runOn(first) {
         val joinLatch = TestLatch()
+        val expectedAddresses = Set(firstAddress, secondAddress)
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
-            if (members.size == 2 && members.exists(_.status == MemberStatus.Joining))
+            if (members.map(_.address) == expectedAddresses && members.exists(_.status == MemberStatus.Joining))
               joinLatch.countDown()
           }
         })
