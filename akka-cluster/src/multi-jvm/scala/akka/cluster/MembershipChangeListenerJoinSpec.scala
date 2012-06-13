@@ -44,18 +44,18 @@ abstract class MembershipChangeListenerJoinSpec
               joinLatch.countDown()
           }
         })
-        testConductor.enter("registered-listener")
+        enter("registered-listener")
 
         joinLatch.await
         cluster.convergence.isDefined must be(true)
       }
 
       runOn(second) {
-        testConductor.enter("registered-listener")
+        enter("registered-listener")
         cluster.join(firstAddress)
       }
 
-      testConductor.enter("after")
+      enter("after")
     }
   }
 }

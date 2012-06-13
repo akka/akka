@@ -62,7 +62,7 @@ abstract class SunnyWeatherSpec
       })
 
       for (n ← 1 to 30) {
-        testConductor.enter("period-" + n)
+        enter("period-" + n)
         unexpected.get must be(null)
         awaitUpConvergence(roles.size)
         assertLeaderIn(roles)
@@ -70,7 +70,7 @@ abstract class SunnyWeatherSpec
         1.seconds.sleep
       }
 
-      testConductor.enter("after")
+      enter("after")
     }
   }
 }

@@ -71,14 +71,14 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy { self: MultiNodeSpec
       // make sure that the node-to-join is started before other join
       startClusterNode()
     }
-    testConductor.enter(roles.head.name + "-started")
+    enter(roles.head.name + "-started")
     if (roles.tail.contains(myself)) {
       cluster.join(node(roles.head).address)
     }
     if (upConvergence && roles.contains(myself)) {
       awaitUpConvergence(numberOfMembers = roles.length)
     }
-    testConductor.enter(roles.map(_.name).mkString("-") + "-joined")
+    enter(roles.map(_.name).mkString("-") + "-joined")
   }
 
   /**

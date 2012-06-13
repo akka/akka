@@ -47,12 +47,12 @@ abstract class MembershipChangeListenerExitingSpec
       awaitClusterUp(first, second, third)
 
       runOn(first) {
-        testConductor.enter("registered-listener")
+        enter("registered-listener")
         cluster.leave(secondAddress)
       }
 
       runOn(second) {
-        testConductor.enter("registered-listener")
+        enter("registered-listener")
       }
 
       runOn(third) {
@@ -63,11 +63,11 @@ abstract class MembershipChangeListenerExitingSpec
               exitingLatch.countDown()
           }
         })
-        testConductor.enter("registered-listener")
+        enter("registered-listener")
         exitingLatch.await
       }
 
-      testConductor.enter("finished")
+      enter("finished")
     }
   }
 }

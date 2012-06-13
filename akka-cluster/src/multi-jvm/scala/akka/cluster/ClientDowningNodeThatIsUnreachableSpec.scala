@@ -47,23 +47,23 @@ abstract class ClientDowningNodeThatIsUnreachableSpec
 
         // mark 'third' node as DOWN
         cluster.down(thirdAddress)
-        testConductor.enter("down-third-node")
+        enter("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
         cluster.latestGossip.members.exists(_.address == thirdAddress) must be(false)
       }
 
       runOn(third) {
-        testConductor.enter("down-third-node")
+        enter("down-third-node")
       }
 
       runOn(second, fourth) {
-        testConductor.enter("down-third-node")
+        enter("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
       }
 
-      testConductor.enter("await-completion")
+      enter("await-completion")
     }
   }
 }

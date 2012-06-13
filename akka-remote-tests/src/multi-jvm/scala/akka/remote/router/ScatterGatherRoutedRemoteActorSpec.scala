@@ -55,11 +55,11 @@ class ScatterGatherRoutedRemoteActorSpec extends MultiNodeSpec(ScatterGatherRout
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
 
       runOn(first, second, third) {
-        testConductor.enter("start", "broadcast-end", "end", "done")
+        enter("start", "broadcast-end", "end", "done")
       }
 
       runOn(fourth) {
-        testConductor.enter("start")
+        enter("start")
         val actor = system.actorOf(Props[SomeActor].withRouter(ScatterGatherFirstCompletedRouter(within = 10 seconds)), "service-hello")
         actor.isInstanceOf[RoutedActorRef] must be(true)
 
@@ -76,17 +76,17 @@ class ScatterGatherRoutedRemoteActorSpec extends MultiNodeSpec(ScatterGatherRout
           case (replyMap, address) ⇒ replyMap + (address -> (replyMap(address) + 1))
         }
 
-        testConductor.enter("broadcast-end")
+        enter("broadcast-end")
         actor ! Broadcast(PoisonPill)
 
-        testConductor.enter("end")
+        enter("end")
         replies.values.sum must be === connectionCount * iterationCount
         replies.get(node(fourth).address) must be(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node
         system.stop(actor)
-        testConductor.enter("done")
+        enter("done")
       }
     }
   }

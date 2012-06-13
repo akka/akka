@@ -44,7 +44,7 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
       runOn(first) {
         cluster.leave(secondAddress)
       }
-      testConductor.enter("second-left")
+      enter("second-left")
 
       runOn(first, third) {
         // verify that the 'second' node is no longer part of the 'members' set
@@ -59,7 +59,7 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
         isRemoved.get.address must be(secondAddress)
       }
 
-      testConductor.enter("finished")
+      enter("finished")
     }
   }
 }
