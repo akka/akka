@@ -29,6 +29,7 @@ abstract class MembershipChangeListenerUpSpec
 
   lazy val firstAddress = node(first).address
   lazy val secondAddress = node(second).address
+  lazy val thirdAddress = node(third).address
 
   "A set of connected cluster systems" must {
 
@@ -38,9 +39,10 @@ abstract class MembershipChangeListenerUpSpec
 
       runOn(first, second) {
         val latch = TestLatch()
+        val expectedAddresses = Set(firstAddress, secondAddress)
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
-            if (members.size == 2 && members.forall(_.status == MemberStatus.Up))
+            if (members.map(_.address) == expectedAddresses && members.forall(_.status == MemberStatus.Up))
               latch.countDown()
           }
         })
@@ -59,9 +61,10 @@ abstract class MembershipChangeListenerUpSpec
     "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 
       val latch = TestLatch()
+      val expectedAddresses = Set(firstAddress, secondAddress, thirdAddress)
       cluster.registerListener(new MembershipChangeListener {
         def notify(members: SortedSet[Member]) {
-          if (members.size == 3 && members.forall(_.status == MemberStatus.Up))
+          if (members.map(_.address) == expectedAddresses && members.forall(_.status == MemberStatus.Up))
             latch.countDown()
         }
       })
