@@ -110,8 +110,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
       cluster.joining(addresses(1))
       cluster.latestGossip.members.map(_.address) must be(Set(selfAddress, addresses(1)))
       memberStatus(addresses(1)) must be(Some(MemberStatus.Joining))
-      // FIXME why is it still convergence immediately after joining?
-      //cluster.convergence.isDefined must be(false)
+      cluster.convergence.isDefined must be(false)
     }
 
     "accept a few more joining nodes" in {
