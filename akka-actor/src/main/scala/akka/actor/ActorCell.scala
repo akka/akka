@@ -13,7 +13,7 @@ import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
 import akka.event.Logging.LogEventException
-import collection.immutable.{ TreeSet, Stack, TreeMap }
+import collection.immutable.{ TreeSet, TreeMap }
 import akka.util.{ Unsafe, Duration, Helpers, NonFatal }
 
 //TODO: everything here for current compatibility - could be limited more
@@ -173,8 +173,8 @@ trait UntypedActorContext extends ActorContext {
  * for! (waves hand)
  */
 private[akka] object ActorCell {
-  val contextStack = new ThreadLocal[Stack[ActorContext]] {
-    override def initialValue = Stack[ActorContext]()
+  val contextStack = new ThreadLocal[List[ActorContext]] {
+    override def initialValue: List[ActorContext] = Nil
   }
 
   final val emptyCancellable: Cancellable = new Cancellable {
@@ -184,7 +184,7 @@ private[akka] object ActorCell {
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
 
-  final val emptyBehaviorStack: Stack[Actor.Receive] = Stack.empty
+  final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
   final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
 
@@ -408,7 +408,7 @@ private[akka] class ActorCell(
 
   var currentMessage: Envelope = _
   var actor: Actor = _
-  private var behaviorStack: Stack[Actor.Receive] = emptyBehaviorStack
+  private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
   @volatile var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
   var nextNameSequence: Long = 0
   var watching: Set[ActorRef] = emptyActorRefSet
@@ -511,7 +511,7 @@ private[akka] class ActorCell(
 
   //This method is in charge of setting up the contextStack and create a new instance of the Actor
   protected def newActor(): Actor = {
-    contextStack.set(contextStack.get.push(this))
+    contextStack.set(this :: contextStack.get)
     try {
       behaviorStack = emptyBehaviorStack
       val instance = props.creator.apply()
@@ -520,12 +520,12 @@ private[akka] class ActorCell(
         throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
       // If no becomes were issued, the actors behavior is its receive method
-      behaviorStack = if (behaviorStack.isEmpty) behaviorStack.push(instance.receive) else behaviorStack
+      behaviorStack = if (behaviorStack.isEmpty) instance.receive :: behaviorStack else behaviorStack
       instance
     } finally {
       val stackAfter = contextStack.get
       if (stackAfter.nonEmpty)
-        contextStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) // pop null marker plus our context
+        contextStack.set(if (stackAfter.head eq null) stackAfter.tail.tail else stackAfter.tail) // pop null marker plus our context
     }
   }
 
@@ -680,7 +680,7 @@ private[akka] class ActorCell(
   }
 
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit =
-    behaviorStack = (if (discardOld && behaviorStack.nonEmpty) behaviorStack.pop else behaviorStack).push(behavior)
+    behaviorStack = behavior :: (if (discardOld && behaviorStack.nonEmpty) behaviorStack.tail else behaviorStack)
 
   /**
    * UntypedActorContext impl
@@ -696,8 +696,8 @@ private[akka] class ActorCell(
   def unbecome(): Unit = {
     val original = behaviorStack
     behaviorStack =
-      if (original.isEmpty || original.pop.isEmpty) emptyBehaviorStack.push(actor.receive)
-      else original.pop
+      if (original.isEmpty || original.tail.isEmpty) actor.receive :: emptyBehaviorStack
+      else original.tail
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
