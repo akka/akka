@@ -1152,7 +1152,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val allMembersInSeen = gossip.members.forall(m ⇒ seen.contains(m.address))
 
     if (hasUnreachable) {
-      log.debug("Cluster Node [{}] - No cluster convergence, due to unreachable [{}].", selfAddress, unreachable)
+      log.debug("Cluster Node [{}] - No cluster convergence, due to unreachable nodes [{}].", selfAddress, unreachable)
       None
     } else if (!allMembersInSeen) {
       log.debug("Cluster Node [{}] - No cluster convergence, due to members not in seen table [{}].", selfAddress,
@@ -1160,13 +1160,14 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       None
     } else {
 
-      val views = (Set.empty[VectorClock] ++ seen.values).size
+      val views = seen.values.toSet.size
 
       if (views == 1) {
         log.debug("Cluster Node [{}] - Cluster convergence reached: [{}]", selfAddress, gossip.members.mkString(", "))
         Some(gossip)
       } else {
-        log.debug("Cluster Node [{}] - No cluster convergence, due to [{}] different views.", selfAddress, views)
+        log.debug("Cluster Node [{}] - No cluster convergence, since not all nodes have seen the same state yet. [{} of {}]",
+          selfAddress, views, seen.values.size)
         None
       }
     }
