@@ -315,7 +315,7 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
   def toMinutes = unit.toMinutes(length)
   def toHours = unit.toHours(length)
   def toDays = unit.toDays(length)
-  def toUnit(u: TimeUnit) = long2double(toNanos) / NANOSECONDS.convert(1, u)
+  def toUnit(u: TimeUnit) = toNanos.toDouble / NANOSECONDS.convert(1, u)
 
   override def toString = this match {
     case Duration(1, DAYS)         ⇒ "1 day"
@@ -354,11 +354,11 @@ class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duration {
 
   def -(other: Duration): Duration = if (!other.finite_?) other else fromNanos(add(toNanos, -other.toNanos))
 
-  def *(factor: Double): FiniteDuration = fromNanos(long2double(toNanos) * factor)
+  def *(factor: Double): FiniteDuration = fromNanos(toNanos.toDouble * factor)
 
-  def /(factor: Double): FiniteDuration = fromNanos(long2double(toNanos) / factor)
+  def /(factor: Double): FiniteDuration = fromNanos(toNanos.toDouble / factor)
 
-  def /(other: Duration): Double = if (other.finite_?) long2double(toNanos) / other.toNanos else 0
+  def /(other: Duration): Double = if (other.finite_?) toNanos.toDouble / other.toNanos else 0
 
   def unary_- : FiniteDuration = Duration(-length, unit)
 
