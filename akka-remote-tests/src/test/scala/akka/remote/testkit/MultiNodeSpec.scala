@@ -12,7 +12,7 @@ import akka.dispatch.Await
 import akka.dispatch.Await.Awaitable
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
 import akka.testkit.AkkaSpec
-import akka.util.{ NonFatal, Duration }
+import akka.util.{ Timeout, NonFatal, Duration }
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -183,6 +183,14 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   }
 
   /**
+   * Enter the named barriers in the order given. Use the remaining duration from
+   * the innermost enclosing `within` block or the default `BarrierTimeout`
+   */
+  def enter(name: String*) {
+    testConductor.enter(Timeout.durationToTimeout(remainingOr(testConductor.Settings.BarrierTimeout.duration)), name)
+  }
+
+  /**
    * Query the controller for the transport address of the given node (by role name) and
    * return that as an ActorPath for easy composition:
    *
@@ -193,11 +201,14 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   def node(role: RoleName): ActorPath = RootActorPath(testConductor.getAddressFor(role).await)
 
   /**
-   * Enrich `.await()` onto all Awaitables, using BarrierTimeout.
+   * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
+   * enclosing `within` block or BarrierTimeout.
+   *
+   * FIXME Is it really BarrierTimeout we want here? That seems like an awfully long time.
    */
   implicit def awaitHelper[T](w: Awaitable[T]) = new AwaitHelper(w)
   class AwaitHelper[T](w: Awaitable[T]) {
-    def await: T = Await.result(w, testConductor.Settings.BarrierTimeout.duration)
+    def await: T = Await.result(w, remainingOr(testConductor.Settings.BarrierTimeout.duration))
   }
 
   /*

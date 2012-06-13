@@ -10,6 +10,7 @@ import akka.remote.testconductor.{ TestConductorProtocol ⇒ TCP }
 import com.google.protobuf.Message
 import akka.actor.Address
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder
+import akka.util.Timeout
 
 case class RoleName(name: String)
 
@@ -28,7 +29,8 @@ private[akka] sealed trait ConfirmedClientOp extends ClientOp
  */
 private[akka] case class Hello(name: String, addr: Address) extends NetworkOp
 
-private[akka] case class EnterBarrier(name: String) extends ServerOp with NetworkOp
+private[akka] case class EnterBarrier(name: String, timeout: Option[Timeout] = None) extends ServerOp with NetworkOp
+private[akka] case class FailBarrier(name: String) extends ServerOp with NetworkOp
 private[akka] case class BarrierResult(name: String, success: Boolean) extends UnconfirmedClientOp with NetworkOp
 
 private[akka] case class Throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Float) extends CommandOp
@@ -72,10 +74,14 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
       x match {
         case Hello(name, addr) ⇒
           w.setHello(TCP.Hello.newBuilder.setName(name).setAddress(addr))
-        case EnterBarrier(name) ⇒
-          w.setBarrier(TCP.EnterBarrier.newBuilder.setName(name))
+        case EnterBarrier(name, timeout) ⇒
+          val barrier = TCP.EnterBarrier.newBuilder.setName(name)
+          timeout foreach (t ⇒ barrier.setTimeout(t.duration.toMillis))
+          w.setBarrier(barrier)
         case BarrierResult(name, success) ⇒
           w.setBarrier(TCP.EnterBarrier.newBuilder.setName(name).setStatus(success))
+        case FailBarrier(name) ⇒
+          w.setBarrier(TCP.EnterBarrier.newBuilder.setName(name).setFailed(true))
         case ThrottleMsg(target, dir, rate) ⇒
           w.setFailure(TCP.InjectFailure.newBuilder.setAddress(target)
             .setFailure(TCP.FailType.Throttle).setDirection(dir).setRateMBit(rate))
@@ -115,7 +121,8 @@ private[akka] class MsgDecoder extends OneToOneDecoder {
       } else if (w.hasBarrier) {
         val barrier = w.getBarrier
         if (barrier.hasStatus) BarrierResult(barrier.getName, barrier.getStatus)
-        else EnterBarrier(w.getBarrier.getName)
+        else if (barrier.hasFailed) FailBarrier(barrier.getName)
+        else EnterBarrier(w.getBarrier.getName, if (barrier.hasTimeout) Option(Timeout.longToTimeout(barrier.getTimeout)) else None)
       } else if (w.hasFailure) {
         val f = w.getFailure
         import TCP.{ FailType ⇒ FT }

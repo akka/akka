@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
 import akka.util.Timeout
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.pattern.{ ask, pipe }
+import akka.pattern.{ ask, pipe, AskTimeoutException }
 import akka.dispatch.Await
 import scala.util.control.NoStackTrace
 import akka.actor.Status
@@ -76,10 +76,34 @@ trait Player { this: TestConductorExt ⇒
    * throw an exception in case of timeouts or other errors.
    */
   def enter(name: String*) {
+    enter(Settings.BarrierTimeout, name)
+  }
+
+  case class OutOfTimeException(barrier: String) extends RuntimeException("Ran out of time while waiting for barrier '" + barrier + "'") with NoStackTrace
+
+  /**
+   * Enter the named barriers, one after the other, in the order given. Will
+   * throw an exception in case of timeouts or other errors.
+   */
+  def enter(timeout: Timeout, name: Seq[String]) {
+    def now: Duration = System.nanoTime.nanos
+
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
+    val stop = now + timeout.duration
     name foreach { b ⇒
-      import Settings.BarrierTimeout
-      Await.result(client ? ToServer(EnterBarrier(b)), Duration.Inf)
+      val barrierTimeout = stop - now
+      if (barrierTimeout < Duration.Zero) {
+        client ! ToServer(FailBarrier(b))
+        throw OutOfTimeException(b)
+      }
+      try {
+        implicit val timeout = Timeout(barrierTimeout + Settings.QueryTimeout.duration)
+        Await.result(client ? ToServer(EnterBarrier(b, Option(barrierTimeout))), Duration.Inf)
+      } catch {
+        case e: AskTimeoutException ⇒
+          client ! ToServer(FailBarrier(b))
+          throw e
+      }
       system.log.debug("passed barrier {}", b)
     }
   }
@@ -88,7 +112,7 @@ trait Player { this: TestConductorExt ⇒
    * Query remote transport address of named node.
    */
   def getAddressFor(name: RoleName): Future[Address] = {
-    import Settings.BarrierTimeout
+    import Settings.QueryTimeout
     client ? ToServer(GetAddress(name)) mapTo
   }
 }
@@ -168,8 +192,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     case Event(ToServer(msg), d @ Data(Some(channel), None)) ⇒
       channel.write(msg)
       val token = msg match {
-        case EnterBarrier(barrier) ⇒ barrier
-        case GetAddress(node)      ⇒ node.name
+        case EnterBarrier(barrier, timeout) ⇒ barrier
+        case GetAddress(node)               ⇒ node.name
       }
       stay using d.copy(runningOp = Some(token, sender))
     case Event(ToServer(op), Data(channel, Some((token, _)))) ⇒

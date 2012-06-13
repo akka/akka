@@ -376,7 +376,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
    * BarrierTimeouts in the players).
    */
   override def supervisorStrategy = OneForOneStrategy() {
-    case BarrierTimeout(data)             ⇒ SupervisorStrategy.Resume
+    case BarrierTimeout(data)             ⇒ SupervisorStrategy.Restart
     case BarrierEmpty(data, msg)          ⇒ SupervisorStrategy.Resume
     case WrongBarrier(name, client, data) ⇒ client ! ToClient(BarrierResult(name, false)); failBarrier(data)
     case ClientLost(data, node)           ⇒ failBarrier(data)
@@ -426,6 +426,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     case op: ServerOp ⇒
       op match {
         case _: EnterBarrier ⇒ barrier forward op
+        case _: FailBarrier  ⇒ barrier forward op
         case GetAddress(node) ⇒
           if (nodes contains node) sender ! ToClient(AddressReply(node, nodes(node).addr))
           else addrInterest += node -> ((addrInterest get node getOrElse Set()) + sender)
@@ -497,9 +498,13 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   import BarrierCoordinator._
   import akka.actor.FSM._
   import Controller._
+  import akka.util.{ Timeout ⇒ auTimeout }
 
-  // this shall be set to false if all subsequent barriers shall fail
+  // this shall be set to true if all subsequent barriers shall fail
   var failed = false
+
+  var barrierTimeout: Option[auTimeout] = None
+
   override def preRestart(reason: Throwable, message: Option[Any]) {}
   override def postRestart(reason: Throwable) { failed = true }
 
@@ -520,27 +525,29 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   }
 
   when(Idle) {
-    case Event(EnterBarrier(name), d @ Data(clients, _, _)) ⇒
+    case Event(EnterBarrier(name, timeout), d @ Data(clients, _, _)) ⇒
       if (failed)
         stay replying ToClient(BarrierResult(name, false))
       else if (clients.map(_.fsm) == Set(sender))
         stay replying ToClient(BarrierResult(name, true))
       else if (clients.find(_.fsm == sender).isEmpty)
         stay replying ToClient(BarrierResult(name, false))
-      else
+      else {
+        barrierTimeout = timeout
         goto(Waiting) using d.copy(barrier = name, arrived = sender :: Nil)
+      }
     case Event(RemoveClient(name), d @ Data(clients, _, _)) ⇒
       if (clients.isEmpty) throw BarrierEmpty(d, "cannot remove " + name + ": no client to remove")
       stay using d.copy(clients = clients filterNot (_.name == name))
   }
 
   onTransition {
-    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, TestConductor().Settings.BarrierTimeout.duration, false)
+    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, barrierTimeout.getOrElse[auTimeout](TestConductor().Settings.BarrierTimeout).duration, false)
     case Waiting -> Idle ⇒ cancelTimer("Timeout")
   }
 
   when(Waiting) {
-    case Event(EnterBarrier(name), d @ Data(clients, barrier, arrived)) ⇒
+    case Event(EnterBarrier(name, timeout), d @ Data(clients, barrier, arrived)) ⇒
       if (name != barrier) throw WrongBarrier(name, sender, d)
       val together = if (clients.exists(_.fsm == sender)) sender :: arrived else arrived
       handleBarrier(d.copy(arrived = together))
@@ -550,18 +557,27 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
         case Some(client) ⇒
           handleBarrier(d.copy(clients = clients - client, arrived = arrived filterNot (_ == client.fsm)))
       }
-    case Event(StateTimeout, data) ⇒
-      throw BarrierTimeout(data)
+    case Event(FailBarrier(name), d @ Data(clients, barrier, arrived)) ⇒
+      if (name != barrier) throw WrongBarrier(name, sender, d)
+      failed = true
+      handleBarrier(d, false)
+
+    case Event(StateTimeout, d @ Data(clients, barrier, arrived)) ⇒
+      handleBarrier(d, false)
+      throw BarrierTimeout(d)
   }
 
   initialize
 
-  def handleBarrier(data: Data): State = {
-    log.debug("handleBarrier({})", data)
-    if (data.arrived.isEmpty) {
+  def handleBarrier(data: Data, status: Boolean = true): State = {
+    log.debug("handleBarrier({}, {})", data, status)
+    if (!status) {
+      data.arrived foreach (_ ! ToClient(BarrierResult(data.barrier, status)))
+      goto(Idle) using data.copy(barrier = "", arrived = Nil)
+    } else if (data.arrived.isEmpty) {
       goto(Idle) using data.copy(barrier = "")
     } else if ((data.clients.map(_.fsm) -- data.arrived).isEmpty) {
-      data.arrived foreach (_ ! ToClient(BarrierResult(data.barrier, true)))
+      data.arrived foreach (_ ! ToClient(BarrierResult(data.barrier, status)))
       goto(Idle) using data.copy(barrier = "", arrived = Nil)
     } else {
       stay using data

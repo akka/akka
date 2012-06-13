@@ -7,7 +7,7 @@ option optimize_for = SPEED;
 
 /******************************************
   Compile with:
-  cd ./akka-remote/src/main/protocol
+  cd ./akka-remote-tests/src/main/protocol
   protoc TestConductorProtocol.proto --java_out ../java
 *******************************************/
 
@@ -27,6 +27,8 @@ message Hello {
 message EnterBarrier {
   required string name = 1;
   optional bool status = 2;
+  optional int64 timeout = 3;
+  optional bool failed = 4;
 }
 
 message AddressRequest {

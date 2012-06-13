@@ -492,7 +492,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1397,7 +1397,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1702,6 +1702,14 @@ public final class TestConductorProtocol {
     // optional bool status = 2;
     boolean hasStatus();
     boolean getStatus();
+    
+    // optional int64 timeout = 3;
+    boolean hasTimeout();
+    long getTimeout();
+    
+    // optional bool failed = 4;
+    boolean hasFailed();
+    boolean getFailed();
   }
   public static final class EnterBarrier extends
       com.google.protobuf.GeneratedMessage
@@ -1774,9 +1782,31 @@ public final class TestConductorProtocol {
       return status_;
     }
     
+    // optional int64 timeout = 3;
+    public static final int TIMEOUT_FIELD_NUMBER = 3;
+    private long timeout_;
+    public boolean hasTimeout() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public long getTimeout() {
+      return timeout_;
+    }
+    
+    // optional bool failed = 4;
+    public static final int FAILED_FIELD_NUMBER = 4;
+    private boolean failed_;
+    public boolean hasFailed() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    public boolean getFailed() {
+      return failed_;
+    }
+    
     private void initFields() {
       name_ = "";
       status_ = false;
+      timeout_ = 0L;
+      failed_ = false;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1800,6 +1830,12 @@ public final class TestConductorProtocol {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeBool(2, status_);
       }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeInt64(3, timeout_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBool(4, failed_);
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -1816,6 +1852,14 @@ public final class TestConductorProtocol {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(2, status_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(3, timeout_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(4, failed_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1927,7 +1971,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -1945,6 +1989,10 @@ public final class TestConductorProtocol {
         bitField0_ = (bitField0_ & ~0x00000001);
         status_ = false;
         bitField0_ = (bitField0_ & ~0x00000002);
+        timeout_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        failed_ = false;
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       
@@ -1991,6 +2039,14 @@ public final class TestConductorProtocol {
           to_bitField0_ |= 0x00000002;
         }
         result.status_ = status_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.timeout_ = timeout_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.failed_ = failed_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -2012,6 +2068,12 @@ public final class TestConductorProtocol {
         }
         if (other.hasStatus()) {
           setStatus(other.getStatus());
+        }
+        if (other.hasTimeout()) {
+          setTimeout(other.getTimeout());
+        }
+        if (other.hasFailed()) {
+          setFailed(other.getFailed());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -2056,6 +2118,16 @@ public final class TestConductorProtocol {
             case 16: {
               bitField0_ |= 0x00000002;
               status_ = input.readBool();
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
+              timeout_ = input.readInt64();
+              break;
+            }
+            case 32: {
+              bitField0_ |= 0x00000008;
+              failed_ = input.readBool();
               break;
             }
           }
@@ -2117,6 +2189,48 @@ public final class TestConductorProtocol {
       public Builder clearStatus() {
         bitField0_ = (bitField0_ & ~0x00000002);
         status_ = false;
+        onChanged();
+        return this;
+      }
+      
+      // optional int64 timeout = 3;
+      private long timeout_ ;
+      public boolean hasTimeout() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      public long getTimeout() {
+        return timeout_;
+      }
+      public Builder setTimeout(long value) {
+        bitField0_ |= 0x00000004;
+        timeout_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearTimeout() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        timeout_ = 0L;
+        onChanged();
+        return this;
+      }
+      
+      // optional bool failed = 4;
+      private boolean failed_ ;
+      public boolean hasFailed() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      public boolean getFailed() {
+        return failed_;
+      }
+      public Builder setFailed(boolean value) {
+        bitField0_ |= 0x00000008;
+        failed_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearFailed() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        failed_ = false;
         onChanged();
         return this;
       }
@@ -2377,7 +2491,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3005,7 +3119,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -3611,7 +3725,7 @@ public final class TestConductorProtocol {
         maybeForceBuilderInitialization();
       }
       
-      private Builder(com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
@@ -4056,19 +4170,19 @@ public final class TestConductorProtocol {
       "\0132\r.EnterBarrier\022\037\n\007failure\030\003 \001(\0132\016.Inje" +
       "ctFailure\022\014\n\004done\030\004 \001(\t\022\035\n\004addr\030\005 \001(\0132\017." +
       "AddressRequest\"0\n\005Hello\022\014\n\004name\030\001 \002(\t\022\031\n" +
-      "\007address\030\002 \002(\0132\010.Address\",\n\014EnterBarrier" +
-      "\022\014\n\004name\030\001 \002(\t\022\016\n\006status\030\002 \001(\010\"6\n\016Addres" +
-      "sRequest\022\014\n\004node\030\001 \002(\t\022\026\n\004addr\030\002 \001(\0132\010.A" +
-      "ddress\"G\n\007Address\022\020\n\010protocol\030\001 \002(\t\022\016\n\006s" +
-      "ystem\030\002 \002(\t\022\014\n\004host\030\003 \002(\t\022\014\n\004port\030\004 \002(\005\"",
-      "\212\001\n\rInjectFailure\022\032\n\007failure\030\001 \002(\0162\t.Fai" +
-      "lType\022\035\n\tdirection\030\002 \001(\0162\n.Direction\022\031\n\007" +
-      "address\030\003 \001(\0132\010.Address\022\020\n\010rateMBit\030\006 \001(" +
-      "\002\022\021\n\texitValue\030\007 \001(\005*A\n\010FailType\022\014\n\010Thro" +
-      "ttle\020\001\022\016\n\nDisconnect\020\002\022\t\n\005Abort\020\003\022\014\n\010Shu" +
-      "tdown\020\004*,\n\tDirection\022\010\n\004Send\020\001\022\013\n\007Receiv" +
-      "e\020\002\022\010\n\004Both\020\003B\035\n\031akka.remote.testconduct" +
-      "orH\001"
+      "\007address\030\002 \002(\0132\010.Address\"M\n\014EnterBarrier" +
+      "\022\014\n\004name\030\001 \002(\t\022\016\n\006status\030\002 \001(\010\022\017\n\007timeou" +
+      "t\030\003 \001(\003\022\016\n\006failed\030\004 \001(\010\"6\n\016AddressReques" +
+      "t\022\014\n\004node\030\001 \002(\t\022\026\n\004addr\030\002 \001(\0132\010.Address\"" +
+      "G\n\007Address\022\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030\002",
+      " \002(\t\022\014\n\004host\030\003 \002(\t\022\014\n\004port\030\004 \002(\005\"\212\001\n\rInj" +
+      "ectFailure\022\032\n\007failure\030\001 \002(\0162\t.FailType\022\035" +
+      "\n\tdirection\030\002 \001(\0162\n.Direction\022\031\n\007address" +
+      "\030\003 \001(\0132\010.Address\022\020\n\010rateMBit\030\006 \001(\002\022\021\n\tex" +
+      "itValue\030\007 \001(\005*A\n\010FailType\022\014\n\010Throttle\020\001\022" +
+      "\016\n\nDisconnect\020\002\022\t\n\005Abort\020\003\022\014\n\010Shutdown\020\004" +
+      "*,\n\tDirection\022\010\n\004Send\020\001\022\013\n\007Receive\020\002\022\010\n\004" +
+      "Both\020\003B\035\n\031akka.remote.testconductorH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -4096,7 +4210,7 @@ public final class TestConductorProtocol {
           internal_static_EnterBarrier_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_EnterBarrier_descriptor,
-              new java.lang.String[] { "Name", "Status", },
+              new java.lang.String[] { "Name", "Status", "Timeout", "Failed", },
               akka.remote.testconductor.TestConductorProtocol.EnterBarrier.class,
               akka.remote.testconductor.TestConductorProtocol.EnterBarrier.Builder.class);
           internal_static_AddressRequest_descriptor =
