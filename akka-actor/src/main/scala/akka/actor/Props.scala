@@ -186,5 +186,9 @@ case class Props(
  * able to optimize serialization.
  */
 private[akka] case class FromClassCreator(clazz: Class[_ <: Actor]) extends Function0[Actor] {
-  def apply(): Actor = clazz.newInstance
+  def apply(): Actor = {
+    val ctor = clazz.getDeclaredConstructor()
+    ctor.setAccessible(true)
+    ctor.newInstance()
+  }
 }
