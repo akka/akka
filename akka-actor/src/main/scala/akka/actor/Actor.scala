@@ -135,8 +135,7 @@ class ActorInitializationException private[akka] (actor: ActorRef, message: Stri
  * there might be more of them in the future, or not.
  */
 class InvalidMessageException private[akka] (message: String, cause: Throwable = null)
-  extends AkkaException(message, cause)
-  with NoStackTrace {
+  extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
 }
 

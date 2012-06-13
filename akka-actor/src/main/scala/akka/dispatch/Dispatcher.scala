@@ -82,7 +82,8 @@ class Dispatcher(
   /**
    * INTERNAL USE ONLY
    */
-  protected[akka] def createMailbox(actor: ActorCell): Mailbox = new Mailbox(actor, mailboxType.create(Some(actor))) with DefaultSystemMessageQueue
+  protected[akka] def createMailbox(actor: akka.actor.Cell): Mailbox =
+    new Mailbox(mailboxType.create(Some(actor.self), Some(actor.system))) with DefaultSystemMessageQueue
 
   /**
    * INTERNAL USE ONLY

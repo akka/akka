@@ -169,6 +169,78 @@ trait UntypedActorContext extends ActorContext {
 }
 
 /**
+ * INTERNAL API
+ */
+private[akka] trait Cell {
+  /**
+   * The “self” reference which this Cell is attached to.
+   */
+  def self: ActorRef
+  /**
+   * The system within which this Cell lives.
+   */
+  def system: ActorSystem
+  /**
+   * The system internals where this Cell lives.
+   */
+  def systemImpl: ActorSystemImpl
+  /**
+   * Recursively suspend this actor and all its children.
+   */
+  def suspend(): Unit
+  /**
+   * Recursively resume this actor and all its children.
+   */
+  def resume(): Unit
+  /**
+   * Restart this actor (will recursively restart or stop all children).
+   */
+  def restart(cause: Throwable): Unit
+  /**
+   * Recursively terminate this actor and all its children.
+   */
+  def stop(): Unit
+  /**
+   * Returns “true” if the actor is locally known to be terminated, “false” if
+   * alive or uncertain.
+   */
+  def isTerminated: Boolean
+  /**
+   * The supervisor of this actor.
+   */
+  def parent: InternalActorRef
+  /**
+   * All children of this actor, including only reserved-names.
+   */
+  def childrenRefs: ActorCell.ChildrenContainer
+  /**
+   * Enqueue a message to be sent to the actor; may or may not actually
+   * schedule the actor to run, depending on which type of cell it is.
+   */
+  def tell(message: Any, sender: ActorRef): Unit
+  /**
+   * Enqueue a message to be sent to the actor; may or may not actually
+   * schedule the actor to run, depending on which type of cell it is.
+   */
+  def sendSystemMessage(msg: SystemMessage): Unit
+  /**
+   * Returns true if the actor is local, i.e. if it is actually scheduled
+   * on a Thread in the current JVM when run.
+   */
+  def isLocal: Boolean
+  /**
+   * If the actor isLocal, returns whether messages are currently queued,
+   * “false” otherwise.
+   */
+  def hasMessages: Boolean
+  /**
+   * If the actor isLocal, returns the number of messages currently queued,
+   * which may be a costly operation, 0 otherwise.
+   */
+  def numberOfMessages: Int
+}
+
+/**
  * Everything in here is completely Akka PRIVATE. You will not find any
  * supported APIs in this place. This is not the API you were looking
  * for! (waves hand)
@@ -359,10 +431,12 @@ private[akka] class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
   val props: Props,
-  @volatile var parent: InternalActorRef) extends UntypedActorContext {
+  @volatile var parent: InternalActorRef) extends UntypedActorContext with Cell {
 
-  import AbstractActorCell.{ mailboxOffset, childrenOffset }
+  import AbstractActorCell.{ mailboxOffset, childrenOffset, nextNameOffset }
   import ActorCell._
+
+  final def isLocal = true
 
   final def systemImpl = system
 
@@ -448,7 +522,7 @@ private[akka] class ActorCell(
     case _ ⇒ true
   }
 
-  private def _actorOf(props: Props, name: String): ActorRef = {
+  private def _actorOf(props: Props, name: String, async: Boolean): ActorRef = {
     if (system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
       val ser = SerializationExtension(system)
       ser.serialize(props.creator) match {
@@ -459,14 +533,19 @@ private[akka] class ActorCell(
         }
       }
     }
-    // in case we are currently terminating, swallow creation requests and return EmptyLocalActorRef
-    if (isTerminating) provider.actorFor(self, Seq(name))
+    /*
+     * in case we are currently terminating, fail external attachChild requests
+     * (internal calls cannot happen anyway because we are suspended)
+     */
+    if (isTerminating) throw new IllegalStateException("cannot create children while terminating or terminated")
     else {
       reserveChild(name)
       // this name will either be unreserved or overwritten with a real child below
       val actor =
-        try provider.actorOf(systemImpl, props, self, self.path / name, false, None, true)
-        catch {
+        try {
+          provider.actorOf(systemImpl, props, self, self.path / name,
+            systemService = false, deploy = None, lookupDeploy = true, async = async)
+        } catch {
           case NonFatal(e) ⇒
             unreserveChild(name)
             throw e
@@ -476,36 +555,53 @@ private[akka] class ActorCell(
     }
   }
 
-  def actorOf(props: Props): ActorRef = _actorOf(props, randomName())
+  def actorOf(props: Props): ActorRef = _actorOf(props, randomName(), async = false)
 
-  def actorOf(props: Props, name: String): ActorRef = {
+  def actorOf(props: Props, name: String): ActorRef = _actorOf(props, checkName(name), async = false)
+
+  private def checkName(name: String): String = {
     import ActorPath.ElementRegex
     name match {
       case null           ⇒ throw new InvalidActorNameException("actor name must not be null")
       case ""             ⇒ throw new InvalidActorNameException("actor name must not be empty")
-      case ElementRegex() ⇒ // this is fine
+      case ElementRegex() ⇒ name
       case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex)
     }
-    _actorOf(props, name)
   }
 
+  private[akka] def attachChild(props: Props, name: String): ActorRef =
+    _actorOf(props, checkName(name), async = true)
+
+  private[akka] def attachChild(props: Props): ActorRef =
+    _actorOf(props, randomName(), async = true)
+
   final def stop(actor: ActorRef): Unit = {
-    if (childrenRefs.getByRef(actor).isDefined) shallDie(actor)
+    val started = actor match {
+      case r: RepointableRef ⇒ r.isStarted
+      case _                 ⇒ true
+    }
+    if (childrenRefs.getByRef(actor).isDefined && started) shallDie(actor)
     actor.asInstanceOf[InternalActorRef].stop()
   }
 
   var currentMessage: Envelope = _
   var actor: Actor = _
   private var behaviorStack: Stack[Actor.Receive] = Stack.empty
-  @volatile var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
+
   var watching: Set[ActorRef] = emptyActorRefSet
   var watchedBy: Set[ActorRef] = emptyActorRefSet
 
-  val nextNameSequence = new AtomicLong
-  final protected def randomName(): String = Helpers.base64(nextNameSequence.getAndIncrement())
+  @volatile private var _nextNameDoNotCallMeDirectly = 0L
+  final protected def randomName(): String = {
+    @tailrec def inc(): Long = {
+      val current = Unsafe.instance.getLongVolatile(this, nextNameOffset)
+      if (Unsafe.instance.compareAndSwapLong(this, nextNameOffset, current, current + 1)) current
+      else inc()
+    }
+    Helpers.base64(inc())
+  }
 
-  @inline
-  final val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
+  @volatile private var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
 
   /**
    * INTERNAL API
@@ -525,6 +621,12 @@ private[akka] class ActorCell(
     else oldMailbox
   }
 
+  final def hasMessages: Boolean = mailbox.hasMessages
+
+  final def numberOfMessages: Int = mailbox.numberOfMessages
+
+  val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
+
   /**
    * UntypedActorContext impl
    */
@@ -532,20 +634,22 @@ private[akka] class ActorCell(
 
   final def isTerminated: Boolean = mailbox.isClosed
 
-  final def start(): Unit = {
+  final def start(): this.type = {
+
     /*
      * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
      */
     swapMailbox(dispatcher.createMailbox(this))
+    mailbox.setActor(this)
+
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     mailbox.systemEnqueue(self, Create())
 
-    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    parent.sendSystemMessage(akka.dispatch.Supervise(self))
-
     // This call is expected to start off the actor by scheduling its mailbox.
     dispatcher.attach(this)
+
+    this
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
@@ -583,8 +687,10 @@ private[akka] class ActorCell(
   final def getChildren(): java.lang.Iterable[ActorRef] =
     scala.collection.JavaConverters.asJavaIterableConverter(children).asJava
 
-  final def tell(message: Any, sender: ActorRef): Unit =
-    dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender)(system))
+  def tell(message: Any, sender: ActorRef): Unit =
+    dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender, system))
+
+  override def sendSystemMessage(message: SystemMessage): Unit = dispatcher.systemDispatch(this, message)
 
   final def sender: ActorRef = currentMessage match {
     case null                      ⇒ system.deadLetters
@@ -719,6 +825,7 @@ private[akka] class ActorCell(
 
     def supervise(child: ActorRef): Unit = if (!isTerminating) {
       if (childrenRefs.getByRef(child).isEmpty) addChild(child)
+      handleSupervise(child)
       if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
     }
 
@@ -902,6 +1009,11 @@ private[akka] class ActorCell(
       } finally {
         parent.tell(Failed(e), self)
       }
+  }
+
+  protected def handleSupervise(child: ActorRef): Unit = child match {
+    case r: RepointableActorRef ⇒ r.activate()
+    case _                      ⇒
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅

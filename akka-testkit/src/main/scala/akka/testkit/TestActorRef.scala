@@ -58,7 +58,7 @@ class TestActorRef[T <: Actor](
    * become/unbecome.
    */
   def receive(o: Any, sender: ActorRef): Unit = try {
-    underlying.currentMessage = Envelope(o, if (sender eq null) underlying.system.deadLetters else sender)(underlying.system)
+    underlying.currentMessage = Envelope(o, if (sender eq null) underlying.system.deadLetters else sender, underlying.system)
     underlying.receiveMessage(o)
   } finally underlying.currentMessage = null
 

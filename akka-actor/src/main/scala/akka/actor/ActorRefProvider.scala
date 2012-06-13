@@ -104,7 +104,8 @@ trait ActorRefProvider {
     path: ActorPath,
     systemService: Boolean,
     deploy: Option[Deploy],
-    lookupDeploy: Boolean): InternalActorRef
+    lookupDeploy: Boolean,
+    async: Boolean): InternalActorRef
 
   /**
    * Create actor reference for a specified local or remote path. If no such
@@ -482,10 +483,12 @@ class LocalActorRefProvider(
     }
 
   lazy val guardian: InternalActorRef =
-    actorOf(system, guardianProps, rootGuardian, rootPath / "user", systemService = true, None, false)
+    actorOf(system, guardianProps, rootGuardian, rootPath / "user",
+      systemService = true, deploy = None, lookupDeploy = false, async = false)
 
   lazy val systemGuardian: InternalActorRef =
-    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", systemService = true, None, false)
+    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system",
+      systemService = true, deploy = None, lookupDeploy = false, async = false)
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
@@ -539,14 +542,17 @@ class LocalActorRefProvider(
     }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
-              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean): InternalActorRef = {
+              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef = {
     props.routerConfig match {
-      case NoRouter ⇒ new LocalActorRef(system, props, supervisor, path) // create a local actor
+      case NoRouter ⇒
+        if (async) new RepointableActorRef(system, props, supervisor, path).initialize()
+        else new LocalActorRef(system, props, supervisor, path)
       case router ⇒
         val lookup = if (lookupDeploy) deployer.lookup(path) else None
         val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
         val d = fromProps ++ deploy.iterator ++ lookup.iterator reduce ((a, b) ⇒ b withFallback a)
-        new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path)
+        val ref = new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path).initialize()
+        if (async) ref else ref.activate()
     }
   }
 
