@@ -227,9 +227,9 @@ case class Gossip(
       // group all members by Address => Seq[Member]
       val groupedByAddress = (a ++ b).groupBy(_.address)
       // pick highest MemberStatus
-      (groupedByAddress.values.foldLeft(Vector.empty[Member]) { (acc, members) ⇒
-        acc :+ members.reduceLeft(Member.highestPriorityOf(_, _))
-      }).toSet
+      (Set.empty[Member] /: groupedByAddress) {
+        case (acc, (_, members)) ⇒ acc + members.reduceLeft(Member.highestPriorityOf)
+      }
     }
 
     // 3. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
@@ -238,7 +238,7 @@ case class Gossip(
     // 4. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
     //    and exclude unreachable
     val mergedMembers = Gossip.emptyMembers ++ reduceHighestPriority(this.members.toSeq, that.members.toSeq).
-      filterNot(m ⇒ mergedUnreachable.contains(m))
+      filterNot(mergedUnreachable.contains)
 
     // 5. merge seen (FIXME is this correct?)
     val mergedSeen = this.overview.seen ++ that.overview.seen
@@ -746,7 +746,9 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localUnreachableMembers = localOverview.unreachable
 
     // 1. check if the node to DOWN is in the 'members' set
-    val downedMember: Option[Member] = localMembers.find(_.address == address).map(m ⇒ m.copy(status = MemberStatus.Down))
+    val downedMember: Option[Member] = localMembers.collectFirst {
+      case m if m.address == address ⇒ m.copy(status = MemberStatus.Down)
+    }
     val newMembers = downedMember match {
       case Some(m) ⇒
         log.info("Cluster Node [{}] - Marking node [{}] as DOWN", selfAddress, m.address)
