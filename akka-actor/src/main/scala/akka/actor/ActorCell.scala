@@ -698,8 +698,9 @@ private[akka] class ActorCell(
 
   def unbecome(): Unit = {
     val original = behaviorStack
-    behaviorStack = if (original.isEmpty || original.pop.isEmpty) Stack.empty[Actor.Receive].push(actor.receive)
-    else original.pop
+    behaviorStack =
+      if (original.isEmpty || original.pop.isEmpty) Stack.empty.push(actor.receive)
+      else original.pop
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
