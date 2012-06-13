@@ -240,8 +240,8 @@ case class Gossip(
     val mergedMembers = Gossip.emptyMembers ++ reduceHighestPriority(this.members.toSeq, that.members.toSeq).
       filterNot(mergedUnreachable.contains)
 
-    // 5. merge seen (FIXME is this correct?)
-    val mergedSeen = this.overview.seen ++ that.overview.seen
+    // 5. fresh seen table
+    val mergedSeen = Map.empty[Address, VectorClock]
 
     Gossip(GossipOverview(mergedSeen, mergedUnreachable), mergedMembers, mergedMeta, mergedVClock)
   }

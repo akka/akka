@@ -73,5 +73,17 @@ class GossipSpec extends WordSpec with MustMatchers {
 
     }
 
+    "start with fresh seen table after merge" in {
+      val g1 = Gossip(members = SortedSet(a1, b1, c1, d1)).seen(a1.address).seen(b1.address)
+      val g2 = Gossip(members = SortedSet(a2, b2, c2, d2)).seen(b2.address).seen(c2.address)
+
+      val merged1 = g1 merge g2
+      merged1.overview.seen.isEmpty must be(true)
+
+      val merged2 = g2 merge g1
+      merged2.overview.seen.isEmpty must be(true)
+
+    }
+
   }
 }
