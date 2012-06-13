@@ -184,7 +184,7 @@ private[akka] object ActorCell {
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
 
-  final val behaviorStackPlaceHolder: Stack[Actor.Receive] = Stack.empty.push(Actor.emptyBehavior)
+  final val behaviorStackPlaceHolder: Stack[Actor.Receive] = Stack.empty
 
   final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
 
@@ -521,10 +521,9 @@ private[akka] class ActorCell(
       if (instance eq null)
         throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
-      behaviorStack = behaviorStack match {
-        case `behaviorStackPlaceHolder` ⇒ Stack.empty.push(instance.receive)
-        case newBehaviors               ⇒ Stack.empty.push(instance.receive).pushAll(newBehaviors.reverse.drop(1))
-      }
+      // If no becomes were issued, the actors behavior is its receive method
+      if (behaviorStack eq behaviorStackPlaceHolder)
+        behaviorStack = Stack.empty.push(instance.receive)
       instance
     } finally {
       val stackAfter = contextStack.get
@@ -683,10 +682,8 @@ private[akka] class ActorCell(
     }
   }
 
-  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit = {
-    if (discardOld) unbecome()
-    behaviorStack = behaviorStack.push(behavior)
-  }
+  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit =
+    behaviorStack = (if (discardOld && behaviorStack.nonEmpty) behaviorStack.pop else behaviorStack).push(behavior)
 
   /**
    * UntypedActorContext impl
@@ -701,8 +698,8 @@ private[akka] class ActorCell(
 
   def unbecome(): Unit = {
     val original = behaviorStack
-    val popped = original.pop
-    behaviorStack = if (popped.isEmpty) original else popped
+    behaviorStack = if (original.isEmpty || original.pop.isEmpty) Stack.empty[Actor.Receive].push(actor.receive)
+    else original.pop
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
