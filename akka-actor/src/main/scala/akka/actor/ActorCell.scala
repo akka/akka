@@ -513,8 +513,6 @@ private[akka] class ActorCell(
   protected def newActor(): Actor = {
     contextStack.set(contextStack.get.push(this))
     try {
-      import ActorCell.emptyBehaviorStack
-
       behaviorStack = emptyBehaviorStack
       val instance = props.creator.apply()
 
