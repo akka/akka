@@ -2,8 +2,8 @@ package akka.osgi
 
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.ActorSystem
-import org.osgi.framework.{ BundleContext, BundleActivator }
-import java.util.Properties
+import java.util.{ Dictionary, Properties }
+import org.osgi.framework.{ ServiceRegistration, BundleContext, BundleActivator }
 
 /**
  * Abstract {@link BundleActivator} implementation to bootstrap and configure an {@link ActorSystem} in an
@@ -14,14 +14,16 @@ abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ Option[String])
   def this() = this({ context: BundleContext ⇒ None })
   def this(name: String) = this({ context: BundleContext ⇒ Some(name) })
 
-  var system: ActorSystem = null
+  var system: Option[ActorSystem] = None
+  var registration: Option[ServiceRegistration] = None
 
   /**
    * Implement this method to add your own actors to the ActorSystem
    *
+   * @param context the bundle context
    * @param system the ActorSystem that was created by the activator
    */
-  def configure(system: ActorSystem)
+  def configure(context: BundleContext, system: ActorSystem)
 
   /**
    * Sets up a new ActorSystem and registers it in the OSGi Service Registry
@@ -29,20 +31,31 @@ abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ Option[String])
    * @param context the BundleContext
    */
   def start(context: BundleContext) {
-    system = OsgiActorSystemFactory(context).createActorSystem(nameFor(context))
-    configure(system)
+    system = Some(OsgiActorSystemFactory(context).createActorSystem(nameFor(context)))
+    system.foreach(configure(context, _))
   }
 
   /**
-   * Shuts down the ActorSystem when the bundle is stopped.
+   * Shuts down the ActorSystem when the bundle is stopped and, if necessary, unregisters a service registration
    *
    * @param context the BundleContext
    */
   def stop(context: BundleContext) {
-    if (system != null) {
-      system.shutdown()
-      system = null
-    }
+    registration.foreach(_.unregister())
+    system.foreach(_.shutdown())
+  }
+
+  /**
+   * Register the actor system in the OSGi service registry
+   *
+   * @param context the bundle context
+   * @param system the actor system
+   */
+  def registerService(context: BundleContext, system: ActorSystem) {
+    val properties = new Properties()
+    properties.put("name", system.name)
+    registration = Some(context.registerService(classOf[ActorSystem].getName, system,
+      properties.asInstanceOf[Dictionary[String, Any]]))
   }
 
 }

@@ -2,7 +2,9 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
            xmlns:akka="http://akka.io/xmlns/blueprint/v1.0.0">
 
-    <akka:actor-system name="config">
+    <service ref="system" interface="akka.actor.ActorSystem" />
+
+    <akka:actor-system id="system" name="config">
         <akka:config>
             some.config {
                 key=value
