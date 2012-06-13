@@ -52,17 +52,17 @@ you need.
 In the configuration of the dispatcher you specify the fully qualified class name
 of the mailbox:
 
-.. includecode:: code/akka/docs/actor/mailbox/DurableMailboxDocSpec.scala
+.. includecode:: code/docs/actor/mailbox/DurableMailboxDocSpec.scala
    :include: dispatcher-config
 
 Here is an example of how to create an actor with a durable dispatcher, in Scala:
 
-.. includecode:: code/akka/docs/actor/mailbox/DurableMailboxDocSpec.scala
+.. includecode:: code/docs/actor/mailbox/DurableMailboxDocSpec.scala
    :include: imports,dispatcher-config-use
 
 Corresponding example in Java:
 
-.. includecode:: code/akka/docs/actor/mailbox/DurableMailboxDocTestBase.java
+.. includecode:: code/docs/actor/mailbox/DurableMailboxDocTestBase.java
    :include: imports,dispatcher-config-use
 
 You can also configure and tune the file-based durable mailbox. This is done in
@@ -80,16 +80,18 @@ a configurator (MailboxType) and a queue implementation (DurableMessageQueue).
 The envelope contains the message sent to the actor, and information about sender. It is the
 envelope that needs to be stored. As a help utility you can mixin DurableMessageSerialization
 to serialize and deserialize the envelope using the ordinary :ref:`serialization-scala`
-mechanism. This optional and you may store the envelope data in any way you like.
+mechanism. This optional and you may store the envelope data in any way you like. Durable
+mailboxes are an excellent fit for usage of circuit breakers.  These are described in the 
+:ref:`circuit-breaker` documentation.
 
-.. includecode:: code/akka/docs/actor/mailbox/DurableMailboxDocSpec.scala
+.. includecode:: code/docs/actor/mailbox/DurableMailboxDocSpec.scala
    :include: custom-mailbox
 
 To facilitate testing of a durable mailbox you may use ``DurableMailboxSpec`` as base class.
 It implements a few basic tests and helps you setup the a fixture. More tests can be
 added in concrete subclass like this:
 
-.. includecode:: code/akka/docs/actor/mailbox/DurableMailboxDocSpec.scala
+.. includecode:: code/docs/actor/mailbox/DurableMailboxDocSpec.scala
    :include: custom-mailbox-test
 
 You find DurableMailboxDocSpec in ``akka-mailboxes-common-test-2.1-SNAPSHOT.jar``.

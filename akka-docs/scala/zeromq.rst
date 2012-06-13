@@ -19,18 +19,18 @@ Connection
 ZeroMQ supports multiple connectivity patterns, each aimed to meet a different set of requirements. Currently, this module supports publisher-subscriber connections and connections based on dealers and routers. For connecting or accepting connections, a socket must be created.
 Sockets are always created using the ``akka.zeromq.ZeroMQExtension``, for example:
 
-.. includecode:: code/akka/docs/zeromq/ZeromqDocSpec.scala#pub-socket
+.. includecode:: code/docs/zeromq/ZeromqDocSpec.scala#pub-socket
 
 or by importing the ``akka.zeromq._`` package to make newSocket method available on system, via an implicit conversion.
 
-.. includecode:: code/akka/docs/zeromq/ZeromqDocSpec.scala#pub-socket2
+.. includecode:: code/docs/zeromq/ZeromqDocSpec.scala#pub-socket2
 
 
 Above examples will create a ZeroMQ Publisher socket that is Bound to the port 1234 on localhost.
 
 Similarly you can create a subscription socket, with a listener, that subscribes to all messages from the publisher using:
 
-.. includecode:: code/akka/docs/zeromq/ZeromqDocSpec.scala#sub-socket
+.. includecode:: code/docs/zeromq/ZeromqDocSpec.scala#sub-socket
 
 The following sub-sections describe the supported connection patterns and how they can be used in an Akka environment. However, for a comprehensive discussion of connection patterns, please refer to `ZeroMQ -- The Guide <http://zguide.zeromq.org/page:all>`_.
 
@@ -46,18 +46,18 @@ When you're using zeromq pub/sub you should be aware that it needs multicast - c
 
 An actor is subscribed to a topic as follows:
 
-.. includecode:: code/akka/docs/zeromq/ZeromqDocSpec.scala#sub-topic-socket
+.. includecode:: code/docs/zeromq/ZeromqDocSpec.scala#sub-topic-socket
 
 It is a prefix match so it is subscribed to all topics starting with ``foo.bar``. Note that if the given string is empty or
 ``SubscribeAll`` is used, the actor is subscribed to all topics.
 
 To unsubscribe from a topic you do the following:
 
-.. includecode:: code/akka/docs/zeromq/ZeromqDocSpec.scala#unsub-topic-socket
+.. includecode:: code/docs/zeromq/ZeromqDocSpec.scala#unsub-topic-socket
 
 To publish messages to a topic you must use two Frames with the topic in the first frame.
 
-.. includecode:: code/akka/docs/zeromq/ZeromqDocSpec.scala#pub-topic
+.. includecode:: code/docs/zeromq/ZeromqDocSpec.scala#pub-topic
 
 Pub-Sub in Action
 ^^^^^^^^^^^^^^^^^
@@ -67,16 +67,16 @@ The following example illustrates one publisher with two subscribers.
 The publisher monitors current heap usage and system load and periodically publishes ``Heap`` events on the ``"health.heap"`` topic
 and ``Load`` events on the ``"health.load"`` topic.
 
-.. includecode:: code/akka/docs/zeromq/ZeromqDocSpec.scala#health
+.. includecode:: code/docs/zeromq/ZeromqDocSpec.scala#health
 
 Let's add one subscriber that logs the information. It subscribes to all topics starting with ``"health"``, i.e. both ``Heap`` and
 ``Load`` events.
 
-.. includecode:: code/akka/docs/zeromq/ZeromqDocSpec.scala#logger
+.. includecode:: code/docs/zeromq/ZeromqDocSpec.scala#logger
 
 Another subscriber keep track of used heap and warns if too much heap is used. It only subscribes to ``Heap`` events.
 
-.. includecode:: code/akka/docs/zeromq/ZeromqDocSpec.scala#alerter
+.. includecode:: code/docs/zeromq/ZeromqDocSpec.scala#alerter
 
 Router-Dealer Connection
 ------------------------
@@ -87,7 +87,7 @@ With those socket types you can build your own reliable pub sub broker that uses
 
 To create a Router socket that has a high watermark configured, you would do:
 
-.. includecode:: code/akka/docs/zeromq/ZeromqDocSpec.scala#high-watermark
+.. includecode:: code/docs/zeromq/ZeromqDocSpec.scala#high-watermark
 
 The akka-zeromq module accepts most if not all the available configuration options for a zeromq socket.
 

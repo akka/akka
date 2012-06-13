@@ -6,13 +6,10 @@ package akka.actor
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
-import akka.dispatch.Await
 import akka.util.duration._
 import akka.routing._
-import akka.config.ConfigurationException
-import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.junit.JUnitSuite
+import akka.ConfigurationException
 
 object ActorConfigurationVerificationSpec {
 
@@ -45,27 +42,27 @@ class ActorConfigurationVerificationSpec extends AkkaSpec(ActorConfigurationVeri
   "An Actor configured with a BalancingDispatcher" must {
     "fail verification with a ConfigurationException if also configured with a RoundRobinRouter" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withDispatcher("balancing-dispatcher").withRouter(RoundRobinRouter(2)))
+        system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(2).withDispatcher("balancing-dispatcher")))
       }
     }
     "fail verification with a ConfigurationException if also configured with a BroadcastRouter" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withDispatcher("balancing-dispatcher").withRouter(BroadcastRouter(2)))
+        system.actorOf(Props[TestActor].withRouter(BroadcastRouter(2).withDispatcher("balancing-dispatcher")))
       }
     }
     "fail verification with a ConfigurationException if also configured with a RandomRouter" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withDispatcher("balancing-dispatcher").withRouter(RandomRouter(2)))
+        system.actorOf(Props[TestActor].withRouter(RandomRouter(2).withDispatcher("balancing-dispatcher")))
       }
     }
     "fail verification with a ConfigurationException if also configured with a SmallestMailboxRouter" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withDispatcher("balancing-dispatcher").withRouter(SmallestMailboxRouter(2)))
+        system.actorOf(Props[TestActor].withRouter(SmallestMailboxRouter(2).withDispatcher("balancing-dispatcher")))
       }
     }
     "fail verification with a ConfigurationException if also configured with a ScatterGatherFirstCompletedRouter" in {
       intercept[ConfigurationException] {
-        system.actorOf(Props[TestActor].withDispatcher("balancing-dispatcher").withRouter(ScatterGatherFirstCompletedRouter(nrOfInstances = 2, within = 2 seconds)))
+        system.actorOf(Props[TestActor].withRouter(ScatterGatherFirstCompletedRouter(nrOfInstances = 2, within = 2 seconds).withDispatcher("balancing-dispatcher")))
       }
     }
     "not fail verification with a ConfigurationException also not configured with a Router" in {

@@ -24,27 +24,27 @@ So let's create a sample extension that just lets us count the number of times s
 
 First, we define what our ``Extension`` should do:
 
-.. includecode:: code/akka/docs/extension/ExtensionDocSpec.scala
+.. includecode:: code/docs/extension/ExtensionDocSpec.scala
    :include: extension
 
 Then we need to create an ``ExtensionId`` for our extension so we can grab ahold of it.
 
-.. includecode:: code/akka/docs/extension/ExtensionDocSpec.scala
+.. includecode:: code/docs/extension/ExtensionDocSpec.scala
    :include: extensionid
 
 Wicked! Now all we need to do is to actually use it:
 
-.. includecode:: code/akka/docs/extension/ExtensionDocSpec.scala
+.. includecode:: code/docs/extension/ExtensionDocSpec.scala
    :include: extension-usage
 
 Or from inside of an Akka Actor:
 
-.. includecode:: code/akka/docs/extension/ExtensionDocSpec.scala
+.. includecode:: code/docs/extension/ExtensionDocSpec.scala
    :include: extension-usage-actor
 
 You can also hide extension behind traits:
 
-.. includecode:: code/akka/docs/extension/ExtensionDocSpec.scala
+.. includecode:: code/docs/extension/ExtensionDocSpec.scala
    :include: extension-usage-actor-trait
 
 That's all there is to it!
@@ -55,7 +55,7 @@ Loading from Configuration
 To be able to load extensions from your Akka configuration you must add FQCNs of implementations of either ``ExtensionId`` or ``ExtensionIdProvider``
 in the ``akka.extensions`` section of the config you provide to your ``ActorSystem``.
 
-.. includecode:: code/akka/docs/extension/ExtensionDocSpec.scala
+.. includecode:: code/docs/extension/ExtensionDocSpec.scala
    :include: config
 
 Note that in this case ``CountExtension`` is an object and therefore the class name ends with ``$``.
@@ -75,17 +75,17 @@ The :ref:`configuration` can be used for application specific settings. A good p
 
 Sample configuration:
 
-.. includecode:: code/akka/docs/extension/SettingsExtensionDocSpec.scala
+.. includecode:: code/docs/extension/SettingsExtensionDocSpec.scala
    :include: config
 
 The ``Extension``:
 
-.. includecode:: code/akka/docs/extension/SettingsExtensionDocSpec.scala
+.. includecode:: code/docs/extension/SettingsExtensionDocSpec.scala
    :include: imports,extension,extensionid
 
 
 Use it:
 
-.. includecode:: code/akka/docs/extension/SettingsExtensionDocSpec.scala
+.. includecode:: code/docs/extension/SettingsExtensionDocSpec.scala
    :include: extension-usage-actor
 

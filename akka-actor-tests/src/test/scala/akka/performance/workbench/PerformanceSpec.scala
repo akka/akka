@@ -3,12 +3,11 @@ package akka.performance.workbench
 import scala.collection.immutable.TreeMap
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
 import org.scalatest.BeforeAndAfterEach
-import akka.actor.simpleName
 import akka.testkit.AkkaSpec
-import akka.actor.ActorSystem
 import akka.util.Duration
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit
+import akka.event.Logging
 
 abstract class PerformanceSpec(cfg: Config = BenchmarkConfig.config) extends AkkaSpec(cfg) with BeforeAndAfterEach {
 
@@ -36,7 +35,7 @@ abstract class PerformanceSpec(cfg: Config = BenchmarkConfig.config) extends Akk
   }
 
   def logMeasurement(numberOfClients: Int, durationNs: Long, n: Long) {
-    val name = simpleName(this)
+    val name = Logging.simpleName(this)
     val durationS = durationNs.toDouble / 1000000000.0
 
     val stats = Stats(
@@ -51,7 +50,7 @@ abstract class PerformanceSpec(cfg: Config = BenchmarkConfig.config) extends Akk
   }
 
   def logMeasurement(numberOfClients: Int, durationNs: Long, stat: DescriptiveStatistics) {
-    val name = simpleName(this)
+    val name = Logging.simpleName(this)
     val durationS = durationNs.toDouble / 1000000000.0
 
     val percentiles = TreeMap[Int, Long](

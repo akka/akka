@@ -4,7 +4,8 @@
 
 package akka.cluster
 
-import akka.actor.{ ActorSystem, Address }
+import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
+import akka.remote.RemoteActorRefProvider
 import akka.event.Logging
 
 import scala.collection.immutable.Map
@@ -23,11 +24,20 @@ import java.util.concurrent.atomic.AtomicReference
  * Default threshold is 8, but can be configured in the Akka config.
  */
 class AccrualFailureDetector(
-  system: ActorSystem,
-  address: Address,
+  val system: ActorSystem,
   val threshold: Int = 8,
   val maxSampleSize: Int = 1000,
-  val timeMachine: () ⇒ Long = System.currentTimeMillis) {
+  val timeMachine: () ⇒ Long = System.currentTimeMillis) extends FailureDetector {
+
+  def this(
+    system: ActorSystem,
+    settings: ClusterSettings,
+    timeMachine: () ⇒ Long = System.currentTimeMillis) =
+    this(
+      system,
+      settings.FailureDetectorThreshold,
+      settings.FailureDetectorMaxSampleSize,
+      timeMachine)
 
   private final val PhiFactor = 1.0 / math.log(10.0)
 
@@ -36,7 +46,11 @@ class AccrualFailureDetector(
   /**
    * Holds the failure statistics for a specific node Address.
    */
-  private case class FailureStats(mean: Double = 0.0D, variance: Double = 0.0D, deviation: Double = 0.0D)
+  private case class FailureStats(mean: Double = 0.0, variance: Double = 0.0, deviation: Double = 0.0)
+
+  // guess statistics for first heartbeat,
+  // important so that connections with only one heartbeat becomes unavailble
+  private val failureStatsFirstHeartbeat = FailureStats(mean = 1000.0)
 
   /**
    * Implement using optimistic lockless concurrency, all state is represented
@@ -62,7 +76,7 @@ class AccrualFailureDetector(
    */
   @tailrec
   final def heartbeat(connection: Address) {
-    log.debug("Node [{}] - Heartbeat from connection [{}] ", address, connection)
+    log.debug("Heartbeat from connection [{}] ", connection)
 
     val oldState = state.get
     val latestTimestamp = oldState.timestamps.get(connection)
@@ -72,7 +86,7 @@ class AccrualFailureDetector(
       // add starter records for this new connection
       val newState = oldState copy (
         version = oldState.version + 1,
-        failureStats = oldState.failureStats + (connection -> FailureStats()),
+        failureStats = oldState.failureStats + (connection -> failureStatsFirstHeartbeat),
         intervalHistory = oldState.intervalHistory + (connection -> IndexedSeq.empty[Long]),
         timestamps = oldState.timestamps + (connection -> timeMachine()),
         explicitRemovals = oldState.explicitRemovals - connection)
@@ -93,29 +107,23 @@ class AccrualFailureDetector(
         case _             ⇒ IndexedSeq.empty[Long]
       }) :+ interval
 
-      val newFailureStats =
-        if (newIntervalsForConnection.size > 1) {
+      val newFailureStats = {
+        val newMean: Double = newIntervalsForConnection.sum.toDouble / newIntervalsForConnection.size
 
-          val newMean: Double = newIntervalsForConnection.sum / newIntervalsForConnection.size.toDouble
-
-          val oldConnectionFailureStats = oldState.failureStats.get(connection).getOrElse {
-            throw new IllegalStateException("Can't calculate new failure statistics due to missing heartbeat history")
-          }
-
-          val deviationSum =
-            newIntervalsForConnection
-              .map(_.toDouble)
-              .foldLeft(0.0D)((x, y) ⇒ x + (y - newMean))
-
-          val newVariance: Double = deviationSum / newIntervalsForConnection.size.toDouble
-          val newDeviation: Double = math.sqrt(newVariance)
-
-          val newFailureStats = oldConnectionFailureStats copy (mean = newMean, deviation = newDeviation, variance = newVariance)
-          oldState.failureStats + (connection -> newFailureStats)
-
-        } else {
-          oldState.failureStats
+        val oldConnectionFailureStats = oldState.failureStats.get(connection).getOrElse {
+          throw new IllegalStateException("Can't calculate new failure statistics due to missing heartbeat history")
         }
+
+        val deviationSum = (0.0d /: newIntervalsForConnection) { (mean, interval) ⇒
+          mean + interval.toDouble - newMean
+        }
+
+        val newVariance: Double = deviationSum / newIntervalsForConnection.size
+        val newDeviation: Double = math.sqrt(newVariance)
+
+        val newFailureStats = oldConnectionFailureStats copy (mean = newMean, deviation = newDeviation, variance = newVariance)
+        oldState.failureStats + (connection -> newFailureStats)
+      }
 
       val newState = oldState copy (version = oldState.version + 1,
         failureStats = newFailureStats,
@@ -132,8 +140,7 @@ class AccrualFailureDetector(
    * Calculates how likely it is that the connection has failed.
    * <p/>
    * If a connection does not have any records in failure detector then it is
-   * considered dead. This is true either if the heartbeat have not started
-   * yet or the connection have been explicitly removed.
+   * considered healthy.
    * <p/>
    * Implementations of 'Cumulative Distribution Function' for Exponential Distribution.
    * For a discussion on the math read [https://issues.apache.org/jira/browse/CASSANDRA-2597].
@@ -145,7 +152,7 @@ class AccrualFailureDetector(
     val phi =
       // if connection has been removed explicitly
       if (oldState.explicitRemovals.contains(connection)) Double.MaxValue
-      else if (oldTimestamp.isEmpty) 0.0D // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
+      else if (oldTimestamp.isEmpty) 0.0 // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
       else {
         val timestampDiff = timeMachine() - oldTimestamp.get
 
@@ -154,12 +161,12 @@ class AccrualFailureDetector(
           case _                              ⇒ throw new IllegalStateException("Can't calculate Failure Detector Phi value for a node that have no heartbeat history")
         }
 
-        if (mean == 0.0D) 0.0D
+        if (mean == 0.0) 0.0
         else PhiFactor * timestampDiff / mean
       }
 
-    // only log if PHI value is starting to get interesting
-    if (phi > 0.0D) log.debug("Node [{}] - Phi value [{}] and threshold [{}] for connection [{}] ", address, phi, threshold, connection)
+    // FIXME change to debug log level, when failure detector is stable
+    log.info("Phi value [{}] and threshold [{}] for connection [{}] ", phi, threshold, connection)
     phi
   }
 
@@ -167,7 +174,8 @@ class AccrualFailureDetector(
    * Removes the heartbeat management for a connection.
    */
   @tailrec
-  final def remove(connection: Address) {
+  final def remove(connection: Address): Unit = {
+    log.debug("Remove connection [{}] ", connection)
     val oldState = state.get
 
     if (oldState.failureStats.contains(connection)) {

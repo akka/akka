@@ -10,7 +10,7 @@ import akka.testkit._
 import akka.util.duration._
 import akka.dispatch.Await
 import akka.util.Duration
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import com.typesafe.config.ConfigFactory
 import akka.pattern.ask
 import java.util.concurrent.ConcurrentHashMap
@@ -73,7 +73,9 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       watch(router)
       watch(c2)
       system.stop(c2)
-      expectMsg(Terminated(c2))
+      expectMsgPF() {
+        case t @ Terminated(`c2`) if t.existenceConfirmed == true ⇒ t
+      }
       // it might take a while until the Router has actually processed the Terminated message
       awaitCond {
         router ! ""
@@ -84,7 +86,9 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         res == Seq(c1, c1)
       }
       system.stop(c1)
-      expectMsg(Terminated(router))
+      expectMsgPF() {
+        case t @ Terminated(`router`) if t.existenceConfirmed == true ⇒ t
+      }
     }
 
     "be able to send their routees" in {

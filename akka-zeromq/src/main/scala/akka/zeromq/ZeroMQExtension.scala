@@ -19,7 +19,7 @@ import org.zeromq.ZMQException
  * @param patch
  */
 case class ZeroMQVersion(major: Int, minor: Int, patch: Int) {
-  override def toString = "%d.%d.%d".format(major, minor, patch)
+  override def toString: String = "%d.%d.%d".format(major, minor, patch)
 }
 
 /**
@@ -27,17 +27,14 @@ case class ZeroMQVersion(major: Int, minor: Int, patch: Int) {
  */
 object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProvider {
   override def get(system: ActorSystem): ZeroMQExtension = super.get(system)
-  def lookup() = this
-  def createExtension(system: ExtendedActorSystem) = new ZeroMQExtension(system)
+  def lookup(): this.type = this
+  override def createExtension(system: ExtendedActorSystem): ZeroMQExtension = new ZeroMQExtension(system)
 
   private val minVersionString = "2.1.0"
   private val minVersion = JZMQ.makeVersion(2, 1, 0)
 
-  private[zeromq] def check[TOption <: SocketOption: Manifest](parameters: Seq[SocketOption]) = {
-    parameters exists { p ⇒
-      ClassManifest.singleType(p) <:< manifest[TOption]
-    }
-  }
+  private[zeromq] def check[TOption <: SocketOption: Manifest](parameters: Seq[SocketOption]) =
+    parameters exists { p ⇒ ClassManifest.singleType(p) <:< manifest[TOption] }
 }
 
 /**
@@ -47,16 +44,14 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
  */
 class ZeroMQExtension(system: ActorSystem) extends Extension {
 
-  val DefaultPollTimeout = Duration(system.settings.config.getMilliseconds("akka.zeromq.poll-timeout"), TimeUnit.MILLISECONDS)
-  val NewSocketTimeout = Timeout(Duration(system.settings.config.getMilliseconds("akka.zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
+  val DefaultPollTimeout: Duration = Duration(system.settings.config.getMilliseconds("akka.zeromq.poll-timeout"), TimeUnit.MILLISECONDS)
+  val NewSocketTimeout: Timeout = Timeout(Duration(system.settings.config.getMilliseconds("akka.zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
 
   /**
    * The version of the ZeroMQ library
    * @return a [[akka.zeromq.ZeroMQVersion]]
    */
-  def version = {
-    ZeroMQVersion(JZMQ.getMajorVersion, JZMQ.getMinorVersion, JZMQ.getPatchVersion)
-  }
+  def version: ZeroMQVersion = ZeroMQVersion(JZMQ.getMajorVersion, JZMQ.getMinorVersion, JZMQ.getPatchVersion)
 
   /**
    * Factory method to create the [[akka.actor.Props]] to build the ZeroMQ socket actor.

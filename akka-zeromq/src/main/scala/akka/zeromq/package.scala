@@ -20,10 +20,10 @@ package object zeromq {
   /**
    * Convenience accessor to subscribe to all events
    */
-  val SubscribeAll = Subscribe(Seq.empty)
+  val SubscribeAll: Subscribe = Subscribe.all
 
   /**
    * Set the linger to 0, doesn't block and discards messages that haven't been sent yet.
    */
-  val NoLinger = Linger(0)
+  val NoLinger: Linger = Linger.no
 }

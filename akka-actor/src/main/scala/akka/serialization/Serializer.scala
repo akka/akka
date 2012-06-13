@@ -6,7 +6,6 @@ package akka.serialization
 
 import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
 import akka.util.ClassLoaderObjectInputStream
-import akka.actor.DynamicAccess
 import akka.actor.ExtendedActorSystem
 import scala.util.DynamicVariable
 

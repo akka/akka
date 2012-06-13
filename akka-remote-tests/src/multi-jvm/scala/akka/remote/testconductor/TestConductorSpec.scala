@@ -1,8 +1,9 @@
+/**
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.remote.testconductor
 
-import akka.remote.AkkaRemoteSpec
 import com.typesafe.config.ConfigFactory
-import akka.remote.AbstractRemoteActorMultiJvmSpec
 import akka.actor.Props
 import akka.actor.Actor
 import akka.dispatch.Await
@@ -10,24 +11,15 @@ import akka.dispatch.Await.Awaitable
 import akka.util.Duration
 import akka.util.duration._
 import akka.testkit.ImplicitSender
+import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress
 import java.net.InetAddress
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
-  commonConfig(ConfigFactory.parseString("""
-    # akka.loglevel = DEBUG
-    akka.remote {
-      log-received-messages = on
-      log-sent-messages = on
-    }
-    akka.actor.debug {
-      receive = on
-      fsm = on
-    }
-  """))
-  
+  commonConfig(debugConfig(on = false))
+
   val master = role("master")
   val slave = role("slave")
 }
@@ -36,28 +28,28 @@ class TestConductorMultiJvmNode1 extends TestConductorSpec
 class TestConductorMultiJvmNode2 extends TestConductorSpec
 
 class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ImplicitSender {
-  
+
   import TestConductorMultiJvmSpec._
 
   def initialParticipants = 2
 
-  runOn(master) {
-    system.actorOf(Props(new Actor {
-      def receive = {
-        case x ⇒ testActor ! x; sender ! x
-      }
-    }), "echo")
-  }
-
-  val echo = system.actorFor(node(master) / "user" / "echo")
+  lazy val echo = system.actorFor(node(master) / "user" / "echo")
 
   "A TestConductor" must {
 
-    "enter a barrier" in {
+    "enter a barrier" taggedAs LongRunningTest in {
+      runOn(master) {
+        system.actorOf(Props(new Actor {
+          def receive = {
+            case x ⇒ testActor ! x; sender ! x
+          }
+        }), "echo")
+      }
+
       testConductor.enter("name")
     }
 
-    "support throttling of network connections" in {
+    "support throttling of network connections" taggedAs LongRunningTest in {
 
       runOn(slave) {
         // start remote network connection so that it can be throttled

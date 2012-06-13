@@ -3,7 +3,7 @@
  */
 package akka.remote.testconductor
 
-import org.jboss.netty.channel.{ Channel, ChannelPipeline, ChannelPipelineFactory, ChannelUpstreamHandler, SimpleChannelUpstreamHandler, StaticChannelPipeline }
+import org.jboss.netty.channel.{ Channel, ChannelPipeline, ChannelPipelineFactory, ChannelUpstreamHandler, SimpleChannelUpstreamHandler, DefaultChannelPipeline }
 import org.jboss.netty.channel.socket.nio.{ NioClientSocketChannelFactory, NioServerSocketChannelFactory }
 import org.jboss.netty.bootstrap.{ ClientBootstrap, ServerBootstrap }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
@@ -12,6 +12,7 @@ import org.jboss.netty.handler.codec.protobuf.{ ProtobufDecoder, ProtobufEncoder
 import org.jboss.netty.handler.timeout.{ ReadTimeoutHandler, ReadTimeoutException }
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
+import akka.event.Logging
 
 /**
  * INTERNAL API.
@@ -21,7 +22,9 @@ private[akka] class TestConductorPipelineFactory(handler: ChannelUpstreamHandler
     val encap = List(new LengthFieldPrepender(4), new LengthFieldBasedFrameDecoder(10000, 0, 4, 0, 4))
     val proto = List(new ProtobufEncoder, new ProtobufDecoder(TestConductorProtocol.Wrapper.getDefaultInstance))
     val msg = List(new MsgEncoder, new MsgDecoder)
-    new StaticChannelPipeline(encap ::: proto ::: msg ::: handler :: Nil: _*)
+    (encap ::: proto ::: msg ::: handler :: Nil).foldLeft(new DefaultChannelPipeline) {
+      (pipe, handler) ⇒ pipe.addLast(Logging.simpleName(handler.getClass), handler); pipe
+    }
   }
 }
 

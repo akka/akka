@@ -25,13 +25,13 @@ scheduled operation.
 Some examples
 -------------
 
-.. includecode:: code/akka/docs/actor/SchedulerDocSpec.scala
+.. includecode:: code/docs/actor/SchedulerDocSpec.scala
    :include: imports1,schedule-one-off-message
 
-.. includecode:: code/akka/docs/actor/SchedulerDocSpec.scala
+.. includecode:: code/docs/actor/SchedulerDocSpec.scala
    :include: schedule-one-off-thunk
 
-.. includecode:: code/akka/docs/actor/SchedulerDocSpec.scala
+.. includecode:: code/docs/actor/SchedulerDocSpec.scala
    :include: schedule-recurring
 
 From ``akka.actor.ActorSystem``

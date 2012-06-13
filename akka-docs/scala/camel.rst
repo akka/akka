@@ -52,7 +52,7 @@ Consumer
 Usage of Camel's integration components in Akka is essentially a
 one-liner. Here's an example.
 
-.. includecode:: code/akka/docs/camel/Introduction.scala#Consumer-mina
+.. includecode:: code/docs/camel/Introduction.scala#Consumer-mina
 
 The above example exposes an actor over a tcp endpoint on port 6200 via Apache
 Camel's `Mina component`_. The actor implements the endpointUri method to define
@@ -64,14 +64,14 @@ component`_), only the actor's endpointUri method must be changed.
 .. _Mina component: http://camel.apache.org/mina.html
 .. _Jetty component: http://camel.apache.org/jetty.html
 
-.. includecode:: code/akka/docs/camel/Introduction.scala#Consumer
+.. includecode:: code/docs/camel/Introduction.scala#Consumer
 
 Producer
 --------
 Actors can also trigger message exchanges with external systems i.e. produce to
 Camel endpoints.
 
-.. includecode:: code/akka/docs/camel/Introduction.scala
+.. includecode:: code/docs/camel/Introduction.scala
                 :include: imports,Producer
 
 In the above example, any message sent to this actor will be sent to
@@ -127,7 +127,7 @@ messages from the ``file:data/input/actor`` Camel endpoint.
 
 .. _Consumer: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/Consumer.scala
 
-.. includecode:: code/akka/docs/camel/Consumers.scala#Consumer1
+.. includecode:: code/docs/camel/Consumers.scala#Consumer1
 
 Whenever a file is put into the data/input/actor directory, its content is
 picked up by the Camel `file component`_ and sent as message to the
@@ -146,7 +146,7 @@ from localhost on port 8877.
 .. _Jetty component: http://camel.apache.org/jetty.html
 .. _Jetty: http://www.eclipse.org/jetty/
 
-.. includecode:: code/akka/docs/camel/Consumers.scala#Consumer2
+.. includecode:: code/docs/camel/Consumers.scala#Consumer2
 
 After starting the actor, clients can send messages to that actor by POSTing to
 ``http://localhost:8877/camel/default``. The actor sends a response by using the

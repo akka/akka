@@ -3,44 +3,32 @@
  */
 package akka.remote.netty
 
-import java.net.InetSocketAddress
-import org.jboss.netty.util.HashedWheelTimer
+import java.util.concurrent.TimeUnit
+import java.net.{ InetAddress, InetSocketAddress }
+import org.jboss.netty.util.{ Timeout, TimerTask, HashedWheelTimer }
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel.group.DefaultChannelGroup
-import org.jboss.netty.channel.{ ChannelHandler, StaticChannelPipeline, SimpleChannelUpstreamHandler, MessageEvent, ExceptionEvent, ChannelStateEvent, ChannelPipelineFactory, ChannelPipeline, ChannelHandlerContext, ChannelFuture, Channel }
+import org.jboss.netty.channel.{ ChannelFutureListener, ChannelHandler, DefaultChannelPipeline, MessageEvent, ExceptionEvent, ChannelStateEvent, ChannelPipelineFactory, ChannelPipeline, ChannelHandlerContext, ChannelFuture, Channel }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.execution.ExecutionHandler
+import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
 import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
 import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, RemoteClientStarted, RemoteClientShutdown, RemoteClientException, RemoteClientError, RemoteClientDisconnected, RemoteClientConnected }
-import akka.actor.{ simpleName, Address }
 import akka.AkkaException
 import akka.event.Logging
-import akka.util.Switch
-import akka.actor.ActorRef
-import org.jboss.netty.channel.ChannelFutureListener
-import akka.remote.RemoteClientWriteFailed
-import java.net.InetAddress
-import org.jboss.netty.util.TimerTask
-import org.jboss.netty.util.Timeout
-import java.util.concurrent.TimeUnit
-import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
-
-class RemoteClientMessageBufferException(message: String, cause: Throwable) extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null)
-}
+import akka.actor.{ DeadLetter, Address, ActorRef }
+import akka.util.{ NonFatal, Switch }
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
  * ActiveRemoteClient, but others could be feasible, like a PassiveRemoteClient that
  * reuses an already established connection.
  */
-abstract class RemoteClient private[akka] (
-  val netty: NettyRemoteTransport,
-  val remoteAddress: Address) {
+private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteTransport, val remoteAddress: Address) {
 
   val log = Logging(netty.system, "RemoteClient")
 
-  val name = simpleName(this) + "@" + remoteAddress
+  val name = Logging.simpleName(this) + "@" + remoteAddress
 
   private[remote] val runSwitch = new Switch()
 
@@ -75,11 +63,13 @@ abstract class RemoteClient private[akka] (
       val f = channel.write(request)
       f.addListener(
         new ChannelFutureListener {
-          def operationComplete(future: ChannelFuture) {
-            if (future.isCancelled || !future.isSuccess) {
-              netty.notifyListeners(RemoteClientWriteFailed(request, future.getCause, netty, remoteAddress))
+          import netty.system.deadLetters
+          def operationComplete(future: ChannelFuture): Unit =
+            if (future.isCancelled || !future.isSuccess) request match {
+              case (msg, sender, recipient) ⇒ deadLetters ! DeadLetter(msg, sender.getOrElse(deadLetters), recipient)
+              // We don't call notifyListeners here since we don't think failed message deliveries are errors
+              /// If the connection goes down we'll get the error reporting done by the pipeline.
             }
-          }
         })
       // Check if we should back off
       if (!channel.isWritable) {
@@ -87,17 +77,17 @@ abstract class RemoteClient private[akka] (
         if (backoff.length > 0 && !f.await(backoff.length, backoff.unit)) f.cancel() //Waited as long as we could, now back off
       }
     } catch {
-      case e: Exception ⇒ netty.notifyListeners(RemoteClientError(e, netty, remoteAddress))
+      case NonFatal(e) ⇒ netty.notifyListeners(RemoteClientError(e, netty, remoteAddress))
     }
   }
 
-  override def toString = name
+  override def toString: String = name
 }
 
 /**
  * RemoteClient represents a connection to an Akka node. Is used to send messages to remote actors on the node.
  */
-class ActiveRemoteClient private[akka] (
+private[akka] class ActiveRemoteClient private[akka] (
   netty: NettyRemoteTransport,
   remoteAddress: Address,
   localAddress: Address)
@@ -159,6 +149,10 @@ class ActiveRemoteClient private[akka] (
       b.setOption("tcpNoDelay", true)
       b.setOption("keepAlive", true)
       b.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
+      settings.ReceiveBufferSize.foreach(sz ⇒ b.setOption("receiveBufferSize", sz))
+      settings.SendBufferSize.foreach(sz ⇒ b.setOption("sendBufferSize", sz))
+      settings.WriteBufferHighWaterMark.foreach(sz ⇒ b.setOption("writeBufferHighWaterMark", sz))
+      settings.WriteBufferLowWaterMark.foreach(sz ⇒ b.setOption("writeBufferLowWaterMark", sz))
       settings.OutboundLocalAddress.foreach(s ⇒ b.setOption("localAddress", new InetSocketAddress(s, 0)))
       bootstrap = b
 
@@ -173,6 +167,7 @@ class ActiveRemoteClient private[akka] (
         notifyListeners(RemoteClientError(connection.getCause, netty, remoteAddress))
         false
       } else {
+        ChannelAddress.set(connection.getChannel, Some(remoteAddress))
         sendSecureCookie(connection)
         notifyListeners(RemoteClientStarted(netty, remoteAddress))
         true
@@ -196,8 +191,10 @@ class ActiveRemoteClient private[akka] (
 
     notifyListeners(RemoteClientShutdown(netty, remoteAddress))
     try {
-      if ((connection ne null) && (connection.getChannel ne null))
+      if ((connection ne null) && (connection.getChannel ne null)) {
+        ChannelAddress.remove(connection.getChannel)
         connection.getChannel.close()
+      }
     } finally {
       try {
         if (openChannels ne null) openChannels.close.awaitUninterruptibly()
@@ -226,7 +223,7 @@ class ActiveRemoteClient private[akka] (
 }
 
 @ChannelHandler.Sharable
-class ActiveRemoteClientHandler(
+private[akka] class ActiveRemoteClientHandler(
   val name: String,
   val bootstrap: ClientBootstrap,
   val remoteAddress: Address,
@@ -315,10 +312,9 @@ class ActiveRemoteClientHandler(
   }
 }
 
-class PassiveRemoteClient(val currentChannel: Channel,
-                          netty: NettyRemoteTransport,
-                          remoteAddress: Address)
-  extends RemoteClient(netty, remoteAddress) {
+private[akka] class PassiveRemoteClient(val currentChannel: Channel,
+                                        netty: NettyRemoteTransport,
+                                        remoteAddress: Address) extends RemoteClient(netty, remoteAddress) {
 
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = runSwitch switchOn {
     netty.notifyListeners(RemoteClientStarted(netty, remoteAddress))

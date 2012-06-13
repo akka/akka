@@ -105,6 +105,14 @@ Once you have configured the properties above you would do the following in code
 ``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
 
+.. note::
+
+  In order to ensure serializability of ``Props`` when passing constructor
+  arguments to the actor being created, do not make the factory an inner class:
+  this will inherently capture a reference to its enclosing object, which in
+  most cases is not serializable. It is best to create a factory method in the
+  companion object of the actor’s class.
+
 Programmatic Remote Deployment
 ------------------------------
 
@@ -116,15 +124,15 @@ precedence.
 
 With these imports:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocSpec.scala#import
+.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#import
 
 and a remote address like this:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocSpec.scala#make-address
+.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#make-address
 
 you can advise the system to create a child on that remote node like so:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
+.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
 
 Serialization
 ^^^^^^^^^^^^^
@@ -279,10 +287,6 @@ which holds the transport used (RemoteTransport) and the outbound address that i
 
 To intercept when an outbound client is shut down you listen to ``RemoteClientShutdown``
 which holds the transport used (RemoteTransport) and the outbound address that it was connected to (Address).
-
-To intercept when an outbound message cannot be sent, you listen to ``RemoteClientWriteFailed`` which holds
-the payload that was not written (AnyRef), the cause of the failed send (Throwable),
-the transport used (RemoteTransport) and the outbound address that was the destination (Address).
 
 For general outbound-related errors, that do not classify as any of the others, you can listen to ``RemoteClientError``,
 which holds the cause (Throwable), the transport used (RemoteTransport) and the outbound address (Address).

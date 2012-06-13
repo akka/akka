@@ -7,7 +7,6 @@ import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
 import RemoteConnection.getAddrString
 import akka.util.duration._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
-import com.eaio.uuid.UUID
 import com.typesafe.config.ConfigFactory
 import akka.util.Timeout
 import akka.util.Duration
@@ -200,21 +199,13 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
               log.warning("did not expect {}", op)
           }
           stay using d.copy(runningOp = None)
-        case ThrottleMsg(target, dir, rate) ⇒
+        case t: ThrottleMsg ⇒
           import settings.QueryTimeout
-          import context.dispatcher
-          TestConductor().failureInjectors.get(target.copy(system = "")) match {
-            case null ⇒ log.warning("cannot throttle unknown address {}", target)
-            case inj ⇒
-              Future.sequence(inj.refs(dir) map (_ ? NetworkFailureInjector.SetRate(rate))) map (_ ⇒ ToServer(Done)) pipeTo self
-          }
+          TestConductor().failureInjector ? t map (_ ⇒ ToServer(Done)) pipeTo self
           stay
-        case DisconnectMsg(target, abort) ⇒
+        case d: DisconnectMsg ⇒
           import settings.QueryTimeout
-          TestConductor().failureInjectors.get(target.copy(system = "")) match {
-            case null ⇒ log.warning("cannot disconnect unknown address {}", target)
-            case inj  ⇒ inj.sender ? NetworkFailureInjector.Disconnect(abort) map (_ ⇒ ToServer(Done)) pipeTo self
-          }
+          TestConductor().failureInjector ? d map (_ ⇒ ToServer(Done)) pipeTo self
           stay
         case TerminateMsg(exit) ⇒
           System.exit(exit)

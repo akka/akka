@@ -11,6 +11,8 @@ import akka.util.NonFatal
  * Watches the end of life of <code>Producer</code>s.
  * Removes a <code>Producer</code> from the <code>ProducerRegistry</code> when it is <code>Terminated</code>,
  * which in turn stops the <code>SendProcessor</code>.
+ *
+ * INTERNAL API
  */
 private class ProducerWatcher(registry: ProducerRegistry) extends Actor {
   override def receive = {
@@ -19,6 +21,9 @@ private class ProducerWatcher(registry: ProducerRegistry) extends Actor {
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private case class RegisterProducer(actorRef: ActorRef)
 
 /**
@@ -27,14 +32,11 @@ private case class RegisterProducer(actorRef: ActorRef)
  * Every <code>Producer</code> needs an <code>Endpoint</code> and a <code>SendProcessor</code>
  * to produce messages over an <code>Exchange</code>.
  */
-private[camel] trait ProducerRegistry {
-  this: Camel ⇒
+private[camel] trait ProducerRegistry { this: Camel ⇒
   private val camelObjects = new ConcurrentHashMap[ActorRef, (Endpoint, SendProcessor)]()
-  private val watcher = system.actorOf(Props(new ProducerWatcher(this)))
+  private val watcher = system.actorOf(Props(new ProducerWatcher(this))) //FIXME should this really be top level?
 
-  private def registerWatch(actorRef: ActorRef) {
-    watcher ! RegisterProducer(actorRef)
-  }
+  private def registerWatch(actorRef: ActorRef): Unit = watcher ! RegisterProducer(actorRef)
 
   /**
    * For internal use only.
@@ -77,7 +79,7 @@ private[camel] trait ProducerRegistry {
       case NonFatal(e) ⇒ {
         system.eventStream.publish(EndpointFailedToActivate(actorRef, e))
         // can't return null to the producer actor, so blow up actor in initialization.
-        throw e
+        throw e //FIXME I'm not a huge fan of log-rethrow, either log or rethrow
       }
     }
   }

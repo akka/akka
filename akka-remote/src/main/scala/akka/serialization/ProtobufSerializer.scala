@@ -27,7 +27,7 @@ object ProtobufSerializer {
   /**
    * Helper to materialize (lookup) an [[akka.actor.ActorRef]]
    * from Akka's protobuf representation in the supplied
-   * [[akka.actor.ActorSystem].
+   * [[akka.actor.ActorSystem]].
    */
   def deserializeActorRef(system: ActorSystem, refProtocol: ActorRefProtocol): ActorRef =
     system.actorFor(refProtocol.getPath)

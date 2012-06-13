@@ -21,12 +21,12 @@ For Akka to know which ``Serializer`` to use for what, you need edit your :ref:`
 in the "akka.actor.serializers"-section you bind names to implementations of the ``akka.serialization.Serializer``
 you wish to use, like this:
 
-.. includecode:: ../scala/code/akka/docs/serialization/SerializationDocSpec.scala#serialize-serializers-config
+.. includecode:: ../scala/code/docs/serialization/SerializationDocSpec.scala#serialize-serializers-config
 
 After you've bound names to different implementations of ``Serializer`` you need to wire which classes
 should be serialized using which ``Serializer``, this is done in the "akka.actor.serialization-bindings"-section:
 
-.. includecode:: ../scala/code/akka/docs/serialization/SerializationDocSpec.scala#serialization-bindings-config
+.. includecode:: ../scala/code/docs/serialization/SerializationDocSpec.scala#serialization-bindings-config
 
 You only need to specify the name of an interface or abstract base class of the
 messages. In case of ambiguity, i.e. the message implements several of the
@@ -53,7 +53,7 @@ Verification
 
 If you want to verify that your messages are serializable you can enable the following config option:
 
-.. includecode:: ../scala/code/akka/docs/serialization/SerializationDocSpec.scala#serialize-messages-config
+.. includecode:: ../scala/code/docs/serialization/SerializationDocSpec.scala#serialize-messages-config
 
 .. warning::
 
@@ -62,7 +62,7 @@ If you want to verify that your messages are serializable you can enable the fol
 
 If you want to verify that your ``Props`` are serializable you can enable the following config option:
 
-.. includecode:: ../scala/code/akka/docs/serialization/SerializationDocSpec.scala#serialize-creators-config
+.. includecode:: ../scala/code/docs/serialization/SerializationDocSpec.scala#serialize-creators-config
 
 .. warning::
 
@@ -75,7 +75,7 @@ Programmatic
 If you want to programmatically serialize/deserialize using Akka Serialization,
 here's some examples:
 
-.. includecode:: code/akka/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: imports,programmatic
 
 For more information, have a look at the ``ScalaDoc`` for ``akka.serialization._``
@@ -85,7 +85,7 @@ Customization
 =============
 
 So, lets say that you want to create your own ``Serializer``,
-you saw the ``akka.docs.serialization.MyOwnSerializer`` in the config example above?
+you saw the ``docs.serialization.MyOwnSerializer`` in the config example above?
 
 Creating new Serializers
 ------------------------
@@ -93,7 +93,7 @@ Creating new Serializers
 First you need to create a class definition of your ``Serializer``,
 which is done by extending ``akka.serialization.JSerializer``, like this:
 
-.. includecode:: code/akka/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: imports,my-own-serializer
    :exclude: ...
 
@@ -106,8 +106,49 @@ Serializing ActorRefs
 All ActorRefs are serializable using JavaSerializer, but in case you are writing your own serializer,
 you might want to know how to serialize and deserialize them properly, here's the magic incantation:
 
-.. includecode:: code/akka/docs/serialization/SerializationDocTestBase.java
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: imports,actorref-serializer
+
+.. note::
+  
+  ``ActorPath.toStringWithAddress`` only differs from ``toString`` if the
+  address does not already have ``host`` and ``port`` components, i.e. it only
+  inserts address information for local addresses.
+
+This assumes that serialization happens in the context of sending a message
+through the remote transport. There are other uses of serialization, though,
+e.g. storing actor references outside of an actor application (database,
+durable mailbox, etc.). In this case, it is important to keep in mind that the
+address part of an actor’s path determines how that actor is communicated with.
+Storing a local actor path might be the right choice if the retrieval happens
+in the same logical context, but it is not enough when deserializing it on a
+different network host: for that it would need to include the system’s remote
+transport address. An actor system is not limited to having just one remote
+transport per se, which makes this question a bit more interesting.
+
+In the general case, the local address to be used depends on the type of remote
+address which shall be the recipient of the serialized information. Use
+:meth:`ActorRefProvider.getExternalAddressFor(remoteAddr)` to query the system
+for the appropriate address to use when sending to ``remoteAddr``:
+
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+   :include: external-address
+
+This requires that you know at least which type of address will be supported by
+the system which will deserialize the resulting actor reference; if you have no
+concrete address handy you can create a dummy one for the right protocol using
+``new Address(protocol, "", "", 0)`` (assuming that the actual transport used is as
+lenient as Akka’s RemoteActorRefProvider).
+
+There is a possible simplification available if you are just using the default
+:class:`NettyRemoteTransport` with the :meth:`RemoteActorRefProvider`, which is
+enabled by the fact that this combination has just a single remote address:
+
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+   :include: external-address-default
+
+This solution has to be adapted once other providers are used (like the planned
+extensions for clustering).
 
 Deep serialization of Actors
 ----------------------------
@@ -140,7 +181,10 @@ which might contain actor references.
 External Akka Serializers
 =========================
 
-`Akka-protostuff by Roman Levenstein<https://github.com/romix/akka-protostuff-serialization>`_
+`Akka-protostuff by Roman Levenstein <https://github.com/romix/akka-protostuff-serialization>`_
 
 
-`Akka-quickser by Roman Levenstein<https://github.com/romix/akka-quickser-serialization>`_
+`Akka-quickser by Roman Levenstein <https://github.com/romix/akka-quickser-serialization>`_
+
+
+`Akka-kryo by Roman Levenstein <https://github.com/romix/akka-kryo-serialization>`_

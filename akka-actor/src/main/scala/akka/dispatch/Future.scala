@@ -68,6 +68,7 @@ object Await {
    * WARNING: Blocking operation, use with caution.
    *
    * @throws [[java.util.concurrent.TimeoutException]] if times out
+   * @throws [[java.lang.Throwable]] (throws clause is Exception due to Java) if there was a problem
    * @return The returned value as returned by Awaitable.result
    */
   @throws(classOf[Exception])

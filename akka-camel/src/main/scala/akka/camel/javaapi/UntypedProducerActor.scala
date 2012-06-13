@@ -40,16 +40,14 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
   final override def transformResponse(msg: Any): AnyRef = onTransformResponse(msg.asInstanceOf[AnyRef])
   final override def routeResponse(msg: Any): Unit = onRouteResponse(msg.asInstanceOf[AnyRef])
 
-  final override def endpointUri = getEndpointUri
+  final override def endpointUri: String = getEndpointUri
 
-  final override def oneway = isOneway
+  final override def oneway: Boolean = isOneway
 
   /**
    * Default implementation of UntypedActor.onReceive
    */
-  def onReceive(message: Any) {
-    produce(message)
-  }
+  def onReceive(message: Any): Unit = produce(message)
 
   /**
    * Returns the Camel endpoint URI to produce messages to.
@@ -61,7 +59,7 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    * If set to true, this producer communicates with the Camel endpoint with an in-only message
    * exchange pattern (fire and forget).
    */
-  def isOneway() = super.oneway
+  def isOneway(): Boolean = super.oneway
 
   /**
    * Returns the <code>CamelContext</code>.

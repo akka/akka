@@ -6,8 +6,10 @@ package akka.util
 /**
  * Collection of internal reflection utilities which may or may not be
  * available (most services specific to HotSpot, but fails gracefully).
+ *
+ * INTERNAL API
  */
-object Reflect {
+private[akka] object Reflect {
 
   /**
    * This optionally holds a function which looks N levels above itself

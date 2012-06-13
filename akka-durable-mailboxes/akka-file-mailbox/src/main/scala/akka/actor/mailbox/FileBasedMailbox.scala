@@ -5,14 +5,14 @@
 package akka.actor.mailbox
 
 import akka.actor.ActorContext
-import akka.dispatch.{ Envelope, MessageQueue }
 import akka.event.Logging
 import akka.actor.ActorRef
-import akka.dispatch.MailboxType
 import com.typesafe.config.Config
-import akka.util.NonFatal
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import akka.actor.ActorSystem
+import akka.dispatch._
+import akka.util.{ Duration, NonFatal }
+import akka.pattern.{ CircuitBreakerOpenException, CircuitBreaker }
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)
@@ -23,46 +23,48 @@ class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config)
 }
 
 class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+  // TODO Is it reasonable for all FileBasedMailboxes to have their own logger?
+  private val log = Logging(system, "FileBasedMessageQueue")
 
-  val log = Logging(system, "FileBasedMessageQueue")
-
-  val queuePath = settings.QueuePath
+  val breaker = CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
 
   private val queue = try {
-    (new java.io.File(queuePath)) match {
+    (new java.io.File(settings.QueuePath)) match {
       case dir if dir.exists && !dir.isDirectory ⇒ throw new IllegalStateException("Path already occupied by non-directory " + dir)
       case dir if !dir.exists                    ⇒ if (!dir.mkdirs() && !dir.isDirectory) throw new IllegalStateException("Creation of directory failed " + dir)
       case _                                     ⇒ //All good
     }
-    val queue = new filequeue.PersistentQueue(queuePath, name, settings, log)
+    val queue = new filequeue.PersistentQueue(settings.QueuePath, name, settings, log)
     queue.setup // replays journal
     queue.discardExpired
     queue
   } catch {
-    case e: Exception ⇒
+    case NonFatal(e) ⇒
       log.error(e, "Could not create a file-based mailbox")
       throw e
   }
 
   def enqueue(receiver: ActorRef, envelope: Envelope) {
-    queue.add(serialize(envelope))
+    breaker.withSyncCircuitBreaker(queue.add(serialize(envelope)))
   }
 
-  def dequeue(): Envelope = try {
-    val item = queue.remove
-    if (item.isDefined) {
-      queue.confirmRemove(item.get.xid)
-      deserialize(item.get.data)
-    } else null
-  } catch {
-    case e: java.util.NoSuchElementException ⇒ null
-    case e: Exception ⇒
-      log.error(e, "Couldn't dequeue from file-based mailbox")
-      throw e
+  def dequeue(): Envelope = {
+    breaker.withSyncCircuitBreaker(
+      try {
+        queue.remove.map(item ⇒ { queue.confirmRemove(item.xid); deserialize(item.data) }).orNull
+      } catch {
+        case _: java.util.NoSuchElementException ⇒ null
+        case e: CircuitBreakerOpenException ⇒
+          log.debug(e.getMessage())
+          throw e
+        case NonFatal(e) ⇒
+          log.error(e, "Couldn't dequeue from file-based mailbox, due to [{}]", e.getMessage())
+          throw e
+      })
   }
 
   def numberOfMessages: Int = {
-    queue.length.toInt
+    breaker.withSyncCircuitBreaker(queue.length.toInt)
   }
 
   def hasMessages: Boolean = numberOfMessages > 0
@@ -78,5 +80,4 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
   }
 
   def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
-
 }

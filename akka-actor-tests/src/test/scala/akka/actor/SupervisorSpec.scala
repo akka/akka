@@ -339,9 +339,7 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 10 seconds)(classOf[Exception] :: Nil))))
 
       val dyingProps = Props(new Actor {
-        inits.incrementAndGet
-
-        if (inits.get % 2 == 0) throw new IllegalStateException("Don't wanna!")
+        if (inits.incrementAndGet % 2 == 0) throw new IllegalStateException("Don't wanna!")
 
         def receive = {
           case Ping ⇒ sender ! PongMessage
@@ -365,6 +363,40 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       inits.get must be(3)
 
       system.stop(supervisor)
+    }
+
+    "must not lose system messages when a NonFatal exception occurs when processing a system message" in {
+      val parent = system.actorOf(Props(new Actor {
+        override val supervisorStrategy = OneForOneStrategy()({
+          case e: IllegalStateException if e.getMessage == "OHNOES" ⇒ throw e
+          case _ ⇒ SupervisorStrategy.Restart
+        })
+        val child = context.watch(context.actorOf(Props(new Actor {
+          override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
+          def receive = {
+            case "die"  ⇒ throw new IllegalStateException("OHNOES")
+            case "test" ⇒ sender ! "child green"
+          }
+        }), "child"))
+
+        override def postRestart(reason: Throwable): Unit = testActor ! "parent restarted"
+
+        def receive = {
+          case t @ Terminated(`child`) ⇒ testActor ! "child terminated"
+          case "die"                   ⇒ child ! "die"
+          case "test"                  ⇒ sender ! "green"
+          case "testchild"             ⇒ child forward "test"
+        }
+      }))
+
+      parent ! "die"
+      parent ! "testchild"
+      expectMsg("parent restarted")
+      expectMsg("child terminated")
+      parent ! "test"
+      expectMsg("green")
+      parent ! "testchild"
+      expectMsg("child green")
     }
   }
 }

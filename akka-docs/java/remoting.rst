@@ -82,15 +82,23 @@ The "app" in this case refers to the name of the ``ActorSystem`` (only showing d
 Logical path lookup is supported on the node you are on, i.e. to use the
 actor created above you would do the following:
 
-.. includecode:: code/akka/docs/remoting/RemoteActorExample.java#localNodeActor
+.. includecode:: code/docs/remoting/RemoteActorExample.java#localNodeActor
 
 This will obtain an ``ActorRef`` on a remote node:
 
-.. includecode:: code/akka/docs/remoting/RemoteActorExample.java#remoteNodeActor
+.. includecode:: code/docs/remoting/RemoteActorExample.java#remoteNodeActor
 
 As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
 
     akka://<actorsystemname>@<hostname>:<port>/<actor path>
+
+.. note::
+
+  In order to ensure serializability of ``Props`` when passing constructor
+  arguments to the actor being created, do not make the factory a non-static
+  inner class: this will inherently capture a reference to its enclosing
+  object, which in most cases is not serializable. It is best to make a static
+  inner class which implements :class:`UntypedActorFactory`.
 
 Programmatic Remote Deployment
 ------------------------------
@@ -103,15 +111,15 @@ precedence.
 
 With these imports:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocTestBase.java#import
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#import
 
 and a remote address like this:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocTestBase.java#make-address
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#make-address
 
 you can advise the system to create a child on that remote node like so:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocTestBase.java#deploy
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#deploy
 
 Serialization
 ^^^^^^^^^^^^^
@@ -271,10 +279,6 @@ which holds the transport used (RemoteTransport) and the outbound address that i
 
 To intercept when an outbound client is shut down you listen to ``RemoteClientShutdown``
 which holds the transport used (RemoteTransport) and the outbound address that it was connected to (Address).
-
-To intercept when an outbound message cannot be sent, you listen to ``RemoteClientWriteFailed`` which holds
-the payload that was not written (AnyRef), the cause of the failed send (Throwable),
-the transport used (RemoteTransport) and the outbound address that was the destination (Address).
 
 For general outbound-related errors, that do not classify as any of the others, you can listen to ``RemoteClientError``,
 which holds the cause (Throwable), the transport used (RemoteTransport) and the outbound address (Address).

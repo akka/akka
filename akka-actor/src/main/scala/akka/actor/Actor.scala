@@ -12,8 +12,9 @@ import java.util.regex.Pattern
 
 /**
  * Marker trait to show which Messages are automatically handled by Akka
+ * Internal use only
  */
-trait AutoReceivedMessage extends Serializable
+private[akka] trait AutoReceivedMessage extends Serializable
 
 /**
  * Marker trait to indicate that a message might be potentially harmful,
@@ -26,9 +27,16 @@ trait PossiblyHarmful
  */
 trait NoSerializationVerificationNeeded
 
-case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
+/**
+ * Internal use only
+ */
+private[akka] case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
 abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful
+
+/**
+ * A message all Actors will understand, that when processed will terminate the Actor permanently.
+ */
 case object PoisonPill extends PoisonPill {
   /**
    * Java API: get the singleton instance
@@ -37,6 +45,10 @@ case object PoisonPill extends PoisonPill {
 }
 
 abstract class Kill extends AutoReceivedMessage with PossiblyHarmful
+/**
+ * A message all Actors will understand, that when processed will make the Actor throw an ActorKilledException,
+ * which will trigger supervision.
+ */
 case object Kill extends Kill {
   /**
    * Java API: get the singleton instance
@@ -44,9 +56,17 @@ case object Kill extends Kill {
   def getInstance = this
 }
 
-case class Terminated(@BeanProperty actor: ActorRef) extends PossiblyHarmful
+/**
+ * When Death Watch is used, the watcher will receive a Terminated(watched) message when watched is terminated.
+ */
+case class Terminated(@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean)
 
 abstract class ReceiveTimeout extends PossiblyHarmful
+
+/**
+ * When using ActorContext.setReceiveTimeout, the singleton instance of ReceiveTimeout will be sent
+ * to the Actor when there hasn't been any message for that long.
+ */
 case object ReceiveTimeout extends ReceiveTimeout {
   /**
    * Java API: get the singleton instance
@@ -60,49 +80,79 @@ case object ReceiveTimeout extends ReceiveTimeout {
  * message is delivered by active routing of the various actors involved.
  */
 sealed trait SelectionPath extends AutoReceivedMessage
-case class SelectChildName(name: String, next: Any) extends SelectionPath
-case class SelectChildPattern(pattern: Pattern, next: Any) extends SelectionPath
-case class SelectParent(next: Any) extends SelectionPath
 
-// Exceptions for Actors
+/**
+ * Internal use only
+ */
+private[akka] case class SelectChildName(name: String, next: Any) extends SelectionPath
+
+/**
+ * Internal use only
+ */
+private[akka] case class SelectChildPattern(pattern: Pattern, next: Any) extends SelectionPath
+
+/**
+ * Internal use only
+ */
+private[akka] case class SelectParent(next: Any) extends SelectionPath
+
+/**
+ * IllegalActorStateException is thrown when a core invariant in the Actor implementation has been violated.
+ * For instance, if you try to create an Actor that doesn't extend Actor.
+ */
 class IllegalActorStateException private[akka] (message: String, cause: Throwable = null)
   extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null);
+  def this(msg: String) = this(msg, null)
 }
 
+/**
+ * ActorKilledException is thrown when an Actor receives the akka.actor.Kill message
+ */
 class ActorKilledException private[akka] (message: String, cause: Throwable)
   extends AkkaException(message, cause)
   with NoStackTrace {
-  def this(msg: String) = this(msg, null);
+  def this(msg: String) = this(msg, null)
 }
 
-case class InvalidActorNameException(message: String) extends AkkaException(message)
+/**
+ * An InvalidActorNameException is thrown when you try to convert something, usually a String, to an Actor name
+ * which doesn't validate.
+ */
+class InvalidActorNameException(message: String) extends AkkaException(message)
 
-case class ActorInitializationException private[akka] (actor: ActorRef, message: String, cause: Throwable = null)
-  extends AkkaException(message, cause)
-  with NoStackTrace {
-  def this(msg: String) = this(null, msg, null);
+/**
+ * An ActorInitializationException is thrown when the the initialization logic for an Actor fails.
+ */
+class ActorInitializationException private[akka] (actor: ActorRef, message: String, cause: Throwable)
+  extends AkkaException(message, cause) /*with NoStackTrace*/ {
+  def this(msg: String) = this(null, msg, null)
+  def this(actor: ActorRef, msg: String) = this(actor, msg, null)
 }
 
-class ActorTimeoutException private[akka] (message: String, cause: Throwable = null)
-  extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null);
-}
-
+/**
+ * InvalidMessageException is thrown when an invalid message is sent to an Actor.
+ * Technically it's only "null" which is an InvalidMessageException but who knows,
+ * there might be more of them in the future, or not.
+ */
 class InvalidMessageException private[akka] (message: String, cause: Throwable = null)
   extends AkkaException(message, cause)
   with NoStackTrace {
-  def this(msg: String) = this(msg, null);
+  def this(msg: String) = this(msg, null)
 }
 
+/**
+ * A DeathPactException is thrown by an Actor that receives a Terminated(someActor) message
+ * that it doesn't handle itself, effectively crashing the Actor and escalating to the supervisor.
+ */
 case class DeathPactException private[akka] (dead: ActorRef)
   extends AkkaException("Monitored actor [" + dead + "] terminated")
   with NoStackTrace
 
-// must not pass InterruptedException to other threads
-case class ActorInterruptedException private[akka] (cause: Throwable)
-  extends AkkaException(cause.getMessage, cause)
-  with NoStackTrace
+/**
+ * When an InterruptedException is thrown inside an Actor, it is wrapped as an ActorInterruptedException as to
+ * avoid cascading interrupts to other threads than the originally interrupted one.
+ */
+class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaException(cause.getMessage, cause) with NoStackTrace
 
 /**
  * This message is published to the EventStream whenever an Actor receives a message it doesn't understand
@@ -115,18 +165,43 @@ case class UnhandledMessage(@BeanProperty message: Any, @BeanProperty sender: Ac
  */
 object Status {
   sealed trait Status extends Serializable
+
+  /**
+   * This class/message type is preferably used to indicate success of some operation performed.
+   */
   case class Success(status: AnyRef) extends Status
+
+  /**
+   * This class/message type is preferably used to indicate failure of some operation performed.
+   * As an example, it is used to signal failure with AskSupport is used (ask/?).
+   */
   case class Failure(cause: Throwable) extends Status
 }
 
+/**
+ * Mix in ActorLogging into your Actor to easily obtain a reference to a logger, which is available under the name "log".
+ *
+ * {{{
+ * class MyActor extends Actor with ActorLogging {
+ *   def receive = {
+ *     case "pigdog" => log.info("We've got yet another pigdog on our hands")
+ *   }
+ * }
+ * }}}
+ */
 trait ActorLogging { this: Actor ⇒
   val log = akka.event.Logging(context.system, this)
 }
 
 object Actor {
-
+  /**
+   * Type alias representing a Receive-expression for Akka Actors.
+   */
   type Receive = PartialFunction[Any, Unit]
 
+  /**
+   * emptyBehavior is a Receive-expression that matches no messages at all, ever.
+   */
   object emptyBehavior extends Receive {
     def isDefinedAt(x: Any) = false
     def apply(x: Any) = throw new UnsupportedOperationException("Empty behavior apply()")
@@ -243,13 +318,13 @@ trait Actor {
    * This defines the initial actor behavior, it must return a partial function
    * with the actor logic.
    */
-  protected def receive: Receive
+  def receive: Receive
 
   /**
    * User overridable definition the strategy to use for supervising
    * child actors.
    */
-  def supervisorStrategy(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
+  def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   /**
    * User overridable callback.
@@ -303,42 +378,5 @@ trait Actor {
       case _                ⇒ context.system.eventStream.publish(UnhandledMessage(message, sender, self))
     }
   }
-
-  // =========================================
-  // ==== INTERNAL IMPLEMENTATION DETAILS ====
-  // =========================================
-
-  /**
-   * For Akka internal use only.
-   */
-  private[akka] final def apply(msg: Any) = {
-    // TODO would it be more efficient to assume that most messages are matched and catch MatchError instead of using isDefinedAt?
-    val head = behaviorStack.head
-    if (head.isDefinedAt(msg)) head.apply(msg) else unhandled(msg)
-  }
-
-  /**
-   * For Akka internal use only.
-   */
-  private[akka] def pushBehavior(behavior: Receive): Unit = {
-    behaviorStack = behaviorStack.push(behavior)
-  }
-
-  /**
-   * For Akka internal use only.
-   */
-  private[akka] def popBehavior(): Unit = {
-    val original = behaviorStack
-    val popped = original.pop
-    behaviorStack = if (popped.isEmpty) original else popped
-  }
-
-  /**
-   * For Akka internal use only.
-   */
-  private[akka] def clearBehaviorStack(): Unit =
-    behaviorStack = Stack.empty[Receive].push(behaviorStack.last)
-
-  private var behaviorStack: Stack[Receive] = Stack.empty[Receive].push(receive)
 }
 

@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.junit.runner.RunWith
 
 import akka.actor.{ Props, LocalActorRef, Deploy, Actor, ActorRef }
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import akka.dispatch.Await
 import akka.pattern.{ ask, gracefulStop }
 import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }

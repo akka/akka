@@ -14,7 +14,7 @@ import java.lang.reflect.InvocationTargetException
  * This is an internal facility and users are not expected to encounter it
  * unless they are extending Akka in ways which go beyond simple Extensions.
  */
-trait DynamicAccess {
+abstract class DynamicAccess {
 
   /**
    * Convenience method which given a `Class[_]` object and a constructor description
@@ -88,7 +88,7 @@ trait DynamicAccess {
  * by default.
  */
 class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAccess {
-
+  //FIXME switch to Scala Reflection for 2.10
   override def getClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]] =
     try {
       val c = classLoader.loadClass(fqcn).asInstanceOf[Class[_ <: T]]

@@ -21,12 +21,12 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
 
   def this(body: Any, headers: JMap[String, Any]) = this(body, headers.toMap) //for Java
 
-  override def toString = "CamelMessage(%s, %s)" format (body, headers)
+  override def toString: String = "CamelMessage(%s, %s)" format (body, headers)
 
   /**
    * Returns those headers from this message whose name is contained in <code>names</code>.
    */
-  def headers(names: Set[String]): Map[String, Any] = headers.filterKeys(names contains _)
+  def headers(names: Set[String]): Map[String, Any] = headers filterKeys names
 
   /**
    * Returns those headers from this message whose name is contained in <code>names</code>.
@@ -75,7 +75,7 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
   /**
    * Creates a CamelMessage with a given <code>body</code>.
    */
-  def withBody(body: Any) = CamelMessage(body, this.headers)
+  def withBody(body: Any): CamelMessage = CamelMessage(body, this.headers)
 
   /**
    * Creates a new CamelMessage with given <code>headers</code>.
@@ -119,9 +119,9 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * Creates a new CamelMessage where the header with given <code>headerName</code> is removed from
    * the existing headers.
    */
-  def withoutHeader(headerName: String) = copy(this.body, this.headers - headerName)
+  def withoutHeader(headerName: String): CamelMessage = copy(this.body, this.headers - headerName)
 
-  def copyContentTo(to: JCamelMessage) = {
+  def copyContentTo(to: JCamelMessage): Unit = {
     to.setBody(this.body)
     for ((name, value) ← this.headers) to.getHeaders.put(name, value.asInstanceOf[AnyRef])
   }
@@ -145,8 +145,7 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * Java API
    *
    */
-  def getBodyAs[T](clazz: Class[T], camelContext: CamelContext): T =
-    camelContext.getTypeConverter.mandatoryConvertTo[T](clazz, body)
+  def getBodyAs[T](clazz: Class[T], camelContext: CamelContext): T = camelContext.getTypeConverter.mandatoryConvertTo[T](clazz, body)
 
   /**
    * Creates a CamelMessage with current <code>body</code> converted to type <code>T</code>.
@@ -184,7 +183,7 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * <p>
    * Java API
    */
-  def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext) = headerAs[T](name)(Manifest.classType(clazz), camelContext).get
+  def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext): T = headerAs[T](name)(Manifest.classType(clazz), camelContext).get
 
 }
 
@@ -201,7 +200,7 @@ object CamelMessage {
    * so that it can be correlated with an asynchronous response. Messages send to Consumer
    * actors have this header already set.
    */
-  val MessageExchangeId = "MessageExchangeId".intern
+  val MessageExchangeId = "MessageExchangeId" //Deliberately without type ascription to make it a constant
 
   /**
    * Creates a canonical form of the given message <code>msg</code>. If <code>msg</code> of type
@@ -244,5 +243,7 @@ case object Ack {
  * message or Exchange.getOut message, depending on the exchange pattern.
  *
  */
-class AkkaCamelException private[akka] (cause: Throwable, val headers: Map[String, Any] = Map.empty)
-  extends AkkaException(cause.getMessage, cause)
+class AkkaCamelException private[akka] (cause: Throwable, val headers: Map[String, Any])
+  extends AkkaException(cause.getMessage, cause) {
+  def this(cause: Throwable) = this(cause, Map.empty)
+}

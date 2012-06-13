@@ -30,17 +30,17 @@ send them on after the burst ended or a flush request is received.
 
 First, consider all of the below to use these import statements:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala#simple-imports
+.. includecode:: code/docs/actor/FSMDocSpec.scala#simple-imports
 
 The contract of our “Buncher” actor is that is accepts or produces the following messages:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala#simple-events
+.. includecode:: code/docs/actor/FSMDocSpec.scala#simple-events
 
 ``SetTarget`` is needed for starting it up, setting the destination for the
 ``Batches`` to be passed on; ``Queue`` will add to the internal queue while
 ``Flush`` will mark the end of a burst.
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala#simple-state
+.. includecode:: code/docs/actor/FSMDocSpec.scala#simple-state
 
 The actor can be in two states: no message queued (aka ``Idle``) or some
 message queued (aka ``Active``). It will stay in the active state as long as
@@ -50,7 +50,7 @@ the actual queue of messages.
 
 Now let’s take a look at the skeleton for our FSM actor:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: simple-fsm
    :exclude: transition-elided,unhandled-elided
 
@@ -79,7 +79,7 @@ shall work identically in both states, we make use of the fact that any event
 which is not handled by the ``when()`` block is passed to the
 ``whenUnhandled()`` block:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala#unhandled-elided
+.. includecode:: code/docs/actor/FSMDocSpec.scala#unhandled-elided
 
 The first case handled here is adding ``Queue()`` requests to the internal
 queue and going to the ``Active`` state (this does the obvious thing of staying
@@ -93,7 +93,7 @@ target, for which we use the ``onTransition`` mechanism: you can declare
 multiple such blocks and all of them will be tried for matching behavior in
 case a state transition occurs (i.e. only when the state actually changes).
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala#transition-elided
+.. includecode:: code/docs/actor/FSMDocSpec.scala#transition-elided
 
 The transition callback is a partial function which takes as input a pair of
 states—the current and the next state. The FSM trait includes a convenience
@@ -106,7 +106,7 @@ To verify that this buncher actually works, it is quite easy to write a test
 using the :ref:`akka-testkit`, which is conveniently bundled with ScalaTest traits
 into ``AkkaSpec``:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: test-code
    :exclude: fsm-code-elided
 
@@ -120,7 +120,7 @@ The :class:`FSM` trait may only be mixed into an :class:`Actor`. Instead of
 extending :class:`Actor`, the self type approach was chosen in order to make it
 obvious that an actor is actually created:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: simple-fsm
    :exclude: fsm-body
 
@@ -165,7 +165,7 @@ The :meth:`stateFunction` argument is a :class:`PartialFunction[Event, State]`,
 which is conveniently given using the partial function literal syntax as
 demonstrated below:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: when-syntax
 
 The :class:`Event(msg: Any, data: D)` case class is parameterized with the data
@@ -189,7 +189,7 @@ If a state doesn't handle a received event a warning is logged. If you want to
 do something else in this case you can specify that with
 :func:`whenUnhandled(stateFunction)`:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: unhandled-syntax
 
 **IMPORTANT**: This handler is not stacked, meaning that each invocation of
@@ -230,7 +230,7 @@ of the modifiers described in the following:
 
 All modifier can be chained to achieve a nice and concise description:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: modifier-syntax
 
 The parentheses are not actually needed in all cases, but they visually
@@ -267,7 +267,7 @@ The handler is a partial function which takes a pair of states as input; no
 resulting state is needed as it is not possible to modify the transition in
 progress.
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: transition-syntax
 
 The convenience extractor :obj:`->` enables decomposition of the pair of states
@@ -280,7 +280,7 @@ It is also possible to pass a function object accepting two states to
 :func:`onTransition`, in case your transition handling logic is implemented as
 a method:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: alt-transition-syntax
 
 The handlers registered with this method are stacked, so you can intersperse
@@ -319,14 +319,14 @@ transformed using Scala’s full supplement of functional programming tools. In
 order to retain type inference, there is a helper function which may be used in
 case some common handling logic shall be applied to different clauses:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: transform-syntax
 
 It goes without saying that the arguments to this method may also be stored, to
 be used several times, e.g. when applying the same transformation to several
 ``when()`` blocks:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: alt-transform-syntax
 
 Timers
@@ -371,14 +371,14 @@ state data which is available during termination handling.
    the same way as a state transition (but note that the ``return`` statement
    may not be used within a :meth:`when` block).
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: stop-syntax
 
 You can use :func:`onTermination(handler)` to specify custom code that is
 executed when the FSM is stopped. The handler is a partial function which takes
 a :class:`StopEvent(reason, stateName, stateData)` as argument:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: termination-syntax
 
 As for the :func:`whenUnhandled` case, this handler is not stacked, so each
@@ -412,7 +412,7 @@ Event Tracing
 The setting ``akka.actor.debug.fsm`` in :ref:`configuration` enables logging of an
 event trace by :class:`LoggingFSM` instances:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: logging-fsm
    :exclude: body-elided
 
@@ -433,7 +433,7 @@ The :class:`LoggingFSM` trait adds one more feature to the FSM: a rolling event
 log which may be used during debugging (for tracing how the FSM entered a
 certain failure state) or for other creative uses:
 
-.. includecode:: code/akka/docs/actor/FSMDocSpec.scala
+.. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: logging-fsm
 
 The :meth:`logDepth` defaults to zero, which turns off the event log.

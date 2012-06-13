@@ -11,7 +11,7 @@ How to Log
 Create a ``LoggingAdapter`` and use the ``error``, ``warning``, ``info``, or ``debug`` methods,
 as illustrated in this example:
 
-.. includecode:: code/akka/docs/event/LoggingDocTestBase.java
+.. includecode:: code/docs/event/LoggingDocTestBase.java
    :include: imports,my-actor
 
 The first parameter to ``Logging.getLogger`` could also be any
@@ -33,7 +33,7 @@ placeholders results in a warning being appended to the log statement (i.e. on
 the same line with the same severity). You may pass a Java array as the only
 substitution argument to have its elements be treated individually:
 
-.. includecode:: code/akka/docs/event/LoggingDocTestBase.java#array
+.. includecode:: code/docs/event/LoggingDocTestBase.java#array
 
 The Java :class:`Class` of the log source is also included in the generated
 :class:`LogEvent`. In case of a simple string this is replaced with a “marker”
@@ -170,7 +170,7 @@ event handler available in the 'akka-slf4j' module.
 
 Example of creating a listener:
 
-.. includecode:: code/akka/docs/event/LoggingDocTestBase.java
+.. includecode:: code/docs/event/LoggingDocTestBase.java
    :include: imports,imports-listener,my-event-listener
 
 
@@ -187,7 +187,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
      <dependency>
        <groupId>ch.qos.logback</groupId>
        <artifactId>logback-classic</artifactId>
-       <version>1.0.0</version>
+       <version>1.0.4</version>
        <scope>runtime</scope>
      </dependency>
 
@@ -211,7 +211,7 @@ the first case and ``LoggerFactory.getLogger(String s)`` in the second).
 
 .. note::
 
-  Beware that the the actor system’s name is appended to a :class:`String` log
+  Beware that the actor system’s name is appended to a :class:`String` log
   source if the LoggingAdapter was created giving an :class:`ActorSystem` to
   the factory. If this is not intended, give a :class:`LoggingBus` instead as
   shown below:
