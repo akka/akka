@@ -184,7 +184,7 @@ private[akka] object ActorCell {
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
 
-  final val behaviorStackPlaceHolder: Stack[Actor.Receive] = Stack.empty
+  final val emptyBehaviorStack: Stack[Actor.Receive] = Stack.empty
 
   final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
 
@@ -408,7 +408,7 @@ private[akka] class ActorCell(
 
   var currentMessage: Envelope = _
   var actor: Actor = _
-  private var behaviorStack: Stack[Actor.Receive] = Stack.empty
+  private var behaviorStack: Stack[Actor.Receive] = emptyBehaviorStack
   @volatile var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
   var nextNameSequence: Long = 0
   var watching: Set[ActorRef] = emptyActorRefSet
@@ -513,17 +513,16 @@ private[akka] class ActorCell(
   protected def newActor(): Actor = {
     contextStack.set(contextStack.get.push(this))
     try {
-      import ActorCell.behaviorStackPlaceHolder
+      import ActorCell.emptyBehaviorStack
 
-      behaviorStack = behaviorStackPlaceHolder
+      behaviorStack = emptyBehaviorStack
       val instance = props.creator.apply()
 
       if (instance eq null)
         throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
       // If no becomes were issued, the actors behavior is its receive method
-      if (behaviorStack eq behaviorStackPlaceHolder)
-        behaviorStack = Stack.empty.push(instance.receive)
+      behaviorStack = if (behaviorStack.isEmpty) behaviorStack.push(instance.receive) else behaviorStack
       instance
     } finally {
       val stackAfter = contextStack.get
@@ -699,7 +698,7 @@ private[akka] class ActorCell(
   def unbecome(): Unit = {
     val original = behaviorStack
     behaviorStack =
-      if (original.isEmpty || original.pop.isEmpty) Stack.empty.push(actor.receive)
+      if (original.isEmpty || original.pop.isEmpty) emptyBehaviorStack.push(actor.receive)
       else original.pop
   }
 
@@ -759,7 +758,7 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle)
           system.eventStream.publish(Debug(self.path.toString, clazz(a), "stopped"))
       } finally {
-        behaviorStack = behaviorStackPlaceHolder
+        behaviorStack = emptyBehaviorStack
         clearActorFields(a)
         actor = null
       }
