@@ -223,8 +223,7 @@ private[akka] object MessageDispatcher {
   def printActors: Unit = if (debug) {
     for {
       d ← actors.keys
-      val c = println(d + " inhabitants: " + d.inhabitants)
-      a ← actors.valueIterator(d)
+      a ← { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
     } {
       val status = if (a.isTerminated) " (terminated)" else " (alive)"
       val messages = a match {

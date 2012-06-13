@@ -34,7 +34,7 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
   private val minVersion = JZMQ.makeVersion(2, 1, 0)
 
   private[zeromq] def check[TOption <: SocketOption: Manifest](parameters: Seq[SocketOption]) =
-    parameters exists { p ⇒ ClassManifest.singleType(p) <:< manifest[TOption] }
+    parameters exists { p ⇒ ClassTag.singleType(p) <:< manifest[TOption] }
 }
 
 /**

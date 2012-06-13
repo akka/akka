@@ -5,6 +5,7 @@ package akka.actor
 
 import akka.util.NonFatal
 import java.lang.reflect.InvocationTargetException
+import scala.reflect.ClassTag
 
 /**
  * The DynamicAccess implementation is the class which is used for
@@ -24,7 +25,7 @@ abstract class DynamicAccess {
    * val obj = DynamicAccess.createInstanceFor(clazz, Seq(classOf[Config] -> config, classOf[String] -> name))
    * }}}
    */
-  def createInstanceFor[T: ClassManifest](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] = {
+  def createInstanceFor[T: ClassTag](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] = {
     val types = args.map(_._1).toArray
     val values = args.map(_._2).toArray
     withErrorHandling {
@@ -40,7 +41,7 @@ abstract class DynamicAccess {
    * Obtain a `Class[_]` object loaded with the right class loader (i.e. the one
    * returned by `classLoader`).
    */
-  def getClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]]
+  def getClassFor[T: ClassTag](fqcn: String): Either[Throwable, Class[_ <: T]]
 
   /**
    * Obtain an object conforming to the type T, which is expected to be
@@ -49,12 +50,12 @@ abstract class DynamicAccess {
    * `args` argument. The exact usage of args depends on which type is requested,
    * see the relevant requesting code for details.
    */
-  def createInstanceFor[T: ClassManifest](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Throwable, T]
+  def createInstanceFor[T: ClassTag](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Throwable, T]
 
   /**
    * Obtain the Scala “object” instance for the given fully-qualified class name, if there is one.
    */
-  def getObjectFor[T: ClassManifest](fqcn: String): Either[Throwable, T]
+  def getObjectFor[T: ClassTag](fqcn: String): Either[Throwable, T]
 
   /**
    * This is the class loader to be used in those special cases where the
@@ -89,7 +90,7 @@ abstract class DynamicAccess {
  */
 class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAccess {
   //FIXME switch to Scala Reflection for 2.10
-  override def getClassFor[T: ClassManifest](fqcn: String): Either[Throwable, Class[_ <: T]] =
+  override def getClassFor[T: ClassTag](fqcn: String): Either[Throwable, Class[_ <: T]] =
     try {
       val c = classLoader.loadClass(fqcn).asInstanceOf[Class[_ <: T]]
       val t = classManifest[T].erasure
@@ -98,7 +99,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
       case NonFatal(e) ⇒ Left(e)
     }
 
-  override def createInstanceFor[T: ClassManifest](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] =
+  override def createInstanceFor[T: ClassTag](fqcn: String, args: Seq[(Class[_], AnyRef)]): Either[Throwable, T] =
     getClassFor(fqcn).fold(Left(_), { c ⇒
       val types = args.map(_._1).toArray
       val values = args.map(_._2).toArray
@@ -111,7 +112,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
       }
     })
 
-  override def getObjectFor[T: ClassManifest](fqcn: String): Either[Throwable, T] = {
+  override def getObjectFor[T: ClassTag](fqcn: String): Either[Throwable, T] = {
     getClassFor(fqcn).fold(Left(_), { c ⇒
       withErrorHandling {
         val module = c.getDeclaredField("MODULE$")

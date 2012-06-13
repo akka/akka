@@ -4,7 +4,7 @@
 package sample.fsm.buncher
 
 import akka.actor.ActorRefFactory
-import scala.reflect.ClassManifest
+import scala.reflect.ClassTag
 import akka.util.Duration
 import akka.actor.{ FSM, Actor, ActorRef }
 
@@ -28,7 +28,7 @@ object GenericBuncher {
 
   class MsgExtractor[A: Manifest] {
     def unapply(m: AnyRef): Option[A] = {
-      if (ClassManifest.fromClass(m.getClass) <:< manifest[A]) {
+      if (ClassTag.fromClass(m.getClass) <:< manifest[A]) {
         Some(m.asInstanceOf[A])
       } else {
         None

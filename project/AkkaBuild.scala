@@ -494,25 +494,25 @@ object Dependency {
   }
 
   // Compile
-  val config        = "com.typesafe"                % "config"                      % "0.4.1"      // ApacheV2
-  val camelCore     = "org.apache.camel"            % "camel-core"                  % V.Camel      // ApacheV2
-  val netty         = "io.netty"                    % "netty"                       % V.Netty      // ApacheV2
-  val protobuf      = "com.google.protobuf"         % "protobuf-java"               % V.Protobuf   // New BSD
-  val scalaStm      = "org.scala-tools"             %% "scala-stm"                  % V.ScalaStm   // Modified BSD (Scala)
-  val slf4jApi      = "org.slf4j"                   % "slf4j-api"                   % V.Slf4j      // MIT
-  val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.6" // ApacheV2
+  val config        = "com.typesafe"                % "config"                % "0.4.1"    // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"            % V.Camel    // ApacheV2
+  val netty         = "io.netty"                    % "netty"                 % V.Netty    // ApacheV2
+  val protobuf      = "com.google.protobuf"         % "protobuf-java"         % V.Protobuf // New BSD
+  val scalaStm      = "org.scala-tools"             %% "scala-stm"            % V.ScalaStm // Modified BSD (Scala)
+  val slf4jApi      = "org.slf4j"                   % "slf4j-api"             % V.Slf4j    // MIT
+  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding" % "0.0.6"    // ApacheV2
 
   // Test
 
   object Test {
-    val commonsMath = "org.apache.commons"          % "commons-math"        % "2.1"        % "test" // ApacheV2
-    val commonsIo     = "commons-io"                % "commons-io"          % "2.0.1"      % "test"// ApacheV2
-    val junit       = "junit"                       % "junit"               % "4.5"        % "test" // Common Public License 1.0
-    val logback     = "ch.qos.logback"              % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
-    val mockito     = "org.mockito"                 % "mockito-all"         % "1.8.1"      % "test" // MIT
-    val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
-    val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
-    val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
+    val commonsMath = "org.apache.commons"          % "commons-math"    % "2.1"        % "test" // ApacheV2
+    val commonsIo   = "commons-io"                  % "commons-io"      % "2.0.1"      % "test" // ApacheV2
+    val junit       = "junit"                       % "junit"           % "4.5"        % "test" // Common Public License 1.0
+    val logback     = "ch.qos.logback"              % "logback-classic" % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
+    val mockito     = "org.mockito"                 % "mockito-all"     % "1.8.1"      % "test" // MIT
+    val scalatest   = "org.scalatest"               %% "scalatest"      % V.Scalatest  % "test" // ApacheV2
+    val scalacheck  = "org.scala-tools.testing"     %% "scalacheck"     % "1.9"        % "test" // New BSD
+    val specs2      = "org.specs2"                  %% "specs2"         % "1.9"        % "test" // Modified BSD / ApacheV2
   }
 }
 

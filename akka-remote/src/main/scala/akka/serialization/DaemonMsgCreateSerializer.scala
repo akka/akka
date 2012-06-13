@@ -131,7 +131,7 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
       case Left(e)      ⇒ throw e
     }
 
-  protected def deserialize[T: ClassManifest](data: ByteString, clazz: Class[T]): T = {
+  protected def deserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray
     serialization.deserialize(bytes, clazz) match {
       case Right(x) if classManifest[T].erasure.isInstance(x) ⇒ x.asInstanceOf[T]

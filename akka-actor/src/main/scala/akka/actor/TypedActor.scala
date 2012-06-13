@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.dispatch._
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.TypedActor.TypedActorInvocationHandler
+import scala.reflect.ClassTag
 import akka.serialization.{ JavaSerializer, SerializationExtension }
 import java.io.ObjectStreamException
 
@@ -403,9 +403,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
             val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
-              case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
-              case Some(Right(joption: AnyRef)) ⇒ joption
-              case Some(Left(ex))               ⇒ throw ex
+              case None | Some(Right(null)) ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
+              case Some(Right(joption))     ⇒ joption.asInstanceOf[AnyRef]
+              case Some(Left(ex))           ⇒ throw ex
             }
           case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration).asInstanceOf[AnyRef]
         }
@@ -481,8 +481,8 @@ object TypedProps {
    *
    * Scala API
    */
-  def apply[T <: AnyRef: ClassManifest](): TypedProps[T] =
-    new TypedProps[T](implicitly[ClassManifest[T]].erasure.asInstanceOf[Class[T]])
+  def apply[T <: AnyRef: ClassTag](): TypedProps[T] =
+    new TypedProps[T](implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]])
 }
 
 /**

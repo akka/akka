@@ -8,6 +8,7 @@ import akka.event.Logging.Error
 import scala.Option
 import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption }
 import scala.util.continuations._
+import scala.reflect.ClassTag
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 import scala.annotation.tailrec
@@ -637,17 +638,17 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
    * Creates a new Future[A] which is completed with this Future's result if
    * that conforms to A's erased type or a ClassCastException otherwise.
    *
-   * When used from Java, to create the Manifest, use:
-   * import static akka.japi.Util.manifest;
-   * future.mapTo(manifest(MyClass.class));
+   * When used from Java, to create the ClassTag, use:
+   * import static akka.japi.Util.classTag;
+   * future.mapTo(classTag(MyClass.class));
    */
-  final def mapTo[A](implicit m: Manifest[A]): Future[A] = {
+  final def mapTo[A](implicit m: ClassTag[A]): Future[A] = {
     val fa = Promise[A]()
     onComplete {
       case l: Left[_, _] ⇒ fa complete l.asInstanceOf[Either[Throwable, A]]
       case Right(t) ⇒
         fa complete (try {
-          Right(BoxedType(m.erasure).cast(t).asInstanceOf[A])
+          Right(BoxedType(m.runtimeClass).cast(t).asInstanceOf[A])
         } catch {
           case e: ClassCastException ⇒ Left(e)
         })

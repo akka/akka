@@ -5,6 +5,7 @@
 package akka.japi
 
 import scala.Some
+import scala.reflect.ClassTag
 
 /**
  * A Function interface. Used to create first-class-functions is Java.
@@ -116,5 +117,5 @@ object Util {
   /**
    * Given a Class returns a Scala Manifest of that Class
    */
-  def manifest[T](clazz: Class[T]): Manifest[T] = Manifest.classType(clazz)
+  def classTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
 }

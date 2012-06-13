@@ -650,6 +650,7 @@ private[akka] class ActorCell(
         case Terminate()               ⇒ terminate()
         case Supervise(child)          ⇒ supervise(child)
         case ChildTerminated(child)    ⇒ handleChildTerminated(child)
+        case NoMessage                 ⇒ //FIXME What should we do?
       }
     } catch {
       case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(e, "error while processing " + message)

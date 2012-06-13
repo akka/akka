@@ -6,7 +6,7 @@ package akka.actor
 
 import akka.dispatch._
 import akka.japi.Creator
-import collection.immutable.Stack
+import scala.reflect.ClassTag
 import akka.routing._
 
 /**
@@ -49,8 +49,8 @@ object Props {
    *
    * Scala API.
    */
-  def apply[T <: Actor: ClassManifest](): Props =
-    default.withCreator(implicitly[ClassManifest[T]].erasure.asInstanceOf[Class[_ <: Actor]])
+  def apply[T <: Actor: ClassTag](): Props =
+    default.withCreator(implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[_ <: Actor]])
 
   /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance
