@@ -26,6 +26,7 @@ import scala.annotation.tailrec
 import com.google.protobuf.ByteString
 import akka.util.internal.HashedWheelTimer
 import akka.dispatch.MonitorableThreadFactory
+import MemberStatus._
 
 /**
  * Interface for membership change listener.
@@ -96,7 +97,6 @@ class Member(val address: Address, val status: MemberStatus) extends ClusterMess
  * Factory and Utility module for Member instances.
  */
 object Member {
-  import MemberStatus._
 
   /**
    * Sort Address by host and port
@@ -147,7 +147,13 @@ case class GossipEnvelope(from: Address, gossip: Gossip) extends ClusterMessage
  *
  * Can be one of: Joining, Up, Leaving, Exiting and Down.
  */
-sealed trait MemberStatus extends ClusterMessage
+sealed trait MemberStatus extends ClusterMessage {
+  /**
+   * Using the same notion for 'unavailable' as 'non-convergence': DOWN and REMOVED.
+   */
+  def isUnavailable: Boolean = this == Down || this == Removed
+}
+
 object MemberStatus {
   case object Joining extends MemberStatus
   case object Up extends MemberStatus
@@ -155,11 +161,6 @@ object MemberStatus {
   case object Exiting extends MemberStatus
   case object Down extends MemberStatus
   case object Removed extends MemberStatus
-
-  /**
-   * Using the same notion for 'unavailable' as 'non-convergence': DOWN and REMOVED.
-   */
-  def isUnavailable(status: MemberStatus): Boolean = status == MemberStatus.Down || status == MemberStatus.Removed
 }
 
 /**
@@ -168,8 +169,6 @@ object MemberStatus {
 case class GossipOverview(
   seen: Map[Address, VectorClock] = Map.empty[Address, VectorClock],
   unreachable: Set[Member] = Set.empty[Member]) {
-
-  // FIXME document when nodes are put in 'unreachable' set and removed from 'members'
 
   override def toString =
     "GossipOverview(seen = [" + seen.mkString(", ") +
@@ -182,7 +181,31 @@ object Gossip {
 }
 
 /**
- * Represents the state of the cluster; cluster ring membership, ring convergence, meta data - all versioned by a vector clock.
+ * Represents the state of the cluster; cluster ring membership, ring convergence, meta data -
+ * all versioned by a vector clock.
+ *
+ * When a node is joining the Member, with status Joining, is added to `members`.
+ * If the joining node was downed it is moved from `overview.unreachable` (status Down)
+ * to `members` (status Joining). It cannot rejoin if not first downed.
+ *
+ * When convergence is reached the leader change status of `members` from Joining
+ * to Up.
+ *
+ * When failure detector consider a node as unavailble it will be moved from
+ * `members` to `overview.unreachable`.
+ *
+ * When a node is downed, either manually or automatically, its status is changed to Down.
+ * It is also removed from `overview.seen` table.
+ * The node will reside as Down in the `overview.unreachable` set until joining
+ * again and it will then go through the normal joining procedure.
+ *
+ * When a Gossip is received the version (vector clock) is used to determine if the
+ * received Gossip is newer or older than the current local Gossip. The received Gossip
+ * and local Gossip is merged in case of conflicting version, i.e. vector clocks without
+ * same history. When merged the seen table is cleared.
+ *
+ * TODO document leaving, exiting and removed when that is implemented
+ *
  */
 case class Gossip(
   overview: GossipOverview = GossipOverview(),
@@ -192,12 +215,34 @@ case class Gossip(
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {
 
+  // FIXME can be disabled as optimization
+  assertInvariants
+  private def assertInvariants: Unit = {
+    val unreachableAndLive = members.intersect(overview.unreachable)
+    if (unreachableAndLive.nonEmpty)
+      throw new IllegalArgumentException("Same nodes in both members and unreachable is not allowed, got [%s]"
+        format unreachableAndLive.mkString(", "))
+
+    val allowedLiveMemberStatuses: Set[MemberStatus] = Set(Joining, Up, Leaving, Exiting)
+    def hasNotAllowedLiveMemberStatus(m: Member) = !allowedLiveMemberStatuses.contains(m.status)
+    if (members exists hasNotAllowedLiveMemberStatus)
+      throw new IllegalArgumentException("Live members must have status [%s], got [%s]"
+        format (allowedLiveMemberStatuses.mkString(", "),
+          (members filter hasNotAllowedLiveMemberStatus).mkString(", ")))
+
+    val seenButNotMember = overview.seen.keySet -- members.map(_.address) -- overview.unreachable.map(_.address)
+    if (seenButNotMember.nonEmpty)
+      throw new IllegalArgumentException("Nodes not part of cluster have marked the Gossip as seen, got [%s]"
+        format seenButNotMember.mkString(", "))
+
+  }
+
   /**
    * Increments the version for this 'Node'.
    */
-  def +(node: VectorClock.Node): Gossip = copy(version = version + node)
+  def :+(node: VectorClock.Node): Gossip = copy(version = version :+ node)
 
-  def +(member: Member): Gossip = {
+  def :+(member: Member): Gossip = {
     if (members contains member) this
     else this copy (members = members + member)
   }
@@ -220,25 +265,30 @@ case class Gossip(
     // 1. merge vector clocks
     val mergedVClock = this.version merge that.version
 
-    // 2. group all members by Address => Seq[Member]
-    val membersGroupedByAddress = (this.members.toSeq ++ that.members.toSeq).groupBy(_.address)
-
-    // 3. merge members by selecting the single Member with highest MemberStatus out of the Member groups
-    val mergedMembers =
-      Gossip.emptyMembers ++
-        membersGroupedByAddress.values.foldLeft(Vector.empty[Member]) { (acc, members) ⇒
-          acc :+ members.reduceLeft(Member.highestPriorityOf(_, _))
-        }
-
-    // 4. merge meta-data
+    // 2. merge meta-data
     val mergedMeta = this.meta ++ that.meta
 
-    // 5. merge gossip overview
-    val mergedOverview = GossipOverview(
-      this.overview.seen ++ that.overview.seen,
-      this.overview.unreachable ++ that.overview.unreachable)
+    def pickHighestPriority(a: Seq[Member], b: Seq[Member]): Set[Member] = {
+      // group all members by Address => Seq[Member]
+      val groupedByAddress = (a ++ b).groupBy(_.address)
+      // pick highest MemberStatus
+      (Set.empty[Member] /: groupedByAddress) {
+        case (acc, (_, members)) ⇒ acc + members.reduceLeft(Member.highestPriorityOf)
+      }
+    }
 
-    Gossip(mergedOverview, mergedMembers, mergedMeta, mergedVClock)
+    // 3. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
+    val mergedUnreachable = pickHighestPriority(this.overview.unreachable.toSeq, that.overview.unreachable.toSeq)
+
+    // 4. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
+    //    and exclude unreachable
+    val mergedMembers = Gossip.emptyMembers ++ pickHighestPriority(this.members.toSeq, that.members.toSeq).
+      filterNot(mergedUnreachable.contains)
+
+    // 5. fresh seen table
+    val mergedSeen = Map.empty[Address, VectorClock]
+
+    Gossip(GossipOverview(mergedSeen, mergedUnreachable), mergedMembers, mergedMeta, mergedVClock)
   }
 
   override def toString =
@@ -423,8 +473,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   }
 
   private val state = {
-    val member = Member(selfAddress, MemberStatus.Joining)
-    val versionedGossip = Gossip(members = Gossip.emptyMembers + member) + vclockNode // add me as member and update my vector clock
+    val member = Member(selfAddress, Joining)
+    val versionedGossip = Gossip(members = Gossip.emptyMembers + member) :+ vclockNode // add me as member and update my vector clock
     val seenVersionedGossip = versionedGossip seen selfAddress
     new AtomicReference[State](State(seenVersionedGossip))
   }
@@ -648,17 +698,23 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localState = state.get
     val localGossip = localState.latestGossip
     val localMembers = localGossip.members
+    val localUnreachable = localGossip.overview.unreachable
 
-    if (!localMembers.exists(_.address == node)) {
+    val alreadyMember = localMembers.exists(_.address == node)
+    val isUnreachable = localUnreachable.exists { m ⇒
+      m.address == node && m.status != Down && m.status != Removed
+    }
+
+    if (!alreadyMember && !isUnreachable) {
 
       // remove the node from the 'unreachable' set in case it is a DOWN node that is rejoining cluster
-      val newUnreachableMembers = localGossip.overview.unreachable filterNot { _.address == node }
+      val newUnreachableMembers = localUnreachable filterNot { _.address == node }
       val newOverview = localGossip.overview copy (unreachable = newUnreachableMembers)
 
-      val newMembers = localMembers + Member(node, MemberStatus.Joining) // add joining node as Joining
+      val newMembers = localMembers + Member(node, Joining) // add joining node as Joining
       val newGossip = localGossip copy (overview = newOverview, members = newMembers)
 
-      val versionedGossip = newGossip + vclockNode
+      val versionedGossip = newGossip :+ vclockNode
       val seenVersionedGossip = versionedGossip seen selfAddress
 
       val newState = localState copy (latestGossip = seenVersionedGossip)
@@ -683,10 +739,10 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localGossip = localState.latestGossip
     val localMembers = localGossip.members
 
-    val newMembers = localMembers + Member(address, MemberStatus.Leaving) // mark node as LEAVING
+    val newMembers = localMembers + Member(address, Leaving) // mark node as LEAVING
     val newGossip = localGossip copy (members = newMembers)
 
-    val versionedGossip = newGossip + vclockNode
+    val versionedGossip = newGossip :+ vclockNode
     val seenVersionedGossip = versionedGossip seen selfAddress
 
     val newState = localState copy (latestGossip = seenVersionedGossip)
@@ -719,8 +775,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   }
 
   /**
-   * The node to DOWN is removed from the 'members' set and put in the 'unreachable' set (if not alread there)
-   * and its status is set to DOWN. The node is alo removed from the 'seen' table.
+   * The node to DOWN is removed from the 'members' set and put in the 'unreachable' set (if not already there)
+   * and its status is set to DOWN. The node is also removed from the 'seen' table.
    *
    * The node will reside as DOWN in the 'unreachable' set until an explicit command JOIN command is sent directly
    * to this node and it will then go through the normal JOINING procedure.
@@ -735,44 +791,38 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localUnreachableMembers = localOverview.unreachable
 
     // 1. check if the node to DOWN is in the 'members' set
-    var downedMember: Option[Member] = None
-    val newMembers =
-      localMembers
-        .map { member ⇒
-          if (member.address == address) {
-            log.info("Cluster Node [{}] - Marking node [{}] as DOWN", selfAddress, member.address)
-            val newMember = member copy (status = MemberStatus.Down)
-            downedMember = Some(newMember)
-            newMember
-          } else member
-        }
-        .filter(_.status != MemberStatus.Down)
+    val downedMember: Option[Member] = localMembers.collectFirst {
+      case m if m.address == address ⇒ m.copy(status = Down)
+    }
+    val newMembers = downedMember match {
+      case Some(m) ⇒
+        log.info("Cluster Node [{}] - Marking node [{}] as DOWN", selfAddress, m.address)
+        localMembers - m
+      case None ⇒ localMembers
+    }
 
     // 2. check if the node to DOWN is in the 'unreachable' set
     val newUnreachableMembers =
-      localUnreachableMembers
-        .filter(_.status != MemberStatus.Down) // no need to DOWN members already DOWN
-        .map { member ⇒
-          if (member.address == address) {
-            log.info("Cluster Node [{}] - Marking unreachable node [{}] as DOWN", selfAddress, member.address)
-            member copy (status = MemberStatus.Down)
-          } else member
-        }
+      localUnreachableMembers.map { member ⇒
+        // no need to DOWN members already DOWN
+        if (member.address == address && member.status != Down) {
+          log.info("Cluster Node [{}] - Marking unreachable node [{}] as DOWN", selfAddress, member.address)
+          member copy (status = Down)
+        } else member
+      }
 
     // 3. add the newly DOWNED members from the 'members' (in step 1.) to the 'newUnreachableMembers' set.
-    val newUnreachablePlusNewlyDownedMembers = downedMember match {
-      case Some(member) ⇒ newUnreachableMembers + member
-      case None         ⇒ newUnreachableMembers
-    }
+    val newUnreachablePlusNewlyDownedMembers = newUnreachableMembers ++ downedMember
 
     // 4. remove nodes marked as DOWN from the 'seen' table
-    val newSeen = newUnreachablePlusNewlyDownedMembers.foldLeft(localSeen) { (currentSeen, member) ⇒
-      currentSeen - member.address
+    val newSeen = localSeen -- newUnreachablePlusNewlyDownedMembers.collect {
+      case m if m.status == Down ⇒ m.address
     }
 
-    val newOverview = localOverview copy (seen = newSeen, unreachable = newUnreachablePlusNewlyDownedMembers) // update gossip overview
+    // update gossip overview
+    val newOverview = localOverview copy (seen = newSeen, unreachable = newUnreachablePlusNewlyDownedMembers)
     val newGossip = localGossip copy (overview = newOverview, members = newMembers) // update gossip
-    val versionedGossip = newGossip + vclockNode
+    val versionedGossip = newGossip :+ vclockNode
     val newState = localState copy (latestGossip = versionedGossip seen selfAddress)
 
     if (!state.compareAndSet(localState, newState)) downing(address) // recur if we fail the update
@@ -793,7 +843,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       if (remoteGossip.version <> localGossip.version) {
         // concurrent
         val mergedGossip = remoteGossip merge localGossip
-        val versionedMergedGossip = mergedGossip + vclockNode
+        val versionedMergedGossip = mergedGossip :+ vclockNode
 
         // FIXME change to debug log level, when failure detector is stable
         log.info(
@@ -830,36 +880,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    * Joins the pre-configured contact point.
    */
   private def autoJoin(): Unit = nodeToJoin foreach join
-
-  /**
-   * Switches the member status.
-   *
-   * @param newStatus the new member status
-   * @param oldState the state to change the member status in
-   * @return the updated new state with the new member status
-   */
-  private def switchMemberStatusTo(newStatus: MemberStatus, state: State): State = {
-    log.info("Cluster Node [{}] - Switching membership status to [{}]", selfAddress, newStatus)
-
-    val localSelf = self
-
-    val localGossip = state.latestGossip
-    val localMembers = localGossip.members
-
-    // change my state into a "new" self
-    val newSelf = localSelf copy (status = newStatus)
-
-    // change my state in 'gossip.members'
-    val newMembers = localMembers map { member ⇒ if (member.address == selfAddress) newSelf else member }
-
-    val newGossip = localGossip copy (members = newMembers)
-
-    // version my changes
-    val versionedGossip = newGossip + vclockNode
-    val seenVersionedGossip = versionedGossip seen selfAddress
-
-    state copy (latestGossip = seenVersionedGossip)
-  }
 
   /**
    * INTERNAL API
@@ -985,14 +1005,14 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
       if (newlyDetectedUnreachableMembers.nonEmpty) { // we have newly detected members marked as unavailable
 
-        val newMembers = localMembers diff newlyDetectedUnreachableMembers
-        val newUnreachableMembers: Set[Member] = localUnreachableMembers ++ newlyDetectedUnreachableMembers
+        val newMembers = localMembers -- newlyDetectedUnreachableMembers
+        val newUnreachableMembers = localUnreachableMembers ++ newlyDetectedUnreachableMembers
 
         val newOverview = localOverview copy (unreachable = newUnreachableMembers)
         val newGossip = localGossip copy (overview = newOverview, members = newMembers)
 
         // updating vclock and 'seen' table
-        val versionedGossip = newGossip + vclockNode
+        val versionedGossip = newGossip :+ vclockNode
         val seenVersionedGossip = versionedGossip seen selfAddress
 
         val newState = localState copy (latestGossip = seenVersionedGossip)
@@ -1053,30 +1073,30 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
               // ----------------------
               // 1. Move JOINING => UP (once all nodes have seen that this node is JOINING e.g. we have a convergence)
               // ----------------------
-              if (member.status == MemberStatus.Joining) {
+              if (member.status == Joining) {
                 log.info("Cluster Node [{}] - Leader is moving node [{}] from JOINING to UP", selfAddress, member.address)
                 hasChangedState = true
-                member copy (status = MemberStatus.Up)
+                member copy (status = Up)
               } else member
 
             } map { member ⇒
               // ----------------------
               // 2. Move EXITING => REMOVED (once all nodes have seen that this node is EXITING e.g. we have a convergence)
               // ----------------------
-              if (member.status == MemberStatus.Exiting) {
+              if (member.status == Exiting) {
                 log.info("Cluster Node [{}] - Leader is moving node [{}] from EXITING to REMOVED", selfAddress, member.address)
                 hasChangedState = true
-                member copy (status = MemberStatus.Removed)
+                member copy (status = Removed)
               } else member
 
             } map { member ⇒
               // ----------------------
               // 3. Move LEAVING => EXITING (once we have a convergence on LEAVING *and* if we have a successful partition handoff)
               // ----------------------
-              if (member.status == MemberStatus.Leaving && hasPartionHandoffCompletedSuccessfully(localGossip)) {
+              if (member.status == Leaving && hasPartionHandoffCompletedSuccessfully(localGossip)) {
                 log.info("Cluster Node [{}] - Leader is moving node [{}] from LEAVING to EXITING", selfAddress, member.address)
                 hasChangedState = true
-                member copy (status = MemberStatus.Exiting)
+                member copy (status = Exiting)
               } else member
 
             }
@@ -1090,16 +1110,20 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
           // 4. Move UNREACHABLE => DOWN (auto-downing by leader)
           // ----------------------
           val newUnreachableMembers =
-            localUnreachableMembers
-              .filter(_.status != MemberStatus.Down) // no need to DOWN members already DOWN
-              .map { member ⇒
+            localUnreachableMembers.map { member ⇒
+              // no need to DOWN members already DOWN
+              if (member.status == Down) member
+              else {
                 log.info("Cluster Node [{}] - Leader is marking unreachable node [{}] as DOWN", selfAddress, member.address)
                 hasChangedState = true
-                member copy (status = MemberStatus.Down)
+                member copy (status = Down)
               }
+            }
 
           // removing nodes marked as DOWN from the 'seen' table
-          val newSeen = localUnreachableMembers.foldLeft(localSeen)((currentSeen, member) ⇒ currentSeen - member.address)
+          val newSeen = localSeen -- newUnreachableMembers.collect {
+            case m if m.status == Down ⇒ m.address
+          }
 
           val newOverview = localOverview copy (seen = newSeen, unreachable = newUnreachableMembers) // update gossip overview
           localGossip copy (overview = newOverview) // update gossip
@@ -1111,7 +1135,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
         // ----------------------
         // 5. Updating the vclock version for the changes
         // ----------------------
-        val versionedGossip = newGossip + vclockNode
+        val versionedGossip = newGossip :+ vclockNode
 
         // ----------------------
         // 6. Updating the 'seen' table
@@ -1138,24 +1162,39 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   private def convergence(gossip: Gossip): Option[Gossip] = {
     val overview = gossip.overview
     val unreachable = overview.unreachable
+    val seen = overview.seen
 
     // First check that:
-    //   1. we don't have any members that are unreachable (unreachable.isEmpty == true), or
+    //   1. we don't have any members that are unreachable, or
     //   2. all unreachable members in the set have status DOWN
     // Else we can't continue to check for convergence
     // When that is done we check that all the entries in the 'seen' table have the same vector clock version
-    if (unreachable.isEmpty || !unreachable.exists { m ⇒
-      m.status != MemberStatus.Down &&
-        m.status != MemberStatus.Removed
-    }) {
-      val seen = gossip.overview.seen
-      val views = Set.empty[VectorClock] ++ seen.values
+    // and that all members exists in seen table
+    val hasUnreachable = unreachable.nonEmpty && unreachable.exists { m ⇒
+      m.status != Down && m.status != Removed
+    }
+    val allMembersInSeen = gossip.members.forall(m ⇒ seen.contains(m.address))
 
-      if (views.size == 1) {
+    if (hasUnreachable) {
+      log.debug("Cluster Node [{}] - No cluster convergence, due to unreachable nodes [{}].", selfAddress, unreachable)
+      None
+    } else if (!allMembersInSeen) {
+      log.debug("Cluster Node [{}] - No cluster convergence, due to members not in seen table [{}].", selfAddress,
+        gossip.members.map(_.address) -- seen.keySet)
+      None
+    } else {
+
+      val views = seen.values.toSet.size
+
+      if (views == 1) {
         log.debug("Cluster Node [{}] - Cluster convergence reached: [{}]", selfAddress, gossip.members.mkString(", "))
         Some(gossip)
-      } else None
-    } else None
+      } else {
+        log.debug("Cluster Node [{}] - No cluster convergence, since not all nodes have seen the same state yet. [{} of {}]",
+          selfAddress, views, seen.values.size)
+        None
+      }
+    }
   }
 
   private def isAvailable(state: State): Boolean = !isUnavailable(state)
@@ -1166,7 +1205,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localMembers = localGossip.members
     val localUnreachableMembers = localOverview.unreachable
     val isUnreachable = localUnreachableMembers exists { _.address == selfAddress }
-    val hasUnavailableMemberStatus = localMembers exists { m ⇒ (m == self) && MemberStatus.isUnavailable(m.status) }
+    val hasUnavailableMemberStatus = localMembers exists { m ⇒ (m == self) && m.status.isUnavailable }
     isUnreachable || hasUnavailableMemberStatus
   }
 

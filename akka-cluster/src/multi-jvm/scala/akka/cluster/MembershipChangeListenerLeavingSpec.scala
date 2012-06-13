@@ -54,9 +54,11 @@ abstract class MembershipChangeListenerLeavingSpec
 
       runOn(third) {
         val latch = TestLatch()
+        val expectedAddresses = Set(firstAddress, secondAddress, thirdAddress)
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
-            if (members.size == 3 && members.exists(m ⇒ m.address == secondAddress && m.status == MemberStatus.Leaving))
+            if (members.map(_.address) == expectedAddresses &&
+              members.exists(m ⇒ m.address == secondAddress && m.status == MemberStatus.Leaving))
               latch.countDown()
           }
         })
