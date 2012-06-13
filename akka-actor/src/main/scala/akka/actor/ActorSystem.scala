@@ -702,9 +702,9 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     final def run(): Unit = lock withGuard {
       @tailrec def runNext(c: List[Runnable]): List[Runnable] = c match {
         case Nil ⇒ Nil
-        case callback :: _ ⇒
+        case callback :: rest ⇒
           try callback.run() catch { case NonFatal(e) ⇒ log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage) }
-          runNext(c.tail)
+          runNext(rest)
       }
       try { callbacks = runNext(callbacks) } finally latch.countDown()
     }
