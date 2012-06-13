@@ -23,7 +23,7 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
-    scalaVersion := "2.9.2"
+    scalaVersion := "2.10.0-M4"
   )
 
   lazy val akka = Project(
@@ -52,6 +52,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ OSGi.actor ++ Seq(
       autoCompilerPlugins := true,
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
+      libraryDependencies <+= scalaVersion { v => "org.scala-lang" % "scala-reflect" % v },
       scalacOptions += "-P:continuations:enable",
       packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
       artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle")),
@@ -493,12 +494,12 @@ object Dependency {
   }
 
   // Compile
-  val config        = "com.typesafe"                % "config"                 % "0.4.1"      // ApacheV2
-  val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
-  val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
-  val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
-  val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
-  val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
+  val config        = "com.typesafe"                % "config"                      % "0.4.1"      // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"                  % V.Camel      // ApacheV2
+  val netty         = "io.netty"                    % "netty"                       % V.Netty      // ApacheV2
+  val protobuf      = "com.google.protobuf"         % "protobuf-java"               % V.Protobuf   // New BSD
+  val scalaStm      = "org.scala-tools"             %% "scala-stm"                  % V.ScalaStm   // Modified BSD (Scala)
+  val slf4jApi      = "org.slf4j"                   % "slf4j-api"                   % V.Slf4j      // MIT
   val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.6" // ApacheV2
 
   // Test

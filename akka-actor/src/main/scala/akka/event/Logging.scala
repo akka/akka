@@ -398,7 +398,12 @@ object Logging {
   /**
    * Marker trait for annotating LogLevel, which must be Int after erasure.
    */
-  trait LogLevelType
+  case class LogLevel(asInt: Int) extends AnyVal {
+    @inline final def >=(other: LogLevel): Boolean = asInt >= other.asInt
+    @inline final def <=(other: LogLevel): Boolean = asInt <= other.asInt
+    @inline final def >(other: LogLevel): Boolean = asInt > other.asInt
+    @inline final def <(other: LogLevel): Boolean = asInt < other.asInt
+  }
 
   /**
    * Log level in numeric form, used when deciding whether a certain log
@@ -406,11 +411,10 @@ object Logging {
    * to DebugLevel (4). In case you want to add more levels, loggers need to
    * be subscribed to their event bus channels manually.
    */
-  type LogLevel = Int with LogLevelType
-  final val ErrorLevel = 1.asInstanceOf[Int with LogLevelType]
-  final val WarningLevel = 2.asInstanceOf[Int with LogLevelType]
-  final val InfoLevel = 3.asInstanceOf[Int with LogLevelType]
-  final val DebugLevel = 4.asInstanceOf[Int with LogLevelType]
+  final val ErrorLevel = LogLevel(1)
+  final val WarningLevel = LogLevel(2)
+  final val InfoLevel = LogLevel(3)
+  final val DebugLevel = LogLevel(4)
 
   /**
    * Returns the LogLevel associated with the given string,
@@ -448,7 +452,7 @@ object Logging {
   }
 
   // these type ascriptions/casts are necessary to avoid CCEs during construction while retaining correct type
-  val AllLogLevels = Seq(ErrorLevel: AnyRef, WarningLevel, InfoLevel, DebugLevel).asInstanceOf[Seq[LogLevel]]
+  val AllLogLevels: Seq[LogLevel] = Seq(ErrorLevel, WarningLevel, InfoLevel, DebugLevel)
 
   /**
    * Obtain LoggingAdapter for the given actor system and source object. This
