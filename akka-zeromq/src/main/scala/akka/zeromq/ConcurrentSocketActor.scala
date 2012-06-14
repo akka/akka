@@ -150,14 +150,22 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     }
   }
 
-  private def sendMessage(frames: Seq[Frame]) {
-    def sendBytes(bytes: Seq[Byte], flags: Int) = socket.send(bytes.toArray, flags)
+  /**
+    * Should the message be retried n times if it fails?
+    *  @return true iff all frames of this message were successfully transmitted
+    */
+  private def sendMessage(frames: Seq[Frame]): Boolean = {
+    def sendBytes(bytes: Seq[Byte], flags: Int): Boolean = socket.send(bytes.toArray, flags)
     val iter = frames.iterator
     while (iter.hasNext) {
       val payload = iter.next.payload
       val flags = if (iter.hasNext) JZMQ.SNDMORE else 0
-      sendBytes(payload, flags)
+      val sendSucceeded = sendBytes(payload, flags)
+      log.debug(if (sendSucceeded) "sendMessage succeeded" else "sendMessage failed")
+      if (!sendSucceeded)
+        return false // if any frame failed, the remaining frames of this are dropped
     }
+    true
   }
 
   // this is a “PollMsg=>Unit” which either polls or schedules Poll, depending on the sign of the timeout
