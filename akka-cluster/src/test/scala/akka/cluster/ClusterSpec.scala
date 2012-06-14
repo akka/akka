@@ -97,15 +97,11 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
 
   "A Cluster" must {
 
-    "initially be singleton cluster and reach convergence after first gossip" in {
+    "initially be singleton cluster and reach convergence immediately" in {
       cluster.isSingletonCluster must be(true)
       cluster.latestGossip.members.map(_.address) must be(Set(selfAddress))
       memberStatus(selfAddress) must be(Some(MemberStatus.Joining))
-      cluster.convergence.isDefined must be(false)
-      cluster.gossip()
-      expectMsg(GossipTo(selfAddress))
-      awaitCond(cluster.convergence.isDefined)
-      memberStatus(selfAddress) must be(Some(MemberStatus.Joining))
+      cluster.convergence.isDefined must be(true)
       cluster.leaderActions()
       memberStatus(selfAddress) must be(Some(MemberStatus.Up))
     }
@@ -114,8 +110,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
       cluster.joining(addresses(1))
       cluster.latestGossip.members.map(_.address) must be(Set(selfAddress, addresses(1)))
       memberStatus(addresses(1)) must be(Some(MemberStatus.Joining))
-      // FIXME why is it still convergence immediately after joining?
-      //cluster.convergence.isDefined must be(false)
+      cluster.convergence.isDefined must be(false)
     }
 
     "accept a few more joining nodes" in {
