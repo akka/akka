@@ -581,9 +581,15 @@ private[akka] class ActorCell(
       }
     }
 
-    def suspend(): Unit = if (isNormal) dispatcher suspend this
+    def suspend(): Unit = if (isNormal) {
+      dispatcher suspend this
+      children foreach (_.asInstanceOf[InternalActorRef].suspend())
+    }
 
-    def resume(): Unit = if (isNormal) dispatcher resume this
+    def resume(): Unit = if (isNormal) {
+      dispatcher resume this
+      children foreach (_.asInstanceOf[InternalActorRef].resume())
+    }
 
     def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
       val watcheeSelf = watchee == self

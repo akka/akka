@@ -29,10 +29,19 @@ object SupervisorHierarchySpec {
       countDown.countDown()
     }
   }
+
+  class Resumer extends Actor {
+    override def supervisorStrategy = OneForOneStrategy() { case _ ⇒ SupervisorStrategy.Resume }
+    def receive = {
+      case "spawn" ⇒ sender ! context.actorOf(Props[Resumer])
+      case "fail"  ⇒ throw new Exception("expected")
+      case "ping"  ⇒ sender ! "pong"
+    }
+  }
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
+class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   import SupervisorHierarchySpec._
 
   "A Supervisor Hierarchy" must {
@@ -80,6 +89,48 @@ class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
         assert(countDownMessages.await(2, TimeUnit.SECONDS))
         assert(countDownMax.await(2, TimeUnit.SECONDS))
       }
+    }
+
+    "resume children after Resume" in {
+      val boss = system.actorOf(Props[Resumer], "resumer")
+      boss ! "spawn"
+      val middle = expectMsgType[ActorRef]
+      middle ! "spawn"
+      val worker = expectMsgType[ActorRef]
+      worker ! "ping"
+      expectMsg("pong")
+      EventFilter[Exception]("expected", occurrences = 1) intercept {
+        middle ! "fail"
+      }
+      middle ! "ping"
+      expectMsg("pong")
+      worker ! "ping"
+      expectMsg("pong")
+    }
+
+    "suspend children while failing" in {
+      val latch = TestLatch()
+      val slowResumer = system.actorOf(Props(new Actor {
+        override def supervisorStrategy = OneForOneStrategy() { case _ ⇒ Await.ready(latch, 4.seconds.dilated); SupervisorStrategy.Resume }
+        def receive = {
+          case "spawn" ⇒ sender ! context.actorOf(Props[Resumer])
+        }
+      }), "slowResumer")
+      slowResumer ! "spawn"
+      val boss = expectMsgType[ActorRef]
+      boss ! "spawn"
+      val middle = expectMsgType[ActorRef]
+      middle ! "spawn"
+      val worker = expectMsgType[ActorRef]
+      worker ! "ping"
+      expectMsg("pong")
+      EventFilter[Exception]("expected", occurrences = 1) intercept {
+        boss ! "fail"
+      }
+      worker ! "ping"
+      expectNoMsg(2 seconds)
+      latch.countDown()
+      expectMsg("pong")
     }
   }
 }
