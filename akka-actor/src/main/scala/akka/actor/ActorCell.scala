@@ -6,16 +6,15 @@ package akka.actor
 
 import akka.dispatch._
 import scala.annotation.tailrec
-import scala.collection.immutable.{ Stack, TreeMap }
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.event.Logging.{ Debug, Warning, Error }
-import akka.util.{ Duration, Helpers }
 import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
-import akka.util.NonFatal
 import akka.event.Logging.LogEventException
+import collection.immutable.{ TreeSet, Stack, TreeMap }
+import akka.util.{ Unsafe, Duration, Helpers, NonFatal }
 
 //TODO: everything here for current compatibility - could be limited more
 
@@ -187,6 +186,8 @@ private[akka] object ActorCell {
 
   final val behaviorStackPlaceHolder: Stack[Actor.Receive] = Stack.empty.push(Actor.emptyBehavior)
 
+  final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
+
   sealed trait SuspendReason
   case object UserRequest extends SuspendReason
   case class Recreation(cause: Throwable) extends SuspendReason
@@ -315,9 +316,8 @@ private[akka] class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
   val props: Props,
-  @volatile var parent: InternalActorRef,
-  /*no member*/ _receiveTimeout: Option[Duration]) extends UntypedActorContext {
-
+  @volatile var parent: InternalActorRef) extends UntypedActorContext {
+  import AbstractActorCell.mailboxOffset
   import ActorCell._
 
   final def systemImpl = system
@@ -350,8 +350,7 @@ private[akka] class ActorCell(
   /**
    * In milliseconds
    */
-  var receiveTimeoutData: (Long, Cancellable) =
-    if (_receiveTimeout.isDefined) (_receiveTimeout.get.toMillis, emptyCancellable) else emptyReceiveTimeoutData
+  var receiveTimeoutData: (Long, Cancellable) = emptyReceiveTimeoutData
 
   @volatile
   var childrenRefs: ChildrenContainer = EmptyChildrenContainer
@@ -407,16 +406,13 @@ private[akka] class ActorCell(
     actor.asInstanceOf[InternalActorRef].stop()
   }
 
-  var currentMessage: Envelope = null
-
+  var currentMessage: Envelope = _
   var actor: Actor = _
-
   private var behaviorStack: Stack[Actor.Receive] = Stack.empty
-
-  @volatile //This must be volatile since it isn't protected by the mailbox status
-  var mailbox: Mailbox = _
-
+  @volatile var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
   var nextNameSequence: Long = 0
+  var watching: Set[ActorRef] = emptyActorRefSet
+  var watchedBy: Set[ActorRef] = emptyActorRefSet
 
   //Not thread safe, so should only be used inside the actor that inhabits this ActorCell
   final protected def randomName(): String = {
@@ -427,6 +423,24 @@ private[akka] class ActorCell(
 
   @inline
   final val dispatcher: MessageDispatcher = system.dispatchers.lookup(props.dispatcher)
+
+  /**
+   * INTERNAL API
+   *
+   * Returns a reference to the current mailbox
+   */
+  @inline final def mailbox: Mailbox = Unsafe.instance.getObjectVolatile(this, mailboxOffset).asInstanceOf[Mailbox]
+
+  /**
+   * INTERNAL API
+   *
+   * replaces the current mailbox using getAndSet semantics
+   */
+  @tailrec final def swapMailbox(newMailbox: Mailbox): Mailbox = {
+    val oldMailbox = mailbox
+    if (!Unsafe.instance.compareAndSwapObject(this, mailboxOffset, oldMailbox, newMailbox)) swapMailbox(newMailbox)
+    else oldMailbox
+  }
 
   /**
    * UntypedActorContext impl
@@ -440,7 +454,7 @@ private[akka] class ActorCell(
      * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
      */
-    mailbox = dispatcher.createMailbox(this)
+    swapMailbox(dispatcher.createMailbox(this))
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     mailbox.systemEnqueue(self, Create())
 
@@ -460,16 +474,22 @@ private[akka] class ActorCell(
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   final def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
 
-  override final def watch(subject: ActorRef): ActorRef = {
-    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    dispatcher.systemDispatch(this, Link(subject))
-    subject
+  override final def watch(subject: ActorRef): ActorRef = subject match {
+    case a: InternalActorRef ⇒
+      if (a != self && !watching.contains(a)) {
+        a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+        watching += a
+      }
+      a
   }
 
-  override final def unwatch(subject: ActorRef): ActorRef = {
-    // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    dispatcher.systemDispatch(this, Unlink(subject))
-    subject
+  override final def unwatch(subject: ActorRef): ActorRef = subject match {
+    case a: InternalActorRef ⇒
+      if (a != self && watching.contains(a)) {
+        a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+        watching -= a
+      }
+      a
   }
 
   final def children: Iterable[ActorRef] = childrenRefs.children
@@ -477,10 +497,8 @@ private[akka] class ActorCell(
   /**
    * Impl UntypedActorContext
    */
-  final def getChildren(): java.lang.Iterable[ActorRef] = {
-    import scala.collection.JavaConverters.asJavaIterableConverter
-    asJavaIterableConverter(children).asJava
-  }
+  final def getChildren(): java.lang.Iterable[ActorRef] =
+    scala.collection.JavaConverters.asJavaIterableConverter(children).asJava
 
   final def tell(message: Any, sender: ActorRef): Unit =
     dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender)(system))
@@ -567,15 +585,35 @@ private[akka] class ActorCell(
 
     def resume(): Unit = if (isNormal) dispatcher resume this
 
-    def link(subject: ActorRef): Unit = if (!isTerminating) {
-      if (system.deathWatch.subscribe(self, subject)) {
-        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + subject))
+    def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
+      val watcheeSelf = watchee == self
+      val watcherSelf = watcher == self
+
+      if (watcheeSelf && !watcherSelf) {
+        if (!watchedBy.contains(watcher)) {
+          watchedBy += watcher
+          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "now monitoring " + watcher))
+        }
+      } else if (!watcheeSelf && watcherSelf) {
+        watch(watchee)
+      } else {
+        system.eventStream.publish(Warning(self.path.toString, clazz(actor), "BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, self)))
       }
     }
 
-    def unlink(subject: ActorRef): Unit = if (!isTerminating) {
-      if (system.deathWatch.unsubscribe(self, subject)) {
-        if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + subject))
+    def remWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
+      val watcheeSelf = watchee == self
+      val watcherSelf = watcher == self
+
+      if (watcheeSelf && !watcherSelf) {
+        if (watchedBy.contains(watcher)) {
+          watchedBy -= watcher
+          if (system.settings.DebugLifecycle) system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + watcher))
+        }
+      } else if (!watcheeSelf && watcherSelf) {
+        unwatch(watchee)
+      } else {
+        system.eventStream.publish(Warning(self.path.toString, clazz(actor), "BUG: illegal Unwatch(%s,%s) for %s".format(watchee, watcher, self)))
       }
     }
 
@@ -603,15 +641,15 @@ private[akka] class ActorCell(
 
     try {
       message match {
-        case Create()               ⇒ create()
-        case Recreate(cause)        ⇒ recreate(cause)
-        case Link(subject)          ⇒ link(subject)
-        case Unlink(subject)        ⇒ unlink(subject)
-        case Suspend()              ⇒ suspend()
-        case Resume()               ⇒ resume()
-        case Terminate()            ⇒ terminate()
-        case Supervise(child)       ⇒ supervise(child)
-        case ChildTerminated(child) ⇒ handleChildTerminated(child)
+        case Create()                  ⇒ create()
+        case Recreate(cause)           ⇒ recreate(cause)
+        case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
+        case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
+        case Suspend()                 ⇒ suspend()
+        case Resume()                  ⇒ resume()
+        case Terminate()               ⇒ terminate()
+        case Supervise(child)          ⇒ supervise(child)
+        case ChildTerminated(child)    ⇒ handleChildTerminated(child)
       }
     } catch {
       case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(e, "error while processing " + message)
@@ -633,7 +671,7 @@ private[akka] class ActorCell(
     checkReceiveTimeout // Reschedule receive timeout
   }
 
-  private final def handleInvokeFailure(t: Throwable, message: String): Unit = try {
+  final def handleInvokeFailure(t: Throwable, message: String): Unit = try {
     dispatcher.reportFailure(new LogEventException(Error(t, self.path.toString, clazz(actor), message), t))
     // prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)
@@ -698,11 +736,32 @@ private[akka] class ActorCell(
     } finally {
       try {
         parent.sendSystemMessage(ChildTerminated(self))
-        system.deathWatch.publish(Terminated(self))
+
+        if (!watchedBy.isEmpty) {
+          val terminated = Terminated(self)(existenceConfirmed = true)
+          try {
+            watchedBy foreach {
+              watcher ⇒
+                try watcher.tell(terminated, self) catch {
+                  case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
+                }
+            }
+          } finally watchedBy = emptyActorRefSet
+        }
+
+        if (!watching.isEmpty) {
+          try {
+            watching foreach { // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+              case watchee: InternalActorRef ⇒ try watchee.sendSystemMessage(Unwatch(watchee, self)) catch {
+                case NonFatal(t) ⇒ system.eventStream.publish(Error(t, self.path.toString, clazz(a), "deathwatch"))
+              }
+            }
+          } finally watching = emptyActorRefSet
+        }
         if (system.settings.DebugLifecycle)
-          system.eventStream.publish(Debug(self.path.toString, clazz(actor), "stopped"))
+          system.eventStream.publish(Debug(self.path.toString, clazz(a), "stopped"))
       } finally {
-        behaviorStack = ActorCell.behaviorStackPlaceHolder
+        behaviorStack = behaviorStackPlaceHolder
         clearActorFields(a)
         actor = null
       }

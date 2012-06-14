@@ -17,20 +17,21 @@ object JoinTwoClustersMultiJvmSpec extends MultiNodeConfig {
   val c1 = role("c1")
   val c2 = role("c2")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = true).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class JoinTwoClustersMultiJvmNode1 extends JoinTwoClustersSpec
-class JoinTwoClustersMultiJvmNode2 extends JoinTwoClustersSpec
-class JoinTwoClustersMultiJvmNode3 extends JoinTwoClustersSpec
-class JoinTwoClustersMultiJvmNode4 extends JoinTwoClustersSpec
-class JoinTwoClustersMultiJvmNode5 extends JoinTwoClustersSpec
-class JoinTwoClustersMultiJvmNode6 extends JoinTwoClustersSpec
+class JoinTwoClustersMultiJvmNode1 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
+class JoinTwoClustersMultiJvmNode2 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
+class JoinTwoClustersMultiJvmNode3 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
+class JoinTwoClustersMultiJvmNode4 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
+class JoinTwoClustersMultiJvmNode5 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
+class JoinTwoClustersMultiJvmNode6 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
 
-abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvmSpec) with MultiNodeClusterSpec with ImplicitSender {
+abstract class JoinTwoClustersSpec
+  extends MultiNodeSpec(JoinTwoClustersMultiJvmSpec)
+  with MultiNodeClusterSpec {
+
   import JoinTwoClustersMultiJvmSpec._
-
-  override def initialParticipants = 6
 
   lazy val a1Address = node(a1).address
   lazy val b1Address = node(b1).address
@@ -41,7 +42,7 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
     "be able to 'elect' a single leader after joining (A -> B)" taggedAs LongRunningTest in {
       // make sure that the node-to-join is started before other join
       runOn(a1, b1, c1) {
-        cluster.self
+        startClusterNode()
       }
       testConductor.enter("first-started")
 
@@ -75,7 +76,6 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
       assertLeader(c1, c2)
 
       testConductor.enter("four-members")
-
     }
 
     "be able to 'elect' a single leader after joining (C -> A + B)" taggedAs LongRunningTest in {
@@ -91,5 +91,4 @@ abstract class JoinTwoClustersSpec extends MultiNodeSpec(JoinTwoClustersMultiJvm
       testConductor.enter("six-members")
     }
   }
-
 }

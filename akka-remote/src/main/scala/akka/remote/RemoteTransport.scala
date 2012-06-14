@@ -78,21 +78,6 @@ case class RemoteClientShutdown(
 }
 
 /**
- * RemoteClientWriteFailed is published when a remote send of a message detectably fails (throws an exception).
- */
-case class RemoteClientWriteFailed(
-  @BeanProperty request: AnyRef,
-  @BeanProperty cause: Throwable,
-  @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
-  override def logLevel: Logging.LogLevel = Logging.WarningLevel
-  override def toString: String =
-    "RemoteClientWriteFailed@" + remoteAddress +
-      ": MessageClass[" + (if (request ne null) request.getClass.getName else "no message") +
-      "] Error[" + cause + "]"
-}
-
-/**
  *  Life-cycle events for RemoteServer.
  */
 trait RemoteServerLifeCycleEvent extends RemoteLifeCycleEvent
@@ -287,10 +272,9 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
       case l: LocalRef ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received local message {}", remoteMessage)
         remoteMessage.payload match {
-          case _: SystemMessage if useUntrustedMode       ⇒ log.warning("operating in UntrustedMode, dropping inbound system message")
-          case _: AutoReceivedMessage if useUntrustedMode ⇒ log.warning("operating in UntrustedMode, dropping inbound AutoReceivedMessage")
-          case msg: SystemMessage                         ⇒ l.sendSystemMessage(msg)
-          case msg                                        ⇒ l.!(msg)(remoteMessage.sender)
+          case msg: PossiblyHarmful if useUntrustedMode ⇒ log.warning("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type {}", msg.getClass)
+          case msg: SystemMessage                       ⇒ l.sendSystemMessage(msg)
+          case msg                                      ⇒ l.!(msg)(remoteMessage.sender)
         }
       case r: RemoteRef ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", remoteMessage)

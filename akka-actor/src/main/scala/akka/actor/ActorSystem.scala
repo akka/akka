@@ -305,8 +305,9 @@ abstract class ActorSystem extends ActorRefFactory {
   implicit def dispatcher: MessageDispatcher
 
   /**
-   * Register a block of code (callback) to run after all actors in this actor system have
-   * been stopped. Multiple code blocks may be registered by calling this method multiple times.
+   * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
+   * all actors in this actor system have been stopped.
+   * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    *
@@ -317,8 +318,9 @@ abstract class ActorSystem extends ActorRefFactory {
   def registerOnTermination[T](code: ⇒ T): Unit
 
   /**
-   * Register a block of code (callback) to run after all actors in this actor system have
-   * been stopped. Multiple code blocks may be registered by calling this method multiple times.
+   * Register a block of code (callback) to run after ActorSystem.shutdown has been issued and
+   * all actors in this actor system have been stopped.
+   * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
    * last registration is run first.
    *
@@ -409,11 +411,6 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def systemGuardian: InternalActorRef
 
   /**
-   * Implementation of the mechanism which is used for watch()/unwatch().
-   */
-  def deathWatch: DeathWatch
-
-  /**
    * A ThreadFactory that can be used if the transport needs to create any Threads
    */
   def threadFactory: ThreadFactory
@@ -485,26 +482,17 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    Await.result(systemGuardian ? CreateChild(props, name), timeout.duration) match {
-      case ref: ActorRef ⇒ ref
-      case ex: Exception ⇒ throw ex
-    }
+    Await.result((systemGuardian ? CreateChild(props, name)).mapTo[ActorRef], timeout.duration)
   }
 
   def actorOf(props: Props, name: String): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    Await.result(guardian ? CreateChild(props, name), timeout.duration) match {
-      case ref: ActorRef ⇒ ref
-      case ex: Exception ⇒ throw ex
-    }
+    Await.result((guardian ? CreateChild(props, name)).mapTo[ActorRef], timeout.duration)
   }
 
   def actorOf(props: Props): ActorRef = {
     implicit val timeout = settings.CreationTimeout
-    Await.result(guardian ? CreateRandomNameChild(props), timeout.duration) match {
-      case ref: ActorRef ⇒ ref
-      case ex: Exception ⇒ throw ex
-    }
+    Await.result((guardian ? CreateRandomNameChild(props)).mapTo[ActorRef], timeout.duration)
   }
 
   def stop(actor: ActorRef): Unit = {
@@ -547,7 +535,8 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   //FIXME Why do we need this at all?
   val deadLetterQueue: MessageQueue = new MessageQueue {
-    def enqueue(receiver: ActorRef, envelope: Envelope) { deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver) }
+    def enqueue(receiver: ActorRef, envelope: Envelope): Unit =
+      deadLetters ! DeadLetter(envelope.message, envelope.sender, receiver)
     def dequeue() = null
     def hasMessages = false
     def numberOfMessages = 0
@@ -556,8 +545,9 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   //FIXME Why do we need this at all?
   val deadLetterMailbox: Mailbox = new Mailbox(null, deadLetterQueue) {
     becomeClosed()
-    def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit = deadLetters ! DeadLetter(handle, receiver, receiver)
-    def systemDrain(): SystemMessage = null
+    def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit =
+      deadLetters ! DeadLetter(handle, receiver, receiver)
+    def systemDrain(newContents: SystemMessage): SystemMessage = null
     def hasSystemMessages = false
   }
 
@@ -570,7 +560,6 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def lookupRoot: InternalActorRef = provider.rootGuardian
   def guardian: InternalActorRef = provider.guardian
   def systemGuardian: InternalActorRef = provider.systemGuardian
-  def deathWatch: DeathWatch = provider.deathWatch
 
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path

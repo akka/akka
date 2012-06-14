@@ -3,23 +3,16 @@
  */
 package akka.remote.testkit
 
-import akka.testkit.AkkaSpec
-import akka.actor.{ ActorSystem, ExtendedActorSystem }
-import akka.remote.testconductor.TestConductor
-import java.net.InetAddress
 import java.net.InetSocketAddress
-import akka.remote.testconductor.TestConductorExt
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import akka.dispatch.Await.Awaitable
+
+import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
+
+import akka.actor.{ RootActorPath, Deploy, ActorPath, ActorSystem, ExtendedActorSystem }
 import akka.dispatch.Await
-import akka.util.Duration
-import akka.util.NonFatal
-import akka.actor.ActorPath
-import akka.actor.RootActorPath
-import akka.remote.testconductor.RoleName
-import akka.actor.Deploy
-import com.typesafe.config.ConfigObject
+import akka.dispatch.Await.Awaitable
+import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
+import akka.testkit.AkkaSpec
+import akka.util.{ NonFatal, Duration }
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -138,17 +131,22 @@ object MultiNodeSpec {
  * `AskTimeoutException: sending to terminated ref breaks promises`. Using lazy
  * val is fine.
  */
-abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
+abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
   extends AkkaSpec(_system) {
 
   import MultiNodeSpec._
 
   def this(config: MultiNodeConfig) =
-    this(config.myself, ActorSystem(AkkaSpec.getCallerName, config.config), config.roles, config.deployments)
+    this(config.myself, ActorSystem(AkkaSpec.getCallerName(classOf[MultiNodeSpec]), config.config), config.roles, config.deployments)
 
   /*
    * Test Class Interface
    */
+
+  /**
+   * All registered roles
+   */
+  def roles: Seq[RoleName] = _roles
 
   /**
    * TO BE DEFINED BY USER: Defines the number of participants required for starting the test. This
@@ -248,5 +246,8 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: 
         throw new IllegalArgumentException("key " + key + " must map to deployment section, not simple value " + x)
     }
   }
+
+  // useful to see which jvm is running which role
+  log.info("Role [{}] started", myself.name)
 
 }

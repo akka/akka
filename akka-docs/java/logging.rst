@@ -187,7 +187,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
      <dependency>
        <groupId>ch.qos.logback</groupId>
        <artifactId>logback-classic</artifactId>
-       <version>1.0.0</version>
+       <version>1.0.4</version>
        <scope>runtime</scope>
      </dependency>
 
@@ -211,7 +211,7 @@ the first case and ``LoggerFactory.getLogger(String s)`` in the second).
 
 .. note::
 
-  Beware that the the actor system’s name is appended to a :class:`String` log
+  Beware that the actor system’s name is appended to a :class:`String` log
   source if the LoggingAdapter was created giving an :class:`ActorSystem` to
   the factory. If this is not intended, give a :class:`LoggingBus` instead as
   shown below:

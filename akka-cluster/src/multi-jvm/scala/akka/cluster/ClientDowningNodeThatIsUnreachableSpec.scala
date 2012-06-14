@@ -4,7 +4,6 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -19,32 +18,32 @@ object ClientDowningNodeThatIsUnreachableMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class ClientDowningNodeThatIsUnreachableMultiJvmNode1 extends ClientDowningNodeThatIsUnreachableSpec
-class ClientDowningNodeThatIsUnreachableMultiJvmNode2 extends ClientDowningNodeThatIsUnreachableSpec
-class ClientDowningNodeThatIsUnreachableMultiJvmNode3 extends ClientDowningNodeThatIsUnreachableSpec
-class ClientDowningNodeThatIsUnreachableMultiJvmNode4 extends ClientDowningNodeThatIsUnreachableSpec
+class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode1 extends ClientDowningNodeThatIsUnreachableSpec with FailureDetectorPuppetStrategy
+class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode2 extends ClientDowningNodeThatIsUnreachableSpec with FailureDetectorPuppetStrategy
+class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode3 extends ClientDowningNodeThatIsUnreachableSpec with FailureDetectorPuppetStrategy
+class ClientDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode4 extends ClientDowningNodeThatIsUnreachableSpec with FailureDetectorPuppetStrategy
 
-class ClientDowningNodeThatIsUnreachableSpec
+class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode1 extends ClientDowningNodeThatIsUnreachableSpec with AccrualFailureDetectorStrategy
+class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode2 extends ClientDowningNodeThatIsUnreachableSpec with AccrualFailureDetectorStrategy
+class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode3 extends ClientDowningNodeThatIsUnreachableSpec with AccrualFailureDetectorStrategy
+class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode4 extends ClientDowningNodeThatIsUnreachableSpec with AccrualFailureDetectorStrategy
+
+abstract class ClientDowningNodeThatIsUnreachableSpec
   extends MultiNodeSpec(ClientDowningNodeThatIsUnreachableMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender with BeforeAndAfter {
-  import ClientDowningNodeThatIsUnreachableMultiJvmSpec._
+  with MultiNodeClusterSpec {
 
-  override def initialParticipants = 4
+  import ClientDowningNodeThatIsUnreachableMultiJvmSpec._
 
   "Client of a 4 node cluster" must {
 
     "be able to DOWN a node that is UNREACHABLE (killed)" taggedAs LongRunningTest in {
+      val thirdAddress = node(third).address
+      awaitClusterUp(first, second, third, fourth)
+
       runOn(first) {
-        cluster.self
-        awaitUpConvergence(numberOfMembers = 4)
-
-        val thirdAddress = node(third).address
-        testConductor.enter("all-up")
-
         // kill 'third' node
         testConductor.shutdown(third, 0)
-        testConductor.removeNode(third)
+        markNodeAsUnavailable(thirdAddress)
 
         // mark 'third' node as DOWN
         cluster.down(thirdAddress)
@@ -52,28 +51,19 @@ class ClientDowningNodeThatIsUnreachableSpec
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
         cluster.latestGossip.members.exists(_.address == thirdAddress) must be(false)
-        testConductor.enter("await-completion")
       }
 
       runOn(third) {
-        cluster.join(node(first).address)
-
-        awaitUpConvergence(numberOfMembers = 4)
-        testConductor.enter("all-up")
+        testConductor.enter("down-third-node")
       }
 
       runOn(second, fourth) {
-        cluster.join(node(first).address)
-        awaitUpConvergence(numberOfMembers = 4)
-
-        val thirdAddress = node(third).address
-        testConductor.enter("all-up")
-
         testConductor.enter("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
-        testConductor.enter("await-completion")
       }
+
+      testConductor.enter("await-completion")
     }
   }
 }
