@@ -362,7 +362,7 @@ object AkkaBuild extends Build {
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
 
     // compile options
-    scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked", "-Xlog-reflective-calls") ++ (
+    scalacOptions ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-unchecked", "-Xlog-reflective-calls") ++ (
       if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 
