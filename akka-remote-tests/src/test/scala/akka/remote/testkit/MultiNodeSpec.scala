@@ -4,14 +4,15 @@
 package akka.remote.testkit
 
 import java.net.InetSocketAddress
+
 import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
+
 import akka.actor.{ RootActorPath, Deploy, ActorPath, ActorSystem, ExtendedActorSystem }
 import akka.dispatch.Await
 import akka.dispatch.Await.Awaitable
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
 import akka.testkit.AkkaSpec
 import akka.util.{ NonFatal, Duration }
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -189,18 +190,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * val serviceA = system.actorFor(node("master") / "user" / "serviceA")
    * }}}
    */
-  def node(role: RoleName): ActorPath = {
-    cachedRootActorPaths.get(role) match {
-      case null ⇒
-        val root = RootActorPath(testConductor.getAddressFor(role).await)
-        cachedRootActorPaths.put(role, root)
-        root
-      case root ⇒ root
-    }
-
-  }
-
-  private val cachedRootActorPaths = new ConcurrentHashMap[RoleName, ActorPath]
+  def node(role: RoleName): ActorPath = RootActorPath(testConductor.getAddressFor(role).await)
 
   /**
    * Enrich `.await()` onto all Awaitables, using BarrierTimeout.

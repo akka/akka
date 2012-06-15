@@ -11,6 +11,9 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.util.duration._
 import akka.util.Duration
+import java.util.concurrent.ConcurrentHashMap
+import akka.actor.ActorPath
+import akka.actor.RootActorPath
 
 object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
@@ -32,6 +35,29 @@ object MultiNodeClusterSpec {
 trait MultiNodeClusterSpec extends FailureDetectorStrategy { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
+
+  private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
+
+  /**
+   * Lookup the Address for the role.
+   * It is cached, which has the implication that stopping
+   * and then restarting a role (jvm) with another address is not
+   * supported.
+   */
+  def address(role: RoleName): Address = {
+    cachedAddresses.get(role) match {
+      case null ⇒
+        val address = node(role).address
+        cachedAddresses.put(role, address)
+        address
+      case address ⇒ address
+    }
+  }
+
+  /**
+   * implicit conversion from RoleName to Address
+   */
+  implicit def role2Address(role: RoleName): Address = address(role)
 
   /**
    * The cluster node instance. Needs to be lazily created.
@@ -73,7 +99,7 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy { self: MultiNodeSpec
     }
     testConductor.enter(roles.head.name + "-started")
     if (roles.tail.contains(myself)) {
-      cluster.join(node(roles.head).address)
+      cluster.join(roles.head)
     }
     if (upConvergence && roles.contains(myself)) {
       awaitUpConvergence(numberOfMembers = roles.length)
@@ -147,14 +173,11 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy { self: MultiNodeSpec
    */
   implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
     import Member.addressOrdering
-    def compare(x: RoleName, y: RoleName) = addressOrdering.compare(node(x).address, node(y).address)
+    def compare(x: RoleName, y: RoleName) = addressOrdering.compare(address(x), address(y))
   }
 
   def roleName(address: Address): Option[RoleName] = {
     testConductor.getNodes.await.find(node(_).address == address)
   }
-
-  // implicit conversion from RoleName to Address
-  implicit def role2Address(role: RoleName): Address = node(role).address
 
 }
