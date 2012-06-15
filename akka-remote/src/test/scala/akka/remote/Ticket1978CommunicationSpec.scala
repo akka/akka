@@ -70,6 +70,9 @@ class Ticket1978AES128CounterRNGSecureSpec extends Ticket1978CommunicationSpec(g
 class Ticket1978AES256CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES256CounterRNGSecure", "TLS_RSA_WITH_AES_256_CBC_SHA"))
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class Ticket1978DefaultRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket1978NonExistingRNGSecureSpec extends Ticket1978CommunicationSpec(("NonExistingRNG", false, AkkaSpec.testConf))
 
 abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boolean, Config)) extends AkkaSpec(cipherEnabledconfig._3) with ImplicitSender with DefaultTimeout {
