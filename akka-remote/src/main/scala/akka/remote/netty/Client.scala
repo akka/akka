@@ -145,7 +145,7 @@ private[akka] class ActiveRemoteClient private[akka] (
       openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
 
       val b = new ClientBootstrap(netty.clientChannelFactory)
-      b.setPipelineFactory(netty.createPipeline(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, netty.timer, this), true))
+      b.setPipelineFactory(netty.createPipeline(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, netty.timer, this), withTimeout = true, isClient = true))
       b.setOption("tcpNoDelay", true)
       b.setOption("keepAlive", true)
       b.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
