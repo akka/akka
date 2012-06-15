@@ -44,6 +44,7 @@ object Configuration {
     NettySSLSupport.initialiseCustomSecureRandom(Some(cipher), None, NoLogging) ne null
   } catch {
     case iae: IllegalArgumentException if iae.getMessage == "Cannot support %s with currently installed providers".format(cipher) ⇒ false
+    case nsae: java.security.NoSuchAlgorithmException ⇒ false
   }) (cipher, true, ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher))) else (cipher, false, AkkaSpec.testConf)
 }
 
