@@ -522,24 +522,28 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   }
 
   // start periodic gossip to random nodes in cluster
-  private val gossipTask = FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay, GossipInterval) {
-    gossip()
-  }
+  private val gossipTask =
+    FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(GossipInterval), GossipInterval) {
+      gossip()
+    }
 
   // start periodic heartbeat to all nodes in cluster
-  private val heartbeatTask = FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay, HeartbeatInterval) {
-    heartbeat()
-  }
+  private val heartbeatTask =
+    FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(HeartbeatInterval), HeartbeatInterval) {
+      heartbeat()
+    }
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  private val failureDetectorReaperTask = FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay, UnreachableNodesReaperInterval) {
-    reapUnreachableMembers()
-  }
+  private val failureDetectorReaperTask =
+    FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval), UnreachableNodesReaperInterval) {
+      reapUnreachableMembers()
+    }
 
   // start periodic leader action management (only applies for the current leader)
-  private val leaderActionsTask = FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay, LeaderActionsInterval) {
-    leaderActions()
-  }
+  private val leaderActionsTask =
+    FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(LeaderActionsInterval), LeaderActionsInterval) {
+      leaderActions()
+    }
 
   createMBean()
 
