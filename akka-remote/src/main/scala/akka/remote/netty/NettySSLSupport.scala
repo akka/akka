@@ -16,14 +16,12 @@ import akka.security.provider.AkkaProvider
  * Used for adding SSL support to Netty pipeline
  * Internal use only
  */
-private object NettySSLSupport {
+private[netty] object NettySSLSupport {
   /**
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
    */
-  def apply(settings: NettySettings, log: LoggingAdapter, isClient: Boolean): SslHandler = {
-    if (isClient) initialiseClientSSL(settings, log)
-    else initialiseServerSSL(settings, log)
-  }
+  def apply(settings: NettySettings, log: LoggingAdapter, isClient: Boolean): SslHandler =
+    if (isClient) initialiseClientSSL(settings, log) else initialiseServerSSL(settings, log)
 
   private def initialiseCustomSecureRandom(settings: NettySettings, log: LoggingAdapter): SecureRandom = {
     /**
@@ -51,36 +49,33 @@ private object NettySSLSupport {
         log.debug("SSLRandomNumberGenerator not specified, falling back to SecureRandom")
         new SecureRandom
     }
-    // prevent stall on first access
-    rng.nextInt()
+    rng.nextInt() // prevent stall on first access
     rng
   }
 
   private def initialiseClientSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
     log.debug("Client SSL is enabled, initialising ...")
-    val sslContext: Option[SSLContext] = {
-      (settings.SSLTrustStore, settings.SSLTrustStorePassword, settings.SSLProtocol) match {
-        case (Some(trustStore), Some(password), Some(protocol)) ⇒ constructClientContext(settings, log, trustStore, password, protocol)
-        case (trustStore, password, protocol) ⇒
-          val msg = "SSL trust store settings went missing. [trust-store: %s] [trust-store-password: %s] [protocol: %s]"
-            .format(trustStore, password, protocol)
-          throw new GeneralSecurityException(msg)
-      }
-    }
-    sslContext match {
-      case Some(context) ⇒ {
+    ((settings.SSLTrustStore, settings.SSLTrustStorePassword, settings.SSLProtocol) match {
+      case (Some(trustStore), Some(password), Some(protocol)) ⇒ constructClientContext(settings, log, trustStore, password, protocol)
+      case (trustStore, password, protocol) ⇒ throw new GeneralSecurityException(
+        "One or several SSL trust store settings are missing: [trust-store: %s] [trust-store-password: %s] [protocol: %s]".format(
+          trustStore,
+          password,
+          protocol))
+    }) match {
+      case Some(context) ⇒
         log.debug("Using client SSL context to create SSLEngine ...")
         val sslEngine = context.createSSLEngine
         sslEngine.setUseClientMode(true)
         sslEngine.setEnabledCipherSuites(settings.SSLSupportedAlgorithms.toArray.map(_.toString))
         new SslHandler(sslEngine)
-      }
-      case None ⇒ {
-        val msg = "Failed to initialise client SSL because SSL context could not be found. " +
-          "Make sure your settings are correct: [trust-store: %s] [trust-store-password: %s] [protocol: %s]"
-          .format(settings.SSLTrustStore, settings.SSLTrustStorePassword, settings.SSLProtocol)
-        throw new GeneralSecurityException(msg)
-      }
+      case None ⇒
+        throw new GeneralSecurityException(
+          """Failed to initialise client SSL because SSL context could not be found." +
+              "Make sure your settings are correct: [trust-store: %s] [trust-store-password: %s] [protocol: %s]""".format(
+            settings.SSLTrustStore,
+            settings.SSLTrustStorePassword,
+            settings.SSLProtocol))
     }
   }
 
@@ -88,13 +83,10 @@ private object NettySSLSupport {
     try {
       val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
       val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
-      val stream = new FileInputStream(trustStorePath)
-      trustStore.load(stream, trustStorePassword.toCharArray)
+      trustStore.load(new FileInputStream(trustStorePath), trustStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
       trustManagerFactory.init(trustStore)
       val trustManagers: Array[TrustManager] = trustManagerFactory.getTrustManagers
-      val sslContext = SSLContext.getInstance(protocol)
-      sslContext.init(null, trustManagers, initialiseCustomSecureRandom(settings, log))
-      Some(sslContext)
+      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(null, trustManagers, initialiseCustomSecureRandom(settings, log)); ctx }
     } catch {
       case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Client SSL connection could not be established because trust store could not be loaded", e)
       case e: IOException              ⇒ throw new RemoteTransportException("Client SSL connection could not be established because: " + e.getMessage, e)
@@ -104,28 +96,24 @@ private object NettySSLSupport {
 
   private def initialiseServerSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
     log.debug("Server SSL is enabled, initialising ...")
-    val sslContext: Option[SSLContext] = {
-      (settings.SSLKeyStore, settings.SSLKeyStorePassword, settings.SSLProtocol) match {
-        case (Some(keyStore), Some(password), Some(protocol)) ⇒ constructServerContext(settings, log, keyStore, password, protocol)
-        case (keyStore, password, protocol) ⇒
-          val msg = "SSL key store settings went missing. [key-store: %s] [key-store-password: %s] [protocol: %s]".format(keyStore, password, protocol)
-          throw new GeneralSecurityException(msg)
-      }
-    }
-    sslContext match {
-      case Some(context) ⇒ {
+
+    ((settings.SSLKeyStore, settings.SSLKeyStorePassword, settings.SSLProtocol) match {
+      case (Some(keyStore), Some(password), Some(protocol)) ⇒ constructServerContext(settings, log, keyStore, password, protocol)
+      case (keyStore, password, protocol) ⇒ throw new GeneralSecurityException(
+        "SSL key store settings went missing. [key-store: %s] [key-store-password: %s] [protocol: %s]".format(keyStore, password, protocol))
+    }) match {
+      case Some(context) ⇒
         log.debug("Using server SSL context to create SSLEngine ...")
         val sslEngine = context.createSSLEngine
         sslEngine.setUseClientMode(false)
         sslEngine.setEnabledCipherSuites(settings.SSLSupportedAlgorithms.toArray.map(_.toString))
         new SslHandler(sslEngine)
-      }
-      case None ⇒ {
-        val msg = "Failed to initialise server SSL because SSL context could not be found. " +
-          "Make sure your settings are correct: [key-store: %s] [key-store-password: %s] [protocol: %s]"
-          .format(settings.SSLKeyStore, settings.SSLKeyStorePassword, settings.SSLProtocol)
-        throw new GeneralSecurityException(msg)
-      }
+      case None ⇒ throw new GeneralSecurityException(
+        """Failed to initialise server SSL because SSL context could not be found.
+           Make sure your settings are correct: [key-store: %s] [key-store-password: %s] [protocol: %s]""".format(
+          settings.SSLKeyStore,
+          settings.SSLKeyStorePassword,
+          settings.SSLProtocol))
     }
   }
 
@@ -133,12 +121,9 @@ private object NettySSLSupport {
     try {
       val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
       val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
-      val stream = new FileInputStream(keyStorePath)
-      keyStore.load(stream, keyStorePassword.toCharArray)
+      keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
       factory.init(keyStore, keyStorePassword.toCharArray)
-      val sslContext = SSLContext.getInstance(protocol)
-      sslContext.init(factory.getKeyManagers, null, initialiseCustomSecureRandom(settings, log))
-      Some(sslContext)
+      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, initialiseCustomSecureRandom(settings, log)); ctx }
     } catch {
       case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
       case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
