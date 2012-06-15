@@ -1,7 +1,7 @@
 /**
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.remote
+/*package akka.remote
 
 import akka.testkit._
 import akka.actor._
@@ -172,4 +172,4 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
 
   }
 
-}
+}*/
