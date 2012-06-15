@@ -5,7 +5,7 @@ package akka.cluster
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import akka.actor.{Address, ExtendedActorSystem}
+import akka.actor.{ Address, ExtendedActorSystem }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -153,4 +153,8 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy { self: MultiNodeSpec
   def roleName(address: Address): Option[RoleName] = {
     testConductor.getNodes.await.find(node(_).address == address)
   }
+
+  // implicit conversion from RoleName to Address
+  implicit def role2Address(role: RoleName): Address = node(role).address
+
 }

@@ -29,19 +29,15 @@ abstract class GossipingAccrualFailureDetectorSpec
 
   import GossipingAccrualFailureDetectorMultiJvmSpec._
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-  lazy val thirdAddress = node(third).address
-
   "A Gossip-driven Failure Detector" must {
 
     "receive gossip heartbeats so that all member nodes in the cluster are marked 'available'" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third)
 
       5.seconds.dilated.sleep // let them gossip
-      cluster.failureDetector.isAvailable(firstAddress) must be(true)
-      cluster.failureDetector.isAvailable(secondAddress) must be(true)
-      cluster.failureDetector.isAvailable(thirdAddress) must be(true)
+      cluster.failureDetector.isAvailable(first) must be(true)
+      cluster.failureDetector.isAvailable(second) must be(true)
+      cluster.failureDetector.isAvailable(third) must be(true)
 
       testConductor.enter("after-1")
     }
@@ -53,10 +49,10 @@ abstract class GossipingAccrualFailureDetectorSpec
 
       runOn(first, second) {
         // remaning nodes should detect failure...
-        awaitCond(!cluster.failureDetector.isAvailable(thirdAddress), 10.seconds)
+        awaitCond(!cluster.failureDetector.isAvailable(third), 10.seconds)
         // other connections still ok
-        cluster.failureDetector.isAvailable(firstAddress) must be(true)
-        cluster.failureDetector.isAvailable(secondAddress) must be(true)
+        cluster.failureDetector.isAvailable(first) must be(true)
+        cluster.failureDetector.isAvailable(second) must be(true)
       }
 
       testConductor.enter("after-2")
