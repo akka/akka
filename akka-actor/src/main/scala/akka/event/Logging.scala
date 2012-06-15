@@ -3,6 +3,8 @@
  */
 package akka.event
 
+import language.existentials
+
 import akka.actor._
 import akka.{ ConfigurationException, AkkaException }
 import akka.actor.ActorSystem.Settings
@@ -722,7 +724,7 @@ object Logging {
    * logger.
    */
   class DefaultLogger extends Actor with StdOutLogger {
-    def receive = {
+    override def receive: Receive = {
       case InitializeLogger(_) ⇒ sender ! LoggerInitialized
       case event: LogEvent     ⇒ print(event)
     }

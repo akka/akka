@@ -4,6 +4,8 @@
 
 package akka.japi
 
+import language.implicitConversions
+
 import scala.Some
 import scala.reflect.ClassTag
 

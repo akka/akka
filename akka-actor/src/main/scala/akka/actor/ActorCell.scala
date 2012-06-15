@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.existentials
+
 import akka.dispatch._
 import scala.annotation.tailrec
 import java.util.concurrent.TimeUnit

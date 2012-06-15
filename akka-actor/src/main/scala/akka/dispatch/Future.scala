@@ -4,6 +4,10 @@
 
 package akka.dispatch
 
+import language.implicitConversions
+import language.postfixOps
+import language.higherKinds
+
 import akka.event.Logging.Error
 import scala.Option
 import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption }

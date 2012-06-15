@@ -3,6 +3,9 @@
  */
 package akka.actor
 
+import language.higherKinds
+import language.postfixOps
+
 import akka.dispatch.{ Future, ExecutionContext }
 import akka.util.{ ByteString, Duration, NonFatal }
 import java.net.{ SocketAddress, InetSocketAddress }

@@ -3,6 +3,8 @@
  */
 package akka.pattern
 
+import language.implicitConversions
+
 import java.util.concurrent.TimeoutException
 import annotation.tailrec
 import akka.actor._

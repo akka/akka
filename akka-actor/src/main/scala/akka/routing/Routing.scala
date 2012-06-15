@@ -3,6 +3,9 @@
  */
 package akka.routing
 
+import language.implicitConversions
+import language.postfixOps
+
 import akka.actor._
 import akka.util.Duration
 import akka.util.duration._

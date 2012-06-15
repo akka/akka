@@ -362,7 +362,7 @@ object AkkaBuild extends Build {
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
 
     // compile options
-    scalacOptions ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-unchecked", "-Xlog-reflective-calls") ++ (
+    scalacOptions ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", /*"-deprecation",*/ "-feature", "-unchecked", "-Xlog-reflective-calls") ++ (
       if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 
@@ -447,14 +447,9 @@ object Dependencies {
 
   val testkit = Seq(Test.scalatest, Test.junit)
 
-  val actorTests = Seq(
-    Test.junit, Test.scalatest, Test.commonsMath, Test.mockito,
-    Test.scalacheck, protobuf
-  )
+  val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf)
 
-  val remote = Seq(
-    netty, protobuf, Test.junit, Test.scalatest
-  )
+  val remote = Seq(netty, protobuf, Test.junit, Test.scalatest)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
@@ -480,39 +475,26 @@ object Dependencies {
 }
 
 object Dependency {
-
-  // Versions
-
-  object V {
-    val Camel        = "2.8.0"
-    val Logback      = "1.0.4"
-    val Netty        = "3.5.0.Final"
-    val Protobuf     = "2.4.1"
-    val ScalaStm     = "0.5"
-    val Scalatest    = "1.6.1"
-    val Slf4j        = "1.6.4"
-  }
-
   // Compile
-  val config        = "com.typesafe"                % "config"                % "0.4.1"    // ApacheV2
-  val camelCore     = "org.apache.camel"            % "camel-core"            % V.Camel    // ApacheV2
-  val netty         = "io.netty"                    % "netty"                 % V.Netty    // ApacheV2
-  val protobuf      = "com.google.protobuf"         % "protobuf-java"         % V.Protobuf // New BSD
-  val scalaStm      = "org.scala-tools"             %% "scala-stm"            % V.ScalaStm // Modified BSD (Scala)
-  val slf4jApi      = "org.slf4j"                   % "slf4j-api"             % V.Slf4j    // MIT
-  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding" % "0.0.6"    // ApacheV2
+  val config        = "com.typesafe"                % "config"                % "0.4.1"       // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"            % "2.8.0"       // ApacheV2
+  val netty         = "io.netty"                    % "netty"                 % "3.5.0.Final" // ApacheV2
+  val protobuf      = "com.google.protobuf"         % "protobuf-java"         % "2.4.1"       // New BSD
+  val scalaStm      = "org.scala-tools"             %% "scala-stm"            % "0.5"         // Modified BSD (Scala)
+  val slf4jApi      = "org.slf4j"                   % "slf4j-api"             % "1.6.4"       // MIT
+  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding" % "0.0.6"       // ApacheV2
 
   // Test
 
   object Test {
-    val commonsMath = "org.apache.commons"          % "commons-math"    % "2.1"        % "test" // ApacheV2
-    val commonsIo   = "commons-io"                  % "commons-io"      % "2.0.1"      % "test" // ApacheV2
-    val junit       = "junit"                       % "junit"           % "4.5"        % "test" // Common Public License 1.0
-    val logback     = "ch.qos.logback"              % "logback-classic" % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
-    val mockito     = "org.mockito"                 % "mockito-all"     % "1.8.1"      % "test" // MIT
-    val scalatest   = "org.scalatest"               %% "scalatest"      % V.Scalatest  % "test" // ApacheV2
-    val scalacheck  = "org.scala-tools.testing"     %% "scalacheck"     % "1.9"        % "test" // New BSD
-    val specs2      = "org.specs2"                  %% "specs2"         % "1.9"        % "test" // Modified BSD / ApacheV2
+    val commonsMath = "org.apache.commons"          % "commons-math"          % "2.1"           % "test" // ApacheV2
+    val commonsIo   = "commons-io"                  % "commons-io"            % "2.0.1"         % "test" // ApacheV2
+    val junit       = "junit"                       % "junit"                 % "4.10"          % "test" // Common Public License 1.0
+    val logback     = "ch.qos.logback"              % "logback-classic"       % "1.0.4"         % "test" // EPL 1.0 / LGPL 2.1
+    val mockito     = "org.mockito"                 % "mockito-all"           % "1.8.1"         % "test" // MIT
+    val scalatest   = "org.scalatest"               %% "scalatest"            % "1.8-SNAPSHOT"  % "test" // ApacheV2
+    val scalacheck  = "org.scalacheck"              % "scalacheck_2.10.0-M3"  % "1.10-SNAPSHOT" % "test" // New BSD
+    val specs2      = "org.specs2"                  %% "specs2"               % "1.11"          % "test" // Modified BSD / ApacheV2
   }
 }
 

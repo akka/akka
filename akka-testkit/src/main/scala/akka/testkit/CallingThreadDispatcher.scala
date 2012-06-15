@@ -74,7 +74,7 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
     if (queues contains mbox) {
       for {
         ref ← queues(mbox)
-        val q = ref.get
+        q = ref.get
         if (q ne null) && (q ne own)
       } {
         val owner = mbox.actor.self

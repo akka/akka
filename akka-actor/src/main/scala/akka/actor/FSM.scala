@@ -3,6 +3,8 @@
  */
 package akka.actor
 
+import language.implicitConversions
+
 import akka.util._
 
 import scala.collection.mutable

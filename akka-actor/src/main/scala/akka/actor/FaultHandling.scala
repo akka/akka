@@ -3,6 +3,8 @@
  */
 package akka.actor
 
+import language.implicitConversions
+
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._

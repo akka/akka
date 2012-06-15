@@ -1,8 +1,9 @@
-package akka.actor
-
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
+package akka.actor
+
+import language.existentials
 
 import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }

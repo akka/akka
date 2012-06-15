@@ -3,6 +3,8 @@
  */
 package akka.pattern
 
+import language.implicitConversions
+
 import akka.dispatch.Future
 import akka.actor.{ Status, ActorRef }
 

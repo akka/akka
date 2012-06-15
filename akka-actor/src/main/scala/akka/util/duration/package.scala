@@ -4,6 +4,8 @@
 
 package akka.util
 
+import language.implicitConversions
+
 import java.util.concurrent.TimeUnit
 //FIXME Needs docs
 package object duration {
