@@ -12,7 +12,7 @@ import org.scalacheck.Gen._
 import scala.collection.mutable.Builder
 
 import java.nio.{ ByteBuffer, ShortBuffer, IntBuffer, FloatBuffer, DoubleBuffer }
-import java.nio.{ ByteOrder }, ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
+import java.nio.ByteOrder, ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 import java.lang.Float.floatToRawIntBits
 import java.lang.Double.doubleToRawLongBits
 

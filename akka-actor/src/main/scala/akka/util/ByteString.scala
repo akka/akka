@@ -55,12 +55,11 @@ object ByteString {
 
   def newBuilder: ByteStringBuilder = new ByteStringBuilder
 
-  implicit def canBuildFrom: CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] = {
+  implicit def canBuildFrom: CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] =
     new CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] {
       def apply(from: TraversableOnce[Byte]) = newBuilder
       def apply() = newBuilder
     }
-  }
 
   private[akka] object ByteString1C {
     def apply(bytes: Array[Byte]) = new ByteString1C(bytes)
