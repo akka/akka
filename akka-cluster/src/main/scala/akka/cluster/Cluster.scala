@@ -118,6 +118,15 @@ object Member {
     case _         ⇒ None
   }
 
+  def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] = {
+    // group all members by Address => Seq[Member]
+    val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.address)
+    // pick highest MemberStatus
+    (Set.empty[Member] /: groupedByAddress) {
+      case (acc, (_, members)) ⇒ acc + members.reduceLeft(highestPriorityOf)
+    }
+  }
+
   /**
    * Picks the Member with the highest "priority" MemberStatus.
    */
@@ -130,8 +139,8 @@ object Member {
     case (_, Exiting)       ⇒ m2
     case (Leaving, _)       ⇒ m1
     case (_, Leaving)       ⇒ m2
-    case (Up, Joining)      ⇒ m1
-    case (Joining, Up)      ⇒ m2
+    case (Up, Joining)      ⇒ m2
+    case (Joining, Up)      ⇒ m1
     case (Joining, Joining) ⇒ m1
     case (Up, Up)           ⇒ m1
   }
@@ -268,21 +277,12 @@ case class Gossip(
     // 2. merge meta-data
     val mergedMeta = this.meta ++ that.meta
 
-    def pickHighestPriority(a: Seq[Member], b: Seq[Member]): Set[Member] = {
-      // group all members by Address => Seq[Member]
-      val groupedByAddress = (a ++ b).groupBy(_.address)
-      // pick highest MemberStatus
-      (Set.empty[Member] /: groupedByAddress) {
-        case (acc, (_, members)) ⇒ acc + members.reduceLeft(Member.highestPriorityOf)
-      }
-    }
-
     // 3. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
-    val mergedUnreachable = pickHighestPriority(this.overview.unreachable.toSeq, that.overview.unreachable.toSeq)
+    val mergedUnreachable = Member.pickHighestPriority(this.overview.unreachable, that.overview.unreachable)
 
     // 4. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
     //    and exclude unreachable
-    val mergedMembers = Gossip.emptyMembers ++ pickHighestPriority(this.members.toSeq, that.members.toSeq).
+    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).
       filterNot(mergedUnreachable.contains)
 
     // 5. fresh seen table
