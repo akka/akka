@@ -8,6 +8,81 @@ public final class TestConductorProtocol {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
+  public enum BarrierOp
+      implements com.google.protobuf.ProtocolMessageEnum {
+    Enter(0, 1),
+    Fail(1, 2),
+    Succeeded(2, 3),
+    Failed(3, 4),
+    ;
+    
+    public static final int Enter_VALUE = 1;
+    public static final int Fail_VALUE = 2;
+    public static final int Succeeded_VALUE = 3;
+    public static final int Failed_VALUE = 4;
+    
+    
+    public final int getNumber() { return value; }
+    
+    public static BarrierOp valueOf(int value) {
+      switch (value) {
+        case 1: return Enter;
+        case 2: return Fail;
+        case 3: return Succeeded;
+        case 4: return Failed;
+        default: return null;
+      }
+    }
+    
+    public static com.google.protobuf.Internal.EnumLiteMap<BarrierOp>
+        internalGetValueMap() {
+      return internalValueMap;
+    }
+    private static com.google.protobuf.Internal.EnumLiteMap<BarrierOp>
+        internalValueMap =
+          new com.google.protobuf.Internal.EnumLiteMap<BarrierOp>() {
+            public BarrierOp findValueByNumber(int number) {
+              return BarrierOp.valueOf(number);
+            }
+          };
+    
+    public final com.google.protobuf.Descriptors.EnumValueDescriptor
+        getValueDescriptor() {
+      return getDescriptor().getValues().get(index);
+    }
+    public final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptorForType() {
+      return getDescriptor();
+    }
+    public static final com.google.protobuf.Descriptors.EnumDescriptor
+        getDescriptor() {
+      return akka.remote.testconductor.TestConductorProtocol.getDescriptor().getEnumTypes().get(0);
+    }
+    
+    private static final BarrierOp[] VALUES = {
+      Enter, Fail, Succeeded, Failed, 
+    };
+    
+    public static BarrierOp valueOf(
+        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+      if (desc.getType() != getDescriptor()) {
+        throw new java.lang.IllegalArgumentException(
+          "EnumValueDescriptor is not for this type.");
+      }
+      return VALUES[desc.getIndex()];
+    }
+    
+    private final int index;
+    private final int value;
+    
+    private BarrierOp(int index, int value) {
+      this.index = index;
+      this.value = value;
+    }
+    
+    // @@protoc_insertion_point(enum_scope:BarrierOp)
+  }
+  
   public enum FailType
       implements com.google.protobuf.ProtocolMessageEnum {
     Throttle(0, 1),
@@ -56,7 +131,7 @@ public final class TestConductorProtocol {
     }
     public static final com.google.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
-      return akka.remote.testconductor.TestConductorProtocol.getDescriptor().getEnumTypes().get(0);
+      return akka.remote.testconductor.TestConductorProtocol.getDescriptor().getEnumTypes().get(1);
     }
     
     private static final FailType[] VALUES = {
@@ -128,7 +203,7 @@ public final class TestConductorProtocol {
     }
     public static final com.google.protobuf.Descriptors.EnumDescriptor
         getDescriptor() {
-      return akka.remote.testconductor.TestConductorProtocol.getDescriptor().getEnumTypes().get(1);
+      return akka.remote.testconductor.TestConductorProtocol.getDescriptor().getEnumTypes().get(2);
     }
     
     private static final Direction[] VALUES = {
@@ -1699,17 +1774,13 @@ public final class TestConductorProtocol {
     boolean hasName();
     String getName();
     
-    // optional bool status = 2;
-    boolean hasStatus();
-    boolean getStatus();
+    // required .BarrierOp op = 2;
+    boolean hasOp();
+    akka.remote.testconductor.TestConductorProtocol.BarrierOp getOp();
     
     // optional int64 timeout = 3;
     boolean hasTimeout();
     long getTimeout();
-    
-    // optional bool failed = 4;
-    boolean hasFailed();
-    boolean getFailed();
   }
   public static final class EnterBarrier extends
       com.google.protobuf.GeneratedMessage
@@ -1772,14 +1843,14 @@ public final class TestConductorProtocol {
       }
     }
     
-    // optional bool status = 2;
-    public static final int STATUS_FIELD_NUMBER = 2;
-    private boolean status_;
-    public boolean hasStatus() {
+    // required .BarrierOp op = 2;
+    public static final int OP_FIELD_NUMBER = 2;
+    private akka.remote.testconductor.TestConductorProtocol.BarrierOp op_;
+    public boolean hasOp() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    public boolean getStatus() {
-      return status_;
+    public akka.remote.testconductor.TestConductorProtocol.BarrierOp getOp() {
+      return op_;
     }
     
     // optional int64 timeout = 3;
@@ -1792,21 +1863,10 @@ public final class TestConductorProtocol {
       return timeout_;
     }
     
-    // optional bool failed = 4;
-    public static final int FAILED_FIELD_NUMBER = 4;
-    private boolean failed_;
-    public boolean hasFailed() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
-    }
-    public boolean getFailed() {
-      return failed_;
-    }
-    
     private void initFields() {
       name_ = "";
-      status_ = false;
+      op_ = akka.remote.testconductor.TestConductorProtocol.BarrierOp.Enter;
       timeout_ = 0L;
-      failed_ = false;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1814,6 +1874,10 @@ public final class TestConductorProtocol {
       if (isInitialized != -1) return isInitialized == 1;
       
       if (!hasName()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasOp()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -1828,13 +1892,10 @@ public final class TestConductorProtocol {
         output.writeBytes(1, getNameBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeBool(2, status_);
+        output.writeEnum(2, op_.getNumber());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeInt64(3, timeout_);
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeBool(4, failed_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -1851,15 +1912,11 @@ public final class TestConductorProtocol {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(2, status_);
+          .computeEnumSize(2, op_.getNumber());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt64Size(3, timeout_);
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeBoolSize(4, failed_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1987,12 +2044,10 @@ public final class TestConductorProtocol {
         super.clear();
         name_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
-        status_ = false;
+        op_ = akka.remote.testconductor.TestConductorProtocol.BarrierOp.Enter;
         bitField0_ = (bitField0_ & ~0x00000002);
         timeout_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000004);
-        failed_ = false;
-        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       
@@ -2038,15 +2093,11 @@ public final class TestConductorProtocol {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.status_ = status_;
+        result.op_ = op_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
         result.timeout_ = timeout_;
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-          to_bitField0_ |= 0x00000008;
-        }
-        result.failed_ = failed_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -2066,14 +2117,11 @@ public final class TestConductorProtocol {
         if (other.hasName()) {
           setName(other.getName());
         }
-        if (other.hasStatus()) {
-          setStatus(other.getStatus());
+        if (other.hasOp()) {
+          setOp(other.getOp());
         }
         if (other.hasTimeout()) {
           setTimeout(other.getTimeout());
-        }
-        if (other.hasFailed()) {
-          setFailed(other.getFailed());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -2081,6 +2129,10 @@ public final class TestConductorProtocol {
       
       public final boolean isInitialized() {
         if (!hasName()) {
+          
+          return false;
+        }
+        if (!hasOp()) {
           
           return false;
         }
@@ -2116,18 +2168,19 @@ public final class TestConductorProtocol {
               break;
             }
             case 16: {
-              bitField0_ |= 0x00000002;
-              status_ = input.readBool();
+              int rawValue = input.readEnum();
+              akka.remote.testconductor.TestConductorProtocol.BarrierOp value = akka.remote.testconductor.TestConductorProtocol.BarrierOp.valueOf(rawValue);
+              if (value == null) {
+                unknownFields.mergeVarintField(2, rawValue);
+              } else {
+                bitField0_ |= 0x00000002;
+                op_ = value;
+              }
               break;
             }
             case 24: {
               bitField0_ |= 0x00000004;
               timeout_ = input.readInt64();
-              break;
-            }
-            case 32: {
-              bitField0_ |= 0x00000008;
-              failed_ = input.readBool();
               break;
             }
           }
@@ -2172,23 +2225,26 @@ public final class TestConductorProtocol {
         onChanged();
       }
       
-      // optional bool status = 2;
-      private boolean status_ ;
-      public boolean hasStatus() {
+      // required .BarrierOp op = 2;
+      private akka.remote.testconductor.TestConductorProtocol.BarrierOp op_ = akka.remote.testconductor.TestConductorProtocol.BarrierOp.Enter;
+      public boolean hasOp() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public boolean getStatus() {
-        return status_;
+      public akka.remote.testconductor.TestConductorProtocol.BarrierOp getOp() {
+        return op_;
       }
-      public Builder setStatus(boolean value) {
+      public Builder setOp(akka.remote.testconductor.TestConductorProtocol.BarrierOp value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
         bitField0_ |= 0x00000002;
-        status_ = value;
+        op_ = value;
         onChanged();
         return this;
       }
-      public Builder clearStatus() {
+      public Builder clearOp() {
         bitField0_ = (bitField0_ & ~0x00000002);
-        status_ = false;
+        op_ = akka.remote.testconductor.TestConductorProtocol.BarrierOp.Enter;
         onChanged();
         return this;
       }
@@ -2210,27 +2266,6 @@ public final class TestConductorProtocol {
       public Builder clearTimeout() {
         bitField0_ = (bitField0_ & ~0x00000004);
         timeout_ = 0L;
-        onChanged();
-        return this;
-      }
-      
-      // optional bool failed = 4;
-      private boolean failed_ ;
-      public boolean hasFailed() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
-      }
-      public boolean getFailed() {
-        return failed_;
-      }
-      public Builder setFailed(boolean value) {
-        bitField0_ |= 0x00000008;
-        failed_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearFailed() {
-        bitField0_ = (bitField0_ & ~0x00000008);
-        failed_ = false;
         onChanged();
         return this;
       }
@@ -4170,19 +4205,21 @@ public final class TestConductorProtocol {
       "\0132\r.EnterBarrier\022\037\n\007failure\030\003 \001(\0132\016.Inje" +
       "ctFailure\022\014\n\004done\030\004 \001(\t\022\035\n\004addr\030\005 \001(\0132\017." +
       "AddressRequest\"0\n\005Hello\022\014\n\004name\030\001 \002(\t\022\031\n" +
-      "\007address\030\002 \002(\0132\010.Address\"M\n\014EnterBarrier" +
-      "\022\014\n\004name\030\001 \002(\t\022\016\n\006status\030\002 \001(\010\022\017\n\007timeou" +
-      "t\030\003 \001(\003\022\016\n\006failed\030\004 \001(\010\"6\n\016AddressReques" +
-      "t\022\014\n\004node\030\001 \002(\t\022\026\n\004addr\030\002 \001(\0132\010.Address\"" +
-      "G\n\007Address\022\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030\002",
-      " \002(\t\022\014\n\004host\030\003 \002(\t\022\014\n\004port\030\004 \002(\005\"\212\001\n\rInj" +
-      "ectFailure\022\032\n\007failure\030\001 \002(\0162\t.FailType\022\035" +
-      "\n\tdirection\030\002 \001(\0162\n.Direction\022\031\n\007address" +
-      "\030\003 \001(\0132\010.Address\022\020\n\010rateMBit\030\006 \001(\002\022\021\n\tex" +
-      "itValue\030\007 \001(\005*A\n\010FailType\022\014\n\010Throttle\020\001\022" +
-      "\016\n\nDisconnect\020\002\022\t\n\005Abort\020\003\022\014\n\010Shutdown\020\004" +
-      "*,\n\tDirection\022\010\n\004Send\020\001\022\013\n\007Receive\020\002\022\010\n\004" +
-      "Both\020\003B\035\n\031akka.remote.testconductorH\001"
+      "\007address\030\002 \002(\0132\010.Address\"E\n\014EnterBarrier" +
+      "\022\014\n\004name\030\001 \002(\t\022\026\n\002op\030\002 \002(\0162\n.BarrierOp\022\017" +
+      "\n\007timeout\030\003 \001(\003\"6\n\016AddressRequest\022\014\n\004nod" +
+      "e\030\001 \002(\t\022\026\n\004addr\030\002 \001(\0132\010.Address\"G\n\007Addre" +
+      "ss\022\020\n\010protocol\030\001 \002(\t\022\016\n\006system\030\002 \002(\t\022\014\n\004",
+      "host\030\003 \002(\t\022\014\n\004port\030\004 \002(\005\"\212\001\n\rInjectFailu" +
+      "re\022\032\n\007failure\030\001 \002(\0162\t.FailType\022\035\n\tdirect" +
+      "ion\030\002 \001(\0162\n.Direction\022\031\n\007address\030\003 \001(\0132\010" +
+      ".Address\022\020\n\010rateMBit\030\006 \001(\002\022\021\n\texitValue\030" +
+      "\007 \001(\005*;\n\tBarrierOp\022\t\n\005Enter\020\001\022\010\n\004Fail\020\002\022" +
+      "\r\n\tSucceeded\020\003\022\n\n\006Failed\020\004*A\n\010FailType\022\014" +
+      "\n\010Throttle\020\001\022\016\n\nDisconnect\020\002\022\t\n\005Abort\020\003\022" +
+      "\014\n\010Shutdown\020\004*,\n\tDirection\022\010\n\004Send\020\001\022\013\n\007" +
+      "Receive\020\002\022\010\n\004Both\020\003B\035\n\031akka.remote.testc" +
+      "onductorH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -4210,7 +4247,7 @@ public final class TestConductorProtocol {
           internal_static_EnterBarrier_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_EnterBarrier_descriptor,
-              new java.lang.String[] { "Name", "Status", "Timeout", "Failed", },
+              new java.lang.String[] { "Name", "Op", "Timeout", },
               akka.remote.testconductor.TestConductorProtocol.EnterBarrier.class,
               akka.remote.testconductor.TestConductorProtocol.EnterBarrier.Builder.class);
           internal_static_AddressRequest_descriptor =

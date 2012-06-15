@@ -45,7 +45,7 @@ abstract class NodeJoinSpec
 
       awaitCond(cluster.latestGossip.members.exists { member ⇒ member.address == secondAddress && member.status == MemberStatus.Joining })
 
-      enter("after")
+      enterBarrier("after")
     }
   }
 }

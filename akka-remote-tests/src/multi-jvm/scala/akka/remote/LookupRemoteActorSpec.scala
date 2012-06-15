@@ -47,7 +47,7 @@ class LookupRemoteActorSpec extends MultiNodeSpec(LookupRemoteActorMultiJvmSpec)
         val masterAddress = testConductor.getAddressFor(master).await
         (hello ? "identify").await.asInstanceOf[ActorRef].path.address must equal(masterAddress)
       }
-      enter("done")
+      enterBarrier("done")
     }
   }
 

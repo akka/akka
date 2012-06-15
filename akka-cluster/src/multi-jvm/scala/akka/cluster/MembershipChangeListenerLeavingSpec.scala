@@ -44,12 +44,12 @@ abstract class MembershipChangeListenerLeavingSpec
       awaitClusterUp(first, second, third)
 
       runOn(first) {
-        enter("registered-listener")
+        enterBarrier("registered-listener")
         cluster.leave(secondAddress)
       }
 
       runOn(second) {
-        enter("registered-listener")
+        enterBarrier("registered-listener")
       }
 
       runOn(third) {
@@ -62,11 +62,11 @@ abstract class MembershipChangeListenerLeavingSpec
               latch.countDown()
           }
         })
-        enter("registered-listener")
+        enterBarrier("registered-listener")
         latch.await
       }
 
-      enter("finished")
+      enterBarrier("finished")
     }
   }
 }

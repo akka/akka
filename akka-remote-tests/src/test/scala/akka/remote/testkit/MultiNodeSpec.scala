@@ -186,7 +186,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * Enter the named barriers in the order given. Use the remaining duration from
    * the innermost enclosing `within` block or the default `BarrierTimeout`
    */
-  def enter(name: String*) {
+  def enterBarrier(name: String*) {
     testConductor.enter(Timeout.durationToTimeout(remainingOr(testConductor.Settings.BarrierTimeout.duration)), name)
   }
 
@@ -202,13 +202,11 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
 
   /**
    * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
-   * enclosing `within` block or BarrierTimeout.
-   *
-   * FIXME Is it really BarrierTimeout we want here? That seems like an awfully long time.
+   * enclosing `within` block or QueryTimeout.
    */
   implicit def awaitHelper[T](w: Awaitable[T]) = new AwaitHelper(w)
   class AwaitHelper[T](w: Awaitable[T]) {
-    def await: T = Await.result(w, remainingOr(testConductor.Settings.BarrierTimeout.duration))
+    def await: T = Await.result(w, remainingOr(testConductor.Settings.QueryTimeout.duration))
   }
 
   /*
@@ -217,9 +215,11 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
 
   private val controllerAddr = new InetSocketAddress(nodeNames(0), 4711)
   if (selfIndex == 0) {
-    testConductor.startController(initialParticipants, myself, controllerAddr).await
+    Await.result(testConductor.startController(initialParticipants, myself, controllerAddr),
+      testConductor.Settings.BarrierTimeout.duration)
   } else {
-    testConductor.startClient(myself, controllerAddr).await
+    Await.result(testConductor.startClient(myself, controllerAddr),
+      testConductor.Settings.BarrierTimeout.duration)
   }
 
   // now add deployments, if so desired

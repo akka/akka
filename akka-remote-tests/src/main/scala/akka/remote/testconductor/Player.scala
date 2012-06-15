@@ -26,6 +26,7 @@ import org.jboss.netty.channel.WriteCompletionEvent
 import java.net.ConnectException
 import akka.util.Deadline
 import akka.actor.Scheduler
+import java.util.concurrent.TimeoutException
 
 /**
  * The Player is the client component of the
@@ -79,8 +80,6 @@ trait Player { this: TestConductorExt ⇒
     enter(Settings.BarrierTimeout, name)
   }
 
-  case class OutOfTimeException(barrier: String) extends RuntimeException("Ran out of time while waiting for barrier '" + barrier + "'") with NoStackTrace
-
   /**
    * Enter the named barriers, one after the other, in the order given. Will
    * throw an exception in case of timeouts or other errors.
@@ -94,7 +93,7 @@ trait Player { this: TestConductorExt ⇒
       val barrierTimeout = stop - now
       if (barrierTimeout < Duration.Zero) {
         client ! ToServer(FailBarrier(b))
-        throw OutOfTimeException(b)
+        throw new TimeoutException("Server timed out while waiting for barrier " + b);
       }
       try {
         implicit val timeout = Timeout(barrierTimeout + Settings.QueryTimeout.duration)
@@ -102,7 +101,8 @@ trait Player { this: TestConductorExt ⇒
       } catch {
         case e: AskTimeoutException ⇒
           client ! ToServer(FailBarrier(b))
-          throw e
+          // Why don't TimeoutException have a constructor that takes a cause?
+          throw new TimeoutException("Client timed out while waiting for barrier " + b);
       }
       system.log.debug("passed barrier {}", b)
     }

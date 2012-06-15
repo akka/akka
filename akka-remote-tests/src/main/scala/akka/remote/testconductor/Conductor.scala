@@ -8,8 +8,6 @@ import RemoteConnection.getAddrString
 import TestConductorProtocol._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
 import com.typesafe.config.ConfigFactory
-import akka.util.Timeout
-import akka.util.Duration
 import akka.util.duration._
 import akka.pattern.ask
 import java.util.concurrent.TimeUnit.MILLISECONDS
@@ -26,6 +24,7 @@ import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.Status
+import akka.util.{ Deadline, Timeout, Duration }
 
 sealed trait Direction {
   def includes(other: Direction): Boolean
@@ -376,7 +375,8 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
    * BarrierTimeouts in the players).
    */
   override def supervisorStrategy = OneForOneStrategy() {
-    case BarrierTimeout(data)             ⇒ SupervisorStrategy.Restart
+    case BarrierTimeout(data)             ⇒ failBarrier(data)
+    case FailedBarrier(data)              ⇒ failBarrier(data)
     case BarrierEmpty(data, msg)          ⇒ SupervisorStrategy.Resume
     case WrongBarrier(name, client, data) ⇒ client ! ToClient(BarrierResult(name, false)); failBarrier(data)
     case ClientLost(data, node)           ⇒ failBarrier(data)
@@ -464,7 +464,7 @@ private[akka] object BarrierCoordinator {
 
   case class RemoveClient(name: RoleName)
 
-  case class Data(clients: Set[Controller.NodeInfo], barrier: String, arrived: List[ActorRef])
+  case class Data(clients: Set[Controller.NodeInfo], barrier: String, arrived: List[ActorRef], deadline: Deadline)
 
   trait Printer { this: Product with Throwable with NoStackTrace ⇒
     override def toString = productPrefix + productIterator.mkString("(", ", ", ")")
@@ -472,6 +472,8 @@ private[akka] object BarrierCoordinator {
 
   case class BarrierTimeout(data: Data)
     extends RuntimeException("timeout while waiting for barrier '" + data.barrier + "'") with NoStackTrace with Printer
+  case class FailedBarrier(data: Data)
+    extends RuntimeException("failing barrier '" + data.barrier + "'") with NoStackTrace with Printer
   case class DuplicateNode(data: Data, node: Controller.NodeInfo)
     extends RuntimeException(node.toString) with NoStackTrace with Printer
   case class WrongBarrier(barrier: String, client: ActorRef, data: Data)
@@ -503,20 +505,18 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   // this shall be set to true if all subsequent barriers shall fail
   var failed = false
 
-  var barrierTimeout: Option[auTimeout] = None
-
   override def preRestart(reason: Throwable, message: Option[Any]) {}
   override def postRestart(reason: Throwable) { failed = true }
 
   // TODO what happens with the other waiting players in case of a test failure?
 
-  startWith(Idle, Data(Set(), "", Nil))
+  startWith(Idle, Data(Set(), "", Nil, null))
 
   whenUnhandled {
-    case Event(n: NodeInfo, d @ Data(clients, _, _)) ⇒
+    case Event(n: NodeInfo, d @ Data(clients, _, _, _)) ⇒
       if (clients.find(_.name == n.name).isDefined) throw new DuplicateNode(d, n)
       stay using d.copy(clients = clients + n)
-    case Event(ClientDisconnected(name), d @ Data(clients, _, arrived)) ⇒
+    case Event(ClientDisconnected(name), d @ Data(clients, _, arrived, _)) ⇒
       if (clients.isEmpty) throw BarrierEmpty(d, "cannot disconnect " + name + ": no client to disconnect")
       (clients find (_.name == name)) match {
         case None    ⇒ stay
@@ -525,7 +525,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   }
 
   when(Idle) {
-    case Event(EnterBarrier(name, timeout), d @ Data(clients, _, _)) ⇒
+    case Event(EnterBarrier(name, timeout), d @ Data(clients, _, _, _)) ⇒
       if (failed)
         stay replying ToClient(BarrierResult(name, false))
       else if (clients.map(_.fsm) == Set(sender))
@@ -533,55 +533,60 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       else if (clients.find(_.fsm == sender).isEmpty)
         stay replying ToClient(BarrierResult(name, false))
       else {
-        barrierTimeout = timeout
-        goto(Waiting) using d.copy(barrier = name, arrived = sender :: Nil)
+        goto(Waiting) using d.copy(barrier = name, arrived = sender :: Nil,
+          deadline = getDeadline(timeout))
       }
-    case Event(RemoveClient(name), d @ Data(clients, _, _)) ⇒
+    case Event(RemoveClient(name), d @ Data(clients, _, _, _)) ⇒
       if (clients.isEmpty) throw BarrierEmpty(d, "cannot remove " + name + ": no client to remove")
       stay using d.copy(clients = clients filterNot (_.name == name))
   }
 
   onTransition {
-    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, barrierTimeout.getOrElse[auTimeout](TestConductor().Settings.BarrierTimeout).duration, false)
+    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline - Deadline.now, false)
     case Waiting -> Idle ⇒ cancelTimer("Timeout")
   }
 
   when(Waiting) {
-    case Event(EnterBarrier(name, timeout), d @ Data(clients, barrier, arrived)) ⇒
+    case Event(EnterBarrier(name, timeout), d @ Data(clients, barrier, arrived, deadline)) ⇒
       if (name != barrier) throw WrongBarrier(name, sender, d)
       val together = if (clients.exists(_.fsm == sender)) sender :: arrived else arrived
-      handleBarrier(d.copy(arrived = together))
-    case Event(RemoveClient(name), d @ Data(clients, barrier, arrived)) ⇒
+      val enterDeadline = getDeadline(timeout)
+      // we only allow the deadlines to get shorter
+      val newDeadline = if ((enterDeadline - deadline) < Duration.Zero) enterDeadline else deadline
+      if (newDeadline != deadline) {
+        cancelTimer("Timeout")
+        setTimer("Timeout", StateTimeout, newDeadline - Deadline.now, false)
+      }
+      handleBarrier(d.copy(arrived = together, deadline = newDeadline))
+    case Event(RemoveClient(name), d @ Data(clients, barrier, arrived, _)) ⇒
       clients find (_.name == name) match {
         case None ⇒ stay
         case Some(client) ⇒
           handleBarrier(d.copy(clients = clients - client, arrived = arrived filterNot (_ == client.fsm)))
       }
-    case Event(FailBarrier(name), d @ Data(clients, barrier, arrived)) ⇒
+    case Event(FailBarrier(name), d @ Data(_, barrier, _, _)) ⇒
       if (name != barrier) throw WrongBarrier(name, sender, d)
-      failed = true
-      handleBarrier(d, false)
-
-    case Event(StateTimeout, d @ Data(clients, barrier, arrived)) ⇒
-      handleBarrier(d, false)
+      throw FailedBarrier(d)
+    case Event(StateTimeout, d) ⇒
       throw BarrierTimeout(d)
   }
 
   initialize
 
-  def handleBarrier(data: Data, status: Boolean = true): State = {
-    log.debug("handleBarrier({}, {})", data, status)
-    if (!status) {
-      data.arrived foreach (_ ! ToClient(BarrierResult(data.barrier, status)))
-      goto(Idle) using data.copy(barrier = "", arrived = Nil)
-    } else if (data.arrived.isEmpty) {
+  def handleBarrier(data: Data): State = {
+    log.debug("handleBarrier({})", data)
+    if (data.arrived.isEmpty) {
       goto(Idle) using data.copy(barrier = "")
     } else if ((data.clients.map(_.fsm) -- data.arrived).isEmpty) {
-      data.arrived foreach (_ ! ToClient(BarrierResult(data.barrier, status)))
+      data.arrived foreach (_ ! ToClient(BarrierResult(data.barrier, true)))
       goto(Idle) using data.copy(barrier = "", arrived = Nil)
     } else {
       stay using data
     }
+  }
+
+  def getDeadline(timeout: Option[Duration]): Deadline = {
+    Deadline.now + timeout.getOrElse(TestConductor().Settings.BarrierTimeout.duration)
   }
 
 }

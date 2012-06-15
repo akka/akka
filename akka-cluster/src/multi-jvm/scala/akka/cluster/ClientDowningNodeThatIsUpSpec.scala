@@ -43,7 +43,7 @@ abstract class ClientDowningNodeThatIsUpSpec
       runOn(first) {
         // mark 'third' node as DOWN
         cluster.down(thirdAddress)
-        enter("down-third-node")
+        enterBarrier("down-third-node")
 
         markNodeAsUnavailable(thirdAddress)
 
@@ -52,16 +52,16 @@ abstract class ClientDowningNodeThatIsUpSpec
       }
 
       runOn(third) {
-        enter("down-third-node")
+        enterBarrier("down-third-node")
       }
 
       runOn(second, fourth) {
-        enter("down-third-node")
+        enterBarrier("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
       }
 
-      enter("await-completion")
+      enterBarrier("await-completion")
     }
   }
 }

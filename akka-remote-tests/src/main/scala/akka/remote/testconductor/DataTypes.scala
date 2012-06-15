@@ -10,7 +10,8 @@ import akka.remote.testconductor.{ TestConductorProtocol ⇒ TCP }
 import com.google.protobuf.Message
 import akka.actor.Address
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder
-import akka.util.Timeout
+import akka.util.Duration
+import akka.remote.testconductor.TestConductorProtocol.BarrierOp
 
 case class RoleName(name: String)
 
@@ -29,7 +30,7 @@ private[akka] sealed trait ConfirmedClientOp extends ClientOp
  */
 private[akka] case class Hello(name: String, addr: Address) extends NetworkOp
 
-private[akka] case class EnterBarrier(name: String, timeout: Option[Timeout] = None) extends ServerOp with NetworkOp
+private[akka] case class EnterBarrier(name: String, timeout: Option[Duration] = None) extends ServerOp with NetworkOp
 private[akka] case class FailBarrier(name: String) extends ServerOp with NetworkOp
 private[akka] case class BarrierResult(name: String, success: Boolean) extends UnconfirmedClientOp with NetworkOp
 
@@ -76,12 +77,14 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
           w.setHello(TCP.Hello.newBuilder.setName(name).setAddress(addr))
         case EnterBarrier(name, timeout) ⇒
           val barrier = TCP.EnterBarrier.newBuilder.setName(name)
-          timeout foreach (t ⇒ barrier.setTimeout(t.duration.toMillis))
+          timeout foreach (t ⇒ barrier.setTimeout(t.toNanos))
+          barrier.setOp(BarrierOp.Enter)
           w.setBarrier(barrier)
         case BarrierResult(name, success) ⇒
-          w.setBarrier(TCP.EnterBarrier.newBuilder.setName(name).setStatus(success))
+          val res = if (success) BarrierOp.Succeeded else BarrierOp.Failed
+          w.setBarrier(TCP.EnterBarrier.newBuilder.setName(name).setOp(res))
         case FailBarrier(name) ⇒
-          w.setBarrier(TCP.EnterBarrier.newBuilder.setName(name).setFailed(true))
+          w.setBarrier(TCP.EnterBarrier.newBuilder.setName(name).setOp(BarrierOp.Fail))
         case ThrottleMsg(target, dir, rate) ⇒
           w.setFailure(TCP.InjectFailure.newBuilder.setAddress(target)
             .setFailure(TCP.FailType.Throttle).setDirection(dir).setRateMBit(rate))
@@ -120,9 +123,13 @@ private[akka] class MsgDecoder extends OneToOneDecoder {
         Hello(h.getName, h.getAddress)
       } else if (w.hasBarrier) {
         val barrier = w.getBarrier
-        if (barrier.hasStatus) BarrierResult(barrier.getName, barrier.getStatus)
-        else if (barrier.hasFailed) FailBarrier(barrier.getName)
-        else EnterBarrier(w.getBarrier.getName, if (barrier.hasTimeout) Option(Timeout.longToTimeout(barrier.getTimeout)) else None)
+        barrier.getOp match {
+          case BarrierOp.Succeeded ⇒ BarrierResult(barrier.getName, true)
+          case BarrierOp.Failed    ⇒ BarrierResult(barrier.getName, false)
+          case BarrierOp.Fail      ⇒ FailBarrier(barrier.getName)
+          case BarrierOp.Enter ⇒ EnterBarrier(barrier.getName,
+            if (barrier.hasTimeout) Option(Duration.fromNanos(barrier.getTimeout)) else None)
+        }
       } else if (w.hasFailure) {
         val f = w.getFailure
         import TCP.{ FailType ⇒ FT }

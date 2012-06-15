@@ -56,7 +56,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
         system.stop(actor)
       }
 
-      enter("done")
+      enterBarrier("done")
     }
 
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef (with deployOnAll)" taggedAs LongRunningTest in {
@@ -74,7 +74,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
         system.stop(actor)
       }
 
-      enter("done")
+      enterBarrier("done")
     }
   }
 }

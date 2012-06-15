@@ -46,16 +46,16 @@ abstract class MembershipChangeListenerUpSpec
               latch.countDown()
           }
         })
-        enter("listener-1-registered")
+        enterBarrier("listener-1-registered")
         cluster.join(firstAddress)
         latch.await
       }
 
       runOn(third) {
-        enter("listener-1-registered")
+        enterBarrier("listener-1-registered")
       }
 
-      enter("after-1")
+      enterBarrier("after-1")
     }
 
     "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
@@ -68,7 +68,7 @@ abstract class MembershipChangeListenerUpSpec
             latch.countDown()
         }
       })
-      enter("listener-2-registered")
+      enterBarrier("listener-2-registered")
 
       runOn(third) {
         cluster.join(firstAddress)
@@ -76,7 +76,7 @@ abstract class MembershipChangeListenerUpSpec
 
       latch.await
 
-      enter("after-2")
+      enterBarrier("after-2")
     }
   }
 }

@@ -46,7 +46,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with Im
         }), "echo")
       }
 
-      enter("name")
+      enterBarrier("name")
     }
 
     "support throttling of network connections" taggedAs LongRunningTest in {
@@ -62,7 +62,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with Im
         testConductor.throttle(slave, master, Direction.Send, rateMBit = 0.01).await
       }
 
-      enter("throttled_send")
+      enterBarrier("throttled_send")
 
       runOn(slave) {
         for (i ← 0 to 9) echo ! i
@@ -73,14 +73,14 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with Im
         receiveN(9) must be(1 to 9)
       }
 
-      enter("throttled_send2")
+      enterBarrier("throttled_send2")
 
       runOn(master) {
         testConductor.throttle(slave, master, Direction.Send, -1).await
         testConductor.throttle(slave, master, Direction.Receive, rateMBit = 0.01).await
       }
 
-      enter("throttled_recv")
+      enterBarrier("throttled_recv")
 
       runOn(slave) {
         for (i ← 10 to 19) echo ! i
@@ -98,7 +98,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with Im
         receiveN(9) must be(11 to 19)
       }
 
-      enter("throttled_recv2")
+      enterBarrier("throttled_recv2")
 
       runOn(master) {
         testConductor.throttle(slave, master, Direction.Receive, -1).await

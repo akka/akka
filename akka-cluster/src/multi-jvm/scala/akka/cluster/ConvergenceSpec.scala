@@ -46,12 +46,12 @@ abstract class ConvergenceSpec
         // doesn't join immediately
       }
 
-      enter("after-1")
+      enterBarrier("after-1")
     }
 
     "not reach convergence while any nodes are unreachable" taggedAs LongRunningTest ignore {
       val thirdAddress = node(third).address
-      enter("before-shutdown")
+      enterBarrier("before-shutdown")
 
       runOn(first) {
         // kill 'third' node
@@ -78,7 +78,7 @@ abstract class ConvergenceSpec
         }
       }
 
-      enter("after-2")
+      enterBarrier("after-2")
     }
 
     "not move a new joining node to Up while there is no convergence" taggedAs LongRunningTest ignore {
@@ -116,7 +116,7 @@ abstract class ConvergenceSpec
         }
       }
 
-      enter("after-3")
+      enterBarrier("after-3")
     }
   }
 }

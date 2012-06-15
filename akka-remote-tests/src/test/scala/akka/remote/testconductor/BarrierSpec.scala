@@ -29,10 +29,10 @@ object BarrierSpec {
     akka.remote.netty.port = 0
     akka.actor.debug.fsm = on
     akka.actor.debug.lifecycle = on
-    """
+               """
 }
 
-class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with BeforeAndAfterEach {
+class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
 
   import BarrierSpec._
   import Controller._
@@ -41,10 +41,6 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
   val A = RoleName("a")
   val B = RoleName("b")
   val C = RoleName("c")
-
-  override def afterEach {
-    system.eventStream.setLogLevel(Logging.WarningLevel)
-  }
 
   "A BarrierCoordinator" must {
 
@@ -56,7 +52,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       EventFilter[BarrierEmpty](occurrences = 1) intercept {
         b ! RemoveClient(A)
       }
-      expectMsg(Failed(b, BarrierEmpty(Data(Set(), "", Nil), "cannot remove RoleName(a): no client to remove")))
+      expectMsg(Failed(b, BarrierEmpty(Data(Set(), "", Nil, null), "cannot remove RoleName(a): no client to remove")))
     }
 
     "register clients and disconnect them" taggedAs TimingTest in {
@@ -66,11 +62,11 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       EventFilter[ClientLost](occurrences = 1) intercept {
         b ! ClientDisconnected(A)
       }
-      expectMsg(Failed(b, ClientLost(Data(Set(), "", Nil), A)))
+      expectMsg(Failed(b, ClientLost(Data(Set(), "", Nil, null), A)))
       EventFilter[BarrierEmpty](occurrences = 1) intercept {
         b ! ClientDisconnected(A)
       }
-      expectMsg(Failed(b, BarrierEmpty(Data(Set(), "", Nil), "cannot disconnect RoleName(a): no client to disconnect")))
+      expectMsg(Failed(b, BarrierEmpty(Data(Set(), "", Nil, null), "cannot disconnect RoleName(a): no client to disconnect")))
     }
 
     "fail entering barrier when nobody registered" taggedAs TimingTest in {
@@ -86,7 +82,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
       a.send(barrier, EnterBarrier("bar2"))
       noMsg(a, b)
-      within(2 second) {
+      within(2 seconds) {
         b.send(barrier, EnterBarrier("bar2"))
         a.expectMsg(ToClient(BarrierResult("bar2", true)))
         b.expectMsg(ToClient(BarrierResult("bar2", true)))
@@ -102,7 +98,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! NodeInfo(C, AddressFromURIString("akka://sys"), c.ref)
       b.send(barrier, EnterBarrier("bar3"))
       noMsg(a, b, c)
-      within(2 second) {
+      within(2 seconds) {
         c.send(barrier, EnterBarrier("bar3"))
         a.expectMsg(ToClient(BarrierResult("bar3", true)))
         b.expectMsg(ToClient(BarrierResult("bar3", true)))
@@ -121,7 +117,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! RemoveClient(A)
       barrier ! ClientDisconnected(A)
       noMsg(a, b, c)
-      b.within(2 second) {
+      b.within(2 seconds) {
         barrier ! RemoveClient(C)
         b.expectMsg(ToClient(BarrierResult("bar4", true)))
       }
@@ -150,7 +146,11 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       EventFilter[ClientLost](occurrences = 1) intercept {
         barrier ! ClientDisconnected(B)
       }
-      expectMsg(Failed(barrier, ClientLost(Data(Set(nodeA), "bar6", a.ref :: Nil), B)))
+      val msg = expectMsgType[Failed]
+      msg match {
+        case Failed(barrier, thr: ClientLost) if (thr == ClientLost(Data(Set(nodeA), "bar6", a.ref :: Nil, thr.data.deadline), B)) ⇒
+        case x ⇒ fail("Expected " + Failed(barrier, ClientLost(Data(Set(nodeA), "bar6", a.ref :: Nil, null), B)) + " but got " + x)
+      }
     }
 
     "fail barrier with disconnecing node who already arrived" taggedAs TimingTest in {
@@ -166,7 +166,11 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       EventFilter[ClientLost](occurrences = 1) intercept {
         barrier ! ClientDisconnected(B)
       }
-      expectMsg(Failed(barrier, ClientLost(Data(Set(nodeA, nodeC), "bar7", a.ref :: Nil), B)))
+      val msg = expectMsgType[Failed]
+      msg match {
+        case Failed(barrier, thr: ClientLost) if (thr == ClientLost(Data(Set(nodeA, nodeC), "bar7", a.ref :: Nil, thr.data.deadline), B)) ⇒
+        case x ⇒ fail("Expected " + Failed(barrier, ClientLost(Data(Set(nodeA, nodeC), "bar7", a.ref :: Nil, null), B)) + " but got " + x)
+      }
     }
 
     "fail when entering wrong barrier" taggedAs TimingTest in {
@@ -180,7 +184,11 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       EventFilter[WrongBarrier](occurrences = 1) intercept {
         b.send(barrier, EnterBarrier("foo"))
       }
-      expectMsg(Failed(barrier, WrongBarrier("foo", b.ref, Data(Set(nodeA, nodeB), "bar8", a.ref :: Nil))))
+      val msg = expectMsgType[Failed]
+      msg match {
+        case Failed(barrier, thr: WrongBarrier) if (thr == WrongBarrier("foo", b.ref, Data(Set(nodeA, nodeB), "bar8", a.ref :: Nil, thr.data.deadline))) ⇒
+        case x ⇒ fail("Expected " + Failed(barrier, WrongBarrier("foo", b.ref, Data(Set(nodeA, nodeB), "bar8", a.ref :: Nil, null))) + " but got " + x)
+      }
     }
 
     "fail barrier after first failure" taggedAs TimingTest in {
@@ -189,7 +197,11 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       EventFilter[BarrierEmpty](occurrences = 1) intercept {
         barrier ! RemoveClient(A)
       }
-      expectMsg(Failed(barrier, BarrierEmpty(Data(Set(), "", Nil), "cannot remove RoleName(a): no client to remove")))
+      val msg = expectMsgType[Failed]
+      msg match {
+        case Failed(barrier, thr: BarrierEmpty) if (thr == BarrierEmpty(Data(Set(), "", Nil, thr.data.deadline), "cannot remove RoleName(a): no client to remove")) ⇒
+        case x ⇒ fail("Expected " + Failed(barrier, BarrierEmpty(Data(Set(), "", Nil, null), "cannot remove RoleName(a): no client to remove")) + " but got " + x)
+      }
       barrier ! NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
       a.send(barrier, EnterBarrier("bar9"))
       a.expectMsg(ToClient(BarrierResult("bar9", false)))
@@ -204,7 +216,11 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! nodeB
       a.send(barrier, EnterBarrier("bar10"))
       EventFilter[BarrierTimeout](occurrences = 1) intercept {
-        expectMsg(7 seconds, Failed(barrier, BarrierTimeout(Data(Set(nodeA, nodeB), "bar10", a.ref :: Nil))))
+        val msg = expectMsgType[Failed](7 seconds)
+        msg match {
+          case Failed(barrier, thr: BarrierTimeout) if (thr == BarrierTimeout(Data(Set(nodeA, nodeB), "bar10", a.ref :: Nil, thr.data.deadline))) ⇒
+          case x ⇒ fail("Expected " + Failed(barrier, BarrierTimeout(Data(Set(nodeA, nodeB), "bar10", a.ref :: Nil, null))) + " but got " + x)
+        }
       }
     }
 
@@ -217,7 +233,11 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       EventFilter[DuplicateNode](occurrences = 1) intercept {
         barrier ! nodeB
       }
-      expectMsg(Failed(barrier, DuplicateNode(Data(Set(nodeA), "", Nil), nodeB)))
+      val msg = expectMsgType[Failed]
+      msg match {
+        case Failed(barrier, thr: DuplicateNode) if (thr == DuplicateNode(Data(Set(nodeA), "", Nil, thr.data.deadline), nodeB)) ⇒
+        case x ⇒ fail("Expected " + Failed(barrier, DuplicateNode(Data(Set(nodeA), "", Nil, null), nodeB)) + " but got " + x)
+      }
     }
 
     "finally have no failure messages left" taggedAs TimingTest in {
@@ -267,7 +287,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       b.expectMsg(ToClient(Done))
       a.send(barrier, EnterBarrier("bar11"))
       noMsg(a, b)
-      within(2 second) {
+      within(2 seconds) {
         b.send(barrier, EnterBarrier("bar11"))
         a.expectMsg(ToClient(BarrierResult("bar11", true)))
         b.expectMsg(ToClient(BarrierResult("bar11", true)))
@@ -286,7 +306,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       c.expectMsg(ToClient(Done))
       b.send(barrier, EnterBarrier("bar12"))
       noMsg(a, b, c)
-      within(2 second) {
+      within(2 seconds) {
         c.send(barrier, EnterBarrier("bar12"))
         a.expectMsg(ToClient(BarrierResult("bar12", true)))
         b.expectMsg(ToClient(BarrierResult("bar12", true)))
@@ -308,7 +328,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! Remove(A)
       barrier ! ClientDisconnected(A)
       noMsg(a, b, c)
-      b.within(2 second) {
+      b.within(2 seconds) {
         barrier ! Remove(C)
         b.expectMsg(ToClient(BarrierResult("bar13", true)))
       }
@@ -391,7 +411,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! nodeB
       a.expectMsg(ToClient(Done))
       b.expectMsg(ToClient(Done))
-      a.send(barrier, EnterBarrier("bar18", Option(Timeout.durationToTimeout(2 seconds))))
+      a.send(barrier, EnterBarrier("bar18", Option(2 seconds)))
       EventFilter[BarrierTimeout](occurrences = 1) intercept {
         Thread.sleep(4000)
       }
@@ -437,14 +457,62 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
       barrier ! nodeB
       a.expectMsg(ToClient(Done))
       b.expectMsg(ToClient(Done))
-      a.send(barrier, EnterBarrier("bar20", Option(Timeout.durationToTimeout(2 seconds))))
-      b.send(barrier, FailBarrier("bar20"))
-      a.expectMsg(ToClient(BarrierResult("bar20", false)))
-      b.expectNoMsg(1 second)
+      a.send(barrier, EnterBarrier("bar20", Option(2 seconds)))
+      EventFilter[FailedBarrier](occurrences = 1) intercept {
+        b.send(barrier, FailBarrier("bar20"))
+        a.expectMsg(ToClient(BarrierResult("bar20", false)))
+        b.expectNoMsg(1 second)
+      }
       a.send(barrier, EnterBarrier("bar21"))
       b.send(barrier, EnterBarrier("bar21"))
       a.expectMsg(ToClient(BarrierResult("bar21", false)))
       b.expectMsg(ToClient(BarrierResult("bar21", false)))
+    }
+
+    "timeout within the shortest timeout if the new timeout is shorter" taggedAs TimingTest in {
+      val barrier = getController(3)
+      val a, b, c = TestProbe()
+      val nodeA = NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
+      val nodeB = NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
+      val nodeC = NodeInfo(C, AddressFromURIString("akka://sys"), c.ref)
+      barrier ! nodeA
+      barrier ! nodeB
+      barrier ! nodeC
+      a.expectMsg(ToClient(Done))
+      b.expectMsg(ToClient(Done))
+      c.expectMsg(ToClient(Done))
+      a.send(barrier, EnterBarrier("bar22", Option(10 seconds)))
+      b.send(barrier, EnterBarrier("bar22", Option(2 seconds)))
+      EventFilter[BarrierTimeout](occurrences = 1) intercept {
+        Thread.sleep(4000)
+      }
+      c.send(barrier, EnterBarrier("bar22"))
+      a.expectMsg(ToClient(BarrierResult("bar22", false)))
+      b.expectMsg(ToClient(BarrierResult("bar22", false)))
+      c.expectMsg(ToClient(BarrierResult("bar22", false)))
+    }
+
+    "timeout within the shortest timeout if the new timeout is longer" taggedAs TimingTest in {
+      val barrier = getController(3)
+      val a, b, c = TestProbe()
+      val nodeA = NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
+      val nodeB = NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
+      val nodeC = NodeInfo(C, AddressFromURIString("akka://sys"), c.ref)
+      barrier ! nodeA
+      barrier ! nodeB
+      barrier ! nodeC
+      a.expectMsg(ToClient(Done))
+      b.expectMsg(ToClient(Done))
+      c.expectMsg(ToClient(Done))
+      a.send(barrier, EnterBarrier("bar23", Option(2 seconds)))
+      b.send(barrier, EnterBarrier("bar23", Option(10 seconds)))
+      EventFilter[BarrierTimeout](occurrences = 1) intercept {
+        Thread.sleep(4000)
+      }
+      c.send(barrier, EnterBarrier("bar23"))
+      a.expectMsg(ToClient(BarrierResult("bar23", false)))
+      b.expectMsg(ToClient(BarrierResult("bar23", false)))
+      c.expectMsg(ToClient(BarrierResult("bar23", false)))
     }
 
     "finally have no failure messages left" taggedAs TimingTest in {
@@ -489,4 +557,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender with 
     probes foreach (_.msgAvailable must be(false))
   }
 
+  private def data(clients: Set[Controller.NodeInfo], barrier: String, arrived: List[ActorRef], previous: Data): Data = {
+    Data(clients, barrier, arrived, previous.deadline)
+  }
 }
