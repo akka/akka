@@ -14,17 +14,14 @@ class AES128CounterRNGSecure extends java.security.SecureRandomSpi {
   /**
    * This is managed internally only
    */
-  protected def engineSetSeed(seed: Array[Byte]) {
-  }
+  override protected def engineSetSeed(seed: Array[Byte]): Unit = ()
 
   /**
    * Generates a user-specified number of random bytes.
    *
    * @param bytes the array to be filled in with random bytes.
    */
-  protected def engineNextBytes(bytes: Array[Byte]) {
-    rng.nextBytes(bytes)
-  }
+  override protected def engineNextBytes(bytes: Array[Byte]): Unit = rng.nextBytes(bytes)
 
   /**
    * Returns the given number of seed bytes.  This call may be used to
@@ -33,8 +30,6 @@ class AES128CounterRNGSecure extends java.security.SecureRandomSpi {
    * @param numBytes the number of seed bytes to generate.
    * @return the seed bytes.
    */
-  protected def engineGenerateSeed(numBytes: Int): Array[Byte] = {
-    DefaultSeedGenerator.getInstance.generateSeed(numBytes)
-  }
+  override protected def engineGenerateSeed(numBytes: Int): Array[Byte] = DefaultSeedGenerator.getInstance.generateSeed(numBytes)
 }
 
