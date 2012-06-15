@@ -9,9 +9,9 @@ import com.typesafe.config._
 import akka.dispatch.{ Await, Future }
 import akka.pattern.ask
 import java.io.File
-import akka.event.LoggingAdapter
 import java.security.{ SecureRandom, PrivilegedAction, AccessController }
 import netty.NettySSLSupport
+import akka.event.{ NoLogging, LoggingAdapter }
 
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
@@ -40,34 +40,40 @@ object Configuration {
     }
   """
 
-  def getConfig(rng: String): String = conf.format(trustStore, keyStore, rng)
+  def getCipherConfig(cipher: String): (String, Boolean, Config) = if (try {
+    NettySSLSupport.initialiseCustomSecureRandom(Some(cipher), None, NoLogging) ne null
+  } catch {
+    case iae: IllegalArgumentException if iae.getMessage == "Cannot support %s with currently installed providers".format(cipher) ⇒ false
+  }) (cipher, true, ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher))) else (cipher, false, AkkaSpec.testConf)
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class Ticket1978SHA1PRNG extends Ticket1978CommunicationSpec("SHA1PRNG")
+import Configuration.getCipherConfig
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class Ticket1978AES128CounterRNGFast extends Ticket1978CommunicationSpec("AES128CounterRNGFast")
+class Ticket1978SHA1PRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("SHA1PRNG"))
 
-/**
- * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
- */
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class Ticket1978AES128CounterRNGSecure extends Ticket1978CommunicationSpec("AES128CounterRNGSecure")
+class Ticket1978AES128CounterRNGFastSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterRNGFast"))
 
 /**
  * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
  */
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class Ticket1978AES256CounterRNGSecure extends Ticket1978CommunicationSpec("AES256CounterRNGSecure")
+class Ticket1978AES128CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterRNGSecure"))
+
+/**
+ * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
+ */
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class Ticket1978AES256CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES256CounterRNGSecure"))
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-abstract class Ticket1978CommunicationSpec(val cipher: String) extends AkkaSpec(Configuration.getConfig(cipher)) with ImplicitSender with DefaultTimeout {
+class Ticket1978NonExistingRNGSecureSpec extends Ticket1978CommunicationSpec(("NonExistingRNG", false, AkkaSpec.testConf))
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boolean, Config)) extends AkkaSpec(cipherEnabledconfig._3) with ImplicitSender with DefaultTimeout {
 
   import RemoteCommunicationSpec._
-
-  // default SecureRandom RNG
-  def this() = this(Configuration.getConfig(""))
 
   val conf = ConfigFactory.parseString("akka.remote.netty.port=12346").withFallback(system.settings.config)
   val other = ActorSystem("remote-sys", conf)
@@ -84,14 +90,8 @@ abstract class Ticket1978CommunicationSpec(val cipher: String) extends AkkaSpec(
     other.shutdown()
   }
 
-  val isSupportedOnPlatform: Boolean = try {
-    NettySSLSupport.initialiseCustomSecureRandom(Some(cipher), None, log) ne null
-  } catch {
-    case iae: IllegalArgumentException if iae.getMessage == "Cannot support %s with currently installed providers".format(cipher) ⇒ false
-  }
-
   "SSL Remoting" must {
-    if (isSupportedOnPlatform) {
+    if (cipherEnabledconfig._2) {
       "support remote look-ups" in {
         here ! "ping"
         expectMsgPF() {
