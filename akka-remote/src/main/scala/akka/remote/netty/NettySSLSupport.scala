@@ -16,22 +16,22 @@ import akka.security.provider.AkkaProvider
  * Used for adding SSL support to Netty pipeline
  * Internal use only
  */
-private[netty] object NettySSLSupport {
+private[akka] object NettySSLSupport {
   /**
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
    */
   def apply(settings: NettySettings, log: LoggingAdapter, isClient: Boolean): SslHandler =
     if (isClient) initialiseClientSSL(settings, log) else initialiseServerSSL(settings, log)
 
-  private def initialiseCustomSecureRandom(settings: NettySettings, log: LoggingAdapter): SecureRandom = {
+  def initialiseCustomSecureRandom(rngName: Option[String], sourceOfRandomness: Option[String], log: LoggingAdapter): SecureRandom = {
     /**
      * According to this bug report: http://bugs.sun.com/view_bug.do?bug_id=6202721
      * Using /dev/./urandom is only necessary when using SHA1PRNG on Linux
      * <quote>Use 'new SecureRandom()' instead of 'SecureRandom.getInstance("SHA1PRNG")'</quote> to avoid having problems
      */
-    settings.SSLRandomSource foreach { path ⇒ System.setProperty("java.security.egd", path) }
+    sourceOfRandomness foreach { path ⇒ System.setProperty("java.security.egd", path) }
 
-    val rng = settings.SSLRandomNumberGenerator match {
+    val rng = rngName match {
       case Some(r @ ("AES128CounterRNGFast" | "AES128CounterRNGSecure" | "AES256CounterRNGSecure")) ⇒
         log.debug("SSL random number generator set to: {}", r)
         val akka = new AkkaProvider
@@ -86,7 +86,7 @@ private[netty] object NettySSLSupport {
       trustStore.load(new FileInputStream(trustStorePath), trustStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
       trustManagerFactory.init(trustStore)
       val trustManagers: Array[TrustManager] = trustManagerFactory.getTrustManagers
-      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(null, trustManagers, initialiseCustomSecureRandom(settings, log)); ctx }
+      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(null, trustManagers, initialiseCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
     } catch {
       case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Client SSL connection could not be established because trust store could not be loaded", e)
       case e: IOException              ⇒ throw new RemoteTransportException("Client SSL connection could not be established because: " + e.getMessage, e)
@@ -123,7 +123,7 @@ private[netty] object NettySSLSupport {
       val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
       keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
       factory.init(keyStore, keyStorePassword.toCharArray)
-      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, initialiseCustomSecureRandom(settings, log)); ctx }
+      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, initialiseCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
     } catch {
       case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
       case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)

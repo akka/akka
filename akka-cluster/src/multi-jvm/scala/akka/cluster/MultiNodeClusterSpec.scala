@@ -11,6 +11,8 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.util.duration._
 import akka.util.Duration
+import org.scalatest.Suite
+import org.scalatest.TestFailedException
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
@@ -32,7 +34,7 @@ object MultiNodeClusterSpec {
     """)
 }
 
-trait MultiNodeClusterSpec extends FailureDetectorStrategy { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
@@ -58,6 +60,24 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy { self: MultiNodeSpec
    * implicit conversion from RoleName to Address
    */
   implicit def role2Address(role: RoleName): Address = address(role)
+
+  // Cluster tests are written so that if previous step (test method) failed
+  // it will most likely not be possible to run next step. This ensures
+  // fail fast of steps after the first failure.
+  private var failed = false
+  override protected def withFixture(test: NoArgTest): Unit = try {
+    if (failed) {
+      val e = new TestFailedException("Previous step failed", 0)
+      // short stack trace
+      e.setStackTrace(e.getStackTrace.take(1))
+      throw e
+    }
+    super.withFixture(test)
+  } catch {
+    case t ⇒
+      failed = true
+      throw t
+  }
 
   /**
    * The cluster node instance. Needs to be lazily created.
@@ -176,8 +196,8 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy { self: MultiNodeSpec
     def compare(x: RoleName, y: RoleName) = addressOrdering.compare(address(x), address(y))
   }
 
-  def roleName(address: Address): Option[RoleName] = {
-    testConductor.getNodes.await.find(node(_).address == address)
+  def roleName(addr: Address): Option[RoleName] = {
+    roles.find(address(_) == addr)
   }
 
 }
