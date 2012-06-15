@@ -452,7 +452,7 @@ object Dependencies {
   )
 
   val remote = Seq(
-    netty, protobuf, Test.junit, Test.scalatest
+    netty, protobuf, uncommonsMath, Test.junit, Test.scalatest
   )
 
   val cluster = Seq(Test.junit, Test.scalatest)
@@ -490,6 +490,7 @@ object Dependency {
     val ScalaStm     = "0.5"
     val Scalatest    = "1.6.1"
     val Slf4j        = "1.6.4"
+    val UncommonsMath = "1.2.2a"
   }
 
   // Compile
@@ -499,6 +500,7 @@ object Dependency {
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
+  val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"        % V.UncommonsMath // ApacheV2
   val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.6" // ApacheV2
 
   // Test
