@@ -20,11 +20,8 @@ object TransitionMultiJvmSpec extends MultiNodeConfig {
   val fifth = role("fifth")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
-      akka.cluster {
-        periodic-tasks-initial-delay = 300 s # turn "off" all periodic tasks
-      }
-      """)).
+    withFallback(ConfigFactory.parseString(
+      "akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
@@ -108,10 +105,10 @@ abstract class TransitionSpec
 
       startClusterNode()
       cluster.isSingletonCluster must be(true)
-      cluster.self.status must be(Joining)
+      cluster.status must be(Joining)
       cluster.convergence.isDefined must be(true)
       cluster.leaderActions()
-      cluster.self.status must be(Up)
+      cluster.status must be(Up)
 
       testConductor.enter("after-1")
     }
