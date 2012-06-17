@@ -285,7 +285,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Unit =
     iterator.copyToArray(xs, start, len)
 
-  @inline final override def foreach[@specialized U](f: Byte ⇒ U): Unit = iterator foreach f
+  override def foreach[@specialized U](f: Byte ⇒ U): Unit = iterator foreach f
 
   /**
    * Efficiently concatenate another ByteString.
@@ -327,7 +327,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * Creates a new ByteBuffer with a copy of all bytes contained in this
    * ByteString.
    */
-  final def toByteBuffer: ByteBuffer = ByteBuffer.wrap(toArray)
+  def toByteBuffer: ByteBuffer = ByteBuffer.wrap(toArray)
 
   /**
    * Decodes this ByteString as a UTF-8 encoded String.

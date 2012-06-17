@@ -409,7 +409,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   // the parent class.
   override def drop(n: Int): this.type = throw new UnsupportedOperationException("Method drop is not implemented in ByteIterator")
 
-  final override def slice(from: Int, until: Int): this.type = {
+  override def slice(from: Int, until: Int): this.type = {
     if (from > 0) drop(from).take(until - from)
     else take(until)
   }
@@ -431,16 +431,16 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     (this, that)
   }
 
-  final override def indexWhere(p: Byte ⇒ Boolean): Int = {
+  override def indexWhere(p: Byte ⇒ Boolean): Int = {
     var index = 0
     var found = false
     while (!found && hasNext) if (p(next())) { found = true } else { index += 1 }
     if (found) index else -1
   }
 
-  final def indexOf(elem: Byte): Int = indexWhere { _ == elem }
+  def indexOf(elem: Byte): Int = indexWhere { _ == elem }
 
-  final override def indexOf[B >: Byte](elem: B): Int = indexWhere { _ == elem }
+  override def indexOf[B >: Byte](elem: B): Int = indexWhere { _ == elem }
 
   def toByteString: ByteString
 
@@ -449,13 +449,13 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
   override def foreach[@specialized U](f: Byte ⇒ U): Unit =
     while (hasNext) f(next())
 
-  final override def foldLeft[@specialized B](z: B)(op: (B, Byte) ⇒ B): B = {
+  override def foldLeft[@specialized B](z: B)(op: (B, Byte) ⇒ B): B = {
     var acc = z
     foreach { byte ⇒ acc = op(acc, byte) }
     acc
   }
 
-  final override def toArray[B >: Byte](implicit arg0: ClassManifest[B]): Array[B] = {
+  override def toArray[B >: Byte](implicit arg0: ClassManifest[B]): Array[B] = {
     val target = Array.ofDim[B](len)
     copyToArray(target)
     target
