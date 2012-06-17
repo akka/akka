@@ -257,10 +257,10 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   // a parent trait.
   override def iterator: ByteIterator = throw new UnsupportedOperationException("Method iterator is not implemented in ByteString")
 
-  @inline final override def head: Byte = this(0)
-  @inline final override def tail: ByteString = this.drop(1)
-  @inline final override def last: Byte = this(this.length - 1)
-  override def init: ByteString = this.take(this.length - 1)
+  override def head: Byte = apply(0)
+  override def tail: ByteString = drop(1)
+  override def last: Byte = apply(length - 1)
+  override def init: ByteString = dropRight(1)
 
   override def slice(from: Int, until: Int): ByteString =
     if ((from == 0) && (until == length)) this

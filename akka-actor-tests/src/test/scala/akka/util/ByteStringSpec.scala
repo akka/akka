@@ -285,7 +285,9 @@ class ByteStringSpec extends WordSpec with MustMatchers with Checkers {
       }
 
       "calling head" in { check { a: ByteString ⇒ a.isEmpty || likeVector(a) { _.head } } }
+      "calling tail" in { check { a: ByteString ⇒ a.isEmpty || likeVector(a) { _.tail } } }
       "calling last" in { check { a: ByteString ⇒ a.isEmpty || likeVector(a) { _.last } } }
+      "calling init" in { check { a: ByteString ⇒ a.isEmpty || likeVector(a) { _.init } } }
       "calling length" in { check { a: ByteString ⇒ likeVector(a) { _.length } } }
 
       "calling span" in { check { (a: ByteString, b: Byte) ⇒ likeVector(a)({ _.span(_ != b) match { case (a, b) ⇒ (a, b) } }) } }
