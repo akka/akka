@@ -17,9 +17,108 @@ ByteString
 
 A primary goal of Akka's IO module is to only communicate between actors with immutable objects. When dealing with network IO on the jvm ``Array[Byte]`` and ``ByteBuffer`` are commonly used to represent collections of ``Byte``\s, but they are mutable. Scala's collection library also lacks a suitably efficient immutable collection for ``Byte``\s. Being able to safely and efficiently move ``Byte``\s around is very important for this IO module, so ``ByteString`` was developed.
 
-``ByteString`` is a `Rope-like <http://en.wikipedia.org/wiki/Rope_(computer_science)>`_ data structure that is immutable and efficient. When 2 ``ByteString``\s are concatenated together they are both stored within the resulting ``ByteString`` instead of copying both to a new ``Array``. Operations such as ``drop`` and ``take`` return ``ByteString``\s that still reference the original ``Array``, but just change the offset and length that is visible. Great care has also been taken to make sure that the internal ``Array`` cannot be modified. Whenever a potentially unsafe ``Array`` is used to create a new ``ByteString`` a defensive copy is created.
+``ByteString`` is a `Rope-like <http://en.wikipedia.org/wiki/Rope_(computer_science)>`_ data structure that is immutable and efficient. When 2 ``ByteString``\s are concatenated together they are both stored within the resulting ``ByteString`` instead of copying both to a new ``Array``. Operations such as ``drop`` and ``take`` return ``ByteString``\s that still reference the original ``Array``, but just change the offset and length that is visible. Great care has also been taken to make sure that the internal ``Array`` cannot be modified. Whenever a potentially unsafe ``Array`` is used to create a new ``ByteString`` a defensive copy is created. If you require a ``ByteString`` that only blocks a much memory as necessary for it's content, use the ``compact`` method to get a ``CompactByteString`` instance. If the ``ByteString`` represented only a slice of the original array, this will result in copying all bytes in that slice.
 
 ``ByteString`` inherits all methods from ``IndexedSeq``, and it also has some new ones. For more information, look up the ``akka.util.ByteString`` class and it's companion object in the ScalaDoc.
+
+``ByteString`` also comes with it's own optimized builder and iterator classes ``ByteStringBuilder`` and ``ByteIterator`` which provides special features in addition to the standard builder / iterator methods:
+
+Compatibility with java.io
+..........................
+
+A ``ByteStringBuilder`` can be wrapped in a `java.io.OutputStream` via the ``asOutputStream`` method. Likewise, ``ByteIterator`` can we wrapped in a ``java.io.InputStream`` via ``asInputStream``. Using these, ``akka.io`` applications can integrate legacy code based on ``java.io`` streams.
+
+Encoding and decoding of binary data
+....................................
+
+``ByteStringBuilder`` and ``ByteIterator`` support encoding and decoding of binary data. As an example, consider a stream of binary data frames with the following format:
+
+.. code-block:: text
+
+  frameLen: Int
+  n: Int
+  m: Int
+  n times {
+    a: Short
+    b: Long
+  }
+  data: m times Double
+
+In this example, the data is to be stored in arrays of ``a``, ``b`` and ``data``.
+
+Decoding of such frames can be efficiently implemented in the following fashion:
+
+.. code-block:: scala
+
+  implicit val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
+
+  val FrameDecoder = for {
+    frameLenBytes <- IO.take(4)
+    frameLen = frameLenBytes.iterator.getInt
+    frame <- IO.take(frameLen)
+  } yield {
+    val in = frame.iterator
+
+    val n = in.getInt
+    val m = in.getInt
+    
+    val a = ArrayBuilder.make[Short]()
+    val b = ArrayBuilder.make[Long]()
+    
+    for (i <- 1 to n) {
+    a += in.getShort
+    b += in.getInt
+    }
+    
+    val data = Array.ofDim[Double](m)
+    in.getDoubles(data)
+    
+    (a.result, b.result, data)
+  }   
+
+This implementation naturally follows the example data format. In a true Scala application, one might, of course, want use specialized immutable Short/Long/Double containers instead of mutable Arrays.
+
+After extracting data from a ``ByteIterator``, the remaining content can be turned back into a ``ByteString`` using the ``toSeq`` method
+
+.. code-block:: scala
+
+  val bytes: ByteString = ...
+  val in: bytes.iterator
+  ... = in.getInt()
+  ... = in.get...
+  val rest: ByteString = in.toSeq
+    
+with no copying from bytes to rest involved. In general, conversions from ByteString to ByteIterator and vice versa are O(1) for non-chunked ``ByteString``s and (at worst) O(nChunks) for chunked ByteStrings.
+
+
+Encoding of data also is very natural, using ``ByteStringBuilder``
+
+.. code-block:: scala
+
+  implicit val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
+
+  val frameBuilder = ByteString.newBuilder
+
+  val n = a.length
+  val m = data.length
+
+  frameBuilder.putInt(n)
+  frameBuilder.putInt(m)
+
+  for (i <- 0 to n-1) {
+    frameBuilder.putShort(a(i))
+    frameBuilder.putLong(b(i))
+  }
+  frameBuilder.putDoubles(data)
+  val frame = frameBuilder.result()
+ 
+The encoded data then can be sent over socket (see ``IOManager``):
+ 
+.. code-block:: scala
+
+  socket.send(ByteString.newBuilder.putInt(frame.length).result)
+  socket.send(frame)
+
 
 IO.Handle
 ^^^^^^^^^
