@@ -248,6 +248,8 @@ object ByteString {
  * TODO: Add performance characteristics
  */
 sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
+  def apply(idx: Int): Byte
+
   override protected[this] def newBuilder: ByteStringBuilder = ByteString.newBuilder
 
   // *must* be overridden by derived classes. This construction is necessary
