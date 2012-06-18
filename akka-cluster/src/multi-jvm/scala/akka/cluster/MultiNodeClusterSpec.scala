@@ -173,7 +173,7 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   /**
    * Wait until the specified nodes have seen the same gossip overview.
    */
-  def awaitSeenSameState(addresses: Seq[Address]): Unit = {
+  def awaitSeenSameState(addresses: Address*): Unit = {
     awaitCond {
       val seen = cluster.latestGossip.overview.seen
       val seenVectorClocks = addresses.flatMap(seen.get(_))

@@ -17,7 +17,7 @@ object NodeJoinMultiJvmSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("akka.cluster.leader-actions-interval = 5 s") // increase the leader action task interval
-      .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
 class NodeJoinMultiJvmNode1 extends NodeJoinSpec with FailureDetectorPuppetStrategy
@@ -29,9 +29,6 @@ abstract class NodeJoinSpec
 
   import NodeJoinMultiJvmSpec._
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-
   "A cluster node" must {
     "join another cluster and get status JOINING - when sending a 'Join' command" taggedAs LongRunningTest in {
 
@@ -40,10 +37,10 @@ abstract class NodeJoinSpec
       }
 
       runOn(second) {
-        cluster.join(firstAddress)
+        cluster.join(first)
       }
 
-      awaitCond(cluster.latestGossip.members.exists { member ⇒ member.address == secondAddress && member.status == MemberStatus.Joining })
+      awaitCond(cluster.latestGossip.members.exists { member ⇒ member.address == address(second) && member.status == MemberStatus.Joining })
 
       testConductor.enter("after")
     }

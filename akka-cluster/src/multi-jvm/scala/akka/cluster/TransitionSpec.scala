@@ -61,7 +61,7 @@ abstract class TransitionSpec
   }
 
   def awaitSeen(addresses: Address*): Unit = awaitCond {
-    seenLatestGossip.map(node(_).address) == addresses.toSet
+    (seenLatestGossip map address) == addresses.toSet
   }
 
   def awaitMembers(addresses: Address*): Unit = awaitCond {
@@ -86,7 +86,7 @@ abstract class TransitionSpec
       }
       runOn(fromRole) {
         testConductor.enter("before-gossip-" + gossipBarrierCounter)
-        cluster.gossipTo(node(toRole).address) // send gossip
+        cluster.gossipTo(toRole) // send gossip
         testConductor.enter("after-gossip-" + gossipBarrierCounter)
       }
       runOn(roles.filterNot(r ⇒ r == fromRole || r == toRole): _*) {
@@ -252,7 +252,7 @@ abstract class TransitionSpec
       // first non-leader gossipTo the other non-leader
       nonLeader(first, second, third).head gossipTo nonLeader(first, second, third).tail.head
       runOn(nonLeader(first, second, third).head) {
-        cluster.gossipTo(node(nonLeader(first, second, third).tail.head).address)
+        cluster.gossipTo(nonLeader(first, second, third).tail.head)
       }
       runOn(nonLeader(first, second, third).tail.head) {
         memberStatus(third) must be(Up)
@@ -411,6 +411,8 @@ abstract class TransitionSpec
         cluster.down(second)
         awaitMemberStatus(second, Down)
       }
+
+      testConductor.enter("after-third-down")
 
       // spread the word
       val gossipRound2 = List(third, fourth, fifth, first, third, fourth, fifth)

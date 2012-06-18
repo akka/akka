@@ -30,15 +30,12 @@ abstract class MembershipChangeListenerJoinSpec
 
   import MembershipChangeListenerJoinMultiJvmSpec._
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-
   "A registered MembershipChangeListener" must {
     "be notified when new node is JOINING" taggedAs LongRunningTest in {
 
       runOn(first) {
         val joinLatch = TestLatch()
-        val expectedAddresses = Set(firstAddress, secondAddress)
+        val expectedAddresses = Set(first, second) map address
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
             if (members.map(_.address) == expectedAddresses && members.exists(_.status == MemberStatus.Joining))
@@ -52,7 +49,7 @@ abstract class MembershipChangeListenerJoinSpec
 
       runOn(second) {
         testConductor.enter("registered-listener")
-        cluster.join(firstAddress)
+        cluster.join(first)
       }
 
       awaitUpConvergence(2)

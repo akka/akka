@@ -50,7 +50,7 @@ abstract class ConvergenceSpec
     }
 
     "not reach convergence while any nodes are unreachable" taggedAs LongRunningTest in {
-      val thirdAddress = node(third).address
+      val thirdAddress = address(third)
       testConductor.enter("before-shutdown")
 
       runOn(first) {
@@ -60,15 +60,13 @@ abstract class ConvergenceSpec
       }
 
       runOn(first, second) {
-        val firstAddress = node(first).address
-        val secondAddress = node(second).address
 
         within(28 seconds) {
           // third becomes unreachable
           awaitCond(cluster.latestGossip.overview.unreachable.size == 1)
           awaitCond(cluster.latestGossip.members.size == 2)
           awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
-          awaitSeenSameState(Seq(firstAddress, secondAddress))
+          awaitSeenSameState(first, second)
           // still one unreachable
           cluster.latestGossip.overview.unreachable.size must be(1)
           cluster.latestGossip.overview.unreachable.head.address must be(thirdAddress)
@@ -84,12 +82,8 @@ abstract class ConvergenceSpec
     "not move a new joining node to Up while there is no convergence" taggedAs LongRunningTest in {
       runOn(fourth) {
         // try to join
-        cluster.join(node(first).address)
+        cluster.join(first)
       }
-
-      val firstAddress = node(first).address
-      val secondAddress = node(second).address
-      val fourthAddress = node(fourth).address
 
       def memberStatus(address: Address): Option[MemberStatus] =
         cluster.latestGossip.members.collectFirst { case m if m.address == address ⇒ m.status }
@@ -97,11 +91,11 @@ abstract class ConvergenceSpec
       def assertNotMovedUp: Unit = {
         within(20 seconds) {
           awaitCond(cluster.latestGossip.members.size == 3)
-          awaitSeenSameState(Seq(firstAddress, secondAddress, fourthAddress))
-          memberStatus(firstAddress) must be(Some(MemberStatus.Up))
-          memberStatus(secondAddress) must be(Some(MemberStatus.Up))
+          awaitSeenSameState(first, second, fourth)
+          memberStatus(first) must be(Some(MemberStatus.Up))
+          memberStatus(second) must be(Some(MemberStatus.Up))
           // leader is not allowed to move the new node to Up
-          memberStatus(fourthAddress) must be(Some(MemberStatus.Joining))
+          memberStatus(fourth) must be(Some(MemberStatus.Joining))
           // still no convergence
           cluster.convergence.isDefined must be(false)
         }

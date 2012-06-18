@@ -48,7 +48,7 @@ abstract class NodeUpSpec
       testConductor.enter("listener-registered")
 
       runOn(second) {
-        cluster.join(node(first).address)
+        cluster.join(first)
       }
       testConductor.enter("joined-again")
 

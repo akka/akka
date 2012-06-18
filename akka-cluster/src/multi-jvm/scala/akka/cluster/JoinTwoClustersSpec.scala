@@ -33,10 +33,6 @@ abstract class JoinTwoClustersSpec
 
   import JoinTwoClustersMultiJvmSpec._
 
-  lazy val a1Address = node(a1).address
-  lazy val b1Address = node(b1).address
-  lazy val c1Address = node(c1).address
-
   "Three different clusters (A, B and C)" must {
 
     "be able to 'elect' a single leader after joining (A -> B)" taggedAs LongRunningTest in {
@@ -47,13 +43,13 @@ abstract class JoinTwoClustersSpec
       testConductor.enter("first-started")
 
       runOn(a1, a2) {
-        cluster.join(a1Address)
+        cluster.join(a1)
       }
       runOn(b1, b2) {
-        cluster.join(b1Address)
+        cluster.join(b1)
       }
       runOn(c1, c2) {
-        cluster.join(c1Address)
+        cluster.join(c1)
       }
 
       awaitUpConvergence(numberOfMembers = 2)
@@ -65,7 +61,7 @@ abstract class JoinTwoClustersSpec
       testConductor.enter("two-members")
 
       runOn(b2) {
-        cluster.join(a1Address)
+        cluster.join(a1)
       }
 
       runOn(a1, a2, b1, b2) {
@@ -81,7 +77,7 @@ abstract class JoinTwoClustersSpec
     "be able to 'elect' a single leader after joining (C -> A + B)" taggedAs LongRunningTest in {
 
       runOn(b2) {
-        cluster.join(c1Address)
+        cluster.join(c1)
       }
 
       awaitUpConvergence(numberOfMembers = 6)
