@@ -25,9 +25,9 @@ object Configuration {
     akka {
       actor.provider = "akka.remote.RemoteActorRefProvider"
       test {
-        single-expect-default = 30s
-        filter-leeway = 30s
-        default-timeout = 30s
+        single-expect-default = 10s
+        filter-leeway = 10s
+        default-timeout = 10s
       }
 
       remote.netty {
@@ -87,7 +87,7 @@ class Ticket1978AES128CounterRNGFastSpec extends Ticket1978CommunicationSpec(get
  * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
  */
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class Ticket1978AES128CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterRNGSecure", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+class Ticket1978AES128CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterRNGSecure", "TLS_RSA_WITH_AES_256_CBC_SHA"))
 
 /**
  * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
@@ -103,7 +103,7 @@ class Ticket1978NonExistingRNGSecureSpec extends Ticket1978CommunicationSpec(("N
 
 abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boolean, Config)) extends AkkaSpec(cipherEnabledconfig._3) with ImplicitSender {
 
-  implicit val timeout: Timeout = Timeout(30 seconds)
+  implicit val timeout: Timeout = Timeout(5 seconds)
 
   import RemoteCommunicationSpec._
 
