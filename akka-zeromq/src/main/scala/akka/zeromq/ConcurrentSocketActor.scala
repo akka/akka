@@ -155,7 +155,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
 
   @tailrec private def flushMessage(i: Seq[Frame]): Boolean =
     if (i.isEmpty)
-      false
+      true
     else {
       val head = i.head
       val tail = i.tail
