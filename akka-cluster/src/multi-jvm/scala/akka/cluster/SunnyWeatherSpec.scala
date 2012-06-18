@@ -20,7 +20,11 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   val fifth = role("fifth")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.cluster.nr-of-deputy-nodes = 0
+    akka.cluster {
+      nr-of-deputy-nodes = 0
+      # FIXME remove this (use default) when ticket #2239 has been fixed
+      gossip-interval = 400 ms
+    }
     akka.loglevel = INFO
     """))
 }

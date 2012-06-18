@@ -1,7 +1,7 @@
 /**
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
-/*package akka.remote
+package akka.remote
 
 import akka.testkit._
 import akka.actor._
@@ -9,9 +9,9 @@ import com.typesafe.config._
 import akka.dispatch.{ Await, Future }
 import akka.pattern.ask
 import java.io.File
-import java.security.{ SecureRandom, PrivilegedAction, AccessController }
-import netty.NettySSLSupport
 import akka.event.{ NoLogging, LoggingAdapter }
+import java.security.{ NoSuchAlgorithmException, SecureRandom, PrivilegedAction, AccessController }
+import netty.{ NettySettings, NettySSLSupport }
 
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
@@ -31,6 +31,7 @@ object Configuration {
           key-store = "%s"
           random-number-generator = "%s"
           supported-algorithms = [%s]
+          sha1prng-random-source = "/dev/./urandom"
         }
       }
       actor.deployment {
@@ -41,12 +42,14 @@ object Configuration {
     }
   """
 
-  def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = if (try {
-    NettySSLSupport.initialiseCustomSecureRandom(Some(cipher), None, NoLogging) ne null
+  def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = try {
+    val config = ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", ")))
+    val settings = new NettySettings(config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty"), "pigdog")
+    (NettySSLSupport.initializeClientSSL(settings, NoLogging) ne null) || (throw new NoSuchAlgorithmException(cipher))
+    (cipher, true, config)
   } catch {
-    case _: IllegalArgumentException               ⇒ false // Cannot match against the message since the message might be localized :S
-    case _: java.security.NoSuchAlgorithmException ⇒ false
-  }) (cipher, true, ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", ")))) else (cipher, false, AkkaSpec.testConf)
+    case (_: IllegalArgumentException) | (_: NoSuchAlgorithmException) ⇒ (cipher, false, AkkaSpec.testConf) // Cannot match against the message since the message might be localized :S
+  }
 }
 
 import Configuration.getCipherConfig
@@ -79,16 +82,7 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
 
   import RemoteCommunicationSpec._
 
-  val conf = ConfigFactory.parseString("akka.remote.netty.port=12346").withFallback(system.settings.config)
-  val other = ActorSystem("remote-sys", conf)
-
-  val remote = other.actorOf(Props(new Actor {
-    def receive = {
-      case "ping" ⇒ sender ! (("pong", sender))
-    }
-  }), "echo")
-
-  val here = system.actorFor("akka://remote-sys@localhost:12346/user/echo")
+  val other = ActorSystem("remote-sys", ConfigFactory.parseString("akka.remote.netty.port=12346").withFallback(system.settings.config))
 
   override def atTermination() {
     other.shutdown()
@@ -96,6 +90,10 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
 
   "SSL Remoting" must {
     if (cipherEnabledconfig._2) {
+      val remote = other.actorOf(Props(new Actor { def receive = { case "ping" ⇒ sender ! (("pong", sender)) } }), "echo")
+
+      val here = system.actorFor("akka://remote-sys@localhost:12346/user/echo")
+
       "support remote look-ups" in {
         here ! "ping"
         expectMsgPF() {
@@ -172,4 +170,4 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
 
   }
 
-}*/
+}

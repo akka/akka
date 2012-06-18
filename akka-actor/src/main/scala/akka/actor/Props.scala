@@ -6,7 +6,6 @@ package akka.actor
 
 import akka.dispatch._
 import akka.japi.Creator
-import collection.immutable.Stack
 import akka.routing._
 
 /**
@@ -186,5 +185,10 @@ case class Props(
  * able to optimize serialization.
  */
 private[akka] case class FromClassCreator(clazz: Class[_ <: Actor]) extends Function0[Actor] {
-  def apply(): Actor = clazz.newInstance
+  def apply(): Actor = try clazz.newInstance catch {
+    case iae: IllegalAccessException ⇒
+      val ctor = clazz.getDeclaredConstructor()
+      ctor.setAccessible(true)
+      ctor.newInstance()
+  }
 }
