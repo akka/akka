@@ -144,9 +144,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = context.children foreach context.stop //Do not call postStop
 
-  override def postRestart(reason: Throwable): Unit = {
-    if (pendingSends.nonEmpty) self ! Flush // If we're restarting we might want to resume sending the messages
-  }
+  override def postRestart(reason: Throwable): Unit = () // Do nothing
 
   override def postStop: Unit = try {
     if (socket != null) {
