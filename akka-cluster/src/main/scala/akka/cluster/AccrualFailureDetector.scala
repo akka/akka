@@ -7,50 +7,89 @@ package akka.cluster
 import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.remote.RemoteActorRefProvider
 import akka.event.Logging
-
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
-
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.TimeUnit.NANOSECONDS
+import akka.util.Duration
+import akka.util.duration._
 
+object AccrualFailureDetector {
+  private def realTimeMachine: () ⇒ Long = () ⇒ NANOSECONDS.toMillis(System.nanoTime)
+}
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
  * [http://ddg.jaist.ac.jp/pub/HDY+04.pdf]
- * <p/>
- * A low threshold is prone to generate many wrong suspicions but ensures a quick detection in the event
- * of a real crash. Conversely, a high threshold generates fewer mistakes but needs more time to detect
- * actual crashes
- * <p/>
- * Default threshold is 8, but can be configured in the Akka config.
+ *
+ * @param system Belongs to the [[akka.actor.ActorSystem]]. Used for logging.
+ *
+ * @param threshold A low threshold is prone to generate many wrong suspicions but ensures a quick detection in the event
+ *   of a real crash. Conversely, a high threshold generates fewer mistakes but needs more time to detect
+ *   actual crashes
+ *
+ * @param maxSampleSize Number of samples to use for calculation of mean and standard deviation of
+ *   inter-arrival times.
+ *
+ * @param minStdDeviation Minimum standard deviation to use for the normal distribution used when calculating phi.
+ *   Too low standard deviation might result in too much sensitivity for sudden, but normal, deviations
+ *   in heartbeat inter arrival times.
+ *
+ * @param acceptableLostDuration Duration corresponding to number of potentially lost/delayed
+ *   heartbeats that will be accepted before considering it to be an anomaly.
+ *   This margin is important to be able to survive sudden, occasional, pauses in heartbeat
+ *   arrivals, due to for example garbage collect or network drop.
+ *
+ * @param firstHeartbeatEstimate Bootstrap the stats with heartbeats that corresponds to
+ *   to this duration, with a with rather high standard deviation (since environment is unknown
+ *   in the beginning)
+ *
+ * @timeMachine The clock, returning time in milliseconds, but can be faked for testing
+ *   purposes. It is only used for measuring intervals (duration).
+ *
  */
 class AccrualFailureDetector(
   val system: ActorSystem,
-  val threshold: Int = 8,
-  val maxSampleSize: Int = 1000,
-  val timeMachine: () ⇒ Long = System.currentTimeMillis) extends FailureDetector {
+  val threshold: Double,
+  val maxSampleSize: Int,
+  val minStdDeviation: Duration,
+  val acceptableLostDuration: Duration,
+  val firstHeartbeatEstimate: Duration,
+  val timeMachine: () ⇒ Long) extends FailureDetector {
 
+  import AccrualFailureDetector._
+
+  /**
+   * Constructor that picks configuration from the settings.
+   */
   def this(
     system: ActorSystem,
     settings: ClusterSettings,
-    timeMachine: () ⇒ Long = System.currentTimeMillis) =
+    timeMachine: () ⇒ Long = AccrualFailureDetector.realTimeMachine) =
     this(
       system,
       settings.FailureDetectorThreshold,
       settings.FailureDetectorMaxSampleSize,
+      settings.HeartbeatInterval * settings.FailureDetectorAcceptableLostHeartbeats,
+      settings.FailureDetectorMinStdDeviation,
+      // we use a conservative estimate for the first heartbeat because
+      // gossip needs to spread back to the joining node before the
+      // first real heartbeat is sent. Initial heartbeat is added when joining.
+      // FIXME this can be changed to HeartbeatInterval when ticket #2249 is fixed
+      settings.GossipInterval * 3 + settings.HeartbeatInterval,
       timeMachine)
-
-  private final val PhiFactor = 1.0 / math.log(10.0)
 
   private val log = Logging(system, "FailureDetector")
 
-  /**
-   * Holds the failure statistics for a specific node Address.
-   */
-  private case class FailureStats(mean: Double = 0.0, variance: Double = 0.0, deviation: Double = 0.0)
-
   // guess statistics for first heartbeat,
-  // important so that connections with only one heartbeat becomes unavailble
-  private val failureStatsFirstHeartbeat = FailureStats(mean = 1000.0)
+  // important so that connections with only one heartbeat becomes unavailable
+  private val firstHeartbeat: HeartbeatHistory = {
+    // bootstrap with 2 entries with rather high standard deviation
+    val mean = firstHeartbeatEstimate.toMillis
+    val stdDeviation = mean / 4
+    HeartbeatHistory(maxSampleSize) :+ (mean - stdDeviation) :+ (mean + stdDeviation)
+  }
+
+  private val acceptableLostMillis = acceptableLostDuration.toMillis
 
   /**
    * Implement using optimistic lockless concurrency, all state is represented
@@ -58,8 +97,7 @@ class AccrualFailureDetector(
    */
   private case class State(
     version: Long = 0L,
-    failureStats: Map[Address, FailureStats] = Map.empty[Address, FailureStats],
-    intervalHistory: Map[Address, IndexedSeq[Long]] = Map.empty[Address, IndexedSeq[Long]],
+    history: Map[Address, HeartbeatHistory] = Map.empty,
     timestamps: Map[Address, Long] = Map.empty[Address, Long],
     explicitRemovals: Set[Address] = Set.empty[Address])
 
@@ -78,96 +116,88 @@ class AccrualFailureDetector(
   final def heartbeat(connection: Address) {
     log.debug("Heartbeat from connection [{}] ", connection)
 
+    val timestamp = timeMachine()
     val oldState = state.get
-    val latestTimestamp = oldState.timestamps.get(connection)
 
-    if (latestTimestamp.isEmpty) {
-      // this is heartbeat from a new connection
-      // add starter records for this new connection
-      val newState = oldState copy (
-        version = oldState.version + 1,
-        failureStats = oldState.failureStats + (connection -> failureStatsFirstHeartbeat),
-        intervalHistory = oldState.intervalHistory + (connection -> IndexedSeq.empty[Long]),
-        timestamps = oldState.timestamps + (connection -> timeMachine()),
-        explicitRemovals = oldState.explicitRemovals - connection)
-
-      // if we won the race then update else try again
-      if (!state.compareAndSet(oldState, newState)) heartbeat(connection) // recur
-
-    } else {
-      // this is a known connection
-      val timestamp = timeMachine()
-      val interval = timestamp - latestTimestamp.get
-
-      val newIntervalsForConnection = (oldState.intervalHistory.get(connection) match {
-        case Some(history) if history.size >= maxSampleSize ⇒
-          // reached max history, drop first interval
-          history drop 1
-        case Some(history) ⇒ history
-        case _             ⇒ IndexedSeq.empty[Long]
-      }) :+ interval
-
-      val newFailureStats = {
-        val newMean: Double = newIntervalsForConnection.sum.toDouble / newIntervalsForConnection.size
-
-        val oldConnectionFailureStats = oldState.failureStats.get(connection).getOrElse {
-          throw new IllegalStateException("Can't calculate new failure statistics due to missing heartbeat history")
-        }
-
-        val deviationSum = (0.0d /: newIntervalsForConnection) { (mean, interval) ⇒
-          mean + interval.toDouble - newMean
-        }
-
-        val newVariance: Double = deviationSum / newIntervalsForConnection.size
-        val newDeviation: Double = math.sqrt(newVariance)
-
-        val newFailureStats = oldConnectionFailureStats copy (mean = newMean, deviation = newDeviation, variance = newVariance)
-        oldState.failureStats + (connection -> newFailureStats)
-      }
-
-      val newState = oldState copy (version = oldState.version + 1,
-        failureStats = newFailureStats,
-        intervalHistory = oldState.intervalHistory + (connection -> newIntervalsForConnection),
-        timestamps = oldState.timestamps + (connection -> timestamp), // record new timestamp,
-        explicitRemovals = oldState.explicitRemovals - connection)
-
-      // if we won the race then update else try again
-      if (!state.compareAndSet(oldState, newState)) heartbeat(connection) // recur
+    val newHistory = oldState.timestamps.get(connection) match {
+      case None ⇒
+        // this is heartbeat from a new connection
+        // add starter records for this new connection
+        firstHeartbeat
+      case (Some(latestTimestamp)) ⇒
+        // this is a known connection
+        val interval = timestamp - latestTimestamp
+        oldState.history(connection) :+ interval
     }
+
+    val newState = oldState copy (version = oldState.version + 1,
+      history = oldState.history + (connection -> newHistory),
+      timestamps = oldState.timestamps + (connection -> timestamp), // record new timestamp,
+      explicitRemovals = oldState.explicitRemovals - connection)
+
+    // if we won the race then update else try again
+    if (!state.compareAndSet(oldState, newState)) heartbeat(connection) // recur
   }
 
   /**
-   * Calculates how likely it is that the connection has failed.
-   * <p/>
+   * The suspicion level of accrual failure detector is given by a value called φ (phi).
+   * The basic idea of the φ failure detector is to express the value of φ on a scale that
+   * is dynamically adjusted to reflect current network conditions.
+   *
+   * The value of φ is calculated as:
+   *
+   * {{{
+   * φ = -log10(1 - F(timeSinceLastHeartbeat)
+   * }}}
+   * where F is the cumulative distribution function of a normal distribution with mean
+   * and standard deviation estimated from historical heartbeat inter-arrival times.
+   *
    * If a connection does not have any records in failure detector then it is
    * considered healthy.
-   * <p/>
-   * Implementations of 'Cumulative Distribution Function' for Exponential Distribution.
-   * For a discussion on the math read [https://issues.apache.org/jira/browse/CASSANDRA-2597].
+   *
    */
   def phi(connection: Address): Double = {
     val oldState = state.get
     val oldTimestamp = oldState.timestamps.get(connection)
 
-    val phi =
-      // if connection has been removed explicitly
-      if (oldState.explicitRemovals.contains(connection)) Double.MaxValue
-      else if (oldTimestamp.isEmpty) 0.0 // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
-      else {
-        val timestampDiff = timeMachine() - oldTimestamp.get
+    // if connection has been removed explicitly
+    if (oldState.explicitRemovals.contains(connection)) Double.MaxValue
+    else if (oldTimestamp.isEmpty) 0.0 // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
+    else {
+      val timeDiff = timeMachine() - oldTimestamp.get
 
-        val mean = oldState.failureStats.get(connection) match {
-          case Some(FailureStats(mean, _, _)) ⇒ mean
-          case _                              ⇒ throw new IllegalStateException("Can't calculate Failure Detector Phi value for a node that have no heartbeat history")
-        }
+      val history = oldState.history(connection)
+      val mean = history.mean
+      val stdDeviation = ensureValidStdDeviation(history.stdDeviation)
 
-        if (mean == 0.0) 0.0
-        else PhiFactor * timestampDiff / mean
-      }
+      val φ = phi(timeDiff, mean + acceptableLostMillis, stdDeviation)
 
-    // FIXME change to debug log level, when failure detector is stable
-    log.info("Phi value [{}] and threshold [{}] for connection [{}] ", phi, threshold, connection)
-    phi
+      // FIXME change to debug log level, when failure detector is stable
+      if (φ > 1.0)
+        log.info("Phi value [{}] for connection [{}], after [{} ms], based on  [{}]",
+          φ, connection, timeDiff, "N(" + mean + ", " + stdDeviation + ")")
+
+      φ
+    }
+  }
+
+  private[cluster] def phi(timeDiff: Long, mean: Double, stdDeviation: Double): Double = {
+    val cdf = cumulativeDistributionFunction(timeDiff, mean, stdDeviation)
+    -math.log10(1.0 - cdf)
+  }
+
+  private val minStdDeviationMillis = minStdDeviation.toMillis
+
+  private def ensureValidStdDeviation(stdDeviation: Double): Double = math.max(stdDeviation, minStdDeviationMillis)
+
+  /**
+   * Cumulative distribution function for N(mean, stdDeviation) normal distribution.
+   * This is an approximation defined in β Mathematics Handbook.
+   */
+  private[cluster] def cumulativeDistributionFunction(x: Double, mean: Double, stdDeviation: Double): Double = {
+    val y = (x - mean) / stdDeviation
+    // Cumulative distribution function for N(0, 1)
+    1.0 / (1.0 + math.exp(-y * (1.5976 + 0.070566 * y * y)))
   }
 
   /**
@@ -178,10 +208,9 @@ class AccrualFailureDetector(
     log.debug("Remove connection [{}] ", connection)
     val oldState = state.get
 
-    if (oldState.failureStats.contains(connection)) {
+    if (oldState.history.contains(connection)) {
       val newState = oldState copy (version = oldState.version + 1,
-        failureStats = oldState.failureStats - connection,
-        intervalHistory = oldState.intervalHistory - connection,
+        history = oldState.history - connection,
         timestamps = oldState.timestamps - connection,
         explicitRemovals = oldState.explicitRemovals + connection)
 
@@ -189,4 +218,60 @@ class AccrualFailureDetector(
       if (!state.compareAndSet(oldState, newState)) remove(connection) // recur
     }
   }
+}
+
+private[cluster] object HeartbeatHistory {
+
+  /**
+   * Create an empty HeartbeatHistory, without any history.
+   * Can only be used as starting point for appending intervals.
+   * The stats (mean, variance, stdDeviation) are not defined for
+   * for empty HeartbeatHistory, i.e. throws AritmeticException.
+   */
+  def apply(maxSampleSize: Int): HeartbeatHistory = HeartbeatHistory(
+    maxSampleSize = maxSampleSize,
+    intervals = IndexedSeq.empty,
+    intervalSum = 0L,
+    interval2Sum = 0L)
+
+}
+
+/**
+ * Holds the heartbeat statistics for a specific node Address.
+ * It is capped by the number of samples specified in `maxSampleSize`.
+ *
+ * The stats (mean, variance, stdDeviation) are not defined for
+ * for empty HeartbeatHistory, i.e. throws AritmeticException.
+ */
+private[cluster] case class HeartbeatHistory private (
+  maxSampleSize: Int,
+  intervals: IndexedSeq[Long],
+  intervalSum: Long,
+  interval2Sum: Long) {
+
+  def mean: Double = intervalSum.toDouble / intervals.size
+
+  def variance: Double = (interval2Sum.toDouble / intervals.size) - (mean * mean)
+
+  def stdDeviation: Double = math.sqrt(variance)
+
+  @tailrec
+  final def :+(interval: Long): HeartbeatHistory = {
+    if (intervals.size < maxSampleSize)
+      HeartbeatHistory(
+        maxSampleSize,
+        intervals = intervals :+ interval,
+        intervalSum = intervalSum + interval,
+        interval2Sum = interval2Sum + pow2(interval))
+    else
+      dropOldest :+ interval // recur
+  }
+
+  private def dropOldest: HeartbeatHistory = HeartbeatHistory(
+    maxSampleSize,
+    intervals = intervals drop 1,
+    intervalSum = intervalSum - intervals.head,
+    interval2Sum = interval2Sum - pow2(intervals.head))
+
+  private def pow2(x: Long) = x * x
 }

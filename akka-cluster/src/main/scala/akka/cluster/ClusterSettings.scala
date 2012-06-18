@@ -13,12 +13,16 @@ import akka.actor.AddressFromURIString
 
 class ClusterSettings(val config: Config, val systemName: String) {
   import config._
-  final val FailureDetectorThreshold = getInt("akka.cluster.failure-detector.threshold")
+
+  final val FailureDetectorThreshold = getDouble("akka.cluster.failure-detector.threshold")
   final val FailureDetectorMaxSampleSize = getInt("akka.cluster.failure-detector.max-sample-size")
   final val FailureDetectorImplementationClass: Option[String] = getString("akka.cluster.failure-detector.implementation-class") match {
     case ""   ⇒ None
     case fqcn ⇒ Some(fqcn)
   }
+  final val FailureDetectorMinStdDeviation: Duration = Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
+  final val FailureDetectorAcceptableLostHeartbeats: Double = getDouble("akka.cluster.failure-detector.acceptable-lost-heartbeats")
+
   final val NodeToJoin: Option[Address] = getString("akka.cluster.node-to-join") match {
     case ""                         ⇒ None
     case AddressFromURIString(addr) ⇒ Some(addr)
