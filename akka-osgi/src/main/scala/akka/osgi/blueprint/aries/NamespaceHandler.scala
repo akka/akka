@@ -80,7 +80,7 @@ class NamespaceHandler extends org.apache.aries.blueprint.NamespaceHandler {
     factory.setId(findAvailableId(context))
     factory.setScope(BeanMetadata.SCOPE_SINGLETON)
     factory.setProcessor(true)
-    factory.setClassName(classOf[BlueprintActorSystemFactory].getName)
+    factory.setRuntimeClass(classOf[BlueprintActorSystemFactory])
 
     factory.setDestroyMethod(DESTROY_METHOD_NAME)
 
