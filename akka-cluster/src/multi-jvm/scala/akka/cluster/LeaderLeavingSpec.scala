@@ -21,9 +21,8 @@ object LeaderLeavingMultiJvmSpec extends MultiNodeConfig {
         akka.cluster {
           leader-actions-interval           = 5 s  # increase the leader action task frequency to make sure we get a chance to test the LEAVING state
           unreachable-nodes-reaper-interval = 30 s
-        }
-      """)
-        .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        }""")
+      .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
 class LeaderLeavingMultiJvmNode1 extends LeaderLeavingSpec with FailureDetectorPuppetStrategy
@@ -42,7 +41,7 @@ abstract class LeaderLeavingSpec
 
   "A LEADER that is LEAVING" must {
 
-    "be moved to LEAVING, then to EXITING, then to REMOVED, then be shut down and then a new LEADER should be elected" taggedAs LongRunningTest ignore {
+    "be moved to LEAVING, then to EXITING, then to REMOVED, then be shut down and then a new LEADER should be elected" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)
 
@@ -53,8 +52,11 @@ abstract class LeaderLeavingSpec
         cluster.leave(oldLeaderAddress)
         testConductor.enter("leader-left")
 
+        // verify that a NEW LEADER have taken over
+        awaitCond(!cluster.isLeader)
+
         // verify that the LEADER is shut down
-        awaitCond(!cluster.isRunning)
+        awaitCond(!cluster.isRunning, 30.seconds.dilated)
 
         // verify that the LEADER is REMOVED
         awaitCond(cluster.status == MemberStatus.Removed)
