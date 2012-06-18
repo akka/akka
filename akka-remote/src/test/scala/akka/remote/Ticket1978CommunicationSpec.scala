@@ -24,7 +24,6 @@ object Configuration {
       actor.provider = "akka.remote.RemoteActorRefProvider"
       remote.netty {
         hostname = localhost
-        port = 12345
         ssl {
           enable = on
           trust-store = "%s"
@@ -43,9 +42,12 @@ object Configuration {
   """
 
   def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = try {
-    val config = ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", ")))
+
+    val config = ConfigFactory.parseString("akka.remote.netty.port=12345").withFallback(ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", "))))
     val settings = new NettySettings(config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty"), "pigdog")
-    (NettySSLSupport.initializeClientSSL(settings, NoLogging) ne null) || (throw new NoSuchAlgorithmException(cipher))
+    val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, NoLogging)
+    rng.nextInt() // Take it for a spin
+    rng.getAlgorithm == cipher || (throw new NoSuchAlgorithmException(cipher))
     (cipher, true, config)
   } catch {
     case (_: IllegalArgumentException) | (_: NoSuchAlgorithmException) ⇒ (cipher, false, AkkaSpec.testConf) // Cannot match against the message since the message might be localized :S
