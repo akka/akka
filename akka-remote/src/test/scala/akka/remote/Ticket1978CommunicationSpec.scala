@@ -9,9 +9,9 @@ import com.typesafe.config._
 import akka.dispatch.{ Await, Future }
 import akka.pattern.ask
 import java.io.File
-import java.security.{ SecureRandom, PrivilegedAction, AccessController }
-import netty.NettySSLSupport
 import akka.event.{ NoLogging, LoggingAdapter }
+import java.security.{ NoSuchAlgorithmException, SecureRandom, PrivilegedAction, AccessController }
+import netty.{ NettySettings, NettySSLSupport }
 
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
@@ -42,12 +42,15 @@ object Configuration {
     }
   """
 
-  def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = if (try {
-    NettySSLSupport.initializeCustomSecureRandom(Some(cipher), None, NoLogging) ne null
+  def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = try {
+    //NettySSLSupport.initializeCustomSecureRandom(Some(cipher), None, NoLogging) ne null
+    val config = ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", ")))
+    val settings = new NettySettings(config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty"), "pigdog")
+    (NettySSLSupport.initializeClientSSL(settings, NoLogging) ne null) || (throw new NoSuchAlgorithmException(cipher))
+    (cipher, true, config)
   } catch {
-    case _: IllegalArgumentException               ⇒ false // Cannot match against the message since the message might be localized :S
-    case _: java.security.NoSuchAlgorithmException ⇒ false
-  }) (cipher, true, ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", ")))) else (cipher, false, AkkaSpec.testConf)
+    case (_: IllegalArgumentException) | (_: NoSuchAlgorithmException) ⇒ (cipher, false, AkkaSpec.testConf) // Cannot match against the message since the message might be localized :S
+  }
 }
 
 import Configuration.getCipherConfig

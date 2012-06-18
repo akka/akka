@@ -53,8 +53,23 @@ private[akka] object NettySSLSupport {
     rng
   }
 
-  private def initializeClientSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
+  def initializeClientSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
     log.debug("Client SSL is enabled, initialising ...")
+
+    def constructClientContext(settings: NettySettings, log: LoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] =
+      try {
+        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+        val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
+        trustStore.load(new FileInputStream(trustStorePath), trustStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
+        trustManagerFactory.init(trustStore)
+        val trustManagers: Array[TrustManager] = trustManagerFactory.getTrustManagers
+        Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(null, trustManagers, initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
+      } catch {
+        case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Client SSL connection could not be established because trust store could not be loaded", e)
+        case e: IOException              ⇒ throw new RemoteTransportException("Client SSL connection could not be established because: " + e.getMessage, e)
+        case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Client SSL connection could not be established because SSL context could not be constructed", e)
+      }
+
     ((settings.SSLTrustStore, settings.SSLTrustStorePassword, settings.SSLProtocol) match {
       case (Some(trustStore), Some(password), Some(protocol)) ⇒ constructClientContext(settings, log, trustStore, password, protocol)
       case (trustStore, password, protocol) ⇒ throw new GeneralSecurityException(
@@ -79,23 +94,21 @@ private[akka] object NettySSLSupport {
     }
   }
 
-  private def constructClientContext(settings: NettySettings, log: LoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] = {
-    try {
-      val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-      val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
-      trustStore.load(new FileInputStream(trustStorePath), trustStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
-      trustManagerFactory.init(trustStore)
-      val trustManagers: Array[TrustManager] = trustManagerFactory.getTrustManagers
-      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(null, trustManagers, initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
-    } catch {
-      case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Client SSL connection could not be established because trust store could not be loaded", e)
-      case e: IOException              ⇒ throw new RemoteTransportException("Client SSL connection could not be established because: " + e.getMessage, e)
-      case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Client SSL connection could not be established because SSL context could not be constructed", e)
-    }
-  }
-
-  private def initializeServerSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
+  def initializeServerSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
     log.debug("Server SSL is enabled, initialising ...")
+
+    def constructServerContext(settings: NettySettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, protocol: String): Option[SSLContext] =
+      try {
+        val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
+        keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
+        factory.init(keyStore, keyStorePassword.toCharArray)
+        Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
+      } catch {
+        case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
+        case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
+        case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
+      }
 
     ((settings.SSLKeyStore, settings.SSLKeyStorePassword, settings.SSLProtocol) match {
       case (Some(keyStore), Some(password), Some(protocol)) ⇒ constructServerContext(settings, log, keyStore, password, protocol)
@@ -114,20 +127,6 @@ private[akka] object NettySSLSupport {
           settings.SSLKeyStore,
           settings.SSLKeyStorePassword,
           settings.SSLProtocol))
-    }
-  }
-
-  private def constructServerContext(settings: NettySettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, protocol: String): Option[SSLContext] = {
-    try {
-      val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-      val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
-      keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
-      factory.init(keyStore, keyStorePassword.toCharArray)
-      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
-    } catch {
-      case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
-      case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
-      case e: GeneralSecurityException ⇒ throw new RemoteTransportException("Server SSL connection could not be established because SSL context could not be constructed", e)
     }
   }
 }
