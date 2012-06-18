@@ -40,17 +40,9 @@ abstract class LeaderLeavingSpec
   lazy val secondAddress = node(second).address
   lazy val thirdAddress = node(third).address
 
-  val reaperWaitingTime = 30.seconds.dilated
-
-  def leaderRole = cluster.leader match {
-    case `firstAddress`  => first
-    case `secondAddress` => second
-    case `thirdAddress`  => third
-  }
-
   "A LEADER that is LEAVING" must {
 
-    "be moved to LEAVING, then to EXITING, then to REMOVED, then be shut down and then a new LEADER should be elected" taggedAs LongRunningTest in {
+    "be moved to LEAVING, then to EXITING, then to REMOVED, then be shut down and then a new LEADER should be elected" taggedAs LongRunningTest ignore {
 
       awaitClusterUp(first, second, third)
 
@@ -62,10 +54,10 @@ abstract class LeaderLeavingSpec
         testConductor.enter("leader-left")
 
         // verify that the LEADER is shut down
-        awaitCond(!cluster.isRunning, reaperWaitingTime)
+        awaitCond(!cluster.isRunning)
 
         // verify that the LEADER is REMOVED
-        awaitCond(cluster.status == MemberStatus.Removed, reaperWaitingTime)
+        awaitCond(cluster.status == MemberStatus.Removed)
 
       } else {
 
@@ -78,13 +70,13 @@ abstract class LeaderLeavingSpec
         awaitCond(cluster.latestGossip.members.exists(m => m.status == MemberStatus.Exiting && m.address == oldLeaderAddress)) // wait on EXITING
 
         // verify that the LEADER is no longer part of the 'members' set
-        awaitCond(cluster.latestGossip.members.forall(_.address != oldLeaderAddress), reaperWaitingTime)
+        awaitCond(cluster.latestGossip.members.forall(_.address != oldLeaderAddress))
 
         // verify that the LEADER is not part of the 'unreachable' set
-        awaitCond(cluster.latestGossip.overview.unreachable.forall(_.address != oldLeaderAddress), reaperWaitingTime)
+        awaitCond(cluster.latestGossip.overview.unreachable.forall(_.address != oldLeaderAddress))
 
         // verify that we have a new LEADER
-        awaitCond(cluster.leader != oldLeaderAddress, reaperWaitingTime)
+        awaitCond(cluster.leader != oldLeaderAddress)
       }
 
       testConductor.enter("finished")
