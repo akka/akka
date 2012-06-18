@@ -19,9 +19,8 @@ import akka.util.duration._
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
   // The certificate will expire in 2109
-  private val trustStore = getPath("truststore")
-  private val keyStore = getPath("keystore")
-  private def getPath(name: String): String = (new File("akka-remote/src/test/resources/" + name)).getAbsolutePath.replace("\\", "\\\\")
+  private val trustStore = getClass.getClassLoader.getResource("truststore").getPath
+  private val keyStore = getClass.getClassLoader.getResource("keystore").getPath
   private val conf = """
     akka {
       actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -114,15 +113,17 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
 
       "support remote look-ups" in {
         here ! "ping"
-        expectMsgPF() {
+        expectMsgPF(timeout.duration) {
           case ("pong", s: AnyRef) if s eq testActor ⇒ true
         }
       }
 
       "send error message for wrong address" in {
-        EventFilter.error(start = "dropping", occurrences = 1).intercept {
-          system.actorFor("akka://remotesys@localhost:12346/user/echo") ! "ping"
-        }(other)
+        within(timeout.duration) {
+          EventFilter.error(start = "dropping", occurrences = 1).intercept {
+            system.actorFor("akka://remotesys@localhost:12346/user/echo") ! "ping"
+          }(other)
+        }
       }
 
       "support ask" in {
@@ -133,52 +134,58 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
       }
 
       "send dead letters on remote if actor does not exist" in {
-        EventFilter.warning(pattern = "dead.*buh", occurrences = 1).intercept {
-          system.actorFor("akka://remote-sys@localhost:12346/does/not/exist") ! "buh"
-        }(other)
+        within(timeout.duration) {
+          EventFilter.warning(pattern = "dead.*buh", occurrences = 1).intercept {
+            system.actorFor("akka://remote-sys@localhost:12346/does/not/exist") ! "buh"
+          }(other)
+        }
       }
 
       "create and supervise children on remote node" in {
-        val r = system.actorOf(Props[Echo], "blub")
-        r.path.toString must be === "akka://remote-sys@localhost:12346/remote/Ticket1978CommunicationSpec@localhost:12345/user/blub"
-        r ! 42
-        expectMsg(42)
-        EventFilter[Exception]("crash", occurrences = 1).intercept {
-          r ! new Exception("crash")
-        }(other)
-        expectMsg("preRestart")
-        r ! 42
-        expectMsg(42)
-        system.stop(r)
-        expectMsg("postStop")
+        within(timeout.duration) {
+          val r = system.actorOf(Props[Echo], "blub")
+          r.path.toString must be === "akka://remote-sys@localhost:12346/remote/Ticket1978CommunicationSpec@localhost:12345/user/blub"
+          r ! 42
+          expectMsg(42)
+          EventFilter[Exception]("crash", occurrences = 1).intercept {
+            r ! new Exception("crash")
+          }(other)
+          expectMsg("preRestart")
+          r ! 42
+          expectMsg(42)
+          system.stop(r)
+          expectMsg("postStop")
+        }
       }
 
       "look-up actors across node boundaries" in {
-        val l = system.actorOf(Props(new Actor {
-          def receive = {
-            case (p: Props, n: String) ⇒ sender ! context.actorOf(p, n)
-            case s: String             ⇒ sender ! context.actorFor(s)
-          }
-        }), "looker")
-        l ! (Props[Echo], "child")
-        val r = expectMsgType[ActorRef]
-        r ! (Props[Echo], "grandchild")
-        val remref = expectMsgType[ActorRef]
-        remref.isInstanceOf[LocalActorRef] must be(true)
-        val myref = system.actorFor(system / "looker" / "child" / "grandchild")
-        myref.isInstanceOf[RemoteActorRef] must be(true)
-        myref ! 43
-        expectMsg(43)
-        lastSender must be theSameInstanceAs remref
-        r.asInstanceOf[RemoteActorRef].getParent must be(l)
-        system.actorFor("/user/looker/child") must be theSameInstanceAs r
-        Await.result(l ? "child/..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
-        Await.result(system.actorFor(system / "looker" / "child") ? "..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
+        within(timeout.duration) {
+          val l = system.actorOf(Props(new Actor {
+            def receive = {
+              case (p: Props, n: String) ⇒ sender ! context.actorOf(p, n)
+              case s: String             ⇒ sender ! context.actorFor(s)
+            }
+          }), "looker")
+          l ! (Props[Echo], "child")
+          val r = expectMsgType[ActorRef]
+          r ! (Props[Echo], "grandchild")
+          val remref = expectMsgType[ActorRef]
+          remref.isInstanceOf[LocalActorRef] must be(true)
+          val myref = system.actorFor(system / "looker" / "child" / "grandchild")
+          myref.isInstanceOf[RemoteActorRef] must be(true)
+          myref ! 43
+          expectMsg(43)
+          lastSender must be theSameInstanceAs remref
+          r.asInstanceOf[RemoteActorRef].getParent must be(l)
+          system.actorFor("/user/looker/child") must be theSameInstanceAs r
+          Await.result(l ? "child/..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
+          Await.result(system.actorFor(system / "looker" / "child") ? "..", timeout.duration).asInstanceOf[AnyRef] must be theSameInstanceAs l
+        }
       }
 
       "not fail ask across node boundaries" in {
         val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo manifest[(String, ActorRef)]
-        Await.result(Future.sequence(f), remaining).map(_._1).toSet must be(Set("pong"))
+        Await.result(Future.sequence(f), timeout.duration).map(_._1).toSet must be(Set("pong"))
       }
     } else {
       "not be run when the cipher is not supported by the platform this test is currently being executed on" ignore {
