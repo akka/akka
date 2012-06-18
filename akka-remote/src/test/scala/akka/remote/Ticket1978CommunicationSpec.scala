@@ -43,7 +43,7 @@ object Configuration {
   """
 
   def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = if (try {
-    NettySSLSupport.initialiseCustomSecureRandom(Some(cipher), None, NoLogging) ne null
+    NettySSLSupport.initializeCustomSecureRandom(Some(cipher), None, NoLogging) ne null
   } catch {
     case _: IllegalArgumentException               ⇒ false // Cannot match against the message since the message might be localized :S
     case _: java.security.NoSuchAlgorithmException ⇒ false
@@ -80,16 +80,7 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
 
   import RemoteCommunicationSpec._
 
-  val conf = ConfigFactory.parseString("akka.remote.netty.port=12346").withFallback(system.settings.config)
-  val other = ActorSystem("remote-sys", conf)
-
-  val remote = other.actorOf(Props(new Actor {
-    def receive = {
-      case "ping" ⇒ sender ! (("pong", sender))
-    }
-  }), "echo")
-
-  val here = system.actorFor("akka://remote-sys@localhost:12346/user/echo")
+  val other = ActorSystem("remote-sys", ConfigFactory.parseString("akka.remote.netty.port=12346").withFallback(system.settings.config))
 
   override def atTermination() {
     other.shutdown()
@@ -97,6 +88,10 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
 
   "SSL Remoting" must {
     if (cipherEnabledconfig._2) {
+      val remote = other.actorOf(Props(new Actor { def receive = { case "ping" ⇒ sender ! (("pong", sender)) } }), "echo")
+
+      val here = system.actorFor("akka://remote-sys@localhost:12346/user/echo")
+
       "support remote look-ups" in {
         here ! "ping"
         expectMsgPF() {

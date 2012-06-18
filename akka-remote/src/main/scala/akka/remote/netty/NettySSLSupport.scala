@@ -21,9 +21,9 @@ private[akka] object NettySSLSupport {
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
    */
   def apply(settings: NettySettings, log: LoggingAdapter, isClient: Boolean): SslHandler =
-    if (isClient) initialiseClientSSL(settings, log) else initialiseServerSSL(settings, log)
+    if (isClient) initializeClientSSL(settings, log) else initializeServerSSL(settings, log)
 
-  def initialiseCustomSecureRandom(rngName: Option[String], sourceOfRandomness: Option[String], log: LoggingAdapter): SecureRandom = {
+  def initializeCustomSecureRandom(rngName: Option[String], sourceOfRandomness: Option[String], log: LoggingAdapter): SecureRandom = {
     /**
      * According to this bug report: http://bugs.sun.com/view_bug.do?bug_id=6202721
      * Using /dev/./urandom is only necessary when using SHA1PRNG on Linux
@@ -53,7 +53,7 @@ private[akka] object NettySSLSupport {
     rng
   }
 
-  private def initialiseClientSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
+  private def initializeClientSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
     log.debug("Client SSL is enabled, initialising ...")
     ((settings.SSLTrustStore, settings.SSLTrustStorePassword, settings.SSLProtocol) match {
       case (Some(trustStore), Some(password), Some(protocol)) ⇒ constructClientContext(settings, log, trustStore, password, protocol)
@@ -71,7 +71,7 @@ private[akka] object NettySSLSupport {
         new SslHandler(sslEngine)
       case None ⇒
         throw new GeneralSecurityException(
-          """Failed to initialise client SSL because SSL context could not be found." +
+          """Failed to initialize client SSL because SSL context could not be found." +
               "Make sure your settings are correct: [trust-store: %s] [trust-store-password: %s] [protocol: %s]""".format(
             settings.SSLTrustStore,
             settings.SSLTrustStorePassword,
@@ -86,7 +86,7 @@ private[akka] object NettySSLSupport {
       trustStore.load(new FileInputStream(trustStorePath), trustStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
       trustManagerFactory.init(trustStore)
       val trustManagers: Array[TrustManager] = trustManagerFactory.getTrustManagers
-      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(null, trustManagers, initialiseCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
+      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(null, trustManagers, initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
     } catch {
       case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Client SSL connection could not be established because trust store could not be loaded", e)
       case e: IOException              ⇒ throw new RemoteTransportException("Client SSL connection could not be established because: " + e.getMessage, e)
@@ -94,7 +94,7 @@ private[akka] object NettySSLSupport {
     }
   }
 
-  private def initialiseServerSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
+  private def initializeServerSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
     log.debug("Server SSL is enabled, initialising ...")
 
     ((settings.SSLKeyStore, settings.SSLKeyStorePassword, settings.SSLProtocol) match {
@@ -109,7 +109,7 @@ private[akka] object NettySSLSupport {
         sslEngine.setEnabledCipherSuites(settings.SSLSupportedAlgorithms.toArray.map(_.toString))
         new SslHandler(sslEngine)
       case None ⇒ throw new GeneralSecurityException(
-        """Failed to initialise server SSL because SSL context could not be found.
+        """Failed to initialize server SSL because SSL context could not be found.
            Make sure your settings are correct: [key-store: %s] [key-store-password: %s] [protocol: %s]""".format(
           settings.SSLKeyStore,
           settings.SSLKeyStorePassword,
@@ -123,7 +123,7 @@ private[akka] object NettySSLSupport {
       val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
       keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
       factory.init(keyStore, keyStorePassword.toCharArray)
-      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, initialiseCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
+      Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
     } catch {
       case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)
       case e: IOException              ⇒ throw new RemoteTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
