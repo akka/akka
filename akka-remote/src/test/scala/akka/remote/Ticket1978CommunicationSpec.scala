@@ -43,7 +43,6 @@ object Configuration {
   """
 
   def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = try {
-    //NettySSLSupport.initializeCustomSecureRandom(Some(cipher), None, NoLogging) ne null
     val config = ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", ")))
     val settings = new NettySettings(config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty"), "pigdog")
     (NettySSLSupport.initializeClientSSL(settings, NoLogging) ne null) || (throw new NoSuchAlgorithmException(cipher))
