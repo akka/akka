@@ -42,11 +42,14 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
 
   /**
    * Lookup the Address for the role.
+   *
+   * Implicit conversion from RoleName to Address.
+   *
    * It is cached, which has the implication that stopping
    * and then restarting a role (jvm) with another address is not
    * supported.
    */
-  def address(role: RoleName): Address = {
+  implicit def address(role: RoleName): Address = {
     cachedAddresses.get(role) match {
       case null ⇒
         val address = node(role).address
@@ -55,11 +58,6 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
       case address ⇒ address
     }
   }
-
-  /**
-   * implicit conversion from RoleName to Address
-   */
-  implicit def role2Address(role: RoleName): Address = address(role)
 
   // Cluster tests are written so that if previous step (test method) failed
   // it will most likely not be possible to run next step. This ensures
@@ -196,8 +194,6 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
     def compare(x: RoleName, y: RoleName) = addressOrdering.compare(address(x), address(y))
   }
 
-  def roleName(addr: Address): Option[RoleName] = {
-    roles.find(address(_) == addr)
-  }
+  def roleName(addr: Address): Option[RoleName] = roles.find(address(_) == addr)
 
 }

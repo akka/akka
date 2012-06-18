@@ -83,7 +83,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
   before {
     cluster._gossipToUnreachableProbablity = 0.0
     cluster._gossipToDeputyProbablity = 0.0
-    addresses.foreach(failureDetector.remove(_))
+    addresses foreach failureDetector.remove
     deterministicRandom.set(0)
   }
 
@@ -180,7 +180,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
 
     "gossip to random unreachable node" in {
       val dead = Set(addresses(1))
-      dead.foreach(failureDetector.markNodeAsUnavailable(_))
+      dead foreach failureDetector.markNodeAsUnavailable
       cluster._gossipToUnreachableProbablity = 1.0 // always
 
       cluster.reapUnreachableMembers()
@@ -198,7 +198,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
       cluster._gossipToDeputyProbablity = -1.0 // real impl
       // 0 and 2 still alive
       val dead = Set(addresses(1), addresses(3), addresses(4), addresses(5))
-      dead.foreach(failureDetector.markNodeAsUnavailable(_))
+      dead foreach failureDetector.markNodeAsUnavailable
 
       cluster.reapUnreachableMembers()
       cluster.latestGossip.overview.unreachable.map(_.address) must be(dead)
