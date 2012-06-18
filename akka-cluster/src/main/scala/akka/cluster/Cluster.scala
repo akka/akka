@@ -105,7 +105,7 @@ class Member(val address: Address, val status: MemberStatus) extends ClusterMess
 }
 
 /**
- * Factory and Utility module for Member instances.
+ * Module with factory and ordering methods for Member instances.
  */
 object Member {
 
@@ -119,10 +119,13 @@ object Member {
   }
 
   /**
-   * `Member` ordering type class, sorts members by `Address`.
+   * `Member` ordering type class, sorts members by host and port with the exception that
+   * it puts all members that are in MemberStatus.EXITING last.
    */
-  implicit val ordering: Ordering[Member] = new Ordering[Member] {
-    def compare(x: Member, y: Member) = addressOrdering.compare(x.address, y.address)
+  implicit val ordering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) ⇒
+    if (a.status == MemberStatus.Exiting && b.status != MemberStatus.Exiting) false
+    else if (a.status != MemberStatus.Exiting && b.status == MemberStatus.Exiting) true
+    else addressOrdering.compare(a.address, b.address) < 0
   }
 
   def apply(address: Address, status: MemberStatus): Member = new Member(address, status)
@@ -301,8 +304,7 @@ case class Gossip(
 
     // 4. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
     //    and exclude unreachable
-    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).
-      filterNot(mergedUnreachable.contains)
+    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
 
     // 5. fresh seen table
     val mergedSeen = Map.empty[Address, VectorClock]
@@ -1109,10 +1111,10 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       val (
         newGossip: Gossip,
         hasChangedState: Boolean,
-        upMembers: Set[Member],
-        exitingMembers: Set[Member],
-        removedMembers: Set[Member],
-        unreachableButNotDownedMembers: Set[Member]) =
+        upMembers,
+        exitingMembers,
+        removedMembers,
+        unreachableButNotDownedMembers) =
 
         if (convergence(localGossip).isDefined) {
           // we have convergence - so we can't have unreachable nodes
