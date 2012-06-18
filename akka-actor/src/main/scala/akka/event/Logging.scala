@@ -875,3 +875,16 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
   protected def notifyInfo(message: String): Unit = bus.publish(Info(logSource, logClass, message))
   protected def notifyDebug(message: String): Unit = bus.publish(Debug(logSource, logClass, message))
 }
+
+private[akka] object NoLogging extends LoggingAdapter {
+  def isErrorEnabled = false
+  def isWarningEnabled = false
+  def isInfoEnabled = false
+  def isDebugEnabled = false
+
+  protected def notifyError(message: String): Unit = ()
+  protected def notifyError(cause: Throwable, message: String): Unit = ()
+  protected def notifyWarning(message: String): Unit = ()
+  protected def notifyInfo(message: String): Unit = ()
+  protected def notifyDebug(message: String): Unit = ()
+}

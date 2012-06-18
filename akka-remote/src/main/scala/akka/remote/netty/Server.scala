@@ -12,7 +12,6 @@ import org.jboss.netty.channel.group.ChannelGroup
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.execution.ExecutionHandler
-import akka.event.Logging
 import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
 import akka.remote.{ RemoteServerShutdown, RemoteServerError, RemoteServerClientDisconnected, RemoteServerClientConnected, RemoteServerClientClosed, RemoteProtocol, RemoteMessage }
 import akka.actor.Address
@@ -40,7 +39,7 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   private val bootstrap = {
     val b = new ServerBootstrap(factory)
-    b.setPipelineFactory(netty.createPipeline(new RemoteServerHandler(openChannels, netty), false))
+    b.setPipelineFactory(netty.createPipeline(new RemoteServerHandler(openChannels, netty), withTimeout = false, isClient = false))
     b.setOption("backlog", settings.Backlog)
     b.setOption("tcpNoDelay", true)
     b.setOption("child.keepAlive", true)
