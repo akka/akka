@@ -12,6 +12,9 @@ import java.io.File
 import akka.event.{ NoLogging, LoggingAdapter }
 import java.security.{ NoSuchAlgorithmException, SecureRandom, PrivilegedAction, AccessController }
 import netty.{ NettySettings, NettySSLSupport }
+import javax.net.ssl.SSLException
+import akka.util.{ Timeout, Duration }
+import akka.util.duration._
 
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
@@ -44,13 +47,24 @@ object Configuration {
   def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = try {
 
     val config = ConfigFactory.parseString("akka.remote.netty.port=12345").withFallback(ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", "))))
-    val settings = new NettySettings(config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty"), "pigdog")
+    val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty")
+    val settings = new NettySettings(fullConfig, "placeholder")
+
     val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, NoLogging)
-    rng.nextInt() // Take it for a spin
-    rng.getAlgorithm == cipher || (throw new NoSuchAlgorithmException(cipher))
+
+    rng.nextInt() // Has to work
+    settings.SSLRandomNumberGenerator foreach { sRng ⇒ rng.getAlgorithm == sRng || (throw new NoSuchAlgorithmException(sRng)) }
+
+    val engine = NettySSLSupport.initializeServerSSL(settings, NoLogging).getEngine
+    val gotAllSupported = enabled.toSet -- engine.getSupportedCipherSuites.toSet
+    val gotAllEnabled = enabled.toSet -- engine.getEnabledCipherSuites.toSet
+    gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
+    gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
+    engine.getSupportedProtocols.contains(settings.SSLProtocol.get) || (throw new IllegalArgumentException(settings.SSLProtocol.get))
+
     (cipher, true, config)
   } catch {
-    case (_: IllegalArgumentException) | (_: NoSuchAlgorithmException) ⇒ (cipher, false, AkkaSpec.testConf) // Cannot match against the message since the message might be localized :S
+    case (_: IllegalArgumentException) | (_: NoSuchAlgorithmException) | (_: SSLException) ⇒ (cipher, false, AkkaSpec.testConf) // Cannot match against the message since the message might be localized :S
   }
 }
 
@@ -80,7 +94,9 @@ class Ticket1978DefaultRNGSecureSpec extends Ticket1978CommunicationSpec(getCiph
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket1978NonExistingRNGSecureSpec extends Ticket1978CommunicationSpec(("NonExistingRNG", false, AkkaSpec.testConf))
 
-abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boolean, Config)) extends AkkaSpec(cipherEnabledconfig._3) with ImplicitSender with DefaultTimeout {
+abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boolean, Config)) extends AkkaSpec(cipherEnabledconfig._3) with ImplicitSender {
+
+  implicit val timeout: Timeout = Timeout(30 seconds)
 
   import RemoteCommunicationSpec._
 
