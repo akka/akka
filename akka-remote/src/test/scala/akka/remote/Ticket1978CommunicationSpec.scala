@@ -24,6 +24,12 @@ object Configuration {
   private val conf = """
     akka {
       actor.provider = "akka.remote.RemoteActorRefProvider"
+      test {
+        single-expect-default = 30s
+        filter-leeway = 30s
+        default-timeout = 30s
+      }
+
       remote.netty {
         hostname = localhost
         ssl {
