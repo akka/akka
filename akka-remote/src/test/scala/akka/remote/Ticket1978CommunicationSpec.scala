@@ -1,7 +1,7 @@
 /**
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
-/*package akka.remote
+package akka.remote
 
 import akka.testkit._
 import akka.actor._
@@ -31,6 +31,7 @@ object Configuration {
           key-store = "%s"
           random-number-generator = "%s"
           supported-algorithms = [%s]
+          sha1prng-random-source = "/dev/./urandom"
         }
       }
       actor.deployment {
@@ -172,4 +173,4 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
 
   }
 
-}*/
+}
