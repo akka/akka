@@ -13,7 +13,6 @@ import java.io.Closeable
 import akka.dispatch.Await.{ Awaitable, CanAwait }
 import akka.util._
 import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
-import collection.immutable.Stack
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
@@ -685,8 +684,8 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   final class TerminationCallbacks extends Runnable with Awaitable[Unit] {
     private val lock = new ReentrantGuard
-    private var callbacks: Stack[Runnable] = _ //non-volatile since guarded by the lock
-    lock withGuard { callbacks = Stack.empty[Runnable] }
+    private var callbacks: List[Runnable] = _ //non-volatile since guarded by the lock
+    lock withGuard { callbacks = Nil }
 
     private val latch = new CountDownLatch(1)
 
@@ -695,17 +694,17 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
         case 0 ⇒ throw new RejectedExecutionException("Must be called prior to system shutdown.")
         case _ ⇒ lock withGuard {
           if (latch.getCount == 0) throw new RejectedExecutionException("Must be called prior to system shutdown.")
-          else callbacks = callbacks.push(callback)
+          else callbacks ::= callback
         }
       }
     }
 
     final def run(): Unit = lock withGuard {
-      @tailrec def runNext(c: Stack[Runnable]): Stack[Runnable] = c.headOption match {
-        case None ⇒ Stack.empty[Runnable]
-        case Some(callback) ⇒
-          try callback.run() catch { case e ⇒ log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage) }
-          runNext(c.pop)
+      @tailrec def runNext(c: List[Runnable]): List[Runnable] = c match {
+        case Nil ⇒ Nil
+        case callback :: rest ⇒
+          try callback.run() catch { case NonFatal(e) ⇒ log.error(e, "Failed to run termination callback, due to [{}]", e.getMessage) }
+          runNext(rest)
       }
       try { callbacks = runNext(callbacks) } finally latch.countDown()
     }
