@@ -5,9 +5,7 @@
 package akka.testkit
 
 import akka.actor._
-import akka.util.Duration
 import java.util.concurrent.atomic.AtomicLong
-import scala.collection.immutable.Stack
 import akka.dispatch._
 import akka.pattern.ask
 
