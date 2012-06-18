@@ -150,13 +150,15 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     }
   }
 
-  private def sendMessage(frames: Seq[Frame]) {
-    def sendBytes(bytes: Seq[Byte], flags: Int) = socket.send(bytes.toArray, flags)
+  private def sendMessage(frames: Seq[Frame]): Unit = {
+    def sendBytes(bytes: Seq[Byte], flags: Int): Boolean = socket.send(bytes.toArray, flags)
     val iter = frames.iterator
     while (iter.hasNext) {
       val payload = iter.next.payload
+      // JZMQ.SNDMORE indicates that a message has multiple frames and this is not the last frame.
       val flags = if (iter.hasNext) JZMQ.SNDMORE else 0
-      sendBytes(payload, flags)
+      val messageSent = sendBytes(payload, flags)
+      log.debug(if (messageSent) "sendMessage sent message" else "sendMessage did not send message")
     }
   }
 
