@@ -123,8 +123,8 @@ object Member {
    * it puts all members that are in MemberStatus.EXITING last.
    */
   implicit val ordering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) ⇒
-    if (a.status == MemberStatus.Exiting && b.status != MemberStatus.Exiting) false
-    else if (a.status != MemberStatus.Exiting && b.status == MemberStatus.Exiting) true
+    if (a.status == Exiting && b.status != Exiting) false
+    else if (a.status != Exiting && b.status == Exiting) true
     else addressOrdering.compare(a.address, b.address) < 0
   }
 
