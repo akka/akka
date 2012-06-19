@@ -37,7 +37,7 @@ object Configuration {
           trust-store = "%s"
           key-store = "%s"
           random-number-generator = "%s"
-          supported-algorithms = [%s]
+          enabled-algorithms = [%s]
           sha1prng-random-source = "/dev/./urandom"
         }
       }
@@ -51,7 +51,7 @@ object Configuration {
 
   def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = try {
 
-    if (true) throw new IllegalArgumentException("This is not working properly yet")
+    if (false) throw new IllegalArgumentException("This is not working properly yet")
 
     val config = ConfigFactory.parseString("akka.remote.netty.port=12345").withFallback(ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", "))))
     val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty")
@@ -62,16 +62,16 @@ object Configuration {
     rng.nextInt() // Has to work
     settings.SSLRandomNumberGenerator foreach { sRng ⇒ rng.getAlgorithm == sRng || (throw new NoSuchAlgorithmException(sRng)) }
 
-    val engine = NettySSLSupport.initializeServerSSL(settings, NoLogging).getEngine
+    val engine = NettySSLSupport.initializeClientSSL(settings, NoLogging).getEngine
     val gotAllSupported = enabled.toSet -- engine.getSupportedCipherSuites.toSet
     val gotAllEnabled = enabled.toSet -- engine.getEnabledCipherSuites.toSet
     gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
     gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
-    engine.getSupportedProtocols.contains(settings.SSLProtocol.get) || (throw new IllegalArgumentException(settings.SSLProtocol.get))
+    engine.getSupportedProtocols.contains(settings.SSLProtocol.get) || (throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol.get))
 
     (cipher, true, config)
   } catch {
-    case (_: IllegalArgumentException) | (_: NoSuchAlgorithmException) | (_: SSLException) ⇒ (cipher, false, AkkaSpec.testConf) // Cannot match against the message since the message might be localized :S
+    case (_: IllegalArgumentException) | (_: NoSuchAlgorithmException) ⇒ (cipher, false, AkkaSpec.testConf) // Cannot match against the message since the message might be localized :S
   }
 }
 
@@ -87,7 +87,7 @@ class Ticket1978AES128CounterRNGFastSpec extends Ticket1978CommunicationSpec(get
  * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
  */
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class Ticket1978AES128CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterRNGSecure", "TLS_RSA_WITH_AES_256_CBC_SHA"))
+class Ticket1978AES128CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterRNGSecure", "TLS_RSA_WITH_AES_128_CBC_SHA"))
 
 /**
  * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
@@ -111,6 +111,7 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
 
   override def atTermination() {
     other.shutdown()
+    other.awaitTermination()
   }
 
   "SSL Remoting" must {
@@ -161,8 +162,6 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
           expectMsg("preRestart")
           r ! 42
           expectMsg(42)
-          system.stop(r)
-          expectMsg("postStop")
         }
       }
 
