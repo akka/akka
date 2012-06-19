@@ -7,8 +7,10 @@ option optimize_for = SPEED;
 
 /******************************************
   Compile with:
-  cd ./akka-remote/src/main/protocol
+  cd ./akka-remote-tests/src/main/protocol
   protoc TestConductorProtocol.proto --java_out ../java
+  cd ../../../..
+  ./scripts/fix-protobuf.sh
 *******************************************/
 
 message Wrapper {
@@ -24,9 +26,17 @@ message Hello {
   required Address address = 2;
 }
 
+enum BarrierOp {
+  Enter = 1;
+  Fail = 2;
+  Succeeded = 3;
+  Failed = 4;
+}
+
 message EnterBarrier {
   required string name = 1;
-  optional bool status = 2;
+  required BarrierOp op = 2;
+  optional int64 timeout = 3;
 }
 
 message AddressRequest {
@@ -47,11 +57,13 @@ enum FailType {
   Abort = 3;
   Shutdown = 4;
 }
+
 enum Direction {
   Send = 1;
   Receive = 2;
   Both = 3;
 }
+
 message InjectFailure {
   required FailType failure = 1;
   optional Direction direction = 2;

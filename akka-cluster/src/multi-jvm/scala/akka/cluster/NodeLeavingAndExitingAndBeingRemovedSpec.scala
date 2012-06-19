@@ -43,7 +43,7 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
       runOn(first) {
         cluster.leave(secondAddress)
       }
-      testConductor.enter("second-left")
+      enterBarrier("second-left")
 
       runOn(first, third) {
         // verify that the 'second' node is no longer part of the 'members' set
@@ -59,7 +59,7 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
         awaitCond(cluster.status == MemberStatus.Removed, reaperWaitingTime)
       }
 
-      testConductor.enter("finished")
+      enterBarrier("finished")
     }
   }
 }
