@@ -349,7 +349,8 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
             throw e
         }
       })
-      val dyingActor = Await.result((supervisor ? dyingProps).mapTo[ActorRef], timeout.duration)
+      supervisor ! dyingProps
+      val dyingActor = expectMsgType[ActorRef]
 
       filterEvents(EventFilter[RuntimeException]("Expected", occurrences = 1),
         EventFilter[IllegalStateException]("error while creating actor", occurrences = 1)) {
@@ -358,7 +359,8 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
           }
         }
 
-      Await.result(dyingActor.?(Ping)(DilatedTimeout), DilatedTimeout) must be === PongMessage
+      dyingActor ! Ping
+      expectMsg(PongMessage)
 
       inits.get must be(3)
 

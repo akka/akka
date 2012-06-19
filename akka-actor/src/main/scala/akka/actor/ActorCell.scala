@@ -682,6 +682,11 @@ private[akka] class ActorCell(
     // prevent any further messages to be processed until the actor has been restarted
     dispatcher.suspend(this)
     if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
+    // now we may just have suspended the poor guy which made us fail by way of Escalate, so adjust the score
+    currentMessage match {
+      case Envelope(Failed(`t`), child) ⇒ child.asInstanceOf[InternalActorRef].resume()
+      case _                            ⇒
+    }
   } finally {
     t match { // Wrap InterruptedExceptions and rethrow
       case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t)), self); throw t
