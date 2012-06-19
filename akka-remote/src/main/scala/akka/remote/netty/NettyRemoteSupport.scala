@@ -24,7 +24,7 @@ import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefPr
 import akka.util.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
 
-object ChannelAddress extends ChannelLocal[Option[Address]] {
+private[akka] object ChannelAddress extends ChannelLocal[Option[Address]] {
   override def initialValue(ch: Channel): Option[Address] = None
 }
 
@@ -54,9 +54,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      * in implementations of ChannelPipelineFactory.
      */
     def apply(handlers: Seq[ChannelHandler]): DefaultChannelPipeline =
-      handlers.foldLeft(new DefaultChannelPipeline) {
-        (pipe, handler) ⇒ pipe.addLast(Logging.simpleName(handler.getClass), handler); pipe
-      }
+      (new DefaultChannelPipeline /: handlers) { (p, h) ⇒ p.addLast(Logging.simpleName(h.getClass), h); p }
 
     /**
      * Constructs the NettyRemoteTransport default pipeline with the give “head” handler, which
@@ -73,11 +71,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      */
     def defaultStack(withTimeout: Boolean, isClient: Boolean): Seq[ChannelHandler] =
       (if (settings.EnableSSL) List(NettySSLSupport(settings, NettyRemoteTransport.this.log, isClient)) else Nil) :::
-        (if (withTimeout) List(timeout) else Nil) :::
-        msgFormat :::
-        authenticator :::
-        executionHandler ::
-        Nil
+        (if (withTimeout) List(timeout) else Nil) ::: msgFormat ::: authenticator ::: executionHandler :: Nil
 
     /**
      * Construct an IdleStateHandler which uses [[akka.remote.netty.NettyRemoteTransport]].timer.

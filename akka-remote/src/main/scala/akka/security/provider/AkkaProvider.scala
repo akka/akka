@@ -12,9 +12,9 @@ final class AkkaProvider extends Provider("Akka", 1.0, "Akka provider 1.0 that i
   AccessController.doPrivileged(new PrivilegedAction[AkkaProvider] {
     def run = {
       //SecureRandom
-      put("SecureRandom.AES128CounterRNGFast", "akka.security.provider.AES128CounterRNGFast")
-      put("SecureRandom.AES128CounterRNGSecure", "akka.security.provider.AES128CounterRNGSecure")
-      put("SecureRandom.AES256CounterRNGSecure", "akka.security.provider.AES256CounterRNGSecure")
+      put("SecureRandom.AES128CounterRNGFast", classOf[AES128CounterRNGFast].getName)
+      put("SecureRandom.AES128CounterRNGSecure", classOf[AES128CounterRNGSecure].getName)
+      put("SecureRandom.AES256CounterRNGSecure", classOf[AES256CounterRNGSecure].getName)
 
       //Implementation type: software or hardware
       put("SecureRandom.AES128CounterRNGFast ImplementedIn", "Software")
