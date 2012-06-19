@@ -83,8 +83,8 @@ class Ticket1978AES128CounterRNGFastSpec extends Ticket1978CommunicationSpec(get
 /**
  * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
  */
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class Ticket1978AES128CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterRNGSecure", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+//@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+//class Ticket1978AES128CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterRNGSecure", "TLS_RSA_WITH_AES_128_CBC_SHA"))
 
 /**
  * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
