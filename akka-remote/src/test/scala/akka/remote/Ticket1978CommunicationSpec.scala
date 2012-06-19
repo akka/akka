@@ -50,9 +50,6 @@ object Configuration {
   """
 
   def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = try {
-
-    if (false) throw new IllegalArgumentException("This is not working properly yet")
-
     val config = ConfigFactory.parseString("akka.remote.netty.port=12345").withFallback(ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", "))))
     val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty")
     val settings = new NettySettings(fullConfig, "placeholder")
