@@ -165,8 +165,7 @@ class AccrualFailureDetector(
         else PhiFactor * timestampDiff / mean
       }
 
-    // FIXME change to debug log level, when failure detector is stable
-    log.info("Phi value [{}] and threshold [{}] for connection [{}] ", phi, threshold, connection)
+    log.debug("Phi value [{}] and threshold [{}] for connection [{}] ", phi, threshold, connection)
     phi
   }
 
