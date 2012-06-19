@@ -9,7 +9,6 @@ package akka
  * <ul>
  *   <li>a uuid for tracking purposes</li>
  *   <li>toString that includes exception name, message and uuid</li>
- *   <li>toLongString which also includes the stack trace</li>
  * </ul>
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
