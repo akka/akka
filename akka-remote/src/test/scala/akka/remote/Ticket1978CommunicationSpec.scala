@@ -124,7 +124,7 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
         }
       }
 
-      "send error message for wrong address" in {
+      "send error message for wrong address" ignore {
         within(timeout.duration) {
           EventFilter.error(start = "dropping", occurrences = 1).intercept {
             system.actorFor("akka://remotesys@localhost:12346/user/echo") ! "ping"
