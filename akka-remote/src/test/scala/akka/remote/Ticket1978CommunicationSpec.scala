@@ -50,7 +50,6 @@ object Configuration {
   def getCipherConfig(cipher: String, enabled: String*): CipherConfig = {
     val localPort, remotePort = { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
     try {
-
       //if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")
 
       val config = ConfigFactory.parseString(conf.format(localPort, trustStore, keyStore, cipher, enabled.mkString(", ")))
