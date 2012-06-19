@@ -893,7 +893,11 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localGossip = localState.latestGossip
 
     val winningGossip =
-      if (remoteGossip.version <> localGossip.version) {
+      if (isSingletonCluster(localState) && localGossip.overview.unreachable.isEmpty && remoteGossip.members.contains(self)) {
+        // a fresh singleton cluster that is joining, no need to merge, use received gossip
+        remoteGossip
+
+      } else if (remoteGossip.version <> localGossip.version) {
         // concurrent
         val mergedGossip = remoteGossip merge localGossip
         val versionedMergedGossip = mergedGossip :+ vclockNode
