@@ -106,8 +106,14 @@ case class RemoteServerShutdown(
 case class RemoteServerError(
   @BeanProperty val cause: Throwable,
   @transient @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
+
+  cause match {
+    case s: javax.net.ssl.SSLException ⇒ var e: Throwable = s; while (e.getCause ne null) e = e.getCause; println(Logging.stackTraceFor(e))
+    case _                             ⇒
+  }
+
   override def logLevel: Logging.LogLevel = Logging.ErrorLevel
-  override def toString: String = "RemoteServerError@" + remote + "] Error[" + cause + "]"
+  override def toString: String = "RemoteServerError@" + remote + "] Error[" + Logging.stackTraceFor(cause) + "]"
 }
 
 /**

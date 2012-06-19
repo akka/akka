@@ -60,11 +60,16 @@ private[akka] object NettySSLSupport {
 
     def constructClientContext(settings: NettySettings, log: LoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] =
       try {
-        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
-        val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
-        trustStore.load(new FileInputStream(trustStorePath), trustStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
-        trustManagerFactory.init(trustStore)
-        val trustManagers: Array[TrustManager] = trustManagerFactory.getTrustManagers
+        val trustManagers: Array[TrustManager] = {
+          val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+          trustManagerFactory.init({
+            val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
+            val fin = new FileInputStream(trustStorePath)
+            try trustStore.load(fin, trustStorePassword.toCharArray) finally fin.close()
+            trustStore
+          })
+          trustManagerFactory.getTrustManagers
+        }
         Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(null, trustManagers, initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
       } catch {
         case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Client SSL connection could not be established because trust store could not be loaded", e)
@@ -102,9 +107,13 @@ private[akka] object NettySSLSupport {
     def constructServerContext(settings: NettySettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, protocol: String): Option[SSLContext] =
       try {
         val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-        val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
-        keyStore.load(new FileInputStream(keyStorePath), keyStorePassword.toCharArray) //FIXME does the FileInputStream need to be closed?
-        factory.init(keyStore, keyStorePassword.toCharArray)
+
+        factory.init({
+          val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
+          val fin = new FileInputStream(keyStorePath)
+          try keyStore.load(fin, keyStorePassword.toCharArray) finally fin.close()
+          keyStore
+        }, keyStorePassword.toCharArray)
         Option(SSLContext.getInstance(protocol)) map { ctx ⇒ ctx.init(factory.getKeyManagers, null, initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)); ctx }
       } catch {
         case e: FileNotFoundException    ⇒ throw new RemoteTransportException("Server SSL connection could not be established because key store could not be loaded", e)

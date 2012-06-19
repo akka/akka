@@ -65,17 +65,15 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      * @param withTimeout determines whether an IdleStateHandler shall be included
      */
     def apply(endpoint: ⇒ Seq[ChannelHandler], withTimeout: Boolean, isClient: Boolean): ChannelPipelineFactory =
-      new ChannelPipelineFactory {
-        def getPipeline = apply(defaultStack(withTimeout, isClient) ++ endpoint)
-      }
+      new ChannelPipelineFactory { override def getPipeline = apply(defaultStack(withTimeout, isClient) ++ endpoint) }
 
     /**
      * Construct a default protocol stack, excluding the “head” handler (i.e. the one which
      * actually dispatches the received messages to the local target actors).
      */
     def defaultStack(withTimeout: Boolean, isClient: Boolean): Seq[ChannelHandler] =
-      (if (settings.EnableSSL) NettySSLSupport(settings, NettyRemoteTransport.this.log, isClient) :: Nil else Nil) :::
-        (if (withTimeout) timeout :: Nil else Nil) :::
+      (if (settings.EnableSSL) List(NettySSLSupport(settings, NettyRemoteTransport.this.log, isClient)) else Nil) :::
+        (if (withTimeout) List(timeout) else Nil) :::
         msgFormat :::
         authenticator :::
         executionHandler ::
@@ -116,7 +114,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      * protect the TCP port from unauthorized use (don’t rely on it too much, though,
      * as this is NOT a cryptographic feature).
      */
-    def authenticator = if (settings.RequireCookie) new RemoteServerAuthenticationHandler(settings.SecureCookie) :: Nil else Nil
+    def authenticator = if (settings.RequireCookie) List(new RemoteServerAuthenticationHandler(settings.SecureCookie)) else Nil
   }
 
   /**
