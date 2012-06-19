@@ -134,7 +134,7 @@ object DispatcherDocSpec {
   }
 
   //#mailbox-implementation-example
-  case class MyUnboundedMailbox() extends akka.dispatch.MailboxType {
+  class MyUnboundedMailbox extends akka.dispatch.MailboxType {
     import akka.actor.{ ActorRef, ActorSystem }
     import com.typesafe.config.Config
     import java.util.concurrent.ConcurrentLinkedQueue
@@ -153,8 +153,8 @@ object DispatcherDocSpec {
       new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
         final val queue = new ConcurrentLinkedQueue[Envelope]()
       }
-    //#mailbox-implementation-example
   }
+  //#mailbox-implementation-example
 }
 
 class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {

@@ -163,10 +163,20 @@ private[akka] trait ActorRefScope {
   def isLocal: Boolean
 }
 
+/**
+ * Refs which are statically known to be local inherit from this Scope
+ */
 private[akka] trait LocalRef extends ActorRefScope {
   final def isLocal = true
 }
 
+/**
+ * RepointableActorRef (and potentially others) may change their locality at
+ * runtime, meaning that isLocal might not be stable. RepointableActorRef has
+ * the feature that it starts out “not fully started” (but you can send to it),
+ * which is why `isStarted` features here; it is not improbable that cluster
+ * actor refs will have the same behavior.
+ */
 private[akka] trait RepointableRef extends ActorRefScope {
   def isStarted: Boolean
 }
@@ -214,6 +224,12 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   def isLocal: Boolean
 }
 
+/**
+ * Common trait of all actor refs which actually have a Cell, most notably
+ * LocalActorRef and RepointableActorRef. The former specializes the return
+ * type of `underlying` so that follow-up calls can use invokevirtual instead
+ * of invokeinterface.
+ */
 private[akka] abstract class ActorRefWithCell extends InternalActorRef { this: ActorRefScope ⇒
   def underlying: Cell
 }

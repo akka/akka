@@ -328,12 +328,12 @@ private[akka] object ActorCell {
 
     def remove(child: ActorRef): ChildrenContainer = NormalChildrenContainer(c - child.path.name)
 
-    def getByName(name: String): Option[ChildRestartStats] = c get name match {
+    def getByName(name: String): Option[ChildRestartStats] = c.get(name) match {
       case s @ Some(_: ChildRestartStats) ⇒ s.asInstanceOf[Option[ChildRestartStats]]
       case _                              ⇒ None
     }
 
-    def getByRef(actor: ActorRef): Option[ChildRestartStats] = c get actor.path.name match {
+    def getByRef(actor: ActorRef): Option[ChildRestartStats] = c.get(actor.path.name) match {
       case c @ Some(crs: ChildRestartStats) if (crs.child == actor) ⇒ c.asInstanceOf[Option[ChildRestartStats]]
       case _ ⇒ None
     }
@@ -349,7 +349,7 @@ private[akka] object ActorCell {
         throw new InvalidActorNameException("actor name " + name + " is not unique!")
       else new NormalChildrenContainer(c.updated(name, ChildNameReserved))
 
-    def unreserve(name: String): ChildrenContainer = c get name match {
+    def unreserve(name: String): ChildrenContainer = c.get(name) match {
       case Some(ChildNameReserved) ⇒ NormalChildrenContainer(c - name)
       case _                       ⇒ this
     }
@@ -389,12 +389,12 @@ private[akka] object ActorCell {
       else copy(c - child.path.name, t)
     }
 
-    def getByName(name: String): Option[ChildRestartStats] = c get name match {
+    def getByName(name: String): Option[ChildRestartStats] = c.get(name) match {
       case s @ Some(_: ChildRestartStats) ⇒ s.asInstanceOf[Option[ChildRestartStats]]
       case _                              ⇒ None
     }
 
-    def getByRef(actor: ActorRef): Option[ChildRestartStats] = c get actor.path.name match {
+    def getByRef(actor: ActorRef): Option[ChildRestartStats] = c.get(actor.path.name) match {
       case c @ Some(crs: ChildRestartStats) if (crs.child == actor) ⇒ c.asInstanceOf[Option[ChildRestartStats]]
       case _ ⇒ None
     }
@@ -413,7 +413,7 @@ private[akka] object ActorCell {
         else copy(c = c.updated(name, ChildNameReserved))
     }
 
-    def unreserve(name: String): ChildrenContainer = c get name match {
+    def unreserve(name: String): ChildrenContainer = c.get(name) match {
       case Some(ChildNameReserved) ⇒ copy(c = c - name)
       case _                       ⇒ this
     }

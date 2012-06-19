@@ -43,11 +43,13 @@ private[akka] class RepointableActorRef(
     if (Unsafe.instance.compareAndSwapObject(this, cellOffset, old, next)) old else swapCell(next)
   }
 
-  /*
+  /**
    * Initialize: make a dummy cell which holds just a mailbox, then tell our
-   * supervisor that we exist so that he can create the real Cell in 
+   * supervisor that we exist so that he can create the real Cell in
    * handleSupervise().
-   * 
+   *
+   * Call twice on your own peril!
+   *
    * This is protected so that others can have different initialization.
    */
   def initialize(): this.type = {
@@ -57,9 +59,10 @@ private[akka] class RepointableActorRef(
   }
 
   /**
-   * This method is supposedly called by the supervisor in handleSupervise()
+   * This method is supposed to be called by the supervisor in handleSupervise()
    * to replace the UnstartedCell with the real one. It assumes no concurrent
-   * modification of the underlying Cell.
+   * modification of the `underlying` field, though it is safe to send messages
+   * at any time.
    */
   def activate(): this.type = {
     underlying match {
@@ -69,6 +72,10 @@ private[akka] class RepointableActorRef(
     this
   }
 
+  /**
+   * This is called by activate() to obtain the cell which is to replace the
+   * unstarted cell. The cell must be fully functional.
+   */
   def newCell(): Cell = new ActorCell(system, this, props, supervisor).start()
 
   def suspend(): Unit = underlying.suspend()
@@ -138,11 +145,17 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
       while (systemQueue.nonEmpty || queue.nonEmpty) {
         while (systemQueue.nonEmpty) {
           val msg = systemQueue.dequeue()
-          try cell sendSystemMessage msg catch { case _: InterruptedException ⇒ interrupted = true }
+          try cell.sendSystemMessage(msg)
+          catch {
+            case _: InterruptedException ⇒ interrupted = true
+          }
         }
         if (queue.nonEmpty) {
           val envelope = queue.dequeue()
-          try cell tell (envelope.message, envelope.sender) catch { case _: InterruptedException ⇒ interrupted = true }
+          try cell.tell(envelope.message, envelope.sender)
+          catch {
+            case _: InterruptedException ⇒ interrupted = true
+          }
         }
       }
       if (interrupted) throw new InterruptedException

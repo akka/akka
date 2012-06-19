@@ -36,8 +36,8 @@ private[akka] class RemoteActorRefProvider(
 
   // these are only available after init()
   override def rootGuardian: InternalActorRef = local.rootGuardian
-  override def guardian: InternalActorRef = local.guardian
-  override def systemGuardian: InternalActorRef = local.systemGuardian
+  override def guardian: LocalActorRef = local.guardian
+  override def systemGuardian: LocalActorRef = local.systemGuardian
   override def terminationFuture: Promise[Unit] = local.terminationFuture
   override def dispatcher: MessageDispatcher = local.dispatcher
   override def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = local.registerTempActor(actorRef, path)

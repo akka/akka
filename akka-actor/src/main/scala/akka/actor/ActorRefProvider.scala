@@ -26,12 +26,12 @@ trait ActorRefProvider {
   /**
    * Reference to the supervisor used for all top-level user actors.
    */
-  def guardian: InternalActorRef
+  def guardian: LocalActorRef
 
   /**
    * Reference to the supervisor used for all top-level system actors.
    */
-  def systemGuardian: InternalActorRef
+  def systemGuardian: LocalActorRef
 
   /**
    * Dead letter destination for this provider.
@@ -482,13 +482,10 @@ class LocalActorRefProvider(
       }
     }
 
-  lazy val guardian: InternalActorRef =
-    actorOf(system, guardianProps, rootGuardian, rootPath / "user",
-      systemService = true, deploy = None, lookupDeploy = false, async = false)
+  lazy val guardian: LocalActorRef = new LocalActorRef(system, guardianProps, rootGuardian, rootPath / "user")
 
-  lazy val systemGuardian: InternalActorRef =
-    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system",
-      systemService = true, deploy = None, lookupDeploy = false, async = false)
+  lazy val systemGuardian: LocalActorRef =
+    new LocalActorRef(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system")
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 

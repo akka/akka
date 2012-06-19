@@ -426,8 +426,10 @@ abstract class ExtendedActorSystem extends ActorSystem {
 
   /**
    * For debugging: traverse actor hierarchy and make string representation.
+   * Careful, this may OOM on large actor systems, and it is only meant for
+   * helping debugging in case something already went terminally wrong.
    */
-  def printTree: String
+  private[akka] def printTree: String
 }
 
 private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader) extends ExtendedActorSystem {
@@ -485,26 +487,11 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   protected def systemImpl: ActorSystemImpl = this
 
-  private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
-    systemGuardian match {
-      case g: LocalActorRef ⇒ g.underlying.attachChild(props, name)
-      case s                ⇒ throw new UnsupportedOperationException("unknown systemGuardian type " + s.getClass)
-    }
-  }
+  private[akka] def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name)
 
-  def actorOf(props: Props, name: String): ActorRef = {
-    guardian match {
-      case g: LocalActorRef ⇒ g.underlying.attachChild(props, name)
-      case s                ⇒ throw new UnsupportedOperationException("unknown guardian type " + s.getClass)
-    }
-  }
+  def actorOf(props: Props, name: String): ActorRef = guardian.underlying.attachChild(props, name)
 
-  def actorOf(props: Props): ActorRef = {
-    guardian match {
-      case g: LocalActorRef ⇒ g.underlying.attachChild(props)
-      case s                ⇒ throw new UnsupportedOperationException("unknown guardian type " + s.getClass)
-    }
-  }
+  def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props)
 
   def stop(actor: ActorRef): Unit = {
     implicit val timeout = settings.CreationTimeout
@@ -569,8 +556,8 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian
-  def guardian: InternalActorRef = provider.guardian
-  def systemGuardian: InternalActorRef = provider.systemGuardian
+  def guardian: LocalActorRef = provider.guardian
+  def systemGuardian: LocalActorRef = provider.systemGuardian
 
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
