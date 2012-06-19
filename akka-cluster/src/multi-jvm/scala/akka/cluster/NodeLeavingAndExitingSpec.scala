@@ -49,7 +49,7 @@ abstract class NodeLeavingAndExitingSpec
       runOn(first) {
         cluster.leave(secondAddress)
       }
-      testConductor.enter("second-left")
+      enterBarrier("second-left")
 
       runOn(first, third) {
 
@@ -68,7 +68,7 @@ abstract class NodeLeavingAndExitingSpec
         hasExited.get.address must be(secondAddress)
       }
 
-      testConductor.enter("finished")
+      enterBarrier("finished")
     }
   }
 }

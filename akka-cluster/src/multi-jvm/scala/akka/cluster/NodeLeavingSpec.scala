@@ -43,7 +43,7 @@ abstract class NodeLeavingSpec
       runOn(first) {
         cluster.leave(secondAddress)
       }
-      testConductor.enter("second-left")
+      enterBarrier("second-left")
 
       runOn(first, third) {
         awaitCond(cluster.latestGossip.members.exists(_.status == MemberStatus.Leaving))
@@ -53,7 +53,7 @@ abstract class NodeLeavingSpec
         hasLeft.get.address must be(secondAddress)
       }
 
-      testConductor.enter("finished")
+      enterBarrier("finished")
     }
   }
 }

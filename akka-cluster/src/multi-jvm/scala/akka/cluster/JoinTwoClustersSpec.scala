@@ -44,7 +44,7 @@ abstract class JoinTwoClustersSpec
       runOn(a1, b1, c1) {
         startClusterNode()
       }
-      testConductor.enter("first-started")
+      enterBarrier("first-started")
 
       runOn(a1, a2) {
         cluster.join(a1Address)
@@ -62,7 +62,7 @@ abstract class JoinTwoClustersSpec
       assertLeader(b1, b2)
       assertLeader(c1, c2)
 
-      testConductor.enter("two-members")
+      enterBarrier("two-members")
 
       runOn(b2) {
         cluster.join(a1Address)
@@ -75,7 +75,7 @@ abstract class JoinTwoClustersSpec
       assertLeader(a1, a2, b1, b2)
       assertLeader(c1, c2)
 
-      testConductor.enter("four-members")
+      enterBarrier("four-members")
     }
 
     "be able to 'elect' a single leader after joining (C -> A + B)" taggedAs LongRunningTest in {
@@ -88,7 +88,7 @@ abstract class JoinTwoClustersSpec
 
       assertLeader(a1, a2, b1, b2, c1, c2)
 
-      testConductor.enter("six-members")
+      enterBarrier("six-members")
     }
   }
 }

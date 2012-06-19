@@ -50,7 +50,7 @@ abstract class LeaderLeavingSpec
       if (cluster.isLeader) {
 
         cluster.leave(oldLeaderAddress)
-        testConductor.enter("leader-left")
+        enterBarrier("leader-left")
 
         // verify that a NEW LEADER have taken over
         awaitCond(!cluster.isLeader)
@@ -63,7 +63,7 @@ abstract class LeaderLeavingSpec
 
       } else {
 
-        testConductor.enter("leader-left")
+        enterBarrier("leader-left")
 
         // verify that the LEADER is LEAVING
         awaitCond(cluster.latestGossip.members.exists(m => m.status == MemberStatus.Leaving && m.address == oldLeaderAddress)) // wait on LEAVING
@@ -81,7 +81,7 @@ abstract class LeaderLeavingSpec
         awaitCond(cluster.leader != oldLeaderAddress)
       }
 
-      testConductor.enter("finished")
+      enterBarrier("finished")
     }
   }
 }

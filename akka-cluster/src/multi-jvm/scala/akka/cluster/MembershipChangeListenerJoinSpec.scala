@@ -45,19 +45,19 @@ abstract class MembershipChangeListenerJoinSpec
               joinLatch.countDown()
           }
         })
-        testConductor.enter("registered-listener")
+        enterBarrier("registered-listener")
 
         joinLatch.await
       }
 
       runOn(second) {
-        testConductor.enter("registered-listener")
+        enterBarrier("registered-listener")
         cluster.join(firstAddress)
       }
 
       awaitUpConvergence(2)
 
-      testConductor.enter("after")
+      enterBarrier("after")
     }
   }
 }
