@@ -38,7 +38,7 @@ abstract class NodeMembershipSpec
       runOn(first) {
         startClusterNode()
       }
-      testConductor.enter("first-started")
+      enterBarrier("first-started")
 
       runOn(first, second) {
         cluster.join(firstAddress)
@@ -50,7 +50,7 @@ abstract class NodeMembershipSpec
         awaitCond(cluster.convergence.isDefined)
       }
 
-      testConductor.enter("after-1")
+      enterBarrier("after-1")
     }
 
     "(when three nodes) start gossiping to each other so that all nodes gets the same gossip info" taggedAs LongRunningTest in {
@@ -66,7 +66,7 @@ abstract class NodeMembershipSpec
       }
       awaitCond(cluster.convergence.isDefined)
 
-      testConductor.enter("after-2")
+      enterBarrier("after-2")
     }
   }
 }

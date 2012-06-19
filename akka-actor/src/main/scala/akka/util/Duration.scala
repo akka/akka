@@ -9,16 +9,22 @@ import TimeUnit._
 import java.lang.{ Double ⇒ JDouble }
 
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class Deadline private (time: Duration) {
+case class Deadline private (time: Duration) extends Ordered[Deadline] {
   def +(other: Duration): Deadline = copy(time = time + other)
   def -(other: Duration): Deadline = copy(time = time - other)
   def -(other: Deadline): Duration = time - other.time
   def timeLeft: Duration = this - Deadline.now
   def hasTimeLeft(): Boolean = !isOverdue() //Code reuse FTW
   def isOverdue(): Boolean = (time.toNanos - System.nanoTime()) < 0
+  def compare(that: Deadline) = this.time compare that.time
 }
+
 object Deadline {
   def now: Deadline = Deadline(Duration(System.nanoTime, NANOSECONDS))
+
+  implicit object DeadlineIsOrdered extends Ordering[Deadline] {
+    def compare(a: Deadline, b: Deadline) = a compare b
+  }
 }
 
 object Duration {
