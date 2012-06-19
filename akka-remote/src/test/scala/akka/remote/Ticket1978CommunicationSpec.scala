@@ -50,6 +50,9 @@ object Configuration {
   """
 
   def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = try {
+
+    if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")
+
     val config = ConfigFactory.parseString("akka.remote.netty.port=12345").withFallback(ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", "))))
     val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty")
     val settings = new NettySettings(fullConfig, "placeholder")
@@ -83,8 +86,8 @@ class Ticket1978AES128CounterRNGFastSpec extends Ticket1978CommunicationSpec(get
 /**
  * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
  */
-//@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-//class Ticket1978AES128CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterRNGSecure", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class Ticket1978AES128CounterRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterRNGSecure", "TLS_RSA_WITH_AES_128_CBC_SHA"))
 
 /**
  * Both of the <quote>Secure</quote> variants require access to the Internet to access random.org.
