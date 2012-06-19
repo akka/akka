@@ -30,7 +30,7 @@ private[akka] sealed trait ConfirmedClientOp extends ClientOp
  */
 private[akka] case class Hello(name: String, addr: Address) extends NetworkOp
 
-private[akka] case class EnterBarrier(name: String, timeout: Option[Duration] = None) extends ServerOp with NetworkOp
+private[akka] case class EnterBarrier(name: String, timeout: Option[Duration]) extends ServerOp with NetworkOp
 private[akka] case class FailBarrier(name: String) extends ServerOp with NetworkOp
 private[akka] case class BarrierResult(name: String, success: Boolean) extends UnconfirmedClientOp with NetworkOp
 

@@ -542,7 +542,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   }
 
   onTransition {
-    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline - Deadline.now, false)
+    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
     case Waiting -> Idle ⇒ cancelTimer("Timeout")
   }
 
@@ -552,12 +552,11 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       val together = if (clients.exists(_.fsm == sender)) sender :: arrived else arrived
       val enterDeadline = getDeadline(timeout)
       // we only allow the deadlines to get shorter
-      val newDeadline = if ((enterDeadline - deadline) < Duration.Zero) enterDeadline else deadline
-      if (newDeadline != deadline) {
-        cancelTimer("Timeout")
-        setTimer("Timeout", StateTimeout, newDeadline - Deadline.now, false)
-      }
-      handleBarrier(d.copy(arrived = together, deadline = newDeadline))
+      if (enterDeadline < deadline) {
+        setTimer("Timeout", StateTimeout, enterDeadline.timeLeft, false)
+        handleBarrier(d.copy(arrived = together, deadline = enterDeadline))
+      } else
+        handleBarrier(d.copy(arrived = together))
     case Event(RemoveClient(name), d @ Data(clients, barrier, arrived, _)) ⇒
       clients find (_.name == name) match {
         case None ⇒ stay

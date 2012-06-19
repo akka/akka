@@ -85,12 +85,10 @@ trait Player { this: TestConductorExt ⇒
    * throw an exception in case of timeouts or other errors.
    */
   def enter(timeout: Timeout, name: Seq[String]) {
-    def now: Duration = System.nanoTime.nanos
-
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
-    val stop = now + timeout.duration
+    val stop = Deadline.now + timeout.duration
     name foreach { b ⇒
-      val barrierTimeout = stop - now
+      val barrierTimeout = stop.timeLeft
       if (barrierTimeout < Duration.Zero) {
         client ! ToServer(FailBarrier(b))
         throw new TimeoutException("Server timed out while waiting for barrier " + b);

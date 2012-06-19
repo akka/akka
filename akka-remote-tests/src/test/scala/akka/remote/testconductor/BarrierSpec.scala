@@ -71,7 +71,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
 
     "fail entering barrier when nobody registered" taggedAs TimingTest in {
       val b = getBarrier()
-      b ! EnterBarrier("bar1")
+      b ! EnterBarrier("bar1", None)
       expectMsg(ToClient(BarrierResult("bar1", false)))
     }
 
@@ -80,10 +80,10 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       val a, b = TestProbe()
       barrier ! NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
-      a.send(barrier, EnterBarrier("bar2"))
+      a.send(barrier, EnterBarrier("bar2", None))
       noMsg(a, b)
       within(2 seconds) {
-        b.send(barrier, EnterBarrier("bar2"))
+        b.send(barrier, EnterBarrier("bar2", None))
         a.expectMsg(ToClient(BarrierResult("bar2", true)))
         b.expectMsg(ToClient(BarrierResult("bar2", true)))
       }
@@ -94,12 +94,12 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       val a, b, c = TestProbe()
       barrier ! NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
-      a.send(barrier, EnterBarrier("bar3"))
+      a.send(barrier, EnterBarrier("bar3", None))
       barrier ! NodeInfo(C, AddressFromURIString("akka://sys"), c.ref)
-      b.send(barrier, EnterBarrier("bar3"))
+      b.send(barrier, EnterBarrier("bar3", None))
       noMsg(a, b, c)
       within(2 seconds) {
-        c.send(barrier, EnterBarrier("bar3"))
+        c.send(barrier, EnterBarrier("bar3", None))
         a.expectMsg(ToClient(BarrierResult("bar3", true)))
         b.expectMsg(ToClient(BarrierResult("bar3", true)))
         c.expectMsg(ToClient(BarrierResult("bar3", true)))
@@ -112,8 +112,8 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       barrier ! NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
       barrier ! NodeInfo(C, AddressFromURIString("akka://sys"), c.ref)
-      a.send(barrier, EnterBarrier("bar4"))
-      b.send(barrier, EnterBarrier("bar4"))
+      a.send(barrier, EnterBarrier("bar4", None))
+      b.send(barrier, EnterBarrier("bar4", None))
       barrier ! RemoveClient(A)
       barrier ! ClientDisconnected(A)
       noMsg(a, b, c)
@@ -130,9 +130,9 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       val a, b = TestProbe()
       barrier ! NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
-      a.send(barrier, EnterBarrier("bar5"))
+      a.send(barrier, EnterBarrier("bar5", None))
       barrier ! RemoveClient(A)
-      b.send(barrier, EnterBarrier("foo"))
+      b.send(barrier, EnterBarrier("foo", None))
       b.expectMsg(ToClient(BarrierResult("foo", true)))
     }
 
@@ -142,7 +142,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       val nodeA = NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
       barrier ! nodeA
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
-      a.send(barrier, EnterBarrier("bar6"))
+      a.send(barrier, EnterBarrier("bar6", None))
       EventFilter[ClientLost](occurrences = 1) intercept {
         barrier ! ClientDisconnected(B)
       }
@@ -161,8 +161,8 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       barrier ! nodeA
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
       barrier ! nodeC
-      a.send(barrier, EnterBarrier("bar7"))
-      b.send(barrier, EnterBarrier("bar7"))
+      a.send(barrier, EnterBarrier("bar7", None))
+      b.send(barrier, EnterBarrier("bar7", None))
       EventFilter[ClientLost](occurrences = 1) intercept {
         barrier ! ClientDisconnected(B)
       }
@@ -180,9 +180,9 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       barrier ! nodeA
       val nodeB = NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
       barrier ! nodeB
-      a.send(barrier, EnterBarrier("bar8"))
+      a.send(barrier, EnterBarrier("bar8", None))
       EventFilter[WrongBarrier](occurrences = 1) intercept {
-        b.send(barrier, EnterBarrier("foo"))
+        b.send(barrier, EnterBarrier("foo", None))
       }
       val msg = expectMsgType[Failed]
       msg match {
@@ -203,7 +203,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
         case x ⇒ fail("Expected " + Failed(barrier, BarrierEmpty(Data(Set(), "", Nil, null), "cannot remove RoleName(a): no client to remove")) + " but got " + x)
       }
       barrier ! NodeInfo(A, AddressFromURIString("akka://sys"), a.ref)
-      a.send(barrier, EnterBarrier("bar9"))
+      a.send(barrier, EnterBarrier("bar9", None))
       a.expectMsg(ToClient(BarrierResult("bar9", false)))
     }
 
@@ -214,7 +214,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       val nodeB = NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
       barrier ! nodeA
       barrier ! nodeB
-      a.send(barrier, EnterBarrier("bar10"))
+      a.send(barrier, EnterBarrier("bar10", None))
       EventFilter[BarrierTimeout](occurrences = 1) intercept {
         val msg = expectMsgType[Failed](7 seconds)
         msg match {
@@ -274,7 +274,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
 
     "fail entering barrier when nobody registered" taggedAs TimingTest in {
       val b = getController(0)
-      b ! EnterBarrier("b")
+      b ! EnterBarrier("b", None)
       expectMsg(ToClient(BarrierResult("b", false)))
     }
 
@@ -285,10 +285,10 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
       a.expectMsg(ToClient(Done))
       b.expectMsg(ToClient(Done))
-      a.send(barrier, EnterBarrier("bar11"))
+      a.send(barrier, EnterBarrier("bar11", None))
       noMsg(a, b)
       within(2 seconds) {
-        b.send(barrier, EnterBarrier("bar11"))
+        b.send(barrier, EnterBarrier("bar11", None))
         a.expectMsg(ToClient(BarrierResult("bar11", true)))
         b.expectMsg(ToClient(BarrierResult("bar11", true)))
       }
@@ -301,13 +301,13 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
       a.expectMsg(ToClient(Done))
       b.expectMsg(ToClient(Done))
-      a.send(barrier, EnterBarrier("bar12"))
+      a.send(barrier, EnterBarrier("bar12", None))
       barrier ! NodeInfo(C, AddressFromURIString("akka://sys"), c.ref)
       c.expectMsg(ToClient(Done))
-      b.send(barrier, EnterBarrier("bar12"))
+      b.send(barrier, EnterBarrier("bar12", None))
       noMsg(a, b, c)
       within(2 seconds) {
-        c.send(barrier, EnterBarrier("bar12"))
+        c.send(barrier, EnterBarrier("bar12", None))
         a.expectMsg(ToClient(BarrierResult("bar12", true)))
         b.expectMsg(ToClient(BarrierResult("bar12", true)))
         c.expectMsg(ToClient(BarrierResult("bar12", true)))
@@ -323,8 +323,8 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       a.expectMsg(ToClient(Done))
       b.expectMsg(ToClient(Done))
       c.expectMsg(ToClient(Done))
-      a.send(barrier, EnterBarrier("bar13"))
-      b.send(barrier, EnterBarrier("bar13"))
+      a.send(barrier, EnterBarrier("bar13", None))
+      b.send(barrier, EnterBarrier("bar13", None))
       barrier ! Remove(A)
       barrier ! ClientDisconnected(A)
       noMsg(a, b, c)
@@ -343,9 +343,9 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
       a.expectMsg(ToClient(Done))
       b.expectMsg(ToClient(Done))
-      a.send(barrier, EnterBarrier("bar14"))
+      a.send(barrier, EnterBarrier("bar14", None))
       barrier ! Remove(A)
-      b.send(barrier, EnterBarrier("foo"))
+      b.send(barrier, EnterBarrier("foo", None))
       b.expectMsg(ToClient(BarrierResult("foo", true)))
     }
 
@@ -357,7 +357,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       barrier ! NodeInfo(B, AddressFromURIString("akka://sys"), b.ref)
       a.expectMsg(ToClient(Done))
       b.expectMsg(ToClient(Done))
-      a.send(barrier, EnterBarrier("bar15"))
+      a.send(barrier, EnterBarrier("bar15", None))
       barrier ! ClientDisconnected(RoleName("unknown"))
       noMsg(a)
       EventFilter[ClientLost](occurrences = 1) intercept {
@@ -377,8 +377,8 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       a.expectMsg(ToClient(Done))
       b.expectMsg(ToClient(Done))
       c.expectMsg(ToClient(Done))
-      a.send(barrier, EnterBarrier("bar16"))
-      b.send(barrier, EnterBarrier("bar16"))
+      a.send(barrier, EnterBarrier("bar16", None))
+      b.send(barrier, EnterBarrier("bar16", None))
       EventFilter[ClientLost](occurrences = 1) intercept {
         barrier ! ClientDisconnected(B)
       }
@@ -394,9 +394,9 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       barrier ! nodeB
       a.expectMsg(ToClient(Done))
       b.expectMsg(ToClient(Done))
-      a.send(barrier, EnterBarrier("bar17"))
+      a.send(barrier, EnterBarrier("bar17", None))
       EventFilter[WrongBarrier](occurrences = 1) intercept {
-        b.send(barrier, EnterBarrier("foo"))
+        b.send(barrier, EnterBarrier("foo", None))
       }
       a.expectMsg(ToClient(BarrierResult("bar17", false)))
       b.expectMsg(ToClient(BarrierResult("foo", false)))
@@ -415,7 +415,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       EventFilter[BarrierTimeout](occurrences = 1) intercept {
         Thread.sleep(4000)
       }
-      b.send(barrier, EnterBarrier("bar18"))
+      b.send(barrier, EnterBarrier("bar18", None))
       a.expectMsg(ToClient(BarrierResult("bar18", false)))
       b.expectMsg(ToClient(BarrierResult("bar18", false)))
     }
@@ -444,7 +444,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
         controller ! nodeB
         b.expectMsg(ToClient(BarrierResult("initial startup", false)))
       }
-      a.send(controller, EnterBarrier("bar19"))
+      a.send(controller, EnterBarrier("bar19", None))
       a.expectMsg(ToClient(BarrierResult("bar19", false)))
     }
 
@@ -463,8 +463,8 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
         a.expectMsg(ToClient(BarrierResult("bar20", false)))
         b.expectNoMsg(1 second)
       }
-      a.send(barrier, EnterBarrier("bar21"))
-      b.send(barrier, EnterBarrier("bar21"))
+      a.send(barrier, EnterBarrier("bar21", None))
+      b.send(barrier, EnterBarrier("bar21", None))
       a.expectMsg(ToClient(BarrierResult("bar21", false)))
       b.expectMsg(ToClient(BarrierResult("bar21", false)))
     }
@@ -486,7 +486,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       EventFilter[BarrierTimeout](occurrences = 1) intercept {
         Thread.sleep(4000)
       }
-      c.send(barrier, EnterBarrier("bar22"))
+      c.send(barrier, EnterBarrier("bar22", None))
       a.expectMsg(ToClient(BarrierResult("bar22", false)))
       b.expectMsg(ToClient(BarrierResult("bar22", false)))
       c.expectMsg(ToClient(BarrierResult("bar22", false)))
@@ -509,7 +509,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       EventFilter[BarrierTimeout](occurrences = 1) intercept {
         Thread.sleep(4000)
       }
-      c.send(barrier, EnterBarrier("bar23"))
+      c.send(barrier, EnterBarrier("bar23", None))
       a.expectMsg(ToClient(BarrierResult("bar23", false)))
       b.expectMsg(ToClient(BarrierResult("bar23", false)))
       c.expectMsg(ToClient(BarrierResult("bar23", false)))
