@@ -18,8 +18,7 @@ import akka.security.provider.AkkaProvider
  */
 private[akka] object NettySSLSupport {
 
-  val akka = new AkkaProvider
-  Security.addProvider(akka)
+  Security addProvider AkkaProvider
 
   /**
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
@@ -38,7 +37,7 @@ private[akka] object NettySSLSupport {
     val rng = rngName match {
       case Some(r @ ("AES128CounterRNGFast" | "AES128CounterRNGSecure" | "AES256CounterRNGSecure")) ⇒
         log.debug("SSL random number generator set to: {}", r)
-        SecureRandom.getInstance(r, akka)
+        SecureRandom.getInstance(r, AkkaProvider)
       case Some("SHA1PRNG") ⇒
         log.debug("SSL random number generator set to: SHA1PRNG")
         // This needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
@@ -91,7 +90,7 @@ private[akka] object NettySSLSupport {
         new SslHandler({
           val sslEngine = context.createSSLEngine
           sslEngine.setUseClientMode(true)
-          sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray.map(_.toString))
+          sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
           sslEngine
         })
       case None ⇒
@@ -133,7 +132,7 @@ private[akka] object NettySSLSupport {
         log.debug("Using server SSL context to create SSLEngine ...")
         val sslEngine = context.createSSLEngine
         sslEngine.setUseClientMode(false)
-        sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray.map(_.toString))
+        sslEngine.setEnabledCipherSuites(settings.SSLEnabledAlgorithms.toArray)
         new SslHandler(sslEngine)
       case None ⇒ throw new GeneralSecurityException(
         """Failed to initialize server SSL because SSL context could not be found.

@@ -3,13 +3,13 @@
  */
 package akka.security.provider
 
-import java.security.{ PrivilegedAction, AccessController, Provider }
+import java.security.{ PrivilegedAction, AccessController, Provider, Security }
 
 /**
  * A provider that for AES128CounterRNGFast, a cryptographically secure random number generator through SecureRandom
  */
-final class AkkaProvider extends Provider("Akka", 1.0, "Akka provider 1.0 that implements a secure AES random number generator") {
-  AccessController.doPrivileged(new PrivilegedAction[AkkaProvider] {
+object AkkaProvider extends Provider("Akka", 1.0, "Akka provider 1.0 that implements a secure AES random number generator") {
+  AccessController.doPrivileged(new PrivilegedAction[this.type] {
     def run = {
       //SecureRandom
       put("SecureRandom.AES128CounterRNGFast", classOf[AES128CounterRNGFast].getName)

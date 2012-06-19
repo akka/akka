@@ -8,6 +8,7 @@ import akka.util.Duration
 import java.util.concurrent.TimeUnit._
 import java.net.InetAddress
 import akka.ConfigurationException
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 private[akka] class NettySettings(config: Config, val systemName: String) {
 
@@ -106,7 +107,7 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
     case password ⇒ Some(password)
   }
 
-  val SSLEnabledAlgorithms = getStringList("ssl.enabled-algorithms").toArray.toSet
+  val SSLEnabledAlgorithms = iterableAsScalaIterableConverter(getStringList("ssl.enabled-algorithms")).asScala.toSet[String]
 
   val SSLProtocol = getString("ssl.protocol") match {
     case ""       ⇒ None
