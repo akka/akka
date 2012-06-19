@@ -36,8 +36,7 @@ abstract class NodeLeavingSpec
 
   "A node that is LEAVING a non-singleton cluster" must {
 
-    // FIXME make it work and remove ignore
-    "be marked as LEAVING in the converged membership table" taggedAs LongRunningTest ignore {
+    "be marked as LEAVING in the converged membership table" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)
 
