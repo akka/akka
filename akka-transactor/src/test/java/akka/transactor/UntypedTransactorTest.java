@@ -58,7 +58,7 @@ public class UntypedTransactorTest {
   Timeout timeout = new Timeout(timeoutSeconds, TimeUnit.SECONDS);
 
   @Before
-  public void initialise() {
+  public void initialize() {
     counters = new ArrayList<ActorRef>();
     for (int i = 1; i <= numCounters; i++) {
       final String name = "counter" + i;

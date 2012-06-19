@@ -39,7 +39,7 @@ abstract class ConvergenceSpec
 
   "A cluster of 3 members" must {
 
-    "reach initial convergence" taggedAs LongRunningTest ignore {
+    "reach initial convergence" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third)
 
       runOn(fourth) {
@@ -49,7 +49,7 @@ abstract class ConvergenceSpec
       enterBarrier("after-1")
     }
 
-    "not reach convergence while any nodes are unreachable" taggedAs LongRunningTest ignore {
+    "not reach convergence while any nodes are unreachable" taggedAs LongRunningTest in {
       val thirdAddress = node(third).address
       enterBarrier("before-shutdown")
 
@@ -81,7 +81,7 @@ abstract class ConvergenceSpec
       enterBarrier("after-2")
     }
 
-    "not move a new joining node to Up while there is no convergence" taggedAs LongRunningTest ignore {
+    "not move a new joining node to Up while there is no convergence" taggedAs LongRunningTest in {
       runOn(fourth) {
         // try to join
         cluster.join(node(first).address)

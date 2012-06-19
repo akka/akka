@@ -492,19 +492,21 @@ trait TestKitBase {
 
     @tailrec
     def doit(acc: List[T], count: Int): List[T] = {
-      if (count >= messages) return acc.reverse
-      receiveOne((stop - now) min idle)
-      lastMessage match {
-        case NullMessage ⇒
-          lastMessage = msg
-          acc.reverse
-        case RealMessage(o, _) if (f isDefinedAt o) ⇒
-          msg = lastMessage
-          doit(f(o) :: acc, count + 1)
-        case RealMessage(o, _) ⇒
-          queue.offerFirst(lastMessage)
-          lastMessage = msg
-          acc.reverse
+      if (count >= messages) acc.reverse
+      else {
+        receiveOne((stop - now) min idle)
+        lastMessage match {
+          case NullMessage ⇒
+            lastMessage = msg
+            acc.reverse
+          case RealMessage(o, _) if (f isDefinedAt o) ⇒
+            msg = lastMessage
+            doit(f(o) :: acc, count + 1)
+          case RealMessage(o, _) ⇒
+            queue.offerFirst(lastMessage)
+            lastMessage = msg
+            acc.reverse
+        }
       }
     }
 
