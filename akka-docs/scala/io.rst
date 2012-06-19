@@ -48,76 +48,29 @@ In this example, the data is to be stored in arrays of ``a``, ``b`` and ``data``
 
 Decoding of such frames can be efficiently implemented in the following fashion:
 
-.. code-block:: scala
-
-  implicit val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
-
-  val FrameDecoder = for {
-    frameLenBytes <- IO.take(4)
-    frameLen = frameLenBytes.iterator.getInt
-    frame <- IO.take(frameLen)
-  } yield {
-    val in = frame.iterator
-
-    val n = in.getInt
-    val m = in.getInt
-    
-    val a = ArrayBuilder.make[Short]()
-    val b = ArrayBuilder.make[Long]()
-    
-    for (i <- 1 to n) {
-    a += in.getShort
-    b += in.getInt
-    }
-    
-    val data = Array.ofDim[Double](m)
-    in.getDoubles(data)
-    
-    (a.result, b.result, data)
-  }   
+.. includecode:: code/akka/docs/io/BinaryCoding.scala
+   :include: decoding
 
 This implementation naturally follows the example data format. In a true Scala application, one might, of course, want use specialized immutable Short/Long/Double containers instead of mutable Arrays.
 
-After extracting data from a ``ByteIterator``, the remaining content can be turned back into a ``ByteString`` using the ``toSeq`` method
+After extracting data from a ``ByteIterator``, the remaining content can also be turned back into a ``ByteString`` using the ``toSeq`` method
 
-.. code-block:: scala
-
-  val bytes: ByteString = ...
-  val in: bytes.iterator
-  ... = in.getInt()
-  ... = in.get...
-  val rest: ByteString = in.toSeq
+.. includecode:: code/akka/docs/io/BinaryCoding.scala
+   :include: rest-to-seq
     
 with no copying from bytes to rest involved. In general, conversions from ByteString to ByteIterator and vice versa are O(1) for non-chunked ``ByteString``s and (at worst) O(nChunks) for chunked ByteStrings.
 
 
 Encoding of data also is very natural, using ``ByteStringBuilder``
 
-.. code-block:: scala
+.. includecode:: code/akka/docs/io/BinaryCoding.scala
+   :include: encoding
 
-  implicit val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
-
-  val frameBuilder = ByteString.newBuilder
-
-  val n = a.length
-  val m = data.length
-
-  frameBuilder.putInt(n)
-  frameBuilder.putInt(m)
-
-  for (i <- 0 to n-1) {
-    frameBuilder.putShort(a(i))
-    frameBuilder.putLong(b(i))
-  }
-  frameBuilder.putDoubles(data)
-  val frame = frameBuilder.result()
  
 The encoded data then can be sent over socket (see ``IOManager``):
  
-.. code-block:: scala
-
-  socket.send(ByteString.newBuilder.putInt(frame.length).result)
-  socket.send(frame)
+.. includecode:: code/akka/docs/io/BinaryCoding.scala
+   :include: sending
 
 
 IO.Handle
