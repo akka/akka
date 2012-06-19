@@ -20,7 +20,7 @@ object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
       .withFallback(ConfigFactory.parseString("""
         akka.cluster {
           leader-actions-interval           = 5 s  # increase the leader action task frequency to make sure we get a chance to test the LEAVING state
-          unreachable-nodes-reaper-interval = 30 s
+          unreachable-nodes-reaper-interval = 300 s # turn "off"
         }
       """)
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
@@ -42,8 +42,7 @@ abstract class NodeLeavingAndExitingSpec
 
   "A node that is LEAVING a non-singleton cluster" must {
 
-    // FIXME make it work and remove ignore
-    "be moved to EXITING by the leader" taggedAs LongRunningTest ignore {
+    "be moved to EXITING by the leader" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)
 

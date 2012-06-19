@@ -106,7 +106,7 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
     case password ⇒ Some(password)
   }
 
-  val SSLSupportedAlgorithms = getStringList("ssl.supported-algorithms")
+  val SSLEnabledAlgorithms = getStringList("ssl.enabled-algorithms").toArray.toSet
 
   val SSLProtocol = getString("ssl.protocol") match {
     case ""       ⇒ None

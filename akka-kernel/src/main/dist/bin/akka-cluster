@@ -63,20 +63,6 @@ case "$2" in
         $JMX_CLIENT $HOST akka:type=Cluster leave=$ACTOR_SYSTEM_URL
         ;;
 
-    remove)
-        if [ $# -ne 3 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> remove <actor-system-url-to-join>"
-            exit 1
-        fi
-
-        ensureNodeIsRunningAndAvailable
-        shift
-
-        ACTOR_SYSTEM_URL=$2
-        echo "Scheduling $ACTOR_SYSTEM_URL to REMOVE"
-        $JMX_CLIENT $HOST akka:type=Cluster remove=$ACTOR_SYSTEM_URL
-        ;;
-
     down)
         if [ $# -ne 3 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> down <actor-system-url-to-join>"
@@ -169,19 +155,32 @@ case "$2" in
         $JMX_CLIENT $HOST akka:type=Cluster Available
         ;;
 
+    is-running)
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> is-running"
+            exit 1
+        fi
+
+        ensureNodeIsRunningAndAvailable
+        shift
+
+        echo "Checking if member node on $HOST is AVAILABLE"
+        $JMX_CLIENT $HOST akka:type=Cluster Running
+        ;;
+
     *)
         printf "Usage: bin/$SELF <node-hostname:jmx-port> <command> ...\n"
         printf "\n"
         printf "Supported commands are:\n"
         printf "%26s - %s\n" "join <actor-system-url>"   "Sends request a JOIN node with the specified URL"
         printf "%26s - %s\n" "leave <actor-system-url>"  "Sends a request for node with URL to LEAVE the cluster"
-        printf "%26s - %s\n" "remove <actor-system-url>" "Sends a request for node with URL to be instantly REMOVED from the cluster"
         printf "%26s - %s\n" "down <actor-system-url>"   "Sends a request for marking node with URL as DOWN"
         printf "%26s - %s\n" member-status               "Asks the member node for its current status"
         printf "%26s - %s\n" cluster-status              "Asks the cluster for its current status (member ring, unavailable nodes, meta data etc.)"
         printf "%26s - %s\n" leader                      "Asks the cluster who the current leader is"
         printf "%26s - %s\n" is-singleton                "Checks if the cluster is a singleton cluster (single node cluster)"
         printf "%26s - %s\n" is-available                "Checks if the member node is available"
+        printf "%26s - %s\n" is-running                  "Checks if the member node is running"
         printf "%26s - %s\n" has-convergence             "Checks if there is a cluster convergence"
         printf "Where the <actor-system-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
         printf "\n"
