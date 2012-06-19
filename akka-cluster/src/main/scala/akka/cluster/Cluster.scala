@@ -603,7 +603,11 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   def latestGossip: Gossip = state.get.latestGossip
 
   /**
-   * Member status for this node.
+   * Member status for this node (`MemberStatus`).
+   *
+   * NOTE: If the node has been removed from the cluster (and shut down) then it's status is set to the 'REMOVED' tombstone state
+   *       and is no longer present in the node ring or any other part of the gossiping state. However in order to maintain the
+   *       model and the semantics the user would expect, this method will in this situation return `MemberStatus.Removed`.
    */
   def status: MemberStatus = {
     if (isRunning) self.status
@@ -1160,11 +1164,9 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
           val hasChangedState = removedMembers.nonEmpty || upMembers.nonEmpty || exitingMembers.nonEmpty
 
           // removing REMOVED nodes from the 'seen' table
-          //val newSeen = removedMembers.foldLeft(localSeen) { (seen, removed) ⇒ seen - removed.address }
           val newSeen = localSeen -- removedMembers.map(_.address)
 
           // removing REMOVED nodes from the 'unreachable' set
-          //val newUnreachableMembers = removedMembers.foldLeft(localUnreachableMembers) { (unreachable, removed) ⇒ unreachable - removed }
           val newUnreachableMembers = localUnreachableMembers -- removedMembers
 
           val newOverview = localOverview copy (seen = newSeen, unreachable = newUnreachableMembers) // update gossip overview
