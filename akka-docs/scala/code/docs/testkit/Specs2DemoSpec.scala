@@ -10,7 +10,7 @@ import akka.util.duration._
 
 class Specs2DemoUnitSpec extends Specification with NoTimeConversions {
 
-  val system = ActorSystem()
+  implicit val system = ActorSystem()
 
   /*
    * this is needed if different test cases would clash when run concurrently,
@@ -19,17 +19,18 @@ class Specs2DemoUnitSpec extends Specification with NoTimeConversions {
   sequential
 
   "A TestKit" should {
-    "work properly with Specs2 unit tests" in
-      new TestKit(system) with Scope with ImplicitSender {
-        within(1 second) {
-          system.actorOf(Props(new Actor {
-            def receive = { case x ⇒ sender ! x }
-          })) ! "hallo"
+    "work properly with Specs2 unit tests" in new test {
+      within(1 second) {
+        system.actorOf(Props(new Actor {
+          def receive = { case x ⇒ sender ! x }
+        })) ! "hallo"
 
-          expectMsgType[String] must be equalTo "hallo"
-        }
+        expectMsgType[String] must be equalTo "hallo"
       }
+    }
   }
 
   step(system.shutdown) // do not forget to shutdown!
 }
+
+class test(implicit system: ActorSystem) extends ImplicitSender with Scope
