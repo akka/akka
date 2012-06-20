@@ -18,7 +18,7 @@ class ClusterConfigSpec extends AkkaSpec {
       import settings._
       FailureDetectorThreshold must be(8.0 plusOrMinus 0.0001)
       FailureDetectorMaxSampleSize must be(1000)
-      FailureDetectorImplementationClass must be(None)
+      FailureDetectorImplementationClass must be(classOf[AccrualFailureDetector].getName)
       FailureDetectorMinStdDeviation must be(100 millis)
       FailureDetectorAcceptableHeartbeatPause must be(3 seconds)
       NodeToJoin must be(None)

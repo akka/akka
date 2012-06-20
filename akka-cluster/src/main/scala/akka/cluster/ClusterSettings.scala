@@ -16,10 +16,7 @@ class ClusterSettings(val config: Config, val systemName: String) {
 
   final val FailureDetectorThreshold = getDouble("akka.cluster.failure-detector.threshold")
   final val FailureDetectorMaxSampleSize = getInt("akka.cluster.failure-detector.max-sample-size")
-  final val FailureDetectorImplementationClass: Option[String] = getString("akka.cluster.failure-detector.implementation-class") match {
-    case ""   ⇒ None
-    case fqcn ⇒ Some(fqcn)
-  }
+  final val FailureDetectorImplementationClass = getString("akka.cluster.failure-detector.implementation-class")
   final val FailureDetectorMinStdDeviation: Duration =
     Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
   final val FailureDetectorAcceptableHeartbeatPause: Duration =
