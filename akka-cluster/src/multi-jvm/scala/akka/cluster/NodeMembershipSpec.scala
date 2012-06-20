@@ -26,10 +26,6 @@ abstract class NodeMembershipSpec
 
   import NodeMembershipMultiJvmSpec._
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-  lazy val thirdAddress = node(third).address
-
   "A set of connected cluster systems" must {
 
     "(when two nodes) start gossiping to each other so that both nodes gets the same gossip info" taggedAs LongRunningTest in {
@@ -41,9 +37,9 @@ abstract class NodeMembershipSpec
       enterBarrier("first-started")
 
       runOn(first, second) {
-        cluster.join(firstAddress)
+        cluster.join(first)
         awaitCond(cluster.latestGossip.members.size == 2)
-        assertMembers(cluster.latestGossip.members, firstAddress, secondAddress)
+        assertMembers(cluster.latestGossip.members, first, second)
         awaitCond {
           cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
         }
@@ -56,11 +52,11 @@ abstract class NodeMembershipSpec
     "(when three nodes) start gossiping to each other so that all nodes gets the same gossip info" taggedAs LongRunningTest in {
 
       runOn(third) {
-        cluster.join(firstAddress)
+        cluster.join(first)
       }
 
       awaitCond(cluster.latestGossip.members.size == 3)
-      assertMembers(cluster.latestGossip.members, firstAddress, secondAddress, thirdAddress)
+      assertMembers(cluster.latestGossip.members, first, second, third)
       awaitCond {
         cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
       }

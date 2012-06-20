@@ -30,10 +30,6 @@ abstract class NodeLeavingSpec
 
   import NodeLeavingMultiJvmSpec._
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-  lazy val thirdAddress = node(third).address
-
   "A node that is LEAVING a non-singleton cluster" must {
 
     "be marked as LEAVING in the converged membership table" taggedAs LongRunningTest in {
@@ -41,7 +37,7 @@ abstract class NodeLeavingSpec
       awaitClusterUp(first, second, third)
 
       runOn(first) {
-        cluster.leave(secondAddress)
+        cluster.leave(second)
       }
       enterBarrier("second-left")
 
@@ -50,7 +46,7 @@ abstract class NodeLeavingSpec
 
         val hasLeft = cluster.latestGossip.members.find(_.status == MemberStatus.Leaving)
         hasLeft must be('defined)
-        hasLeft.get.address must be(secondAddress)
+        hasLeft.get.address must be(address(second))
       }
 
       enterBarrier("finished")
