@@ -20,7 +20,7 @@ class ClusterConfigSpec extends AkkaSpec {
       FailureDetectorMaxSampleSize must be(1000)
       FailureDetectorImplementationClass must be(None)
       FailureDetectorMinStdDeviation must be(100 millis)
-      FailureDetectorAcceptableLostHeartbeats must be(3.0 plusOrMinus 0.0001)
+      FailureDetectorAcceptableHeartbeatPause must be(3 seconds)
       NodeToJoin must be(None)
       PeriodicTasksInitialDelay must be(1 seconds)
       GossipInterval must be(1 second)

@@ -20,8 +20,10 @@ class ClusterSettings(val config: Config, val systemName: String) {
     case ""   ⇒ None
     case fqcn ⇒ Some(fqcn)
   }
-  final val FailureDetectorMinStdDeviation: Duration = Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
-  final val FailureDetectorAcceptableLostHeartbeats: Double = getDouble("akka.cluster.failure-detector.acceptable-lost-heartbeats")
+  final val FailureDetectorMinStdDeviation: Duration =
+    Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
+  final val FailureDetectorAcceptableHeartbeatPause: Duration =
+    Duration(getMilliseconds("akka.cluster.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
 
   final val NodeToJoin: Option[Address] = getString("akka.cluster.node-to-join") match {
     case ""                         ⇒ None

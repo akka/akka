@@ -15,11 +15,25 @@ import akka.util.Duration
 import akka.util.duration._
 
 object AccrualFailureDetector {
-  private def realTimeMachine: () ⇒ Long = () ⇒ NANOSECONDS.toMillis(System.nanoTime)
+  private def realClock: () ⇒ Long = () ⇒ NANOSECONDS.toMillis(System.nanoTime)
 }
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
  * [http://ddg.jaist.ac.jp/pub/HDY+04.pdf]
+ *
+ * The suspicion level of failure is given by a value called φ (phi).
+ * The basic idea of the φ failure detector is to express the value of φ on a scale that
+ * is dynamically adjusted to reflect current network conditions. A configurable
+ * threshold is used to decide if φ is considered to be a failure.
+ *
+ * The value of φ is calculated as:
+ *
+ * {{{
+ * φ = -log10(1 - F(timeSinceLastHeartbeat)
+ * }}}
+ * where F is the cumulative distribution function of a normal distribution with mean
+ * and standard deviation estimated from historical heartbeat inter-arrival times.
+ *
  *
  * @param system Belongs to the [[akka.actor.ActorSystem]]. Used for logging.
  *
@@ -34,7 +48,7 @@ object AccrualFailureDetector {
  *   Too low standard deviation might result in too much sensitivity for sudden, but normal, deviations
  *   in heartbeat inter arrival times.
  *
- * @param acceptableLostDuration Duration corresponding to number of potentially lost/delayed
+ * @param acceptableHeartbeatPause Duration corresponding to number of potentially lost/delayed
  *   heartbeats that will be accepted before considering it to be an anomaly.
  *   This margin is important to be able to survive sudden, occasional, pauses in heartbeat
  *   arrivals, due to for example garbage collect or network drop.
@@ -43,7 +57,7 @@ object AccrualFailureDetector {
  *   to this duration, with a with rather high standard deviation (since environment is unknown
  *   in the beginning)
  *
- * @timeMachine The clock, returning time in milliseconds, but can be faked for testing
+ * @clock The clock, returning current time in milliseconds, but can be faked for testing
  *   purposes. It is only used for measuring intervals (duration).
  *
  */
@@ -52,9 +66,9 @@ class AccrualFailureDetector(
   val threshold: Double,
   val maxSampleSize: Int,
   val minStdDeviation: Duration,
-  val acceptableLostDuration: Duration,
+  val acceptableHeartbeatPause: Duration,
   val firstHeartbeatEstimate: Duration,
-  val timeMachine: () ⇒ Long) extends FailureDetector {
+  val clock: () ⇒ Long) extends FailureDetector {
 
   import AccrualFailureDetector._
 
@@ -64,19 +78,19 @@ class AccrualFailureDetector(
   def this(
     system: ActorSystem,
     settings: ClusterSettings,
-    timeMachine: () ⇒ Long = AccrualFailureDetector.realTimeMachine) =
+    clock: () ⇒ Long = AccrualFailureDetector.realClock) =
     this(
       system,
       settings.FailureDetectorThreshold,
       settings.FailureDetectorMaxSampleSize,
-      settings.HeartbeatInterval * settings.FailureDetectorAcceptableLostHeartbeats,
+      settings.FailureDetectorAcceptableHeartbeatPause,
       settings.FailureDetectorMinStdDeviation,
       // we use a conservative estimate for the first heartbeat because
       // gossip needs to spread back to the joining node before the
       // first real heartbeat is sent. Initial heartbeat is added when joining.
       // FIXME this can be changed to HeartbeatInterval when ticket #2249 is fixed
       settings.GossipInterval * 3 + settings.HeartbeatInterval,
-      timeMachine)
+      clock)
 
   private val log = Logging(system, "FailureDetector")
 
@@ -89,7 +103,7 @@ class AccrualFailureDetector(
     HeartbeatHistory(maxSampleSize) :+ (mean - stdDeviation) :+ (mean + stdDeviation)
   }
 
-  private val acceptableLostMillis = acceptableLostDuration.toMillis
+  private val acceptableHeartbeatPauseMillis = acceptableHeartbeatPause.toMillis
 
   /**
    * Implement using optimistic lockless concurrency, all state is represented
@@ -116,7 +130,7 @@ class AccrualFailureDetector(
   final def heartbeat(connection: Address) {
     log.debug("Heartbeat from connection [{}] ", connection)
 
-    val timestamp = timeMachine()
+    val timestamp = clock()
     val oldState = state.get
 
     val newHistory = oldState.timestamps.get(connection) match {
@@ -124,7 +138,7 @@ class AccrualFailureDetector(
         // this is heartbeat from a new connection
         // add starter records for this new connection
         firstHeartbeat
-      case (Some(latestTimestamp)) ⇒
+      case Some(latestTimestamp) ⇒
         // this is a known connection
         val interval = timestamp - latestTimestamp
         oldState.history(connection) :+ interval
@@ -140,21 +154,10 @@ class AccrualFailureDetector(
   }
 
   /**
-   * The suspicion level of accrual failure detector is given by a value called φ (phi).
-   * The basic idea of the φ failure detector is to express the value of φ on a scale that
-   * is dynamically adjusted to reflect current network conditions.
-   *
-   * The value of φ is calculated as:
-   *
-   * {{{
-   * φ = -log10(1 - F(timeSinceLastHeartbeat)
-   * }}}
-   * where F is the cumulative distribution function of a normal distribution with mean
-   * and standard deviation estimated from historical heartbeat inter-arrival times.
+   * The suspicion level of the accrual failure detector.
    *
    * If a connection does not have any records in failure detector then it is
    * considered healthy.
-   *
    */
   def phi(connection: Address): Double = {
     val oldState = state.get
@@ -164,18 +167,17 @@ class AccrualFailureDetector(
     if (oldState.explicitRemovals.contains(connection)) Double.MaxValue
     else if (oldTimestamp.isEmpty) 0.0 // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
     else {
-      val timeDiff = timeMachine() - oldTimestamp.get
+      val timeDiff = clock() - oldTimestamp.get
 
       val history = oldState.history(connection)
       val mean = history.mean
       val stdDeviation = ensureValidStdDeviation(history.stdDeviation)
 
-      val φ = phi(timeDiff, mean + acceptableLostMillis, stdDeviation)
+      val φ = phi(timeDiff, mean + acceptableHeartbeatPauseMillis, stdDeviation)
 
       // FIXME change to debug log level, when failure detector is stable
-      if (φ > 1.0)
-        log.info("Phi value [{}] for connection [{}], after [{} ms], based on  [{}]",
-          φ, connection, timeDiff, "N(" + mean + ", " + stdDeviation + ")")
+      if (φ > 1.0) log.info("Phi value [{}] for connection [{}], after [{} ms], based on  [{}]",
+        φ, connection, timeDiff, "N(" + mean + ", " + stdDeviation + ")")
 
       φ
     }
@@ -232,7 +234,7 @@ private[cluster] object HeartbeatHistory {
     maxSampleSize = maxSampleSize,
     intervals = IndexedSeq.empty,
     intervalSum = 0L,
-    interval2Sum = 0L)
+    squaredIntervalSum = 0L)
 
 }
 
@@ -247,11 +249,18 @@ private[cluster] case class HeartbeatHistory private (
   maxSampleSize: Int,
   intervals: IndexedSeq[Long],
   intervalSum: Long,
-  interval2Sum: Long) {
+  squaredIntervalSum: Long) {
+
+  if (maxSampleSize < 1)
+    throw new IllegalArgumentException("maxSampleSize must be >= 1, got [%s]" format maxSampleSize)
+  if (intervalSum < 0L)
+    throw new IllegalArgumentException("intervalSum must be >= 0, got [%s]" format intervalSum)
+  if (squaredIntervalSum < 0L)
+    throw new IllegalArgumentException("squaredIntervalSum must be >= 0, got [%s]" format squaredIntervalSum)
 
   def mean: Double = intervalSum.toDouble / intervals.size
 
-  def variance: Double = (interval2Sum.toDouble / intervals.size) - (mean * mean)
+  def variance: Double = (squaredIntervalSum.toDouble / intervals.size) - (mean * mean)
 
   def stdDeviation: Double = math.sqrt(variance)
 
@@ -262,7 +271,7 @@ private[cluster] case class HeartbeatHistory private (
         maxSampleSize,
         intervals = intervals :+ interval,
         intervalSum = intervalSum + interval,
-        interval2Sum = interval2Sum + pow2(interval))
+        squaredIntervalSum = squaredIntervalSum + pow2(interval))
     else
       dropOldest :+ interval // recur
   }
@@ -271,7 +280,7 @@ private[cluster] case class HeartbeatHistory private (
     maxSampleSize,
     intervals = intervals drop 1,
     intervalSum = intervalSum - intervals.head,
-    interval2Sum = interval2Sum - pow2(intervals.head))
+    squaredIntervalSum = squaredIntervalSum - pow2(intervals.head))
 
   private def pow2(x: Long) = x * x
 }
