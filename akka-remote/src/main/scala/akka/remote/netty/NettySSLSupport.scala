@@ -9,8 +9,8 @@ import javax.net.ssl.{ KeyManagerFactory, TrustManager, TrustManagerFactory, SSL
 import akka.remote.RemoteTransportException
 import akka.event.LoggingAdapter
 import java.io.{ IOException, FileNotFoundException, FileInputStream }
-import java.security.{ SecureRandom, GeneralSecurityException, KeyStore, Security }
 import akka.security.provider.AkkaProvider
+import java.security._
 
 /**
  * Used for adding SSL support to Netty pipeline
@@ -32,17 +32,20 @@ private[akka] object NettySSLSupport {
      * Using /dev/./urandom is only necessary when using SHA1PRNG on Linux
      * <quote>Use 'new SecureRandom()' instead of 'SecureRandom.getInstance("SHA1PRNG")'</quote> to avoid having problems
      */
-    sourceOfRandomness foreach { path ⇒ System.setProperty("java.security.egd", path) }
+    sourceOfRandomness foreach { path ⇒
+      System.setProperty("java.security.egd", path)
+      System.setProperty("securerandom.source", path)
+    }
 
     val rng = rngName match {
       case Some(r @ ("AES128CounterRNGFast" | "AES128CounterRNGSecure" | "AES256CounterRNGSecure")) ⇒
         log.debug("SSL random number generator set to: {}", r)
         SecureRandom.getInstance(r, AkkaProvider)
-      case Some("SHA1PRNG") ⇒
-        log.debug("SSL random number generator set to: SHA1PRNG")
-        // This needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
+      case Some(s @ ("SHA1PRNG" | "NativePRNG")) ⇒
+        log.debug("SSL random number generator set to: " + s)
+        // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
         // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
-        SecureRandom.getInstance("SHA1PRNG")
+        SecureRandom.getInstance(s)
       case Some(unknown) ⇒
         log.debug("Unknown SSLRandomNumberGenerator [{}] falling back to SecureRandom", unknown)
         new SecureRandom

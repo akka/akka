@@ -128,8 +128,8 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
 
       "support tell" in {
         val here = system.actorFor(otherAddress.toString + "/user/echo")
-        for (i ← 1 to 100) here ! (("ping", i))
-        for (i ← 1 to 100) expectMsgPF(timeout.duration) { case (("pong", i), `testActor`) ⇒ true }
+        for (i ← 1 to 1000) here ! (("ping", i))
+        for (i ← 1 to 1000) expectMsgPF(timeout.duration) { case (("pong", i), `testActor`) ⇒ true }
       }
 
       "support ask" in {
