@@ -121,20 +121,26 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
     }
   }
 
-  ("- SSL communication") must {
+  ("-") must {
     if (cipherConfig.runTest) {
       val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) ⇒ sender ! ((("pong", x), sender)) } }), "echo")
       val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address
 
       "support tell" in {
         val here = system.actorFor(otherAddress.toString + "/user/echo")
-        for (i ← 1 to 1000) here ! (("ping", i))
-        for (i ← 1 to 1000) expectMsgPF(timeout.duration) { case (("pong", i), `testActor`) ⇒ true }
+
+        Await.result(here ? (("ping", -1)) mapTo manifest[((String, Int), ActorRef)], timeout.duration)._1 must be(("pong", -1))
+
+        for (i ← 1 to 10000) here ! (("ping", i))
+        for (i ← 1 to 10000) expectMsgPF(timeout.duration) { case (("pong", i), `testActor`) ⇒ true }
       }
 
       "support ask" in {
         val here = system.actorFor(otherAddress.toString + "/user/echo")
-        val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo manifest[((String, Int), ActorRef)]
+
+        Await.result(here ? (("ping", -1)) mapTo manifest[((String, Int), ActorRef)], timeout.duration)._1 must be(("pong", -1))
+
+        val f = for (i ← 1 to 10000) yield here ? (("ping", i)) mapTo manifest[((String, Int), ActorRef)]
         Await.result(Future.sequence(f), timeout.duration).map(_._1._1).toSet must be(Set("pong"))
       }
 
