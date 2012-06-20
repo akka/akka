@@ -48,7 +48,7 @@ abstract class SingletonClusterSpec
 
     "become singleton cluster when one node is shutdown" taggedAs LongRunningTest in {
       runOn(first) {
-        val secondAddress = node(second).address
+        val secondAddress = address(second)
         testConductor.shutdown(second, 0)
 
         markNodeAsUnavailable(secondAddress)

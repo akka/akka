@@ -48,7 +48,7 @@ abstract class NodeUpSpec
       enterBarrier("listener-registered")
 
       runOn(second) {
-        cluster.join(node(first).address)
+        cluster.join(first)
       }
       enterBarrier("joined-again")
 

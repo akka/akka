@@ -50,7 +50,7 @@ abstract class LeaderElectionSpec
         assertLeaderIn(sortedRoles)
       }
 
-      enterBarrier("after")
+      enterBarrier("after-1")
     }
 
     def shutdownLeaderAndVerifyNewLeader(alreadyShutdown: Int): Unit = {
@@ -63,7 +63,7 @@ abstract class LeaderElectionSpec
       myself match {
 
         case `controller` ⇒
-          val leaderAddress = node(leader).address
+          val leaderAddress = address(leader)
           enterBarrier("before-shutdown")
           testConductor.shutdown(leader, 0)
           enterBarrier("after-shutdown", "after-down", "completed")
@@ -74,7 +74,7 @@ abstract class LeaderElectionSpec
         // this node will be shutdown by the controller and doesn't participate in more barriers
 
         case `aUser` ⇒
-          val leaderAddress = node(leader).address
+          val leaderAddress = address(leader)
           enterBarrier("before-shutdown", "after-shutdown")
           // user marks the shutdown leader as DOWN
           cluster.down(leaderAddress)
@@ -97,10 +97,12 @@ abstract class LeaderElectionSpec
 
     "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 0)
+      enterBarrier("after-2")
     }
 
     "be able to 're-elect' a single leader after leader has left (again)" taggedAs LongRunningTest in {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 1)
+      enterBarrier("after-3")
     }
   }
 }
