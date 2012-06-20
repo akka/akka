@@ -261,4 +261,13 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   // useful to see which jvm is running which role
   log.info("Role [{}] started", myself.name)
 
+  // remove all nodes before we shut the conductor down
+  final override def beforeShutdown() = {
+    if (selfIndex == 0) {
+      Await.result(testConductor.getNodes.map(x ⇒ x.filterNot(_ == myself).foreach(testConductor.removeNode(_))),
+        testConductor.Settings.BarrierTimeout.duration)
+      testConductor.enter("multi-node-spec-internal-barrier-before-shutdown")
+    }
+  }
+
 }
