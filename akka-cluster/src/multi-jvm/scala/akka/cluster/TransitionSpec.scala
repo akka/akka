@@ -396,7 +396,7 @@ abstract class TransitionSpec
         seenLatestGossip must be(Set(fifth))
       }
 
-      testConductor.enter("after-second-unavailble")
+      enterBarrier("after-second-unavailble")
 
       // spread the word
       val gossipRound = List(fifth, fourth, third, first, third, fourth, fifth)
@@ -414,7 +414,7 @@ abstract class TransitionSpec
         awaitMemberStatus(second, Down)
       }
 
-      testConductor.enter("after-second-down")
+      enterBarrier("after-second-down")
 
       // spread the word
       val gossipRound2 = List(third, fourth, fifth, first, third, fourth, fifth)
