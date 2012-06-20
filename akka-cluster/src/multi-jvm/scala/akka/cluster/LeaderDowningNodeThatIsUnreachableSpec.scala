@@ -42,7 +42,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec
     "be able to DOWN a 'last' node that is UNREACHABLE" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third, fourth)
 
-      val fourthAddress = node(fourth).address
+      val fourthAddress = address(fourth)
       runOn(first) {
         // kill 'fourth' node
         testConductor.shutdown(fourth, 0)
@@ -70,7 +70,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec
     }
 
     "be able to DOWN a 'middle' node that is UNREACHABLE" taggedAs LongRunningTest in {
-      val secondAddress = node(second).address
+      val secondAddress = address(second)
 
       enterBarrier("before-down-second-node")
       runOn(first) {

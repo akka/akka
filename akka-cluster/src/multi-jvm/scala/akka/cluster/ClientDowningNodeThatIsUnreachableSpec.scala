@@ -37,7 +37,7 @@ abstract class ClientDowningNodeThatIsUnreachableSpec
   "Client of a 4 node cluster" must {
 
     "be able to DOWN a node that is UNREACHABLE (killed)" taggedAs LongRunningTest in {
-      val thirdAddress = node(third).address
+      val thirdAddress = address(third)
       awaitClusterUp(first, second, third, fourth)
 
       runOn(first) {

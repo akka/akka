@@ -60,7 +60,7 @@ abstract class TransitionSpec
   }
 
   def awaitSeen(addresses: Address*): Unit = awaitCond {
-    seenLatestGossip.map(node(_).address) == addresses.toSet
+    (seenLatestGossip map address) == addresses.toSet
   }
 
   def awaitMembers(addresses: Address*): Unit = awaitCond {
@@ -70,9 +70,6 @@ abstract class TransitionSpec
   def awaitMemberStatus(address: Address, status: MemberStatus): Unit = awaitCond {
     memberStatus(address) == Up
   }
-
-  // implicit conversion from RoleName to Address
-  implicit def role2Address(role: RoleName): Address = node(role).address
 
   // DSL sugar for `role1 gossipTo role2`
   implicit def roleExtras(role: RoleName): RoleWrapper = new RoleWrapper(role)
@@ -88,7 +85,7 @@ abstract class TransitionSpec
       }
       runOn(fromRole) {
         enterBarrier("before-gossip-" + gossipBarrierCounter)
-        cluster.gossipTo(node(toRole).address) // send gossip
+        cluster.gossipTo(toRole) // send gossip
         enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
       runOn(roles.filterNot(r ⇒ r == fromRole || r == toRole): _*) {
@@ -254,7 +251,7 @@ abstract class TransitionSpec
       // first non-leader gossipTo the other non-leader
       nonLeader(first, second, third).head gossipTo nonLeader(first, second, third).tail.head
       runOn(nonLeader(first, second, third).head) {
-        cluster.gossipTo(node(nonLeader(first, second, third).tail.head).address)
+        cluster.gossipTo(nonLeader(first, second, third).tail.head)
       }
       runOn(nonLeader(first, second, third).tail.head) {
         memberStatus(third) must be(Up)
@@ -398,6 +395,8 @@ abstract class TransitionSpec
         seenLatestGossip must be(Set(fifth))
       }
 
+      testConductor.enter("after-second-unavailble")
+
       // spread the word
       val gossipRound = List(fifth, fourth, third, first, third, fourth, fifth)
       for (x :: y :: Nil ← gossipRound.sliding(2)) {
@@ -413,6 +412,8 @@ abstract class TransitionSpec
         cluster.down(second)
         awaitMemberStatus(second, Down)
       }
+
+      testConductor.enter("after-second-down")
 
       // spread the word
       val gossipRound2 = List(third, fourth, fifth, first, third, fourth, fifth)
