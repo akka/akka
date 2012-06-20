@@ -118,7 +118,15 @@ private[akka] class ActiveRemoteClient private[akka] (
 
     // Returns whether the handshake was written to the channel or not
     def sendSecureCookie(connection: ChannelFuture): Boolean = {
-      if (!settings.EnableSSL || connection.getChannel.getPipeline.get[SslHandler](classOf[SslHandler]).handshake().awaitUninterruptibly().isSuccess) {
+      val future =
+        if (!connection.isSuccess || !settings.EnableSSL) connection
+        else connection.getChannel.getPipeline.get[SslHandler](classOf[SslHandler]).handshake().awaitUninterruptibly()
+
+      if (!future.isSuccess) {
+        notifyListeners(RemoteClientError(future.getCause, netty, remoteAddress))
+        false
+      } else {
+        ChannelAddress.set(connection.getChannel, Some(remoteAddress))
         val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
         if (settings.SecureCookie.nonEmpty) handshake.setCookie(settings.SecureCookie.get)
         handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
@@ -128,7 +136,7 @@ private[akka] class ActiveRemoteClient private[akka] (
           .build)
         connection.getChannel.write(netty.createControlEnvelope(handshake.build))
         true
-      } else false
+      }
     }
 
     def attemptReconnect(): Boolean = {
@@ -136,14 +144,7 @@ private[akka] class ActiveRemoteClient private[akka] (
       log.debug("Remote client reconnecting to [{}|{}]", remoteAddress, remoteIP)
       connection = bootstrap.connect(new InetSocketAddress(remoteIP, remoteAddress.port.get))
       openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
-
-      if (!connection.isSuccess) {
-        notifyListeners(RemoteClientError(connection.getCause, netty, remoteAddress))
-        false
-      } else {
-        sendSecureCookie(connection)
-        true
-      }
+      sendSecureCookie(connection)
     }
 
     runSwitch switchOn {
@@ -168,24 +169,19 @@ private[akka] class ActiveRemoteClient private[akka] (
 
       openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
 
-      if (!connection.isSuccess) {
-        notifyListeners(RemoteClientError(connection.getCause, netty, remoteAddress))
-        false
-      } else {
-        ChannelAddress.set(connection.getChannel, Some(remoteAddress))
-        sendSecureCookie(connection)
+      if (sendSecureCookie(connection)) {
         notifyListeners(RemoteClientStarted(netty, remoteAddress))
         true
+      } else {
+        connection.getChannel.close()
+        openChannels.remove(connection.getChannel)
+        false
       }
     } match {
       case true ⇒ true
       case false if reconnectIfAlreadyConnected ⇒
-        connection.getChannel.close()
-        openChannels.remove(connection.getChannel)
-
         log.debug("Remote client reconnecting to [{}]", remoteAddress)
         attemptReconnect()
-
       case false ⇒ false
     }
   }

@@ -106,7 +106,7 @@ class Ticket1978NonExistingRNGSecureSpec extends Ticket1978CommunicationSpec(Cip
 
 abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) extends AkkaSpec(cipherConfig.config) with ImplicitSender {
 
-  implicit val timeout: Timeout = Timeout(5 seconds)
+  implicit val timeout: Timeout = Timeout(10 seconds)
 
   import RemoteCommunicationSpec._
 
@@ -129,14 +129,14 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
       "support tell" in {
         val here = system.actorFor(otherAddress.toString + "/user/echo")
 
-        for (i ← 1 to 10000) here ! (("ping", i))
-        for (i ← 1 to 10000) expectMsgPF(timeout.duration) { case (("pong", i), `testActor`) ⇒ true }
+        for (i ← 1 to 1000) here ! (("ping", i))
+        for (i ← 1 to 1000) expectMsgPF(timeout.duration) { case (("pong", i), `testActor`) ⇒ true }
       }
 
       "support ask" in {
         val here = system.actorFor(otherAddress.toString + "/user/echo")
 
-        val f = for (i ← 1 to 10000) yield here ? (("ping", i)) mapTo manifest[((String, Int), ActorRef)]
+        val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo manifest[((String, Int), ActorRef)]
         Await.result(Future.sequence(f), timeout.duration).map(_._1._1).toSet must be(Set("pong"))
       }
 
