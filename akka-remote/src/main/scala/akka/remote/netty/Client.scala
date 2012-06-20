@@ -18,6 +18,7 @@ import akka.AkkaException
 import akka.event.Logging
 import akka.actor.{ DeadLetter, Address, ActorRef }
 import akka.util.{ NonFatal, Switch }
+import org.jboss.netty.handler.ssl.SslHandler
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
@@ -115,15 +116,19 @@ private[akka] class ActiveRemoteClient private[akka] (
    */
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = {
 
-    def sendSecureCookie(connection: ChannelFuture) {
-      val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
-      if (settings.SecureCookie.nonEmpty) handshake.setCookie(settings.SecureCookie.get)
-      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
-        .setSystem(localAddress.system)
-        .setHostname(localAddress.host.get)
-        .setPort(localAddress.port.get)
-        .build)
-      connection.getChannel.write(netty.createControlEnvelope(handshake.build))
+    // Returns whether the handshake was written to the channel or not
+    def sendSecureCookie(connection: ChannelFuture): Boolean = {
+      if (!settings.EnableSSL || connection.getChannel.getPipeline.get[SslHandler](classOf[SslHandler]).handshake().awaitUninterruptibly().isSuccess) {
+        val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
+        if (settings.SecureCookie.nonEmpty) handshake.setCookie(settings.SecureCookie.get)
+        handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
+          .setSystem(localAddress.system)
+          .setHostname(localAddress.host.get)
+          .setPort(localAddress.port.get)
+          .build)
+        connection.getChannel.write(netty.createControlEnvelope(handshake.build))
+        true
+      } else false
     }
 
     def attemptReconnect(): Boolean = {
