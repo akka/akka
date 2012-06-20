@@ -71,7 +71,10 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      */
     def defaultStack(withTimeout: Boolean, isClient: Boolean): Seq[ChannelHandler] =
       (if (settings.EnableSSL) List(NettySSLSupport(settings, NettyRemoteTransport.this.log, isClient)) else Nil) :::
-        (if (withTimeout) List(timeout) else Nil) ::: msgFormat ::: authenticator ::: executionHandler
+      (if (withTimeout) List(timeout) else Nil) :::
+      msgFormat :::
+      authenticator :::
+      executionHandler
 
     /**
      * Construct an IdleStateHandler which uses [[akka.remote.netty.NettyRemoteTransport]].timer.
