@@ -16,13 +16,13 @@ class Specs2DemoAcceptance extends Specification {
       "correctly convert durations" ! e2 ^
       Step(system.shutdown()) ^ end // do not forget to shutdown!
 
-  val system = ActorSystem()
+  implicit val system = ActorSystem()
 
   // an alternative to mixing in NoTimeConversions
   implicit def d2d(d: org.specs2.time.Duration): akka.util.FiniteDuration =
     akka.util.Duration(d.inMilliseconds, "millis")
 
-  def e1 = new TestKit(system) with Scope with ImplicitSender {
+  def e1 = new test {
     within(1 second) {
       system.actorOf(Props(new Actor {
         def receive = { case x ⇒ sender ! x }
@@ -34,3 +34,4 @@ class Specs2DemoAcceptance extends Specification {
 
   def e2 = ((1 second): akka.util.Duration).toMillis must be equalTo 1000
 }
+class test(implicit system: ActorSystem) extends ImplicitSender with Scope
