@@ -33,7 +33,9 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
 
   val deterministicRandom = new AtomicInteger
 
-  val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem], new FailureDetectorPuppet(system)) {
+  val failureDetector = new FailureDetectorPuppet(system)
+
+  val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector) {
 
     override def selectRandomNode(addresses: IndexedSeq[Address]): Option[Address] = {
       if (addresses.isEmpty) None
@@ -64,16 +66,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
       else _gossipToDeputyProbablity
     }
 
-    @volatile
-    var _unavailable: Set[Address] = Set.empty
-
-    override val failureDetector = new FailureDetectorPuppet(system) {
-      override def isAvailable(connection: Address): Boolean = {
-        if (_unavailable.contains(connection)) false
-        else super.isAvailable(connection)
-      }
-    }
-
   }
 
   val selfAddress = cluster.self.address
@@ -91,7 +83,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
   before {
     cluster._gossipToUnreachableProbablity = 0.0
     cluster._gossipToDeputyProbablity = 0.0
-    cluster._unavailable = Set.empty
+    addresses foreach failureDetector.remove
     deterministicRandom.set(0)
   }
 
@@ -110,8 +102,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
       cluster.joining(addresses(1))
       cluster.latestGossip.members.map(_.address) must be(Set(selfAddress, addresses(1)))
       memberStatus(addresses(1)) must be(Some(MemberStatus.Joining))
-      // FIXME why is it still convergence immediately after joining?
-      //cluster.convergence.isDefined must be(false)
+      cluster.convergence.isDefined must be(false)
     }
 
     "accept a few more joining nodes" in {
@@ -189,7 +180,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
 
     "gossip to random unreachable node" in {
       val dead = Set(addresses(1))
-      cluster._unavailable = dead
+      dead foreach failureDetector.markNodeAsUnavailable
       cluster._gossipToUnreachableProbablity = 1.0 // always
 
       cluster.reapUnreachableMembers()
@@ -207,7 +198,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
       cluster._gossipToDeputyProbablity = -1.0 // real impl
       // 0 and 2 still alive
       val dead = Set(addresses(1), addresses(3), addresses(4), addresses(5))
-      cluster._unavailable = dead
+      dead foreach failureDetector.markNodeAsUnavailable
 
       cluster.reapUnreachableMembers()
       cluster.latestGossip.overview.unreachable.map(_.address) must be(dead)

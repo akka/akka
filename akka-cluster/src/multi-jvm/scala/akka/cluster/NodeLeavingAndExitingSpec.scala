@@ -20,7 +20,7 @@ object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
       .withFallback(ConfigFactory.parseString("""
         akka.cluster {
           leader-actions-interval           = 5 s  # increase the leader action task frequency to make sure we get a chance to test the LEAVING state
-          unreachable-nodes-reaper-interval = 30 s
+          unreachable-nodes-reaper-interval = 300 s # turn "off"
         }
       """)
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
@@ -36,21 +36,16 @@ abstract class NodeLeavingAndExitingSpec
 
   import NodeLeavingAndExitingMultiJvmSpec._
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-  lazy val thirdAddress = node(third).address
-
   "A node that is LEAVING a non-singleton cluster" must {
 
-    // FIXME make it work and remove ignore
-    "be moved to EXITING by the leader" taggedAs LongRunningTest ignore {
+    "be moved to EXITING by the leader" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)
 
       runOn(first) {
-        cluster.leave(secondAddress)
+        cluster.leave(second)
       }
-      testConductor.enter("second-left")
+      enterBarrier("second-left")
 
       runOn(first, third) {
 
@@ -60,16 +55,16 @@ abstract class NodeLeavingAndExitingSpec
         awaitCond(cluster.latestGossip.members.exists(_.status == MemberStatus.Leaving)) // wait on LEAVING
         val hasLeft = cluster.latestGossip.members.find(_.status == MemberStatus.Leaving) // verify node that left
         hasLeft must be('defined)
-        hasLeft.get.address must be(secondAddress)
+        hasLeft.get.address must be(address(second))
 
         // 2. Verify that 'second' node is set to EXITING
         awaitCond(cluster.latestGossip.members.exists(_.status == MemberStatus.Exiting)) // wait on EXITING
         val hasExited = cluster.latestGossip.members.find(_.status == MemberStatus.Exiting) // verify node that exited
         hasExited must be('defined)
-        hasExited.get.address must be(secondAddress)
+        hasExited.get.address must be(address(second))
       }
 
-      testConductor.enter("finished")
+      enterBarrier("finished")
     }
   }
 }

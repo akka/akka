@@ -41,17 +41,20 @@ class EventStream(private val debug: Boolean = false) extends LoggingBus with Su
   }
 
   override def subscribe(subscriber: ActorRef, channel: Class[_]): Boolean = {
+    if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     if (debug) publish(Logging.Debug(simpleName(this), this.getClass, "subscribing " + subscriber + " to channel " + channel))
     super.subscribe(subscriber, channel)
   }
 
   override def unsubscribe(subscriber: ActorRef, channel: Class[_]): Boolean = {
+    if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     val ret = super.unsubscribe(subscriber, channel)
     if (debug) publish(Logging.Debug(simpleName(this), this.getClass, "unsubscribing " + subscriber + " from channel " + channel))
     ret
   }
 
   override def unsubscribe(subscriber: ActorRef) {
+    if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     super.unsubscribe(subscriber)
     if (debug) publish(Logging.Debug(simpleName(this), this.getClass, "unsubscribing " + subscriber + " from all channels"))
   }

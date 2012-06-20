@@ -15,7 +15,7 @@ import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
 import akka.event.Logging.LogEventException
-import collection.immutable.{ TreeSet, Stack, TreeMap }
+import collection.immutable.{ TreeSet, TreeMap }
 import akka.util.{ Unsafe, Duration, Helpers, NonFatal }
 
 //TODO: everything here for current compatibility - could be limited more
@@ -175,8 +175,8 @@ trait UntypedActorContext extends ActorContext {
  * for! (waves hand)
  */
 private[akka] object ActorCell {
-  val contextStack = new ThreadLocal[Stack[ActorContext]] {
-    override def initialValue = Stack[ActorContext]()
+  val contextStack = new ThreadLocal[List[ActorContext]] {
+    override def initialValue: List[ActorContext] = Nil
   }
 
   final val emptyCancellable: Cancellable = new Cancellable {
@@ -186,7 +186,7 @@ private[akka] object ActorCell {
 
   final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
 
-  final val behaviorStackPlaceHolder: Stack[Actor.Receive] = Stack.empty.push(Actor.emptyBehavior)
+  final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
   final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
 
@@ -410,7 +410,7 @@ private[akka] class ActorCell(
 
   var currentMessage: Envelope = _
   var actor: Actor = _
-  private var behaviorStack: Stack[Actor.Receive] = Stack.empty
+  private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
   @volatile var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
   var nextNameSequence: Long = 0
   var watching: Set[ActorRef] = emptyActorRefSet
@@ -513,25 +513,21 @@ private[akka] class ActorCell(
 
   //This method is in charge of setting up the contextStack and create a new instance of the Actor
   protected def newActor(): Actor = {
-    contextStack.set(contextStack.get.push(this))
+    contextStack.set(this :: contextStack.get)
     try {
-      import ActorCell.behaviorStackPlaceHolder
-
-      behaviorStack = behaviorStackPlaceHolder
+      behaviorStack = emptyBehaviorStack
       val instance = props.creator.apply()
 
       if (instance eq null)
         throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
-      behaviorStack = behaviorStack match {
-        case `behaviorStackPlaceHolder` ⇒ Stack.empty.push(instance.receive)
-        case newBehaviors               ⇒ Stack.empty.push(instance.receive).pushAll(newBehaviors.reverse.drop(1))
-      }
+      // If no becomes were issued, the actors behavior is its receive method
+      behaviorStack = if (behaviorStack.isEmpty) instance.receive :: behaviorStack else behaviorStack
       instance
     } finally {
       val stackAfter = contextStack.get
       if (stackAfter.nonEmpty)
-        contextStack.set(if (stackAfter.head eq null) stackAfter.pop.pop else stackAfter.pop) // pop null marker plus our context
+        contextStack.set(if (stackAfter.head eq null) stackAfter.tail.tail else stackAfter.tail) // pop null marker plus our context
     }
   }
 
@@ -686,10 +682,8 @@ private[akka] class ActorCell(
     }
   }
 
-  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit = {
-    if (discardOld) unbecome()
-    behaviorStack = behaviorStack.push(behavior)
-  }
+  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit =
+    behaviorStack = behavior :: (if (discardOld && behaviorStack.nonEmpty) behaviorStack.tail else behaviorStack)
 
   /**
    * UntypedActorContext impl
@@ -704,8 +698,9 @@ private[akka] class ActorCell(
 
   def unbecome(): Unit = {
     val original = behaviorStack
-    val popped = original.pop
-    behaviorStack = if (popped.isEmpty) original else popped
+    behaviorStack =
+      if (original.isEmpty || original.tail.isEmpty) actor.receive :: emptyBehaviorStack
+      else original.tail
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
@@ -764,7 +759,7 @@ private[akka] class ActorCell(
         if (system.settings.DebugLifecycle)
           system.eventStream.publish(Debug(self.path.toString, clazz(a), "stopped"))
       } finally {
-        behaviorStack = behaviorStackPlaceHolder
+        behaviorStack = emptyBehaviorStack
         clearActorFields(a)
         actor = null
       }

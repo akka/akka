@@ -9,6 +9,7 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
+import akka.actor.Address
 
 object MembershipChangeListenerLeavingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -19,7 +20,7 @@ object MembershipChangeListenerLeavingMultiJvmSpec extends MultiNodeConfig {
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
         akka.cluster.leader-actions-interval           = 5 s
-        akka.cluster.unreachable-nodes-reaper-interval = 30 s
+        akka.cluster.unreachable-nodes-reaper-interval = 300 s # turn "off"
       """))
       .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
@@ -34,37 +35,35 @@ abstract class MembershipChangeListenerLeavingSpec
 
   import MembershipChangeListenerLeavingMultiJvmSpec._
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-  lazy val thirdAddress = node(third).address
-
   "A registered MembershipChangeListener" must {
     "be notified when new node is LEAVING" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)
 
       runOn(first) {
-        testConductor.enter("registered-listener")
-        cluster.leave(secondAddress)
+        enterBarrier("registered-listener")
+        cluster.leave(second)
       }
 
       runOn(second) {
-        testConductor.enter("registered-listener")
+        enterBarrier("registered-listener")
       }
 
       runOn(third) {
         val latch = TestLatch()
+        val expectedAddresses = Set(first, second, third) map address
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
-            if (members.size == 3 && members.exists(m ⇒ m.address == secondAddress && m.status == MemberStatus.Leaving))
+            if (members.map(_.address) == expectedAddresses &&
+              members.exists(m ⇒ m.address == address(second) && m.status == MemberStatus.Leaving))
               latch.countDown()
           }
         })
-        testConductor.enter("registered-listener")
+        enterBarrier("registered-listener")
         latch.await
       }
 
-      testConductor.enter("finished")
+      enterBarrier("finished")
     }
   }
 }

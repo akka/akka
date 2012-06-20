@@ -21,18 +21,19 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
     akka.cluster {
-      gossip-interval    = 400 ms
       nr-of-deputy-nodes = 0
+      # FIXME remove this (use default) when ticket #2239 has been fixed
+      gossip-interval = 400 ms
     }
     akka.loglevel = INFO
     """))
 }
 
-class SunnyWeatherMultiJvmNode1 extends SunnyWeatherSpec with FailureDetectorPuppetStrategy
-class SunnyWeatherMultiJvmNode2 extends SunnyWeatherSpec with FailureDetectorPuppetStrategy
-class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec with FailureDetectorPuppetStrategy
-class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec with FailureDetectorPuppetStrategy
-class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec with FailureDetectorPuppetStrategy
+class SunnyWeatherMultiJvmNode1 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
+class SunnyWeatherMultiJvmNode2 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
+class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
+class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
+class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
 
 abstract class SunnyWeatherSpec
   extends MultiNodeSpec(SunnyWeatherMultiJvmSpec)
@@ -62,7 +63,7 @@ abstract class SunnyWeatherSpec
       })
 
       for (n ← 1 to 30) {
-        testConductor.enter("period-" + n)
+        enterBarrier("period-" + n)
         unexpected.get must be(null)
         awaitUpConvergence(roles.size)
         assertLeaderIn(roles)
@@ -70,7 +71,7 @@ abstract class SunnyWeatherSpec
         1.seconds.sleep
       }
 
-      testConductor.enter("after")
+      enterBarrier("after")
     }
   }
 }

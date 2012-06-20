@@ -18,7 +18,7 @@ object MembershipChangeListenerJoinMultiJvmSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("akka.cluster.leader-actions-interval = 5 s") // increase the leader action task interval to allow time checking for JOIN before leader moves it to UP
-      .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
 class MembershipChangeListenerJoinMultiJvmNode1 extends MembershipChangeListenerJoinSpec with FailureDetectorPuppetStrategy
@@ -30,32 +30,31 @@ abstract class MembershipChangeListenerJoinSpec
 
   import MembershipChangeListenerJoinMultiJvmSpec._
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-
   "A registered MembershipChangeListener" must {
     "be notified when new node is JOINING" taggedAs LongRunningTest in {
 
       runOn(first) {
         val joinLatch = TestLatch()
+        val expectedAddresses = Set(first, second) map address
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
-            if (members.size == 2 && members.exists(_.status == MemberStatus.Joining)) // second node is not part of node ring anymore
+            if (members.map(_.address) == expectedAddresses && members.exists(_.status == MemberStatus.Joining))
               joinLatch.countDown()
           }
         })
-        testConductor.enter("registered-listener")
+        enterBarrier("registered-listener")
 
         joinLatch.await
-        cluster.convergence.isDefined must be(true)
       }
 
       runOn(second) {
-        testConductor.enter("registered-listener")
-        cluster.join(firstAddress)
+        enterBarrier("registered-listener")
+        cluster.join(first)
       }
 
-      testConductor.enter("after")
+      awaitUpConvergence(2)
+
+      enterBarrier("after")
     }
   }
 }

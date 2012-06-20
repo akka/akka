@@ -139,8 +139,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
    */
   def newSocket(socketParameters: SocketOption*): ActorRef = {
     implicit val timeout = NewSocketTimeout
-    val req = (zeromqGuardian ? newSocketProps(socketParameters: _*)).mapTo[ActorRef]
-    Await.result(req, timeout.duration)
+    Await.result((zeromqGuardian ? newSocketProps(socketParameters: _*)).mapTo[ActorRef], timeout.duration)
   }
 
   /**
@@ -248,9 +247,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
         case _                                         ⇒ false
       }
 
-      def receive = {
-        case p: Props ⇒ sender ! context.actorOf(p)
-      }
+      def receive = { case p: Props ⇒ sender ! context.actorOf(p) }
     }), "zeromq")
   }
 

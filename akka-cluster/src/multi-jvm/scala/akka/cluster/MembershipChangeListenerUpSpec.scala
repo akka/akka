@@ -27,9 +27,6 @@ abstract class MembershipChangeListenerUpSpec
 
   import MembershipChangeListenerUpMultiJvmSpec._
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-
   "A set of connected cluster systems" must {
 
     "(when two nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
@@ -38,42 +35,44 @@ abstract class MembershipChangeListenerUpSpec
 
       runOn(first, second) {
         val latch = TestLatch()
+        val expectedAddresses = Set(first, second) map address
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
-            if (members.size == 2 && members.forall(_.status == MemberStatus.Up))
+            if (members.map(_.address) == expectedAddresses && members.forall(_.status == MemberStatus.Up))
               latch.countDown()
           }
         })
-        testConductor.enter("listener-1-registered")
-        cluster.join(firstAddress)
+        enterBarrier("listener-1-registered")
+        cluster.join(first)
         latch.await
       }
 
       runOn(third) {
-        testConductor.enter("listener-1-registered")
+        enterBarrier("listener-1-registered")
       }
 
-      testConductor.enter("after-1")
+      enterBarrier("after-1")
     }
 
     "(when three nodes) after cluster convergence updates the membership table then all MembershipChangeListeners should be triggered" taggedAs LongRunningTest in {
 
       val latch = TestLatch()
+      val expectedAddresses = Set(first, second, third) map address
       cluster.registerListener(new MembershipChangeListener {
         def notify(members: SortedSet[Member]) {
-          if (members.size == 3 && members.forall(_.status == MemberStatus.Up))
+          if (members.map(_.address) == expectedAddresses && members.forall(_.status == MemberStatus.Up))
             latch.countDown()
         }
       })
-      testConductor.enter("listener-2-registered")
+      enterBarrier("listener-2-registered")
 
       runOn(third) {
-        cluster.join(firstAddress)
+        cluster.join(first)
       }
 
       latch.await
 
-      testConductor.enter("after-2")
+      enterBarrier("after-2")
     }
   }
 }

@@ -37,7 +37,7 @@ abstract class ClientDowningNodeThatIsUnreachableSpec
   "Client of a 4 node cluster" must {
 
     "be able to DOWN a node that is UNREACHABLE (killed)" taggedAs LongRunningTest in {
-      val thirdAddress = node(third).address
+      val thirdAddress = address(third)
       awaitClusterUp(first, second, third, fourth)
 
       runOn(first) {
@@ -47,23 +47,23 @@ abstract class ClientDowningNodeThatIsUnreachableSpec
 
         // mark 'third' node as DOWN
         cluster.down(thirdAddress)
-        testConductor.enter("down-third-node")
+        enterBarrier("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
         cluster.latestGossip.members.exists(_.address == thirdAddress) must be(false)
       }
 
       runOn(third) {
-        testConductor.enter("down-third-node")
+        enterBarrier("down-third-node")
       }
 
       runOn(second, fourth) {
-        testConductor.enter("down-third-node")
+        enterBarrier("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
       }
 
-      testConductor.enter("await-completion")
+      enterBarrier("await-completion")
     }
   }
 }
