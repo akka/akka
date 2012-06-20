@@ -158,7 +158,13 @@ trait TestKitBase {
    * block or missing that it returns the properly dilated default for this
    * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = if (end == Duration.Undefined) testKitSettings.SingleExpectDefaultTimeout.dilated else end - now
+  def remaining: Duration = remainingOr(testKitSettings.SingleExpectDefaultTimeout.dilated)
+
+  /**
+   * Obtain time remaining for execution of the innermost enclosing `within`
+   * block or missing that it returns the given duration.
+   */
+  def remainingOr(duration: Duration): Duration = if (end == Duration.Undefined) duration else end - now
 
   /**
    * Query queue status.
@@ -486,19 +492,21 @@ trait TestKitBase {
 
     @tailrec
     def doit(acc: List[T], count: Int): List[T] = {
-      if (count >= messages) return acc.reverse
-      receiveOne((stop - now) min idle)
-      lastMessage match {
-        case NullMessage ⇒
-          lastMessage = msg
-          acc.reverse
-        case RealMessage(o, _) if (f isDefinedAt o) ⇒
-          msg = lastMessage
-          doit(f(o) :: acc, count + 1)
-        case RealMessage(o, _) ⇒
-          queue.offerFirst(lastMessage)
-          lastMessage = msg
-          acc.reverse
+      if (count >= messages) acc.reverse
+      else {
+        receiveOne((stop - now) min idle)
+        lastMessage match {
+          case NullMessage ⇒
+            lastMessage = msg
+            acc.reverse
+          case RealMessage(o, _) if (f isDefinedAt o) ⇒
+            msg = lastMessage
+            doit(f(o) :: acc, count + 1)
+          case RealMessage(o, _) ⇒
+            queue.offerFirst(lastMessage)
+            lastMessage = msg
+            acc.reverse
+        }
       }
     }
 
@@ -605,12 +613,6 @@ object TestKit {
   /**
    * Await until the given condition evaluates to `true` or the timeout
    * expires, whichever comes first.
-   *
-   * If no timeout is given, take it from the innermost enclosing `within`
-   * block.
-   *
-   * Note that the timeout is scaled using Duration.dilated, which uses the
-   * configuration entry "akka.test.timefactor"
    */
   def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis, noThrow: Boolean = false): Boolean = {
     val stop = now + max

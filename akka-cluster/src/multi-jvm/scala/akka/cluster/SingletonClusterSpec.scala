@@ -43,7 +43,7 @@ abstract class SingletonClusterSpec
       cluster.isSingletonCluster must be(false)
       assertLeader(first, second)
 
-      testConductor.enter("after-1")
+      enterBarrier("after-1")
     }
 
     "become singleton cluster when one node is shutdown" taggedAs LongRunningTest in {
@@ -58,7 +58,7 @@ abstract class SingletonClusterSpec
         assertLeader(first)
       }
 
-      testConductor.enter("after-2")
+      enterBarrier("after-2")
     }
   }
 }

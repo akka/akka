@@ -9,6 +9,8 @@ option optimize_for = SPEED;
   Compile with:
   cd ./akka-remote/src/main/protocol
   protoc RemoteProtocol.proto --java_out ../java
+  cd ../../../..
+  ./scripts/fix-protobuf.sh
 *******************************************/
 
 message AkkaRemoteProtocol {

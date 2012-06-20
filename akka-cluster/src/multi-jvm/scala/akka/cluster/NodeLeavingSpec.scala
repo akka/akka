@@ -32,15 +32,14 @@ abstract class NodeLeavingSpec
 
   "A node that is LEAVING a non-singleton cluster" must {
 
-    // FIXME make it work and remove ignore
-    "be marked as LEAVING in the converged membership table" taggedAs LongRunningTest ignore {
+    "be marked as LEAVING in the converged membership table" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)
 
       runOn(first) {
         cluster.leave(second)
       }
-      testConductor.enter("second-left")
+      enterBarrier("second-left")
 
       runOn(first, third) {
         awaitCond(cluster.latestGossip.members.exists(_.status == MemberStatus.Leaving))
@@ -50,7 +49,7 @@ abstract class NodeLeavingSpec
         hasLeft.get.address must be(address(second))
       }
 
-      testConductor.enter("finished")
+      enterBarrier("finished")
     }
   }
 }

@@ -50,7 +50,7 @@ abstract class LeaderElectionSpec
         assertLeaderIn(sortedRoles)
       }
 
-      testConductor.enter("after")
+      enterBarrier("after")
     }
 
     def shutdownLeaderAndVerifyNewLeader(alreadyShutdown: Int): Unit = {
@@ -64,33 +64,33 @@ abstract class LeaderElectionSpec
 
         case `controller` ⇒
           val leaderAddress = address(leader)
-          testConductor.enter("before-shutdown")
+          enterBarrier("before-shutdown")
           testConductor.shutdown(leader, 0)
-          testConductor.enter("after-shutdown", "after-down", "completed")
+          enterBarrier("after-shutdown", "after-down", "completed")
           markNodeAsUnavailable(leaderAddress)
 
         case `leader` ⇒
-          testConductor.enter("before-shutdown", "after-shutdown")
+          enterBarrier("before-shutdown", "after-shutdown")
         // this node will be shutdown by the controller and doesn't participate in more barriers
 
         case `aUser` ⇒
           val leaderAddress = address(leader)
-          testConductor.enter("before-shutdown", "after-shutdown")
+          enterBarrier("before-shutdown", "after-shutdown")
           // user marks the shutdown leader as DOWN
           cluster.down(leaderAddress)
-          testConductor.enter("after-down", "completed")
+          enterBarrier("after-down", "completed")
           markNodeAsUnavailable(leaderAddress)
 
         case _ if remainingRoles.contains(myself) ⇒
           // remaining cluster nodes, not shutdown
-          testConductor.enter("before-shutdown", "after-shutdown", "after-down")
+          enterBarrier("before-shutdown", "after-shutdown", "after-down")
 
           awaitUpConvergence(currentRoles.size - 1)
           val nextExpectedLeader = remainingRoles.head
           cluster.isLeader must be(myself == nextExpectedLeader)
           assertLeaderIn(remainingRoles)
 
-          testConductor.enter("completed")
+          enterBarrier("completed")
 
       }
     }

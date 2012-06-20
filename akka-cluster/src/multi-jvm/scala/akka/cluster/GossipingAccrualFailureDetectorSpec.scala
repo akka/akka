@@ -39,7 +39,7 @@ abstract class GossipingAccrualFailureDetectorSpec
       cluster.failureDetector.isAvailable(second) must be(true)
       cluster.failureDetector.isAvailable(third) must be(true)
 
-      testConductor.enter("after-1")
+      enterBarrier("after-1")
     }
 
     "mark node as 'unavailable' if a node in the cluster is shut down (and its heartbeats stops)" taggedAs LongRunningTest in {
@@ -55,7 +55,7 @@ abstract class GossipingAccrualFailureDetectorSpec
         cluster.failureDetector.isAvailable(second) must be(true)
       }
 
-      testConductor.enter("after-2")
+      enterBarrier("after-2")
     }
   }
 }

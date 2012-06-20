@@ -38,15 +38,14 @@ abstract class NodeLeavingAndExitingSpec
 
   "A node that is LEAVING a non-singleton cluster" must {
 
-    // FIXME make it work and remove ignore
-    "be moved to EXITING by the leader" taggedAs LongRunningTest ignore {
+    "be moved to EXITING by the leader" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)
 
       runOn(first) {
         cluster.leave(second)
       }
-      testConductor.enter("second-left")
+      enterBarrier("second-left")
 
       runOn(first, third) {
 
@@ -65,7 +64,7 @@ abstract class NodeLeavingAndExitingSpec
         hasExited.get.address must be(address(second))
       }
 
-      testConductor.enter("finished")
+      enterBarrier("finished")
     }
   }
 }

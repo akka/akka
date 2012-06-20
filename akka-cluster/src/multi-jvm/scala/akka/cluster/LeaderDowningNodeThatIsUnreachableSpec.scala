@@ -46,7 +46,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec
       runOn(first) {
         // kill 'fourth' node
         testConductor.shutdown(fourth, 0)
-        testConductor.enter("down-fourth-node")
+        enterBarrier("down-fourth-node")
 
         // mark the node as unreachable in the failure detector
         markNodeAsUnavailable(fourthAddress)
@@ -57,26 +57,26 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec
       }
 
       runOn(fourth) {
-        testConductor.enter("down-fourth-node")
+        enterBarrier("down-fourth-node")
       }
 
       runOn(second, third) {
-        testConductor.enter("down-fourth-node")
+        enterBarrier("down-fourth-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(fourthAddress), 30.seconds)
       }
 
-      testConductor.enter("await-completion-1")
+      enterBarrier("await-completion-1")
     }
 
     "be able to DOWN a 'middle' node that is UNREACHABLE" taggedAs LongRunningTest in {
       val secondAddress = address(second)
 
-      testConductor.enter("before-down-second-node")
+      enterBarrier("before-down-second-node")
       runOn(first) {
         // kill 'second' node
         testConductor.shutdown(second, 0)
-        testConductor.enter("down-second-node")
+        enterBarrier("down-second-node")
 
         // mark the node as unreachable in the failure detector
         markNodeAsUnavailable(secondAddress)
@@ -87,16 +87,16 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec
       }
 
       runOn(second) {
-        testConductor.enter("down-second-node")
+        enterBarrier("down-second-node")
       }
 
       runOn(third) {
-        testConductor.enter("down-second-node")
+        enterBarrier("down-second-node")
 
         awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = Seq(secondAddress), 30 seconds)
       }
 
-      testConductor.enter("await-completion-2")
+      enterBarrier("await-completion-2")
     }
   }
 }
