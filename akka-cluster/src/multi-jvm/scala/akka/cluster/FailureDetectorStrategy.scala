@@ -55,7 +55,7 @@ trait AccrualFailureDetectorStrategy extends FailureDetectorStrategy { self: Mul
 
   override val failureDetector: FailureDetector = new AccrualFailureDetector(system, new ClusterSettings(system.settings.config, system.name))
 
-  override def markNodeAsAvailable(address: Address): Unit = { /* no-op */ }
+  override def markNodeAsAvailable(address: Address): Unit = ()
 
-  override def markNodeAsUnavailable(address: Address): Unit = { /* no-op */ }
+  override def markNodeAsUnavailable(address: Address): Unit = ()
 }

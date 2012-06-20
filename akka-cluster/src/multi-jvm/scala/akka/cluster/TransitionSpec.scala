@@ -20,8 +20,7 @@ object TransitionMultiJvmSpec extends MultiNodeConfig {
   val fifth = role("fifth")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString(
-      "akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
+    withFallback(ConfigFactory.parseString("akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
@@ -396,7 +395,7 @@ abstract class TransitionSpec
         seenLatestGossip must be(Set(fifth))
       }
 
-      testConductor.enter("after-second-unavailble")
+      enterBarrier("after-second-unavailble")
 
       // spread the word
       val gossipRound = List(fifth, fourth, third, first, third, fourth, fifth)
@@ -414,7 +413,7 @@ abstract class TransitionSpec
         awaitMemberStatus(second, Down)
       }
 
-      testConductor.enter("after-second-down")
+      enterBarrier("after-second-down")
 
       // spread the word
       val gossipRound2 = List(third, fourth, fifth, first, third, fourth, fifth)

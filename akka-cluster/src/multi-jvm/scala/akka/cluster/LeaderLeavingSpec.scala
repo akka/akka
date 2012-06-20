@@ -35,6 +35,8 @@ abstract class LeaderLeavingSpec
 
   import LeaderLeavingMultiJvmSpec._
 
+  val leaderHandoffWaitingTime = 30.seconds.dilated
+
   "A LEADER that is LEAVING" must {
 
     "be moved to LEAVING, then to EXITING, then to REMOVED, then be shut down and then a new LEADER should be elected" taggedAs LongRunningTest in {
@@ -62,19 +64,19 @@ abstract class LeaderLeavingSpec
         enterBarrier("leader-left")
 
         // verify that the LEADER is LEAVING
-        awaitCond(cluster.latestGossip.members.exists(m ⇒ m.status == MemberStatus.Leaving && m.address == oldLeaderAddress)) // wait on LEAVING
+        awaitCond(cluster.latestGossip.members.exists(m ⇒ m.status == MemberStatus.Leaving && m.address == oldLeaderAddress), leaderHandoffWaitingTime) // wait on LEAVING
 
         // verify that the LEADER is EXITING
-        awaitCond(cluster.latestGossip.members.exists(m ⇒ m.status == MemberStatus.Exiting && m.address == oldLeaderAddress)) // wait on EXITING
+        awaitCond(cluster.latestGossip.members.exists(m ⇒ m.status == MemberStatus.Exiting && m.address == oldLeaderAddress), leaderHandoffWaitingTime) // wait on EXITING
 
         // verify that the LEADER is no longer part of the 'members' set
-        awaitCond(cluster.latestGossip.members.forall(_.address != oldLeaderAddress))
+        awaitCond(cluster.latestGossip.members.forall(_.address != oldLeaderAddress), leaderHandoffWaitingTime)
 
         // verify that the LEADER is not part of the 'unreachable' set
-        awaitCond(cluster.latestGossip.overview.unreachable.forall(_.address != oldLeaderAddress))
+        awaitCond(cluster.latestGossip.overview.unreachable.forall(_.address != oldLeaderAddress), leaderHandoffWaitingTime)
 
         // verify that we have a new LEADER
-        awaitCond(cluster.leader != oldLeaderAddress)
+        awaitCond(cluster.leader != oldLeaderAddress, leaderHandoffWaitingTime)
       }
 
       enterBarrier("finished")

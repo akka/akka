@@ -403,14 +403,12 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): Cluster = {
     val clusterSettings = new ClusterSettings(system.settings.config, system.name)
 
-    val failureDetector = clusterSettings.FailureDetectorImplementationClass match {
-      case None ⇒ new AccrualFailureDetector(system, clusterSettings)
-      case Some(fqcn) ⇒
-        system.dynamicAccess.createInstanceFor[FailureDetector](
-          fqcn, Seq((classOf[ActorSystem], system), (classOf[ClusterSettings], clusterSettings))) match {
-            case Right(fd) ⇒ fd
-            case Left(e)   ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
-          }
+    val failureDetector = {
+      import clusterSettings.{ FailureDetectorImplementationClass ⇒ fqcn }
+      system.dynamicAccess.createInstanceFor[FailureDetector](
+        fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> clusterSettings)).fold(
+          e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString),
+          identity)
     }
 
     new Cluster(system, failureDetector)
