@@ -57,7 +57,7 @@ object AccrualFailureDetector {
  *   to this duration, with a with rather high standard deviation (since environment is unknown
  *   in the beginning)
  *
- * @clock The clock, returning current time in milliseconds, but can be faked for testing
+ * @param clock The clock, returning current time in milliseconds, but can be faked for testing
  *   purposes. It is only used for measuring intervals (duration).
  *
  */
@@ -68,7 +68,7 @@ class AccrualFailureDetector(
   val minStdDeviation: Duration,
   val acceptableHeartbeatPause: Duration,
   val firstHeartbeatEstimate: Duration,
-  val clock: () ⇒ Long) extends FailureDetector {
+  val clock: () ⇒ Long = AccrualFailureDetector.realClock) extends FailureDetector {
 
   import AccrualFailureDetector._
 
@@ -77,8 +77,7 @@ class AccrualFailureDetector(
    */
   def this(
     system: ActorSystem,
-    settings: ClusterSettings,
-    clock: () ⇒ Long = AccrualFailureDetector.realClock) =
+    settings: ClusterSettings) =
     this(
       system,
       settings.FailureDetectorThreshold,
@@ -90,7 +89,7 @@ class AccrualFailureDetector(
       // first real heartbeat is sent. Initial heartbeat is added when joining.
       // FIXME this can be changed to HeartbeatInterval when ticket #2249 is fixed
       settings.GossipInterval * 3 + settings.HeartbeatInterval,
-      clock)
+      AccrualFailureDetector.realClock)
 
   private val log = Logging(system, "FailureDetector")
 
