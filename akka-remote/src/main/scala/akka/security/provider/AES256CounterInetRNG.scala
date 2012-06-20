@@ -4,16 +4,25 @@
 package akka.security.provider
 
 import org.uncommons.maths.random.{ AESCounterRNG, DefaultSeedGenerator }
-import java.security.SecureRandom
 
 /**
  * Internal API
+ * This class is a wrapper around the 256-bit AESCounterRNG algorithm provided by http://maths.uncommons.org/
+ * It uses the default seed generator which uses one of the following 3 random seed sources:
+ * Depending on availability: /dev/random, random.org and SecureRandom (provided by Java)
+ * The only method used by netty ssl is engineNextBytes(bytes)
  */
-class AES128CounterRNGFast extends java.security.SecureRandomSpi {
-  private val rng = new AESCounterRNG()
+class AES256CounterInetRNG extends java.security.SecureRandomSpi {
+  /**
+   * From AESCounterRNG API docs:
+   * Valid values are 16 (128 bits), 24 (192 bits) and 32 (256 bits).
+   * Any other values will result in an exception from the AES implementation.
+   */
+  private val AES_256_BIT = 32 // Magic number is magic
+  private val rng = new AESCounterRNG(AES_256_BIT)
 
   /**
-   * This is managed internally only
+   * This is managed internally by AESCounterRNG
    */
   override protected def engineSetSeed(seed: Array[Byte]): Unit = ()
 
@@ -25,6 +34,7 @@ class AES128CounterRNGFast extends java.security.SecureRandomSpi {
   override protected def engineNextBytes(bytes: Array[Byte]): Unit = rng.nextBytes(bytes)
 
   /**
+   * Unused method
    * Returns the given number of seed bytes.  This call may be used to
    * seed other random number generators.
    *
