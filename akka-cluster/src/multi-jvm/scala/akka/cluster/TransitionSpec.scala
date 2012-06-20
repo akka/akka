@@ -20,8 +20,7 @@ object TransitionMultiJvmSpec extends MultiNodeConfig {
   val fifth = role("fifth")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString(
-      "akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
+    withFallback(ConfigFactory.parseString("akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
