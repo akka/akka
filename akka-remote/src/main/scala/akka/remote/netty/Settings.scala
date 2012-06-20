@@ -73,7 +73,7 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
   val ExecutionPoolKeepalive: Duration = Duration(getMilliseconds("execution-pool-keepalive"), MILLISECONDS)
 
   val ExecutionPoolSize: Int = getInt("execution-pool-size") match {
-    case sz if sz < 1 ⇒ throw new IllegalArgumentException("akka.remote.netty.execution-pool-size is less than 1")
+    case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.netty.execution-pool-size is less than 0")
     case sz           ⇒ sz
   }
 

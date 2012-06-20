@@ -71,7 +71,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      */
     def defaultStack(withTimeout: Boolean, isClient: Boolean): Seq[ChannelHandler] =
       (if (settings.EnableSSL) List(NettySSLSupport(settings, NettyRemoteTransport.this.log, isClient)) else Nil) :::
-        (if (withTimeout) List(timeout) else Nil) ::: msgFormat ::: authenticator ::: executionHandler :: Nil
+        (if (withTimeout) List(timeout) else Nil) ::: msgFormat ::: authenticator ::: executionHandler
 
     /**
      * Construct an IdleStateHandler which uses [[akka.remote.netty.NettyRemoteTransport]].timer.
@@ -95,13 +95,15 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      * happen on a netty thread (that could be bad if re-sending over the network for
      * remote-deployed actors).
      */
-    val executionHandler = new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(
-      settings.ExecutionPoolSize,
-      settings.MaxChannelMemorySize,
-      settings.MaxTotalMemorySize,
-      settings.ExecutionPoolKeepalive.length,
-      settings.ExecutionPoolKeepalive.unit,
-      system.threadFactory))
+    val executionHandler = if (settings.ExecutionPoolSize != 0)
+      List(new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(
+        settings.ExecutionPoolSize,
+        settings.MaxChannelMemorySize,
+        settings.MaxTotalMemorySize,
+        settings.ExecutionPoolKeepalive.length,
+        settings.ExecutionPoolKeepalive.unit,
+        system.threadFactory)))
+    else Nil
 
     /**
      * Construct and authentication handler which uses the SecureCookie to somewhat
