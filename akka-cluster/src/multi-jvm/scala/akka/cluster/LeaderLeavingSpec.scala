@@ -64,10 +64,10 @@ abstract class LeaderLeavingSpec
         enterBarrier("leader-left")
 
         // verify that the LEADER is LEAVING
-        awaitCond(cluster.latestGossip.members.exists(m ⇒ m.status == MemberStatus.Leaving && m.address == oldLeaderAddress)) // wait on LEAVING
+        awaitCond(cluster.latestGossip.members.exists(m ⇒ m.status == MemberStatus.Leaving && m.address == oldLeaderAddress), leaderHandoffWaitingTime) // wait on LEAVING
 
         // verify that the LEADER is EXITING
-        awaitCond(cluster.latestGossip.members.exists(m ⇒ m.status == MemberStatus.Exiting && m.address == oldLeaderAddress)) // wait on EXITING
+        awaitCond(cluster.latestGossip.members.exists(m ⇒ m.status == MemberStatus.Exiting && m.address == oldLeaderAddress), leaderHandoffWaitingTime) // wait on EXITING
 
         // verify that the LEADER is no longer part of the 'members' set
         awaitCond(cluster.latestGossip.members.forall(_.address != oldLeaderAddress), leaderHandoffWaitingTime)
