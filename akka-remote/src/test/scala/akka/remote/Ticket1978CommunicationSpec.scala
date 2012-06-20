@@ -51,7 +51,7 @@ object Configuration {
 
   def getCipherConfig(cipher: String, enabled: String*): (String, Boolean, Config) = try {
 
-    if (true) throw new IllegalArgumentException("Test not enabled")
+    if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")
 
     val config = ConfigFactory.parseString("akka.remote.netty.port=12345").withFallback(ConfigFactory.parseString(conf.format(trustStore, keyStore, cipher, enabled.mkString(", "))))
     val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty")
@@ -127,7 +127,7 @@ abstract class Ticket1978CommunicationSpec(val cipherEnabledconfig: (String, Boo
         }
       }
 
-      "send error message for wrong address" in {
+      "send error message for wrong address" ignore {
         within(timeout.duration) {
           EventFilter.error(start = "dropping", occurrences = 1).intercept {
             system.actorFor("akka://remotesys@localhost:12346/user/echo") ! "ping"

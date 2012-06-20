@@ -13,7 +13,9 @@ import akka.util.duration._
 import akka.util.Duration
 import org.scalatest.Suite
 import org.scalatest.TestFailedException
-import scala.util.control.NoStackTrace
+import java.util.concurrent.ConcurrentHashMap
+import akka.actor.ActorPath
+import akka.actor.RootActorPath
 
 object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
@@ -35,6 +37,27 @@ object MultiNodeClusterSpec {
 trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
+
+  private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
+
+  /**
+   * Lookup the Address for the role.
+   *
+   * Implicit conversion from RoleName to Address.
+   *
+   * It is cached, which has the implication that stopping
+   * and then restarting a role (jvm) with another address is not
+   * supported.
+   */
+  implicit def address(role: RoleName): Address = {
+    cachedAddresses.get(role) match {
+      case null ⇒
+        val address = node(role).address
+        cachedAddresses.put(role, address)
+        address
+      case address ⇒ address
+    }
+  }
 
   // Cluster tests are written so that if previous step (test method) failed
   // it will most likely not be possible to run next step. This ensures
@@ -92,14 +115,14 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
       // make sure that the node-to-join is started before other join
       startClusterNode()
     }
-    testConductor.enter(roles.head.name + "-started")
+    enterBarrier(roles.head.name + "-started")
     if (roles.tail.contains(myself)) {
-      cluster.join(node(roles.head).address)
+      cluster.join(roles.head)
     }
     if (upConvergence && roles.contains(myself)) {
       awaitUpConvergence(numberOfMembers = roles.length)
     }
-    testConductor.enter(roles.map(_.name).mkString("-") + "-joined")
+    enterBarrier(roles.map(_.name).mkString("-") + "-joined")
   }
 
   /**
@@ -150,7 +173,7 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   /**
    * Wait until the specified nodes have seen the same gossip overview.
    */
-  def awaitSeenSameState(addresses: Seq[Address]): Unit = {
+  def awaitSeenSameState(addresses: Address*): Unit = {
     awaitCond {
       val seen = cluster.latestGossip.overview.seen
       val seenVectorClocks = addresses.flatMap(seen.get(_))
@@ -168,10 +191,9 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
    */
   implicit val clusterOrdering: Ordering[RoleName] = new Ordering[RoleName] {
     import Member.addressOrdering
-    def compare(x: RoleName, y: RoleName) = addressOrdering.compare(node(x).address, node(y).address)
+    def compare(x: RoleName, y: RoleName) = addressOrdering.compare(address(x), address(y))
   }
 
-  def roleName(address: Address): Option[RoleName] = {
-    roles.find(node(_).address == address)
-  }
+  def roleName(addr: Address): Option[RoleName] = roles.find(address(_) == addr)
+
 }
