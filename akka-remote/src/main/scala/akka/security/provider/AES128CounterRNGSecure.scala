@@ -3,13 +3,13 @@
  */
 package akka.security.provider
 
-import org.uncommons.maths.random.{ AESCounterRNG, SecureRandomSeedGenerator }
+import org.uncommons.maths.random.{ AESCounterRNG, DefaultSeedGenerator }
 
 /**
  * Internal API
  */
 class AES128CounterRNGSecure extends java.security.SecureRandomSpi {
-  private val rng = new AESCounterRNG(new SecureRandomSeedGenerator())
+  private val rng = new AESCounterRNG()
 
   /**
    * This is managed internally only
@@ -30,6 +30,6 @@ class AES128CounterRNGSecure extends java.security.SecureRandomSpi {
    * @param numBytes the number of seed bytes to generate.
    * @return the seed bytes.
    */
-  override protected def engineGenerateSeed(numBytes: Int): Array[Byte] = (new SecureRandomSeedGenerator()).generateSeed(numBytes)
+  override protected def engineGenerateSeed(numBytes: Int): Array[Byte] = DefaultSeedGenerator.getInstance.generateSeed(numBytes)
 }
 

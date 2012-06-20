@@ -15,7 +15,12 @@ akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
   remote.netty {
     hostname = localhost
-    port = 0
+    port = 12345
+  }
+  actor.deployment {
+    /blub.remote = "akka://remote-sys@localhost:12346"
+    /looker/child.remote = "akka://remote-sys@localhost:12346"
+    /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
   }
 }
 """) with ImplicitSender with DefaultTimeout {
