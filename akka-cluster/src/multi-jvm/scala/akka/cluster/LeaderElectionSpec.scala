@@ -50,7 +50,7 @@ abstract class LeaderElectionSpec
         assertLeaderIn(sortedRoles)
       }
 
-      enterBarrier("after")
+      enterBarrier("after-1")
     }
 
     def shutdownLeaderAndVerifyNewLeader(alreadyShutdown: Int): Unit = {
@@ -97,10 +97,12 @@ abstract class LeaderElectionSpec
 
     "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 0)
+      enterBarrier("after-2")
     }
 
     "be able to 're-elect' a single leader after leader has left (again)" taggedAs LongRunningTest in {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 1)
+      enterBarrier("after-3")
     }
   }
 }

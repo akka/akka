@@ -106,6 +106,7 @@ case class RemoteServerShutdown(
 case class RemoteServerError(
   @BeanProperty val cause: Throwable,
   @transient @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
+
   override def logLevel: Logging.LogLevel = Logging.ErrorLevel
   override def toString: String = "RemoteServerError@" + remote + "] Error[" + cause + "]"
 }

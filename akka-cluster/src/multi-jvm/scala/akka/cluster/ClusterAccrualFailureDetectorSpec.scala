@@ -9,7 +9,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.util.duration._
 import akka.testkit._
 
-object GossipingAccrualFailureDetectorMultiJvmSpec extends MultiNodeConfig {
+object ClusterAccrualFailureDetectorMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -19,22 +19,22 @@ object GossipingAccrualFailureDetectorMultiJvmSpec extends MultiNodeConfig {
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class GossipingWithAccrualFailureDetectorMultiJvmNode1 extends GossipingAccrualFailureDetectorSpec with AccrualFailureDetectorStrategy
-class GossipingWithAccrualFailureDetectorMultiJvmNode2 extends GossipingAccrualFailureDetectorSpec with AccrualFailureDetectorStrategy
-class GossipingWithAccrualFailureDetectorMultiJvmNode3 extends GossipingAccrualFailureDetectorSpec with AccrualFailureDetectorStrategy
+class ClusterAccrualFailureDetectorMultiJvmNode1 extends ClusterAccrualFailureDetectorSpec with AccrualFailureDetectorStrategy
+class ClusterAccrualFailureDetectorMultiJvmNode2 extends ClusterAccrualFailureDetectorSpec with AccrualFailureDetectorStrategy
+class ClusterAccrualFailureDetectorMultiJvmNode3 extends ClusterAccrualFailureDetectorSpec with AccrualFailureDetectorStrategy
 
-abstract class GossipingAccrualFailureDetectorSpec
-  extends MultiNodeSpec(GossipingAccrualFailureDetectorMultiJvmSpec)
+abstract class ClusterAccrualFailureDetectorSpec
+  extends MultiNodeSpec(ClusterAccrualFailureDetectorMultiJvmSpec)
   with MultiNodeClusterSpec {
 
-  import GossipingAccrualFailureDetectorMultiJvmSpec._
+  import ClusterAccrualFailureDetectorMultiJvmSpec._
 
-  "A Gossip-driven Failure Detector" must {
+  "A heartbeat driven Failure Detector" must {
 
-    "receive gossip heartbeats so that all member nodes in the cluster are marked 'available'" taggedAs LongRunningTest in {
+    "receive heartbeats so that all member nodes in the cluster are marked 'available'" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third)
 
-      5.seconds.dilated.sleep // let them gossip
+      5.seconds.dilated.sleep // let them heartbeat
       cluster.failureDetector.isAvailable(first) must be(true)
       cluster.failureDetector.isAvailable(second) must be(true)
       cluster.failureDetector.isAvailable(third) must be(true)
@@ -47,9 +47,11 @@ abstract class GossipingAccrualFailureDetectorSpec
         testConductor.shutdown(third, 0)
       }
 
+      enterBarrier("third-shutdown")
+
       runOn(first, second) {
         // remaning nodes should detect failure...
-        awaitCond(!cluster.failureDetector.isAvailable(third), 10.seconds)
+        awaitCond(!cluster.failureDetector.isAvailable(third), 15.seconds)
         // other connections still ok
         cluster.failureDetector.isAvailable(first) must be(true)
         cluster.failureDetector.isAvailable(second) must be(true)
