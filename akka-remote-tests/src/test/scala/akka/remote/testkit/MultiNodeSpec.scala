@@ -268,8 +268,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
       testConductor.removeNode(myself)
       within(testConductor.Settings.BarrierTimeout.duration) {
         awaitCond {
-          val nodes = testConductor.getNodes.await
-          nodes.size < 1 || (nodes.size == 1 && nodes.head == myself)
+          testConductor.getNodes.await.filterNot(_ == myself).isEmpty
         }
       }
     }
