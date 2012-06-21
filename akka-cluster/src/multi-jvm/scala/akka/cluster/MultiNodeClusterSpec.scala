@@ -26,7 +26,6 @@ object MultiNodeClusterSpec {
       leader-actions-interval           = 200 ms
       unreachable-nodes-reaper-interval = 200 ms
       periodic-tasks-initial-delay      = 300 ms
-      nr-of-deputy-nodes                = 2
     }
     akka.test {
       single-expect-default = 5 s
@@ -78,9 +77,21 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   }
 
   /**
+   * Make it possible to override/configure seedNodes from tests without
+   * specifying in config. Addresses are unknown before startup time.
+   */
+  protected def seedNodes: IndexedSeq[RoleName] = IndexedSeq.empty
+
+  /**
    * The cluster node instance. Needs to be lazily created.
    */
-  private lazy val clusterNode = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector)
+  private lazy val clusterNode = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector) {
+    override def seedNodes: IndexedSeq[Address] = {
+      val testSeedNodes = MultiNodeClusterSpec.this.seedNodes
+      if (testSeedNodes.isEmpty) super.seedNodes
+      else testSeedNodes map address
+    }
+  }
 
   /**
    * Get the cluster node to use.

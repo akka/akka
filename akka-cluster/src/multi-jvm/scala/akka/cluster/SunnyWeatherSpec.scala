@@ -21,7 +21,6 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
     akka.cluster {
-      nr-of-deputy-nodes = 0
       # FIXME remove this (use default) when ticket #2239 has been fixed
       gossip-interval = 400 ms
     }
