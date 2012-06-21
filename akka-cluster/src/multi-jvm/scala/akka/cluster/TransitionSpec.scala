@@ -387,7 +387,8 @@ abstract class TransitionSpec
       enterBarrier("after-5")
     }
 
-    "perform correct transitions when second becomes unavailble" taggedAs LongRunningTest in {
+    // FIXME ignored due to #2259
+    "perform correct transitions when second becomes unavailble" taggedAs LongRunningTest ignore {
       runOn(fifth) {
         markNodeAsUnavailable(second)
         cluster.reapUnreachableMembers()
