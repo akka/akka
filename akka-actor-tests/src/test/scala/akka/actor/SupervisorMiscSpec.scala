@@ -3,6 +3,8 @@
  */
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit.{ filterEvents, EventFilter }
 import akka.dispatch.{ PinnedDispatcher, Dispatchers, Await }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }

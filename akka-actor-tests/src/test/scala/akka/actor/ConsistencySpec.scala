@@ -1,5 +1,7 @@
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
 import akka.dispatch.UnboundedMailbox
 import akka.util.duration._

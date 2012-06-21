@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import akka.util.{ ByteString, Duration, Deadline }
 import akka.util.duration._
 import scala.util.continuations._

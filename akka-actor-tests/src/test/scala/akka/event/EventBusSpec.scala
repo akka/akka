@@ -4,6 +4,8 @@
 
 package akka.event
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfterEach
 import akka.testkit._
 import akka.util.duration._

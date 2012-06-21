@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfterEach
 import akka.util.duration._
 import akka.{ Die, Ping }

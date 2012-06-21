@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.testkit._
 import TestEvent.Mute

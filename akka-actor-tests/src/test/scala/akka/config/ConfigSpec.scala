@@ -4,6 +4,8 @@
 
 package akka.config
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._

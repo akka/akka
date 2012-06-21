@@ -4,6 +4,8 @@
 
 package akka.serialization
 
+import language.postfixOps
+
 import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor._
 import java.io._

@@ -3,6 +3,8 @@
  */
 package akka.testkit
 
+import language.existentials
+
 import scala.util.matching.Regex
 import akka.actor.{ DeadLetter, ActorSystem, Terminated, UnhandledMessage }
 import akka.dispatch.{ SystemMessage, Terminate }

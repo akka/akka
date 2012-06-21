@@ -3,6 +3,8 @@
  */
 package akka.event
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
 import akka.util.duration._
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl, ActorSystem, Props, UnhandledMessage }

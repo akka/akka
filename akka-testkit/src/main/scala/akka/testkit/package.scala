@@ -1,5 +1,7 @@
 package akka
 
+import language.implicitConversions
+
 import akka.actor.ActorSystem
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS

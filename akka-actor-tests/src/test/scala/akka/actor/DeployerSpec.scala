@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions

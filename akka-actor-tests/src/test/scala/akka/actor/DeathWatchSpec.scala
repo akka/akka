@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit._
 import akka.util.duration._
 import java.util.concurrent.atomic._

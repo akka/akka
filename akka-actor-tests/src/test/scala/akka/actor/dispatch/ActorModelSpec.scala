@@ -3,6 +3,8 @@
  */
 package akka.actor.dispatch
 
+import language.postfixOps
+
 import org.scalatest.Assertions._
 import akka.testkit._
 import akka.dispatch._

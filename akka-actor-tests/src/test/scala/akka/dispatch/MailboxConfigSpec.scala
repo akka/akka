@@ -1,5 +1,7 @@
 package akka.dispatch
 
+import language.postfixOps
+
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import java.util.concurrent.{ TimeUnit, BlockingQueue }
 import java.util.concurrent.ConcurrentLinkedQueue

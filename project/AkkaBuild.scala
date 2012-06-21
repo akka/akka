@@ -494,7 +494,7 @@ object Dependency {
     val junit       = "junit"                       % "junit"                 % "4.10"              % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"       % "1.0.4"             % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"           % "1.8.1"             % "test" // MIT
-    val scalatest   = "org.scalatest"               %% "scalatest"            % "1.9-2.10.0-M4-B1"  % "test" // ApacheV2
+    val scalatest   = "org.scalatest"               %% "scalatest"            % "1.9-2.10.0-M4-B2"  % "test" // ApacheV2
     val scalacheck  = "org.scalacheck"              %% "scalacheck"           % "1.10.0-b1"         % "test" // New BSD
     val specs2      = "org.specs2"                  %% "specs2"               % "1.11"              % "test" // Modified BSD / ApacheV2
   }

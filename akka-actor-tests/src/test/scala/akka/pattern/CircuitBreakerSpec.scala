@@ -1,9 +1,10 @@
-
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.pattern
+
+import language.postfixOps
 
 import akka.util.duration._
 import akka.testkit._

@@ -1,5 +1,7 @@
 package akka.dispatch
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.prop.Checkers
 import org.scalacheck._

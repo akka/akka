@@ -3,6 +3,8 @@
  */
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit._
 import org.scalatest.junit.JUnitSuite
 import com.typesafe.config.ConfigFactory

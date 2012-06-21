@@ -1,5 +1,7 @@
 package akka.actor.dispatch
 
+import language.postfixOps
+
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.{ filterEvents, EventFilter, AkkaSpec }

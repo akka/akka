@@ -1,5 +1,7 @@
 package akka.actor
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfterEach
 import akka.util.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }

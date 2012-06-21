@@ -3,6 +3,8 @@
  */
 package akka.actor
 
+import language.postfixOps
+
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import akka.actor._
 import org.scalatest.BeforeAndAfterAll

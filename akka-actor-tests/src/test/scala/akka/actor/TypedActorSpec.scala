@@ -1,8 +1,9 @@
-package akka.actor
-
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
+package akka.actor
+
+import language.postfixOps
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.Duration

@@ -1,5 +1,7 @@
 package akka.dispatch
 
+import language.postfixOps
+
 import akka.actor.{ Props, LocalActorRef, Actor }
 import akka.testkit.AkkaSpec
 import akka.pattern.ask

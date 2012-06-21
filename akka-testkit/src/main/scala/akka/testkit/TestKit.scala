@@ -3,6 +3,8 @@
  */
 package akka.testkit
 
+import language.postfixOps
+
 import akka.actor._
 import Actor._
 import akka.util.Duration

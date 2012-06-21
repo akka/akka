@@ -3,6 +3,8 @@
  */
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._

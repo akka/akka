@@ -3,6 +3,8 @@
  */
 package akka.testkit
 
+import language.{ postfixOps, reflectiveCalls }
+
 import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
 import akka.actor.ActorSystem

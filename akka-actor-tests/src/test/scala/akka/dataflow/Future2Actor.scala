@@ -3,6 +3,8 @@
  */
 package akka.dataflow
 
+import language.postfixOps
+
 import akka.actor.{ Actor, Props }
 import akka.dispatch.{ Future, Await }
 import akka.util.duration._

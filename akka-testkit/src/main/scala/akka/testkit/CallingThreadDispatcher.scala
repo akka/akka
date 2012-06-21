@@ -3,6 +3,8 @@
  */
 package akka.testkit
 
+import language.postfixOps
+
 import java.lang.ref.WeakReference
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList

@@ -3,6 +3,8 @@
  */
 package akka.routing
 
+import language.postfixOps
+
 import akka.actor.Actor
 import akka.testkit._
 import akka.actor.Props

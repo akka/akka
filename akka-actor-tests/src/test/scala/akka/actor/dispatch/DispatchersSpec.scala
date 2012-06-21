@@ -3,6 +3,8 @@
  */
 package akka.actor.dispatch
 
+import language.postfixOps
+
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import scala.reflect.{ Manifest }
 import akka.dispatch._

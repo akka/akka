@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import java.lang.Thread.sleep
 import org.scalatest.BeforeAndAfterAll
 import akka.dispatch.Await

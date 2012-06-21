@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.MustMatchers
 

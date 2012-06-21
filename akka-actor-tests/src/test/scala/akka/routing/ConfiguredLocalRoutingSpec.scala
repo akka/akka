@@ -3,6 +3,8 @@
  */
 package akka.routing
 
+import language.postfixOps
+
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.junit.runner.RunWith

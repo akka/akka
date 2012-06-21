@@ -3,6 +3,8 @@
  */
 package akka.actor
 
+import language.postfixOps
+
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.util.duration._

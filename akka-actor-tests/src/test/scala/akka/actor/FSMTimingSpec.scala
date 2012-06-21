@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit._
 import akka.util.Duration
 import akka.util.duration._
