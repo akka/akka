@@ -634,7 +634,7 @@ The `Stash` trait enables an actor to temporarily stash away messages
 that can not or should not be handled using the actor's current
 behavior. Upon changing the actor's message handler, i.e., right
 before invoking ``context.become`` or ``context.unbecome``, all
-stashed messages can be "unstashed" by prepending them to the actor's
+stashed messages can be "unstashed", thereby prepending them to the actor's
 mailbox. This way, the stashed messages can be processed in the same
 order as they have been received originally.
 
@@ -667,6 +667,12 @@ mailbox). In case a bounded mailbox overflows, a
 ``MessageQueueAppendFailedException`` is thrown.
 The stash is guaranteed to be empty after calling ``unstashAll()``.
 
+.. warning::
+
+  Note that the ``Stash`` trait must be mixed into (a subclass of) the
+  ``Actor`` trait before any trait/class that overrides the ``preRestart``
+  callback. This means it's not possible to write
+  ``Actor with MyActor with Stash`` if ``MyActor`` overrides ``preRestart``.
 
 
 Killing an Actor
