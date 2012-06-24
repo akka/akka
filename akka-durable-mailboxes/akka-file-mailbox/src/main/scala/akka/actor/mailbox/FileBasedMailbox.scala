@@ -21,18 +21,17 @@ class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config)
     case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
-
 class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
-  // TODO Is it reasonable for all FileBasedMailboxes to have their own logger?
-  private val log = Logging(system, "FileBasedMessageQueue")
 
-  val breaker = CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
+  private val breaker = CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
+
+  private val log = Logging(system, "FileBasedMessageQueue")
 
   private val queue = try {
     (new java.io.File(settings.QueuePath)) match {
       case dir if dir.exists && !dir.isDirectory ⇒ throw new IllegalStateException("Path already occupied by non-directory " + dir)
       case dir if !dir.exists                    ⇒ if (!dir.mkdirs() && !dir.isDirectory) throw new IllegalStateException("Creation of directory failed " + dir)
-      case _                                     ⇒ //All good
+      case _                                     ⇒ // All good
     }
     val queue = new filequeue.PersistentQueue(settings.QueuePath, name, settings, log)
     queue.setup // replays journal
