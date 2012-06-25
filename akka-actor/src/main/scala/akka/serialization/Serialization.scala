@@ -145,7 +145,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   private[akka] val bindings: Seq[ClassSerializer] = {
     val configuredBindings = for ((k: String, v: String) ← settings.SerializationBindings if v != "none") yield {
-      val c = system.dynamicAccess.getClassFor(k).fold(throw _, identity[Class[_]])
+      val c = system.dynamicAccess.getClassFor[Any](k).fold(throw _, identity[Class[_]])
       (c, serializers(v))
     }
     sort(configuredBindings)

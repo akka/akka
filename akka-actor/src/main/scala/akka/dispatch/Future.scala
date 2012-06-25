@@ -27,7 +27,7 @@ import java.util.concurrent.{ ExecutionException, Callable, TimeoutException }
 import java.util.concurrent.atomic.{ AtomicInteger }
 import akka.pattern.AskTimeoutException
 import scala.util.DynamicVariable
-import scala.runtime.BoxedUnit
+import scala.runtime.{ BoxedUnit, AbstractPartialFunction }
 
 object Await {
 
@@ -952,7 +952,7 @@ final class KeptPromise[T](suppliedValue: Either[Throwable, T])(implicit val exe
  */
 object japi {
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
-  class CallbackBridge[-T] extends PartialFunction[T, BoxedUnit] {
+  class CallbackBridge[-T] extends AbstractPartialFunction[T, BoxedUnit] {
     override final def isDefinedAt(t: T): Boolean = true
     override final def apply(t: T): BoxedUnit = {
       internal(t)
@@ -962,7 +962,7 @@ object japi {
   }
 
   @deprecated("Do not use this directly, use 'Recover'", "2.0")
-  class RecoverBridge[+T] extends PartialFunction[Throwable, T] {
+  class RecoverBridge[+T] extends AbstractPartialFunction[Throwable, T] {
     override final def isDefinedAt(t: Throwable): Boolean = true
     override final def apply(t: Throwable): T = internal(t)
     protected def internal(result: Throwable): T = null.asInstanceOf[T]
@@ -976,10 +976,11 @@ object japi {
 
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
   class UnitFunctionBridge[-T] extends (T ⇒ BoxedUnit) {
-    override final def apply(t: T): BoxedUnit = {
-      internal(t)
-      BoxedUnit.UNIT
-    }
+    final def apply$mcLJ$sp(l: Long): BoxedUnit = { internal(l.asInstanceOf[T]); BoxedUnit.UNIT }
+    final def apply$mcLI$sp(i: Int): BoxedUnit = { internal(i.asInstanceOf[T]); BoxedUnit.UNIT }
+    final def apply$mcLF$sp(f: Float): BoxedUnit = { internal(f.asInstanceOf[T]); BoxedUnit.UNIT }
+    final def apply$mcLD$sp(d: Double): BoxedUnit = { internal(d.asInstanceOf[T]); BoxedUnit.UNIT }
+    override final def apply(t: T): BoxedUnit = { internal(t); BoxedUnit.UNIT }
     protected def internal(result: T): Unit = ()
   }
 }
