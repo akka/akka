@@ -206,7 +206,8 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     }
     result match {
       case null ⇒
-        if (currentFrames.isEmpty) currentFrames
+        if (socket.hasReceiveMore) receiveMessage(mode, currentFrames)
+        else if (currentFrames.isEmpty) currentFrames
         else throw new IllegalStateException("no more frames available while socket.hasReceivedMore==true")
       case bytes ⇒
         val frames = currentFrames :+ Frame(if (bytes.length == 0) noBytes else bytes)
