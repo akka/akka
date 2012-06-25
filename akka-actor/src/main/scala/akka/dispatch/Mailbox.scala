@@ -476,7 +476,17 @@ trait BoundedDequeBasedMessageQueueSemantics extends DequeBasedMessageQueue {
 }
 
 /**
- * MailboxType is a factory to create MessageQueues for an optionally provided ActorContext
+ * MailboxType is a factory to create MessageQueues for an optionally
+ * provided ActorContext.
+ *
+ * <b>Possibly Important Notice</b>
+ *
+ * When implementing a custom mailbox type, be aware that there is special
+ * semantics attached to `system.actorOf()` in that sending to the returned
+ * ActorRef may—for a short period of time—enqueue the messages first in a
+ * dummy queue. Top-level actors are created in two steps, and only after the
+ * guardian actor has performed that second step will all previously sent
+ * messages be transferred from the dummy queue into the real mailbox.
  */
 trait MailboxType {
   def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue

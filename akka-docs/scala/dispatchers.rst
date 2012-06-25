@@ -212,8 +212,10 @@ filling in will they be transferred into the real mailbox. Thus,
 
 .. code-block:: scala
 
-   system.actorOf(...) ! "bang"
-   assert(bangIsInMyCustomMailbx)
+   val props: Props = ...
+   // this actor uses MyCustomMailbox, which is assumed to be a singleton
+   system.actorOf(props.withDispatcher("myCustomMailbox")) ! "bang"
+   assert(MyCustomMailbox.instance.getLastEnqueuedMessage == "bang")
 
 will probably fail; you will have to allow for some time to pass and retry the
 check à la :meth:`TestKit.awaitCond`.
