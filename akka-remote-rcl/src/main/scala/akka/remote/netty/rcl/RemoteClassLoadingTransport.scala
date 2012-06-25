@@ -11,16 +11,17 @@ import collection.immutable.HashSet
 import collection.mutable.HashMap
 import akka.dispatch.Await
 import java.net.URL
-import akka.actor.{ Props, Actor, ActorRef, ExtendedActorSystem }
+import akka.actor._
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import akka.event.{ LoggingAdapter, Logging }
 import scala.collection._
 import akka.util.NonFatal
+import scala.Some
 
 class RemoteClassLoadingTransport(system: ExtendedActorSystem, provider: RemoteActorRefProvider) extends NettyRemoteTransport(system, provider) {
 
   // 1 thread should be plenty
-  val nrOfRclThreads = 1;
+  val nrOfRclThreads = 1
 
   // the RCL stuff has to be processed by a separate thread because we might block in the classloader or the user might block
   override def createPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean): ChannelPipelineFactory = {
@@ -80,28 +81,19 @@ class RemoteClassLoadingTransport(system: ExtendedActorSystem, provider: RemoteA
   private val remoteClassLoadersLock = new ReentrantReadWriteLock
 
   // this is the actor we query for RCL stuff that is process by seperated thread
-  system.actorOf(Props { new RclActor(systemClassLoader) }, "Rcl-Service")
+  system.actorOf(Props {
+    new RclActor(systemClassLoader)
+  }, "Rcl-Service")
 
-  // on received just make sure the "context" has the correct classloader set
+  // on receive just make sure the "context" has the correct classloader set
   override def receiveMessage(remoteMessage: RemoteMessage) {
-    RclMetadata.getOrigin(remoteMessage) match {
-      case `originAddressByteString` ⇒ {
-        threadLocalDynamicAccess.dynamicVariable.withValue(systemClassLoader) {
-          super.receiveMessage(remoteMessage)
-        }
-      }
-      case someOrigin: ByteString ⇒ {
-        val rcl = getClassLoaderForOrigin(someOrigin)
-
-        threadLocalDynamicAccess.dynamicVariable.withValue(rcl) {
-          super.receiveMessage(remoteMessage)
-        }
-      }
-      case _ ⇒ {
-        threadLocalDynamicAccess.dynamicVariable.withValue(systemClassLoader) {
-          super.receiveMessage(remoteMessage)
-        }
-      }
+    val clToUse = RclMetadata.getOrigin(remoteMessage) match {
+      case `originAddressByteString` ⇒ systemClassLoader
+      case someOrigin: ByteString    ⇒ getClassLoaderForOrigin(someOrigin)
+      case _                         ⇒ systemClassLoader
+    }
+    threadLocalDynamicAccess.dynamicVariable.withValue(clToUse) {
+      super.receiveMessage(remoteMessage)
     }
   }
 
@@ -146,9 +138,7 @@ class RemoteClassLoadingTransport(system: ExtendedActorSystem, provider: RemoteA
         val name = ref.getClass.getName
         if (!name.startsWith("java.") && !name.startsWith("scala.")) {
           ref.getClass.getClassLoader match {
-            case rcl: RemoteClassLoader ⇒ {
-              RclMetadata.addOrigin(pb, rcl.originAddress)
-            }
+            case rcl: RemoteClassLoader ⇒ RclMetadata.addOrigin(pb, rcl.originAddress)
             case cl: ClassLoader ⇒ systemClassLoaderChain(cl) match {
               case true ⇒ RclMetadata.addOrigin(pb, originAddressByteString)
               case _    ⇒ log.warning("Remote Class Loading does not support sending messages loaded outside Actor System's classloader.\n{}", message)
@@ -165,7 +155,6 @@ class RemoteClassLoadingTransport(system: ExtendedActorSystem, provider: RemoteA
 }
 
 import akka.util.Timeout
-import akka.util.duration._
 import akka.pattern.ask
 
 class RemoteClassLoader(parent: ClassLoader, origin: ActorRef, val originAddress: ByteString, log: LoggingAdapter, settings: RemoteSettings) extends ClassLoader(parent) {
@@ -197,11 +186,10 @@ class RemoteClassLoader(parent: ClassLoader, origin: ActorRef, val originAddress
       log.debug("Initiated RCL for {} from {}.", fqn, origin.path.address)
       val referencedClasses = Await.result(origin ? GiveMeReferencedClassesOf(fqn), timeout.duration) match {
         case r: ReferencedClassesOf ⇒ r.refs
-        case _ ⇒ {
+        case _ ⇒
           // if we can't get references we are sure we cannot get the bytecode or is corrupt
           log.warning("Failed to find referenced classes for {}.")
           throw new ClassNotFoundException(fqn)
-        }
       }
       log.debug("Got list of referenced classes for {} from {}.\n{}", fqn, origin.path.address, referencedClasses deepToString)
       val withoutAlreadyAvailable = referencedClasses filter (!isAlreadyLoaded(_)) filter (_ != fqn)
@@ -218,10 +206,9 @@ class RemoteClassLoader(parent: ClassLoader, origin: ActorRef, val originAddress
       val bytecode = bytecodes.first.bytecode
       defineClass(fqn, bytecode, 0, bytecode.length)
     } catch {
-      case e: Exception ⇒ {
+      case e: Exception ⇒
         log.debug("Failed to get requested bytecode for class {} from {}.\n{}", fqn, origin.path.address, e)
         throw new ClassNotFoundException(fqn)
-      }
     }
   }
 
@@ -229,7 +216,7 @@ class RemoteClassLoader(parent: ClassLoader, origin: ActorRef, val originAddress
     try {
       innerCall = true
       loadClass(fqn)
-      return true
+      true
     } catch {
       case NonFatal(_) ⇒ false
     } finally {
@@ -243,9 +230,9 @@ object RclMetadata {
   def isRclChatMsg(arp: AkkaRemoteProtocol): Boolean = {
     if (arp.hasInstruction) false
     import scala.collection.JavaConversions._
-    arp.getMessage.getMetadataList.collectFirst({
-      case entry if entry.getKey == "rclChatMsg" ⇒ true
-    }).getOrElse(false)
+    arp.getMessage.getMetadataList exists {
+      _.getKey == "rclChatMsg"
+    }
   }
 
   def addRclChatTag(pb: RemoteMessageProtocol.Builder) {
@@ -283,7 +270,6 @@ class RclActor(val cl: ClassLoader) extends Actor {
         case NonFatal(_) ⇒
           log.warning("Cannot find bytecode for {}.", fqn)
           sender ! ByteCodeNotAvailable(fqn)
-
       }
     }
 
@@ -295,7 +281,6 @@ class RclActor(val cl: ClassLoader) extends Actor {
         case NonFatal(_) ⇒
           log.warning("Cannot find bytecode for {}.", fqns)
           sender ! ByteCodeNotAvailable("")
-
       }
     }
 
@@ -308,7 +293,6 @@ class RclActor(val cl: ClassLoader) extends Actor {
       } catch {
         case NonFatal(_) ⇒
           log.warning("Cannot find referenced classes of of {}.", fqn)
-
           sender ! ByteCodeNotAvailable(fqn)
       }
 
@@ -331,12 +315,16 @@ sealed trait RclChatMsg
 
 // RCL Questions
 case class GiveMeByteCodeFor(fqn: String) extends RclChatMsg
+
 case class GiveMeByteCodesFor(fqn: String, fqns: Array[String]) extends RclChatMsg
+
 case class GiveMeReferencedClassesOf(fqn: String) extends RclChatMsg
 
 // RCL Answers
 case class ByteCodeFor(fqn: String, bytecode: Array[Byte]) extends RclChatMsg
+
 case class ByteCodesFor(first: ByteCodeFor, entries: Array[ByteCodeFor]) extends RclChatMsg
+
 case class ReferencedClassesOf(fromFqn: String, refs: Array[String]) extends RclChatMsg
 
 case class ByteCodeNotAvailable(fqn: String) extends RclChatMsg
