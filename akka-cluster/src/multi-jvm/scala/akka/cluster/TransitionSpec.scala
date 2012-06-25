@@ -387,7 +387,6 @@ abstract class TransitionSpec
       enterBarrier("after-5")
     }
 
-    // FIXME ignored due to #2259
     "perform correct transitions when second becomes unavailble" taggedAs LongRunningTest in {
       runOn(fifth) {
         markNodeAsUnavailable(second)
