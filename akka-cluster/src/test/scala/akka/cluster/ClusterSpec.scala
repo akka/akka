@@ -11,12 +11,13 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Address
 import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.BeforeAndAfter
+import akka.remote.RemoteActorRefProvider
 
 object ClusterSpec {
   val config = """
     akka.cluster {
+      auto-join                    = off
       auto-down                    = off
-      nr-of-deputy-nodes           = 3
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
     }
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -31,11 +32,23 @@ object ClusterSpec {
 class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
   import ClusterSpec._
 
+  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address
+  val addresses = IndexedSeq(
+    selfAddress,
+    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 1),
+    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 2),
+    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 3),
+    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 4),
+    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 5))
+
   val deterministicRandom = new AtomicInteger
 
   val failureDetector = new FailureDetectorPuppet(system)
 
   val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector) {
+
+    // 3 deputy nodes (addresses index 1, 2, 3)
+    override def seedNodes = addresses.slice(1, 4)
 
     override def selectRandomNode(addresses: IndexedSeq[Address]): Option[Address] = {
       if (addresses.isEmpty) None
@@ -68,15 +81,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
 
   }
 
-  val selfAddress = cluster.self.address
-  val addresses = IndexedSeq(
-    selfAddress,
-    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 1),
-    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 2),
-    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 3),
-    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 4),
-    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 5))
-
   def memberStatus(address: Address): Option[MemberStatus] =
     cluster.latestGossip.members.collectFirst { case m if m.address == address ⇒ m.status }
 
@@ -88,6 +92,11 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
   }
 
   "A Cluster" must {
+
+    "use the address of the remote transport" in {
+      cluster.selfAddress must be(selfAddress)
+      cluster.self.address must be(selfAddress)
+    }
 
     "initially be singleton cluster and reach convergence immediately" in {
       cluster.isSingletonCluster must be(true)
@@ -161,7 +170,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
     "gossip to duputy node" in {
       cluster._gossipToDeputyProbablity = 1.0 // always
 
-      // we have configured 2 deputy nodes
+      // we have configured 3 deputy nodes (seedNodes)
       cluster.gossip() // 1 is deputy
       cluster.gossip() // 2 is deputy
       cluster.gossip() // 3 is deputy
