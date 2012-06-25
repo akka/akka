@@ -4,6 +4,9 @@
 
 package akka.cluster
 
+import language.postfixOps
+import language.reflectiveCalls
+
 import akka.testkit.AkkaSpec
 import akka.util.duration._
 import akka.util.Duration

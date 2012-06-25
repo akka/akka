@@ -216,7 +216,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case AddressReply(node, addr) ⇒
           runningOp match {
             case Some((_, requester)) ⇒ requester ! addr
-            case None ⇒ log.warning("did not expect {}", op)
+            case None                 ⇒ log.warning("did not expect {}", op)
           }
           stay using d.copy(runningOp = None)
         case t: ThrottleMsg ⇒
