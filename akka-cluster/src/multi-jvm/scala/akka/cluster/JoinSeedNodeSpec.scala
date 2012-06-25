@@ -16,7 +16,9 @@ object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val ordinary1 = role("ordinary1")
   val ordinary2 = role("ordinary2")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).
+    withFallback(ConfigFactory.parseString("akka.cluster.auto-join = on")).
+    withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class JoinSeedNodeMultiJvmNode1 extends JoinSeedNodeSpec with FailureDetectorPuppetStrategy

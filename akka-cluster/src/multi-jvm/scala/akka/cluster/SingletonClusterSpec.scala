@@ -16,6 +16,7 @@ object SingletonClusterMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       akka.cluster {
+        auto-join                  = on
         auto-down                  = on
         failure-detector.threshold = 4
       }
@@ -38,12 +39,20 @@ abstract class SingletonClusterSpec
 
   "A cluster of 2 nodes" must {
 
-    "not be singleton cluster when joined" taggedAs LongRunningTest in {
+    "become singleton cluster when started with 'auto-join=on' and 'seed-nodes=[]'" taggedAs LongRunningTest in {
+      startClusterNode()
+      awaitUpConvergence(1)
+      cluster.isSingletonCluster must be(true)
+
+      enterBarrier("after-1")
+    }
+
+    "not be singleton cluster when joined with other node" taggedAs LongRunningTest in {
       awaitClusterUp(first, second)
       cluster.isSingletonCluster must be(false)
       assertLeader(first, second)
 
-      enterBarrier("after-1")
+      enterBarrier("after-2")
     }
 
     "become singleton cluster when one node is shutdown" taggedAs LongRunningTest in {
@@ -58,7 +67,7 @@ abstract class SingletonClusterSpec
         assertLeader(first)
       }
 
-      enterBarrier("after-2")
+      enterBarrier("after-3")
     }
   }
 }

@@ -20,6 +20,7 @@ import akka.actor.RootActorPath
 object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.cluster {
+      auto-join                         = off
       auto-down                         = off
       gossip-interval                   = 200 ms
       heartbeat-interval                = 400 ms
@@ -99,10 +100,15 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   def cluster: Cluster = clusterNode
 
   /**
-   * Use this method instead of 'cluster.self'
-   * for the initial startup of the cluster node.
+   * Use this method for the initial startup of the cluster node.
    */
-  def startClusterNode(): Unit = cluster.self
+  def startClusterNode(): Unit = {
+    if (cluster.latestGossip.members.isEmpty) {
+      cluster join myself
+      awaitCond(cluster.latestGossip.members.exists(_.address == address(myself)))
+    } else
+      cluster.self
+  }
 
   /**
    * Initialize the cluster with the specified member
