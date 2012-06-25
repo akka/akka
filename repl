@@ -1,0 +1,9 @@
+import akka.actor._
+import akka.dispatch.{ Future, Promise }
+import com.typesafe.config.ConfigFactory
+val config=ConfigFactory.parseString("akka.daemonic=on")
+val sys=ActorSystem("repl", config.withFallback(ConfigFactory.load())).asInstanceOf[ExtendedActorSystem]
+implicit val ec=sys.dispatcher
+import akka.util.duration._
+import akka.util.Timeout
+implicit val timeout=Timeout(5 seconds)
