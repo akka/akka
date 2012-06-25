@@ -286,6 +286,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       implicit val dispatcher = interceptedDispatcher()
       val start, oneAtATime = new CountDownLatch(1)
       val a = newTestActor(dispatcher.id)
+      awaitStarted(a)
 
       a ! CountDown(start)
       assertCountDown(start, 3.seconds.dilated.toMillis, "Should process first message within 3 seconds")
