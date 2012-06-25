@@ -34,6 +34,10 @@ class OverlaySetting[T](base: ⇒ T) {
   def apply() = local.getOrElse(base)
 }
 
+trait Prependable[T] {
+  def prepend(t: T): Unit
+}
+
 class PersistentQueue(persistencePath: String, val name: String, val settings: FileBasedMailboxSettings, log: LoggingAdapter) {
 
   private case object ItemArrived
@@ -56,9 +60,9 @@ class PersistentQueue(persistencePath: String, val name: String, val settings: F
   // # of items in the queue (including those not in memory)
   private var queueLength: Long = 0
 
-  private var queue = new mutable.Queue[QItem] {
+  private var queue: mutable.Queue[QItem] with Prependable[QItem] = new mutable.Queue[QItem] with Prependable[QItem] {
     // scala's Queue doesn't (yet?) have a way to put back.
-    def unget(item: QItem) = prependElem(item)
+    def prepend(item: QItem) = prependElem(item)
   }
   private var _memoryBytes: Long = 0
 
@@ -435,7 +439,7 @@ class PersistentQueue(persistencePath: String, val name: String, val settings: F
     openTransactions.remove(xid) map { item ⇒
       queueLength += 1
       queueSize += item.data.length
-      queue unget item
+      queue prepend item
       _memoryBytes += item.data.length
     }
   }

@@ -3,6 +3,8 @@
  */
 package akka.actor.mailbox
 
+import language.postfixOps
+
 import java.io.InputStream
 import java.util.concurrent.TimeoutException
 

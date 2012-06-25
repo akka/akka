@@ -17,9 +17,9 @@ import akka.actor.ExtendedActorSystem
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)
-  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = owner zip system headOption match {
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = (owner zip system).headOption match {
     case Some((o, s: ExtendedActorSystem)) ⇒ new FileBasedMessageQueue(o, s, settings)
-    case None                              ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
+    case _                                 ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
 
