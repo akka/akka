@@ -2,13 +2,14 @@ package akka.dispatch
 
 import language.postfixOps
 
-import akka.actor.{ Props, LocalActorRef, Actor }
-import akka.testkit.AkkaSpec
-import akka.pattern.ask
-import akka.util.duration._
-import akka.testkit.DefaultTimeout
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 import com.typesafe.config.Config
-import akka.actor.ActorSystem
+
+import akka.actor.{ Props, InternalActorRef, ActorSystem, Actor }
+import akka.pattern.ask
+import akka.testkit.{ DefaultTimeout, AkkaSpec }
+import akka.util.duration.intToDurationInt
 
 object PriorityDispatcherSpec {
   val config = """
@@ -56,7 +57,7 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
         case i: Int  ⇒ acc = i :: acc
         case 'Result ⇒ sender.tell(acc)
       }
-    }).withDispatcher(dispatcherKey)).asInstanceOf[LocalActorRef]
+    }).withDispatcher(dispatcherKey)).asInstanceOf[InternalActorRef]
 
     actor.suspend //Make sure the actor isn't treating any messages, let it buffer the incoming messages
 

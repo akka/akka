@@ -99,9 +99,14 @@ trait TestKitBase {
    */
   lazy val testActor: ActorRef = {
     val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-    impl.systemActorOf(Props(new TestActor(queue))
+    val ref = impl.systemActorOf(Props(new TestActor(queue))
       .withDispatcher(CallingThreadDispatcher.Id),
       "testActor" + TestKit.testActorId.incrementAndGet)
+    awaitCond(ref match {
+      case r: RepointableRef ⇒ r.isStarted
+      case _                 ⇒ true
+    }, 1 second, 10 millis)
+    ref
   }
 
   private var end: Duration = Duration.Undefined

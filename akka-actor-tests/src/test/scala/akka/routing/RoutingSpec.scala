@@ -14,10 +14,11 @@ import akka.dispatch.Await
 import akka.util.Duration
 import akka.ConfigurationException
 import com.typesafe.config.ConfigFactory
-import akka.pattern.ask
+import akka.pattern.{ ask, pipe }
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.config.Config
 import akka.dispatch.Dispatchers
+import akka.util.Timeout
 
 object RoutingSpec {
 
@@ -171,6 +172,18 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       expectMsg("restarted")
       expectMsg("restarted")
       expectMsg("restarted")
+    }
+
+    "must start in-line for context.actorOf()" in {
+      system.actorOf(Props(new Actor {
+        def receive = {
+          case "start" ⇒
+            context.actorOf(Props(new Actor {
+              def receive = { case x ⇒ sender ! x }
+            }).withRouter(RoundRobinRouter(2))) ? "hello" pipeTo sender
+        }
+      })) ! "start"
+      expectMsg("hello")
     }
 
   }
@@ -530,7 +543,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       }
     }
     "support custom router" in {
-      val myrouter = system.actorOf(Props().withRouter(FromConfig), "myrouter")
+      val myrouter = system.actorOf(Props.empty.withRouter(FromConfig), "myrouter")
       myrouter.isTerminated must be(false)
     }
   }
@@ -542,7 +555,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
 
     "count votes as intended - not as in Florida" in {
-      val routedActor = system.actorOf(Props().withRouter(VoteCountRouter()))
+      val routedActor = system.actorOf(Props.empty.withRouter(VoteCountRouter()))
       routedActor ! DemocratVote
       routedActor ! DemocratVote
       routedActor ! RepublicanVote

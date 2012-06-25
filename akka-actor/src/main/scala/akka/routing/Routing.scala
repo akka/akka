@@ -26,41 +26,27 @@ import scala.runtime.ScalaRunTime
  * send a message to on (or more) of these actors.
  */
 private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _supervisor: InternalActorRef, _path: ActorPath)
-  extends LocalActorRef(
-    _system,
-    _props.copy(creator = () ⇒ _props.routerConfig.createActor(), dispatcher = _props.routerConfig.routerDispatcher),
-    _supervisor,
-    _path) {
+  extends RepointableActorRef(_system, _props, _supervisor, _path) {
 
-  /*
-   * CAUTION: RoutedActorRef is PROBLEMATIC
-   * ======================================
-   *
-   * We are constructing/assembling the children outside of the scope of the
-   * Router actor, inserting them in its childrenRef list, which is not at all
-   * synchronized. This is done exactly once at start-up, all other accesses
-   * are done from the Router actor. This means that the only thing which is
-   * really hairy is making sure that the Router does not touch its childrenRefs
-   * before we are done with them: lock the monitor of the actor cell (hence the
-   * override of newActorCell) and use that to block the Router constructor for
-   * as long as it takes to setup the RoutedActorRef itself.
-   * 
-   *            ===>  I M P O R T A N T    N O T I C E  <===
-   *            
-   * DO NOT THROW ANY EXCEPTIONS BEFORE THE FOLLOWING TRY-BLOCK WITHOUT
-   * EXITING THE MONITOR OF THE actorCell!
-   * 
-   * This is important, just don’t do it! No kidding.
-   */
-  override def newActorCell(
-    system: ActorSystemImpl,
-    ref: InternalActorRef,
-    props: Props,
-    supervisor: InternalActorRef): ActorCell = {
-    val cell = super.newActorCell(system, ref, props, supervisor)
-    Unsafe.instance.monitorEnter(cell)
-    cell
+  // verify that a BalancingDispatcher is not used with a Router
+  if (_props.routerConfig != NoRouter && _system.dispatchers.isBalancingDispatcher(_props.routerConfig.routerDispatcher)) {
+    throw new ConfigurationException(
+      "Configuration for " + this +
+        " is invalid - you can not use a 'BalancingDispatcher' as a Router's dispatcher, you can however use it for the routees.")
   }
+
+  _props.routerConfig.verifyConfig()
+
+  override def newCell(): Cell = new RoutedActorCell(system, this, props, supervisor)
+
+}
+
+private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef)
+  extends ActorCell(
+    _system,
+    _ref,
+    _props.copy(creator = () ⇒ _props.routerConfig.createActor(), dispatcher = _props.routerConfig.routerDispatcher),
+    _supervisor) {
 
   private[akka] val routerConfig = _props.routerConfig
   private[akka] val routeeProps = _props.copy(routerConfig = NoRouter)
@@ -75,39 +61,29 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   private var _routeeProvider: RouteeProvider = _
   def routeeProvider = _routeeProvider
 
-  val route =
-    try {
-      // verify that a BalancingDispatcher is not used with a Router
-      if (_props.routerConfig != NoRouter && _system.dispatchers.isBalancingDispatcher(_props.routerConfig.routerDispatcher)) {
-        actorContext.stop(actorContext.self)
-        throw new ConfigurationException(
-          "Configuration for actor [" + _path.toString +
-            "] is invalid - you can not use a 'BalancingDispatcher' as a Router's dispatcher, you can however use it for the routees.")
-      }
-
-      _routeeProvider = routerConfig.createRouteeProvider(actorContext)
-      val r = routerConfig.createRoute(routeeProps, routeeProvider)
-      // initial resize, before message send
-      routerConfig.resizer foreach { r ⇒
-        if (r.isTimeForResize(resizeCounter.getAndIncrement()))
-          r.resize(routeeProps, routeeProvider)
-      }
-      r
-    } finally {
-      assert(Thread.holdsLock(actorContext))
-      Unsafe.instance.monitorExit(actorContext) // unblock Router’s constructor
+  val route = {
+    _routeeProvider = routerConfig.createRouteeProvider(this)
+    val r = routerConfig.createRoute(routeeProps, routeeProvider)
+    // initial resize, before message send
+    routerConfig.resizer foreach { r ⇒
+      if (r.isTimeForResize(resizeCounter.getAndIncrement()))
+        r.resize(routeeProps, routeeProvider)
     }
+    r
+  }
 
   if (routerConfig.resizer.isEmpty && _routees.isEmpty)
     throw new ActorInitializationException("router " + routerConfig + " did not register routees!")
+
+  start()
 
   /*
    * end of construction
    */
 
   def applyRoute(sender: ActorRef, message: Any): Iterable[Destination] = message match {
-    case _: AutoReceivedMessage ⇒ Destination(this, this) :: Nil
-    case Terminated(_)          ⇒ Destination(this, this) :: Nil
+    case _: AutoReceivedMessage ⇒ Destination(self, self) :: Nil
+    case Terminated(_)          ⇒ Destination(self, self) :: Nil
     case CurrentRoutees ⇒
       sender ! RouterRoutees(_routees)
       Nil
@@ -125,7 +101,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   private[akka] def addRoutees(newRoutees: IndexedSeq[ActorRef]): Unit = {
     _routees = _routees ++ newRoutees
     // subscribe to Terminated messages for all route destinations, to be handled by Router actor
-    newRoutees foreach underlying.watch
+    newRoutees foreach watch
   }
 
   /**
@@ -136,13 +112,13 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
    */
   private[akka] def removeRoutees(abandonedRoutees: IndexedSeq[ActorRef]): Unit = {
     _routees = _routees diff abandonedRoutees
-    abandonedRoutees foreach underlying.unwatch
+    abandonedRoutees foreach unwatch
   }
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = {
+  override def tell(message: Any, sender: ActorRef): Unit = {
     resize()
 
-    val s = if (sender eq null) underlying.system.deadLetters else sender
+    val s = if (sender eq null) system.deadLetters else sender
 
     val msg = message match {
       case Broadcast(m) ⇒ m
@@ -150,15 +126,18 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     }
 
     applyRoute(s, message) match {
-      case Destination(_, x) :: Nil if x eq this ⇒ super.!(message)(s)
-      case refs                                  ⇒ refs foreach (p ⇒ p.recipient.!(msg)(p.sender))
+      case Destination(_, x) :: Nil if x == self ⇒ super.tell(message, s)
+      case refs ⇒
+        refs foreach (p ⇒
+          if (p.recipient == self) super.tell(msg, p.sender)
+          else p.recipient.!(msg)(p.sender))
     }
   }
 
   def resize(): Unit = {
     for (r ← routerConfig.resizer) {
       if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeInProgress.compareAndSet(false, true))
-        super.!(Router.Resize)
+        super.tell(Router.Resize, self)
     }
   }
 }
@@ -215,6 +194,11 @@ trait RouterConfig {
    */
   def resizer: Option[Resizer] = None
 
+  /**
+   * Check that everything is there which is needed. Called in constructor of RoutedActorRef to fail early.
+   */
+  def verifyConfig(): Unit = {}
+
 }
 
 /**
@@ -230,7 +214,7 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
    * Not thread safe, but intended to be called from protected points, such as
    * `RouterConfig.createRoute` and `Resizer.resize`.
    */
-  def registerRoutees(routees: IndexedSeq[ActorRef]): Unit = routedRef.addRoutees(routees)
+  def registerRoutees(routees: IndexedSeq[ActorRef]): Unit = routedCell.addRoutees(routees)
 
   /**
    * Adds the routees to the router.
@@ -250,7 +234,7 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`.
    */
-  def unregisterRoutees(routees: IndexedSeq[ActorRef]): Unit = routedRef.removeRoutees(routees)
+  def unregisterRoutees(routees: IndexedSeq[ActorRef]): Unit = routedCell.removeRoutees(routees)
 
   def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
     (nrOfInstances, routees) match {
@@ -267,9 +251,9 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
   /**
    * All routees of the router
    */
-  def routees: IndexedSeq[ActorRef] = routedRef.routees
+  def routees: IndexedSeq[ActorRef] = routedCell.routees
 
-  private def routedRef = context.self.asInstanceOf[RoutedActorRef]
+  private def routedCell = context.asInstanceOf[RoutedActorCell]
 }
 
 /**
@@ -301,12 +285,9 @@ trait CustomRoute {
  */
 trait Router extends Actor {
 
-  // make sure that we synchronize properly to get the childrenRefs into our CPU cache
-  val ref = context.synchronized {
-    self match {
-      case x: RoutedActorRef ⇒ x
-      case _                 ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef")
-    }
+  val ref = context match {
+    case x: RoutedActorCell ⇒ x
+    case _                  ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef, not in " + context.getClass)
   }
 
   final def receive = ({
@@ -420,8 +401,10 @@ class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
 
   def this() = this(Dispatchers.DefaultDispatcherId)
 
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
-    throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
+  override def verifyConfig(): Unit =
+    throw new ConfigurationException("router needs external configuration from file (e.g. application.conf)")
+
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
 
   def supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy
 }
@@ -777,9 +760,11 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def isProcessingMessage(a: ActorRef): Boolean = a match {
-    case x: LocalActorRef ⇒
-      val cell = x.underlying
-      cell.mailbox.isScheduled && cell.currentMessage != null
+    case x: ActorRefWithCell ⇒
+      x.underlying match {
+        case cell: ActorCell ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
+        case _               ⇒ false
+      }
     case _ ⇒ false
   }
 
@@ -791,8 +776,8 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def hasMessages(a: ActorRef): Boolean = a match {
-    case x: LocalActorRef ⇒ x.underlying.mailbox.hasMessages
-    case _                ⇒ false
+    case x: ActorRefWithCell ⇒ x.underlying.hasMessages
+    case _                   ⇒ false
   }
 
   /**
@@ -802,8 +787,12 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def isSuspended(a: ActorRef): Boolean = a match {
-    case x: LocalActorRef ⇒ x.underlying.mailbox.isSuspended
-    case _                ⇒ false
+    case x: ActorRefWithCell ⇒
+      x.underlying match {
+        case cell: ActorCell ⇒ cell.mailbox.isSuspended
+        case _               ⇒ true
+      }
+    case _ ⇒ false
   }
 
   /**
@@ -813,8 +802,8 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def numberOfMessages(a: ActorRef): Int = a match {
-    case x: LocalActorRef ⇒ x.underlying.mailbox.numberOfMessages
-    case _                ⇒ 0
+    case x: ActorRefWithCell ⇒ x.underlying.numberOfMessages
+    case _                   ⇒ 0
   }
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
@@ -1286,12 +1275,20 @@ case class DefaultResizer(
    */
   def pressure(routees: IndexedSeq[ActorRef]): Int = {
     routees count {
-      case a: LocalActorRef ⇒
-        val cell = a.underlying
-        pressureThreshold match {
-          case 1          ⇒ cell.mailbox.isScheduled && cell.mailbox.hasMessages
-          case i if i < 1 ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
-          case threshold  ⇒ cell.mailbox.numberOfMessages >= threshold
+      case a: ActorRefWithCell ⇒
+        a.underlying match {
+          case cell: ActorCell ⇒
+            pressureThreshold match {
+              case 1          ⇒ cell.mailbox.isScheduled && cell.mailbox.hasMessages
+              case i if i < 1 ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
+              case threshold  ⇒ cell.mailbox.numberOfMessages >= threshold
+            }
+          case cell ⇒
+            pressureThreshold match {
+              case 1          ⇒ cell.hasMessages
+              case i if i < 1 ⇒ true // unstarted cells are always busy, for example
+              case threshold  ⇒ cell.numberOfMessages >= threshold
+            }
         }
       case x ⇒
         false

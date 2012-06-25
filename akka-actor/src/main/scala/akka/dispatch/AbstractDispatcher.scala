@@ -16,8 +16,10 @@ import akka.event.Logging.LogEventException
 import akka.jsr166y.{ ForkJoinTask, ForkJoinPool }
 import akka.util.{ Unsafe, Duration, NonFatal, Index }
 
-final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
-  if (message.isInstanceOf[AnyRef]) {
+final case class Envelope private (val message: Any, val sender: ActorRef)
+
+object Envelope {
+  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
     val msg = message.asInstanceOf[AnyRef]
     if (msg eq null) throw new InvalidMessageException("Message is null")
     if (system.settings.SerializeAllMessages && !msg.isInstanceOf[NoSerializationVerificationNeeded]) {
@@ -30,6 +32,7 @@ final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorS
         }
       }
     }
+    new Envelope(message, sender)
   }
 }
 
@@ -227,8 +230,8 @@ private[akka] object MessageDispatcher {
     } {
       val status = if (a.isTerminated) " (terminated)" else " (alive)"
       val messages = a match {
-        case l: LocalActorRef ⇒ " " + l.underlying.mailbox.numberOfMessages + " messages"
-        case _                ⇒ " " + a.getClass
+        case r: ActorRefWithCell ⇒ " " + r.underlying.numberOfMessages + " messages"
+        case _                   ⇒ " " + a.getClass
       }
       val parent = a match {
         case i: InternalActorRef ⇒ ", parent: " + i.getParent
@@ -264,7 +267,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  protected[akka] def createMailbox(actor: ActorCell): Mailbox //FIXME should this really be private[akka]?
+  protected[akka] def createMailbox(actor: Cell): Mailbox //FIXME should this really be private[akka]?
 
   /**
    * Identifier of this dispatcher, corresponds to the full key
