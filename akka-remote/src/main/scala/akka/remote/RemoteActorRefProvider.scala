@@ -36,8 +36,8 @@ private[akka] class RemoteActorRefProvider(
 
   // these are only available after init()
   override def rootGuardian: InternalActorRef = local.rootGuardian
-  override def guardian: InternalActorRef = local.guardian
-  override def systemGuardian: InternalActorRef = local.systemGuardian
+  override def guardian: LocalActorRef = local.guardian
+  override def systemGuardian: LocalActorRef = local.systemGuardian
   override def terminationFuture: Promise[Unit] = local.terminationFuture
   override def dispatcher: MessageDispatcher = local.dispatcher
   override def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = local.registerTempActor(actorRef, path)
@@ -96,8 +96,8 @@ private[akka] class RemoteActorRefProvider(
   }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
-              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean): InternalActorRef = {
-    if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy)
+              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef = {
+    if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy, async)
     else {
 
       /*
@@ -155,14 +155,14 @@ private[akka] class RemoteActorRefProvider(
       Iterator(props.deploy) ++ deployment.iterator reduce ((a, b) ⇒ b withFallback a) match {
         case d @ Deploy(_, _, _, RemoteScope(addr)) ⇒
           if (addr == rootPath.address || addr == transport.address) {
-            local.actorOf(system, props, supervisor, path, false, deployment.headOption, false)
+            local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else {
             val rpath = RootActorPath(addr) / "remote" / transport.address.hostPort / path.elements
             useActorOnNode(rpath, props, d, supervisor)
             new RemoteActorRef(this, transport, rpath, supervisor)
           }
 
-        case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false)
+        case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
       }
     }
   }

@@ -1,8 +1,12 @@
 package akka.actor.dispatch
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
-import akka.dispatch.{ Mailbox, Dispatchers }
-import akka.actor.{ LocalActorRef, IllegalActorStateException, Actor, Props }
+
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
+import akka.actor.{ Props, ActorRefWithCell, ActorCell, Actor }
+import akka.dispatch.Mailbox
 import akka.testkit.AkkaSpec
 
 object BalancingDispatcherSpec {
@@ -51,8 +55,8 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
     "have fast actor stealing work from slow actor" in {
       val finishedCounter = new CountDownLatch(110)
 
-      val slow = system.actorOf(Props(new DelayableActor(50, finishedCounter)).withDispatcher(delayableActorDispatcher)).asInstanceOf[LocalActorRef]
-      val fast = system.actorOf(Props(new DelayableActor(10, finishedCounter)).withDispatcher(delayableActorDispatcher)).asInstanceOf[LocalActorRef]
+      val slow = system.actorOf(Props(new DelayableActor(50, finishedCounter)).withDispatcher(delayableActorDispatcher)).asInstanceOf[ActorRefWithCell]
+      val fast = system.actorOf(Props(new DelayableActor(10, finishedCounter)).withDispatcher(delayableActorDispatcher)).asInstanceOf[ActorRefWithCell]
 
       var sentToFast = 0
 
@@ -76,11 +80,11 @@ class BalancingDispatcherSpec extends AkkaSpec(BalancingDispatcherSpec.config) {
       }
 
       finishedCounter.await(5, TimeUnit.SECONDS)
-      fast.underlying.mailbox.asInstanceOf[Mailbox].hasMessages must be(false)
-      slow.underlying.mailbox.asInstanceOf[Mailbox].hasMessages must be(false)
-      fast.underlying.actor.asInstanceOf[DelayableActor].invocationCount must be > sentToFast
-      fast.underlying.actor.asInstanceOf[DelayableActor].invocationCount must be >
-        (slow.underlying.actor.asInstanceOf[DelayableActor].invocationCount)
+      fast.underlying.asInstanceOf[ActorCell].mailbox.asInstanceOf[Mailbox].hasMessages must be(false)
+      slow.underlying.asInstanceOf[ActorCell].mailbox.asInstanceOf[Mailbox].hasMessages must be(false)
+      fast.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount must be > sentToFast
+      fast.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount must be >
+        (slow.underlying.asInstanceOf[ActorCell].actor.asInstanceOf[DelayableActor].invocationCount)
       system.stop(slow)
       system.stop(fast)
     }
