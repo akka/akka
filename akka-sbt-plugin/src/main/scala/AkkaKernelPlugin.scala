@@ -75,7 +75,9 @@ object AkkaKernelPlugin extends Plugin {
 
         copyFiles(libFiles(cp, conf.libFilter), distLibPath)
         copyFiles(conf.additionalLibs, distLibPath)
-        for (subTarget ← subProjectDependencies.map(_.target)) {
+        for (subProjectDependency ← subProjectDependencies) {
+          val subTarget = subProjectDependency.target
+          EvaluateTask(buildStruct, packageBin in Compile, st, subProjectDependency.projectRef)
           copyJars(subTarget, distLibPath)
         }
         log.info("Distribution created.")
@@ -220,10 +222,10 @@ object AkkaKernelPlugin extends Plugin {
     }.toList
 
     val target = setting(Keys.crossTarget, "Missing crossTarget directory")
-    SubProjectInfo(project.id, target, subProjects)
+    SubProjectInfo(projectRef, target, subProjects)
   }
 
-  private case class SubProjectInfo(id: String, target: File, subProjects: Seq[SubProjectInfo]) {
+  private case class SubProjectInfo(projectRef: ProjectRef, target: File, subProjects: Seq[SubProjectInfo]) {
 
     def recursiveSubProjects: Set[SubProjectInfo] = {
       val flatSubProjects = for {

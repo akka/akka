@@ -82,13 +82,6 @@ that is used in log messages and for identifying actors. The name must not be em
 or start with ``$``. If the given name is already in use by another child to the
 same parent actor an `InvalidActorNameException` is thrown.
 
-.. warning::
-
-  Creating top-level actors with ``system.actorOf`` is a blocking operation,
-  hence it may dead-lock due to starvation if the default dispatcher is
-  overloaded. To avoid problems, do not call this method from within actors or
-  futures which run on the default dispatcher.
-
 Actors are automatically started asynchronously when created.
 When you create the ``UntypedActor`` then it will automatically call the ``preStart``
 callback method on the ``UntypedActor`` class. This is an excellent place to
@@ -628,7 +621,7 @@ What happens to the Message
 ---------------------------
 
 If an exception is thrown while a message is being processed (so taken of his
-mailbox and handed over the the receive), then this message will be lost. It is
+mailbox and handed over to the receive), then this message will be lost. It is
 important to understand that it is not put back on the mailbox. So if you want
 to retry processing of a message, you need to deal with it yourself by catching
 the exception and retry your flow. Make sure that you put a bound on the number

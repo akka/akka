@@ -92,6 +92,14 @@ As you can see from the example above the following pattern is used to find an `
 
     akka://<actorsystemname>@<hostname>:<port>/<actor path>
 
+.. note::
+
+  In order to ensure serializability of ``Props`` when passing constructor
+  arguments to the actor being created, do not make the factory a non-static
+  inner class: this will inherently capture a reference to its enclosing
+  object, which in most cases is not serializable. It is best to make a static
+  inner class which implements :class:`UntypedActorFactory`.
+
 Programmatic Remote Deployment
 ------------------------------
 
@@ -271,10 +279,6 @@ which holds the transport used (RemoteTransport) and the outbound address that i
 
 To intercept when an outbound client is shut down you listen to ``RemoteClientShutdown``
 which holds the transport used (RemoteTransport) and the outbound address that it was connected to (Address).
-
-To intercept when an outbound message cannot be sent, you listen to ``RemoteClientWriteFailed`` which holds
-the payload that was not written (AnyRef), the cause of the failed send (Throwable),
-the transport used (RemoteTransport) and the outbound address that was the destination (Address).
 
 For general outbound-related errors, that do not classify as any of the others, you can listen to ``RemoteClientError``,
 which holds the cause (Throwable), the transport used (RemoteTransport) and the outbound address (Address).

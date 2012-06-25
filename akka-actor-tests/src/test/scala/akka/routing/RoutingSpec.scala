@@ -12,10 +12,11 @@ import akka.dispatch.Await
 import akka.util.Duration
 import akka.ConfigurationException
 import com.typesafe.config.ConfigFactory
-import akka.pattern.ask
+import akka.pattern.{ ask, pipe }
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.config.Config
 import akka.dispatch.Dispatchers
+import akka.util.Timeout
 
 object RoutingSpec {
 
@@ -73,7 +74,9 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       watch(router)
       watch(c2)
       system.stop(c2)
-      expectMsg(Terminated(c2))
+      expectMsgPF() {
+        case t @ Terminated(`c2`) if t.existenceConfirmed == true ⇒ t
+      }
       // it might take a while until the Router has actually processed the Terminated message
       awaitCond {
         router ! ""
@@ -84,7 +87,9 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         res == Seq(c1, c1)
       }
       system.stop(c1)
-      expectMsg(Terminated(router))
+      expectMsgPF() {
+        case t @ Terminated(`router`) if t.existenceConfirmed == true ⇒ t
+      }
     }
 
     "be able to send their routees" in {
@@ -165,6 +170,18 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       expectMsg("restarted")
       expectMsg("restarted")
       expectMsg("restarted")
+    }
+
+    "must start in-line for context.actorOf()" in {
+      system.actorOf(Props(new Actor {
+        def receive = {
+          case "start" ⇒
+            context.actorOf(Props(new Actor {
+              def receive = { case x ⇒ sender ! x }
+            }).withRouter(RoundRobinRouter(2))) ? "hello" pipeTo sender
+        }
+      })) ! "start"
+      expectMsg("hello")
     }
 
   }
@@ -524,7 +541,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       }
     }
     "support custom router" in {
-      val myrouter = system.actorOf(Props().withRouter(FromConfig), "myrouter")
+      val myrouter = system.actorOf(Props.empty.withRouter(FromConfig), "myrouter")
       myrouter.isTerminated must be(false)
     }
   }
@@ -536,7 +553,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
 
     "count votes as intended - not as in Florida" in {
-      val routedActor = system.actorOf(Props().withRouter(VoteCountRouter()))
+      val routedActor = system.actorOf(Props.empty.withRouter(VoteCountRouter()))
       routedActor ! DemocratVote
       routedActor ! DemocratVote
       routedActor ! RepublicanVote

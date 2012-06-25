@@ -12,7 +12,7 @@ import java.util.concurrent.Executors
 import scala.collection.mutable.HashMap
 import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroupFuture }
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
-import org.jboss.netty.channel.{ ChannelHandlerContext, Channel, StaticChannelPipeline, ChannelHandler, ChannelPipelineFactory, ChannelLocal }
+import org.jboss.netty.channel.{ ChannelHandlerContext, Channel, DefaultChannelPipeline, ChannelHandler, ChannelPipelineFactory, ChannelLocal }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufEncoder, ProtobufDecoder }
 import org.jboss.netty.handler.execution.{ ExecutionHandler, OrderedMemoryAwareThreadPoolExecutor }
@@ -24,7 +24,7 @@ import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefPr
 import akka.util.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
 
-object ChannelAddress extends ChannelLocal[Option[Address]] {
+private[akka] object ChannelAddress extends ChannelLocal[Option[Address]] {
   override def initialValue(ch: Channel): Option[Address] = None
 }
 
@@ -50,10 +50,11 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
    */
   object PipelineFactory {
     /**
-     * Construct a StaticChannelPipeline from a sequence of handlers; to be used
+     * Construct a DefaultChannelPipeline from a sequence of handlers; to be used
      * in implementations of ChannelPipelineFactory.
      */
-    def apply(handlers: Seq[ChannelHandler]): StaticChannelPipeline = new StaticChannelPipeline(handlers: _*)
+    def apply(handlers: Seq[ChannelHandler]): DefaultChannelPipeline =
+      (new DefaultChannelPipeline /: handlers) { (p, h) ⇒ p.addLast(Logging.simpleName(h.getClass), h); p }
 
     /**
      * Constructs the NettyRemoteTransport default pipeline with the give “head” handler, which
@@ -61,21 +62,19 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      *
      * @param withTimeout determines whether an IdleStateHandler shall be included
      */
-    def apply(endpoint: ⇒ Seq[ChannelHandler], withTimeout: Boolean): ChannelPipelineFactory =
-      new ChannelPipelineFactory {
-        def getPipeline = apply(defaultStack(withTimeout) ++ endpoint)
-      }
+    def apply(endpoint: ⇒ Seq[ChannelHandler], withTimeout: Boolean, isClient: Boolean): ChannelPipelineFactory =
+      new ChannelPipelineFactory { override def getPipeline = apply(defaultStack(withTimeout, isClient) ++ endpoint) }
 
     /**
      * Construct a default protocol stack, excluding the “head” handler (i.e. the one which
      * actually dispatches the received messages to the local target actors).
      */
-    def defaultStack(withTimeout: Boolean): Seq[ChannelHandler] =
-      (if (withTimeout) timeout :: Nil else Nil) :::
+    def defaultStack(withTimeout: Boolean, isClient: Boolean): Seq[ChannelHandler] =
+      (if (settings.EnableSSL) List(NettySSLSupport(settings, NettyRemoteTransport.this.log, isClient)) else Nil) :::
+        (if (withTimeout) List(timeout) else Nil) :::
         msgFormat :::
         authenticator :::
-        executionHandler ::
-        Nil
+        executionHandler
 
     /**
      * Construct an IdleStateHandler which uses [[akka.remote.netty.NettyRemoteTransport]].timer.
@@ -99,28 +98,30 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      * happen on a netty thread (that could be bad if re-sending over the network for
      * remote-deployed actors).
      */
-    val executionHandler = new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(
-      settings.ExecutionPoolSize,
-      settings.MaxChannelMemorySize,
-      settings.MaxTotalMemorySize,
-      settings.ExecutionPoolKeepalive.length,
-      settings.ExecutionPoolKeepalive.unit,
-      system.threadFactory))
+    val executionHandler = if (settings.ExecutionPoolSize != 0)
+      List(new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(
+        settings.ExecutionPoolSize,
+        settings.MaxChannelMemorySize,
+        settings.MaxTotalMemorySize,
+        settings.ExecutionPoolKeepalive.length,
+        settings.ExecutionPoolKeepalive.unit,
+        system.threadFactory)))
+    else Nil
 
     /**
      * Construct and authentication handler which uses the SecureCookie to somewhat
      * protect the TCP port from unauthorized use (don’t rely on it too much, though,
      * as this is NOT a cryptographic feature).
      */
-    def authenticator = if (settings.RequireCookie) new RemoteServerAuthenticationHandler(settings.SecureCookie) :: Nil else Nil
+    def authenticator = if (settings.RequireCookie) List(new RemoteServerAuthenticationHandler(settings.SecureCookie)) else Nil
   }
 
   /**
    * This method is factored out to provide an extension point in case the
    * pipeline shall be changed. It is recommended to use
    */
-  def createPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean): ChannelPipelineFactory =
-    PipelineFactory(Seq(endpoint), withTimeout)
+  def createPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean, isClient: Boolean): ChannelPipelineFactory =
+    PipelineFactory(Seq(endpoint), withTimeout, isClient)
 
   private val remoteClients = new HashMap[Address, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock

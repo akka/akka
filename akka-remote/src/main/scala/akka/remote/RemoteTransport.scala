@@ -78,21 +78,6 @@ case class RemoteClientShutdown(
 }
 
 /**
- * RemoteClientWriteFailed is published when a remote send of a message detectably fails (throws an exception).
- */
-case class RemoteClientWriteFailed(
-  @BeanProperty request: AnyRef,
-  @BeanProperty cause: Throwable,
-  @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
-  override def logLevel: Logging.LogLevel = Logging.WarningLevel
-  override def toString: String =
-    "RemoteClientWriteFailed@" + remoteAddress +
-      ": MessageClass[" + (if (request ne null) request.getClass.getName else "no message") +
-      "] Error[" + cause + "]"
-}
-
-/**
  *  Life-cycle events for RemoteServer.
  */
 trait RemoteServerLifeCycleEvent extends RemoteLifeCycleEvent
@@ -121,6 +106,7 @@ case class RemoteServerShutdown(
 case class RemoteServerError(
   @BeanProperty val cause: Throwable,
   @transient @BeanProperty remote: RemoteTransport) extends RemoteServerLifeCycleEvent {
+
   override def logLevel: Logging.LogLevel = Logging.ErrorLevel
   override def toString: String = "RemoteServerError@" + remote + "] Error[" + cause + "]"
 }
@@ -284,15 +270,14 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
             }
           case x ⇒ log.warning("remoteDaemon received illegal message {} from {}", x, remoteMessage.sender)
         }
-      case l: LocalRef ⇒
+      case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received local message {}", remoteMessage)
         remoteMessage.payload match {
-          case _: SystemMessage if useUntrustedMode       ⇒ log.warning("operating in UntrustedMode, dropping inbound system message")
-          case _: AutoReceivedMessage if useUntrustedMode ⇒ log.warning("operating in UntrustedMode, dropping inbound AutoReceivedMessage")
-          case msg: SystemMessage                         ⇒ l.sendSystemMessage(msg)
-          case msg                                        ⇒ l.!(msg)(remoteMessage.sender)
+          case msg: PossiblyHarmful if useUntrustedMode ⇒ log.warning("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type {}", msg.getClass)
+          case msg: SystemMessage                       ⇒ l.sendSystemMessage(msg)
+          case msg                                      ⇒ l.!(msg)(remoteMessage.sender)
         }
-      case r: RemoteRef ⇒
+      case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", remoteMessage)
         remoteMessage.originalReceiver match {
           case AddressFromURIString(address) if address == provider.transport.address ⇒
@@ -300,7 +285,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
             r.!(remoteMessage.payload)(remoteMessage.sender)
           case r ⇒ log.error("dropping message {} for non-local recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
         }
-      case r ⇒ log.error("dropping message {} for non-local recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
+      case r ⇒ log.error("dropping message {} for unknown recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
     }
   }
 }

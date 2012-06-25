@@ -230,7 +230,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
 
   .. code-block:: scala
 
-     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.0" % "runtime"
+     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.4" % "runtime"
 
 
 You need to enable the Slf4jEventHandler in the 'event-handlers' element in
@@ -253,7 +253,7 @@ the first case and ``LoggerFactory.getLogger(s: String)`` in the second).
 
 .. note::
 
-  Beware that the the actor system’s name is appended to a :class:`String` log
+  Beware that the actor system’s name is appended to a :class:`String` log
   source if the LoggingAdapter was created giving an :class:`ActorSystem` to
   the factory. If this is not intended, give a :class:`LoggingBus` instead as
   shown below:

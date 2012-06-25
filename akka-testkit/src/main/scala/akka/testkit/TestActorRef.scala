@@ -5,9 +5,7 @@
 package akka.testkit
 
 import akka.actor._
-import akka.util.Duration
 import java.util.concurrent.atomic.AtomicLong
-import scala.collection.immutable.Stack
 import akka.dispatch._
 import akka.pattern.ask
 
@@ -31,18 +29,12 @@ class TestActorRef[T <: Actor](
       if (_props.dispatcher == Dispatchers.DefaultDispatcherId) CallingThreadDispatcher.Id
       else _props.dispatcher),
     _supervisor,
-    _supervisor.path / name,
-    false) {
+    _supervisor.path / name) {
 
   import TestActorRef.InternalGetActor
 
-  override def newActorCell(
-    system: ActorSystemImpl,
-    ref: InternalActorRef,
-    props: Props,
-    supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration]): ActorCell =
-    new ActorCell(system, ref, props, supervisor, receiveTimeout) {
+  override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
+    new ActorCell(system, ref, props, supervisor) {
       override def autoReceiveMessage(msg: Envelope) {
         msg.message match {
           case InternalGetActor ⇒ sender ! actor
@@ -56,7 +48,17 @@ class TestActorRef[T <: Actor](
    * thrown will be available to you, while still being able to use
    * become/unbecome.
    */
-  def receive(o: Any): Unit = underlying.receiveMessage(o)
+  def receive(o: Any): Unit = receive(o, underlying.system.deadLetters)
+
+  /**
+   * Directly inject messages into actor receive behavior. Any exceptions
+   * thrown will be available to you, while still being able to use
+   * become/unbecome.
+   */
+  def receive(o: Any, sender: ActorRef): Unit = try {
+    underlying.currentMessage = Envelope(o, if (sender eq null) underlying.system.deadLetters else sender, underlying.system)
+    underlying.receiveMessage(o)
+  } finally underlying.currentMessage = null
 
   /**
    * Retrieve reference to the underlying actor, where the static type matches the factory used inside the

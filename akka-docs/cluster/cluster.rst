@@ -5,7 +5,7 @@
  Cluster Specification
 ######################
 
-.. note:: *This document describes the new clustering coming in Akka 2.1 (not 2.0)*
+.. note:: *This document describes the new clustering coming in Akka Coltrane and is not available in the latest stable release)*
 
 Intro
 =====
@@ -69,16 +69,6 @@ A cluster is made up of a set of member nodes. The identifier for each node is a
 each node hosting some part of the application. Cluster membership and
 partitioning of the application are decoupled. A node could be a member of a
 cluster without hosting any actors.
-
-
-Singleton Cluster
------------------
-
-If a node does not have a preconfigured contact point to join in the Akka
-configuration, then it is considered a singleton cluster (single node cluster)
-and will automatically transition from ``joining`` to ``up``. Singleton clusters
-can later explicitly send a ``Join`` message to another node to form a N-node
-cluster. It is also possible to link multiple N-node clusters by ``joining`` them.
 
 
 Singleton Cluster
@@ -173,8 +163,8 @@ After gossip convergence a ``leader`` for the cluster can be determined. There i
 ``leader`` election process, the ``leader`` can always be recognised deterministically
 by any node whenever there is gossip convergence. The ``leader`` is simply the first
 node in sorted order that is able to take the leadership role, where the only
-allowed member states for a ``leader`` are ``up`` or ``leaving`` (see below for more
-information about member states).
+allowed member states for a ``leader`` are ``up``, ``leaving`` or ``exiting`` (see
+below for more information about member states).
 
 The role of the ``leader`` is to shift members in and out of the cluster, changing
 ``joining`` members to the ``up`` state or ``exiting`` members to the
@@ -311,10 +301,6 @@ handoff has completed then the node will change to the ``exiting`` state. Once
 all nodes have seen the exiting state (convergence) the ``leader`` will remove the
 node from the cluster, marking it as ``removed``.
 
-A node can also be removed forcefully by moving it directly to the ``removed``
-state using the ``remove`` action. The cluster will rebalance based on the new
-cluster membership.
-
 If a node is unreachable then gossip convergence is not possible and therefore
 any ``leader`` actions are also not possible (for instance, allowing a node to
 become a part of the cluster, or changing actor distribution). To be able to
@@ -323,11 +309,12 @@ unreachable node is experiencing only transient difficulties then it can be
 explicitly marked as ``down`` using the ``down`` user action. When this node
 comes back up and begins gossiping it will automatically go through the joining
 process again. If the unreachable node will be permanently down then it can be
-removed from the cluster directly with the ``remove`` user action. The cluster
-can also *auto-down* a node using the accrual failure detector.
+removed from the cluster directly by shutting the actor system down or killing it
+through an external ``SIGKILL`` signal, invocation of ``System.exit(status)`` or
+similar. The cluster can, through the leader, also *auto-down* a node.
 
-This means that nodes can join and leave the cluster at any point in time,
-e.g. provide cluster elasticity.
+This means that nodes can join and leave the cluster at any point in time, i.e.
+provide cluster elasticity.
 
 
 State Diagram for the Member States
@@ -348,11 +335,11 @@ Member States
 - **leaving** / **exiting**
     states during graceful removal
 
-- **removed**
-    tombstone state (no longer a member)
-
 - **down**
     marked as down/offline/unreachable
+
+- **removed**
+    tombstone state (no longer a member)
 
 
 User Actions
@@ -367,9 +354,6 @@ User Actions
 
 - **down**
     mark a node as temporarily down
-
-- **remove**
-    remove a node from the cluster immediately
 
 
 Leader Actions

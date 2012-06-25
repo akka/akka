@@ -3,23 +3,16 @@
  */
 package akka.remote.testkit
 
-import akka.testkit.AkkaSpec
-import akka.actor.{ ActorSystem, ExtendedActorSystem }
-import akka.remote.testconductor.TestConductor
-import java.net.InetAddress
 import java.net.InetSocketAddress
-import akka.remote.testconductor.TestConductorExt
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import akka.dispatch.Await.Awaitable
+
+import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
+
+import akka.actor.{ RootActorPath, Deploy, ActorPath, ActorSystem, ExtendedActorSystem }
 import akka.dispatch.Await
-import akka.util.Duration
-import akka.util.NonFatal
-import akka.actor.ActorPath
-import akka.actor.RootActorPath
-import akka.remote.testconductor.RoleName
-import akka.actor.Deploy
-import com.typesafe.config.ConfigObject
+import akka.dispatch.Await.Awaitable
+import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
+import akka.testkit.AkkaSpec
+import akka.util.{ Timeout, NonFatal, Duration }
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -44,7 +37,7 @@ abstract class MultiNodeConfig {
 
   /**
    * Include for verbose debug logging
-   * @param on when `true` debug Config is returned, otherwise empty Config
+   * @param on when `true` debug Config is returned, otherwise config with info logging
    */
   def debugConfig(on: Boolean): Config =
     if (on)
@@ -59,7 +52,8 @@ abstract class MultiNodeConfig {
           fsm = on
         }
         """)
-    else ConfigFactory.empty
+    else
+      ConfigFactory.parseString("akka.loglevel = INFO")
 
   /**
    * Construct a RoleName and return it, to be used as an identifier in the
@@ -137,17 +131,22 @@ object MultiNodeSpec {
  * `AskTimeoutException: sending to terminated ref breaks promises`. Using lazy
  * val is fine.
  */
-abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
+abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
   extends AkkaSpec(_system) {
 
   import MultiNodeSpec._
 
   def this(config: MultiNodeConfig) =
-    this(config.myself, ActorSystem(AkkaSpec.getCallerName, config.config), config.roles, config.deployments)
+    this(config.myself, ActorSystem(AkkaSpec.getCallerName(classOf[MultiNodeSpec]), config.config), config.roles, config.deployments)
 
   /*
    * Test Class Interface
    */
+
+  /**
+   * All registered roles
+   */
+  def roles: Seq[RoleName] = _roles
 
   /**
    * TO BE DEFINED BY USER: Defines the number of participants required for starting the test. This
@@ -184,6 +183,14 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: 
   }
 
   /**
+   * Enter the named barriers in the order given. Use the remaining duration from
+   * the innermost enclosing `within` block or the default `BarrierTimeout`
+   */
+  def enterBarrier(name: String*) {
+    testConductor.enter(Timeout.durationToTimeout(remainingOr(testConductor.Settings.BarrierTimeout.duration)), name)
+  }
+
+  /**
    * Query the controller for the transport address of the given node (by role name) and
    * return that as an ActorPath for easy composition:
    *
@@ -194,11 +201,12 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: 
   def node(role: RoleName): ActorPath = RootActorPath(testConductor.getAddressFor(role).await)
 
   /**
-   * Enrich `.await()` onto all Awaitables, using BarrierTimeout.
+   * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
+   * enclosing `within` block or QueryTimeout.
    */
   implicit def awaitHelper[T](w: Awaitable[T]) = new AwaitHelper(w)
   class AwaitHelper[T](w: Awaitable[T]) {
-    def await: T = Await.result(w, testConductor.Settings.BarrierTimeout.duration)
+    def await: T = Await.result(w, remainingOr(testConductor.Settings.QueryTimeout.duration))
   }
 
   /*
@@ -207,9 +215,11 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: 
 
   private val controllerAddr = new InetSocketAddress(nodeNames(0), 4711)
   if (selfIndex == 0) {
-    testConductor.startController(initialParticipants, myself, controllerAddr).await
+    Await.result(testConductor.startController(initialParticipants, myself, controllerAddr),
+      testConductor.Settings.BarrierTimeout.duration)
   } else {
-    testConductor.startClient(myself, controllerAddr).await
+    Await.result(testConductor.startClient(myself, controllerAddr),
+      testConductor.Settings.BarrierTimeout.duration)
   }
 
   // now add deployments, if so desired
@@ -247,5 +257,8 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, roles: 
         throw new IllegalArgumentException("key " + key + " must map to deployment section, not simple value " + x)
     }
   }
+
+  // useful to see which jvm is running which role
+  log.info("Role [{}] started", myself.name)
 
 }

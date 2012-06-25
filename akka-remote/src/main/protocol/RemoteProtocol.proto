@@ -9,6 +9,8 @@ option optimize_for = SPEED;
   Compile with:
   cd ./akka-remote/src/main/protocol
   protoc RemoteProtocol.proto --java_out ../java
+  cd ../../../..
+  ./scripts/fix-protobuf.sh
 *******************************************/
 
 message AkkaRemoteProtocol {
@@ -107,12 +109,4 @@ message DeployProtocol {
   optional bytes config = 2;
   optional bytes routerConfig = 3;
   optional bytes scope = 4;
-}
-
-/**
- * Serialization of akka.remote.DaemonMsgWatch
- */
-message DaemonMsgWatchProtocol {
-  required ActorRefProtocol watcher = 1;
-  required ActorRefProtocol watched = 2;
 }

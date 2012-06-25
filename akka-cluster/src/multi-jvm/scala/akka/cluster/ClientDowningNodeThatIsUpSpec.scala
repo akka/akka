@@ -4,7 +4,6 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -19,58 +18,50 @@ object ClientDowningNodeThatIsUpMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class ClientDowningNodeThatIsUpMultiJvmNode1 extends ClientDowningNodeThatIsUpSpec
-class ClientDowningNodeThatIsUpMultiJvmNode2 extends ClientDowningNodeThatIsUpSpec
-class ClientDowningNodeThatIsUpMultiJvmNode3 extends ClientDowningNodeThatIsUpSpec
-class ClientDowningNodeThatIsUpMultiJvmNode4 extends ClientDowningNodeThatIsUpSpec
+class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode1 extends ClientDowningNodeThatIsUpSpec with FailureDetectorPuppetStrategy
+class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode2 extends ClientDowningNodeThatIsUpSpec with FailureDetectorPuppetStrategy
+class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode3 extends ClientDowningNodeThatIsUpSpec with FailureDetectorPuppetStrategy
+class ClientDowningNodeThatIsUpWithFailureDetectorPuppetMultiJvmNode4 extends ClientDowningNodeThatIsUpSpec with FailureDetectorPuppetStrategy
 
-class ClientDowningNodeThatIsUpSpec
+class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode1 extends ClientDowningNodeThatIsUpSpec with AccrualFailureDetectorStrategy
+class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode2 extends ClientDowningNodeThatIsUpSpec with AccrualFailureDetectorStrategy
+class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode3 extends ClientDowningNodeThatIsUpSpec with AccrualFailureDetectorStrategy
+class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode4 extends ClientDowningNodeThatIsUpSpec with AccrualFailureDetectorStrategy
+
+abstract class ClientDowningNodeThatIsUpSpec
   extends MultiNodeSpec(ClientDowningNodeThatIsUpMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender with BeforeAndAfter {
-  import ClientDowningNodeThatIsUpMultiJvmSpec._
+  with MultiNodeClusterSpec {
 
-  override def initialParticipants = 4
+  import ClientDowningNodeThatIsUpMultiJvmSpec._
 
   "Client of a 4 node cluster" must {
 
     "be able to DOWN a node that is UP (healthy and available)" taggedAs LongRunningTest in {
+      val thirdAddress = address(third)
+      awaitClusterUp(first, second, third, fourth)
+
       runOn(first) {
-        cluster.self
-        awaitUpConvergence(numberOfMembers = 4)
-
-        val thirdAddress = node(third).address
-        testConductor.enter("all-up")
-
         // mark 'third' node as DOWN
         cluster.down(thirdAddress)
-        testConductor.enter("down-third-node")
+        enterBarrier("down-third-node")
+
+        markNodeAsUnavailable(thirdAddress)
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
         cluster.latestGossip.members.exists(_.address == thirdAddress) must be(false)
-        testConductor.enter("await-completion")
       }
 
       runOn(third) {
-        cluster.join(node(first).address)
-        awaitUpConvergence(numberOfMembers = 4)
-        testConductor.enter("all-up")
-        testConductor.enter("down-third-node")
-        testConductor.enter("await-completion")
+        enterBarrier("down-third-node")
       }
 
       runOn(second, fourth) {
-        cluster.join(node(first).address)
-        awaitUpConvergence(numberOfMembers = 4)
-
-        val thirdAddress = node(third).address
-        testConductor.enter("all-up")
-
-        testConductor.enter("down-third-node")
+        enterBarrier("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
-        testConductor.enter("await-completion")
       }
+
+      enterBarrier("await-completion")
     }
   }
 }

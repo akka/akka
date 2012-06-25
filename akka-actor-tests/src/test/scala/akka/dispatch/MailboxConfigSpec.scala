@@ -1,14 +1,17 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.dispatch
 
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-import java.util.concurrent.{ TimeUnit, BlockingQueue }
-import java.util.concurrent.ConcurrentLinkedQueue
-import akka.util._
-import akka.util.duration._
-import akka.testkit.AkkaSpec
-import akka.actor.{ ActorRef, ActorContext, Props, LocalActorRef }
+import java.util.concurrent.{ ConcurrentLinkedQueue, BlockingQueue }
+
+import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll }
+
 import com.typesafe.config.Config
-import akka.actor.ActorSystem
+
+import akka.actor.{ RepointableRef, Props, DeadLetter, ActorSystem, ActorRefWithCell, ActorRef, ActorCell }
+import akka.testkit.AkkaSpec
+import akka.util.duration.intToDurationInt
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -39,9 +42,10 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       q.numberOfMessages must be === config.capacity
       q.hasMessages must be === true
 
-      intercept[MessageQueueAppendFailedException] {
-        q.enqueue(null, exampleMessage)
-      }
+      system.eventStream.subscribe(testActor, classOf[DeadLetter])
+      q.enqueue(testActor, exampleMessage)
+      expectMsg(DeadLetter(exampleMessage.message, system.deadLetters, testActor))
+      system.eventStream.unsubscribe(testActor, classOf[DeadLetter])
 
       q.dequeue must be === exampleMessage
       q.numberOfMessages must be(config.capacity - 1)
@@ -75,7 +79,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
     result
   }
 
-  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, system.deadLetters)(system)
+  def createMessageInvocation(msg: Any): Envelope = Envelope(msg, system.deadLetters, system)
 
   def ensureInitialMailboxState(config: MailboxType, q: MessageQueue) {
     q must not be null
@@ -136,8 +140,8 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 class DefaultMailboxSpec extends MailboxSpec {
   lazy val name = "The default mailbox implementation"
   def factory = {
-    case u: UnboundedMailbox ⇒ u.create(None)
-    case b: BoundedMailbox   ⇒ b.create(None)
+    case u: UnboundedMailbox ⇒ u.create(None, None)
+    case b: BoundedMailbox   ⇒ b.create(None, None)
   }
 }
 
@@ -145,8 +149,8 @@ class PriorityMailboxSpec extends MailboxSpec {
   val comparator = PriorityGenerator(_.##)
   lazy val name = "The priority mailbox implementation"
   def factory = {
-    case UnboundedMailbox()                    ⇒ new UnboundedPriorityMailbox(comparator).create(None)
-    case BoundedMailbox(capacity, pushTimeOut) ⇒ new BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(None)
+    case UnboundedMailbox()                    ⇒ new UnboundedPriorityMailbox(comparator).create(None, None)
+    case BoundedMailbox(capacity, pushTimeOut) ⇒ new BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(None, None)
   }
 }
 
@@ -158,13 +162,13 @@ object CustomMailboxSpec {
     """
 
   class MyMailboxType(settings: ActorSystem.Settings, config: Config) extends MailboxType {
-    override def create(owner: Option[ActorContext]) = owner match {
+    override def create(owner: Option[ActorRef], system: Option[ActorSystem]) = owner match {
       case Some(o) ⇒ new MyMailbox(o)
       case None    ⇒ throw new Exception("no mailbox owner given")
     }
   }
 
-  class MyMailbox(owner: ActorContext) extends QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
+  class MyMailbox(owner: ActorRef) extends QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
     final val queue = new ConcurrentLinkedQueue[Envelope]()
   }
 }
@@ -174,7 +178,11 @@ class CustomMailboxSpec extends AkkaSpec(CustomMailboxSpec.config) {
   "Dispatcher configuration" must {
     "support custom mailboxType" in {
       val actor = system.actorOf(Props.empty.withDispatcher("my-dispatcher"))
-      val queue = actor.asInstanceOf[LocalActorRef].underlying.mailbox.messageQueue
+      awaitCond(actor match {
+        case r: RepointableRef ⇒ r.isStarted
+        case _                 ⇒ true
+      }, 1 second, 10 millis)
+      val queue = actor.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].mailbox.messageQueue
       queue.getClass must be(classOf[CustomMailboxSpec.MyMailbox])
     }
   }

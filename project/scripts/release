@@ -93,6 +93,8 @@ fi
 declare -r version=$1
 declare -r publish_path="${release_server}:${release_path}"
 
+[[ `java -version 2>&1 | head -1 | cut -d ' ' -f3 | cut -d '.' -f2` -eq 6 ]] || fail "Java version is not 1.6"
+
 # check for a git command
 type -P git &> /dev/null || fail "git command not found"
 
@@ -218,6 +220,13 @@ try cp akka-spring/src/main/resources/akka/spring/akka-*.xsd ${release_dir}
 echolog "Creating gzipped tar download..."
 try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka-${version}.tgz akka-${version}
 echolog "Successfully created local release"
+
+# check binary compatibility for dry run
+if [ $dry_run ]; then
+  echodry "Running migration manager report..."
+  sbt mima-report-binary-issues
+  echodry "Finished migration manager report"
+fi
 
 # commit and tag this release
 echolog "Committing and tagging..."

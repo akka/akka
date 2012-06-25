@@ -11,7 +11,7 @@ import akka.actor.Props
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.AkkaSpec
-import akka.actor.Actor
+import akka.actor.{ Actor, ExtendedActorSystem }
 
 class MyActor extends Actor {
   def receive = {
@@ -50,35 +50,40 @@ import akka.dispatch.MailboxType
 import akka.dispatch.MessageQueue
 import akka.actor.mailbox.DurableMessageQueue
 import akka.actor.mailbox.DurableMessageSerialization
+import akka.pattern.CircuitBreaker
+import akka.util.duration._
 
 class MyMailboxType(systemSettings: ActorSystem.Settings, config: Config)
   extends MailboxType {
 
-  override def create(owner: Option[ActorContext]): MessageQueue = owner match {
-    case Some(o) ⇒ new MyMessageQueue(o)
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = owner zip system headOption match {
+    case Some((o, s: ExtendedActorSystem)) ⇒ new MyMessageQueue(o, s)
     case None ⇒ throw new IllegalArgumentException(
       "requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
 
-class MyMessageQueue(_owner: ActorContext)
-  extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+class MyMessageQueue(_owner: ActorRef, _system: ExtendedActorSystem)
+  extends DurableMessageQueue(_owner, _system) with DurableMessageSerialization {
 
   val storage = new QueueStorage
+  // A real-world implmentation would use configuration to set the last 
+  // three parameters below
+  val breaker = CircuitBreaker(system.scheduler, 5, 30.seconds, 1.minute)
 
-  def enqueue(receiver: ActorRef, envelope: Envelope) {
+  def enqueue(receiver: ActorRef, envelope: Envelope): Unit = breaker.withSyncCircuitBreaker {
     val data: Array[Byte] = serialize(envelope)
     storage.push(data)
   }
 
-  def dequeue(): Envelope = {
+  def dequeue(): Envelope = breaker.withSyncCircuitBreaker {
     val data: Option[Array[Byte]] = storage.pull()
     data.map(deserialize).orNull
   }
 
-  def hasMessages: Boolean = !storage.isEmpty
+  def hasMessages: Boolean = breaker.withSyncCircuitBreaker { !storage.isEmpty }
 
-  def numberOfMessages: Int = storage.size
+  def numberOfMessages: Int = breaker.withSyncCircuitBreaker { storage.size }
 
   /**
    * Called when the mailbox is disposed.
@@ -86,7 +91,7 @@ class MyMessageQueue(_owner: ActorContext)
    * but the purpose of a durable mailbox is to continue
    * with the same message queue when the actor is started again.
    */
-  def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
+  def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = ()
 
 }
 //#custom-mailbox

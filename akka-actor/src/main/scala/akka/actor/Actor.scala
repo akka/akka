@@ -7,7 +7,6 @@ package akka.actor
 import akka.AkkaException
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
-import scala.collection.immutable.Stack
 import java.util.regex.Pattern
 
 /**
@@ -59,7 +58,7 @@ case object Kill extends Kill {
 /**
  * When Death Watch is used, the watcher will receive a Terminated(watched) message when watched is terminated.
  */
-case class Terminated(@BeanProperty actor: ActorRef) extends PossiblyHarmful
+case class Terminated(@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean) extends AutoReceivedMessage
 
 abstract class ReceiveTimeout extends PossiblyHarmful
 
@@ -135,8 +134,7 @@ class ActorInitializationException private[akka] (actor: ActorRef, message: Stri
  * there might be more of them in the future, or not.
  */
 class InvalidMessageException private[akka] (message: String, cause: Throwable = null)
-  extends AkkaException(message, cause)
-  with NoStackTrace {
+  extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
 }
 
@@ -279,18 +277,14 @@ trait Actor {
    */
   protected[akka] implicit val context: ActorContext = {
     val contextStack = ActorCell.contextStack.get
-
-    def noContextError =
+    if ((contextStack.isEmpty) || (contextStack.head eq null))
       throw new ActorInitializationException(
         "\n\tYou cannot create an instance of [" + getClass.getName + "] explicitly using the constructor (new)." +
           "\n\tYou have to use one of the factory methods to create a new actor. Either use:" +
           "\n\t\t'val actor = context.actorOf(Props[MyActor])'        (to create a supervised child actor from within an actor), or" +
           "\n\t\t'val actor = system.actorOf(Props(new MyActor(..)))' (to create a top level actor from the ActorSystem)")
-
-    if (contextStack.isEmpty) noContextError
     val c = contextStack.head
-    if (c eq null) noContextError
-    ActorCell.contextStack.set(contextStack.push(null))
+    ActorCell.contextStack.set(null :: contextStack)
     c
   }
 

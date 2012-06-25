@@ -3,24 +3,23 @@
  */
 package akka.actor.dispatch
 
-import org.scalatest.Assertions._
-import akka.testkit._
-import akka.dispatch._
-import akka.util.Timeout
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
-import akka.util.Switch
 import java.rmi.RemoteException
-import org.junit.{ After, Test }
-import akka.actor._
-import util.control.NoStackTrace
-import akka.actor.ActorSystem
-import akka.util.duration._
-import akka.event.Logging.Error
+import java.util.concurrent.{ TimeUnit, CountDownLatch, ConcurrentHashMap }
+import java.util.concurrent.atomic.{ AtomicLong, AtomicInteger }
+
+import org.junit.runner.RunWith
+import org.scalatest.Assertions.{ fail, assert }
+import org.scalatest.junit.JUnitRunner
+
 import com.typesafe.config.Config
-import akka.util.Duration
+
+import akka.actor._
+import akka.dispatch._
+import akka.event.Logging.Error
 import akka.pattern.ask
+import akka.testkit._
+import akka.util.{ Timeout, Switch, Duration }
+import akka.util.duration._
 
 object ActorModelSpec {
 
@@ -201,7 +200,7 @@ object ActorModelSpec {
     msgsReceived: Long = statsFor(actorRef, dispatcher).msgsReceived.get(),
     msgsProcessed: Long = statsFor(actorRef, dispatcher).msgsProcessed.get(),
     restarts: Long = statsFor(actorRef, dispatcher).restarts.get())(implicit system: ActorSystem) {
-    val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[LocalActorRef].underlying.dispatcher))
+    val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].dispatcher))
     val deadline = System.currentTimeMillis + 1000
     try {
       await(deadline)(stats.suspensions.get() == suspensions)
@@ -240,6 +239,13 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
   import ActorModelSpec._
 
   def newTestActor(dispatcher: String) = system.actorOf(Props[DispatcherActor].withDispatcher(dispatcher))
+
+  def awaitStarted(ref: ActorRef): Unit = {
+    awaitCond(ref match {
+      case r: RepointableRef ⇒ r.isStarted
+      case _                 ⇒ true
+    }, 1 second, 10 millis)
+  }
 
   protected def interceptedDispatcher(): MessageDispatcherInterceptor
   protected def dispatcherType: String
@@ -280,6 +286,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       implicit val dispatcher = interceptedDispatcher()
       val start, oneAtATime = new CountDownLatch(1)
       val a = newTestActor(dispatcher.id)
+      awaitStarted(a)
 
       a ! CountDown(start)
       assertCountDown(start, 3.seconds.dilated.toMillis, "Should process first message within 3 seconds")
@@ -328,7 +335,8 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
     "not process messages for a suspended actor" in {
       implicit val dispatcher = interceptedDispatcher()
-      val a = newTestActor(dispatcher.id).asInstanceOf[LocalActorRef]
+      val a = newTestActor(dispatcher.id).asInstanceOf[InternalActorRef]
+      awaitStarted(a)
       val done = new CountDownLatch(1)
       a.suspend
       a ! CountDown(done)
@@ -374,7 +382,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                   def compare(l: AnyRef, r: AnyRef) = (l, r) match { case (ll: ActorCell, rr: ActorCell) ⇒ ll.self.path compareTo rr.self.path }
                 } foreach {
                   case cell: ActorCell ⇒
-                    System.err.println(" - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.status + " " + cell.mailbox.numberOfMessages + " " + SystemMessage.size(cell.mailbox.systemDrain()))
+                    System.err.println(" - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.status + " " + cell.mailbox.numberOfMessages + " " + SystemMessage.size(cell.mailbox.systemDrain(null)))
                 }
 
                 System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
@@ -436,6 +444,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
     "not double-deregister" in {
       implicit val dispatcher = interceptedDispatcher()
+      for (i ← 1 to 1000) system.actorOf(Props.empty)
       val a = newTestActor(dispatcher.id)
       a ! DoubleStop
       awaitCond(statsFor(a, dispatcher).registers.get == 1)

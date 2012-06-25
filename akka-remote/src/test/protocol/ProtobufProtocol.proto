@@ -4,11 +4,13 @@
 
 package akka.actor;
 
-/*
+/******************************************
   Compile with:
   cd ./akka-remote/src/test/protocol
   protoc ProtobufProtocol.proto --java_out ../java
-*/
+  cd ../../../..
+  ./scripts/fix-protobuf.sh
+*******************************************/
 
 message MyMessage {
   required uint64 id = 1;

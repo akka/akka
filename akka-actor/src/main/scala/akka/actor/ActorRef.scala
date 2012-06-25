@@ -163,8 +163,22 @@ private[akka] trait ActorRefScope {
   def isLocal: Boolean
 }
 
+/**
+ * Refs which are statically known to be local inherit from this Scope
+ */
 private[akka] trait LocalRef extends ActorRefScope {
   final def isLocal = true
+}
+
+/**
+ * RepointableActorRef (and potentially others) may change their locality at
+ * runtime, meaning that isLocal might not be stable. RepointableActorRef has
+ * the feature that it starts out “not fully started” (but you can send to it),
+ * which is why `isStarted` features here; it is not improbable that cluster
+ * actor refs will have the same behavior.
+ */
+private[akka] trait RepointableRef extends ActorRefScope {
+  def isStarted: Boolean
 }
 
 /**
@@ -211,6 +225,16 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
 }
 
 /**
+ * Common trait of all actor refs which actually have a Cell, most notably
+ * LocalActorRef and RepointableActorRef. The former specializes the return
+ * type of `underlying` so that follow-up calls can use invokevirtual instead
+ * of invokeinterface.
+ */
+private[akka] abstract class ActorRefWithCell extends InternalActorRef { this: ActorRefScope ⇒
+  def underlying: Cell
+}
+
+/**
  * This is an internal look-up failure token, not useful for anything else.
  */
 private[akka] case object Nobody extends MinimalActorRef {
@@ -227,31 +251,24 @@ private[akka] class LocalActorRef private[akka] (
   _system: ActorSystemImpl,
   _props: Props,
   _supervisor: InternalActorRef,
-  override val path: ActorPath,
-  val systemService: Boolean = false,
-  _receiveTimeout: Option[Duration] = None)
-  extends InternalActorRef with LocalRef {
+  override val path: ActorPath)
+  extends ActorRefWithCell with LocalRef {
 
   /*
-   * actorCell.start() publishes actorCell & this to the dispatcher, which
-   * means that messages may be processed theoretically before the constructor
-   * ends. The JMM guarantees visibility for final fields only after the end
-   * of the constructor, so publish the actorCell safely by making it a
-   * @volatile var which is NOT TO BE WRITTEN TO. The alternative would be to
-   * move start() outside of the constructor, which would basically require
-   * us to use purely factory methods for creating LocalActorRefs.
+   * Safe publication of this class’s fields is guaranteed by mailbox.setActor()
+   * which is called indirectly from actorCell.start() (if you’re wondering why
+   * this is at all important, remember that under the JMM final fields are only
+   * frozen at the _end_ of the constructor, but we are publishing “this” before
+   * that is reached).
    */
-  @volatile
-  private var actorCell = newActorCell(_system, this, _props, _supervisor, _receiveTimeout)
+  private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
   actorCell.start()
 
-  protected def newActorCell(
-    system: ActorSystemImpl,
-    ref: InternalActorRef,
-    props: Props,
-    supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration]): ActorCell =
-    new ActorCell(system, ref, props, supervisor, receiveTimeout)
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+  _supervisor.sendSystemMessage(akka.dispatch.Supervise(this))
+
+  protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
+    new ActorCell(system, ref, props, supervisor)
 
   protected def actorContext: ActorContext = actorCell
 
@@ -320,9 +337,9 @@ private[akka] class LocalActorRef private[akka] (
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
-  protected[akka] def underlying: ActorCell = actorCell
+  def underlying: ActorCell = actorCell
 
-  override def sendSystemMessage(message: SystemMessage): Unit = underlying.dispatcher.systemDispatch(underlying, message)
+  override def sendSystemMessage(message: SystemMessage): Unit = actorCell.sendSystemMessage(message)
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
 
@@ -409,16 +426,26 @@ private[akka] object DeadLetterActorRef {
  *
  * INTERNAL API
  */
-private[akka] class EmptyLocalActorRef(
-  override val provider: ActorRefProvider,
-  override val path: ActorPath,
-  val eventStream: EventStream) extends MinimalActorRef {
+private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
+                                       override val path: ActorPath,
+                                       val eventStream: EventStream) extends MinimalActorRef {
 
   override def isTerminated(): Boolean = true
 
+  override def sendSystemMessage(message: SystemMessage): Unit = specialHandle(message)
+
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
-    case d: DeadLetter ⇒ // do NOT form endless loops, since deadLetters will resend!
-    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+    case d: DeadLetter ⇒ specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
+    case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
+  }
+
+  protected def specialHandle(msg: Any): Boolean = msg match {
+    case w: Watch ⇒
+      if (w.watchee == this && w.watcher != this)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
+      true
+    case _: Unwatch ⇒ true // Just ignore
+    case _          ⇒ false
   }
 }
 
@@ -428,12 +455,22 @@ private[akka] class EmptyLocalActorRef(
  *
  * INTERNAL API
  */
-private[akka] class DeadLetterActorRef(_provider: ActorRefProvider, _path: ActorPath, _eventStream: EventStream)
-  extends EmptyLocalActorRef(_provider, _path, _eventStream) {
+private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
+                                       _path: ActorPath,
+                                       _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
-    case d: DeadLetter ⇒ eventStream.publish(d)
-    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+    case d: DeadLetter ⇒ if (!specialHandle(d.message)) eventStream.publish(d)
+    case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
+  }
+
+  override protected def specialHandle(msg: Any): Boolean = msg match {
+    case w: Watch ⇒
+      if (w.watchee != this && w.watcher != this)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
+      true
+    case w: Unwatch ⇒ true // Just ignore
+    case _          ⇒ false
   }
 
   @throws(classOf[java.io.ObjectStreamException])

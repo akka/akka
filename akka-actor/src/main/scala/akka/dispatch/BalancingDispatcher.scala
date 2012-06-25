@@ -9,6 +9,7 @@ import annotation.tailrec
 import akka.util.{ Duration, Helpers }
 import java.util.{ Comparator, Iterator }
 import java.util.concurrent.{ Executor, LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
+import akka.actor.ActorSystemImpl
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -46,26 +47,25 @@ class BalancingDispatcher(
   /**
    * INTERNAL USE ONLY
    */
-  private[akka] val messageQueue: MessageQueue = mailboxType.create(None)
+  private[akka] val messageQueue: MessageQueue = mailboxType.create(None, None)
 
-  private class SharingMailbox(_actor: ActorCell, _messageQueue: MessageQueue) extends Mailbox(_actor, _messageQueue) with DefaultSystemMessageQueue {
+  private class SharingMailbox(val system: ActorSystemImpl, _messageQueue: MessageQueue)
+    extends Mailbox(_messageQueue) with DefaultSystemMessageQueue {
     override def cleanUp(): Unit = {
+      val dlq = system.deadLetterMailbox
       //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
-      if (hasSystemMessages) {
-        val dlq = actor.systemImpl.deadLetterMailbox
-        var message = systemDrain()
-        while (message ne null) {
-          // message must be “virgin” before being able to systemEnqueue again
-          val next = message.next
-          message.next = null
-          dlq.systemEnqueue(actor.self, message)
-          message = next
-        }
+      var message = systemDrain(NoMessage)
+      while (message ne null) {
+        // message must be “virgin” before being able to systemEnqueue again
+        val next = message.next
+        message.next = null
+        dlq.systemEnqueue(system.deadLetters, message)
+        message = next
       }
     }
   }
 
-  protected[akka] override def createMailbox(actor: ActorCell): Mailbox = new SharingMailbox(actor, messageQueue)
+  protected[akka] override def createMailbox(actor: akka.actor.Cell): Mailbox = new SharingMailbox(actor.systemImpl, messageQueue)
 
   protected[akka] override def register(actor: ActorCell): Unit = {
     super.register(actor)
