@@ -3,6 +3,8 @@
  */
 package akka.remote.testconductor
 
+import language.implicitConversions
+
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder
 import org.jboss.netty.channel.ChannelHandlerContext
 import org.jboss.netty.channel.Channel

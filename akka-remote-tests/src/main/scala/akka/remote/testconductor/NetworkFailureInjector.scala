@@ -3,6 +3,8 @@
  */
 package akka.remote.testconductor
 
+import language.postfixOps
+
 import java.net.InetSocketAddress
 
 import scala.annotation.tailrec

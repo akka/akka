@@ -3,6 +3,8 @@
  */
 package akka.remote.testconductor
 
+import language.postfixOps
+
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
 import RemoteConnection.getAddrString
 import akka.util.duration._
@@ -184,7 +186,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     case Event(Disconnected, _) ⇒
       log.info("disconnected from TestConductor")
       throw new ConnectionFailure("disconnect")
-    case Event(ToServer(Done), Data(Some(channel), _)) ⇒
+    case Event(ToServer(_: Done), Data(Some(channel), _)) ⇒
       channel.write(Done)
       stay
     case Event(ToServer(msg), d @ Data(Some(channel), None)) ⇒
@@ -232,6 +234,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case TerminateMsg(exit) ⇒
           System.exit(exit)
           stay // needed because Java doesn’t have Nothing
+        case _: Done ⇒ stay //FIXME what should happen?
       }
   }
 

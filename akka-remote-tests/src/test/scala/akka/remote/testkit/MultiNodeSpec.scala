@@ -3,6 +3,8 @@
  */
 package akka.remote.testkit
 
+import language.implicitConversions
+
 import java.net.InetSocketAddress
 
 import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }

@@ -3,6 +3,8 @@
  */
 package akka.remote.testconductor
 
+import language.postfixOps
+
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
 import RemoteConnection.getAddrString
 import TestConductorProtocol._
@@ -430,6 +432,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case GetAddress(node) ⇒
           if (nodes contains node) sender ! ToClient(AddressReply(node, nodes(node).addr))
           else addrInterest += node -> ((addrInterest get node getOrElse Set()) + sender)
+        case _: Done ⇒ //FIXME what should happen?
       }
     case op: CommandOp ⇒
       op match {

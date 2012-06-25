@@ -168,11 +168,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * serializerMap is a Map whose keys is the class that is serializable and values is the serializer
    * to be used for that class.
    */
-  private val serializerMap: ConcurrentHashMap[Class[_], Serializer] = {
-    val serializerMap = new ConcurrentHashMap[Class[_], Serializer]
-    for ((c, s) ← bindings) serializerMap.put(c, s)
-    serializerMap
-  }
+  private val serializerMap: ConcurrentHashMap[Class[_], Serializer] =
+    (new ConcurrentHashMap[Class[_], Serializer] /: bindings) { case (map, (c, s)) ⇒ map.put(c, s); map }
 
   /**
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)

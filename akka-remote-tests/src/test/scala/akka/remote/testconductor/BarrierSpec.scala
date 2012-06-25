@@ -3,6 +3,8 @@
  */
 package akka.remote.testconductor
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
 import akka.actor.Props
 import akka.actor.AddressFromURIString
