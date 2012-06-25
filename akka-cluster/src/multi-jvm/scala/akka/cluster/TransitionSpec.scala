@@ -68,7 +68,7 @@ abstract class TransitionSpec
   }
 
   def awaitMemberStatus(address: Address, status: MemberStatus): Unit = awaitCond {
-    memberStatus(address) == Up
+    memberStatus(address) == status
   }
 
   // DSL sugar for `role1 gossipTo role2`
@@ -388,7 +388,7 @@ abstract class TransitionSpec
     }
 
     // FIXME ignored due to #2259
-    "perform correct transitions when second becomes unavailble" taggedAs LongRunningTest ignore {
+    "perform correct transitions when second becomes unavailble" taggedAs LongRunningTest in {
       runOn(fifth) {
         markNodeAsUnavailable(second)
         cluster.reapUnreachableMembers()
