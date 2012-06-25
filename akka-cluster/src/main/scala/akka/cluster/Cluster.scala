@@ -439,15 +439,12 @@ trait ClusterNodeMBean {
 /**
  * This module is responsible for Gossiping cluster information. The abstraction maintains the list of live
  * and dead members. Periodically i.e. every 1 second this module chooses a random member and initiates a round
- * of Gossip with it. Whenever it gets gossip updates it updates the Failure Detector with the liveness
- * information.
+ * of Gossip with it.
  * <p/>
- * During each of these runs the member initiates gossip exchange according to following rules (as defined in the
- * Cassandra documentation [http://wiki.apache.org/cassandra/ArchitectureGossip]:
+ * During each of these runs the member initiates gossip exchange according to following rules:
  * <pre>
  *   1) Gossip to random live member (if any)
- *   2) Gossip to random unreachable member with certain probability depending on number of unreachable and live members
- *   3) If the member gossiped to at (1) was not deputy, or the number of live members is less than number of deputy list,
+ *   2) If the member gossiped to at (1) was not deputy, or the number of live members is less than number of deputy list,
  *       gossip to random deputy with certain probability depending on number of unreachable, deputy and live members.
  * </pre>
  *
@@ -1016,7 +1013,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       // 1. gossip to alive members
       val gossipedToAlive = gossipToRandomNodeOf(localMemberAddresses)
 
-      // 3. gossip to a deputy nodes for facilitating partition healing
+      // 2. gossip to a deputy nodes for facilitating partition healing
       val deputies = deputyNodes(localMemberAddresses)
       val alreadyGossipedToDeputy = gossipedToAlive.map(deputies.contains(_)).getOrElse(false)
       if ((!alreadyGossipedToDeputy || localMembersSize < NrOfDeputyNodes) && deputies.nonEmpty) {
