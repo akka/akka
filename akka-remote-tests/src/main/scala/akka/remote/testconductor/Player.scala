@@ -204,23 +204,19 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case BarrierResult(b, success) ⇒
           runningOp match {
             case Some((barrier, requester)) ⇒
-              if (b != barrier) {
-                requester ! Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
-              } else if (!success) {
-                requester ! Status.Failure(new RuntimeException("barrier failed: " + b))
-              } else {
-                requester ! b
-              }
+              val response =
+                if (b != barrier) Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
+                else if (!success) Status.Failure(new RuntimeException("barrier failed: " + b))
+                else b
+              requester ! response
             case None ⇒
               log.warning("did not expect {}", op)
           }
           stay using d.copy(runningOp = None)
         case AddressReply(node, addr) ⇒
           runningOp match {
-            case Some((_, requester)) ⇒
-              requester ! addr
-            case None ⇒
-              log.warning("did not expect {}", op)
+            case Some((_, requester)) ⇒ requester ! addr
+            case None ⇒ log.warning("did not expect {}", op)
           }
           stay using d.copy(runningOp = None)
         case t: ThrottleMsg ⇒
