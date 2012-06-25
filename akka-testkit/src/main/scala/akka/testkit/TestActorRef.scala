@@ -132,4 +132,9 @@ object TestActorRef {
           "\nOR try to change: 'actorOf(Props[MyActor]' to 'actorOf(Props(new MyActor)'.", exception)
     }
   }), name)
+
+  /**
+   * Java API
+   */
+  def create(props: Props, name: String, system: ActorSystem) = apply(props, name)(system)
 }

@@ -13,6 +13,7 @@ import scala.annotation.tailrec
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.util.BoxedType
+import scala.annotation.varargs
 
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
@@ -240,6 +241,22 @@ trait TestKitBase {
    * Same as calling `within(0 seconds, max)(f)`.
    */
   def within[T](max: Duration)(f: ⇒ T): T = within(0 seconds, max)(f)
+
+  /**
+   * Java API for within():
+   *
+   * {{{
+   * new Within(Duration.parse("3 seconds")) {
+   *   public void run() {
+   *     // your test code here
+   *   }
+   * }
+   * }}}
+   */
+  abstract class Within(max: Duration) {
+    def run(): Unit
+    within(max)(run())
+  }
 
   /**
    * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.

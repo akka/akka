@@ -64,3 +64,4 @@ mongoDB/
 redis/
 beanstalk/
 .scalastyle
+bin/

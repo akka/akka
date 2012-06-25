@@ -5,6 +5,7 @@
 package akka.japi
 
 import scala.Some
+import scala.util.control.NoStackTrace
 
 /**
  * A Function interface. Used to create first-class-functions is Java.
@@ -42,6 +43,50 @@ trait Creator[T] {
    * This method must return a different instance upon every call.
    */
   def create(): T
+}
+
+object PurePartialFunction {
+  case object NoMatch extends RuntimeException with NoStackTrace
+}
+
+/**
+ * Helper for implementing a *pure* partial function: it will possibly be
+ * invoked multiple times for a single “application”, because its only abstract
+ * method is used for both isDefinedAt() and apply(); the former is mapped to
+ * `isCheck == true` and the latter to `isCheck == false` for those cases where
+ * this is important to know.
+ *
+ * {{{
+ * new PurePartialFunction<Object, String>() {
+ *   public String apply(Object in, boolean isCheck) {
+ *     if (in instanceof TheThing) {
+ *       if (isCheck) return null; // to spare the expensive or side-effecting code
+ *       return doSomethingWithTheThing((TheThing) in);
+ *     } else {
+ *       throw noMatch();
+ *     }
+ *   }
+ * }
+ * }}}
+ *
+ * The typical use of partial functions from Akka looks like the following:
+ *
+ * {{{
+ * if (pf.isDefinedAt(x)) pf.apply(x)
+ * }}}
+ *
+ * i.e. it will first call `PurePartialFunction.apply(x, true)` and if that
+ * does not throw `noMatch()` it will continue with calling
+ * `PurePartialFunction.apply(x, false)`.
+ */
+abstract class PurePartialFunction[A, B] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
+  import PurePartialFunction._
+
+  def apply(x: A, isCheck: Boolean): B
+
+  final def isDefinedAt(x: A): Boolean = try { apply(x, true); true } catch { case NoMatch ⇒ false }
+  final def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError }
+  final def noMatch(): RuntimeException = NoMatch
 }
 
 /**
@@ -117,4 +162,6 @@ object Util {
    * Given a Class returns a Scala Manifest of that Class
    */
   def manifest[T](clazz: Class[T]): Manifest[T] = Manifest.classType(clazz)
+
+  def arrayToSeq[T](arr: Array[T]): Seq[T] = arr.toSeq
 }
