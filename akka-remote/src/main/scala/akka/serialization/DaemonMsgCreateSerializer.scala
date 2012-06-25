@@ -6,23 +6,13 @@ package akka.serialization
 
 import java.io.Serializable
 import com.google.protobuf.ByteString
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Deploy
-import akka.actor.ExtendedActorSystem
-import akka.actor.NoScopeGiven
-import akka.actor.Props
-import akka.actor.Scope
+import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.{ Actor, ActorRef, Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.remote.DaemonMsgCreate
-import akka.remote.RemoteProtocol.ActorRefProtocol
-import akka.remote.RemoteProtocol.DaemonMsgCreateProtocol
-import akka.remote.RemoteProtocol.DeployProtocol
-import akka.remote.RemoteProtocol.PropsProtocol
-import akka.routing.NoRouter
-import akka.routing.RouterConfig
+import akka.remote.RemoteProtocol.{ DaemonMsgCreateProtocol, DeployProtocol, PropsProtocol }
+import akka.routing.{ NoRouter, RouterConfig }
 import akka.actor.FromClassCreator
+import scala.reflect.ClassTag
 
 /**
  * Serializes akka's internal DaemonMsgCreate using protobuf
@@ -99,7 +89,7 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
     def props = {
       val creator =
         if (proto.getProps.hasFromClassCreator) {
-          system.dynamicAccess.getClassFor(proto.getProps.getFromClassCreator) match {
+          system.dynamicAccess.getClassFor[Actor](proto.getProps.getFromClassCreator) match {
             case Right(clazz) ⇒ FromClassCreator(clazz)
             case Left(e)      ⇒ throw e
           }
@@ -134,9 +124,8 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
   protected def deserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray
     serialization.deserialize(bytes, clazz) match {
-      case Right(x) if classManifest[T].erasure.isInstance(x) ⇒ x.asInstanceOf[T]
-      case Right(other) ⇒ throw new IllegalArgumentException("Can't deserialize to [%s], got [%s]".
-        format(clazz.getName, other))
+      case Right(x: T)  ⇒ x
+      case Right(other) ⇒ throw new IllegalArgumentException("Can't deserialize to [%s], got [%s]".format(clazz.getName, other))
       case Left(e) ⇒
         // Fallback to the java serializer, because some interfaces don't implement java.io.Serializable,
         // but the impl instance does. This could be optimized by adding java serializers in reference.conf:
@@ -144,8 +133,8 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
         // akka.routing.RouterConfig
         // akka.actor.Scope
         serialization.deserialize(bytes, classOf[java.io.Serializable]) match {
-          case Right(x) if classManifest[T].erasure.isInstance(x) ⇒ x.asInstanceOf[T]
-          case _ ⇒ throw e // the first exception
+          case Right(x: T) ⇒ x
+          case _           ⇒ throw e // the first exception
         }
     }
   }

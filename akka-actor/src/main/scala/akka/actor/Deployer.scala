@@ -139,7 +139,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
     val deployment = config.withFallback(default)
 
-    val routees = deployment.getStringList("routees.paths").asScala.toSeq
+    val routees = Vector() ++ deployment.getStringList("routees.paths").asScala
 
     val nrOfInstances = deployment.getInt("nr-of-instances")
 

@@ -3,6 +3,8 @@
  */
 package akka.remote
 
+import language.postfixOps
+
 import akka.testkit._
 import akka.actor._
 import com.typesafe.config._

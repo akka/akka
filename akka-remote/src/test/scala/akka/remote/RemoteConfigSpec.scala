@@ -3,6 +3,8 @@
  */
 package akka.remote
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
 import akka.actor.ExtendedActorSystem
 import akka.util.duration._
