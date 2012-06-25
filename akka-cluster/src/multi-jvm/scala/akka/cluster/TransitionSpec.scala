@@ -68,7 +68,7 @@ abstract class TransitionSpec
   }
 
   def awaitMemberStatus(address: Address, status: MemberStatus): Unit = awaitCond {
-    memberStatus(address) == Up
+    memberStatus(address) == status
   }
 
   // DSL sugar for `role1 gossipTo role2`
@@ -118,33 +118,18 @@ abstract class TransitionSpec
         awaitMembers(first, second)
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Joining)
+        seenLatestGossip must be(Set(first))
         cluster.convergence.isDefined must be(false)
       }
       enterBarrier("second-joined")
 
       first gossipTo second
-      runOn(second) {
-        members must be(Set(first, second))
-        memberStatus(first) must be(Up)
-        memberStatus(second) must be(Joining)
-        // we got a conflicting version in second, and therefore not convergence in second
-        seenLatestGossip must be(Set(second))
-        cluster.convergence.isDefined must be(false)
-      }
-
       second gossipTo first
-      runOn(first) {
-        seenLatestGossip must be(Set(first, second))
-      }
-
-      first gossipTo second
-      runOn(second) {
-        seenLatestGossip must be(Set(first, second))
-      }
 
       runOn(first, second) {
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Joining)
+        seenLatestGossip must be(Set(first, second))
         cluster.convergence.isDefined must be(true)
       }
       enterBarrier("convergence-joining-2")
@@ -191,42 +176,20 @@ abstract class TransitionSpec
       second gossipTo first
       runOn(first) {
         members must be(Set(first, second, third))
-        cluster.convergence.isDefined must be(false)
         memberStatus(third) must be(Joining)
+        seenLatestGossip must be(Set(first, second))
+        cluster.convergence.isDefined must be(false)
       }
 
       first gossipTo third
-      runOn(third) {
-        members must be(Set(first, second, third))
-        cluster.convergence.isDefined must be(false)
-        memberStatus(third) must be(Joining)
-        // conflicting version
-        seenLatestGossip must be(Set(third))
-      }
-
       third gossipTo first
       third gossipTo second
-      runOn(first, second) {
-        seenLatestGossip must be(Set(myself, third))
-      }
-
-      first gossipTo second
-      runOn(second) {
-        seenLatestGossip must be(Set(first, second, third))
-        cluster.convergence.isDefined must be(true)
-      }
-
-      runOn(first, third) {
-        cluster.convergence.isDefined must be(false)
-      }
-
-      second gossipTo first
-      second gossipTo third
       runOn(first, second, third) {
-        seenLatestGossip must be(Set(first, second, third))
+        members must be(Set(first, second, third))
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Up)
         memberStatus(third) must be(Joining)
+        seenLatestGossip must be(Set(first, second, third))
         cluster.convergence.isDefined must be(true)
       }
 
@@ -283,19 +246,21 @@ abstract class TransitionSpec
     "startup a second separated cluster consisting of nodes fourth and fifth" taggedAs LongRunningTest in {
       runOn(fourth) {
         cluster.join(fifth)
-        awaitMembers(fourth, fifth)
-        cluster.gossipTo(fifth)
-        awaitSeen(fourth, fifth)
-        cluster.convergence.isDefined must be(true)
       }
       runOn(fifth) {
         awaitMembers(fourth, fifth)
-        cluster.gossipTo(fourth)
-        awaitSeen(fourth, fifth)
-        cluster.gossipTo(fourth)
+      }
+      testConductor.enter("fourth-joined")
+
+      fifth gossipTo fourth
+      fourth gossipTo fifth
+
+      runOn(fourth, fifth) {
+        memberStatus(fourth) must be(Joining)
+        memberStatus(fifth) must be(Up)
+        seenLatestGossip must be(Set(fourth, fifth))
         cluster.convergence.isDefined must be(true)
       }
-      enterBarrier("fourth-joined-fifth")
 
       enterBarrier("after-4")
     }

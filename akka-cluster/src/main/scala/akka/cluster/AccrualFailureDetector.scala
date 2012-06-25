@@ -85,11 +85,7 @@ class AccrualFailureDetector(
       settings.FailureDetectorMaxSampleSize,
       settings.FailureDetectorAcceptableHeartbeatPause,
       settings.FailureDetectorMinStdDeviation,
-      // we use a conservative estimate for the first heartbeat because
-      // gossip needs to spread back to the joining node before the
-      // first real heartbeat is sent. Initial heartbeat is added when joining.
-      // FIXME this can be changed to HeartbeatInterval when ticket #2249 is fixed
-      settings.GossipInterval * 3 + settings.HeartbeatInterval,
+      settings.HeartbeatInterval,
       clock)
 
   private val log = Logging(system, "FailureDetector")

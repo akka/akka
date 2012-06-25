@@ -194,8 +194,8 @@ object MemberStatus {
  * Represents the overview of the cluster, holds the cluster convergence table and set with unreachable nodes.
  */
 case class GossipOverview(
-  seen: Map[Address, VectorClock] = Map.empty[Address, VectorClock],
-  unreachable: Set[Member] = Set.empty[Member]) {
+  seen: Map[Address, VectorClock] = Map.empty,
+  unreachable: Set[Member] = Set.empty) {
 
   override def toString =
     "GossipOverview(seen = [" + seen.mkString(", ") +
@@ -241,7 +241,7 @@ object Gossip {
 case class Gossip(
   overview: GossipOverview = GossipOverview(),
   members: SortedSet[Member], // sorted set of members with their status, sorted by address
-  meta: Map[String, Array[Byte]] = Map.empty[String, Array[Byte]],
+  meta: Map[String, Array[Byte]] = Map.empty,
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {
@@ -403,14 +403,12 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): Cluster = {
     val clusterSettings = new ClusterSettings(system.settings.config, system.name)
 
-    val failureDetector = clusterSettings.FailureDetectorImplementationClass match {
-      case None ⇒ new AccrualFailureDetector(system, clusterSettings)
-      case Some(fqcn) ⇒
-        system.dynamicAccess.createInstanceFor[FailureDetector](
-          fqcn, Seq((classOf[ActorSystem], system), (classOf[ClusterSettings], clusterSettings))) match {
-            case Right(fd) ⇒ fd
-            case Left(e)   ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
-          }
+    val failureDetector = {
+      import clusterSettings.{ FailureDetectorImplementationClass ⇒ fqcn }
+      system.dynamicAccess.createInstanceFor[FailureDetector](
+        fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> clusterSettings)).fold(
+          e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString),
+          identity)
     }
 
     new Cluster(system, failureDetector)
@@ -463,7 +461,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    */
   private case class State(
     latestGossip: Gossip,
-    memberMembershipChangeListeners: Set[MembershipChangeListener] = Set.empty[MembershipChangeListener])
+    joinInProgress: Map[Address, Deadline] = Map.empty,
+    memberMembershipChangeListeners: Set[MembershipChangeListener] = Set.empty)
 
   if (!system.provider.isInstanceOf[RemoteActorRefProvider])
     throw new ConfigurationException("ActorSystem[" + system + "] needs to have a 'RemoteActorRefProvider' enabled in the configuration")
@@ -674,11 +673,18 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    * Try to join this cluster node with the node specified by 'address'.
    * A 'Join(thisNodeAddress)' command is sent to the node to join.
    */
-  def join(address: Address): Unit = {
-    val connection = clusterCommandConnectionFor(address)
-    val command = ClusterUserAction.Join(selfAddress)
-    log.info("Cluster Node [{}] - Trying to send JOIN to [{}] through connection [{}]", selfAddress, address, connection)
-    connection ! command
+  @tailrec
+  final def join(address: Address): Unit = {
+    val localState = state.get
+    val newState = localState copy (joinInProgress = localState.joinInProgress +
+      (address -> (Deadline.now + JoinTimeout)))
+    if (!state.compareAndSet(localState, newState)) join(address) // recur
+    else {
+      val connection = clusterCommandConnectionFor(address)
+      val command = ClusterUserAction.Join(selfAddress)
+      log.info("Cluster Node [{}] - Trying to send JOIN to [{}] through connection [{}]", selfAddress, address, connection)
+      connection ! command
+    }
   }
 
   /**
@@ -893,7 +899,11 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localGossip = localState.latestGossip
 
     val winningGossip =
-      if (remoteGossip.version <> localGossip.version) {
+      if (isSingletonCluster(localState) && localGossip.overview.unreachable.isEmpty && remoteGossip.members.contains(self)) {
+        // a fresh singleton cluster that is joining, no need to merge, use received gossip
+        remoteGossip
+
+      } else if (remoteGossip.version <> localGossip.version) {
         // concurrent
         val mergedGossip = remoteGossip merge localGossip
         val versionedMergedGossip = mergedGossip :+ vclockNode
@@ -913,7 +923,15 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
         remoteGossip
       }
 
-    val newState = localState copy (latestGossip = winningGossip seen selfAddress)
+    val newJoinInProgress =
+      if (localState.joinInProgress.isEmpty) localState.joinInProgress
+      else localState.joinInProgress --
+        winningGossip.members.map(_.address) --
+        winningGossip.overview.unreachable.map(_.address)
+
+    val newState = localState copy (
+      latestGossip = winningGossip seen selfAddress,
+      joinInProgress = newJoinInProgress)
 
     // if we won the race then update else try again
     if (!state.compareAndSet(localState, newState)) receiveGossip(from, remoteGossip) // recur if we fail the update
@@ -1023,16 +1041,15 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    * INTERNAL API.
    */
   private[cluster] def heartbeat(): Unit = {
+    removeOverdueJoinInProgress()
     val localState = state.get
 
-    if (!isSingletonCluster(localState)) {
-      val liveMembers = localState.latestGossip.members.toIndexedSeq
+    val beatTo = localState.latestGossip.members.toSeq.map(_.address) ++ localState.joinInProgress.keys
 
-      for (member ← liveMembers; if member.address != selfAddress) {
-        val connection = clusterGossipConnectionFor(member.address)
-        log.debug("Cluster Node [{}] - Heartbeat to [{}]", selfAddress, connection)
-        connection ! selfHeartbeat
-      }
+    for (address ← beatTo; if address != selfAddress) {
+      val connection = clusterGossipConnectionFor(address)
+      log.debug("Cluster Node [{}] - Heartbeat to [{}]", selfAddress, connection)
+      connection ! selfHeartbeat
     }
   }
 
@@ -1077,6 +1094,23 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
           notifyMembershipChangeListeners(localState, newState)
         }
       }
+    }
+  }
+
+  /**
+   * INTERNAL API.
+   *
+   * Removes overdue joinInProgress from State.
+   */
+  @tailrec
+  final private[cluster] def removeOverdueJoinInProgress(): Unit = {
+    val localState = state.get
+    val overdueJoins = localState.joinInProgress collect {
+      case (address, deadline) if deadline.isOverdue ⇒ address
+    }
+    if (overdueJoins.nonEmpty) {
+      val newState = localState copy (joinInProgress = localState.joinInProgress -- overdueJoins)
+      if (!state.compareAndSet(localState, newState)) removeOverdueJoinInProgress() // recur
     }
   }
 

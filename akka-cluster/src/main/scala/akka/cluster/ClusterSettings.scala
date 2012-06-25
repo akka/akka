@@ -16,10 +16,7 @@ class ClusterSettings(val config: Config, val systemName: String) {
 
   final val FailureDetectorThreshold = getDouble("akka.cluster.failure-detector.threshold")
   final val FailureDetectorMaxSampleSize = getInt("akka.cluster.failure-detector.max-sample-size")
-  final val FailureDetectorImplementationClass: Option[String] = getString("akka.cluster.failure-detector.implementation-class") match {
-    case ""   ⇒ None
-    case fqcn ⇒ Some(fqcn)
-  }
+  final val FailureDetectorImplementationClass = getString("akka.cluster.failure-detector.implementation-class")
   final val FailureDetectorMinStdDeviation: Duration =
     Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
   final val FailureDetectorAcceptableHeartbeatPause: Duration =
@@ -29,14 +26,15 @@ class ClusterSettings(val config: Config, val systemName: String) {
     case ""                         ⇒ None
     case AddressFromURIString(addr) ⇒ Some(addr)
   }
-  final val PeriodicTasksInitialDelay = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
-  final val GossipInterval = Duration(getMilliseconds("akka.cluster.gossip-interval"), MILLISECONDS)
-  final val HeartbeatInterval = Duration(getMilliseconds("akka.cluster.heartbeat-interval"), MILLISECONDS)
-  final val LeaderActionsInterval = Duration(getMilliseconds("akka.cluster.leader-actions-interval"), MILLISECONDS)
-  final val UnreachableNodesReaperInterval = Duration(getMilliseconds("akka.cluster.unreachable-nodes-reaper-interval"), MILLISECONDS)
-  final val NrOfGossipDaemons = getInt("akka.cluster.nr-of-gossip-daemons")
-  final val NrOfDeputyNodes = getInt("akka.cluster.nr-of-deputy-nodes")
-  final val AutoDown = getBoolean("akka.cluster.auto-down")
-  final val SchedulerTickDuration = Duration(getMilliseconds("akka.cluster.scheduler.tick-duration"), MILLISECONDS)
-  final val SchedulerTicksPerWheel = getInt("akka.cluster.scheduler.ticks-per-wheel")
+  final val PeriodicTasksInitialDelay: Duration = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
+  final val GossipInterval: Duration = Duration(getMilliseconds("akka.cluster.gossip-interval"), MILLISECONDS)
+  final val HeartbeatInterval: Duration = Duration(getMilliseconds("akka.cluster.heartbeat-interval"), MILLISECONDS)
+  final val LeaderActionsInterval: Duration = Duration(getMilliseconds("akka.cluster.leader-actions-interval"), MILLISECONDS)
+  final val UnreachableNodesReaperInterval: Duration = Duration(getMilliseconds("akka.cluster.unreachable-nodes-reaper-interval"), MILLISECONDS)
+  final val NrOfGossipDaemons: Int = getInt("akka.cluster.nr-of-gossip-daemons")
+  final val NrOfDeputyNodes: Int = getInt("akka.cluster.nr-of-deputy-nodes")
+  final val AutoDown: Boolean = getBoolean("akka.cluster.auto-down")
+  final val JoinTimeout: Duration = Duration(getMilliseconds("akka.cluster.join-timeout"), MILLISECONDS)
+  final val SchedulerTickDuration: Duration = Duration(getMilliseconds("akka.cluster.scheduler.tick-duration"), MILLISECONDS)
+  final val SchedulerTicksPerWheel: Int = getInt("akka.cluster.scheduler.ticks-per-wheel")
 }

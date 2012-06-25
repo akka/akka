@@ -13,11 +13,10 @@ private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
 }
 
-abstract class DurableMessageQueue(val owner: ActorContext) extends MessageQueue {
+abstract class DurableMessageQueue(val owner: ActorRef, val system: ExtendedActorSystem) extends MessageQueue {
   import DurableExecutableMailboxConfig._
 
-  def system: ExtendedActorSystem = owner.system.asInstanceOf[ExtendedActorSystem]
-  def ownerPath: ActorPath = owner.self.path
+  def ownerPath: ActorPath = owner.path
   val ownerPathString: String = ownerPath.elements.mkString("/")
   val name: String = "mailbox_" + Name.replaceAllIn(ownerPathString, "_")
 
@@ -42,7 +41,7 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
     val message = MessageSerializer.serialize(system, durableMessage.message.asInstanceOf[AnyRef])
     val builder = RemoteMessageProtocol.newBuilder
       .setMessage(message)
-      .setRecipient(serializeActorRef(owner.self))
+      .setRecipient(serializeActorRef(owner))
       .setSender(serializeActorRef(durableMessage.sender))
 
     builder.build.toByteArray
@@ -60,7 +59,7 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
     val message = MessageSerializer.deserialize(system, durableMessage.getMessage)
     val sender = deserializeActorRef(durableMessage.getSender)
 
-    Envelope(message, sender)(system)
+    Envelope(message, sender, system)
   }
 
 }
