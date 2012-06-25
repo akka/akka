@@ -19,6 +19,8 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
   val fifth = role("fifth")
 
+  // Note that this test uses default configuration,
+  // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
     akka.cluster {
       # FIXME remove this (use default) when ticket #2239 has been fixed

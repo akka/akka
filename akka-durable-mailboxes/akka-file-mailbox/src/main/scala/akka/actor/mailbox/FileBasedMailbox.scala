@@ -13,20 +13,22 @@ import akka.actor.ActorSystem
 import akka.dispatch._
 import akka.util.{ Duration, NonFatal }
 import akka.pattern.{ CircuitBreakerOpenException, CircuitBreaker }
+import akka.actor.ExtendedActorSystem
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)
-  override def create(owner: Option[ActorContext]): MessageQueue = owner match {
-    case Some(o) ⇒ new FileBasedMessageQueue(o, settings)
-    case None    ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = owner zip system headOption match {
+    case Some((o, s: ExtendedActorSystem)) ⇒ new FileBasedMessageQueue(o, s, settings)
+    case None                              ⇒ throw new ConfigurationException("creating a durable mailbox requires an owner (i.e. does not work with BalancingDispatcher)")
   }
 }
 
-class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailboxSettings) extends DurableMessageQueue(_owner) with DurableMessageSerialization {
+class FileBasedMessageQueue(_owner: ActorRef, _system: ExtendedActorSystem, val settings: FileBasedMailboxSettings)
+  extends DurableMessageQueue(_owner, _system) with DurableMessageSerialization {
   // TODO Is it reasonable for all FileBasedMailboxes to have their own logger?
   private val log = Logging(system, "FileBasedMessageQueue")
 
-  val breaker = CircuitBreaker(_owner.system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
+  val breaker = CircuitBreaker(system.scheduler, settings.CircuitBreakerMaxFailures, settings.CircuitBreakerCallTimeout, settings.CircuitBreakerResetTimeout)
 
   private val queue = try {
     (new java.io.File(settings.QueuePath)) match {
@@ -79,5 +81,5 @@ class FileBasedMessageQueue(_owner: ActorContext, val settings: FileBasedMailbox
     case NonFatal(_) ⇒ false
   }
 
-  def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
+  def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = ()
 }
