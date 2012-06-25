@@ -375,8 +375,7 @@ private[cluster] final class ClusterCommandDaemon(cluster: Cluster) extends Acto
     val seedRoutees = for (address ← cluster.seedNodes; if address != cluster.selfAddress)
       yield self.path.toStringWithAddress(address)
     if (seedRoutees.nonEmpty) {
-      // FIXME config of within (use JoinInProgressTimeout when that is in master)
-      implicit val within = Timeout(5 seconds)
+      implicit val within = Timeout(cluster.clusterSettings.JoinSeedNodeTimeout)
       val seedRouter = context.actorOf(
         Props.empty.withRouter(ScatterGatherFirstCompletedRouter(
           routees = seedRoutees, within = within.duration)))
@@ -678,6 +677,12 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    * Returns true if the node is UP or JOINING.
    */
   def isAvailable: Boolean = !isUnavailable(state.get)
+
+  /**
+   * Make it possible to override/configure seedNodes from tests without
+   * specifying in config. Addresses are unknown before startup time.
+   */
+  def seedNodes: IndexedSeq[Address] = SeedNodes
 
   /**
    * Registers a listener to subscribe to cluster membership changes.
@@ -1373,14 +1378,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    */
   private def deputyNodes(addresses: IndexedSeq[Address]): IndexedSeq[Address] =
     addresses filterNot (_ == selfAddress) intersect seedNodes
-
-  /**
-   * INTERNAL API.
-   *
-   * Make it possible to override/configure seedNodes from tests without
-   * specifying in config. Addresses are unknown before startup time.
-   */
-  private[cluster] def seedNodes: IndexedSeq[Address] = SeedNodes
 
   /**
    * INTERNAL API.

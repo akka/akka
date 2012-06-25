@@ -25,6 +25,7 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val SeedNodes: IndexedSeq[Address] = getStringList("akka.cluster.seed-nodes").asScala.map {
     case AddressFromURIString(addr) ⇒ addr
   }.toIndexedSeq
+  final val JoinSeedNodeTimeout = Duration(getMilliseconds("akka.cluster.join-seed-node-timeout"), MILLISECONDS)
   final val PeriodicTasksInitialDelay = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
   final val GossipInterval = Duration(getMilliseconds("akka.cluster.gossip-interval"), MILLISECONDS)
   final val HeartbeatInterval = Duration(getMilliseconds("akka.cluster.heartbeat-interval"), MILLISECONDS)
