@@ -4,6 +4,9 @@
 
 package akka.camel
 
+import language.postfixOps
+import language.existentials
+
 import akka.actor._
 import org.scalatest.matchers.MustMatchers
 import akka.util.duration._

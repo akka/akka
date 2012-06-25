@@ -1,5 +1,7 @@
 package akka.camel.internal
 
+import language.postfixOps
+
 import org.scalatest.matchers.MustMatchers
 import akka.util.duration._
 import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }

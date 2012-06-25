@@ -4,6 +4,8 @@
 
 package akka.camel
 
+import language.postfixOps
+
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.WordSpec
 import akka.camel.TestSupport.SharedCamelSystem

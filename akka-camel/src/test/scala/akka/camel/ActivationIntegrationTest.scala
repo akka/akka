@@ -4,6 +4,8 @@
 
 package akka.camel
 
+import language.postfixOps
+
 import org.scalatest.matchers.MustMatchers
 import akka.util.duration._
 import org.apache.camel.ProducerTemplate

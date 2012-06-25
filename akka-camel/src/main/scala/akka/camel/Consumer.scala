@@ -4,6 +4,8 @@
 
 package akka.camel
 
+import language.postfixOps
+
 import internal.component.DurationTypeConverter
 import org.apache.camel.model.{ RouteDefinition, ProcessorDefinition }
 

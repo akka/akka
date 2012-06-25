@@ -4,6 +4,8 @@
 
 package akka.camel.internal.component
 
+import language.postfixOps
+
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.{ eq ⇒ the, any }
 import org.mockito.Mockito._

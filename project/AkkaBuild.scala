@@ -508,7 +508,7 @@ object OSGi {
 
   val agent = exports(Seq("akka.agent.*"))
 
-  val camel = exports(Seq("akka.camel.*", "akka.camelexamples"))
+  val camel = exports(Seq("akka.camel.*"))
 
   val cluster = exports(Seq("akka.cluster.*"))
 

@@ -4,6 +4,8 @@
 
 package akka.camelexamples
 
+import language.implicitConversions
+
 import java.io.FileWriter
 
 private[camelexamples] object RichString {

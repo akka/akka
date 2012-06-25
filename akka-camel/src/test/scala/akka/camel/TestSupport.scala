@@ -4,6 +4,9 @@
 
 package akka.camel
 
+import language.postfixOps
+import language.implicitConversions
+
 import akka.actor.{ Props, ActorSystem, Actor }
 import akka.util.duration._
 import java.util.concurrent.{ TimeoutException, ExecutionException, TimeUnit }

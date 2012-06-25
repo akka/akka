@@ -4,6 +4,8 @@
 
 package akka.camel
 
+import language.postfixOps
+
 import org.apache.camel.{ Exchange, Processor }
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint

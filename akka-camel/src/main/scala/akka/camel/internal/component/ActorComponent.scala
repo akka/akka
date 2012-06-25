@@ -4,6 +4,8 @@
 
 package akka.camel.internal.component
 
+import language.postfixOps
+
 import java.util.{ Map ⇒ JMap }
 
 import org.apache.camel._

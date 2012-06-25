@@ -4,6 +4,8 @@
 
 package akka.camelexamples
 
+import language.postfixOps
+
 import akka.camel._
 import akka.util.duration._
 import akka.actor.{ Actor, OneForOneStrategy }
