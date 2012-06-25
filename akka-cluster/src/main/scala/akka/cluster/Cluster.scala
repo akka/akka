@@ -197,6 +197,9 @@ case class GossipOverview(
   seen: Map[Address, VectorClock] = Map.empty,
   unreachable: Set[Member] = Set.empty) {
 
+  def isNonDownUnreachable(address: Address): Boolean =
+    unreachable.exists { m ⇒ m.address == address && m.status != Down }
+
   override def toString =
     "GossipOverview(seen = [" + seen.mkString(", ") +
       "], unreachable = [" + unreachable.mkString(", ") +
@@ -751,7 +754,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localUnreachable = localGossip.overview.unreachable
 
     val alreadyMember = localMembers.exists(_.address == node)
-    val isUnreachable = localUnreachable.exists { m ⇒ m.address == node && m.status != Down }
+    val isUnreachable = localGossip.overview.isNonDownUnreachable(node)
 
     if (!alreadyMember && !isUnreachable) {
 
@@ -898,46 +901,49 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localState = state.get
     val localGossip = localState.latestGossip
 
-    val winningGossip =
-      if (isSingletonCluster(localState) && localGossip.overview.unreachable.isEmpty && remoteGossip.members.contains(self)) {
-        // a fresh singleton cluster that is joining, no need to merge, use received gossip
-        remoteGossip
+    if (!localGossip.overview.isNonDownUnreachable(from)) {
 
-      } else if (remoteGossip.version <> localGossip.version) {
-        // concurrent
-        val mergedGossip = remoteGossip merge localGossip
-        val versionedMergedGossip = mergedGossip :+ vclockNode
+      val winningGossip =
+        if (isSingletonCluster(localState) && localGossip.overview.unreachable.isEmpty && remoteGossip.members.contains(self)) {
+          // a fresh singleton cluster that is joining, no need to merge, use received gossip
+          remoteGossip
 
-        log.debug(
-          """Can't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merging them into [{}]""",
-          remoteGossip, localGossip, versionedMergedGossip)
+        } else if (remoteGossip.version <> localGossip.version) {
+          // concurrent
+          val mergedGossip = remoteGossip merge localGossip
+          val versionedMergedGossip = mergedGossip :+ vclockNode
 
-        versionedMergedGossip
+          log.debug(
+            """Can't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merging them into [{}]""",
+            remoteGossip, localGossip, versionedMergedGossip)
 
-      } else if (remoteGossip.version < localGossip.version) {
-        // local gossip is newer
-        localGossip
+          versionedMergedGossip
 
-      } else {
-        // remote gossip is newer
-        remoteGossip
+        } else if (remoteGossip.version < localGossip.version) {
+          // local gossip is newer
+          localGossip
+
+        } else {
+          // remote gossip is newer
+          remoteGossip
+        }
+
+      val newJoinInProgress =
+        if (localState.joinInProgress.isEmpty) localState.joinInProgress
+        else localState.joinInProgress --
+          winningGossip.members.map(_.address) --
+          winningGossip.overview.unreachable.map(_.address)
+
+      val newState = localState copy (
+        latestGossip = winningGossip seen selfAddress,
+        joinInProgress = newJoinInProgress)
+
+      // if we won the race then update else try again
+      if (!state.compareAndSet(localState, newState)) receiveGossip(from, remoteGossip) // recur if we fail the update
+      else {
+        log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
+        notifyMembershipChangeListeners(localState, newState)
       }
-
-    val newJoinInProgress =
-      if (localState.joinInProgress.isEmpty) localState.joinInProgress
-      else localState.joinInProgress --
-        winningGossip.members.map(_.address) --
-        winningGossip.overview.unreachable.map(_.address)
-
-    val newState = localState copy (
-      latestGossip = winningGossip seen selfAddress,
-      joinInProgress = newJoinInProgress)
-
-    // if we won the race then update else try again
-    if (!state.compareAndSet(localState, newState)) receiveGossip(from, remoteGossip) // recur if we fail the update
-    else {
-      log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
-      notifyMembershipChangeListeners(localState, newState)
     }
   }
 
@@ -978,15 +984,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   /**
    * INTERNAL API.
    */
-  private[cluster] def gossipToUnreachableProbablity(membersSize: Int, unreachableSize: Int): Double =
-    (membersSize + unreachableSize) match {
-      case 0   ⇒ 0.0
-      case sum ⇒ unreachableSize.toDouble / sum
-    }
-
-  /**
-   * INTERNAL API.
-   */
   private[cluster] def gossipToDeputyProbablity(membersSize: Int, unreachableSize: Int, nrOfDeputyNodes: Int): Double = {
     if (nrOfDeputyNodes > membersSize) 1.0
     else if (nrOfDeputyNodes == 0) 0.0
@@ -1018,13 +1015,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
       // 1. gossip to alive members
       val gossipedToAlive = gossipToRandomNodeOf(localMemberAddresses)
-
-      // 2. gossip to unreachable members
-      if (localUnreachableSize > 0) {
-        val probability = gossipToUnreachableProbablity(localMembersSize, localUnreachableSize)
-        if (ThreadLocalRandom.current.nextDouble() < probability)
-          gossipToRandomNodeOf(localUnreachableMembers.map(_.address))
-      }
 
       // 3. gossip to a deputy nodes for facilitating partition healing
       val deputies = deputyNodes(localMemberAddresses)

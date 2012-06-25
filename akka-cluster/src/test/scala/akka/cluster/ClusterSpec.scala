@@ -51,14 +51,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
     }
 
     @volatile
-    var _gossipToUnreachableProbablity = 0.0
-
-    override def gossipToUnreachableProbablity(membersSize: Int, unreachableSize: Int): Double = {
-      if (_gossipToUnreachableProbablity < 0.0) super.gossipToUnreachableProbablity(membersSize, unreachableSize)
-      else _gossipToUnreachableProbablity
-    }
-
-    @volatile
     var _gossipToDeputyProbablity = 0.0
 
     override def gossipToDeputyProbablity(membersSize: Int, unreachableSize: Int, deputySize: Int): Double = {
@@ -81,7 +73,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
     cluster.latestGossip.members.collectFirst { case m if m.address == address ⇒ m.status }
 
   before {
-    cluster._gossipToUnreachableProbablity = 0.0
     cluster._gossipToDeputyProbablity = 0.0
     addresses foreach failureDetector.remove
     deterministicRandom.set(0)
@@ -133,17 +124,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
       expectNoMsg(1 second)
     }
 
-    "use certain probability for gossiping to unreachable node depending on the number of unreachable and live nodes" in {
-      cluster._gossipToUnreachableProbablity = -1.0 // use real impl
-      cluster.gossipToUnreachableProbablity(10, 1) must be < (cluster.gossipToUnreachableProbablity(9, 1))
-      cluster.gossipToUnreachableProbablity(10, 1) must be < (cluster.gossipToUnreachableProbablity(10, 2))
-      cluster.gossipToUnreachableProbablity(10, 5) must be < (cluster.gossipToUnreachableProbablity(10, 9))
-      cluster.gossipToUnreachableProbablity(0, 10) must be <= (1.0)
-      cluster.gossipToUnreachableProbablity(1, 10) must be <= (1.0)
-      cluster.gossipToUnreachableProbablity(10, 0) must be(0.0 plusOrMinus (0.0001))
-      cluster.gossipToUnreachableProbablity(0, 0) must be(0.0 plusOrMinus (0.0001))
-    }
-
     "use certain probability for gossiping to deputy node depending on the number of unreachable and live nodes" in {
       cluster._gossipToDeputyProbablity = -1.0 // use real impl
       cluster.gossipToDeputyProbablity(10, 1, 2) must be < (cluster.gossipToDeputyProbablity(9, 1, 2))
@@ -176,22 +156,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
 
       expectNoMsg(1 second)
 
-    }
-
-    "gossip to random unreachable node" in {
-      val dead = Set(addresses(1))
-      dead foreach failureDetector.markNodeAsUnavailable
-      cluster._gossipToUnreachableProbablity = 1.0 // always
-
-      cluster.reapUnreachableMembers()
-      cluster.latestGossip.overview.unreachable.map(_.address) must be(dead)
-
-      cluster.gossip()
-
-      expectMsg(GossipTo(addresses(2))) // first available
-      expectMsg(GossipTo(addresses(1))) // the unavailable
-
-      expectNoMsg(1 second)
     }
 
     "gossip to random deputy node if number of live nodes is less than number of deputy nodes" in {

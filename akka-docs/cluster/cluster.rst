@@ -213,7 +213,7 @@ nodes involved in a gossip exchange.
 
 Periodically, the default is every 1 second, each node chooses another random
 node to initiate a round of gossip with. The choice of node is random but can
-also include extra gossiping for unreachable nodes, ``deputy`` nodes, and nodes with
+also include extra gossiping for ``deputy`` nodes, and nodes with
 either newer or older state versions.
 
 The gossip overview contains the current state version for all nodes and also a
@@ -228,14 +228,11 @@ During each round of gossip exchange the following process is used:
 
 1. Gossip to random live node (if any)
 
-2. Gossip to random unreachable node with certain probability depending on the
-   number of unreachable and live nodes
-
-3. If the node gossiped to at (1) was not a ``deputy`` node, or the number of live
+2. If the node gossiped to at (1) was not a ``deputy`` node, or the number of live
    nodes is less than number of ``deputy`` nodes, gossip to random ``deputy`` node with
    certain probability depending on number of unreachable, ``deputy``, and live nodes.
 
-4. Gossip to random node with newer or older state information, based on the
+3. Gossip to random node with newer or older state information, based on the
    current gossip overview, with some probability (?)
 
 The gossiper only sends the gossip overview to the chosen node. The recipient of
