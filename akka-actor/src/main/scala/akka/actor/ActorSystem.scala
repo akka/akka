@@ -422,6 +422,13 @@ abstract class ExtendedActorSystem extends ActorSystem {
    * creation.
    */
   def dynamicAccess: DynamicAccess
+
+  /**
+   * For debugging: traverse actor hierarchy and make string representation.
+   * Careful, this may OOM on large actor systems, and it is only meant for
+   * helping debugging in case something already went terminally wrong.
+   */
+  private[akka] def printTree: String
 }
 
 private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader) extends ExtendedActorSystem {
@@ -479,20 +486,11 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   protected def systemImpl: ActorSystemImpl = this
 
-  private[akka] def systemActorOf(props: Props, name: String): ActorRef = {
-    implicit val timeout = settings.CreationTimeout
-    Await.result((systemGuardian ? CreateChild(props, name)).mapTo[ActorRef], timeout.duration)
-  }
+  private[akka] def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name)
 
-  def actorOf(props: Props, name: String): ActorRef = {
-    implicit val timeout = settings.CreationTimeout
-    Await.result((guardian ? CreateChild(props, name)).mapTo[ActorRef], timeout.duration)
-  }
+  def actorOf(props: Props, name: String): ActorRef = guardian.underlying.attachChild(props, name)
 
-  def actorOf(props: Props): ActorRef = {
-    implicit val timeout = settings.CreationTimeout
-    Await.result((guardian ? CreateRandomNameChild(props)).mapTo[ActorRef], timeout.duration)
-  }
+  def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props)
 
   def stop(actor: ActorRef): Unit = {
     implicit val timeout = settings.CreationTimeout
@@ -539,10 +537,10 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     def dequeue() = null
     def hasMessages = false
     def numberOfMessages = 0
-    def cleanUp(owner: ActorContext, deadLetters: MessageQueue): Unit = ()
+    def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = ()
   }
   //FIXME Why do we need this at all?
-  val deadLetterMailbox: Mailbox = new Mailbox(null, deadLetterQueue) {
+  val deadLetterMailbox: Mailbox = new Mailbox(deadLetterQueue) {
     becomeClosed()
     def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit =
       deadLetters ! DeadLetter(handle, receiver, receiver)
@@ -557,8 +555,8 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   def terminationFuture: Future[Unit] = provider.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian
-  def guardian: InternalActorRef = provider.guardian
-  def systemGuardian: InternalActorRef = provider.systemGuardian
+  def guardian: LocalActorRef = provider.guardian
+  def systemGuardian: LocalActorRef = provider.systemGuardian
 
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
@@ -681,6 +679,31 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   }
 
   override def toString: String = lookupRoot.path.root.address.toString
+
+  override def printTree: String = {
+    def printNode(node: ActorRef, indent: String): String = {
+      node match {
+        case wc: ActorRefWithCell ⇒
+          val cell = wc.underlying
+          indent + "-> " + node.path.name + " " + Logging.simpleName(node) + " " +
+            (cell match {
+              case real: ActorCell ⇒ if (real.actor ne null) real.actor.getClass else "null"
+              case _               ⇒ Logging.simpleName(cell)
+            }) +
+            " " + (cell.childrenRefs match {
+              case ActorCell.TerminatingChildrenContainer(_, toDie, reason) ⇒
+                "Terminating(" + reason + ")" +
+                  (toDie.toSeq.sorted mkString ("\n" + indent + "        toDie: ", "\n" + indent + "               ", ""))
+              case x ⇒ Logging.simpleName(x)
+            }) +
+            (if (cell.childrenRefs.children.isEmpty) "" else "\n") +
+            (cell.childrenRefs.children.toSeq.sorted map (printNode(_, indent + "   |")) mkString ("\n"))
+        case _ ⇒
+          indent + node.path.name + " " + Logging.simpleName(node)
+      }
+    }
+    printNode(actorFor("/"), "")
+  }
 
   final class TerminationCallbacks extends Runnable with Awaitable[Unit] {
     private val lock = new ReentrantGuard

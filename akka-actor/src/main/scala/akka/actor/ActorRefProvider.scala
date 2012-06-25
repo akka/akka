@@ -26,12 +26,12 @@ trait ActorRefProvider {
   /**
    * Reference to the supervisor used for all top-level user actors.
    */
-  def guardian: InternalActorRef
+  def guardian: LocalActorRef
 
   /**
    * Reference to the supervisor used for all top-level system actors.
    */
-  def systemGuardian: InternalActorRef
+  def systemGuardian: LocalActorRef
 
   /**
    * Dead letter destination for this provider.
@@ -104,7 +104,8 @@ trait ActorRefProvider {
     path: ActorPath,
     systemService: Boolean,
     deploy: Option[Deploy],
-    lookupDeploy: Boolean): InternalActorRef
+    lookupDeploy: Boolean,
+    async: Boolean): InternalActorRef
 
   /**
    * Create actor reference for a specified local or remote path. If no such
@@ -481,11 +482,10 @@ class LocalActorRefProvider(
       }
     }
 
-  lazy val guardian: InternalActorRef =
-    actorOf(system, guardianProps, rootGuardian, rootPath / "user", true, None, false)
+  lazy val guardian: LocalActorRef = new LocalActorRef(system, guardianProps, rootGuardian, rootPath / "user")
 
-  lazy val systemGuardian: InternalActorRef =
-    actorOf(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system", true, None, false)
+  lazy val systemGuardian: LocalActorRef =
+    new LocalActorRef(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system")
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
@@ -539,22 +539,20 @@ class LocalActorRefProvider(
     }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
-              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean): InternalActorRef = {
+              systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef = {
     props.routerConfig match {
-      case NoRouter ⇒ new LocalActorRef(system, props, supervisor, path) // create a local actor
+      case NoRouter ⇒
+        if (async) new RepointableActorRef(system, props, supervisor, path).initialize()
+        else new LocalActorRef(system, props, supervisor, path)
       case router ⇒
         val lookup = if (lookupDeploy) deployer.lookup(path) else None
         val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
         val d = fromProps ++ deploy.iterator ++ lookup.iterator reduce ((a, b) ⇒ b withFallback a)
-        new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path)
+        val ref = new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path).initialize()
+        if (async) ref else ref.activate()
     }
   }
 
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
-}
-
-private[akka] class GuardianCell(_system: ActorSystemImpl, _self: InternalActorRef, _props: Props, _parent: InternalActorRef)
-  extends ActorCell(_system, _self, _props, _parent) {
-
 }
 
