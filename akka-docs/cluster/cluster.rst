@@ -183,14 +183,20 @@ according to the Failure Detector is considered unreachable. This means setting
 the unreachable node status to ``down`` automatically.
 
 
+Seed Nodes
+^^^^^^^^^^
+
+The seed nodes are configured contact points for inital join of the cluster.
+When a new node is started started it sends a message to all seed nodes and 
+then sends join command to the one that answers first.
+
+It is possible to turn off automatic join.
+
 Deputy Nodes
 ^^^^^^^^^^^^
 
-After gossip convergence a set of ``deputy`` nodes for the cluster can be
-determined. As with the ``leader``, there is no ``deputy`` election process,
-the deputies can always be recognised deterministically by any node whenever there
-is gossip convergence. The list of ``deputy`` nodes is simply the N - 1 number
-of nodes (e.g. starting with the first node after the ``leader``) in sorted order.
+The deputy nodes are the live members of the configured seed nodes. 
+It is preferred to use deputy nodes in different racks/data centers.
 
 The nodes defined as ``deputy`` nodes are just regular member nodes whose only
 "special role" is to help breaking logical partitions as seen in the gossip
