@@ -74,6 +74,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   }
 
   final override def afterAll {
+    beforeShutdown()
     system.shutdown()
     try system.awaitTermination(5 seconds) catch {
       case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
@@ -82,6 +83,8 @@ abstract class AkkaSpec(_system: ActorSystem)
   }
 
   protected def atStartup() {}
+
+  protected def beforeShutdown() {}
 
   protected def atTermination() {}
 
