@@ -71,7 +71,7 @@ class RemoteClassLoadingTransport(system: ExtendedActorSystem, provider: RemoteA
 
   // replace dynamic access with our thread local dynamic access
   val threadLocalDynamicAccess = new ThreadLocalReflectiveDynamicAccess(systemClassLoader)
-  ReflectionUtil.setField("_pm", system, threadLocalDynamicAccess)
+  ReflectionUtil.setFieldValue("_pm", system, threadLocalDynamicAccess)
 
   lazy val originAddressByteString = ByteString.copyFrom(address.toString, "utf-8")
 
