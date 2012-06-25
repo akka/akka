@@ -3,6 +3,8 @@
  */
 package akka.event.slf4j
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
 import akka.actor.Actor
 import akka.actor.ActorLogging
