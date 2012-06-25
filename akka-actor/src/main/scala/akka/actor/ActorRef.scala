@@ -163,8 +163,22 @@ private[akka] trait ActorRefScope {
   def isLocal: Boolean
 }
 
+/**
+ * Refs which are statically known to be local inherit from this Scope
+ */
 private[akka] trait LocalRef extends ActorRefScope {
   final def isLocal = true
+}
+
+/**
+ * RepointableActorRef (and potentially others) may change their locality at
+ * runtime, meaning that isLocal might not be stable. RepointableActorRef has
+ * the feature that it starts out “not fully started” (but you can send to it),
+ * which is why `isStarted` features here; it is not improbable that cluster
+ * actor refs will have the same behavior.
+ */
+private[akka] trait RepointableRef extends ActorRefScope {
+  def isStarted: Boolean
 }
 
 /**
@@ -211,6 +225,16 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
 }
 
 /**
+ * Common trait of all actor refs which actually have a Cell, most notably
+ * LocalActorRef and RepointableActorRef. The former specializes the return
+ * type of `underlying` so that follow-up calls can use invokevirtual instead
+ * of invokeinterface.
+ */
+private[akka] abstract class ActorRefWithCell extends InternalActorRef { this: ActorRefScope ⇒
+  def underlying: Cell
+}
+
+/**
  * This is an internal look-up failure token, not useful for anything else.
  */
 private[akka] case object Nobody extends MinimalActorRef {
@@ -228,20 +252,20 @@ private[akka] class LocalActorRef private[akka] (
   _props: Props,
   _supervisor: InternalActorRef,
   override val path: ActorPath)
-  extends InternalActorRef with LocalRef {
+  extends ActorRefWithCell with LocalRef {
 
   /*
-   * actorCell.start() publishes actorCell & this to the dispatcher, which
-   * means that messages may be processed theoretically before the constructor
-   * ends. The JMM guarantees visibility for final fields only after the end
-   * of the constructor, so publish the actorCell safely by making it a
-   * @volatile var which is NOT TO BE WRITTEN TO. The alternative would be to
-   * move start() outside of the constructor, which would basically require
-   * us to use purely factory methods for creating LocalActorRefs.
+   * Safe publication of this class’s fields is guaranteed by mailbox.setActor()
+   * which is called indirectly from actorCell.start() (if you’re wondering why
+   * this is at all important, remember that under the JMM final fields are only
+   * frozen at the _end_ of the constructor, but we are publishing “this” before
+   * that is reached).
    */
-  @volatile
-  private var actorCell = newActorCell(_system, this, _props, _supervisor)
+  private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
   actorCell.start()
+
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+  _supervisor.sendSystemMessage(akka.dispatch.Supervise(this))
 
   protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor)
@@ -313,9 +337,9 @@ private[akka] class LocalActorRef private[akka] (
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
-  protected[akka] def underlying: ActorCell = actorCell
+  def underlying: ActorCell = actorCell
 
-  override def sendSystemMessage(message: SystemMessage): Unit = underlying.dispatcher.systemDispatch(underlying, message)
+  override def sendSystemMessage(message: SystemMessage): Unit = actorCell.sendSystemMessage(message)
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
 
