@@ -8,6 +8,7 @@ import language.existentials
 import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Timeout, NonFatal, Duration }
+import akka.util.Reflect.instantiator
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.dispatch._
 import java.util.concurrent.TimeoutException
@@ -463,7 +464,7 @@ object TypedProps {
    * Scala API
    */
   def apply[T <: AnyRef](interface: Class[_ >: T], implementation: Class[T]): TypedProps[T] =
-    new TypedProps[T](extractInterfaces(interface), () ⇒ implementation.newInstance())
+    new TypedProps[T](extractInterfaces(interface), instantiator(implementation))
 
   /**
    * Uses the supplied thunk as the factory for the TypedActor implementation,
@@ -507,7 +508,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
    */
   def this(implementation: Class[T]) =
     this(interfaces = TypedProps.extractInterfaces(implementation),
-      creator = () ⇒ implementation.newInstance())
+      creator = instantiator(implementation))
 
   /**
    * Uses the supplied Creator as the factory for the TypedActor implementation,
@@ -519,7 +520,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
    */
   def this(interface: Class[_ >: T], implementation: Creator[T]) =
     this(interfaces = TypedProps.extractInterfaces(interface),
-      creator = () ⇒ implementation.create())
+      creator = implementation.create _)
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,
@@ -531,7 +532,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
    */
   def this(interface: Class[_ >: T], implementation: Class[T]) =
     this(interfaces = TypedProps.extractInterfaces(interface),
-      creator = () ⇒ implementation.newInstance())
+      creator = instantiator(implementation))
 
   /**
    * Returns a new TypedProps with the specified dispatcher set.

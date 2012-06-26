@@ -10,6 +10,7 @@ import akka.dispatch._
 import akka.japi.Creator
 import scala.reflect.ClassTag
 import akka.routing._
+import akka.util.Reflect
 
 /**
  * Factory for Props instances.
@@ -188,10 +189,5 @@ case class Props(
  * able to optimize serialization.
  */
 private[akka] case class FromClassCreator(clazz: Class[_ <: Actor]) extends Function0[Actor] {
-  def apply(): Actor = try clazz.newInstance catch {
-    case iae: IllegalAccessException ⇒
-      val ctor = clazz.getDeclaredConstructor()
-      ctor.setAccessible(true)
-      ctor.newInstance()
-  }
+  def apply(): Actor = Reflect.instantiate(clazz)
 }
