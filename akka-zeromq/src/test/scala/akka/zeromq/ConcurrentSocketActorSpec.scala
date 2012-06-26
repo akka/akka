@@ -3,6 +3,8 @@
  */
 package akka.zeromq
 
+import language.postfixOps
+
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.{ TestProbe, DefaultTimeout, AkkaSpec }
 import akka.util.duration._

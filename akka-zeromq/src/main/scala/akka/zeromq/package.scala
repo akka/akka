@@ -3,6 +3,8 @@
  */
 package akka
 
+import language.implicitConversions
+
 import actor.ActorSystem
 
 /**

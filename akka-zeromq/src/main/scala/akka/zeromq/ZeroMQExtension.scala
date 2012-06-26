@@ -32,9 +32,6 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
 
   private val minVersionString = "2.1.0"
   private val minVersion = JZMQ.makeVersion(2, 1, 0)
-
-  private[zeromq] def check[TOption <: SocketOption: Manifest](parameters: Seq[SocketOption]) =
-    parameters exists { p ⇒ ClassTag.singleType(p) <:< manifest[TOption] }
 }
 
 /**
@@ -61,7 +58,10 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
    */
   def newSocketProps(socketParameters: SocketOption*): Props = {
     verifyZeroMQVersion
-    require(ZeroMQExtension.check[SocketType.ZMQSocketType](socketParameters), "A socket type is required")
+    require(socketParameters exists {
+      case s: SocketType.ZMQSocketType ⇒ true
+      case _                           ⇒ false
+    }, "A socket type is required")
     Props(new ConcurrentSocketActor(socketParameters)).withDispatcher("akka.zeromq.socket-dispatcher")
   }
 
