@@ -83,7 +83,6 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
 
   def applyRoute(sender: ActorRef, message: Any): Iterable[Destination] = message match {
     case _: AutoReceivedMessage ⇒ Destination(self, self) :: Nil
-    case Terminated(_)          ⇒ Destination(self, self) :: Nil
     case CurrentRoutees ⇒
       sender ! RouterRoutees(_routees)
       Nil

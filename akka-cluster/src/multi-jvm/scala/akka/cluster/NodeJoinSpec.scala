@@ -36,6 +36,8 @@ abstract class NodeJoinSpec
         startClusterNode()
       }
 
+      enterBarrier("first-started")
+
       runOn(second) {
         cluster.join(first)
       }

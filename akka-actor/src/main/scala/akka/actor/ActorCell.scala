@@ -898,6 +898,7 @@ private[akka] class ActorCell(
 
     msg.message match {
       case Failed(cause)            ⇒ handleFailure(sender, cause)
+      case t: Terminated            ⇒ watching -= t.actor; receiveMessage(t)
       case Kill                     ⇒ throw new ActorKilledException("Kill")
       case PoisonPill               ⇒ self.stop()
       case SelectParent(m)          ⇒ parent.tell(m, msg.sender)

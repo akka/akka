@@ -61,14 +61,9 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       val b = getBarrier()
       b ! NodeInfo(A, AddressFromURIString("akka://sys"), system.deadLetters)
       b ! ClientDisconnected(B)
-      EventFilter[ClientLost](occurrences = 1) intercept {
-        b ! ClientDisconnected(A)
-      }
-      expectMsg(Failed(b, ClientLost(Data(Set(), "", Nil, null), A)))
-      EventFilter[BarrierEmpty](occurrences = 1) intercept {
-        b ! ClientDisconnected(A)
-      }
-      expectMsg(Failed(b, BarrierEmpty(Data(Set(), "", Nil, null), "cannot disconnect RoleName(a): no client to disconnect")))
+      expectNoMsg(1 second)
+      b ! ClientDisconnected(A)
+      expectNoMsg(1 second)
     }
 
     "fail entering barrier when nobody registered" taggedAs TimingTest in {
@@ -266,12 +261,9 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
       b ! NodeInfo(A, AddressFromURIString("akka://sys"), testActor)
       expectMsg(ToClient(Done))
       b ! ClientDisconnected(B)
-      EventFilter[ClientLost](occurrences = 1) intercept {
-        b ! ClientDisconnected(A)
-      }
-      EventFilter[BarrierEmpty](occurrences = 1) intercept {
-        b ! ClientDisconnected(A)
-      }
+      expectNoMsg(1 second)
+      b ! ClientDisconnected(A)
+      expectNoMsg(1 second)
     }
 
     "fail entering barrier when nobody registered" taggedAs TimingTest in {
