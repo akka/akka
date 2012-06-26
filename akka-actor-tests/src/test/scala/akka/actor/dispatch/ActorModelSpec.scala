@@ -22,6 +22,7 @@ import akka.pattern.ask
 import akka.testkit._
 import akka.util.{ Timeout, Switch, Duration }
 import akka.util.duration._
+import annotation.tailrec
 
 object ActorModelSpec {
 
@@ -224,16 +225,16 @@ object ActorModelSpec {
     }
   }
 
-  def await(until: Long)(condition: ⇒ Boolean): Unit = try {
-    while (System.currentTimeMillis() <= until) {
-      try {
-        if (condition) return else Thread.sleep(25)
-      } catch {
-        case e: InterruptedException ⇒
-      }
+  def await(until: Long)(condition: ⇒ Boolean): Unit = if (System.currentTimeMillis() <= until) {
+    var done = false
+    try {
+      done = condition
+      if (!done) Thread.sleep(25)
+    } catch {
+      case e: InterruptedException ⇒
     }
-    throw new AssertionError("await failed")
-  }
+    if (!done) await(until)(condition)
+  } else throw new AssertionError("await failed")
 }
 
 abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with DefaultTimeout {

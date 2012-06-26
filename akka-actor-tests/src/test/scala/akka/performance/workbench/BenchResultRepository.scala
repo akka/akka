@@ -102,20 +102,21 @@ class FileBenchResultRepository extends BenchResultRepository {
 
   private def save(stats: Stats) {
     new File(serDir).mkdirs
-    if (!serDirExists) return
-    val timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(stats.timestamp))
-    val name = stats.name + "--" + timestamp + "--" + stats.load + ".ser"
-    val f = new File(serDir, name)
-    var out: ObjectOutputStream = null
-    try {
-      out = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
-      out.writeObject(stats)
-    } catch {
-      case e: Exception ⇒
-        val errMsg = "Failed to save [%s] to [%s], due to [%s]".format(stats, f.getAbsolutePath, e.getMessage)
-        throw new RuntimeException(errMsg)
-    } finally {
-      if (out ne null) try { out.close() } catch { case ignore: Exception ⇒ }
+    if (serDirExists) {
+      val timestamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date(stats.timestamp))
+      val name = stats.name + "--" + timestamp + "--" + stats.load + ".ser"
+      val f = new File(serDir, name)
+      var out: ObjectOutputStream = null
+      try {
+        out = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(f)))
+        out.writeObject(stats)
+      } catch {
+        case e: Exception ⇒
+          val errMsg = "Failed to save [%s] to [%s], due to [%s]".format(stats, f.getAbsolutePath, e.getMessage)
+          throw new RuntimeException(errMsg)
+      } finally {
+        if (out ne null) try { out.close() } catch { case ignore: Exception ⇒ }
+      }
     }
   }
 
@@ -142,19 +143,20 @@ class FileBenchResultRepository extends BenchResultRepository {
 
   def saveHtmlReport(content: String, fileName: String) {
     new File(htmlDir).mkdirs
-    if (!htmlDirExists) return
-    val f = new File(htmlDir, fileName)
-    var writer: PrintWriter = null
-    try {
-      writer = new PrintWriter(new FileWriter(f))
-      writer.print(content)
-      writer.flush()
-    } catch {
-      case e: Exception ⇒
-        val errMsg = "Failed to save report to [%s], due to [%s]".format(f.getAbsolutePath, e.getMessage)
-        throw new RuntimeException(errMsg)
-    } finally {
-      if (writer ne null) try { writer.close() } catch { case ignore: Exception ⇒ }
+    if (htmlDirExists) {
+      val f = new File(htmlDir, fileName)
+      var writer: PrintWriter = null
+      try {
+        writer = new PrintWriter(new FileWriter(f))
+        writer.print(content)
+        writer.flush()
+      } catch {
+        case e: Exception ⇒
+          val errMsg = "Failed to save report to [%s], due to [%s]".format(f.getAbsolutePath, e.getMessage)
+          throw new RuntimeException(errMsg)
+      } finally {
+        if (writer ne null) try { writer.close() } catch { case ignore: Exception ⇒ }
+      }
     }
   }
 
