@@ -1,11 +1,10 @@
-package akka.osgi.blueprint.aries
+package akka.osgi.aries.blueprint
 
 import org.scalatest.FlatSpec
 import akka.actor.ActorSystem
 import de.kalpatec.pojosr.framework.launch.BundleDescriptor
 import akka.osgi.PojoSRTestSupport
 import akka.osgi.PojoSRTestSupport.bundle
-import akka.osgi.test.ActorSystemAwareBean
 
 /**
  * Test cases for {@link ActorSystemActivator}

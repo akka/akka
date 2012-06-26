@@ -1,4 +1,4 @@
-package akka.osgi.test
+package akka.osgi.aries.blueprint
 
 import akka.actor.ActorSystem
 

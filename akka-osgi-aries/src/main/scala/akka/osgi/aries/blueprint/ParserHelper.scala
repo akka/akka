@@ -1,4 +1,4 @@
-package akka.osgi.blueprint.aries
+package akka.osgi.aries.blueprint
 
 import org.w3c.dom.{ Node, Element }
 

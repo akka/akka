@@ -1,6 +1,5 @@
 package akka.osgi
 
-import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.ActorSystem
 import java.util.{ Dictionary, Properties }
 import org.osgi.framework.{ ServiceRegistration, BundleContext, BundleActivator }

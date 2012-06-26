@@ -226,6 +226,15 @@ object AkkaBuild extends Build {
     )
   )
 
+  lazy val osgiAries = Project(
+    id = "akka-osgi-aries",
+    base = file("akka-osgi-aries"),
+    dependencies = Seq(osgi % "compile;test->test"),
+    settings = defaultSettings ++ OSGi.osgiAries ++ Seq(
+      libraryDependencies ++= Dependencies.osgiAries
+    )
+  )
+
   lazy val akkaSbtPlugin = Project(
     id = "akka-sbt-plugin",
     base = file("akka-sbt-plugin"),
@@ -480,7 +489,9 @@ object Dependencies {
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
-  val osgi = Seq(osgiCore, ariesBlueprint, Test.logback, Test.ariesProxy, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
+  val osgi = Seq(osgiCore,Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
+
+  val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
@@ -551,9 +562,12 @@ object OSGi {
 
   val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
 
-  val osgi = exports(Seq("akka.osgi.*")) ++ Seq(
-    OsgiKeys.importPackage := Seq("org.apache.aries.blueprint.*;resolution:=optional",
-                                  "org.osgi.service.blueprint.*;resolution:=optional") ++ defaultImports
+  val osgi = exports(Seq("akka.osgi")) ++ Seq(
+    OsgiKeys.privatePackage := Seq("akka.osgi.impl")
+  )
+
+  val osgiAries = exports() ++ Seq(
+    OsgiKeys.privatePackage := Seq("akka.osgi.aries.*")
   )
 
   val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
@@ -564,7 +578,7 @@ object OSGi {
 
   val zeroMQ = exports(Seq("akka.zeromq.*"))
 
-  def exports(packages: Seq[String]) = osgiSettings ++ Seq(
+  def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
     OsgiKeys.importPackage := defaultImports,
     OsgiKeys.exportPackage := packages
   )

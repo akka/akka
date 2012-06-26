@@ -1,9 +1,7 @@
-package akka.osgi.blueprint
+package akka.osgi.aries.blueprint
 
 import org.osgi.framework.BundleContext
 import akka.osgi.OsgiActorSystemFactory
-import collection.mutable.Buffer
-import akka.actor.{ Actor, Props, ActorSystem }
 import com.typesafe.config.ConfigFactory
 
 /**

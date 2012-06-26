@@ -1,4 +1,4 @@
-package akka.osgi.blueprint.aries
+package akka.osgi.aries.blueprint
 
 import org.apache.aries.blueprint.ParserContext
 import org.osgi.service.blueprint.container.ComponentDefinitionException
@@ -7,10 +7,9 @@ import org.apache.aries.blueprint.mutable.MutableBeanMetadata
 import collection.JavaConversions.setAsJavaSet
 import org.osgi.framework.BundleContext
 import org.apache.aries.blueprint.reflect.{ ValueMetadataImpl, RefMetadataImpl, BeanArgumentImpl }
-import org.w3c.dom.{ NodeList, Element, Node }
+import org.w3c.dom.{ Element, Node }
 import org.osgi.service.blueprint.reflect.{ BeanMetadata, ComponentMetadata }
-import akka.actor.{ ActorSystem }
-import akka.osgi.blueprint.{ BlueprintActorSystemFactory }
+import akka.actor.ActorSystem
 import java.util.concurrent.atomic.AtomicInteger
 
 import ParserHelper.childElements

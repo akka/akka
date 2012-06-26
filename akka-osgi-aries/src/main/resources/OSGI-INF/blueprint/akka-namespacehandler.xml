@@ -9,7 +9,7 @@
                 </array>
             </entry>
         </service-properties>
-        <bean class="akka.osgi.blueprint.aries.NamespaceHandler"/>
+        <bean class="akka.osgi.aries.blueprint.NamespaceHandler"/>
     </service>
 
 </blueprint>
