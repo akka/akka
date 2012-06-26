@@ -87,16 +87,15 @@ object Sphinx {
 
   def pdfTask = (sphinxLatex, streams) map {
     (latex, s) => {
-      val empty = (latex * "*.pdf").get.isEmpty
+      val pdf = latex / "Akka.pdf"
       def failed = sys.error("Failed to build Sphinx pdf documentation.")
-      if (empty) {
+      if (!pdf.exists) {
         s.log.info("Building Sphinx pdf documentation...")
         val logger = newLogger(s)
         val exitCode = Process(Seq("make", "all-pdf"), latex) ! logger
         if (exitCode != 0) failed
+        s.log.info("Sphinx pdf documentation created: %s" format pdf)
       }
-      val pdf = (latex * "*.pdf").get.headOption.getOrElse(failed)
-      if (empty) s.log.info("Sphinx pdf documentation created: %s" format pdf)
       pdf
     }
   }
