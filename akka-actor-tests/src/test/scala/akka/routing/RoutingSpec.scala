@@ -26,6 +26,10 @@ object RoutingSpec {
         router = round-robin
         nr-of-instances = 3
       }
+      /router2 {
+        router = round-robin
+        nr-of-instances = 3
+      }
       /myrouter {
         router = "akka.routing.RoutingSpec$MyRouter"
         foo = bar
@@ -129,7 +133,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
 
     "use configured nr-of-instances when router is specified" in {
-      val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(nrOfInstances = 2)), "router1")
+      val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(nrOfInstances = 2)), "router2")
       Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(3)
       system.stop(router)
     }
