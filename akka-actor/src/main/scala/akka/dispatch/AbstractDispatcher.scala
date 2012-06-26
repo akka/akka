@@ -13,7 +13,7 @@ import akka.event.EventStream
 import com.typesafe.config.Config
 import akka.serialization.SerializationExtension
 import akka.event.Logging.LogEventException
-import akka.jsr166y.{ ForkJoinTask, ForkJoinPool }
+import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
 import akka.util.{ Unsafe, Duration, NonFatal, Index }
 
 final case class Envelope private (val message: Any, val sender: ActorRef)

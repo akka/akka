@@ -15,7 +15,7 @@ import com.typesafe.config.Config
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
-import akka.jsr166y.ThreadLocalRandom
+import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.util.Unsafe
 import akka.dispatch.Dispatchers
 import scala.annotation.tailrec

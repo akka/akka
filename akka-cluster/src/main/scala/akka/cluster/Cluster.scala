@@ -10,7 +10,7 @@ import akka.ConfigurationException
 import akka.dispatch.Await
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
-import akka.jsr166y.ThreadLocalRandom
+import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.pattern._
 import akka.remote._
 import akka.routing._
