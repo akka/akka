@@ -11,12 +11,13 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Address
 import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.BeforeAndAfter
+import akka.remote.RemoteActorRefProvider
 
 object ClusterSpec {
   val config = """
     akka.cluster {
+      auto-join                    = off
       auto-down                    = off
-      nr-of-deputy-nodes           = 3
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
     }
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -31,9 +32,23 @@ object ClusterSpec {
 class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
   import ClusterSpec._
 
+  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address
+  val addresses = IndexedSeq(
+    selfAddress,
+    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 1),
+    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 2),
+    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 3),
+    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 4),
+    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 5))
+
   val deterministicRandom = new AtomicInteger
 
-  val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem], new FailureDetectorPuppet(system)) {
+  val failureDetector = new FailureDetectorPuppet(system)
+
+  val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector) {
+
+    // 3 deputy nodes (addresses index 1, 2, 3)
+    override def seedNodes = addresses.slice(1, 4)
 
     override def selectRandomNode(addresses: IndexedSeq[Address]): Option[Address] = {
       if (addresses.isEmpty) None
@@ -49,14 +64,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
     }
 
     @volatile
-    var _gossipToUnreachableProbablity = 0.0
-
-    override def gossipToUnreachableProbablity(membersSize: Int, unreachableSize: Int): Double = {
-      if (_gossipToUnreachableProbablity < 0.0) super.gossipToUnreachableProbablity(membersSize, unreachableSize)
-      else _gossipToUnreachableProbablity
-    }
-
-    @volatile
     var _gossipToDeputyProbablity = 0.0
 
     override def gossipToDeputyProbablity(membersSize: Int, unreachableSize: Int, deputySize: Int): Double = {
@@ -64,41 +71,28 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
       else _gossipToDeputyProbablity
     }
 
-    @volatile
-    var _unavailable: Set[Address] = Set.empty
-
-    override val failureDetector = new FailureDetectorPuppet(system) {
-      override def isAvailable(connection: Address): Boolean = {
-        if (_unavailable.contains(connection)) false
-        else super.isAvailable(connection)
-      }
-    }
-
   }
-
-  val selfAddress = cluster.self.address
-  val addresses = IndexedSeq(
-    selfAddress,
-    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 1),
-    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 2),
-    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 3),
-    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 4),
-    Address("akka", system.name, selfAddress.host.get, selfAddress.port.get + 5))
 
   def memberStatus(address: Address): Option[MemberStatus] =
     cluster.latestGossip.members.collectFirst { case m if m.address == address ⇒ m.status }
 
   before {
-    cluster._gossipToUnreachableProbablity = 0.0
     cluster._gossipToDeputyProbablity = 0.0
-    cluster._unavailable = Set.empty
+    addresses foreach failureDetector.remove
     deterministicRandom.set(0)
   }
 
   "A Cluster" must {
 
-    "initially be singleton cluster and reach convergence immediately" in {
-      cluster.isSingletonCluster must be(true)
+    "use the address of the remote transport" in {
+      cluster.selfAddress must be(selfAddress)
+    }
+
+    "initially become singleton cluster when joining itself and reach convergence" in {
+      cluster.isSingletonCluster must be(false) // auto-join = off
+      cluster.join(selfAddress)
+      awaitCond(cluster.isSingletonCluster)
+      cluster.self.address must be(selfAddress)
       cluster.latestGossip.members.map(_.address) must be(Set(selfAddress))
       memberStatus(selfAddress) must be(Some(MemberStatus.Joining))
       cluster.convergence.isDefined must be(true)
@@ -141,17 +135,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
       expectNoMsg(1 second)
     }
 
-    "use certain probability for gossiping to unreachable node depending on the number of unreachable and live nodes" in {
-      cluster._gossipToUnreachableProbablity = -1.0 // use real impl
-      cluster.gossipToUnreachableProbablity(10, 1) must be < (cluster.gossipToUnreachableProbablity(9, 1))
-      cluster.gossipToUnreachableProbablity(10, 1) must be < (cluster.gossipToUnreachableProbablity(10, 2))
-      cluster.gossipToUnreachableProbablity(10, 5) must be < (cluster.gossipToUnreachableProbablity(10, 9))
-      cluster.gossipToUnreachableProbablity(0, 10) must be <= (1.0)
-      cluster.gossipToUnreachableProbablity(1, 10) must be <= (1.0)
-      cluster.gossipToUnreachableProbablity(10, 0) must be(0.0 plusOrMinus (0.0001))
-      cluster.gossipToUnreachableProbablity(0, 0) must be(0.0 plusOrMinus (0.0001))
-    }
-
     "use certain probability for gossiping to deputy node depending on the number of unreachable and live nodes" in {
       cluster._gossipToDeputyProbablity = -1.0 // use real impl
       cluster.gossipToDeputyProbablity(10, 1, 2) must be < (cluster.gossipToDeputyProbablity(9, 1, 2))
@@ -169,7 +152,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
     "gossip to duputy node" in {
       cluster._gossipToDeputyProbablity = 1.0 // always
 
-      // we have configured 2 deputy nodes
+      // we have configured 3 deputy nodes (seedNodes)
       cluster.gossip() // 1 is deputy
       cluster.gossip() // 2 is deputy
       cluster.gossip() // 3 is deputy
@@ -186,27 +169,11 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
 
     }
 
-    "gossip to random unreachable node" in {
-      val dead = Set(addresses(1))
-      cluster._unavailable = dead
-      cluster._gossipToUnreachableProbablity = 1.0 // always
-
-      cluster.reapUnreachableMembers()
-      cluster.latestGossip.overview.unreachable.map(_.address) must be(dead)
-
-      cluster.gossip()
-
-      expectMsg(GossipTo(addresses(2))) // first available
-      expectMsg(GossipTo(addresses(1))) // the unavailable
-
-      expectNoMsg(1 second)
-    }
-
     "gossip to random deputy node if number of live nodes is less than number of deputy nodes" in {
       cluster._gossipToDeputyProbablity = -1.0 // real impl
       // 0 and 2 still alive
       val dead = Set(addresses(1), addresses(3), addresses(4), addresses(5))
-      cluster._unavailable = dead
+      dead foreach failureDetector.markNodeAsUnavailable
 
       cluster.reapUnreachableMembers()
       cluster.latestGossip.overview.unreachable.map(_.address) must be(dead)

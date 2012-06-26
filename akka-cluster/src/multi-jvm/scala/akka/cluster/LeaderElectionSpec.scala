@@ -50,7 +50,7 @@ abstract class LeaderElectionSpec
         assertLeaderIn(sortedRoles)
       }
 
-      testConductor.enter("after")
+      enterBarrier("after-1")
     }
 
     def shutdownLeaderAndVerifyNewLeader(alreadyShutdown: Int): Unit = {
@@ -63,44 +63,46 @@ abstract class LeaderElectionSpec
       myself match {
 
         case `controller` ⇒
-          val leaderAddress = node(leader).address
-          testConductor.enter("before-shutdown")
+          val leaderAddress = address(leader)
+          enterBarrier("before-shutdown")
           testConductor.shutdown(leader, 0)
-          testConductor.enter("after-shutdown", "after-down", "completed")
+          enterBarrier("after-shutdown", "after-down", "completed")
           markNodeAsUnavailable(leaderAddress)
 
         case `leader` ⇒
-          testConductor.enter("before-shutdown", "after-shutdown")
+          enterBarrier("before-shutdown", "after-shutdown")
         // this node will be shutdown by the controller and doesn't participate in more barriers
 
         case `aUser` ⇒
-          val leaderAddress = node(leader).address
-          testConductor.enter("before-shutdown", "after-shutdown")
+          val leaderAddress = address(leader)
+          enterBarrier("before-shutdown", "after-shutdown")
           // user marks the shutdown leader as DOWN
           cluster.down(leaderAddress)
-          testConductor.enter("after-down", "completed")
+          enterBarrier("after-down", "completed")
           markNodeAsUnavailable(leaderAddress)
 
         case _ if remainingRoles.contains(myself) ⇒
           // remaining cluster nodes, not shutdown
-          testConductor.enter("before-shutdown", "after-shutdown", "after-down")
+          enterBarrier("before-shutdown", "after-shutdown", "after-down")
 
           awaitUpConvergence(currentRoles.size - 1)
           val nextExpectedLeader = remainingRoles.head
           cluster.isLeader must be(myself == nextExpectedLeader)
           assertLeaderIn(remainingRoles)
 
-          testConductor.enter("completed")
+          enterBarrier("completed")
 
       }
     }
 
     "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 0)
+      enterBarrier("after-2")
     }
 
     "be able to 're-elect' a single leader after leader has left (again)" taggedAs LongRunningTest in {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 1)
+      enterBarrier("after-3")
     }
   }
 }

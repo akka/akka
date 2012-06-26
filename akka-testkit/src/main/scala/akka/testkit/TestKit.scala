@@ -97,9 +97,14 @@ trait TestKitBase {
    */
   lazy val testActor: ActorRef = {
     val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-    impl.systemActorOf(Props(new TestActor(queue))
+    val ref = impl.systemActorOf(Props(new TestActor(queue))
       .withDispatcher(CallingThreadDispatcher.Id),
       "testActor" + TestKit.testActorId.incrementAndGet)
+    awaitCond(ref match {
+      case r: RepointableRef ⇒ r.isStarted
+      case _                 ⇒ true
+    }, 1 second, 10 millis)
+    ref
   }
 
   private var end: Duration = Duration.Undefined
@@ -158,7 +163,13 @@ trait TestKitBase {
    * block or missing that it returns the properly dilated default for this
    * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = if (end == Duration.Undefined) testKitSettings.SingleExpectDefaultTimeout.dilated else end - now
+  def remaining: Duration = remainingOr(testKitSettings.SingleExpectDefaultTimeout.dilated)
+
+  /**
+   * Obtain time remaining for execution of the innermost enclosing `within`
+   * block or missing that it returns the given duration.
+   */
+  def remainingOr(duration: Duration): Duration = if (end == Duration.Undefined) duration else end - now
 
   /**
    * Query queue status.
@@ -607,12 +618,6 @@ object TestKit {
   /**
    * Await until the given condition evaluates to `true` or the timeout
    * expires, whichever comes first.
-   *
-   * If no timeout is given, take it from the innermost enclosing `within`
-   * block.
-   *
-   * Note that the timeout is scaled using Duration.dilated, which uses the
-   * configuration entry "akka.test.timefactor"
    */
   def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis, noThrow: Boolean = false): Boolean = {
     val stop = now + max

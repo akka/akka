@@ -134,8 +134,8 @@ object DispatcherDocSpec {
   }
 
   //#mailbox-implementation-example
-  case class MyUnboundedMailbox() extends akka.dispatch.MailboxType {
-    import akka.actor.ActorContext
+  class MyUnboundedMailbox extends akka.dispatch.MailboxType {
+    import akka.actor.{ ActorRef, ActorSystem }
     import com.typesafe.config.Config
     import java.util.concurrent.ConcurrentLinkedQueue
     import akka.dispatch.{
@@ -149,12 +149,12 @@ object DispatcherDocSpec {
     def this(settings: ActorSystem.Settings, config: Config) = this()
 
     // The create method is called to create the MessageQueue
-    final override def create(owner: Option[ActorContext]): MessageQueue =
+    final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
       new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
         final val queue = new ConcurrentLinkedQueue[Envelope]()
       }
-    //#mailbox-implementation-example
   }
+  //#mailbox-implementation-example
 }
 
 class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {

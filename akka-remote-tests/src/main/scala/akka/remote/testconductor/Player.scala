@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
 import akka.util.Timeout
 import akka.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.pattern.{ ask, pipe }
+import akka.pattern.{ ask, pipe, AskTimeoutException }
 import akka.dispatch.Await
 import scala.util.control.NoStackTrace
 import akka.actor.Status
@@ -26,6 +26,7 @@ import org.jboss.netty.channel.WriteCompletionEvent
 import java.net.ConnectException
 import akka.util.Deadline
 import akka.actor.Scheduler
+import java.util.concurrent.TimeoutException
 
 /**
  * The Player is the client component of the
@@ -76,10 +77,31 @@ trait Player { this: TestConductorExt ⇒
    * throw an exception in case of timeouts or other errors.
    */
   def enter(name: String*) {
+    enter(Settings.BarrierTimeout, name)
+  }
+
+  /**
+   * Enter the named barriers, one after the other, in the order given. Will
+   * throw an exception in case of timeouts or other errors.
+   */
+  def enter(timeout: Timeout, name: Seq[String]) {
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
+    val stop = Deadline.now + timeout.duration
     name foreach { b ⇒
-      import Settings.BarrierTimeout
-      Await.result(client ? ToServer(EnterBarrier(b)), Duration.Inf)
+      val barrierTimeout = stop.timeLeft
+      if (barrierTimeout < Duration.Zero) {
+        client ! ToServer(FailBarrier(b))
+        throw new TimeoutException("Server timed out while waiting for barrier " + b);
+      }
+      try {
+        implicit val timeout = Timeout(barrierTimeout + Settings.QueryTimeout.duration)
+        Await.result(client ? ToServer(EnterBarrier(b, Option(barrierTimeout))), Duration.Inf)
+      } catch {
+        case e: AskTimeoutException ⇒
+          client ! ToServer(FailBarrier(b))
+          // Why don't TimeoutException have a constructor that takes a cause?
+          throw new TimeoutException("Client timed out while waiting for barrier " + b);
+      }
       system.log.debug("passed barrier {}", b)
     }
   }
@@ -88,7 +110,7 @@ trait Player { this: TestConductorExt ⇒
    * Query remote transport address of named node.
    */
   def getAddressFor(name: RoleName): Future[Address] = {
-    import Settings.BarrierTimeout
+    import Settings.QueryTimeout
     client ? ToServer(GetAddress(name)) mapTo
   }
 }
@@ -168,8 +190,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     case Event(ToServer(msg), d @ Data(Some(channel), None)) ⇒
       channel.write(msg)
       val token = msg match {
-        case EnterBarrier(barrier) ⇒ barrier
-        case GetAddress(node)      ⇒ node.name
+        case EnterBarrier(barrier, timeout) ⇒ barrier
+        case GetAddress(node)               ⇒ node.name
       }
       stay using d.copy(runningOp = Some(token, sender))
     case Event(ToServer(op), Data(channel, Some((token, _)))) ⇒

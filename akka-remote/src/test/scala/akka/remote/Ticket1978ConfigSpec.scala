@@ -15,12 +15,7 @@ akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
   remote.netty {
     hostname = localhost
-    port = 12345
-  }
-  actor.deployment {
-    /blub.remote = "akka://remote-sys@localhost:12346"
-    /looker/child.remote = "akka://remote-sys@localhost:12346"
-    /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
+    port = 0
   }
 }
 """) with ImplicitSender with DefaultTimeout {
@@ -40,7 +35,7 @@ akka {
       SSLTrustStore must be(Some("truststore"))
       SSLTrustStorePassword must be(Some("changeme"))
       SSLProtocol must be(Some("TLSv1"))
-      SSLSupportedAlgorithms must be(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
+      SSLEnabledAlgorithms must be(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
       SSLRandomSource must be(None)
       SSLRandomNumberGenerator must be(None)
     }

@@ -8,6 +8,7 @@ import akka.util.Duration
 import java.util.concurrent.TimeUnit._
 import java.net.InetAddress
 import akka.ConfigurationException
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 private[akka] class NettySettings(config: Config, val systemName: String) {
 
@@ -72,7 +73,7 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
   val ExecutionPoolKeepalive: Duration = Duration(getMilliseconds("execution-pool-keepalive"), MILLISECONDS)
 
   val ExecutionPoolSize: Int = getInt("execution-pool-size") match {
-    case sz if sz < 1 ⇒ throw new IllegalArgumentException("akka.remote.netty.execution-pool-size is less than 1")
+    case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.netty.execution-pool-size is less than 0")
     case sz           ⇒ sz
   }
 
@@ -106,7 +107,7 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
     case password ⇒ Some(password)
   }
 
-  val SSLSupportedAlgorithms = getStringList("ssl.supported-algorithms").toArray.toSet
+  val SSLEnabledAlgorithms = iterableAsScalaIterableConverter(getStringList("ssl.enabled-algorithms")).asScala.toSet[String]
 
   val SSLProtocol = getString("ssl.protocol") match {
     case ""       ⇒ None

@@ -20,8 +20,7 @@ object TransitionMultiJvmSpec extends MultiNodeConfig {
   val fifth = role("fifth")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString(
-      "akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
+    withFallback(ConfigFactory.parseString("akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
@@ -61,7 +60,7 @@ abstract class TransitionSpec
   }
 
   def awaitSeen(addresses: Address*): Unit = awaitCond {
-    seenLatestGossip.map(node(_).address) == addresses.toSet
+    (seenLatestGossip map address) == addresses.toSet
   }
 
   def awaitMembers(addresses: Address*): Unit = awaitCond {
@@ -69,11 +68,8 @@ abstract class TransitionSpec
   }
 
   def awaitMemberStatus(address: Address, status: MemberStatus): Unit = awaitCond {
-    memberStatus(address) == Up
+    memberStatus(address) == status
   }
-
-  // implicit conversion from RoleName to Address
-  implicit def role2Address(role: RoleName): Address = node(role).address
 
   // DSL sugar for `role1 gossipTo role2`
   implicit def roleExtras(role: RoleName): RoleWrapper = new RoleWrapper(role)
@@ -83,18 +79,18 @@ abstract class TransitionSpec
       gossipBarrierCounter += 1
       runOn(toRole) {
         val g = cluster.latestGossip
-        testConductor.enter("before-gossip-" + gossipBarrierCounter)
+        enterBarrier("before-gossip-" + gossipBarrierCounter)
         awaitCond(cluster.latestGossip != g) // received gossip
-        testConductor.enter("after-gossip-" + gossipBarrierCounter)
+        enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
       runOn(fromRole) {
-        testConductor.enter("before-gossip-" + gossipBarrierCounter)
-        cluster.gossipTo(node(toRole).address) // send gossip
-        testConductor.enter("after-gossip-" + gossipBarrierCounter)
+        enterBarrier("before-gossip-" + gossipBarrierCounter)
+        cluster.gossipTo(toRole) // send gossip
+        enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
       runOn(roles.filterNot(r ⇒ r == fromRole || r == toRole): _*) {
-        testConductor.enter("before-gossip-" + gossipBarrierCounter)
-        testConductor.enter("after-gossip-" + gossipBarrierCounter)
+        enterBarrier("before-gossip-" + gossipBarrierCounter)
+        enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
     }
   }
@@ -110,7 +106,7 @@ abstract class TransitionSpec
       cluster.leaderActions()
       cluster.status must be(Up)
 
-      testConductor.enter("after-1")
+      enterBarrier("after-1")
     }
 
     "perform correct transitions when second joining first" taggedAs LongRunningTest in {
@@ -122,43 +118,28 @@ abstract class TransitionSpec
         awaitMembers(first, second)
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Joining)
+        seenLatestGossip must be(Set(first))
         cluster.convergence.isDefined must be(false)
       }
-      testConductor.enter("second-joined")
+      enterBarrier("second-joined")
 
       first gossipTo second
-      runOn(second) {
-        members must be(Set(first, second))
-        memberStatus(first) must be(Up)
-        memberStatus(second) must be(Joining)
-        // we got a conflicting version in second, and therefore not convergence in second
-        seenLatestGossip must be(Set(second))
-        cluster.convergence.isDefined must be(false)
-      }
-
       second gossipTo first
-      runOn(first) {
-        seenLatestGossip must be(Set(first, second))
-      }
-
-      first gossipTo second
-      runOn(second) {
-        seenLatestGossip must be(Set(first, second))
-      }
 
       runOn(first, second) {
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Joining)
+        seenLatestGossip must be(Set(first, second))
         cluster.convergence.isDefined must be(true)
       }
-      testConductor.enter("convergence-joining-2")
+      enterBarrier("convergence-joining-2")
 
       runOn(leader(first, second)) {
         cluster.leaderActions()
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Up)
       }
-      testConductor.enter("leader-actions-2")
+      enterBarrier("leader-actions-2")
 
       leader(first, second) gossipTo nonLeader(first, second).head
       runOn(nonLeader(first, second).head) {
@@ -176,7 +157,7 @@ abstract class TransitionSpec
         cluster.convergence.isDefined must be(true)
       }
 
-      testConductor.enter("after-2")
+      enterBarrier("after-2")
     }
 
     "perform correct transitions when third joins second" taggedAs LongRunningTest in {
@@ -190,51 +171,29 @@ abstract class TransitionSpec
         memberStatus(third) must be(Joining)
         seenLatestGossip must be(Set(second))
       }
-      testConductor.enter("third-joined-second")
+      enterBarrier("third-joined-second")
 
       second gossipTo first
       runOn(first) {
         members must be(Set(first, second, third))
-        cluster.convergence.isDefined must be(false)
         memberStatus(third) must be(Joining)
+        seenLatestGossip must be(Set(first, second))
+        cluster.convergence.isDefined must be(false)
       }
 
       first gossipTo third
-      runOn(third) {
-        members must be(Set(first, second, third))
-        cluster.convergence.isDefined must be(false)
-        memberStatus(third) must be(Joining)
-        // conflicting version
-        seenLatestGossip must be(Set(third))
-      }
-
       third gossipTo first
       third gossipTo second
-      runOn(first, second) {
-        seenLatestGossip must be(Set(myself, third))
-      }
-
-      first gossipTo second
-      runOn(second) {
-        seenLatestGossip must be(Set(first, second, third))
-        cluster.convergence.isDefined must be(true)
-      }
-
-      runOn(first, third) {
-        cluster.convergence.isDefined must be(false)
-      }
-
-      second gossipTo first
-      second gossipTo third
       runOn(first, second, third) {
-        seenLatestGossip must be(Set(first, second, third))
+        members must be(Set(first, second, third))
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Up)
         memberStatus(third) must be(Joining)
+        seenLatestGossip must be(Set(first, second, third))
         cluster.convergence.isDefined must be(true)
       }
 
-      testConductor.enter("convergence-joining-3")
+      enterBarrier("convergence-joining-3")
 
       runOn(leader(first, second, third)) {
         cluster.leaderActions()
@@ -242,7 +201,7 @@ abstract class TransitionSpec
         memberStatus(second) must be(Up)
         memberStatus(third) must be(Up)
       }
-      testConductor.enter("leader-actions-3")
+      enterBarrier("leader-actions-3")
 
       // leader gossipTo first non-leader
       leader(first, second, third) gossipTo nonLeader(first, second, third).head
@@ -255,7 +214,7 @@ abstract class TransitionSpec
       // first non-leader gossipTo the other non-leader
       nonLeader(first, second, third).head gossipTo nonLeader(first, second, third).tail.head
       runOn(nonLeader(first, second, third).head) {
-        cluster.gossipTo(node(nonLeader(first, second, third).tail.head).address)
+        cluster.gossipTo(nonLeader(first, second, third).tail.head)
       }
       runOn(nonLeader(first, second, third).tail.head) {
         memberStatus(third) must be(Up)
@@ -281,27 +240,29 @@ abstract class TransitionSpec
         cluster.convergence.isDefined must be(true)
       }
 
-      testConductor.enter("after-3")
+      enterBarrier("after-3")
     }
 
     "startup a second separated cluster consisting of nodes fourth and fifth" taggedAs LongRunningTest in {
       runOn(fourth) {
         cluster.join(fifth)
-        awaitMembers(fourth, fifth)
-        cluster.gossipTo(fifth)
-        awaitSeen(fourth, fifth)
-        cluster.convergence.isDefined must be(true)
       }
       runOn(fifth) {
         awaitMembers(fourth, fifth)
-        cluster.gossipTo(fourth)
-        awaitSeen(fourth, fifth)
-        cluster.gossipTo(fourth)
+      }
+      testConductor.enter("fourth-joined")
+
+      fifth gossipTo fourth
+      fourth gossipTo fifth
+
+      runOn(fourth, fifth) {
+        memberStatus(fourth) must be(Joining)
+        memberStatus(fifth) must be(Up)
+        seenLatestGossip must be(Set(fourth, fifth))
         cluster.convergence.isDefined must be(true)
       }
-      testConductor.enter("fourth-joined-fifth")
 
-      testConductor.enter("after-4")
+      enterBarrier("after-4")
     }
 
     "perform correct transitions when second cluster (node fourth) joins first cluster (node third)" taggedAs LongRunningTest in {
@@ -313,7 +274,7 @@ abstract class TransitionSpec
         awaitMembers(first, second, third, fourth)
         seenLatestGossip must be(Set(third))
       }
-      testConductor.enter("fourth-joined-third")
+      enterBarrier("fourth-joined-third")
 
       third gossipTo second
       runOn(second) {
@@ -365,7 +326,7 @@ abstract class TransitionSpec
       memberStatus(fifth) must be(Up)
       cluster.convergence.isDefined must be(true)
 
-      testConductor.enter("convergence-joining-3")
+      enterBarrier("convergence-joining-3")
 
       runOn(leader(roles: _*)) {
         cluster.leaderActions()
@@ -378,7 +339,7 @@ abstract class TransitionSpec
         x gossipTo y
       }
 
-      testConductor.enter("spread-5")
+      enterBarrier("spread-5")
 
       seenLatestGossip must be(roles.toSet)
       memberStatus(first) must be(Up)
@@ -388,7 +349,7 @@ abstract class TransitionSpec
       memberStatus(fifth) must be(Up)
       cluster.convergence.isDefined must be(true)
 
-      testConductor.enter("after-5")
+      enterBarrier("after-5")
     }
 
     "perform correct transitions when second becomes unavailble" taggedAs LongRunningTest in {
@@ -398,6 +359,8 @@ abstract class TransitionSpec
         cluster.latestGossip.overview.unreachable must contain(Member(second, Up))
         seenLatestGossip must be(Set(fifth))
       }
+
+      enterBarrier("after-second-unavailble")
 
       // spread the word
       val gossipRound = List(fifth, fourth, third, first, third, fourth, fifth)
@@ -415,6 +378,8 @@ abstract class TransitionSpec
         awaitMemberStatus(second, Down)
       }
 
+      enterBarrier("after-second-down")
+
       // spread the word
       val gossipRound2 = List(third, fourth, fifth, first, third, fourth, fifth)
       for (x :: y :: Nil ← gossipRound2.sliding(2)) {
@@ -428,7 +393,7 @@ abstract class TransitionSpec
         cluster.convergence.isDefined must be(true)
       }
 
-      testConductor.enter("after-6")
+      enterBarrier("after-6")
     }
 
   }

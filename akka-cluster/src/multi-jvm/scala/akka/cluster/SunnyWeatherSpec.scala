@@ -19,11 +19,13 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
   val fifth = role("fifth")
 
+  // Note that this test uses default configuration,
+  // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
     akka.cluster {
-      nr-of-deputy-nodes = 0
       # FIXME remove this (use default) when ticket #2239 has been fixed
       gossip-interval = 400 ms
+      auto-join = off
     }
     akka.loglevel = INFO
     """))
@@ -63,7 +65,7 @@ abstract class SunnyWeatherSpec
       })
 
       for (n ← 1 to 30) {
-        testConductor.enter("period-" + n)
+        enterBarrier("period-" + n)
         unexpected.get must be(null)
         awaitUpConvergence(roles.size)
         assertLeaderIn(roles)
@@ -71,7 +73,7 @@ abstract class SunnyWeatherSpec
         1.seconds.sleep
       }
 
-      testConductor.enter("after")
+      enterBarrier("after")
     }
   }
 }

@@ -37,37 +37,33 @@ abstract class MembershipChangeListenerExitingSpec
 
   import MembershipChangeListenerExitingMultiJvmSpec._
 
-  lazy val firstAddress = node(first).address
-  lazy val secondAddress = node(second).address
-  lazy val thirdAddress = node(third).address
-
   "A registered MembershipChangeListener" must {
     "be notified when new node is EXITING" taggedAs LongRunningTest in {
 
       awaitClusterUp(first, second, third)
 
       runOn(first) {
-        testConductor.enter("registered-listener")
-        cluster.leave(secondAddress)
+        enterBarrier("registered-listener")
+        cluster.leave(second)
       }
 
       runOn(second) {
-        testConductor.enter("registered-listener")
+        enterBarrier("registered-listener")
       }
 
       runOn(third) {
         val exitingLatch = TestLatch()
         cluster.registerListener(new MembershipChangeListener {
           def notify(members: SortedSet[Member]) {
-            if (members.size == 3 && members.exists(m ⇒ m.address == secondAddress && m.status == MemberStatus.Exiting))
+            if (members.size == 3 && members.exists(m ⇒ m.address == address(second) && m.status == MemberStatus.Exiting))
               exitingLatch.countDown()
           }
         })
-        testConductor.enter("registered-listener")
+        enterBarrier("registered-listener")
         exitingLatch.await
       }
 
-      testConductor.enter("finished")
+      enterBarrier("finished")
     }
   }
 }
