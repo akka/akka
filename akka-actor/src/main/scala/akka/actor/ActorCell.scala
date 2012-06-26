@@ -908,7 +908,6 @@ private[akka] class ActorCell(
   }
 
   final def receiveMessage(msg: Any): Unit = {
-    //FIXME replace with behaviorStack.head.applyOrElse(msg, unhandled) + "-optimize"
     val head = behaviorStack.head
     if (head.isDefinedAt(msg)) head.apply(msg) else actor.unhandled(msg)
   }
