@@ -33,6 +33,23 @@ abstract class JoinSeedNodeSpec
   override def seedNodes = IndexedSeq(seed1, seed2)
 
   "A cluster with configured seed nodes" must {
+    "start the seed nodes sequentially" taggedAs LongRunningTest in {
+      runOn(seed1) {
+        startClusterNode()
+      }
+      enterBarrier("seed1-started")
+
+      runOn(seed2) {
+        startClusterNode()
+      }
+      enterBarrier("seed2-started")
+
+      runOn(seed1, seed2) {
+        awaitUpConvergence(2)
+      }
+      enterBarrier("after-1")
+    }
+
     "join the seed nodes at startup" taggedAs LongRunningTest in {
 
       startClusterNode()
@@ -40,7 +57,7 @@ abstract class JoinSeedNodeSpec
 
       awaitUpConvergence(4)
 
-      enterBarrier("after")
+      enterBarrier("after-2")
     }
   }
 }
