@@ -86,11 +86,13 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
 
     "use the address of the remote transport" in {
       cluster.selfAddress must be(selfAddress)
-      cluster.self.address must be(selfAddress)
     }
 
-    "initially be singleton cluster and reach convergence immediately" in {
-      cluster.isSingletonCluster must be(true)
+    "initially become singleton cluster when joining itself and reach convergence" in {
+      cluster.isSingletonCluster must be(false) // auto-join = off
+      cluster.join(selfAddress)
+      awaitCond(cluster.isSingletonCluster)
+      cluster.self.address must be(selfAddress)
       cluster.latestGossip.members.map(_.address) must be(Set(selfAddress))
       memberStatus(selfAddress) must be(Some(MemberStatus.Joining))
       cluster.convergence.isDefined must be(true)
