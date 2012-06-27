@@ -599,6 +599,14 @@ mailbox). In case a bounded mailbox overflows, a
 ``MessageQueueAppendFailedException`` is thrown.
 The stash is guaranteed to be empty after calling ``unstashAll()``.
 
+The stash is backed by a ``scala.collection.immutable.Vector``. As a
+result, even a very large number of messages may be stashed without a
+major impact on performance.
+
+Note that the stash is not persisted across restarts of an actor,
+unlike the actor's mailbox. Therefore, it should be managed like other
+parts of the actor's state which have the same property.
+
 
 Killing an Actor
 ================
