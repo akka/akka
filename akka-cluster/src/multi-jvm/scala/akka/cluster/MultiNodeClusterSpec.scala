@@ -198,7 +198,7 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
     }
   }
 
-  def roleOfLeader(nodesInCluster: Seq[RoleName]): RoleName = {
+  def roleOfLeader(nodesInCluster: Seq[RoleName] = roles): RoleName = {
     nodesInCluster.length must not be (0)
     nodesInCluster.sorted.head
   }

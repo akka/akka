@@ -99,12 +99,14 @@ abstract class TransitionSpec
 
     "start nodes as singleton clusters" taggedAs LongRunningTest in {
 
-      startClusterNode()
-      cluster.isSingletonCluster must be(true)
-      cluster.status must be(Joining)
-      cluster.convergence.isDefined must be(true)
-      cluster.leaderActions()
-      cluster.status must be(Up)
+      runOn(first) {
+        startClusterNode()
+        cluster.isSingletonCluster must be(true)
+        cluster.status must be(Joining)
+        cluster.convergence.isDefined must be(true)
+        cluster.leaderActions()
+        cluster.status must be(Up)
+      }
 
       enterBarrier("after-1")
     }
@@ -244,13 +246,20 @@ abstract class TransitionSpec
     }
 
     "startup a second separated cluster consisting of nodes fourth and fifth" taggedAs LongRunningTest in {
+      runOn(fifth) {
+        startClusterNode()
+        cluster.leaderActions()
+        cluster.status must be(Up)
+      }
+      enterBarrier("fifth-started")
+
       runOn(fourth) {
         cluster.join(fifth)
       }
       runOn(fifth) {
         awaitMembers(fourth, fifth)
       }
-      testConductor.enter("fourth-joined")
+      enterBarrier("fourth-joined")
 
       fifth gossipTo fourth
       fourth gossipTo fifth
