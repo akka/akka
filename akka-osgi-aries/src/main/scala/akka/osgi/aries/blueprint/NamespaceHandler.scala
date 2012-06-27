@@ -15,7 +15,26 @@ import java.util.concurrent.atomic.AtomicInteger
 import ParserHelper.childElements
 
 /**
- * Aries Blueprint namespace handler implementation
+ * Aries Blueprint namespace handler implementation.  This namespace handler will allow users of Apache Aries' Blueprint
+ * implementation to define their Akka [[akka.actor.ActorSystem]] using a syntax like this:
+ *
+ * {{{
+ * <?xml version="1.0" encoding="UTF-8"?>
+ * <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+ *            xmlns:akka="http://akka.io/xmlns/blueprint/v1.0.0">
+ *
+ *   <akka:actor-system name="config">
+ *      <akka:config>
+ *        some.config {
+ *          key=value
+ *        }
+ *      </akka:config>
+ *   </akka:actor-system>
+ *
+ * </blueprint>
+ * }}}
+ *
+ * Users of other IoC frameworks in an OSGi environment should use [[akka.osgi.OsgiActorSystemFactory]] instead.
  */
 class NamespaceHandler extends org.apache.aries.blueprint.NamespaceHandler {
 

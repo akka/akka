@@ -63,10 +63,8 @@ class BundleDelegatingClassLoader(bundle: Bundle, classLoader: Option[ClassLoade
       case cnfe: ClassNotFoundException ⇒ rethrowClassNotFoundException(name, cnfe)
     }
 
-  def rethrowClassNotFoundException(name: String, cnfe: ClassNotFoundException): Nothing =
+  private def rethrowClassNotFoundException(name: String, cnfe: ClassNotFoundException): Nothing =
     throw new ClassNotFoundException(name + " from bundle " + bundle.getBundleId + " (" + bundle.getSymbolicName + ")", cnfe)
-
-  def getBundle: Bundle = bundle
 
   override def toString = String.format("BundleDelegatingClassLoader(%s)", bundle)
 

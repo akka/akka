@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
 
+    <!--
+        Register the namespace handler in the OSGi Service Registry
+    -->
     <service interface="org.apache.aries.blueprint.NamespaceHandler">
         <service-properties>
             <entry key="osgi.service.blueprint.namespace">

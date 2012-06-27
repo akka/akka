@@ -5,7 +5,11 @@ import akka.osgi.OsgiActorSystemFactory
 import com.typesafe.config.ConfigFactory
 
 /**
- * A set of helper/factory classes to build a Akka system using Blueprint
+ * A set of helper/factory classes to build a Akka system using Blueprint.  This class is only meant to be used by
+ * the [[akka.osgi.aries.blueprint.NamespaceHandler]] class, you should not use this class directly.
+ *
+ * If you're looking for a way to set up Akka using Blueprint without the namespace handler, you should use
+ * [[akka.osgi.OsgiActorSystemFactory]] instead.
  */
 class BlueprintActorSystemFactory(context: BundleContext, name: String) extends OsgiActorSystemFactory(context) {
 

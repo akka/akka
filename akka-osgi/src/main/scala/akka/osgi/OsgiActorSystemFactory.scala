@@ -14,13 +14,18 @@ class OsgiActorSystemFactory(val context: BundleContext) {
   /*
    * Classloader that delegates to the bundle for which the factory is creating an ActorSystem
    */
-  val classloader = BundleDelegatingClassLoader.createFor(context)
+  private val classloader = BundleDelegatingClassLoader.createFor(context)
 
   /**
-   * Creates the ActorSystem and registers it in the OSGi Service Registry
+   * Creates the [[akka.actor.ActorSystem]], using the name specified
    */
   def createActorSystem(name: String): ActorSystem = createActorSystem(Option(name))
 
+  /**
+   * Creates the [[akka.actor.ActorSystem]], using the name specified.
+   *
+   * A default name (`bundle-<bundle id>-ActorSystem`) is assigned when you pass along [[scala.None]] instead.
+   */
   def createActorSystem(name: Option[String]): ActorSystem =
     ActorSystem(actorSystemName(name), actorSystemConfig(context), classloader)
 
@@ -34,7 +39,8 @@ class OsgiActorSystemFactory(val context: BundleContext) {
   }
 
   /**
-   * Determine a the ActorSystem name
+   * Determine the name for the [[akka.actor.ActorSystem]]
+   * Returns a default value of `bundle-<bundle id>-ActorSystem` is no name is being specified
    */
   def actorSystemName(name: Option[String]): String =
     name.getOrElse("bundle-%s-ActorSystem".format(context.getBundle().getBundleId))
@@ -43,6 +49,9 @@ class OsgiActorSystemFactory(val context: BundleContext) {
 
 object OsgiActorSystemFactory {
 
-  def apply(context: BundleContext) = new OsgiActorSystemFactory(context)
+  /*
+   * Create an [[OsgiActorSystemFactory]] instance to set up Akka in an OSGi environment
+   */
+  def apply(context: BundleContext): OsgiActorSystemFactory = new OsgiActorSystemFactory(context)
 
 }
