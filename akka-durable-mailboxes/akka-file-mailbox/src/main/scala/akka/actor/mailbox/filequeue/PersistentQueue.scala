@@ -68,44 +68,44 @@ class PersistentQueue(persistencePath: String, val name: String, val settings: F
   def overlay[T](base: ⇒ T) = new OverlaySetting(base)
 
   // attempting to add an item after the queue reaches this size (in items) will fail.
-  val maxItems = overlay(PersistentQueue.maxItems)
+  final val maxItems = overlay(PersistentQueue.maxItems)
 
   // attempting to add an item after the queue reaches this size (in bytes) will fail.
-  val maxSize = overlay(PersistentQueue.maxSize)
+  final val maxSize = overlay(PersistentQueue.maxSize)
 
   // attempting to add an item larger than this size (in bytes) will fail.
-  val maxItemSize = overlay(PersistentQueue.maxItemSize)
+  final val maxItemSize = overlay(PersistentQueue.maxItemSize)
 
   // maximum expiration time for this queue (seconds).
-  val maxAge = overlay(PersistentQueue.maxAge)
+  final val maxAge = overlay(PersistentQueue.maxAge)
 
   // maximum journal size before the journal should be rotated.
-  val maxJournalSize = overlay(PersistentQueue.maxJournalSize)
+  final val maxJournalSize = overlay(PersistentQueue.maxJournalSize)
 
   // maximum size of a queue before it drops into read-behind mode.
-  val maxMemorySize = overlay(PersistentQueue.maxMemorySize)
+  final val maxMemorySize = overlay(PersistentQueue.maxMemorySize)
 
   // maximum overflow (multiplier) of a journal file before we re-create it.
-  val maxJournalOverflow = overlay(PersistentQueue.maxJournalOverflow)
+  final val maxJournalOverflow = overlay(PersistentQueue.maxJournalOverflow)
 
   // absolute maximum size of a journal file until we rebuild it, no matter what.
-  val maxJournalSizeAbsolute = overlay(PersistentQueue.maxJournalSizeAbsolute)
+  final val maxJournalSizeAbsolute = overlay(PersistentQueue.maxJournalSizeAbsolute)
 
   // whether to drop older items (instead of newer) when the queue is full
-  val discardOldWhenFull = overlay(PersistentQueue.discardOldWhenFull)
+  final val discardOldWhenFull = overlay(PersistentQueue.discardOldWhenFull)
 
   // whether to keep a journal file at all
-  val keepJournal = overlay(PersistentQueue.keepJournal)
+  final val keepJournal = overlay(PersistentQueue.keepJournal)
 
   // whether to sync the journal after each transaction
-  val syncJournal = overlay(PersistentQueue.syncJournal)
+  final val syncJournal = overlay(PersistentQueue.syncJournal)
 
   // (optional) move expired items over to this queue
-  val expiredQueue = overlay(PersistentQueue.expiredQueue)
+  final val expiredQueue = overlay(PersistentQueue.expiredQueue)
 
   private var journal = new Journal(new File(persistencePath, name).getCanonicalPath, syncJournal(), log)
 
-  // track tentative removals
+  // track tentative remofinal vals
   private var xidCounter: Int = 0
   private val openTransactions = new mutable.HashMap[Int, QItem]
   def openTransactionCount = openTransactions.size

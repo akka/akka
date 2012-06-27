@@ -22,10 +22,10 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val FailureDetectorAcceptableHeartbeatPause: Duration =
     Duration(getMilliseconds("akka.cluster.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
 
-  final val NodeToJoin: Option[Address] = getString("akka.cluster.node-to-join") match {
-    case ""                         ⇒ None
-    case AddressFromURIString(addr) ⇒ Some(addr)
-  }
+  final val SeedNodes: IndexedSeq[Address] = getStringList("akka.cluster.seed-nodes").asScala.map {
+    case AddressFromURIString(addr) ⇒ addr
+  }.toIndexedSeq
+  final val SeedNodeTimeout: Duration = Duration(getMilliseconds("akka.cluster.seed-node-timeout"), MILLISECONDS)
   final val PeriodicTasksInitialDelay: Duration = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
   final val GossipInterval: Duration = Duration(getMilliseconds("akka.cluster.gossip-interval"), MILLISECONDS)
   final val HeartbeatInterval: Duration = Duration(getMilliseconds("akka.cluster.heartbeat-interval"), MILLISECONDS)
@@ -33,6 +33,7 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val UnreachableNodesReaperInterval: Duration = Duration(getMilliseconds("akka.cluster.unreachable-nodes-reaper-interval"), MILLISECONDS)
   final val NrOfGossipDaemons: Int = getInt("akka.cluster.nr-of-gossip-daemons")
   final val NrOfDeputyNodes: Int = getInt("akka.cluster.nr-of-deputy-nodes")
+  final val AutoJoin: Boolean = getBoolean("akka.cluster.auto-join")
   final val AutoDown: Boolean = getBoolean("akka.cluster.auto-down")
   final val JoinTimeout: Duration = Duration(getMilliseconds("akka.cluster.join-timeout"), MILLISECONDS)
   final val SchedulerTickDuration: Duration = Duration(getMilliseconds("akka.cluster.scheduler.tick-duration"), MILLISECONDS)

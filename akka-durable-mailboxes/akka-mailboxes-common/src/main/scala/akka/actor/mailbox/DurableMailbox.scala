@@ -68,11 +68,15 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
  * Conventional organization of durable mailbox settings:
  *
  * {{{
- * my-durable-dispatcher {
- *   mailbox-type = "my.durable.mailbox"
- *   my-durable-mailbox {
- *     setting1 = 1
- *     setting2 = 2
+ * akka {
+ *   actor {
+ *     my-durable-dispatcher {
+ *       mailbox-type = "my.durable.mailbox"
+ *       my-durable-mailbox {
+ *         setting1 = 1
+ *         setting2 = 2
+ *       }
+ *     }
  *   }
  * }
  * }}}

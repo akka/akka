@@ -34,7 +34,7 @@ class FileBasedMessageQueue(_owner: ActorRef, _system: ExtendedActorSystem, val 
     (new java.io.File(settings.QueuePath)) match {
       case dir if dir.exists && !dir.isDirectory ⇒ throw new IllegalStateException("Path already occupied by non-directory " + dir)
       case dir if !dir.exists                    ⇒ if (!dir.mkdirs() && !dir.isDirectory) throw new IllegalStateException("Creation of directory failed " + dir)
-      case _                                     ⇒ //All good
+      case _                                     ⇒ // All good
     }
     val queue = new filequeue.PersistentQueue(settings.QueuePath, name, settings, log)
     queue.setup // replays journal

@@ -636,7 +636,7 @@ order as they have been received originally.
   Please note that the ``Stash`` can only be used together with actors
   that have a deque-based mailbox. For this, configure the
   ``mailbox-type`` of the dispatcher to be a deque-based mailbox, such as
-  ``akka.dispatch.UnboundedDequeBasedMailbox``.
+  ``akka.dispatch.UnboundedDequeBasedMailbox`` (see :ref:`dispatchers-scala`).
 
 Here is an example of the ``Stash`` in action:
 
@@ -646,7 +646,7 @@ Invoking ``stash()`` adds the current message (the message that the
 actor received last) to the actor's stash. It is typically invoked
 when handling the default case in the actor's message handler to stash
 messages that aren't handled by the other cases. It is illegal to
-stash the same message twice; to do so results in a
+stash the same message twice; to do so results in an
 ``IllegalStateException`` being thrown. The stash may also be bounded
 in which case invoking ``stash()`` may lead to a capacity violation,
 which results in a ``StashOverflowException``. The capacity of the

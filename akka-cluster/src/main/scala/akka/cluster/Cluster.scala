@@ -11,7 +11,7 @@ import akka.dispatch.Await
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import akka.jsr166y.ThreadLocalRandom
-import akka.pattern.ask
+import akka.pattern._
 import akka.remote._
 import akka.routing._
 import akka.util._
@@ -55,10 +55,28 @@ sealed trait ClusterMessage extends Serializable
 object ClusterUserAction {
 
   /**
-   * Command to join the cluster. Sent when a node (reprsesented by 'address')
+   * Command to join the cluster. Sent when a node (represented by 'address')
    * wants to join another node (the receiver).
    */
   case class Join(address: Address) extends ClusterMessage
+
+  /**
+   * Start message of the process to join one of the seed nodes.
+   * The node sends `InitJoin` to all seed nodes, which replies
+   * with `InitJoinAck`. The first reply is used others are discarded.
+   * The node sends `Join` command to the seed node that replied first.
+   */
+  case object JoinSeedNode extends ClusterMessage
+
+  /**
+   * @see JoinSeedNode
+   */
+  case object InitJoin extends ClusterMessage
+
+  /**
+   * @see JoinSeedNode
+   */
+  case class InitJoinAck(address: Address) extends ClusterMessage
 
   /**
    * Command to leave the cluster.
@@ -196,6 +214,9 @@ object MemberStatus {
 case class GossipOverview(
   seen: Map[Address, VectorClock] = Map.empty,
   unreachable: Set[Member] = Set.empty) {
+
+  def isNonDownUnreachable(address: Address): Boolean =
+    unreachable.exists { m ⇒ m.address == address && m.status != Down }
 
   override def toString =
     "GossipOverview(seen = [" + seen.mkString(", ") +
@@ -343,11 +364,27 @@ private[cluster] final class ClusterCommandDaemon(cluster: Cluster) extends Acto
   val log = Logging(context.system, this)
 
   def receive = {
-    case Join(address)   ⇒ cluster.joining(address)
-    case Down(address)   ⇒ cluster.downing(address)
-    case Leave(address)  ⇒ cluster.leaving(address)
-    case Exit(address)   ⇒ cluster.exiting(address)
-    case Remove(address) ⇒ cluster.removing(address)
+    case JoinSeedNode         ⇒ joinSeedNode()
+    case InitJoin             ⇒ sender ! InitJoinAck(cluster.selfAddress)
+    case InitJoinAck(address) ⇒ cluster.join(address)
+    case Join(address)        ⇒ cluster.joining(address)
+    case Down(address)        ⇒ cluster.downing(address)
+    case Leave(address)       ⇒ cluster.leaving(address)
+    case Exit(address)        ⇒ cluster.exiting(address)
+    case Remove(address)      ⇒ cluster.removing(address)
+  }
+
+  def joinSeedNode(): Unit = {
+    val seedRoutees = for (address ← cluster.seedNodes; if address != cluster.selfAddress)
+      yield self.path.toStringWithAddress(address)
+    if (seedRoutees.nonEmpty) {
+      implicit val within = Timeout(cluster.clusterSettings.SeedNodeTimeout)
+      val seedRouter = context.actorOf(
+        Props.empty.withRouter(ScatterGatherFirstCompletedRouter(
+          routees = seedRoutees, within = within.duration)))
+      seedRouter ? InitJoin pipeTo self
+      seedRouter ! PoisonPill
+    }
   }
 
   override def unhandled(unknown: Any) = log.error("Illegal command [{}]", unknown)
@@ -436,15 +473,12 @@ trait ClusterNodeMBean {
 /**
  * This module is responsible for Gossiping cluster information. The abstraction maintains the list of live
  * and dead members. Periodically i.e. every 1 second this module chooses a random member and initiates a round
- * of Gossip with it. Whenever it gets gossip updates it updates the Failure Detector with the liveness
- * information.
+ * of Gossip with it.
  * <p/>
- * During each of these runs the member initiates gossip exchange according to following rules (as defined in the
- * Cassandra documentation [http://wiki.apache.org/cassandra/ArchitectureGossip]:
+ * During each of these runs the member initiates gossip exchange according to following rules:
  * <pre>
  *   1) Gossip to random live member (if any)
- *   2) Gossip to random unreachable member with certain probability depending on number of unreachable and live members
- *   3) If the member gossiped to at (1) was not deputy, or the number of live members is less than number of deputy list,
+ *   2) If the member gossiped to at (1) was not deputy, or the number of live members is less than number of deputy list,
  *       gossip to random deputy with certain probability depending on number of unreachable, deputy and live members.
  * </pre>
  *
@@ -480,8 +514,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
   implicit private val defaultTimeout = Timeout(remoteSettings.RemoteSystemDaemonAckTimeout)
 
-  private val nodeToJoin: Option[Address] = NodeToJoin filter (_ != selfAddress)
-
   private val serialization = remote.serialization
 
   private val _isRunning = new AtomicBoolean(true)
@@ -508,8 +540,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     new AtomicReference[State](State(seenVersionedGossip))
   }
 
-  // try to join the node defined in the 'akka.cluster.node-to-join' option
-  autoJoin()
+  // try to join one of the nodes defined in the 'akka.cluster.seed-nodes'
+  if (AutoJoin) joinSeedNode()
 
   // ========================================================
   // ===================== WORK DAEMONS =====================
@@ -648,6 +680,12 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   def isAvailable: Boolean = !isUnavailable(state.get)
 
   /**
+   * Make it possible to override/configure seedNodes from tests without
+   * specifying in config. Addresses are unknown before startup time.
+   */
+  def seedNodes: IndexedSeq[Address] = SeedNodes
+
+  /**
    * Registers a listener to subscribe to cluster membership changes.
    */
   @tailrec
@@ -751,7 +789,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localUnreachable = localGossip.overview.unreachable
 
     val alreadyMember = localMembers.exists(_.address == node)
-    val isUnreachable = localUnreachable.exists { m ⇒ m.address == node && m.status != Down }
+    val isUnreachable = localGossip.overview.isNonDownUnreachable(node)
 
     if (!alreadyMember && !isUnreachable) {
 
@@ -898,46 +936,49 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     val localState = state.get
     val localGossip = localState.latestGossip
 
-    val winningGossip =
-      if (isSingletonCluster(localState) && localGossip.overview.unreachable.isEmpty && remoteGossip.members.contains(self)) {
-        // a fresh singleton cluster that is joining, no need to merge, use received gossip
-        remoteGossip
+    if (!localGossip.overview.isNonDownUnreachable(from)) {
 
-      } else if (remoteGossip.version <> localGossip.version) {
-        // concurrent
-        val mergedGossip = remoteGossip merge localGossip
-        val versionedMergedGossip = mergedGossip :+ vclockNode
+      val winningGossip =
+        if (isSingletonCluster(localState) && localGossip.overview.unreachable.isEmpty && remoteGossip.members.contains(self)) {
+          // a fresh singleton cluster that is joining, no need to merge, use received gossip
+          remoteGossip
 
-        log.debug(
-          """Can't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merging them into [{}]""",
-          remoteGossip, localGossip, versionedMergedGossip)
+        } else if (remoteGossip.version <> localGossip.version) {
+          // concurrent
+          val mergedGossip = remoteGossip merge localGossip
+          val versionedMergedGossip = mergedGossip :+ vclockNode
 
-        versionedMergedGossip
+          log.debug(
+            """Can't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merging them into [{}]""",
+            remoteGossip, localGossip, versionedMergedGossip)
 
-      } else if (remoteGossip.version < localGossip.version) {
-        // local gossip is newer
-        localGossip
+          versionedMergedGossip
 
-      } else {
-        // remote gossip is newer
-        remoteGossip
+        } else if (remoteGossip.version < localGossip.version) {
+          // local gossip is newer
+          localGossip
+
+        } else {
+          // remote gossip is newer
+          remoteGossip
+        }
+
+      val newJoinInProgress =
+        if (localState.joinInProgress.isEmpty) localState.joinInProgress
+        else localState.joinInProgress --
+          winningGossip.members.map(_.address) --
+          winningGossip.overview.unreachable.map(_.address)
+
+      val newState = localState copy (
+        latestGossip = winningGossip seen selfAddress,
+        joinInProgress = newJoinInProgress)
+
+      // if we won the race then update else try again
+      if (!state.compareAndSet(localState, newState)) receiveGossip(from, remoteGossip) // recur if we fail the update
+      else {
+        log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
+        notifyMembershipChangeListeners(localState, newState)
       }
-
-    val newJoinInProgress =
-      if (localState.joinInProgress.isEmpty) localState.joinInProgress
-      else localState.joinInProgress --
-        winningGossip.members.map(_.address) --
-        winningGossip.overview.unreachable.map(_.address)
-
-    val newState = localState copy (
-      latestGossip = winningGossip seen selfAddress,
-      joinInProgress = newJoinInProgress)
-
-    // if we won the race then update else try again
-    if (!state.compareAndSet(localState, newState)) receiveGossip(from, remoteGossip) // recur if we fail the update
-    else {
-      log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
-      notifyMembershipChangeListeners(localState, newState)
     }
   }
 
@@ -947,9 +988,9 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   private[cluster] def receiveHeartbeat(from: Address): Unit = failureDetector heartbeat from
 
   /**
-   * Joins the pre-configured contact point.
+   * Joins the pre-configured contact points.
    */
-  private def autoJoin(): Unit = nodeToJoin foreach join
+  private def joinSeedNode(): Unit = clusterCommandDaemon ! ClusterUserAction.JoinSeedNode
 
   /**
    * INTERNAL API.
@@ -974,15 +1015,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     peer foreach gossipTo
     peer
   }
-
-  /**
-   * INTERNAL API.
-   */
-  private[cluster] def gossipToUnreachableProbablity(membersSize: Int, unreachableSize: Int): Double =
-    (membersSize + unreachableSize) match {
-      case 0   ⇒ 0.0
-      case sum ⇒ unreachableSize.toDouble / sum
-    }
 
   /**
    * INTERNAL API.
@@ -1019,18 +1051,11 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       // 1. gossip to alive members
       val gossipedToAlive = gossipToRandomNodeOf(localMemberAddresses)
 
-      // 2. gossip to unreachable members
-      if (localUnreachableSize > 0) {
-        val probability = gossipToUnreachableProbablity(localMembersSize, localUnreachableSize)
-        if (ThreadLocalRandom.current.nextDouble() < probability)
-          gossipToRandomNodeOf(localUnreachableMembers.map(_.address))
-      }
-
-      // 3. gossip to a deputy nodes for facilitating partition healing
+      // 2. gossip to a deputy nodes for facilitating partition healing
       val deputies = deputyNodes(localMemberAddresses)
       val alreadyGossipedToDeputy = gossipedToAlive.map(deputies.contains(_)).getOrElse(false)
-      if ((!alreadyGossipedToDeputy || localMembersSize < NrOfDeputyNodes) && deputies.nonEmpty) {
-        val probability = gossipToDeputyProbablity(localMembersSize, localUnreachableSize, NrOfDeputyNodes)
+      if ((!alreadyGossipedToDeputy || localMembersSize < seedNodes.size) && deputies.nonEmpty) {
+        val probability = gossipToDeputyProbablity(localMembersSize, localUnreachableSize, seedNodes.size)
         if (ThreadLocalRandom.current.nextDouble() < probability)
           gossipToRandomNodeOf(deputies)
       }
@@ -1373,7 +1398,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    * Gets the addresses of a all the 'deputy' nodes - excluding this node if part of the group.
    */
   private def deputyNodes(addresses: IndexedSeq[Address]): IndexedSeq[Address] =
-    addresses drop 1 take NrOfDeputyNodes filterNot (_ == selfAddress)
+    addresses filterNot (_ == selfAddress) intersect seedNodes
 
   /**
    * INTERNAL API.
