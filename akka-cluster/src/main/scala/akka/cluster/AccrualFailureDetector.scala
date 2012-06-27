@@ -80,12 +80,12 @@ class AccrualFailureDetector(
     settings: ClusterSettings) =
     this(
       system,
-      settings.FailureDetectorThreshold,
-      settings.FailureDetectorMaxSampleSize,
-      settings.FailureDetectorAcceptableHeartbeatPause,
-      settings.FailureDetectorMinStdDeviation,
-      settings.HeartbeatInterval,
-      AccrualFailureDetector.realClock)
+      threshold = settings.FailureDetectorThreshold,
+      maxSampleSize = settings.FailureDetectorMaxSampleSize,
+      minStdDeviation = settings.FailureDetectorMinStdDeviation,
+      acceptableHeartbeatPause = settings.FailureDetectorAcceptableHeartbeatPause,
+      firstHeartbeatEstimate = settings.HeartbeatInterval,
+      clock = AccrualFailureDetector.realClock)
 
   private val log = Logging(system, "FailureDetector")
 
