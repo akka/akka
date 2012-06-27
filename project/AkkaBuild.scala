@@ -23,7 +23,12 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
-    scalaVersion := "2.10.0-M4"
+    //scalaVersion := "2.10.0-M4"
+    scalaVersion := "2.10.0-SNAPSHOT",
+    scalaVersion in update <<= (scalaVersion) apply {
+      case  "2.10.0-SNAPSHOT" =>  "2.10.0-M4"
+      case x => x
+    }
   )
 
   lazy val akka = Project(
@@ -362,7 +367,7 @@ object AkkaBuild extends Build {
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
 
     // compile options
-    scalacOptions ++= Seq("-encoding", "UTF-8", /*"-target:jvm-1.6",*/ /*"-deprecation",*/ "-feature", "-unchecked", "-Xlog-reflective-calls") ++ (
+    scalacOptions ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", /*"-deprecation",*/ "-feature", "-unchecked", "-Xlog-reflective-calls") ++ (
       if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 

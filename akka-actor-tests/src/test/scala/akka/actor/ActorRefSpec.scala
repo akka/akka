@@ -123,7 +123,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
     to.success(r)
     r
   } catch {
-    case e ⇒
+    case e: Throwable ⇒
       to.failure(e)
       throw e
   }
