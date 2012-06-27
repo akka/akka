@@ -388,8 +388,8 @@ object AkkaBuild extends Build {
       if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
     },
 
-    // show full stack traces
-    testOptions in Test += Tests.Argument("-oF")
+    // show full stack traces and test case durations
+    testOptions in Test += Tests.Argument("-oDF")
   )
 
   lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(

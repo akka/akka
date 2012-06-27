@@ -27,6 +27,7 @@ import javax.management._
 import MemberStatus._
 import scala.annotation.tailrec
 import scala.collection.immutable.{ Map, SortedSet }
+import scala.collection.GenTraversableOnce
 
 /**
  * Interface for membership change listener.
@@ -179,6 +180,20 @@ object Member {
     case (Joining, Joining) ⇒ m1
     case (Up, Up)           ⇒ m1
   }
+
+  // FIXME Workaround for https://issues.scala-lang.org/browse/SI-5986
+  // SortedSet + and ++ operators replaces existing element
+  // Use these :+ and :++ operators for the Gossip members
+  implicit def sortedSetWorkaround(sortedSet: SortedSet[Member]): SortedSetWorkaround = new SortedSetWorkaround(sortedSet)
+  class SortedSetWorkaround(sortedSet: SortedSet[Member]) {
+    implicit def :+(elem: Member): SortedSet[Member] = {
+      if (sortedSet.contains(elem)) sortedSet
+      else sortedSet + elem
+    }
+
+    implicit def :++(elems: GenTraversableOnce[Member]): SortedSet[Member] =
+      sortedSet ++ (elems.toSet diff sortedSet)
+  }
 }
 
 /**
@@ -226,6 +241,7 @@ case class GossipOverview(
 
 object Gossip {
   val emptyMembers: SortedSet[Member] = SortedSet.empty
+
 }
 
 /**
@@ -300,7 +316,7 @@ case class Gossip(
    */
   def :+(member: Member): Gossip = {
     if (members contains member) this
-    else this copy (members = members + member)
+    else this copy (members = members :+ member)
   }
 
   /**
@@ -329,7 +345,7 @@ case class Gossip(
 
     // 4. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
     //    and exclude unreachable
-    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
+    val mergedMembers = Gossip.emptyMembers :++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
 
     // 5. fresh seen table
     val mergedSeen = Map.empty[Address, VectorClock]
@@ -364,20 +380,23 @@ private[cluster] final class ClusterCommandDaemon(cluster: Cluster) extends Acto
   val log = Logging(context.system, this)
 
   def receive = {
-    case JoinSeedNode         ⇒ joinSeedNode()
-    case InitJoin             ⇒ sender ! InitJoinAck(cluster.selfAddress)
-    case InitJoinAck(address) ⇒ cluster.join(address)
-    case Join(address)        ⇒ cluster.joining(address)
-    case Down(address)        ⇒ cluster.downing(address)
-    case Leave(address)       ⇒ cluster.leaving(address)
-    case Exit(address)        ⇒ cluster.exiting(address)
-    case Remove(address)      ⇒ cluster.removing(address)
+    case JoinSeedNode                    ⇒ joinSeedNode()
+    case InitJoin                        ⇒ sender ! InitJoinAck(cluster.selfAddress)
+    case InitJoinAck(address)            ⇒ cluster.join(address)
+    case Join(address)                   ⇒ cluster.joining(address)
+    case Down(address)                   ⇒ cluster.downing(address)
+    case Leave(address)                  ⇒ cluster.leaving(address)
+    case Exit(address)                   ⇒ cluster.exiting(address)
+    case Remove(address)                 ⇒ cluster.removing(address)
+    case Failure(e: AskTimeoutException) ⇒ joinSeedNodeTimeout()
   }
 
   def joinSeedNode(): Unit = {
     val seedRoutees = for (address ← cluster.seedNodes; if address != cluster.selfAddress)
       yield self.path.toStringWithAddress(address)
-    if (seedRoutees.nonEmpty) {
+    if (seedRoutees.isEmpty) {
+      cluster join cluster.selfAddress
+    } else {
       implicit val within = Timeout(cluster.clusterSettings.SeedNodeTimeout)
       val seedRouter = context.actorOf(
         Props.empty.withRouter(ScatterGatherFirstCompletedRouter(
@@ -386,6 +405,8 @@ private[cluster] final class ClusterCommandDaemon(cluster: Cluster) extends Acto
       seedRouter ! PoisonPill
     }
   }
+
+  def joinSeedNodeTimeout(): Unit = cluster join cluster.selfAddress
 
   override def unhandled(unknown: Any) = log.error("Illegal command [{}]", unknown)
 }
@@ -534,10 +555,9 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   }
 
   private val state = {
-    val member = Member(selfAddress, Joining)
-    val versionedGossip = Gossip(members = Gossip.emptyMembers + member) :+ vclockNode // add me as member and update my vector clock
-    val seenVersionedGossip = versionedGossip seen selfAddress
-    new AtomicReference[State](State(seenVersionedGossip))
+    // note that self is not initially member,
+    // and the Gossip is not versioned for this 'Node' yet
+    new AtomicReference[State](State(Gossip(members = Gossip.emptyMembers)))
   }
 
   // try to join one of the nodes defined in the 'akka.cluster.seed-nodes'
@@ -797,7 +817,9 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       val newUnreachableMembers = localUnreachable filterNot { _.address == node }
       val newOverview = localGossip.overview copy (unreachable = newUnreachableMembers)
 
-      val newMembers = localMembers + Member(node, Joining) // add joining node as Joining
+      // add joining node as Joining
+      // add self in case someone else joins before self has joined (Set discards duplicates)
+      val newMembers = localMembers :+ Member(node, Joining) :+ Member(selfAddress, Joining)
       val newGossip = localGossip copy (overview = newOverview, members = newMembers)
 
       val versionedGossip = newGossip :+ vclockNode
@@ -939,11 +961,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     if (!localGossip.overview.isNonDownUnreachable(from)) {
 
       val winningGossip =
-        if (isSingletonCluster(localState) && localGossip.overview.unreachable.isEmpty && remoteGossip.members.contains(self)) {
-          // a fresh singleton cluster that is joining, no need to merge, use received gossip
-          remoteGossip
-
-        } else if (remoteGossip.version <> localGossip.version) {
+        if (remoteGossip.version <> localGossip.version) {
           // concurrent
           val mergedGossip = remoteGossip merge localGossip
           val versionedMergedGossip = mergedGossip :+ vclockNode
