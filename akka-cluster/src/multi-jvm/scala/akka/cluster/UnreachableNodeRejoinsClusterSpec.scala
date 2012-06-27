@@ -24,20 +24,21 @@ object UnreachableNodeRejoinsClusterMultiJvmSpec extends MultiNodeConfig {
     roles.filterNot(_ == role)
   }
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
-      akka.cluster {
-        failure-detector.threshold = 5
-      }                                    """)
-  ).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class UnreachableNodeRejoinsClusterMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec
-class UnreachableNodeRejoinsClusterMultiJvmNode2 extends UnreachableNodeRejoinsClusterSpec
-class UnreachableNodeRejoinsClusterMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec
-class UnreachableNodeRejoinsClusterMultiJvmNode4 extends UnreachableNodeRejoinsClusterSpec
+class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec with FailureDetectorPuppetStrategy
+class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode2 extends UnreachableNodeRejoinsClusterSpec with FailureDetectorPuppetStrategy
+class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec with FailureDetectorPuppetStrategy
+class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode4 extends UnreachableNodeRejoinsClusterSpec with FailureDetectorPuppetStrategy
 
-class UnreachableNodeRejoinsClusterSpec
+
+class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
+class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode2 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
+class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
+class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode4 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
+
+abstract class UnreachableNodeRejoinsClusterSpec
   extends MultiNodeSpec(UnreachableNodeRejoinsClusterMultiJvmSpec)
   with MultiNodeClusterSpec
   with ImplicitSender with BeforeAndAfter {
@@ -45,14 +46,14 @@ class UnreachableNodeRejoinsClusterSpec
 
   override def initialParticipants = allRoles.size
 
-  lazy val sortedRoles = clusterSortedRoles(allRoles)
+  lazy val sortedRoles = allRoles.sorted
   lazy val master = sortedRoles(0)
   lazy val victim = sortedRoles(1)
 
   var endBarrierNumber = 0
   def endBarrier: Unit = {
     endBarrierNumber += 1
-    testConductor.enter("after_" + endBarrierNumber)
+    enterBarrier("after_" + endBarrierNumber)
   }
 
   "A cluster of " + allRoles.size + " members" must {
@@ -70,10 +71,11 @@ class UnreachableNodeRejoinsClusterSpec
         }
       }
 
-      testConductor.enter("unplug_victim")
+      enterBarrier("unplug_victim")
 
       runOn(victim) {
         val otherAddresses = sortedRoles.collect { case x if x != victim => node(x).address }
+        otherAddresses.foreach(markNodeAsUnavailable(_))
         within(30 seconds) {
           // victim becomes all alone
           awaitCond({ val gossip = cluster.latestGossip
@@ -89,13 +91,14 @@ class UnreachableNodeRejoinsClusterSpec
       runOn(allButVictim:_*) {
         val victimAddress = node(victim).address
         val otherAddresses = allButVictim.map(node(_).address)
+        markNodeAsUnavailable(victimAddress)
         within(30 seconds) {
           // victim becomes unreachable
           awaitCond({ val gossip = cluster.latestGossip
             gossip.overview.unreachable.size == 1 &&
               gossip.members.size == (allRoles.size - 1) &&
               gossip.members.forall(_.status == MemberStatus.Up) })
-          awaitSeenSameState(otherAddresses)
+          awaitSeenSameState(otherAddresses:_*)
           // still one unreachable
           cluster.latestGossip.overview.unreachable.size must be(1)
           cluster.latestGossip.overview.unreachable.head.address must be(victimAddress)
@@ -128,7 +131,7 @@ class UnreachableNodeRejoinsClusterSpec
         }
       }
 
-      testConductor.enter("plug_in_victim")
+      enterBarrier("plug_in_victim")
 
       runOn(victim) {
         cluster.join(node(master).address)
