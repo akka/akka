@@ -176,7 +176,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     val duration = fromConfig getOrElse ZeroMQExtension(context.system).DefaultPollTimeout
     if (duration > Duration.Zero) { (msg: PollMsg) ⇒
       // for positive timeout values, do poll (i.e. block this thread)
-      poller.poll(duration.toMicros)
+      ZeroMQExtension(context.system).poll(poller, duration)
       self ! msg
     } else {
       val d = -duration
