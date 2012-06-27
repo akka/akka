@@ -28,6 +28,7 @@ import MemberStatus._
 import scala.annotation.tailrec
 import scala.collection.immutable.{ Map, SortedSet }
 import scala.collection.GenTraversableOnce
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Interface for membership change listener.
@@ -948,6 +949,13 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     }
   }
 
+  // Can be removed when gossip has been optimized
+  private val _receivedGossipCount = new AtomicLong
+  /**
+   * INTERNAL API.
+   */
+  private[cluster] def receivedGossipCount: Long = _receivedGossipCount.get
+
   /**
    * INTERNAL API.
    *
@@ -995,6 +1003,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       if (!state.compareAndSet(localState, newState)) receiveGossip(from, remoteGossip) // recur if we fail the update
       else {
         log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
+        _receivedGossipCount.incrementAndGet()
         notifyMembershipChangeListeners(localState, newState)
       }
     }
