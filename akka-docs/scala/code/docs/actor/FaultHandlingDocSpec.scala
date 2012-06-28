@@ -3,6 +3,8 @@
  */
 package docs.actor
 
+import language.postfixOps
+
 //#testkit
 import akka.testkit.{ AkkaSpec, ImplicitSender, EventFilter }
 import akka.actor.{ ActorRef, Props, Terminated }

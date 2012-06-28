@@ -3,6 +3,8 @@
  */
 package docs.routing
 
+import language.postfixOps
+
 import akka.routing.{ ScatterGatherFirstCompletedRouter, BroadcastRouter, RandomRouter, RoundRobinRouter }
 import annotation.tailrec
 import akka.actor.{ Props, Actor }

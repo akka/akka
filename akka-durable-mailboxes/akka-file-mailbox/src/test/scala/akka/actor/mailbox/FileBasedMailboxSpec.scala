@@ -1,5 +1,7 @@
 package akka.actor.mailbox
 
+import language.postfixOps
+
 import org.apache.commons.io.FileUtils
 import akka.dispatch.Mailbox
 

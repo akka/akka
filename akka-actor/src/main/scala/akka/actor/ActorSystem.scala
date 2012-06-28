@@ -646,7 +646,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
                 instance //Profit!
             }
           } catch {
-            case t ⇒
+            case t: Throwable ⇒
               extensions.remove(ext, inProcessOfRegistration) //In case shit hits the fan, remove the inProcess signal
               throw t //Escalate to caller
           } finally {

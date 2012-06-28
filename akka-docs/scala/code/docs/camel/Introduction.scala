@@ -1,7 +1,7 @@
 package docs.camel
 
 object Introduction {
-  {
+  def foo = {
     //#Consumer-mina
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -21,7 +21,7 @@ object Introduction {
     val mina = sys.actorOf(Props[MinaClient])
     //#Consumer-mina
   }
-  {
+  def bar = {
     //#Consumer
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -35,7 +35,7 @@ object Introduction {
     }
     //#Consumer
   }
-  {
+  def baz = {
     //#Producer
     import akka.actor.Actor
     import akka.camel.{ Producer, Oneway }

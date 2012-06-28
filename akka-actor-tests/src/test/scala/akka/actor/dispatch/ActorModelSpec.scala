@@ -157,7 +157,7 @@ object ActorModelSpec {
     try {
       await(deadline)(stops == dispatcher.stops.get)
     } catch {
-      case e ⇒
+      case e: Throwable ⇒
         system.eventStream.publish(Error(e, dispatcher.toString, dispatcher.getClass, "actual: stops=" + dispatcher.stops.get +
           " required: stops=" + stops))
         throw e
@@ -214,7 +214,7 @@ object ActorModelSpec {
       await(deadline)(stats.msgsProcessed.get() == msgsProcessed)
       await(deadline)(stats.restarts.get() == restarts)
     } catch {
-      case e ⇒
+      case e: Throwable ⇒
         system.eventStream.publish(Error(e,
           Option(dispatcher).toString,
           (Option(dispatcher) getOrElse this).getClass,

@@ -1,5 +1,7 @@
 package docs.testkit
 
+import language.postfixOps
+
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
 import org.specs2.time.NoTimeConversions

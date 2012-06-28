@@ -31,7 +31,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e ⇒
+        case e: Throwable ⇒
           dead.set(true)
           e.printStackTrace
       }
@@ -46,7 +46,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e ⇒
+        case e: Throwable ⇒
           dead.set(true)
           e.printStackTrace
       }
@@ -61,7 +61,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e ⇒
+        case e: Throwable ⇒
           dead.set(true)
           e.printStackTrace
       }

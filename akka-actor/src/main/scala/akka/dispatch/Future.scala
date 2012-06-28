@@ -688,7 +688,7 @@ sealed trait Future[+T] extends Await.Awaitable[T] {
           case NonFatal(e) ⇒
             executor.reportFailure(new LogEventException(Debug("Future", getClass, e.getMessage), e))
             p complete Left(e)
-          case t ⇒
+          case t: Throwable ⇒
             p complete Left(new ExecutionException(t)); throw t
         }
     }

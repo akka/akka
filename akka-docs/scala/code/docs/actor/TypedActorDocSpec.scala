@@ -3,6 +3,8 @@
  */
 package docs.actor
 
+import language.postfixOps
+
 //#imports
 import akka.dispatch.{ Promise, Future, Await }
 import akka.util.duration._

@@ -3,6 +3,8 @@
  */
 package docs.testkit
 
+import language.postfixOps
+
 //#imports-test-probe
 import akka.testkit.TestProbe
 import akka.util.duration._

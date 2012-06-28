@@ -3,6 +3,8 @@
  */
 package docs.actor
 
+import language.postfixOps
+
 //#test-code
 import akka.testkit.AkkaSpec
 import akka.actor.Props

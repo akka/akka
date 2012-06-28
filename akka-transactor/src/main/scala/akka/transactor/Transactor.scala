@@ -4,6 +4,8 @@
 
 package akka.transactor
 
+import language.postfixOps
+
 import akka.actor.{ Actor, ActorRef }
 import scala.concurrent.stm.InTxn
 

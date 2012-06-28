@@ -3,6 +3,8 @@
  */
 package docs.testkit
 
+import language.postfixOps
+
 //#testkit-usage
 import scala.util.Random
 

@@ -3,6 +3,8 @@
  */
 package docs.future
 
+import language.postfixOps
+
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._

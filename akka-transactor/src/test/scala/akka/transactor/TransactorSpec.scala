@@ -4,6 +4,8 @@
 
 package akka.transactor
 
+import language.postfixOps
+
 import akka.actor._
 import akka.dispatch.Await
 import akka.util.duration._

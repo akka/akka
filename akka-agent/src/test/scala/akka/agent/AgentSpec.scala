@@ -1,5 +1,7 @@
 package akka.agent
 
+import language.postfixOps
+
 import akka.dispatch.Await
 import akka.util.Duration
 import akka.util.duration._

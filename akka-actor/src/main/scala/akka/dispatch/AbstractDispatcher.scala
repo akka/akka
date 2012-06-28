@@ -300,7 +300,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     try {
       executeTask(invocation)
     } catch {
-      case t ⇒
+      case t: Throwable ⇒
         addInhabitants(-1)
         throw t
     }
@@ -575,7 +575,7 @@ object ForkJoinExecutorConfigurator {
     final override def setRawResult(u: Unit): Unit = ()
     final override def getRawResult(): Unit = ()
     final override def exec(): Boolean = try { mailbox.run; true } catch {
-      case anything ⇒
+      case anything: Throwable ⇒
         val t = Thread.currentThread
         t.getUncaughtExceptionHandler match {
           case null ⇒

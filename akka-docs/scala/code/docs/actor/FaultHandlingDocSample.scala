@@ -3,6 +3,8 @@
  */
 package docs.actor
 
+import language.postfixOps
+
 //#all
 //#imports
 import akka.actor._

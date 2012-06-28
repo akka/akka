@@ -3,6 +3,8 @@
  */
 package docs.actor.mailbox
 
+import language.postfixOps
+
 //#imports
 import akka.actor.Props
 
@@ -56,7 +58,7 @@ import akka.util.duration._
 class MyMailboxType(systemSettings: ActorSystem.Settings, config: Config)
   extends MailboxType {
 
-  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = owner zip system headOption match {
+  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = (owner zip system) headOption match {
     case Some((o, s: ExtendedActorSystem)) ⇒ new MyMessageQueue(o, s)
     case None ⇒ throw new IllegalArgumentException(
       "requires an owner (i.e. does not work with BalancingDispatcher)")

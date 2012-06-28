@@ -20,7 +20,7 @@ import akka.event.LoggingAdapter;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-import static akka.japi.Util.manifest;
+import static akka.japi.Util.classTag;
 
 import static akka.actor.SupervisorStrategy.*;
 import static akka.pattern.Patterns.ask;
@@ -146,7 +146,7 @@ public class FaultHandlingDocSample {
 
         // Send current progress to the initial sender
         pipe(ask(counterService, GetCurrentCount, askTimeout)
-               .mapTo(manifest(CurrentCount.class))
+               .mapTo(classTag(CurrentCount.class))
                .map(new Mapper<CurrentCount, Progress>() {
             public Progress apply(CurrentCount c) {
                 return new Progress(100.0 * c.count / totalCount);

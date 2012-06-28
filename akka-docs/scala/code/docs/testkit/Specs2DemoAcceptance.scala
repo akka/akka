@@ -1,5 +1,8 @@
 package docs.testkit
 
+import language.postfixOps
+import language.implicitConversions
+
 import org.specs2.Specification
 import org.specs2.specification.{ Step, Scope }
 

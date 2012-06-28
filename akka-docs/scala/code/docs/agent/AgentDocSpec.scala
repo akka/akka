@@ -3,6 +3,8 @@
  */
 package docs.agent
 
+import language.postfixOps
+
 import akka.agent.Agent
 import akka.util.duration._
 import akka.util.Timeout
