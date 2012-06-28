@@ -736,9 +736,9 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   @tailrec
   final def join(address: Address): Unit = {
     val localState = state.get
-    // wipe our state
+    // wipe our state since a node that joins a cluster must be empty
     val newState = createCleanState copy (joinInProgress = Map.empty + (address -> (Deadline.now + JoinTimeout)))
-    // wipe the failure detector
+    // wipe the failure detector since we are starting fresh and shouldn't care about the past
     failureDetector.reset()
     if (!state.compareAndSet(localState, newState)) join(address) // recur
     else {
@@ -818,11 +818,11 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     if (!alreadyMember && !isUnreachable) {
 
       // remove the node from the 'unreachable' set in case it is a DOWN node that is rejoining cluster
-      val newUnreachableMembers = localUnreachable filterNot { _.address == node }
+      val (rejoiningMember, newUnreachableMembers) = localUnreachable partition { _.address == node }
       val newOverview = localGossip.overview copy (unreachable = newUnreachableMembers)
 
       // remove the node from the failure detector if it is a DOWN node that is rejoining cluster
-      if (localUnreachable.size > newUnreachableMembers.size) failureDetector.remove(node)
+      if (rejoiningMember.nonEmpty) failureDetector.remove(node)
 
       // add joining node as Joining
       // add self in case someone else joins before self has joined (Set discards duplicates)

@@ -18,12 +18,6 @@ object UnreachableNodeRejoinsClusterMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  val allRoles = Seq(first, second, third, fourth)
-
-  def allBut(role: RoleName, roles: Seq[RoleName] = allRoles): Seq[RoleName] = {
-    roles.filterNot(_ == role)
-  }
-
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
@@ -40,13 +34,15 @@ class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode4 exten
 
 abstract class UnreachableNodeRejoinsClusterSpec
   extends MultiNodeSpec(UnreachableNodeRejoinsClusterMultiJvmSpec)
-  with MultiNodeClusterSpec
-  with ImplicitSender with BeforeAndAfter {
+  with MultiNodeClusterSpec {
   import UnreachableNodeRejoinsClusterMultiJvmSpec._
 
-  override def initialParticipants = allRoles.size
+  def allBut(role: RoleName, roles: Seq[RoleName] = roles): Seq[RoleName] = {
+    roles.filterNot(_ == role)
+  }
 
-  lazy val sortedRoles = allRoles.sorted
+
+  lazy val sortedRoles = roles.sorted
   lazy val master = sortedRoles(0)
   lazy val victim = sortedRoles(1)
 
@@ -56,10 +52,10 @@ abstract class UnreachableNodeRejoinsClusterSpec
     enterBarrier("after_" + endBarrierNumber)
   }
 
-  "A cluster of " + allRoles.size + " members" must {
+  "A cluster of " + roles.size + " members" must {
 
     "reach initial convergence" taggedAs LongRunningTest in {
-      awaitClusterUp(allRoles:_*)
+      awaitClusterUp(roles:_*)
       endBarrier
     }
 
@@ -73,35 +69,32 @@ abstract class UnreachableNodeRejoinsClusterSpec
 
       enterBarrier("unplug_victim")
 
+      val allButVictim = allBut(victim, sortedRoles)
       runOn(victim) {
-        val otherAddresses = sortedRoles.collect { case x if x != victim => node(x).address }
-        otherAddresses.foreach(markNodeAsUnavailable(_))
+        allButVictim.foreach(markNodeAsUnavailable(_))
         within(30 seconds) {
           // victim becomes all alone
           awaitCond({ val gossip = cluster.latestGossip
-            gossip.overview.unreachable.size == (allRoles.size - 1) &&
+            gossip.overview.unreachable.size == (roles.size - 1) &&
               gossip.members.size == 1 &&
               gossip.members.forall(_.status == MemberStatus.Up) })
-          cluster.latestGossip.overview.unreachable.map(_.address) must be(otherAddresses.toSet)
+          cluster.latestGossip.overview.unreachable.map(_.address) must be((allButVictim map address).toSet)
           cluster.convergence.isDefined must be(false)
         }
       }
 
-      val allButVictim = allBut(victim)
       runOn(allButVictim:_*) {
-        val victimAddress = node(victim).address
-        val otherAddresses = allButVictim.map(node(_).address)
-        markNodeAsUnavailable(victimAddress)
+        markNodeAsUnavailable(victim)
         within(30 seconds) {
           // victim becomes unreachable
           awaitCond({ val gossip = cluster.latestGossip
             gossip.overview.unreachable.size == 1 &&
-              gossip.members.size == (allRoles.size - 1) &&
+              gossip.members.size == (roles.size - 1) &&
               gossip.members.forall(_.status == MemberStatus.Up) })
-          awaitSeenSameState(otherAddresses:_*)
+          awaitSeenSameState(allButVictim map address:_*)
           // still one unreachable
           cluster.latestGossip.overview.unreachable.size must be(1)
-          cluster.latestGossip.overview.unreachable.head.address must be(victimAddress)
+          cluster.latestGossip.overview.unreachable.head.address must be(node(victim).address)
           // and therefore no convergence
           cluster.convergence.isDefined must be(false)
         }
@@ -111,13 +104,12 @@ abstract class UnreachableNodeRejoinsClusterSpec
     }
 
     "mark the node as DOWN" taggedAs LongRunningTest in {
-      val victimAddress = node(victim).address
       runOn(master) {
-        cluster.down(victimAddress)
+        cluster down victim
       }
 
       runOn(allBut(victim):_*) {
-        awaitUpConvergence(allRoles.size - 1, Seq(victimAddress))
+        awaitUpConvergence(roles.size - 1, Seq(victim))
       }
 
       endBarrier
@@ -134,10 +126,10 @@ abstract class UnreachableNodeRejoinsClusterSpec
       enterBarrier("plug_in_victim")
 
       runOn(victim) {
-        cluster.join(node(master).address)
+        cluster join master
       }
 
-      awaitUpConvergence(allRoles.size)
+      awaitUpConvergence(roles.size)
 
       endBarrier
     }
