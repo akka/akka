@@ -128,6 +128,8 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
 
   override protected def useUntrustedMode = remoteSettings.UntrustedMode
 
+  override protected def logRemoteLifeCycleEvents = remoteSettings.LogRemoteLifeCycleEvents
+
   val server: NettyRemoteServer = try createServer() catch { case NonFatal(ex) ⇒ shutdown(); throw ex }
 
   /**
