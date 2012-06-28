@@ -172,12 +172,15 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
 
   // this is a “PollMsg=>Unit” which either polls or schedules Poll, depending on the sign of the timeout
   private val doPollTimeout = {
+    val ext = ZeroMQExtension(context.system)
     val fromConfig = params collectFirst { case PollTimeoutDuration(duration) ⇒ duration }
-    val duration = fromConfig getOrElse ZeroMQExtension(context.system).DefaultPollTimeout
-    if (duration > Duration.Zero) { (msg: PollMsg) ⇒
+    val duration = (fromConfig getOrElse ext.DefaultPollTimeout)
+    if (duration > Duration.Zero) {
       // for positive timeout values, do poll (i.e. block this thread)
-      ZeroMQExtension(context.system).poll(poller, duration)
-      self ! msg
+      val pollLength = duration.toUnit(ext.pollTimeUnit).toLong
+      (msg: PollMsg) ⇒
+        poller.poll(pollLength)
+        self ! msg
     } else {
       val d = -duration
 

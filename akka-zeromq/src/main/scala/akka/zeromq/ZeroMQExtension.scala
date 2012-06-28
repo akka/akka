@@ -48,9 +48,7 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
   val DefaultPollTimeout: Duration = Duration(system.settings.config.getMilliseconds("akka.zeromq.poll-timeout"), TimeUnit.MILLISECONDS)
   val NewSocketTimeout: Timeout = Timeout(Duration(system.settings.config.getMilliseconds("akka.zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
 
-  val poll =
-    if (version.major >= 3) (poller: Poller, duration: Duration) ⇒ poller.poll(duration.toMillis)
-    else (poller: Poller, duration: Duration) ⇒ poller.poll(duration.toMicros)
+  val pollTimeUnit = if (version.major >= 3) TimeUnit.MILLISECONDS else TimeUnit.MICROSECONDS
 
   /**
    * The version of the ZeroMQ library
