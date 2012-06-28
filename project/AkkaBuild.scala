@@ -487,7 +487,7 @@ object Dependency {
   val protobuf      = "com.google.protobuf"         % "protobuf-java"         % "2.4.1"       // New BSD
   val scalaStm      = "org.scala-tools"             %% "scala-stm"            % "0.5"         // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"             % "1.6.4"       // MIT
-  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding" % "0.0.6.1-B1"  // ApacheV2  //FIXME SWITCH TO OFFICIAL VERSION
+  val zeroMQ        = "org.zeromq"                  %% "zeromq-scala-binding" % "0.0.6"  // ApacheV2  //FIXME SWITCH TO OFFICIAL VERSION
   val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"       % "1.2.2a"      // ApacheV2
 
 
