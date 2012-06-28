@@ -57,4 +57,9 @@ class FailureDetectorPuppet(system: ActorSystem, settings: ClusterSettings) exte
     log.debug("Removing cluster node [{}]", connection)
     connections.remove(connection)
   }
+
+  def reset(): Unit = {
+    log.debug("Resetting failure detector")
+    connections.clear()
+  }
 }

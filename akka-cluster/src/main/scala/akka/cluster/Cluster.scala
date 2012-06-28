@@ -27,6 +27,7 @@ import javax.management._
 import MemberStatus._
 import scala.annotation.tailrec
 import scala.collection.immutable.{ Map, SortedSet }
+import scala.collection.GenTraversableOnce
 
 /**
  * Interface for membership change listener.
@@ -179,6 +180,20 @@ object Member {
     case (Joining, Joining) ⇒ m1
     case (Up, Up)           ⇒ m1
   }
+
+  // FIXME Workaround for https://issues.scala-lang.org/browse/SI-5986
+  // SortedSet + and ++ operators replaces existing element
+  // Use these :+ and :++ operators for the Gossip members
+  implicit def sortedSetWorkaround(sortedSet: SortedSet[Member]): SortedSetWorkaround = new SortedSetWorkaround(sortedSet)
+  class SortedSetWorkaround(sortedSet: SortedSet[Member]) {
+    implicit def :+(elem: Member): SortedSet[Member] = {
+      if (sortedSet.contains(elem)) sortedSet
+      else sortedSet + elem
+    }
+
+    implicit def :++(elems: GenTraversableOnce[Member]): SortedSet[Member] =
+      sortedSet ++ (elems.toSet diff sortedSet)
+  }
 }
 
 /**
@@ -226,6 +241,7 @@ case class GossipOverview(
 
 object Gossip {
   val emptyMembers: SortedSet[Member] = SortedSet.empty
+
 }
 
 /**
@@ -300,7 +316,7 @@ case class Gossip(
    */
   def :+(member: Member): Gossip = {
     if (members contains member) this
-    else this copy (members = members + member)
+    else this copy (members = members :+ member)
   }
 
   /**
@@ -329,7 +345,7 @@ case class Gossip(
 
     // 4. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
     //    and exclude unreachable
-    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
+    val mergedMembers = Gossip.emptyMembers :++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
 
     // 5. fresh seen table
     val mergedSeen = Map.empty[Address, VectorClock]
@@ -803,7 +819,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
       // add joining node as Joining
       // add self in case someone else joins before self has joined (Set discards duplicates)
-      val newMembers = localMembers + Member(node, Joining) + Member(selfAddress, Joining)
+      val newMembers = localMembers :+ Member(node, Joining) :+ Member(selfAddress, Joining)
       val newGossip = localGossip copy (overview = newOverview, members = newMembers)
 
       val versionedGossip = newGossip :+ vclockNode
