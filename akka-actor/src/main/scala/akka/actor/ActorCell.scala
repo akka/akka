@@ -907,10 +907,7 @@ private[akka] class ActorCell(
     }
   }
 
-  final def receiveMessage(msg: Any): Unit = {
-    val head = behaviorStack.head
-    if (head.isDefinedAt(msg)) head.apply(msg) else actor.unhandled(msg)
-  }
+  final def receiveMessage(msg: Any): Unit = behaviorStack.head.applyOrElse(msg, actor.unhandled)
 
   private def doTerminate() {
     val a = actor
