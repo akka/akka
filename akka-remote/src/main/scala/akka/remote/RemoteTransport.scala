@@ -189,9 +189,11 @@ abstract class RemoteTransport {
            senderOption: Option[ActorRef],
            recipient: RemoteActorRef): Unit
 
+  protected def logRemoteLifeCycleEvents: Boolean
+
   def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
     system.eventStream.publish(message)
-    system.log.log(message.logLevel, "REMOTE: {}", message)
+    if (logRemoteLifeCycleEvents) system.log.log(message.logLevel, "{}", message)
   }
 
   override def toString = address.toString
@@ -224,11 +226,16 @@ trait RemoteMarshallingOps {
 
   protected def useUntrustedMode: Boolean
 
-  def createMessageSendEnvelope(rmp: RemoteMessageProtocol): AkkaRemoteProtocol = {
-    val arp = AkkaRemoteProtocol.newBuilder
-    arp.setMessage(rmp)
-    arp.build
-  }
+  /**
+   * When this method returns true, RemoteLifeCycleEvents will be logged as well as be put onto the eventStream.
+   */
+  protected def logRemoteLifeCycleEvents: Boolean
+
+  /**
+   * Returns a newly created AkkaRemoteProtocol with the given message payload.
+   */
+  def createMessageSendEnvelope(rmp: RemoteMessageProtocol): AkkaRemoteProtocol =
+    AkkaRemoteProtocol.newBuilder.setMessage(rmp).build
 
   def createControlEnvelope(rcp: RemoteControlProtocol): AkkaRemoteProtocol = {
     val arp = AkkaRemoteProtocol.newBuilder

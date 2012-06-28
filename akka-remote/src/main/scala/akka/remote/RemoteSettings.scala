@@ -19,4 +19,5 @@ class RemoteSettings(val config: Config, val systemName: String) {
   val LogSend = getBoolean("akka.remote.log-sent-messages")
   val RemoteSystemDaemonAckTimeout = Duration(getMilliseconds("akka.remote.remote-daemon-ack-timeout"), MILLISECONDS)
   val UntrustedMode = getBoolean("akka.remote.untrusted-mode")
+  val LogRemoteLifeCycleEvents: Boolean = getBoolean("akka.remote.log-remote-lifecycle-events")
 }

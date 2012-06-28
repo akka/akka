@@ -51,9 +51,8 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   override protected def useUntrustedMode = remoteSettings.UntrustedMode
 
-  val server = try new NettyRemoteServer(this) catch {
-    case ex ⇒ shutdown(); throw ex
-  }
+  val server = try new NettyRemoteServer(this) catch { case ex ⇒ shutdown(); throw ex }
+  override protected def logRemoteLifeCycleEvents = remoteSettings.LogRemoteLifeCycleEvents
 
   // the address is set in start() or from the RemoteServerHandler, whichever comes first
   private val _address = new AtomicReference[Address]
