@@ -832,7 +832,10 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       else {
         log.info("Cluster Node [{}] - Node [{}] is JOINING", selfAddress, node)
         // treat join as initial heartbeat, so that it becomes unavailable if nothing more happens
-        if (node != selfAddress) failureDetector heartbeat node
+        if (node != selfAddress) {
+          failureDetector heartbeat node
+          gossipTo(node)
+        }
         notifyMembershipChangeListeners(localState, newState)
       }
     }
@@ -974,10 +977,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
           val mergedGossip = remoteGossip merge localGossip
           val versionedMergedGossip = mergedGossip :+ vclockNode
 
-          log.debug(
-            """Can't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merging them into [{}]""",
-            remoteGossip, localGossip, versionedMergedGossip)
-
           versionedMergedGossip
 
         } else if (remoteGossip.version < localGossip.version) {
@@ -1003,8 +1002,20 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       if (!state.compareAndSet(localState, newState)) receiveGossip(from, remoteGossip) // recur if we fail the update
       else {
         log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
+
+        if ((winningGossip ne localGossip) && (winningGossip ne remoteGossip))
+          log.debug(
+            """Couldn't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merged them into [{}]""",
+            remoteGossip, localGossip, winningGossip)
+
         _receivedGossipCount.incrementAndGet()
         notifyMembershipChangeListeners(localState, newState)
+
+        if ((winningGossip ne remoteGossip) || (newState.latestGossip ne remoteGossip)) {
+          // send back gossip to sender when sender had different view, i.e. merge, or sender had
+          // older or sender had newer
+          gossipTo(from)
+        }
       }
     }
   }
@@ -1055,6 +1066,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     }
   }
 
+  private def gossipToDifferentViewProbability: Double = 0.8
+
   /**
    * INTERNAL API.
    *
@@ -1075,8 +1088,21 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       val localUnreachableMembers = localGossip.overview.unreachable.toIndexedSeq
       val localUnreachableSize = localUnreachableMembers.size
 
-      // 1. gossip to alive members
-      val gossipedToAlive = gossipToRandomNodeOf(localMemberAddresses)
+      // 1. gossip to a random alive member with preference to a member
+      // with older or newer gossip version
+      val nodesWithdifferentView = {
+        val localMemberAddressesSet = localGossip.members map { _.address }
+        for {
+          (address, version) ← localGossip.overview.seen
+          if localMemberAddressesSet contains address
+          if version != localGossip.version
+        } yield address
+      }
+      val gossipedToAlive =
+        if (nodesWithdifferentView.nonEmpty && ThreadLocalRandom.current.nextDouble() < gossipToDifferentViewProbability)
+          gossipToRandomNodeOf(nodesWithdifferentView.toIndexedSeq)
+        else
+          gossipToRandomNodeOf(localMemberAddresses)
 
       // 2. gossip to a deputy nodes for facilitating partition healing
       val deputies = deputyNodes(localMemberAddresses)
