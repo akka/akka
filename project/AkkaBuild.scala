@@ -310,11 +310,11 @@ object AkkaBuild extends Build {
   val defaultExcludedTags = Set("timing", "long-running")
 
   lazy val defaultMultiJvmOptions: Seq[String] = {
-    (System.getProperty("akka.test.timefactor") match {
-      case null => Nil
-      case x => List("-Dakka.test.timefactor=" + x)
-    }) :::
-    (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
+    import scala.collection.JavaConverters._
+    val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
+      case key: String if key.startsWith("akka.") => "-D" + key + "=" + System.getProperty(key)
+    }
+    akkaProperties ::: (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
   }
 
   // for excluding tests by name use system property: -Dakka.test.names.exclude=TimingSpec
