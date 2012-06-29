@@ -4,9 +4,7 @@
 package akka.remote.testkit
 
 import java.net.InetSocketAddress
-
 import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
-
 import akka.actor.{ RootActorPath, ActorPath, ActorSystem, ExtendedActorSystem }
 import akka.dispatch.Await
 import akka.dispatch.Await.Awaitable
@@ -14,6 +12,7 @@ import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
 import akka.testkit.AkkaSpec
 import akka.util.{ Timeout, NonFatal }
 import akka.util.duration._
+import akka.remote.RemoteActorRefProvider
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -259,8 +258,9 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     }
   }
 
-  // useful to see which jvm is running which role
-  log.info("Role [{}] started", myself.name)
+  // useful to see which jvm is running which role, used by LogRoleReplace utility
+  log.info("Role [{}] started with address [{}]", myself.name,
+    system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address)
 
   // wait for all nodes to remove themselves before we shut the conductor down
   final override def beforeShutdown() = {
