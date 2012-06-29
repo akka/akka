@@ -8,7 +8,7 @@ import language.postfixOps
 import akka.actor.Actor
 import akka.testkit._
 import akka.actor.Props
-import akka.dispatch.Await
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.actor.ActorRef
 import java.util.concurrent.atomic.AtomicInteger

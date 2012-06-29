@@ -8,7 +8,7 @@ import language.postfixOps
 
 import akka.testkit._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._

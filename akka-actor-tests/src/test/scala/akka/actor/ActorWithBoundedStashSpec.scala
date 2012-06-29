@@ -8,8 +8,9 @@ import language.postfixOps
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
-import akka.dispatch.{ Await, BoundedDequeBasedMailbox }
+import akka.dispatch.BoundedDequeBasedMailbox
 import akka.pattern.ask
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.{ Config, ConfigFactory }

@@ -13,7 +13,7 @@ import akka.actor.Props;
 import akka.dispatch.Future;
 import akka.dispatch.Futures;
 import akka.dispatch.Mapper;
-import akka.dispatch.Await;
+import scala.concurrent.Await;
 import scala.concurrent.util.Duration;
 import akka.util.Timeout;
 //#import-future
@@ -34,7 +34,7 @@ import akka.actor.Terminated;
 //#import-gracefulStop
 import static akka.pattern.Patterns.gracefulStop;
 import akka.dispatch.Future;
-import akka.dispatch.Await;
+import scala.concurrent.Await;
 import scala.concurrent.util.Duration;
 import akka.pattern.AskTimeoutException;
 //#import-gracefulStop

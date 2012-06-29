@@ -140,7 +140,7 @@ class TransactorDocSpec extends AkkaSpec {
     import CoordinatedExample._
 
     //#run-coordinated-example
-    import akka.dispatch.Await
+    import scala.concurrent.Await
     import scala.concurrent.util.duration._
     import akka.util.Timeout
     import akka.pattern.ask

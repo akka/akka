@@ -9,6 +9,7 @@ import com.typesafe.config.Config
 import akka.actor.{ Props, InternalActorRef, ActorSystem, Actor }
 import akka.pattern.ask
 import akka.testkit.{ DefaultTimeout, AkkaSpec }
+import scala.concurrent.Await
 import scala.concurrent.util.duration.intToDurationInt
 
 object PriorityDispatcherSpec {

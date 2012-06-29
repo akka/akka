@@ -23,6 +23,7 @@ import akka.testkit._
 import akka.util.{ Timeout, Switch }
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
+import scala.concurrent.Await
 import scala.annotation.tailrec
 
 object ActorModelSpec {

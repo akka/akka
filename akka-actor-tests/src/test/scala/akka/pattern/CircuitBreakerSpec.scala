@@ -10,7 +10,7 @@ import scala.concurrent.util.duration._
 import akka.testkit._
 import org.scalatest.BeforeAndAfter
 import akka.dispatch.Future
-import akka.dispatch.Await
+import scala.concurrent.Await
 
 object CircuitBreakerSpec {
 

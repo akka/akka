@@ -4,6 +4,7 @@ import akka.util.Timeout;
 import akka.actor.ActorSystem;
 
 import akka.japi.*;
+import scala.concurrent.Await;
 import scala.concurrent.util.Duration;
 import akka.testkit.TestKitExtension;
 import org.junit.AfterClass;

@@ -12,12 +12,11 @@ import org.scalatest.matchers.MustMatchers
 import akka.testkit._
 import akka.util.Timeout
 import scala.concurrent.util.duration._
+import scala.concurrent.Await
 import java.lang.IllegalStateException
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import akka.dispatch.{ Await, DefaultPromise, Promise, Future }
+import akka.dispatch.Promise
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
-import akka.actor.NonPublicClass
 
 object ActorRefSpec {
 

@@ -5,11 +5,13 @@
 package akka.dispatch
 
 import akka.event.Logging.Error
-import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorCell
-import scala.concurrent.util.Duration
-import java.util.concurrent._
 import akka.event.Logging
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{ ExecutorService, RejectedExecutionException }
+import scala.concurrent.forkjoin.ForkJoinPool
+import scala.concurrent.util.Duration
+import scala.concurrent.Awaitable
 
 /**
  * The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a
@@ -76,6 +78,25 @@ class Dispatcher(
             prerequisites.eventStream.publish(Error(e, getClass.getName, getClass, "executeTask was rejected twice!"))
             throw e2
         }
+    }
+  }
+
+  override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = {
+    scala.concurrent.impl.InternalFutureUtil.releaseFutureStack(this)
+
+    executorService.executor match {
+      case fj: ForkJoinPool ⇒
+        val result = new AtomicReference[Option[T]](None)
+        ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
+          def block(): Boolean = {
+            result.set(Some(awaitable.result(atMost)(scala.concurrent.impl.InternalFutureUtil.canAwaitEvidence)))
+            true
+          }
+          def isReleasable = result.get.isDefined
+        })
+        result.get.get // Exception intended if None
+      case _ ⇒
+        awaitable.result(atMost)(scala.concurrent.impl.InternalFutureUtil.canAwaitEvidence)
     }
   }
 

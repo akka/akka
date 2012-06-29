@@ -12,7 +12,7 @@ import akka.testkit.{ TestKit, filterEvents, EventFilter }
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.DefaultTimeout
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 import scala.concurrent.util.duration._
 

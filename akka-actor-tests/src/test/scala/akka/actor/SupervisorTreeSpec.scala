@@ -7,13 +7,11 @@ import language.postfixOps
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.actor.Actor._
-import akka.testkit.{ TestKit, EventFilter, filterEvents, filterException }
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import akka.testkit.DefaultTimeout
-import akka.dispatch.{ Await, Dispatchers }
+import akka.testkit.{ TestKit, EventFilter, filterEvents, filterException, AkkaSpec, ImplicitSender, DefaultTimeout }
+import akka.dispatch.Dispatchers
 import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

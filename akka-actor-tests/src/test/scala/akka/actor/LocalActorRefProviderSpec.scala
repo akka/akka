@@ -7,9 +7,10 @@ package akka.actor
 import language.postfixOps
 
 import akka.testkit._
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.util.Timeout
-import akka.dispatch.{ Await, Future }
+import akka.dispatch.Future
 
 object LocalActorRefProviderSpec {
   val config = """

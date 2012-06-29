@@ -7,7 +7,7 @@ package akka.transactor
 import org.scalatest.BeforeAndAfterAll
 
 import akka.actor._
-import akka.dispatch.Await
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.util.Timeout
 import akka.testkit._

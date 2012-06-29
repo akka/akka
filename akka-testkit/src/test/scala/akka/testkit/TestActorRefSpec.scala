@@ -9,7 +9,8 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.event.Logging.Warning
-import akka.dispatch.{ Future, Promise, Await }
+import akka.dispatch.{ Future, Promise }
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.actor.ActorSystem
 import akka.pattern.ask

@@ -5,17 +5,17 @@
 package akka.dispatch
 
 import java.util.concurrent._
-import akka.event.Logging.Error
+import akka.event.Logging.{ Error, LogEventException }
 import akka.actor._
-import akka.actor.ActorSystem
 import scala.annotation.tailrec
 import akka.event.EventStream
 import com.typesafe.config.Config
 import akka.serialization.SerializationExtension
-import akka.event.Logging.LogEventException
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
 import akka.util.{ Unsafe, NonFatal, Index }
 import scala.concurrent.util.Duration
+import scala.concurrent.ExecutionContext
+import scala.concurrent.{ Await, Awaitable }
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
@@ -124,88 +124,6 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
 }
 
 /**
- * Java API to create ExecutionContexts
- */
-object ExecutionContexts {
-
-  /**
-   * Creates an ExecutionContext from the given ExecutorService
-   */
-  def fromExecutorService(e: ExecutorService): ExecutionContextExecutorService =
-    new ExecutionContext.WrappedExecutorService(e)
-
-  /**
-   * Creates an ExecutionContext from the given Executor
-   */
-  def fromExecutor(e: Executor): ExecutionContextExecutor =
-    new ExecutionContext.WrappedExecutor(e)
-}
-
-object ExecutionContext {
-  implicit def defaultExecutionContext(implicit system: ActorSystem): ExecutionContext = system.dispatcher
-
-  /**
-   * Creates an ExecutionContext from the given ExecutorService
-   */
-  def fromExecutorService(e: ExecutorService): ExecutionContext with ExecutorService = new WrappedExecutorService(e)
-
-  /**
-   * Creates an ExecutionContext from the given Executor
-   */
-  def fromExecutor(e: Executor): ExecutionContext with Executor = new WrappedExecutor(e)
-
-  /**
-   * Internal Akka use only
-   */
-  private[akka] class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContextExecutorService {
-    override def reportFailure(t: Throwable): Unit = t match {
-      case e: LogEventException ⇒ e.getCause.printStackTrace()
-      case _                    ⇒ t.printStackTrace()
-    }
-  }
-
-  /**
-   * Internal Akka use only
-   */
-  private[akka] class WrappedExecutor(val executor: Executor) extends ExecutionContextExecutor {
-    override final def execute(runnable: Runnable): Unit = executor.execute(runnable)
-    override def reportFailure(t: Throwable): Unit = t match {
-      case e: LogEventException ⇒ e.getCause.printStackTrace()
-      case _                    ⇒ t.printStackTrace()
-    }
-  }
-}
-
-/**
- * Union interface since Java does not support union types
- */
-trait ExecutionContextExecutor extends ExecutionContext with Executor
-
-/**
- * Union interface since Java does not support union types
- */
-trait ExecutionContextExecutorService extends ExecutionContextExecutor with ExecutorService
-
-/**
- * An ExecutionContext is essentially the same thing as a java.util.concurrent.Executor
- * This interface/trait exists to decouple the concept of execution from Actors & MessageDispatchers
- * It is also needed to provide a fallback implicit default instance (in the companion object).
- */
-trait ExecutionContext {
-
-  /**
-   * Submits the runnable for execution
-   */
-  def execute(runnable: Runnable): Unit
-
-  /**
-   * Failed tasks should call reportFailure to let the ExecutionContext
-   * log the problem or whatever is appropriate for the implementation.
-   */
-  def reportFailure(t: Throwable): Unit
-}
-
-/**
  * INTERNAL API
  */
 private[akka] trait LoadMetrics { self: Executor ⇒
@@ -289,13 +207,9 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /**
    * Detaches the specified actor instance from this dispatcher
    */
-  final def detach(actor: ActorCell): Unit = try {
-    unregister(actor)
-  } finally {
-    ifSensibleToDoSoThenScheduleShutdown()
-  }
+  final def detach(actor: ActorCell): Unit = try unregister(actor) finally ifSensibleToDoSoThenScheduleShutdown()
 
-  final def execute(runnable: Runnable): Unit = {
+  final override def execute(runnable: Runnable): Unit = {
     val invocation = TaskInvocation(eventStream, runnable, taskCleanup)
     addInhabitants(+1)
     try {
@@ -307,7 +221,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     }
   }
 
-  def reportFailure(t: Throwable): Unit = t match {
+  override def reportFailure(t: Throwable): Unit = t match {
     case e: LogEventException ⇒ prerequisites.eventStream.publish(e.event)
     case _                    ⇒ prerequisites.eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
   }

@@ -7,17 +7,13 @@ import language.{ postfixOps, reflectiveCalls }
 
 import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
-import akka.actor.ActorSystem
-import akka.actor.{ Actor, ActorRef, Props }
+import akka.actor.{ Actor, ActorRef, Props, ActorSystem, PoisonPill, DeadLetter }
 import akka.event.{ Logging, LoggingAdapter }
 import scala.concurrent.util.duration._
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import akka.actor.PoisonPill
-import akka.actor.DeadLetter
+import scala.concurrent.Await
+import com.typesafe.config.{ Config, ConfigFactory }
 import java.util.concurrent.TimeoutException
-import akka.dispatch.{ Await, MessageDispatcher }
-import akka.dispatch.Dispatchers
+import akka.dispatch.{ MessageDispatcher, Dispatchers }
 import akka.pattern.ask
 
 object TimingTest extends Tag("timing")

@@ -5,8 +5,9 @@ package akka.pattern
  */
 
 import scala.concurrent.util.Duration
+import scala.concurrent.ExecutionContext
 import akka.actor._
-import akka.dispatch.{ ExecutionContext, Promise, Future }
+import akka.dispatch.{ Promise, Future }
 
 trait FutureTimeoutSupport {
   /**

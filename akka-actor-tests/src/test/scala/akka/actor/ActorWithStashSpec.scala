@@ -8,7 +8,7 @@ import language.postfixOps
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 import scala.concurrent.util.duration._
 import com.typesafe.config.{ Config, ConfigFactory }

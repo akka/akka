@@ -9,7 +9,7 @@ import language.postfixOps
 import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor._
 import java.io._
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.util.Timeout
 import scala.concurrent.util.duration._
 import scala.reflect.BeanInfo

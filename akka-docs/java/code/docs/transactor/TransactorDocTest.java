@@ -9,7 +9,7 @@ import org.junit.Test;
 
 //#imports
 import akka.actor.*;
-import akka.dispatch.Await;
+import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
 import akka.transactor.Coordinated;
 import scala.concurrent.util.Duration;

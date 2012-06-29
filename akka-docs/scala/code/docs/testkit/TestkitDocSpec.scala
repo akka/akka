@@ -122,7 +122,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#test-behavior
     import akka.testkit.TestActorRef
     import scala.concurrent.util.duration._
-    import akka.dispatch.Await
+    import scala.concurrent.Await
     import akka.pattern.ask
 
     val actorRef = TestActorRef(new MyActor)

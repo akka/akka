@@ -20,7 +20,7 @@ import akka.testkit._
 import akka.util._
 import scala.concurrent.util.duration._
 import akka.actor.Actor.Receive
-import akka.dispatch.Await
+import scala.concurrent.Await
 
 //#my-actor
 class MyActor extends Actor {
@@ -327,7 +327,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val actorRef = system.actorOf(Props[MyActor])
     //#gracefulStop
     import akka.pattern.gracefulStop
-    import akka.dispatch.Await
+    import scala.concurrent.Await
 
     try {
       val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds)(system)

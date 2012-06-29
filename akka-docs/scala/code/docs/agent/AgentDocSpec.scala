@@ -113,7 +113,7 @@ class AgentDocSpec extends AkkaSpec {
     val agent = Agent(0)
 
     //#read-future
-    import akka.dispatch.Await
+    import scala.concurrent.Await
 
     implicit val timeout = Timeout(5 seconds)
     val future = agent.future

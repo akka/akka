@@ -7,11 +7,11 @@ package akka.pattern
 import language.postfixOps
 
 import akka.testkit.AkkaSpec
-import akka.actor.Props
-import akka.actor.Actor
+import akka.actor.{ Props, Actor }
+import scala.concurrent.Await
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
-import akka.dispatch.{ Future, Promise, Await }
+import akka.dispatch.{ Future, Promise }
 
 object PatternSpec {
   case class Work(duration: Duration)

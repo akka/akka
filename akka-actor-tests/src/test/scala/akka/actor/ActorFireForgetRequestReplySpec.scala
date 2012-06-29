@@ -7,7 +7,7 @@ package akka.actor
 import akka.testkit._
 import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.util.duration._
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 
 object ActorFireForgetRequestReplySpec {

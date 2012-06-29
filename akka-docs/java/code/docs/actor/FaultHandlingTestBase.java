@@ -12,7 +12,7 @@ import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
-import akka.dispatch.Await;
+import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
 import scala.concurrent.util.Duration;
 import akka.testkit.AkkaSpec;

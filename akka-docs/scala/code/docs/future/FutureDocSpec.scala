@@ -61,7 +61,7 @@ class FutureDocSpec extends AkkaSpec {
     val actor = system.actorOf(Props[MyActor])
     val msg = "hello"
     //#ask-blocking
-    import akka.dispatch.Await
+    import scala.concurrent.Await
     import akka.pattern.ask
     import akka.util.Timeout
     import scala.concurrent.util.duration._
@@ -88,7 +88,7 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of simple future eval" in {
     //#future-eval
-    import akka.dispatch.Await
+    import scala.concurrent.Await
     import akka.dispatch.Future
     import scala.concurrent.util.duration._
 
@@ -184,7 +184,7 @@ class FutureDocSpec extends AkkaSpec {
     val msg1 = 1
     val msg2 = 2
     implicit val timeout = Timeout(5 seconds)
-    import akka.dispatch.Await
+    import scala.concurrent.Await
     import akka.pattern.ask
     //#composing-wrong
 
@@ -208,7 +208,7 @@ class FutureDocSpec extends AkkaSpec {
     val msg1 = 1
     val msg2 = 2
     implicit val timeout = Timeout(5 seconds)
-    import akka.dispatch.Await
+    import scala.concurrent.Await
     import akka.pattern.ask
     //#composing
 

@@ -17,7 +17,7 @@ import scala.concurrent.util.Duration
  * The Camel endpoints are activated asynchronously. This trait can signal when an endpoint is activated or de-activated.
  */
 trait Activation {
-  import akka.dispatch.Await
+  import scala.concurrent.Await
 
   def system: ActorSystem //FIXME Why is this here, what's it needed for and who should use it?
 

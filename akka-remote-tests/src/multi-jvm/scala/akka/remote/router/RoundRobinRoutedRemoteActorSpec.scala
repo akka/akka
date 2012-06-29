@@ -8,7 +8,7 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.PoisonPill
 import akka.actor.Address
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec

@@ -15,7 +15,7 @@ import akka.actor.*;
 import akka.routing.*;
 import scala.concurrent.util.Duration;
 import akka.util.Timeout;
-import akka.dispatch.Await;
+import scala.concurrent.Await;
 import akka.dispatch.Future;
 import akka.dispatch.Dispatchers;
 import akka.testkit.AkkaSpec;

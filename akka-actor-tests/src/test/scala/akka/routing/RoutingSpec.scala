@@ -10,7 +10,7 @@ import akka.actor._
 import scala.collection.mutable.LinkedList
 import akka.testkit._
 import scala.concurrent.util.duration._
-import akka.dispatch.Await
+import scala.concurrent.Await
 import scala.concurrent.util.Duration
 import akka.ConfigurationException
 import com.typesafe.config.ConfigFactory

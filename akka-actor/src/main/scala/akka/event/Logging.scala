@@ -13,7 +13,7 @@ import scala.concurrent.util.duration._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException
-import akka.dispatch.Await
+import scala.concurrent.Await
 import annotation.implicitNotFound
 
 /**

@@ -15,6 +15,7 @@ import akka.dispatch.{ MailboxType, TaskInvocation, SystemMessage, Suspend, Resu
 import scala.concurrent.util.duration.intToDurationInt
 import akka.util.{ Switch, NonFatal }
 import scala.concurrent.util.Duration
+import scala.concurrent.Awaitable
 import akka.actor.ActorContext
 import akka.dispatch.MessageQueue
 
@@ -206,6 +207,8 @@ class CallingThreadDispatcher(
   }
 
   protected[akka] override def executeTask(invocation: TaskInvocation) { invocation.run }
+
+  override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)(scala.concurrent.impl.InternalFutureUtil.canAwaitEvidence)
 
   /*
    * This method must be called with this thread's queue, which must already

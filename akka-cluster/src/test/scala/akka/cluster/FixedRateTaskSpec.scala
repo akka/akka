@@ -8,7 +8,7 @@ import akka.testkit.AkkaSpec
 import scala.concurrent.util.duration._
 import akka.testkit.TimingTest
 import akka.testkit.TestLatch
-import akka.dispatch.Await
+import scala.concurrent.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FixedRateTaskSpec extends AkkaSpec {

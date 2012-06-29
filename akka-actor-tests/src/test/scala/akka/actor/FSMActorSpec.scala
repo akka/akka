@@ -12,7 +12,7 @@ import TestEvent.Mute
 import scala.concurrent.util.duration._
 import akka.event._
 import com.typesafe.config.ConfigFactory
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.util.Timeout
 import scala.concurrent.util.Duration
 

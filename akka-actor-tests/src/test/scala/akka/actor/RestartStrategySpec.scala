@@ -8,7 +8,7 @@ import language.postfixOps
 
 import java.lang.Thread.sleep
 import org.scalatest.BeforeAndAfterAll
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.testkit.TestEvent._
 import akka.testkit.EventFilter
 import java.util.concurrent.{ TimeUnit, CountDownLatch }

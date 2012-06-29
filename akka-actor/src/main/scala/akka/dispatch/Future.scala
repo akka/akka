@@ -16,7 +16,6 @@ import java.util.{ LinkedList ⇒ JLinkedList }
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
 import akka.util.BoxedType
-import akka.dispatch.Await.CanAwait
 import akka.util.NonFatal
 import akka.event.Logging.{ LogEventException, Debug, Error }
 import java.util.concurrent.TimeUnit.NANOSECONDS
@@ -25,58 +24,9 @@ import java.util.concurrent.atomic.{ AtomicInteger }
 import akka.pattern.AskTimeoutException
 import scala.util.DynamicVariable
 import scala.concurrent.util.Duration
+import scala.concurrent.ExecutionContext
 import scala.runtime.{ BoxedUnit, AbstractPartialFunction }
-
-object Await {
-
-  /**
-   * Internal Akka use only
-   */
-  sealed trait CanAwait
-
-  /**
-   * Classes that implement Awaitable can be used with Await,
-   * this is used to do blocking operations (blocking in the "pause this thread" sense)
-   */
-  trait Awaitable[+T] {
-    /**
-     * Should throw [[java.util.concurrent.TimeoutException]] if times out
-     * This method should not be called directly.
-     */
-    @throws(classOf[TimeoutException])
-    def ready(atMost: Duration)(implicit permit: CanAwait): this.type
-
-    /**
-     * Throws exceptions if cannot produce a T within the specified time
-     * This method should not be called directly.
-     */
-    @throws(classOf[Exception])
-    def result(atMost: Duration)(implicit permit: CanAwait): T
-  }
-
-  private[this] implicit final val permit = new CanAwait {}
-
-  /**
-   * Blocks the current Thread to wait for the given awaitable to be ready.
-   * WARNING: Blocking operation, use with caution.
-   *
-   * @throws [[java.util.concurrent.TimeoutException]] if times out
-   * @return The returned value as returned by Awaitable.ready
-   */
-  @throws(classOf[TimeoutException])
-  def ready[T <: Awaitable[_]](awaitable: T, atMost: Duration): T = awaitable.ready(atMost)
-
-  /**
-   * Blocks the current Thread to wait for the given awaitable to have a result.
-   * WARNING: Blocking operation, use with caution.
-   *
-   * @throws [[java.util.concurrent.TimeoutException]] if times out
-   * @throws [[java.lang.Throwable]] (throws clause is Exception due to Java) if there was a problem
-   * @return The returned value as returned by Awaitable.result
-   */
-  @throws(classOf[Exception])
-  def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)
-}
+import scala.concurrent.{ Awaitable, Await, CanAwait }
 
 /**
  * Futures is the Java API for Futures and Promises
@@ -415,7 +365,7 @@ object Future {
  *    and [[akka.dispatch.Future]].`fallbackTo` are some methods to consider
  *    using when possible, to avoid concurrent callbacks.
  */
-sealed trait Future[+T] extends Await.Awaitable[T] {
+sealed trait Future[+T] extends Awaitable[T] {
 
   protected implicit def executor: ExecutionContext
 

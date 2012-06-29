@@ -12,7 +12,7 @@ import akka.{ Die, Ping }
 import akka.testkit.TestEvent._
 import akka.testkit._
 import java.util.concurrent.atomic.AtomicInteger
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 
 object SupervisorSpec {

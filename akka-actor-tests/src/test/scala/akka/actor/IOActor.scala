@@ -7,11 +7,12 @@ package akka.actor
 import language.postfixOps
 
 import akka.util.ByteString
+import scala.concurrent.{ ExecutionContext, Await }
 import scala.concurrent.util.{ Duration, Deadline }
 import scala.concurrent.util.duration._
 import scala.util.continuations._
 import akka.testkit._
-import akka.dispatch.{ Await, Future, Promise, ExecutionContext, MessageDispatcher }
+import akka.dispatch.{ Future, Promise, MessageDispatcher }
 import java.net.{ SocketAddress }
 import akka.pattern.ask
 

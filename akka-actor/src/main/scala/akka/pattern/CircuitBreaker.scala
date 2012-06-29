@@ -6,12 +6,14 @@ package akka.pattern
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong, AtomicBoolean }
 import akka.AkkaException
 import akka.actor.Scheduler
-import akka.dispatch.{ Future, ExecutionContext, Await, Promise }
+import akka.dispatch.{ Future, Promise }
 import akka.util.{ NonFatal, Unsafe }
+import scala.concurrent.ExecutionContext
 import scala.concurrent.util.duration._
 import scala.concurrent.util.{ Duration, Deadline }
 import util.control.NoStackTrace
 import java.util.concurrent.{ Callable, CopyOnWriteArrayList }
+import scala.concurrent.{ Awaitable, Await, CanAwait }
 
 /**
  * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
@@ -22,9 +24,9 @@ object CircuitBreaker {
    * Synchronous execution context to run in caller's thread - used by companion object factory methods
    */
   private[CircuitBreaker] val syncExecutionContext = new ExecutionContext {
-    def execute(runnable: Runnable): Unit = runnable.run()
-
-    def reportFailure(t: Throwable): Unit = ()
+    override def execute(runnable: Runnable): Unit = runnable.run()
+    override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)(scala.concurrent.impl.InternalFutureUtil.canAwaitEvidence)
+    override def reportFailure(t: Throwable): Unit = ()
   }
 
   /**

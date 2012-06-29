@@ -14,7 +14,7 @@ import akka.actor.Props;
 import scala.concurrent.util.Duration;
 import akka.util.Timeout;
 import akka.dispatch.Future;
-import akka.dispatch.Await;
+import scala.concurrent.Await;
 
 //#parentActor
 public class ParentActor extends UntypedActor {

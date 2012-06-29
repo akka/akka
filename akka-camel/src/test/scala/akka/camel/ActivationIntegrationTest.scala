@@ -14,7 +14,7 @@ import akka.util.Timeout
 import TestSupport._
 import org.scalatest.WordSpec
 import akka.testkit.TestLatch
-import akka.dispatch.Await
+import scala.concurrent.Await
 
 class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCamelSystem {
   implicit val timeout = Timeout(10 seconds)

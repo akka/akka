@@ -12,7 +12,7 @@ import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelH
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.util.duration._
 import akka.pattern.ask
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.event.{ LoggingAdapter, Logging }
 import scala.util.control.NoStackTrace
 import akka.event.LoggingReceive

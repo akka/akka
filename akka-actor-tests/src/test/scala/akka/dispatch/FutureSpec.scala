@@ -9,12 +9,11 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import org.scalacheck.Gen._
 import akka.actor._
-import akka.testkit.{ EventFilter, filterEvents, filterException }
+import akka.testkit.{ EventFilter, filterEvents, filterException, AkkaSpec, DefaultTimeout, TestLatch }
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
-import akka.testkit.AkkaSpec
+import scala.concurrent.ExecutionContext
 import org.scalatest.junit.JUnitSuite
-import akka.testkit.DefaultTimeout
-import akka.testkit.TestLatch
 import scala.runtime.NonLocalReturnControl
 import akka.pattern.ask
 import java.lang.{ IllegalStateException, ArithmeticException }
@@ -86,7 +85,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     }
 
     "have different ECs" in {
-      def namedCtx(n: String) = ExecutionContexts.fromExecutorService(
+      def namedCtx(n: String) = ExecutionContext.fromExecutorService(
         Executors.newSingleThreadExecutor(new ThreadFactory {
           def newThread(r: Runnable) = new Thread(r, n)
         }))
@@ -105,8 +104,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       try {
         Await.result(result, timeout.duration) must be === "Hi A"
       } finally {
-        A.asInstanceOf[ExecutorService].shutdown()
-        B.asInstanceOf[ExecutorService].shutdown()
+        A.shutdown()
+        B.shutdown()
       }
     }
   }

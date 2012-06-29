@@ -5,7 +5,7 @@ import akka.actor._
 import akka.actor.Actor._
 import akka.routing._
 import java.util.concurrent.atomic.AtomicInteger
-import akka.dispatch.Await
+import scala.concurrent.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ListenerSpec extends AkkaSpec {

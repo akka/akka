@@ -8,7 +8,7 @@ import language.postfixOps
 import akka.testkit._
 import org.scalatest.junit.JUnitSuite
 import com.typesafe.config.ConfigFactory
-import akka.dispatch.Await
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import scala.collection.JavaConverters
 import java.util.concurrent.{ TimeUnit, RejectedExecutionException, CountDownLatch, ConcurrentLinkedQueue }

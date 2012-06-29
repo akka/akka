@@ -6,7 +6,8 @@ package akka.actor
 import language.higherKinds
 import language.postfixOps
 
-import akka.dispatch.{ Future, ExecutionContext }
+import akka.dispatch.Future
+import scala.concurrent.ExecutionContext
 import scala.concurrent.util.Duration
 import akka.util.{ ByteString, NonFatal }
 import java.net.{ SocketAddress, InetSocketAddress }

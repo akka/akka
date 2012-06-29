@@ -13,7 +13,7 @@ import org.apache.camel.component.mock.MockEndpoint
 import akka.camel.TestSupport.SharedCamelSystem
 import akka.actor.Props
 import akka.pattern._
-import akka.dispatch.Await
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import org.scalatest._
 import matchers.MustMatchers

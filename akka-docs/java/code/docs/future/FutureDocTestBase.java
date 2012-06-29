@@ -40,8 +40,8 @@ import static akka.dispatch.Futures.reduce;
 //#imports6
 
 //#imports7
-import akka.dispatch.ExecutionContexts;
-import akka.dispatch.ExecutionContextExecutorService;
+import scala.concurrent.ExecutionContexts;
+import scala.concurrent.ExecutionContextExecutorService;
 
 //#imports7
 

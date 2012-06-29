@@ -10,8 +10,8 @@ import java.net.InetSocketAddress
 import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
 
 import akka.actor.{ RootActorPath, ActorPath, ActorSystem, ExtendedActorSystem }
-import akka.dispatch.Await
-import akka.dispatch.Await.Awaitable
+import scala.concurrent.Await
+import scala.concurrent.Await.Awaitable
 import akka.util.{ Timeout, NonFatal }
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
 import akka.testkit.AkkaSpec

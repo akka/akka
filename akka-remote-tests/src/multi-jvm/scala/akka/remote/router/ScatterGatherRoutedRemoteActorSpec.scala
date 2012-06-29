@@ -6,7 +6,7 @@ package akka.remote.router
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec

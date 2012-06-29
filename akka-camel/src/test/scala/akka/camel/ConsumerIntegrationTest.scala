@@ -17,7 +17,7 @@ import org.apache.camel.builder.Builder
 import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException }
 import java.util.concurrent.{ ExecutionException, TimeUnit, TimeoutException }
 import akka.testkit.TestLatch
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.actor.Status.Failure
 
 class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedCamelSystem {

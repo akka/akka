@@ -10,7 +10,7 @@ import akka.testkit._
 import scala.concurrent.util.duration._
 import Actor._
 import scala.concurrent.util.Duration
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 
 object ForwardActorSpec {

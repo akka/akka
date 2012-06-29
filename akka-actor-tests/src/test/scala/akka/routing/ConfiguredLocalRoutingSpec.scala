@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.junit.runner.RunWith
 import akka.actor.{ Props, Deploy, Actor, ActorRef }
 import akka.ConfigurationException
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.{ ask, gracefulStop }
 import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }
 import scala.concurrent.util.duration.intToDurationInt

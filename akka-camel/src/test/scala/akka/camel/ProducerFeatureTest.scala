@@ -9,7 +9,7 @@ import language.postfixOps
 import org.apache.camel.{ Exchange, Processor }
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.camel.TestSupport.SharedCamelSystem
 import akka.actor.SupervisorStrategy.Stop
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }

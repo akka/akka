@@ -2,7 +2,7 @@ package akka.agent
 
 import language.postfixOps
 
-import akka.dispatch.Await
+import scala.concurrent.Await
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
 import akka.util.Timeout

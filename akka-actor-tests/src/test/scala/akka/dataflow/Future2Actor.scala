@@ -6,10 +6,10 @@ package akka.dataflow
 import language.postfixOps
 
 import akka.actor.{ Actor, Props }
-import akka.dispatch.{ Future, Await }
+import akka.dispatch.Future
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
-import akka.testkit.AkkaSpec
-import akka.testkit.DefaultTimeout
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.pattern.{ ask, pipe }
 
 class Future2ActorSpec extends AkkaSpec with DefaultTimeout {

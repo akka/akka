@@ -4,8 +4,9 @@
 package akka.util
 
 import org.scalatest.matchers.MustMatchers
-import akka.dispatch.{ Future, Await }
+import akka.dispatch.Future
 import akka.testkit.AkkaSpec
+import scala.concurrent.Await
 import scala.util.Random
 import akka.testkit.DefaultTimeout
 

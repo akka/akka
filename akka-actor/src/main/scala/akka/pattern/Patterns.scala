@@ -4,7 +4,7 @@
 package akka.pattern
 
 import akka.actor.Scheduler
-import akka.dispatch.ExecutionContext
+import scala.concurrent.ExecutionContext
 import java.util.concurrent.Callable
 
 object Patterns {
