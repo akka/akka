@@ -14,12 +14,23 @@ import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.util.BoxedType
 import scala.annotation.varargs
+import akka.japi.PurePartialFunction
 
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
 
-  trait AutoPilot {
-    def run(sender: ActorRef, msg: Any): Option[AutoPilot]
+  abstract class AutoPilot {
+    def run(sender: ActorRef, msg: Any): AutoPilot
+    def noAutoPilot: AutoPilot = NoAutoPilot
+    def keepRunning: AutoPilot = KeepRunning
+  }
+
+  case object NoAutoPilot extends AutoPilot {
+    def run(sender: ActorRef, msg: Any): AutoPilot = this
+  }
+
+  case object KeepRunning extends AutoPilot {
+    def run(sender: ActorRef, msg: Any): AutoPilot = sys.error("must not call")
   }
 
   case class SetIgnore(i: Ignore)
@@ -43,15 +54,18 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
 
   var ignore: Ignore = None
 
-  var autopilot: Option[AutoPilot] = None
+  var autopilot: AutoPilot = NoAutoPilot
 
   def receive = {
     case SetIgnore(ign)      ⇒ ignore = ign
     case x @ Watch(ref)      ⇒ context.watch(ref); queue.offerLast(RealMessage(x, self))
     case x @ UnWatch(ref)    ⇒ context.unwatch(ref); queue.offerLast(RealMessage(x, self))
-    case SetAutoPilot(pilot) ⇒ autopilot = Some(pilot)
+    case SetAutoPilot(pilot) ⇒ autopilot = pilot
     case x: AnyRef ⇒
-      autopilot = autopilot.flatMap(_.run(sender, x))
+      autopilot = autopilot.run(sender, x) match {
+        case KeepRunning ⇒ autopilot
+        case other       ⇒ other
+      }
       val observe = ignore map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
       if (observe) queue.offerLast(RealMessage(x, sender))
   }
@@ -126,20 +140,20 @@ trait TestKitBase {
    * Have the testActor watch someone (i.e. `context.watch(...)`). Waits until
    * the Watch message is received back using expectMsg.
    */
-  def watch(ref: ActorRef) {
+  def watch(ref: ActorRef): ActorRef = {
     val msg = TestActor.Watch(ref)
     testActor ! msg
-    expectMsg(msg)
+    expectMsg(msg).ref
   }
 
   /**
    * Have the testActor stop watching someone (i.e. `context.unwatch(...)`). Waits until
    * the Watch message is received back using expectMsg.
    */
-  def unwatch(ref: ActorRef) {
+  def unwatch(ref: ActorRef): ActorRef = {
     val msg = TestActor.UnWatch(ref)
     testActor ! msg
-    expectMsg(msg)
+    expectMsg(msg).ref
   }
 
   /**
@@ -241,22 +255,6 @@ trait TestKitBase {
    * Same as calling `within(0 seconds, max)(f)`.
    */
   def within[T](max: Duration)(f: ⇒ T): T = within(0 seconds, max)(f)
-
-  /**
-   * Java API for within():
-   *
-   * {{{
-   * new Within(Duration.parse("3 seconds")) {
-   *   public void run() {
-   *     // your test code here
-   *   }
-   * }
-   * }}}
-   */
-  abstract class Within(max: Duration) {
-    def run(): Unit
-    within(max)(run())
-  }
 
   /**
    * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.

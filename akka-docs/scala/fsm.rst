@@ -424,7 +424,7 @@ This FSM will log at DEBUG level:
   * all state transitions
 
 Life cycle changes and special messages can be logged as described for
-:ref:`Actors <actor.logging>`.
+:ref:`Actors <actor.logging-scala>`.
 
 Rolling Event Log
 -----------------

@@ -46,7 +46,9 @@ trait Creator[T] {
 }
 
 object PurePartialFunction {
-  case object NoMatch extends RuntimeException with NoStackTrace
+  sealed abstract class NoMatchException extends RuntimeException with NoStackTrace
+  case object NoMatch extends NoMatchException
+  final def noMatch(): RuntimeException = NoMatch
 }
 
 /**
@@ -86,7 +88,16 @@ abstract class PurePartialFunction[A, B] extends scala.runtime.AbstractFunction1
 
   final def isDefinedAt(x: A): Boolean = try { apply(x, true); true } catch { case NoMatch ⇒ false }
   final def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError }
-  final def noMatch(): RuntimeException = NoMatch
+}
+
+abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
+  import PurePartialFunction._
+
+  def `match`(x: A): B
+
+  var cache: B = _
+  final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
+  final def apply(x: A): B = cache
 }
 
 /**
@@ -164,4 +175,6 @@ object Util {
   def manifest[T](clazz: Class[T]): Manifest[T] = Manifest.classType(clazz)
 
   def arrayToSeq[T](arr: Array[T]): Seq[T] = arr.toSeq
+
+  def arrayToSeq(classes: Array[Class[_]]): Seq[Class[_]] = classes.toSeq
 }

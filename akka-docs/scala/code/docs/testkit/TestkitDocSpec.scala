@@ -275,4 +275,15 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#test-kit-base
   }
 
+  "demonstrate within() nesting" in {
+    intercept[AssertionError] {
+      //#test-within-probe
+      val probe = TestProbe()
+      within(1 second) {
+        probe.expectMsg("hello")
+      }
+      //#test-within-probe
+    }
+  }
+
 }
