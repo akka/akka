@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 import com.typesafe.config.Config
 import akka.actor.{ ActorInitializationException, ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorRef, ActorCell }
 import akka.dispatch.{ MailboxType, TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
-import akka.util.duration.intToDurationInt
+import scala.concurrent.util.duration.intToDurationInt
 import akka.util.{ Switch, NonFatal }
 import scala.concurrent.util.Duration
 import akka.actor.ActorContext
