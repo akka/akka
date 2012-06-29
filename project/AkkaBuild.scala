@@ -440,9 +440,7 @@ object AkkaBuild extends Build {
 object Dependencies {
   import Dependency._
 
-  val actor = Seq(
-    config
-  )
+  val actor = Seq(config)
 
   val testkit = Seq(Test.scalatest, Test.junit)
 
