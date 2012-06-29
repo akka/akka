@@ -59,7 +59,8 @@ object AkkaSpec {
 abstract class AkkaSpec(_system: ActorSystem)
   extends TestKit(_system) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
-  def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass), config.withFallback(AkkaSpec.testConf)))
+  def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
+    ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
