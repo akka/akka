@@ -30,7 +30,8 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString("""
     # Number of ActorSystems in each jvm, can be specified as
     # system property when running real tests. Many nodes
-    # will take long time.
+    # will take long time and consume many threads.
+    # 10 => 50 nodes is possible to run on one machine.
     akka.test.large-cluster-spec.nodes-per-datacenter = 2
     akka.cluster {
       gossip-interval = 500 ms
@@ -40,7 +41,19 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.default-dispatcher.fork-join-executor.parallelism-max = 2
     akka.scheduler.tick-duration = 33 ms
-    akka.remote.netty.execution-pool-size = 1
+    akka.remote.netty.execution-pool-size = 0
+
+    # don't use testconductor transport in this test, especially not
+    # when using use-dispatcher-for-io
+    akka.remote.transport = "akka.remote.netty.NettyRemoteTransport"
+
+    # Using a separate dispatcher for netty io doesn't reduce number
+    # of needed threads
+    # akka.remote.netty.use-dispatcher-for-io=akka.test.io-dispatcher
+    # akka.test.io-dispatcher.fork-join-executor {
+    #   parallelism-min = 100
+    #   parallelism-max = 100
+    # }
     """))
 }
 
@@ -207,13 +220,26 @@ abstract class LargeClusterSpec
       }
       enterBarrier("fifth-datacenter-started")
 
-      for (i ← 0 until nodesPerDatacenter) {
-        val totalNodes = nodesPerDatacenter * 4 + i + 1
+      // enough to join a few one-by-one (takes too long time otherwise)
+      val (bulk, oneByOne) = systems.splitAt(systems.size - 3)
+
+      if (bulk.nonEmpty) {
+        val totalNodes = nodesPerDatacenter * 4 + bulk.size
         within(expectedMaxDuration(totalNodes)) {
-          val joiningClusters = ifNode(fifthDatacenter)(Set(Cluster(systems(i))))(Set.empty)
+          val joiningClusters = ifNode(fifthDatacenter)(bulk.map(Cluster(_)).toSet)(Set.empty)
           join(joiningClusters, from = fifthDatacenter, to = firstDatacenter, totalNodes,
             runOnRoles = firstDatacenter, secondDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter)
-          enterBarrier("fifth-datacenter-joined-" + i)
+          enterBarrier("fifth-datacenter-joined-" + bulk.size)
+        }
+      }
+
+      for (i ← 0 until oneByOne.size) {
+        val totalNodes = nodesPerDatacenter * 4 + bulk.size + i + 1
+        within(expectedMaxDuration(totalNodes)) {
+          val joiningClusters = ifNode(fifthDatacenter)(Set(Cluster(oneByOne(i))))(Set.empty)
+          join(joiningClusters, from = fifthDatacenter, to = firstDatacenter, totalNodes,
+            runOnRoles = firstDatacenter, secondDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter)
+          enterBarrier("fifth-datacenter-joined-" + (bulk.size + i))
         }
       }
     }
