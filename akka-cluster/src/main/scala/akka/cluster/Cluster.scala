@@ -1066,8 +1066,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     }
   }
 
-  private def gossipToDifferentViewProbability: Double = 0.8
-
   /**
    * INTERNAL API.
    *
@@ -1099,7 +1097,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
         } yield address
       }
       val gossipedToAlive =
-        if (nodesWithdifferentView.nonEmpty && ThreadLocalRandom.current.nextDouble() < gossipToDifferentViewProbability)
+        if (nodesWithdifferentView.nonEmpty && ThreadLocalRandom.current.nextDouble() < GossipDifferentViewProbability)
           gossipToRandomNodeOf(nodesWithdifferentView.toIndexedSeq)
         else
           gossipToRandomNodeOf(localMemberAddresses)
