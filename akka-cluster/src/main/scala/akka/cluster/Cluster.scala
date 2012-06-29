@@ -737,7 +737,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   final def join(address: Address): Unit = {
     val localState = state.get
     // wipe our state since a node that joins a cluster must be empty
-    val newState = createCleanState copy (joinInProgress = Map.empty + (address -> (Deadline.now + JoinTimeout)))
+    val newState = createCleanState copy (joinInProgress = Map.empty + (address -> (Deadline.now + JoinTimeout)),
+      memberMembershipChangeListeners = localState.memberMembershipChangeListeners)
     // wipe the failure detector since we are starting fresh and shouldn't care about the past
     failureDetector.reset()
     if (!state.compareAndSet(localState, newState)) join(address) // recur
