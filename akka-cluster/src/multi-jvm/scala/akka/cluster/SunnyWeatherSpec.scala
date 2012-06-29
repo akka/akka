@@ -23,8 +23,6 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
     akka.cluster {
-      # FIXME remove this (use default) when ticket #2239 has been fixed
-      gossip-interval = 400 ms
       auto-join = off
     }
     akka.loglevel = INFO

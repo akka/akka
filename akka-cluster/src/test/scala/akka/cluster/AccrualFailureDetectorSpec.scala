@@ -114,7 +114,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
       fd.isAvailable(conn) must be(true)
     }
 
-    "mark node as dead after explicit removal of connection" in {
+    "mark node as available after explicit removal of connection" in {
       val timeInterval = List[Long](0, 1000, 100, 100, 100)
       val fd = createFailureDetector(clock = fakeTimeGenerator(timeInterval))
 
@@ -124,7 +124,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
       fd.isAvailable(conn) must be(true)
       fd.remove(conn)
 
-      fd.isAvailable(conn) must be(false)
+      fd.isAvailable(conn) must be(true)
     }
 
     "mark node as available after explicit removal of connection and receiving heartbeat again" in {
@@ -140,7 +140,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 
       fd.remove(conn)
 
-      fd.isAvailable(conn) must be(false) //3300
+      fd.isAvailable(conn) must be(true) //3300
 
       // it receives heartbeat from an explicitly removed node
       fd.heartbeat(conn) //4400

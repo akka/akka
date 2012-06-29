@@ -107,8 +107,7 @@ class AccrualFailureDetector(
   private case class State(
     version: Long = 0L,
     history: Map[Address, HeartbeatHistory] = Map.empty,
-    timestamps: Map[Address, Long] = Map.empty[Address, Long],
-    explicitRemovals: Set[Address] = Set.empty[Address])
+    timestamps: Map[Address, Long] = Map.empty[Address, Long])
 
   private val state = new AtomicReference[State](State())
 
@@ -141,8 +140,7 @@ class AccrualFailureDetector(
 
     val newState = oldState copy (version = oldState.version + 1,
       history = oldState.history + (connection -> newHistory),
-      timestamps = oldState.timestamps + (connection -> timestamp), // record new timestamp,
-      explicitRemovals = oldState.explicitRemovals - connection)
+      timestamps = oldState.timestamps + (connection -> timestamp)) // record new timestamp
 
     // if we won the race then update else try again
     if (!state.compareAndSet(oldState, newState)) heartbeat(connection) // recur
@@ -158,9 +156,7 @@ class AccrualFailureDetector(
     val oldState = state.get
     val oldTimestamp = oldState.timestamps.get(connection)
 
-    // if connection has been removed explicitly
-    if (oldState.explicitRemovals.contains(connection)) Double.MaxValue
-    else if (oldTimestamp.isEmpty) 0.0 // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
+    if (oldTimestamp.isEmpty) 0.0 // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
     else {
       val timeDiff = clock() - oldTimestamp.get
 
@@ -208,12 +204,23 @@ class AccrualFailureDetector(
     if (oldState.history.contains(connection)) {
       val newState = oldState copy (version = oldState.version + 1,
         history = oldState.history - connection,
-        timestamps = oldState.timestamps - connection,
-        explicitRemovals = oldState.explicitRemovals + connection)
+        timestamps = oldState.timestamps - connection)
 
       // if we won the race then update else try again
       if (!state.compareAndSet(oldState, newState)) remove(connection) // recur
     }
+  }
+
+  def reset(): Unit = {
+    @tailrec
+    def doReset(): Unit = {
+      val oldState = state.get
+      val newState = oldState.copy(version = oldState.version + 1, history = Map.empty, timestamps = Map.empty)
+      // if we won the race then update else try again
+      if (!state.compareAndSet(oldState, newState)) doReset() // recur
+    }
+    log.debug("Resetting failure detector")
+    doReset()
   }
 }
 

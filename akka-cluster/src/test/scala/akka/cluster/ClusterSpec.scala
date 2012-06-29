@@ -105,12 +105,14 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
       cluster.latestGossip.members.map(_.address) must be(Set(selfAddress, addresses(1)))
       memberStatus(addresses(1)) must be(Some(MemberStatus.Joining))
       cluster.convergence.isDefined must be(false)
+      expectMsg(GossipTo(addresses(1)))
     }
 
     "accept a few more joining nodes" in {
       for (a ← addresses.drop(2)) {
         cluster.joining(a)
         memberStatus(a) must be(Some(MemberStatus.Joining))
+        expectMsg(GossipTo(a))
       }
       cluster.latestGossip.members.map(_.address) must be(addresses.toSet)
     }
@@ -121,7 +123,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with BeforeAndAfter {
     }
 
     "gossip to random live node" in {
-      cluster.latestGossip.members
       cluster.gossip()
       cluster.gossip()
       cluster.gossip()

@@ -202,7 +202,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
    */
   def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
     system.eventStream.publish(message)
-    system.log.log(message.logLevel, "{}", message)
+    if (logRemoteLifeCycleEvents) log.log(message.logLevel, "{}", message)
   }
 
   /**
@@ -219,6 +219,11 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
    * When this method returns true, some functionality will be turned off for security purposes.
    */
   protected def useUntrustedMode: Boolean
+
+  /**
+   * When this method returns true, RemoteLifeCycleEvents will be logged as well as be put onto the eventStream.
+   */
+  protected def logRemoteLifeCycleEvents: Boolean
 
   /**
    * Returns a newly created AkkaRemoteProtocol with the given message payload.

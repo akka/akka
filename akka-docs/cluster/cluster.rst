@@ -138,7 +138,7 @@ implementation of `The Phi Accrual Failure Detector`_ by Hayashibara et al.
 An accrual failure detector decouple monitoring and interpretation. That makes
 them applicable to a wider area of scenarios and more adequate to build generic
 failure detection services. The idea is that it is keeping a history of failure
-statistics, calculated from heartbeats received from the gossip protocol, and is
+statistics, calculated from heartbeats received from other nodes, and is
 trying to do educated guesses by taking multiple factors, and how they
 accumulate over time, into account in order to come up with a better guess if a
 specific node is up or down. Rather than just answering "yes" or "no" to the
@@ -232,14 +232,13 @@ breaking logical partitions as seen in the gossip algorithm defined below.
 
 During each round of gossip exchange the following process is used:
 
-1. Gossip to random live node (if any)
+1. Gossip to random node with newer or older state information, if any, based on the
+   current gossip overview, with some probability. Otherwise Gossip to any random 
+   live node.
 
 2. If the node gossiped to at (1) was not a ``deputy`` node, or the number of live
    nodes is less than number of ``deputy`` nodes, gossip to random ``deputy`` node with
    certain probability depending on number of unreachable, ``deputy``, and live nodes.
-
-3. Gossip to random node with newer or older state information, based on the
-   current gossip overview, with some probability (?)
 
 The gossiper only sends the gossip overview to the chosen node. The recipient of
 the gossip can use the gossip overview to determine whether:
