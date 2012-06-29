@@ -5,6 +5,7 @@ package docs.future;
 
 //#imports1
 import akka.dispatch.*;
+import scala.concurrent.Await;
 import akka.util.Timeout;
 
 //#imports1
@@ -40,8 +41,8 @@ import static akka.dispatch.Futures.reduce;
 //#imports6
 
 //#imports7
-import scala.concurrent.ExecutionContexts;
-import scala.concurrent.ExecutionContextExecutorService;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.ExecutionContext$;
 
 //#imports7
 
@@ -79,17 +80,17 @@ public class FutureDocTestBase {
     system.shutdown();
   }
 
-  @Test public void useCustomExecutionContext() throws Exception {
+  @SuppressWarnings("unchecked") @Test public void useCustomExecutionContext() throws Exception {
       ExecutorService yourExecutorServiceGoesHere = Executors.newSingleThreadExecutor();
       //#diy-execution-context
-      ExecutionContextExecutorService ec =
-        ExecutionContexts.fromExecutorService(yourExecutorServiceGoesHere);
+      ExecutionContext ec =
+        ExecutionContext$.MODULE$.fromExecutorService(yourExecutorServiceGoesHere, (scala.Function1<java.lang.Throwable,scala.runtime.BoxedUnit>)(ExecutionContext$.MODULE$.fromExecutorService$default$2()));
 
       //Use ec with your Futures
       Future<String> f1 = Futures.successful("foo", ec);
 
-      // Then you shut the ec down somewhere at the end of your program/application.
-      ec.shutdown();
+      // Then you shut the ExecutorService down somewhere at the end of your program/application.
+      yourExecutorServiceGoesHere.shutdown();
       //#diy-execution-context
   }
 

@@ -5,8 +5,8 @@ package akka.zeromq
 
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
-import akka.dispatch.{ Await }
 import akka.pattern.ask
+import scala.concurrent.Await
 import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.util.Timeout

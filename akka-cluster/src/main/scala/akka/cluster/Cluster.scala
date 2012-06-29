@@ -9,13 +9,14 @@ import language.implicitConversions
 import akka.actor._
 import akka.actor.Status._
 import akka.ConfigurationException
-import akka.dispatch.{ Await, MonitorableThreadFactory }
+import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.pattern._
 import akka.remote._
 import akka.routing._
 import akka.util._
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import scala.concurrent.util.{ Duration, Deadline }
 import akka.util.internal.HashedWheelTimer

@@ -14,7 +14,8 @@ import akka.actor.Status.Failure
 import akka.util.Timeout
 import scala.concurrent.util.duration._
 import java.lang.IllegalStateException
-import akka.dispatch.{ ExecutionContext, Future, Await, Promise }
+import akka.dispatch.{ Future, Promise }
+import scala.concurrent.{ Await, ExecutionContext }
 
 object FutureDocSpec {
 

@@ -202,14 +202,14 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef actorRef = system.actorOf(new Props(MyUntypedActor.class));
     //#gracefulStop
-
-    try {
+    //FIXME URGENT Await.result should have a @throws clause
+    //try {
       Future<Boolean> stopped = gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), system);
       Await.result(stopped, Duration.create(6, TimeUnit.SECONDS));
       // the actor has been stopped
-    } catch (AskTimeoutException e) {
+    //} catch (AskTimeoutException e) {
       // the actor wasn't stopped within 5 seconds
-    }
+    //}
     //#gracefulStop
     system.shutdown();
   }

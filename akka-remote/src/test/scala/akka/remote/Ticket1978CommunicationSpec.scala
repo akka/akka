@@ -8,13 +8,14 @@ import language.postfixOps
 import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
-import akka.dispatch.{ Await, Future }
+import akka.dispatch.Future
 import akka.pattern.ask
 import java.io.File
 import java.security.{ NoSuchAlgorithmException, SecureRandom, PrivilegedAction, AccessController }
 import akka.remote.netty.{ NettySettings, NettySSLSupport }
 import javax.net.ssl.SSLException
 import akka.util.Timeout
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 import akka.event.{ Logging, NoLogging, LoggingAdapter }

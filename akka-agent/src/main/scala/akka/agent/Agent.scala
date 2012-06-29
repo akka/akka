@@ -10,6 +10,7 @@ import akka.dispatch._
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.stm._
+import scala.concurrent.Await
 
 /**
  * Used internally to send functions.

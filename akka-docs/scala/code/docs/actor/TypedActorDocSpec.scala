@@ -6,7 +6,8 @@ package docs.actor
 import language.postfixOps
 
 //#imports
-import akka.dispatch.{ Promise, Future, Await }
+import akka.dispatch.{ Promise, Future }
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.actor.{ ActorContext, TypedActor, TypedProps }
 

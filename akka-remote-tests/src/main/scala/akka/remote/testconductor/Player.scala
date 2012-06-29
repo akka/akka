@@ -8,6 +8,7 @@ import language.postfixOps
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, PoisonPill, Status, Address, Scheduler }
 import RemoteConnection.getAddrString
 import scala.concurrent.util.{ Duration, Deadline }
+import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.util.Timeout
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent, WriteCompletionEvent, ExceptionEvent }
@@ -15,7 +16,7 @@ import com.typesafe.config.ConfigFactory
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeoutException
 import akka.pattern.{ ask, pipe, AskTimeoutException }
-import akka.dispatch.{ Await, Future }
+import akka.dispatch.Future
 import scala.util.control.NoStackTrace
 import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
