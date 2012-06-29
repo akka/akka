@@ -10,6 +10,7 @@ import akka.ConfigurationException
 import scala.collection.JavaConverters._
 import akka.actor.Address
 import akka.actor.AddressFromURIString
+import akka.dispatch.Dispatchers
 
 class ClusterSettings(val config: Config, val systemName: String) {
   import config._
@@ -36,6 +37,10 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val AutoJoin: Boolean = getBoolean("akka.cluster.auto-join")
   final val AutoDown: Boolean = getBoolean("akka.cluster.auto-down")
   final val JoinTimeout: Duration = Duration(getMilliseconds("akka.cluster.join-timeout"), MILLISECONDS)
+  final val UseDispatcher: String = getString("akka.cluster.use-dispatcher") match {
+    case "" ⇒ Dispatchers.DefaultDispatcherId
+    case id ⇒ id
+  }
   final val GossipDifferentViewProbability: Double = getDouble("akka.cluster.gossip-different-view-probability")
   final val SchedulerTickDuration: Duration = Duration(getMilliseconds("akka.cluster.scheduler.tick-duration"), MILLISECONDS)
   final val SchedulerTicksPerWheel: Int = getInt("akka.cluster.scheduler.ticks-per-wheel")
