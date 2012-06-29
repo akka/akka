@@ -1,37 +1,30 @@
 Getting Started
 ===============
 
-The best way to start learning Akka is to try the Getting Started Tutorial,
-which comes in several flavours depending on you development environment
-preferences:
-
-- :ref:`getting-started-first-java` for Java development, either
-
-  - as standalone project, running from the command line,
-  - or as Maven project and running it from within Maven
-
-- :ref:`getting-started-first-scala` for Scala development, either
-
-  - as standalone project, running from the command line,
-  - or as SBT (Simple Build Tool) project and running it from within SBT
-
-The Getting Started Tutorial describes everything you need to get going, and you
-don't need to read the rest of this page if you study the tutorial. For later
-look back reference this page describes the essential parts for getting started
-with different development environments.
-
 Prerequisites
 -------------
 
 Akka requires that you have `Java 1.6 <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_ or
 later installed on you machine.
 
+Getting Started Guides and Template Projects
+--------------------------------------------
+
+The best way to start learning Akka is to download the Typesafe Stack and either try out
+the Akka Getting Started Tutorials or check out one of Akka Template Projects. Both comes
+in several flavours depending on your development environment preferences.
+
+- `Download Typesafe Stack <http://typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html>`_
+- `Getting Started Tutorials <http://typesafe.com/resources/getting-started/tutorials/index.html>`_
+- `Template Projects <http://typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
+
 Download
 --------
 
-There are several ways to download Akka. You can download the full distribution
-with microkernel, which includes all modules. Or you can use a build tool like
-Maven or sbt to download dependencies from the Akka Maven repository.
+There are several ways to download Akka. You can download it as part of the Typesafe Stack
+(as described above). You can download the full distribution with microkernel, which includes
+all modules. Or you can use a build tool like Maven or SBT to download dependencies from the
+Akka Maven repository.
 
 Modules
 -------
@@ -84,9 +77,9 @@ repositories, including akka.io.
 Using Akka with Maven
 ---------------------
 
-Information about how to use Akka with Maven, including how to create an Akka
-Maven project from scratch, can be found in the
-:ref:`getting-started-first-java`.
+The simplest way to get started with Akka and Maven is to check out the
+`Akka/Maven template <http://typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
+project.
 
 Summary of the essential parts for using Akka with Maven:
 
@@ -116,8 +109,9 @@ Summary of the essential parts for using Akka with Maven:
 Using Akka with SBT
 -------------------
 
-Information about how to use Akka with SBT, including how to create an Akka SBT project from scratch,
-can be found in the :ref:`getting-started-first-scala`.
+The simplest way to get started with Akka and SBT is to check out the
+`Akka/SBT template <http://typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
+project.
 
 Summary of the essential parts for using Akka with SBT:
 
