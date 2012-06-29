@@ -858,9 +858,9 @@ private[akka] class ActorCell(
   }
 
   final def handleInvokeFailure(t: Throwable, message: String): Unit = try {
-    dispatcher.reportFailure(new LogEventException(Error(t, self.path.toString, clazz(actor), message), t))
-    // prevent any further messages to be processed until the actor has been restarted
-    dispatcher.suspend(this)
+    dispatcher.reportFailure(new LogEventException(Warning(t, self.path.toString, clazz(actor), message), t))
+    // disabled: prevent any further messages to be processed until the actor has been restarted
+    //dispatcher.suspend(this)
     if (actor ne null) actor.supervisorStrategy.handleSupervisorFailing(self, children)
   } finally {
     t match { // Wrap InterruptedExceptions and rethrow
