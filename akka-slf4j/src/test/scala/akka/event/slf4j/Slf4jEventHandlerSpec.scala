@@ -8,7 +8,7 @@ import language.postfixOps
 import akka.testkit.AkkaSpec
 import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.event.Logging
 import akka.actor.Props
 import ch.qos.logback.core.OutputStreamAppender

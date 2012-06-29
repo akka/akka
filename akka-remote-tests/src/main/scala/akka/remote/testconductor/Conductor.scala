@@ -10,23 +10,19 @@ import RemoteConnection.getAddrString
 import TestConductorProtocol._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
 import com.typesafe.config.ConfigFactory
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.pattern.ask
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.dispatch.Await
-import akka.event.LoggingAdapter
-import akka.actor.PoisonPill
-import akka.event.Logging
+import akka.event.{ LoggingAdapter, Logging }
 import scala.util.control.NoStackTrace
 import akka.event.LoggingReceive
-import akka.actor.Address
 import java.net.InetSocketAddress
 import akka.dispatch.Future
-import akka.actor.OneForOneStrategy
-import akka.actor.SupervisorStrategy
+import akka.actor.{ OneForOneStrategy, SupervisorStrategy, Status, Address, PoisonPill }
 import java.util.concurrent.ConcurrentHashMap
-import akka.actor.Status
-import akka.util.{ Deadline, Timeout, Duration }
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import akka.util.{ Timeout }
+import scala.concurrent.util.{ Deadline, Duration }
 
 sealed trait Direction {
   def includes(other: Direction): Boolean
@@ -559,7 +555,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       val together = if (clients.exists(_.fsm == sender)) sender :: arrived else arrived
       val enterDeadline = getDeadline(timeout)
       // we only allow the deadlines to get shorter
-      if (enterDeadline < deadline) {
+      if (enterDeadline.timeLeft < deadline.timeLeft) {
         setTimer("Timeout", StateTimeout, enterDeadline.timeLeft, false)
         handleBarrier(d.copy(arrived = together, deadline = enterDeadline))
       } else

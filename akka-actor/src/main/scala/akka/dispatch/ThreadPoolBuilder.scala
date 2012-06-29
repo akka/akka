@@ -5,7 +5,7 @@
 package akka.dispatch
 
 import java.util.Collection
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import scala.concurrent.forkjoin._
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.ArrayBlockingQueue

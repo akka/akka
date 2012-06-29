@@ -9,8 +9,8 @@ import language.postfixOps
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 import akka.actor.ActorSystem
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

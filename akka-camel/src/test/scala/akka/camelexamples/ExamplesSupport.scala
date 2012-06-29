@@ -7,7 +7,7 @@ package akka.camelexamples
 import language.postfixOps
 
 import akka.camel._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.actor.{ Actor, OneForOneStrategy }
 import akka.actor.SupervisorStrategy._
 

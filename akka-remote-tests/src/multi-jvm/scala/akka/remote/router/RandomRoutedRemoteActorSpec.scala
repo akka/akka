@@ -16,7 +16,7 @@ import akka.routing.Broadcast
 import akka.routing.RandomRouter
 import akka.routing.RoutedActorRef
 import akka.testkit._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 
 object RandomRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 

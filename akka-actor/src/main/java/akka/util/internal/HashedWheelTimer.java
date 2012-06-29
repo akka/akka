@@ -16,7 +16,7 @@
 package akka.util.internal;
 
 import akka.event.LoggingAdapter;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 
 import java.util.*;
 import java.util.concurrent.ThreadFactory;

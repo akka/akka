@@ -12,7 +12,7 @@ import akka.actor.*;
 import akka.dispatch.Await;
 import static akka.pattern.Patterns.ask;
 import akka.transactor.Coordinated;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 import akka.util.Timeout;
 import static java.util.concurrent.TimeUnit.SECONDS;
 //#imports

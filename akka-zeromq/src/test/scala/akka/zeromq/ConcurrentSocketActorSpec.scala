@@ -7,7 +7,7 @@ import language.postfixOps
 
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.{ TestProbe, DefaultTimeout, AkkaSpec }
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.actor.{ Cancellable, Actor, Props, ActorRef }
 import akka.util.Timeout
 

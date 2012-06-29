@@ -7,8 +7,9 @@ import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong, AtomicBoolean }
 import akka.AkkaException
 import akka.actor.Scheduler
 import akka.dispatch.{ Future, ExecutionContext, Await, Promise }
-import akka.util.{ Deadline, Duration, NonFatal, Unsafe }
-import akka.util.duration._
+import akka.util.{ NonFatal, Unsafe }
+import scala.concurrent.util.duration._
+import scala.concurrent.util.{ Duration, Deadline }
 import util.control.NoStackTrace
 import java.util.concurrent.{ Callable, CopyOnWriteArrayList }
 

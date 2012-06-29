@@ -11,7 +11,7 @@ import akka.routing.SmallestMailboxRouter;
 import akka.actor.UntypedActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 import akka.util.Timeout;
 import akka.dispatch.Future;
 import akka.dispatch.Await;

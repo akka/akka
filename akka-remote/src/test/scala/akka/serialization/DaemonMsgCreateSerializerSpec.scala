@@ -11,7 +11,7 @@ import akka.testkit.AkkaSpec
 import akka.actor.{ Actor, Address, Props, Deploy, OneForOneStrategy, SupervisorStrategy, FromClassCreator }
 import akka.remote.{ DaemonMsgCreate, RemoteScope }
 import akka.routing.{ RoundRobinRouter, FromConfig }
-import akka.util.duration._
+import scala.concurrent.util.duration._
 
 object DaemonMsgCreateSerializerSpec {
   class MyActor extends Actor {

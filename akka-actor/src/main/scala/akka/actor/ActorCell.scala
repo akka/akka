@@ -15,9 +15,9 @@ import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
 import akka.event.Logging.LogEventException
-import collection.immutable.{ TreeSet, TreeMap }
-import akka.util.{ Unsafe, Duration, Helpers, NonFatal }
-import java.util.concurrent.atomic.AtomicLong
+import scala.collection.immutable.{ TreeSet, TreeMap }
+import akka.util.{ Unsafe, Helpers, NonFatal }
+import scala.concurrent.util.Duration
 
 //TODO: everything here for current compatibility - could be limited more
 

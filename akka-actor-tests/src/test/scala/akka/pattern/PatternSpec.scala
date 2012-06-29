@@ -9,15 +9,15 @@ import language.postfixOps
 import akka.testkit.AkkaSpec
 import akka.actor.Props
 import akka.actor.Actor
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 import akka.dispatch.{ Future, Promise, Await }
 
 object PatternSpec {
   case class Work(duration: Duration)
   class TargetActor extends Actor {
     def receive = {
-      case Work(duration) ⇒ duration.sleep()
+      case Work(duration) ⇒ Thread.sleep(duration.toMillis)
     }
   }
 }

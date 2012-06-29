@@ -8,8 +8,6 @@ import language.implicitConversions
 import language.postfixOps
 import language.higherKinds
 
-import akka.event.Logging.Error
-import scala.Option
 import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption }
 import scala.util.continuations._
 import scala.reflect.ClassTag
@@ -17,16 +15,16 @@ import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 import scala.annotation.tailrec
 import scala.collection.mutable.Stack
-import akka.util.{ Duration, BoxedType }
+import akka.util.BoxedType
 import akka.dispatch.Await.CanAwait
 import akka.util.NonFatal
-import akka.event.Logging.LogEventException
-import akka.event.Logging.Debug
+import akka.event.Logging.{ LogEventException, Debug, Error }
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.util.concurrent.{ ExecutionException, Callable, TimeoutException }
 import java.util.concurrent.atomic.{ AtomicInteger }
 import akka.pattern.AskTimeoutException
 import scala.util.DynamicVariable
+import scala.concurrent.util.Duration
 import scala.runtime.{ BoxedUnit, AbstractPartialFunction }
 
 object Await {

@@ -14,7 +14,7 @@ import akka.testkit.ImplicitSender
 import akka.testkit.DefaultTimeout
 import akka.dispatch.Await
 import akka.pattern.ask
-import akka.util.duration._
+import scala.concurrent.util.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender with DefaultTimeout {

@@ -12,10 +12,11 @@ import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
 import akka.actor.{ RootActorPath, ActorPath, ActorSystem, ExtendedActorSystem }
 import akka.dispatch.Await
 import akka.dispatch.Await.Awaitable
+import akka.util.{ Timeout, NonFatal }
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
 import akka.testkit.AkkaSpec
-import akka.util.{ Timeout, NonFatal }
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 
 /**
  * Configure the role names and participants of the test, including configuration settings.

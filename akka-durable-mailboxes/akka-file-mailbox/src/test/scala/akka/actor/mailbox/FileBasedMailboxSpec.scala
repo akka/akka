@@ -27,7 +27,7 @@ class FileBasedMailboxSpec extends DurableMailboxSpec("File", FileBasedMailboxSp
       settings.QueuePath must be("file-based")
       settings.CircuitBreakerMaxFailures must be(5)
 
-      import akka.util.duration._
+      import scala.concurrent.util.duration._
 
       settings.CircuitBreakerCallTimeout must be(5 seconds)
     }

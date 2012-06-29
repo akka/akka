@@ -8,7 +8,7 @@ import language.postfixOps
 
 import akka.actor._
 import akka.dispatch.Await
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._

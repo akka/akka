@@ -10,8 +10,8 @@ import akka.testkit._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.dispatch.Await
 import akka.pattern.ask
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 
 object SupervisorHierarchySpec {
   class FireWorkerException(msg: String) extends Exception(msg)

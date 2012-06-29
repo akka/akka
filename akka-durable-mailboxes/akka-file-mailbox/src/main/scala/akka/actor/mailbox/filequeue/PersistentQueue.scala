@@ -20,7 +20,7 @@ package akka.actor.mailbox.filequeue
 import java.io._
 import scala.collection.mutable
 import akka.event.LoggingAdapter
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.actor.mailbox.FileBasedMailboxSettings
 

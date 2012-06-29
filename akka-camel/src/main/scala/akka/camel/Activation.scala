@@ -4,12 +4,13 @@
 
 package akka.camel
 
-import internal._
-import akka.util.{ Timeout, Duration }
+import akka.camel.internal._
+import akka.util.Timeout
 import akka.dispatch.Future
 import java.util.concurrent.TimeoutException
 import akka.actor.{ ActorSystem, Props, ActorRef }
 import akka.pattern._
+import scala.concurrent.util.Duration
 
 /**
  * Activation trait that can be used to wait on activation or de-activation of Camel endpoints.

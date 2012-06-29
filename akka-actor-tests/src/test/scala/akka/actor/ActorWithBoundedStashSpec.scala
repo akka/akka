@@ -10,7 +10,7 @@ import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
 import akka.dispatch.{ Await, BoundedDequeBasedMailbox }
 import akka.pattern.ask
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterEach

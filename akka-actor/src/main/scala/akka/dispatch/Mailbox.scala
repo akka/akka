@@ -5,8 +5,9 @@ package akka.dispatch
 
 import akka.AkkaException
 import java.util.{ Comparator, PriorityQueue, Queue, Deque }
-import akka.util._
+import scala.concurrent.util.Duration
 import akka.actor.{ ActorCell, ActorRef, Cell }
+import akka.util.{ Unsafe, NonFatal, BoundedBlockingQueue }
 import java.util.concurrent._
 import annotation.tailrec
 import akka.event.Logging.Error

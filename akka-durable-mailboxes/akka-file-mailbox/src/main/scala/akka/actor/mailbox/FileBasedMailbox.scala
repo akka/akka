@@ -4,16 +4,14 @@
 
 package akka.actor.mailbox
 
-import akka.actor.ActorContext
+import akka.actor.{ ActorContext, ActorRef, ActorSystem, ExtendedActorSystem }
 import akka.event.Logging
-import akka.actor.ActorRef
 import com.typesafe.config.Config
 import akka.ConfigurationException
-import akka.actor.ActorSystem
 import akka.dispatch._
-import akka.util.{ Duration, NonFatal }
+import akka.util.NonFatal
 import akka.pattern.{ CircuitBreakerOpenException, CircuitBreaker }
-import akka.actor.ExtendedActorSystem
+import scala.concurrent.util.Duration
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)

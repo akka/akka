@@ -9,7 +9,7 @@ import akka.actor.TypedActor;
 import akka.dispatch.*;
 import akka.actor.*;
 import akka.japi.*;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 import java.util.concurrent.TimeUnit;
 
 //#imports

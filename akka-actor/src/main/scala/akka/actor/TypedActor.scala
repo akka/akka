@@ -7,7 +7,8 @@ import language.existentials
 
 import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
-import akka.util.{ Timeout, NonFatal, Duration }
+import akka.util.{ Timeout, NonFatal }
+import scala.concurrent.util.Duration
 import akka.util.Reflect.instantiator
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.dispatch._

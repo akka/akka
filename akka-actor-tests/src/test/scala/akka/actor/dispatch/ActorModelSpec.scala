@@ -20,9 +20,10 @@ import akka.dispatch._
 import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
-import akka.util.{ Timeout, Switch, Duration }
-import akka.util.duration._
-import annotation.tailrec
+import akka.util.{ Timeout, Switch }
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
+import scala.annotation.tailrec
 
 object ActorModelSpec {
 

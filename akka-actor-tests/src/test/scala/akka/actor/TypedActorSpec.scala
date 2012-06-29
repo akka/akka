@@ -6,9 +6,9 @@ package akka.actor
 import language.postfixOps
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import akka.util.Timeout
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }

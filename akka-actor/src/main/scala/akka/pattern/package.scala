@@ -4,8 +4,6 @@
 package akka
 
 import akka.actor._
-import akka.dispatch.{ Future, Promise }
-import akka.util.{ Timeout, Duration }
 
 /**
  * == Commonly Used Patterns With Akka ==

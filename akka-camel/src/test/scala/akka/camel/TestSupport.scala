@@ -8,11 +8,11 @@ import language.postfixOps
 import language.implicitConversions
 
 import akka.actor.{ Props, ActorSystem, Actor }
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import java.util.concurrent.{ TimeoutException, ExecutionException, TimeUnit }
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, Suite }
 import org.scalatest.matchers.{ BePropertyMatcher, BePropertyMatchResult }
-import akka.util.{ FiniteDuration, Duration }
+import scala.concurrent.util.{ FiniteDuration, Duration }
 
 private[camel] object TestSupport {
 

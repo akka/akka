@@ -5,7 +5,8 @@
 package akka.pattern
 
 import akka.actor._
-import akka.util.{ Timeout, Duration }
+import akka.util.{ Timeout }
+import scala.concurrent.util.Duration
 import akka.dispatch.{ Unwatch, Watch, Promise, Future }
 
 trait GracefulStopSupport {

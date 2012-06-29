@@ -9,6 +9,7 @@ import akka.dispatch._
 import akka.pattern.ask
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
+import scala.concurrent.util.Duration
 import java.io.Closeable
 import akka.dispatch.Await.{ Awaitable, CanAwait }
 import akka.util._

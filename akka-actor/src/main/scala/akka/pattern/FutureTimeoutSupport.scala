@@ -4,7 +4,7 @@ package akka.pattern
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import akka.actor._
 import akka.dispatch.{ ExecutionContext, Promise, Future }
 

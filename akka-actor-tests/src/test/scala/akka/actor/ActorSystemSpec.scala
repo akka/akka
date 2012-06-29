@@ -9,7 +9,7 @@ import akka.testkit._
 import org.scalatest.junit.JUnitSuite
 import com.typesafe.config.ConfigFactory
 import akka.dispatch.Await
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import scala.collection.JavaConverters
 import java.util.concurrent.{ TimeUnit, RejectedExecutionException, CountDownLatch, ConcurrentLinkedQueue }
 import akka.pattern.ask
@@ -105,7 +105,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
 
       for (i ← 1 to count) {
         system2.registerOnTermination {
-          (i % 3).millis.dilated.sleep()
+          Thread.sleep((i % 3).millis.dilated.toMillis)
           result add i
           latch.countDown()
         }
@@ -127,7 +127,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       var callbackWasRun = false
 
       system2.registerOnTermination {
-        50.millis.dilated.sleep()
+        Thread.sleep(50.millis.dilated.toMillis)
         callbackWasRun = true
       }
 

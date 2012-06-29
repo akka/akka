@@ -5,30 +5,20 @@ package akka.remote.testconductor
 
 import language.postfixOps
 
-import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
+import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, PoisonPill, Status, Address, Scheduler }
 import RemoteConnection.getAddrString
-import akka.util.duration._
-import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
-import com.typesafe.config.ConfigFactory
+import scala.concurrent.util.{ Duration, Deadline }
+import scala.concurrent.util.duration._
 import akka.util.Timeout
-import akka.util.Duration
+import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent, WriteCompletionEvent, ExceptionEvent }
+import com.typesafe.config.ConfigFactory
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.pattern.{ ask, pipe, AskTimeoutException }
-import akka.dispatch.Await
-import scala.util.control.NoStackTrace
-import akka.actor.Status
-import akka.event.LoggingAdapter
-import akka.actor.PoisonPill
-import akka.event.Logging
-import akka.dispatch.Future
-import java.net.InetSocketAddress
-import akka.actor.Address
-import org.jboss.netty.channel.ExceptionEvent
-import org.jboss.netty.channel.WriteCompletionEvent
-import java.net.ConnectException
-import akka.util.Deadline
-import akka.actor.Scheduler
 import java.util.concurrent.TimeoutException
+import akka.pattern.{ ask, pipe, AskTimeoutException }
+import akka.dispatch.{ Await, Future }
+import scala.util.control.NoStackTrace
+import akka.event.{ LoggingAdapter, Logging }
+import java.net.{ InetSocketAddress, ConnectException }
 
 /**
  * The Player is the client component of the

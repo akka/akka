@@ -8,7 +8,7 @@ import language.postfixOps
 import akka.routing.{ ScatterGatherFirstCompletedRouter, BroadcastRouter, RandomRouter, RoundRobinRouter }
 import annotation.tailrec
 import akka.actor.{ Props, Actor }
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.util.Timeout
 import akka.dispatch.Await
 import akka.pattern.ask

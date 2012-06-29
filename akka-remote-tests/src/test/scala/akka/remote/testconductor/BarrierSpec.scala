@@ -5,23 +5,14 @@ package akka.remote.testconductor
 
 import language.postfixOps
 
-import akka.testkit.AkkaSpec
-import akka.actor.Props
-import akka.actor.AddressFromURIString
-import akka.actor.ActorRef
-import akka.testkit.ImplicitSender
-import akka.actor.Actor
-import akka.actor.OneForOneStrategy
-import akka.actor.SupervisorStrategy
-import akka.testkit.EventFilter
-import akka.testkit.TestProbe
-import akka.util.duration._
+import akka.actor.{ Props, AddressFromURIString, ActorRef, Actor, OneForOneStrategy, SupervisorStrategy }
+import akka.testkit.{ AkkaSpec, ImplicitSender, EventFilter, TestProbe, TimingTest }
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 import akka.event.Logging
+import akka.util.Timeout
 import org.scalatest.BeforeAndAfterEach
-import java.net.InetSocketAddress
-import java.net.InetAddress
-import akka.testkit.TimingTest
-import akka.util.{ Timeout, Duration }
+import java.net.{ InetSocketAddress, InetAddress }
 
 object BarrierSpec {
   case class Failed(ref: ActorRef, thr: Throwable)

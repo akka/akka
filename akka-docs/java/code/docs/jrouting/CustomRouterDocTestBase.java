@@ -13,7 +13,7 @@ import static org.junit.Assert.assertEquals;
 
 import akka.actor.*;
 import akka.routing.*;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 import akka.util.Timeout;
 import akka.dispatch.Await;
 import akka.dispatch.Future;

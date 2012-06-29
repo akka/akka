@@ -9,7 +9,7 @@ import language.postfixOps
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.WordSpec
 import akka.camel.TestSupport.SharedCamelSystem
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.actor.{ ActorRef, Props }
 
 class ProducerRegistryTest extends WordSpec with MustMatchers with SharedCamelSystem {

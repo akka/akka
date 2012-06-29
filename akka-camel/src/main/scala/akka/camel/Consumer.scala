@@ -10,8 +10,8 @@ import internal.component.DurationTypeConverter
 import org.apache.camel.model.{ RouteDefinition, ProcessorDefinition }
 
 import akka.actor._
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.

@@ -3,7 +3,7 @@ package akka
 import language.implicitConversions
 
 import akka.actor.ActorSystem
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 package object testkit {
@@ -34,7 +34,7 @@ package object testkit {
    * Scala API. Scale timeouts (durations) during tests with the configured
    * 'akka.test.timefactor'.
    * Implicit conversion to add dilated function to Duration.
-   * import akka.util.duration._
+   * import scala.concurrent.util.duration._
    * import akka.testkit._
    * 10.milliseconds.dilated
    *

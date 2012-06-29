@@ -5,16 +5,13 @@ package docs.zeromq
 
 import language.postfixOps
 
-import akka.actor.Actor
-import akka.actor.Props
-import akka.util.duration._
+import akka.actor.{ Actor, Props }
+import scala.concurrent.util.duration._
 import akka.testkit._
-import akka.zeromq.ZeroMQVersion
-import akka.zeromq.ZeroMQExtension
+import akka.zeromq.{ ZeroMQVersion, ZeroMQExtension }
 import java.text.SimpleDateFormat
 import java.util.Date
-import akka.zeromq.SocketType
-import akka.zeromq.Bind
+import akka.zeromq.{ SocketType, Bind }
 
 object ZeromqDocSpec {
 
@@ -180,7 +177,7 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
 
     // Let it run for a while to see some output.
     // Don't do like this in real tests, this is only doc demonstration.
-    3.seconds.sleep()
+    Thread.sleep(3.seconds.toMillis)
 
   }
 

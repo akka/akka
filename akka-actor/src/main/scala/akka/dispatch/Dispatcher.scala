@@ -7,7 +7,7 @@ package akka.dispatch
 import akka.event.Logging.Error
 import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorCell
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import java.util.concurrent._
 import akka.event.Logging
 

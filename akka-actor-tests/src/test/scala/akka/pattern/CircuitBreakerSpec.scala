@@ -6,7 +6,7 @@ package akka.pattern
 
 import language.postfixOps
 
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.testkit._
 import org.scalatest.BeforeAndAfter
 import akka.dispatch.Future
@@ -139,7 +139,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
 
     "increment failure count on callTimeout" in {
       breakers.shortCallTimeoutCb.withSyncCircuitBreaker({
-        100.millis.dilated.sleep()
+        Thread.sleep(100.millis.dilated.toMillis)
       })
       breakers.shortCallTimeoutCb.currentFailureCount must be(1)
     }
@@ -231,7 +231,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
     "increment failure count on callTimeout" in {
       breakers.shortCallTimeoutCb.withCircuitBreaker {
         Future {
-          100.millis.dilated.sleep()
+          Thread.sleep(100.millis.dilated.toMillis)
           sayHi
         }
       }

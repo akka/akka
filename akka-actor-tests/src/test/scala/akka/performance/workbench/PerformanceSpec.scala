@@ -4,7 +4,7 @@ import scala.collection.immutable.TreeMap
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics
 import org.scalatest.BeforeAndAfterEach
 import akka.testkit.AkkaSpec
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit
 import akka.event.Logging

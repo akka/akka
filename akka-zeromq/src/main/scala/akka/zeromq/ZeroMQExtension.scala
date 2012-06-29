@@ -7,7 +7,7 @@ import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import akka.dispatch.{ Await }
 import akka.pattern.ask
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.util.Timeout
 import org.zeromq.ZMQException

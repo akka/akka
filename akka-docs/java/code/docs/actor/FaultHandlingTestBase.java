@@ -14,7 +14,7 @@ import akka.actor.Terminated;
 import akka.actor.UntypedActor;
 import akka.dispatch.Await;
 import static akka.pattern.Patterns.ask;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;
 

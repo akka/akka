@@ -6,10 +6,10 @@ package akka.event
 import language.postfixOps
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.testkit._
 import org.scalatest.WordSpec
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import java.util.Properties

@@ -8,7 +8,7 @@ import org.specs2.time.NoTimeConversions
 
 import akka.actor.{ Props, ActorSystem, Actor }
 import akka.testkit.{ TestKit, ImplicitSender }
-import akka.util.duration._
+import scala.concurrent.util.duration._
 
 class Specs2DemoUnitSpec extends Specification with NoTimeConversions {
 

@@ -9,7 +9,7 @@ import language.existentials
 
 import akka.actor._
 import org.scalatest.matchers.MustMatchers
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import TestSupport._
 import org.scalatest.WordSpec
 import org.apache.camel.model.RouteDefinition

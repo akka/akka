@@ -15,7 +15,7 @@ class FSMDocSpec extends AkkaSpec {
     //#fsm-code-elided
     //#simple-imports
     import akka.actor.{ Actor, ActorRef, FSM }
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
     //#simple-imports
     //#simple-events
     // received events

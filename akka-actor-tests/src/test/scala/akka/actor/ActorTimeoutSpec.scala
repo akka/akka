@@ -3,7 +3,7 @@
  */
 package akka.actor
 
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.testkit._
 import akka.dispatch.Await
 import akka.util.Timeout

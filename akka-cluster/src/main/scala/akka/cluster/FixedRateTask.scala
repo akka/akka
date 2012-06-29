@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.Scheduler
-import akka.util.Duration
+import scala.concurrent.util.Duration
 
 /**
  * INTERNAL API

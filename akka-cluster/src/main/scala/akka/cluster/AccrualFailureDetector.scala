@@ -11,8 +11,8 @@ import scala.collection.immutable.Map
 import scala.annotation.tailrec
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.TimeUnit.NANOSECONDS
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 
 object AccrualFailureDetector {
   private def realClock: () ⇒ Long = () ⇒ NANOSECONDS.toMillis(System.nanoTime)

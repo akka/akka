@@ -4,7 +4,7 @@
 
 package akka.testkit
 
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import akka.actor.ActorSystem
 import akka.dispatch.Await.{ CanAwait, Awaitable }
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }

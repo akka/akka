@@ -7,8 +7,8 @@ import language.implicitConversions
 import language.postfixOps
 
 import akka.actor._
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 import akka.ConfigurationException
 import akka.pattern.pipe
 import com.typesafe.config.Config

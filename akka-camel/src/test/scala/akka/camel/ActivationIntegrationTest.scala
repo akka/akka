@@ -7,7 +7,7 @@ package akka.camel
 import language.postfixOps
 
 import org.scalatest.matchers.MustMatchers
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import org.apache.camel.ProducerTemplate
 import akka.actor._
 import akka.util.Timeout

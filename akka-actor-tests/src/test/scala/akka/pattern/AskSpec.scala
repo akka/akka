@@ -6,7 +6,7 @@ package akka.pattern
 import language.postfixOps
 
 import akka.testkit.AkkaSpec
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.testkit.DefaultTimeout
 
 class AskSpec extends AkkaSpec with DefaultTimeout {

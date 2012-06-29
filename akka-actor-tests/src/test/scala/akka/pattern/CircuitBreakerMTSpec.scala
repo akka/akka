@@ -4,7 +4,7 @@
 package akka.pattern
 
 import akka.testkit._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import org.scalatest.BeforeAndAfter
 import akka.dispatch.{ Promise, Await, Future }
 
