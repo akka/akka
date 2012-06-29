@@ -20,12 +20,12 @@ abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ Option[String])
   /**
    * No-args constructor - a default name (`bundle-<bundle id>-ActorSystem`) will be assigned to the [[akka.actor.ActorSystem]]
    */
-  def this() = this({ context: BundleContext ⇒ None })
+  def this() = this(context ⇒ None)
 
   /**
    * Create the activator, specifying the name of the [[akka.actor.ActorSystem]] to be created
    */
-  def this(name: String) = this({ context: BundleContext ⇒ Some(name) })
+  def this(name: String) = this(context ⇒ Some(name))
 
   private var system: Option[ActorSystem] = None
   private var registration: Option[ServiceRegistration] = None
@@ -47,7 +47,7 @@ abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ Option[String])
    */
   def start(context: BundleContext): Unit = {
     system = Some(OsgiActorSystemFactory(context).createActorSystem(nameFor(context)))
-    system.foreach(configure(context, _))
+    system foreach (configure(context, _))
   }
 
   /**
@@ -56,8 +56,8 @@ abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ Option[String])
    * @param context the BundleContext
    */
   def stop(context: BundleContext): Unit = {
-    registration.foreach(_.unregister())
-    system.foreach(_.shutdown())
+    registration foreach (_.unregister())
+    system foreach (_.shutdown())
   }
 
   /**

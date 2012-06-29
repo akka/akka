@@ -28,7 +28,7 @@ class BundleDelegatingClassLoader(bundle: Bundle, classLoader: Option[ClassLoade
   protected override def findClass(name: String): Class[_] = bundle.loadClass(name)
 
   protected override def findResource(name: String): URL = {
-    val resource: URL = bundle.getResource(name)
+    val resource = bundle.getResource(name)
     classLoader match {
       case Some(loader) if resource == null ⇒ loader.getResource(name)
       case _                                ⇒ resource
@@ -40,7 +40,7 @@ class BundleDelegatingClassLoader(bundle: Bundle, classLoader: Option[ClassLoade
     bundle.getResources(name).asInstanceOf[Enumeration[URL]]
 
   protected override def loadClass(name: String, resolve: Boolean): Class[_] = {
-    val clazz: Class[_] = try {
+    val clazz = try {
       findClass(name)
     } catch {
       case cnfe: ClassNotFoundException ⇒ {
@@ -66,7 +66,7 @@ class BundleDelegatingClassLoader(bundle: Bundle, classLoader: Option[ClassLoade
   private def rethrowClassNotFoundException(name: String, cnfe: ClassNotFoundException): Nothing =
     throw new ClassNotFoundException(name + " from bundle " + bundle.getBundleId + " (" + bundle.getSymbolicName + ")", cnfe)
 
-  override def toString = String.format("BundleDelegatingClassLoader(%s)", bundle)
+  override def toString: String = String.format("BundleDelegatingClassLoader(%s)", bundle)
 
 }
 
