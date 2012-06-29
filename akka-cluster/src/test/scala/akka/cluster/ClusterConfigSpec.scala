@@ -34,6 +34,7 @@ class ClusterConfigSpec extends AkkaSpec {
       NrOfGossipDaemons must be(4)
       AutoJoin must be(true)
       AutoDown must be(true)
+      GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)
       SchedulerTickDuration must be(33 millis)
       SchedulerTicksPerWheel must be(512)
     }

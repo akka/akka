@@ -138,6 +138,19 @@ trait Conductor { this: TestConductorExt ⇒
   }
 
   /**
+   * Switch the Netty pipeline of the remote support into pass through mode for
+   * sending and/or receiving.
+   *
+   * @param node is the symbolic name of the node which is to be affected
+   * @param target is the symbolic name of the other node to which connectivity shall be impeded
+   * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
+   */
+  def passThrough(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
+    import Settings.QueryTimeout
+    controller ? Throttle(node, target, direction, -1f) mapTo
+  }
+
+  /**
    * Tell the remote support to shutdown the connection to the given remote
    * peer. It works regardless of whether the recipient was initiator or
    * responder.
