@@ -55,11 +55,15 @@ object ActorSystem {
    * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
+   *
+   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config): ActorSystem = apply(name, config)
 
   /**
    * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
+   *
+   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def create(name: String, config: Config, classLoader: ClassLoader): ActorSystem = apply(name, config, classLoader)
 
@@ -89,11 +93,15 @@ object ActorSystem {
    * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
    * then tries to walk the stack to find the callers class loader, then falls back to the ClassLoader
    * associated with the ActorSystem class.
+   *
+   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(name: String, config: Config): ActorSystem = apply(name, config, findClassLoader())
 
   /**
    * Creates a new ActorSystem with the name "default", the specified Config, and specified ClassLoader
+   *
+   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   def apply(name: String, config: Config, classLoader: ClassLoader): ActorSystem = new ActorSystemImpl(name, config, classLoader).start()
 
@@ -101,11 +109,15 @@ object ActorSystem {
    * Settings are the overall ActorSystem Settings which also provides a convenient access to the Config object.
    *
    * For more detailed information about the different possible configuration options, look in the Akka Documentation under "Configuration"
+   *
+   * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
    */
   class Settings(classLoader: ClassLoader, cfg: Config, final val name: String) {
 
     /**
      * The backing Config of this ActorSystem's Settings
+     *
+     * @see <a href="http://typesafehub.github.com/config/v0.4.1/" target="_blank">The Typesafe Config Library API Documentation</a>
      */
     final val config: Config = {
       val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
