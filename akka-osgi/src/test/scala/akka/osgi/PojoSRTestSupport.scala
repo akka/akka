@@ -19,10 +19,8 @@ import org.scalatest.{ BeforeAndAfterAll, Suite }
  */
 trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
 
-  val MAX_WAIT_TIME = 8000;
-  val START_WAIT_TIME = 100;
-
-  implicit def buildBundleDescriptor(builder: BundleDescriptorBuilder) = builder.build
+  val MAX_WAIT_TIME = 12800
+  val START_WAIT_TIME = 50
 
   /**
    * All bundles being found on the test classpath are automatically installed and started in the PojoSR runtime.
@@ -31,12 +29,12 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
   val testBundles: Seq[BundleDescriptor]
 
   lazy val context: BundleContext = {
-    val config = new HashMap[String, AnyRef]();
+    val config = new HashMap[String, AnyRef]()
     System.setProperty("org.osgi.framework.storage", "target/akka-osgi/" + System.currentTimeMillis)
 
     val bundles = new ClasspathScanner().scanForBundles()
     bundles.addAll(testBundles)
-    config.put(PojoServiceRegistryFactory.BUNDLE_DESCRIPTORS, bundles);
+    config.put(PojoServiceRegistryFactory.BUNDLE_DESCRIPTORS, bundles)
 
     val loader: ServiceLoader[PojoServiceRegistryFactory] = ServiceLoader.load(classOf[PojoServiceRegistryFactory])
 
@@ -68,15 +66,15 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
 
   def awaitReference(serviceType: Class[_], wait: Long): ServiceReference = {
     val option = Option(context.getServiceReference(serviceType.getName))
+    Thread.sleep(wait)
     option match {
-      case Some(reference)                ⇒ reference;
+      case Some(reference)                ⇒ reference
       case None if (wait > MAX_WAIT_TIME) ⇒ fail("Gave up waiting for service of type %s".format(serviceType))
-      case None ⇒ {
-        Thread.sleep(wait);
-        awaitReference(serviceType, wait * 2);
-      }
+      case None                           ⇒ awaitReference(serviceType, wait * 2)
     }
   }
+
+  protected def buildTestBundles(builders: Seq[BundleDescriptorBuilder]): Seq[BundleDescriptor] = builders map (_.build)
 }
 
 object PojoSRTestSupport {
@@ -97,35 +95,47 @@ class BundleDescriptorBuilder(name: String) {
 
   val tinybundle = TinyBundles.bundle.set(Constants.BUNDLE_SYMBOLICNAME, name)
 
-  def withBlueprintFile(name: String, contents: URL) =
+  /**
+   * Add a Blueprint XML file to our test bundle
+   */
+  def withBlueprintFile(name: String, contents: URL): BundleDescriptorBuilder =
     returnBuilder(tinybundle.add("OSGI-INF/blueprint/%s".format(name), contents))
 
+  /**
+   * Add a Blueprint XML file to our test bundle
+   */
   def withBlueprintFile(contents: URL): BundleDescriptorBuilder = withBlueprintFile(filename(contents), contents)
 
-  def withActivator(activator: Class[_ <: BundleActivator]) =
+  /**
+   * Add a Bundle activator to our test bundle
+   */
+  def withActivator(activator: Class[_ <: BundleActivator]): BundleDescriptorBuilder =
     returnBuilder(tinybundle.set(Constants.BUNDLE_ACTIVATOR, activator.getName))
 
-  def returnBuilder(block: ⇒ Unit) = {
+  private def returnBuilder(block: ⇒ Unit) = {
     block
     this
   }
 
-  def build = {
+  /**
+   * Build the actual PojoSR BundleDescriptor instance
+   */
+  def build: BundleDescriptor = {
     val file: File = tinybundleToJarFile(name)
 
     new BundleDescriptor(
       getClass().getClassLoader(),
       new URL("jar:" + file.toURI().toString() + "!/"),
-      extractHeaders(file));
+      extractHeaders(file))
   }
 
   def extractHeaders(file: File): HashMap[String, String] = {
-    val headers = new HashMap[String, String]();
+    val headers = new HashMap[String, String]()
 
-    val jis = new JarInputStream(new FileInputStream(file));
+    val jis = new JarInputStream(new FileInputStream(file))
     try {
       for (entry ← jis.getManifest().getMainAttributes().entrySet()) {
-        headers.put(entry.getKey().toString(), entry.getValue().toString());
+        headers.put(entry.getKey().toString(), entry.getValue().toString())
       }
     } finally {
       jis.close()
@@ -135,12 +145,12 @@ class BundleDescriptorBuilder(name: String) {
   }
 
   def tinybundleToJarFile(name: String): File = {
-    val file = new File("target/%s-%tQ.jar".format(name, new Date()));
-    val fos = new FileOutputStream(file);
+    val file = new File("target/%s-%tQ.jar".format(name, new Date()))
+    val fos = new FileOutputStream(file)
     try {
-      copy(tinybundle.build(), fos);
+      copy(tinybundle.build(), fos)
     } finally {
-      fos.close();
+      fos.close()
     }
     file
   }

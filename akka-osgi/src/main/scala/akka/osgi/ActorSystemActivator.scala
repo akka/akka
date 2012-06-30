@@ -12,20 +12,8 @@ import org.osgi.framework.{ ServiceRegistration, BundleContext, BundleActivator 
  * This convenience activator is mainly useful for setting up a single [[akka.actor.ActorSystem]] instance and sharing that
  * with other bundles in the OSGi Framework.  If you want to set up multiple systems in the same bundle context, look at
  * the [[akka.osgi.OsgiActorSystemFactory]] instead.
- *
- * @param nameFor a function that allows you to determine the name of the [[akka.actor.ActorSystem]] at bundle startup time
  */
-abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ Option[String]) extends BundleActivator {
-
-  /**
-   * No-args constructor - a default name (`bundle-<bundle id>-ActorSystem`) will be assigned to the [[akka.actor.ActorSystem]]
-   */
-  def this() = this(context ⇒ None)
-
-  /**
-   * Create the activator, specifying the name of the [[akka.actor.ActorSystem]] to be created
-   */
-  def this(name: String) = this(context ⇒ Some(name))
+abstract class ActorSystemActivator extends BundleActivator {
 
   private var system: Option[ActorSystem] = None
   private var registration: Option[ServiceRegistration] = None
@@ -46,7 +34,7 @@ abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ Option[String])
    * @param context the BundleContext
    */
   def start(context: BundleContext): Unit = {
-    system = Some(OsgiActorSystemFactory(context).createActorSystem(nameFor(context)))
+    system = Some(OsgiActorSystemFactory(context).createActorSystem(Option(getActorSystemName(context))))
     system foreach (configure(context, _))
   }
 
@@ -73,5 +61,14 @@ abstract class ActorSystemActivator(nameFor: (BundleContext) ⇒ Option[String])
     registration = Some(context.registerService(classOf[ActorSystem].getName, system,
       properties.asInstanceOf[Dictionary[String, Any]]))
   }
+
+  /**
+   * By default, the [[akka.actor.ActorSystem]] name will be set to `bundle-<bundle id>-ActorSystem`.  Override this
+   * method to define another name for your [[akka.actor.ActorSystem]] instance.
+   *
+   * @param context the bundle context
+   * @return the actor system name
+   */
+  def getActorSystemName(context: BundleContext): String = null
 
 }

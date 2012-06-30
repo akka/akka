@@ -52,7 +52,7 @@ class NamespaceHandler extends org.apache.aries.blueprint.NamespaceHandler {
   }
 
   def decorate(node: Node, component: ComponentMetadata, context: ParserContext) =
-    throw new ComponentDefinitionException("Bad xml syntax: node decoration is not supported");
+    throw new ComponentDefinitionException("Bad xml syntax: node decoration is not supported")
 
   /*
    * Parse <akka:actor-system/>
@@ -114,9 +114,9 @@ class NamespaceHandler extends org.apache.aries.blueprint.NamespaceHandler {
    */
   def getId(context: ParserContext, element: Element) = {
     if (element.hasAttribute(ID_ATTRIBUTE)) {
-      element.getAttribute(ID_ATTRIBUTE);
+      element.getAttribute(ID_ATTRIBUTE)
     } else {
-      findAvailableId(context);
+      findAvailableId(context)
     }
   }
 
@@ -134,8 +134,8 @@ class NamespaceHandler extends org.apache.aries.blueprint.NamespaceHandler {
 
 object NamespaceHandler {
 
-  private val ID_ATTRIBUTE = "id";
-  private val NAME_ATTRIBUTE = "name";
+  private val ID_ATTRIBUTE = "id"
+  private val NAME_ATTRIBUTE = "name"
 
   private val BUNDLE_CONTEXT_REFID = "blueprintBundleContext"
 
