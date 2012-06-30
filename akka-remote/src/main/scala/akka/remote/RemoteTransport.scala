@@ -300,7 +300,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
  * it allows to easily obtain references to the deserialized message, its intended recipient
  * and the sender.
  */
-class RemoteMessage(input: RemoteMessageProtocol, system: ExtendedActorSystem) {
+class RemoteMessage(val input: RemoteMessageProtocol, system: ExtendedActorSystem) {
   /**
    * Returns a String-representation of the ActorPath that this RemoteMessage is destined for
    */

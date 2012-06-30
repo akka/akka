@@ -43,7 +43,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, remoteRcl, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, docs)
   )
 
   lazy val actor = Project(
@@ -107,6 +107,23 @@ object AkkaBuild extends Build {
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
+      previousArtifact := akkaPreviousArtifact("akka-remote")
+    )
+  ) configs (MultiJvm)
+
+  lazy val remoteRcl = Project(
+    id = "akka-remote-rcl",
+    base = file("akka-remote-rcl"),
+    dependencies = Seq(remote, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
+    settings = defaultSettings ++ multiJvmSettings ++ OSGi.remoteRcl ++ Seq(
+      libraryDependencies ++= Dependencies.remoteRcl,
+      // disable parallel tests
+      parallelExecution in Test := false,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      },
+      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
+      jvmOptions in MultiJvm := defaultMultiJvmOptions ++ Seq("-javaagent:" + System.getProperty("user.home") + "/.ivy2/cache/com.typesafe/path-hole/jars/path-hole-1.0.jar"),
       previousArtifact := akkaPreviousArtifact("akka-remote")
     )
   ) configs (MultiJvm)
@@ -453,6 +470,8 @@ object Dependencies {
     netty, protobuf, uncommonsMath, Test.junit, Test.scalatest
   )
 
+  val remoteRcl = Seq(Test.path_hole, Test.junit, Test.scalatest)
+
   val cluster = Seq(Test.junit, Test.scalatest)
 
   val slf4j = Seq(slf4jApi, Test.logback)
@@ -512,6 +531,7 @@ object Dependency {
     val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
     val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
     val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
+    val path_hole   = "com.typesafe"                % "path-hole"           % "1.0"        % "test" from "https://github.com/avrecko/path-hole/raw/master/repository/com/typesafe/path-hole/1.0/path-hole-1.0.jar" // Ours
   }
 }
 
@@ -532,6 +552,8 @@ object OSGi {
   val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
 
   val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
+
+  val remoteRcl = exports(Seq("akka.remote.*"))
 
   val slf4j = exports(Seq("akka.event.slf4j.*"))
 
