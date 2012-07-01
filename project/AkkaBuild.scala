@@ -50,7 +50,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, /*akkaSbtPlugin,*/ samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, /*akkaSbtPlugin,*/ samples, tutorials, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -225,6 +225,24 @@ object AkkaBuild extends Build {
      )
   )
 
+  lazy val osgi = Project(
+    id = "akka-osgi",
+    base = file("akka-osgi"),
+    dependencies = Seq(actor),
+    settings = defaultSettings ++ OSGi.osgi ++ Seq(
+      libraryDependencies ++= Dependencies.osgi
+    )
+  )
+
+  lazy val osgiAries = Project(
+    id = "akka-osgi-aries",
+    base = file("akka-osgi-aries"),
+    dependencies = Seq(osgi % "compile;test->test"),
+    settings = defaultSettings ++ OSGi.osgiAries ++ Seq(
+      libraryDependencies ++= Dependencies.osgiAries
+    )
+  )
+
   lazy val akkaSbtPlugin = Project(
     id = "akka-sbt-plugin",
     base = file("akka-sbt-plugin"),
@@ -289,7 +307,7 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
-      remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel),
+      remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
     settings = defaultSettings ++ Sphinx.settings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -473,6 +491,10 @@ object Dependencies {
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
+  val osgi = Seq(osgiCore,Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
+
+  val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
+
   val tutorials = Seq(Test.scalatest, Test.junit)
 
   val docs = Seq(Test.scalatest, Test.junit, Test.specs2)
@@ -485,15 +507,16 @@ object Dependency {
   def v(a: String): String = a+"_"+AkkaBuild.desiredScalaVersion
 
   // Compile
-  val config        = "com.typesafe"                % "config"                  % "0.4.1"       // ApacheV2
-  val camelCore     = "org.apache.camel"            % "camel-core"              % "2.8.0"       // ApacheV2
-  val netty         = "io.netty"                    % "netty"                   % "3.5.1.Final" // ApacheV2
-  val protobuf      = "com.google.protobuf"         % "protobuf-java"           % "2.4.1"       // New BSD
-  val scalaStm      = "org.scala-tools"             % v("scala-stm")            % "0.5"         // Modified BSD (Scala)
-  val slf4jApi      = "org.slf4j"                   % "slf4j-api"               % "1.6.4"       // MIT
-  val zeroMQ        = "org.zeromq"                  % v("zeromq-scala-binding") % "0.0.6"  // ApacheV2  //FIXME SWITCH TO OFFICIAL VERSION
-  val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"         % "1.2.2a"      // ApacheV2
-
+  val config        = "com.typesafe"                % "config"                     % "0.4.1"       // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"                 % "2.8.0"       // ApacheV2
+  val netty         = "io.netty"                    % "netty"                      % "3.5.1.Final" // ApacheV2
+  val protobuf      = "com.google.protobuf"         % "protobuf-java"              % "2.4.1"       // New BSD
+  val scalaStm      = "org.scala-tools"             % v("scala-stm")               % "0.5"         // Modified BSD (Scala)
+  val slf4jApi      = "org.slf4j"                   % "slf4j-api"                  % "1.6.4"       // MIT
+  val zeroMQ        = "org.zeromq"                  % v("zeromq-scala-binding")    % "0.0.6"       // ApacheV2  //FIXME SWITCH TO OFFICIAL VERSION
+  val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"            % "1.2.2a"      // ApacheV2
+  val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint" % "0.3.2"       // ApacheV2
+  val osgiCore      = "org.osgi"                    % "org.osgi.core"              % "4.2.0"       // ApacheV2
 
   // Test
 
@@ -506,6 +529,9 @@ object Dependency {
     val scalatest   = "org.scalatest"               % v("scalatest")            % "1.9-2.10.0-M4-B2"  % "test" // ApacheV2
     val scalacheck  = "org.scalacheck"              % v("scalacheck")           % "1.10.0-b1"         % "test" // New BSD
     val specs2      = "org.specs2"                  % "specs2_2.10"             % "1.11"              % "test" // Modified BSD / ApacheV2
+    val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3" % "test"  // ApacheV2
+    val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"   % "test" // ApacheV2
+    val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"         % "1.0.0"      % "test" // ApacheV2
   }
 }
 
@@ -525,6 +551,10 @@ object OSGi {
 
   val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
 
+  val osgi = exports(Seq("akka.osgi")) ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.impl"))
+
+  val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
+
   val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
 
   val slf4j = exports(Seq("akka.event.slf4j.*"))
@@ -533,11 +563,12 @@ object OSGi {
 
   val zeroMQ = exports(Seq("akka.zeromq.*"))
 
-  def exports(packages: Seq[String]) = osgiSettings ++ Seq(
-    OsgiKeys.importPackage := Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*"),
+  def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
+    OsgiKeys.importPackage := defaultImports,
     OsgiKeys.exportPackage := packages
   )
 
+  def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
   def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
   def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
   def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.2,2.10)\"".format(packageName)
