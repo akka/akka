@@ -35,18 +35,17 @@ class SimpleNamespaceHandlerTest extends WordSpec with MustMatchers with PojoSRT
 
   "simple.xml" must {
     "set up ActorSystem when bundle starts" in {
-      val system = serviceForType[ActorSystem]
-      assert(system != null)
+      serviceForType[ActorSystem] must not be (null)
     }
 
     "stop the ActorSystem when bundle stops" in {
       val system = serviceForType[ActorSystem]
-      assert(!system.isTerminated)
+      system.isTerminated must be(false)
 
       bundleForName(TEST_BUNDLE_NAME).stop()
 
       system.awaitTermination()
-      assert(system.isTerminated)
+      system.isTerminated must be(true)
     }
   }
 
@@ -63,19 +62,19 @@ class ConfigNamespaceHandlerTest extends WordSpec with MustMatchers with PojoSRT
   "config.xml" must {
     "set up ActorSystem when bundle starts" in {
       val system = serviceForType[ActorSystem]
-      assert(system != null)
+      system must not be (null)
 
-      assert(system.settings.config.getString("some.config.key") == "value")
+      system.settings.config.getString("some.config.key") must be("value")
     }
 
     "stop the ActorSystem when bundle stops" in {
       val system = serviceForType[ActorSystem]
-      assert(!system.isTerminated)
+      system.isTerminated must be(false)
 
       bundleForName(TEST_BUNDLE_NAME).stop()
 
       system.awaitTermination()
-      assert(system.isTerminated)
+      system.isTerminated must be(true)
     }
   }
 
@@ -93,8 +92,8 @@ class DependencyInjectionNamespaceHandlerTest extends WordSpec with MustMatchers
 
     "set up bean containing ActorSystem" in {
       val bean = serviceForType[ActorSystemAwareBean]
-      assert(bean != null)
-      assert(bean.system != null)
+      bean must not be (null)
+      bean.system must not be (null)
     }
   }
 

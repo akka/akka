@@ -1,18 +1,24 @@
-import akka.actor.{ Props, ActorSystem }
-import akka.osgi.ActorSystemActivator
-import org.apache.servicemix.examples.akka.Listener
-import org.apache.servicemix.examples.akka.Master
+package docs.osgi
+
+case object SomeMessage
+
+class SomeActor extends akka.actor.Actor {
+  def receive = { case SomeMessage ⇒ }
+}
 
 //#Activator
-class Activator extends ActorSystemActivator("PiSystem") {
+import akka.actor.{ Props, ActorSystem }
+import org.osgi.framework.BundleContext
+import akka.osgi.ActorSystemActivator
+
+class Activator extends ActorSystemActivator {
 
   def configure(context: BundleContext, system: ActorSystem) {
     // optionally register the ActorSystem in the OSGi Service Registry
     registerService(context, system)
 
-    val listener = system.actorOf(Props[Listener], name = "listener")
-    val master = system.actorOf(Props(new Master(4, 10000, 10000, listener)), name = "master")
-    master ! Calculate
+    val someActor = system.actorOf(Props[SomeActor], name = "someName")
+    someActor ! SomeMessage
   }
 
 }

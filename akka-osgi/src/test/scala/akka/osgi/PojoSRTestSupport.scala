@@ -36,10 +36,7 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
     bundles.addAll(testBundles)
     config.put(PojoServiceRegistryFactory.BUNDLE_DESCRIPTORS, bundles)
 
-    val loader: ServiceLoader[PojoServiceRegistryFactory] = ServiceLoader.load(classOf[PojoServiceRegistryFactory])
-
-    val registry = loader.iterator.next.newPojoServiceRegistry(config)
-    registry.getBundleContext
+    ServiceLoader.load(classOf[PojoServiceRegistryFactory]).iterator.next.newPojoServiceRegistry(config).getBundleContext
   }
 
   // Ensure bundles get stopped at the end of the test to release resources and stop threads
@@ -48,25 +45,21 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
   /**
    * Convenience method to find a bundle by symbolic name
    */
-  def bundleForName(name: String) = context.getBundles.find(_.getSymbolicName == name) match {
-    case Some(bundle) ⇒ bundle
-    case None         ⇒ fail("Unable to find bundle with symbolic name %s".format(name))
-  }
+  def bundleForName(name: String) =
+    context.getBundles.find(_.getSymbolicName == name).getOrElse(fail("Unable to find bundle with symbolic name %s".format(name)))
 
   /**
    * Convenience method to find a service by interface.  If the service is not already available in the OSGi Service
    * Registry, this method will wait for a few seconds for the service to appear.
    */
-  def serviceForType[T](implicit manifest: Manifest[T]): T = {
-    val reference = awaitReference(manifest.erasure)
-    context.getService(reference).asInstanceOf[T]
-  }
+  def serviceForType[T](implicit manifest: Manifest[T]): T =
+    context.getService(awaitReference(manifest.erasure)).asInstanceOf[T]
 
   def awaitReference(serviceType: Class[_]): ServiceReference = awaitReference(serviceType, START_WAIT_TIME)
 
   def awaitReference(serviceType: Class[_], wait: Long): ServiceReference = {
     val option = Option(context.getServiceReference(serviceType.getName))
-    Thread.sleep(wait)
+    Thread.sleep(wait) //FIXME No sleep please
     option match {
       case Some(reference)                ⇒ reference
       case None if (wait > MAX_WAIT_TIME) ⇒ fail("Gave up waiting for service of type %s".format(serviceType))
@@ -78,12 +71,10 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
 }
 
 object PojoSRTestSupport {
-
   /**
    * Convenience method to define additional test bundles
    */
   def bundle(name: String) = new BundleDescriptorBuilder(name)
-
 }
 
 /**
@@ -98,22 +89,24 @@ class BundleDescriptorBuilder(name: String) {
   /**
    * Add a Blueprint XML file to our test bundle
    */
-  def withBlueprintFile(name: String, contents: URL): BundleDescriptorBuilder =
-    returnBuilder(tinybundle.add("OSGI-INF/blueprint/%s".format(name), contents))
+  def withBlueprintFile(name: String, contents: URL): BundleDescriptorBuilder = {
+    tinybundle.add("OSGI-INF/blueprint/%s".format(name), contents)
+    this
+  }
 
   /**
    * Add a Blueprint XML file to our test bundle
    */
-  def withBlueprintFile(contents: URL): BundleDescriptorBuilder = withBlueprintFile(filename(contents), contents)
+  def withBlueprintFile(contents: URL): BundleDescriptorBuilder = {
+    val filename = contents.getFile.split("/").last
+    withBlueprintFile(filename, contents)
+  }
 
   /**
    * Add a Bundle activator to our test bundle
    */
-  def withActivator(activator: Class[_ <: BundleActivator]): BundleDescriptorBuilder =
-    returnBuilder(tinybundle.set(Constants.BUNDLE_ACTIVATOR, activator.getName))
-
-  private def returnBuilder(block: ⇒ Unit) = {
-    block
+  def withActivator(activator: Class[_ <: BundleActivator]): BundleDescriptorBuilder = {
+    tinybundle.set(Constants.BUNDLE_ACTIVATOR, activator.getName)
     this
   }
 
@@ -122,11 +115,7 @@ class BundleDescriptorBuilder(name: String) {
    */
   def build: BundleDescriptor = {
     val file: File = tinybundleToJarFile(name)
-
-    new BundleDescriptor(
-      getClass().getClassLoader(),
-      new URL("jar:" + file.toURI().toString() + "!/"),
-      extractHeaders(file))
+    new BundleDescriptor(getClass().getClassLoader(), new URL("jar:" + file.toURI().toString() + "!/"), extractHeaders(file))
   }
 
   def extractHeaders(file: File): HashMap[String, String] = {
@@ -134,12 +123,9 @@ class BundleDescriptorBuilder(name: String) {
 
     val jis = new JarInputStream(new FileInputStream(file))
     try {
-      for (entry ← jis.getManifest().getMainAttributes().entrySet()) {
+      for (entry ← jis.getManifest().getMainAttributes().entrySet())
         headers.put(entry.getKey().toString(), entry.getValue().toString())
-      }
-    } finally {
-      jis.close()
-    }
+    } finally jis.close()
 
     headers
   }
@@ -147,14 +133,9 @@ class BundleDescriptorBuilder(name: String) {
   def tinybundleToJarFile(name: String): File = {
     val file = new File("target/%s-%tQ.jar".format(name, new Date()))
     val fos = new FileOutputStream(file)
-    try {
-      copy(tinybundle.build(), fos)
-    } finally {
-      fos.close()
-    }
+    try copy(tinybundle.build(), fos) finally fos.close()
+
     file
   }
-
-  private[this] def filename(url: URL) = url.getFile.split("/").last
 }
 

@@ -37,19 +37,17 @@ class PingPongActorSystemActivatorTest extends WordSpec with MustMatchers with P
       val actor = system.actorFor("/user/pong")
 
       implicit val timeout = Timeout(5 seconds)
-      val future = actor ? Ping
-      val result = Await.result(future, timeout.duration)
-      assert(result != null)
+      Await.result(actor ? Ping, timeout.duration) must be(Pong)
     }
 
     "stop the ActorSystem when bundle stops" in {
       val system = serviceForType[ActorSystem]
-      assert(!system.isTerminated)
+      system.isTerminated must be(false)
 
       bundleForName(TEST_BUNDLE_NAME).stop()
 
       system.awaitTermination()
-      assert(system.isTerminated)
+      system.isTerminated must be(true)
     }
   }
 
@@ -59,15 +57,12 @@ class RuntimeNameActorSystemActivatorTest extends WordSpec with MustMatchers wit
 
   import ActorSystemActivatorTest._
 
-  val testBundles: Seq[BundleDescriptor] = buildTestBundles(Seq(
-    bundle(TEST_BUNDLE_NAME).withActivator(classOf[RuntimeNameActorSystemActivator])))
+  val testBundles: Seq[BundleDescriptor] = buildTestBundles(Seq(bundle(TEST_BUNDLE_NAME).withActivator(classOf[RuntimeNameActorSystemActivator])))
 
   "RuntimeNameActorSystemActivator" must {
 
     "register an ActorSystem and add the bundle id to the system name" in {
-      val system = serviceForType[ActorSystem]
-      val bundle = bundleForName(TEST_BUNDLE_NAME)
-      system.name must equal(TestActivators.ACTOR_SYSTEM_NAME_PATTERN.format(bundle.getBundleId))
+      serviceForType[ActorSystem].name must equal(TestActivators.ACTOR_SYSTEM_NAME_PATTERN.format(bundleForName(TEST_BUNDLE_NAME).getBundleId))
     }
   }
 

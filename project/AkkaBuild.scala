@@ -43,7 +43,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -299,7 +299,7 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
-      remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel),
+      remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
     settings = defaultSettings ++ Sphinx.settings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -560,13 +560,9 @@ object OSGi {
 
   val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
 
-  val osgi = exports(Seq("akka.osgi")) ++ Seq(
-    OsgiKeys.privatePackage := Seq("akka.osgi.impl")
-  )
+  val osgi = exports(Seq("akka.osgi")) ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.impl"))
 
-  val osgiAries = exports() ++ Seq(
-    OsgiKeys.privatePackage := Seq("akka.osgi.aries.*")
-  )
+  val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
   val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
 
