@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://akka.io/xmlns/blueprint/v1.0.0"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:bp="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+            targetNamespace="http://akka.io/xmlns/blueprint/v1.0.0"
+            elementFormDefault="qualified"
+            attributeFormDefault="unqualified">
+
+    <xsd:import namespace="http://www.osgi.org/xmlns/blueprint/v1.0.0"/>
+
+    <xsd:annotation>
+        <xsd:documentation>
+            Defines the configuration elements for setting up Akka with Blueprint
+        </xsd:documentation>
+    </xsd:annotation>
+
+    <xsd:element name="actor-system">
+        <xsd:complexType>
+            <xsd:annotation>
+                <xsd:documentation>
+                    Defines an Akka ActorSystem
+                </xsd:documentation>
+            </xsd:annotation>
+            <xsd:sequence>
+                <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                    <xsd:element ref="config" />
+                </xsd:choice>
+            </xsd:sequence>
+            <xsd:attribute name="id" type="xsd:ID"/>
+            <xsd:attribute name="name" type="xsd:string" use="optional"/>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="config" type="xsd:string">
+        <xsd:annotation>
+            <xsd:documentation>
+                Defines an Akka ActorSystem configuration
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+
+</xsd:schema>
