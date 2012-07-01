@@ -217,6 +217,24 @@ object AkkaBuild extends Build {
      )
   )
 
+  lazy val osgi = Project(
+    id = "akka-osgi",
+    base = file("akka-osgi"),
+    dependencies = Seq(actor),
+    settings = defaultSettings ++ OSGi.osgi ++ Seq(
+      libraryDependencies ++= Dependencies.osgi
+    )
+  )
+
+  lazy val osgiAries = Project(
+    id = "akka-osgi-aries",
+    base = file("akka-osgi-aries"),
+    dependencies = Seq(osgi % "compile;test->test"),
+    settings = defaultSettings ++ OSGi.osgiAries ++ Seq(
+      libraryDependencies ++= Dependencies.osgiAries
+    )
+  )
+
   lazy val akkaSbtPlugin = Project(
     id = "akka-sbt-plugin",
     base = file("akka-sbt-plugin"),
@@ -469,6 +487,10 @@ object Dependencies {
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
+  val osgi = Seq(osgiCore,Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
+
+  val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
+
   val tutorials = Seq(Test.scalatest, Test.junit)
 
   val docs = Seq(Test.scalatest, Test.junit, Test.specs2)
@@ -484,6 +506,7 @@ object Dependency {
     val Camel        = "2.8.0"
     val Logback      = "1.0.4"
     val Netty        = "3.5.1.Final"
+    val OSGi         = "4.2.0"
     val Protobuf     = "2.4.1"
     val ScalaStm     = "0.5"
     val Scalatest    = "1.6.1"
@@ -492,9 +515,11 @@ object Dependency {
   }
 
   // Compile
+  val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint" % "0.3.2"  // ApacheV2
   val config        = "com.typesafe"                % "config"                 % "0.4.1"      // ApacheV2
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
   val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
+  val osgiCore      = "org.osgi"                    % "org.osgi.core"          % V.OSGi       // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
   val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
@@ -504,14 +529,18 @@ object Dependency {
   // Test
 
   object Test {
+    val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3" % "test"  // ApacheV2
     val commonsMath = "org.apache.commons"          % "commons-math"        % "2.1"        % "test" // ApacheV2
-    val commonsIo     = "commons-io"                % "commons-io"          % "2.0.1"      % "test"// ApacheV2
+    val commonsIo   = "commons-io"                  % "commons-io"          % "2.0.1"      % "test"// ApacheV2
     val junit       = "junit"                       % "junit"               % "4.5"        % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"         % "1.8.1"      % "test" // MIT
+    val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"   % "test" // ApacheV2
     val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
     val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
     val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
+    val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"         % "1.0.0"      % "test" // ApacheV2
+    val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
   }
 }
 
@@ -531,6 +560,14 @@ object OSGi {
 
   val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
 
+  val osgi = exports(Seq("akka.osgi")) ++ Seq(
+    OsgiKeys.privatePackage := Seq("akka.osgi.impl")
+  )
+
+  val osgiAries = exports() ++ Seq(
+    OsgiKeys.privatePackage := Seq("akka.osgi.aries.*")
+  )
+
   val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
 
   val slf4j = exports(Seq("akka.event.slf4j.*"))
@@ -539,11 +576,12 @@ object OSGi {
 
   val zeroMQ = exports(Seq("akka.zeromq.*"))
 
-  def exports(packages: Seq[String]) = osgiSettings ++ Seq(
-    OsgiKeys.importPackage := Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*"),
+  def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
+    OsgiKeys.importPackage := defaultImports,
     OsgiKeys.exportPackage := packages
   )
 
+  def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
   def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
   def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
   def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.9.2,2.10)\"".format(packageName)
