@@ -19,7 +19,7 @@ private[camelexamples] class SysOutConsumer extends Consumer {
   override def activationTimeout = 10 seconds
   def endpointUri = "file://data/input/CamelConsumer"
 
-  protected def receive = {
+  def receive = {
     case msg: CamelMessage ⇒ {
       printf("Received '%s'\n", msg.bodyAs[String])
     }
@@ -30,12 +30,12 @@ private[camelexamples] class TroubleMaker extends Consumer {
   def endpointUri = "WRONG URI"
 
   println("Trying to instantiate conumer with uri: " + endpointUri)
-  protected def receive = { case _ ⇒ }
+  def receive = { case _ ⇒ }
 }
 
 private[camelexamples] class SysOutActor(implicit camel: Camel) extends Actor {
   implicit val camelContext = camel.context
-  protected def receive = {
+  def receive = {
     case msg: CamelMessage ⇒ {
       printf("Received '%s'\n", msg.bodyAs[String])
     }

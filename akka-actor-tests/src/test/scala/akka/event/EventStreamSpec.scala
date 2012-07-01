@@ -19,7 +19,7 @@ object EventStreamSpec {
         loglevel = INFO
         event-handlers = ["akka.event.EventStreamSpec$MyLog", "%s"]
       }
-      """.format(Logging.StandardOutLoggerName))
+      """.format(Logging.StandardOutLogger.getClass.getName))
 
   val configUnhandled = ConfigFactory.parseString("""
       akka {
@@ -72,6 +72,17 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         bus.publish(M(13))
         expectNoMsg
       }
+    }
+
+    "not allow null as subscriber" in {
+      val bus = new EventStream(true)
+      intercept[IllegalArgumentException] { bus.subscribe(null, classOf[M]) }.getMessage must be("subscriber is null")
+    }
+
+    "not allow null as unsubscriber" in {
+      val bus = new EventStream(true)
+      intercept[IllegalArgumentException] { bus.unsubscribe(null, classOf[M]) }.getMessage must be("subscriber is null")
+      intercept[IllegalArgumentException] { bus.unsubscribe(null) }.getMessage must be("subscriber is null")
     }
 
     "be able to log unhandled messages" in {

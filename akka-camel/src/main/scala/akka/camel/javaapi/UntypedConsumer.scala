@@ -13,7 +13,7 @@ import org.apache.camel.{ ProducerTemplate, CamelContext }
  * class is meant to be used from Java.
  */
 abstract class UntypedConsumerActor extends UntypedActor with Consumer {
-  final def endpointUri = getEndpointUri
+  final def endpointUri: String = getEndpointUri
 
   /**
    * Returns the Camel endpoint URI to consume messages from.

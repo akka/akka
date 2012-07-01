@@ -3,7 +3,6 @@
 # ============== Akka Cluster Administration Tool ==============
 #
 # This script is meant to be used from within the Akka distribution.
-# Requires setting $AKKA_HOME to the root of the distribution.
 #
 # Add these options to the sbt or startup script:
 #   java \
@@ -15,9 +14,12 @@
 
 # FIXME support authentication? if so add: -Dcom.sun.management.jmxremote.password.file=<path to file> AND tweak this script to support it (arg need 'user:passwd' instead of '-')
 
-# NOTE: The 'cmdline-jmxclient' JAR is available as part of the Akka distribution.
-#       Provided by Typesafe Maven Repository: http://repo.typesafe.com/typesafe/releases/cmdline-jmxclient.
-JMX_CLIENT="java -jar $AKKA_HOME/lib/akka/cmdline-jmxclient-0.10.3.jar -"
+declare AKKA_HOME="$(cd "$(cd "$(dirname "$0")"; pwd -P)"/..; pwd)"
+
+[ -n "$JMX_CLIENT_CLASSPATH" ] || JMX_CLIENT_CLASSPATH="$AKKA_HOME/lib/akka/akka-kernel-*"
+
+# NOTE: The 'cmdline-jmxclient' is available as part of the Akka distribution.
+JMX_CLIENT="java -cp $JMX_CLIENT_CLASSPATH akka.jmx.Client -"
 
 SELF=`basename $0` # script name
 HOST=$1            # cluster node:port to talk to through JMX
@@ -59,20 +61,6 @@ case "$2" in
         ACTOR_SYSTEM_URL=$2
         echo "Scheduling $ACTOR_SYSTEM_URL to LEAVE cluster"
         $JMX_CLIENT $HOST akka:type=Cluster leave=$ACTOR_SYSTEM_URL
-        ;;
-
-    remove)
-        if [ $# -ne 3 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> remove <actor-system-url-to-join>"
-            exit 1
-        fi
-
-        ensureNodeIsRunningAndAvailable
-        shift
-
-        ACTOR_SYSTEM_URL=$2
-        echo "Scheduling $ACTOR_SYSTEM_URL to REMOVE"
-        $JMX_CLIENT $HOST akka:type=Cluster remove=$ACTOR_SYSTEM_URL
         ;;
 
     down)
@@ -167,25 +155,38 @@ case "$2" in
         $JMX_CLIENT $HOST akka:type=Cluster Available
         ;;
 
+    is-running)
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> is-running"
+            exit 1
+        fi
+
+        ensureNodeIsRunningAndAvailable
+        shift
+
+        echo "Checking if member node on $HOST is AVAILABLE"
+        $JMX_CLIENT $HOST akka:type=Cluster Running
+        ;;
+
     *)
-        printf "Usage: $SELF <node-hostname:jmx-port> <command> ...\n"
+        printf "Usage: bin/$SELF <node-hostname:jmx-port> <command> ...\n"
         printf "\n"
         printf "Supported commands are:\n"
         printf "%26s - %s\n" "join <actor-system-url>"   "Sends request a JOIN node with the specified URL"
         printf "%26s - %s\n" "leave <actor-system-url>"  "Sends a request for node with URL to LEAVE the cluster"
-        printf "%26s - %s\n" "remove <actor-system-url>" "Sends a request for node with URL to be instantly REMOVED from the cluster"
         printf "%26s - %s\n" "down <actor-system-url>"   "Sends a request for marking node with URL as DOWN"
         printf "%26s - %s\n" member-status               "Asks the member node for its current status"
         printf "%26s - %s\n" cluster-status              "Asks the cluster for its current status (member ring, unavailable nodes, meta data etc.)"
         printf "%26s - %s\n" leader                      "Asks the cluster who the current leader is"
         printf "%26s - %s\n" is-singleton                "Checks if the cluster is a singleton cluster (single node cluster)"
         printf "%26s - %s\n" is-available                "Checks if the member node is available"
+        printf "%26s - %s\n" is-running                  "Checks if the member node is running"
         printf "%26s - %s\n" has-convergence             "Checks if there is a cluster convergence"
         printf "Where the <actor-system-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
         printf "\n"
-        printf "Examples: $SELF localhost:9999 is-available\n"
-        printf "          $SELF localhost:9999 join akka://MySystem@darkstar:2552\n"
-        printf "          $SELF localhost:9999 cluster-status\n"
+        printf "Examples: bin/$SELF localhost:9999 is-available\n"
+        printf "          bin/$SELF localhost:9999 join akka://MySystem@darkstar:2552\n"
+        printf "          bin/$SELF localhost:9999 cluster-status\n"
         exit 1
         ;;
 esac

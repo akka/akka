@@ -9,6 +9,7 @@ import annotation.tailrec
 import akka.util.{ Duration, Helpers }
 import java.util.{ Comparator, Iterator }
 import java.util.concurrent.{ Executor, LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
+import akka.actor.ActorSystemImpl
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -35,14 +36,36 @@ class BalancingDispatcher(
   attemptTeamWork: Boolean)
   extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 
-  val team = new ConcurrentSkipListSet[ActorCell](
+  /**
+   * INTERNAL USE ONLY
+   */
+  private[akka] val team = new ConcurrentSkipListSet[ActorCell](
     Helpers.identityHashComparator(new Comparator[ActorCell] {
       def compare(l: ActorCell, r: ActorCell) = l.self.path compareTo r.self.path
     }))
 
-  val messageQueue: MessageQueue = mailboxType.create(None)
+  /**
+   * INTERNAL USE ONLY
+   */
+  private[akka] val messageQueue: MessageQueue = mailboxType.create(None, None)
 
-  protected[akka] override def createMailbox(actor: ActorCell): Mailbox = new SharingMailbox(actor, messageQueue)
+  private class SharingMailbox(val system: ActorSystemImpl, _messageQueue: MessageQueue)
+    extends Mailbox(_messageQueue) with DefaultSystemMessageQueue {
+    override def cleanUp(): Unit = {
+      val dlq = system.deadLetterMailbox
+      //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
+      var message = systemDrain(NoMessage)
+      while (message ne null) {
+        // message must be “virgin” before being able to systemEnqueue again
+        val next = message.next
+        message.next = null
+        dlq.systemEnqueue(system.deadLetters, message)
+        message = next
+      }
+    }
+  }
+
+  protected[akka] override def createMailbox(actor: akka.actor.Cell): Mailbox = new SharingMailbox(actor.systemImpl, messageQueue)
 
   protected[akka] override def register(actor: ActorCell): Unit = {
     super.register(actor)
@@ -64,7 +87,7 @@ class BalancingDispatcher(
     @tailrec def scheduleOne(i: Iterator[ActorCell] = team.iterator): Unit =
       if (messageQueue.hasMessages
         && i.hasNext
-        && (executorService.get().executor match {
+        && (executorService.executor match {
           case lm: LoadMetrics ⇒ lm.atFullThrottle == false
           case other           ⇒ true
         })
@@ -72,24 +95,5 @@ class BalancingDispatcher(
         scheduleOne(i)
 
     scheduleOne()
-  }
-}
-
-class SharingMailbox(_actor: ActorCell, _messageQueue: MessageQueue)
-  extends Mailbox(_actor, _messageQueue) with DefaultSystemMessageQueue {
-
-  override def cleanUp(): Unit = {
-    //Don't call the original implementation of this since it scraps all messages, and we don't want to do that
-    if (hasSystemMessages) {
-      val dlq = actor.systemImpl.deadLetterMailbox
-      var message = systemDrain()
-      while (message ne null) {
-        // message must be “virgin” before being able to systemEnqueue again
-        val next = message.next
-        message.next = null
-        dlq.systemEnqueue(actor.self, message)
-        message = next
-      }
-    }
   }
 }

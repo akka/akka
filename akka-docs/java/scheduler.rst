@@ -25,13 +25,13 @@ scheduled operation.
 Some examples
 -------------
 
-.. includecode:: code/akka/docs/actor/SchedulerDocTestBase.java
+.. includecode:: code/docs/actor/SchedulerDocTestBase.java
    :include: imports1,schedule-one-off-message
 
-.. includecode:: code/akka/docs/actor/SchedulerDocTestBase.java
+.. includecode:: code/docs/actor/SchedulerDocTestBase.java
    :include: schedule-one-off-thunk
 
-.. includecode:: code/akka/docs/actor/SchedulerDocTestBase.java
+.. includecode:: code/docs/actor/SchedulerDocTestBase.java
    :include: imports1,imports2,schedule-recurring
 
 From ``akka.actor.ActorSystem``

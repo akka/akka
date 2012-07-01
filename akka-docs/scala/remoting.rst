@@ -105,6 +105,14 @@ Once you have configured the properties above you would do the following in code
 ``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
 
+.. note::
+
+  In order to ensure serializability of ``Props`` when passing constructor
+  arguments to the actor being created, do not make the factory an inner class:
+  this will inherently capture a reference to its enclosing object, which in
+  most cases is not serializable. It is best to create a factory method in the
+  companion object of the actor’s class.
+
 Programmatic Remote Deployment
 ------------------------------
 
@@ -116,15 +124,15 @@ precedence.
 
 With these imports:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocSpec.scala#import
+.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#import
 
 and a remote address like this:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocSpec.scala#make-address
+.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#make-address
 
 you can advise the system to create a child on that remote node like so:
 
-.. includecode:: code/akka/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
+.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#deploy
 
 Serialization
 ^^^^^^^^^^^^^
@@ -280,10 +288,6 @@ which holds the transport used (RemoteTransport) and the outbound address that i
 To intercept when an outbound client is shut down you listen to ``RemoteClientShutdown``
 which holds the transport used (RemoteTransport) and the outbound address that it was connected to (Address).
 
-To intercept when an outbound message cannot be sent, you listen to ``RemoteClientWriteFailed`` which holds
-the payload that was not written (AnyRef), the cause of the failed send (Throwable),
-the transport used (RemoteTransport) and the outbound address that was the destination (Address).
-
 For general outbound-related errors, that do not classify as any of the others, you can listen to ``RemoteClientError``,
 which holds the cause (Throwable), the transport used (RemoteTransport) and the outbound address (Address).
 
@@ -301,3 +305,64 @@ which holds the transport used (RemoteTransport) and optionally the address that
 
 To intercept when an inbound remote client has been closed you listen to ``RemoteServerClientClosed``
 which holds the transport used (RemoteTransport) and optionally the address of the remote client that was closed (Option[Address]).
+
+Remote Security
+^^^^^^^^^^^^^^^
+
+Akka provides a couple of ways to enhance security between remote nodes (client/server):
+
+* Untrusted Mode
+* Security Cookie Handshake
+
+Untrusted Mode
+--------------
+
+You can enable untrusted mode for preventing system messages to be send by clients, e.g. messages like.
+This will prevent the client to send these messages to the server:
+
+* ``Create``
+* ``Recreate``
+* ``Suspend``
+* ``Resume``
+* ``Terminate``
+* ``Supervise``
+* ``ChildTerminated``
+* ``Link``
+* ``Unlink``
+
+Here is how to turn it on in the config::
+
+    akka {
+      actor {
+        remote {
+          untrusted-mode = on
+        }
+      }
+    }
+
+Secure Cookie Handshake
+-----------------------
+
+Akka remoting also allows you to specify a secure cookie that will be exchanged and ensured to be identical
+in the connection handshake between the client and the server. If they are not identical then the client
+will be refused to connect to the server.
+
+The secure cookie can be any kind of string. But the recommended approach is to generate a cryptographically
+secure cookie using this script ``$AKKA_HOME/scripts/generate_config_with_secure_cookie.sh`` or from code
+using the ``akka.util.Crypt.generateSecureCookie()`` utility method.
+
+You have to ensure that both the connecting client and the server have the same secure cookie as well
+as the ``require-cookie`` option turned on.
+
+Here is an example config::
+
+    akka {
+      actor {
+        remote {
+          netty {
+            secure-cookie = "090A030E0F0A05010900000A0C0E0C0B03050D05"
+            require-cookie = on
+          }
+        }
+      }
+    }

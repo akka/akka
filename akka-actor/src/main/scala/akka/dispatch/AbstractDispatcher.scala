@@ -16,8 +16,10 @@ import akka.event.Logging.LogEventException
 import akka.jsr166y.{ ForkJoinTask, ForkJoinPool }
 import akka.util.{ Unsafe, Duration, NonFatal, Index }
 
-final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorSystem) {
-  if (message.isInstanceOf[AnyRef]) {
+final case class Envelope private (val message: Any, val sender: ActorRef)
+
+object Envelope {
+  def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
     val msg = message.asInstanceOf[AnyRef]
     if (msg eq null) throw new InvalidMessageException("Message is null")
     if (system.settings.SerializeAllMessages && !msg.isInstanceOf[NoSerializationVerificationNeeded]) {
@@ -30,10 +32,14 @@ final case class Envelope(val message: Any, val sender: ActorRef)(system: ActorS
         }
       }
     }
+    new Envelope(message, sender)
   }
 }
 
-object SystemMessage {
+/**
+ * INTERNAL API
+ */
+private[akka] object SystemMessage {
   @tailrec
   final def size(list: SystemMessage, acc: Int = 0): Int = {
     if (list eq null) acc else size(list.next, acc + 1)
@@ -59,33 +65,61 @@ object SystemMessage {
  * system messages is handled in a single thread only and not ever passed around,
  * hence no further synchronization is needed.
  *
+ * INTERNAL API
+ *
  * ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
  */
-sealed trait SystemMessage extends PossiblyHarmful {
+private[akka] sealed trait SystemMessage extends PossiblyHarmful {
   @transient
   var next: SystemMessage = _
 }
-case class Create() extends SystemMessage // send to self from Dispatcher.register
-case class Recreate(cause: Throwable) extends SystemMessage // sent to self from ActorCell.restart
-case class Suspend() extends SystemMessage // sent to self from ActorCell.suspend
-case class Resume() extends SystemMessage // sent to self from ActorCell.resume
-case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
-case class Supervise(child: ActorRef) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
-case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to supervisor from ActorCell.doTerminate
-case class Link(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.watch
-case class Unlink(subject: ActorRef) extends SystemMessage // sent to self from ActorCell.unwatch
+
+/**
+ * INTERNAL API
+ */
+private[akka] case class Create() extends SystemMessage // send to self from Dispatcher.register
+/**
+ * INTERNAL API
+ */
+private[akka] case class Recreate(cause: Throwable) extends SystemMessage // sent to self from ActorCell.restart
+/**
+ * INTERNAL API
+ */
+private[akka] case class Suspend() extends SystemMessage // sent to self from ActorCell.suspend
+/**
+ * INTERNAL API
+ */
+private[akka] case class Resume() extends SystemMessage // sent to self from ActorCell.resume
+/**
+ * INTERNAL API
+ */
+private[akka] case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
+/**
+ * INTERNAL API
+ */
+private[akka] case class Supervise(child: ActorRef) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+/**
+ * INTERNAL API
+ */
+private[akka] case class ChildTerminated(child: ActorRef) extends SystemMessage // sent to supervisor from ActorCell.doTerminate
+/**
+ * INTERNAL API
+ */
+private[akka] case class Watch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to establish a DeathWatch
+/**
+ * INTERNAL API
+ */
+private[akka] case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
+/**
+ * INTERNAL API
+ */
+private[akka] case object NoMessage extends SystemMessage // switched into the mailbox to signal termination
 
 final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Runnable {
-  def run() {
-    try {
-      runnable.run()
-    } catch {
-      case NonFatal(e) ⇒
-        eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
-    } finally {
-      cleanup()
-    }
-  }
+  def run(): Unit =
+    try runnable.run() catch {
+      case NonFatal(e) ⇒ eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
+    } finally cleanup()
 }
 
 /**
@@ -170,10 +204,16 @@ trait ExecutionContext {
   def reportFailure(t: Throwable): Unit
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] trait LoadMetrics { self: Executor ⇒
   def atFullThrottle(): Boolean
 }
 
+/**
+ * INTERNAL API
+ */
 private[akka] object MessageDispatcher {
   val UNSCHEDULED = 0 //WARNING DO NOT CHANGE THE VALUE OF THIS: It relies on the faster init of 0 in AbstractMessageDispatcher
   val SCHEDULED = 1
@@ -181,7 +221,7 @@ private[akka] object MessageDispatcher {
 
   // dispatcher debugging helper using println (see below)
   // since this is a compile-time constant, scalac will elide code behind if (MessageDispatcher.debug) (RK checked with 2.9.1)
-  final val debug = false
+  final val debug = false // Deliberately without type ascription to make it a compile-time constant
   lazy val actors = new Index[MessageDispatcher, ActorRef](16, _ compareTo _)
   def printActors: Unit = if (debug) {
     for {
@@ -191,8 +231,8 @@ private[akka] object MessageDispatcher {
     } {
       val status = if (a.isTerminated) " (terminated)" else " (alive)"
       val messages = a match {
-        case l: LocalActorRef ⇒ " " + l.underlying.mailbox.numberOfMessages + " messages"
-        case _                ⇒ " " + a.getClass
+        case r: ActorRefWithCell ⇒ " " + r.underlying.numberOfMessages + " messages"
+        case _                   ⇒ " " + a.getClass
       }
       val parent = a match {
         case i: InternalActorRef ⇒ ", parent: " + i.getParent
@@ -228,7 +268,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /**
    *  Creates and returns a mailbox for the given actor.
    */
-  protected[akka] def createMailbox(actor: ActorCell): Mailbox
+  protected[akka] def createMailbox(actor: Cell): Mailbox //FIXME should this really be private[akka]?
 
   /**
    * Identifier of this dispatcher, corresponds to the full key
@@ -255,7 +295,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     ifSensibleToDoSoThenScheduleShutdown()
   }
 
-  final def execute(runnable: Runnable) {
+  final def execute(runnable: Runnable): Unit = {
     val invocation = TaskInvocation(eventStream, runnable, taskCleanup)
     addInhabitants(+1)
     try {
@@ -277,16 +317,14 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     case 0 ⇒
       shutdownSchedule match {
         case UNSCHEDULED ⇒
-          if (updateShutdownSchedule(UNSCHEDULED, SCHEDULED)) {
-            scheduleShutdownAction()
-            ()
-          } else ifSensibleToDoSoThenScheduleShutdown()
+          if (updateShutdownSchedule(UNSCHEDULED, SCHEDULED)) scheduleShutdownAction()
+          else ifSensibleToDoSoThenScheduleShutdown()
         case SCHEDULED ⇒
           if (updateShutdownSchedule(SCHEDULED, RESCHEDULED)) ()
           else ifSensibleToDoSoThenScheduleShutdown()
-        case RESCHEDULED ⇒ ()
+        case RESCHEDULED ⇒
       }
-    case _ ⇒ ()
+    case _ ⇒
   }
 
   private def scheduleShutdownAction(): Unit = {
@@ -300,6 +338,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   /**
    * If you override it, you must call it. But only ever once. See "attach" for only invocation.
+   *
+   * INTERNAL API
    */
   protected[akka] def register(actor: ActorCell) {
     if (debug) actors.put(this, actor.self)
@@ -308,13 +348,14 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   /**
    * If you override it, you must call it. But only ever once. See "detach" for the only invocation
+   *
+   * INTERNAL API
    */
   protected[akka] def unregister(actor: ActorCell) {
     if (debug) actors.remove(this, actor.self)
     addInhabitants(-1)
-    val mailBox = actor.mailbox
+    val mailBox = actor.swapMailbox(deadLetterMailbox)
     mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up
-    actor.mailbox = deadLetterMailbox
     mailBox.cleanUp()
   }
 
@@ -322,7 +363,6 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     @tailrec
     final def run() {
       shutdownSchedule match {
-        case UNSCHEDULED ⇒ ()
         case SCHEDULED ⇒
           try {
             if (inhabitants == 0) shutdown() //Warning, racy
@@ -332,6 +372,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
         case RESCHEDULED ⇒
           if (updateShutdownSchedule(RESCHEDULED, SCHEDULED)) scheduleShutdownAction()
           else run()
+        case UNSCHEDULED ⇒
       }
     }
   }
@@ -340,6 +381,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    * When the dispatcher no longer has any actors registered, how long will it wait until it shuts itself down,
    * defaulting to your akka configs "akka.actor.default-dispatcher.shutdown-timeout" or default specified in
    * reference.conf
+   *
+   * INTERNAL API
    */
   protected[akka] def shutdownTimeout: Duration
 
@@ -362,36 +405,59 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   }
 
   /**
-   *   Will be called when the dispatcher is to queue an invocation for execution
+   * Will be called when the dispatcher is to queue an invocation for execution
+   *
+   * INTERNAL API
    */
   protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage)
 
   /**
-   *   Will be called when the dispatcher is to queue an invocation for execution
+   * Will be called when the dispatcher is to queue an invocation for execution
+   *
+   * INTERNAL API
    */
   protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope)
 
   /**
    * Suggest to register the provided mailbox for execution
+   *
+   * INTERNAL API
    */
   protected[akka] def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean
 
   // TODO check whether this should not actually be a property of the mailbox
+  /**
+   * INTERNAL API
+   */
   protected[akka] def throughput: Int
+
+  /**
+   * INTERNAL API
+   */
   protected[akka] def throughputDeadlineTime: Duration
 
-  @inline
-  protected[akka] final val isThroughputDeadlineTimeDefined = throughputDeadlineTime.toMillis > 0
+  /**
+   * INTERNAL API
+   */
+  @inline protected[akka] final val isThroughputDeadlineTimeDefined = throughputDeadlineTime.toMillis > 0
 
+  /**
+   * INTERNAL API
+   */
   protected[akka] def executeTask(invocation: TaskInvocation)
 
   /**
    * Called one time every time an actor is detached from this dispatcher and this dispatcher has no actors left attached
    * Must be idempotent
+   *
+   * INTERNAL API
    */
   protected[akka] def shutdown(): Unit
 }
 
+/**
+ * An ExecutorServiceConfigurator is a class that given some prerequisites and a configuration can create instances of ExecutorService
+ */
 abstract class ExecutorServiceConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceFactoryProvider
 
 /**

@@ -11,24 +11,25 @@ import akka.actor.ActorSystem
 class FileBasedMailboxSettings(val systemSettings: ActorSystem.Settings, val userConfig: Config)
   extends DurableMailboxSettings {
 
-  def name = "file-based"
+  def name: String = "file-based"
 
   val config = initialize
-
   import config._
 
-  val QueuePath = getString("directory-path")
+  final val QueuePath: String = getString("directory-path")
+  final val MaxItems: Int = getInt("max-items")
+  final val MaxSize: Long = getBytes("max-size")
+  final val MaxItemSize: Long = getBytes("max-item-size")
+  final val MaxAge: Duration = Duration(getMilliseconds("max-age"), MILLISECONDS)
+  final val MaxJournalSize: Long = getBytes("max-journal-size")
+  final val MaxMemorySize: Long = getBytes("max-memory-size")
+  final val MaxJournalOverflow: Int = getInt("max-journal-overflow")
+  final val MaxJournalSizeAbsolute: Long = getBytes("max-journal-size-absolute")
+  final val DiscardOldWhenFull: Boolean = getBoolean("discard-old-when-full")
+  final val KeepJournal: Boolean = getBoolean("keep-journal")
+  final val SyncJournal: Boolean = getBoolean("sync-journal")
 
-  val MaxItems = getInt("max-items")
-  val MaxSize = getBytes("max-size")
-  val MaxItemSize = getBytes("max-item-size")
-  val MaxAge = Duration(getMilliseconds("max-age"), MILLISECONDS)
-  val MaxJournalSize = getBytes("max-journal-size")
-  val MaxMemorySize = getBytes("max-memory-size")
-  val MaxJournalOverflow = getInt("max-journal-overflow")
-  val MaxJournalSizeAbsolute = getBytes("max-journal-size-absolute")
-  val DiscardOldWhenFull = getBoolean("discard-old-when-full")
-  val KeepJournal = getBoolean("keep-journal")
-  val SyncJournal = getBoolean("sync-journal")
-
+  final val CircuitBreakerMaxFailures = getInt("circuit-breaker.max-failures")
+  final val CircuitBreakerCallTimeout = Duration.fromNanos(getNanoseconds("circuit-breaker.call-timeout"))
+  final val CircuitBreakerResetTimeout = Duration.fromNanos(getNanoseconds("circuit-breaker.reset-timeout"))
 }

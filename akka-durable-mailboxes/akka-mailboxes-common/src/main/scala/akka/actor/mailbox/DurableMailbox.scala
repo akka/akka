@@ -3,42 +3,54 @@
  */
 package akka.actor.mailbox
 
-import akka.actor.{ ActorContext, ActorRef, ExtendedActorSystem }
 import akka.dispatch.{ Envelope, MessageQueue }
 import akka.remote.MessageSerializer
 import akka.remote.RemoteProtocol.{ ActorRefProtocol, RemoteMessageProtocol }
 import com.typesafe.config.Config
-import akka.actor.ActorSystem
+import akka.actor._
 
 private[akka] object DurableExecutableMailboxConfig {
   val Name = "[\\.\\/\\$\\s]".r
 }
 
-abstract class DurableMessageQueue(val owner: ActorContext) extends MessageQueue {
+abstract class DurableMessageQueue(val owner: ActorRef, val system: ExtendedActorSystem) extends MessageQueue {
   import DurableExecutableMailboxConfig._
 
-  def system: ExtendedActorSystem = owner.system.asInstanceOf[ExtendedActorSystem]
-  def ownerPath = owner.self.path
-  val ownerPathString = ownerPath.elements.mkString("/")
-  val name = "mailbox_" + Name.replaceAllIn(ownerPathString, "_")
+  def ownerPath: ActorPath = owner.path
+  val ownerPathString: String = ownerPath.elements.mkString("/")
+  val name: String = "mailbox_" + Name.replaceAllIn(ownerPathString, "_")
 
 }
 
+/**
+ * DurableMessageSerialization can be mixed into a DurableMessageQueue and adds functionality
+ * to serialize and deserialize Envelopes (messages)
+ */
 trait DurableMessageSerialization { this: DurableMessageQueue ⇒
 
+  /**
+   * Serializes the given Envelope into an Array of Bytes using an efficient serialization/deserialization strategy
+   */
   def serialize(durableMessage: Envelope): Array[Byte] = {
 
+    // It's alright to use ref.path.toString here
+    // When the sender is a LocalActorRef it should be local when deserialized also.
+    // When the sender is a RemoteActorRef the path.toString already contains remote address information.
     def serializeActorRef(ref: ActorRef): ActorRefProtocol = ActorRefProtocol.newBuilder.setPath(ref.path.toString).build
 
     val message = MessageSerializer.serialize(system, durableMessage.message.asInstanceOf[AnyRef])
     val builder = RemoteMessageProtocol.newBuilder
       .setMessage(message)
-      .setRecipient(serializeActorRef(owner.self))
+      .setRecipient(serializeActorRef(owner))
       .setSender(serializeActorRef(durableMessage.sender))
 
     builder.build.toByteArray
   }
 
+  /**
+   * Deserializes an array of Bytes that were serialized using the DurableMessageSerialization.serialize method,
+   * into an Envelope.
+   */
   def deserialize(bytes: Array[Byte]): Envelope = {
 
     def deserializeActorRef(refProtocol: ActorRefProtocol): ActorRef = system.actorFor(refProtocol.getPath)
@@ -47,7 +59,7 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
     val message = MessageSerializer.deserialize(system, durableMessage.getMessage)
     val sender = deserializeActorRef(durableMessage.getSender)
 
-    new Envelope(message, sender)(system)
+    Envelope(message, sender, system)
   }
 
 }
@@ -56,11 +68,15 @@ trait DurableMessageSerialization { this: DurableMessageQueue ⇒
  * Conventional organization of durable mailbox settings:
  *
  * {{{
- * my-durable-dispatcher {
- *   mailbox-type = "my.durable.mailbox"
- *   my-durable-mailbox {
- *     setting1 = 1
- *     setting2 = 2
+ * akka {
+ *   actor {
+ *     my-durable-dispatcher {
+ *       mailbox-type = "my.durable.mailbox"
+ *       my-durable-mailbox {
+ *         setting1 = 1
+ *         setting2 = 2
+ *       }
+ *     }
  *   }
  * }
  * }}}

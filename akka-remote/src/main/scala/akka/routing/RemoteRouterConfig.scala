@@ -10,7 +10,7 @@ import akka.actor.ActorSystemImpl
 import akka.actor.Deploy
 import akka.actor.InternalActorRef
 import akka.actor.Props
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import akka.remote.RemoteScope
 import akka.actor.AddressFromURIString
 import akka.actor.SupervisorStrategy
@@ -59,7 +59,7 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _re
   extends RouteeProvider(_context, _resizer) {
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
-  private val nodeAddressIter = Stream.continually(nodes).flatten.iterator
+  private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
 
   override def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
     (nrOfInstances, routees, nodes) match {
@@ -71,7 +71,8 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _re
         IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
           val name = "c" + i
           val deploy = Deploy("", ConfigFactory.empty(), props.routerConfig, RemoteScope(nodeAddressIter.next))
-          impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name, false, Some(deploy), false)
+          impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
+            systemService = false, Some(deploy), lookupDeploy = false, async = false)
         })
 
       case (_, xs, _) ⇒ throw new ConfigurationException("Remote target.nodes can not be combined with routees for [%s]"

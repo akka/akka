@@ -36,7 +36,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
     "notify with one Terminated message when an Actor is stopped" in {
       val terminal = system.actorOf(Props.empty)
       startWatching(terminal) ! "hallo"
-      expectMsg("hallo") // this ensures that the DaemonMsgWatch has been received before we send the PoisonPill
+      expectMsg("hallo")
 
       terminal ! PoisonPill
 
@@ -142,6 +142,26 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
         testActor.isTerminated must not be true
         result must be(Seq(1, 2, 3))
       }
+    }
+
+    "be able to watch a child with the same name after the old died" in {
+      val parent = system.actorOf(Props(new Actor {
+        def receive = {
+          case "NKOTB" ⇒
+            val currentKid = context.watch(context.actorOf(Props(ctx ⇒ { case "NKOTB" ⇒ ctx stop ctx.self }), "kid"))
+            currentKid forward "NKOTB"
+            context become {
+              case Terminated(`currentKid`) ⇒
+                testActor ! "GREEN"
+                context unbecome
+            }
+        }
+      }))
+
+      parent ! "NKOTB"
+      expectMsg("GREEN")
+      parent ! "NKOTB"
+      expectMsg("GREEN")
     }
   }
 

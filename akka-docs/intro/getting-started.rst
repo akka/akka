@@ -31,7 +31,7 @@ Modules
 
 Akka is very modular and has many JARs for containing different features.
 
-- ``akka-actor-2.1-SNAPSHOT.jar`` -- Classic Actors, Typed Actors, IO Actor etc. Has ZERO dependencies.
+- ``akka-actor-2.1-SNAPSHOT.jar`` -- Classic Actors, Typed Actors, IO Actor etc.
 - ``akka-remote-2.1-SNAPSHOT.jar`` -- Remote Actors
 - ``akka-testkit-2.1-SNAPSHOT.jar`` -- Toolkit for testing Actor systems
 - ``akka-kernel-2.1-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server
@@ -43,8 +43,7 @@ Akka is very modular and has many JARs for containing different features.
 - ``akka-<storage-system>-mailbox-2.1-SNAPSHOT.jar`` -- Akka durable mailboxes
 
 How to see the JARs dependencies of each Akka module is described in the
-:ref:`dependencies` section. Worth noting is that ``akka-actor`` has zero
-external dependencies (apart from the ``scala-library.jar`` JAR).
+:ref:`dependencies` section.
 
 Using a release distribution
 ----------------------------
@@ -67,7 +66,8 @@ The Akka distribution includes the microkernel. To run the microkernel put your
 application jar in the ``deploy`` directory and use the scripts in the ``bin``
 directory.
 
-More information is available in the documentation of the :ref:`microkernel`.
+More information is available in the documentation of the
+:ref:`microkernel-scala` / :ref:`microkernel-java`.
 
 Using a build tool
 ------------------
@@ -136,12 +136,17 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 Using Akka with Eclipse
 -----------------------
 
-Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate Eclipse project.
+Setup SBT project and then use `sbteclipse <https://github.com/typesafehub/sbteclipse>`_ to generate a Eclipse project.
 
 Using Akka with IntelliJ IDEA
 -----------------------------
 
-Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate IntelliJ IDEA project.
+Setup SBT project and then use `sbt-idea <https://github.com/mpeltonen/sbt-idea>`_ to generate a IntelliJ IDEA project.
+
+Using Akka with NetBeans
+------------------------
+
+Setup SBT project and then use `sbt-netbeans-plugin <https://github.com/remeniuk/sbt-netbeans-plugin>`_ to generate a NetBeans project.
 
 Build from sources
 ------------------

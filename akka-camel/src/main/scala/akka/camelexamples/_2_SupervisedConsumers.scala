@@ -14,7 +14,7 @@ private[camelexamples] object SupervisedConsumersExample extends App {
 
   system.actorOf(Props(new Actor {
     context.watch(context.actorOf(Props[EndpointManager]))
-    protected def receive = {
+    def receive = {
       case Terminated(ref) ⇒ system.shutdown()
     }
   }))
@@ -30,7 +30,7 @@ private[camelexamples] class EndpointManager extends Actor {
   watch(actorOf(Props[SysOutConsumer]))
   watch(actorOf(Props[TroubleMaker]))
 
-  protected def receive = {
+  def receive = {
     case Terminated(ref) ⇒ {
       printf("Hey! One of the endpoints has died: %s. I am doing sepuku...\n", ref)
       self ! PoisonPill

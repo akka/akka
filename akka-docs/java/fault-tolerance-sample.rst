@@ -43,11 +43,11 @@ Step        Description
 9, 10, 11   and tells the ``Counter`` that there is no ``Storage``.
 12          The ``CounterService`` schedules a ``Reconnect`` message to itself.
 13, 14      When it receives the ``Reconnect`` message it creates a new ``Storage`` ...
-15, 16      and tells the the ``Counter`` to use the new ``Storage``
+15, 16      and tells the ``Counter`` to use the new ``Storage``
 =========== ==================================================================================
 
 Full Source Code of the Fault Tolerance Sample (Java)
 ------------------------------------------------------
 
-.. includecode:: code/akka/docs/actor/japi/FaultHandlingDocSample.java#all
+.. includecode:: code/docs/actor/japi/FaultHandlingDocSample.java#all
 

@@ -55,14 +55,14 @@ object ByteString {
 
   def newBuilder: ByteStringBuilder = new ByteStringBuilder
 
-  implicit def canBuildFrom: CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] =
+  implicit val canBuildFrom: CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] =
     new CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] {
-      def apply(from: TraversableOnce[Byte]) = newBuilder
-      def apply() = newBuilder
+      def apply(ignore: TraversableOnce[Byte]): ByteStringBuilder = newBuilder
+      def apply(): ByteStringBuilder = newBuilder
     }
 
   private[akka] object ByteString1C {
-    def apply(bytes: Array[Byte]) = new ByteString1C(bytes)
+    def apply(bytes: Array[Byte]): ByteString1C = new ByteString1C(bytes)
   }
 
   /**
@@ -181,9 +181,9 @@ object ByteString {
 
     // 0: both empty, 1: 2nd empty, 2: 1st empty, 3: neither empty
     def compare(b1: ByteString, b2: ByteString): Int =
-      if (b1.length == 0)
-        if (b2.length == 0) 0 else 2
-      else if (b2.length == 0) 1 else 3
+      if (b1.isEmpty)
+        if (b2.isEmpty) 0 else 2
+      else if (b2.isEmpty) 1 else 3
 
   }
 

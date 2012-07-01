@@ -182,10 +182,9 @@ trait SubchannelClassification { this: EventBus ⇒
  */
 trait ScanningClassification { self: EventBus ⇒
   protected final val subscribers = new ConcurrentSkipListSet[(Classifier, Subscriber)](new Comparator[(Classifier, Subscriber)] {
-    def compare(a: (Classifier, Subscriber), b: (Classifier, Subscriber)): Int = {
-      val cM = compareClassifiers(a._1, b._1)
-      if (cM != 0) cM
-      else compareSubscribers(a._2, b._2)
+    def compare(a: (Classifier, Subscriber), b: (Classifier, Subscriber)): Int = compareClassifiers(a._1, b._1) match {
+      case 0     ⇒ compareSubscribers(a._2, b._2)
+      case other ⇒ other
     }
   })
 
@@ -238,7 +237,7 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
   import java.util.concurrent.ConcurrentHashMap
   import scala.annotation.tailrec
   private val empty = TreeSet.empty[ActorRef]
-  protected val mappings = new ConcurrentHashMap[ActorRef, TreeSet[ActorRef]](mapSize)
+  private val mappings = new ConcurrentHashMap[ActorRef, TreeSet[ActorRef]](mapSize)
 
   @tailrec
   protected final def associate(monitored: ActorRef, monitor: ActorRef): Boolean = {
@@ -320,12 +319,22 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
    */
   protected def mapSize: Int
 
-  def publish(event: Event): Unit = {
-    val receivers = mappings.get(classify(event))
-    if (receivers ne null) receivers foreach { _ ! event }
+  def publish(event: Event): Unit = mappings.get(classify(event)) match {
+    case null ⇒ ()
+    case some ⇒ some foreach { _ ! event }
   }
 
-  def subscribe(subscriber: Subscriber, to: Classifier): Boolean = associate(to, subscriber)
-  def unsubscribe(subscriber: Subscriber, from: Classifier): Boolean = dissociate(from, subscriber)
-  def unsubscribe(subscriber: Subscriber): Unit = dissociate(subscriber)
+  def subscribe(subscriber: Subscriber, to: Classifier): Boolean =
+    if (subscriber eq null) throw new IllegalArgumentException("Subscriber is null")
+    else if (to eq null) throw new IllegalArgumentException("Classifier is null")
+    else associate(to, subscriber)
+
+  def unsubscribe(subscriber: Subscriber, from: Classifier): Boolean =
+    if (subscriber eq null) throw new IllegalArgumentException("Subscriber is null")
+    else if (from eq null) throw new IllegalArgumentException("Classifier is null")
+    else dissociate(from, subscriber)
+
+  def unsubscribe(subscriber: Subscriber): Unit =
+    if (subscriber eq null) throw new IllegalArgumentException("Subscriber is null")
+    else dissociate(subscriber)
 }

@@ -12,7 +12,7 @@ Akka License
 
   This software is licensed under the Apache 2 license, quoted below.
 
-  Copyright 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+  Copyright 2009-2012 Typesafe Inc. <http://www.typesafe.com>
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy of
@@ -196,4 +196,4 @@ Licenses for Dependency Libraries
 ---------------------------------
 
 Each dependency and its license can be seen in the project build file (the comment on the side of each dependency):
-`<https://github.com/akka/akka/blob/master/project/build/AkkaProject.scala#L127>`_
+`<https://github.com/akka/akka/blob/master/project/AkkaBuild.scala#L497>`_

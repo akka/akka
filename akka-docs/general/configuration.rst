@@ -65,7 +65,7 @@ When using JarJar, OneJar, Assembly or any jar-bundler
     Akka's configuration approach relies heavily on the notion of every
     module/jar having its own reference.conf file, all of these will be
     discovered by the configuration and loaded. Unfortunately this also means
-    that if you put merge multiple jars into the same jar, you need to merge all the
+    that if you put/merge multiple jars into the same jar, you need to merge all the
     reference.confs as well. Otherwise all defaults will be lost and Akka will not function.
 
 Custom application.conf
@@ -256,7 +256,7 @@ result::
 You may also specify and parse the configuration programmatically in other ways when instantiating
 the ``ActorSystem``.
 
-.. includecode:: code/akka/docs/config/ConfigDocSpec.scala
+.. includecode:: code/docs/config/ConfigDocSpec.scala
    :include: imports,custom-config
 
 Reading configuration from a custom location
@@ -301,7 +301,7 @@ you could put a config string in code using
 You can also combine your custom config with the usual config,
 that might look like:
 
-.. includecode:: code/akka/docs/config/ConfigDoc.java
+.. includecode:: code/docs/config/ConfigDoc.java
    :include: java-custom-config
 
 When working with ``Config`` objects, keep in mind that there are

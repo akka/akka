@@ -40,17 +40,17 @@ application. An ``ActorSystem`` is required to create the underlying Actors. See
 
 Here is an example of creating an Agent:
 
-.. includecode:: code/akka/docs/agent/AgentDocTest.java
+.. includecode:: code/docs/agent/AgentDocTest.java
    :include: import-system,import-agent
    :language: java
 
-.. includecode:: code/akka/docs/agent/AgentDocTest.java#create
+.. includecode:: code/docs/agent/AgentDocTest.java#create
    :language: java
 
 An Agent will be running until you invoke ``close`` on it. Then it will be
 eligible for garbage collection (unless you hold on to it in some way).
 
-.. includecode:: code/akka/docs/agent/AgentDocTest.java#close
+.. includecode:: code/docs/agent/AgentDocTest.java#close
    :language: java
 
 
@@ -65,10 +65,10 @@ the update will be applied but dispatches to an Agent from a single thread will
 occur in order. You apply a value or a function by invoking the ``send``
 function.
 
-.. includecode:: code/akka/docs/agent/AgentDocTest.java#import-function
+.. includecode:: code/docs/agent/AgentDocTest.java#import-function
    :language: java
 
-.. includecode:: code/akka/docs/agent/AgentDocTest.java#send
+.. includecode:: code/docs/agent/AgentDocTest.java#send
    :language: java
 
 You can also dispatch a function to update the internal state but on its own
@@ -77,7 +77,7 @@ long-running or blocking operations. You do this with the ``sendOff``
 method. Dispatches using either ``sendOff`` or ``send`` will still be executed
 in order.
 
-.. includecode:: code/akka/docs/agent/AgentDocTest.java#send-off
+.. includecode:: code/docs/agent/AgentDocTest.java#send-off
    :language: java
 
 
@@ -87,7 +87,7 @@ Reading an Agent's value
 Agents can be dereferenced (you can get an Agent's value) by calling the get
 method:
 
-.. includecode:: code/akka/docs/agent/AgentDocTest.java#read-get
+.. includecode:: code/docs/agent/AgentDocTest.java#read-get
    :language: java
 
 Reading an Agent's current value does not involve any message passing and
@@ -101,8 +101,8 @@ Awaiting an Agent's value
 It is also possible to read the value after all currently queued sends have
 completed. You can do this with ``await``:
 
-.. includecode:: code/akka/docs/agent/AgentDocTest.java#import-timeout
+.. includecode:: code/docs/agent/AgentDocTest.java#import-timeout
    :language: java
 
-.. includecode:: code/akka/docs/agent/AgentDocTest.java#read-await
+.. includecode:: code/docs/agent/AgentDocTest.java#read-await
    :language: java

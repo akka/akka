@@ -16,16 +16,25 @@ class ClusterConfigSpec extends AkkaSpec {
     "be able to parse generic cluster config elements" in {
       val settings = new ClusterSettings(system.settings.config, system.name)
       import settings._
-      FailureDetectorThreshold must be(8)
+      FailureDetectorThreshold must be(8.0 plusOrMinus 0.0001)
       FailureDetectorMaxSampleSize must be(1000)
-      NodeToJoin must be(None)
+      FailureDetectorImplementationClass must be(classOf[AccrualFailureDetector].getName)
+      FailureDetectorMinStdDeviation must be(100 millis)
+      FailureDetectorAcceptableHeartbeatPause must be(3 seconds)
+      SeedNodes must be(Seq.empty[String])
+      SeedNodeTimeout must be(5 seconds)
       PeriodicTasksInitialDelay must be(1 seconds)
-      GossipFrequency must be(1 second)
-      LeaderActionsFrequency must be(1 second)
-      UnreachableNodesReaperFrequency must be(1 second)
+      GossipInterval must be(1 second)
+      HeartbeatInterval must be(1 second)
+      LeaderActionsInterval must be(1 second)
+      UnreachableNodesReaperInterval must be(1 second)
+      JoinTimeout must be(60 seconds)
       NrOfGossipDaemons must be(4)
-      NrOfDeputyNodes must be(3)
+      AutoJoin must be(true)
       AutoDown must be(true)
+      GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)
+      SchedulerTickDuration must be(33 millis)
+      SchedulerTicksPerWheel must be(512)
     }
   }
 }

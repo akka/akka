@@ -1,14 +1,17 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
 
 import akka.util.Duration
-import org.jboss.netty.akka.util.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout }
+import akka.util.internal.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout, Timer }
 import akka.event.LoggingAdapter
 import akka.dispatch.MessageDispatcher
 import java.io.Closeable
+import java.util.concurrent.atomic.AtomicReference
+import scala.annotation.tailrec
+import akka.util.internal._
 
 //#scheduler
 /**
@@ -119,7 +122,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
                        log: LoggingAdapter,
                        dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
 
-  def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable = {
+  override def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
@@ -134,7 +137,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         initialDelay))
   }
 
-  def schedule(initialDelay: Duration, delay: Duration)(f: ⇒ Unit): Cancellable = {
+  override def schedule(initialDelay: Duration, delay: Duration)(f: ⇒ Unit): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
@@ -148,7 +151,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         initialDelay))
   }
 
-  def schedule(initialDelay: Duration, delay: Duration, runnable: Runnable): Cancellable = {
+  override def schedule(initialDelay: Duration, delay: Duration, runnable: Runnable): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
@@ -161,7 +164,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         initialDelay))
   }
 
-  def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable =
+  override def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable =
     new DefaultCancellable(
       hashedWheelTimer.newTimeout(
         new TimerTask() {
@@ -169,7 +172,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         },
         delay))
 
-  def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable =
+  override def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable =
     new DefaultCancellable(
       hashedWheelTimer.newTimeout(
         new TimerTask {
@@ -177,7 +180,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
         },
         delay))
 
-  def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable =
+  override def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable =
     new DefaultCancellable(
       hashedWheelTimer.newTimeout(
         new TimerTask with Runnable {
@@ -188,11 +191,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
 
   private trait ContinuousScheduling { this: TimerTask ⇒
     def scheduleNext(timeout: HWTimeout, delay: Duration, delegator: ContinuousCancellable) {
-      try {
-        delegator.swap(timeout.getTimer.newTimeout(this, delay))
-      } catch {
-        case _: IllegalStateException ⇒ // stop recurring if timer is stopped
-      }
+      try delegator.swap(timeout.getTimer.newTimeout(this, delay)) catch { case _: IllegalStateException ⇒ } // stop recurring if timer is stopped
     }
   }
 
@@ -203,54 +202,50 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
     }
   }
 
-  def close() = {
+  override def close(): Unit = {
     import scala.collection.JavaConverters._
     hashedWheelTimer.stop().asScala foreach execDirectly
   }
 }
 
+private[akka] object ContinuousCancellable {
+  val initial: HWTimeout = new HWTimeout {
+    override def getTimer: Timer = null
+    override def getTask: TimerTask = null
+    override def isExpired: Boolean = false
+    override def isCancelled: Boolean = false
+    override def cancel: Unit = ()
+  }
+
+  val cancelled: HWTimeout = new HWTimeout {
+    override def getTimer: Timer = null
+    override def getTask: TimerTask = null
+    override def isExpired: Boolean = false
+    override def isCancelled: Boolean = true
+    override def cancel: Unit = ()
+  }
+}
 /**
  * Wrapper of a [[org.jboss.netty.akka.util.Timeout]] that delegates all
  * methods. Needed to be able to cancel continuous tasks,
  * since they create new Timeout for each tick.
  */
-private[akka] class ContinuousCancellable extends Cancellable {
-  @volatile
-  private var delegate: HWTimeout = _
-  @volatile
-  private var cancelled = false
-
+private[akka] class ContinuousCancellable extends AtomicReference[HWTimeout](ContinuousCancellable.initial) with Cancellable {
   private[akka] def init(initialTimeout: HWTimeout): this.type = {
-    delegate = initialTimeout
+    compareAndSet(ContinuousCancellable.initial, initialTimeout)
     this
   }
 
-  private[akka] def swap(newTimeout: HWTimeout): Unit = {
-    val wasCancelled = isCancelled
-    delegate = newTimeout
-    if (wasCancelled || isCancelled) cancel()
+  @tailrec private[akka] final def swap(newTimeout: HWTimeout): Unit = get match {
+    case some if some.isCancelled ⇒ try cancel() finally newTimeout.cancel()
+    case some                     ⇒ if (!compareAndSet(some, newTimeout)) swap(newTimeout)
   }
 
-  def isCancelled(): Boolean = {
-    // delegate is initially null, but this object will not be exposed to the world until after init
-    cancelled || delegate.isCancelled()
-  }
-
-  def cancel(): Unit = {
-    // the underlying Timeout will not become cancelled once the task has been started to run,
-    // therefore we keep a flag here to make sure that rescheduling doesn't occur when cancelled
-    cancelled = true
-    // delegate is initially null, but this object will not be exposed to the world until after init
-    delegate.cancel()
-  }
+  def isCancelled(): Boolean = get().isCancelled()
+  def cancel(): Unit = getAndSet(ContinuousCancellable.cancelled).cancel()
 }
 
-class DefaultCancellable(val timeout: HWTimeout) extends Cancellable {
-  def cancel() {
-    timeout.cancel()
-  }
-
-  def isCancelled: Boolean = {
-    timeout.isCancelled
-  }
+private[akka] class DefaultCancellable(timeout: HWTimeout) extends AtomicReference[HWTimeout](timeout) with Cancellable {
+  override def cancel(): Unit = getAndSet(ContinuousCancellable.cancelled).cancel()
+  override def isCancelled: Boolean = get().isCancelled
 }

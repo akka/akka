@@ -34,8 +34,19 @@ final case class Deploy(
   routerConfig: RouterConfig = NoRouter,
   scope: Scope = NoScopeGiven) {
 
+  /**
+   * Java API to create a Deploy with the given RouterConfig
+   */
   def this(routing: RouterConfig) = this("", ConfigFactory.empty, routing)
+
+  /**
+   * Java API to create a Deploy with the given RouterConfig with Scope
+   */
   def this(routing: RouterConfig, scope: Scope) = this("", ConfigFactory.empty, routing, scope)
+
+  /**
+   * Java API to create a Deploy with the given Scope
+   */
   def this(scope: Scope) = this("", ConfigFactory.empty, NoRouter, scope)
 
   /**
@@ -67,13 +78,9 @@ trait Scope {
 
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 abstract class LocalScope extends Scope
-case object LocalScope extends LocalScope {
-  /**
-   * Java API
-   */
-  @deprecated("use instance() method instead", "2.0.1")
-  def scope: Scope = this
 
+//FIXME docs
+case object LocalScope extends LocalScope {
   /**
    * Java API: get the singleton instance
    */
@@ -128,7 +135,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
     add(d.path.split("/").drop(1), d)
   }
 
-  protected def parseConfig(key: String, config: Config): Option[Deploy] = {
+  def parseConfig(key: String, config: Config): Option[Deploy] = {
 
     val deployment = config.withFallback(default)
 
@@ -162,5 +169,4 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
     Some(Deploy(key, deployment, router, NoScopeGiven))
   }
-
 }

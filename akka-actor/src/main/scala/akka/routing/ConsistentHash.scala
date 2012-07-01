@@ -23,7 +23,7 @@ class ConsistentHash[T](nodes: Seq[T], replicas: Int) {
 
   nodes.foreach(this += _)
 
-  def +=(node: T) {
+  def +=(node: T): Unit = {
     cluster += node
     (1 to replicas) foreach { replica ⇒
       val key = hashFor((node + ":" + replica).getBytes("UTF-8"))
@@ -32,7 +32,7 @@ class ConsistentHash[T](nodes: Seq[T], replicas: Int) {
     }
   }
 
-  def -=(node: T) {
+  def -=(node: T): Unit = {
     cluster -= node
     (1 to replicas) foreach { replica ⇒
       val key = hashFor((node + ":" + replica).getBytes("UTF-8"))
@@ -96,7 +96,7 @@ class MurmurHash[@specialized(Int, Long, Float, Double) T](seed: Int) extends (T
   private var hashvalue = h
 
   /** Begin a new hash using the same seed. */
-  def reset() {
+  def reset(): Unit = {
     h = startHash(seed)
     c = hiddenMagicA
     k = hiddenMagicB
@@ -104,7 +104,7 @@ class MurmurHash[@specialized(Int, Long, Float, Double) T](seed: Int) extends (T
   }
 
   /** Incorporate the hash value of one item. */
-  def apply(t: T) {
+  def apply(t: T): Unit = {
     h = extendHash(h, t.##, c, k)
     c = nextMagicA(c)
     k = nextMagicB(k)
@@ -112,7 +112,7 @@ class MurmurHash[@specialized(Int, Long, Float, Double) T](seed: Int) extends (T
   }
 
   /** Incorporate a known hash value. */
-  def append(i: Int) {
+  def append(i: Int): Unit = {
     h = extendHash(h, i, c, k)
     c = nextMagicA(c)
     k = nextMagicB(k)
@@ -120,14 +120,15 @@ class MurmurHash[@specialized(Int, Long, Float, Double) T](seed: Int) extends (T
   }
 
   /** Retrieve the hash value */
-  def hash = {
+  def hash: Int = {
     if (!hashed) {
       hashvalue = finalizeHash(h)
       hashed = true
     }
     hashvalue
   }
-  override def hashCode = hash
+
+  override def hashCode: Int = hash
 }
 
 /**
@@ -143,35 +144,35 @@ class MurmurHash[@specialized(Int, Long, Float, Double) T](seed: Int) extends (T
 object MurmurHash {
   // Magic values used for MurmurHash's 32 bit hash.
   // Don't change these without consulting a hashing expert!
-  final private val visibleMagic = 0x971e137b
-  final private val hiddenMagicA = 0x95543787
-  final private val hiddenMagicB = 0x2ad7eb25
-  final private val visibleMixer = 0x52dce729
-  final private val hiddenMixerA = 0x7b7d159c
-  final private val hiddenMixerB = 0x6bce6396
-  final private val finalMixer1 = 0x85ebca6b
-  final private val finalMixer2 = 0xc2b2ae35
+  final private val visibleMagic: Int = 0x971e137b
+  final private val hiddenMagicA: Int = 0x95543787
+  final private val hiddenMagicB: Int = 0x2ad7eb25
+  final private val visibleMixer: Int = 0x52dce729
+  final private val hiddenMixerA: Int = 0x7b7d159c
+  final private val hiddenMixerB: Int = 0x6bce6396
+  final private val finalMixer1: Int = 0x85ebca6b
+  final private val finalMixer2: Int = 0xc2b2ae35
 
   // Arbitrary values used for hashing certain classes
-  final private val seedString = 0xf7ca7fd2
-  final private val seedArray = 0x3c074a61
+  final private val seedString: Int = 0xf7ca7fd2
+  final private val seedArray: Int = 0x3c074a61
 
   /** The first 23 magic integers from the first stream are stored here */
-  val storedMagicA =
+  val storedMagicA: Array[Int] =
     Iterator.iterate(hiddenMagicA)(nextMagicA).take(23).toArray
 
   /** The first 23 magic integers from the second stream are stored here */
-  val storedMagicB =
+  val storedMagicB: Array[Int] =
     Iterator.iterate(hiddenMagicB)(nextMagicB).take(23).toArray
 
   /** Begin a new hash with a seed value. */
-  def startHash(seed: Int) = seed ^ visibleMagic
+  def startHash(seed: Int): Int = seed ^ visibleMagic
 
   /** The initial magic integers in the first stream. */
-  def startMagicA = hiddenMagicA
+  def startMagicA: Int = hiddenMagicA
 
   /** The initial magic integer in the second stream. */
-  def startMagicB = hiddenMagicB
+  def startMagicB: Int = hiddenMagicB
 
   /**
    * Incorporates a new value into an existing hash.
@@ -182,18 +183,17 @@ object MurmurHash {
    *  @param magicB    a magic integer from a different stream
    *  @return          the updated hash value
    */
-  def extendHash(hash: Int, value: Int, magicA: Int, magicB: Int) = {
+  def extendHash(hash: Int, value: Int, magicA: Int, magicB: Int): Int =
     (hash ^ rotl(value * magicA, 11) * magicB) * 3 + visibleMixer
-  }
 
   /** Given a magic integer from the first stream, compute the next */
-  def nextMagicA(magicA: Int) = magicA * 5 + hiddenMixerA
+  def nextMagicA(magicA: Int): Int = magicA * 5 + hiddenMixerA
 
   /** Given a magic integer from the second stream, compute the next */
-  def nextMagicB(magicB: Int) = magicB * 5 + hiddenMixerB
+  def nextMagicB(magicB: Int): Int = magicB * 5 + hiddenMixerB
 
   /** Once all hashes have been incorporated, this performs a final mixing */
-  def finalizeHash(hash: Int) = {
+  def finalizeHash(hash: Int): Int = {
     var i = (hash ^ (hash >>> 16))
     i *= finalMixer1
     i ^= (i >>> 13)
@@ -203,7 +203,7 @@ object MurmurHash {
   }
 
   /** Compute a high-quality hash of an array */
-  def arrayHash[@specialized T](a: Array[T]) = {
+  def arrayHash[@specialized T](a: Array[T]): Int = {
     var h = startHash(a.length * seedArray)
     var c = hiddenMagicA
     var k = hiddenMagicB
@@ -218,7 +218,7 @@ object MurmurHash {
   }
 
   /** Compute a high-quality hash of a string */
-  def stringHash(s: String) = {
+  def stringHash(s: String): Int = {
     var h = startHash(s.length * seedString)
     var c = hiddenMagicA
     var k = hiddenMagicB
@@ -239,7 +239,7 @@ object MurmurHash {
    *  where the order of appearance of elements does not matter.
    *  This is useful for hashing sets, for example.
    */
-  def symmetricHash[T](xs: TraversableOnce[T], seed: Int) = {
+  def symmetricHash[T](xs: TraversableOnce[T], seed: Int): Int = {
     var a, b, n = 0
     var c = 1
     xs.foreach(i ⇒ {

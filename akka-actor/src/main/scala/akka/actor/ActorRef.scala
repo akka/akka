@@ -6,7 +6,6 @@ package akka.actor
 
 import akka.dispatch._
 import akka.util._
-import scala.collection.immutable.Stack
 import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.{ Serialization, JavaSerializer }
 import akka.event.EventStream
@@ -160,12 +159,26 @@ trait ScalaActorRef { ref: ActorRef ⇒
  * often necessary to distinguish between local and non-local references, this
  * is the only method provided on the scope.
  */
-trait ActorRefScope {
+private[akka] trait ActorRefScope {
   def isLocal: Boolean
 }
 
-trait LocalRef extends ActorRefScope {
+/**
+ * Refs which are statically known to be local inherit from this Scope
+ */
+private[akka] trait LocalRef extends ActorRefScope {
   final def isLocal = true
+}
+
+/**
+ * RepointableActorRef (and potentially others) may change their locality at
+ * runtime, meaning that isLocal might not be stable. RepointableActorRef has
+ * the feature that it starts out “not fully started” (but you can send to it),
+ * which is why `isStarted` features here; it is not improbable that cluster
+ * actor refs will have the same behavior.
+ */
+private[akka] trait RepointableRef extends ActorRefScope {
+  def isStarted: Boolean
 }
 
 /**
@@ -212,45 +225,50 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
 }
 
 /**
+ * Common trait of all actor refs which actually have a Cell, most notably
+ * LocalActorRef and RepointableActorRef. The former specializes the return
+ * type of `underlying` so that follow-up calls can use invokevirtual instead
+ * of invokeinterface.
+ */
+private[akka] abstract class ActorRefWithCell extends InternalActorRef { this: ActorRefScope ⇒
+  def underlying: Cell
+}
+
+/**
  * This is an internal look-up failure token, not useful for anything else.
  */
 private[akka] case object Nobody extends MinimalActorRef {
-  val path = new RootActorPath(Address("akka", "all-systems"), "/Nobody")
-  def provider = throw new UnsupportedOperationException("Nobody does not provide")
+  override val path: RootActorPath = new RootActorPath(Address("akka", "all-systems"), "/Nobody")
+  override def provider = throw new UnsupportedOperationException("Nobody does not provide")
 }
 
 /**
  *  Local (serializable) ActorRef that is used when referencing the Actor on its "home" node.
+ *
+ *  INTERNAL API
  */
 private[akka] class LocalActorRef private[akka] (
   _system: ActorSystemImpl,
   _props: Props,
   _supervisor: InternalActorRef,
-  val path: ActorPath,
-  val systemService: Boolean = false,
-  _receiveTimeout: Option[Duration] = None)
-  extends InternalActorRef with LocalRef {
+  override val path: ActorPath)
+  extends ActorRefWithCell with LocalRef {
 
   /*
-   * actorCell.start() publishes actorCell & this to the dispatcher, which
-   * means that messages may be processed theoretically before the constructor
-   * ends. The JMM guarantees visibility for final fields only after the end
-   * of the constructor, so publish the actorCell safely by making it a
-   * @volatile var which is NOT TO BE WRITTEN TO. The alternative would be to
-   * move start() outside of the constructor, which would basically require
-   * us to use purely factory methods for creating LocalActorRefs.
+   * Safe publication of this class’s fields is guaranteed by mailbox.setActor()
+   * which is called indirectly from actorCell.start() (if you’re wondering why
+   * this is at all important, remember that under the JMM final fields are only
+   * frozen at the _end_ of the constructor, but we are publishing “this” before
+   * that is reached).
    */
-  @volatile
-  private var actorCell = newActorCell(_system, this, _props, _supervisor, _receiveTimeout)
+  private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
   actorCell.start()
 
-  protected def newActorCell(
-    system: ActorSystemImpl,
-    ref: InternalActorRef,
-    props: Props,
-    supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration]): ActorCell =
-    new ActorCell(system, ref, props, supervisor, receiveTimeout)
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+  _supervisor.sendSystemMessage(akka.dispatch.Supervise(this))
+
+  protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
+    new ActorCell(system, ref, props, supervisor)
 
   protected def actorContext: ActorContext = actorCell
 
@@ -268,21 +286,21 @@ private[akka] class LocalActorRef private[akka] (
    * message sends done from the same thread after calling this method will not
    * be processed until resumed.
    */
-  def suspend(): Unit = actorCell.suspend()
+  override def suspend(): Unit = actorCell.suspend()
 
   /**
    * Resumes a suspended actor.
    */
-  def resume(): Unit = actorCell.resume()
+  override def resume(): Unit = actorCell.resume()
 
   /**
    * Shuts down the actor and its message queue
    */
-  def stop(): Unit = actorCell.stop()
+  override def stop(): Unit = actorCell.stop()
 
-  def getParent: InternalActorRef = actorCell.parent
+  override def getParent: InternalActorRef = actorCell.parent
 
-  def provider = actorCell.provider
+  override def provider: ActorRefProvider = actorCell.provider
 
   /**
    * Method for looking up a single child beneath this actor. Override in order
@@ -294,7 +312,7 @@ private[akka] class LocalActorRef private[akka] (
       case None      ⇒ Nobody
     }
 
-  def getChild(names: Iterator[String]): InternalActorRef = {
+  override def getChild(names: Iterator[String]): InternalActorRef = {
     /*
      * The idea is to recursively descend as far as possible with LocalActor
      * Refs and hand over to that “foreign” child when we encounter it.
@@ -303,29 +321,29 @@ private[akka] class LocalActorRef private[akka] (
     def rec(ref: InternalActorRef, name: Iterator[String]): InternalActorRef =
       ref match {
         case l: LocalActorRef ⇒
-          val n = name.next()
-          val next = n match {
+          val next = name.next() match {
             case ".." ⇒ l.getParent
             case ""   ⇒ l
-            case _    ⇒ l.getSingleChild(n)
+            case any  ⇒ l.getSingleChild(any)
           }
           if (next == Nobody || name.isEmpty) next else rec(next, name)
         case _ ⇒
           ref.getChild(name)
       }
+
     if (names.isEmpty) this
     else rec(this, names)
   }
 
   // ========= AKKA PROTECTED FUNCTIONS =========
 
-  protected[akka] def underlying: ActorCell = actorCell
+  def underlying: ActorCell = actorCell
 
-  def sendSystemMessage(message: SystemMessage) { underlying.dispatcher.systemDispatch(underlying, message) }
+  override def sendSystemMessage(message: SystemMessage): Unit = actorCell.sendSystemMessage(message)
 
-  def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
 
-  def restart(cause: Throwable): Unit = actorCell.restart(cause)
+  override def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
   @throws(classOf[java.io.ObjectStreamException])
   protected def writeReplace(): AnyRef = SerializedActorRef(path)
@@ -333,9 +351,10 @@ private[akka] class LocalActorRef private[akka] (
 
 /**
  * Memento pattern for serializing ActorRefs transparently
+ * INTERNAL API
  */
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
-case class SerializedActorRef private (path: String) {
+private[akka] case class SerializedActorRef private (path: String) {
   import akka.serialization.JavaSerializer.currentSystem
 
   @throws(classOf[java.io.ObjectStreamException])
@@ -349,7 +368,10 @@ case class SerializedActorRef private (path: String) {
   }
 }
 
-object SerializedActorRef {
+/**
+ * INTERNAL API
+ */
+private[akka] object SerializedActorRef {
   def apply(path: ActorPath): SerializedActorRef = {
     Serialization.currentTransportAddress.value match {
       case null ⇒ new SerializedActorRef(path.toString)
@@ -360,33 +382,32 @@ object SerializedActorRef {
 
 /**
  * Trait for ActorRef implementations where all methods contain default stubs.
+ *
+ * INTERNAL API
  */
 private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 
-  def getParent: InternalActorRef = Nobody
+  override def getParent: InternalActorRef = Nobody
+  override def getChild(names: Iterator[String]): InternalActorRef = if (names.forall(_.isEmpty)) this else Nobody
 
-  def getChild(names: Iterator[String]): InternalActorRef = {
-    val dropped = names.dropWhile(_.isEmpty)
-    if (dropped.isEmpty) this
-    else Nobody
-  }
+  override def suspend(): Unit = ()
+  override def resume(): Unit = ()
+  override def stop(): Unit = ()
+  override def isTerminated = false
 
-  def suspend(): Unit = ()
-  def resume(): Unit = ()
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
 
-  def stop(): Unit = ()
-
-  def isTerminated = false
-
-  def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
-
-  def sendSystemMessage(message: SystemMessage): Unit = ()
-  def restart(cause: Throwable): Unit = ()
+  override def sendSystemMessage(message: SystemMessage): Unit = ()
+  override def restart(cause: Throwable): Unit = ()
 
   @throws(classOf[java.io.ObjectStreamException])
   protected def writeReplace(): AnyRef = SerializedActorRef(path)
 }
 
+/**
+ * When a message is sent to an Actor that is terminated before receiving the message, it will be sent as a DeadLetter
+ * to the ActorSystem's EventStream
+ */
 case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 
 private[akka] object DeadLetterActorRef {
@@ -402,30 +423,54 @@ private[akka] object DeadLetterActorRef {
 /**
  * This special dead letter reference has a name: it is that which is returned
  * by a local look-up which is unsuccessful.
+ *
+ * INTERNAL API
  */
-private[akka] class EmptyLocalActorRef(
-  val provider: ActorRefProvider,
-  val path: ActorPath,
-  val eventStream: EventStream) extends MinimalActorRef {
+private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
+                                       override val path: ActorPath,
+                                       val eventStream: EventStream) extends MinimalActorRef {
 
   override def isTerminated(): Boolean = true
 
+  override def sendSystemMessage(message: SystemMessage): Unit = specialHandle(message)
+
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
-    case d: DeadLetter ⇒ // do NOT form endless loops, since deadLetters will resend!
-    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+    case d: DeadLetter ⇒ specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
+    case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
+  }
+
+  protected def specialHandle(msg: Any): Boolean = msg match {
+    case w: Watch ⇒
+      if (w.watchee == this && w.watcher != this)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
+      true
+    case _: Unwatch ⇒ true // Just ignore
+    case _          ⇒ false
   }
 }
 
 /**
  * Internal implementation of the dead letter destination: will publish any
  * received message to the eventStream, wrapped as [[akka.actor.DeadLetter]].
+ *
+ * INTERNAL API
  */
-private[akka] class DeadLetterActorRef(_provider: ActorRefProvider, _path: ActorPath, _eventStream: EventStream)
-  extends EmptyLocalActorRef(_provider, _path, _eventStream) {
+private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
+                                       _path: ActorPath,
+                                       _eventStream: EventStream) extends EmptyLocalActorRef(_provider, _path, _eventStream) {
 
   override def !(message: Any)(implicit sender: ActorRef = this): Unit = message match {
-    case d: DeadLetter ⇒ eventStream.publish(d)
-    case _             ⇒ eventStream.publish(DeadLetter(message, sender, this))
+    case d: DeadLetter ⇒ if (!specialHandle(d.message)) eventStream.publish(d)
+    case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
+  }
+
+  override protected def specialHandle(msg: Any): Boolean = msg match {
+    case w: Watch ⇒
+      if (w.watchee != this && w.watcher != this)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
+      true
+    case w: Unwatch ⇒ true // Just ignore
+    case _          ⇒ false
   }
 
   @throws(classOf[java.io.ObjectStreamException])
@@ -434,10 +479,12 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider, _path: Actor
 
 /**
  * Internal implementation detail used for paths like “/temp”
+ *
+ * INTERNAL API
  */
 private[akka] class VirtualPathContainer(
-  val provider: ActorRefProvider,
-  val path: ActorPath,
+  override val provider: ActorRefProvider,
+  override val path: ActorPath,
   override val getParent: InternalActorRef,
   val log: LoggingAdapter) extends MinimalActorRef {
 
@@ -450,12 +497,8 @@ private[akka] class VirtualPathContainer(
     }
   }
 
-  def removeChild(name: String): Unit = {
-    children.remove(name) match {
-      case null ⇒ log.warning("{} trying to remove non-child {}", path, name)
-      case _    ⇒ //okay
-    }
-  }
+  def removeChild(name: String): Unit =
+    if (children.remove(name) eq null) log.warning("{} trying to remove non-child {}", path, name)
 
   def getChild(name: String): InternalActorRef = children.get(name)
 

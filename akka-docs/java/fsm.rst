@@ -35,9 +35,9 @@ using a small well-defined set of methods. One way to achieve this is to
 assemble all mutable state in a superclass which keeps it private and offers
 protected methods for mutating it.
 
-.. includecode:: code/akka/docs/actor/FSMDocTestBase.java#imports-data
+.. includecode:: code/docs/actor/FSMDocTestBase.java#imports-data
 
-.. includecode:: code/akka/docs/actor/FSMDocTestBase.java#base
+.. includecode:: code/docs/actor/FSMDocTestBase.java#base
 
 The benefit of this approach is that state changes can be acted upon in one
 central place, which makes it impossible to forget inserting code for reacting
@@ -50,15 +50,15 @@ The base class shown above is designed to support a similar example as for the
 Scala FSM documentation: an actor which receives and queues messages, to be
 delivered in batches to a configurable target actor. The messages involved are:
 
-.. includecode:: code/akka/docs/actor/FSMDocTestBase.java#data
+.. includecode:: code/docs/actor/FSMDocTestBase.java#data
 
 This actor has only the two states ``IDLE`` and ``ACTIVE``, making their
 handling quite straight-forward in the concrete actor derived from the base
 class:
 
-.. includecode:: code/akka/docs/actor/FSMDocTestBase.java#imports-actor
+.. includecode:: code/docs/actor/FSMDocTestBase.java#imports-actor
 
-.. includecode:: code/akka/docs/actor/FSMDocTestBase.java#actor
+.. includecode:: code/docs/actor/FSMDocTestBase.java#actor
 
 The trick here is to factor out common functionality like :meth:`whenUnhandled`
 and :meth:`transition` in order to obtain a few well-defined points for

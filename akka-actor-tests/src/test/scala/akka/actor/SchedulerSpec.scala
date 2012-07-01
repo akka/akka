@@ -18,7 +18,12 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
   }
 
   override def afterEach {
-    while (cancellables.peek() ne null) { Option(cancellables.poll()).foreach(_.cancel()) }
+    while (cancellables.peek() ne null) {
+      for (c ← Option(cancellables.poll())) {
+        c.cancel()
+        c.isCancelled must be === true
+      }
+    }
   }
 
   "A Scheduler" must {
@@ -43,7 +48,7 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       assert(countDownLatch2.await(2, TimeUnit.SECONDS))
     }
 
-    "should stop continuous scheduling if the receiving actor has been terminated" taggedAs TimingTest in {
+    "stop continuous scheduling if the receiving actor has been terminated" taggedAs TimingTest in {
       val actor = system.actorOf(Props(new Actor {
         def receive = {
           case x ⇒ testActor ! x

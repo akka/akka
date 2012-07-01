@@ -36,7 +36,7 @@ Actor in Java are implemented by extending the ``UntypedActor`` class and implem
 
 Here is an example:
 
-.. includecode:: code/akka/docs/actor/MyUntypedActor.java#my-untyped-actor
+.. includecode:: code/docs/actor/MyUntypedActor.java#my-untyped-actor
 
 Props
 -----
@@ -44,7 +44,7 @@ Props
 ``Props`` is a configuration class to specify options for the creation
 of actors. Here are some examples on how to create a ``Props`` instance.
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props-config
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#creating-props-config
 
 
 Creating Actors with Props
@@ -52,13 +52,13 @@ Creating Actors with Props
 
 Actors are created by passing in a ``Props`` instance into the ``actorOf`` factory method.
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-props
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#creating-props
 
 
 Creating Actors with default constructor
 ----------------------------------------
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
    :include: imports,system-actorOf
 
 The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
@@ -75,19 +75,12 @@ how the supervisor hierarchy is arranged. When using the context the current act
 will be supervisor of the created child actor. When using the system it will be
 a top level actor, that is supervised by the system (internal guardian actor).
 
-.. includecode:: code/akka/docs/actor/FirstUntypedActor.java#context-actorOf
+.. includecode:: code/docs/actor/FirstUntypedActor.java#context-actorOf
 
 The name parameter is optional, but you should preferably name your actors, since
 that is used in log messages and for identifying actors. The name must not be empty
 or start with ``$``. If the given name is already in use by another child to the
 same parent actor an `InvalidActorNameException` is thrown.
-
-.. warning::
-
-  Creating top-level actors with ``system.actorOf`` is a blocking operation,
-  hence it may dead-lock due to starvation if the default dispatcher is
-  overloaded. To avoid problems, do not call this method from within actors or
-  futures which run on the default dispatcher.
 
 Actors are automatically started asynchronously when created.
 When you create the ``UntypedActor`` then it will automatically call the ``preStart``
@@ -110,11 +103,17 @@ in which you can create the Actor in any way you like.
 
 Here is an example:
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#creating-constructor
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#creating-constructor
 
 This way of creating the Actor is also great for integrating with Dependency Injection
 (DI) frameworks like Guice or Spring.
 
+.. warning::
+
+  You might be tempted at times to offer an ``UntypedActor`` factory which
+  always returns the same instance, e.g. by using a static field. This is not
+  supported, as it goes against the meaning of an actor restart, which is
+  described here: :ref:`supervision-restart`.
 
 UntypedActor API
 ================
@@ -144,7 +143,7 @@ In addition, it offers:
 The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following:
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#lifecycle-callbacks
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#lifecycle-callbacks
 
 The implementations shown above are the defaults provided by the :class:`UntypedActor`
 class.
@@ -163,7 +162,7 @@ termination (see `Stopping Actors`_). This service is provided by the
 Registering a monitor is easy (see fourth line, the rest is for demonstrating
 the whole functionality):
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#watch
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#watch
 
 It should be noted that the :class:`Terminated` message is generated
 independent of the order in which registration and termination occur.
@@ -279,7 +278,7 @@ convention.
 
 Here is an example of an immutable message:
 
-.. includecode:: code/akka/docs/actor/ImmutableMessage.java#immutable-message
+.. includecode:: code/docs/actor/ImmutableMessage.java#immutable-message
 
 
 Send messages
@@ -332,9 +331,9 @@ Ask: Send-And-Receive-Future
 The ``ask`` pattern involves actors as well as futures, hence it is offered as
 a use pattern rather than a method on :class:`ActorRef`:
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#import-askPipe
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#import-askPipe
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#ask-pipe
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#ask-pipe
 
 This example demonstrates ``ask`` together with the ``pipe`` pattern on
 futures, because this is likely to be a common combination. Please note that
@@ -355,7 +354,7 @@ To complete the future with an exception you need send a Failure message to the 
 This is *not done automatically* when an actor throws an exception while processing a
 message.
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java#reply-exception
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java#reply-exception
 
 If the actor does not complete the future, it will expire after the timeout period,
 specified as parameter to the ``ask`` method; this will complete the
@@ -364,7 +363,7 @@ specified as parameter to the ``ask`` method; this will complete the
 See :ref:`futures-java` for more information on how to await or query a
 future.
 
-The ``onComplete``, ``onResult``, or ``onTimeout`` methods of the ``Future`` can be
+The ``onComplete``, ``onSuccess``, or ``onFailure`` methods of the ``Future`` can be
 used to register a callback to get a notification when the Future completes.
 Gives you a way to avoid blocking.
 
@@ -399,7 +398,7 @@ an abstract method on the ``UntypedActor`` base class that needs to be defined.
 
 Here is an example:
 
-.. includecode:: code/akka/docs/actor/MyUntypedActor.java#my-untyped-actor
+.. includecode:: code/docs/actor/MyUntypedActor.java#my-untyped-actor
 
 An alternative to using if-instanceof checks is to use `Apache Commons MethodUtils
 <http://commons.apache.org/beanutils/api/org/apache/commons/beanutils/MethodUtils.html#invokeMethod(java.lang.Object,%20java.lang.String,%20java.lang.Object)>`_
@@ -432,7 +431,7 @@ received within a certain time. To receive this timeout you have to set the
 ``receiveTimeout`` property and declare handing for the ReceiveTimeout
 message.
 
-.. includecode:: code/akka/docs/actor/MyReceivedTimeoutUntypedActor.java#receive-timeout
+.. includecode:: code/docs/actor/MyReceivedTimeoutUntypedActor.java#receive-timeout
 
 .. _stopping-actors-java:
 
@@ -494,7 +493,7 @@ in the mailbox.
 
 Use it like this:
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
    :include: import-actors,poison-pill
 
 Graceful Stop
@@ -503,7 +502,7 @@ Graceful Stop
 :meth:`gracefulStop` is useful if you need to wait for termination or compose ordered
 termination of several actors:
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
    :include: import-gracefulStop,gracefulStop
 
 When ``gracefulStop()`` returns successfully, the actor’s ``postStop()`` hook
@@ -537,7 +536,7 @@ The hotswapped code is kept in a Stack which can be pushed and popped.
 
 To hotswap the Actor using ``getContext().become``:
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
    :include: import-procedure,hot-swap-actor
 
 The ``become`` method is useful for many different things, such as to implement
@@ -545,7 +544,7 @@ a Finite State Machine (FSM).
 
 Here is another little cute example of ``become`` and ``unbecome`` in action:
 
-.. includecode:: code/akka/docs/actor/UntypedActorSwapper.java#swapper
+.. includecode:: code/docs/actor/UntypedActorSwapper.java#swapper
 
 Downgrade
 ---------
@@ -567,7 +566,7 @@ through regular supervisor semantics.
 
 Use it like this:
 
-.. includecode:: code/akka/docs/actor/UntypedActorDocTestBase.java
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
    :include: import-actors,kill
 
 Actors and exceptions
@@ -580,7 +579,7 @@ What happens to the Message
 ---------------------------
 
 If an exception is thrown while a message is being processed (so taken of his
-mailbox and handed over the the receive), then this message will be lost. It is
+mailbox and handed over to the receive), then this message will be lost. It is
 important to understand that it is not put back on the mailbox. So if you want
 to retry processing of a message, you need to deal with it yourself by catching
 the exception and retry your flow. Make sure that you put a bound on the number

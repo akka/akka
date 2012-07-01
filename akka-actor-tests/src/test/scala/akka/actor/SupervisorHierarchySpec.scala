@@ -20,7 +20,7 @@ object SupervisorHierarchySpec {
    */
   class CountDownActor(countDown: CountDownLatch, override val supervisorStrategy: SupervisorStrategy) extends Actor {
 
-    protected def receive = {
+    def receive = {
       case p: Props ⇒ sender ! context.actorOf(p)
     }
     // test relies on keeping children around during restart
@@ -67,7 +67,7 @@ class SupervisorHierarchySpec extends AkkaSpec with DefaultTimeout {
 
         val crasher = context.watch(context.actorOf(Props(new CountDownActor(countDownMessages, SupervisorStrategy.defaultStrategy))))
 
-        protected def receive = {
+        def receive = {
           case "killCrasher" ⇒ crasher ! Kill
           case Terminated(_) ⇒ countDownMax.countDown()
         }

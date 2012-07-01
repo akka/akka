@@ -5,3 +5,4 @@ Common utilities
    :maxdepth: 2
 
    duration
+   circuitbreaker

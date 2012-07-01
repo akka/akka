@@ -6,14 +6,12 @@ package akka.routing
 import akka.actor._
 import akka.util.Duration
 import akka.util.duration._
-import akka.config.ConfigurationException
+import akka.ConfigurationException
 import akka.pattern.pipe
-import akka.pattern.AskSupport
 import com.typesafe.config.Config
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
 import akka.jsr166y.ThreadLocalRandom
 import akka.util.Unsafe
 import akka.dispatch.Dispatchers
@@ -25,36 +23,27 @@ import scala.runtime.ScalaRunTime
  * send a message to on (or more) of these actors.
  */
 private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _supervisor: InternalActorRef, _path: ActorPath)
-  extends LocalActorRef(
-    _system,
-    _props.copy(creator = () ⇒ _props.routerConfig.createActor(), dispatcher = _props.routerConfig.routerDispatcher),
-    _supervisor,
-    _path) {
+  extends RepointableActorRef(_system, _props, _supervisor, _path) {
 
-  /*
-   * CAUTION: RoutedActorRef is PROBLEMATIC
-   * ======================================
-   * 
-   * We are constructing/assembling the children outside of the scope of the 
-   * Router actor, inserting them in its childrenRef list, which is not at all
-   * synchronized. This is done exactly once at start-up, all other accesses
-   * are done from the Router actor. This means that the only thing which is
-   * really hairy is making sure that the Router does not touch its childrenRefs
-   * before we are done with them: lock the monitor of the actor cell (hence the
-   * override of newActorCell) and use that to block the Router constructor for
-   * as long as it takes to setup the RoutedActorRef itself.
-   */
-  override def newActorCell(
-    system: ActorSystemImpl,
-    ref: InternalActorRef,
-    props: Props,
-    supervisor: InternalActorRef,
-    receiveTimeout: Option[Duration]): ActorCell =
-    {
-      val cell = super.newActorCell(system, ref, props, supervisor, receiveTimeout)
-      Unsafe.instance.monitorEnter(cell)
-      cell
-    }
+  // verify that a BalancingDispatcher is not used with a Router
+  if (_props.routerConfig != NoRouter && _system.dispatchers.isBalancingDispatcher(_props.routerConfig.routerDispatcher)) {
+    throw new ConfigurationException(
+      "Configuration for " + this +
+        " is invalid - you can not use a 'BalancingDispatcher' as a Router's dispatcher, you can however use it for the routees.")
+  }
+
+  _props.routerConfig.verifyConfig()
+
+  override def newCell(): Cell = new RoutedActorCell(system, this, props, supervisor)
+
+}
+
+private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef)
+  extends ActorCell(
+    _system,
+    _ref,
+    _props.copy(creator = () ⇒ _props.routerConfig.createActor(), dispatcher = _props.routerConfig.routerDispatcher),
+    _supervisor) {
 
   private[akka] val routerConfig = _props.routerConfig
   private[akka] val routeeProps = _props.copy(routerConfig = NoRouter)
@@ -69,31 +58,28 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   private var _routeeProvider: RouteeProvider = _
   def routeeProvider = _routeeProvider
 
-  val route =
-    try {
-      _routeeProvider = routerConfig.createRouteeProvider(actorContext)
-      val r = routerConfig.createRoute(routeeProps, routeeProvider)
-      // initial resize, before message send
-      routerConfig.resizer foreach { r ⇒
-        if (r.isTimeForResize(resizeCounter.getAndIncrement()))
-          r.resize(routeeProps, routeeProvider)
-      }
-      r
-    } finally {
-      assert(Thread.holdsLock(actorContext))
-      Unsafe.instance.monitorExit(actorContext) // unblock Router’s constructor
+  val route = {
+    _routeeProvider = routerConfig.createRouteeProvider(this)
+    val r = routerConfig.createRoute(routeeProps, routeeProvider)
+    // initial resize, before message send
+    routerConfig.resizer foreach { r ⇒
+      if (r.isTimeForResize(resizeCounter.getAndIncrement()))
+        r.resize(routeeProps, routeeProvider)
     }
+    r
+  }
 
   if (routerConfig.resizer.isEmpty && _routees.isEmpty)
     throw new ActorInitializationException("router " + routerConfig + " did not register routees!")
+
+  start()
 
   /*
    * end of construction
    */
 
   def applyRoute(sender: ActorRef, message: Any): Iterable[Destination] = message match {
-    case _: AutoReceivedMessage ⇒ Destination(this, this) :: Nil
-    case Terminated(_)          ⇒ Destination(this, this) :: Nil
+    case _: AutoReceivedMessage ⇒ Destination(self, self) :: Nil
     case CurrentRoutees ⇒
       sender ! RouterRoutees(_routees)
       Nil
@@ -111,7 +97,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
   private[akka] def addRoutees(newRoutees: IndexedSeq[ActorRef]): Unit = {
     _routees = _routees ++ newRoutees
     // subscribe to Terminated messages for all route destinations, to be handled by Router actor
-    newRoutees foreach underlying.watch
+    newRoutees foreach watch
   }
 
   /**
@@ -122,13 +108,13 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
    */
   private[akka] def removeRoutees(abandonedRoutees: IndexedSeq[ActorRef]): Unit = {
     _routees = _routees diff abandonedRoutees
-    abandonedRoutees foreach underlying.unwatch
+    abandonedRoutees foreach unwatch
   }
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = {
+  override def tell(message: Any, sender: ActorRef): Unit = {
     resize()
 
-    val s = if (sender eq null) underlying.system.deadLetters else sender
+    val s = if (sender eq null) system.deadLetters else sender
 
     val msg = message match {
       case Broadcast(m) ⇒ m
@@ -136,15 +122,18 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
     }
 
     applyRoute(s, message) match {
-      case Destination(_, x) :: Nil if x eq this ⇒ super.!(message)(s)
-      case refs                                  ⇒ refs foreach (p ⇒ p.recipient.!(msg)(p.sender))
+      case Destination(_, x) :: Nil if x == self ⇒ super.tell(message, s)
+      case refs ⇒
+        refs foreach (p ⇒
+          if (p.recipient == self) super.tell(msg, p.sender)
+          else p.recipient.!(msg)(p.sender))
     }
   }
 
   def resize(): Unit = {
     for (r ← routerConfig.resizer) {
       if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeInProgress.compareAndSet(false, true))
-        super.!(Router.Resize)
+        super.tell(Router.Resize, self)
     }
   }
 }
@@ -171,7 +160,7 @@ trait RouterConfig {
 
   def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route
 
-  def createRouteeProvider(context: ActorContext) = new RouteeProvider(context, resizer)
+  def createRouteeProvider(context: ActorContext): RouteeProvider = new RouteeProvider(context, resizer)
 
   def createActor(): Router = new Router {
     override def supervisorStrategy: SupervisorStrategy = RouterConfig.this.supervisorStrategy
@@ -192,13 +181,19 @@ trait RouterConfig {
    */
   def withFallback(other: RouterConfig): RouterConfig = this
 
-  protected def toAll(sender: ActorRef, routees: Iterable[ActorRef]): Iterable[Destination] = routees.map(Destination(sender, _))
+  protected def toAll(sender: ActorRef, routees: Iterable[ActorRef]): Iterable[Destination] =
+    routees.map(Destination(sender, _))
 
   /**
    * Routers with dynamically resizable number of routees return the [[akka.routing.Resizer]]
    * to use.
    */
   def resizer: Option[Resizer] = None
+
+  /**
+   * Check that everything is there which is needed. Called in constructor of RoutedActorRef to fail early.
+   */
+  def verifyConfig(): Unit = {}
 
 }
 
@@ -215,9 +210,7 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
    * Not thread safe, but intended to be called from protected points, such as
    * `RouterConfig.createRoute` and `Resizer.resize`.
    */
-  def registerRoutees(routees: IndexedSeq[ActorRef]): Unit = {
-    routedRef.addRoutees(routees)
-  }
+  def registerRoutees(routees: IndexedSeq[ActorRef]): Unit = routedCell.addRoutees(routees)
 
   /**
    * Adds the routees to the router.
@@ -237,9 +230,7 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`.
    */
-  def unregisterRoutees(routees: IndexedSeq[ActorRef]): Unit = {
-    routedRef.removeRoutees(routees)
-  }
+  def unregisterRoutees(routees: IndexedSeq[ActorRef]): Unit = routedCell.removeRoutees(routees)
 
   def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
     (nrOfInstances, routees) match {
@@ -250,19 +241,15 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
       case (_, xs)  ⇒ xs.map(context.actorFor(_))(scala.collection.breakOut)
     }
 
-  def createAndRegisterRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): Unit = {
-    if (resizer.isEmpty) {
-      registerRoutees(createRoutees(props, nrOfInstances, routees))
-    }
-  }
+  def createAndRegisterRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): Unit =
+    if (resizer.isEmpty) registerRoutees(createRoutees(props, nrOfInstances, routees))
 
   /**
    * All routees of the router
    */
-  def routees: IndexedSeq[ActorRef] = routedRef.routees
+  def routees: IndexedSeq[ActorRef] = routedCell.routees
 
-  private def routedRef = context.self.asInstanceOf[RoutedActorRef]
-
+  private def routedCell = context.asInstanceOf[RoutedActorCell]
 }
 
 /**
@@ -294,19 +281,16 @@ trait CustomRoute {
  */
 trait Router extends Actor {
 
-  // make sure that we synchronize properly to get the childrenRefs into our CPU cache
-  val ref = context.synchronized {
-    self match {
-      case x: RoutedActorRef ⇒ x
-      case _                 ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef")
-    }
+  val ref = context match {
+    case x: RoutedActorCell ⇒ x
+    case _                  ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef, not in " + context.getClass)
   }
 
   final def receive = ({
 
     case Router.Resize ⇒
-      try ref.routerConfig.resizer foreach (_.resize(ref.routeeProps, ref.routeeProvider))
-      finally assert(ref.resizeInProgress.getAndSet(false))
+      val ab = ref.resizeInProgress
+      if (ab.get) try ref.routerConfig.resizer foreach (_.resize(ref.routeeProps, ref.routeeProvider)) finally ab.set(false)
 
     case Terminated(child) ⇒
       ref.removeRoutees(IndexedSeq(child))
@@ -321,6 +305,9 @@ trait Router extends Actor {
   }
 }
 
+/**
+ * INTERNAL API
+ */
 private object Router {
 
   case object Resize
@@ -374,9 +361,9 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 abstract class NoRouter extends RouterConfig
 case object NoRouter extends NoRouter {
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null // FIXME, null, really??
   def routerDispatcher: String = ""
-  def supervisorStrategy = null
+  def supervisorStrategy = null // FIXME null, really??
   override def withFallback(other: RouterConfig): RouterConfig = other
 
   /**
@@ -406,52 +393,24 @@ case object FromConfig extends FromConfig {
 //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
 class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig
-  with Product
-  with Serializable
-  with Equals {
+  with Serializable {
 
   def this() = this(Dispatchers.DefaultDispatcherId)
 
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route =
-    throw new ConfigurationException("router " + routeeProvider.context.self + " needs external configuration from file (e.g. application.conf)")
+  override def verifyConfig(): Unit =
+    throw new ConfigurationException("router needs external configuration from file (e.g. application.conf)")
+
+  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
 
   def supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy
-
-  // open-coded case class to preserve binary compatibility, all deprecated for 2.1
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  override def productPrefix = "FromConfig"
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  def productArity = 1
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  def productElement(x: Int) = x match {
-    case 0 ⇒ routerDispatcher
-    case _ ⇒ throw new IndexOutOfBoundsException(x.toString)
-  }
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  def copy(d: String = Dispatchers.DefaultDispatcherId): FromConfig = new FromConfig(d)
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  def canEqual(o: Any) = o.isInstanceOf[FromConfig]
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  override def hashCode = ScalaRunTime._hashCode(this)
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  override def toString = "FromConfig(" + routerDispatcher + ")"
-
-  @deprecated("FromConfig does not make sense as case class", "2.0.1")
-  override def equals(other: Any): Boolean = other match {
-    case FromConfig(x) ⇒ x == routerDispatcher
-    case _             ⇒ false
-  }
-
 }
 
 object RoundRobinRouter {
-  def apply(routees: Iterable[ActorRef]) = new RoundRobinRouter(routees = routees map (_.path.toString))
+  /**
+   * Creates a new RoundRobinRouter, routing to the specified routees
+   */
+  def apply(routees: Iterable[ActorRef]): RoundRobinRouter =
+    new RoundRobinRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
@@ -512,9 +471,7 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int) = {
-    this(nrOfInstances = nr)
-  }
+  def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
    * Constructor that sets the routees to be used.
@@ -522,9 +479,7 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(routeePaths))
-  }
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -535,13 +490,13 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
   /**
    * Java API for setting routerDispatcher
    */
-  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+  def withDispatcher(dispatcherId: String): RoundRobinRouter = copy(routerDispatcher = dispatcherId)
 
   /**
    * Java API for setting the supervisor strategy to be used for the “head”
    * Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): RoundRobinRouter = copy(supervisorStrategy = strategy)
 }
 
 trait RoundRobinLike { this: RouterConfig ⇒
@@ -571,7 +526,10 @@ trait RoundRobinLike { this: RouterConfig ⇒
 }
 
 object RandomRouter {
-  def apply(routees: Iterable[ActorRef]) = new RandomRouter(routees = routees map (_.path.toString))
+  /**
+   * Creates a new RandomRouter, routing to the specified routees
+   */
+  def apply(routees: Iterable[ActorRef]): RandomRouter = new RandomRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
@@ -632,9 +590,7 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int) = {
-    this(nrOfInstances = nr)
-  }
+  def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
    * Constructor that sets the routees to be used.
@@ -642,9 +598,7 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(routeePaths))
-  }
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -655,13 +609,13 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
   /**
    * Java API for setting routerDispatcher
    */
-  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+  def withDispatcher(dispatcherId: String): RandomRouter = copy(routerDispatcher = dispatcherId)
 
   /**
    * Java API for setting the supervisor strategy to be used for the “head”
    * Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): RandomRouter = copy(supervisorStrategy = strategy)
 }
 
 trait RandomLike { this: RouterConfig ⇒
@@ -688,7 +642,11 @@ trait RandomLike { this: RouterConfig ⇒
 }
 
 object SmallestMailboxRouter {
-  def apply(routees: Iterable[ActorRef]) = new SmallestMailboxRouter(routees = routees map (_.path.toString))
+  /**
+   * Creates a new SmallestMailboxRouter, routing to the specified routees
+   */
+  def apply(routees: Iterable[ActorRef]): SmallestMailboxRouter =
+    new SmallestMailboxRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
@@ -758,9 +716,7 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int) = {
-    this(nrOfInstances = nr)
-  }
+  def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
    * Constructor that sets the routees to be used.
@@ -768,9 +724,7 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(routeePaths))
-  }
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -781,19 +735,16 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
   /**
    * Java API for setting routerDispatcher
    */
-  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+  def withDispatcher(dispatcherId: String): SmallestMailboxRouter = copy(routerDispatcher = dispatcherId)
 
   /**
    * Java API for setting the supervisor strategy to be used for the “head”
    * Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): SmallestMailboxRouter = copy(supervisorStrategy = strategy)
 }
 
 trait SmallestMailboxLike { this: RouterConfig ⇒
-
-  import java.security.SecureRandom
-
   def nrOfInstances: Int
 
   def routees: Iterable[String]
@@ -805,9 +756,11 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def isProcessingMessage(a: ActorRef): Boolean = a match {
-    case x: LocalActorRef ⇒
-      val cell = x.underlying
-      cell.mailbox.isScheduled && cell.currentMessage != null
+    case x: ActorRefWithCell ⇒
+      x.underlying match {
+        case cell: ActorCell ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
+        case _               ⇒ false
+      }
     case _ ⇒ false
   }
 
@@ -819,8 +772,8 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def hasMessages(a: ActorRef): Boolean = a match {
-    case x: LocalActorRef ⇒ x.underlying.mailbox.hasMessages
-    case _                ⇒ false
+    case x: ActorRefWithCell ⇒ x.underlying.hasMessages
+    case _                   ⇒ false
   }
 
   /**
@@ -830,8 +783,12 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def isSuspended(a: ActorRef): Boolean = a match {
-    case x: LocalActorRef ⇒ x.underlying.mailbox.isSuspended
-    case _                ⇒ false
+    case x: ActorRefWithCell ⇒
+      x.underlying match {
+        case cell: ActorCell ⇒ cell.mailbox.isSuspended
+        case _               ⇒ true
+      }
+    case _ ⇒ false
   }
 
   /**
@@ -841,8 +798,8 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
    * routers based on mailbox and actor internal state.
    */
   protected def numberOfMessages(a: ActorRef): Int = a match {
-    case x: LocalActorRef ⇒ x.underlying.mailbox.numberOfMessages
-    case _                ⇒ 0
+    case x: ActorRefWithCell ⇒ x.underlying.numberOfMessages
+    case _                   ⇒ 0
   }
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
@@ -895,7 +852,10 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
 }
 
 object BroadcastRouter {
-  def apply(routees: Iterable[ActorRef]) = new BroadcastRouter(routees = routees map (_.path.toString))
+  /**
+   * Creates a new BroadcastRouter, routing to the specified routees
+   */
+  def apply(routees: Iterable[ActorRef]): BroadcastRouter = new BroadcastRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
@@ -956,9 +916,7 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int) = {
-    this(nrOfInstances = nr)
-  }
+  def this(nr: Int) = this(nrOfInstances = nr)
 
   /**
    * Constructor that sets the routees to be used.
@@ -966,9 +924,7 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = {
-    this(routees = iterableAsScalaIterable(routeePaths))
-  }
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -979,13 +935,13 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
   /**
    * Java API for setting routerDispatcher
    */
-  def withDispatcher(dispatcherId: String) = copy(routerDispatcher = dispatcherId)
+  def withDispatcher(dispatcherId: String): BroadcastRouter = copy(routerDispatcher = dispatcherId)
 
   /**
    * Java API for setting the supervisor strategy to be used for the “head”
    * Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): BroadcastRouter = copy(supervisorStrategy = strategy)
 }
 
 trait BroadcastLike { this: RouterConfig ⇒
@@ -1004,7 +960,11 @@ trait BroadcastLike { this: RouterConfig ⇒
 }
 
 object ScatterGatherFirstCompletedRouter {
-  def apply(routees: Iterable[ActorRef], within: Duration) = new ScatterGatherFirstCompletedRouter(routees = routees map (_.path.toString), within = within)
+  /**
+   * Creates a new ScatterGatherFirstCompletedRouter, routing to the specified routees, timing out after the specified Duration
+   */
+  def apply(routees: Iterable[ActorRef], within: Duration): ScatterGatherFirstCompletedRouter =
+    new ScatterGatherFirstCompletedRouter(routees = routees map (_.path.toString), within = within)
 
   /**
    * Java API to create router with the supplied 'routees' actors.
@@ -1071,9 +1031,7 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int, w: Duration) = {
-    this(nrOfInstances = nr, within = w)
-  }
+  def this(nr: Int, w: Duration) = this(nrOfInstances = nr, within = w)
 
   /**
    * Constructor that sets the routees to be used.
@@ -1081,9 +1039,8 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String], w: Duration) = {
+  def this(routeePaths: java.lang.Iterable[String], w: Duration) =
     this(routees = iterableAsScalaIterable(routeePaths), within = w)
-  }
 
   /**
    * Constructor that sets the resizer to be used.
@@ -1152,10 +1109,14 @@ trait Resizer {
    * This method is invoked only in the context of the Router actor in order to safely
    * create/stop children.
    */
-  def resize(props: Props, routeeProvider: RouteeProvider)
+  def resize(props: Props, routeeProvider: RouteeProvider): Unit
 }
 
 case object DefaultResizer {
+
+  /**
+   * Creates a new DefaultResizer from the given configuration
+   */
   def apply(resizerConfig: Config): DefaultResizer =
     DefaultResizer(
       lowerBound = resizerConfig.getInt("lower-bound"),
@@ -1168,6 +1129,7 @@ case object DefaultResizer {
       messagesPerResize = resizerConfig.getInt("messages-per-resize"))
 }
 
+//FIXME DOCUMENT ME
 case class DefaultResizer(
   /**
    * The fewest number of routees the router should ever have.
@@ -1242,7 +1204,7 @@ case class DefaultResizer(
 
   def isTimeForResize(messageCounter: Long): Boolean = (messageCounter % messagesPerResize == 0)
 
-  def resize(props: Props, routeeProvider: RouteeProvider) {
+  def resize(props: Props, routeeProvider: RouteeProvider): Unit = {
     val currentRoutees = routeeProvider.routees
     val requestedCapacity = capacity(currentRoutees)
 
@@ -1260,7 +1222,7 @@ case class DefaultResizer(
    * Give concurrent messages a chance to be placed in mailbox before
    * sending PoisonPill.
    */
-  protected def delayedStop(scheduler: Scheduler, abandon: IndexedSeq[ActorRef]) {
+  protected def delayedStop(scheduler: Scheduler, abandon: IndexedSeq[ActorRef]): Unit = {
     if (abandon.nonEmpty) {
       if (stopDelay <= Duration.Zero) {
         abandon foreach (_ ! PoisonPill)
@@ -1309,12 +1271,20 @@ case class DefaultResizer(
    */
   def pressure(routees: IndexedSeq[ActorRef]): Int = {
     routees count {
-      case a: LocalActorRef ⇒
-        val cell = a.underlying
-        pressureThreshold match {
-          case 1          ⇒ cell.mailbox.isScheduled && cell.mailbox.hasMessages
-          case i if i < 1 ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
-          case threshold  ⇒ cell.mailbox.numberOfMessages >= threshold
+      case a: ActorRefWithCell ⇒
+        a.underlying match {
+          case cell: ActorCell ⇒
+            pressureThreshold match {
+              case 1          ⇒ cell.mailbox.isScheduled && cell.mailbox.hasMessages
+              case i if i < 1 ⇒ cell.mailbox.isScheduled && cell.currentMessage != null
+              case threshold  ⇒ cell.mailbox.numberOfMessages >= threshold
+            }
+          case cell ⇒
+            pressureThreshold match {
+              case 1          ⇒ cell.hasMessages
+              case i if i < 1 ⇒ true // unstarted cells are always busy, for example
+              case threshold  ⇒ cell.numberOfMessages >= threshold
+            }
         }
       case x ⇒
         false
@@ -1329,9 +1299,7 @@ case class DefaultResizer(
    * @param capacity current number of routees
    * @return proposed change in the capacity
    */
-  def filter(pressure: Int, capacity: Int): Int = {
-    rampup(pressure, capacity) + backoff(pressure, capacity)
-  }
+  def filter(pressure: Int, capacity: Int): Int = rampup(pressure, capacity) + backoff(pressure, capacity)
 
   /**
    * Computes a proposed positive (or zero) capacity delta using

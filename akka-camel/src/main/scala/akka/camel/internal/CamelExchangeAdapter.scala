@@ -16,34 +16,34 @@ import akka.camel.{ FailureResult, AkkaCamelException, CamelMessage }
  *
  * @author Martin Krasser
  */
-private[camel] class CamelExchangeAdapter(exchange: Exchange) {
+private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
   /**
    * Returns the exchange id
    */
-  def getExchangeId = exchange.getExchangeId
+  def getExchangeId: String = exchange.getExchangeId
 
   /**
    * Returns if the exchange is out capable.
    */
-  def isOutCapable = exchange.getPattern.isOutCapable
+  def isOutCapable: Boolean = exchange.getPattern.isOutCapable
 
   /**
    * Sets Exchange.getIn from the given CamelMessage object.
    */
-  def setRequest(msg: CamelMessage) { msg.copyContentTo(request) }
+  def setRequest(msg: CamelMessage): Unit = msg.copyContentTo(request)
 
   /**
    * Depending on the exchange pattern, sets Exchange.getIn or Exchange.getOut from the given
    * CamelMessage object. If the exchange is out-capable then the Exchange.getOut is set, otherwise
    * Exchange.getIn.
    */
-  def setResponse(msg: CamelMessage) { msg.copyContentTo(response) }
+  def setResponse(msg: CamelMessage): Unit = msg.copyContentTo(response)
 
   /**
    * Sets Exchange.getException from the given FailureResult message. Headers of the FailureResult message
    * are ignored.
    */
-  def setFailure(msg: FailureResult) { exchange.setException(msg.cause) }
+  def setFailure(msg: FailureResult): Unit = exchange.setException(msg.cause)
 
   /**
    * Creates an immutable CamelMessage object from Exchange.getIn so it can be used with Actors.
@@ -120,7 +120,7 @@ private[camel] class CamelExchangeAdapter(exchange: Exchange) {
    */
   def toResponseMessage(headers: Map[String, Any]): CamelMessage = CamelMessage.from(response, headers)
 
-  private def request = exchange.getIn
+  private def request: JCamelMessage = exchange.getIn
 
   private def response: JCamelMessage = ExchangeHelper.getResultMessage(exchange)
 
