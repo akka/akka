@@ -14,3 +14,4 @@ sealed trait SeedSize { def size: Int }
 case object Seed128 extends SeedSize { val size = 16 }
 case object Seed192 extends SeedSize { val size = 24 }
 case object Seed256 extends SeedSize { val size = 32 }
+
