@@ -42,6 +42,13 @@ class ClusterSettings(val config: Config, val systemName: String) {
     case id ⇒ id
   }
   final val GossipDifferentViewProbability: Double = getDouble("akka.cluster.gossip-different-view-probability")
+  final val MaxGossipMergeRate: Double = getDouble("akka.cluster.max-gossip-merge-rate")
   final val SchedulerTickDuration: Duration = Duration(getMilliseconds("akka.cluster.scheduler.tick-duration"), MILLISECONDS)
   final val SchedulerTicksPerWheel: Int = getInt("akka.cluster.scheduler.ticks-per-wheel")
+  final val SendCircuitBreakerSettings: CircuitBreakerSettings = CircuitBreakerSettings(
+    maxFailures = getInt("akka.cluster.send-circuit-breaker.max-failures"),
+    callTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.call-timeout"), MILLISECONDS),
+    resetTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.reset-timeout"), MILLISECONDS))
 }
+
+case class CircuitBreakerSettings(maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)
