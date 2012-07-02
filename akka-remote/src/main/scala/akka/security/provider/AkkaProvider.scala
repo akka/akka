@@ -13,7 +13,7 @@ object AkkaProvider extends Provider("Akka", 1.0, "Akka provider 1.0 that implem
     def run = {
       //SecureRandom
       put("SecureRandom.AES128CounterSecureRNG", classOf[AES128CounterSecureRNG].getName)
-      put("SecureRandom.AES256CounterSecureRNG", classOf[AES128CounterSecureRNG].getName)
+      put("SecureRandom.AES256CounterSecureRNG", classOf[AES256CounterSecureRNG].getName)
       put("SecureRandom.AES128CounterInetRNG", classOf[AES128CounterInetRNG].getName)
       put("SecureRandom.AES256CounterInetRNG", classOf[AES256CounterInetRNG].getName)
 

@@ -13,7 +13,7 @@ import org.uncommons.maths.random.{ AESCounterRNG, SecureRandomSeedGenerator }
  */
 class AES128CounterSecureRNG extends java.security.SecureRandomSpi {
   /**Singleton instance. */
-  private final lazy val INSTANCE: SecureRandomSeedGenerator = new SecureRandomSeedGenerator
+  private final val INSTANCE: SecureRandomSeedGenerator = new SecureRandomSeedGenerator
 
   /**
    * Make sure the seed generator is provided by a SecureRandom singleton and not default 'Random'
