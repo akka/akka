@@ -1,0 +1,55 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ * modified and converted to Scala from Daniel W. Dyer's DefaultSeedGenerator
+ */
+package akka.security.provider
+
+import org.uncommons.maths.random.{ SeedGenerator, SeedException, SecureRandomSeedGenerator, RandomDotOrgSeedGenerator, DevRandomSeedGenerator }
+
+/**
+ * Internal API
+ * Seed generator that maintains multiple strategies for seed
+ * generation and will delegate to the best one available for the
+ * current operating environment.
+ * @author Daniel Dyer
+ */
+object InternetSeedGenerator {
+  /**
+   * @return The singleton instance of this class.
+   */
+  def getInstance: InternetSeedGenerator = {
+    INSTANCE
+  }
+
+  /**Singleton instance. */
+  private final val INSTANCE: InternetSeedGenerator = new InternetSeedGenerator
+  /**Delegate generators. */
+  private final val GENERATORS: Seq[SeedGenerator] =
+    new RandomDotOrgSeedGenerator :: // first try the Internet seed generator
+      new DevRandomSeedGenerator :: // try the local /dev/random
+      new SecureRandomSeedGenerator :: // this is last because it always works
+      Nil
+
+}
+
+final class InternetSeedGenerator extends SeedGenerator {
+  /**
+   * Generates a seed by trying each of the available strategies in
+   * turn until one succeeds.  Tries the most suitable strategy first
+   * and eventually degrades to the least suitable (but guaranteed to
+   * work) strategy.
+   * @param length The length (in bytes) of the seed.
+   * @return A random seed of the requested length.
+   */
+  def generateSeed(length: Int): Array[Byte] = {
+    for (generator ← InternetSeedGenerator.GENERATORS) {
+      try {
+        generator.generateSeed(length)
+      } catch {
+        case ex: SeedException ⇒ // Ignore and try the next generator...
+      }
+    }
+    throw new IllegalStateException("All available seed generation strategies failed.")
+  }
+}
+
