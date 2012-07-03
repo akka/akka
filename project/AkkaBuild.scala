@@ -388,6 +388,7 @@ object AkkaBuild extends Build {
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
+    logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
     excludeTestNames := useExcludeTestNames,
     excludeTestTags := useExcludeTestTags,

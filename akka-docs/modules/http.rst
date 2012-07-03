@@ -12,10 +12,18 @@ service applications that integrates with Akka. It provides a REST API on top of
 Getting started
 ---------------
 
-First you must make your application aware of play-mini.
-In SBT you just have to add the following to your ``libraryDependencies``::
+Easiest way to get started with `Play2 Mini <https://github.com/typesafehub/play2-mini>`_  is to use the
+G8 project templates, as described in the `Play2 Mini Documentation <https://github.com/typesafehub/play2-mini>`_.
+
+If you already have an Akka project and want to add Play2 Mini, you must first add the following to 
+your ``libraryDependencies``::
 
   libraryDependencies += "com.typesafe" %% "play-mini" % "<version-number>"
+
+In case you need to start Play2 Mini programatically you can use::
+
+  play.core.server.NettyServer.main(Array())
+
 
 Akka Mist
 =========
