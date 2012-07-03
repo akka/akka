@@ -63,7 +63,6 @@ class ConfigNamespaceHandlerTest extends WordSpec with MustMatchers with PojoSRT
     "set up ActorSystem when bundle starts" in {
       val system = serviceForType[ActorSystem]
       system must not be (null)
-
       system.settings.config.getString("some.config.key") must be("value")
     }
 

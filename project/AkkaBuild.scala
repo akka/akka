@@ -222,7 +222,8 @@ object AkkaBuild extends Build {
     base = file("akka-osgi"),
     dependencies = Seq(actor),
     settings = defaultSettings ++ OSGi.osgi ++ Seq(
-      libraryDependencies ++= Dependencies.osgi
+      libraryDependencies ++= Dependencies.osgi,
+      parallelExecution in Test := false
     )
   )
 
@@ -231,7 +232,8 @@ object AkkaBuild extends Build {
     base = file("akka-osgi-aries"),
     dependencies = Seq(osgi % "compile;test->test"),
     settings = defaultSettings ++ OSGi.osgiAries ++ Seq(
-      libraryDependencies ++= Dependencies.osgiAries
+      libraryDependencies ++= Dependencies.osgiAries,
+      parallelExecution in Test := false
     )
   )
 
