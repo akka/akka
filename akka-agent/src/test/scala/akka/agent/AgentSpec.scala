@@ -39,11 +39,10 @@ class AgentSpec extends AkkaSpec {
 
       val agent = Agent("a")
       agent send (_ + "b")
-      val longRunning = (s: String) ⇒ { l1.countDown; l2.await(5, TimeUnit.SECONDS); s + "c" }
-      agent sendOff longRunning
+      agent.sendOff((s: String) ⇒ { l1.countDown; l2.await(5, TimeUnit.SECONDS); s + "c" })
+      l1.await(5, TimeUnit.SECONDS)
       agent send (_ + "d")
       agent send countDown
-      l1.await(5, TimeUnit.SECONDS)
       l2.countDown
       countDown.await(5 seconds)
       agent() must be("abcd")
@@ -57,9 +56,9 @@ class AgentSpec extends AkkaSpec {
 
       val r1 = agent.alter(_ + "b")(5000)
       val r2 = agent.alterOff((s: String) ⇒ { l1.countDown; l2.await(5, TimeUnit.SECONDS); s + "c" })(5000)
+      l1.await(5, TimeUnit.SECONDS)
       val r3 = agent.alter(_ + "d")(5000)
       val result = Future.sequence(Seq(r1, r2, r3)).map(_.mkString(":"))
-      l1.await(5, TimeUnit.SECONDS)
       l2.countDown
 
       Await.result(result, 5 seconds) must be === "ab:abc:abcd"
