@@ -4,6 +4,7 @@
 package akka.security.provider
 
 import org.uncommons.maths.random.{ AESCounterRNG }
+import SeedSize.Seed128
 
 /**
  * Internal API
@@ -13,7 +14,7 @@ import org.uncommons.maths.random.{ AESCounterRNG }
  * The only method used by netty ssl is engineNextBytes(bytes)
  */
 class AES128CounterInetRNG extends java.security.SecureRandomSpi {
-  private val rng = new AESCounterRNG(InternetSeedGenerator.getInstance.generateSeed(Seed128.size))
+  private val rng = new AESCounterRNG(engineGenerateSeed(Seed128))
 
   /**
    * This is managed internally by AESCounterRNG

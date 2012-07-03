@@ -37,10 +37,8 @@ object InternetSeedGenerator {
   /**Delegate generators. */
   private final val GENERATORS: Seq[SeedGenerator] =
     new RandomDotOrgSeedGenerator :: // first try the Internet seed generator
-      new DevRandomSeedGenerator :: // try the local /dev/random
       new SecureRandomSeedGenerator :: // this is last because it always works
       Nil
-
 }
 
 final class InternetSeedGenerator extends SeedGenerator {
@@ -55,11 +53,13 @@ final class InternetSeedGenerator extends SeedGenerator {
   def generateSeed(length: Int): Array[Byte] = {
     for (generator ← InternetSeedGenerator.GENERATORS) {
       try {
-        generator.generateSeed(length)
+        return generator.generateSeed(length)
       } catch {
         case ex: SeedException ⇒ // Ignore and try the next generator...
       }
     }
+    // This shouldn't happen as at least one of the generators should be
+    // able to generate a seed.
     throw new IllegalStateException("All available seed generation strategies failed.")
   }
 }

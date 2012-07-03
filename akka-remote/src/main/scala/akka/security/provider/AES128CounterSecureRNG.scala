@@ -4,6 +4,7 @@
 package akka.security.provider
 
 import org.uncommons.maths.random.{ AESCounterRNG, SecureRandomSeedGenerator }
+import SeedSize.Seed128
 
 /**
  * Internal API
@@ -18,7 +19,7 @@ class AES128CounterSecureRNG extends java.security.SecureRandomSpi {
   /**
    * Make sure the seed generator is provided by a SecureRandom singleton and not default 'Random'
    */
-  private val rng = new AESCounterRNG(INSTANCE.generateSeed(Seed128.size))
+  private val rng = new AESCounterRNG(engineGenerateSeed(Seed128))
 
   /**
    * This is managed internally by AESCounterRNG
