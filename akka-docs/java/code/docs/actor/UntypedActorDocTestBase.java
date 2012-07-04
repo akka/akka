@@ -235,7 +235,7 @@ public class UntypedActorDocTestBase {
 
     final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
     futures.add(ask(actorA, "request", 1000)); // using 1000ms timeout
-    futures.add(ask(actorB, "reqeest", t)); // using timeout from above
+    futures.add(ask(actorB, "another request", t)); // using timeout from above
 
     final Future<Iterable<Object>> aggregate = Futures.sequence(futures, system.dispatcher());
     

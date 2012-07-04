@@ -32,7 +32,7 @@ class ClusterConfigSpec extends AkkaSpec {
       JoinTimeout must be(60 seconds)
       NrOfGossipDaemons must be(4)
       AutoJoin must be(true)
-      AutoDown must be(true)
+      AutoDown must be(false)
       UseDispatcher must be(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)
       MaxGossipMergeRate must be(5.0 plusOrMinus 0.0001)
