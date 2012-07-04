@@ -27,6 +27,7 @@ object MultiNodeClusterSpec {
       leader-actions-interval           = 200 ms
       unreachable-nodes-reaper-interval = 200 ms
       periodic-tasks-initial-delay      = 300 ms
+      publish-state-interval            = 0 s # always, when it happens
     }
     akka.test {
       single-expect-default = 5 s

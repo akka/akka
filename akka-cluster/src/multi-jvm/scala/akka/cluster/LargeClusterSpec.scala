@@ -36,8 +36,8 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     akka.cluster {
       gossip-interval = 500 ms
       auto-join = off
-      nr-of-gossip-daemons = 2
       failure-detector.acceptable-heartbeat-pause = 10s
+      publish-state-interval = 0 s # always, when it happens
     }
     akka.loglevel = INFO
     akka.actor.default-dispatcher.fork-join-executor {
@@ -133,8 +133,10 @@ abstract class LargeClusterSpec
 
       val clusterNodes = ifNode(from)(joiningClusterNodes)(systems.map(Cluster(_)).toSet)
       val startGossipCounts = Map.empty[Cluster, Long] ++
-        clusterNodes.map(c ⇒ (c -> c.receivedGossipCount))
-      def gossipCount(c: Cluster): Long = c.receivedGossipCount - startGossipCounts(c)
+        clusterNodes.map(c ⇒ (c -> c.latestStats.receivedGossipCount))
+      def gossipCount(c: Cluster): Long = {
+        c.latestStats.receivedGossipCount - startGossipCounts(c)
+      }
       val startTime = System.nanoTime
       def tookMillis: String = TimeUnit.NANOSECONDS.toMillis(System.nanoTime - startTime) + " ms"
 
@@ -259,8 +261,10 @@ abstract class LargeClusterSpec
 
       within(30.seconds + (3.seconds * liveNodes)) {
         val startGossipCounts = Map.empty[Cluster, Long] ++
-          systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).receivedGossipCount))
-        def gossipCount(c: Cluster): Long = c.receivedGossipCount - startGossipCounts(c)
+          systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).latestStats.receivedGossipCount))
+        def gossipCount(c: Cluster): Long = {
+          c.latestStats.receivedGossipCount - startGossipCounts(c)
+        }
         val startTime = System.nanoTime
         def tookMillis: String = TimeUnit.NANOSECONDS.toMillis(System.nanoTime - startTime) + " ms"
 
@@ -286,7 +290,7 @@ abstract class LargeClusterSpec
         runOn(firstDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter) {
           Await.ready(latch, remaining)
           awaitCond(systems.forall(Cluster(_).convergence.isDefined))
-          val mergeCount = systems.map(sys ⇒ Cluster(sys).mergeCount).sum
+          val mergeCount = systems.map(sys ⇒ Cluster(sys).latestStats.mergeCount).sum
           val counts = systems.map(sys ⇒ gossipCount(Cluster(sys)))
           val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / nodesPerDatacenter, counts.min, counts.max)
           log.info("Convergence of [{}] nodes reached after failure, it took [{}], received [{}] gossip messages per node, merged [{}] times",
