@@ -58,6 +58,10 @@ object PurePartialFunction {
  * `isCheck == true` and the latter to `isCheck == false` for those cases where
  * this is important to know.
  *
+ * Failure to match is signaled by throwing `noMatch()`, i.e. not returning
+ * normally (the exception used in this case is pre-allocated, hence not
+ * <i>that</i> expensive).
+ *
  * {{{
  * new PurePartialFunction<Object, String>() {
  *   public String apply(Object in, boolean isCheck) {
@@ -74,7 +78,9 @@ object PurePartialFunction {
  * The typical use of partial functions from Akka looks like the following:
  *
  * {{{
- * if (pf.isDefinedAt(x)) pf.apply(x)
+ * if (pf.isDefinedAt(x)) {
+ *   pf.apply(x);
+ * }
  * }}}
  *
  * i.e. it will first call `PurePartialFunction.apply(x, true)` and if that
@@ -90,6 +96,15 @@ abstract class PurePartialFunction[A, B] extends scala.runtime.AbstractFunction1
   final def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError }
 }
 
+/**
+ * This is a specialized variant of PartialFunction which is <b><i>only
+ * applicable if you know that `isDefinedAt(x)` is always called before
+ * `apply(x)`—with the same `x` of course.</i></b>
+ *
+ * `match(x)` will be called for `isDefinedAt(x)` only, and its semantics
+ * are the same as for [[akka.japi.PurePartialFunction]] (apart from the
+ * missing because unneeded boolean argument).
+ */
 abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
   import PurePartialFunction._
 
