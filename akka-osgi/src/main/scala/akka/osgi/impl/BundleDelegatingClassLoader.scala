@@ -13,7 +13,7 @@ object BundleDelegatingClassLoader {
   /*
    * Create a bundle delegating classloader for the bundle context's bundle
    */
-  def createFor(context: BundleContext) = new BundleDelegatingClassLoader(context.getBundle)
+  def apply(context: BundleContext): BundleDelegatingClassLoader = new BundleDelegatingClassLoader(context.getBundle)
 
 }
 
@@ -27,13 +27,11 @@ class BundleDelegatingClassLoader(bundle: Bundle, classLoader: Option[ClassLoade
 
   protected override def findClass(name: String): Class[_] = bundle.loadClass(name)
 
-  protected override def findResource(name: String): URL = {
-    val resource = bundle.getResource(name)
-    classLoader match {
-      case Some(loader) if resource == null ⇒ loader.getResource(name)
-      case _                                ⇒ resource
+  protected override def findResource(name: String): URL =
+    bundle.getResource(name) match {
+      case null if classLoader.isDefined ⇒ classLoader.get.getResource(name)
+      case result                        ⇒ result
     }
-  }
 
   @SuppressWarnings(Array("unchecked", "rawtypes"))
   protected override def findResources(name: String): Enumeration[URL] =
@@ -41,32 +39,18 @@ class BundleDelegatingClassLoader(bundle: Bundle, classLoader: Option[ClassLoade
 
   protected override def loadClass(name: String, resolve: Boolean): Class[_] = {
     val clazz = try {
-      findClass(name)
+      try findClass(name) catch { case _: ClassNotFoundException if classLoader.isDefined ⇒ classLoader.get.loadClass(name) } // First fall back to secondary loader
     } catch {
-      case cnfe: ClassNotFoundException ⇒ {
-        classLoader match {
-          case Some(loader) ⇒ loadClass(name, loader)
-          case None         ⇒ rethrowClassNotFoundException(name, cnfe)
-        }
-      }
+      case cnfe: ClassNotFoundException ⇒
+        throw new ClassNotFoundException("%s from bundle %s (%s)".format(name, bundle.getBundleId, bundle.getSymbolicName), cnfe) // IF we have no secondary loader or that failed as well, wrap and rethrow
     }
-    if (resolve) {
+
+    if (resolve)
       resolveClass(clazz)
-    }
+
     clazz
   }
 
-  private def loadClass(name: String, classLoader: ClassLoader) =
-    try {
-      classLoader.loadClass(name)
-    } catch {
-      case cnfe: ClassNotFoundException ⇒ rethrowClassNotFoundException(name, cnfe)
-    }
-
-  private def rethrowClassNotFoundException(name: String, cnfe: ClassNotFoundException): Nothing =
-    throw new ClassNotFoundException(name + " from bundle " + bundle.getBundleId + " (" + bundle.getSymbolicName + ")", cnfe)
-
-  override def toString: String = String.format("BundleDelegatingClassLoader(%s)", bundle)
-
+  override val toString: String = "BundleDelegatingClassLoader(%s)".format(bundle.getBundleId)
 }
 
