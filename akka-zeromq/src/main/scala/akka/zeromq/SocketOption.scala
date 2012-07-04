@@ -48,7 +48,7 @@ sealed trait SocketOptionQuery extends Request
 /**
  * This socket should be a client socket and connect to the specified endpoint
  *
- * @param endpoint an uri like tcp://127.0.0.1.5432
+ * @param endpoint URI (ex. tcp://127.0.0.1:5432)
  */
 case class Connect(endpoint: String) extends SocketConnectOption
 
