@@ -4,6 +4,7 @@
 package akka.zeromq
 
 import org.zeromq.{ ZMQ ⇒ JZMQ }
+import org.zeromq.ZMQ.Poller
 import akka.actor._
 import akka.dispatch.{ Await }
 import akka.pattern.ask
@@ -46,6 +47,8 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
 
   val DefaultPollTimeout: Duration = Duration(system.settings.config.getMilliseconds("akka.zeromq.poll-timeout"), TimeUnit.MILLISECONDS)
   val NewSocketTimeout: Timeout = Timeout(Duration(system.settings.config.getMilliseconds("akka.zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
+
+  val pollTimeUnit = if (version.major >= 3) TimeUnit.MILLISECONDS else TimeUnit.MICROSECONDS
 
   /**
    * The version of the ZeroMQ library
