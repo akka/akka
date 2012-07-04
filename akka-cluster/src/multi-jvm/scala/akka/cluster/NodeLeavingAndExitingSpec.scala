@@ -18,11 +18,8 @@ object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
-        akka.cluster {
-          leader-actions-interval           = 5 s  # increase the leader action task frequency to make sure we get a chance to test the LEAVING state
-          unreachable-nodes-reaper-interval = 300 s # turn "off"
-        }
-      """)
+          # turn off unreachable reaper
+          akka.cluster.unreachable-nodes-reaper-interval = 300 s""")
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
@@ -42,26 +39,39 @@ abstract class NodeLeavingAndExitingSpec
 
       awaitClusterUp(first, second, third)
 
-      runOn(first) {
-        cluster.leave(second)
-      }
-      enterBarrier("second-left")
-
       runOn(first, third) {
+        val secondAddess = address(second)
+        val leavingLatch = TestLatch()
+        val exitingLatch = TestLatch()
+        val expectedAddresses = roles.toSet map address
+        cluster.registerListener(new MembershipChangeListener {
+          def notify(members: SortedSet[Member]) {
+            def check(status: MemberStatus): Boolean =
+              (members.map(_.address) == expectedAddresses &&
+                members.exists(m ⇒ m.address == secondAddess && m.status == status))
+            if (check(MemberStatus.Leaving)) leavingLatch.countDown()
+            if (check(MemberStatus.Exiting)) exitingLatch.countDown()
+          }
+        })
+        enterBarrier("registered-listener")
 
-        // 1. Verify that 'second' node is set to LEAVING
-        //   We have set the 'leader-actions-interval' to 5 seconds to make sure that we get a
-        //   chance to test the LEAVING state before the leader moves the node to EXITING
-        awaitCond(cluster.latestGossip.members.exists(_.status == MemberStatus.Leaving)) // wait on LEAVING
-        val hasLeft = cluster.latestGossip.members.find(_.status == MemberStatus.Leaving) // verify node that left
-        hasLeft must be('defined)
-        hasLeft.get.address must be(address(second))
+        runOn(third) {
+          cluster.leave(second)
+        }
+        enterBarrier("second-left")
 
-        // 2. Verify that 'second' node is set to EXITING
-        awaitCond(cluster.latestGossip.members.exists(_.status == MemberStatus.Exiting)) // wait on EXITING
-        val hasExited = cluster.latestGossip.members.find(_.status == MemberStatus.Exiting) // verify node that exited
-        hasExited must be('defined)
-        hasExited.get.address must be(address(second))
+        // Verify that 'second' node is set to LEAVING
+        leavingLatch.await
+
+        // Verify that 'second' node is set to EXITING
+        exitingLatch.await
+
+      }
+
+      // node that is leaving
+      runOn(second) {
+        enterBarrier("registered-listener")
+        enterBarrier("second-left")
       }
 
       enterBarrier("finished")
