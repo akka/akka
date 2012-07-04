@@ -1022,7 +1022,7 @@ private[cluster] final class ClusterCore(cluster: Cluster) extends Actor with Ac
       val localUnreachableMembers = localGossip.overview.unreachable.toIndexedSeq
       val localUnreachableSize = localUnreachableMembers.size
 
-      // 1. gossip to a random alive member with preference to a member
+      // gossip to a random alive member with preference to a member
       // with older or newer gossip version
       val nodesWithdifferentView = {
         val localMemberAddressesSet = localGossip.members map { _.address }
@@ -1038,14 +1038,6 @@ private[cluster] final class ClusterCore(cluster: Cluster) extends Actor with Ac
         else
           gossipToRandomNodeOf(localMemberAddresses)
 
-      // 2. gossip to a deputy nodes for facilitating partition healing
-      val deputies = deputyNodes(localMemberAddresses)
-      val alreadyGossipedToDeputy = gossipedToAlive.map(deputies.contains(_)).getOrElse(false)
-      if ((!alreadyGossipedToDeputy || localMembersSize < seedNodes.size) && deputies.nonEmpty) {
-        val probability = gossipToDeputyProbablity(localMembersSize, localUnreachableSize, seedNodes.size)
-        if (ThreadLocalRandom.current.nextDouble() < probability)
-          gossipToRandomNodeOf(deputies)
-      }
     }
   }
 
@@ -1280,12 +1272,6 @@ private[cluster] final class ClusterCore(cluster: Cluster) extends Actor with Ac
     }
   }
 
-  /**
-   * Gets the addresses of a all the 'deputy' nodes - excluding this node if part of the group.
-   */
-  def deputyNodes(addresses: IndexedSeq[Address]): IndexedSeq[Address] =
-    addresses filterNot (_ == selfAddress) intersect seedNodes
-
   def seedNodes: IndexedSeq[Address] = cluster.seedNodes
 
   def selectRandomNode(addresses: IndexedSeq[Address]): Option[Address] =
@@ -1307,15 +1293,6 @@ private[cluster] final class ClusterCore(cluster: Cluster) extends Actor with Ac
     val peer = selectRandomNode(peers)
     peer foreach gossipTo
     peer
-  }
-
-  private[cluster] def gossipToDeputyProbablity(membersSize: Int, unreachableSize: Int, nrOfDeputyNodes: Int): Double = {
-    if (nrOfDeputyNodes > membersSize) 1.0
-    else if (nrOfDeputyNodes == 0) 0.0
-    else (membersSize + unreachableSize) match {
-      case 0   ⇒ 0.0
-      case sum ⇒ (nrOfDeputyNodes + unreachableSize).toDouble / sum
-    }
   }
 
   /**
@@ -1399,12 +1376,9 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
  * and dead members. Periodically i.e. every 1 second this module chooses a random member and initiates a round
  * of Gossip with it.
  * <p/>
- * During each of these runs the member initiates gossip exchange according to following rules:
- * <pre>
- *   1) Gossip to random live member (if any)
- *   2) If the member gossiped to at (1) was not deputy, or the number of live members is less than number of deputy list,
- *       gossip to random deputy with certain probability depending on number of unreachable, deputy and live members.
- * </pre>
+ * During each round of gossip exchange it sends Gossip to random node with
+ * newer or older state information, if any, based on the current gossip overview,
+ * with some probability. Otherwise Gossip to any random live node.
  *
  * Example:
  * {{{
