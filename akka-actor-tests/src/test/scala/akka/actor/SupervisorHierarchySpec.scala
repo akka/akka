@@ -215,6 +215,8 @@ object SupervisorHierarchySpec {
    * TODO RK: also test exceptions during recreate
    * 
    * TODO RK: also test recreate including terminating children
+   * 
+   * TODO RK: also verify that preRestart is not called more than once per instance
    */
 
   class StressTest(testActor: ActorRef, depth: Int, breadth: Int) extends Actor with LoggingFSM[State, Null] {

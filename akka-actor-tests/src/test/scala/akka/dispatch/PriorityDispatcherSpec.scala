@@ -61,7 +61,7 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
     val msgs = (1 to 100).toList
     for (m ← msgs) actor ! m
 
-    actor.resume //Signal the actor to start treating it's message backlog
+    actor.resume(inResponseToFailure = false) //Signal the actor to start treating it's message backlog
 
     Await.result(actor.?('Result).mapTo[List[Int]], timeout.duration) must be === msgs.reverse
   }

@@ -227,7 +227,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         contextStackMustBeEmpty
       }
 
-      filterException[java.lang.IllegalStateException] {
+      EventFilter[ActorInitializationException](occurrences = 1) intercept {
         (intercept[java.lang.IllegalStateException] {
           wrap(result ⇒
             actorOf(Props(new OuterActor(actorOf(Props(promiseIntercept({ throw new IllegalStateException("Ur state be b0rked"); new InnerActor })(result)))))))

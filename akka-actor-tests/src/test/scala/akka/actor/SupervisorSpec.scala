@@ -339,7 +339,12 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 10 seconds)(classOf[Exception] :: Nil))))
 
       val dyingProps = Props(new Actor {
-        if (inits.incrementAndGet % 2 == 0) throw new IllegalStateException("Don't wanna!")
+        val init = inits.getAndIncrement()
+        if (init % 3 == 1) throw new IllegalStateException("Don't wanna!")
+
+        override def preRestart(cause: Throwable, msg: Option[Any]) {
+          if (init % 3 == 0) throw new IllegalStateException("Don't wanna!")
+        }
 
         def receive = {
           case Ping ⇒ sender ! PongMessage
@@ -352,8 +357,10 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
       supervisor ! dyingProps
       val dyingActor = expectMsgType[ActorRef]
 
-      filterEvents(EventFilter[RuntimeException]("Expected", occurrences = 1),
-        EventFilter[IllegalStateException]("error while creating actor", occurrences = 1)) {
+      filterEvents(
+        EventFilter[RuntimeException]("Expected", occurrences = 1),
+        EventFilter[PreRestartException]("Don't wanna!", occurrences = 1),
+        EventFilter[PostRestartException]("Don't wanna!", occurrences = 1)) {
           intercept[RuntimeException] {
             Await.result(dyingActor.?(DieReply)(DilatedTimeout), DilatedTimeout)
           }
@@ -376,8 +383,8 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         val child = context.watch(context.actorOf(Props(new Actor {
           override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
           def receive = {
-            case "die"  ⇒ throw new IllegalStateException("OHNOES")
-            case "test" ⇒ sender ! "child green"
+            case l: TestLatch ⇒ Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES")
+            case "test"       ⇒ sender ! "child green"
           }
         }), "child"))
 
@@ -385,14 +392,18 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
 
         def receive = {
           case t @ Terminated(`child`) ⇒ testActor ! "child terminated"
-          case "die"                   ⇒ child ! "die"
+          case l: TestLatch            ⇒ child ! l
           case "test"                  ⇒ sender ! "green"
           case "testchild"             ⇒ child forward "test"
         }
       }))
 
-      parent ! "die"
+      val latch = TestLatch()
+      parent ! latch
       parent ! "testchild"
+      EventFilter[IllegalStateException]("OHNOES", occurrences = 2) intercept {
+        latch.countDown()
+      }
       expectMsg("parent restarted")
       expectMsg("child terminated")
       parent ! "test"

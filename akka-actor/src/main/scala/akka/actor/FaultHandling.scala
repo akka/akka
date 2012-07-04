@@ -196,19 +196,30 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 }
 
 /**
- * An Akka SupervisorStrategy is the policy to apply for crashing children
+ * An Akka SupervisorStrategy is the policy to apply for crashing children.
+ *
+ * <b>IMPORTANT:</b>
+ *
+ * You should not normally need to create new subclasses, instead use the
+ * existing [[akka.actor.OneForOneStrategy]] or [[akka.actor.AllForOneStrategy]],
+ * but if you do, please read the docs of the methods below carefully, as
+ * incorrect implementations may lead to “blocked” actor systems (i.e.
+ * permanently suspended actors).
  */
 abstract class SupervisorStrategy {
 
   import SupervisorStrategy._
 
   /**
-   * Returns the Decider that is associated with this SupervisorStrategy
+   * Returns the Decider that is associated with this SupervisorStrategy.
+   * The Decider is invoked by the default implementation of `handleFailure`
+   * to obtain the Directive to be applied.
    */
   def decider: Decider
 
   /**
    * This method is called after the child has been removed from the set of children.
+   * It does not need to do anything special.
    */
   def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit
 
@@ -217,25 +228,44 @@ abstract class SupervisorStrategy {
    */
   def processFailure(context: ActorContext, restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit
 
-  //FIXME docs
-  def handleSupervisorFailing(supervisor: ActorRef, children: Iterable[ActorRef]): Unit =
-    if (children.nonEmpty) children.foreach(_.asInstanceOf[InternalActorRef].suspend())
-
-  //FIXME docs
-  def handleSupervisorRestarted(cause: Throwable, supervisor: ActorRef, children: Iterable[ActorRef]): Unit =
-    if (children.nonEmpty) children.foreach(_.asInstanceOf[InternalActorRef].restart(cause))
-
   /**
-   * Returns whether it processed the failure or not
+   * This is the main entry point: in case of a child’s failure, this method
+   * must try to handle the failure by resuming, restarting or stopping the
+   * child (and returning `true`), or it returns `false` to escalate the
+   * failure, which will lead to this actor re-throwing the exception which
+   * caused the failure. The exception will not be wrapped.
    */
   def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
     val directive = if (decider.isDefinedAt(cause)) decider(cause) else Escalate //FIXME applyOrElse in Scala 2.10
     directive match {
-      case Resume   ⇒ child.asInstanceOf[InternalActorRef].resume(); true
+      case Resume   ⇒ resumeChild(child); true
       case Restart  ⇒ processFailure(context, true, child, cause, stats, children); true
       case Stop     ⇒ processFailure(context, false, child, cause, stats, children); true
       case Escalate ⇒ false
     }
+  }
+
+  /**
+   * Resume the previously failed child: <b>do never apply this to a child which
+   * is not the currently failing child</b>. Suspend/resume needs to be done in
+   * matching pairs, otherwise actors will wake up too soon or never at all.
+   */
+  final def resumeChild(child: ActorRef): Unit = child.asInstanceOf[InternalActorRef].resume(inResponseToFailure = true)
+
+  /**
+   * Restart the given child, possibly suspending it first.
+   *
+   * <b>IMPORTANT:</b>
+   *
+   * If the child is the currently failing one, it will already have been
+   * suspended, hence `suspendFirst` is false. If the child is not the
+   * currently failing one, then it did not request this treatment and is
+   * therefore not prepared to be resumed without prior suspend.
+   */
+  final def restartChild(child: ActorRef, cause: Throwable, suspendFirst: Boolean): Unit = {
+    val c = child.asInstanceOf[InternalActorRef]
+    if (suspendFirst) c.suspend()
+    c.restart(cause)
   }
 
 }
@@ -276,7 +306,7 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration
   def processFailure(context: ActorContext, restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit = {
     if (children.nonEmpty) {
       if (restart && children.forall(_.requestRestartPermission(retriesWindow)))
-        children.foreach(_.child.asInstanceOf[InternalActorRef].restart(cause))
+        children foreach (crs ⇒ restartChild(crs.child, cause, suspendFirst = (crs.child != child)))
       else
         for (c ← children) context.stop(c.child)
     }
@@ -318,7 +348,7 @@ case class OneForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration
 
   def processFailure(context: ActorContext, restart: Boolean, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Unit = {
     if (restart && stats.requestRestartPermission(retriesWindow))
-      child.asInstanceOf[InternalActorRef].restart(cause)
+      restartChild(child, cause, suspendFirst = false)
     else
       context.stop(child) //TODO optimization to drop child here already?
   }

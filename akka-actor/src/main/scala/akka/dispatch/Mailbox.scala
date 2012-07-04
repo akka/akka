@@ -30,7 +30,7 @@ private[akka] object Mailbox {
   final val Scheduled = 2 // Deliberately without type ascription to make it a compile-time constant
   // shifted by 2: the suspend count!
   final val shouldScheduleMask = 3
-  final val shouldProcessMask = ~2
+  final val shouldNotProcessMask = ~2
   final val suspendMask = ~3
   final val suspendUnit = 4
 
@@ -82,7 +82,7 @@ private[akka] abstract class Mailbox(val actor: ActorCell, val messageQueue: Mes
   final def status: Mailbox.Status = Unsafe.instance.getIntVolatile(this, AbstractMailbox.mailboxStatusOffset)
 
   @inline
-  final def shouldProcessMessage: Boolean = (status & shouldProcessMask) == 0
+  final def shouldProcessMessage: Boolean = (status & shouldNotProcessMask) == 0
 
   @inline
   final def isSuspended: Boolean = (status & suspendMask) != 0

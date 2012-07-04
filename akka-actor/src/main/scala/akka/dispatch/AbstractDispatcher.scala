@@ -86,7 +86,7 @@ private[akka] case class Suspend() extends SystemMessage // sent to self from Ac
 /**
  * INTERNAL API
  */
-private[akka] case class Resume() extends SystemMessage // sent to self from ActorCell.resume
+private[akka] case class Resume(inResponseToFailure: Boolean) extends SystemMessage // sent to self from ActorCell.resume
 /**
  * INTERNAL API
  */
