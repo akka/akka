@@ -255,7 +255,7 @@ private[akka] object ActorCell {
     def cancel() {}
   }
 
-  final val emptyReceiveTimeoutData: (Long, Cancellable) = (-1, emptyCancellable)
+  final val emptyReceiveTimeoutData: (Duration, Cancellable) = (Duration.Undefined, emptyCancellable)
 
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
@@ -446,21 +446,25 @@ private[akka] class ActorCell(
 
   final def provider = system.provider
 
-  override final def receiveTimeout: Option[Duration] = if (receiveTimeoutData._1 > 0) Some(Duration(receiveTimeoutData._1, MILLISECONDS)) else None
+  override final def receiveTimeout: Option[Duration] = receiveTimeoutData._1 match {
+    case Duration.Undefined => None
+    case duration => Some(duration)
+  }
 
   override final def setReceiveTimeout(timeout: Duration): Unit = setReceiveTimeout(Some(timeout))
 
   final def setReceiveTimeout(timeout: Option[Duration]): Unit = {
-    val timeoutMs = timeout match {
-      case None ⇒ -1L
+    val validTimeout = timeout match {
+      case None ⇒ Duration.Undefined
+      case Some(Duration.Undefined) ⇒ Duration.Undefined
       case Some(duration) ⇒
         val ms = duration.toMillis
-        if (ms <= 0) -1L
+        if (ms <= 0) Duration.Undefined
         // 1 millisecond is minimum supported
-        else if (ms < 1) 1L
-        else ms
+        else if (ms < 1) Duration(1, MILLISECONDS)
+        else duration
     }
-    receiveTimeoutData = (timeoutMs, receiveTimeoutData._2)
+    receiveTimeoutData = (validTimeout, receiveTimeoutData._2)
   }
 
   final override def resetReceiveTimeout(): Unit = setReceiveTimeout(None)
@@ -468,7 +472,7 @@ private[akka] class ActorCell(
   /**
    * In milliseconds
    */
-  var receiveTimeoutData: (Long, Cancellable) = emptyReceiveTimeoutData
+  var receiveTimeoutData: (Duration, Cancellable) = emptyReceiveTimeoutData
 
   @volatile
   private var _childrenRefsDoNotCallMeDirectly: ChildrenContainer = EmptyChildrenContainer
@@ -1016,10 +1020,10 @@ private[akka] class ActorCell(
 
   final def checkReceiveTimeout() {
     val recvtimeout = receiveTimeoutData
-    if (recvtimeout._1 > 0 && !mailbox.hasMessages) {
+    if (recvtimeout._1 != Duration.Undefined && !mailbox.hasMessages) {
       recvtimeout._2.cancel() //Cancel any ongoing future
       //Only reschedule if desired and there are currently no more messages to be processed
-      receiveTimeoutData = (recvtimeout._1, system.scheduler.scheduleOnce(Duration(recvtimeout._1, TimeUnit.MILLISECONDS), self, ReceiveTimeout))
+      receiveTimeoutData = (recvtimeout._1, system.scheduler.scheduleOnce(recvtimeout._1, self, ReceiveTimeout))
     } else cancelReceiveTimeout()
 
   }
