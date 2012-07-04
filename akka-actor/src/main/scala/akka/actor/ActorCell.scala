@@ -447,25 +447,16 @@ private[akka] class ActorCell(
   final def provider = system.provider
 
   override final def receiveTimeout: Option[Duration] = receiveTimeoutData._1 match {
-    case Duration.Undefined => None
-    case duration => Some(duration)
+    case Duration.Undefined ⇒ None
+    case duration           ⇒ Some(duration)
   }
 
-  override final def setReceiveTimeout(timeout: Duration): Unit = setReceiveTimeout(Some(timeout))
+  final def setReceiveTimeout(timeout: Option[Duration]): Unit = setReceiveTimeout(timeout.getOrElse(Duration.Undefined))
 
-  final def setReceiveTimeout(timeout: Option[Duration]): Unit = {
-    val validTimeout = timeout match {
-      case None ⇒ Duration.Undefined
-      case Some(Duration.Undefined) ⇒ Duration.Undefined
-      case Some(duration) ⇒
-        val ms = duration.toMillis
-        if (ms <= 0) Duration.Undefined
-        // 1 millisecond is minimum supported
-        else if (ms < 1) Duration(1, MILLISECONDS)
-        else duration
-    }
-    receiveTimeoutData = (validTimeout, receiveTimeoutData._2)
-  }
+  override final def setReceiveTimeout(timeout: Duration): Unit =
+    receiveTimeoutData = (
+      if (Duration.Undefined == timeout || timeout.toMillis < 1) Duration.Undefined else timeout,
+      receiveTimeoutData._2)
 
   final override def resetReceiveTimeout(): Unit = setReceiveTimeout(None)
 
@@ -1020,7 +1011,7 @@ private[akka] class ActorCell(
 
   final def checkReceiveTimeout() {
     val recvtimeout = receiveTimeoutData
-    if (recvtimeout._1 != Duration.Undefined && !mailbox.hasMessages) {
+    if (Duration.Undefined != recvtimeout._1 && !mailbox.hasMessages) {
       recvtimeout._2.cancel() //Cancel any ongoing future
       //Only reschedule if desired and there are currently no more messages to be processed
       receiveTimeoutData = (recvtimeout._1, system.scheduler.scheduleOnce(recvtimeout._1, self, ReceiveTimeout))
