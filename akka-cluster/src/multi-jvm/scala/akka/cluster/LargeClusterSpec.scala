@@ -36,6 +36,7 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     akka.cluster {
       gossip-interval = 500 ms
       auto-join = off
+      auto-down = on
       failure-detector.acceptable-heartbeat-pause = 10s
       publish-state-interval = 0 s # always, when it happens
     }
