@@ -28,17 +28,14 @@ object InternetSeedGenerator {
   /**
    * @return The singleton instance of this class.
    */
-  def getInstance: InternetSeedGenerator = {
-    INSTANCE
-  }
+  def getInstance: InternetSeedGenerator = Instance
 
   /**Singleton instance. */
-  private final val INSTANCE: InternetSeedGenerator = new InternetSeedGenerator
+  private final val Instance: InternetSeedGenerator = new InternetSeedGenerator
   /**Delegate generators. */
-  private final val GENERATORS: Seq[SeedGenerator] =
-    new RandomDotOrgSeedGenerator :: // first try the Internet seed generator
-      new SecureRandomSeedGenerator :: // this is last because it always works
-      Nil
+  private final val Generators: Seq[SeedGenerator] =
+    Seq(new RandomDotOrgSeedGenerator, // first try the Internet seed generator
+      new SecureRandomSeedGenerator) // this is last because it always works
 }
 
 final class InternetSeedGenerator extends SeedGenerator {
@@ -50,17 +47,7 @@ final class InternetSeedGenerator extends SeedGenerator {
    * @param length The length (in bytes) of the seed.
    * @return A random seed of the requested length.
    */
-  def generateSeed(length: Int): Array[Byte] = {
-    for (generator ← InternetSeedGenerator.GENERATORS) {
-      try {
-        return generator.generateSeed(length)
-      } catch {
-        case ex: SeedException ⇒ // Ignore and try the next generator...
-      }
-    }
-    // This shouldn't happen as at least one of the generators should be
-    // able to generate a seed.
-    throw new IllegalStateException("All available seed generation strategies failed.")
-  }
+  def generateSeed(length: Int): Array[Byte] = InternetSeedGenerator.Generators.view.flatMap(
+    g ⇒ try Option(g.generateSeed(length)) catch { case _: SeedException ⇒ None }).headOption.getOrElse(throw new IllegalStateException("All available seed generation strategies failed."))
 }
 

@@ -14,7 +14,7 @@ import SeedSize.Seed256
  */
 class AES256CounterSecureRNG extends java.security.SecureRandomSpi {
   /**Singleton instance. */
-  private final val INSTANCE: SecureRandomSeedGenerator = new SecureRandomSeedGenerator
+  private final val Instance: SecureRandomSeedGenerator = new SecureRandomSeedGenerator
 
   private val rng = new AESCounterRNG(engineGenerateSeed(Seed256))
 
@@ -38,6 +38,6 @@ class AES256CounterSecureRNG extends java.security.SecureRandomSpi {
    * @param numBytes the number of seed bytes to generate.
    * @return the seed bytes.
    */
-  override protected def engineGenerateSeed(numBytes: Int): Array[Byte] = INSTANCE.generateSeed(numBytes)
+  override protected def engineGenerateSeed(numBytes: Int): Array[Byte] = Instance.generateSeed(numBytes)
 }
 
