@@ -14,29 +14,29 @@ import akka.util.Timeout;
 import scala.concurrent.util.Duration;
 import akka.japi.Function;
 import java.util.concurrent.Callable;
-import static akka.dispatch.Futures.future;
+import static scala.concurrent.Futures.future;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 //#imports2
 
 //#imports3
-import static akka.dispatch.Futures.sequence;
+import static scala.concurrent.Futures.sequence;
 
 //#imports3
 
 //#imports4
-import static akka.dispatch.Futures.traverse;
+import static scala.concurrent.Futures.traverse;
 
 //#imports4
 
 //#imports5
 import akka.japi.Function2;
-import static akka.dispatch.Futures.fold;
+import static scala.concurrent.Futures.fold;
 
 //#imports5
 
 //#imports6
-import static akka.dispatch.Futures.reduce;
+import static scala.concurrent.Futures.reduce;
 
 //#imports6
 

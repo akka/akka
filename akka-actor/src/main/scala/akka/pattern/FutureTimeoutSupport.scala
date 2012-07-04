@@ -5,20 +5,20 @@ package akka.pattern
  */
 
 import scala.concurrent.util.Duration
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ ExecutionContext, Promise, Future }
 import akka.actor._
-import akka.dispatch.{ Promise, Future }
 
 trait FutureTimeoutSupport {
   /**
-   * Returns a [[akka.dispatch.Future]] that will be completed with the success or failure of the provided value
+   * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
   def after[T](duration: Duration, using: Scheduler)(value: ⇒ Future[T])(implicit ec: ExecutionContext): Future[T] =
     if (duration.isFinite() && duration.length < 1) value else {
       val p = Promise[T]()
       val c = using.scheduleOnce(duration) { p completeWith value }
-      p onComplete { _ ⇒ c.cancel() }
-      p
+      val f = p.future
+      f onComplete { _ ⇒ c.cancel() }
+      f
     }
 }

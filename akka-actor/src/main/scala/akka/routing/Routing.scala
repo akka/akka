@@ -16,10 +16,8 @@ import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.util.Unsafe
 import akka.dispatch.Dispatchers
 import scala.annotation.tailrec
-import scala.runtime.ScalaRunTime
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -1078,7 +1076,7 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
       case (sender, message) ⇒
         val provider: ActorRefProvider = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider
         val asker = akka.pattern.PromiseActorRef(provider, within)
-        asker.result.pipeTo(sender)
+        asker.result.future.pipeTo(sender)
         toAll(asker, routeeProvider.routees)
     }
   }

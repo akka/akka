@@ -10,7 +10,7 @@ import akka.testkit._
 import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.util.Timeout
-import akka.dispatch.Future
+import scala.concurrent.Future
 
 object LocalActorRefProviderSpec {
   val config = """

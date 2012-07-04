@@ -4,7 +4,7 @@
 package akka.util
 
 import org.scalatest.matchers.MustMatchers
-import akka.dispatch.Future
+import scala.concurrent.Future
 import akka.testkit.AkkaSpec
 import scala.concurrent.Await
 import scala.util.Random

@@ -350,10 +350,8 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by copying a byte array.
    */
-  def apply(bytes: Array[Byte]): CompactByteString = {
-    if (bytes.isEmpty) empty
-    else ByteString.ByteString1C(bytes.clone)
-  }
+  def apply(bytes: Array[Byte]): CompactByteString =
+    if (bytes.isEmpty) empty else ByteString.ByteString1C(bytes.clone)
 
   /**
    * Creates a new CompactByteString by copying bytes.
@@ -395,10 +393,8 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by encoding a String with a charset.
    */
-  def apply(string: String, charset: String): CompactByteString = {
-    if (string.isEmpty) empty
-    else ByteString.ByteString1C(string.getBytes(charset))
-  }
+  def apply(string: String, charset: String): CompactByteString =
+    if (string.isEmpty) empty else ByteString.ByteString1C(string.getBytes(charset))
 
   /**
    * Creates a new CompactByteString by copying length bytes starting at offset from
@@ -452,7 +448,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     this
   }
 
-  protected def fillByteBuffer(len: Int, byteOrder: ByteOrder)(fill: ByteBuffer ⇒ Unit): this.type = {
+  @inline protected final def fillByteBuffer(len: Int, byteOrder: ByteOrder)(fill: ByteBuffer ⇒ Unit): this.type = {
     fillArray(len) {
       case (array, start) ⇒
         val buffer = ByteBuffer.wrap(array, start, len)

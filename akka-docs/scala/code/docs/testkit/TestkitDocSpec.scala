@@ -9,7 +9,7 @@ import language.postfixOps
 import akka.testkit.TestProbe
 import scala.concurrent.util.duration._
 import akka.actor._
-import akka.dispatch.Futures
+import scala.concurrent.Futures
 
 //#imports-test-probe
 

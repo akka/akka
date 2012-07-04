@@ -9,10 +9,10 @@ import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.{ Timeout, NonFatal }
 import scala.concurrent.util.Duration
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future }
 import akka.util.Reflect.instantiator
-import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import akka.dispatch._
+import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import scala.reflect.ClassTag

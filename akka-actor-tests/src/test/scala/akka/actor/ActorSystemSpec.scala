@@ -14,7 +14,7 @@ import scala.collection.JavaConverters
 import java.util.concurrent.{ TimeUnit, RejectedExecutionException, CountDownLatch, ConcurrentLinkedQueue }
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.dispatch.Future
+import scala.concurrent.Future
 
 class JavaExtensionSpec extends JavaExtension with JUnitSuite
 

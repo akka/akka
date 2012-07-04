@@ -23,7 +23,7 @@ import akka.testkit._
 import akka.util.{ Timeout, Switch }
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future, Promise }
 import scala.annotation.tailrec
 
 object ActorModelSpec {
@@ -413,9 +413,9 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val a = newTestActor(dispatcher.id)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)) }
+        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
         val f4 = a ? Reply("foo2")
-        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)) }
+        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
         val f6 = a ? Reply("bar2")
 
         assert(Await.result(f1, timeout.duration) === "foo")

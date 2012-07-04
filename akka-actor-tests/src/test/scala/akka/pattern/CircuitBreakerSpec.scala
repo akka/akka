@@ -9,7 +9,7 @@ import language.postfixOps
 import scala.concurrent.util.duration._
 import akka.testkit._
 import org.scalatest.BeforeAndAfter
-import akka.dispatch.Future
+import scala.concurrent.Future
 import scala.concurrent.Await
 
 object CircuitBreakerSpec {

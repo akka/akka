@@ -15,7 +15,7 @@ import akka.actor._
  *
  * <ul>
  * <li><b>ask:</b> create a temporary one-off actor for receiving a reply to a
- * message and complete a [[akka.dispatch.Future]] with it; returns said
+ * message and complete a [[scala.concurrent.Future]] with it; returns said
  * Future.</li>
  * <li><b>pipeTo:</b> feed eventually computed value of a future to an actor as
  * a message.</li>

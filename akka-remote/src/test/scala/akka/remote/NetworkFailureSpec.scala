@@ -10,7 +10,7 @@ import akka.remote.netty.NettyRemoteTransport
 import akka.actor.Actor
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
-import akka.dispatch.Future
+import scala.concurrent.Future
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.util.concurrent.atomic.AtomicBoolean

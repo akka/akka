@@ -6,7 +6,7 @@ package akka.camel
 
 import akka.camel.internal._
 import akka.util.Timeout
-import akka.dispatch.Future
+import scala.concurrent.Future
 import java.util.concurrent.TimeoutException
 import akka.actor.{ ActorSystem, Props, ActorRef }
 import akka.pattern._

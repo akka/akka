@@ -7,16 +7,15 @@ import language.postfixOps
 
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.Timeout
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
-import akka.serialization.SerializationExtension
-import akka.japi.{ Creator, Option ⇒ JOption }
+import akka.japi.{ Option ⇒ JOption }
 import akka.testkit.DefaultTimeout
-import akka.dispatch.{ Dispatchers, Future, Promise }
+import akka.dispatch.{ Dispatchers }
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
 import akka.actor.TypedActor._
@@ -110,7 +109,7 @@ object TypedActorSpec {
 
     def pigdog = "Pigdog"
 
-    def futurePigdog(): Future[String] = Promise.successful(pigdog)
+    def futurePigdog(): Future[String] = Promise.successful(pigdog).future
 
     def futurePigdog(delay: Long): Future[String] = {
       Thread.sleep(delay)
@@ -119,7 +118,7 @@ object TypedActorSpec {
 
     def futurePigdog(delay: Long, numbered: Int): Future[String] = {
       Thread.sleep(delay)
-      Promise.successful(pigdog + numbered)
+      Promise.successful(pigdog + numbered).future
     }
 
     def futureComposePigdogFrom(foo: Foo): Future[String] = {

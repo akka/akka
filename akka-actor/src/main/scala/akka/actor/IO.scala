@@ -6,8 +6,7 @@ package akka.actor
 import language.higherKinds
 import language.postfixOps
 
-import akka.dispatch.Future
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.util.Duration
 import akka.util.{ ByteString, NonFatal }
 import java.net.{ SocketAddress, InetSocketAddress }
@@ -564,7 +563,7 @@ object IO {
    * A mutable reference to an [[akka.actor.IO.Iteratee]]. Not thread safe.
    *
    * Designed for use within an [[akka.actor.Actor]], although all actions
-   * perfomed on the Iteratee are processed within a [[akka.dispatch.Future]]
+   * perfomed on the Iteratee are processed within a [[scala.concurrent.Future]]
    * so it is not safe to refer to the Actor's state from within this Iteratee.
    * Messages should instead be sent to the Actor in order to modify state.
    *

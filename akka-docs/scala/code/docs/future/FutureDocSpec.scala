@@ -79,7 +79,7 @@ class FutureDocSpec extends AkkaSpec {
     val msg = "hello"
     implicit val timeout = Timeout(5 seconds)
     //#map-to
-    import akka.dispatch.Future
+    import scala.concurrent.Future
     import akka.pattern.ask
 
     val future: Future[String] = ask(actor, msg).mapTo[String]
@@ -90,7 +90,7 @@ class FutureDocSpec extends AkkaSpec {
   "demonstrate usage of simple future eval" in {
     //#future-eval
     import scala.concurrent.Await
-    import akka.dispatch.Future
+    import scala.concurrent.Future
     import scala.concurrent.util.duration._
 
     val future = Future {

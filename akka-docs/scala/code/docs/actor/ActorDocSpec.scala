@@ -12,7 +12,7 @@ import akka.event.Logging
 
 //#imports1
 
-import akka.dispatch.Future
+import scala.concurrent.Future
 import akka.actor.{ ActorRef, ActorSystem }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers

@@ -10,8 +10,8 @@ import akka.actor.Props;
 //#imports
 
 //#import-future
-import akka.dispatch.Future;
-import akka.dispatch.Futures;
+import scala.concurrent.Future;
+import scala.concurrent.Futures;
 import akka.dispatch.Mapper;
 import scala.concurrent.Await;
 import scala.concurrent.util.Duration;
@@ -33,7 +33,7 @@ import akka.actor.Terminated;
 
 //#import-gracefulStop
 import static akka.pattern.Patterns.gracefulStop;
-import akka.dispatch.Future;
+import scala.concurrent.Future;
 import scala.concurrent.Await;
 import scala.concurrent.util.Duration;
 import akka.pattern.AskTimeoutException;
@@ -42,8 +42,8 @@ import akka.pattern.AskTimeoutException;
 //#import-askPipe
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
-import akka.dispatch.Future;
-import akka.dispatch.Futures;
+import scala.concurrent.Future;
+import scala.concurrent.Futures;
 import scala.concurrent.util.Duration;
 import akka.util.Timeout;
 import java.util.concurrent.TimeUnit;

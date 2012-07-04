@@ -17,7 +17,7 @@ import akka.event.{ LoggingAdapter, Logging }
 import scala.util.control.NoStackTrace
 import akka.event.LoggingReceive
 import java.net.InetSocketAddress
-import akka.dispatch.Future
+import scala.concurrent.Future
 import akka.actor.{ OneForOneStrategy, SupervisorStrategy, Status, Address, PoisonPill }
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit.MILLISECONDS

@@ -13,7 +13,7 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import scala.concurrent.util.Duration;
 import akka.util.Timeout;
-import akka.dispatch.Future;
+import scala.concurrent.Future;
 import scala.concurrent.Await;
 
 //#parentActor

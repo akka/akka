@@ -6,8 +6,7 @@ package akka.pattern
 import akka.testkit._
 import scala.concurrent.util.duration._
 import org.scalatest.BeforeAndAfter
-import akka.dispatch.{ Promise, Future }
-import scala.concurrent.Await
+import scala.concurrent.{ Promise, Future, Await }
 
 class CircuitBreakerMTSpec extends AkkaSpec with BeforeAndAfter {
 
@@ -37,7 +36,7 @@ class CircuitBreakerMTSpec extends AkkaSpec with BeforeAndAfter {
   def openBreaker: Unit = {
     for (i ← 1 to 5)
       Await.result(breakers.breaker.withCircuitBreaker(Future(unreliableCall("fail"))) recoverWith {
-        case _ ⇒ Promise.successful("OK")
+        case _ ⇒ Promise.successful("OK").future
       }, 1.second.dilated)
   }
 
@@ -62,9 +61,7 @@ class CircuitBreakerMTSpec extends AkkaSpec with BeforeAndAfter {
 
       val futures = for (i ← 1 to 100) yield breakers.breaker.withCircuitBreaker(Future {
         Thread.sleep(10); unreliableCall("success")
-      }) recoverWith {
-        case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO")
-      }
+      }) recoverWith { case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO").future }
 
       val futureList = Future.sequence(futures)
 
@@ -82,9 +79,7 @@ class CircuitBreakerMTSpec extends AkkaSpec with BeforeAndAfter {
 
       val futures = for (i ← 1 to 100) yield breakers.breaker.withCircuitBreaker(Future {
         Thread.sleep(10); unreliableCall("succeed")
-      }) recoverWith {
-        case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO")
-      }
+      }) recoverWith { case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO").future }
 
       val futureList = Future.sequence(futures)
 
@@ -106,7 +101,7 @@ class CircuitBreakerMTSpec extends AkkaSpec with BeforeAndAfter {
       val futures = for (i ← 1 to 100) yield breakers.breaker.withCircuitBreaker(Future {
         Thread.sleep(10); unreliableCall("succeed")
       }) recoverWith {
-        case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO")
+        case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO").future
       }
 
       val futureList = Future.sequence(futures)

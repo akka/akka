@@ -7,12 +7,12 @@ package akka.actor
 import language.postfixOps
 
 import akka.util.ByteString
-import scala.concurrent.{ ExecutionContext, Await }
+import scala.concurrent.{ ExecutionContext, Await, Future, Promise }
 import scala.concurrent.util.{ Duration, Deadline }
 import scala.concurrent.util.duration._
 import scala.util.continuations._
 import akka.testkit._
-import akka.dispatch.{ Future, Promise, MessageDispatcher }
+import akka.dispatch.MessageDispatcher
 import java.net.{ SocketAddress }
 import akka.pattern.ask
 
@@ -246,7 +246,7 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
    */
   def retry[T](count: Option[Int] = None, timeout: Option[Duration] = None, delay: Option[Duration] = Some(100 millis), filter: Option[Throwable ⇒ Boolean] = None)(future: ⇒ Future[T])(implicit executor: ExecutionContext): Future[T] = {
 
-    val promise = Promise[T]()(executor)
+    val promise = Promise[T]()
 
     val timer: Option[Deadline] = timeout match {
       case Some(duration) ⇒ Some(duration fromNow)
@@ -271,7 +271,7 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
 
     run(0)
 
-    promise
+    promise.future
   }
 
   "an IO Actor" must {
@@ -279,7 +279,7 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
       filterException[java.net.ConnectException] {
         val addressPromise = Promise[SocketAddress]()
         val server = system.actorOf(Props(new SimpleEchoServer(addressPromise)))
-        val address = Await.result(addressPromise, TestLatch.DefaultTimeout)
+        val address = Await.result(addressPromise.future, TestLatch.DefaultTimeout)
         val client = system.actorOf(Props(new SimpleEchoClient(address)))
         val f1 = retry() { client ? ByteString("Hello World!1") }
         val f2 = retry() { client ? ByteString("Hello World!2") }
@@ -296,7 +296,7 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
       filterException[java.net.ConnectException] {
         val addressPromise = Promise[SocketAddress]()
         val server = system.actorOf(Props(new SimpleEchoServer(addressPromise)))
-        val address = Await.result(addressPromise, TestLatch.DefaultTimeout)
+        val address = Await.result(addressPromise.future, TestLatch.DefaultTimeout)
         val client = system.actorOf(Props(new SimpleEchoClient(address)))
         val list = List.range(0, 100)
         val f = Future.traverse(list)(i ⇒ retry() { client ? ByteString(i.toString) })
@@ -310,7 +310,7 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
       filterException[java.net.ConnectException] {
         val addressPromise = Promise[SocketAddress]()
         val server = system.actorOf(Props(new KVStore(addressPromise)))
-        val address = Await.result(addressPromise, TestLatch.DefaultTimeout)
+        val address = Await.result(addressPromise.future, TestLatch.DefaultTimeout)
         val client1 = system.actorOf(Props(new KVClient(address)))
         val client2 = system.actorOf(Props(new KVClient(address)))
         val f1 = retry() { client1 ? KVSet("hello", "World") }

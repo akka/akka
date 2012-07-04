@@ -17,7 +17,7 @@ import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import scala.concurrent.Await;
-import akka.dispatch.Future;
+import scala.concurrent.Future;
 import static akka.pattern.Patterns.ask;
 import akka.testkit.AkkaSpec;
 import akka.testkit.EventFilter;

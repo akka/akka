@@ -14,7 +14,7 @@ import akka.util.Timeout
 import scala.concurrent.util.duration._
 import scala.concurrent.Await
 import java.lang.IllegalStateException
-import akka.dispatch.Promise
+import scala.concurrent.Promise
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
 
@@ -131,7 +131,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
   def wrap[T](f: Promise[Actor] ⇒ T): T = {
     val result = Promise[Actor]()
     val r = f(result)
-    Await.result(result, 1 minute)
+    Await.result(result.future, 1 minute)
     r
   }
 

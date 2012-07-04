@@ -8,7 +8,7 @@ import language.postfixOps
 import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
-import akka.dispatch.Future
+import scala.concurrent.Future
 import akka.pattern.ask
 import java.io.File
 import java.security.{ NoSuchAlgorithmException, SecureRandom, PrivilegedAction, AccessController }
