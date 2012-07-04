@@ -795,7 +795,6 @@ private[cluster] final class ClusterCore(cluster: Cluster) extends Actor with Ac
       latestGossip = seenVersionedGossip
 
       log.info("Cluster Node [{}] - Marked address [{}] as LEAVING", selfAddress, address)
-      publishState()
       notifyListeners(localGossip)
     }
   }
@@ -819,7 +818,11 @@ private[cluster] final class ClusterCore(cluster: Cluster) extends Actor with Ac
    */
   def removing(address: Address): Unit = {
     log.info("Cluster Node [{}] - Node has been REMOVED by the leader - shutting down...", selfAddress)
-    publishState()
+    val localGossip = latestGossip
+    // just cleaning up the gossip state
+    latestGossip = Gossip()
+    // make sure the final (removed) state is always published
+    notifyListeners(localGossip)
     cluster.shutdown()
   }
 
@@ -1309,7 +1312,7 @@ private[cluster] final class ClusterCore(cluster: Cluster) extends Actor with Ac
   }
 
   def notifyListeners(oldGossip: Gossip): Unit = {
-    if (PublishStateInterval == Duration.Zero) publishState
+    if (PublishStateInterval == Duration.Zero) publishState()
 
     val oldMembersStatus = oldGossip.members.map(m ⇒ (m.address, m.status))
     val newMembersStatus = latestGossip.members.map(m ⇒ (m.address, m.status))
