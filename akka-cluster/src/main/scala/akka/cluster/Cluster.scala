@@ -487,16 +487,17 @@ private[cluster] final class ClusterHeartbeatSender(cluster: Cluster) extends Ac
   val digester = MessageDigest.getInstance("MD5")
 
   /**
-   * Child name is MD5 hash of the address
+   * Child name is MD5 hash of the address.
+   * FIXME Change to URLEncode when ticket #2123 has been fixed
    */
-  def hash(name: String): String = {
+  def encodeChildName(name: String): String = {
     digester update name.getBytes("UTF-8")
     digester.digest.map { h ⇒ "%02x".format(0xFF & h) }.mkString
   }
 
   def receive = {
     case msg @ SendHeartbeat(from, to, deadline) ⇒
-      val workerName = hash(to.toString)
+      val workerName = encodeChildName(to.toString)
       val worker = context.actorFor(workerName) match {
         case notFound if notFound.isTerminated ⇒
           context.actorOf(Props(new ClusterHeartbeatSenderWorker(
