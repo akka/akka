@@ -14,8 +14,8 @@ import java.net.URL
 
 import java.util.jar.JarInputStream
 import java.io.{ FileInputStream, FileOutputStream, File }
-import java.util.{ Date, ServiceLoader, HashMap }
 import org.scalatest.{ BeforeAndAfterAll, Suite }
+import java.util.{ UUID, Date, ServiceLoader, HashMap }
 
 /**
  * Trait that provides support for building akka-osgi tests using PojoSR
@@ -29,11 +29,11 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
    * All bundles being found on the test classpath are automatically installed and started in the PojoSR runtime.
    * Implement this to define the extra bundles that should be available for testing.
    */
-  val testBundles: Seq[BundleDescriptor]
+  def testBundles: Seq[BundleDescriptor]
 
   lazy val context: BundleContext = {
     val config = new HashMap[String, AnyRef]()
-    System.setProperty("org.osgi.framework.storage", "target/akka-osgi/" + System.currentTimeMillis)
+    System.setProperty("org.osgi.framework.storage", "target/akka-osgi/" + UUID.randomUUID().toString)
 
     val bundles = new ClasspathScanner().scanForBundles()
     bundles.addAll(testBundles)

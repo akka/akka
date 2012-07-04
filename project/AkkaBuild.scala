@@ -43,6 +43,20 @@ object AkkaBuild extends Build {
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id),
+      initialCommands in ThisBuild :=
+        """|import akka.actor._
+           |import akka.dispatch._
+           |import com.typesafe.config.ConfigFactory
+           |import akka.util.duration._
+           |import akka.util.Timeout
+           |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG")
+           |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=RemoteActorRefProvider").withFallback(config)
+           |var system: ActorSystem = null
+           |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.shutdown()!") }
+           |implicit def ec = system.dispatcher
+           |implicit val timeout = Timeout(5 seconds)
+           |""".stripMargin,
+      initialCommands in Test in ThisBuild += "import akka.testkit._",
       // online version of docs
       sphinxDocs <<= baseDirectory / "akka-docs",
       sphinxTags in sphinxHtml += "online",
@@ -76,6 +90,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.testkit,
+      initialCommands += "import akka.testkit._",
       previousArtifact := akkaPreviousArtifact("akka-testkit")
     )
   )
@@ -230,7 +245,8 @@ object AkkaBuild extends Build {
     base = file("akka-osgi"),
     dependencies = Seq(actor),
     settings = defaultSettings ++ OSGi.osgi ++ Seq(
-      libraryDependencies ++= Dependencies.osgi
+      libraryDependencies ++= Dependencies.osgi,
+      parallelExecution in Test := false
     )
   )
 
@@ -239,7 +255,8 @@ object AkkaBuild extends Build {
     base = file("akka-osgi-aries"),
     dependencies = Seq(osgi % "compile;test->test"),
     settings = defaultSettings ++ OSGi.osgiAries ++ Seq(
-      libraryDependencies ++= Dependencies.osgiAries
+      libraryDependencies ++= Dependencies.osgiAries,
+      parallelExecution in Test := false
     )
   )
 
@@ -395,6 +412,7 @@ object AkkaBuild extends Build {
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
+    logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
     excludeTestNames := useExcludeTestNames,
     excludeTestTags := useExcludeTestTags,
