@@ -8,14 +8,14 @@
     <groupId>akka.tutorial.second.java</groupId>
     <artifactId>akka-tutorial-second-java</artifactId>
     <packaging>jar</packaging>
-    <version>1.3-SNAPSHOT</version>
+    <version>1.3</version>
     <url>http://akka.io</url>
 
     <dependencies>
         <dependency>
             <groupId>se.scalablesolutions.akka</groupId>
             <artifactId>akka-actor</artifactId>
-            <version>1.3-SNAPSHOT</version>
+            <version>1.3</version>
         </dependency>
     </dependencies>
 

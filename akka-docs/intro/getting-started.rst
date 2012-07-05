@@ -47,23 +47,23 @@ Akka is split up into two different parts:
 
 Akka is very modular and has many JARs for containing different features. The core distribution has seven modules:
 
-- ``akka-actor-1.3-SNAPSHOT`` -- Standard Actors
-- ``akka-typed-actor-1.3-SNAPSHOT`` -- Typed Actors
-- ``akka-remote-1.3-SNAPSHOT`` -- Remote Actors
-- ``akka-stm-1.3-SNAPSHOT`` -- STM (Software Transactional Memory), transactors and transactional datastructures
-- ``akka-http-1.3-SNAPSHOT`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
-- ``akka-slf4j-1.3-SNAPSHOT`` -- SLF4J Event Handler Listener
-- ``akka-testkit-1.3-SNAPSHOT`` -- Toolkit for testing Actors
+- ``akka-actor-1.3`` -- Standard Actors
+- ``akka-typed-actor-1.3`` -- Typed Actors
+- ``akka-remote-1.3`` -- Remote Actors
+- ``akka-stm-1.3`` -- STM (Software Transactional Memory), transactors and transactional datastructures
+- ``akka-http-1.3`` -- Akka Mist for continuation-based asynchronous HTTP and also Jersey integration
+- ``akka-slf4j-1.3`` -- SLF4J Event Handler Listener
+- ``akka-testkit-1.3`` -- Toolkit for testing Actors
 
 We also have Akka Modules containing add-on modules outside the core of Akka.
 
-- ``akka-kernel-1.3-SNAPSHOT`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
-- ``akka-amqp-1.3-SNAPSHOT`` -- AMQP integration
-- ``akka-camel-1.3-SNAPSHOT`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
-- ``akka-camel-typed-1.3-SNAPSHOT`` -- Apache Camel Typed Actors integration
-- ``akka-scalaz-1.3-SNAPSHOT`` -- Support for the Scalaz library
-- ``akka-spring-1.3-SNAPSHOT`` -- Spring framework integration
-- ``akka-osgi-dependencies-bundle-1.3-SNAPSHOT`` -- OSGi support
+- ``akka-kernel-1.3`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
+- ``akka-amqp-1.3`` -- AMQP integration
+- ``akka-camel-1.3`` -- Apache Camel Actors integration (it's the best way to have your Akka application communicate with the rest of the world)
+- ``akka-camel-typed-1.3`` -- Apache Camel Typed Actors integration
+- ``akka-scalaz-1.3`` -- Support for the Scalaz library
+- ``akka-spring-1.3`` -- Spring framework integration
+- ``akka-osgi-dependencies-bundle-1.3`` -- OSGi support
 
 
 How to see the JARs dependencies of each Akka module is described in the :ref:`dependencies` section. Worth noting
@@ -108,14 +108,14 @@ Summary of the essential parts for using Akka with Maven:
     <url>http://repo.typesafe.com/typesafe/releases/</url>
   </repository>
 
-2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 1.3-SNAPSHOT:
+2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 1.3:
 
 .. code-block:: xml
 
   <dependency>
     <groupId>se.scalablesolutions.akka</groupId>
     <artifactId>akka-actor</artifactId>
-    <version>1.3-SNAPSHOT</version>
+    <version>1.3</version>
   </dependency>
 
 
@@ -140,7 +140,7 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-    libraryDependencies += "se.scalablesolutions.akka" % "akka-actor" % "1.3-SNAPSHOT"
+    libraryDependencies += "se.scalablesolutions.akka" % "akka-actor" % "1.3"
 
 
 Using Akka with Eclipse
