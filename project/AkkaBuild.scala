@@ -519,7 +519,7 @@ object Dependency {
     val Camel        = "2.8.0"
     val Jackson      = "1.8.0"
     val Jetty        = "7.4.0.v20110414"
-    val Logback      = "0.9.28"
+    val Logback      = "1.0.4"
     val Netty        = "3.5.2.Final"
     val Protobuf     = "2.4.1"
     val Rabbit       = "2.3.1"
