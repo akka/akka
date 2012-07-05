@@ -257,14 +257,14 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         val in = new ObjectInputStream(new ByteArrayInputStream(bytes))
         val readA = in.readObject
 
-        a.isInstanceOf[LocalActorRef] must be === true
-        readA.isInstanceOf[LocalActorRef] must be === true
+        a.isInstanceOf[ActorRefWithCell] must be === true
+        readA.isInstanceOf[ActorRefWithCell] must be === true
         (readA eq a) must be === true
       }
 
       val ser = new JavaSerializer(esys)
       val readA = ser.fromBinary(bytes, None)
-      readA.isInstanceOf[LocalActorRef] must be === true
+      readA.isInstanceOf[ActorRefWithCell] must be === true
       (readA eq a) must be === true
     }
 
@@ -358,17 +358,24 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       system.stop(serverRef)
     }
 
+    "support actorOfs where the class of the actor isn't public" in {
+      val a = system.actorOf(NonPublicClass.createProps())
+      a.tell("pigdog", testActor)
+      expectMsg("pigdog")
+      system stop a
+    }
+
     "stop when sent a poison pill" in {
       val timeout = Timeout(20000)
       val ref = system.actorOf(Props(new Actor {
         def receive = {
-          case 5    ⇒ sender.tell("five")
-          case null ⇒ sender.tell("null")
+          case 5 ⇒ sender.tell("five")
+          case 0 ⇒ sender.tell("null")
         }
       }))
 
       val ffive = (ref.ask(5)(timeout)).mapTo[String]
-      val fnull = (ref.ask(null)(timeout)).mapTo[String]
+      val fnull = (ref.ask(0)(timeout)).mapTo[String]
       ref ! PoisonPill
 
       Await.result(ffive, timeout.duration) must be("five")

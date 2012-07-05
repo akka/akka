@@ -128,7 +128,7 @@ class CallingThreadDispatcher(
 
   override def id: String = Id
 
-  protected[akka] override def createMailbox(actor: ActorCell) = new CallingThreadMailbox(actor, mailboxType)
+  protected[akka] override def createMailbox(actor: akka.actor.Cell) = new CallingThreadMailbox(actor, mailboxType)
 
   protected[akka] override def shutdown() {}
 
@@ -282,17 +282,21 @@ class NestingQueue(val q: MessageQueue) {
   def isActive = active
 }
 
-class CallingThreadMailbox(_receiver: ActorCell, val mailboxType: MailboxType) extends Mailbox(_receiver, null) with DefaultSystemMessageQueue {
+class CallingThreadMailbox(_receiver: akka.actor.Cell, val mailboxType: MailboxType)
+  extends Mailbox(null) with DefaultSystemMessageQueue {
+
+  val system = _receiver.system
+  val self = _receiver.self
 
   private val q = new ThreadLocal[NestingQueue]() {
     override def initialValue = {
-      val queue = new NestingQueue(mailboxType.create(Some(actor)))
-      CallingThreadDispatcherQueues(actor.system).registerQueue(CallingThreadMailbox.this, queue)
+      val queue = new NestingQueue(mailboxType.create(Some(self), Some(system)))
+      CallingThreadDispatcherQueues(system).registerQueue(CallingThreadMailbox.this, queue)
       queue
     }
   }
 
-  override def enqueue(receiver: ActorRef, msg: Envelope): Unit = throw new UnsupportedOperationException("CallingThreadMailbox cannot enqueue normally")
+  override def enqueue(receiver: ActorRef, msg: Envelope): Unit = q.get.q.enqueue(receiver, msg)
   override def dequeue(): Envelope = throw new UnsupportedOperationException("CallingThreadMailbox cannot dequeue normally")
   override def hasMessages: Boolean = q.get.q.hasMessages
   override def numberOfMessages: Int = 0
@@ -312,7 +316,7 @@ class CallingThreadMailbox(_receiver: ActorCell, val mailboxType: MailboxType) e
       val q = queue
       CallingThreadDispatcherQueues(actor.system).gatherFromAllOtherQueues(this, q)
       super.cleanUp()
-      q.q.cleanUp(actor, actor.systemImpl.deadLetterQueue)
+      q.q.cleanUp(actor.self, actor.systemImpl.deadLetterQueue)
     }
   }
 }

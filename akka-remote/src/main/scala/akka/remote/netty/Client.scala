@@ -18,6 +18,7 @@ import akka.AkkaException
 import akka.event.Logging
 import akka.actor.{ DeadLetter, Address, ActorRef }
 import akka.util.{ NonFatal, Switch }
+import org.jboss.netty.handler.ssl.SslHandler
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
@@ -115,15 +116,27 @@ private[akka] class ActiveRemoteClient private[akka] (
    */
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = {
 
-    def sendSecureCookie(connection: ChannelFuture) {
-      val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
-      if (settings.SecureCookie.nonEmpty) handshake.setCookie(settings.SecureCookie.get)
-      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
-        .setSystem(localAddress.system)
-        .setHostname(localAddress.host.get)
-        .setPort(localAddress.port.get)
-        .build)
-      connection.getChannel.write(netty.createControlEnvelope(handshake.build))
+    // Returns whether the handshake was written to the channel or not
+    def sendSecureCookie(connection: ChannelFuture): Boolean = {
+      val future =
+        if (!connection.isSuccess || !settings.EnableSSL) connection
+        else connection.getChannel.getPipeline.get[SslHandler](classOf[SslHandler]).handshake().awaitUninterruptibly()
+
+      if (!future.isSuccess) {
+        notifyListeners(RemoteClientError(future.getCause, netty, remoteAddress))
+        false
+      } else {
+        ChannelAddress.set(connection.getChannel, Some(remoteAddress))
+        val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
+        if (settings.SecureCookie.nonEmpty) handshake.setCookie(settings.SecureCookie.get)
+        handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
+          .setSystem(localAddress.system)
+          .setHostname(localAddress.host.get)
+          .setPort(localAddress.port.get)
+          .build)
+        connection.getChannel.write(netty.createControlEnvelope(handshake.build))
+        true
+      }
     }
 
     def attemptReconnect(): Boolean = {
@@ -131,21 +144,14 @@ private[akka] class ActiveRemoteClient private[akka] (
       log.debug("Remote client reconnecting to [{}|{}]", remoteAddress, remoteIP)
       connection = bootstrap.connect(new InetSocketAddress(remoteIP, remoteAddress.port.get))
       openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
-
-      if (!connection.isSuccess) {
-        notifyListeners(RemoteClientError(connection.getCause, netty, remoteAddress))
-        false
-      } else {
-        sendSecureCookie(connection)
-        true
-      }
+      sendSecureCookie(connection)
     }
 
     runSwitch switchOn {
       openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
 
       val b = new ClientBootstrap(netty.clientChannelFactory)
-      b.setPipelineFactory(netty.createPipeline(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, netty.timer, this), true))
+      b.setPipelineFactory(netty.createPipeline(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, netty.timer, this), withTimeout = true, isClient = true))
       b.setOption("tcpNoDelay", true)
       b.setOption("keepAlive", true)
       b.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
@@ -163,24 +169,19 @@ private[akka] class ActiveRemoteClient private[akka] (
 
       openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
 
-      if (!connection.isSuccess) {
-        notifyListeners(RemoteClientError(connection.getCause, netty, remoteAddress))
-        false
-      } else {
-        ChannelAddress.set(connection.getChannel, Some(remoteAddress))
-        sendSecureCookie(connection)
+      if (sendSecureCookie(connection)) {
         notifyListeners(RemoteClientStarted(netty, remoteAddress))
         true
+      } else {
+        connection.getChannel.close()
+        openChannels.remove(connection.getChannel)
+        false
       }
     } match {
       case true ⇒ true
       case false if reconnectIfAlreadyConnected ⇒
-        connection.getChannel.close()
-        openChannels.remove(connection.getChannel)
-
         log.debug("Remote client reconnecting to [{}]", remoteAddress)
         attemptReconnect()
-
       case false ⇒ false
     }
   }

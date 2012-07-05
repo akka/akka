@@ -13,12 +13,24 @@ import scala.annotation.tailrec
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.util.BoxedType
+import scala.annotation.varargs
+import akka.japi.PurePartialFunction
 
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
 
-  trait AutoPilot {
-    def run(sender: ActorRef, msg: Any): Option[AutoPilot]
+  abstract class AutoPilot {
+    def run(sender: ActorRef, msg: Any): AutoPilot
+    def noAutoPilot: AutoPilot = NoAutoPilot
+    def keepRunning: AutoPilot = KeepRunning
+  }
+
+  case object NoAutoPilot extends AutoPilot {
+    def run(sender: ActorRef, msg: Any): AutoPilot = this
+  }
+
+  case object KeepRunning extends AutoPilot {
+    def run(sender: ActorRef, msg: Any): AutoPilot = sys.error("must not call")
   }
 
   case class SetIgnore(i: Ignore)
@@ -42,15 +54,18 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
 
   var ignore: Ignore = None
 
-  var autopilot: Option[AutoPilot] = None
+  var autopilot: AutoPilot = NoAutoPilot
 
   def receive = {
     case SetIgnore(ign)      ⇒ ignore = ign
     case x @ Watch(ref)      ⇒ context.watch(ref); queue.offerLast(RealMessage(x, self))
     case x @ UnWatch(ref)    ⇒ context.unwatch(ref); queue.offerLast(RealMessage(x, self))
-    case SetAutoPilot(pilot) ⇒ autopilot = Some(pilot)
+    case SetAutoPilot(pilot) ⇒ autopilot = pilot
     case x: AnyRef ⇒
-      autopilot = autopilot.flatMap(_.run(sender, x))
+      autopilot = autopilot.run(sender, x) match {
+        case KeepRunning ⇒ autopilot
+        case other       ⇒ other
+      }
       val observe = ignore map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
       if (observe) queue.offerLast(RealMessage(x, sender))
   }
@@ -97,9 +112,14 @@ trait TestKitBase {
    */
   lazy val testActor: ActorRef = {
     val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-    impl.systemActorOf(Props(new TestActor(queue))
+    val ref = impl.systemActorOf(Props(new TestActor(queue))
       .withDispatcher(CallingThreadDispatcher.Id),
       "testActor" + TestKit.testActorId.incrementAndGet)
+    awaitCond(ref match {
+      case r: RepointableRef ⇒ r.isStarted
+      case _                 ⇒ true
+    }, 1 second, 10 millis)
+    ref
   }
 
   private var end: Duration = Duration.Undefined
@@ -125,20 +145,20 @@ trait TestKitBase {
    * Have the testActor watch someone (i.e. `context.watch(...)`). Waits until
    * the Watch message is received back using expectMsg.
    */
-  def watch(ref: ActorRef) {
+  def watch(ref: ActorRef): ActorRef = {
     val msg = TestActor.Watch(ref)
     testActor ! msg
-    expectMsg(msg)
+    expectMsg(msg).ref
   }
 
   /**
    * Have the testActor stop watching someone (i.e. `context.unwatch(...)`). Waits until
    * the Watch message is received back using expectMsg.
    */
-  def unwatch(ref: ActorRef) {
+  def unwatch(ref: ActorRef): ActorRef = {
     val msg = TestActor.UnWatch(ref)
     testActor ! msg
-    expectMsg(msg)
+    expectMsg(msg).ref
   }
 
   /**
@@ -158,7 +178,13 @@ trait TestKitBase {
    * block or missing that it returns the properly dilated default for this
    * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = if (end == Duration.Undefined) testKitSettings.SingleExpectDefaultTimeout.dilated else end - now
+  def remaining: Duration = remainingOr(testKitSettings.SingleExpectDefaultTimeout.dilated)
+
+  /**
+   * Obtain time remaining for execution of the innermost enclosing `within`
+   * block or missing that it returns the given duration.
+   */
+  def remainingOr(duration: Duration): Duration = if (end == Duration.Undefined) duration else end - now
 
   /**
    * Query queue status.
@@ -486,19 +512,21 @@ trait TestKitBase {
 
     @tailrec
     def doit(acc: List[T], count: Int): List[T] = {
-      if (count >= messages) return acc.reverse
-      receiveOne((stop - now) min idle)
-      lastMessage match {
-        case NullMessage ⇒
-          lastMessage = msg
-          acc.reverse
-        case RealMessage(o, _) if (f isDefinedAt o) ⇒
-          msg = lastMessage
-          doit(f(o) :: acc, count + 1)
-        case RealMessage(o, _) ⇒
-          queue.offerFirst(lastMessage)
-          lastMessage = msg
-          acc.reverse
+      if (count >= messages) acc.reverse
+      else {
+        receiveOne((stop - now) min idle)
+        lastMessage match {
+          case NullMessage ⇒
+            lastMessage = msg
+            acc.reverse
+          case RealMessage(o, _) if (f isDefinedAt o) ⇒
+            msg = lastMessage
+            doit(f(o) :: acc, count + 1)
+          case RealMessage(o, _) ⇒
+            queue.offerFirst(lastMessage)
+            lastMessage = msg
+            acc.reverse
+        }
       }
     }
 
@@ -605,12 +633,6 @@ object TestKit {
   /**
    * Await until the given condition evaluates to `true` or the timeout
    * expires, whichever comes first.
-   *
-   * If no timeout is given, take it from the innermost enclosing `within`
-   * block.
-   *
-   * Note that the timeout is scaled using Duration.dilated, which uses the
-   * configuration entry "akka.test.timefactor"
    */
   def awaitCond(p: ⇒ Boolean, max: Duration, interval: Duration = 100.millis, noThrow: Boolean = false): Boolean = {
     val stop = now + max

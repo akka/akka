@@ -802,33 +802,6 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         assert(Await.result(z, timeout.duration) === 42)
       }
 
-      "futureFlowLoops" in {
-        import Future.flow
-        import akka.util.cps._
-
-        val count = 1000
-
-        val promises = List.fill(count)(Promise[Int]())
-
-        flow {
-          var i = 0
-          val iter = promises.iterator
-          whileC(iter.hasNext) {
-            iter.next << i
-            i += 1
-          }
-        }
-
-        var i = 0
-        promises foreach { p ⇒
-          assert(Await.result(p, timeout.duration) === i)
-          i += 1
-        }
-
-        assert(i === count)
-
-      }
-
       "run callbacks async" in {
         val latch = Vector.fill(10)(new TestLatch)
 

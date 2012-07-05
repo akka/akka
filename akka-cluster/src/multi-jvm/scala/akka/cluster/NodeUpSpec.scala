@@ -33,7 +33,7 @@ abstract class NodeUpSpec
 
       awaitClusterUp(first, second)
 
-      testConductor.enter("after-1")
+      enterBarrier("after-1")
     }
 
     "be unaffected when joining again" taggedAs LongRunningTest in {
@@ -45,12 +45,12 @@ abstract class NodeUpSpec
             unexpected.set(members)
         }
       })
-      testConductor.enter("listener-registered")
+      enterBarrier("listener-registered")
 
       runOn(second) {
-        cluster.join(node(first).address)
+        cluster.join(first)
       }
-      testConductor.enter("joined-again")
+      enterBarrier("joined-again")
 
       // let it run for a while to make sure that nothing bad happens
       for (n ← 1 to 20) {
@@ -59,7 +59,7 @@ abstract class NodeUpSpec
         cluster.latestGossip.members.forall(_.status == MemberStatus.Up) must be(true)
       }
 
-      testConductor.enter("after-2")
+      enterBarrier("after-2")
     }
   }
 }

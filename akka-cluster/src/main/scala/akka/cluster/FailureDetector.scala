@@ -25,4 +25,9 @@ trait FailureDetector {
    * Removes the heartbeat management for a connection.
    */
   def remove(connection: Address): Unit
+
+  /**
+   * Removes all connections and starts over.
+   */
+  def reset(): Unit
 }

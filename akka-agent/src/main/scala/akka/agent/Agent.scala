@@ -97,7 +97,7 @@ object Agent {
  */
 class Agent[T](initialValue: T, system: ActorSystem) {
   private val ref = Ref(initialValue)
-  private val updater = system.actorOf(Props(new AgentUpdater(this, ref))).asInstanceOf[LocalActorRef] //TODO can we avoid this somehow?
+  private val updater = system.actorOf(Props(new AgentUpdater(this, ref))).asInstanceOf[InternalActorRef] //TODO can we avoid this somehow?
 
   /**
    * Read the internal state of the agent.

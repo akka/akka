@@ -55,11 +55,11 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
 
       runOn(first, second, third) {
-        testConductor.enter("start", "broadcast-end", "end", "done")
+        enterBarrier("start", "broadcast-end", "end", "done")
       }
 
       runOn(fourth) {
-        testConductor.enter("start")
+        enterBarrier("start")
         val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "service-hello")
         actor.isInstanceOf[RoutedActorRef] must be(true)
 
@@ -76,17 +76,17 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
           case (replyMap, address) ⇒ replyMap + (address -> (replyMap(address) + 1))
         }
 
-        testConductor.enter("broadcast-end")
+        enterBarrier("broadcast-end")
         actor ! Broadcast(PoisonPill)
 
-        testConductor.enter("end")
+        enterBarrier("end")
         replies.values foreach { _ must be(iterationCount) }
         replies.get(node(fourth).address) must be(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node
         system.stop(actor)
-        testConductor.enter("done")
+        enterBarrier("done")
       }
     }
   }

@@ -88,12 +88,10 @@ object LogRoleReplace extends ClipboardOwner {
 
 class LogRoleReplace {
 
-  private val RoleStarted = """\[([\w\-]+)\].*Role \[([\w]+)\] started""".r
-  private val RemoteServerStarted = """\[([\w\-]+)\].*RemoteServerStarted@akka://.*@([\w\-\.]+):([0-9]+)""".r
+  private val RoleStarted = """\[([\w\-]+)\].*Role \[([\w]+)\] started with address \[akka://.*@([\w\-\.]+):([0-9]+)\]""".r
   private val ColorCode = """\[[0-9]+m"""
 
   private var replacements: Map[String, String] = Map.empty
-  private var jvmToAddress: Map[String, String] = Map.empty
 
   def process(in: BufferedReader, out: PrintWriter): Unit = {
 
@@ -121,23 +119,13 @@ class LogRoleReplace {
     if (line.startsWith("[info] * ")) {
       // reset when new test begins
       replacements = Map.empty
-      jvmToAddress = Map.empty
     }
 
     line match {
-      case RemoteServerStarted(jvm, host, port) ⇒
-        jvmToAddress += (jvm -> (host + ":" + port))
+      case RoleStarted(jvm, role, host, port) ⇒
+        replacements += (jvm -> role)
+        replacements += ((host + ":" + port) -> role)
         false
-
-      case RoleStarted(jvm, role) ⇒
-        jvmToAddress.get(jvm) match {
-          case Some(address) ⇒
-            replacements += (jvm -> role)
-            replacements += (address -> role)
-            false
-          case None ⇒ false
-        }
-
       case _ ⇒ true
     }
   }

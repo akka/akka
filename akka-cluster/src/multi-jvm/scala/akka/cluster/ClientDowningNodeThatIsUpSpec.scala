@@ -37,13 +37,13 @@ abstract class ClientDowningNodeThatIsUpSpec
   "Client of a 4 node cluster" must {
 
     "be able to DOWN a node that is UP (healthy and available)" taggedAs LongRunningTest in {
-      val thirdAddress = node(third).address
+      val thirdAddress = address(third)
       awaitClusterUp(first, second, third, fourth)
 
       runOn(first) {
         // mark 'third' node as DOWN
         cluster.down(thirdAddress)
-        testConductor.enter("down-third-node")
+        enterBarrier("down-third-node")
 
         markNodeAsUnavailable(thirdAddress)
 
@@ -52,16 +52,16 @@ abstract class ClientDowningNodeThatIsUpSpec
       }
 
       runOn(third) {
-        testConductor.enter("down-third-node")
+        enterBarrier("down-third-node")
       }
 
       runOn(second, fourth) {
-        testConductor.enter("down-third-node")
+        enterBarrier("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
       }
 
-      testConductor.enter("await-completion")
+      enterBarrier("await-completion")
     }
   }
 }

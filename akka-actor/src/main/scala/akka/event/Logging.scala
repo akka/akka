@@ -586,6 +586,7 @@ object Logging {
     /** Null Object used for errors without cause Throwable */
     object NoCause extends NoStackTrace
   }
+  def noCause = Error.NoCause
 
   /**
    * For WARNING Logging
@@ -874,4 +875,17 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
   protected def notifyWarning(message: String): Unit = bus.publish(Warning(logSource, logClass, message))
   protected def notifyInfo(message: String): Unit = bus.publish(Info(logSource, logClass, message))
   protected def notifyDebug(message: String): Unit = bus.publish(Debug(logSource, logClass, message))
+}
+
+private[akka] object NoLogging extends LoggingAdapter {
+  def isErrorEnabled = false
+  def isWarningEnabled = false
+  def isInfoEnabled = false
+  def isDebugEnabled = false
+
+  protected def notifyError(message: String): Unit = ()
+  protected def notifyError(cause: Throwable, message: String): Unit = ()
+  protected def notifyWarning(message: String): Unit = ()
+  protected def notifyInfo(message: String): Unit = ()
+  protected def notifyDebug(message: String): Unit = ()
 }

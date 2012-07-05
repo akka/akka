@@ -48,14 +48,14 @@ At-most-once
 
 Actual transports may provide stronger semantics,
 but at-most-once is the semantics you should expect.
-The alternatives would be once-and-only-once, which is extremely costly, 
+The alternatives would be once-and-only-once, which is extremely costly,
 or at-least-once which essentially requires idempotency of message processing,
 which is a user-level concern.
 
 Ordering is preserved on a per-sender basis
 -------------------------------------------
 
-Actor ``A1` sends messages ``M1``, ``M2``, ``M3`` to ``A2``
+Actor ``A1`` sends messages ``M1``, ``M2``, ``M3`` to ``A2``
 Actor ``A3`` sends messages ``M4``, ``M5``, ``M6`` to ``A2``
 
 This means that:
