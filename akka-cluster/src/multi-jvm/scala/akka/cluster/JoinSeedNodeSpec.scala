@@ -36,6 +36,10 @@ abstract class JoinSeedNodeSpec
 
   "A cluster with configured seed nodes" must {
     "start the seed nodes sequentially" taggedAs LongRunningTest in {
+      // without looking up the addresses first there might be
+      // [akka://JoinSeedNodeSpec/user/TestConductorClient] cannot write GetAddress(RoleName(seed2)) while waiting for seed1
+      roles foreach address
+
       runOn(seed1) {
         startClusterNode()
       }

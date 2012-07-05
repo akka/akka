@@ -36,12 +36,22 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     akka.cluster {
       gossip-interval = 500 ms
       auto-join = off
-      failure-detector.threshold = 4
+      auto-down = on
+      failure-detector.acceptable-heartbeat-pause = 10s
+      publish-state-interval = 0 s # always, when it happens
     }
     akka.loglevel = INFO
-    akka.actor.default-dispatcher.fork-join-executor.parallelism-max = 2
+    akka.actor.default-dispatcher.fork-join-executor {
+      # when using nodes-per-datacenter=10 we need some extra
+      # threads to keep up with netty connect blocking
+      parallelism-min = 13
+      parallelism-max = 13
+    }
     akka.scheduler.tick-duration = 33 ms
-    akka.remote.netty.execution-pool-size = 0
+    akka.remote.netty.execution-pool-size = 4
+    #akka.remote.netty.reconnection-time-window = 1s
+    akka.remote.netty.backoff-timeout = 500ms
+    akka.remote.netty.connection-timeout = 500ms
 
     # don't use testconductor transport in this test, especially not
     # when using use-dispatcher-for-io
@@ -124,8 +134,10 @@ abstract class LargeClusterSpec
 
       val clusterNodes = ifNode(from)(joiningClusterNodes)(systems.map(Cluster(_)).toSet)
       val startGossipCounts = Map.empty[Cluster, Long] ++
-        clusterNodes.map(c ⇒ (c -> c.receivedGossipCount))
-      def gossipCount(c: Cluster): Long = c.receivedGossipCount - startGossipCounts(c)
+        clusterNodes.map(c ⇒ (c -> c.latestStats.receivedGossipCount))
+      def gossipCount(c: Cluster): Long = {
+        c.latestStats.receivedGossipCount - startGossipCounts(c)
+      }
       val startTime = System.nanoTime
       def tookMillis: String = TimeUnit.NANOSECONDS.toMillis(System.nanoTime - startTime) + " ms"
 
@@ -244,15 +256,16 @@ abstract class LargeClusterSpec
       }
     }
 
-    // FIXME sometimes this fails, FD marks nodes from other than second-datacenter as unavailable
-    "detect failure and auto-down crashed nodes in second-datacenter" taggedAs LongRunningTest ignore {
+    "detect failure and auto-down crashed nodes in second-datacenter" taggedAs LongRunningTest in {
       val unreachableNodes = nodesPerDatacenter
       val liveNodes = nodesPerDatacenter * 4
 
-      within(20.seconds + expectedMaxDuration(liveNodes)) {
+      within(30.seconds + (3.seconds * liveNodes)) {
         val startGossipCounts = Map.empty[Cluster, Long] ++
-          systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).receivedGossipCount))
-        def gossipCount(c: Cluster): Long = c.receivedGossipCount - startGossipCounts(c)
+          systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).latestStats.receivedGossipCount))
+        def gossipCount(c: Cluster): Long = {
+          c.latestStats.receivedGossipCount - startGossipCounts(c)
+        }
         val startTime = System.nanoTime
         def tookMillis: String = TimeUnit.NANOSECONDS.toMillis(System.nanoTime - startTime) + " ms"
 
@@ -278,10 +291,11 @@ abstract class LargeClusterSpec
         runOn(firstDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter) {
           Await.ready(latch, remaining)
           awaitCond(systems.forall(Cluster(_).convergence.isDefined))
+          val mergeCount = systems.map(sys ⇒ Cluster(sys).latestStats.mergeCount).sum
           val counts = systems.map(sys ⇒ gossipCount(Cluster(sys)))
           val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / nodesPerDatacenter, counts.min, counts.max)
-          log.info("Convergence of [{}] nodes reached after failure, it took [{}], received [{}] gossip messages per node",
-            liveNodes, tookMillis, formattedStats)
+          log.info("Convergence of [{}] nodes reached after failure, it took [{}], received [{}] gossip messages per node, merged [{}] times",
+            liveNodes, tookMillis, formattedStats, mergeCount)
         }
 
         enterBarrier("after-6")
