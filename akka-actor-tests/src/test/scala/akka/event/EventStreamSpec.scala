@@ -72,19 +72,6 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       intercept[IllegalArgumentException] { bus.unsubscribe(null) }.getMessage must be("subscriber is null")
     }
 
-    "be able to log unhandled messages" in {
-      val sys = ActorSystem("EventStreamSpecUnhandled", configUnhandled)
-      try {
-        sys.eventStream.subscribe(testActor, classOf[AnyRef])
-        val m = UnhandledMessage(42, sys.deadLetters, sys.deadLetters)
-        sys.eventStream.publish(m)
-        expectMsgAllOf(m, Logging.Debug(sys.deadLetters.path.toString, sys.deadLetters.getClass, "unhandled message from " + sys.deadLetters + ": 42"))
-        sys.eventStream.unsubscribe(testActor)
-      } finally {
-        sys.shutdown()
-      }
-    }
-
     "manage log levels" in {
       val bus = new EventStream(false)
       bus.startDefaultLoggers(impl)
