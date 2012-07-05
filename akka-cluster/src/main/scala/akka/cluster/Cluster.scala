@@ -29,6 +29,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.{ Map, SortedSet }
 import scala.collection.GenTraversableOnce
 import java.util.concurrent.atomic.AtomicLong
+import java.security.MessageDigest
 
 /**
  * Interface for membership change listener.
@@ -200,7 +201,13 @@ object Member {
 /**
  * Envelope adding a sender address to the gossip.
  */
-case class GossipEnvelope(from: Address, gossip: Gossip) extends ClusterMessage
+case class GossipEnvelope(from: Address, gossip: Gossip, conversation: Boolean = true) extends ClusterMessage
+
+/**
+ * When conflicting versions of received and local [[akka.cluster.Gossip]] is detected
+ * it's forwarded to the leader for conflict resolution.
+ */
+case class GossipMergeConflict(a: GossipEnvelope, b: GossipEnvelope) extends ClusterMessage
 
 /**
  * Defines the current status of a cluster member node
@@ -354,6 +361,11 @@ case class Gossip(
     Gossip(GossipOverview(mergedSeen, mergedUnreachable), mergedMembers, mergedMeta, mergedVClock)
   }
 
+  def isLeader(address: Address): Boolean =
+    members.nonEmpty && (address == members.head.address)
+
+  def leader: Option[Address] = members.headOption.map(_.address)
+
   override def toString =
     "Gossip(" +
       "overview = " + overview +
@@ -371,8 +383,18 @@ case class Heartbeat(from: Address) extends ClusterMessage
 /**
  * INTERNAL API.
  *
+ * Command to [akka.cluster.ClusterHeartbeatSender]], which will send [[akka.cluster.Heartbeat]]
+ * to the other node.
+ * Local only, no need to serialize.
+ */
+private[cluster] case class SendHeartbeat(heartbeatMsg: Heartbeat, to: Address, deadline: Deadline)
+
+/**
+ * INTERNAL API.
+ *
  * Manages routing of the different cluster commands.
- * Instantiated as a single instance for each Cluster - e.g. commands are serialized to Cluster message after message.
+ * Instantiated as a single instance for each Cluster - e.g. commands are serialized
+ * to Cluster message after message, but concurrent with other types of messages.
  */
 private[cluster] final class ClusterCommandDaemon(cluster: Cluster) extends Actor {
   import ClusterUserAction._
@@ -398,7 +420,7 @@ private[cluster] final class ClusterCommandDaemon(cluster: Cluster) extends Acto
     if (seedRoutees.isEmpty) {
       cluster join cluster.selfAddress
     } else {
-      implicit val within = Timeout(cluster.clusterSettings.SeedNodeTimeout)
+      implicit val within = Timeout(cluster.settings.SeedNodeTimeout)
       val seedRouter = context.actorOf(
         Props.empty.withRouter(ScatterGatherFirstCompletedRouter(
           routees = seedRoutees, within = within.duration)))
@@ -415,18 +437,116 @@ private[cluster] final class ClusterCommandDaemon(cluster: Cluster) extends Acto
 /**
  * INTERNAL API.
  *
- * Pooled and routed with N number of configurable instances.
- * Concurrent access to Cluster.
+ * Receives Gossip messages and delegates to Cluster.
+ * Instantiated as a single instance for each Cluster - e.g. gossips are serialized
+ * to Cluster message after message, but concurrent with other types of messages.
  */
-private[cluster] final class ClusterGossipDaemon(cluster: Cluster) extends Actor {
-  val log = Logging(context.system, this)
+private[cluster] final class ClusterGossipDaemon(cluster: Cluster) extends Actor with ActorLogging {
 
   def receive = {
-    case Heartbeat(from)              ⇒ cluster.receiveHeartbeat(from)
-    case GossipEnvelope(from, gossip) ⇒ cluster.receiveGossip(from, gossip)
+    case msg: GossipEnvelope      ⇒ cluster.receiveGossip(msg)
+    case msg: GossipMergeConflict ⇒ cluster.receiveGossipMerge(msg)
   }
 
-  override def unhandled(unknown: Any) = log.error("[/system/cluster/gossip] can not respond to messages - received [{}]", unknown)
+  override def unhandled(unknown: Any) = log.error("[{}] can not respond to messages - received [{}]",
+    self.path, unknown)
+}
+
+/**
+ * INTERNAL API.
+ *
+ * Receives Heartbeat messages and delegates to Cluster.
+ * Instantiated as a single instance for each Cluster - e.g. heartbeats are serialized
+ * to Cluster message after message, but concurrent with other types of messages.
+ */
+private[cluster] final class ClusterHeartbeatDaemon(cluster: Cluster) extends Actor with ActorLogging {
+
+  def receive = {
+    case Heartbeat(from) ⇒ cluster.receiveHeartbeat(from)
+  }
+
+  override def unhandled(unknown: Any) = log.error("[{}] can not respond to messages - received [{}]",
+    self.path, unknown)
+}
+
+/*
+ * This actor is responsible for sending the heartbeat messages to
+ * other nodes. Netty blocks when sending to broken connections. This actor
+ * isolates sending to different nodes by using child workers for each target
+ * address and thereby reduce the risk of irregular heartbeats to healty
+ * nodes due to broken connections to other nodes.
+ */
+private[cluster] final class ClusterHeartbeatSender(cluster: Cluster) extends Actor with ActorLogging {
+
+  /**
+   * Looks up and returns the remote cluster heartbeat connection for the specific address.
+   */
+  def clusterHeartbeatConnectionFor(address: Address): ActorRef =
+    context.system.actorFor(RootActorPath(address) / "system" / "cluster" / "heartbeat")
+
+  val digester = MessageDigest.getInstance("MD5")
+
+  /**
+   * Child name is MD5 hash of the address.
+   * FIXME Change to URLEncode when ticket #2123 has been fixed
+   */
+  def encodeChildName(name: String): String = {
+    digester update name.getBytes("UTF-8")
+    digester.digest.map { h ⇒ "%02x".format(0xFF & h) }.mkString
+  }
+
+  def receive = {
+    case msg @ SendHeartbeat(from, to, deadline) ⇒
+      val workerName = encodeChildName(to.toString)
+      val worker = context.actorFor(workerName) match {
+        case notFound if notFound.isTerminated ⇒
+          context.actorOf(Props(new ClusterHeartbeatSenderWorker(
+            cluster.settings.SendCircuitBreakerSettings, clusterHeartbeatConnectionFor(to))), workerName)
+        case child ⇒ child
+      }
+      worker ! msg
+  }
+
+}
+
+/**
+ * Responsible for sending [[akka.cluster.Heartbeat]] to one specific address.
+ *
+ * Netty blocks when sending to broken connections, and this actor uses
+ * a configurable circuit breaker to reduce connect attempts to broken
+ * connections.
+ *
+ * @see ClusterHeartbeatSender
+ */
+private[cluster] final class ClusterHeartbeatSenderWorker(
+  cbSettings: CircuitBreakerSettings, toRef: ActorRef)
+  extends Actor with ActorLogging {
+
+  val breaker = CircuitBreaker(context.system.scheduler,
+    cbSettings.maxFailures, cbSettings.callTimeout, cbSettings.resetTimeout).
+    onHalfOpen(log.debug("CircuitBreaker Half-Open for: [{}]", toRef)).
+    onOpen(log.debug("CircuitBreaker Open for [{}]", toRef)).
+    onClose(log.debug("CircuitBreaker Closed for [{}]", toRef))
+
+  context.setReceiveTimeout(30 seconds)
+
+  def receive = {
+    case SendHeartbeat(heartbeatMsg, _, deadline) ⇒
+      if (!deadline.isOverdue) {
+        // the CircuitBreaker will measure elapsed time and open if too many long calls
+        try breaker.withSyncCircuitBreaker {
+          log.debug("Cluster Node [{}] - Heartbeat to [{}]", heartbeatMsg.from, toRef)
+          toRef ! heartbeatMsg
+          if (deadline.isOverdue) log.debug("Sending heartbeat to [{}] took longer than expected", toRef)
+        } catch { case e: CircuitBreakerOpenException ⇒ /* skip sending heartbeat to broken connection */ }
+
+        // make sure it will cleanup when not used any more
+        context.setReceiveTimeout(30 seconds)
+      }
+
+    case ReceiveTimeout ⇒ context.stop(self) // cleanup when not used
+
+  }
 }
 
 /**
@@ -434,17 +554,24 @@ private[cluster] final class ClusterGossipDaemon(cluster: Cluster) extends Actor
  *
  * Supervisor managing the different Cluster daemons.
  */
-private[cluster] final class ClusterDaemonSupervisor(cluster: Cluster) extends Actor {
-  val log = Logging(context.system, this)
+private[cluster] final class ClusterDaemonSupervisor(cluster: Cluster) extends Actor with ActorLogging {
 
-  private val commands = context.actorOf(Props(new ClusterCommandDaemon(cluster)), "commands")
-  private val gossip = context.actorOf(
-    Props(new ClusterGossipDaemon(cluster)).withRouter(
-      RoundRobinRouter(cluster.clusterSettings.NrOfGossipDaemons)), "gossip")
+  val configuredDispatcher = cluster.settings.UseDispatcher
+  val commands = context.actorOf(Props(new ClusterCommandDaemon(cluster)).
+    withDispatcher(configuredDispatcher), name = "commands")
+  val gossip = context.actorOf(Props(new ClusterGossipDaemon(cluster)).
+    withDispatcher(configuredDispatcher).
+    withRouter(RoundRobinRouter(cluster.settings.NrOfGossipDaemons)),
+    name = "gossip")
+  val heartbeat = context.actorOf(Props(new ClusterHeartbeatDaemon(cluster)).
+    withDispatcher(configuredDispatcher), name = "heartbeat")
+  val heartbeatSender = context.actorOf(Props(new ClusterHeartbeatSender(cluster)).
+    withDispatcher(configuredDispatcher), name = "heartbeatSender")
 
   def receive = Actor.emptyBehavior
 
-  override def unhandled(unknown: Any): Unit = log.error("[/system/cluster] can not respond to messages - received [{}]", unknown)
+  override def unhandled(unknown: Any): Unit = log.error("[{}] can not respond to messages - received [{}]",
+    self.path, unknown)
 }
 
 /**
@@ -526,8 +653,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   private val remote: RemoteActorRefProvider = system.provider.asInstanceOf[RemoteActorRefProvider]
 
   val remoteSettings = new RemoteSettings(system.settings.config, system.name)
-  val clusterSettings = new ClusterSettings(system.settings.config, system.name)
-  import clusterSettings._
+  val settings = new ClusterSettings(system.settings.config, system.name)
+  import settings._
 
   val selfAddress = remote.transport.address
   private val selfHeartbeat = Heartbeat(selfAddress)
@@ -548,7 +675,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
   // create supervisor for daemons under path "/system/cluster"
   private val clusterDaemons = {
-    val createChild = CreateChild(Props(new ClusterDaemonSupervisor(this)), "cluster")
+    val createChild = CreateChild(Props(new ClusterDaemonSupervisor(this)).
+      withDispatcher(UseDispatcher), name = "cluster")
     Await.result(system.systemGuardian ? createChild, defaultTimeout.duration) match {
       case a: ActorRef  ⇒ a
       case e: Exception ⇒ throw e
@@ -675,15 +803,15 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   /**
    * Is this node the leader?
    */
-  def isLeader: Boolean = {
-    val members = latestGossip.members
-    members.nonEmpty && (selfAddress == members.head.address)
-  }
+  def isLeader: Boolean = latestGossip.isLeader(selfAddress)
 
   /**
    * Get the address of the current leader.
    */
-  def leader: Address = latestGossip.members.head.address
+  def leader: Address = latestGossip.leader match {
+    case Some(x) ⇒ x
+    case None    ⇒ throw new IllegalStateException("There is no leader in this cluster")
+  }
 
   /**
    * Is this node a singleton cluster?
@@ -838,7 +966,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
       if (!state.compareAndSet(localState, newState)) joining(node) // recur if we failed update
       else {
-        log.info("Cluster Node [{}] - Node [{}] is JOINING", selfAddress, node)
+        log.debug("Cluster Node [{}] - Node [{}] is JOINING", selfAddress, node)
         // treat join as initial heartbeat, so that it becomes unavailable if nothing more happens
         if (node != selfAddress) {
           failureDetector heartbeat node
@@ -962,6 +1090,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
   // Can be removed when gossip has been optimized
   private val _receivedGossipCount = new AtomicLong
+
   /**
    * INTERNAL API.
    */
@@ -969,67 +1098,156 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
   /**
    * INTERNAL API.
+   */
+  private[cluster] def mergeCount: Long = _mergeCount.get
+
+  // Can be removed when gossip has been optimized
+  private val _mergeCount = new AtomicLong
+
+  /**
+   * INTERNAL API.
+   */
+  private[cluster] def mergeDetectedCount: Long = _mergeDetectedCount.get
+
+  // Can be removed when gossip has been optimized
+  private val _mergeDetectedCount = new AtomicLong
+
+  private val _mergeConflictCount = new AtomicLong
+  private def mergeRate(count: Long): Double = (count * 1000.0) / GossipInterval.toMillis
+
+  /**
+   * INTERNAL API.
+   *
+   * When conflicting versions of received and local [[akka.cluster.Gossip]] is detected
+   * it's forwarded to the leader for conflict resolution. Trying to simultaneously
+   * resolving conflicts at several nodes creates new conflicts. Therefore the leader resolves
+   * conflicts to limit divergence. To avoid overload there is also a configurable rate
+   * limit of how many conflicts that are handled by second. If the limit is
+   * exceeded the conflicting gossip messages are dropped and will reappear later.
+   */
+  private[cluster] def receiveGossipMerge(merge: GossipMergeConflict): Unit = {
+    val count = _mergeConflictCount.incrementAndGet
+    val rate = mergeRate(count)
+    if (rate <= MaxGossipMergeRate) {
+      receiveGossip(merge.a.copy(conversation = false))
+      receiveGossip(merge.b.copy(conversation = false))
+
+      // use one-way gossip from leader to reduce load of leader
+      def sendBack(to: Address): Unit = {
+        if (to != selfAddress && !latestGossip.overview.unreachable.exists(_.address == to))
+          oneWayGossipTo(to)
+      }
+
+      sendBack(merge.a.from)
+      sendBack(merge.b.from)
+
+    } else {
+      log.debug("Dropping gossip merge conflict due to rate [{}] / s ", rate)
+    }
+  }
+
+  /**
+   * INTERNAL API.
    *
    * Receive new gossip.
    */
   @tailrec
-  final private[cluster] def receiveGossip(from: Address, remoteGossip: Gossip): Unit = {
+  final private[cluster] def receiveGossip(envelope: GossipEnvelope): Unit = {
+    val from = envelope.from
+    val remoteGossip = envelope.gossip
     val localState = state.get
     val localGossip = localState.latestGossip
 
-    if (!localGossip.overview.isNonDownUnreachable(from)) {
+    if (remoteGossip.overview.unreachable.exists(_.address == selfAddress)) {
+      // FIXME how should we handle this situation?
+      log.debug("Received gossip with self as unreachable, from [{}]", from)
 
-      val winningGossip =
-        if (remoteGossip.version <> localGossip.version) {
-          // concurrent
-          val mergedGossip = remoteGossip merge localGossip
-          val versionedMergedGossip = mergedGossip :+ vclockNode
+    } else if (!localGossip.overview.isNonDownUnreachable(from)) {
 
-          versionedMergedGossip
+      // leader handles merge conflicts, or when they have different views of how is leader
+      val handleMerge = localGossip.leader == Some(selfAddress) || localGossip.leader != remoteGossip.leader
+      val conflict = remoteGossip.version <> localGossip.version
 
-        } else if (remoteGossip.version < localGossip.version) {
-          // local gossip is newer
-          localGossip
+      if (conflict && !handleMerge) {
+        // delegate merge resolution to leader to reduce number of simultaneous resolves,
+        // which will result in new conflicts
 
+        log.debug("Merge conflict [{}] detected [{}] <> [{}]", _mergeDetectedCount.incrementAndGet, selfAddress, from)
+
+        val count = _mergeConflictCount.incrementAndGet
+        val rate = mergeRate(count)
+        if (rate <= MaxGossipMergeRate) {
+          val leaderConnection = clusterGossipConnectionFor(localGossip.leader.get)
+          leaderConnection ! GossipMergeConflict(GossipEnvelope(selfAddress, localGossip), envelope)
         } else {
-          // remote gossip is newer
-          remoteGossip
+          log.debug("Skipping gossip merge conflict due to rate [{}] / s ", rate)
         }
 
-      val newJoinInProgress =
-        if (localState.joinInProgress.isEmpty) localState.joinInProgress
-        else localState.joinInProgress --
-          winningGossip.members.map(_.address) --
-          winningGossip.overview.unreachable.map(_.address)
+      } else {
 
-      val newState = localState copy (
-        latestGossip = winningGossip seen selfAddress,
-        joinInProgress = newJoinInProgress)
+        val winningGossip =
 
-      // for all new joining nodes we optimistically remove them from the failure detector, since if we wait until
-      // we have won the CAS, then the node might be picked up by the reapUnreachableMembers task and moved to
-      // unreachable before we can remove the node from the failure detector
-      (newState.latestGossip.members -- localState.latestGossip.members).filter(_.status == Joining).foreach {
-        case node ⇒ failureDetector.remove(node.address)
-      }
+          if (conflict) {
+            // conflicting versions, merge, and new version
+            val mergedGossip = remoteGossip merge localGossip
+            mergedGossip :+ vclockNode
 
-      // if we won the race then update else try again
-      if (!state.compareAndSet(localState, newState)) receiveGossip(from, remoteGossip) // recur if we fail the update
-      else {
-        log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
+          } else if (remoteGossip.version < localGossip.version) {
+            // local gossip is newer
+            localGossip
 
-        if ((winningGossip ne localGossip) && (winningGossip ne remoteGossip))
-          log.debug(
-            """Couldn't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merged them into [{}]""",
-            remoteGossip, localGossip, winningGossip)
+          } else if (!remoteGossip.members.exists(_.address == selfAddress)) {
+            // FIXME This is a very strange. It can happen when many nodes join at the same time.
+            // It's not detected as an ordinary version conflict <>
+            // If we don't handle this situation there will be IllegalArgumentException when marking this as seen
+            // merge, and new version
+            val mergedGossip = remoteGossip merge (localGossip :+ Member(selfAddress, Joining))
+            mergedGossip :+ vclockNode
 
-        _receivedGossipCount.incrementAndGet()
-        notifyMembershipChangeListeners(localState, newState)
+          } else {
+            // remote gossip is newer
+            remoteGossip
 
-        if ((winningGossip ne remoteGossip) || (newState.latestGossip ne remoteGossip)) {
-          // send back gossip to sender when sender had different view, i.e. merge, or sender had
-          // older or sender had newer
-          gossipTo(from)
+          }
+
+        val newJoinInProgress =
+          if (localState.joinInProgress.isEmpty) localState.joinInProgress
+          else localState.joinInProgress --
+            winningGossip.members.map(_.address) --
+            winningGossip.overview.unreachable.map(_.address)
+
+        val newState = localState copy (
+          latestGossip = winningGossip seen selfAddress,
+          joinInProgress = newJoinInProgress)
+
+        // for all new joining nodes we optimistically remove them from the failure detector, since if we wait until
+        // we have won the CAS, then the node might be picked up by the reapUnreachableMembers task and moved to
+        // unreachable before we can remove the node from the failure detector
+        (newState.latestGossip.members -- localState.latestGossip.members).filter(_.status == Joining).foreach {
+          case node ⇒ failureDetector.remove(node.address)
+        }
+
+        // if we won the race then update else try again
+        if (!state.compareAndSet(localState, newState)) receiveGossip(envelope) // recur if we fail the update
+        else {
+          log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
+
+          if (conflict) {
+            _mergeCount.incrementAndGet
+            log.debug(
+              """Couldn't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merged them into [{}]""",
+              remoteGossip, localGossip, winningGossip)
+          }
+
+          _receivedGossipCount.incrementAndGet()
+          notifyMembershipChangeListeners(localState, newState)
+
+          if (envelope.conversation &&
+            (conflict || (winningGossip ne remoteGossip) || (newState.latestGossip ne remoteGossip))) {
+            // send back gossip to sender when sender had different view, i.e. merge, or sender had
+            // older or sender had newer
+            gossipTo(from)
+          }
         }
       }
     }
@@ -1050,10 +1268,19 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    *
    * Gossips latest gossip to an address.
    */
-  private[cluster] def gossipTo(address: Address): Unit = {
+  private[cluster] def gossipTo(address: Address): Unit =
+    gossipTo(address, GossipEnvelope(selfAddress, latestGossip, conversation = true))
+
+  /**
+   * INTERNAL API.
+   */
+  private[cluster] def oneWayGossipTo(address: Address): Unit =
+    gossipTo(address, GossipEnvelope(selfAddress, latestGossip, conversation = false))
+
+  private def gossipTo(address: Address, gossipMsg: GossipEnvelope): Unit = if (address != selfAddress) {
     val connection = clusterGossipConnectionFor(address)
     log.debug("Cluster Node [{}] - Gossiping to [{}]", selfAddress, connection)
-    connection ! GossipEnvelope(selfAddress, latestGossip)
+    connection ! gossipMsg
   }
 
   /**
@@ -1088,6 +1315,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    */
   private[cluster] def gossip(): Unit = {
     val localState = state.get
+    _mergeConflictCount.set(0)
 
     log.debug("Cluster Node [{}] - Initiating new round of gossip", selfAddress)
 
@@ -1137,11 +1365,9 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
     val beatTo = localState.latestGossip.members.toSeq.map(_.address) ++ localState.joinInProgress.keys
 
-    for (address ← beatTo; if address != selfAddress) {
-      val connection = clusterGossipConnectionFor(address)
-      log.debug("Cluster Node [{}] - Heartbeat to [{}]", selfAddress, connection)
-      connection ! selfHeartbeat
-    }
+    val deadline = Deadline.now + HeartbeatInterval
+    for (address ← beatTo; if address != selfAddress)
+      clusterHeartbeatSender ! SendHeartbeat(selfHeartbeat, address, deadline)
   }
 
   /**
@@ -1163,7 +1389,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
       val newlyDetectedUnreachableMembers = localMembers filterNot { member ⇒ failureDetector.isAvailable(member.address) }
 
-      if (newlyDetectedUnreachableMembers.nonEmpty) { // we have newly detected members marked as unavailable
+      if (newlyDetectedUnreachableMembers.nonEmpty) {
 
         val newMembers = localMembers -- newlyDetectedUnreachableMembers
         val newUnreachableMembers = localUnreachableMembers ++ newlyDetectedUnreachableMembers
@@ -1180,7 +1406,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
         // if we won the race then update else try again
         if (!state.compareAndSet(localState, newState)) reapUnreachableMembers() // recur
         else {
-          log.info("Cluster Node [{}] - Marking node(s) as UNREACHABLE [{}]", selfAddress, newlyDetectedUnreachableMembers.mkString(", "))
+          log.error("Cluster Node [{}] - Marking node(s) as UNREACHABLE [{}]", selfAddress, newlyDetectedUnreachableMembers.mkString(", "))
 
           notifyMembershipChangeListeners(localState, newState)
         }
@@ -1459,6 +1685,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    * Looks up and returns the remote cluster gossip connection for the specific address.
    */
   private def clusterGossipConnectionFor(address: Address): ActorRef = system.actorFor(RootActorPath(address) / "system" / "cluster" / "gossip")
+
+  private def clusterHeartbeatSender: ActorRef = system.actorFor(clusterDaemons.path / "heartbeatSender")
 
   /**
    * Gets the addresses of a all the 'deputy' nodes - excluding this node if part of the group.

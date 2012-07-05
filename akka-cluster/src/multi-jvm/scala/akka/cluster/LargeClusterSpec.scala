@@ -36,12 +36,21 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     akka.cluster {
       gossip-interval = 500 ms
       auto-join = off
-      failure-detector.threshold = 4
+      nr-of-gossip-daemons = 2
+      failure-detector.acceptable-heartbeat-pause = 10s
     }
     akka.loglevel = INFO
-    akka.actor.default-dispatcher.fork-join-executor.parallelism-max = 2
+    akka.actor.default-dispatcher.fork-join-executor {
+      # when using nodes-per-datacenter=10 we need some extra
+      # threads to keep up with netty connect blocking
+      parallelism-min = 13
+      parallelism-max = 13
+    }
     akka.scheduler.tick-duration = 33 ms
-    akka.remote.netty.execution-pool-size = 0
+    akka.remote.netty.execution-pool-size = 4
+    #akka.remote.netty.reconnection-time-window = 1s
+    akka.remote.netty.backoff-timeout = 500ms
+    akka.remote.netty.connection-timeout = 500ms
 
     # don't use testconductor transport in this test, especially not
     # when using use-dispatcher-for-io
@@ -244,12 +253,11 @@ abstract class LargeClusterSpec
       }
     }
 
-    // FIXME sometimes this fails, FD marks nodes from other than second-datacenter as unavailable
-    "detect failure and auto-down crashed nodes in second-datacenter" taggedAs LongRunningTest ignore {
+    "detect failure and auto-down crashed nodes in second-datacenter" taggedAs LongRunningTest in {
       val unreachableNodes = nodesPerDatacenter
       val liveNodes = nodesPerDatacenter * 4
 
-      within(20.seconds + expectedMaxDuration(liveNodes)) {
+      within(30.seconds + (3.seconds * liveNodes)) {
         val startGossipCounts = Map.empty[Cluster, Long] ++
           systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).receivedGossipCount))
         def gossipCount(c: Cluster): Long = c.receivedGossipCount - startGossipCounts(c)
@@ -278,10 +286,11 @@ abstract class LargeClusterSpec
         runOn(firstDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter) {
           Await.ready(latch, remaining)
           awaitCond(systems.forall(Cluster(_).convergence.isDefined))
+          val mergeCount = systems.map(sys ⇒ Cluster(sys).mergeCount).sum
           val counts = systems.map(sys ⇒ gossipCount(Cluster(sys)))
           val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / nodesPerDatacenter, counts.min, counts.max)
-          log.info("Convergence of [{}] nodes reached after failure, it took [{}], received [{}] gossip messages per node",
-            liveNodes, tookMillis, formattedStats)
+          log.info("Convergence of [{}] nodes reached after failure, it took [{}], received [{}] gossip messages per node, merged [{}] times",
+            liveNodes, tookMillis, formattedStats, mergeCount)
         }
 
         enterBarrier("after-6")

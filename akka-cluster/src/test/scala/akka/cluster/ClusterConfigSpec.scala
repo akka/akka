@@ -7,6 +7,7 @@ package akka.cluster
 import akka.testkit.AkkaSpec
 import akka.util.duration._
 import akka.util.Duration
+import akka.dispatch.Dispatchers
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterConfigSpec extends AkkaSpec {
@@ -32,9 +33,15 @@ class ClusterConfigSpec extends AkkaSpec {
       NrOfGossipDaemons must be(4)
       AutoJoin must be(true)
       AutoDown must be(false)
+      UseDispatcher must be(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)
+      MaxGossipMergeRate must be(5.0 plusOrMinus 0.0001)
       SchedulerTickDuration must be(33 millis)
       SchedulerTicksPerWheel must be(512)
+      SendCircuitBreakerSettings must be(CircuitBreakerSettings(
+        maxFailures = 3,
+        callTimeout = 2 seconds,
+        resetTimeout = 30 seconds))
     }
   }
 }
