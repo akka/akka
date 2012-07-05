@@ -119,7 +119,7 @@ One more special aspect which is overridden for single-threaded tests is the
 :meth:`receiveTimeout`, as including that would entail asynchronous queuing of
 :obj:`ReceiveTimeout` messages, violating the synchronous contract.
 
-.. warning::
+.. note::
 
    To summarize: :class:`TestActorRef` overwrites two fields: it sets the
    dispatcher to :obj:`CallingThreadDispatcher.global` and it sets the
