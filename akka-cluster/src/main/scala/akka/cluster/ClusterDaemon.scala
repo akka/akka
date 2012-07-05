@@ -165,7 +165,6 @@ private[cluster] final class ClusterDaemon(environment: ClusterEnvironment) exte
  * INTERNAL API.
  */
 private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) extends Actor with ActorLogging {
-  // FIXME break up the cluster constructor parameter into something that is easier to test without Cluster
   import ClusterLeaderAction._
   import InternalClusterAction._
   import ClusterHeartbeatSender._
@@ -509,14 +508,6 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
           } else if (remoteGossip.version < localGossip.version) {
             // local gossip is newer
             localGossip
-
-          } else if (!remoteGossip.members.exists(_.address == selfAddress)) {
-            // FIXME This is a very strange. It can happen when many nodes join at the same time.
-            // It's not detected as an ordinary version conflict <>
-            // If we don't handle this situation there will be IllegalArgumentException when marking this as seen
-            // merge, and new version
-            val mergedGossip = remoteGossip merge (localGossip :+ Member(selfAddress, Joining))
-            mergedGossip :+ vclockNode
 
           } else {
             // remote gossip is newer
