@@ -16,6 +16,7 @@ import akka.event.Logging.{ LogEventException, LogEvent }
 import collection.immutable.{ TreeSet, TreeMap }
 import akka.util.{ Unsafe, Duration, Helpers, NonFatal }
 import java.util.concurrent.atomic.AtomicLong
+import scala.collection.JavaConverters.asJavaIterableConverter
 
 //TODO: everything here for current compatibility - could be limited more
 
@@ -260,7 +261,6 @@ private[akka] object ActorCell {
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
   final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
-
 }
 
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)
@@ -286,6 +286,12 @@ private[akka] class ActorCell(
 
   final def provider = system.provider
 
+  /*
+   * RECEIVE TIMEOUT
+   */
+
+  var receiveTimeoutData: (Duration, Cancellable) = emptyReceiveTimeoutData
+
   override final def receiveTimeout: Option[Duration] = receiveTimeoutData._1 match {
     case Duration.Undefined ⇒ None
     case duration           ⇒ Some(duration)
@@ -300,142 +306,22 @@ private[akka] class ActorCell(
 
   final override def resetReceiveTimeout(): Unit = setReceiveTimeout(None)
 
-  /**
-   * In milliseconds
+  /*
+   * CHILDREN
    */
-  var receiveTimeoutData: (Duration, Cancellable) = emptyReceiveTimeoutData
 
   @volatile
   private var _childrenRefsDoNotCallMeDirectly: ChildrenContainer = EmptyChildrenContainer
 
   def childrenRefs: ChildrenContainer = Unsafe.instance.getObjectVolatile(this, childrenOffset).asInstanceOf[ChildrenContainer]
 
-  private def swapChildrenRefs(oldChildren: ChildrenContainer, newChildren: ChildrenContainer): Boolean =
-    Unsafe.instance.compareAndSwapObject(this, childrenOffset, oldChildren, newChildren)
+  final def children: Iterable[ActorRef] = childrenRefs.children
+  final def getChildren(): java.lang.Iterable[ActorRef] = asJavaIterableConverter(children).asJava
 
-  @tailrec private def reserveChild(name: String): Boolean = {
-    val c = childrenRefs
-    swapChildrenRefs(c, c.reserve(name)) || reserveChild(name)
-  }
-
-  @tailrec private def unreserveChild(name: String): Boolean = {
-    val c = childrenRefs
-    swapChildrenRefs(c, c.unreserve(name)) || unreserveChild(name)
-  }
-
-  @tailrec private def addChild(ref: ActorRef): Boolean = {
-    val c = childrenRefs
-    swapChildrenRefs(c, c.add(ref)) || addChild(ref)
-  }
-
-  @tailrec private def shallDie(ref: ActorRef): Boolean = {
-    val c = childrenRefs
-    swapChildrenRefs(c, c.shallDie(ref)) || shallDie(ref)
-  }
-
-  @tailrec private def removeChild(ref: ActorRef): ChildrenContainer = {
-    val c = childrenRefs
-    val n = c.remove(ref)
-    if (swapChildrenRefs(c, n)) n
-    else removeChild(ref)
-  }
-
-  @tailrec private def setChildrenTerminationReason(reason: SuspendReason): Boolean = {
-    childrenRefs match {
-      case c: TerminatingChildrenContainer ⇒ swapChildrenRefs(c, c.copy(reason = reason)) || setChildrenTerminationReason(reason)
-      case _                               ⇒ false
-    }
-  }
-
-  private def isTerminating = childrenRefs match {
-    case TerminatingChildrenContainer(_, _, Termination) ⇒ true
-    case TerminatedChildrenContainer ⇒ true
-    case _ ⇒ false
-  }
-  private def isNormal = childrenRefs match {
-    case TerminatingChildrenContainer(_, _, Termination | _: Recreation) ⇒ false
-    case TerminatedChildrenContainer ⇒ false
-    case _ ⇒ true
-  }
-
-  private def _actorOf(props: Props, name: String, async: Boolean): ActorRef = {
-    if (system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
-      val ser = SerializationExtension(system)
-      ser.serialize(props.creator) match {
-        case Left(t) ⇒ throw t
-        case Right(bytes) ⇒ ser.deserialize(bytes, props.creator.getClass) match {
-          case Left(t) ⇒ throw t
-          case _       ⇒ //All good
-        }
-      }
-    }
-    /*
-     * in case we are currently terminating, fail external attachChild requests
-     * (internal calls cannot happen anyway because we are suspended)
-     */
-    if (isTerminating) throw new IllegalStateException("cannot create children while terminating or terminated")
-    else {
-      reserveChild(name)
-      // this name will either be unreserved or overwritten with a real child below
-      val actor =
-        try {
-          provider.actorOf(systemImpl, props, self, self.path / name,
-            systemService = false, deploy = None, lookupDeploy = true, async = async)
-        } catch {
-          case NonFatal(e) ⇒
-            unreserveChild(name)
-            throw e
-        }
-      addChild(actor)
-      actor
-    }
-  }
-
-  def actorOf(props: Props): ActorRef = _actorOf(props, randomName(), async = false)
-
-  def actorOf(props: Props, name: String): ActorRef = _actorOf(props, checkName(name), async = false)
-
-  private def checkName(name: String): String = {
-    import ActorPath.ElementRegex
-    name match {
-      case null           ⇒ throw new InvalidActorNameException("actor name must not be null")
-      case ""             ⇒ throw new InvalidActorNameException("actor name must not be empty")
-      case ElementRegex() ⇒ name
-      case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex)
-    }
-  }
-
-  private[akka] def attachChild(props: Props, name: String): ActorRef =
-    _actorOf(props, checkName(name), async = true)
-
-  private[akka] def attachChild(props: Props): ActorRef =
-    _actorOf(props, randomName(), async = true)
-
-  final def stop(actor: ActorRef): Unit = {
-    val started = actor match {
-      case r: RepointableRef ⇒ r.isStarted
-      case _                 ⇒ true
-    }
-    if (childrenRefs.getByRef(actor).isDefined && started) shallDie(actor)
-    actor.asInstanceOf[InternalActorRef].stop()
-  }
-
-  var currentMessage: Envelope = _
-  var actor: Actor = _
-  private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
-  var watching: Set[ActorRef] = emptyActorRefSet
-  var watchedBy: Set[ActorRef] = emptyActorRefSet
-
-  /*
-   * have we told our supervisor that we Failed() and have not yet heard back?
-   * (actually: we might have heard back but not yet acted upon it, in case of
-   * a restart with dying children)
-   * might well be replaced by ref to a Cancellable in the future (see #2299)
-   */
-  private var _failed = false
-  def currentlyFailed: Boolean = _failed
-  def setFailed(): Unit = _failed = true
-  def setNotFailed(): Unit = _failed = false
+  def actorOf(props: Props): ActorRef = makeChild(this, props, randomName(), async = false)
+  def actorOf(props: Props, name: String): ActorRef = makeChild(this, props, checkName(name), async = false)
+  private[akka] def attachChild(props: Props): ActorRef = makeChild(this, props, randomName(), async = true)
+  private[akka] def attachChild(props: Props, name: String): ActorRef = makeChild(this, props, checkName(name), async = true)
 
   @volatile private var _nextNameDoNotCallMeDirectly = 0L
   final protected def randomName(): String = {
@@ -447,20 +333,51 @@ private[akka] class ActorCell(
     Helpers.base64(inc())
   }
 
+  final def stop(actor: ActorRef): Unit = {
+    val started = actor match {
+      case r: RepointableRef ⇒ r.isStarted
+      case _                 ⇒ true
+    }
+    if (childrenRefs.getByRef(actor).isDefined && started) shallDie(this, actor)
+    actor.asInstanceOf[InternalActorRef].stop()
+  }
+
+  /*
+   * ACTOR STATE
+   */
+
+  var currentMessage: Envelope = _
+  var actor: Actor = _
+  private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
+  var watching: Set[ActorRef] = emptyActorRefSet
+  var watchedBy: Set[ActorRef] = emptyActorRefSet
+
+  override final def watch(subject: ActorRef): ActorRef = subject match {
+    case a: InternalActorRef ⇒
+      if (a != self && !watching.contains(a)) {
+        a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+        watching += a
+      }
+      a
+  }
+
+  override final def unwatch(subject: ActorRef): ActorRef = subject match {
+    case a: InternalActorRef ⇒
+      if (a != self && watching.contains(a)) {
+        a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+        watching -= a
+      }
+      a
+  }
+
+  /*
+   * MAILBOX and DISPATCHER
+   */
+
   @volatile private var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
 
-  /**
-   * INTERNAL API
-   *
-   * Returns a reference to the current mailbox
-   */
   @inline final def mailbox: Mailbox = Unsafe.instance.getObjectVolatile(this, mailboxOffset).asInstanceOf[Mailbox]
 
-  /**
-   * INTERNAL API
-   *
-   * replaces the current mailbox using getAndSet semantics
-   */
   @tailrec final def swapMailbox(newMailbox: Mailbox): Mailbox = {
     val oldMailbox = mailbox
     if (!Unsafe.instance.compareAndSwapObject(this, mailboxOffset, oldMailbox, newMailbox)) swapMailbox(newMailbox)
@@ -505,25 +422,44 @@ private[akka] class ActorCell(
   final def resume(inResponseToFailure: Boolean): Unit = dispatcher.systemDispatch(this, Resume(inResponseToFailure))
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+  final def restart(cause: Throwable): Unit = dispatcher.systemDispatch(this, Recreate(cause))
+
+  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   final def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
 
-  override final def watch(subject: ActorRef): ActorRef = subject match {
-    case a: InternalActorRef ⇒
-      if (a != self && !watching.contains(a)) {
-        a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-        watching += a
-      }
-      a
+  def tell(message: Any, sender: ActorRef): Unit =
+    dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender, system))
+
+  override def sendSystemMessage(message: SystemMessage): Unit = dispatcher.systemDispatch(this, message)
+
+  /*
+   * ACTOR CONTEXT IMPL
+   */
+
+  final def sender: ActorRef = currentMessage match {
+    case null                      ⇒ system.deadLetters
+    case msg if msg.sender ne null ⇒ msg.sender
+    case _                         ⇒ system.deadLetters
   }
 
-  override final def unwatch(subject: ActorRef): ActorRef = subject match {
-    case a: InternalActorRef ⇒
-      if (a != self && watching.contains(a)) {
-        a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-        watching -= a
-      }
-      a
+  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit =
+    behaviorStack = behavior :: (if (discardOld && behaviorStack.nonEmpty) behaviorStack.tail else behaviorStack)
+
+  def become(behavior: Procedure[Any]): Unit = become(behavior, false)
+
+  def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
+    become({ case msg ⇒ behavior.apply(msg) }: Actor.Receive, discardOld)
+
+  def unbecome(): Unit = {
+    val original = behaviorStack
+    behaviorStack =
+      if (original.isEmpty || original.tail.isEmpty) actor.receive :: emptyBehaviorStack
+      else original.tail
   }
+
+  /*
+   * FAILURE HANDLING
+   */
 
   /* =================
    * T H E   R U L E S
@@ -542,24 +478,16 @@ private[akka] class ActorCell(
 
   private def resumeNonRecursive(): Unit = dispatcher resume this
 
-  final def children: Iterable[ActorRef] = childrenRefs.children
-
-  /**
-   * Impl UntypedActorContext
+  /*
+   * have we told our supervisor that we Failed() and have not yet heard back?
+   * (actually: we might have heard back but not yet acted upon it, in case of
+   * a restart with dying children)
+   * might well be replaced by ref to a Cancellable in the future (see #2299)
    */
-  final def getChildren(): java.lang.Iterable[ActorRef] =
-    scala.collection.JavaConverters.asJavaIterableConverter(children).asJava
-
-  def tell(message: Any, sender: ActorRef): Unit =
-    dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender, system))
-
-  override def sendSystemMessage(message: SystemMessage): Unit = dispatcher.systemDispatch(this, message)
-
-  final def sender: ActorRef = currentMessage match {
-    case null                      ⇒ system.deadLetters
-    case msg if msg.sender ne null ⇒ msg.sender
-    case _                         ⇒ system.deadLetters
-  }
+  private var _failed = false
+  def currentlyFailed: Boolean = _failed
+  def setFailed(): Unit = _failed = true
+  def setNotFailed(): Unit = _failed = false
 
   //This method is in charge of setting up the contextStack and create a new instance of the Actor
   protected def newActor(): Actor = {
@@ -584,7 +512,7 @@ private[akka] class ActorCell(
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def systemInvoke(message: SystemMessage) {
 
-    def create(): Unit = if (isNormal) {
+    def create(): Unit = if (childrenRefs.isNormal) {
       try {
         val created = newActor()
         actor = created
@@ -603,7 +531,7 @@ private[akka] class ActorCell(
     }
 
     def recreate(cause: Throwable): Unit =
-      if (isNormal) {
+      if (childrenRefs.isNormal) {
         val failedActor = actor
         if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
         if (failedActor ne null) {
@@ -621,7 +549,7 @@ private[akka] class ActorCell(
         assert(mailbox.isSuspended, "mailbox must be suspended during restart, status=" + mailbox.status)
         childrenRefs match {
           case ct: TerminatingChildrenContainer ⇒
-            setChildrenTerminationReason(Recreation(cause))
+            setChildrenTerminationReason(this, Recreation(cause))
           case _ ⇒
             doRecreate(cause, failedActor)
         }
@@ -633,7 +561,7 @@ private[akka] class ActorCell(
     def doSuspend(): Unit = {
       // done always to keep that suspend counter balanced
       suspendNonRecursive()
-      children foreach (_.asInstanceOf[InternalActorRef].suspend())
+      childrenRefs.suspendChildren()
     }
 
     def doResume(inResponseToFailure: Boolean): Unit = {
@@ -641,7 +569,7 @@ private[akka] class ActorCell(
       // must happen “atomically”
       try resumeNonRecursive()
       finally if (inResponseToFailure) setNotFailed()
-      children foreach (_.asInstanceOf[InternalActorRef].resume(inResponseToFailure = false))
+      childrenRefs.resumeChildren()
     }
 
     def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
@@ -685,7 +613,7 @@ private[akka] class ActorCell(
 
       childrenRefs match {
         case ct: TerminatingChildrenContainer ⇒
-          setChildrenTerminationReason(Termination)
+          setChildrenTerminationReason(this, Termination)
           // do not process normal messages while waiting for all children to terminate
           suspendNonRecursive()
           if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "stopping"))
@@ -693,8 +621,8 @@ private[akka] class ActorCell(
       }
     }
 
-    def supervise(child: ActorRef): Unit = if (!isTerminating) {
-      if (childrenRefs.getByRef(child).isEmpty) addChild(child)
+    def supervise(child: ActorRef): Unit = if (!childrenRefs.isTerminating) {
+      if (childrenRefs.getByRef(child).isEmpty) addChild(this, child)
       handleSupervise(child)
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
     }
@@ -733,11 +661,7 @@ private[akka] class ActorCell(
   }
 
   final def handleInvokeFailure(t: Throwable, message: String): Unit = {
-    try {
-      dispatcher.reportFailure(new LogEventException(Error(t, self.path.toString, clazz(actor), message), t))
-    } catch {
-      case NonFatal(_) ⇒ // no sense logging if logging does not work
-    }
+    publish(Error(t, self.path.toString, clazz(actor), message))
     // prevent any further messages to be processed until the actor has been restarted
     if (!currentlyFailed) {
       // suspend self; these two must happen “atomically”
@@ -748,36 +672,13 @@ private[akka] class ActorCell(
         case Envelope(Failed(`t`), child) ⇒ Set(child)
         case _                            ⇒ Set.empty
       }
-      childrenRefs.stats collect {
-        case ChildRestartStats(child, _, _) if !(skip contains child) ⇒ child
-      } foreach (_.asInstanceOf[InternalActorRef].suspend())
+      childrenRefs.suspendChildren(skip)
       // tell supervisor
       t match { // Wrap InterruptedExceptions and rethrow
         case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t)), self); throw t
         case _                       ⇒ parent.tell(Failed(t), self)
       }
     }
-  }
-
-  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit =
-    behaviorStack = behavior :: (if (discardOld && behaviorStack.nonEmpty) behaviorStack.tail else behaviorStack)
-
-  /**
-   * UntypedActorContext impl
-   */
-  def become(behavior: Procedure[Any]): Unit = become(behavior, false)
-
-  /*
-   * UntypedActorContext impl
-   */
-  def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
-    become({ case msg ⇒ behavior.apply(msg) }: Actor.Receive, discardOld)
-
-  def unbecome(): Unit = {
-    val original = behaviorStack
-    behaviorStack =
-      if (original.isEmpty || original.tail.isEmpty) actor.receive :: emptyBehaviorStack
-      else original.tail
   }
 
   def autoReceiveMessage(msg: Envelope): Unit = {
@@ -870,8 +771,8 @@ private[akka] class ActorCell(
 
   final def handleChildTerminated(child: ActorRef): Unit = try {
     childrenRefs match {
-      case tc @ TerminatingChildrenContainer(_, _, reason) ⇒
-        val n = removeChild(child)
+      case TerminatingChildrenContainer(_, _, reason) ⇒
+        val n = removeChild(this, child)
         actor.supervisorStrategy.handleChildTerminated(this, child, children)
         if (!n.isInstanceOf[TerminatingChildrenContainer]) reason match {
           case Recreation(cause) ⇒ doRecreate(cause, actor) // doRecreate since this is the continuation of "recreate"
@@ -879,7 +780,7 @@ private[akka] class ActorCell(
           case _                 ⇒
         }
       case _ ⇒
-        removeChild(child)
+        removeChild(this, child)
         actor.supervisorStrategy.handleChildTerminated(this, child, children)
     }
   } catch {
@@ -890,9 +791,6 @@ private[akka] class ActorCell(
     case r: RepointableActorRef ⇒ r.activate()
     case _                      ⇒
   }
-
-  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def restart(cause: Throwable): Unit = dispatcher.systemDispatch(this, Recreate(cause))
 
   final def checkReceiveTimeout() {
     val recvtimeout = receiveTimeoutData
