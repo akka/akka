@@ -9,8 +9,10 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.actor.Address
+import akka.pattern.ask
 import akka.remote.testconductor.RoleName
 import MemberStatus._
+import InternalClusterAction._
 
 object TransitionMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -28,7 +30,8 @@ class TransitionMultiJvmNode3 extends TransitionSpec with FailureDetectorPuppetS
 
 abstract class TransitionSpec
   extends MultiNodeSpec(TransitionMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec
+  with ImplicitSender {
 
   import TransitionMultiJvmSpec._
 
@@ -67,6 +70,22 @@ abstract class TransitionSpec
     memberStatus(address) == status
   }
 
+  def leaderActions(): Unit = {
+    cluster.clusterCore ! LeaderActionsTick
+    awaitPing()
+  }
+
+  def reapUnreachable(): Unit = {
+    cluster.clusterCore ! ReapUnreachableTick
+    awaitPing()
+  }
+
+  def awaitPing(): Unit = {
+    val ping = Ping()
+    cluster.clusterCore ! ping
+    expectMsgPF() { case pong @ Pong(`ping`, _) ⇒ pong }
+  }
+
   // DSL sugar for `role1 gossipTo role2`
   implicit def roleExtras(role: RoleName): RoleWrapper = new RoleWrapper(role)
   var gossipBarrierCounter = 0
@@ -83,7 +102,8 @@ abstract class TransitionSpec
       }
       runOn(fromRole) {
         enterBarrier("before-gossip-" + gossipBarrierCounter)
-        cluster.gossipTo(toRole) // send gossip
+        // send gossip
+        cluster.clusterCore ! InternalClusterAction.SendGossipTo(toRole)
         // gossip chat will synchronize the views
         awaitCond((Set(fromRole, toRole) -- seenLatestGossip).isEmpty)
         enterBarrier("after-gossip-" + gossipBarrierCounter)
@@ -104,7 +124,7 @@ abstract class TransitionSpec
         cluster.isSingletonCluster must be(true)
         cluster.status must be(Joining)
         cluster.convergence.isDefined must be(true)
-        cluster.leaderActions()
+        leaderActions()
         cluster.status must be(Up)
       }
 
@@ -127,7 +147,7 @@ abstract class TransitionSpec
       enterBarrier("convergence-joining-2")
 
       runOn(leader(first, second)) {
-        cluster.leaderActions()
+        leaderActions()
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Up)
       }
@@ -182,7 +202,7 @@ abstract class TransitionSpec
       enterBarrier("convergence-joining-3")
 
       runOn(leader(first, second, third)) {
-        cluster.leaderActions()
+        leaderActions()
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Up)
         memberStatus(third) must be(Up)
@@ -200,7 +220,8 @@ abstract class TransitionSpec
       // first non-leader gossipTo the other non-leader
       nonLeader(first, second, third).head gossipTo nonLeader(first, second, third).tail.head
       runOn(nonLeader(first, second, third).head) {
-        cluster.gossipTo(nonLeader(first, second, third).tail.head)
+        // send gossip
+        cluster.clusterCore ! InternalClusterAction.SendGossipTo(nonLeader(first, second, third).tail.head)
       }
       runOn(nonLeader(first, second, third).tail.head) {
         memberStatus(third) must be(Up)
@@ -224,7 +245,7 @@ abstract class TransitionSpec
     "perform correct transitions when second becomes unavailble" taggedAs LongRunningTest in {
       runOn(third) {
         markNodeAsUnavailable(second)
-        cluster.reapUnreachableMembers()
+        reapUnreachable()
         cluster.latestGossip.overview.unreachable must contain(Member(second, Up))
         seenLatestGossip must be(Set(third))
       }

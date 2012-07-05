@@ -7,9 +7,9 @@ package akka.cluster
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
-
 import akka.actor.Scheduler
 import akka.util.Duration
+import akka.actor.Cancellable
 
 /**
  * INTERNAL API
@@ -27,7 +27,8 @@ private[akka] object FixedRateTask {
  * for inaccuracy in scheduler. It will start when constructed, using the
  * initialDelay.
  */
-private[akka] class FixedRateTask(scheduler: Scheduler, initalDelay: Duration, delay: Duration, task: Runnable) extends Runnable {
+private[akka] class FixedRateTask(scheduler: Scheduler, initalDelay: Duration, delay: Duration, task: Runnable)
+  extends Runnable with Cancellable {
 
   private val delayNanos = delay.toNanos
   private val cancelled = new AtomicBoolean(false)
@@ -37,9 +38,11 @@ private[akka] class FixedRateTask(scheduler: Scheduler, initalDelay: Duration, d
 
   def cancel(): Unit = cancelled.set(true)
 
-  override final def run(): Unit = if (!cancelled.get) try {
+  def isCancelled: Boolean = cancelled.get
+
+  override final def run(): Unit = if (!isCancelled) try {
     task.run()
-  } finally if (!cancelled.get) {
+  } finally if (!isCancelled) {
     val nextTime = startTime + delayNanos * counter.incrementAndGet
     // it's ok to schedule with negative duration, will run asap
     val nextDelay = Duration(nextTime - System.nanoTime, TimeUnit.NANOSECONDS)
