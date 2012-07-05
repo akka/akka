@@ -289,3 +289,28 @@ If the timeout is reached the ``Future`` becomes unusable, even if an attempt is
   val future1 = actor ? msg onTimeout { _ =>
     println("Timed out!")
   }
+
+Cancelation
+-----------
+
+In case the result of a Future is not needed any more, it may be completed with
+a :class:`FutureCanceledException` by calling ``Future.cancel()``, thus
+inhibiting later normal completion (unless it was already completed).  While
+this action does *not* cancel the computation of the ``Future`` value, it will
+prevent the invokation of registered ``onComplete`` callbacks with that value,
+hence possibly aborting a processing chain; it does nothing, however, it the
+``Future`` already has been completed.
+
+.. code-block:: scala
+
+  val future = Future( ... )
+  ...
+  future.cancel()
+
+If applied to a composite ``Future``, i.e. one returned by the
+``firstCompletedOf``, ``fold``, ``sequence`` or ``reduce`` methods on the
+``Future`` or ``Futures`` objects, it will cancel all contained future, with
+the natural effect an exception would have for that composition.
+
+This method is probably most useful in ``onTimeout`` callbacks.
+

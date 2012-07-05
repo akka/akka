@@ -23,8 +23,6 @@ logs
 storage
 .codefellow
 .ensime
-.cache
-.target
 _dump
 .manager
 manifest.mf

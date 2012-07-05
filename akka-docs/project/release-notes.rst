@@ -1,23 +1,6 @@
 Release Notes
 ==============
 
-Release 1.3
------------
-
-This release, aside for the new 0MQ module, includes several important bugfixes.
-
-- **FIX** - Fix use of AlreadyCompletedFuture with monadic methods (map/flatMap/etc...)
-- **FIX** - Make sure the Mongo based durable mailbox gets published
-- **ADD** - Make sure akka-zeromq module is code reviewed and enabled in AkkaBuild
-- **FIX** - Avoid Class.getSimpleName in EventHandler
-- **FIX** - Remove Netty compression
-- **FIX** - Remote client terminates connection during remote typed actor operation
-- **FIX** - Actor pool start with min amount of actor (preFill)
-- **FIX** - def broadcast should do forward and not !
-- **FIX** - toRemoteActorRefProtocol regression
-- **FIX** - Possible leak of ActorRefs when using actor pool
-- **FIX** - Adding sane rejected execution handler as default
-
 Release 1.2
 -----------
 

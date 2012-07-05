@@ -6,7 +6,7 @@ package akka.zeromq
 import org.zeromq.{ZMQ => JZMQ}
 import akka.zeromq.SocketType._
 
-class Context(numIoThreads: Int) {
+private[zeromq] class Context(numIoThreads: Int = 1) {
   private var context = JZMQ.context(numIoThreads)
   def socket(socketType: SocketType) = {
     context.socket(socketType.id)

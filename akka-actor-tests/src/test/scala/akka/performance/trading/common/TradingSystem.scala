@@ -1,12 +1,11 @@
-package akka.performance.trading.system
+package akka.performance.trading.common
 
 import akka.performance.trading.domain.Orderbook
 import akka.performance.trading.domain.OrderbookRepository
 import akka.actor.Actor._
-import akka.dispatch.MessageDispatcher
 import akka.actor.ActorRef
-import akka.actor.Actor
 import akka.actor.PoisonPill
+import akka.dispatch.MessageDispatcher
 
 trait TradingSystem {
   type ME
@@ -70,10 +69,7 @@ class AkkaTradingSystem extends TradingSystem {
   }
 
   def createMatchingEngine(meId: String, orderbooks: List[Orderbook]) =
-    meDispatcher match {
-      case Some(d) ⇒ Actor.actorOf(new AkkaMatchingEngine(meId, orderbooks) { self.dispatcher = d }).start()
-      case _       ⇒ Actor.actorOf(new AkkaMatchingEngine(meId, orderbooks)).start()
-    }
+    actorOf(new AkkaMatchingEngine(meId, orderbooks, meDispatcher))
 
   override def createOrderReceivers: List[ActorRef] = {
     (1 to 10).toList map (i ⇒ createOrderReceiver())
@@ -91,18 +87,19 @@ class AkkaTradingSystem extends TradingSystem {
     MatchingEngineRouting(Map() ++ rules)
   }
 
-  def createOrderReceiver() = orDispatcher match {
-    case Some(d) ⇒ Actor.actorOf(new AkkaOrderReceiver() { self.dispatcher = d }).start()
-    case _       ⇒ Actor.actorOf(new AkkaOrderReceiver()).start()
-  }
+  def createOrderReceiver() =
+    actorOf(new AkkaOrderReceiver(orDispatcher))
 
   override def start() {
     for (MatchingEngineInfo(p, s, o) ← matchingEngines) {
+      p.start()
       // standby is optional
+      s.foreach(_.start())
       s.foreach(p ! _)
     }
     val routing = matchingEngineRouting
     for (or ← orderReceivers) {
+      or.start()
       or ! routing
     }
   }

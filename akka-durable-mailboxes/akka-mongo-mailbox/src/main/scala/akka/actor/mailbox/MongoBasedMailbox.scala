@@ -49,7 +49,7 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
     /* TODO - Test if a BSON serializer is registered for the message and only if not, use toByteString? */
     val durableMessage = MongoDurableMessage(ownerAddress, msg.receiver, msg.message, msg.channel)
     // todo - do we need to filter the actor name at all for safe collection naming?
-    val result = new DefaultCompletableFuture[Boolean](writeTimeout)
+    val result = new DefaultPromise[Boolean](writeTimeout)
     mongo.insert(durableMessage, false)(RequestFutures.write { wr: Either[Throwable, (Option[AnyRef], WriteResult)] ⇒
       wr match {
         case Right((oid, wr)) ⇒ result.completeWithResult(true)
@@ -68,7 +68,7 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
      * TODO - Should we have a specific query in place? Which way do we sort?
      * TODO - Error handling version!
      */
-    val msgInvocation = new DefaultCompletableFuture[MessageInvocation](readTimeout)
+    val msgInvocation = new DefaultPromise[MessageInvocation](readTimeout)
     mongo.findAndRemove(Document.empty) { doc: Option[MongoDurableMessage] ⇒
       doc match {
         case Some(msg) ⇒ {
@@ -91,7 +91,7 @@ class MongoBasedNaiveMailbox(val owner: ActorRef) extends DurableExecutableMailb
   }
 
   def size: Int = {
-    val count = new DefaultCompletableFuture[Int](readTimeout)
+    val count = new DefaultPromise[Int](readTimeout)
     mongo.count()(count.completeWithResult)
     count.as[Int].getOrElse(-1)
   }

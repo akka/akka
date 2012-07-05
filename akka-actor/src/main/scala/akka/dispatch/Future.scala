@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.dispatch
@@ -10,6 +10,7 @@ import akka.actor.{ Actor, Channel, ForwardableChannel, NullChannel, UntypedChan
 import akka.japi.{ Procedure, Function ⇒ JFunc }
 
 import scala.util.continuations._
+import scala.collection.JavaConversions
 
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
@@ -25,6 +26,8 @@ import scala.Math
 class FutureTimeoutException(message: String, cause: Throwable = null) extends AkkaException(message, cause) {
   def this(message: String) = this(message, null)
 }
+
+class FutureCanceledException extends AkkaException
 
 object Futures {
 
@@ -56,7 +59,7 @@ object Futures {
    * Returns a Future to the result of the first future in the list that is completed
    */
   def firstCompletedOf[T](futures: Iterable[Future[T]], timeout: Long = Long.MaxValue): Future[T] = {
-    val futureResult = new DefaultCompletableFuture[T](timeout)
+    val futureResult = new CompositePromise[T, T](futures, timeout)
 
     val completeFirst: Future[T] ⇒ Unit = _.value.foreach(futureResult complete _)
     for (f ← futures) f onComplete completeFirst
@@ -69,7 +72,7 @@ object Futures {
    * Returns a Future to the result of the first future in the list that is completed
    */
   def firstCompletedOf[T <: AnyRef](futures: java.lang.Iterable[Future[T]], timeout: Long): Future[T] =
-    firstCompletedOf(scala.collection.JavaConversions.iterableAsScalaIterable(futures), timeout)
+    firstCompletedOf(JavaConversions.iterableAsScalaIterable(futures), timeout)
 
   /**
    * A non-blocking fold over the specified futures.
@@ -85,7 +88,7 @@ object Futures {
     if (futures.isEmpty) {
       new AlreadyCompletedFuture[R](Right(zero))
     } else {
-      val result = new DefaultCompletableFuture[R](timeout)
+      val result = new CompositePromise[T, R](futures, timeout)
       val results = new ConcurrentLinkedQueue[T]()
       val done = new Switch(false)
       val allDone = futures.size
@@ -132,7 +135,7 @@ object Futures {
    * or the result of the fold.
    */
   def fold[T <: AnyRef, R <: AnyRef](zero: R, timeout: Long, futures: java.lang.Iterable[Future[T]], fun: akka.japi.Function2[R, T, R]): Future[R] =
-    fold(zero, timeout)(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(fun.apply _)
+    fold(zero, timeout)(JavaConversions.iterableAsScalaIterable(futures))(fun.apply _)
 
   /**
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
@@ -145,7 +148,7 @@ object Futures {
     if (futures.isEmpty)
       new AlreadyCompletedFuture[R](Left(new UnsupportedOperationException("empty reduce left")))
     else {
-      val result = new DefaultCompletableFuture[R](timeout)
+      val result = new CompositePromise[T, R](futures, timeout)
       val seedFound = new AtomicBoolean(false)
       val seedFold: Future[T] ⇒ Unit = f ⇒ {
         if (seedFound.compareAndSet(false, true)) { //Only the first completed should trigger the fold
@@ -167,19 +170,23 @@ object Futures {
    * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
    */
   def reduce[T <: AnyRef, R >: T](futures: java.lang.Iterable[Future[T]], timeout: Long, fun: akka.japi.Function2[R, T, T]): Future[R] =
-    reduce(scala.collection.JavaConversions.iterableAsScalaIterable(futures), timeout)(fun.apply _)
+    reduce(JavaConversions.iterableAsScalaIterable(futures), timeout)(fun.apply _)
 
   /**
    * Java API.
    * Simple version of Futures.traverse. Transforms a java.lang.Iterable[Future[A]] into a Future[java.lang.Iterable[A]].
    * Useful for reducing many Futures into a single Future.
    */
-  def sequence[A](in: JIterable[Future[A]], timeout: Long): Future[JIterable[A]] =
-    scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[A]()))((fr, fa) ⇒
+  def sequence[A](in: JIterable[Future[A]], timeout: Long): Future[JIterable[A]] = {
+    val it = JavaConversions.iterableAsScalaIterable(in)
+    val f = it.foldLeft(Future(new JLinkedList[A]()))((fr, fa) ⇒
       for (r ← fr; a ← fa) yield {
         r add a
         r
       })
+    val result = new CompositePromise[A, JIterable[A]](it, timeout)
+    result completeWith f
+  }
 
   /**
    * Java API.
@@ -195,7 +202,7 @@ object Futures {
    * in parallel.
    */
   def traverse[A, B](in: JIterable[A], timeout: Long, fn: JFunc[A, Future[B]]): Future[JIterable[B]] =
-    scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[B]())) { (fr, a) ⇒
+    JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[B]())) { (fr, a) ⇒
       val fb = fn(a)
       for (r ← fr; b ← fb) yield {
         r add b
@@ -277,8 +284,17 @@ object Future {
    * Simple version of Futures.traverse. Transforms a Traversable[Future[A]] into a Future[Traversable[A]].
    * Useful for reducing many Futures into a single Future.
    */
-  def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]], timeout: Long = Actor.TIMEOUT)(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]]): Future[M[A]] =
-    in.foldLeft(new DefaultCompletableFuture[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a)).map(_.result)
+  def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]], timeout: Long = Actor.TIMEOUT)(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]]): Future[M[A]] = {
+    val vf = in.toIndexedSeq.asInstanceOf[Iterable[Future[A]]]
+    val fb = vf.foldLeft(new DefaultCompletableFuture[Builder[A, M[A]]](timeout).completeWithResult(cbf(in)): Future[Builder[A, M[A]]])((fr, fa) ⇒ for (r ← fr; a ← fa.asInstanceOf[Future[A]]) yield (r += a))
+    val result = new CompositePromise[A, M[A]](vf, timeout)
+    fb onComplete { _.value.get match {
+        case l: Left[_, _]  ⇒ result.complete(l.asInstanceOf[Either[Throwable, M[A]]])
+        case Right(builder) ⇒ result.complete(Right(builder.result))
+      }
+    }
+    result
+  }
 
   /**
    * Transforms a Traversable[A] into a Future[Traversable[B]] using the provided Function A ⇒ Future[B].
@@ -730,6 +746,14 @@ sealed trait Future[+T] extends japi.Future[T] {
     case Some(Right(r)) ⇒ Some(r)
     case _ ⇒ None
   }
+
+  /**
+   * Complete this Future with a FutureCancelledException if it has not been
+   * completed, yet. If this is a compound Future (i.e. from Future.traverse
+   * and friends), all contained Futures are canceled, the overall effect of
+   * which depends on the nature of the compound Future.
+   */
+  def cancel(): this.type
 }
 
 package japi {
@@ -904,16 +928,8 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
     val runNow =
       if (value.isEmpty) {
         if (!isExpired) {
-          //To avoid leaking memory from cancelled Futures, as described by:
-          //http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6213323
-          val runnable = new AtomicReference[() => Unit](() => if(!this.isCompleted) func(this)) with Runnable {
-            def run() = getAndSet(null) match { //Do not run twice
-              case null =>
-              case some => some()
-            }
-          } //TODO Reschedule is run prematurely
-          val fut = Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
-          onComplete(_ => { fut.cancel(false); runnable.set(null) })
+          val runnable = new Runnable { def run() { if (!isCompleted) func(DefaultCompletableFuture.this) } } //TODO Reschedule is run prematurely
+          Scheduler.scheduleOnce(runnable, timeLeft, NANOS)
           false
         } else true
       } else false
@@ -927,10 +943,24 @@ class DefaultCompletableFuture[T](timeout: Long, timeunit: TimeUnit)(implicit va
     try { func(this) } catch { case e ⇒ EventHandler notify EventHandler.Error(e, this) } //TODO catch, everything? Really?
   }
 
+  def cancel(): this.type = {
+    complete(Left(new FutureCanceledException))
+    this
+  }
+
   @inline
   private def currentTimeInNanos: Long = MILLIS.toNanos(System.currentTimeMillis)
   @inline
   private def timeLeft(): Long = timeoutInNanos - (currentTimeInNanos - _startTimeInNanos)
+}
+
+class CompositePromise[T, R](futures: Iterable[Future[T]], timeout: Long)(implicit dispatcher: MessageDispatcher)
+  extends DefaultCompletableFuture[R](timeout) {
+
+  override def cancel(): this.type = {
+    futures foreach (_.cancel())
+    this
+  }
 }
 
 class ActorCompletableFuture(timeout: Long, timeunit: TimeUnit)(implicit dispatcher: MessageDispatcher)
@@ -984,4 +1014,5 @@ sealed class AlreadyCompletedFuture[T](suppliedValue: Either[Throwable, T], time
   def await: this.type = this
   def isExpired: Boolean = true
   def onTimeout(func: Future[T] ⇒ Unit): this.type = this
+  def cancel(): this.type = this
 }

@@ -1,5 +1,5 @@
 /**
- *   Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *   Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.dispatch
@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
+ *     .setRejectionPolicy(new CallerRunsPolicy)
  *     .build
  * </pre>
  * <p/>
@@ -37,6 +38,7 @@ import java.util.concurrent.TimeUnit
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
+ *     .setRejectionPolicy(new CallerRunsPolicy())
  *     .build();
  * </pre>
  * <p/>
@@ -166,7 +168,7 @@ object Dispatchers {
    *   max-pool-size-factor  = 4.0 # Max no of threads ... ceil(available processors * factor)
    *   executor-bounds = -1        # Makes the Executor bounded, -1 is unbounded
    *   allow-core-timeout = on     # Allow core threads to time out
-   *   rejection-policy = "sane" # sane, abort, caller-runs, discard-oldest, discard
+   *   rejection-policy = "caller-runs" # abort, caller-runs, discard-oldest, discard
    *   throughput = 5              # Throughput for ExecutorBasedEventDrivenDispatcher
    * }
    * ex: from(config.getConfigMap(identifier).get)

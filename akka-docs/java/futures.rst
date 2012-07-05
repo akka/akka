@@ -267,3 +267,29 @@ Exceptions
 ----------
 
 Since the result of a ``Future`` is created concurrently to the rest of the program, exceptions must be handled differently. It doesn't matter if an ``UntypedActor`` or the dispatcher is completing the ``Future``, if an ``Exception`` is caught the ``Future`` will contain it instead of a valid result. If a ``Future`` does contain an ``Exception``, calling ``get`` will cause it to be thrown again so it can be handled properly.
+
+Cancelation
+-----------
+
+In case the result of a Future is not needed any more, it may be completed with
+a :class:`FutureCanceledException` by calling ``Future.cancel()``, thus
+inhibiting later normal completion (unless it was already completed).  While
+this action does *not* cancel the computation of the ``Future`` value, it will
+prevent the invokation of registered ``onComplete`` callbacks with that value,
+hence possibly aborting a processing chain; it does nothing, however, it the
+``Future`` already has been completed.
+
+.. code-block:: java
+
+  Future<String> future = ...
+  ...
+  future.cancel();
+
+If applied to a composite ``Future``, i.e. one returned by the
+``firstCompletedOf``, ``fold``, ``sequence`` or ``reduce`` methods on the
+``Futures`` class, it will cancel all contained future, with
+the natural effect an exception would have for that composition.
+
+This method is probably most useful in ``onTimeout`` callbacks.
+
+

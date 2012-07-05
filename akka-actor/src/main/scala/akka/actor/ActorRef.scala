@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.actor
@@ -739,7 +739,6 @@ class LocalActorRef private[akka] (
         if (Actor.debugLifecycle) EventHandler.debug(a, "stopping")
         a.postStop
       } finally {
-        notifySupervisorWithMessage(Death(this, null))
         currentMessage = null
         setActorSelfFields(actorInstance.get, null)
       }
@@ -860,12 +859,8 @@ class LocalActorRef private[akka] (
         case ref: ActorRef ⇒ Some(ref)
         case _             ⇒ None
       }
-      val chFuture = channel match {
-        case f: ActorCompletableFuture ⇒ Some(f)
-        case _                         ⇒ None
-      }
       Actor.remote.send[Any](
-        message, sender, chFuture, homeAddress.get, timeout, chFuture.isEmpty, this, None, ActorType.ScalaActor, None)
+        message, sender, None, homeAddress.get, timeout, true, this, None, ActorType.ScalaActor, None)
     } else {
       dispatcher dispatchMessage new MessageInvocation(this, message, channel)
     }
@@ -928,33 +923,21 @@ class LocalActorRef private[akka] (
 
   protected[akka] def handleTrapExit(dead: ActorRef, reason: Throwable) {
     faultHandler match {
-      case AllForOneStrategy(_, _, _) if reason == null => //Stopped
-        if (_linkedActors.remove(dead.uuid) ne null) {
-          val i = _linkedActors.values.iterator
-          while (i.hasNext) {
-            i.next.stop()
-            i.remove
-          }
-        }
-        
       case AllForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(reason.getClass)) ⇒
         restartLinkedActors(reason, maxRetries, within)
-
-      case OneForOneStrategy(_, _, _) if reason == null => //Stopped
-        _linkedActors.remove(dead.uuid)
 
       case OneForOneStrategy(trapExit, maxRetries, within) if trapExit.exists(_.isAssignableFrom(reason.getClass)) ⇒
         dead.restart(reason, maxRetries, within)
 
       case _ ⇒
-        if (_supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason)) else dead.stop()
+        if (_supervisor.isDefined) notifySupervisorWithMessage(Death(this, reason))
+        else dead.stop()
     }
   }
 
   private def requestRestartPermission(maxNrOfRetries: Option[Int], withinTimeRange: Option[Int]): Boolean = {
-    val denied = if (_status == ActorRefInternals.SHUTDOWN) {
-      true
-    } else if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) { //Immortal
+
+    val denied = if (maxNrOfRetries.isEmpty && withinTimeRange.isEmpty) { //Immortal
       false
     } else if (withinTimeRange.isEmpty) { // restrict number of restarts
       val retries = maxNrOfRetriesCount + 1
@@ -1248,11 +1231,7 @@ private[akka] case class RemoteActorRef private[akka] (
       case ref: ActorRef ⇒ Some(ref)
       case _             ⇒ None
     }
-    val chFuture = channel match {
-      case f: ActorCompletableFuture ⇒ Some(f)
-      case _                         ⇒ None
-    }
-    Actor.remote.send[Any](message, chSender, chFuture, homeAddress.get, timeout, chFuture.isEmpty, this, None, actorType, loader)
+    Actor.remote.send[Any](message, chSender, None, homeAddress.get, timeout, true, this, None, actorType, loader)
   }
 
   def postMessageToMailboxAndCreateFutureResultWithTimeout(

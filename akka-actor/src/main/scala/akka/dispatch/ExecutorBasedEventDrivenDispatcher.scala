@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.dispatch
@@ -33,6 +33,7 @@ import akka.actor.{ActorInitializationException, ActorRef, simpleName}
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
+ *     .setRejectionPolicy(new CallerRunsPolicy)
  *     .buildThreadPool
  * </pre>
  * <p/>
@@ -47,6 +48,7 @@ import akka.actor.{ActorInitializationException, ActorRef, simpleName}
  *     .setCorePoolSize(16)
  *     .setMaxPoolSize(128)
  *     .setKeepAliveTimeInMillis(60000)
+ *     .setRejectionPolicy(new CallerRunsPolicy())
  *     .buildThreadPool();
  * </pre>
  * <p/>
@@ -85,7 +87,7 @@ class ExecutorBasedEventDrivenDispatcher(
 
   val name = "akka:event-driven:dispatcher:" + _name
 
-  protected[akka] val threadFactory = new MonitorableThreadFactory(name, config.daemonic)
+  protected[akka] val threadFactory = new MonitorableThreadFactory(name)
   protected[akka] val executorService = new AtomicReference[ExecutorService](config.createLazyExecutorService(threadFactory))
 
   protected[akka] def dispatch(invocation: MessageInvocation) = {
@@ -101,11 +103,8 @@ class ExecutorBasedEventDrivenDispatcher(
     try executorService.get() execute invocation
     catch {
       case e: RejectedExecutionException ⇒
-        try { executorService.get() execute invocation } catch {
-          case e2: RejectedExecutionException =>
-            EventHandler.warning(this, e2.toString)
-            throw e2
-        }
+        EventHandler.warning(this, e.toString)
+        throw e
     }
   }
 
@@ -151,12 +150,9 @@ class ExecutorBasedEventDrivenDispatcher(
           executorService.get() execute mbox
         } catch {
           case e: RejectedExecutionException ⇒
-            try { executorService.get() execute mbox } catch {
-              case e2: RejectedExecutionException =>
-                mbox.dispatcherLock.unlock()
-                EventHandler.warning(this, e2.toString)
-                throw e2
-            }
+            EventHandler.warning(this, e.toString)
+            mbox.dispatcherLock.unlock()
+            throw e
         }
       } else {
         mbox.dispatcherLock.unlock() //If the dispatcher isn't active or if the actor is suspended, unlock the dispatcher lock
@@ -170,16 +166,13 @@ class ExecutorBasedEventDrivenDispatcher(
   override val toString = simpleName(this) + "[" + name + "]"
 
   def suspend(actorRef: ActorRef) {
-    val mbox = getMailbox(actorRef)
-    if (mbox ne null) mbox.suspended.tryLock
+    getMailbox(actorRef).suspended.tryLock
   }
 
   def resume(actorRef: ActorRef) {
     val mbox = getMailbox(actorRef)
-    if (mbox ne null) {
-      mbox.suspended.tryUnlock
-      reRegisterForExecution(mbox)
-    }
+    mbox.suspended.tryUnlock
+    reRegisterForExecution(mbox)
   }
 }
 

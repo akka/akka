@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.util
@@ -220,7 +220,7 @@ object Duration {
  * val d3 = d2 + 1.millisecond
  * </pre>
  */
-abstract class Duration extends Serializable {
+abstract class Duration {
   def length: Long
   def unit: TimeUnit
   def toNanos: Long

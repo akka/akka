@@ -1,4 +1,4 @@
-package akka.performance.trading.system
+package akka.performance.trading.common
 
 import akka.performance.trading.domain._
 import akka.actor._
@@ -12,20 +12,24 @@ trait MatchingEngine {
   val orderbooks: List[Orderbook]
   val supportedOrderbookSymbols = orderbooks map (_.symbol)
   protected val orderbooksMap: Map[String, Orderbook] =
-    orderbooks.map(o ⇒ (o.symbol, o)).toMap
+    Map() ++ (orderbooks map (o ⇒ (o.symbol, o)))
 
 }
 
-class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
+class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook], disp: Option[MessageDispatcher])
   extends Actor with MatchingEngine {
+
+  for (d ← disp) {
+    self.dispatcher = d
+  }
 
   var standby: Option[ActorRef] = None
 
   def receive = {
-    case order: Order ⇒
-      handleOrder(order)
     case standbyRef: ActorRef ⇒
       standby = Some(standbyRef)
+    case order: Order ⇒
+      handleOrder(order)
     case unknown ⇒
       EventHandler.warning(this, "Received unknown message: " + unknown)
   }
@@ -33,21 +37,30 @@ class AkkaMatchingEngine(val meId: String, val orderbooks: List[Orderbook])
   def handleOrder(order: Order) {
     orderbooksMap.get(order.orderbookSymbol) match {
       case Some(orderbook) ⇒
-        standby.foreach(_ forward order)
+        val pendingStandbyReply: Option[Future[_]] =
+          for (s ← standby) yield { s ? order }
 
         orderbook.addOrder(order)
         orderbook.matchOrders()
-
-        done(true, order)
-
+        // wait for standby reply
+        pendingStandbyReply.foreach(waitForStandby(_))
+        done(true)
       case None ⇒
         EventHandler.warning(this, "Orderbook not handled by this MatchingEngine: " + order.orderbookSymbol)
+        done(false)
     }
   }
 
-  def done(status: Boolean, order: Order) {
-    if (standby.isEmpty) {
-      self.sender ! Rsp(order, status)
+  def done(status: Boolean) {
+    self.channel ! new Rsp(status)
+  }
+
+  def waitForStandby(pendingStandbyFuture: Future[_]) {
+    try {
+      pendingStandbyFuture.await
+    } catch {
+      case e: FutureTimeoutException ⇒
+        EventHandler.error(this, "Standby timeout: " + e)
     }
   }
 

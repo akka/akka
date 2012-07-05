@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.actor
@@ -112,8 +112,8 @@ class TypedActorSpec extends Spec with ShouldMatchers with BeforeAndAfterEach {
         gotStopped completeWithResult ref.isShutdown
       })
       result.get should equal(100)
-      gotStopped.get should equal(true)
       ref.isShutdown should equal(true)
+      gotStopped.get should equal(true)
     }
   }
 

@@ -36,7 +36,7 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
     b += "ownerAddress" -> msg.ownerAddress
 
     msg.channel match {
-      case a: ActorRef ⇒ { b += "senderAddress" -> a.id }
+      case a: ActorRef ⇒ { b += "senderAddress" -> a.address }
       case _           ⇒
     }
     /**
@@ -75,12 +75,14 @@ object BSONSerializableMailbox extends SerializableBSONObject[MongoDurableMessag
     val doc = deserializer.decodeAndFetch(in).asInstanceOf[BSONDocument]
     EventHandler.debug(this, "Deserializing a durable message from MongoDB: %s".format(doc))
     val msgData = MessageProtocol.parseFrom(doc.as[org.bson.types.Binary]("message").getData)
-    val msg = MessageSerializer.deserialize(msgData, None)
+    val msg = MessageSerializer.deserialize(msgData)
     val ownerAddress = doc.as[String]("ownerAddress")
-    val owner = Actor.registry.actorsFor(ownerAddress).headOption.getOrElse(
+    val owner = Actor.registry.actorFor(ownerAddress).getOrElse(
       throw new DurableMailboxException("No actor could be found for address [" + ownerAddress + "], could not deserialize message."))
 
-    val senderOption = if (doc.contains("senderAddress")) Actor.registry.actorsFor(doc.as[String]("senderAddress")).headOption else None
+    val senderOption = if (doc.contains("senderAddress")) {
+      Actor.registry.actorFor(doc.as[String]("senderAddress"))
+    } else None
 
     val sender = senderOption match {
       case Some(ref) ⇒ ref

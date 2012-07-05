@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.dispatch
@@ -7,6 +7,7 @@ package akka.dispatch
 import java.util.Collection
 import java.util.concurrent._
 import atomic.{ AtomicLong, AtomicInteger }
+import ThreadPoolExecutor.CallerRunsPolicy
 
 import akka.util.Duration
 import akka.event.EventHandler
@@ -17,11 +18,10 @@ object ThreadPoolConfig {
   type QueueFactory = () ⇒ BlockingQueue[Runnable]
 
   val defaultAllowCoreThreadTimeout: Boolean = false
-  val defaultDaemonic: Boolean = false
   val defaultCorePoolSize: Int = 16
   val defaultMaxPoolSize: Int = 128
   val defaultTimeout: Duration = Duration(60000L, TimeUnit.MILLISECONDS)
-  def defaultFlowHandler: FlowHandler = flowHandler(new SaneRejectedExecutionHandler)
+  def defaultFlowHandler: FlowHandler = flowHandler(new CallerRunsPolicy)
 
   def flowHandler(rejectionHandler: RejectedExecutionHandler): FlowHandler = Left(rejectionHandler)
   def flowHandler(bounds: Int): FlowHandler = Right(bounds)
@@ -56,8 +56,7 @@ case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.def
                             maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
                             threadTimeout: Duration = ThreadPoolConfig.defaultTimeout,
                             flowHandler: ThreadPoolConfig.FlowHandler = ThreadPoolConfig.defaultFlowHandler,
-                            queueFactory: ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue(),
-                            daemonic: Boolean = ThreadPoolConfig.defaultDaemonic) {
+                            queueFactory: ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue()) {
 
   final def createLazyExecutorService(threadFactory: ThreadFactory): ExecutorService =
     new LazyExecutorServiceWrapper(createExecutorService(threadFactory))
@@ -113,9 +112,6 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
   def withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(capacity: Int, fair: Boolean): ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(queueFactory = arrayBlockingQueue(capacity, fair), flowHandler = defaultFlowHandler))
 
-  def setDaemonic(daemonicity: Boolean): ThreadPoolConfigDispatcherBuilder =
-    this.copy(config = config.copy(daemonic = daemonicity))
-
   def setCorePoolSize(size: Int): ThreadPoolConfigDispatcherBuilder =
     this.copy(config = config.copy(corePoolSize = size))
 
@@ -155,14 +151,10 @@ case class ThreadPoolConfigDispatcherBuilder(dispatcherFactory: (ThreadPoolConfi
 /**
  * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
-class MonitorableThreadFactory(val name: String, val daemon: Boolean = false) extends ThreadFactory {
+class MonitorableThreadFactory(val name: String) extends ThreadFactory {
   protected val counter = new AtomicLong
 
-  def newThread(runnable: Runnable) = {
-    val t = new MonitorableThread(runnable, name)
-    t.setDaemon(daemon)
-    t
-  }
+  def newThread(runnable: Runnable) = new MonitorableThread(runnable, name)
 }
 
 /**
@@ -267,11 +259,4 @@ trait LazyExecutorService extends ExecutorServiceDelegate {
 
 class LazyExecutorServiceWrapper(executorFactory: ⇒ ExecutorService) extends LazyExecutorService {
   def createExecutor = executorFactory
-}
-
-class SaneRejectedExecutionHandler extends RejectedExecutionHandler {
-  def rejectedExecution(runnable: Runnable, threadPoolExecutor: ThreadPoolExecutor): Unit = {
-    if (threadPoolExecutor.isShutdown) throw new RejectedExecutionException("Shutdown")
-    else runnable.run()
-  }
 }

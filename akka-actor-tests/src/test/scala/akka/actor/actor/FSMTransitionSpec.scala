@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.actor
@@ -34,19 +34,6 @@ object FSMTransitionSpec {
     }
     initialize
     override def preRestart(reason: Throwable) { target ! "restarted" }
-  }
-
-  class OtherFSM(target: ActorRef) extends Actor with FSM[Int, Int] {
-    startWith(0, 0)
-    when(0) {
-      case Ev("tick") => goto(1) using (1)
-    }
-    when(1) {
-      case Ev(_) => stay
-    }
-    onTransition {
-      case 0 -> 1 => target ! ((stateData, nextStateData))
-    }
   }
 
   class Forwarder(target: ActorRef) extends Actor {
@@ -99,18 +86,6 @@ class FSMTransitionSpec extends WordSpec with MustMatchers with TestKit {
         forward.start()
         fsm ! SubscribeTransitionCallBack(forward)
         expectMsg(CurrentState(fsm, 0))
-      }
-    }
-
-  }
-
-  "A FSM" must {
-
-    "make previous and next state data available in onTransition" in {
-      val fsm = Actor.actorOf(new OtherFSM(testActor)).start()
-      within(300 millis) {
-        fsm ! "tick"
-        expectMsg((0, 1))
       }
     }
 

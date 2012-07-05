@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.dispatch
@@ -262,7 +262,6 @@ abstract class MessageDispatcherConfigurator {
       conf_?(config getDouble "max-pool-size-factor")(factor ⇒ _.setMaxPoolSizeFromFactor(factor)),
       conf_?(config getInt "executor-bounds")(bounds ⇒ _.setExecutorBounds(bounds)),
       conf_?(config getBool "allow-core-timeout")(allow ⇒ _.setAllowCoreThreadTimeout(allow)),
-      conf_?(config getBool "daemonic")(daemonicity => _.setDaemonic(daemonicity)),
       conf_?(config getInt "task-queue-size" flatMap {
         case size if size > 0 =>
           config getString "task-queue-type" map {
@@ -273,7 +272,6 @@ abstract class MessageDispatcherConfigurator {
         case _ => None
       })(queueFactory => _.setQueueFactory(queueFactory)),
       conf_?(config getString "rejection-policy" map {
-        case "sane"           => new SaneRejectedExecutionHandler()
         case "abort"          ⇒ new AbortPolicy()
         case "caller-runs"    ⇒ new CallerRunsPolicy()
         case "discard-oldest" ⇒ new DiscardOldestPolicy()

@@ -761,6 +761,62 @@ class FutureSpec extends JUnitSuite {
   }
 
   @Test
+  def futureMustBeCancelable {
+    val f = Future(Thread.sleep(2000))
+    val f2 = f recover {
+      case _: FutureCanceledException => "canceled"
+    }
+    f.cancel()
+    intercept[FutureCanceledException] ( f.get )
+    assert(f2.get == "canceled")
+  }
+
+  def listOfFutures = for (x <- 1 to 5) yield Future(Thread.sleep(1000))
+  def isCanceled(f: Future[_]) = f.value match {
+    case Some(Left(_: FutureCanceledException)) => true
+    case _ => false
+  }
+
+  @Test
+  def compositeFutureMustBeCancelable {
+    {
+      val lf = listOfFutures
+      val f = Future.sequence(lf)
+      f.cancel()
+      assert(lf forall isCanceled)
+      intercept[FutureCanceledException] ( f.get )
+    }
+    {
+      val lf = listOfFutures
+      val f = Futures.firstCompletedOf(lf)
+      f.cancel()
+      assert(lf forall isCanceled)
+      intercept[FutureCanceledException] ( f.get )
+    }
+    {
+      val lf = listOfFutures
+      val f = Futures.fold(0)(lf)((_,_) => 0)
+      f.cancel()
+      assert(lf forall isCanceled)
+      intercept[FutureCanceledException] ( f.get )
+    }
+    {
+      val lf = listOfFutures
+      val f = Futures.reduce(lf)((_,_) => 0)
+      f.cancel()
+      assert(lf forall isCanceled)
+      intercept[FutureCanceledException] ( f.get )
+    }
+    {
+      val lf = listOfFutures
+      val f = Futures.sequence(scala.collection.JavaConversions.asJavaIterable(lf))
+      f.cancel()
+      assert(lf forall isCanceled)
+      intercept[FutureCanceledException] ( f.get )
+    }
+  }
+
+  @Test
   def ticket1313DeadlockNestedAwait {
     val simple = Future(()) map (_ ⇒ (Future(()) map (_ ⇒ ())).get)
     assert(simple.await.isCompleted)

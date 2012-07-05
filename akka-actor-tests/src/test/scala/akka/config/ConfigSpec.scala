@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.config
@@ -28,7 +28,7 @@ class ConfigSpec extends WordSpec with MustMatchers {
       getInt("akka.actor.default-dispatcher.task-queue-size") must equal(Some(-1))
       getString("akka.actor.default-dispatcher.task-queue-type") must equal(Some("linked"))
       getBool("akka.actor.default-dispatcher.allow-core-timeout") must equal(Some(true))
-      getString("akka.actor.default-dispatcher.rejection-policy") must equal(Some("sane"))
+      getString("akka.actor.default-dispatcher.rejection-policy") must equal(Some("caller-runs"))
       getInt("akka.actor.default-dispatcher.mailbox-capacity") must equal(Some(-1))
       getInt("akka.actor.default-dispatcher.mailbox-push-timeout-time") must equal(Some(10))
       getLong("akka.actor.dispatcher-shutdown-timeout") must equal(Some(1))

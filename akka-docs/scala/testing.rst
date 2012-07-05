@@ -48,15 +48,6 @@ The tools offered are described in detail in the following sections.
 
    Be sure to add the module :mod:`akka-testkit` to your dependencies.
 
-.. note::
-
-   While this document focuses on the Scala API for conducting tests, it does
-   not matter whether an actor under test is implemented using Scala or Java.
-   However, providing the same functionality as offered by the testkit in Java
-   would lead to a very much more clunky API, which is why writing the test
-   spec should preferably be done in Scala. If that is not an option,
-   :class:`TestProbe` may be used conveniently from Java as well.
-
 Unit Testing with :class:`TestActorRef`
 =======================================
 

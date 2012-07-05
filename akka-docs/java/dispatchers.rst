@@ -104,6 +104,7 @@ Here is an example:
 
   import akka.actor.Actor;
   import akka.dispatch.Dispatchers;
+  import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
 
   class MyActor extends UntypedActor {
      public MyActor() {
@@ -112,6 +113,7 @@ Here is an example:
         .setCorePoolSize(16)
         .setMaxPoolSize(128)
         .setKeepAliveTimeInMillis(60000)
+        .setRejectionPolicy(new CallerRunsPolicy())
         .build());
     }
      ...

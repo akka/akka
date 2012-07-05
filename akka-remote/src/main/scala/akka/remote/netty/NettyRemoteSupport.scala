@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2011 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2011 Scalable Solutions AB <http://scalablesolutions.se>
  */
 
 package akka.remote.netty
@@ -76,11 +76,22 @@ trait NettyRemoteClientModule extends RemoteClientModule {
   private val remoteClients = new HashMap[Address, RemoteClient]
   private val remoteActors = new Index[Address, Uuid]
   protected[akka] val futures = new ConcurrentHashMap[Uuid, CompletableFuture[_]]
-  @volatile
-  protected[akka] var timer: HashedWheelTimer = _
+  private val timer = new HashedWheelTimer()
   private val lock = new ReadWriteGuard
 
   def isRunning: Boolean
+
+  timer.newTimeout(new TimerTask() {
+    def run(timeout: Timeout) = {
+      if (isRunning) {
+        val i = futures.entrySet.iterator
+        while (i.hasNext) {
+          val e = i.next
+          if (e.getValue.isExpired) futures.remove(e.getKey)
+        }
+      }
+    }
+  }, RemoteClientSettings.REAP_FUTURES_DELAY.length, RemoteClientSettings.REAP_FUTURES_DELAY.unit)
 
   protected[akka] def typedActorFor[T](intfClass: Class[T], serviceId: String, implClassName: String, timeout: Long, hostname: String, port: Int, loader: Option[ClassLoader]): T =
     TypedActor.createProxyForRemoteActorRef(intfClass, RemoteActorRef(serviceId, implClassName, hostname, port, timeout, loader, AkkaActorType.TypedActor))
@@ -112,24 +123,6 @@ trait NettyRemoteClientModule extends RemoteClientModule {
               remoteClients.get(key) match { //Recheck for addition, race between upgrades
                 case s: Some[RemoteClient] ⇒ s.get //If already populated by other writer
                 case None ⇒ //Populate map
-                  if (timer == null) {
-                    timer = new HashedWheelTimer()
-                    timer.newTimeout(new TimerTask() {
-                      def run(timeout: Timeout) = {
-                        if (isRunning) {
-                          val i = futures.entrySet.iterator
-                          while (i.hasNext) {
-                            val e = i.next
-                            if (e.getValue.isExpired) futures.remove(e.getKey)
-                          }
-                          if (isRunning && !timeout.isCancelled)
-                            timeout.getTimer.newTimeout(timeout.getTask,
-                              RemoteClientSettings.REAP_FUTURES_DELAY.length,
-                              RemoteClientSettings.REAP_FUTURES_DELAY.unit)
-                        }
-                      }
-                    }, RemoteClientSettings.REAP_FUTURES_DELAY.length, RemoteClientSettings.REAP_FUTURES_DELAY.unit)
-                  } //Create timer on demand
                   val client = new ActiveRemoteClient(this, address, loader, notifyListeners)
                   client.connect()
                   remoteClients += key -> client
@@ -172,6 +165,7 @@ trait NettyRemoteClientModule extends RemoteClientModule {
   def shutdownClientModule() {
     shutdownRemoteClients()
     futures.clear()
+    timer.stop()
     //TODO: Should we empty our remoteActors too?
     //remoteActors.clear
   }
@@ -179,10 +173,6 @@ trait NettyRemoteClientModule extends RemoteClientModule {
   def shutdownRemoteClients() = lock withWriteGuard {
     remoteClients.foreach({ case (addr, client) ⇒ client.shutdown() })
     remoteClients.clear()
-    if (timer != null) {
-      timer.stop()
-      timer = null
-    }
   }
 
   def registerClientManagedActor(hostname: String, port: Int, uuid: Uuid) = {
@@ -439,9 +429,11 @@ class ActiveRemoteClient private[akka] (
   @volatile
   private var bootstrap: ClientBootstrap = _
   @volatile
+  private[remote] var connection: ChannelFuture = _
+  @volatile
   private[remote] var openChannels: DefaultChannelGroup = _
   @volatile
-  private[remote] var connection: ChannelFuture = _
+  private var timer: HashedWheelTimer = _
   @volatile
   private var reconnectionTimeWindowStart = 0L
 
@@ -451,14 +443,16 @@ class ActiveRemoteClient private[akka] (
   def connect(reconnectIfAlreadyConnected: Boolean = false): Boolean = {
     runSwitch switchOn {
       openChannels = new DefaultDisposableChannelGroup(classOf[RemoteClient].getName)
+      timer = new HashedWheelTimer
+
       bootstrap = new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool, Executors.newCachedThreadPool))
-      bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, supervisors, bootstrap, remoteAddress, module.timer, this))
+      bootstrap.setPipelineFactory(new ActiveRemoteClientPipelineFactory(name, supervisors, bootstrap, remoteAddress, timer, this))
       bootstrap.setOption("tcpNoDelay", true)
       bootstrap.setOption("keepAlive", true)
-      bootstrap.setOption("connectTimeoutMillis", CONNECTION_TIMEOUT.toMillis)
 
+      // Wait until the connection attempt succeeds or fails.
       connection = bootstrap.connect(remoteAddress)
-      openChannels.add(connection.awaitUninterruptibly.getChannel) // Wait until the connection attempt succeeds or fails.
+      openChannels.add(connection.awaitUninterruptibly.getChannel)
 
       if (!connection.isSuccess) {
         notifyListeners(RemoteClientError(connection.getCause, module, remoteAddress))
@@ -485,18 +479,14 @@ class ActiveRemoteClient private[akka] (
   //Please note that this method does _not_ remove the ARC from the NettyRemoteClientModule's map of clients
   def shutdown() = runSwitch switchOff {
     notifyListeners(RemoteClientShutdown(module, remoteAddress))
-    try {
-      if (openChannels ne null) openChannels.close.awaitUninterruptibly()
-    } finally {
-      openChannels = null
-      connection = null
-      try {
-        bootstrap.releaseExternalResources()
-      } finally {
-        bootstrap = null
-        resendMessageQueue.clear()
-      }
-    }
+    timer.stop()
+    timer = null
+    openChannels.close.awaitUninterruptibly
+    openChannels = null
+    bootstrap.releaseExternalResources()
+    bootstrap = null
+    connection = null
+    resendMessageQueue.clear()
   }
 
   private[akka] def isWithinReconnectionTimeWindow: Boolean = {
@@ -548,17 +538,13 @@ class ActiveRemoteClientHandler(
   val client: ActiveRemoteClient)
   extends SimpleChannelUpstreamHandler {
 
-  def runOnceNow(thunk: ⇒ Unit): Unit = timer.newTimeout(new TimerTask() {
-    def run(timeout: Timeout) = try { thunk } finally { timeout.cancel() }
-  }, 0, TimeUnit.MILLISECONDS)
-
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) {
     try {
       event.getMessage match {
         case arp: AkkaRemoteProtocol if arp.hasInstruction ⇒
           val rcp = arp.getInstruction
           rcp.getCommandType match {
-            case CommandType.SHUTDOWN ⇒ runOnceNow { client.module.shutdownClientConnection(remoteAddress) }
+            case CommandType.SHUTDOWN ⇒ spawn { client.module.shutdownClientConnection(remoteAddress) }
           }
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
           val reply = arp.getMessage
@@ -601,12 +587,14 @@ class ActiveRemoteClientHandler(
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = client.runSwitch ifOn {
     if (client.isWithinReconnectionTimeWindow) {
       timer.newTimeout(new TimerTask() {
-        def run(timeout: Timeout) = if (client.isRunning) {
-          client.openChannels.remove(event.getChannel)
-          client.connect(reconnectIfAlreadyConnected = true)
+        def run(timeout: Timeout) = {
+          if (client.isRunning) {
+            client.openChannels.remove(event.getChannel)
+            client.connect(reconnectIfAlreadyConnected = true)
+          }
         }
       }, RemoteClientSettings.RECONNECT_DELAY.toMillis, TimeUnit.MILLISECONDS)
-    } else runOnceNow { client.module.shutdownClientConnection(remoteAddress) }
+    } else spawn { client.module.shutdownClientConnection(remoteAddress) }
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
@@ -629,7 +617,7 @@ class ActiveRemoteClientHandler(
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
     event.getCause match {
       case e: ReadTimeoutException ⇒
-        runOnceNow { client.module.shutdownClientConnection(remoteAddress) }
+        spawn { client.module.shutdownClientConnection(remoteAddress) }
       case e ⇒
         client.notifyListeners(RemoteClientError(e, client.module, client.remoteAddress))
         event.getChannel.close //FIXME Is this the correct behavior?
@@ -657,6 +645,7 @@ class ActiveRemoteClientHandler(
  * Provides the implementation of the Netty remote support
  */
 class NettyRemoteSupport extends RemoteSupport with NettyRemoteServerModule with NettyRemoteClientModule {
+
   // Needed for remote testing and switching on/off under run
   val optimizeLocal = new AtomicBoolean(true)
 
@@ -713,6 +702,7 @@ class NettyRemoteServer(serverModule: NettyRemoteServerModule, val host: String,
   bootstrap.setOption("child.tcpNoDelay", true)
   bootstrap.setOption("child.keepAlive", true)
   bootstrap.setOption("child.reuseAddress", true)
+  bootstrap.setOption("child.connectTimeoutMillis", RemoteServerSettings.CONNECTION_TIMEOUT.toMillis)
 
   openChannels.add(bootstrap.bind(address))
   serverModule.notifyListeners(RemoteServerStarted(serverModule))

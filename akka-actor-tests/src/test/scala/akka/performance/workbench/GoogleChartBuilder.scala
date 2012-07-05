@@ -14,72 +14,6 @@ object GoogleChartBuilder {
   val ChartHeight = 400
 
   /**
-   * Builds a bar chart for tps in the statistics.
-   */
-  def tpsChartUrl(statsByTimestamp: TreeMap[Long, Seq[Stats]], title: String, legend: Stats ⇒ String): String = {
-    if (statsByTimestamp.isEmpty) return ""
-
-    val loads = statsByTimestamp.values.head.map(_.load)
-    val allStats = statsByTimestamp.values.flatten
-
-    val sb = new StringBuilder
-    sb.append(BaseUrl)
-    // bar chart
-    sb.append("cht=bvg")
-    sb.append("&")
-    // size
-    sb.append("chs=").append(ChartWidth).append("x").append(ChartHeight)
-    sb.append("&")
-    // title
-    sb.append("chtt=").append(urlEncode(title))
-    sb.append("&")
-    // axis locations
-    sb.append("chxt=y,x")
-    sb.append("&")
-    // labels
-    sb.append("chxl=1:|")
-    sb.append(loads.mkString("|"))
-    sb.append("&")
-
-    // label color and font
-    //sb.append("chxs=2,D65D82,11.5,0,lt,D65D82")
-    //sb.append("&")
-
-    // legend
-    val legendStats = statsByTimestamp.values.map(_.head).toSeq
-    appendLegend(legendStats, sb, legend)
-    sb.append("&")
-    // bar spacing
-    sb.append("chbh=a,4,20")
-    sb.append("&")
-    // bar colors
-    barColors(statsByTimestamp.size, sb)
-    sb.append("&")
-
-    // data series
-    val loadStr = loads.mkString(",")
-    sb.append("chd=t:")
-    val maxValue = allStats.map(_.tps).max
-    val tpsSeries: Iterable[String] =
-      for (statsSeq ← statsByTimestamp.values) yield {
-        statsSeq.map(_.tps).mkString(",")
-      }
-    sb.append(tpsSeries.mkString("|"))
-
-    // y range
-    sb.append("&")
-    sb.append("chxr=0,0,").append(maxValue)
-    sb.append("&")
-    sb.append("chds=0,").append(maxValue)
-    sb.append("&")
-
-    // grid lines
-    appendGridSpacing(maxValue.toLong, sb)
-
-    return sb.toString
-  }
-
-  /**
    * Builds a bar chart for all percentiles and the mean in the statistics.
    */
   def percentilesAndMeanChartUrl(statistics: Seq[Stats], title: String, legend: Stats ⇒ String): String = {
@@ -176,11 +110,6 @@ object GoogleChartBuilder {
       for ((s, m) ← percentileSeries.zip(meanValues))
         yield s + "," + formatDouble(m)
 
-    sb.append(series.mkString("|"))
-  }
-
-  private def dataSeries(values: Seq[Double], sb: StringBuilder) {
-    val series = values.map(formatDouble(_))
     sb.append(series.mkString("|"))
   }
 
