@@ -58,6 +58,11 @@ abstract class UnreachableNodeRejoinsClusterSpec
     }
 
     "mark a node as UNREACHABLE when we pull the network" taggedAs LongRunningTest in {
+      // let them send at least one heartbeat to each other after the gossip convergence
+      // because for new joining nodes we remove them from the failure detector when
+      // receive gossip
+      2.seconds.dilated.sleep
+
       runOn(first) {
         // pull network for victim node from all nodes
         allBut(victim).foreach { roleName ⇒

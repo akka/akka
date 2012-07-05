@@ -569,7 +569,6 @@ private[cluster] final class ClusterHeartbeatSenderWorker(
 
   def receive = {
     case SendHeartbeat(heartbeatMsg, _, deadline) ⇒
-      log.debug("Cluster Node [{}] - Heartbeat to [{}]", heartbeatMsg.from, toRef)
       if (!deadline.isOverdue) {
         // the CircuitBreaker will measure elapsed time and open if too many long calls
         try breaker.withSyncCircuitBreaker {
@@ -977,8 +976,8 @@ private[cluster] final class ClusterCore(cluster: Cluster) extends Actor with Ac
         joinInProgress = newJoinInProgress
 
         // for all new joining nodes we remove them from the failure detector
-        (latestGossip.members -- localGossip.members).filter(_.status == Joining).foreach {
-          case node ⇒ cluster.failureDetector.remove(node.address)
+        (latestGossip.members -- localGossip.members).filter(_.status == Joining).foreach { node ⇒
+          cluster.failureDetector.remove(node.address)
         }
 
         log.debug("Cluster Node [{}] - Receiving gossip from [{}]", selfAddress, from)
@@ -1250,7 +1249,9 @@ private[cluster] final class ClusterCore(cluster: Cluster) extends Actor with Ac
       val localMembers = localGossip.members
       val localUnreachableMembers = localGossip.overview.unreachable
 
-      val newlyDetectedUnreachableMembers = localMembers filterNot { member ⇒ cluster.failureDetector.isAvailable(member.address) }
+      val newlyDetectedUnreachableMembers = localMembers filterNot { member ⇒
+        member.address == selfAddress || cluster.failureDetector.isAvailable(member.address)
+      }
 
       if (newlyDetectedUnreachableMembers.nonEmpty) {
 
