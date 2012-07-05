@@ -415,9 +415,17 @@ case class Gossip(
     // When that is done we check that all the entries in the 'seen' table have the same vector clock version
     // and that all members exists in seen table
     val hasUnreachable = unreachable.nonEmpty && unreachable.exists { _.status != Down }
-    val allMembersInSeen = members.forall(m ⇒ seen.contains(m.address))
+    def allMembersInSeen = members.forall(m ⇒ seen.contains(m.address))
 
-    !hasUnreachable && allMembersInSeen && (seen.values.toSet.size == 1)
+    def seenSame: Boolean =
+      if (seen.isEmpty) false
+      else {
+        val values = seen.values
+        val seenHead = values.head
+        values.forall(_ == seenHead)
+      }
+
+    !hasUnreachable && allMembersInSeen && seenSame
   }
 
   def isLeader(address: Address): Boolean =
@@ -434,17 +442,13 @@ case class Gossip(
 
   def isUnavailable(address: Address): Boolean = {
     val isUnreachable = overview.unreachable exists { _.address == address }
-    val hasUnavailableMemberStatus = members exists { m ⇒ (m.address == address) && m.status.isUnavailable }
+    val hasUnavailableMemberStatus = members exists { m ⇒ m.status.isUnavailable && m.address == address }
     isUnreachable || hasUnavailableMemberStatus
   }
 
   def member(address: Address): Member = {
-    members.find(_.address == address)
-      .getOrElse {
-        overview.unreachable
-          .find(_.address == address)
-          .getOrElse(Member(address, Removed))
-      }
+    members.find(_.address == address).orElse(overview.unreachable.find(_.address == address)).
+      getOrElse(Member(address, Removed))
   }
 
   override def toString =
