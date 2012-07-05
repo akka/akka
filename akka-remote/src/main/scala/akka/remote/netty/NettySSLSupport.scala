@@ -38,7 +38,7 @@ private[akka] object NettySSLSupport {
     }
 
     val rng = rngName match {
-      case Some(r @ ("AES128CounterSecureRNG" | "AES128CounterInetRNG" | "AES256CounterInetRNG")) ⇒
+      case Some(r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG" | "AES128CounterInetRNG" | "AES256CounterInetRNG")) ⇒
         log.debug("SSL random number generator set to: {}", r)
         SecureRandom.getInstance(r, AkkaProvider)
       case Some(s @ ("SHA1PRNG" | "NativePRNG")) ⇒

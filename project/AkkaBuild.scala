@@ -42,10 +42,10 @@ object AkkaBuild extends Build {
            |import com.typesafe.config.ConfigFactory
            |import akka.util.duration._
            |import akka.util.Timeout
-           |val config = ConfigFactory.parseString("akka.daemonic=on")
+           |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG")
            |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=RemoteActorRefProvider").withFallback(config)
            |var system: ActorSystem = null
-           |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config) }
+           |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.shutdown()!") }
            |implicit def ec = system.dispatcher
            |implicit val timeout = Timeout(5 seconds)
            |""".stripMargin,
@@ -320,7 +320,8 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Sphinx.settings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
-      unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
+      unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
     )
   )
 
@@ -511,7 +512,7 @@ object Dependencies {
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
-  val docs = Seq(Test.scalatest, Test.junit, Test.specs2)
+  val docs = Seq(Test.scalatest, Test.junit, Test.specs2, Test.junitIntf)
 
   val zeroMQ = Seq(protobuf, Dependency.zeroMQ, Test.scalatest, Test.junit)
 }
@@ -559,6 +560,7 @@ object Dependency {
     val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
     val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"         % "1.0.0"      % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
+    val junitIntf   = "com.novocode"                % "junit-interface"     % "0.8"        % "test" // MIT
   }
 }
 
