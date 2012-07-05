@@ -13,6 +13,8 @@ import akka.actor.Address
 import java.util.concurrent.atomic.AtomicInteger
 import akka.remote.RemoteActorRefProvider
 import InternalClusterAction._
+import java.lang.management.ManagementFactory
+import javax.management.ObjectName
 
 object ClusterSpec {
   val config = """
@@ -55,6 +57,13 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
     "use the address of the remote transport" in {
       cluster.selfAddress must be(selfAddress)
+    }
+
+    "register jmx mbean" in {
+      val name = new ObjectName("akka:type=Cluster")
+      val info = ManagementFactory.getPlatformMBeanServer.getMBeanInfo(name)
+      info.getAttributes.length must be > (0)
+      info.getOperations.length must be > (0)
     }
 
     "initially become singleton cluster when joining itself and reach convergence" in {

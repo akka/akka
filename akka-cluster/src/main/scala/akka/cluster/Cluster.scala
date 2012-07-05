@@ -19,11 +19,9 @@ import akka.util.duration._
 import akka.util.internal.HashedWheelTimer
 import com.google.protobuf.ByteString
 import java.io.Closeable
-import java.lang.management.ManagementFactory
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit._
-import javax.management._
 import MemberStatus._
 import scala.annotation.tailrec
 import scala.collection.immutable.{ Map, SortedSet }
@@ -1485,6 +1483,9 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
   system.registerOnTermination(shutdown())
 
+  private val clusterJmx = new ClusterJmx(this, log)
+  clusterJmx.createMBean()
+
   log.info("Cluster Node [{}] - has started up successfully", selfAddress)
 
   // ======================================================
@@ -1615,6 +1616,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
 
       clusterScheduler.close()
 
+      clusterJmx.unregisterMBean()
+
       log.info("Cluster Node [{}] - Cluster node successfully shut down", selfAddress)
     }
   }
@@ -1631,7 +1634,5 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    * INTERNAL API
    */
   private[cluster] def latestStats: ClusterStats = _latestStats
-
-  // FIXME add back JMX
 
 }
