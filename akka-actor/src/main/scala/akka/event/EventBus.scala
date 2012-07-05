@@ -324,7 +324,17 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
     if (receivers ne null) receivers foreach { _ ! event }
   }
 
-  def subscribe(subscriber: Subscriber, to: Classifier): Boolean = associate(to, subscriber)
-  def unsubscribe(subscriber: Subscriber, from: Classifier): Boolean = dissociate(from, subscriber)
-  def unsubscribe(subscriber: Subscriber): Unit = dissociate(subscriber)
+  def subscribe(subscriber: Subscriber, to: Classifier): Boolean =
+    if (subscriber eq null) throw new IllegalArgumentException("Subscriber is null")
+    else if (to eq null) throw new IllegalArgumentException("Classifier is null")
+    else associate(to, subscriber)
+
+  def unsubscribe(subscriber: Subscriber, from: Classifier): Boolean =
+    if (subscriber eq null) throw new IllegalArgumentException("Subscriber is null")
+    else if (from eq null) throw new IllegalArgumentException("Classifier is null")
+    else dissociate(from, subscriber)
+
+  def unsubscribe(subscriber: Subscriber): Unit =
+    if (subscriber eq null) throw new IllegalArgumentException("Subscriber is null")
+    else dissociate(subscriber)
 }
