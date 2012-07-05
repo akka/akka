@@ -419,9 +419,7 @@ case class Gossip(
     val hasUnreachable = unreachable.nonEmpty && unreachable.exists { _.status != Down }
     val allMembersInSeen = members.forall(m ⇒ seen.contains(m.address))
 
-    if (hasUnreachable) false
-    else if (!allMembersInSeen) true
-    else seen.values.toSet.size == 1
+    !hasUnreachable && allMembersInSeen && (seen.values.toSet.size == 1)
   }
 
   def isLeader(address: Address): Boolean =
