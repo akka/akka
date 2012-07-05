@@ -52,10 +52,13 @@ abstract class ActorSystemActivator extends BundleActivator {
    * Register the actor system in the OSGi service registry.  The activator itself will ensure that this service
    * is unregistered again when the bundle is being stopped.
    *
+   * Only one ActorSystem can be registered at a time, so any previous registration will be unregistered prior to registering the new.
+   *
    * @param context the bundle context
    * @param system the actor system
    */
   def registerService(context: BundleContext, system: ActorSystem): Unit = {
+    registration.foreach(_.unregister()) //Cleanup
     val properties = new Properties()
     properties.put("name", system.name)
     registration = Some(context.registerService(classOf[ActorSystem].getName, system,

@@ -2,7 +2,8 @@ package akka.osgi.aries.blueprint
 
 import org.osgi.framework.BundleContext
 import akka.osgi.OsgiActorSystemFactory
-import com.typesafe.config.ConfigFactory
+import akka.actor.ActorSystem
+import com.typesafe.config.{ Config, ConfigFactory }
 
 /**
  * A set of helper/factory classes to build a Akka system using Blueprint.  This class is only meant to be used by
@@ -15,30 +16,22 @@ class BlueprintActorSystemFactory(context: BundleContext, name: String) extends 
 
   var config: Option[String] = None
 
-  lazy val system = super.createActorSystem(stringToOption(name))
+  lazy val system: ActorSystem = super.createActorSystem(if (name == null || name.isEmpty) None else Some(name))
 
-  def setConfig(config: String) = { this.config = Some(config) }
+  def setConfig(config: String): Unit = this.config = Some(config)
 
-  def create = system
+  def create(): ActorSystem = system
 
-  def destroy = system.shutdown()
-
-  def stringToOption(original: String) = if (original == null || original.isEmpty) {
-    None
-  } else {
-    Some(original)
-  }
+  def destroy(): Unit = system.shutdown()
 
   /**
    * Strategy method to create the Config for the ActorSystem, ensuring that the default/reference configuration is
    * loaded from the akka-actor bundle.
    */
-  override def actorSystemConfig(context: BundleContext) = {
+  override def actorSystemConfig(context: BundleContext): Config =
     config match {
       case Some(value) ⇒ ConfigFactory.parseString(value).withFallback(super.actorSystemConfig(context))
       case None        ⇒ super.actorSystemConfig(context)
     }
-
-  }
 }
 
