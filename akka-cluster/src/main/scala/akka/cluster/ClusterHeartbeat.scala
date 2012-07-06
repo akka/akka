@@ -113,6 +113,7 @@ private[cluster] final class ClusterHeartbeatSenderWorker(
     onOpen(log.debug("CircuitBreaker Open for [{}]", toRef)).
     onClose(log.debug("CircuitBreaker Closed for [{}]", toRef))
 
+  // make sure it will cleanup when not used any more
   context.setReceiveTimeout(30 seconds)
 
   def receive = {
@@ -124,9 +125,6 @@ private[cluster] final class ClusterHeartbeatSenderWorker(
           toRef ! heartbeatMsg
           if (deadline.isOverdue) log.debug("Sending heartbeat to [{}] took longer than expected", toRef)
         } catch { case e: CircuitBreakerOpenException ⇒ /* skip sending heartbeat to broken connection */ }
-
-        // make sure it will cleanup when not used any more
-        context.setReceiveTimeout(30 seconds)
       }
 
     case ReceiveTimeout ⇒ context.stop(self) // cleanup when not used
