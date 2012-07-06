@@ -165,7 +165,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       system.scheduler.scheduleOnce(200 millis) { system.shutdown() }
       var failing = false
       var created = Vector.empty[ActorRef]
-      while (!system.isTerminated && system.uptime < 5) {
+      while (!system.isTerminated) {
         try {
           val t = system.actorOf(Props[ActorSystemSpec.Terminater])
           failing must not be true // because once failing => always failing (it’s due to shutdown)
@@ -173,12 +173,14 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
         } catch {
           case _: IllegalStateException ⇒ failing = true
         }
+
+        if (!failing && system.uptime >= 5) {
+          println(created.last)
+          println(system.asInstanceOf[ExtendedActorSystem].printTree)
+          fail("System didn't terminate within 5 seconds")
+        }
       }
-      if (system.uptime >= 5) {
-        println(created.last)
-        println(system.asInstanceOf[ExtendedActorSystem].printTree)
-        system.uptime must be < 5L
-      }
+
       created filter (ref ⇒ !ref.isTerminated && !ref.asInstanceOf[ActorRefWithCell].underlying.isInstanceOf[UnstartedCell]) must be(Seq())
     }
 
