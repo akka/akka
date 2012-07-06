@@ -5,17 +5,13 @@ package docs.future
 
 import language.postfixOps
 
-import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.matchers.MustMatchers
 import akka.testkit._
-import akka.actor.Actor
-import akka.actor.Props
+import akka.actor.{ Actor, Props }
 import akka.actor.Status.Failure
 import akka.util.Timeout
 import scala.concurrent.util.duration._
 import java.lang.IllegalStateException
-import akka.dispatch.{ Future, Promise }
-import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 
 object FutureDocSpec {
 
@@ -45,7 +41,7 @@ class FutureDocSpec extends AkkaSpec {
   "demonstrate usage custom ExecutionContext" in {
     val yourExecutorServiceGoesHere = java.util.concurrent.Executors.newSingleThreadExecutor()
     //#diy-execution-context
-    import akka.dispatch.{ ExecutionContext, Promise }
+    import scala.concurrent.{ ExecutionContext, Promise }
 
     implicit val ec = ExecutionContext.fromExecutorService(yourExecutorServiceGoesHere)
 
@@ -120,7 +116,7 @@ class FutureDocSpec extends AkkaSpec {
     val f1 = Future {
       "Hello" + "World"
     }
-    val f2 = Promise.successful(3)
+    val f2 = Promise.successful(3).future
     val f3 = f1 map { x ⇒
       f2 map { y ⇒
         x.length * y
@@ -135,7 +131,7 @@ class FutureDocSpec extends AkkaSpec {
     val f1 = Future {
       "Hello" + "World"
     }
-    val f2 = Promise.successful(3)
+    val f2 = Promise.successful(3).future
     val f3 = f1 flatMap { x ⇒
       f2 map { y ⇒
         x.length * y
@@ -148,7 +144,7 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of filter" in {
     //#filter
-    val future1 = Promise.successful(4)
+    val future1 = Promise.successful(4).future
     val future2 = future1.filter(_ % 2 == 0)
     val result = Await.result(future2, 1 second)
     result must be(4)
@@ -293,8 +289,8 @@ class FutureDocSpec extends AkkaSpec {
     val msg1 = -1
     //#try-recover
     val future = akka.pattern.ask(actor, msg1) recoverWith {
-      case e: ArithmeticException        ⇒ Promise.successful(0)
-      case foo: IllegalArgumentException ⇒ Promise.failed[Int](new IllegalStateException("All br0ken!"))
+      case e: ArithmeticException        ⇒ Promise.successful(0).future
+      case foo: IllegalArgumentException ⇒ Promise.failed[Int](new IllegalStateException("All br0ken!")).future
     }
     //#try-recover
     Await.result(future, 1 second) must be(0)
@@ -346,7 +342,7 @@ class FutureDocSpec extends AkkaSpec {
       Await.result(future, 1 second) must be("foo")
     }
     {
-      val future = Promise.failed[String](new IllegalStateException("OHNOES"))
+      val future = Promise.failed[String](new IllegalStateException("OHNOES")).future
       //#onFailure
       future onFailure {
         case ise: IllegalStateException if ise.getMessage == "OHNOES" ⇒
@@ -372,10 +368,10 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of Promise.success & Promise.failed" in {
     //#successful
-    val future = Promise.successful("Yay!")
+    val future = Promise.successful("Yay!").future
     //#successful
     //#failed
-    val otherFuture = Promise.failed[String](new IllegalArgumentException("Bang!"))
+    val otherFuture = Promise.failed[String](new IllegalArgumentException("Bang!")).future
     //#failed
     Await.result(future, 1 second) must be("Yay!")
     intercept[IllegalArgumentException] { Await.result(otherFuture, 1 second) }

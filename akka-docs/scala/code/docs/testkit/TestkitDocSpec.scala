@@ -9,7 +9,7 @@ import language.postfixOps
 import akka.testkit.TestProbe
 import scala.concurrent.util.duration._
 import akka.actor._
-import scala.concurrent.Futures
+import scala.concurrent.Future
 
 //#imports-test-probe
 
@@ -127,7 +127,10 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
     val actorRef = TestActorRef(new MyActor)
     // hypothetical message stimulating a '42' answer
-    val result = Await.result((actorRef ? Say42), 5 seconds).asInstanceOf[Int]
+    val future = actorRef ? Say42
+    val result = future.value.get match {
+      case Right(x: Int) ⇒ x
+    }
     result must be(42)
     //#test-behavior
   }
@@ -148,7 +151,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
     val actorRef = TestActorRef(new Actor {
       def receive = {
-        case boom ⇒ throw new IllegalArgumentException("boom")
+        case "hello" ⇒ throw new IllegalArgumentException("boom")
       }
     })
     intercept[IllegalArgumentException] { actorRef.receive("hello") }
@@ -272,6 +275,17 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       system.shutdown()
     }
     //#test-kit-base
+  }
+
+  "demonstrate within() nesting" in {
+    intercept[AssertionError] {
+      //#test-within-probe
+      val probe = TestProbe()
+      within(1 second) {
+        probe.expectMsg("hello")
+      }
+      //#test-within-probe
+    }
   }
 
 }

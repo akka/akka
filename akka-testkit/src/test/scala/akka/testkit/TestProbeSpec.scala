@@ -46,10 +46,10 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
       //#autopilot
       val probe = TestProbe()
       probe.setAutoPilot(new TestActor.AutoPilot {
-        def run(sender: ActorRef, msg: Any): Option[TestActor.AutoPilot] =
+        def run(sender: ActorRef, msg: Any): TestActor.AutoPilot =
           msg match {
-            case "stop" ⇒ None
-            case x      ⇒ testActor.tell(x, sender); Some(this)
+            case "stop" ⇒ TestActor.NoAutoPilot
+            case x      ⇒ testActor.tell(x, sender); TestActor.KeepRunning
           }
       })
       //#autopilot

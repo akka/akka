@@ -12,7 +12,7 @@ import scala.concurrent.util.Duration;
 import akka.pattern.CircuitBreaker;
 import akka.event.Logging;
 
-import static scala.concurrent.Futures.future;
+import static akka.dispatch.Futures.future;
 
 import java.util.concurrent.Callable;
 

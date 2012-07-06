@@ -328,7 +328,8 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Sphinx.settings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
-      unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test
+      unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
     )
   )
 
@@ -515,7 +516,7 @@ object Dependencies {
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
-  val docs = Seq(Test.scalatest, Test.junit, Test.specs2)
+  val docs = Seq(Test.scalatest, Test.junit, Test.specs2, Test.junitIntf)
 
   val zeroMQ = Seq(protobuf, Dependency.zeroMQ, Test.scalatest, Test.junit)
 }
@@ -550,6 +551,8 @@ object Dependency {
     val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3" % "test"  // ApacheV2
     val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"   % "test" // ApacheV2
     val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"         % "1.0.0"      % "test" // ApacheV2
+    val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
+    val junitIntf   = "com.novocode"                % "junit-interface"     % "0.8"        % "test" // MIT
   }
 }
 

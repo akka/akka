@@ -6,8 +6,7 @@ package docs.actor
 import language.postfixOps
 
 //#imports
-import akka.dispatch.{ Promise, Future }
-import scala.concurrent.Await
+import scala.concurrent.{ Promise, Future, Await }
 import scala.concurrent.util.duration._
 import akka.actor.{ ActorContext, TypedActor, TypedProps }
 
@@ -40,7 +39,7 @@ class SquarerImpl(val name: String) extends Squarer {
 
   def squareDontCare(i: Int): Unit = i * i //Nobody cares :(
 
-  def square(i: Int): Future[Int] = Promise successful i * i
+  def square(i: Int): Future[Int] = Promise.successful(i * i).future
 
   def squareNowPlease(i: Int): Option[Int] = Some(i * i)
 
@@ -56,7 +55,7 @@ trait Foo {
 
 trait Bar {
   import TypedActor.dispatcher //So we have an implicit dispatcher for our Promise
-  def doBar(str: String): Future[String] = Promise successful str.toUpperCase
+  def doBar(str: String): Future[String] = Promise.successful(str.toUpperCase).future
 }
 
 class FooBar extends Foo with Bar

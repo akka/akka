@@ -6,13 +6,13 @@ package akka.zeromq
 import org.zeromq.ZMQ.{ Socket, Poller }
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
-import akka.dispatch.{ Promise, Future }
-import akka.event.Logging
-import scala.annotation.tailrec
-import java.util.concurrent.TimeUnit
-import collection.mutable.ListBuffer
-import akka.util.NonFatal
+import scala.concurrent.{ Promise, Future }
 import scala.concurrent.util.Duration
+import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
+import akka.event.Logging
+import java.util.concurrent.TimeUnit
+import akka.util.NonFatal
 
 private[zeromq] object ConcurrentSocketActor {
   private sealed trait PollMsg
@@ -173,12 +173,15 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
 
   // this is a “PollMsg=>Unit” which either polls or schedules Poll, depending on the sign of the timeout
   private val doPollTimeout = {
+    val ext = ZeroMQExtension(context.system)
     val fromConfig = params collectFirst { case PollTimeoutDuration(duration) ⇒ duration }
-    val duration = fromConfig getOrElse ZeroMQExtension(context.system).DefaultPollTimeout
-    if (duration > Duration.Zero) { (msg: PollMsg) ⇒
+    val duration = (fromConfig getOrElse ext.DefaultPollTimeout)
+    if (duration > Duration.Zero) {
       // for positive timeout values, do poll (i.e. block this thread)
-      poller.poll(duration.toMicros)
-      self ! msg
+      val pollLength = duration.toUnit(ext.pollTimeUnit).toLong
+      (msg: PollMsg) ⇒
+        poller.poll(pollLength)
+        self ! msg
     } else {
       val d = -duration
 

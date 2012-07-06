@@ -7,6 +7,7 @@ package akka.cluster
 import language.postfixOps
 
 import akka.testkit.AkkaSpec
+import akka.dispatch.Dispatchers
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 
@@ -30,13 +31,19 @@ class ClusterConfigSpec extends AkkaSpec {
       HeartbeatInterval must be(1 second)
       LeaderActionsInterval must be(1 second)
       UnreachableNodesReaperInterval must be(1 second)
+      PublishStateInterval must be(1 second)
       JoinTimeout must be(60 seconds)
-      NrOfGossipDaemons must be(4)
       AutoJoin must be(true)
       AutoDown must be(false)
+      UseDispatcher must be(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)
+      MaxGossipMergeRate must be(5.0 plusOrMinus 0.0001)
       SchedulerTickDuration must be(33 millis)
       SchedulerTicksPerWheel must be(512)
+      SendCircuitBreakerSettings must be(CircuitBreakerSettings(
+        maxFailures = 3,
+        callTimeout = 2 seconds,
+        resetTimeout = 30 seconds))
     }
   }
 }

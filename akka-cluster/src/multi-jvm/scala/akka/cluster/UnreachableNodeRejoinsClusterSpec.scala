@@ -9,7 +9,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Address
-import akka.remote.testconductor.{RoleName, Direction}
+import akka.remote.testconductor.{ RoleName, Direction }
 import akka.util.duration._
 
 object UnreachableNodeRejoinsClusterMultiJvmSpec extends MultiNodeConfig {
@@ -26,7 +26,6 @@ class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode2 extend
 class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec with FailureDetectorPuppetStrategy
 class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode4 extends UnreachableNodeRejoinsClusterSpec with FailureDetectorPuppetStrategy
 
-
 class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
 class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode2 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
 class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
@@ -41,7 +40,6 @@ abstract class UnreachableNodeRejoinsClusterSpec
     roles.filterNot(_ == role)
   }
 
-
   lazy val sortedRoles = roles.sorted
   lazy val master = sortedRoles(0)
   lazy val victim = sortedRoles(1)
@@ -55,14 +53,19 @@ abstract class UnreachableNodeRejoinsClusterSpec
   "A cluster of " + roles.size + " members" must {
 
     "reach initial convergence" taggedAs LongRunningTest in {
-      awaitClusterUp(roles:_*)
+      awaitClusterUp(roles: _*)
       endBarrier
     }
 
     "mark a node as UNREACHABLE when we pull the network" taggedAs LongRunningTest in {
+      // let them send at least one heartbeat to each other after the gossip convergence
+      // because for new joining nodes we remove them from the failure detector when
+      // receive gossip
+      2.seconds.dilated.sleep
+
       runOn(first) {
         // pull network for victim node from all nodes
-        allBut(victim).foreach { roleName =>
+        allBut(victim).foreach { roleName ⇒
           testConductor.blackhole(victim, roleName, Direction.Both).await
         }
       }
@@ -74,24 +77,28 @@ abstract class UnreachableNodeRejoinsClusterSpec
         allButVictim.foreach(markNodeAsUnavailable(_))
         within(30 seconds) {
           // victim becomes all alone
-          awaitCond({ val gossip = cluster.latestGossip
+          awaitCond({
+            val gossip = cluster.latestGossip
             gossip.overview.unreachable.size == (roles.size - 1) &&
               gossip.members.size == 1 &&
-              gossip.members.forall(_.status == MemberStatus.Up) })
+              gossip.members.forall(_.status == MemberStatus.Up)
+          })
           cluster.latestGossip.overview.unreachable.map(_.address) must be((allButVictim map address).toSet)
           cluster.convergence.isDefined must be(false)
         }
       }
 
-      runOn(allButVictim:_*) {
+      runOn(allButVictim: _*) {
         markNodeAsUnavailable(victim)
         within(30 seconds) {
           // victim becomes unreachable
-          awaitCond({ val gossip = cluster.latestGossip
+          awaitCond({
+            val gossip = cluster.latestGossip
             gossip.overview.unreachable.size == 1 &&
               gossip.members.size == (roles.size - 1) &&
-              gossip.members.forall(_.status == MemberStatus.Up) })
-          awaitSeenSameState(allButVictim map address:_*)
+              gossip.members.forall(_.status == MemberStatus.Up)
+          })
+          awaitSeenSameState(allButVictim map address: _*)
           // still one unreachable
           cluster.latestGossip.overview.unreachable.size must be(1)
           cluster.latestGossip.overview.unreachable.head.address must be(node(victim).address)
@@ -108,7 +115,7 @@ abstract class UnreachableNodeRejoinsClusterSpec
         cluster down victim
       }
 
-      runOn(allBut(victim):_*) {
+      runOn(allBut(victim): _*) {
         awaitUpConvergence(roles.size - 1, Seq(victim))
       }
 
@@ -118,7 +125,7 @@ abstract class UnreachableNodeRejoinsClusterSpec
     "allow node to REJOIN when the network is plugged back in" taggedAs LongRunningTest in {
       runOn(first) {
         // put the network back in
-        allBut(victim).foreach { roleName =>
+        allBut(victim).foreach { roleName ⇒
           testConductor.passThrough(victim, roleName, Direction.Both).await
         }
       }

@@ -803,7 +803,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         flow { y << 2 }
 
         assert(Await.result(z, timeout.duration) === 42)
-      }
+      }*/
 
       "run callbacks async" in {
         val latch = Vector.fill(10)(new TestLatch)

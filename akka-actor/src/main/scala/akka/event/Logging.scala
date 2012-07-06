@@ -592,6 +592,7 @@ object Logging {
     /** Null Object used for errors without cause Throwable */
     object NoCause extends NoStackTrace
   }
+  def noCause = Error.NoCause
 
   /**
    * For WARNING Logging

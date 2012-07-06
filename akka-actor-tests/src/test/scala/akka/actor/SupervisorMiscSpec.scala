@@ -58,19 +58,19 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
         actor4 ! Kill
 
         countDownLatch.await(10, TimeUnit.SECONDS)
-        assert(Await.result(actor1 ? "status", timeout.duration) == "OK", "actor1 is shutdown")
-        assert(Await.result(actor2 ? "status", timeout.duration) == "OK", "actor2 is shutdown")
-        assert(Await.result(actor3 ? "status", timeout.duration) == "OK", "actor3 is shutdown")
-        assert(Await.result(actor4 ? "status", timeout.duration) == "OK", "actor4 is shutdown")
+
+        Seq("actor1" -> actor1, "actor2" -> actor2, "actor3" -> actor3, "actor4" -> actor4) map {
+          case (id, ref) ⇒ (id, ref ? "status")
+        } foreach {
+          case (id, f) ⇒ (id, Await.result(f, timeout.duration)) must be === ((id, "OK"))
+        }
       }
     }
 
     "be able to create named children in its constructor" in {
       val a = system.actorOf(Props(new Actor {
         context.actorOf(Props.empty, "bob")
-        def receive = {
-          case x: Exception ⇒ throw x
-        }
+        def receive = { case x: Exception ⇒ throw x }
         override def preStart(): Unit = testActor ! "preStart"
       }))
       val m = "weird message"
@@ -126,20 +126,14 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
 
     "be able to create a similar kid in the fault handling strategy" in {
       val parent = system.actorOf(Props(new Actor {
-
         override val supervisorStrategy = new OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider) {
           override def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit = {
             val newKid = context.actorOf(Props.empty, child.path.name)
-            testActor ! {
-              if ((newKid ne child) && newKid.path == child.path) "green"
-              else "red"
-            }
+            testActor ! { if ((newKid ne child) && newKid.path == child.path) "green" else "red" }
           }
         }
 
-        def receive = {
-          case "engage" ⇒ context.stop(context.actorOf(Props.empty, "Robert"))
-        }
+        def receive = { case "engage" ⇒ context.stop(context.actorOf(Props.empty, "Robert")) }
       }))
       parent ! "engage"
       expectMsg("green")

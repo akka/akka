@@ -29,12 +29,12 @@ object Futures {
   /**
    * Java API, creates an already completed Promise with the specified exception
    */
-  def failed[T](exception: Throwable, executor: ExecutionContext): Promise[T] = Promise.failed(exception)
+  def failed[T](exception: Throwable, executor: ExecutionContext): Future[T] = Promise.failed(exception).future
 
   /**
    * Java API, Creates an already completed Promise with the specified result
    */
-  def successful[T](result: T, executor: ExecutionContext): Promise[T] = Promise.successful(result)
+  def successful[T](result: T, executor: ExecutionContext): Future[T] = Promise.successful(result).future
 
   /**
    * Java API.

@@ -321,7 +321,7 @@ public class JavaFutureTests {
     Future<Object> f = p.future().recoverWith(new Recover<Future<Object>>() {
       public Future<Object> recover(Throwable t) throws Throwable {
         if (t == fail)
-          return Futures.<Object> successful("foo", system.dispatcher()).future();
+          return Futures.<Object> successful("foo", system.dispatcher());
         else
           throw t;
       }

@@ -38,7 +38,7 @@ abstract class NodeUpSpec
 
     "be unaffected when joining again" taggedAs LongRunningTest in {
 
-      val unexpected = new AtomicReference[SortedSet[Member]]
+      val unexpected = new AtomicReference[SortedSet[Member]](SortedSet.empty)
       cluster.registerListener(new MembershipChangeListener {
         def notify(members: SortedSet[Member]) {
           if (members.size != 2 || members.exists(_.status != MemberStatus.Up))
@@ -55,7 +55,7 @@ abstract class NodeUpSpec
       // let it run for a while to make sure that nothing bad happens
       for (n ← 1 to 20) {
         100.millis.dilated.sleep()
-        unexpected.get must be(null)
+        unexpected.get must be(SortedSet.empty)
         cluster.latestGossip.members.forall(_.status == MemberStatus.Up) must be(true)
       }
 

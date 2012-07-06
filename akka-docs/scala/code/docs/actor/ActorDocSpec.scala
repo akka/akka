@@ -302,6 +302,26 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val actor = system.actorOf(Props(new HotSwapActor), name = "hot")
   }
 
+  "using Stash" in {
+    //#stash
+    import akka.actor.Stash
+    class ActorWithProtocol extends Actor with Stash {
+      def receive = {
+        case "open" ⇒
+          unstashAll()
+          context.become {
+            case "write" ⇒ // do writing...
+            case "close" ⇒
+              unstashAll()
+              context.unbecome()
+            case msg ⇒ stash()
+          }
+        case msg ⇒ stash()
+      }
+    }
+    //#stash
+  }
+
   "using watch" in {
     //#watch
     import akka.actor.{ Actor, Props, Terminated }

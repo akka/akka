@@ -11,7 +11,7 @@ import akka.actor.Props;
 
 //#import-future
 import scala.concurrent.Future;
-import scala.concurrent.Futures;
+import akka.dispatch.Futures;
 import akka.dispatch.Mapper;
 import scala.concurrent.Await;
 import scala.concurrent.util.Duration;
@@ -43,12 +43,16 @@ import akka.pattern.AskTimeoutException;
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
 import scala.concurrent.Future;
-import scala.concurrent.Futures;
+import akka.dispatch.Futures;
 import scala.concurrent.util.Duration;
 import akka.util.Timeout;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 //#import-askPipe
+
+//#import-stash
+import akka.actor.UntypedActorWithStash;
+//#import-stash
 
 import akka.actor.Props;
 import akka.actor.UntypedActor;
@@ -246,7 +250,7 @@ public class UntypedActorDocTestBase {
         final int x = (Integer) it.next();
         return new Result(x, s);
       }
-    });
+    }, system.dispatcher());
 
     pipe(transformed).to(actorC);
     //#ask-pipe
@@ -345,6 +349,31 @@ public class UntypedActorDocTestBase {
   }
 
   //#hot-swap-actor
+
+  //#stash
+  public static class ActorWithProtocol extends UntypedActorWithStash {
+    private Boolean isOpen = false;
+    public void onReceive(Object msg) {
+      if (isOpen) {
+        if (msg.equals("write")) {
+          // do writing...
+        } else if (msg.equals("close")) {
+          unstashAll();
+          isOpen = false;
+        } else {
+          stash();
+        }
+      } else {
+        if (msg.equals("open")) {
+          unstashAll();
+          isOpen = true;
+        } else {
+          stash();
+        }
+      }
+    }
+  }
+  //#stash
 
   //#watch
   public static class WatchActor extends UntypedActor {
