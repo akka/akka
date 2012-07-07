@@ -508,7 +508,8 @@ private[akka] class ActorCell(
   }
 
   private def isTerminating = childrenRefs match {
-    case TerminatedChildrenContainer | TerminatingChildrenContainer(_, _, Termination) ⇒ true
+    case TerminatingChildrenContainer(_, _, Termination) ⇒ true
+    case TerminatedChildrenContainer ⇒ true
     case _ ⇒ false
   }
   private def isNormal = childrenRefs match {
@@ -980,10 +981,11 @@ private[akka] class ActorCell(
     childrenRefs match {
       case tc @ TerminatingChildrenContainer(_, _, reason) ⇒
         val n = removeChild(child)
+        actor.supervisorStrategy.handleChildTerminated(this, child, children)
         if (!n.isInstanceOf[TerminatingChildrenContainer]) reason match {
           case Recreation(cause) ⇒ doRecreate(cause, actor) // doRecreate since this is the continuation of "recreate"
           case Termination       ⇒ doTerminate()
-          case _                 ⇒ actor.supervisorStrategy.handleChildTerminated(this, child, children)
+          case _                 ⇒
         }
       case _ ⇒
         removeChild(child)
