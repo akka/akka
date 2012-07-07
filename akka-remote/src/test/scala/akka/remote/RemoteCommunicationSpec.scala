@@ -118,7 +118,7 @@ akka {
       val r = expectMsgType[ActorRef]
       r ! (Props[Echo], "grandchild")
       val remref = expectMsgType[ActorRef]
-      remref.isInstanceOf[LocalActorRef] must be(true)
+      remref.asInstanceOf[ActorRefScope].isLocal must be(true)
       val myref = system.actorFor(system / "looker" / "child" / "grandchild")
       myref.isInstanceOf[RemoteActorRef] must be(true)
       myref ! 43

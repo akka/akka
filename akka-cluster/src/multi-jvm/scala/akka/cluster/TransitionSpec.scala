@@ -9,15 +9,15 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.actor.Address
+import akka.pattern.ask
 import akka.remote.testconductor.RoleName
 import MemberStatus._
+import InternalClusterAction._
 
 object TransitionMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
-  val fourth = role("fourth")
-  val fifth = role("fifth")
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
@@ -27,12 +27,11 @@ object TransitionMultiJvmSpec extends MultiNodeConfig {
 class TransitionMultiJvmNode1 extends TransitionSpec with FailureDetectorPuppetStrategy
 class TransitionMultiJvmNode2 extends TransitionSpec with FailureDetectorPuppetStrategy
 class TransitionMultiJvmNode3 extends TransitionSpec with FailureDetectorPuppetStrategy
-class TransitionMultiJvmNode4 extends TransitionSpec with FailureDetectorPuppetStrategy
-class TransitionMultiJvmNode5 extends TransitionSpec with FailureDetectorPuppetStrategy
 
 abstract class TransitionSpec
   extends MultiNodeSpec(TransitionMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec
+  with ImplicitSender {
 
   import TransitionMultiJvmSpec._
 
@@ -68,7 +67,23 @@ abstract class TransitionSpec
   }
 
   def awaitMemberStatus(address: Address, status: MemberStatus): Unit = awaitCond {
-    memberStatus(address) == Up
+    memberStatus(address) == status
+  }
+
+  def leaderActions(): Unit = {
+    cluster.clusterCore ! LeaderActionsTick
+    awaitPing()
+  }
+
+  def reapUnreachable(): Unit = {
+    cluster.clusterCore ! ReapUnreachableTick
+    awaitPing()
+  }
+
+  def awaitPing(): Unit = {
+    val ping = Ping()
+    cluster.clusterCore ! ping
+    expectMsgPF() { case pong @ Pong(`ping`, _) ⇒ pong }
   }
 
   // DSL sugar for `role1 gossipTo role2`
@@ -81,11 +96,16 @@ abstract class TransitionSpec
         val g = cluster.latestGossip
         enterBarrier("before-gossip-" + gossipBarrierCounter)
         awaitCond(cluster.latestGossip != g) // received gossip
+        // gossip chat will synchronize the views
+        awaitCond((Set(fromRole, toRole) -- seenLatestGossip).isEmpty)
         enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
       runOn(fromRole) {
         enterBarrier("before-gossip-" + gossipBarrierCounter)
-        cluster.gossipTo(toRole) // send gossip
+        // send gossip
+        cluster.clusterCore ! InternalClusterAction.SendGossipTo(toRole)
+        // gossip chat will synchronize the views
+        awaitCond((Set(fromRole, toRole) -- seenLatestGossip).isEmpty)
         enterBarrier("after-gossip-" + gossipBarrierCounter)
       }
       runOn(roles.filterNot(r ⇒ r == fromRole || r == toRole): _*) {
@@ -99,12 +119,14 @@ abstract class TransitionSpec
 
     "start nodes as singleton clusters" taggedAs LongRunningTest in {
 
-      startClusterNode()
-      cluster.isSingletonCluster must be(true)
-      cluster.status must be(Joining)
-      cluster.convergence.isDefined must be(true)
-      cluster.leaderActions()
-      cluster.status must be(Up)
+      runOn(first) {
+        startClusterNode()
+        cluster.isSingletonCluster must be(true)
+        cluster.status must be(Joining)
+        cluster.convergence.isDefined must be(true)
+        leaderActions()
+        cluster.status must be(Up)
+      }
 
       enterBarrier("after-1")
     }
@@ -114,61 +136,29 @@ abstract class TransitionSpec
       runOn(second) {
         cluster.join(first)
       }
-      runOn(first) {
+      runOn(first, second) {
+        // gossip chat from the join will synchronize the views
         awaitMembers(first, second)
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Joining)
-        cluster.convergence.isDefined must be(false)
-      }
-      enterBarrier("second-joined")
-
-      first gossipTo second
-      runOn(second) {
-        members must be(Set(first, second))
-        memberStatus(first) must be(Up)
-        memberStatus(second) must be(Joining)
-        // we got a conflicting version in second, and therefore not convergence in second
-        seenLatestGossip must be(Set(second))
-        cluster.convergence.isDefined must be(false)
-      }
-
-      second gossipTo first
-      runOn(first) {
-        seenLatestGossip must be(Set(first, second))
-      }
-
-      first gossipTo second
-      runOn(second) {
-        seenLatestGossip must be(Set(first, second))
-      }
-
-      runOn(first, second) {
-        memberStatus(first) must be(Up)
-        memberStatus(second) must be(Joining)
+        awaitCond(seenLatestGossip == Set(first, second))
         cluster.convergence.isDefined must be(true)
       }
       enterBarrier("convergence-joining-2")
 
       runOn(leader(first, second)) {
-        cluster.leaderActions()
+        leaderActions()
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Up)
       }
       enterBarrier("leader-actions-2")
 
       leader(first, second) gossipTo nonLeader(first, second).head
-      runOn(nonLeader(first, second).head) {
-        memberStatus(first) must be(Up)
-        memberStatus(second) must be(Up)
-        seenLatestGossip must be(Set(first, second))
-        cluster.convergence.isDefined must be(true)
-      }
-
-      nonLeader(first, second).head gossipTo leader(first, second)
       runOn(first, second) {
-        memberStatus(first) must be(Up)
-        memberStatus(second) must be(Up)
+        // gossip chat will synchronize the views
+        awaitCond(memberStatus(second) == Up)
         seenLatestGossip must be(Set(first, second))
+        memberStatus(first) must be(Up)
         cluster.convergence.isDefined must be(true)
       }
 
@@ -180,60 +170,39 @@ abstract class TransitionSpec
       runOn(third) {
         cluster.join(second)
       }
-      runOn(second) {
+      runOn(second, third) {
+        // gossip chat from the join will synchronize the views
         awaitMembers(first, second, third)
-        cluster.convergence.isDefined must be(false)
         memberStatus(third) must be(Joining)
-        seenLatestGossip must be(Set(second))
+        awaitCond(seenLatestGossip == Set(second, third))
+        cluster.convergence.isDefined must be(false)
       }
       enterBarrier("third-joined-second")
 
       second gossipTo first
-      runOn(first) {
-        members must be(Set(first, second, third))
-        cluster.convergence.isDefined must be(false)
-        memberStatus(third) must be(Joining)
-      }
-
-      first gossipTo third
-      runOn(third) {
-        members must be(Set(first, second, third))
-        cluster.convergence.isDefined must be(false)
-        memberStatus(third) must be(Joining)
-        // conflicting version
-        seenLatestGossip must be(Set(third))
-      }
-
-      third gossipTo first
-      third gossipTo second
       runOn(first, second) {
-        seenLatestGossip must be(Set(myself, third))
-      }
-
-      first gossipTo second
-      runOn(second) {
+        // gossip chat will synchronize the views
+        awaitMembers(first, second, third)
+        memberStatus(third) must be(Joining)
+        awaitCond(memberStatus(second) == Up)
         seenLatestGossip must be(Set(first, second, third))
         cluster.convergence.isDefined must be(true)
       }
 
-      runOn(first, third) {
-        cluster.convergence.isDefined must be(false)
-      }
-
-      second gossipTo first
-      second gossipTo third
+      first gossipTo third
       runOn(first, second, third) {
-        seenLatestGossip must be(Set(first, second, third))
+        members must be(Set(first, second, third))
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Up)
         memberStatus(third) must be(Joining)
+        seenLatestGossip must be(Set(first, second, third))
         cluster.convergence.isDefined must be(true)
       }
 
       enterBarrier("convergence-joining-3")
 
       runOn(leader(first, second, third)) {
-        cluster.leaderActions()
+        leaderActions()
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Up)
         memberStatus(third) must be(Up)
@@ -251,17 +220,10 @@ abstract class TransitionSpec
       // first non-leader gossipTo the other non-leader
       nonLeader(first, second, third).head gossipTo nonLeader(first, second, third).tail.head
       runOn(nonLeader(first, second, third).head) {
-        cluster.gossipTo(nonLeader(first, second, third).tail.head)
+        // send gossip
+        cluster.clusterCore ! InternalClusterAction.SendGossipTo(nonLeader(first, second, third).tail.head)
       }
       runOn(nonLeader(first, second, third).tail.head) {
-        memberStatus(third) must be(Up)
-        seenLatestGossip must be(Set(first, second, third))
-        cluster.convergence.isDefined must be(true)
-      }
-
-      // and back again
-      nonLeader(first, second, third).tail.head gossipTo nonLeader(first, second, third).head
-      runOn(nonLeader(first, second, third).head) {
         memberStatus(third) must be(Up)
         seenLatestGossip must be(Set(first, second, third))
         cluster.convergence.isDefined must be(true)
@@ -280,151 +242,36 @@ abstract class TransitionSpec
       enterBarrier("after-3")
     }
 
-    "startup a second separated cluster consisting of nodes fourth and fifth" taggedAs LongRunningTest in {
-      runOn(fourth) {
-        cluster.join(fifth)
-        awaitMembers(fourth, fifth)
-        cluster.gossipTo(fifth)
-        awaitSeen(fourth, fifth)
-        cluster.convergence.isDefined must be(true)
-      }
-      runOn(fifth) {
-        awaitMembers(fourth, fifth)
-        cluster.gossipTo(fourth)
-        awaitSeen(fourth, fifth)
-        cluster.gossipTo(fourth)
-        cluster.convergence.isDefined must be(true)
-      }
-      enterBarrier("fourth-joined-fifth")
-
-      enterBarrier("after-4")
-    }
-
-    "perform correct transitions when second cluster (node fourth) joins first cluster (node third)" taggedAs LongRunningTest in {
-
-      runOn(fourth) {
-        cluster.join(third)
-      }
-      runOn(third) {
-        awaitMembers(first, second, third, fourth)
-        seenLatestGossip must be(Set(third))
-      }
-      enterBarrier("fourth-joined-third")
-
-      third gossipTo second
-      runOn(second) {
-        seenLatestGossip must be(Set(second, third))
-      }
-
-      second gossipTo fourth
-      runOn(fourth) {
-        members must be(roles.toSet)
-        // merge conflict
-        seenLatestGossip must be(Set(fourth))
-      }
-
-      fourth gossipTo first
-      fourth gossipTo second
-      fourth gossipTo third
-      fourth gossipTo fifth
-      runOn(first, second, third, fifth) {
-        members must be(roles.toSet)
-        seenLatestGossip must be(Set(fourth, myself))
-      }
-
-      first gossipTo fifth
-      runOn(fifth) {
-        seenLatestGossip must be(Set(first, fourth, fifth))
-      }
-
-      fifth gossipTo third
-      runOn(third) {
-        seenLatestGossip must be(Set(first, third, fourth, fifth))
-      }
-
-      third gossipTo second
-      runOn(second) {
-        seenLatestGossip must be(roles.toSet)
-        cluster.convergence.isDefined must be(true)
-      }
-
-      second gossipTo first
-      second gossipTo third
-      second gossipTo fourth
-      third gossipTo fifth
-
-      seenLatestGossip must be(roles.toSet)
-      memberStatus(first) must be(Up)
-      memberStatus(second) must be(Up)
-      memberStatus(third) must be(Up)
-      memberStatus(fourth) must be(Joining)
-      memberStatus(fifth) must be(Up)
-      cluster.convergence.isDefined must be(true)
-
-      enterBarrier("convergence-joining-3")
-
-      runOn(leader(roles: _*)) {
-        cluster.leaderActions()
-        memberStatus(fourth) must be(Up)
-        seenLatestGossip must be(Set(myself))
-        cluster.convergence.isDefined must be(false)
-      }
-      // spread the word
-      for (x :: y :: Nil ← (roles.sorted ++ roles.sorted.dropRight(1)).toList.sliding(2)) {
-        x gossipTo y
-      }
-
-      enterBarrier("spread-5")
-
-      seenLatestGossip must be(roles.toSet)
-      memberStatus(first) must be(Up)
-      memberStatus(second) must be(Up)
-      memberStatus(third) must be(Up)
-      memberStatus(fourth) must be(Up)
-      memberStatus(fifth) must be(Up)
-      cluster.convergence.isDefined must be(true)
-
-      enterBarrier("after-5")
-    }
-
     "perform correct transitions when second becomes unavailble" taggedAs LongRunningTest in {
-      runOn(fifth) {
+      runOn(third) {
         markNodeAsUnavailable(second)
-        cluster.reapUnreachableMembers()
+        reapUnreachable()
         cluster.latestGossip.overview.unreachable must contain(Member(second, Up))
-        seenLatestGossip must be(Set(fifth))
+        seenLatestGossip must be(Set(third))
       }
 
       enterBarrier("after-second-unavailble")
 
-      // spread the word
-      val gossipRound = List(fifth, fourth, third, first, third, fourth, fifth)
-      for (x :: y :: Nil ← gossipRound.sliding(2)) {
-        x gossipTo y
-      }
+      third gossipTo first
 
-      runOn((roles.filterNot(_ == second)): _*) {
+      runOn(first, third) {
         cluster.latestGossip.overview.unreachable must contain(Member(second, Up))
         cluster.convergence.isDefined must be(false)
       }
 
-      runOn(third) {
+      runOn(first) {
         cluster.down(second)
         awaitMemberStatus(second, Down)
       }
 
       enterBarrier("after-second-down")
 
-      // spread the word
-      val gossipRound2 = List(third, fourth, fifth, first, third, fourth, fifth)
-      for (x :: y :: Nil ← gossipRound2.sliding(2)) {
-        x gossipTo y
-      }
+      first gossipTo third
 
-      runOn((roles.filterNot(_ == second)): _*) {
+      runOn(first, third) {
         cluster.latestGossip.overview.unreachable must contain(Member(second, Down))
         memberStatus(second) must be(Down)
-        seenLatestGossip must be(Set(first, third, fourth, fifth))
+        seenLatestGossip must be(Set(first, third))
         cluster.convergence.isDefined must be(true)
       }
 

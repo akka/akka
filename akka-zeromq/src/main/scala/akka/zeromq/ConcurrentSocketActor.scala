@@ -172,12 +172,15 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
 
   // this is a “PollMsg=>Unit” which either polls or schedules Poll, depending on the sign of the timeout
   private val doPollTimeout = {
+    val ext = ZeroMQExtension(context.system)
     val fromConfig = params collectFirst { case PollTimeoutDuration(duration) ⇒ duration }
-    val duration = fromConfig getOrElse ZeroMQExtension(context.system).DefaultPollTimeout
-    if (duration > Duration.Zero) { (msg: PollMsg) ⇒
+    val duration = (fromConfig getOrElse ext.DefaultPollTimeout)
+    if (duration > Duration.Zero) {
       // for positive timeout values, do poll (i.e. block this thread)
-      poller.poll(duration.toMicros)
-      self ! msg
+      val pollLength = duration.toUnit(ext.pollTimeUnit).toLong
+      (msg: PollMsg) ⇒
+        poller.poll(pollLength)
+        self ! msg
     } else {
       val d = -duration
 
@@ -190,29 +193,24 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   }
 
   @tailrec private def doPoll(mode: PollMsg, togo: Int = 10): Unit =
-    receiveMessage(mode) match {
-      case null  ⇒ // receiveMessage has already done something special here
-      case Seq() ⇒ doPollTimeout(mode)
-      case frames ⇒
-        notifyListener(deserializer(frames))
-        if (togo > 0) doPoll(mode, togo - 1)
-        else self ! mode
+    if (togo <= 0) self ! mode
+    else receiveMessage(mode) match {
+      case Seq()  ⇒ doPollTimeout(mode)
+      case frames ⇒ notifyListener(deserializer(frames)); doPoll(mode, togo - 1)
     }
 
-  @tailrec private def receiveMessage(mode: PollMsg, currentFrames: Vector[Frame] = Vector.empty): Seq[Frame] = {
-    val result = mode match {
-      case Poll        ⇒ socket.recv(JZMQ.NOBLOCK)
-      case PollCareful ⇒ if (poller.poll(0) > 0) socket.recv(0) else null
+  @tailrec private def receiveMessage(mode: PollMsg, currentFrames: Vector[Frame] = Vector.empty): Seq[Frame] =
+    if (mode == PollCareful && (poller.poll(0) <= 0)) {
+      if (currentFrames.isEmpty) currentFrames else throw new IllegalStateException("Received partial transmission!")
+    } else {
+      socket.recv(if (mode == Poll) JZMQ.NOBLOCK else 0) match {
+        case null ⇒ /*EAGAIN*/
+          if (currentFrames.isEmpty) currentFrames else receiveMessage(mode, currentFrames)
+        case bytes ⇒
+          val frames = currentFrames :+ Frame(if (bytes.length == 0) noBytes else bytes)
+          if (socket.hasReceiveMore) receiveMessage(mode, frames) else frames
+      }
     }
-    result match {
-      case null ⇒
-        if (currentFrames.isEmpty) currentFrames
-        else throw new IllegalStateException("no more frames available while socket.hasReceivedMore==true")
-      case bytes ⇒
-        val frames = currentFrames :+ Frame(if (bytes.length == 0) noBytes else bytes)
-        if (socket.hasReceiveMore) receiveMessage(mode, frames) else frames
-    }
-  }
 
   private val listenerOpt = params collectFirst { case Listener(l) ⇒ l }
   private def watchListener(): Unit = listenerOpt foreach context.watch

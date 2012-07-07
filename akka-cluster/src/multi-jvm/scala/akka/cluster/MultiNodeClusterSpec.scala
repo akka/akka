@@ -20,13 +20,14 @@ import akka.actor.RootActorPath
 object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.cluster {
+      auto-join                         = off
       auto-down                         = off
       gossip-interval                   = 200 ms
       heartbeat-interval                = 400 ms
       leader-actions-interval           = 200 ms
       unreachable-nodes-reaper-interval = 200 ms
       periodic-tasks-initial-delay      = 300 ms
-      nr-of-deputy-nodes                = 2
+      publish-state-interval            = 0 s # always, when it happens
     }
     akka.test {
       single-expect-default = 5 s
@@ -78,9 +79,21 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   }
 
   /**
+   * Make it possible to override/configure seedNodes from tests without
+   * specifying in config. Addresses are unknown before startup time.
+   */
+  protected def seedNodes: IndexedSeq[RoleName] = IndexedSeq.empty
+
+  /**
    * The cluster node instance. Needs to be lazily created.
    */
-  private lazy val clusterNode = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector)
+  private lazy val clusterNode = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector) {
+    override def seedNodes: IndexedSeq[Address] = {
+      val testSeedNodes = MultiNodeClusterSpec.this.seedNodes
+      if (testSeedNodes.isEmpty) super.seedNodes
+      else testSeedNodes map address
+    }
+  }
 
   /**
    * Get the cluster node to use.
@@ -88,10 +101,15 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   def cluster: Cluster = clusterNode
 
   /**
-   * Use this method instead of 'cluster.self'
-   * for the initial startup of the cluster node.
+   * Use this method for the initial startup of the cluster node.
    */
-  def startClusterNode(): Unit = cluster.self
+  def startClusterNode(): Unit = {
+    if (cluster.latestGossip.members.isEmpty) {
+      cluster join myself
+      awaitCond(cluster.latestGossip.members.exists(_.address == address(myself)))
+    } else
+      cluster.self
+  }
 
   /**
    * Initialize the cluster with the specified member
@@ -181,7 +199,7 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
     }
   }
 
-  def roleOfLeader(nodesInCluster: Seq[RoleName]): RoleName = {
+  def roleOfLeader(nodesInCluster: Seq[RoleName] = roles): RoleName = {
     nodesInCluster.length must not be (0)
     nodesInCluster.sorted.head
   }

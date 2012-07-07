@@ -50,6 +50,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 //#import-askPipe
 
+//#import-stash
+import akka.actor.UntypedActorWithStash;
+//#import-stash
+
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
@@ -235,7 +239,7 @@ public class UntypedActorDocTestBase {
 
     final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
     futures.add(ask(actorA, "request", 1000)); // using 1000ms timeout
-    futures.add(ask(actorB, "reqeest", t)); // using timeout from above
+    futures.add(ask(actorB, "another request", t)); // using timeout from above
 
     final Future<Iterable<Object>> aggregate = Futures.sequence(futures, system.dispatcher());
     
@@ -345,6 +349,31 @@ public class UntypedActorDocTestBase {
   }
 
   //#hot-swap-actor
+
+  //#stash
+  public static class ActorWithProtocol extends UntypedActorWithStash {
+    private Boolean isOpen = false;
+    public void onReceive(Object msg) {
+      if (isOpen) {
+        if (msg.equals("write")) {
+          // do writing...
+        } else if (msg.equals("close")) {
+          unstashAll();
+          isOpen = false;
+        } else {
+          stash();
+        }
+      } else {
+        if (msg.equals("open")) {
+          unstashAll();
+          isOpen = true;
+        } else {
+          stash();
+        }
+      }
+    }
+  }
+  //#stash
 
   //#watch
   public static class WatchActor extends UntypedActor {

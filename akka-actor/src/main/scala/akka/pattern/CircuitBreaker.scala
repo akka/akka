@@ -135,14 +135,13 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
    * @return The result of the call
    */
   def withSyncCircuitBreaker[T](body: ⇒ T): T = {
-    Await.result(withCircuitBreaker(
-      {
-        try
-          Promise.successful(body)(CircuitBreaker.syncExecutionContext)
-        catch {
-          case NonFatal(t) ⇒ Promise.failed(t)(CircuitBreaker.syncExecutionContext)
-        }
-      }), callTimeout)
+    Await.result(withCircuitBreaker({
+      try
+        Promise.successful(body)(CircuitBreaker.syncExecutionContext)
+      catch {
+        case NonFatal(t) ⇒ Promise.failed(t)(CircuitBreaker.syncExecutionContext)
+      }
+    }), callTimeout)
   }
 
   /**

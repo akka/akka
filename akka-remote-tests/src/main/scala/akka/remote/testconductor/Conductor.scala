@@ -140,6 +140,19 @@ trait Conductor { this: TestConductorExt ⇒
   }
 
   /**
+   * Switch the Netty pipeline of the remote support into pass through mode for
+   * sending and/or receiving.
+   *
+   * @param node is the symbolic name of the node which is to be affected
+   * @param target is the symbolic name of the other node to which connectivity shall be impeded
+   * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
+   */
+  def passThrough(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
+    import Settings.QueryTimeout
+    controller ? Throttle(node, target, direction, -1f) mapTo
+  }
+
+  /**
    * Tell the remote support to shutdown the connection to the given remote
    * peer. It works regardless of whether the recipient was initiator or
    * responder.
@@ -282,6 +295,8 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
   import akka.actor.FSM._
   import Controller._
 
+  var roleName: RoleName = null
+
   startWith(Initial, None)
 
   whenUnhandled {
@@ -292,12 +307,15 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
   }
 
   onTermination {
-    case _ ⇒ controller ! ClientDisconnected
+    case _ ⇒
+      controller ! ClientDisconnected(roleName)
+      channel.close()
   }
 
   when(Initial, stateTimeout = 10 seconds) {
     case Event(Hello(name, addr), _) ⇒
-      controller ! NodeInfo(RoleName(name), addr, self)
+      roleName = RoleName(name)
+      controller ! NodeInfo(roleName, addr, self)
       goto(Ready)
     case Event(x: NetworkOp, _) ⇒
       log.warning("client {} sent no Hello in first message (instead {}), disconnecting", getAddrString(channel), x)
@@ -334,10 +352,6 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
   }
 
   initialize
-
-  onTermination {
-    case _ ⇒ channel.close()
-  }
 }
 
 /**
@@ -517,10 +531,13 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       if (clients.find(_.name == n.name).isDefined) throw new DuplicateNode(d, n)
       stay using d.copy(clients = clients + n)
     case Event(ClientDisconnected(name), d @ Data(clients, _, arrived, _)) ⇒
-      if (clients.isEmpty) throw BarrierEmpty(d, "cannot disconnect " + name + ": no client to disconnect")
-      (clients find (_.name == name)) match {
-        case None    ⇒ stay
-        case Some(c) ⇒ throw ClientLost(d.copy(clients = clients - c, arrived = arrived filterNot (_ == c.fsm)), name)
+      if (arrived.isEmpty)
+        stay using d.copy(clients = clients.filterNot(_.name == name))
+      else {
+        (clients find (_.name == name)) match {
+          case None    ⇒ stay
+          case Some(c) ⇒ throw ClientLost(d.copy(clients = clients - c, arrived = arrived filterNot (_ == c.fsm)), name)
+        }
       }
   }
 

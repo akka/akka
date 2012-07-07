@@ -57,7 +57,7 @@ object AccrualFailureDetector {
  *   to this duration, with a with rather high standard deviation (since environment is unknown
  *   in the beginning)
  *
- * @clock The clock, returning current time in milliseconds, but can be faked for testing
+ * @param clock The clock, returning current time in milliseconds, but can be faked for testing
  *   purposes. It is only used for measuring intervals (duration).
  *
  */
@@ -68,7 +68,7 @@ class AccrualFailureDetector(
   val minStdDeviation: Duration,
   val acceptableHeartbeatPause: Duration,
   val firstHeartbeatEstimate: Duration,
-  val clock: () ⇒ Long) extends FailureDetector {
+  val clock: () ⇒ Long = AccrualFailureDetector.realClock) extends FailureDetector {
 
   import AccrualFailureDetector._
 
@@ -77,20 +77,15 @@ class AccrualFailureDetector(
    */
   def this(
     system: ActorSystem,
-    settings: ClusterSettings,
-    clock: () ⇒ Long = AccrualFailureDetector.realClock) =
+    settings: ClusterSettings) =
     this(
       system,
-      settings.FailureDetectorThreshold,
-      settings.FailureDetectorMaxSampleSize,
-      settings.FailureDetectorAcceptableHeartbeatPause,
-      settings.FailureDetectorMinStdDeviation,
-      // we use a conservative estimate for the first heartbeat because
-      // gossip needs to spread back to the joining node before the
-      // first real heartbeat is sent. Initial heartbeat is added when joining.
-      // FIXME this can be changed to HeartbeatInterval when ticket #2249 is fixed
-      settings.GossipInterval * 3 + settings.HeartbeatInterval,
-      clock)
+      threshold = settings.FailureDetectorThreshold,
+      maxSampleSize = settings.FailureDetectorMaxSampleSize,
+      minStdDeviation = settings.FailureDetectorMinStdDeviation,
+      acceptableHeartbeatPause = settings.FailureDetectorAcceptableHeartbeatPause,
+      firstHeartbeatEstimate = settings.HeartbeatInterval,
+      clock = AccrualFailureDetector.realClock)
 
   private val log = Logging(system, "FailureDetector")
 
@@ -112,8 +107,7 @@ class AccrualFailureDetector(
   private case class State(
     version: Long = 0L,
     history: Map[Address, HeartbeatHistory] = Map.empty,
-    timestamps: Map[Address, Long] = Map.empty[Address, Long],
-    explicitRemovals: Set[Address] = Set.empty[Address])
+    timestamps: Map[Address, Long] = Map.empty[Address, Long])
 
   private val state = new AtomicReference[State](State())
 
@@ -146,8 +140,7 @@ class AccrualFailureDetector(
 
     val newState = oldState copy (version = oldState.version + 1,
       history = oldState.history + (connection -> newHistory),
-      timestamps = oldState.timestamps + (connection -> timestamp), // record new timestamp,
-      explicitRemovals = oldState.explicitRemovals - connection)
+      timestamps = oldState.timestamps + (connection -> timestamp)) // record new timestamp
 
     // if we won the race then update else try again
     if (!state.compareAndSet(oldState, newState)) heartbeat(connection) // recur
@@ -163,9 +156,7 @@ class AccrualFailureDetector(
     val oldState = state.get
     val oldTimestamp = oldState.timestamps.get(connection)
 
-    // if connection has been removed explicitly
-    if (oldState.explicitRemovals.contains(connection)) Double.MaxValue
-    else if (oldTimestamp.isEmpty) 0.0 // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
+    if (oldTimestamp.isEmpty) 0.0 // treat unmanaged connections, e.g. with zero heartbeats, as healthy connections
     else {
       val timeDiff = clock() - oldTimestamp.get
 
@@ -176,8 +167,9 @@ class AccrualFailureDetector(
       val φ = phi(timeDiff, mean + acceptableHeartbeatPauseMillis, stdDeviation)
 
       // FIXME change to debug log level, when failure detector is stable
-      if (φ > 1.0) log.info("Phi value [{}] for connection [{}], after [{} ms], based on  [{}]",
-        φ, connection, timeDiff, "N(" + mean + ", " + stdDeviation + ")")
+      if (φ > 1.0 && timeDiff < (acceptableHeartbeatPauseMillis + 5000))
+        log.info("Phi value [{}] for connection [{}], after [{} ms], based on  [{}]",
+          φ, connection, timeDiff, "N(" + mean + ", " + stdDeviation + ")")
 
       φ
     }
@@ -213,12 +205,23 @@ class AccrualFailureDetector(
     if (oldState.history.contains(connection)) {
       val newState = oldState copy (version = oldState.version + 1,
         history = oldState.history - connection,
-        timestamps = oldState.timestamps - connection,
-        explicitRemovals = oldState.explicitRemovals + connection)
+        timestamps = oldState.timestamps - connection)
 
       // if we won the race then update else try again
       if (!state.compareAndSet(oldState, newState)) remove(connection) // recur
     }
+  }
+
+  def reset(): Unit = {
+    @tailrec
+    def doReset(): Unit = {
+      val oldState = state.get
+      val newState = oldState.copy(version = oldState.version + 1, history = Map.empty, timestamps = Map.empty)
+      // if we won the race then update else try again
+      if (!state.compareAndSet(oldState, newState)) doReset() // recur
+    }
+    log.debug("Resetting failure detector")
+    doReset()
   }
 }
 

@@ -57,9 +57,6 @@ These terms are used throughout the documentation.
   A single node in the cluster that acts as the leader. Managing cluster convergence,
   partitions, fail-over, rebalancing etc.
 
-**deputy nodes**
-  A set of nodes responsible for breaking logical partitions.
-
 
 Membership
 ==========
@@ -138,7 +135,7 @@ implementation of `The Phi Accrual Failure Detector`_ by Hayashibara et al.
 An accrual failure detector decouple monitoring and interpretation. That makes
 them applicable to a wider area of scenarios and more adequate to build generic
 failure detection services. The idea is that it is keeping a history of failure
-statistics, calculated from heartbeats received from the gossip protocol, and is
+statistics, calculated from heartbeats received from other nodes, and is
 trying to do educated guesses by taking multiple factors, and how they
 accumulate over time, into account in order to come up with a better guess if a
 specific node is up or down. Rather than just answering "yes" or "no" to the
@@ -183,18 +180,14 @@ according to the Failure Detector is considered unreachable. This means setting
 the unreachable node status to ``down`` automatically.
 
 
-Deputy Nodes
-^^^^^^^^^^^^
+Seed Nodes
+^^^^^^^^^^
 
-After gossip convergence a set of ``deputy`` nodes for the cluster can be
-determined. As with the ``leader``, there is no ``deputy`` election process,
-the deputies can always be recognised deterministically by any node whenever there
-is gossip convergence. The list of ``deputy`` nodes is simply the N - 1 number
-of nodes (e.g. starting with the first node after the ``leader``) in sorted order.
+The seed nodes are configured contact points for inital join of the cluster.
+When a new node is started started it sends a message to all seed nodes and 
+then sends join command to the one that answers first.
 
-The nodes defined as ``deputy`` nodes are just regular member nodes whose only
-"special role" is to help breaking logical partitions as seen in the gossip
-algorithm defined below.
+It is possible to turn off automatic join.
 
 
 Gossip Protocol
@@ -213,30 +206,18 @@ nodes involved in a gossip exchange.
 
 Periodically, the default is every 1 second, each node chooses another random
 node to initiate a round of gossip with. The choice of node is random but can
-also include extra gossiping for unreachable nodes, ``deputy`` nodes, and nodes with
-either newer or older state versions.
+also include extra gossiping nodes with either newer or older state versions.
 
 The gossip overview contains the current state version for all nodes and also a
 list of unreachable nodes. Whenever a node receives a gossip overview it updates
 the `Failure Detector`_ with the liveness information.
 
-The nodes defined as ``deputy`` nodes are just regular member nodes whose only
-"special role" is to function as contact points in the cluster and to help
-breaking logical partitions as seen in the gossip algorithm defined below.
+The nodes defined as ``seed`` nodes are just regular member nodes whose only
+"special role" is to function as contact points in the cluster.
 
-During each round of gossip exchange the following process is used:
-
-1. Gossip to random live node (if any)
-
-2. Gossip to random unreachable node with certain probability depending on the
-   number of unreachable and live nodes
-
-3. If the node gossiped to at (1) was not a ``deputy`` node, or the number of live
-   nodes is less than number of ``deputy`` nodes, gossip to random ``deputy`` node with
-   certain probability depending on number of unreachable, ``deputy``, and live nodes.
-
-4. Gossip to random node with newer or older state information, based on the
-   current gossip overview, with some probability (?)
+During each round of gossip exchange it sends Gossip to random node with 
+newer or older state information, if any, based on the current gossip overview, 
+with some probability. Otherwise Gossip to any random live node.
 
 The gossiper only sends the gossip overview to the chosen node. The recipient of
 the gossip can use the gossip overview to determine whether:
