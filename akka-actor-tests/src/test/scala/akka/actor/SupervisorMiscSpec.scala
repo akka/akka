@@ -134,6 +134,9 @@ class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with Defaul
       }))
       parent ! "engage"
       expectMsg("green")
+      EventFilter[IllegalStateException]("handleChildTerminated failed", occurrences = 1) intercept {
+        system.stop(parent)
+      }
     }
 
   }

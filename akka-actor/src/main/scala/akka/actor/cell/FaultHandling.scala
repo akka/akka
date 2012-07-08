@@ -166,9 +166,17 @@ trait FaultHandling { this: ActorCell ⇒
     case None        ⇒ publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
   }
 
-  final protected def handleChildTerminated(child: ActorRef): Unit = try {
+  final protected def handleChildTerminated(child: ActorRef): Unit = {
     val status = removeChildAndGetStateChange(child)
-    actor.supervisorStrategy.handleChildTerminated(this, child, children)
+    /*
+     * if this fails, we do nothing in case of terminating/restarting state, 
+     * otherwise tell the supervisor etc. (in that second case, the match
+     * below will hit the empty default case, too)
+     */
+    try actor.supervisorStrategy.handleChildTerminated(this, child, children)
+    catch {
+      case NonFatal(e) ⇒ handleInvokeFailure(e, "handleChildTerminated failed")
+    }
     /*
      * if the removal changed the state of the (terminating) children container,
      * then we are continuing the previously suspended recreate/terminate action
@@ -178,7 +186,5 @@ trait FaultHandling { this: ActorCell ⇒
       case Some(ChildrenContainer.Termination)       ⇒ finishTerminate()
       case _                                         ⇒
     }
-  } catch {
-    case NonFatal(e) ⇒ handleInvokeFailure(e, "handleChildTerminated failed")
   }
 }
