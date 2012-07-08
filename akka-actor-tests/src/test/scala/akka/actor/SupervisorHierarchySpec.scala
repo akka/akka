@@ -229,7 +229,7 @@ object SupervisorHierarchySpec {
     var pingChildren = Set.empty[ActorRef]
 
     val nextJob = Iterator.continually(Random.nextFloat match {
-      case x if x > 0.5 ⇒
+      case x if x >= 0.5 ⇒
         // ping one child
         val pick = ((x - 0.5) * 2 * idleChildren.size).toInt
         val ref = idleChildren(pick)

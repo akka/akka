@@ -2,13 +2,24 @@
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.actor
+package akka.actor.cell
 
 import scala.collection.immutable.TreeMap
 import scala.annotation.tailrec
 import akka.util.Unsafe
 import akka.serialization.SerializationExtension
 import akka.util.NonFatal
+import akka.actor.ActorPath.ElementRegex
+import akka.actor.ActorCell
+import akka.actor.ActorRef
+import akka.actor.ChildNameReserved
+import akka.actor.ChildRestartStats
+import akka.actor.ChildStats
+import akka.actor.InternalActorRef
+import akka.actor.InvalidActorNameException
+import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.Props
+import scala.annotation.tailrec
 
 /**
  * INTERNAL API
@@ -33,13 +44,6 @@ private[akka] trait ChildrenContainer {
 
   def isTerminating: Boolean = false
   def isNormal: Boolean = true
-
-  def suspendChildren(skip: Set[ActorRef] = Set.empty): Unit =
-    stats collect {
-      case ChildRestartStats(child, _, _) if !(skip contains child) ⇒ child
-    } foreach (_.asInstanceOf[InternalActorRef].suspend())
-
-  def resumeChildren(): Unit = stats foreach (_.child.asInstanceOf[InternalActorRef].suspend())
 }
 
 /**
@@ -49,88 +53,6 @@ private[akka] trait ChildrenContainer {
  * of an actor, hence they are intimately tied to ActorCell.
  */
 private[akka] object ChildrenContainer {
-
-  // low level CAS helpers
-  @inline private def swapChildrenRefs(cell: ActorCell, oldChildren: ChildrenContainer, newChildren: ChildrenContainer): Boolean =
-    Unsafe.instance.compareAndSwapObject(cell, AbstractActorCell.childrenOffset, oldChildren, newChildren)
-
-  @tailrec final def reserveChild(cell: ActorCell, name: String): Boolean = {
-    val c = cell.childrenRefs
-    swapChildrenRefs(cell, c, c.reserve(name)) || reserveChild(cell, name)
-  }
-
-  @tailrec final def unreserveChild(cell: ActorCell, name: String): Boolean = {
-    val c = cell.childrenRefs
-    swapChildrenRefs(cell, c, c.unreserve(name)) || unreserveChild(cell, name)
-  }
-
-  @tailrec final def addChild(cell: ActorCell, ref: ActorRef): Boolean = {
-    val c = cell.childrenRefs
-    swapChildrenRefs(cell, c, c.add(ref)) || addChild(cell, ref)
-  }
-
-  @tailrec final def shallDie(cell: ActorCell, ref: ActorRef): Boolean = {
-    val c = cell.childrenRefs
-    swapChildrenRefs(cell, c, c.shallDie(ref)) || shallDie(cell, ref)
-  }
-
-  @tailrec final def removeChild(cell: ActorCell, ref: ActorRef): ChildrenContainer = {
-    val c = cell.childrenRefs
-    val n = c.remove(ref)
-    if (swapChildrenRefs(cell, c, n)) n
-    else removeChild(cell, ref)
-  }
-
-  @tailrec final def setChildrenTerminationReason(cell: ActorCell, reason: ChildrenContainer.SuspendReason): Boolean = {
-    cell.childrenRefs match {
-      case c: ChildrenContainer.TerminatingChildrenContainer ⇒
-        swapChildrenRefs(cell, c, c.copy(reason = reason)) || setChildrenTerminationReason(cell, reason)
-      case _ ⇒ false
-    }
-  }
-
-  def checkName(name: String): String = {
-    import ActorPath.ElementRegex
-    name match {
-      case null           ⇒ throw new InvalidActorNameException("actor name must not be null")
-      case ""             ⇒ throw new InvalidActorNameException("actor name must not be empty")
-      case ElementRegex() ⇒ name
-      case _              ⇒ throw new InvalidActorNameException("illegal actor name '" + name + "', must conform to " + ElementRegex)
-    }
-  }
-
-  def makeChild(cell: ActorCell, props: Props, name: String, async: Boolean): ActorRef = {
-    if (cell.system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
-      val ser = SerializationExtension(cell.system)
-      ser.serialize(props.creator) match {
-        case Left(t) ⇒ throw t
-        case Right(bytes) ⇒ ser.deserialize(bytes, props.creator.getClass) match {
-          case Left(t) ⇒ throw t
-          case _       ⇒ //All good
-        }
-      }
-    }
-    /*
-     * in case we are currently terminating, fail external attachChild requests
-     * (internal calls cannot happen anyway because we are suspended)
-     */
-    if (cell.childrenRefs.isTerminating) throw new IllegalStateException("cannot create children while terminating or terminated")
-    else {
-      reserveChild(cell, name)
-      // this name will either be unreserved or overwritten with a real child below
-      val actor =
-        try {
-          cell.provider.actorOf(cell.systemImpl, props, cell.self, cell.self.path / name,
-            systemService = false, deploy = None, lookupDeploy = true, async = async)
-        } catch {
-          case NonFatal(e) ⇒
-            unreserveChild(cell, name)
-            throw e
-        }
-      addChild(cell, actor)
-      actor
-    }
-  }
 
   sealed trait SuspendReason
   case object UserRequest extends SuspendReason

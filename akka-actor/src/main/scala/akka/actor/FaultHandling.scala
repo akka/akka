@@ -230,7 +230,8 @@ abstract class SupervisorStrategy {
 
   /**
    * This method is called after the child has been removed from the set of children.
-   * It does not need to do anything special.
+   * It does not need to do anything special. Exceptions thrown from this method
+   * do NOT make the actor fail if this happens during termination.
    */
   def handleChildTerminated(context: ActorContext, child: ActorRef, children: Iterable[ActorRef]): Unit
 

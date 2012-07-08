@@ -16,6 +16,7 @@ import akka.dispatch.MessageDispatcher
 import java.util.concurrent.locks.ReentrantLock
 import akka.event.Logging.Warning
 import scala.collection.mutable.Queue
+import akka.actor.cell.ChildrenContainer
 
 /**
  * This actor ref starts out with some dummy cell (by default just enqueuing
@@ -102,7 +103,7 @@ private[akka] class RepointableActorRef(
         case ".." ⇒ getParent.getChild(name)
         case ""   ⇒ getChild(name)
         case other ⇒
-          underlying.childrenRefs.getByName(other) match {
+          underlying.getChildByName(other) match {
             case Some(crs) ⇒ crs.child.asInstanceOf[InternalActorRef].getChild(name)
             case None      ⇒ Nobody
           }
@@ -176,6 +177,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
   def isTerminated: Boolean = false
   def parent: InternalActorRef = supervisor
   def childrenRefs: ChildrenContainer = ChildrenContainer.EmptyChildrenContainer
+  def getChildByName(name: String): Option[ChildRestartStats] = None
   def tell(message: Any, sender: ActorRef): Unit = {
     lock.lock()
     try {

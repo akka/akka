@@ -307,7 +307,7 @@ private[akka] class LocalActorRef private[akka] (
    * to inject “synthetic” actor paths like “/temp”.
    */
   protected def getSingleChild(name: String): InternalActorRef =
-    actorCell.childrenRefs.getByName(name) match {
+    actorCell.getChildByName(name) match {
       case Some(crs) ⇒ crs.child.asInstanceOf[InternalActorRef]
       case None      ⇒ Nobody
     }
