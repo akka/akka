@@ -26,6 +26,8 @@ class Member(val address: Address, val status: MemberStatus) extends ClusterMess
  */
 object Member {
 
+  val none = Set.empty[Member]
+
   /**
    * `Address` ordering type class, sorts addresses by host and port.
    */
@@ -56,7 +58,7 @@ object Member {
     // group all members by Address => Seq[Member]
     val groupedByAddress = (a.toSeq ++ b.toSeq).groupBy(_.address)
     // pick highest MemberStatus
-    (Set.empty[Member] /: groupedByAddress) {
+    (Member.none /: groupedByAddress) {
       case (acc, (_, members)) ⇒ acc + members.reduceLeft(highestPriorityOf)
     }
   }
