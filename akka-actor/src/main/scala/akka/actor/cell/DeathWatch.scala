@@ -4,14 +4,12 @@
 
 package akka.actor.cell
 
-import akka.actor.{ InternalActorRef, ActorRef, ActorCell }
+import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorCell, Actor }
 import akka.dispatch.{ Watch, Unwatch }
-import akka.event.Logging._
+import akka.event.Logging.{ Warning, Error, Debug }
 import akka.util.NonFatal
-import akka.actor.Terminated
-import akka.actor.Actor
 
-trait DeathWatch { this: ActorCell ⇒
+private[akka] trait DeathWatch { this: ActorCell ⇒
 
   private var watching: Set[ActorRef] = ActorCell.emptyActorRefSet
   private var watchedBy: Set[ActorRef] = ActorCell.emptyActorRefSet

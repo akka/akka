@@ -246,6 +246,8 @@ abstract class SupervisorStrategy {
    * child (and returning `true`), or it returns `false` to escalate the
    * failure, which will lead to this actor re-throwing the exception which
    * caused the failure. The exception will not be wrapped.
+   *
+   * @param children is a lazy collection (a view)
    */
   def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
     val directive = if (decider.isDefinedAt(cause)) decider(cause) else Escalate //FIXME applyOrElse in Scala 2.10

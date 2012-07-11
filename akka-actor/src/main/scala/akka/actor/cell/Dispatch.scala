@@ -5,20 +5,12 @@
 package akka.actor.cell
 
 import scala.annotation.tailrec
-import akka.actor.ActorRef
-import akka.dispatch.SystemMessage
-import akka.util.Unsafe
-import akka.dispatch.MessageDispatcher
-import akka.dispatch.Suspend
-import akka.dispatch.Recreate
-import akka.actor.ActorCell
-import akka.dispatch.Terminate
-import akka.dispatch.Envelope
-import akka.dispatch.Resume
-import akka.dispatch.Mailbox
-import akka.dispatch.Create
 
-trait Dispatch { this: ActorCell ⇒
+import akka.actor.{ ActorRef, ActorCell }
+import akka.dispatch.{ Terminate, SystemMessage, Suspend, Resume, Recreate, MessageDispatcher, Mailbox, Envelope, Create }
+import akka.util.Unsafe
+
+private[akka] trait Dispatch { this: ActorCell ⇒
 
   @volatile private var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
 

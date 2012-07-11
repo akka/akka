@@ -4,22 +4,17 @@
 
 package akka.actor
 
-import akka.dispatch._
-import scala.annotation.tailrec
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.event.Logging.{ Debug, Warning, Error }
-import akka.japi.Procedure
-import java.io.{ NotSerializableException, ObjectOutputStream }
-import akka.serialization.SerializationExtension
-import akka.event.Logging.{ LogEventException, LogEvent }
-import collection.immutable.{ TreeSet, TreeMap }
-import akka.util.{ Unsafe, Duration, Helpers, NonFatal }
-import java.util.concurrent.atomic.AtomicLong
-import scala.collection.JavaConverters.asJavaIterableConverter
-import akka.actor.cell.ChildrenContainer
+import java.io.{ ObjectOutputStream, NotSerializableException }
 
-//TODO: everything here for current compatibility - could be limited more
+import scala.annotation.tailrec
+import scala.collection.immutable.TreeSet
+
+import ActorCell.{ emptyBehaviorStack, contextStack }
+import akka.actor.cell.ChildrenContainer
+import akka.dispatch._
+import akka.event.Logging.{ LogEvent, Debug }
+import akka.japi.Procedure
+import akka.util.{ NonFatal, Duration }
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -95,9 +90,9 @@ trait ActorContext extends ActorRefFactory {
   def sender: ActorRef
 
   /**
-   * Returns all supervised children; this method returns a view onto the
-   * internal collection of children. Targeted lookups should be using
-   * `actorFor` instead for performance reasons:
+   * Returns all supervised children; this method returns a view (i.e. a lazy
+   * collection) onto the internal collection of children. Targeted lookups
+   * should be using `actorFor` instead for performance reasons:
    *
    * {{{
    * val badLookup = context.children find (_.path.name == "kid")

@@ -4,20 +4,14 @@
 
 package akka.actor.cell
 
-import akka.actor.PreRestartException
-import akka.actor.ActorCell
-import akka.util.NonFatal
-import akka.actor.ActorRef
-import akka.actor.PostRestartException
-import akka.actor.Actor
-import akka.dispatch.Envelope
-import akka.dispatch.ChildTerminated
-import akka.actor.Failed
-import akka.actor.InternalActorRef
-import akka.event.Logging._
-import akka.actor.ActorInterruptedException
+import scala.annotation.tailrec
 
-trait FaultHandling { this: ActorCell ⇒
+import akka.actor.{ PreRestartException, PostRestartException, InternalActorRef, Failed, ActorRef, ActorInterruptedException, ActorCell, Actor }
+import akka.dispatch.{ Envelope, ChildTerminated }
+import akka.event.Logging.{ Warning, Error, Debug }
+import akka.util.NonFatal
+
+private[akka] trait FaultHandling { this: ActorCell ⇒
 
   /* =================
    * T H E   R U L E S
@@ -43,10 +37,13 @@ trait FaultHandling { this: ActorCell ⇒
    * might well be replaced by ref to a Cancellable in the future (see #2299)
    */
   private var _failed = false
-  private def currentlyFailed: Boolean = _failed
+  private def isFailed: Boolean = _failed
   private def setFailed(): Unit = _failed = true
-  private def setNotFailed(): Unit = _failed = false
+  private def clearFailed(): Unit = _failed = false
 
+  /**
+   * Do re-create the actor in response to a failure.
+   */
   protected def faultRecreate(cause: Throwable): Unit =
     if (isNormal) {
       val failedActor = actor
@@ -70,17 +67,27 @@ trait FaultHandling { this: ActorCell ⇒
       faultResume(inResponseToFailure = false)
     }
 
+  /**
+   * Do suspend the actor in response to a failure of a parent (i.e. the
+   * “recursive suspend” feature).
+   */
   protected def faultSuspend(): Unit = {
     // done always to keep that suspend counter balanced
     suspendNonRecursive()
     suspendChildren()
   }
 
+  /**
+   * Do resume the actor in response to a failure.
+   *
+   * @param inResponseToFailure signifies if it was our own failure which
+   *        prompted this action.
+   */
   protected def faultResume(inResponseToFailure: Boolean): Unit = {
     // done always to keep that suspend counter balanced
     // must happen “atomically”
     try resumeNonRecursive()
-    finally if (inResponseToFailure) setNotFailed()
+    finally if (inResponseToFailure) clearFailed()
     resumeChildren()
   }
 
@@ -103,7 +110,7 @@ trait FaultHandling { this: ActorCell ⇒
   final def handleInvokeFailure(t: Throwable, message: String): Unit = {
     publish(Error(t, self.path.toString, clazz(actor), message))
     // prevent any further messages to be processed until the actor has been restarted
-    if (!currentlyFailed) try {
+    if (!isFailed) try {
       suspendNonRecursive()
       setFailed()
       // suspend children
@@ -142,8 +149,9 @@ trait FaultHandling { this: ActorCell ⇒
 
   private def finishRecreate(cause: Throwable, failedActor: Actor): Unit = try {
     try resumeNonRecursive()
-    finally setNotFailed() // must happen in any case, so that failure is propagated
+    finally clearFailed() // must happen in any case, so that failure is propagated
 
+    // need to keep a snapshot of the surviving children before the new actor instance creates new ones
     val survivors = children
 
     val freshActor = newActor()

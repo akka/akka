@@ -10,11 +10,11 @@ import akka.actor.ActorCell.emptyCancellable
 import akka.actor.Cancellable
 import akka.util.Duration
 
-object ReceiveTimeout {
+private[akka] object ReceiveTimeout {
   final val emptyReceiveTimeoutData: (Duration, Cancellable) = (Duration.Undefined, ActorCell.emptyCancellable)
 }
 
-trait ReceiveTimeout { this: ActorCell ⇒
+private[akka] trait ReceiveTimeout { this: ActorCell ⇒
 
   import ReceiveTimeout._
   import ActorCell._

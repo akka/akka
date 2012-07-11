@@ -5,21 +5,8 @@
 package akka.actor.cell
 
 import scala.collection.immutable.TreeMap
-import scala.annotation.tailrec
-import akka.util.Unsafe
-import akka.serialization.SerializationExtension
-import akka.util.NonFatal
-import akka.actor.ActorPath.ElementRegex
-import akka.actor.ActorCell
-import akka.actor.ActorRef
-import akka.actor.ChildNameReserved
-import akka.actor.ChildRestartStats
-import akka.actor.ChildStats
-import akka.actor.InternalActorRef
-import akka.actor.InvalidActorNameException
-import akka.actor.NoSerializationVerificationNeeded
-import akka.actor.Props
-import scala.annotation.tailrec
+
+import akka.actor.{ InvalidActorNameException, ChildStats, ChildRestartStats, ChildNameReserved, ActorRef }
 
 /**
  * INTERNAL API
@@ -117,7 +104,7 @@ private[akka] object ChildrenContainer {
 
     def children: Iterable[ActorRef] = c.values.view.collect { case ChildRestartStats(child, _, _) ⇒ child }
 
-    def stats: Iterable[ChildRestartStats] = c.values.collect { case c: ChildRestartStats ⇒ c }
+    def stats: Iterable[ChildRestartStats] = c.values.view.collect { case c: ChildRestartStats ⇒ c }
 
     def shallDie(actor: ActorRef): ChildrenContainer = TerminatingChildrenContainer(c, Set(actor), UserRequest)
 
@@ -178,7 +165,7 @@ private[akka] object ChildrenContainer {
 
     def children: Iterable[ActorRef] = c.values.view.collect { case ChildRestartStats(child, _, _) ⇒ child }
 
-    def stats: Iterable[ChildRestartStats] = c.values.collect { case c: ChildRestartStats ⇒ c }
+    def stats: Iterable[ChildRestartStats] = c.values.view.collect { case c: ChildRestartStats ⇒ c }
 
     def shallDie(actor: ActorRef): ChildrenContainer = copy(toDie = toDie + actor)
 

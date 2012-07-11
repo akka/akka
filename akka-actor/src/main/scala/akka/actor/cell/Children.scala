@@ -6,19 +6,13 @@ package akka.actor.cell
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.asJavaIterableConverter
-import akka.actor.{ RepointableRef, Props, InternalActorRef, ActorRef, ActorCell }
-import akka.util.{ Unsafe, Helpers }
-import akka.actor.InvalidActorNameException
-import akka.serialization.SerializationExtension
-import akka.util.NonFatal
-import akka.actor.NoSerializationVerificationNeeded
-import akka.actor.ActorPath
-import akka.actor.ChildRestartStats
-import akka.actor.ChildRestartStats
-import akka.actor.ChildRestartStats
-import akka.actor.ChildRestartStats
 
-trait Children { this: ActorCell ⇒
+import akka.actor._
+import akka.actor.ActorPath.ElementRegex
+import akka.serialization.SerializationExtension
+import akka.util.{ Unsafe, NonFatal, Helpers }
+
+private[akka] trait Children { this: ActorCell ⇒
 
   import ChildrenContainer._
 
@@ -77,6 +71,13 @@ trait Children { this: ActorCell ⇒
       val c = childrenRefs
       swapChildrenRefs(c, c.add(ref)) || rec()
     }
+    /*
+     * This does not need to check getByRef every tailcall, because the change 
+     * cannot happen in that direction as a race: the only entity removing a 
+     * child is the actor itself, and the only entity which could be racing is 
+     * somebody who calls attachChild, and there we are guaranteed that that 
+     * child cannot yet have died (since it has not yet been created).
+     */
     if (childrenRefs.getByRef(ref).isEmpty) rec() else false
   }
 
@@ -109,9 +110,10 @@ trait Children { this: ActorCell ⇒
   protected def isTerminating = childrenRefs.isTerminating
 
   protected def suspendChildren(skip: Set[ActorRef] = Set.empty): Unit =
-    childrenRefs.stats collect {
-      case ChildRestartStats(child, _, _) if !(skip contains child) ⇒ child
-    } foreach (_.asInstanceOf[InternalActorRef].suspend())
+    childrenRefs.stats foreach {
+      case ChildRestartStats(child, _, _) if !(skip contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()
+      case _ ⇒
+    }
 
   protected def resumeChildren(): Unit =
     childrenRefs.stats foreach (_.child.asInstanceOf[InternalActorRef].resume(inResponseToFailure = false))
@@ -125,9 +127,11 @@ trait Children { this: ActorCell ⇒
   protected def removeChildAndGetStateChange(child: ActorRef): Option[SuspendReason] = {
     childrenRefs match {
       case TerminatingChildrenContainer(_, _, reason) ⇒
-        val n = removeChild(child)
-        if (!n.isInstanceOf[TerminatingChildrenContainer]) Some(reason) else None
-      case _ ⇒ removeChild(child); None
+        val newContainer = removeChild(child)
+        if (!newContainer.isInstanceOf[TerminatingChildrenContainer]) Some(reason) else None
+      case _ ⇒
+        removeChild(child)
+        None
     }
   }
 
