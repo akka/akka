@@ -15,13 +15,29 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.channel.{ ChannelHandlerContext, Channel }
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufEncoder, ProtobufDecoder }
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor
-import org.jboss.netty.util.HashedWheelTimer
 import akka.actor.{ Address, ActorSystemImpl, ActorRef }
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
 import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteSettings, RemoteMarshallingOps, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
 import akka.util.NonFatal
+import org.jboss.netty.util.{ DefaultObjectSizeEstimator, HashedWheelTimer }
+import com.google.protobuf.MessageLite
+
+/**
+ * Helps keep track of how many bytes are in flight
+ * INTERNAL API
+ */
+private[akka] object AkkaProtocolMessageSizeEstimator extends DefaultObjectSizeEstimator {
+  override final def estimateSize(o: AnyRef): Int =
+    o match {
+      case proto: MessageLite ⇒
+        val msgSize = proto.getSerializedSize
+        val misalignment = msgSize % 8
+        if (misalignment != 0) msgSize + 8 - misalignment else msgSize
+      case msg ⇒ super.estimateSize(msg)
+    }
+}
 
 /**
  * Provides the implementation of the Netty remote support
@@ -40,6 +56,7 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
     settings.MaxTotalMemorySize,
     settings.ExecutionPoolKeepalive.length,
     settings.ExecutionPoolKeepalive.unit,
+    AkkaProtocolMessageSizeEstimator,
     system.threadFactory)
 
   val clientChannelFactory = new NioClientSocketChannelFactory(
