@@ -5,8 +5,7 @@
 package akka.remote.netty
 
 import java.net.InetSocketAddress
-import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.concurrent.Executors
 import scala.collection.mutable.HashMap
@@ -17,12 +16,13 @@ import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBa
 import org.jboss.netty.handler.codec.protobuf.{ ProtobufEncoder, ProtobufDecoder }
 import org.jboss.netty.handler.execution.{ ExecutionHandler, OrderedMemoryAwareThreadPoolExecutor }
 import org.jboss.netty.handler.timeout.IdleStateHandler
-import org.jboss.netty.util.HashedWheelTimer
+import org.jboss.netty.util.{ DefaultObjectSizeEstimator, HashedWheelTimer }
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
 import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
 import akka.util.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
+import com.google.protobuf.MessageLite
 
 private[akka] object ChannelAddress extends ChannelLocal[Option[Address]] {
   override def initialValue(ch: Channel): Option[Address] = None
@@ -108,8 +108,23 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
         settings.MaxTotalMemorySize,
         settings.ExecutionPoolKeepalive.length,
         settings.ExecutionPoolKeepalive.unit,
+        AkkaProtocolMessageSizeEstimator,
         system.threadFactory)))
     else Nil
+
+    /**
+     * Helps keep track of how many bytes are in flight
+     */
+    object AkkaProtocolMessageSizeEstimator extends DefaultObjectSizeEstimator {
+      override final def estimateSize(o: AnyRef): Int =
+        o match {
+          case proto: MessageLite ⇒
+            val msgSize = proto.getSerializedSize
+            val misalignment = msgSize % 8
+            if (misalignment != 0) msgSize + 8 - misalignment else msgSize
+          case msg ⇒ super.estimateSize(msg)
+        }
+    }
 
     /**
      * Construct and authentication handler which uses the SecureCookie to somewhat
