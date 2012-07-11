@@ -545,7 +545,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
       gossipToRandomNodeOf(
         if (preferredGossipTargets.nonEmpty) preferredGossipTargets
-        else localGossip.members.toIndexedSeq[Member].map(_.address) // Fall back to localGossip; important to not accidentally use `map` of the SortedSet, since the original order is not preserved)
+        else localGossip.members.toIndexedSeq.map(_.address) // Fall back to localGossip; important to not accidentally use `map` of the SortedSet, since the original order is not preserved)
         )
     }
   }
