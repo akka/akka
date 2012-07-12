@@ -27,4 +27,41 @@ object Consumers {
     }
     //#Consumer2
   }
+  {
+    //#Consumer3
+    import akka.camel.{ CamelMessage, Consumer }
+    import akka.camel.Ack
+    import akka.actor.Status.Failure
+
+    class Consumer3 extends Consumer {
+      override def autoack = false
+
+      def endpointUri = "jms:queue:test"
+
+      def receive = {
+        case msg:CamelMessage ⇒
+          sender ! Ack
+          // on success
+          // ..
+          val someException = new Exception("e1")
+          // on failure
+          sender ! Failure(someException)
+      }
+    }
+    //#Consumer3
+  }
+  {
+    //#Consumer4
+    import akka.camel.{ CamelMessage, Consumer }
+    import akka.util.duration._
+
+    class Consumer4 extends Consumer {
+      def endpointUri = "jetty:http://localhost:8877/camel/default"
+      override def replyTimeout = 500 millis
+      def receive = {
+        case msg: CamelMessage ⇒ sender ! ("Hello %s" format msg.bodyAs[String])
+      }
+    }
+    //#Consumer4
+  }
 }
