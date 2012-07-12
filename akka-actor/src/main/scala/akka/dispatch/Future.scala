@@ -126,7 +126,7 @@ object Futures {
 
   /**
    * Java API.
-   * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
+   Reduces the results of the supplied futures and binary function.
    */
   def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, R], executor: ExecutionContext): Future[R] =
     Future.reduce[T, R](scala.collection.JavaConversions.iterableAsScalaIterable(futures))(fun.apply)(executor)
@@ -265,7 +265,7 @@ object Future {
   }
 
   /**
-   * Initiates a fold over the supplied futures where the fold-zero is the result value of the Future that's completed first
+   * Reduces the results of the supplied futures and binary operation.
    * Example:
    * <pre>
    *   val result = Await.result(Futures.reduce(futures)(_ + _), 5 seconds)
