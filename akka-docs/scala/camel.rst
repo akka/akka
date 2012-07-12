@@ -93,13 +93,12 @@ matching, transformation, serialization or storage. In the above example of the 
 the XML message is put in the body of a newly created Camel Message with an empty set of headers.
 You can also create a CamelMessage yourself with the appropriate body and headers as you see fit.
 
-__ https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/Message.java
+__ https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Message.java
 
 CamelExtension
 --------------
 The akka-camel module is implemented as an Akka Extension, the ``CamelExtension`` object.
-Extensions will only be loaded once per ``ActorSystem``, which will be managed by Akka. There is a one to one relationship between the ``CamelExtension`` and
-the ``ActorSystem``, there can be only one ``CamelExtension`` for one ``ActorSystem``.
+Extensions will only be loaded once per ``ActorSystem``, which will be managed by Akka.
 The ``CamelExtension`` object provides access to the `Camel`_ trait.
 The `Camel`_ trait in turn provides access to two important Apache Camel objects, the `CamelContext`_ and the `ProducerTemplate`_.
 Below you can see how you can get access to these Apache Camel objects.
@@ -113,12 +112,12 @@ Below an example on how to add the ActiveMQ component to the `CamelContext`_, wh
 .. includecode:: code/docs/camel/Introduction.scala#CamelExtensionAddComponent
 
 The `CamelContext`_ joins the lifecycle of the ``ActorSystem`` and ``CamelExtension`` it is associated with; the `CamelContext`_ is started when
-the ``CamelExtension`` is created, and it is shutdown when the associated ``ActorSystem`` is shut down. The same is true for the `ProducerTemplate`_.
+the ``CamelExtension`` is created, and it is shut down when the associated ``ActorSystem`` is shut down. The same is true for the `ProducerTemplate`_.
 
 The ``CamelExtension`` is used by both `Producer` and `Consumer` actors to interact with Apache Camel internally.
-When Akka creates a `Consumer` actor, the `Consumer` is published at its
-Camel endpoint (more precisely, the route is added to the `CamelContext`_ from the `Endpoint`_ to the actor).
-When Akka creates a `Producer` actor, a `SendProcessor`_ and `Endpoint`_ are created so that the Producer can send messages to it.
+You can access the ``CamelExtension`` inside a `Producer` or a `Consumer` using the ``camel`` definition, or get straight at the `CamelContext` using the ``camelContext`` definition.
+Actors are created and started asynchronously. When a `Consumer` actor is created, the `Consumer` is published at its Camel endpoint (more precisely, the route is added to the `CamelContext`_ from the `Endpoint`_ to the actor).
+When a `Producer` actor is created, a `SendProcessor`_ and `Endpoint`_ are created so that the Producer can send messages to it.
 Publication is done asynchronously; setting up an endpoint may still be in progress after you have
 requested the actor to be created. Some Camel components can take a while to startup, and in some cases you might want to know when the endpoints are activated and ready to be used.
 The `Camel`_ trait allows you to find out when the endpoint is activated or deactivated.
@@ -134,10 +133,10 @@ Deactivation of a Consumer or a Producer actor happens when the actor is termina
 A ``DeActivationTimeoutException`` is thrown if the associated camel objects could not be deactivated within the specified timeout.
 
 .. _Camel: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/Camel.scala
-.. _CamelContext: https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/CamelContext.java
-.. _ProducerTemplate: https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/ProducerTemplate.java
-.. _SendProcessor: https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/processor/SendProcessor.java
-.. _Endpoint: https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/Endpoint.java
+.. _CamelContext: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java
+.. _ProducerTemplate: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/ProducerTemplate.java
+.. _SendProcessor: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/processor/SendProcessor.java
+.. _Endpoint: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Endpoint.java
 
 Dependencies
 ============
@@ -203,7 +202,7 @@ body.
 
 .. _camel-acknowledgements:
 
-Acknowledgements
+Delivery acknowledgements
 ----------------
 
 With in-out message exchanges, clients usually know that a message exchange is
@@ -232,8 +231,7 @@ Camel Exchanges (and their corresponding endpoints) that support two-way communi
 an actor before returning it to the initiating client.
 For some endpoint types, timeout values can be defined in an endpoint-specific
 way which is described in the documentation of the individual `Camel
-components`_. Another option is to configure timeouts on the level of consumer
-actors.
+components`_. Another option is to configure timeouts on the level of consumer actors.
 
 .. _Camel components: http://camel.apache.org/components.html
 
@@ -244,7 +242,7 @@ result in the `Exchange`_ failing with a TimeoutException set on the failure of 
 The timeout on the consumer actor can be overridden with the ``replyTimeout``, as shown below.
 
 .. includecode:: code/docs/camel/Consumers.scala#Consumer4
-.. _Exchange: https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/Exchange.java
+.. _Exchange: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java
 
 Producer Actors
 ===============
@@ -320,7 +318,7 @@ For initiating a a two-way message exchange, one of the
 .. includecode:: code/docs/camel/Producers.scala#RequestProducerTemplate
 
 .. _Producer: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/Producer.scala
-.. _ProducerTemplate: https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/ProducerTemplate.java
+.. _ProducerTemplate: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/ProducerTemplate.java
 
 .. _camel-asynchronous-routing:
 
@@ -366,7 +364,7 @@ constructed by akka-camel, when the actor was started. Although the default
 route construction templates, used by akka-camel internally, are sufficient for
 most use cases, some applications may require more specialized routes to actors.
 The akka-camel module provides two mechanisms for customizing routes to actors,
-which will be explained in this section. These are
+which will be explained in this section. These are:
 
 * Usage of :ref:`camel-components` to access actors.
   Any Camel route can use these components to access Akka actors.
@@ -488,7 +486,7 @@ route to the consumer actor (where targetActorUri is the actor component URI as 
 \*) Before passing the RouteDefinition instance to the route definition handler,
 akka-camel may make some further modifications to it.
 
-__ https://svn.apache.org/repos/asf/camel/trunk/camel-core/src/main/java/org/apache/camel/model/
+__ https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/model/
 
 .. _camel-examples:
 
