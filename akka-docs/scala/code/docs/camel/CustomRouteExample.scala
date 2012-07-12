@@ -1,27 +1,26 @@
 package docs.camel
 
-
 object CustomRouteExample {
   {
     //#CustomRouteExample
-    import akka.actor.{Actor, ActorRef, Props, ActorSystem}
-    import akka.camel.{CamelMessage, Consumer, Producer, CamelExtension}
+    import akka.actor.{ Actor, ActorRef, Props, ActorSystem }
+    import akka.camel.{ CamelMessage, Consumer, Producer, CamelExtension }
     import org.apache.camel.builder.RouteBuilder
-    import org.apache.camel.{Exchange, Processor}
+    import org.apache.camel.{ Exchange, Processor }
 
     class Consumer3(transformer: ActorRef) extends Actor with Consumer {
       def endpointUri = "jetty:http://0.0.0.0:8877/camel/welcome"
 
       def receive = {
         // Forward a string representation of the message body to transformer
-        case msg: CamelMessage => transformer.forward(msg.bodyAs[String])
+        case msg: CamelMessage ⇒ transformer.forward(msg.bodyAs[String])
       }
     }
 
     class Transformer(producer: ActorRef) extends Actor {
       def receive = {
         // example: transform message body "foo" to "- foo -" and forward result to producer
-        case msg: CamelMessage => producer.forward(msg.mapBody((body: String) => "- %s -" format body))
+        case msg: CamelMessage ⇒ producer.forward(msg.mapBody((body: String) ⇒ "- %s -" format body))
       }
     }
 

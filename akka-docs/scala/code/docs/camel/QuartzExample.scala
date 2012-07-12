@@ -1,13 +1,12 @@
 package docs.camel
 
-
 object QuartzExample {
 
   {
     //#Quartz
-    import akka.actor.{ActorSystem, Props}
+    import akka.actor.{ ActorSystem, Props }
 
-    import akka.camel.{Consumer}
+    import akka.camel.{ Consumer }
 
     class MyQuartzActor extends Consumer {
 
@@ -15,7 +14,7 @@ object QuartzExample {
 
       def receive = {
 
-        case msg => println("==============> received %s " format msg)
+        case msg ⇒ println("==============> received %s " format msg)
 
       } // end receive
 

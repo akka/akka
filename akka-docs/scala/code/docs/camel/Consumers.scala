@@ -39,7 +39,7 @@ object Consumers {
       def endpointUri = "jms:queue:test"
 
       def receive = {
-        case msg:CamelMessage ⇒
+        case msg: CamelMessage ⇒
           sender ! Ack
           // on success
           // ..

@@ -3,12 +3,11 @@ package docs.camel
 import akka.camel.CamelMessage
 import akka.actor.Status.Failure
 
-
 object CustomRoute {
   {
     //#CustomRoute
-    import akka.actor.{Props, ActorSystem, Actor, ActorRef}
-    import akka.camel.{CamelMessage, CamelExtension}
+    import akka.actor.{ Props, ActorSystem, Actor, ActorRef }
+    import akka.camel.{ CamelMessage, CamelExtension }
     import org.apache.camel.builder.RouteBuilder
     import akka.camel._
     class Responder extends Actor {
@@ -20,7 +19,7 @@ object CustomRoute {
       }
     }
 
-    class CustomRouteBuilder(system: ActorSystem, responder:ActorRef) extends RouteBuilder {
+    class CustomRouteBuilder(system: ActorSystem, responder: ActorRef) extends RouteBuilder {
       def configure {
         from("jetty:http://localhost:8877/camel/custom").to(responder)
       }

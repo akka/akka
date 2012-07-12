@@ -6,8 +6,8 @@ object Producers {
   {
     //#Producer1
     import akka.actor.Actor
-    import akka.actor.{Props, ActorSystem}
-    import akka.camel.{Producer, CamelMessage}
+    import akka.actor.{ Props, ActorSystem }
+    import akka.camel.{ Producer, CamelMessage }
     import akka.util.Timeout
 
     class Producer1 extends Actor with Producer {
@@ -26,14 +26,14 @@ object Producers {
   }
   {
     //#RouteResponse
-    import akka.actor.{Actor, ActorRef}
-    import akka.camel.{Producer, CamelMessage}
-    import akka.actor.{Props, ActorSystem}
+    import akka.actor.{ Actor, ActorRef }
+    import akka.camel.{ Producer, CamelMessage }
+    import akka.actor.{ Props, ActorSystem }
 
     class ResponseReceiver extends Actor {
       def receive = {
-        case msg:CamelMessage ⇒
-          // do something with the forwarded response
+        case msg: CamelMessage ⇒
+        // do something with the forwarded response
       }
     }
 
@@ -44,7 +44,7 @@ object Producers {
     }
     val system = ActorSystem("some-system")
     val receiver = system.actorOf(Props[ResponseReceiver])
-    val forwardResponse = system.actorOf(Props(new Forwarder("http://localhost:8080/news/akka",receiver)))
+    val forwardResponse = system.actorOf(Props(new Forwarder("http://localhost:8080/news/akka", receiver)))
     // the Forwarder sends out a request to the web page and forwards the response to
     // the ResponseReceiver
     forwardResponse ! "some request"
@@ -53,12 +53,12 @@ object Producers {
   {
     //#TransformOutgoingMessage
     import akka.actor.Actor
-    import akka.camel.{Producer, CamelMessage}
+    import akka.camel.{ Producer, CamelMessage }
 
     class Transformer(uri: String) extends Actor with Producer {
       def endpointUri = uri
 
-      def upperCase(msg:CamelMessage) = msg.mapBody {
+      def upperCase(msg: CamelMessage) = msg.mapBody {
         body: String ⇒ body.toUpperCase
       }
 
@@ -70,10 +70,10 @@ object Producers {
   }
   {
     //#Oneway
-    import akka.actor.{Actor, Props, ActorSystem}
+    import akka.actor.{ Actor, Props, ActorSystem }
     import akka.camel.Producer
 
-    class OnewaySender(uri:String) extends Actor with Producer {
+    class OnewaySender(uri: String) extends Actor with Producer {
       def endpointUri = uri
       override def oneway: Boolean = true
     }
@@ -86,9 +86,9 @@ object Producers {
   }
   {
     //#Correlate
-    import akka.camel.{Producer, CamelMessage}
+    import akka.camel.{ Producer, CamelMessage }
     import akka.actor.Actor
-    import akka.actor.{Props, ActorSystem}
+    import akka.actor.{ Props, ActorSystem }
 
     class Producer2 extends Actor with Producer {
       def endpointUri = "activemg:FOO.BAR"
@@ -103,11 +103,11 @@ object Producers {
     //#ProducerTemplate
     import akka.actor.Actor
     class MyActor extends Actor {
-       def receive = {
-         case msg ⇒
-           val template = CamelExtension(context.system).template
-           template.sendBody("direct:news", msg)
-       }
+      def receive = {
+        case msg ⇒
+          val template = CamelExtension(context.system).template
+          template.sendBody("direct:news", msg)
+      }
     }
     //#ProducerTemplate
   }
