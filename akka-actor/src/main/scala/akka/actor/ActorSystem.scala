@@ -148,6 +148,7 @@ object ActorSystem {
     final val FsmDebugEvent = getBoolean("akka.actor.debug.fsm")
     final val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
     final val DebugUnhandledMessage = getBoolean("akka.actor.debug.unhandled")
+    final val DebugRouterMisconfiguration = getBoolean("akka.actor.debug.router-misconfiguration")
 
     final val Home = config.getString("akka.home") match {
       case "" ⇒ None
