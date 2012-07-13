@@ -124,32 +124,32 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
     Unsafe.instance.putIntVolatile(this, AbstractMailbox.mailboxStatusOffset, newStatus)
 
   /**
-   * set new primary status Open. Caller does not need to worry about whether
+   * Reduce the suspend count by one. Caller does not need to worry about whether
    * status was Scheduled or not.
    *
    * @returns true if the suspend count reached zero
    */
   @tailrec
-  final def becomeOpen(): Boolean = status match {
+  final def resume(): Boolean = status match {
     case Closed ⇒ setStatus(Closed); false
     case s ⇒
       val next = if (s < suspendUnit) s else s - suspendUnit
       if (updateStatus(s, next)) next < suspendUnit
-      else becomeOpen()
+      else resume()
   }
 
   /**
-   * set new primary status Suspended. Caller does not need to worry about whether
+   * Increment the suspend count by one. Caller does not need to worry about whether
    * status was Scheduled or not.
    *
    * @returns true if the previous suspend count was zero
    */
   @tailrec
-  final def becomeSuspended(): Boolean = status match {
+  final def suspend(): Boolean = status match {
     case Closed ⇒ setStatus(Closed); false
     case s ⇒
       if (updateStatus(s, s + suspendUnit)) s < suspendUnit
-      else becomeSuspended()
+      else suspend()
   }
 
   /**
