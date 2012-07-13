@@ -39,8 +39,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         getBoolean("akka.daemonic") must be(false)
         settings.Daemonicity must be(false)
 
-        getBoolean("akka.jvm-exit-on-fatal-error") must be(false)
-        settings.JvmExitOnFatalError must be(false)
+        getBoolean("akka.jvm-exit-on-fatal-error") must be(true)
+        settings.JvmExitOnFatalError must be(true)
       }
 
       {
@@ -104,8 +104,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
           getBoolean("unhandled") must be(false)
           settings.DebugUnhandledMessage must be(false)
 
-          getBoolean("router-misconfiguration") must be(true)
-          settings.DebugRouterMisconfiguration must be(true)
+          getBoolean("router-misconfiguration") must be(false)
+          settings.DebugRouterMisconfiguration must be(false)
         }
       }
     }
