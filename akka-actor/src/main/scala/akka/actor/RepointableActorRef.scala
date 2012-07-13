@@ -170,9 +170,9 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
   }
 
   def system: ActorSystem = systemImpl
-  def suspend(): Unit = { lock.lock(); suspendCount += 1; lock.unlock() }
-  def resume(inResponseToFailure: Boolean): Unit = { lock.lock(); suspendCount -= 1; lock.unlock() }
-  def restart(cause: Throwable): Unit = { lock.lock(); suspendCount -= 1; lock.unlock() }
+  def suspend(): Unit = { lock.lock(); try suspendCount += 1 finally lock.unlock() }
+  def resume(inResponseToFailure: Boolean): Unit = { lock.lock(); try suspendCount -= 1 finally lock.unlock() }
+  def restart(cause: Throwable): Unit = { lock.lock(); try suspendCount -= 1 finally lock.unlock() }
   def stop(): Unit = sendSystemMessage(Terminate())
   def isTerminated: Boolean = false
   def parent: InternalActorRef = supervisor
