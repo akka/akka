@@ -77,7 +77,7 @@ private[akka] class RepointableActorRef(
    * This is called by activate() to obtain the cell which is to replace the
    * unstarted cell. The cell must be fully functional.
    */
-  def newCell(): Cell = new ActorCell(system, this, props, supervisor).start()
+  def newCell(): Cell = new ActorCell(system, this, props, supervisor).start(sendSupervise = false)
 
   def suspend(): Unit = underlying.suspend()
 

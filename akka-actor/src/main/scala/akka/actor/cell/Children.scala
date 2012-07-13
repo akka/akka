@@ -101,6 +101,8 @@ private[akka] trait Children { this: ActorCell ⇒
     }
   }
 
+  final protected def setTerminated(): Unit = Unsafe.instance.putObjectVolatile(this, AbstractActorCell.childrenOffset, TerminatedChildrenContainer)
+
   /*
    * ActorCell-internal API
    */

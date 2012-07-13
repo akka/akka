@@ -35,7 +35,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   final def isTerminated: Boolean = mailbox.isClosed
 
-  final def start(): this.type = {
+  final def start(sendSupervise: Boolean): this.type = {
 
     /*
      * Create the mailbox and enqueue the Create() message to ensure that
@@ -46,6 +46,11 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
     mailbox.systemEnqueue(self, Create())
+
+    if (sendSupervise) {
+      // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+      parent.sendSystemMessage(akka.dispatch.Supervise(self))
+    }
 
     // This call is expected to start off the actor by scheduling its mailbox.
     dispatcher.attach(this)

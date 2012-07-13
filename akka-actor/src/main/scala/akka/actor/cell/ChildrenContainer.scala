@@ -58,13 +58,14 @@ private[akka] object ChildrenContainer {
     def shallDie(actor: ActorRef): ChildrenContainer = this
     def reserve(name: String): ChildrenContainer = new NormalChildrenContainer(emptyStats.updated(name, ChildNameReserved))
     def unreserve(name: String): ChildrenContainer = this
-    override def toString = "no children"
   }
 
   /**
    * This is the empty container, shared among all leaf actors.
    */
-  object EmptyChildrenContainer extends EmptyChildrenContainer
+  object EmptyChildrenContainer extends EmptyChildrenContainer {
+    override def toString = "no children"
+  }
 
   /**
    * This is the empty container which is installed after the last child has
@@ -77,6 +78,7 @@ private[akka] object ChildrenContainer {
       throw new IllegalStateException("cannot reserve actor name '" + name + "': already terminated")
     override def isTerminating: Boolean = true
     override def isNormal: Boolean = false
+    override def toString = "terminated"
   }
 
   /**
@@ -85,7 +87,7 @@ private[akka] object ChildrenContainer {
    * calling context.stop(child) and processing the ChildTerminated() system
    * message).
    */
-  class NormalChildrenContainer(c: TreeMap[String, ChildStats]) extends ChildrenContainer {
+  class NormalChildrenContainer(val c: TreeMap[String, ChildStats]) extends ChildrenContainer {
 
     def add(child: ActorRef): ChildrenContainer =
       new NormalChildrenContainer(c.updated(child.path.name, ChildRestartStats(child)))

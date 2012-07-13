@@ -273,7 +273,7 @@ private[akka] class ActorCell(
   val system: ActorSystemImpl,
   val self: InternalActorRef,
   val props: Props,
-  @volatile var parent: InternalActorRef)
+  val parent: InternalActorRef)
   extends UntypedActorContext with Cell
   with cell.ReceiveTimeout
   with cell.Children
@@ -290,14 +290,15 @@ private[akka] class ActorCell(
   protected final def lookupRoot = self
   final def provider = system.provider
 
-  var actor: Actor = _
+  private[this] var _actor: Actor = _
+  def actor: Actor = _actor
+  protected def actor_=(a: Actor): Unit = _actor = a
   var currentMessage: Envelope = _
   private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
 
   /*
    * MESSAGE PROCESSING
    */
-
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
   final def systemInvoke(message: SystemMessage): Unit = try {
     message match {

@@ -98,13 +98,20 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     // stop all children, which will turn childrenRefs into TerminatingChildrenContainer (if there are children)
     children foreach stop
 
+    val wasTerminating = isTerminating
+
     if (setChildrenTerminationReason(ChildrenContainer.Termination)) {
-      // do not process normal messages while waiting for all children to terminate
-      suspendNonRecursive()
-      // do not propagate failures during shutdown to the supervisor
-      setFailed()
-      if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "stopping"))
-    } else finishTerminate()
+      if (!wasTerminating) {
+        // do not process normal messages while waiting for all children to terminate
+        suspendNonRecursive()
+        // do not propagate failures during shutdown to the supervisor
+        setFailed()
+        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "stopping"))
+      }
+    } else {
+      setTerminated()
+      finishTerminate()
+    }
   }
 
   final def handleInvokeFailure(t: Throwable, message: String): Unit = {

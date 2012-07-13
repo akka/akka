@@ -262,10 +262,7 @@ private[akka] class LocalActorRef private[akka] (
    * that is reached).
    */
   private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
-  actorCell.start()
-
-  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  _supervisor.sendSystemMessage(akka.dispatch.Supervise(this))
+  actorCell.start(sendSupervise = true)
 
   protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor)
