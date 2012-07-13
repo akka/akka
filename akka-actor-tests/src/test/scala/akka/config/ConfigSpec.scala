@@ -36,8 +36,11 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         getMilliseconds("akka.scheduler.tick-duration") must equal(100)
         settings.SchedulerTickDuration must equal(100 millis)
 
+        getBoolean("akka.daemonic") must be(false)
         settings.Daemonicity must be(false)
-        settings.JvmExitOnFatalError must be(true)
+
+        getBoolean("akka.jvm-exit-on-fatal-error") must be(false)
+        settings.JvmExitOnFatalError must be(false)
       }
 
       {
@@ -77,6 +80,32 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
           getInt("task-queue-size") must equal(-1)
           getString("task-queue-type") must equal("linked")
           getBoolean("allow-core-timeout") must equal(true)
+        }
+
+        // Debug config
+        {
+          val debug = config.getConfig("akka.actor.debug")
+          import debug._
+          getBoolean("receive") must be(false)
+          settings.AddLoggingReceive must be(false)
+
+          getBoolean("autoreceive") must be(false)
+          settings.DebugAutoReceive must be(false)
+
+          getBoolean("lifecycle") must be(false)
+          settings.DebugLifecycle must be(false)
+
+          getBoolean("fsm") must be(false)
+          settings.FsmDebugEvent must be(false)
+
+          getBoolean("event-stream") must be(false)
+          settings.DebugEventStream must be(false)
+
+          getBoolean("unhandled") must be(false)
+          settings.DebugUnhandledMessage must be(false)
+
+          getBoolean("router-misconfiguration") must be(true)
+          settings.DebugRouterMisconfiguration must be(true)
         }
       }
     }

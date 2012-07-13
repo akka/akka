@@ -542,6 +542,9 @@ class LocalActorRefProvider(
               systemService: Boolean, deploy: Option[Deploy], lookupDeploy: Boolean, async: Boolean): InternalActorRef = {
     props.routerConfig match {
       case NoRouter ⇒
+        if (settings.DebugRouterMisconfiguration && deployer.lookup(path).isDefined)
+          log.warning("Configuration says that {} should be a router, but code disagrees. Remove the config or add a routerConfig to its Props.")
+
         if (async) new RepointableActorRef(system, props, supervisor, path).initialize()
         else new LocalActorRef(system, props, supervisor, path)
       case router ⇒
