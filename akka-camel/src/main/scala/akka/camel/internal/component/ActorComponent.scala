@@ -231,18 +231,53 @@ private[camel] case class ActorEndpointPath private (actorPath: String) {
   import ActorEndpointPath._
   require(actorPath != null)
   require(actorPath.length() > 0)
-  def toCamelPath(config: ConsumerConfig = consumerConfig): String = "actor://path:%s?%s" format (actorPath, config.toCamelParameters)
+  def toCamelPath(config: ConsumerConfig = consumerConfig): String = CamelPath.toCamelUri(actorPath, config)
 
   def findActorIn(system: ActorSystem): Option[ActorRef] = {
     val ref = system.actorFor(actorPath)
     if (ref.isTerminated) None else Some(ref)
   }
 }
+
+/**
+ * Converts ActorRefs and actorPaths to uri's that point to the actor through the Camel Actor Component.
+ * Can also be used in the Java API as a helper for custom route builders. the Scala API has an implicit conversion in the camel package to
+ * directly use `to(actorRef)`. In java you could use `to(CamelPath.toCamelUri(actorRef)`.
+ */
+object CamelPath {
+  private val uriFormat = "actor://path:%s?%s"
+
+  /**
+   * Converts the actorRef to a camel URI (string) which can be used in custom routes.
+   * @param actorRef the actorRef
+   * @return the camel URI to the actor.
+   */
+  def toCamelUri(actorRef: ActorRef): String = uriFormat format (actorRef.path.toString, ActorEndpointPath.consumerConfig.toCamelParameters)
+
+  /**
+   * Converts the actorRef to a camel URI (string) which can be used in custom routes. the consumerConfig that is supplied is used to determine the parameters of
+   * the URI.
+   * @param actorRef the actorRef
+   * @param consumerConfig the configuration of the Consumer actor
+   * @return the camel URI to the actor.
+   */
+  def toCamelUri(actorRef: ActorRef, consumerConfig: ConsumerConfig): String = uriFormat format (actorRef.path.toString, consumerConfig.toCamelParameters)
+
+  /**
+   * Converts the actorPath to a camel URI (string) which can be used in custom routes. the consumerConfig that is supplied is used to determine the parameters of
+   * the URI to the consumer actor.
+   * @param actorPath the actor path string
+   * @param consumerConfig the configuration of the Consumer actor
+   * @return the camel URI to the actor.
+   */
+  def toCamelUri(actorPath: String, consumerConfig: ConsumerConfig): String = uriFormat format (actorPath, consumerConfig.toCamelParameters)
+}
+
 /**
  * For internal use only. Companion of `ActorEndpointPath`
  */
 private[camel] object ActorEndpointPath {
-  private val consumerConfig: ConsumerConfig = new ConsumerConfig {}
+  private[camel] val consumerConfig: ConsumerConfig = new ConsumerConfig {}
 
   def apply(actorRef: ActorRef): ActorEndpointPath = new ActorEndpointPath(actorRef.path.toString)
 
