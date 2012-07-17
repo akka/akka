@@ -5,12 +5,12 @@ package akka.pattern
 
 import language.implicitConversions
 
-import scala.concurrent.{ Future }
+import scala.concurrent.{ Future, ExecutionContext }
 import akka.actor.{ Status, ActorRef }
 
 trait PipeToSupport {
 
-  final class PipeableFuture[T](val future: Future[T]) {
+  final class PipeableFuture[T](val future: Future[T])(implicit executionContext: ExecutionContext) {
     def pipeTo(recipient: ActorRef)(implicit sender: ActorRef = null): Future[T] = {
       future onComplete {
         case Right(r) ⇒ recipient ! r
@@ -39,5 +39,5 @@ trait PipeToSupport {
    *
    * }}}
    */
-  implicit def pipe[T](future: Future[T]): PipeableFuture[T] = new PipeableFuture(future)
+  implicit def pipe[T](future: Future[T])(implicit executionContext: ExecutionContext): PipeableFuture[T] = new PipeableFuture(future)
 }

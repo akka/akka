@@ -23,7 +23,6 @@ object CircuitBreaker {
    */
   private[CircuitBreaker] val syncExecutionContext = new ExecutionContext {
     override def execute(runnable: Runnable): Unit = runnable.run()
-    override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)(scala.concurrent.impl.InternalFutureUtil.canAwaitEvidence)
     override def reportFailure(t: Throwable): Unit = ()
   }
 

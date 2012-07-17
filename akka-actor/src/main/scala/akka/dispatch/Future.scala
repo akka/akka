@@ -41,6 +41,7 @@ object Futures {
    * Returns a Future that will hold the optional result of the first Future with a result that matches the predicate
    */
   def find[T <: AnyRef](futures: JIterable[Future[T]], predicate: JFunc[T, java.lang.Boolean], executor: ExecutionContext): Future[JOption[T]] = {
+    implicit val ec = executor
     Future.find[T]((scala.collection.JavaConversions.iterableAsScalaIterable(futures)))(predicate.apply(_))(executor).map(JOption.fromScalaOption(_))
   }
 
@@ -95,26 +96,6 @@ object Futures {
       for (r ← fr; b ← fb) yield { r add b; r }
     }
   }
-
-  /**
-   * Signals that the current thread of execution will potentially engage
-   * an action that will take a non-trivial amount of time, perhaps by using blocking.IO or using a lot of CPU time,
-   * giving the system a chance to spawn new threads, reuse old threads or otherwise,
-   * to prevent starvation and/or unfairness.
-   *
-   * Assures that any Future tasks initiated in the current thread will be
-   * executed asynchronously, including any tasks currently queued to be
-   * executed in the current thread. This is needed if the current task may
-   * block, causing delays in executing the remaining tasks which in some
-   * cases may cause a deadlock.
-   *
-   * Usage: Call this method in a callback (map, flatMap etc also count) to a Future,
-   * if you will be doing blocking in the callback.
-   *
-   * Note: Calling 'Await.result(future)' or 'Await.ready(future)' will automatically trigger this method.
-   *
-   */
-  def blocking(): Unit = scala.concurrent.impl.InternalFutureUtil.releaseFutureStack(ExecutionContext.defaultExecutionContext) //FIXME NOT CORRECT EC
 }
 
 /**

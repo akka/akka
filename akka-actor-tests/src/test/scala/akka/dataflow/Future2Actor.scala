@@ -13,7 +13,7 @@ import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.pattern.{ ask, pipe }
 
 class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
-
+  implicit val ec = system.dispatcher
   "The Future2Actor bridge" must {
 
     "support convenient sending to multiple destinations" in {

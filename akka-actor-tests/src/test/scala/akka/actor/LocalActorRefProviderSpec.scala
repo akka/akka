@@ -41,7 +41,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
   }
 
   "An ActorRefFactory" must {
-
+    implicit val ec = system.dispatcher
     "only create one instance of an actor with a specific address in a concurrent environment" in {
       val impl = system.asInstanceOf[ActorSystemImpl]
       val provider = impl.provider

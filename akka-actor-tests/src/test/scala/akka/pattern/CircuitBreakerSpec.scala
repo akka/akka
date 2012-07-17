@@ -20,7 +20,7 @@ object CircuitBreakerSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
-
+  implicit val ec = system.dispatcher
   import CircuitBreakerSpec.TestException
 
   val awaitTimeout = 2.seconds.dilated

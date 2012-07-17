@@ -587,6 +587,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def start(): this.type = _start
 
   private lazy val terminationCallbacks = {
+    implicit val d = dispatcher
     val callbacks = new TerminationCallbacks
     terminationFuture onComplete (_ ⇒ callbacks.run)
     callbacks

@@ -23,7 +23,7 @@ object PatternSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PatternSpec extends AkkaSpec {
-
+  implicit val ec = system.dispatcher
   import PatternSpec._
 
   "pattern.gracefulStop" must {

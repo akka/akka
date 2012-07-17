@@ -208,8 +208,6 @@ class CallingThreadDispatcher(
 
   protected[akka] override def executeTask(invocation: TaskInvocation) { invocation.run }
 
-  override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable.result(atMost)(scala.concurrent.impl.InternalFutureUtil.canAwaitEvidence)
-
   /*
    * This method must be called with this thread's queue, which must already
    * have been entered (active). When this method returns, the queue will be

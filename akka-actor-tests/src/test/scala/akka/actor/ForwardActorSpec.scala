@@ -8,10 +8,10 @@ import language.postfixOps
 
 import akka.testkit._
 import scala.concurrent.util.duration._
-import Actor._
+import akka.actor.Actor._
 import scala.concurrent.util.Duration
 import scala.concurrent.Await
-import akka.pattern.ask
+import akka.pattern.{ ask, pipe }
 
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"
@@ -33,12 +33,10 @@ object ForwardActorSpec {
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ForwardActorSpec extends AkkaSpec {
   import ForwardActorSpec._
-
+  implicit val ec = system.dispatcher
   "A Forward Actor" must {
 
     "forward actor reference when invoking forward on tell" in {
-      val latch = new TestLatch(1)
-
       val replyTo = system.actorOf(Props(new Actor { def receive = { case ExpectedMessage ⇒ testActor ! ExpectedMessage } }))
 
       val chain = createForwardingChain(system)
@@ -49,7 +47,7 @@ class ForwardActorSpec extends AkkaSpec {
 
     "forward actor reference when invoking forward on ask" in {
       val chain = createForwardingChain(system)
-      chain.ask(ExpectedMessage)(5 seconds) onSuccess { case ExpectedMessage ⇒ testActor ! ExpectedMessage }
+      chain.ask(ExpectedMessage)(5 seconds) pipeTo testActor
       expectMsg(5 seconds, ExpectedMessage)
     }
   }

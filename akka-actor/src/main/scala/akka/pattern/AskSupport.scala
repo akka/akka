@@ -9,7 +9,7 @@ import java.util.concurrent.TimeoutException
 import annotation.tailrec
 import akka.actor._
 import akka.dispatch._
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{ Future, Promise, ExecutionContext }
 import akka.util.{ NonFatal, Timeout, Unsafe }
 
 /**
@@ -305,6 +305,7 @@ private[akka] object PromiseActorRef {
   private case class StoppedWithPath(path: ActorPath)
 
   def apply(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
+    implicit val ec = provider.dispatcher // TODO should we take an ExecutionContext in the method signature?
     val result = Promise[Any]()
     val a = new PromiseActorRef(provider, result)
     val f = provider.scheduler.scheduleOnce(timeout.duration) { result.tryComplete(Left(new AskTimeoutException("Timed out"))) }

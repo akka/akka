@@ -275,6 +275,7 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
   }
 
   "an IO Actor" must {
+    implicit val ec = system.dispatcher
     "run echo server" in {
       filterException[java.net.ConnectException] {
         val addressPromise = Promise[SocketAddress]()

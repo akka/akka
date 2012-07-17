@@ -81,25 +81,6 @@ class Dispatcher(
     }
   }
 
-  override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = {
-    scala.concurrent.impl.InternalFutureUtil.releaseFutureStack(this)
-
-    executorService.executor match {
-      case fj: ForkJoinPool ⇒
-        val result = new AtomicReference[Option[T]](None)
-        ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
-          def block(): Boolean = {
-            result.set(Some(awaitable.result(atMost)(scala.concurrent.impl.InternalFutureUtil.canAwaitEvidence)))
-            true
-          }
-          def isReleasable = result.get.isDefined
-        })
-        result.get.get // Exception intended if None
-      case _ ⇒
-        awaitable.result(atMost)(scala.concurrent.impl.InternalFutureUtil.canAwaitEvidence)
-    }
-  }
-
   /**
    * INTERNAL USE ONLY
    */

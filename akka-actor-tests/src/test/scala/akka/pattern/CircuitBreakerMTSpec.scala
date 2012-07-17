@@ -8,7 +8,7 @@ import scala.concurrent.util.duration._
 import scala.concurrent.{ Promise, Future, Await }
 
 class CircuitBreakerMTSpec extends AkkaSpec {
-
+  implicit val ec = system.dispatcher
   "A circuit breaker being called by many threads" must {
     val breaker = new CircuitBreaker(system.scheduler, 5, 100.millis.dilated, 500.millis.dilated)
 

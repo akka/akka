@@ -20,17 +20,17 @@ import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
 
-  lazy val desiredScalaVersion = "2.10.0-M4"
+  lazy val desiredScalaVersion = "2.10.0-M5"
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
-    //scalaVersion := "2.10.0-M4"
-    scalaVersion := "2.10.0-SNAPSHOT",
+    scalaVersion := desiredScalaVersion
+    /*scalaVersion := "2.10.0-SNAPSHOT",
     scalaVersion in update <<= (scalaVersion) apply {
       case  "2.10.0-SNAPSHOT" =>  desiredScalaVersion
       case x => x
-    }
+    }*/
   )
 
   lazy val akka = Project(
@@ -545,8 +545,8 @@ object Dependency {
     val junit       = "junit"                       % "junit"                   % "4.10"              % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"         % "1.0.4"             % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"             % "1.8.1"             % "test" // MIT
-    val scalatest   = "org.scalatest"               % v("scalatest")            % "1.9-2.10.0-M4-B2"  % "test" // ApacheV2
-    val scalacheck  = "org.scalacheck"              % v("scalacheck")           % "1.10.0-b1"         % "test" // New BSD
+    val scalatest   = "org.scalatest"               % v("scalatest")            % "1.9-2.10.0-M5-B2"  % "test" // ApacheV2
+    val scalacheck  = "org.scalacheck"              % v("scalacheck")           % "1.10.0"            % "test" // New BSD
     val specs2      = "org.specs2"                  % "specs2_2.10"             % "1.11"              % "test" // Modified BSD / ApacheV2
     val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3" % "test"  // ApacheV2
     val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"   % "test" // ApacheV2

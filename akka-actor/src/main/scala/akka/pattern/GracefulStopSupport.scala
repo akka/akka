@@ -39,6 +39,7 @@ trait GracefulStopSupport {
     if (target.isTerminated) Promise.successful(true).future
     else system match {
       case e: ExtendedActorSystem ⇒
+        implicit val d = e.dispatcher // TODO take implicit ExecutionContext/MessageDispatcher in method signature?
         val internalTarget = target.asInstanceOf[InternalActorRef]
         val ref = PromiseActorRef(e.provider, Timeout(timeout))
         internalTarget.sendSystemMessage(Watch(target, ref))

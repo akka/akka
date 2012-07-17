@@ -91,7 +91,7 @@ object Patterns {
    *   Patterns.pipe(transformed).to(nextActor);
    * }}}
    */
-  def pipe[T](future: Future[T]): PipeableFuture[T] = scalaPipe(future)
+  def pipe[T](future: Future[T], context: ExecutionContext): PipeableFuture[T] = scalaPipe(future)(context)
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with success (value `true`) when
