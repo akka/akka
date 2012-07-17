@@ -146,7 +146,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         "pass checks" in {
           filterException[ArithmeticException] {
             check({ (future: Future[Int], actions: List[FutureAction]) ⇒
-              def wrap[T](f: Future[T]): Either[Throwable, T] = try Await.ready(f, timeout.duration).value.get catch { case t ⇒ println(f.getClass + " - " + t.getClass + ": " + t.getMessage + ""); f.value.get }
+              def wrap[T](f: Future[T]): Either[Throwable, T] = Await.ready(f, timeout.duration).value.get
               val result = (future /: actions)(_ /: _)
               val expected = (wrap(future) /: actions)(_ /: _)
               ((wrap(result), expected) match {
@@ -996,7 +996,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       case Left(e)  ⇒ that
       case Right(r) ⇒ try { Right(action(r)) } catch { case e if NonFatal(e) ⇒ Left(e) }
     }
-    def /:(that: Future[Int]): Future[Int] = that flatMap (n ⇒ Future(action(n)))
+    def /:(that: Future[Int]): Future[Int] = that flatMap (n ⇒ Future.successful(action(n)))
   }
 
   implicit def arbFuture: Arbitrary[Future[Int]] = Arbitrary(for (n ← arbitrary[Int]) yield Future(n))
