@@ -15,13 +15,7 @@ import org.apache.camel.processor.SendProcessor
  *
  * @author Martin Krasser
  */
-trait ProducerSupport { this: Actor ⇒
-  protected[this] implicit def camel = CamelExtension(context.system) // FIXME This is duplicated from Consumer, create a common base-trait?
-
-  /**
-   * camelContext implicit is useful when using advanced methods of CamelMessage.
-   */
-  protected[this] implicit def camelContext = camel.context // FIXME This is duplicated from Consumer, create a common base-trait?
+trait ProducerSupport extends CamelSupport { this: Actor ⇒
 
   protected[this] lazy val (endpoint: Endpoint, processor: SendProcessor) = camel.registerProducer(self, endpointUri)
 

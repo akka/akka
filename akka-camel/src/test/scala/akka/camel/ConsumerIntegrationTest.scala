@@ -168,5 +168,5 @@ trait ErrorPassing {
 }
 
 trait ManualAckConsumer extends Consumer {
-  override def autoack = false
+  override def autoAck = false
 }

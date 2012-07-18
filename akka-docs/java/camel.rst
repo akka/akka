@@ -218,7 +218,7 @@ is added to the consumer actor's mailbox. Any failure or exception that occurs
 during processing of that message by the consumer actor cannot be reported back
 to the endpoint in this case. To allow consumer actors to positively or
 negatively acknowledge the receipt of a message from an in-only message
-exchange, they need to override the ``autoack`` method to return false.
+exchange, they need to override the ``autoAck`` method to return false.
 In this case, consumer actors must reply either with a
 special Ack message (positive acknowledgement) or a Failure (negative
 acknowledgement).
@@ -404,7 +404,7 @@ engine`_.
 
 This component accepts the following endpoint URI format:
 
-* ``actor://path:[<actor-path>]?<options>``
+* ``[<actor-path>]?<options>``
 
 where ``<actor-path>`` is the ``ActorPath`` to the actor. The ``<options>`` are
 name-value pairs separated by ``&`` (i.e. ``name1=value1&name2=value2&...``).
@@ -427,7 +427,7 @@ The following URI options are supported:
 |              |          |         |                                                |
 |              |          |         | See also :ref:`camel-timeout`.                 |
 +--------------+----------+---------+------------------------------------------------+
-| autoack      | Boolean  | true    | If set to true, in-only message exchanges      |
+| autoAck      | Boolean  | true    | If set to true, in-only message exchanges      |
 |              |          |         | are auto-acknowledged when the message is      |
 |              |          |         | added to the actor's mailbox. If set to        |
 |              |          |         | false, actors must acknowledge the             |
@@ -438,7 +438,7 @@ The following URI options are supported:
 
 Here's an actor endpoint URI example containing an actor uuid::
 
-   actor://path:akka://some-system/user/myconsumer?autoack=false&replyTimeout=100+millis
+   akka://some-system/user/myconsumer?autoAck=false&replyTimeout=100+millis
 
 In the following example, a custom route to an actor is created, using the
 actor's path.

@@ -8,7 +8,7 @@ import akka.camel.javaapi.UntypedConsumerActor;
 public class Consumer3 extends UntypedConsumerActor{
 
   @Override
-  public boolean autoack() {
+  public boolean autoAck() {
     return false;
   }
 

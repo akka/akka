@@ -321,8 +321,8 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   }
 
   def config(endpointUri: String = "test-uri", isAutoAck: Boolean = true, _replyTimeout: Duration = Int.MaxValue seconds) = {
-    val endpoint = new ActorEndpoint(endpointUri, actorComponent, actorEndpointPath, camel)
-    endpoint.autoack = isAutoAck
+    val endpoint = new ActorEndpoint(endpointUri, actorComponent, actorEndpointPath, camel, system)
+    endpoint.autoAck = isAutoAck
     endpoint.replyTimeout = _replyTimeout
     endpoint
   }

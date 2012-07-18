@@ -12,7 +12,7 @@ public class CustomRouteBuilder extends RouteBuilder{
   }
 
   public void configure() throws Exception {
-    from("jetty:http://localhost:8877/camel/custom").to(CamelPath.toCamelUri(responder));
+    from("jetty:http://localhost:8877/camel/custom").to(CamelPath.toUri(responder));
   }
 }
 //#CustomRoute
