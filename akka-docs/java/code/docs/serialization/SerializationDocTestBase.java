@@ -168,7 +168,7 @@ public class SerializationDocTestBase {
 
   @Test
   public void demonstrateTheProgrammaticAPI() {
-    // #programmatic
+    //#programmatic
     ActorSystem system = ActorSystem.create("example");
 
     // Get the Serialization Extension
@@ -190,7 +190,7 @@ public class SerializationDocTestBase {
     // Voilá!
     assertEquals(original, back);
 
-    // #programmatic
+    //#programmatic
     system.shutdown();
   }
 }
