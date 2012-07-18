@@ -26,7 +26,7 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
 
   lazy val context: CamelContext = {
     val ctx = new DefaultCamelContext
-    ctx.setName(system.name);
+    ctx.setName(system.name)
     ctx.setStreamCaching(true)
     ctx.addComponent("actor", new ActorComponent(this))
     ctx.getTypeConverterRegistry.addTypeConverter(classOf[Duration], classOf[String], DurationTypeConverter)

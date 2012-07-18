@@ -33,10 +33,13 @@ You can also give the router already created routees as in:
 
 .. includecode:: code/docs/routing/RouterViaProgramExample.scala#programmaticRoutingRoutees
 
-It should be noted that no actor factory or class needs to be provided in this
-case, as the ``Router`` will not create any children on its own (which is not
-true anymore when using a resizer). The routees can also be specified by giving
-their path strings.
+.. note::
+
+    No actor factory or class needs to be provided in this
+    case, as the ``Router`` will not create any children on its own (which is not
+    true anymore when using a resizer). The routees can also be specified by giving
+    their path strings.
+
 
 When you create a router programmatically you define the number of routees *or* you pass already created routees to it.
 If you send both parameters to the router *only* the latter will be used, i.e. ``nrOfInstances`` is disregarded.

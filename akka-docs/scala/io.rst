@@ -234,6 +234,11 @@ And it's companion object:
 .. includecode:: code/docs/io/HTTPServer.scala
    :include: actor-companion
 
+And the OKResponse:
+
+.. includecode:: code/docs/io/HTTPServer.scala
+   :include: ok-response
+
 A ``main`` method to start everything up:
 
 .. includecode:: code/docs/io/HTTPServer.scala
