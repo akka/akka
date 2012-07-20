@@ -12,6 +12,7 @@ import java.util.Collection
 import java.util.concurrent.{ Callable, Executor, TimeUnit }
 import scala.concurrent.util.Duration
 import scala.concurrent._
+import annotation.tailrec
 
 private[akka] trait Batchable { self: Runnable ⇒ }
 
@@ -45,19 +46,6 @@ private[akka] trait BatchingExecutor extends Executor {
   // invariant: if "_tasksLocal.get ne null" then we are inside BatchingRunnable.run; if it is null, we are outside
   private val _tasksLocal = new ThreadLocal[List[Runnable]]()
 
-  // only valid to call if _tasksLocal.get ne null
-  private def push(runnable: Runnable): Unit = _tasksLocal.set(runnable :: _tasksLocal.get)
-
-  // only valid to call if _tasksLocal.get ne null
-  private def nonEmpty(): Boolean = _tasksLocal.get.nonEmpty
-
-  // only valid to call if _tasksLocal.get ne null
-  private def pop(): Runnable = {
-    val tasks = _tasksLocal.get
-    _tasksLocal.set(tasks.tail)
-    tasks.head
-  }
-
   private class Batch(val initial: List[Runnable]) extends Runnable with BlockContext {
     private var parentBlockContext: BlockContext = _
     // this method runs in the delegate ExecutionContext's thread
@@ -68,27 +56,31 @@ private[akka] trait BatchingExecutor extends Executor {
       BlockContext.withBlockContext(this) {
         try {
           parentBlockContext = prevBlockContext
-          _tasksLocal set initial
-          while (nonEmpty()) {
-            val next = pop()
-            try {
-              next.run()
-            } catch {
-              case t: Throwable ⇒
-                // if one task throws, move the
-                // remaining tasks to another thread
-                // so we can throw the exception
-                // up to the invoking executor
-                val remaining = _tasksLocal.get
-                _tasksLocal set Nil
-                unbatchedExecute(new Batch(remaining)) //TODO what if this submission fails?
-                throw t // rethrow
-            }
+
+          @tailrec def processBatch(batch: List[Runnable]): Unit = batch match {
+            case Nil ⇒ ()
+            case head :: tail ⇒
+              _tasksLocal set tail
+              try {
+                head.run()
+              } catch {
+                case t: Throwable ⇒
+                  // if one task throws, move the
+                  // remaining tasks to another thread
+                  // so we can throw the exception
+                  // up to the invoking executor
+                  val remaining = _tasksLocal.get
+                  _tasksLocal set Nil
+                  unbatchedExecute(new Batch(remaining)) //TODO what if this submission fails?
+                  throw t // rethrow
+              }
+              processBatch(_tasksLocal.get) // since head.run() can add entries, always do _tasksLocal.get here
           }
+
+          processBatch(initial)
         } finally {
           _tasksLocal.remove()
           parentBlockContext = null
-          require(_tasksLocal.get eq null)
         }
       }
     }
@@ -114,7 +106,7 @@ private[akka] trait BatchingExecutor extends Executor {
     if (batchable(runnable)) { // If we can batch the runnable
       _tasksLocal.get match {
         case null ⇒ unbatchedExecute(new Batch(List(runnable))) // If we aren't in batching mode yet, enqueue batch
-        case some ⇒ push(runnable) // If we are already in batching mode, add to batch
+        case some ⇒ _tasksLocal.set(runnable :: some) // If we are already in batching mode, add to batch
       }
     } else unbatchedExecute(runnable) // If not batchable, just delegate to underlying
   }
