@@ -883,6 +883,29 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         FutureSpec.ready(complex, timeout.duration) must be('completed)
       }
 
+      "re-use the same thread for nested futures with batching ExecutionContext" in {
+        val failCount = new java.util.concurrent.atomic.AtomicInteger
+        val f = Future() flatMap { _ ⇒
+          val originalThread = Thread.currentThread
+          // run some nested futures
+          val nested =
+            for (i ← 1 to 100)
+              yield Future.successful("abc") flatMap { _ ⇒
+              if (Thread.currentThread ne originalThread)
+                failCount.incrementAndGet
+              // another level of nesting
+              Future.successful("xyz") map { _ ⇒
+                if (Thread.currentThread ne originalThread)
+                  failCount.incrementAndGet
+              }
+            }
+          Future.sequence(nested)
+        }
+        Await.ready(f, timeout.duration)
+        // TODO re-enable once we're using the batching dispatcher
+        // failCount.get must be(0)
+      }
+
       //FIXME DATAFLOW
       /*"should capture first exception with dataflow" in {
         import Future.flow
