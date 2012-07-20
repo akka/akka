@@ -153,6 +153,15 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         expectMsgType[RouterRoutees].routees.head ! Kill
       }
       expectMsgType[ActorKilledException]
+
+      //#supervision
+
+      val router2 = system.actorOf(Props.empty.withRouter(RoundRobinRouter(1).withSupervisorStrategy(escalator)))
+      router2 ! CurrentRoutees
+      EventFilter[ActorKilledException](occurrences = 2) intercept {
+        expectMsgType[RouterRoutees].routees.head ! Kill
+      }
+      expectMsgType[ActorKilledException]
     }
 
     "default to all-for-one-always-escalate strategy" in {
