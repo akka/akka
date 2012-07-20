@@ -5,7 +5,7 @@
 package akka.dispatch
 
 import java.util.Collection
-import scala.concurrent.{ Awaitable, BlockContext }
+import scala.concurrent.{ Awaitable, BlockContext, CanAwait }
 import scala.concurrent.util.Duration
 import scala.concurrent.forkjoin._
 import java.util.concurrent.{
@@ -159,13 +159,11 @@ object MonitorableThreadFactory {
     new Thread.UncaughtExceptionHandler() { def uncaughtException(thread: Thread, cause: Throwable) = () }
 
   private[akka] class AkkaForkJoinWorkerThread(_pool: ForkJoinPool) extends ForkJoinWorkerThread(_pool) with BlockContext {
-    override def internalBlockingCall[T](awaitable: Awaitable[T], atMost: Duration): T = {
+    override def blockOn[T](thunk: ⇒ T)(implicit permission: CanAwait): T = {
       val result = new AtomicReference[Option[T]](None)
       ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
         def block(): Boolean = {
-          result.set(Some(awaitable.result(atMost)(scala.concurrent.impl.InternalFutureUtil.canAwaitEvidence)))
-          // FIXME replace with
-          //result.set(Some(BlockContext.DefaultBlockContext.internalBlockingCall(awaitable, atMost)))
+          result.set(Some(thunk))
           true
         }
         def isReleasable = result.get.isDefined

@@ -25,12 +25,12 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
-    scalaVersion := desiredScalaVersion
-    /*scalaVersion := "2.10.0-SNAPSHOT",
+    //scalaVersion := desiredScalaVersion
+    scalaVersion := "2.10.0-SNAPSHOT",
     scalaVersion in update <<= (scalaVersion) apply {
       case  "2.10.0-SNAPSHOT" =>  desiredScalaVersion
       case x => x
-    }*/
+    }
   )
 
   lazy val akka = Project(
@@ -47,7 +47,7 @@ object AkkaBuild extends Build {
         """|import akka.actor._
            |import akka.dispatch._
            |import com.typesafe.config.ConfigFactory
-           |import akka.util.duration._
+           |import scala.concurrent.util.duration._
            |import akka.util.Timeout
            |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG")
            |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=RemoteActorRefProvider").withFallback(config)
