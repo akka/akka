@@ -97,7 +97,7 @@ private[akka] trait BatchingExecutor extends Executor {
       // if we know there will be blocking, we don't want to keep tasks queued up because it could deadlock.
       {
         val tasks = _tasksLocal.get
-        _tasksLocal.remove()
+        _tasksLocal set Nil
         if ((tasks ne null) && tasks.nonEmpty)
           unbatchedExecute(new Batch(tasks))
       }
