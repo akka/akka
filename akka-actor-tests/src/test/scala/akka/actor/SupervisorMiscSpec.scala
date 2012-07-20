@@ -3,13 +3,16 @@
  */
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit.{ filterEvents, EventFilter }
-import akka.dispatch.{ PinnedDispatcher, Dispatchers, Await }
+import scala.concurrent.Await
+import akka.dispatch.{ PinnedDispatcher, Dispatchers }
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.pattern.ask
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.util.NonFatal
 
 object SupervisorMiscSpec {

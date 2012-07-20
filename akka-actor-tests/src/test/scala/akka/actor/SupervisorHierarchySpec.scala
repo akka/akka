@@ -4,12 +4,14 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit._
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 
 object SupervisorHierarchySpec {
   class FireWorkerException(msg: String) extends Exception(msg)

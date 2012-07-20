@@ -3,6 +3,8 @@
  */
 package akka.testkit
 
+import language.postfixOps
+
 import java.lang.ref.WeakReference
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
@@ -10,9 +12,10 @@ import scala.annotation.tailrec
 import com.typesafe.config.Config
 import akka.actor.{ ActorInitializationException, ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorRef, ActorCell }
 import akka.dispatch.{ MailboxType, TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
-import akka.util.duration.intToDurationInt
-import akka.util.{ Switch, Duration }
-import akka.util.NonFatal
+import scala.concurrent.util.duration.intToDurationInt
+import akka.util.{ Switch, NonFatal }
+import scala.concurrent.util.Duration
+import scala.concurrent.Awaitable
 import akka.actor.ActorContext
 import akka.dispatch.MessageQueue
 
@@ -74,7 +77,7 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
     if (queues contains mbox) {
       for {
         ref ← queues(mbox)
-        val q = ref.get
+        q = ref.get
         if (q ne null) && (q ne own)
       } {
         val owner = mbox.actor.self

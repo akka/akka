@@ -16,7 +16,7 @@ In Scala durations are constructable using a mini-DSL and support all expected o
 
 .. code-block:: scala
 
-   import akka.util.duration._   // notice the small d
+   import scala.concurrent.util.duration._   // notice the small d
 
    val fivesec = 5.seconds
    val threemillis = 3.millis

@@ -10,11 +10,11 @@ import akka.actor.Props;
 //#imports
 
 //#import-future
-import akka.dispatch.Future;
+import scala.concurrent.Future;
 import akka.dispatch.Futures;
 import akka.dispatch.Mapper;
-import akka.dispatch.Await;
-import akka.util.Duration;
+import scala.concurrent.Await;
+import scala.concurrent.util.Duration;
 import akka.util.Timeout;
 //#import-future
 
@@ -33,18 +33,18 @@ import akka.actor.Terminated;
 
 //#import-gracefulStop
 import static akka.pattern.Patterns.gracefulStop;
-import akka.dispatch.Future;
-import akka.dispatch.Await;
-import akka.util.Duration;
+import scala.concurrent.Future;
+import scala.concurrent.Await;
+import scala.concurrent.util.Duration;
 import akka.pattern.AskTimeoutException;
 //#import-gracefulStop
 
 //#import-askPipe
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
-import akka.dispatch.Future;
+import scala.concurrent.Future;
 import akka.dispatch.Futures;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 import akka.util.Timeout;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
@@ -206,14 +206,14 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef actorRef = system.actorOf(new Props(MyUntypedActor.class));
     //#gracefulStop
-
-    try {
+    //FIXME URGENT Await.result should have a @throws clause
+    //try {
       Future<Boolean> stopped = gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), system);
       Await.result(stopped, Duration.create(6, TimeUnit.SECONDS));
       // the actor has been stopped
-    } catch (AskTimeoutException e) {
+    //} catch (AskTimeoutException e) {
       // the actor wasn't stopped within 5 seconds
-    }
+    //}
     //#gracefulStop
     system.shutdown();
   }
@@ -250,7 +250,7 @@ public class UntypedActorDocTestBase {
         final int x = (Integer) it.next();
         return new Result(x, s);
       }
-    });
+    }, system.dispatcher());
 
     pipe(transformed).to(actorC);
     //#ask-pipe

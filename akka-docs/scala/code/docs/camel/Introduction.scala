@@ -4,7 +4,7 @@ import akka.actor.{ Props, ActorSystem }
 import akka.camel.CamelExtension
 
 object Introduction {
-  {
+  def foo = {
     //#Consumer-mina
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -24,7 +24,7 @@ object Introduction {
     val mina = system.actorOf(Props[MyEndpoint])
     //#Consumer-mina
   }
-  {
+  def bar = {
     //#Consumer
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -38,7 +38,7 @@ object Introduction {
     }
     //#Consumer
   }
-  {
+  def baz = {
     //#Producer
     import akka.actor.Actor
     import akka.camel.{ Producer, Oneway }

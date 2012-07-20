@@ -3,6 +3,8 @@
  */
 package akka.actor.dispatch
 
+import language.postfixOps
+
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import scala.reflect.{ Manifest }
 import akka.dispatch._
@@ -12,7 +14,7 @@ import scala.collection.JavaConverters._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.Props
-import akka.util.duration._
+import scala.concurrent.util.duration._
 
 object DispatchersSpec {
   val config = """

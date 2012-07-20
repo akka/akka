@@ -3,10 +3,12 @@
  */
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.routing._
 import org.scalatest.BeforeAndAfterEach
 import akka.ConfigurationException

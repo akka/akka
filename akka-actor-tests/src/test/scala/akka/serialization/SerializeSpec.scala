@@ -4,12 +4,14 @@
 
 package akka.serialization
 
+import language.postfixOps
+
 import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.actor._
 import java.io._
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.util.Timeout
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import scala.reflect.BeanInfo
 import com.google.protobuf.Message
 import akka.pattern.ask

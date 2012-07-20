@@ -6,9 +6,9 @@ package akka.zeromq
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import org.zeromq.ZMQ.Poller
 import akka.actor._
-import akka.dispatch.{ Await }
 import akka.pattern.ask
-import akka.util.Duration
+import scala.concurrent.Await
+import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.util.Timeout
 import org.zeromq.ZMQException
@@ -33,9 +33,6 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
 
   private val minVersionString = "2.1.0"
   private val minVersion = JZMQ.makeVersion(2, 1, 0)
-
-  private[zeromq] def check[TOption <: SocketOption: Manifest](parameters: Seq[SocketOption]) =
-    parameters exists { p ⇒ ClassManifest.singleType(p) <:< manifest[TOption] }
 }
 
 /**
@@ -64,7 +61,10 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
    */
   def newSocketProps(socketParameters: SocketOption*): Props = {
     verifyZeroMQVersion
-    require(ZeroMQExtension.check[SocketType.ZMQSocketType](socketParameters), "A socket type is required")
+    require(socketParameters exists {
+      case s: SocketType.ZMQSocketType ⇒ true
+      case _                           ⇒ false
+    }, "A socket type is required")
     Props(new ConcurrentSocketActor(socketParameters)).withDispatcher("akka.zeromq.socket-dispatcher")
   }
 

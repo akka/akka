@@ -1,7 +1,7 @@
 package docs.camel
 
 object Consumers {
-  {
+  def foo = {
     //#Consumer1
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -14,7 +14,7 @@ object Consumers {
     }
     //#Consumer1
   }
-  {
+  def bar = {
     //#Consumer2
     import akka.camel.{ CamelMessage, Consumer }
 

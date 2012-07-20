@@ -6,7 +6,7 @@ package akka.remote.router
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -14,7 +14,7 @@ import akka.routing.Broadcast
 import akka.routing.ScatterGatherFirstCompletedRouter
 import akka.routing.RoutedActorRef
 import akka.testkit._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.actor.PoisonPill
 import akka.actor.Address
 

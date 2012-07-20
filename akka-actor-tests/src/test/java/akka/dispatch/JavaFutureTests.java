@@ -4,7 +4,10 @@ import akka.util.Timeout;
 import akka.actor.ActorSystem;
 
 import akka.japi.*;
-import akka.util.Duration;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.Promise;
+import scala.concurrent.util.Duration;
 import akka.testkit.TestKitExtension;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -17,7 +20,7 @@ import java.util.LinkedList;
 import java.lang.Iterable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import static akka.japi.Util.manifest;
+import static akka.japi.Util.classTag;
 
 import akka.testkit.AkkaSpec;
 
@@ -53,7 +56,7 @@ public class JavaFutureTests {
       public String apply(String s) {
         return s + " World";
       }
-    });
+    }, system.dispatcher());
 
     assertEquals("Hello World", Await.result(f2, timeout));
   }
@@ -62,13 +65,13 @@ public class JavaFutureTests {
   public void mustBeAbleToExecuteAnOnResultCallback() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
-    Future<String> f = cf;
+    Future<String> f = cf.future();
     f.onSuccess(new OnSuccess<String>() {
       public void onSuccess(String result) {
         if (result.equals("foo"))
           latch.countDown();
       }
-    });
+    }, system.dispatcher());
 
     cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
@@ -79,13 +82,13 @@ public class JavaFutureTests {
   public void mustBeAbleToExecuteAnOnExceptionCallback() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
-    Future<String> f = cf;
+    Future<String> f = cf.future();
     f.onFailure(new OnFailure() {
       public void onFailure(Throwable t) {
         if (t instanceof NullPointerException)
           latch.countDown();
       }
-    });
+    }, system.dispatcher());
 
     Throwable exception = new NullPointerException();
     cf.failure(exception);
@@ -97,12 +100,12 @@ public class JavaFutureTests {
   public void mustBeAbleToExecuteAnOnCompleteCallback() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
-    Future<String> f = cf;
+    Future<String> f = cf.future();
     f.onComplete(new OnComplete<String>() {
       public void onComplete(Throwable t, String r) {
         latch.countDown();
       }
-    });
+    }, system.dispatcher());
 
     cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
@@ -113,12 +116,12 @@ public class JavaFutureTests {
   public void mustBeAbleToForeachAFuture() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
-    Future<String> f = cf;
+    Future<String> f = cf.future();
     f.foreach(new Foreach<String>() {
       public void each(String future) {
         latch.countDown();
       }
-    });
+    },system.dispatcher());
 
     cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
@@ -130,16 +133,16 @@ public class JavaFutureTests {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
     cf.success("1000");
-    Future<String> f = cf;
+    Future<String> f = cf.future();
     Future<Integer> r = f.flatMap(new Mapper<String, Future<Integer>>() {
       public Future<Integer> checkedApply(String r) throws Throwable {
         if (false) throw new IOException("Just here to make sure this compiles.");
         latch.countDown();
         Promise<Integer> cf = Futures.promise(system.dispatcher());
         cf.success(Integer.parseInt(r));
-        return cf;
+        return cf.future();
       }
-    });
+    }, system.dispatcher());
 
     assertEquals(Await.result(f, timeout), "1000");
     assertEquals(Await.result(r, timeout).intValue(), 1000);
@@ -150,13 +153,13 @@ public class JavaFutureTests {
   public void mustBeAbleToFilterAFuture() throws Throwable {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise(system.dispatcher());
-    Future<String> f = cf;
+    Future<String> f = cf.future();
     Future<String> r = f.filter(Filter.filterOf(new Function<String, Boolean>() {
       public Boolean apply(String r) {
         latch.countDown();
         return r.equals("foo");
       }
-    }));
+    }), system.dispatcher());
 
     cf.success("foo");
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
@@ -280,18 +283,18 @@ public class JavaFutureTests {
     Promise<String> p = Futures.promise(system.dispatcher());
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.success("foo");
-    Await.ready(p, d);
-    assertEquals(Await.result(p, d), "foo");
+    Await.ready(p.future(), d);
+    assertEquals(Await.result(p.future(), d), "foo");
   }
 
   @Test
   public void mapToMustBeCallable() throws Exception {
     Promise<Object> p = Futures.promise(system.dispatcher());
-    Future<String> f = p.future().mapTo(manifest(String.class));
+    Future<String> f = p.future().mapTo(classTag(String.class));
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.success("foo");
-    Await.ready(p, d);
-    assertEquals(Await.result(p, d), "foo");
+    Await.ready(p.future(), d);
+    assertEquals(Await.result(p.future(), d), "foo");
   }
 
   @Test
@@ -305,7 +308,7 @@ public class JavaFutureTests {
         else
           throw t;
       }
-    });
+    }, system.dispatcher());
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.failure(fail);
     assertEquals(Await.result(f, d), "foo");
@@ -318,11 +321,11 @@ public class JavaFutureTests {
     Future<Object> f = p.future().recoverWith(new Recover<Future<Object>>() {
       public Future<Object> recover(Throwable t) throws Throwable {
         if (t == fail)
-          return Futures.<Object> successful("foo", system.dispatcher()).future();
+          return Futures.<Object> successful("foo", system.dispatcher());
         else
           throw t;
       }
-    });
+    }, system.dispatcher());
     Duration d = Duration.create(1, TimeUnit.SECONDS);
     p.failure(fail);
     assertEquals(Await.result(f, d), "foo");

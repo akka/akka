@@ -4,15 +4,18 @@
 
 package akka.cluster
 
+import language.postfixOps
+import language.reflectiveCalls
+
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
+
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import akka.util.duration._
-import akka.util.Duration
 import akka.actor.ExtendedActorSystem
 import akka.actor.Address
-import java.util.concurrent.atomic.AtomicInteger
+import akka.cluster.InternalClusterAction._
 import akka.remote.RemoteActorRefProvider
-import InternalClusterAction._
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName
 

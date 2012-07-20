@@ -5,8 +5,9 @@
 package akka.dispatch
 
 import akka.actor.{ ActorCell, ActorRef }
-import annotation.tailrec
-import akka.util.{ Duration, Helpers }
+import scala.annotation.tailrec
+import scala.concurrent.util.Duration
+import akka.util.Helpers
 import java.util.{ Comparator, Iterator }
 import java.util.concurrent.{ Executor, LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 import akka.actor.ActorSystemImpl

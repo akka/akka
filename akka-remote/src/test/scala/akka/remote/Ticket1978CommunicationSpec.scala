@@ -3,17 +3,21 @@
  */
 package akka.remote
 
+import language.postfixOps
+
 import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
-import akka.dispatch.{ Await, Future }
+import scala.concurrent.Future
 import akka.pattern.ask
 import java.io.File
 import java.security.{ NoSuchAlgorithmException, SecureRandom, PrivilegedAction, AccessController }
-import netty.{ NettySettings, NettySSLSupport }
+import akka.remote.netty.{ NettySettings, NettySSLSupport }
 import javax.net.ssl.SSLException
-import akka.util.{ Timeout, Duration }
-import akka.util.duration._
+import akka.util.Timeout
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 import akka.event.{ Logging, NoLogging, LoggingAdapter }
 
 object Configuration {

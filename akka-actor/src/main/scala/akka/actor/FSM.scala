@@ -3,8 +3,10 @@
  */
 package akka.actor
 
-import akka.util._
+import language.implicitConversions
 
+import akka.util._
+import scala.concurrent.util.Duration
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
 

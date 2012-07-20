@@ -4,20 +4,14 @@
 
 package akka.serialization
 
+import language.postfixOps
+
 import com.typesafe.config.ConfigFactory
 import akka.testkit.AkkaSpec
-import akka.actor.Actor
-import akka.actor.Address
-import akka.actor.Props
-import akka.actor.Deploy
-import akka.actor.OneForOneStrategy
-import akka.actor.SupervisorStrategy
-import akka.remote.DaemonMsgCreate
-import akka.remote.RemoteScope
-import akka.routing.RoundRobinRouter
-import akka.routing.FromConfig
-import akka.util.duration._
-import akka.actor.FromClassCreator
+import akka.actor.{ Actor, Address, Props, Deploy, OneForOneStrategy, SupervisorStrategy, FromClassCreator }
+import akka.remote.{ DaemonMsgCreate, RemoteScope }
+import akka.routing.{ RoundRobinRouter, FromConfig }
+import scala.concurrent.util.duration._
 
 object DaemonMsgCreateSerializerSpec {
   class MyActor extends Actor {
@@ -92,6 +86,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
       ser.deserialize(bytes.asInstanceOf[Array[Byte]], classOf[DaemonMsgCreate]) match {
         case Left(exception)           ⇒ fail(exception)
         case Right(m: DaemonMsgCreate) ⇒ assertDaemonMsgCreate(msg, m)
+        case other                     ⇒ throw new MatchError(other)
       }
     }
 

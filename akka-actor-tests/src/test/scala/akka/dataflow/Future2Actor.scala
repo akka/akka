@@ -3,15 +3,17 @@
  */
 package akka.dataflow
 
+import language.postfixOps
+
 import akka.actor.{ Actor, Props }
-import akka.dispatch.{ Future, Await }
-import akka.util.duration._
-import akka.testkit.AkkaSpec
-import akka.testkit.DefaultTimeout
+import scala.concurrent.Future
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.pattern.{ ask, pipe }
 
 class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
-
+  implicit val ec = system.dispatcher
   "The Future2Actor bridge" must {
 
     "support convenient sending to multiple destinations" in {

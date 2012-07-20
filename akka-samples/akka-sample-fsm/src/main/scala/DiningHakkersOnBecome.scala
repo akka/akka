@@ -3,11 +3,13 @@
  */
 package sample.fsm.dining.become
 
+import language.postfixOps
+
 //Akka adaptation of
 //http://www.dalnefre.com/wp/2010/08/dining-philosophers-in-humus/
 
 import akka.actor._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 
 /*
 * First we define our messages, they basically speak for themselves

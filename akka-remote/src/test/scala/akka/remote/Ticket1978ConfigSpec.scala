@@ -3,9 +3,8 @@ package akka.remote
 import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
-import akka.actor.ExtendedActorSystem
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 import akka.remote.netty.NettyRemoteTransport
 import java.util.ArrayList
 

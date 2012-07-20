@@ -4,8 +4,6 @@
 package akka
 
 import akka.actor._
-import akka.dispatch.{ Future, Promise }
-import akka.util.{ Timeout, Duration }
 
 /**
  * == Commonly Used Patterns With Akka ==
@@ -17,7 +15,7 @@ import akka.util.{ Timeout, Duration }
  *
  * <ul>
  * <li><b>ask:</b> create a temporary one-off actor for receiving a reply to a
- * message and complete a [[akka.dispatch.Future]] with it; returns said
+ * message and complete a [[scala.concurrent.Future]] with it; returns said
  * Future.</li>
  * <li><b>pipeTo:</b> feed eventually computed value of a future to an actor as
  * a message.</li>

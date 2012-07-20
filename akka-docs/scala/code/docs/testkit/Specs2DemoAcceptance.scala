@@ -1,10 +1,14 @@
 package docs.testkit
 
+import language.postfixOps
+import language.implicitConversions
+
 import org.specs2.Specification
 import org.specs2.specification.{ Step, Scope }
 
 import akka.actor.{ Props, ActorSystem, Actor }
 import akka.testkit.{ TestKit, ImplicitSender }
+import scala.concurrent.util.{ FiniteDuration, Duration }
 
 class Specs2DemoAcceptance extends Specification {
   def is =
@@ -19,8 +23,7 @@ class Specs2DemoAcceptance extends Specification {
   val system = ActorSystem()
 
   // an alternative to mixing in NoTimeConversions
-  implicit def d2d(d: org.specs2.time.Duration): akka.util.FiniteDuration =
-    akka.util.Duration(d.inMilliseconds, "millis")
+  implicit def d2d(d: org.specs2.time.Duration): FiniteDuration = Duration(d.inMilliseconds, "millis")
 
   def e1 = new TestKit(system) with Scope with ImplicitSender {
     within(1 second) {
@@ -32,5 +35,5 @@ class Specs2DemoAcceptance extends Specification {
     }
   }
 
-  def e2 = ((1 second): akka.util.Duration).toMillis must be equalTo 1000
+  def e2 = ((1 second): Duration).toMillis must be equalTo 1000
 }

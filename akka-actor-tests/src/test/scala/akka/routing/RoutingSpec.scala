@@ -3,13 +3,15 @@
  */
 package akka.routing
 
+import language.postfixOps
+
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import scala.collection.mutable.LinkedList
 import akka.testkit._
-import akka.util.duration._
-import akka.dispatch.Await
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.Await
+import scala.concurrent.util.Duration
 import akka.ConfigurationException
 import com.typesafe.config.ConfigFactory
 import akka.pattern.{ ask, pipe }
@@ -65,7 +67,7 @@ object RoutingSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with ImplicitSender {
-
+  implicit val ec = system.dispatcher
   import akka.routing.RoutingSpec._
 
   "routers in general" must {

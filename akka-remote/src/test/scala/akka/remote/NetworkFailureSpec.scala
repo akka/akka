@@ -10,14 +10,14 @@ import akka.remote.netty.NettyRemoteTransport
 import akka.actor.Actor
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
-import akka.dispatch.Future
+import scala.concurrent.Future
 
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import java.util.concurrent.atomic.AtomicBoolean
 
 trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
   import Actor._
-  import akka.util.Duration
+  import scala.concurrent.util.Duration
 
   val BytesPerSecond = "60KByte/s"
   val DelayMillis = "350ms"
@@ -31,7 +31,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e ⇒
+        case e: Throwable ⇒
           dead.set(true)
           e.printStackTrace
       }
@@ -46,7 +46,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e ⇒
+        case e: Throwable ⇒
           dead.set(true)
           e.printStackTrace
       }
@@ -61,7 +61,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
         Thread.sleep(duration.toMillis)
         restoreIP
       } catch {
-        case e ⇒
+        case e: Throwable ⇒
           dead.set(true)
           e.printStackTrace
       }

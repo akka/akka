@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.existentials
+
 import akka.dispatch._
 import scala.annotation.tailrec
 import java.util.concurrent.TimeUnit
@@ -13,9 +15,9 @@ import akka.japi.Procedure
 import java.io.{ NotSerializableException, ObjectOutputStream }
 import akka.serialization.SerializationExtension
 import akka.event.Logging.LogEventException
-import collection.immutable.{ TreeSet, TreeMap }
-import akka.util.{ Unsafe, Duration, Helpers, NonFatal }
-import java.util.concurrent.atomic.AtomicLong
+import scala.collection.immutable.{ TreeSet, TreeMap }
+import akka.util.{ Unsafe, Helpers, NonFatal }
+import scala.concurrent.util.Duration
 
 //TODO: everything here for current compatibility - could be limited more
 
@@ -900,11 +902,7 @@ private[akka] class ActorCell(
     }
   }
 
-  final def receiveMessage(msg: Any): Unit = {
-    //FIXME replace with behaviorStack.head.applyOrElse(msg, unhandled) + "-optimize"
-    val head = behaviorStack.head
-    if (head.isDefinedAt(msg)) head.apply(msg) else actor.unhandled(msg)
-  }
+  final def receiveMessage(msg: Any): Unit = behaviorStack.head.applyOrElse(msg, actor.unhandled)
 
   private def doTerminate() {
     val a = actor

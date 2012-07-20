@@ -4,9 +4,12 @@
 
 package akka.camel
 
+import language.postfixOps
+import language.existentials
+
 import akka.actor._
 import org.scalatest.matchers.MustMatchers
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import TestSupport._
 import org.scalatest.WordSpec
 import org.apache.camel.model.RouteDefinition
@@ -14,7 +17,7 @@ import org.apache.camel.builder.Builder
 import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException }
 import java.util.concurrent.{ ExecutionException, TimeUnit, TimeoutException }
 import akka.testkit.TestLatch
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.actor.Status.Failure
 
 class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedCamelSystem {

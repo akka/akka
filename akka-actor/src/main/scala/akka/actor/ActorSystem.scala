@@ -9,8 +9,9 @@ import akka.dispatch._
 import akka.pattern.ask
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
+import scala.concurrent.util.Duration
 import java.io.Closeable
-import akka.dispatch.Await.{ Awaitable, CanAwait }
+import scala.concurrent.{ Await, Awaitable, CanAwait, Future }
 import akka.util._
 import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
@@ -586,6 +587,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def start(): this.type = _start
 
   private lazy val terminationCallbacks = {
+    implicit val d = dispatcher
     val callbacks = new TerminationCallbacks
     terminationFuture onComplete (_ ⇒ callbacks.run)
     callbacks
@@ -659,7 +661,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
                 instance //Profit!
             }
           } catch {
-            case t ⇒
+            case t: Throwable ⇒
               extensions.remove(ext, inProcessOfRegistration) //In case shit hits the fan, remove the inProcess signal
               throw t //Escalate to caller
           } finally {

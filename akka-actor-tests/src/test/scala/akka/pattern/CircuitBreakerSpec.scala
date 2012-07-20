@@ -1,15 +1,16 @@
-
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.pattern
 
-import akka.util.duration._
+import language.postfixOps
+
+import scala.concurrent.util.duration._
 import akka.testkit._
 import org.scalatest.BeforeAndAfter
-import akka.dispatch.Future
-import akka.dispatch.Await
+import scala.concurrent.Future
+import scala.concurrent.Await
 
 object CircuitBreakerSpec {
 
@@ -19,7 +20,7 @@ object CircuitBreakerSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
-
+  implicit val ec = system.dispatcher
   import CircuitBreakerSpec.TestException
 
   val awaitTimeout = 2.seconds.dilated
@@ -138,7 +139,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
 
     "increment failure count on callTimeout" in {
       breakers.shortCallTimeoutCb.withSyncCircuitBreaker({
-        100.millis.dilated.sleep()
+        Thread.sleep(100.millis.dilated.toMillis)
       })
       breakers.shortCallTimeoutCb.currentFailureCount must be(1)
     }
@@ -230,7 +231,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
     "increment failure count on callTimeout" in {
       breakers.shortCallTimeoutCb.withCircuitBreaker {
         Future {
-          100.millis.dilated.sleep()
+          Thread.sleep(100.millis.dilated.toMillis)
           sayHi
         }
       }

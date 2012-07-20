@@ -3,12 +3,14 @@
  */
 package docs.actor
 
+import language.postfixOps
+
 //#all
 //#imports
 import akka.actor._
 import akka.actor.SupervisorStrategy._
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 import akka.util.Timeout
 import akka.event.LoggingReceive
 import akka.pattern.{ ask, pipe }

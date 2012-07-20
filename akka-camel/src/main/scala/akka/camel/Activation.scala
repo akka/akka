@@ -4,19 +4,20 @@
 
 package akka.camel
 
-import internal._
-import akka.util.{ Timeout, Duration }
-import akka.dispatch.Future
+import akka.camel.internal._
+import akka.util.Timeout
+import scala.concurrent.Future
 import java.util.concurrent.TimeoutException
 import akka.actor.{ ActorSystem, Props, ActorRef }
 import akka.pattern._
+import scala.concurrent.util.Duration
 
 /**
  * Activation trait that can be used to wait on activation or de-activation of Camel endpoints.
  * The Camel endpoints are activated asynchronously. This trait can signal when an endpoint is activated or de-activated.
  */
 trait Activation {
-  import akka.dispatch.Await
+  import scala.concurrent.Await
 
   def system: ActorSystem //FIXME Why is this here, what's it needed for and who should use it?
 

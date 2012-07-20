@@ -3,6 +3,8 @@
  */
 package docs.actor
 
+import language.postfixOps
+
 //#imports1
 import akka.actor.Actor
 import akka.actor.Props
@@ -10,15 +12,15 @@ import akka.event.Logging
 
 //#imports1
 
-import akka.dispatch.Future
+import scala.concurrent.Future
 import akka.actor.{ ActorRef, ActorSystem }
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
 import akka.util._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.actor.Actor.Receive
-import akka.dispatch.Await
+import scala.concurrent.Await
 
 //#my-actor
 class MyActor extends Actor {
@@ -242,7 +244,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "using implicit timeout" in {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-implicit-timeout
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
     import akka.util.Timeout
     import akka.pattern.ask
     implicit val timeout = Timeout(5 seconds)
@@ -255,7 +257,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "using explicit timeout" in {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-explicit-timeout
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
     import akka.pattern.ask
     val future = myActor.ask("hello")(5 seconds)
     //#using-explicit-timeout
@@ -265,7 +267,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "using receiveTimeout" in {
     //#receive-timeout
     import akka.actor.ReceiveTimeout
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
     class MyActor extends Actor {
       context.setReceiveTimeout(30 milliseconds)
       def receive = {
@@ -345,7 +347,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val actorRef = system.actorOf(Props[MyActor])
     //#gracefulStop
     import akka.pattern.gracefulStop
-    import akka.dispatch.Await
+    import scala.concurrent.Await
 
     try {
       val stopped: Future[Boolean] = gracefulStop(actorRef, 5 seconds)(system)

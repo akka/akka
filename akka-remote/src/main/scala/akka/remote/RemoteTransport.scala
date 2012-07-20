@@ -34,7 +34,7 @@ case class RemoteClientError(
   @transient @BeanProperty remote: RemoteTransport,
   @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.ErrorLevel
-  override def toString: String = "RemoteClientError@" + remoteAddress + ": Error[" + cause + "]"
+  override def toString: String = "RemoteClientError@" + remoteAddress + ": Error[" + Logging.stackTraceFor(cause) + "]"
 }
 
 /**

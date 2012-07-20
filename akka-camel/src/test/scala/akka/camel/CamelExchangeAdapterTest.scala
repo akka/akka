@@ -4,6 +4,8 @@
 
 package akka.camel
 
+import language.implicitConversions
+
 import internal.CamelExchangeAdapter
 import org.apache.camel.impl.DefaultExchange
 import org.apache.camel.{ Exchange, ExchangePattern }

@@ -5,12 +5,14 @@
 package akka.pattern
 
 import akka.actor._
-import akka.util.{ Timeout, Duration }
-import akka.dispatch.{ Unwatch, Watch, Promise, Future }
+import akka.util.{ Timeout }
+import akka.dispatch.{ Unwatch, Watch }
+import scala.concurrent.{ Promise, Future }
+import scala.concurrent.util.Duration
 
 trait GracefulStopSupport {
   /**
-   * Returns a [[akka.dispatch.Future]] that will be completed with success (value `true`) when
+   * Returns a [[scala.concurrent.Future]] that will be completed with success (value `true`) when
    * existing messages of the target actor has been processed and the actor has been
    * terminated.
    *
@@ -30,22 +32,24 @@ trait GracefulStopSupport {
    * }
    * }}}
    *
-   * If the target actor isn't terminated within the timeout the [[akka.dispatch.Future]]
+   * If the target actor isn't terminated within the timeout the [[scala.concurrent.Future]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
-    if (target.isTerminated) Promise.successful(true)
+    if (target.isTerminated) Promise.successful(true).future
     else system match {
       case e: ExtendedActorSystem ⇒
+        implicit val d = e.dispatcher // TODO take implicit ExecutionContext/MessageDispatcher in method signature?
         val internalTarget = target.asInstanceOf[InternalActorRef]
         val ref = PromiseActorRef(e.provider, Timeout(timeout))
         internalTarget.sendSystemMessage(Watch(target, ref))
-        ref.result onComplete { // Just making sure we're not leaking here
+        val f = ref.result.future
+        f onComplete { // Just making sure we're not leaking here
           case Right(Terminated(`target`)) ⇒ ()
           case _                           ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
         }
         target ! PoisonPill
-        ref.result map {
+        f map {
           case Terminated(`target`) ⇒ true
           case _                    ⇒ false
         }

@@ -1,17 +1,21 @@
-package akka.actor
-
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
+package akka.actor
+
+import language.existentials
 
 import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
-import akka.util.{ Timeout, NonFatal, Duration }
-import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
+import akka.util.{ Timeout, NonFatal }
+import scala.concurrent.util.Duration
+import scala.concurrent.{ Await, Future }
+import akka.util.Reflect.instantiator
 import akka.dispatch._
+import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.TypedActor.TypedActorInvocationHandler
+import scala.reflect.ClassTag
 import akka.serialization.{ JavaSerializer, SerializationExtension }
 import java.io.ObjectStreamException
 
@@ -403,9 +407,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
             val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
-              case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
-              case Some(Right(joption: AnyRef)) ⇒ joption
-              case Some(Left(ex))               ⇒ throw ex
+              case None | Some(Right(null)) ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
+              case Some(Right(joption))     ⇒ joption.asInstanceOf[AnyRef]
+              case Some(Left(ex))           ⇒ throw ex
             }
           case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration).asInstanceOf[AnyRef]
         }
@@ -462,7 +466,7 @@ object TypedProps {
    * Scala API
    */
   def apply[T <: AnyRef](interface: Class[_ >: T], implementation: Class[T]): TypedProps[T] =
-    new TypedProps[T](extractInterfaces(interface), () ⇒ implementation.newInstance())
+    new TypedProps[T](extractInterfaces(interface), instantiator(implementation))
 
   /**
    * Uses the supplied thunk as the factory for the TypedActor implementation,
@@ -481,8 +485,8 @@ object TypedProps {
    *
    * Scala API
    */
-  def apply[T <: AnyRef: ClassManifest](): TypedProps[T] =
-    new TypedProps[T](implicitly[ClassManifest[T]].erasure.asInstanceOf[Class[T]])
+  def apply[T <: AnyRef: ClassTag](): TypedProps[T] =
+    new TypedProps[T](implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]])
 }
 
 /**
@@ -506,7 +510,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
    */
   def this(implementation: Class[T]) =
     this(interfaces = TypedProps.extractInterfaces(implementation),
-      creator = () ⇒ implementation.newInstance())
+      creator = instantiator(implementation))
 
   /**
    * Uses the supplied Creator as the factory for the TypedActor implementation,
@@ -518,7 +522,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
    */
   def this(interface: Class[_ >: T], implementation: Creator[T]) =
     this(interfaces = TypedProps.extractInterfaces(interface),
-      creator = () ⇒ implementation.create())
+      creator = implementation.create _)
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,
@@ -530,7 +534,7 @@ case class TypedProps[T <: AnyRef] protected[TypedProps] (
    */
   def this(interface: Class[_ >: T], implementation: Class[T]) =
     this(interfaces = TypedProps.extractInterfaces(interface),
-      creator = () ⇒ implementation.newInstance())
+      creator = instantiator(implementation))
 
   /**
    * Returns a new TypedProps with the specified dispatcher set.

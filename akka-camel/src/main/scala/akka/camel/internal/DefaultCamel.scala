@@ -1,12 +1,13 @@
 package akka.camel.internal
 
 import akka.actor.ActorSystem
-import component.{ DurationTypeConverter, ActorComponent }
+import akka.camel.internal.component.{ DurationTypeConverter, ActorComponent }
 import org.apache.camel.impl.DefaultCamelContext
 import scala.Predef._
 import akka.event.Logging
 import akka.camel.Camel
-import akka.util.{ NonFatal, Duration }
+import akka.util.NonFatal
+import scala.concurrent.util.Duration
 import org.apache.camel.{ ProducerTemplate, CamelContext }
 
 /**

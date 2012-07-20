@@ -10,6 +10,7 @@ import scala.collection.IndexedSeqOptimized
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
+import scala.reflect.ClassTag
 
 object ByteString {
 
@@ -281,7 +282,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def indexWhere(p: Byte ⇒ Boolean): Int = iterator.indexWhere(p)
   override def indexOf[B >: Byte](elem: B): Int = iterator.indexOf(elem)
 
-  override def toArray[B >: Byte](implicit arg0: ClassManifest[B]): Array[B] = iterator.toArray
+  override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = iterator.toArray
   override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Unit =
     iterator.copyToArray(xs, start, len)
 
@@ -349,10 +350,8 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by copying a byte array.
    */
-  def apply(bytes: Array[Byte]): CompactByteString = {
-    if (bytes.isEmpty) empty
-    else ByteString.ByteString1C(bytes.clone)
-  }
+  def apply(bytes: Array[Byte]): CompactByteString =
+    if (bytes.isEmpty) empty else ByteString.ByteString1C(bytes.clone)
 
   /**
    * Creates a new CompactByteString by copying bytes.
@@ -394,10 +393,8 @@ object CompactByteString {
   /**
    * Creates a new CompactByteString by encoding a String with a charset.
    */
-  def apply(string: String, charset: String): CompactByteString = {
-    if (string.isEmpty) empty
-    else ByteString.ByteString1C(string.getBytes(charset))
-  }
+  def apply(string: String, charset: String): CompactByteString =
+    if (string.isEmpty) empty else ByteString.ByteString1C(string.getBytes(charset))
 
   /**
    * Creates a new CompactByteString by copying length bytes starting at offset from
@@ -451,7 +448,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     this
   }
 
-  protected def fillByteBuffer(len: Int, byteOrder: ByteOrder)(fill: ByteBuffer ⇒ Unit): this.type = {
+  @inline protected final def fillByteBuffer(len: Int, byteOrder: ByteOrder)(fill: ByteBuffer ⇒ Unit): this.type = {
     fillArray(len) {
       case (array, start) ⇒
         val buffer = ByteBuffer.wrap(array, start, len)

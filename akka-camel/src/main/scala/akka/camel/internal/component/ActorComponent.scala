@@ -4,6 +4,8 @@
 
 package akka.camel.internal.component
 
+import language.postfixOps
+
 import java.util.{ Map ⇒ JMap }
 
 import org.apache.camel._
@@ -13,10 +15,11 @@ import akka.actor._
 import akka.pattern._
 
 import scala.reflect.BeanProperty
-import akka.util.duration._
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import akka.camel.internal.CamelExchangeAdapter
-import akka.util.{ NonFatal, Duration, Timeout }
+import akka.util.{ NonFatal, Timeout }
 import akka.camel.{ ActorNotRegisteredException, ConsumerConfig, Camel, Ack, FailureResult, CamelMessage }
 
 /**

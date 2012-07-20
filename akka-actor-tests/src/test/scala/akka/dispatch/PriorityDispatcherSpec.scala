@@ -1,14 +1,16 @@
 package akka.dispatch
 
+import language.postfixOps
+
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-
 import com.typesafe.config.Config
 
 import akka.actor.{ Props, InternalActorRef, ActorSystem, Actor }
 import akka.pattern.ask
 import akka.testkit.{ DefaultTimeout, AkkaSpec }
-import akka.util.duration.intToDurationInt
+import scala.concurrent.Await
+import scala.concurrent.util.duration.intToDurationInt
 
 object PriorityDispatcherSpec {
   val config = """

@@ -4,10 +4,13 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit._
-import akka.util.duration._
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
 import akka.util.Timeout
-import akka.dispatch.{ Await, Future }
+import scala.concurrent.Future
 
 object LocalActorRefProviderSpec {
   val config = """
@@ -38,7 +41,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
   }
 
   "An ActorRefFactory" must {
-
+    implicit val ec = system.dispatcher
     "only create one instance of an actor with a specific address in a concurrent environment" in {
       val impl = system.asInstanceOf[ActorSystemImpl]
       val provider = impl.provider

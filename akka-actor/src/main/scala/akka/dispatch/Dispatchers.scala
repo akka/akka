@@ -9,7 +9,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
 import akka.actor.{ Scheduler, DynamicAccess, ActorSystem }
 import akka.event.Logging.Warning
 import akka.event.EventStream
-import akka.util.Duration
+import scala.concurrent.util.Duration
 
 /**
  * DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher

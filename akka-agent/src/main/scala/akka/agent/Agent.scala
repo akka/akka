@@ -6,10 +6,10 @@ package akka.agent
 
 import akka.actor._
 import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
-import akka.dispatch._
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.stm._
+import scala.concurrent.{ Future, Promise, Await }
 
 /**
  * Used internally to send functions.
@@ -127,9 +127,9 @@ class Agent[T](initialValue: T, system: ActorSystem) {
     def dispatch = ask(updater, Alter(f))(timeout).asInstanceOf[Future[T]]
     val txn = Txn.findCurrent
     if (txn.isDefined) {
-      val result = Promise[T]()(system.dispatcher)
+      val result = Promise[T]()
       Txn.afterCommit(status ⇒ result completeWith dispatch)(txn.get)
-      result
+      result.future
     } else dispatch
   }
 
@@ -168,14 +168,14 @@ class Agent[T](initialValue: T, system: ActorSystem) {
    * still be executed in order.
    */
   def alterOff(f: T ⇒ T)(timeout: Timeout): Future[T] = {
-    val result = Promise[T]()(system.dispatcher)
+    val result = Promise[T]()
     send((value: T) ⇒ {
       suspend()
       val threadBased = system.actorOf(Props(new ThreadBasedAgentUpdater(this, ref)).withDispatcher("akka.agent.alter-off-dispatcher"))
       result completeWith ask(threadBased, Alter(f))(timeout).asInstanceOf[Future[T]]
       value
     })
-    result
+    result.future
   }
 
   /**

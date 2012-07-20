@@ -9,8 +9,8 @@ import akka.actor.{ Address, ExtendedActorSystem }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 import org.scalatest.Suite
 import org.scalatest.TestFailedException
 import java.util.concurrent.ConcurrentHashMap

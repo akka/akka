@@ -6,7 +6,8 @@ package akka.remote
 import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
-import akka.dispatch.{ Await, Future }
+import scala.concurrent.Future
+import scala.concurrent.Await
 import akka.pattern.ask
 
 object RemoteCommunicationSpec {

@@ -4,14 +4,16 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
 import akka.testkit._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import java.util.concurrent.atomic._
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 import java.util.UUID.{ randomUUID ⇒ newUuid }
 

@@ -4,15 +4,17 @@
 
 package akka.camel
 
+import language.postfixOps
+
 import org.scalatest.matchers.MustMatchers
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import org.apache.camel.ProducerTemplate
 import akka.actor._
 import akka.util.Timeout
 import TestSupport._
 import org.scalatest.WordSpec
 import akka.testkit.TestLatch
-import akka.dispatch.Await
+import scala.concurrent.Await
 
 class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCamelSystem {
   implicit val timeout = Timeout(10 seconds)

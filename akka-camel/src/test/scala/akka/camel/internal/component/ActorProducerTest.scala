@@ -4,13 +4,15 @@
 
 package akka.camel.internal.component
 
+import language.postfixOps
+
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.{ eq ⇒ the, any }
 import org.mockito.Mockito._
 import org.apache.camel.AsyncCallback
 import java.util.concurrent.atomic.AtomicBoolean
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 import akka.testkit.{ TestKit, TestProbe }
 import java.lang.String
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }

@@ -4,7 +4,7 @@
 package akka.testkit
 
 import com.typesafe.config.Config
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import akka.util.Timeout
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.{ ExtensionId, ActorSystem, Extension, ExtendedActorSystem }
