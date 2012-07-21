@@ -516,7 +516,7 @@ object Dependencies {
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
-  val docs = Seq(Test.scalatest, Test.junit, Test.specs2, Test.junitIntf)
+  val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
 
   val zeroMQ = Seq(protobuf, Dependency.zeroMQ, Test.scalatest, Test.junit)
 }
@@ -547,7 +547,6 @@ object Dependency {
     val mockito     = "org.mockito"                 % "mockito-all"             % "1.8.1"             % "test" // MIT
     val scalatest   = "org.scalatest"               % v("scalatest")            % "1.9-2.10.0-M5-B2"  % "test" // ApacheV2
     val scalacheck  = "org.scalacheck"              % v("scalacheck")           % "1.10.0"            % "test" // New BSD
-    val specs2      = "org.specs2"                  % "specs2_2.10"             % "1.11"              % "test" // Modified BSD / ApacheV2
     val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3" % "test"  // ApacheV2
     val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"   % "test" // ApacheV2
     val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"         % "1.0.0"      % "test" // ApacheV2
