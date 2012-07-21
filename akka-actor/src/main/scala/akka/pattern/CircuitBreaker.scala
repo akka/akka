@@ -9,7 +9,7 @@ import akka.actor.Scheduler
 import akka.util.{ NonFatal, Unsafe }
 import scala.util.control.NoStackTrace
 import java.util.concurrent.{ Callable, CopyOnWriteArrayList }
-import scala.concurrent.{ ExecutionContext, Future, Promise, Awaitable, Await, CanAwait }
+import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
 import scala.concurrent.util.{ Duration, Deadline }
 import scala.concurrent.util.duration._
 
@@ -40,6 +40,9 @@ object CircuitBreaker {
     new CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)(syncExecutionContext)
 
   /**
+   * Callbacks run in caller's thread when using withSyncCircuitBreaker, and in same ExecutionContext as the passed
+   * in Future when using withCircuitBreaker. To use another ExecutionContext for the callbacks you can specify the
+   * executor in the constructor.
    * Java API alias for apply
    *
    * @param scheduler Reference to Akka scheduler
@@ -132,7 +135,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
    */
   def withSyncCircuitBreaker[T](body: ⇒ T): T =
     Await.result(
-      withCircuitBreaker({ try Promise.successful(body) catch { case NonFatal(t) ⇒ Promise.failed(t) } }.future),
+      withCircuitBreaker(try Future.successful(body) catch { case NonFatal(t) ⇒ Future.failed(t) }),
       callTimeout)
 
   /**
@@ -285,7 +288,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
         while (iterator.hasNext) {
           val listener = iterator.next
           //FIXME per @viktorklang: it's a bit wasteful to create Futures for one-offs, just use EC.execute instead
-          Future(listener())
+          Future(listener())(executor)
         }
       }
     }
@@ -300,11 +303,11 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
      */
     def callThrough[T](body: ⇒ Future[T]): Future[T] = {
       val deadline = callTimeout.fromNow
-      val bodyFuture = try body catch { case NonFatal(t) ⇒ Promise.failed(t).future }
-      bodyFuture onComplete {
+      val bodyFuture = try body catch { case NonFatal(t) ⇒ Future.failed(t) }
+      bodyFuture.onComplete({
         case Right(_) if !deadline.isOverdue() ⇒ callSucceeds()
         case _                                 ⇒ callFails()
-      }
+      })(CircuitBreaker.syncExecutionContext)
       bodyFuture
     }
 
