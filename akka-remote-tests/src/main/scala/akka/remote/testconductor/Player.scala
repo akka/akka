@@ -212,10 +212,12 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           stay using d.copy(runningOp = None)
         case t: ThrottleMsg ⇒
           import settings.QueryTimeout
+          import context.dispatcher // FIXME is this the right EC for the future below?
           TestConductor().failureInjector ? t map (_ ⇒ ToServer(Done)) pipeTo self
           stay
         case d: DisconnectMsg ⇒
           import settings.QueryTimeout
+          import context.dispatcher // FIXME is this the right EC for the future below?
           TestConductor().failureInjector ? d map (_ ⇒ ToServer(Done)) pipeTo self
           stay
         case TerminateMsg(exit) ⇒

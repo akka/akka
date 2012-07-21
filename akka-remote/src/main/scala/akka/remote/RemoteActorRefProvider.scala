@@ -91,7 +91,7 @@ private[akka] class RemoteActorRefProvider(
 
     system.eventStream.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
 
-    terminationFuture.onComplete(_ ⇒ transport.shutdown())
+    system.registerOnTermination(transport.shutdown())
   }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,

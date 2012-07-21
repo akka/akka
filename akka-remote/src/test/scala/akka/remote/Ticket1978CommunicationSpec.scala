@@ -141,6 +141,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
       }
 
       "support ask" in {
+        import system.dispatcher
         val here = system.actorFor(otherAddress.toString + "/user/echo")
 
         val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo manifest[((String, Int), ActorRef)]

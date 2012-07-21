@@ -86,6 +86,7 @@ trait Conductor { this: TestConductorExt ⇒
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
     _controller = system.actorOf(Props(new Controller(participants, controllerPort)), "controller")
     import Settings.BarrierTimeout
+    import system.dispatcher
     controller ? GetSockAddr flatMap { case sockAddr: InetSocketAddress ⇒ startClient(name, sockAddr) map (_ ⇒ sockAddr) }
   }
 
