@@ -8,13 +8,14 @@
 
 package akka.dispatch
 
-import java.util.Collection
-import java.util.concurrent.{ Callable, Executor, TimeUnit }
-import scala.concurrent.util.Duration
+import java.util.concurrent.{ Executor }
 import scala.concurrent._
-import annotation.tailrec
+import scala.annotation.tailrec
 
-private[akka] trait Batchable { self: Runnable ⇒ }
+/**
+ * All Batchables are automatically batched when submitted to a BatchingExecutor
+ */
+private[akka] trait Batchable extends Runnable
 
 /**
  * Mixin trait for an Executor

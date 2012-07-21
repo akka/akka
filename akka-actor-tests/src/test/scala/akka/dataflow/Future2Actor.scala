@@ -11,6 +11,7 @@ import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.pattern.{ ask, pipe }
+import scala.concurrent.ExecutionException
 
 class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
   implicit val ec = system.dispatcher
@@ -43,9 +44,9 @@ class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
         }
       }))
       Await.result(actor ? "do", timeout.duration) must be(31)
-      intercept[AssertionError] {
+      intercept[ExecutionException] {
         Await.result(actor ? "ex", timeout.duration)
-      }
+      }.getCause.isInstanceOf[AssertionError] must be(true)
     }
   }
 }
