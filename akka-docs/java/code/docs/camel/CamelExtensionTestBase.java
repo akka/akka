@@ -13,7 +13,7 @@ public class CamelExtensionTestBase {
     //#CamelExtension
     ActorSystem system = ActorSystem.create("some-system");
     Camel camel = CamelExtension.get(system);
-    CamelContext camelContext= camel.context();
+    CamelContext camelContext = camel.context();
     ProducerTemplate producerTemplate = camel.template();
     //#CamelExtension
     system.shutdown();
@@ -22,7 +22,7 @@ public class CamelExtensionTestBase {
     //#CamelExtensionAddComponent
     ActorSystem system = ActorSystem.create("some-system");
     Camel camel = CamelExtension.get(system);
-    CamelContext camelContext= camel.context();
+    CamelContext camelContext = camel.context();
     // camelContext.addComponent("activemq", ActiveMQComponent.activeMQComponent("vm://localhost?broker.persistent=false"))
     //#CamelExtensionAddComponent
     system.shutdown();

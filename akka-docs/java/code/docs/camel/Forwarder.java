@@ -11,13 +11,14 @@ public class Forwarder extends UntypedProducerActor {
     this.uri = uri;
     this.target = target;
   }
+
   public String getEndpointUri() {
     return uri;
   }
 
   @Override
   public void onRouteResponse(Object message) {
-    target.forward(message,getContext());
+    target.forward(message, getContext());
   }
 }
 //#RouteResponse

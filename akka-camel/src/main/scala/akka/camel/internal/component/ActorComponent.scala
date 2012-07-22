@@ -244,7 +244,7 @@ object CamelPath {
    * Converts the actorRef to a Camel URI (string) which can be used in custom routes.
    * The created URI will have no parameters, it is purely the string representation of the actor's path.
    * @param actorRef the actorRef
-   * @return the camel URI to the actor.
+   * @return the Camel URI to the actor.
    */
   def toUri(actorRef: ActorRef): String = actorRef.path.toString
 
@@ -256,7 +256,7 @@ object CamelPath {
    * @param actorRef the actorRef
    * @param autoAck parameter for a Consumer Actor, see [[akka.camel.ConsumerConfig]]
    * @param replyTimeout parameter for a Consumer Actor, see [[akka.camel.ConsumerConfig]]
-   * @return the camel URI to the Consumer actor, including the parameters for auto acknowledgement and replyTimeout.
+   * @return the Camel URI to the Consumer Actor, including the parameters for auto acknowledgement and replyTimeout.
    */
   def toUri(actorRef: ActorRef, autoAck: Boolean, replyTimeout: Duration): String = "%s?autoAck=%s&replyTimeout=%s".format(actorRef.path.toString, autoAck, replyTimeout.toString)
 }

@@ -24,12 +24,9 @@ Other, more advanced external articles (for version 1) are:
 Introduction
 ============
 
-The akka-camel module allows actors to receive
-and send messages over a great variety of protocols and APIs (akka-camel version 1.x also provided
-this functionality to Typed Actors. In akka-camel 2, support for Typed Actors has been removed.)
-This section gives a brief overview of the general ideas behind the akka-camel module, the
-remaining sections go into the details. In addition to the native Scala and Java
-actor API, actors can now exchange messages with other systems over large number
+The akka-camel module allows Untyped Actors to receive
+and send messages over a great variety of protocols and APIs.
+In addition to the native Scala and Java actor API, actors can now exchange messages with other systems over large number
 of protocols and APIs such as HTTP, SOAP, TCP, FTP, SMTP or JMS, to mention a
 few. At the moment, approximately 80 protocols and APIs are supported.
 
@@ -52,7 +49,7 @@ Here's an example of using Camel's integration components in Akka.
 
 .. includecode:: code/docs/camel/MyEndpoint.java#Consumer-mina
 
-The above example exposes an actor over a TCP endpoint on port 6200 via Apache
+The above example exposes an actor over a TCP endpoint via Apache
 Camel's `Mina component`_. The actor implements the `getEndpointUri` method to define
 an endpoint from which it can receive messages. After starting the actor, TCP
 clients can immediately send messages to and receive responses from that
@@ -141,28 +138,6 @@ A ``DeActivationTimeoutException`` is thrown if the associated camel objects cou
 .. _SendProcessor: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/processor/SendProcessor.java
 .. _Endpoint: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Endpoint.java
 
-Dependencies
-============
-
-SBT
----
-.. code-block:: scala
-
-    "com.typesafe.akka" % "akka-camel" % "2.1-SNAPSHOT"
-
-Maven
------
-.. code-block:: xml
-
-    <dependency>
-        <groupId>com.typesafe.akka</groupId>
-        <artifactId>akka-camel</artifactId>
-        <version>2.1-SNAPSHOT</version>
-    </dependency>
-
-.. _camel-consumer-actors:
-
-
 Consumer Actors
 ================
 
@@ -171,7 +146,7 @@ class. For example, the following actor class (Consumer1) implements the
 `getEndpointUri` method, which is declared in the `UntypedConsumerActor`_ class, in order to receive
 messages from the ``file:data/input/actor`` Camel endpoint.
 
-.. _UntypedConsumerActor: https://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/javaapi/UntypedConsumer.scala
+.. _UntypedConsumerActor: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/javaapi/UntypedConsumer.scala
 
 .. includecode:: code/docs/camel/Consumer1.java#Consumer1
 
@@ -220,12 +195,12 @@ to the endpoint in this case. To allow consumer actors to positively or
 negatively acknowledge the receipt of a message from an in-only message
 exchange, they need to override the ``autoAck`` method to return false.
 In this case, consumer actors must reply either with a
-special Ack message (positive acknowledgement) or a Failure (negative
+special akka.camel.Ack message (positive acknowledgement) or a akka.actor.Status.Failure (negative
 acknowledgement).
 
 .. includecode:: code/docs/camel/Consumer3.java#Consumer3
 
-.. _camel-timeout:
+.. _camel-timeout-java:
 
 Consumer timeout
 ----------------
@@ -239,13 +214,14 @@ components`_. Another option is to configure timeouts on the level of consumer a
 .. _Camel components: http://camel.apache.org/components.html
 
 Two-way communications between a Camel endpoint and an actor are
-initiated by sending the request message to the actor with the ask pattern
+initiated by sending the request message to the actor with the `ask`_ pattern
 and the actor replies to the endpoint when the response is ready. The ask request to the actor can timeout, which will
 result in the `Exchange`_ failing with a TimeoutException set on the failure of the `Exchange`_.
 The timeout on the consumer actor can be overridden with the ``replyTimeout``, as shown below.
 
 .. includecode:: code/docs/camel/Consumer4.java#Consumer4
 .. _Exchange: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java
+.. _ask: http://github.com/akka/akka/blob/master/akka-actor/src/main/scala/akka/pattern/Patterns.scala
 
 Producer Actors
 ===============
@@ -255,10 +231,9 @@ For sending messages to Camel endpoints, actors need to inherit from the `Untype
 .. includecode:: code/docs/camel/Producer1.java#Producer1
 
 Producer1 inherits a default implementation of the onReceive method from the
-UntypedProducerActor class. To customize a producer actor's default behavior it is
-recommended to override the `UntypedProducerActor`_.onTransformResponse and
+`UntypedProducerActor`_ class. To customize a producer actor's default behavior you must override the `UntypedProducerActor`_.onTransformResponse and
 `UntypedProducerActor`_.onTransformOutgoingMessage methods. This is explained later in more detail.
-Actors should not override the default `UntypedProducerActor`_.onReceive method.
+Producer Actors cannot override the `UntypedProducerActor`_.onReceive method.
 
 Any message sent to a Producer actor will be sent to
 the associated Camel endpoint, in the above example to
@@ -271,7 +246,7 @@ Producer actor and waits for a response.
 
 The future contains the response CamelMessage, or an ``AkkaCamelException`` when an error occurred, which contains the headers of the response.
 
-.. _camel-custom-processing:
+.. _camel-custom-processing-java:
 
 Custom Processing
 -----------------
@@ -304,16 +279,15 @@ Message correlation
 -------------------
 
 To correlate request with response messages, applications can set the
-Message.MessageExchangeId message header.
+`Message.MessageExchangeId` message header.
 
 .. includecode:: code/docs/camel/ProducerTestBase.java#Correlate
 
 ProducerTemplate
 ----------------
 
-The `UntypedProducerActor`_ class is a very
-convenient way for actors to produce messages to Camel endpoints. Actors may also use a Camel `ProducerTemplate`_ for producing
-messages to endpoints.
+The `UntypedProducerActor`_ class is a very convenient way for actors to produce messages to Camel endpoints.
+Actors may also use a Camel `ProducerTemplate`_ for producing messages to endpoints.
 
 .. includecode:: code/docs/camel/MyActor.java#ProducerTemplate
 
@@ -325,17 +299,17 @@ For initiating a a two-way message exchange, one of the
 .. _UntypedProducerActor: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/javaapi/UntypedProducerActor.scala
 .. _ProducerTemplate: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/ProducerTemplate.java
 
-.. _camel-asynchronous-routing:
+.. _camel-asynchronous-routing-java:
 
 Asynchronous routing
 ====================
 
-Since Akka 0.10, in-out message exchanges between endpoints and actors are
+In-out message exchanges between endpoints and actors are
 designed to be asynchronous. This is the case for both, consumer and producer
 actors.
 
 * A consumer endpoint sends request messages to its consumer actor using the ``!``
-  (bang) operator and the actor returns responses with ``sender !`` once they are
+  (tell) operator and the actor returns responses with ``sender !`` once they are
   ready.
 
 * A producer actor sends request messages to its endpoint using Camel's
@@ -343,7 +317,7 @@ actors.
   producer actor's mailbox for later processing. By default, response messages are
   returned to the initial sender but this can be overridden by Producer
   implementations (see also description of the ``onRouteResponse`` method
-  in :ref:`camel-custom-processing`).
+  in :ref:`camel-custom-processing-java`).
 
 However, asynchronous two-way message exchanges, without allocating a thread for
 the full duration of exchange, cannot be generically supported by Camel's
@@ -371,26 +345,25 @@ most use cases, some applications may require more specialized routes to actors.
 The akka-camel module provides two mechanisms for customizing routes to actors,
 which will be explained in this section. These are:
 
-* Usage of :ref:`camel-components` to access actors.
+* Usage of :ref:`camel-components-java` to access actors.
   Any Camel route can use these components to access Akka actors.
 
 * :ref:`camel-intercepting-route-construction-java` to actors.
-  Default routes to consumer actors are extended using predefined extension
-  points.
+  This option gives you the ability to change routes that have already been added to Camel.
+  Consumer actors have a hook into the route definition process which can be used to change the route.
 
 
-.. _camel-components:
+.. _camel-components-java:
 
 Akka Camel components
 ---------------------
 
 Akka actors can be accessed from Camel routes using the `actor`_ Camel component. This component can be used to
-access any Akka actor (not only consumer actors) from Camel routes, as described
-in the following sections.
+access any Akka actor (not only consumer actors) from Camel routes, as described in the following sections.
 
-.. _actor: https://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/internal/component/ActorComponent.scala
+.. _actor: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/internal/component/ActorComponent.scala
 
-.. _access-to-actors:
+.. _access-to-actors-java:
 
 Access to actors
 ----------------
@@ -399,7 +372,7 @@ To access actors from custom Camel routes, the `actor`_ Camel
 component should be used. It fully supports Camel's `asynchronous routing
 engine`_.
 
-.. _actor: https://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/internal/component/ActorComponent.scala
+.. _actor: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/internal/component/ActorComponent.scala
 .. _asynchronous routing engine: http://camel.apache.org/asynchronous-routing-engine.html
 
 This component accepts the following endpoint URI format:
@@ -425,7 +398,7 @@ The following URI options are supported:
 |              |          |         | between the amount and the unit, like          |
 |              |          |         | for example ``200+millis``                     |
 |              |          |         |                                                |
-|              |          |         | See also :ref:`camel-timeout`.                 |
+|              |          |         | See also :ref:`camel-timeout-java`.            |
 +--------------+----------+---------+------------------------------------------------+
 | autoAck      | Boolean  | true    | If set to true, in-only message exchanges      |
 |              |          |         | are auto-acknowledged when the message is      |
@@ -457,15 +430,12 @@ the HTTP request.
 Intercepting route construction
 -------------------------------
 
-The previous section, :ref:`camel-components`, explained how to setup a route to
-an actor manually. It was the application's
-responsibility to define the route and add it to the current CamelContext. This
-section explains a more convenient way to define custom routes: akka-camel is
-still setting up the routes to consumer actors (and adds these routes to the
-current CamelContext) but applications can define extensions to these routes.
-Extensions can be defined with Camel's `Java DSL`_ or `Scala DSL`_. For example,
-an extension could be a custom error handler that redelivers messages from an
-endpoint to an actor's bounded mailbox when the mailbox was full.
+The previous section, :ref:`camel-components-java`, explained how to setup a route to
+an actor manually.
+It was the application's responsibility to define the route and add it to the current CamelContext.
+This section explains a more convenient way to define custom routes: akka-camel is still setting up the routes to consumer actors
+(and adds these routes to the current CamelContext) but applications can define extensions to these routes.
+Extensions can be defined with Camel's `Java DSL`_ or `Scala DSL`_. For example, an extension could be a custom error handler that redelivers messages from an endpoint to an actor's bounded mailbox when the mailbox was full.
 
 .. _Java DSL: http://camel.apache.org/dsl.html
 .. _Scala DSL: http://camel.apache.org/scala-dsl.html
@@ -487,7 +457,8 @@ returns a ProcessorDefinition (in the above example, the ProcessorDefinition
 returned by the end method. See the `org.apache.camel.model`__ package for
 details). After executing the route definition handler, akka-camel finally calls
 a to(targetActorUri) on the returned ProcessorDefinition to complete the
-route to the consumer actor (where targetActorUri is the actor component URI as described in :ref:`access-to-actors`).
+route to the consumer actor (where targetActorUri is the actor component URI as described in :ref:`access-to-actors-java`).
+If the actor cannot be found, a `ActorNotRegisteredException` is thrown.
 
 \*) Before passing the RouteDefinition instance to the route definition handler,
 akka-camel may make some further modifications to it.
@@ -505,7 +476,7 @@ Asynchronous routing and transformation example
 -----------------------------------------------
 
 This example demonstrates how to implement consumer and producer actors that
-support :ref:`camel-asynchronous-routing` with their Camel endpoints. The sample
+support :ref:`camel-asynchronous-routing-java` with their Camel endpoints. The sample
 application transforms the content of the Akka homepage, http://akka.io, by
 replacing every occurrence of *Akka* with *AKKA*. To run this example, add
 a Boot class that starts the actors. After starting

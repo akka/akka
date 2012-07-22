@@ -5,7 +5,7 @@ import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
 
 public class MyEndpoint extends UntypedConsumerActor{
-  private String uri = "mina:tcp://localhost:6200?textline=true";
+  private String uri;
 
   public String getEndpointUri() {
     return uri;
@@ -14,9 +14,8 @@ public class MyEndpoint extends UntypedConsumerActor{
   public void onReceive(Object message) throws Exception {
     if (message instanceof CamelMessage) {
       /* ... */
-    } else {
-      /* ... */
-    }
+    } else
+      unhandled(message);
   }
 
   // Extra constructor to change the default uri,
@@ -26,6 +25,7 @@ public class MyEndpoint extends UntypedConsumerActor{
   }
 
   public MyEndpoint() {
+    this.uri = "mina:tcp://localhost:6200?textline=true";
   }
 }
 //#Consumer-mina
