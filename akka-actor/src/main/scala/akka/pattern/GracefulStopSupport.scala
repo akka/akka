@@ -7,7 +7,7 @@ package akka.pattern
 import akka.actor._
 import akka.util.{ Timeout }
 import akka.dispatch.{ Unwatch, Watch }
-import scala.concurrent.{ Promise, Future }
+import scala.concurrent.Future
 import scala.concurrent.util.Duration
 
 trait GracefulStopSupport {
@@ -36,10 +36,10 @@ trait GracefulStopSupport {
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
-    if (target.isTerminated) Promise.successful(true).future
+    if (target.isTerminated) Future successful true
     else system match {
       case e: ExtendedActorSystem ⇒
-        implicit val d = e.dispatcher // TODO take implicit ExecutionContext/MessageDispatcher in method signature?
+        import e.dispatcher // TODO take implicit ExecutionContext/MessageDispatcher in method signature?
         val internalTarget = target.asInstanceOf[InternalActorRef]
         val ref = PromiseActorRef(e.provider, Timeout(timeout))
         internalTarget.sendSystemMessage(Watch(target, ref))
