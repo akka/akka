@@ -35,7 +35,7 @@ private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends D
    * @see org.apache.camel.Component
    */
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint =
-    new ActorEndpoint(uri, this, ActorEndpointPath.fromCamelPath(uri), camel, system)
+    new ActorEndpoint(uri, this, ActorEndpointPath.fromCamelPath(uri), camel)
 }
 
 /**
@@ -54,8 +54,7 @@ private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends D
 private[camel] class ActorEndpoint(uri: String,
                                    comp: ActorComponent,
                                    val path: ActorEndpointPath,
-                                   camel: Camel,
-                                   val system: ActorSystem) extends DefaultEndpoint(uri, comp) with ActorEndpointConfig {
+                                   val camel: Camel) extends DefaultEndpoint(uri, comp) with ActorEndpointConfig {
 
   /**
    * The ActorEndpoint only supports receiving messages from Camel.
@@ -89,17 +88,11 @@ private[camel] class ActorEndpoint(uri: String,
  */
 private[camel] trait ActorEndpointConfig {
   def path: ActorEndpointPath
-  def system: ActorSystem
-  private def config = system.settings.config
-  @BeanProperty var replyTimeout: Duration = Duration(config.getMilliseconds("akka.camel.consumer.replyTimeout"), MILLISECONDS)
+  def camel: Camel
 
-  /**
-   * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
-   * set via the <code>autoAck=true|false</code> endpoint URI parameter. Default value is
-   * <code>true</code>. When set to <code>false</code> consumer actors need to additionally
-   * call <code>Consumer.ack</code> within <code>Actor.receive</code>.
-   */
-  @BeanProperty var autoAck: Boolean = config.getBoolean("akka.camel.consumer.autoAck")
+  @BeanProperty var replyTimeout: Duration = camel.settings.replyTimeout
+
+  @BeanProperty var autoAck: Boolean = camel.settings.autoAck
 }
 
 /**

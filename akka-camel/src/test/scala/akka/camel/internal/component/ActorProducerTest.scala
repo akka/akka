@@ -5,7 +5,7 @@
 package akka.camel.internal.component
 
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Matchers.{ eq ⇒ the, any }
+import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.apache.camel.AsyncCallback
 import java.util.concurrent.atomic.AtomicBoolean
@@ -15,7 +15,7 @@ import akka.testkit.{ TestKit, TestProbe }
 import java.lang.String
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import akka.camel._
-import internal.CamelExchangeAdapter
+import internal.{ DefaultCamel, CamelExchangeAdapter }
 import org.scalatest.{ Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
@@ -269,7 +269,10 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     asyncCallback = createAsyncCallback
 
     probe = TestProbe()
-    camel = mock[Camel]
+    camel = camelWithMocks
+    def camelWithMocks = new DefaultCamel(mock[ActorSystem]) {
+      override lazy val settings = mock[CamelSettings]
+    }
     exchange = mock[CamelExchangeAdapter]
     callback = mock[AsyncCallback]
     actorEndpointPath = mock[ActorEndpointPath]
@@ -321,7 +324,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   }
 
   def config(endpointUri: String = "test-uri", isAutoAck: Boolean = true, _replyTimeout: Duration = Int.MaxValue seconds) = {
-    val endpoint = new ActorEndpoint(endpointUri, actorComponent, actorEndpointPath, camel, system)
+    val endpoint = new ActorEndpoint(endpointUri, actorComponent, actorEndpointPath, camel)
     endpoint.autoAck = isAutoAck
     endpoint.replyTimeout = _replyTimeout
     endpoint

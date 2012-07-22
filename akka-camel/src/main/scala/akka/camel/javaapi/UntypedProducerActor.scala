@@ -70,4 +70,11 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
    * Returns the <code>ProducerTemplate</code>.
    */
   def getProducerTemplate(): ProducerTemplate = camel.template
+
+  /**
+   * ''Java API'': Returns the [[akka.camel.Activation]] interface
+   * that can be used to wait on activation or de-activation of Camel endpoints.
+   * @return the Activation interface
+   */
+  def getActivation(): Activation = camel
 }

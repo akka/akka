@@ -5,7 +5,7 @@ import component.{ DurationTypeConverter, ActorComponent }
 import org.apache.camel.impl.DefaultCamelContext
 import scala.Predef._
 import akka.event.Logging
-import akka.camel.Camel
+import akka.camel.{ CamelSettings, Camel }
 import akka.util.{ NonFatal, Duration }
 import org.apache.camel.{ ProducerTemplate, CamelContext }
 
@@ -32,6 +32,8 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
     ctx.getTypeConverterRegistry.addTypeConverter(classOf[Duration], classOf[String], DurationTypeConverter)
     ctx
   }
+
+  lazy val settings = new CamelSettings(system.settings.config)
 
   lazy val template: ProducerTemplate = context.createProducerTemplate()
 

@@ -87,6 +87,18 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
     camel.routeCount must be(0)
   }
 
+  "Consumer must register on uri passed in through constructor" in {
+    val consumer = start(new TestActor("direct://test"))
+    camel.awaitActivation(consumer, defaultTimeout seconds)
+
+    camel.routeCount must be > (0)
+    camel.routes.get(0).getEndpoint.getEndpointUri must be("direct://test")
+    system.stop(consumer)
+    camel.awaitDeactivation(consumer, defaultTimeout seconds)
+
+    camel.routeCount must be(0)
+  }
+
   "Error passing consumer supports error handling through route modification" in {
     start(new ErrorThrowingConsumer("direct:error-handler-test") with ErrorPassing {
       override def onRouteDefinition(rd: RouteDefinition) = {

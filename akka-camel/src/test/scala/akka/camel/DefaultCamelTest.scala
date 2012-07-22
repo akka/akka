@@ -17,14 +17,14 @@ class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers
 
   import org.mockito.Mockito.{ when, verify }
 
-  def camelWitMocks = new DefaultCamel(mock[ActorSystem]) {
+  def camelWithMocks = new DefaultCamel(mock[ActorSystem]) {
     override val log = mock[LoggingAdapter]
     override lazy val template = mock[ProducerTemplate]
     override lazy val context = mock[CamelContext]
   }
 
   "during shutdown, when both context and template fail to shutdown" when {
-    val camel = camelWitMocks
+    val camel = camelWithMocks
 
     when(camel.context.stop()) thenThrow new RuntimeException("context")
     when(camel.template.stop()) thenThrow new RuntimeException("template")
@@ -44,7 +44,7 @@ class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers
   }
 
   "during start, if template fails to start, it will stop the context" in {
-    val camel = camelWitMocks
+    val camel = camelWithMocks
 
     when(camel.template.start()) thenThrow new RuntimeException
 

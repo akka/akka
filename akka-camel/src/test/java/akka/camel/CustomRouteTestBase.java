@@ -10,25 +10,24 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.mock.MockEndpoint;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Before;
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
 public class CustomRouteTestBase {
-
   private static Camel camel;
   private static ActorSystem system;
 
-  @BeforeClass
-  public static void setUpBeforeClass() {
+  @Before
+  public void before() {
     system = ActorSystem.create("test");
     camel = (Camel) CamelExtension.get(system);
   }
 
-  @AfterClass
-  public static void cleanup() {
+  @After
+  public void after() {
     system.shutdown();
   }
 
@@ -43,12 +42,26 @@ public class CustomRouteTestBase {
   }
 
   @Test
+  public void testCustomProducerUriRoute() throws Exception {
+    MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockProducerUri", MockEndpoint.class);
+    ActorRef producer = system.actorOf(new Props(new UntypedActorFactory(){
+      public Actor create() {
+        return new EndpointProducer("mock:mockProducerUri");
+      }
+    }), "mockEndpointUri");
+    camel.context().addRoutes(new CustomRouteBuilder("direct:test",producer));
+    camel.template().sendBody("direct:test", "test");
+    assertMockEndpoint(mockEndpoint);
+    system.stop(producer);
+  }
+
+  @Test
   public void testCustomConsumerRoute() throws Exception {
     MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockConsumer", MockEndpoint.class);
     ActorRef consumer = system.actorOf(new Props(TestConsumer.class), "testConsumer");
     camel.awaitActivation(consumer,new FiniteDuration(10, TimeUnit.SECONDS));
-    camel.context().addRoutes(new CustomRouteBuilder("direct:testConsumer",consumer));
-    camel.template().sendBody("direct:testConsumer", "test");
+    camel.context().addRoutes(new CustomRouteBuilder("direct:testRouteConsumer",consumer));
+    camel.template().sendBody("direct:testRouteConsumer", "test");
     assertMockEndpoint(mockEndpoint);
     system.stop(consumer);
   }
@@ -58,7 +71,7 @@ public class CustomRouteTestBase {
     MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockAck", MockEndpoint.class);
     ActorRef consumer = system.actorOf(new Props( new UntypedActorFactory(){
       public Actor create() {
-        return new TestAckConsumer("mock:mockAck");
+        return new TestAckConsumer("direct:testConsumerAck","mock:mockAck");
       }
     }), "testConsumerAck");
     camel.awaitActivation(consumer,new FiniteDuration(10, TimeUnit.SECONDS));
@@ -73,7 +86,7 @@ public class CustomRouteTestBase {
     MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockAckUri", MockEndpoint.class);
     ActorRef consumer = system.actorOf(new Props( new UntypedActorFactory(){
       public Actor create() {
-        return new TestAckConsumer("mock:mockAckUri");
+        return new TestAckConsumer("direct:testConsumerAckFromUri","mock:mockAckUri");
       }
     }), "testConsumerAckUri");
     camel.awaitActivation(consumer,new FiniteDuration(10, TimeUnit.SECONDS));
@@ -87,7 +100,7 @@ public class CustomRouteTestBase {
   public void testCustomTimeoutConsumerRoute() throws Exception {
     ActorRef consumer = system.actorOf(new Props( new UntypedActorFactory(){
       public Actor create() {
-        return new TestAckConsumer("mock:mockAckUri");
+        return new TestAckConsumer("direct:testConsumerException","mock:mockException");
       }
     }), "testConsumerException");
     camel.awaitActivation(consumer, new FiniteDuration(10, TimeUnit.SECONDS));
@@ -130,26 +143,6 @@ public class CustomRouteTestBase {
     }
   }
 
-  public static class TestAckConsumer extends UntypedConsumerActor {
-
-    String endpoint;
-
-    public TestAckConsumer(String to){
-      endpoint = to;
-    }
-
-    @Override
-    public String getEndpointUri() {
-      return "direct:testconsumer";
-    }
-
-    @Override
-    public void onReceive(Object message) {
-      this.getProducerTemplate().sendBody(endpoint, "test");
-      getSender().tell(Ack.getInstance());
-    }
-  }
-
 
   public static class TestConsumer extends UntypedConsumerActor {
     @Override
@@ -163,6 +156,23 @@ public class CustomRouteTestBase {
     }
   }
 
+  public static class EndpointProducer extends UntypedProducerActor {
+    private String uri;
+
+    public EndpointProducer(String uri) {
+      this.uri = uri;
+    }
+
+    public String getEndpointUri() {
+      return uri;
+    }
+
+    @Override
+    public boolean isOneway() {
+      return true;
+    }
+  }
+
   public static class MockEndpointProducer extends UntypedProducerActor {
     public String getEndpointUri() {
       return "mock:mockProducer";
@@ -171,6 +181,27 @@ public class CustomRouteTestBase {
     @Override
     public boolean isOneway() {
       return true;
+    }
+  }
+
+  public static class TestAckConsumer extends UntypedConsumerActor {
+    private String myuri;
+    private String to;
+
+    public TestAckConsumer(String uri, String to){
+      myuri = uri;
+      this.to = to;
+    }
+
+    @Override
+    public String getEndpointUri() {
+      return myuri;
+    }
+
+    @Override
+    public void onReceive(Object message) {
+      this.getProducerTemplate().sendBody(to, "test");
+      getSender().tell(Ack.getInstance());
     }
   }
 }

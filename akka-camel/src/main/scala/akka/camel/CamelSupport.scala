@@ -1,14 +1,21 @@
 package akka.camel
 
 import akka.actor.Actor
+import com.typesafe.config.Config
+import akka.util.Duration
+import java.util.concurrent.TimeUnit._
 
 private[camel] trait CamelSupport { this: Actor ⇒
+
   /**
-   * camel extension
+   * For internal use only. Returns a [[akka.camel.Camel]] trait which provides access to the CamelExtension.
    */
-  protected[this] implicit def camel = CamelExtension(context.system)
+  protected def camel = CamelExtension(context.system)
+
   /**
-   * camelContext implicit is useful when using advanced methods of CamelMessage.
+   * Returns the CamelContext.
+   * The camelContext is defined implicit for simplifying the use of CamelMessage from the Scala API.
    */
-  protected[this] implicit def camelContext = camel.context
+  protected implicit def camelContext = camel.context
+
 }
