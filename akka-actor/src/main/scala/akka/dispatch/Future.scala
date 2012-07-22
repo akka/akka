@@ -19,22 +19,22 @@ object Futures {
   /**
    * Java API, equivalent to Future.apply
    */
-  def future[T](body: Callable[T], executor: ExecutionContext): Future[T] = Future(body.call)(executor) // TODO REMOVE EC
+  def future[T](body: Callable[T], executor: ExecutionContext): Future[T] = Future(body.call)(executor)
 
   /**
    * Java API, equivalent to Promise.apply
    */
-  def promise[T](executor: ExecutionContext): Promise[T] = Promise[T]() // TODO REMOVE EC
+  def promise[T](): Promise[T] = Promise[T]()
 
   /**
    * Java API, creates an already completed Promise with the specified exception
    */
-  def failed[T](exception: Throwable, executor: ExecutionContext): Future[T] = Future.failed(exception) // TODO REMOVE EC
+  def failed[T](exception: Throwable): Future[T] = Future.failed(exception)
 
   /**
    * Java API, Creates an already completed Promise with the specified result
    */
-  def successful[T](result: T, executor: ExecutionContext): Future[T] = Future.successful(result) // TODO REMOVE EC
+  def successful[T](result: T): Future[T] = Future.successful(result)
 
   /**
    * Java API.
