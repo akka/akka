@@ -33,7 +33,7 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
     ctx
   }
 
-  lazy val settings = new CamelSettings(system.settings.config)
+  val settings = new CamelSettings(system.settings.config)
 
   lazy val template: ProducerTemplate = context.createProducerTemplate()
 

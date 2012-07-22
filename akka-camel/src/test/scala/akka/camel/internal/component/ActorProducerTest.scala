@@ -7,7 +7,7 @@ package akka.camel.internal.component
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
-import org.apache.camel.AsyncCallback
+import org.apache.camel.{ CamelContext, ProducerTemplate, AsyncCallback }
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.util.duration._
 import akka.util.Duration
@@ -22,6 +22,9 @@ import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 import org.mockito.{ ArgumentMatcher, Matchers, Mockito }
 import org.scalatest.matchers.MustMatchers
 import akka.actor.Status.Failure
+import com.typesafe.config.ConfigFactory
+import akka.actor.ActorSystem.Settings
+import akka.event.LoggingAdapter
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
 
@@ -269,15 +272,25 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     asyncCallback = createAsyncCallback
 
     probe = TestProbe()
-    camel = camelWithMocks
-    def camelWithMocks = new DefaultCamel(mock[ActorSystem]) {
-      override lazy val settings = mock[CamelSettings]
+
+    val sys = mock[ActorSystem]
+    val config = ConfigFactory.defaultReference()
+    when(sys.settings) thenReturn (new Settings(this.getClass.getClassLoader, config, "mocksystem"))
+    when(sys.name) thenReturn ("mocksystem")
+
+    def camelWithMocks = new DefaultCamel(sys) {
+      override val log = mock[LoggingAdapter]
+      override lazy val template = mock[ProducerTemplate]
+      override lazy val context = mock[CamelContext]
+      override val settings = mock[CamelSettings]
     }
+    camel = camelWithMocks
+
     exchange = mock[CamelExchangeAdapter]
     callback = mock[AsyncCallback]
     actorEndpointPath = mock[ActorEndpointPath]
     actorComponent = mock[ActorComponent]
-    producer = new ActorProducer(config(), camel)
+    producer = new ActorProducer(configure(), camel)
     message = CamelMessage(null, null)
   }
 
@@ -289,7 +302,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   def given(actor: ActorRef = probe.ref, outCapable: Boolean = true, autoAck: Boolean = true, replyTimeout: Duration = Int.MaxValue seconds) = {
     prepareMocks(actor, outCapable = outCapable)
-    new ActorProducer(config(isAutoAck = autoAck, _replyTimeout = replyTimeout), camel)
+    new ActorProducer(configure(isAutoAck = autoAck, _replyTimeout = replyTimeout), camel)
   }
 
   def createAsyncCallback = new TestAsyncCallback
@@ -323,7 +336,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   }
 
-  def config(endpointUri: String = "test-uri", isAutoAck: Boolean = true, _replyTimeout: Duration = Int.MaxValue seconds) = {
+  def configure(endpointUri: String = "test-uri", isAutoAck: Boolean = true, _replyTimeout: Duration = Int.MaxValue seconds) = {
     val endpoint = new ActorEndpoint(endpointUri, actorComponent, actorEndpointPath, camel)
     endpoint.autoAck = isAutoAck
     endpoint.replyTimeout = _replyTimeout

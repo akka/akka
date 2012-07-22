@@ -10,7 +10,7 @@ private[camel] trait CamelSupport { this: Actor ⇒
   /**
    * For internal use only. Returns a [[akka.camel.Camel]] trait which provides access to the CamelExtension.
    */
-  protected def camel = CamelExtension(context.system)
+  protected val camel = CamelExtension(context.system)
 
   /**
    * Returns the CamelContext.
