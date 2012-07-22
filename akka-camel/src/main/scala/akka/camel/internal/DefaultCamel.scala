@@ -6,7 +6,7 @@ import org.apache.camel.impl.DefaultCamelContext
 import scala.Predef._
 import akka.event.Logging
 import akka.camel.Camel
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 import scala.concurrent.util.Duration
 import org.apache.camel.{ ProducerTemplate, CamelContext }
 

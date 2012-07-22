@@ -6,11 +6,12 @@ package akka.pattern
 import language.implicitConversions
 
 import java.util.concurrent.TimeoutException
-import annotation.tailrec
 import akka.actor._
 import akka.dispatch._
+import scala.annotation.tailrec
+import scala.util.control.NonFatal
 import scala.concurrent.{ Future, Promise, ExecutionContext }
-import akka.util.{ NonFatal, Timeout, Unsafe }
+import akka.util.{ Timeout, Unsafe }
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,

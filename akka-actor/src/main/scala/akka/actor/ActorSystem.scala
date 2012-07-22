@@ -12,6 +12,7 @@ import scala.annotation.tailrec
 import scala.concurrent.util.Duration
 import java.io.Closeable
 import scala.concurrent.{ Await, Awaitable, CanAwait, Future }
+import scala.util.control.NonFatal
 import akka.util._
 import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }

@@ -6,12 +6,13 @@ package akka.pattern
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong, AtomicBoolean }
 import akka.AkkaException
 import akka.actor.Scheduler
-import akka.util.{ NonFatal, Unsafe }
+import akka.util.Unsafe
 import scala.util.control.NoStackTrace
 import java.util.concurrent.{ Callable, CopyOnWriteArrayList }
 import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
 import scala.concurrent.util.{ Duration, Deadline }
 import scala.concurrent.util.duration._
+import scala.util.control.NonFatal
 
 /**
  * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread

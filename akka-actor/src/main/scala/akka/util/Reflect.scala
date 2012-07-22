@@ -2,6 +2,7 @@
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.util
+import scala.util.control.NonFatal
 
 /**
  * Collection of internal reflection utilities which may or may not be

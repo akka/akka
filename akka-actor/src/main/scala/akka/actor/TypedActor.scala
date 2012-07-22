@@ -7,7 +7,8 @@ import language.existentials
 
 import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
-import akka.util.{ Timeout, NonFatal }
+import akka.util.Timeout
+import scala.util.control.NonFatal
 import scala.concurrent.util.Duration
 import scala.concurrent.{ Await, Future }
 import akka.util.Reflect.instantiator

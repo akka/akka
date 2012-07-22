@@ -16,7 +16,7 @@ import scala.concurrent.Future
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 
 object TestkitDocSpec {
   case object Say42

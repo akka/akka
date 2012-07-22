@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import akka.event.Logging
 import java.util.concurrent.TimeUnit
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 
 private[zeromq] object ConcurrentSocketActor {
   private sealed trait PollMsg

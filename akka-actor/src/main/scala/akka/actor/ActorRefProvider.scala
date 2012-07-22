@@ -7,7 +7,8 @@ package akka.actor
 import akka.dispatch._
 import akka.routing._
 import akka.event._
-import akka.util.{ NonFatal, Switch, Helpers }
+import akka.util.{ Switch, Helpers }
+import scala.util.control.NonFatal
 import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.atomic.AtomicLong
 

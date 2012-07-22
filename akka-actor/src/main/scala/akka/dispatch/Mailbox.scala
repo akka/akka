@@ -3,16 +3,16 @@
  */
 package akka.dispatch
 
-import akka.AkkaException
 import java.util.{ Comparator, PriorityQueue, Queue, Deque }
-import scala.concurrent.util.Duration
-import akka.actor.{ ActorCell, ActorRef, Cell }
-import akka.util.{ Unsafe, NonFatal, BoundedBlockingQueue }
 import java.util.concurrent._
-import annotation.tailrec
+import akka.AkkaException
+import akka.actor.{ ActorCell, ActorRef, Cell, ActorSystem, InternalActorRef, DeadLetter }
+import akka.util.{ Unsafe, BoundedBlockingQueue }
 import akka.event.Logging.Error
+import scala.concurrent.util.Duration
+import scala.annotation.tailrec
+import scala.util.control.NonFatal
 import com.typesafe.config.Config
-import akka.actor._
 
 /**
  * INTERNAL API

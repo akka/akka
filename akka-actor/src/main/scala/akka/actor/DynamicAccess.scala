@@ -3,7 +3,7 @@
  */
 package akka.actor
 
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 import java.lang.reflect.InvocationTargetException
 import scala.reflect.ClassTag
 

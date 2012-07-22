@@ -11,13 +11,13 @@ import java.util.LinkedList
 import scala.annotation.tailrec
 import com.typesafe.config.Config
 import akka.actor.{ ActorInitializationException, ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorRef, ActorCell }
-import akka.dispatch.{ MailboxType, TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
+import akka.dispatch.{ MessageQueue, MailboxType, TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
 import scala.concurrent.util.duration.intToDurationInt
-import akka.util.{ Switch, NonFatal }
+import akka.util.Switch
 import scala.concurrent.util.Duration
 import scala.concurrent.Awaitable
 import akka.actor.ActorContext
-import akka.dispatch.MessageQueue
+import scala.util.control.NonFatal
 
 /*
  * Locking rules:

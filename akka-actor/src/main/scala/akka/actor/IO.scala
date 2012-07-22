@@ -8,7 +8,8 @@ import language.postfixOps
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.util.Duration
-import akka.util.{ ByteString, NonFatal }
+import scala.util.control.NonFatal
+import akka.util.ByteString
 import java.net.{ SocketAddress, InetSocketAddress }
 import java.io.IOException
 import java.nio.ByteBuffer

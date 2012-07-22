@@ -10,7 +10,7 @@ import com.typesafe.config.Config
 import akka.actor.{ Extension, ExtendedActorSystem, Address, DynamicAccess }
 import akka.event.Logging
 import java.util.concurrent.ConcurrentHashMap
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
 

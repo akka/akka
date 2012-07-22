@@ -9,7 +9,7 @@ import akka.event.Logging
 import com.typesafe.config.Config
 import akka.ConfigurationException
 import akka.dispatch._
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 import akka.pattern.{ CircuitBreakerOpenException, CircuitBreaker }
 import scala.concurrent.util.Duration
 

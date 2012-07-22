@@ -17,9 +17,10 @@ import akka.pattern._
 import scala.reflect.BeanProperty
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
+import scala.util.control.NonFatal
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import akka.camel.internal.CamelExchangeAdapter
-import akka.util.{ NonFatal, Timeout }
+import akka.util.Timeout
 import akka.camel.{ ActorNotRegisteredException, ConsumerConfig, Camel, Ack, FailureResult, CamelMessage }
 
 /**

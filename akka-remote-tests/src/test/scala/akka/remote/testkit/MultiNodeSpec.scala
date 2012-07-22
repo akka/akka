@@ -8,13 +8,14 @@ import language.implicitConversions
 import java.net.InetSocketAddress
 import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
 import akka.actor.{ RootActorPath, ActorPath, ActorSystem, ExtendedActorSystem }
-import scala.concurrent.{ Await, Awaitable }
-import akka.util.{ Timeout, NonFatal }
+import akka.util.Timeout
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
+import akka.remote.RemoteActorRefProvider
 import akka.testkit.AkkaSpec
+import scala.concurrent.{ Await, Awaitable }
+import scala.util.control.NonFatal
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
-import akka.remote.RemoteActorRefProvider
 
 /**
  * Configure the role names and participants of the test, including configuration settings.

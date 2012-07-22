@@ -7,15 +7,15 @@ package akka.dispatch
 import java.util.concurrent._
 import akka.event.Logging.{ Error, LogEventException }
 import akka.actor._
-import scala.annotation.tailrec
 import akka.event.EventStream
 import com.typesafe.config.Config
 import akka.serialization.SerializationExtension
+import akka.util.{ Unsafe, Index }
+import scala.annotation.tailrec
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
-import akka.util.{ Unsafe, NonFatal, Index }
 import scala.concurrent.util.Duration
-import scala.concurrent.ExecutionContext
-import scala.concurrent.{ Await, Awaitable }
+import scala.concurrent.{ ExecutionContext, Await, Awaitable }
+import scala.util.control.NonFatal
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
