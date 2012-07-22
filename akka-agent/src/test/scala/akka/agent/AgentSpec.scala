@@ -54,6 +54,7 @@ class AgentSpec extends AkkaSpec {
     }
 
     "maintain order between alter and alterOff" in {
+      import system.dispatcher
       val l1, l2 = new CountDownLatch(1)
       val agent = Agent("a")
 

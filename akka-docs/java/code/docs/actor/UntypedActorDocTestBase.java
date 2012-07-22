@@ -251,7 +251,7 @@ public class UntypedActorDocTestBase {
       }
     }, system.dispatcher());
 
-    pipe(transformed).to(actorC);
+    pipe(transformed, system.dispatcher()).to(actorC);
     //#ask-pipe
     system.shutdown();
   }

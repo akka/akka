@@ -103,6 +103,7 @@ class Worker extends Actor with ActorLogging {
       counterService ! Increment(1)
 
       // Send current progress to the initial sender
+      import context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
       counterService ? GetCurrentCount map {
         case CurrentCount(_, count) ⇒ Progress(100.0 * count / totalCount)
       } pipeTo progressListener.get

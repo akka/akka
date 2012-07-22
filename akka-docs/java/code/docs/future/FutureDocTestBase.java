@@ -86,10 +86,10 @@ public class FutureDocTestBase {
       ExecutorService yourExecutorServiceGoesHere = Executors.newSingleThreadExecutor();
       //#diy-execution-context
       ExecutionContext ec =
-        ExecutionContext$.MODULE$.fromExecutorService(yourExecutorServiceGoesHere, (scala.Function1<java.lang.Throwable,scala.runtime.BoxedUnit>)(ExecutionContext$.MODULE$.fromExecutorService$default$2()));
+        ExecutionContext$.MODULE$.fromExecutorService(yourExecutorServiceGoesHere);
 
       //Use ec with your Futures
-      Future<String> f1 = Futures.successful("foo", ec);
+      Future<String> f1 = Futures.successful("foo");
 
       // Then you shut the ExecutorService down somewhere at the end of your program/application.
       yourExecutorServiceGoesHere.shutdown();
@@ -219,8 +219,8 @@ public class FutureDocTestBase {
   @Test
   public void useSequence() throws Exception {
     List<Future<Integer>> source = new ArrayList<Future<Integer>>();
-    source.add(Futures.successful(1, system.dispatcher()));
-    source.add(Futures.successful(2, system.dispatcher()));
+    source.add(Futures.successful(1));
+    source.add(Futures.successful(2));
 
     //#sequence
     final ExecutionContext ec = system.dispatcher();
@@ -271,8 +271,8 @@ public class FutureDocTestBase {
   @Test
   public void useFold() throws Exception {
     List<Future<String>> source = new ArrayList<Future<String>>();
-    source.add(Futures.successful("a", system.dispatcher()));
-    source.add(Futures.successful("b", system.dispatcher()));
+    source.add(Futures.successful("a"));
+    source.add(Futures.successful("b"));
     //#fold
 
     final ExecutionContext ec = system.dispatcher();
@@ -295,8 +295,8 @@ public class FutureDocTestBase {
   @Test
   public void useReduce() throws Exception {
     List<Future<String>> source = new ArrayList<Future<String>>();
-    source.add(Futures.successful("a", system.dispatcher()));
-    source.add(Futures.successful("b", system.dispatcher()));
+    source.add(Futures.successful("a"));
+    source.add(Futures.successful("b"));
     //#reduce
 
     final ExecutionContext ec = system.dispatcher();
@@ -319,10 +319,10 @@ public class FutureDocTestBase {
   public void useSuccessfulAndFailed() throws Exception {
     final ExecutionContext ec = system.dispatcher();
     //#successful
-    Future<String> future = Futures.successful("Yay!", ec);
+    Future<String> future = Futures.successful("Yay!");
     //#successful
     //#failed
-    Future<String> otherFuture = Futures.failed(new IllegalArgumentException("Bang!"), ec);
+    Future<String> otherFuture = Futures.failed(new IllegalArgumentException("Bang!"));
     //#failed
     Object result = Await.result(future, Duration.create(1, SECONDS));
     assertEquals("Yay!", result);
@@ -334,7 +334,7 @@ public class FutureDocTestBase {
   public void useFilter() throws Exception {
     //#filter
     final ExecutionContext ec = system.dispatcher();
-    Future<Integer> future1 = Futures.successful(4, ec);
+    Future<Integer> future1 = Futures.successful(4);
     Future<Integer> successfulFilter = future1.filter(Filter.filterOf(new Function<Integer, Boolean>() {
       public Boolean apply(Integer i) {
         return i % 2 == 0;
@@ -362,7 +362,7 @@ public class FutureDocTestBase {
   public void useAndThen() {
     //#and-then
     final ExecutionContext ec = system.dispatcher();
-    Future<String> future1 = Futures.successful("value", ec).andThen(new OnComplete<String>() {
+    Future<String> future1 = Futures.successful("value").andThen(new OnComplete<String>() {
         public void onComplete(Throwable failure, String result) {
             if (failure != null)
                 sendToIssueTracker(failure);
@@ -427,7 +427,7 @@ public class FutureDocTestBase {
   @Test
   public void useOnSuccessOnFailureAndOnComplete() throws Exception {
     {
-      Future<String> future = Futures.successful("foo", system.dispatcher());
+      Future<String> future = Futures.successful("foo");
 
       //#onSuccess
       final ExecutionContext ec = system.dispatcher();
@@ -444,7 +444,7 @@ public class FutureDocTestBase {
       //#onSuccess
     }
     {
-      Future<String> future = Futures.failed(new IllegalStateException("OHNOES"), system.dispatcher());
+      Future<String> future = Futures.failed(new IllegalStateException("OHNOES"));
       //#onFailure
       final ExecutionContext ec = system.dispatcher();
 
@@ -460,7 +460,7 @@ public class FutureDocTestBase {
       //#onFailure
     }
     {
-      Future<String> future = Futures.successful("foo", system.dispatcher());
+      Future<String> future = Futures.successful("foo");
       //#onComplete
       final ExecutionContext ec = system.dispatcher();
 
@@ -482,8 +482,8 @@ public class FutureDocTestBase {
     {
       //#zip
       final ExecutionContext ec = system.dispatcher();
-      Future<String> future1 = Futures.successful("foo", ec);
-      Future<String> future2 = Futures.successful("bar", ec);
+      Future<String> future1 = Futures.successful("foo");
+      Future<String> future2 = Futures.successful("bar");
       Future<String> future3 = future1.zip(future2).map(new Mapper<scala.Tuple2<String, String>, String>() {
         public String apply(scala.Tuple2<String, String> zipped) {
           return zipped._1() + " " + zipped._2();
@@ -497,10 +497,9 @@ public class FutureDocTestBase {
 
     {
       //#fallback-to
-      final ExecutionContext ec = system.dispatcher();
-      Future<String> future1 = Futures.failed(new IllegalStateException("OHNOES1"), ec);
-      Future<String> future2 = Futures.failed(new IllegalStateException("OHNOES2"), ec);
-      Future<String> future3 = Futures.successful("bar", ec);
+      Future<String> future1 = Futures.failed(new IllegalStateException("OHNOES1"));
+      Future<String> future2 = Futures.failed(new IllegalStateException("OHNOES2"));
+      Future<String> future3 = Futures.successful("bar");
       Future<String> future4 = future1.fallbackTo(future2).fallbackTo(future3); // Will have "bar" in this case
       String result = Await.result(future4, Duration.create(1, SECONDS));
       assertEquals("bar", result);

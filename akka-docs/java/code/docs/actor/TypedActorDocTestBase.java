@@ -56,7 +56,7 @@ public class TypedActorDocTestBase {
       }
 
       public Future<Integer> square(int i) {
-          return Futures.successful(i * i, TypedActor.dispatcher());
+          return Futures.successful(i * i);
       }
 
       public Option<Integer> squareNowPlease(int i) {

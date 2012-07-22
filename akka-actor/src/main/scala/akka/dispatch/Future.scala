@@ -5,11 +5,63 @@
 package akka.dispatch
 
 import scala.runtime.{ BoxedUnit, AbstractPartialFunction }
-import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption }
-import scala.concurrent.{ Future, Promise, ExecutionContext }
+import akka.japi.{ Function ⇒ JFunc, Option ⇒ JOption, Procedure }
+import scala.concurrent.{ Future, Promise, ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService }
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
-import java.util.concurrent.{ ExecutionException, Callable, TimeoutException }
+import java.util.concurrent.{ Executor, ExecutorService, ExecutionException, Callable, TimeoutException }
+
+/**
+ * ExecutionContexts is the Java API for ExecutionContexts
+ */
+object ExecutionContexts {
+  /**
+   * Returns a new ExecutionContextExecutor which will delegate execution to the underlying Executor,
+   * and which will use the default error reporter.
+   *
+   * @param executor the Executor which will be used for the ExecutionContext
+   * @return a new ExecutionContext
+   */
+  def fromExecutor(executor: Executor): ExecutionContextExecutor =
+    ExecutionContext.fromExecutor(executor)
+
+  /**
+   * Returns a new ExecutionContextExecutor which will delegate execution to the underlying Executor,
+   * and which will use the provided error reporter.
+   *
+   * @param executor the Executor which will be used for the ExecutionContext
+   * @param errorReporter a Procedure that will log any exceptions passed to it
+   * @return a new ExecutionContext
+   */
+  def fromExecutor(executor: Executor, errorReporter: Procedure[Throwable]): ExecutionContextExecutor =
+    ExecutionContext.fromExecutor(executor, errorReporter.apply)
+
+  /**
+   * Returns a new ExecutionContextExecutorService which will delegate execution to the underlying ExecutorService,
+   * and which will use the default error reporter.
+   *
+   * @param executor the ExecutorService which will be used for the ExecutionContext
+   * @return a new ExecutionContext
+   */
+  def fromExecutorService(executorService: ExecutorService): ExecutionContextExecutorService =
+    ExecutionContext.fromExecutorService(executorService)
+
+  /**
+   * Returns a new ExecutionContextExecutorService which will delegate execution to the underlying ExecutorService,
+   * and which will use the provided error reporter.
+   *
+   * @param executor the ExecutorService which will be used for the ExecutionContext
+   * @param errorReporter a Procedure that will log any exceptions passed to it
+   * @return a new ExecutionContext
+   */
+  def fromExecutorService(executorService: ExecutorService, errorReporter: Procedure[Throwable]): ExecutionContextExecutorService =
+    ExecutionContext.fromExecutorService(executorService, errorReporter.apply)
+
+  /**
+   * @return a reference to the global ExecutionContext
+   */
+  def global(): ExecutionContext = ExecutionContext.global
+}
 
 /**
  * Futures is the Java API for Futures and Promises

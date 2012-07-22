@@ -330,6 +330,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
   }
 
   def prepareMocks(actor: ActorRef, message: CamelMessage = message, outCapable: Boolean) {
+    when(camel.system) thenReturn system
     when(actorEndpointPath.findActorIn(any[ActorSystem])) thenReturn Option(actor)
     when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
     when(exchange.isOutCapable) thenReturn outCapable

@@ -37,7 +37,7 @@ object FutureDocSpec {
 
 class FutureDocSpec extends AkkaSpec {
   import FutureDocSpec._
-
+  import system.dispatcher
   "demonstrate usage custom ExecutionContext" in {
     val yourExecutorServiceGoesHere = java.util.concurrent.Executors.newSingleThreadExecutor()
     //#diy-execution-context
@@ -150,7 +150,7 @@ class FutureDocSpec extends AkkaSpec {
     result must be(4)
 
     val failedFilter = future1.filter(_ % 2 == 1).recover {
-      case m: MatchError ⇒ 0 //When filter fails, it will have a MatchError
+      case m: NoSuchElementException ⇒ 0 //When filter fails, it will have a java.util.NoSuchElementException
     }
     val result2 = Await.result(failedFilter, 1 second)
     result2 must be(0) //Can only be 0 when there was a MatchError

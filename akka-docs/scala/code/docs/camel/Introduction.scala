@@ -3,6 +3,8 @@ package docs.camel
 import akka.actor.{ Props, ActorSystem }
 import akka.camel.CamelExtension
 
+import language.postfixOps
+
 object Introduction {
   def foo = {
     //#Consumer-mina
@@ -75,7 +77,7 @@ object Introduction {
   {
     //#CamelActivation
     import akka.camel.{ CamelMessage, Consumer }
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
 
     class MyEndpoint extends Consumer {
       def endpointUri = "mina:tcp://localhost:6200?textline=true"

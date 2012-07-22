@@ -1,7 +1,13 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package docs.camel
 
 import akka.camel.CamelMessage
 import akka.actor.Status.Failure
+
+import language.existentials
 
 object CustomRoute {
   {

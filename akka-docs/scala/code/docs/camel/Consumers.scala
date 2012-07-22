@@ -1,4 +1,10 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package docs.camel
+
+import language.postfixOps
 
 object Consumers {
   def foo = {
@@ -53,7 +59,7 @@ object Consumers {
   {
     //#Consumer4
     import akka.camel.{ CamelMessage, Consumer }
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
 
     class Consumer4 extends Consumer {
       def endpointUri = "jetty:http://localhost:8877/camel/default"

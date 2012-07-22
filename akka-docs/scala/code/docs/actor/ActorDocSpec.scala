@@ -363,7 +363,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val actorA, actorB, actorC, actorD = system.actorOf(Props.empty)
     //#ask-pipeTo
     import akka.pattern.{ ask, pipe }
-
+    import system.dispatcher // The ExecutionContext that will be used
     case class Result(x: Int, s: String, d: Double)
     case object Request
 

@@ -1,6 +1,7 @@
 package docs.camel
 
 import akka.camel.CamelExtension
+import language.postfixOps
 
 object Producers {
   {
@@ -16,7 +17,7 @@ object Producers {
     //#Producer1
     //#AskProducer
     import akka.pattern.ask
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
     implicit val timeout = Timeout(10 seconds)
 
     val system = ActorSystem("some-system")
