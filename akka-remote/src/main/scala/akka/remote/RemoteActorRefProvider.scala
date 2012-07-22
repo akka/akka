@@ -236,7 +236,7 @@ private[akka] class RemoteActorRef private[akka] (
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 
-  def resume(): Unit = sendSystemMessage(Resume())
+  def resume(inResponseToFailure: Boolean): Unit = sendSystemMessage(Resume(inResponseToFailure))
 
   def stop(): Unit = sendSystemMessage(Terminate())
 

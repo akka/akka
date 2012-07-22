@@ -191,7 +191,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   /*
    * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).
    */
-  def resume(): Unit
+  def resume(inResponseToFailure: Boolean): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
   def stop(): Unit
@@ -262,10 +262,7 @@ private[akka] class LocalActorRef private[akka] (
    * that is reached).
    */
   private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
-  actorCell.start()
-
-  // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  _supervisor.sendSystemMessage(akka.dispatch.Supervise(this))
+  actorCell.start(sendSupervise = true)
 
   protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor)
@@ -291,7 +288,7 @@ private[akka] class LocalActorRef private[akka] (
   /**
    * Resumes a suspended actor.
    */
-  override def resume(): Unit = actorCell.resume()
+  override def resume(inResponseToFailure: Boolean): Unit = actorCell.resume(inResponseToFailure)
 
   /**
    * Shuts down the actor and its message queue
@@ -307,7 +304,7 @@ private[akka] class LocalActorRef private[akka] (
    * to inject “synthetic” actor paths like “/temp”.
    */
   protected def getSingleChild(name: String): InternalActorRef =
-    actorCell.childrenRefs.getByName(name) match {
+    actorCell.getChildByName(name) match {
       case Some(crs) ⇒ crs.child.asInstanceOf[InternalActorRef]
       case None      ⇒ Nobody
     }
@@ -391,7 +388,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override def getChild(names: Iterator[String]): InternalActorRef = if (names.forall(_.isEmpty)) this else Nobody
 
   override def suspend(): Unit = ()
-  override def resume(): Unit = ()
+  override def resume(inResponseToFailure: Boolean): Unit = ()
   override def stop(): Unit = ()
   override def isTerminated = false
 

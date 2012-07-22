@@ -17,6 +17,7 @@ import java.util.concurrent.TimeoutException
 import akka.dispatch.{ Await, MessageDispatcher }
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
+import akka.actor.ActorSystemImpl
 
 object TimingTest extends Tag("timing")
 object LongRunningTest extends Tag("long-running")
@@ -78,7 +79,9 @@ abstract class AkkaSpec(_system: ActorSystem)
     beforeShutdown()
     system.shutdown()
     try system.awaitTermination(5 seconds) catch {
-      case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
+      case _: TimeoutException ⇒
+        system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
+        println(system.asInstanceOf[ActorSystemImpl].printTree)
     }
     atTermination()
   }
