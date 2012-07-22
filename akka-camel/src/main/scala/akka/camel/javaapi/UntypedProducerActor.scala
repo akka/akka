@@ -47,7 +47,7 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
   /**
    * Default implementation of UntypedActor.onReceive
    */
-  def onReceive(message: Any): Unit = produce(message)
+  final def onReceive(message: Any): Unit = produce(message)
 
   /**
    * Returns the Camel endpoint URI to produce messages to.

@@ -125,10 +125,10 @@ trait ProducerSupport extends CamelSupport { this: Actor ⇒
 trait Producer extends ProducerSupport { this: Actor ⇒
 
   /**
-   * Default implementation of Actor.receive. Any messages received by this actors
+   * Implementation of Actor.receive. Any messages received by this actor
    * will be produced to the endpoint specified by <code>endpointUri</code>.
    */
-  def receive: Actor.Receive = produce
+  final def receive: Actor.Receive = produce
 }
 
 /**
