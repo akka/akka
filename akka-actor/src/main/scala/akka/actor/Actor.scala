@@ -137,7 +137,7 @@ class ActorInitializationException private[akka] (val actor: ActorRef, message: 
  * @param msg is the message which was optionally passed into preRestart()
  */
 class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, val origCause: Throwable, val msg: Option[Any])
-  extends ActorInitializationException(actor, "exception in preRestart(" + origCause.getClass + ", " + msg.getClass + ")", cause) {
+  extends ActorInitializationException(actor, "exception in preRestart(" + origCause.getClass + ", " + msg.map(_.getClass) + ")", cause) {
 }
 
 /**
