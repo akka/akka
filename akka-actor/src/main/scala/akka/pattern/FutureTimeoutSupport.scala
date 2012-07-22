@@ -7,6 +7,7 @@ package akka.pattern
 import scala.concurrent.util.Duration
 import scala.concurrent.{ ExecutionContext, Promise, Future }
 import akka.actor._
+import akka.util.NonFatal
 
 trait FutureTimeoutSupport {
   /**
@@ -16,7 +17,9 @@ trait FutureTimeoutSupport {
   def after[T](duration: Duration, using: Scheduler)(value: ⇒ Future[T])(implicit ec: ExecutionContext): Future[T] =
     if (duration.isFinite() && duration.length < 1) value else {
       val p = Promise[T]()
-      val c = using.scheduleOnce(duration) { p completeWith value }
+      val c = using.scheduleOnce(duration) {
+        p completeWith { try value catch { case NonFatal(t) ⇒ Future.failed(t) } }
+      }
       val f = p.future
       f onComplete { _ ⇒ c.cancel() }
       f
