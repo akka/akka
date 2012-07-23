@@ -75,18 +75,17 @@ trait AskSupport {
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef match {
     case ref: InternalActorRef if ref.isTerminated ⇒
       actorRef.tell(message)
-      Promise.failed[Any](new AskTimeoutException("sending to terminated ref breaks promises")).future
+      Future.failed[Any](new AskTimeoutException("Recipient[%s] had already been terminated." format actorRef))
     case ref: InternalActorRef ⇒
-      val provider = ref.provider
-      if (timeout.duration.length <= 0) {
-        actorRef.tell(message)
-        Promise.failed[Any](new AskTimeoutException("not asking with negative timeout")).future
-      } else {
+      if (!timeout.duration.isFinite) Future.failed[Any](new IllegalArgumentException("Timeouts to `ask` must be finite. Question not sent to [%s]" format actorRef))
+      else if (timeout.duration.length <= 0) Future.failed[Any](new IllegalArgumentException("Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format actorRef))
+      else {
+        val provider = ref.provider
         val a = PromiseActorRef(provider, timeout)
         actorRef.tell(message, a)
         a.result.future
       }
-    case _ ⇒ throw new IllegalArgumentException("incompatible ActorRef " + actorRef)
+    case _ ⇒ Future.failed[Any](new IllegalArgumentException("Unsupported type of ActorRef for the recipient. Question not sent to [%s]" format actorRef))
   }
 
   /**
