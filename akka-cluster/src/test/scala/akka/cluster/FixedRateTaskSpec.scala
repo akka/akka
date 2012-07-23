@@ -5,10 +5,10 @@
 package akka.cluster
 
 import akka.testkit.AkkaSpec
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.testkit.TimingTest
 import akka.testkit.TestLatch
-import akka.dispatch.Await
+import scala.concurrent.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FixedRateTaskSpec extends AkkaSpec {
@@ -31,7 +31,7 @@ class FixedRateTaskSpec extends AkkaSpec {
       val n = 22
       val latch = new TestLatch(n)
       FixedRateTask(system.scheduler, 225.millis, 225.millis) {
-        80.millis.sleep()
+        Thread.sleep(80)
         latch.countDown()
       }
       Await.ready(latch, 6.seconds)

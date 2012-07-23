@@ -4,6 +4,8 @@
 
 package akka
 
+import language.implicitConversions
+
 import org.apache.camel.model.ProcessorDefinition
 
 package object camel {

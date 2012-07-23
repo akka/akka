@@ -3,18 +3,21 @@
  */
 package akka.testkit
 
+import language.postfixOps
+
 import java.lang.ref.WeakReference
 import java.util.concurrent.locks.ReentrantLock
 import java.util.LinkedList
 import scala.annotation.tailrec
 import com.typesafe.config.Config
 import akka.actor.{ ActorInitializationException, ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorRef, ActorCell }
-import akka.dispatch.{ MailboxType, TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
-import akka.util.duration.intToDurationInt
-import akka.util.{ Switch, Duration }
-import akka.util.NonFatal
+import akka.dispatch.{ MessageQueue, MailboxType, TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
+import scala.concurrent.util.duration.intToDurationInt
+import akka.util.Switch
+import scala.concurrent.util.Duration
+import scala.concurrent.Awaitable
 import akka.actor.ActorContext
-import akka.dispatch.MessageQueue
+import scala.util.control.NonFatal
 
 /*
  * Locking rules:
@@ -74,7 +77,7 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
     if (queues contains mbox) {
       for {
         ref ← queues(mbox)
-        val q = ref.get
+        q = ref.get
         if (q ne null) && (q ne own)
       } {
         val owner = mbox.actor.self
@@ -151,7 +154,7 @@ class CallingThreadDispatcher(
 
   override def suspend(actor: ActorCell) {
     actor.mailbox match {
-      case m: CallingThreadMailbox ⇒ m.suspendSwitch.switchOn
+      case m: CallingThreadMailbox ⇒ m.suspendSwitch.switchOn; m.suspend()
       case m                       ⇒ m.systemEnqueue(actor.self, Suspend())
     }
   }
@@ -163,11 +166,12 @@ class CallingThreadDispatcher(
         val wasActive = queue.isActive
         val switched = mbox.suspendSwitch.switchOff {
           CallingThreadDispatcherQueues(actor.system).gatherFromAllOtherQueues(mbox, queue)
+          mbox.resume()
         }
         if (switched && !wasActive) {
           runQueue(mbox, queue)
         }
-      case m ⇒ m.systemEnqueue(actor.self, Resume())
+      case m ⇒ m.systemEnqueue(actor.self, Resume(false))
     }
   }
 

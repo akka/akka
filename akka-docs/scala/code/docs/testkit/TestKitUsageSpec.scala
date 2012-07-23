@@ -3,6 +3,8 @@
  */
 package docs.testkit
 
+import language.postfixOps
+
 //#testkit-usage
 import scala.util.Random
 
@@ -19,7 +21,7 @@ import akka.actor.Props
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
 import akka.testkit.TestKit
-import akka.util.duration._
+import scala.concurrent.util.duration._
 
 /**
  * a Test to show some TestKit examples

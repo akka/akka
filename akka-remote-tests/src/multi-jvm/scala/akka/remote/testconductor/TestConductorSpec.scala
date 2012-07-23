@@ -6,10 +6,10 @@ package akka.remote.testconductor
 import com.typesafe.config.ConfigFactory
 import akka.actor.Props
 import akka.actor.Actor
-import akka.dispatch.Await
-import akka.dispatch.Await.Awaitable
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.Await
+import scala.concurrent.Await.Awaitable
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 import akka.testkit.ImplicitSender
 import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress

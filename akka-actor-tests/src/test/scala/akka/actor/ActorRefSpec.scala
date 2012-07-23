@@ -4,15 +4,17 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
 import akka.testkit._
 import akka.util.Timeout
-import akka.util.duration._
+import scala.concurrent.util.duration._
+import scala.concurrent.Await
 import java.lang.IllegalStateException
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import akka.dispatch.{ Await, DefaultPromise, Promise, Future }
+import scala.concurrent.Promise
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
 
@@ -52,7 +54,7 @@ object ActorRefSpec {
     }
 
     private def work {
-      1.second.dilated.sleep
+      Thread.sleep(1.second.dilated.toMillis)
     }
   }
 
@@ -121,7 +123,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
     to.success(r)
     r
   } catch {
-    case e ⇒
+    case e: Throwable ⇒
       to.failure(e)
       throw e
   }
@@ -129,7 +131,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
   def wrap[T](f: Promise[Actor] ⇒ T): T = {
     val result = Promise[Actor]()
     val r = f(result)
-    Await.result(result, 1 minute)
+    Await.result(result.future, 1 minute)
     r
   }
 

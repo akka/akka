@@ -25,9 +25,9 @@ class Switch(startAsOn: Boolean = false) {
   protected def transcend(from: Boolean, action: ⇒ Unit): Boolean = synchronized {
     if (switch.compareAndSet(from, !from)) {
       try action catch {
-        case e ⇒
+        case t: Throwable ⇒
           switch.compareAndSet(!from, from) // revert status
-          throw e
+          throw t
       }
       true
     } else false

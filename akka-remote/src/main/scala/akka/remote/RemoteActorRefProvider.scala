@@ -6,10 +6,9 @@ package akka.remote
 
 import akka.actor._
 import akka.dispatch._
-import akka.event.{ Logging, LoggingAdapter }
-import akka.event.EventStream
-import akka.serialization.Serialization
-import akka.serialization.SerializationExtension
+import akka.event.{ Logging, LoggingAdapter, EventStream }
+import akka.serialization.{ Serialization, SerializationExtension }
+import scala.concurrent.Future
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -38,7 +37,7 @@ private[akka] class RemoteActorRefProvider(
   override def rootGuardian: InternalActorRef = local.rootGuardian
   override def guardian: LocalActorRef = local.guardian
   override def systemGuardian: LocalActorRef = local.systemGuardian
-  override def terminationFuture: Promise[Unit] = local.terminationFuture
+  override def terminationFuture: Future[Unit] = local.terminationFuture
   override def dispatcher: MessageDispatcher = local.dispatcher
   override def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = local.registerTempActor(actorRef, path)
   override def unregisterTempActor(path: ActorPath): Unit = local.unregisterTempActor(path)
@@ -92,7 +91,7 @@ private[akka] class RemoteActorRefProvider(
 
     system.eventStream.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
 
-    terminationFuture.onComplete(_ ⇒ transport.shutdown())
+    system.registerOnTermination(transport.shutdown())
   }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,
@@ -236,7 +235,7 @@ private[akka] class RemoteActorRef private[akka] (
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 
-  def resume(): Unit = sendSystemMessage(Resume())
+  def resume(inResponseToFailure: Boolean): Unit = sendSystemMessage(Resume(inResponseToFailure))
 
   def stop(): Unit = sendSystemMessage(Terminate())
 

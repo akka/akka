@@ -3,12 +3,14 @@
  */
 package docs.actor
 
+import language.postfixOps
+
 //#all
 //#imports
 import akka.actor._
 import akka.actor.SupervisorStrategy._
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 import akka.util.Timeout
 import akka.event.LoggingReceive
 import akka.pattern.{ ask, pipe }
@@ -101,6 +103,7 @@ class Worker extends Actor with ActorLogging {
       counterService ! Increment(1)
 
       // Send current progress to the initial sender
+      import context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
       counterService ? GetCurrentCount map {
         case CurrentCount(_, count) ⇒ Progress(100.0 * count / totalCount)
       } pipeTo progressListener.get

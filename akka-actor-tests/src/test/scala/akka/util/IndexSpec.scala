@@ -4,13 +4,14 @@
 package akka.util
 
 import org.scalatest.matchers.MustMatchers
-import akka.dispatch.{ Future, Await }
+import scala.concurrent.Future
 import akka.testkit.AkkaSpec
+import scala.concurrent.Await
 import scala.util.Random
 import akka.testkit.DefaultTimeout
 
 class IndexSpec extends AkkaSpec with MustMatchers with DefaultTimeout {
-
+  implicit val ec = system.dispatcher
   private def emptyIndex = new Index[String, Int](100, _ compareTo _)
 
   private def indexWithValues = {

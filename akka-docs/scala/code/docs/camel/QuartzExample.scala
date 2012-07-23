@@ -1,34 +1,30 @@
 package docs.camel
 
 object QuartzExample {
+  //#Quartz
+  import akka.actor.{ ActorSystem, Props }
 
-  {
-    //#Quartz
-    import akka.actor.{ ActorSystem, Props }
+  import akka.camel.{ Consumer }
 
-    import akka.camel.{ Consumer }
+  class MyQuartzActor extends Consumer {
 
-    class MyQuartzActor extends Consumer {
+    def endpointUri = "quartz://example?cron=0/2+*+*+*+*+?"
 
-      def endpointUri = "quartz://example?cron=0/2+*+*+*+*+?"
+    def receive = {
 
-      def receive = {
+      case msg ⇒ println("==============> received %s " format msg)
 
-        case msg ⇒ println("==============> received %s " format msg)
+    } // end receive
 
-      } // end receive
+  } // end MyQuartzActor
 
-    } // end MyQuartzActor
+  object MyQuartzActor {
 
-    object MyQuartzActor {
+    def main(str: Array[String]) {
+      val system = ActorSystem("my-quartz-system")
+      system.actorOf(Props[MyQuartzActor])
+    } // end main
 
-      def main(str: Array[String]) {
-        val system = ActorSystem("my-quartz-system")
-        system.actorOf(Props[MyQuartzActor])
-      } // end main
-
-    } // end MyQuartzActor
-    //#Quartz
-  }
-
+  } // end MyQuartzActor
+  //#Quartz
 }

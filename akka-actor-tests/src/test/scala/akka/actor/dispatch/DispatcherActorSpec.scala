@@ -1,13 +1,16 @@
 package akka.actor.dispatch
 
+import language.postfixOps
+
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.{ filterEvents, EventFilter, AkkaSpec }
 import akka.actor.{ Props, Actor }
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.Await
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 import akka.testkit.DefaultTimeout
-import akka.dispatch.{ Await, PinnedDispatcher, Dispatchers, Dispatcher }
+import akka.dispatch.{ PinnedDispatcher, Dispatchers, Dispatcher }
 import akka.pattern.ask
 
 object DispatcherActorSpec {

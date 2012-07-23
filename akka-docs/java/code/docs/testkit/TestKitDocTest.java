@@ -19,14 +19,14 @@ import akka.actor.Kill;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
-import akka.dispatch.Await;
-import akka.dispatch.Future;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
 import akka.testkit.CallingThreadDispatcher;
 import akka.testkit.TestActor;
 import akka.testkit.TestActor.AutoPilot;
 import akka.testkit.TestActorRef;
 import akka.testkit.JavaTestKit;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 
 public class TestKitDocTest {
   

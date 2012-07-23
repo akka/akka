@@ -6,10 +6,12 @@ package docs.actor;
 //#imports
 
 import akka.actor.TypedActor;
-import akka.dispatch.*;
 import akka.actor.*;
 import akka.japi.*;
-import akka.util.Duration;
+import akka.dispatch.Futures;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.util.Duration;
 import java.util.concurrent.TimeUnit;
 
 //#imports
@@ -54,7 +56,7 @@ public class TypedActorDocTestBase {
       }
 
       public Future<Integer> square(int i) {
-          return Futures.successful(i * i, TypedActor.dispatcher());
+          return Futures.successful(i * i);
       }
 
       public Option<Integer> squareNowPlease(int i) {

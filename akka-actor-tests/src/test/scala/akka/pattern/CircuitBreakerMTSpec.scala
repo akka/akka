@@ -4,12 +4,11 @@
 package akka.pattern
 
 import akka.testkit._
-import akka.util.duration._
-import akka.dispatch.{ Promise, Await, Future }
-import akka.actor.ActorSystem
+import scala.concurrent.util.duration._
+import scala.concurrent.{ Promise, Future, Await }
 
 class CircuitBreakerMTSpec extends AkkaSpec {
-
+  implicit val ec = system.dispatcher
   "A circuit breaker being called by many threads" must {
     val breaker = new CircuitBreaker(system.scheduler, 5, 100.millis.dilated, 500.millis.dilated)
 
@@ -33,7 +32,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       val futures = for (i ← 1 to 100) yield breaker.withCircuitBreaker(Future {
         Thread.sleep(10); "success"
       }) recoverWith {
-        case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO")
+        case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO").future
       }
 
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
@@ -53,7 +52,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       val futures = for (i ← 1 to 100) yield breaker.withCircuitBreaker(Future {
         Thread.sleep(10); "succeed"
       }) recoverWith {
-        case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO")
+        case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO").future
       }
 
       val result = Await.result(Future.sequence(futures), 5.second.dilated)
@@ -72,7 +71,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       val futures = (1 to 100) map {
         i ⇒
           breaker.withCircuitBreaker(Future { Thread.sleep(10); "succeed" }) recoverWith {
-            case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO")
+            case _: CircuitBreakerOpenException ⇒ Promise.successful("CBO").future
           }
       }
 

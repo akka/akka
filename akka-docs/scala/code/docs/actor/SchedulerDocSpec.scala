@@ -3,10 +3,12 @@
  */
 package docs.actor
 
+import language.postfixOps
+
 //#imports1
 import akka.actor.Actor
 import akka.actor.Props
-import akka.util.duration._
+import scala.concurrent.util.duration._
 
 //#imports1
 

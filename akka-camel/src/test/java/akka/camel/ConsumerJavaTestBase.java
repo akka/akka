@@ -7,7 +7,7 @@ package akka.camel;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.util.FiniteDuration;
+import scala.concurrent.util.FiniteDuration;
 import org.junit.AfterClass;
 import org.junit.Test;
 

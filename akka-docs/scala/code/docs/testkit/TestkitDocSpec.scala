@@ -3,18 +3,20 @@
  */
 package docs.testkit
 
+import language.postfixOps
+
 //#imports-test-probe
 import akka.testkit.TestProbe
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.actor._
-import akka.dispatch.Futures
+import scala.concurrent.Future
 
 //#imports-test-probe
 
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 
 object TestkitDocSpec {
   case object Say42
@@ -86,7 +88,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#test-fsm-ref
     import akka.testkit.TestFSMRef
     import akka.actor.FSM
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
 
     val fsm = TestFSMRef(new Actor with FSM[Int, String] {
       startWith(1, "")
@@ -119,8 +121,8 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
     //#test-behavior
     import akka.testkit.TestActorRef
-    import akka.util.duration._
-    import akka.dispatch.Await
+    import scala.concurrent.util.duration._
+    import scala.concurrent.Await
     import akka.pattern.ask
 
     val actorRef = TestActorRef(new MyActor)
@@ -160,7 +162,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     type Worker = MyActor
     //#test-within
     import akka.actor.Props
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
 
     val worker = system.actorOf(Props[Worker])
     within(200 millis) {
@@ -174,7 +176,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   "demonstrate dilated duration" in {
     //#duration-dilation
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
     import akka.testkit._
     10.milliseconds.dilated
     //#duration-dilation
@@ -207,7 +209,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   "demonstrate probe reply" in {
     import akka.testkit.TestProbe
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
     import akka.pattern.ask
     //#test-probe-reply
     val probe = TestProbe()

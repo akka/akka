@@ -1,10 +1,12 @@
 package akka.camel.internal
 
+import language.postfixOps
+
 import org.scalatest.matchers.MustMatchers
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
 import akka.actor.{ Props, ActorSystem }
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import akka.camel._
 import akka.testkit.{ TimingTest, TestProbe, TestKit }
 

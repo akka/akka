@@ -3,11 +3,15 @@
  */
 package akka.pattern
 
+import language.implicitConversions
+
 import java.util.concurrent.TimeoutException
-import annotation.tailrec
 import akka.actor._
 import akka.dispatch._
-import akka.util.{ NonFatal, Timeout, Unsafe }
+import scala.annotation.tailrec
+import scala.util.control.NonFatal
+import scala.concurrent.{ Future, Promise, ExecutionContext }
+import akka.util.{ Timeout, Unsafe }
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
@@ -41,7 +45,7 @@ trait AskSupport {
   implicit def ask(actorRef: ActorRef): AskableActorRef = new AskableActorRef(actorRef)
 
   /**
-   * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
+   * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
    * holding the eventual reply message; this means that the target actor
    * needs to send the result to the `sender` reference provided. The Future
    * will be completed with an [[akka.pattern.AskTimeoutException]] after the
@@ -66,23 +70,22 @@ trait AskSupport {
    *   } pipeTo nextActor
    * }}}
    *
-   * [see [[akka.dispatch.Future]] for a description of `flow`]
+   * [see [[scala.concurrent.Future]] for a description of `flow`]
    */
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef match {
     case ref: InternalActorRef if ref.isTerminated ⇒
       actorRef.tell(message)
-      Promise.failed(new AskTimeoutException("sending to terminated ref breaks promises"))(ref.provider.dispatcher)
+      Future.failed[Any](new AskTimeoutException("Recipient[%s] had already been terminated." format actorRef))
     case ref: InternalActorRef ⇒
-      val provider = ref.provider
-      if (timeout.duration.length <= 0) {
-        actorRef.tell(message)
-        Promise.failed(new AskTimeoutException("not asking with negative timeout"))(provider.dispatcher)
-      } else {
+      if (!timeout.duration.isFinite) Future.failed[Any](new IllegalArgumentException("Timeouts to `ask` must be finite. Question not sent to [%s]" format actorRef))
+      else if (timeout.duration.length <= 0) Future.failed[Any](new IllegalArgumentException("Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format actorRef))
+      else {
+        val provider = ref.provider
         val a = PromiseActorRef(provider, timeout)
         actorRef.tell(message, a)
-        a.result
+        a.result.future
       }
-    case _ ⇒ throw new IllegalArgumentException("incompatible ActorRef " + actorRef)
+    case _ ⇒ Future.failed[Any](new IllegalArgumentException("Unsupported type of ActorRef for the recipient. Question not sent to [%s]" format actorRef))
   }
 
   /**
@@ -91,7 +94,7 @@ trait AskSupport {
   private[akka] final class AskableActorRef(val actorRef: ActorRef) {
 
     /**
-     * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
+     * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
      * holding the eventual reply message; this means that the target actor
      * needs to send the result to the `sender` reference provided. The Future
      * will be completed with an [[akka.pattern.AskTimeoutException]] after the
@@ -116,12 +119,12 @@ trait AskSupport {
      *   } pipeTo nextActor
      * }}}
      *
-     * [see the [[akka.dispatch.Future]] companion object for a description of `flow`]
+     * [see the [[scala.concurrent.Future]] companion object for a description of `flow`]
      */
     def ask(message: Any)(implicit timeout: Timeout): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
 
     /**
-     * Sends a message asynchronously and returns a [[akka.dispatch.Future]]
+     * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
      * holding the eventual reply message; this means that the target actor
      * needs to send the result to the `sender` reference provided. The Future
      * will be completed with an [[akka.pattern.AskTimeoutException]] after the
@@ -146,7 +149,7 @@ trait AskSupport {
      *   } pipeTo nextActor
      * }}}
      *
-     * [see the [[akka.dispatch.Future]] companion object for a description of `flow`]
+     * [see the [[scala.concurrent.Future]] companion object for a description of `flow`]
      */
     def ?(message: Any)(implicit timeout: Timeout): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
   }
@@ -275,7 +278,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   @tailrec
   override def stop(): Unit = {
     def ensureCompleted(): Unit = {
-      if (!result.isCompleted) result.tryComplete(Left(new ActorKilledException("Stopped")))
+      result.tryComplete(Left(new ActorKilledException("Stopped")))
       val watchers = clearWatchers()
       if (!watchers.isEmpty) {
         val termination = Terminated(this)(existenceConfirmed = true)
@@ -302,10 +305,11 @@ private[akka] object PromiseActorRef {
   private case class StoppedWithPath(path: ActorPath)
 
   def apply(provider: ActorRefProvider, timeout: Timeout): PromiseActorRef = {
-    val result = Promise[Any]()(provider.dispatcher)
+    implicit val ec = provider.dispatcher // TODO should we take an ExecutionContext in the method signature?
+    val result = Promise[Any]()
     val a = new PromiseActorRef(provider, result)
     val f = provider.scheduler.scheduleOnce(timeout.duration) { result.tryComplete(Left(new AskTimeoutException("Timed out"))) }
-    result onComplete { _ ⇒ try a.stop() finally f.cancel() }
+    result.future onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a
   }
 }

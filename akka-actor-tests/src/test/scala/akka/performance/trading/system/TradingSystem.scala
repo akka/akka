@@ -1,5 +1,7 @@
 package akka.performance.trading.system
 
+import language.postfixOps
+
 import akka.performance.trading.domain.Orderbook
 import akka.performance.trading.domain.OrderbookRepository
 import akka.actor.Actor._
@@ -44,7 +46,7 @@ class AkkaTradingSystem(val system: ActorSystem) extends TradingSystem {
   def matchingEngineDispatcher: Option[String] = Some("benchmark.trading-dispatcher")
 
   override val orderbooksGroupedByMatchingEngine: List[List[Orderbook]] =
-    for (groupOfSymbols: List[String] ← OrderbookRepository.orderbookSymbolsGroupedByMatchingEngine)
+    for (groupOfSymbols ← OrderbookRepository.orderbookSymbolsGroupedByMatchingEngine)
       yield groupOfSymbols map (s ⇒ Orderbook(s, false, system))
 
   var matchingEngineForOrderbook: Map[String, ActorRef] = Map()

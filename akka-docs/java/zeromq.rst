@@ -21,7 +21,7 @@ Sockets are always created using the ``akka.zeromq.ZeroMQExtension``, for exampl
 
 .. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#pub-socket
 
-Above examples will create a ZeroMQ Publisher socket that is Bound to the port 1233 on localhost.
+Above examples will create a ZeroMQ Publisher socket that is Bound to the port 21231 on localhost.
 
 Similarly you can create a subscription socket, with a listener, that subscribes to all messages from the publisher using:
 

@@ -3,6 +3,8 @@
  */
 package akka.event
 
+import language.existentials
+
 import akka.actor.Actor.Receive
 import akka.actor.ActorContext
 import akka.actor.ActorCell

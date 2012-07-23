@@ -3,9 +3,9 @@
  */
 package akka.actor
 
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.testkit._
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.util.Timeout
 import akka.pattern.{ ask, AskTimeoutException }
 

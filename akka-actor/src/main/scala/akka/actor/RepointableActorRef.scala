@@ -16,6 +16,7 @@ import akka.dispatch.MessageDispatcher
 import java.util.concurrent.locks.ReentrantLock
 import akka.event.Logging.Warning
 import scala.collection.mutable.Queue
+import akka.actor.cell.ChildrenContainer
 
 /**
  * This actor ref starts out with some dummy cell (by default just enqueuing
@@ -76,11 +77,11 @@ private[akka] class RepointableActorRef(
    * This is called by activate() to obtain the cell which is to replace the
    * unstarted cell. The cell must be fully functional.
    */
-  def newCell(): Cell = new ActorCell(system, this, props, supervisor).start()
+  def newCell(): Cell = new ActorCell(system, this, props, supervisor).start(sendSupervise = false)
 
   def suspend(): Unit = underlying.suspend()
 
-  def resume(): Unit = underlying.resume()
+  def resume(inResponseToFailure: Boolean): Unit = underlying.resume(inResponseToFailure)
 
   def stop(): Unit = underlying.stop()
 
@@ -102,7 +103,7 @@ private[akka] class RepointableActorRef(
         case ".." ⇒ getParent.getChild(name)
         case ""   ⇒ getChild(name)
         case other ⇒
-          underlying.childrenRefs.getByName(other) match {
+          underlying.getChildByName(other) match {
             case Some(crs) ⇒ crs.child.asInstanceOf[InternalActorRef].getChild(name)
             case None      ⇒ Nobody
           }
@@ -129,6 +130,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
   // use Envelope to keep on-send checks in the same place
   val queue: Queue[Envelope] = Queue()
   val systemQueue: Queue[SystemMessage] = Queue()
+  var suspendCount = 0
 
   def replaceWith(cell: Cell): Unit = {
     lock.lock()
@@ -161,18 +163,21 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
       if (interrupted) throw new InterruptedException
     } finally try
       self.swapCell(cell)
+    finally try
+      for (_ ← 1 to suspendCount) cell.suspend()
     finally
       lock.unlock()
   }
 
   def system: ActorSystem = systemImpl
-  def suspend(): Unit = {}
-  def resume(): Unit = {}
-  def restart(cause: Throwable): Unit = {}
+  def suspend(): Unit = { lock.lock(); try suspendCount += 1 finally lock.unlock() }
+  def resume(inResponseToFailure: Boolean): Unit = { lock.lock(); try suspendCount -= 1 finally lock.unlock() }
+  def restart(cause: Throwable): Unit = { lock.lock(); try suspendCount -= 1 finally lock.unlock() }
   def stop(): Unit = sendSystemMessage(Terminate())
   def isTerminated: Boolean = false
   def parent: InternalActorRef = supervisor
-  def childrenRefs: ActorCell.ChildrenContainer = ActorCell.EmptyChildrenContainer
+  def childrenRefs: ChildrenContainer = ChildrenContainer.EmptyChildrenContainer
+  def getChildByName(name: String): Option[ChildRestartStats] = None
   def tell(message: Any, sender: ActorRef): Unit = {
     lock.lock()
     try {

@@ -3,14 +3,16 @@
  */
 package akka.routing
 
+import language.postfixOps
+
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.runner.RunWith
 import akka.actor.{ Props, Deploy, Actor, ActorRef }
 import akka.ConfigurationException
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.{ ask, gracefulStop }
 import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }
-import akka.util.duration.intToDurationInt
+import scala.concurrent.util.duration.intToDurationInt
 import akka.actor.UnstartedCell
 
 object ConfiguredLocalRoutingSpec {

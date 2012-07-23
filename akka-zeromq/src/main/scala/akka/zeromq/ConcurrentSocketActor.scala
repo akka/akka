@@ -6,12 +6,13 @@ package akka.zeromq
 import org.zeromq.ZMQ.{ Socket, Poller }
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
-import akka.dispatch.{ Promise, Future }
+import scala.concurrent.{ Promise, Future }
+import scala.concurrent.util.Duration
+import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
 import akka.event.Logging
-import annotation.tailrec
 import java.util.concurrent.TimeUnit
-import collection.mutable.ListBuffer
-import akka.util.{ NonFatal, Duration }
+import scala.util.control.NonFatal
 
 private[zeromq] object ConcurrentSocketActor {
   private sealed trait PollMsg

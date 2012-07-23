@@ -3,6 +3,8 @@
  */
 package akka.testkit
 
+import language.existentials
+
 import scala.util.matching.Regex
 import akka.actor.{ DeadLetter, ActorSystem, Terminated, UnhandledMessage }
 import akka.dispatch.{ SystemMessage, Terminate }
@@ -10,7 +12,7 @@ import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, De
 import akka.event.Logging
 import java.lang.{ Iterable ⇒ JIterable }
 import scala.collection.JavaConverters
-import akka.util.Duration
+import scala.concurrent.util.Duration
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`

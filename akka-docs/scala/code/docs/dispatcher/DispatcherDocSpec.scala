@@ -3,12 +3,14 @@
  */
 package docs.dispatcher
 
+import language.postfixOps
+
 import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.actor.{ Props, Actor, PoisonPill, ActorSystem }
 
 object DispatcherDocSpec {

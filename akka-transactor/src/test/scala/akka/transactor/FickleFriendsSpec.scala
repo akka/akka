@@ -4,18 +4,21 @@
 
 package akka.transactor
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfterAll
 
 import akka.actor._
-import akka.dispatch.Await
-import akka.util.duration._
-import akka.util.Timeout
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
 import akka.testkit._
 import akka.testkit.TestEvent.Mute
 import scala.concurrent.stm._
 import scala.util.Random.{ nextInt ⇒ random }
 import java.util.concurrent.CountDownLatch
 import akka.pattern.{ AskTimeoutException, ask }
+import akka.util.Timeout
+import scala.util.control.NonFatal
 
 object FickleFriends {
   case class FriendlyIncrement(friends: Seq[ActorRef], timeout: Timeout, latch: CountDownLatch)
@@ -49,7 +52,7 @@ object FickleFriends {
               }
             }
           } catch {
-            case _ ⇒ () // swallow exceptions
+            case NonFatal(_) ⇒ () // swallow exceptions
           }
         }
       }

@@ -3,16 +3,15 @@
  */
 package docs.zeromq
 
-import akka.actor.Actor
-import akka.actor.Props
-import akka.util.duration._
+import language.postfixOps
+
+import akka.actor.{ Actor, Props }
+import scala.concurrent.util.duration._
 import akka.testkit._
-import akka.zeromq.ZeroMQVersion
-import akka.zeromq.ZeroMQExtension
+import akka.zeromq.{ ZeroMQVersion, ZeroMQExtension }
 import java.text.SimpleDateFormat
 import java.util.Date
-import akka.zeromq.SocketType
-import akka.zeromq.Bind
+import akka.zeromq.{ SocketType, Bind }
 
 object ZeromqDocSpec {
 
@@ -30,7 +29,7 @@ object ZeromqDocSpec {
 
   class HealthProbe extends Actor {
 
-    val pubSocket = context.system.newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:1235"))
+    val pubSocket = ZeroMQExtension(context.system).newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:1235"))
     val memory = ManagementFactory.getMemoryMXBean
     val os = ManagementFactory.getOperatingSystemMXBean
     val ser = SerializationExtension(context.system)
@@ -64,7 +63,7 @@ object ZeromqDocSpec {
   //#logger
   class Logger extends Actor with ActorLogging {
 
-    context.system.newSocket(SocketType.Sub, Listener(self), Connect("tcp://127.0.0.1:1235"), Subscribe("health"))
+    ZeroMQExtension(context.system).newSocket(SocketType.Sub, Listener(self), Connect("tcp://127.0.0.1:1235"), Subscribe("health"))
     val ser = SerializationExtension(context.system)
     val timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS")
 
@@ -90,7 +89,7 @@ object ZeromqDocSpec {
   //#alerter
   class HeapAlerter extends Actor with ActorLogging {
 
-    context.system.newSocket(SocketType.Sub, Listener(self), Connect("tcp://127.0.0.1:1235"), Subscribe("health.heap"))
+    ZeroMQExtension(context.system).newSocket(SocketType.Sub, Listener(self), Connect("tcp://127.0.0.1:1235"), Subscribe("health.heap"))
     val ser = SerializationExtension(context.system)
     var count = 0
 
@@ -121,11 +120,6 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
     val pubSocket = ZeroMQExtension(system).newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:21231"))
     //#pub-socket
 
-    //#pub-socket2
-    import akka.zeromq._
-    val pubSocket2 = system.newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:21232"))
-    //#pub-socket2
-
     //#sub-socket
     import akka.zeromq._
     val listener = system.actorOf(Props(new Actor {
@@ -135,11 +129,11 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
         case _             ⇒ //...
       }
     }))
-    val subSocket = system.newSocket(SocketType.Sub, Listener(listener), Connect("tcp://127.0.0.1:21231"), SubscribeAll)
+    val subSocket = ZeroMQExtension(system).newSocket(SocketType.Sub, Listener(listener), Connect("tcp://127.0.0.1:21231"), SubscribeAll)
     //#sub-socket
 
     //#sub-topic-socket
-    val subTopicSocket = system.newSocket(SocketType.Sub, Listener(listener), Connect("tcp://127.0.0.1:21231"), Subscribe("foo.bar"))
+    val subTopicSocket = ZeroMQExtension(system).newSocket(SocketType.Sub, Listener(listener), Connect("tcp://127.0.0.1:21231"), Subscribe("foo.bar"))
     //#sub-topic-socket
 
     //#unsub-topic-socket
@@ -155,7 +149,7 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
     system.stop(subTopicSocket)
 
     //#high-watermark
-    val highWatermarkSocket = system.newSocket(
+    val highWatermarkSocket = ZeroMQExtension(system).newSocket(
       SocketType.Router,
       Listener(listener),
       Bind("tcp://127.0.0.1:21233"),
@@ -183,7 +177,7 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
 
     // Let it run for a while to see some output.
     // Don't do like this in real tests, this is only doc demonstration.
-    3.seconds.sleep()
+    Thread.sleep(3.seconds.toMillis)
 
   }
 

@@ -5,11 +5,13 @@
 package akka.dispatch
 
 import akka.event.Logging.Error
-import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorCell
-import akka.util.Duration
-import java.util.concurrent._
 import akka.event.Logging
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{ ExecutorService, RejectedExecutionException }
+import scala.concurrent.forkjoin.ForkJoinPool
+import scala.concurrent.util.Duration
+import scala.concurrent.Awaitable
 
 /**
  * The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a
