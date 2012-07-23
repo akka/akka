@@ -90,7 +90,7 @@ private[akka] case class Suspend() extends SystemMessage // sent to self from Ac
 /**
  * INTERNAL API
  */
-private[akka] case class Resume() extends SystemMessage // sent to self from ActorCell.resume
+private[akka] case class Resume(inResponseToFailure: Boolean) extends SystemMessage // sent to self from ActorCell.resume
 /**
  * INTERNAL API
  */
@@ -306,7 +306,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   def suspend(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
     if ((mbox.actor eq actor) && (mbox.dispatcher eq this))
-      mbox.becomeSuspended()
+      mbox.suspend()
   }
 
   /*
@@ -314,7 +314,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   def resume(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
-    if ((mbox.actor eq actor) && (mbox.dispatcher eq this) && mbox.becomeOpen())
+    if ((mbox.actor eq actor) && (mbox.dispatcher eq this) && mbox.resume())
       registerForExecution(mbox, false, false)
   }
 

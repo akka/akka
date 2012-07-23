@@ -73,7 +73,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   if (routerConfig.resizer.isEmpty && _routees.isEmpty)
     throw new ActorInitializationException("router " + routerConfig + " did not register routees!")
 
-  start()
+  start(sendSupervise = false)
 
   /*
    * end of construction

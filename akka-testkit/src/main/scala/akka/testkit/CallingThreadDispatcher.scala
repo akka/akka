@@ -154,7 +154,7 @@ class CallingThreadDispatcher(
 
   override def suspend(actor: ActorCell) {
     actor.mailbox match {
-      case m: CallingThreadMailbox ⇒ m.suspendSwitch.switchOn
+      case m: CallingThreadMailbox ⇒ m.suspendSwitch.switchOn; m.suspend()
       case m                       ⇒ m.systemEnqueue(actor.self, Suspend())
     }
   }
@@ -166,11 +166,12 @@ class CallingThreadDispatcher(
         val wasActive = queue.isActive
         val switched = mbox.suspendSwitch.switchOff {
           CallingThreadDispatcherQueues(actor.system).gatherFromAllOtherQueues(mbox, queue)
+          mbox.resume()
         }
         if (switched && !wasActive) {
           runQueue(mbox, queue)
         }
-      case m ⇒ m.systemEnqueue(actor.self, Resume())
+      case m ⇒ m.systemEnqueue(actor.self, Resume(false))
     }
   }
 

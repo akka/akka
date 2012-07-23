@@ -25,12 +25,16 @@ private[akka] object Mailbox {
    * the following assigned numbers CANNOT be changed without looking at the code which uses them!
    */
 
-  // primary status: only first three
+  // primary status
   final val Open = 0 // _status is not initialized in AbstractMailbox, so default must be zero! Deliberately without type ascription to make it a compile-time constant
-  final val Suspended = 1 // Deliberately without type ascription to make it a compile-time constant
-  final val Closed = 2 // Deliberately without type ascription to make it a compile-time constant
+  final val Closed = 1 // Deliberately without type ascription to make it a compile-time constant
   // secondary status: Scheduled bit may be added to Open/Suspended
-  final val Scheduled = 4 // Deliberately without type ascription to make it a compile-time constant
+  final val Scheduled = 2 // Deliberately without type ascription to make it a compile-time constant
+  // shifted by 2: the suspend count!
+  final val shouldScheduleMask = 3
+  final val shouldNotProcessMask = ~2
+  final val suspendMask = ~3
+  final val suspendUnit = 4
 
   // mailbox debugging helper using println (see below)
   // since this is a compile-time constant, scalac will elide code behind if (Mailbox.debug) (RK checked with 2.9.1)
@@ -101,10 +105,10 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   final def status: Mailbox.Status = Unsafe.instance.getIntVolatile(this, AbstractMailbox.mailboxStatusOffset)
 
   @inline
-  final def shouldProcessMessage: Boolean = (status & 3) == Open
+  final def shouldProcessMessage: Boolean = (status & shouldNotProcessMask) == 0
 
   @inline
-  final def isSuspended: Boolean = (status & 3) == Suspended
+  final def isSuspended: Boolean = (status & suspendMask) != 0
 
   @inline
   final def isClosed: Boolean = status == Closed
@@ -121,23 +125,32 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
     Unsafe.instance.putIntVolatile(this, AbstractMailbox.mailboxStatusOffset, newStatus)
 
   /**
-   * set new primary status Open. Caller does not need to worry about whether
+   * Reduce the suspend count by one. Caller does not need to worry about whether
    * status was Scheduled or not.
+   *
+   * @returns true if the suspend count reached zero
    */
   @tailrec
-  final def becomeOpen(): Boolean = status match {
+  final def resume(): Boolean = status match {
     case Closed ⇒ setStatus(Closed); false
-    case s      ⇒ updateStatus(s, Open | s & Scheduled) || becomeOpen()
+    case s ⇒
+      val next = if (s < suspendUnit) s else s - suspendUnit
+      if (updateStatus(s, next)) next < suspendUnit
+      else resume()
   }
 
   /**
-   * set new primary status Suspended. Caller does not need to worry about whether
+   * Increment the suspend count by one. Caller does not need to worry about whether
    * status was Scheduled or not.
+   *
+   * @returns true if the previous suspend count was zero
    */
   @tailrec
-  final def becomeSuspended(): Boolean = status match {
+  final def suspend(): Boolean = status match {
     case Closed ⇒ setStatus(Closed); false
-    case s      ⇒ updateStatus(s, Suspended | s & Scheduled) || becomeSuspended()
+    case s ⇒
+      if (updateStatus(s, s + suspendUnit)) s < suspendUnit
+      else suspend()
   }
 
   /**
@@ -158,11 +171,10 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
     val s = status
     /*
      * only try to add Scheduled bit if pure Open/Suspended, not Closed or with
-     * Scheduled bit already set (this is one of the reasons why the numbers
-     * cannot be changed in object Mailbox above)
+     * Scheduled bit already set
      */
-    if (s <= Suspended) updateStatus(s, s | Scheduled) || setAsScheduled()
-    else false
+    if ((s & shouldScheduleMask) != Open) false
+    else updateStatus(s, s | Scheduled) || setAsScheduled()
   }
 
   /**
@@ -171,12 +183,6 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   @tailrec
   final def setAsIdle(): Boolean = {
     val s = status
-    /*
-     * only try to remove Scheduled bit if currently Scheduled, not Closed or
-     * without Scheduled bit set (this is one of the reasons why the numbers
-     * cannot be changed in object Mailbox above)
-     */
-
     updateStatus(s, s & ~Scheduled) || setAsIdle()
   }
 
