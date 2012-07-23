@@ -34,7 +34,7 @@ object Consumers {
     import akka.actor.Status.Failure
 
     class Consumer3 extends Consumer {
-      override def autoack = false
+      override def autoAck = false
 
       def endpointUri = "jms:queue:test"
 

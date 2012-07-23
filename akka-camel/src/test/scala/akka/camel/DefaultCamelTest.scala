@@ -12,19 +12,26 @@ import akka.actor.ActorSystem
 import org.apache.camel.{ CamelContext, ProducerTemplate }
 import org.scalatest.WordSpec
 import akka.event.LoggingAdapter
+import akka.actor.ActorSystem.Settings
+import com.typesafe.config.ConfigFactory
 
 class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers with MockitoSugar {
 
   import org.mockito.Mockito.{ when, verify }
+  val sys = mock[ActorSystem]
+  val config = ConfigFactory.defaultReference()
+  when(sys.settings) thenReturn (new Settings(this.getClass.getClassLoader, config, "mocksystem"))
+  when(sys.name) thenReturn ("mocksystem")
 
-  def camelWitMocks = new DefaultCamel(mock[ActorSystem]) {
+  def camelWithMocks = new DefaultCamel(sys) {
     override val log = mock[LoggingAdapter]
     override lazy val template = mock[ProducerTemplate]
     override lazy val context = mock[CamelContext]
+    override val settings = mock[CamelSettings]
   }
 
   "during shutdown, when both context and template fail to shutdown" when {
-    val camel = camelWitMocks
+    val camel = camelWithMocks
 
     when(camel.context.stop()) thenThrow new RuntimeException("context")
     when(camel.template.stop()) thenThrow new RuntimeException("template")
@@ -44,7 +51,7 @@ class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers
   }
 
   "during start, if template fails to start, it will stop the context" in {
-    val camel = camelWitMocks
+    val camel = camelWithMocks
 
     when(camel.template.start()) thenThrow new RuntimeException
 

@@ -12,15 +12,15 @@ import org.scalatest.WordSpec
 
 class ActorComponentConfigurationTest extends WordSpec with MustMatchers with SharedCamelSystem {
 
-  val component: Component = camel.context.getComponent("actor")
+  val component: Component = camel.context.getComponent("akka")
 
   "Endpoint url config must be correctly parsed" in {
-    val actorEndpointConfig = component.createEndpoint("actor://path:akka://test/user/$a?autoack=false&replyTimeout=987000000+nanos").asInstanceOf[ActorEndpointConfig]
+    val actorEndpointConfig = component.createEndpoint("akka://test/user/$a?autoAck=false&replyTimeout=987000000+nanos").asInstanceOf[ActorEndpointConfig]
 
     actorEndpointConfig must have(
-      'endpointUri("actor://path:akka://test/user/$a?autoack=false&replyTimeout=987000000+nanos"),
-      'path(ActorEndpointPath.fromCamelPath("path:akka://test/user/$a")),
-      'autoack(false),
+      'endpointUri("akka://test/user/$a?autoAck=false&replyTimeout=987000000+nanos"),
+      'path(ActorEndpointPath.fromCamelPath("akka://test/user/$a")),
+      'autoAck(false),
       'replyTimeout(987000000 nanos))
   }
 

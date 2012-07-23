@@ -12,16 +12,21 @@ import org.scalatest.WordSpec
 
 class ActorEndpointPathTest extends WordSpec with SharedCamelSystem with MustMatchers with MockitoSugar {
 
-  def find(path: String) = ActorEndpointPath.fromCamelPath("path:" + path).findActorIn(system)
+  def find(path: String) = ActorEndpointPath.fromCamelPath(path).findActorIn(system)
 
   "findActorIn returns Some(actor ref) if actor exists" in {
-    val path = system.actorOf(Props(behavior = ctx ⇒ { case _ ⇒ {} })).path
+    val path = system.actorOf(Props(behavior = ctx ⇒ { case _ ⇒ {} }), "knownactor").path
     find(path.toString) must be('defined)
   }
 
   "findActorIn returns None" when {
-    "invalid path" in { find("some_invalid_path") must be(None) }
-    "non existing valid path" in { find("akka://system/user/$a") must be(None) }
+    "non existing valid path" in { find("akka://system/user/unknownactor") must be(None) }
   }
-
+  "fromCamelPath throws IllegalArgumentException" when {
+    "invalid path" in {
+      intercept[IllegalArgumentException] {
+        find("invalidpath")
+      }
+    }
+  }
 }

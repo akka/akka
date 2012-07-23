@@ -229,7 +229,7 @@ object CamelMessage {
 
 /**
  * Positive acknowledgement message (used for application-acknowledged message receipts).
- * When `autoack` is set to false in the [[akka.camel.Consumer]], you can send an `Ack` to the sender of the CamelMessage.
+ * When `autoAck` is set to false in the [[akka.camel.Consumer]], you can send an `Ack` to the sender of the CamelMessage.
  * @author Martin Krasser
  */
 case object Ack {
