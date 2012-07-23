@@ -10,7 +10,7 @@ import akka.actor.Status.Failure
 import language.existentials
 
 object CustomRoute {
-  {
+  object Sample1 {
     //#CustomRoute
     import akka.actor.{ Props, ActorSystem, Actor, ActorRef }
     import akka.camel.{ CamelMessage, CamelExtension }
@@ -37,7 +37,7 @@ object CustomRoute {
     //#CustomRoute
 
   }
-  {
+  object Sample2 {
     //#ErrorThrowingConsumer
     import akka.camel.Consumer
 

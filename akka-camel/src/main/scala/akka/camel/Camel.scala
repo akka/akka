@@ -7,6 +7,9 @@ package akka.camel
 import internal._
 import akka.actor._
 import org.apache.camel.{ ProducerTemplate, CamelContext }
+import com.typesafe.config.Config
+import scala.concurrent.util.Duration
+import java.util.concurrent.TimeUnit._
 
 /**
  * Camel trait encapsulates the underlying camel machinery.
@@ -30,6 +33,33 @@ trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with A
    */
   def template: ProducerTemplate
 
+  /**
+   * The settings for the CamelExtension
+   */
+  def settings: CamelSettings
+}
+
+/**
+ * Settings for the Camel Extension
+ * @param config the config
+ */
+class CamelSettings(val config: Config) {
+  /**
+   * Configured setting for how long the actor should wait for activation before it fails.
+   */
+  final val activationTimeout: Duration = Duration(config.getMilliseconds("akka.camel.consumer.activationTimeout"), MILLISECONDS)
+  /**
+   * Configured setting, When endpoint is out-capable (can produce responses) replyTimeout is the maximum time
+   * the endpoint can take to send the response before the message exchange fails.
+   * This setting is used for out-capable, in-only, manually acknowledged communication.
+   */
+  final val replyTimeout: Duration = Duration(config.getMilliseconds("akka.camel.consumer.replyTimeout"), MILLISECONDS)
+  /**
+   * Configured setting which determines whether one-way communications between an endpoint and this consumer actor
+   * should be auto-acknowledged or application-acknowledged.
+   * This flag has only effect when exchange is in-only.
+   */
+  final val autoAck: Boolean = config.getBoolean("akka.camel.consumer.autoAck")
 }
 
 /**

@@ -7,7 +7,7 @@ package docs.camel
 import language.postfixOps
 
 object Consumers {
-  def foo = {
+  object Sample1 {
     //#Consumer1
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -20,7 +20,7 @@ object Consumers {
     }
     //#Consumer1
   }
-  def bar = {
+  object Sample2 {
     //#Consumer2
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -33,14 +33,14 @@ object Consumers {
     }
     //#Consumer2
   }
-  {
+  object Sample3 {
     //#Consumer3
     import akka.camel.{ CamelMessage, Consumer }
     import akka.camel.Ack
     import akka.actor.Status.Failure
 
     class Consumer3 extends Consumer {
-      override def autoack = false
+      override def autoAck = false
 
       def endpointUri = "jms:queue:test"
 
@@ -56,7 +56,7 @@ object Consumers {
     }
     //#Consumer3
   }
-  {
+  object Sample4 {
     //#Consumer4
     import akka.camel.{ CamelMessage, Consumer }
     import scala.concurrent.util.duration._

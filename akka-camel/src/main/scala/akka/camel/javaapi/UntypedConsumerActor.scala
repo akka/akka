@@ -16,19 +16,26 @@ abstract class UntypedConsumerActor extends UntypedActor with Consumer {
   final def endpointUri: String = getEndpointUri
 
   /**
-   * Returns the Camel endpoint URI to consume messages from.
+   * ''Java API'': Returns the Camel endpoint URI to consume messages from.
    */
   def getEndpointUri(): String
 
   /**
-   * Returns the [[org.apache.camel.CamelContext]]
+   * ''Java API'': Returns the [[org.apache.camel.CamelContext]]
    * @return the CamelContext
    */
-  protected def getCamelContext: CamelContext = camelContext
+  protected def getCamelContext(): CamelContext = camelContext
 
   /**
-   * Returns the [[org.apache.camel.ProducerTemplate]]
+   * ''Java API'': Returns the [[org.apache.camel.ProducerTemplate]]
    * @return the ProducerTemplate
    */
-  protected def getProducerTemplate: ProducerTemplate = camel.template
+  protected def getProducerTemplate(): ProducerTemplate = camel.template
+
+  /**
+   * ''Java API'': Returns the [[akka.camel.Activation]] interface
+   * that can be used to wait on activation or de-activation of Camel endpoints.
+   * @return the Activation interface
+   */
+  protected def getActivation(): Activation = camel
 }

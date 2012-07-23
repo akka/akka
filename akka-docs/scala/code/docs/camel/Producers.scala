@@ -4,7 +4,7 @@ import akka.camel.CamelExtension
 import language.postfixOps
 
 object Producers {
-  {
+  object Sample1 {
     //#Producer1
     import akka.actor.Actor
     import akka.actor.{ Props, ActorSystem }
@@ -25,7 +25,7 @@ object Producers {
     val future = producer.ask("some request").mapTo[CamelMessage]
     //#AskProducer
   }
-  {
+  object Sample2 {
     //#RouteResponse
     import akka.actor.{ Actor, ActorRef }
     import akka.camel.{ Producer, CamelMessage }
@@ -51,7 +51,7 @@ object Producers {
     forwardResponse ! "some request"
     //#RouteResponse
   }
-  {
+  object Sample3 {
     //#TransformOutgoingMessage
     import akka.actor.Actor
     import akka.camel.{ Producer, CamelMessage }
@@ -69,7 +69,7 @@ object Producers {
     }
     //#TransformOutgoingMessage
   }
-  {
+  object Sample4 {
     //#Oneway
     import akka.actor.{ Actor, Props, ActorSystem }
     import akka.camel.Producer
@@ -85,14 +85,14 @@ object Producers {
     //#Oneway
 
   }
-  {
+  object Sample5 {
     //#Correlate
     import akka.camel.{ Producer, CamelMessage }
     import akka.actor.Actor
     import akka.actor.{ Props, ActorSystem }
 
     class Producer2 extends Actor with Producer {
-      def endpointUri = "activemg:FOO.BAR"
+      def endpointUri = "activemq:FOO.BAR"
     }
     val system = ActorSystem("some-system")
     val producer = system.actorOf(Props[Producer2])
@@ -100,7 +100,7 @@ object Producers {
     producer ! CamelMessage("bar", Map(CamelMessage.MessageExchangeId -> "123"))
     //#Correlate
   }
-  {
+  object Sample6 {
     //#ProducerTemplate
     import akka.actor.Actor
     class MyActor extends Actor {
@@ -112,7 +112,7 @@ object Producers {
     }
     //#ProducerTemplate
   }
-  {
+  object Sample7 {
     //#RequestProducerTemplate
     import akka.actor.Actor
     class MyActor extends Actor {

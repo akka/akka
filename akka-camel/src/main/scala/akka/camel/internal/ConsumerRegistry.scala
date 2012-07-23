@@ -5,7 +5,7 @@
 package akka.camel.internal
 
 import akka.camel._
-import component.ActorEndpointPath
+import component.CamelPath
 import java.io.InputStream
 
 import org.apache.camel.builder.RouteBuilder
@@ -122,7 +122,7 @@ private[camel] case class RegisterConsumer(endpointUri: String, actorRef: ActorR
  */
 private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: ActorRef, config: ConsumerConfig) extends RouteBuilder {
 
-  protected def targetActorUri = ActorEndpointPath(consumer).toCamelPath(config)
+  protected def targetActorUri = CamelPath.toUri(consumer, config.autoAck, config.replyTimeout)
 
   def configure() {
     val scheme = endpointUri take endpointUri.indexOf(":") // e.g. "http" from "http://whatever/..."

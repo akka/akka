@@ -7,9 +7,9 @@ package akka.camel.internal.component
 import language.postfixOps
 
 import org.scalatest.mock.MockitoSugar
-import org.mockito.Matchers.{ eq ⇒ the, any }
+import org.mockito.Matchers.any
 import org.mockito.Mockito._
-import org.apache.camel.AsyncCallback
+import org.apache.camel.{ CamelContext, ProducerTemplate, AsyncCallback }
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
@@ -17,13 +17,16 @@ import akka.testkit.{ TestKit, TestProbe }
 import java.lang.String
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import akka.camel._
-import internal.CamelExchangeAdapter
+import internal.{ DefaultCamel, CamelExchangeAdapter }
 import org.scalatest.{ Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.camel.TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 import org.mockito.{ ArgumentMatcher, Matchers, Mockito }
 import org.scalatest.matchers.MustMatchers
 import akka.actor.Status.Failure
+import com.typesafe.config.ConfigFactory
+import akka.actor.ActorSystem.Settings
+import akka.event.LoggingAdapter
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
 
@@ -271,12 +274,26 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     asyncCallback = createAsyncCallback
 
     probe = TestProbe()
-    camel = mock[Camel]
+
+    val sys = mock[ActorSystem]
+    val config = ConfigFactory.defaultReference()
+    when(sys.dispatcher) thenReturn system.dispatcher
+    when(sys.settings) thenReturn (new Settings(this.getClass.getClassLoader, config, "mocksystem"))
+    when(sys.name) thenReturn ("mocksystem")
+
+    def camelWithMocks = new DefaultCamel(sys) {
+      override val log = mock[LoggingAdapter]
+      override lazy val template = mock[ProducerTemplate]
+      override lazy val context = mock[CamelContext]
+      override val settings = mock[CamelSettings]
+    }
+    camel = camelWithMocks
+
     exchange = mock[CamelExchangeAdapter]
     callback = mock[AsyncCallback]
     actorEndpointPath = mock[ActorEndpointPath]
     actorComponent = mock[ActorComponent]
-    producer = new ActorProducer(config(), camel)
+    producer = new ActorProducer(configure(), camel)
     message = CamelMessage(null, null)
   }
 
@@ -288,7 +305,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   def given(actor: ActorRef = probe.ref, outCapable: Boolean = true, autoAck: Boolean = true, replyTimeout: Duration = Int.MaxValue seconds) = {
     prepareMocks(actor, outCapable = outCapable)
-    new ActorProducer(config(isAutoAck = autoAck, _replyTimeout = replyTimeout), camel)
+    new ActorProducer(configure(isAutoAck = autoAck, _replyTimeout = replyTimeout), camel)
   }
 
   def createAsyncCallback = new TestAsyncCallback
@@ -308,29 +325,23 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
       callbackReceived.countDown()
     }
 
-    private[this] def valueWithin(implicit timeout: Duration) = {
+    private[this] def valueWithin(implicit timeout: Duration) =
       if (!callbackReceived.await(timeout.toNanos, TimeUnit.NANOSECONDS)) fail("Callback not received!")
-      callbackValue.get
-    }
+      else callbackValue.get
 
-    def expectDoneSyncWithin(implicit timeout: Duration) {
-      if (!valueWithin(timeout)) fail("Expected to be done Synchronously")
-    }
-    def expectDoneAsyncWithin(implicit timeout: Duration) {
-      if (valueWithin(timeout)) fail("Expected to be done Asynchronously")
-    }
+    def expectDoneSyncWithin(implicit timeout: Duration): Unit = if (!valueWithin(timeout)) fail("Expected to be done Synchronously")
+    def expectDoneAsyncWithin(implicit timeout: Duration): Unit = if (valueWithin(timeout)) fail("Expected to be done Asynchronously")
 
   }
 
-  def config(endpointUri: String = "test-uri", isAutoAck: Boolean = true, _replyTimeout: Duration = Int.MaxValue seconds) = {
+  def configure(endpointUri: String = "test-uri", isAutoAck: Boolean = true, _replyTimeout: Duration = Int.MaxValue seconds) = {
     val endpoint = new ActorEndpoint(endpointUri, actorComponent, actorEndpointPath, camel)
-    endpoint.autoack = isAutoAck
+    endpoint.autoAck = isAutoAck
     endpoint.replyTimeout = _replyTimeout
     endpoint
   }
 
   def prepareMocks(actor: ActorRef, message: CamelMessage = message, outCapable: Boolean) {
-    when(camel.system) thenReturn system
     when(actorEndpointPath.findActorIn(any[ActorSystem])) thenReturn Option(actor)
     when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
     when(exchange.isOutCapable) thenReturn outCapable
