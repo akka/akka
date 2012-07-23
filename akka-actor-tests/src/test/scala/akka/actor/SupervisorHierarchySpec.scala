@@ -246,7 +246,7 @@ object SupervisorHierarchySpec {
         Ping(ref)
       case x ⇒
         // fail one child
-        val pick = ((if (x > 0.25) x - 0.25 else x) * 4 * children.size).toInt
+        val pick = ((if (x >= 0.25) x - 0.25 else x) * 4 * children.size).toInt
         Fail(children(pick), if (x > 0.25) Restart else Resume)
     })
 
