@@ -91,7 +91,7 @@ object Producers {
     import akka.actor.{ Props, ActorSystem }
 
     class Producer2 extends Actor with Producer {
-      def endpointUri = "activemg:FOO.BAR"
+      def endpointUri = "activemq:FOO.BAR"
     }
     val system = ActorSystem("some-system")
     val producer = system.actorOf(Props[Producer2])

@@ -37,6 +37,7 @@ private[camel] object TestSupport {
     }
 
     def routeCount = camel.context.getRoutes().size()
+    def routes = camel.context.getRoutes
   }
 
   @deprecated

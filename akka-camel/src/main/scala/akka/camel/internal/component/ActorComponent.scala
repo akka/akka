@@ -13,12 +13,11 @@ import akka.actor._
 import akka.pattern._
 
 import scala.reflect.BeanProperty
-import akka.util.duration._
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import akka.camel.internal.CamelExchangeAdapter
 import akka.util.{ NonFatal, Duration, Timeout }
-import akka.camel.{ ActorNotRegisteredException, ConsumerConfig, Camel, Ack, FailureResult, CamelMessage }
-
+import akka.camel.{ ActorNotRegisteredException, Camel, Ack, FailureResult, CamelMessage }
+import java.util.concurrent.TimeUnit.MILLISECONDS
 /**
  * For internal use only.
  * Creates Camel [[org.apache.camel.Endpoint]]s that send messages to [[akka.camel.Consumer]] actors through an [[akka.camel.internal.component.ActorProducer]].
@@ -31,12 +30,12 @@ import akka.camel.{ ActorNotRegisteredException, ConsumerConfig, Camel, Ack, Fai
  *
  * @author Martin Krasser
  */
-private[camel] class ActorComponent(camel: Camel) extends DefaultComponent {
+private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends DefaultComponent {
   /**
    * @see org.apache.camel.Component
    */
   def createEndpoint(uri: String, remaining: String, parameters: JMap[String, Object]): ActorEndpoint =
-    new ActorEndpoint(uri, this, ActorEndpointPath.fromCamelPath(remaining), camel)
+    new ActorEndpoint(uri, this, ActorEndpointPath.fromCamelPath(uri), camel)
 }
 
 /**
@@ -47,7 +46,7 @@ private[camel] class ActorComponent(camel: Camel) extends DefaultComponent {
  * The `ActorEndpoint`s are created by the [[akka.camel.internal.component.ActorComponent]].
  *
  * Actors are referenced using actor endpoint URIs of the following format:
- * <code>actor://path:[actorPath]?[options]%s</code>,
+ * <code>[actorPath]?[options]%s</code>,
  * where <code>[actorPath]</code> refers to the actor path to the actor.
  *
  * @author Martin Krasser
@@ -55,14 +54,14 @@ private[camel] class ActorComponent(camel: Camel) extends DefaultComponent {
 private[camel] class ActorEndpoint(uri: String,
                                    comp: ActorComponent,
                                    val path: ActorEndpointPath,
-                                   camel: Camel) extends DefaultEndpoint(uri, comp) with ActorEndpointConfig {
+                                   val camel: Camel) extends DefaultEndpoint(uri, comp) with ActorEndpointConfig {
 
   /**
    * The ActorEndpoint only supports receiving messages from Camel.
    * The createProducer method (not to be confused with a producer actor) is used to send messages into the endpoint.
    * The ActorComponent is only there to send to actors registered through an actor endpoint URI.
    * You can use an actor as an endpoint to send to in a camel route (as in, a Camel Consumer Actor). so from(someuri) to (actoruri), but not 'the other way around'.
-   * Supporting createConsumer would mean that messages are consumed from an Actor endpoint in a route, and an Actor is not necessarily a producer of messages
+   * Supporting createConsumer would mean that messages are consumed from an Actor endpoint in a route, and an Actor is not necessarily a producer of messages.
    * [[akka.camel.Producer]] Actors can be used for sending messages to some other uri/ component type registered in Camel.
    * @throws UnsupportedOperationException this method is not supported
    */
@@ -89,16 +88,11 @@ private[camel] class ActorEndpoint(uri: String,
  */
 private[camel] trait ActorEndpointConfig {
   def path: ActorEndpointPath
+  def camel: Camel
 
-  @BeanProperty var replyTimeout: Duration = 1 minute // FIXME default should be in config, not code
+  @BeanProperty var replyTimeout: Duration = camel.settings.replyTimeout
 
-  /**
-   * Whether to auto-acknowledge one-way message exchanges with (untyped) actors. This is
-   * set via the <code>autoack=true|false</code> endpoint URI parameter. Default value is
-   * <code>true</code>. When set to <code>false</code> consumer actors need to additionally
-   * call <code>Consumer.ack</code> within <code>Actor.receive</code>.
-   */
-  @BeanProperty var autoack: Boolean = true
+  @BeanProperty var autoAck: Boolean = camel.settings.autoAck
 }
 
 /**
@@ -159,7 +153,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
     if (exchange.isOutCapable) { //InOut
       sendAsync(message, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
     } else { // inOnly
-      if (endpoint.autoack) { //autoAck
+      if (endpoint.autoAck) { //autoAck
         fireAndForget(message, exchange)
         notifyDoneSynchronously()
         true // done sync
@@ -172,7 +166,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
   private def forwardResponseTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
     case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
     case Right(msg)                    ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
-    case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+    case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
     case Left(throwable)               ⇒ exchange.setFailure(FailureResult(throwable))
   }
 
@@ -180,7 +174,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
     case Right(Ack)                    ⇒ { /* no response message to set */ }
     case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
     case Right(msg)                    ⇒ exchange.setFailure(FailureResult(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
-    case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+    case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
     case Left(throwable)               ⇒ exchange.setFailure(FailureResult(throwable))
   }
 
@@ -231,27 +225,56 @@ private[camel] case class ActorEndpointPath private (actorPath: String) {
   import ActorEndpointPath._
   require(actorPath != null)
   require(actorPath.length() > 0)
-  def toCamelPath(config: ConsumerConfig = consumerConfig): String = "actor://path:%s?%s" format (actorPath, config.toCamelParameters)
+  require(actorPath.startsWith("akka://"))
 
   def findActorIn(system: ActorSystem): Option[ActorRef] = {
     val ref = system.actorFor(actorPath)
     if (ref.isTerminated) None else Some(ref)
   }
 }
+
+/**
+ * Converts ActorRefs and actorPaths to URI's that point to the actor through the Camel Actor Component.
+ * Can also be used in the Java API as a helper for custom route builders. the Scala API has an implicit conversion in the camel package to
+ * directly use `to(actorRef)`. In java you could use `to(CamelPath.toUri(actorRef)`.
+ * The URI to the actor is exactly the same as the string representation of the ActorPath, except that it can also have optional URI parameters to configure the Consumer Actor.
+ */
+object CamelPath {
+  /**
+   * Converts the actorRef to a Camel URI (string) which can be used in custom routes.
+   * The created URI will have no parameters, it is purely the string representation of the actor's path.
+   * @param actorRef the actorRef
+   * @return the Camel URI to the actor.
+   */
+  def toUri(actorRef: ActorRef): String = actorRef.path.toString
+
+  /**
+   * Converts the actorRef to a Camel URI (string) which can be used in custom routes.
+   * Use this version of toUri when you know that the actorRef points to a Consumer Actor and you would like to
+   * set autoAck and replyTimeout parameters to non-default values.
+   *
+   * @param actorRef the actorRef
+   * @param autoAck parameter for a Consumer Actor, see [[akka.camel.ConsumerConfig]]
+   * @param replyTimeout parameter for a Consumer Actor, see [[akka.camel.ConsumerConfig]]
+   * @return the Camel URI to the Consumer Actor, including the parameters for auto acknowledgement and replyTimeout.
+   */
+  def toUri(actorRef: ActorRef, autoAck: Boolean, replyTimeout: Duration): String = "%s?autoAck=%s&replyTimeout=%s".format(actorRef.path.toString, autoAck, replyTimeout.toString)
+}
+
 /**
  * For internal use only. Companion of `ActorEndpointPath`
  */
-private[camel] object ActorEndpointPath {
-  private val consumerConfig: ConsumerConfig = new ConsumerConfig {}
+private[camel] case object ActorEndpointPath {
 
   def apply(actorRef: ActorRef): ActorEndpointPath = new ActorEndpointPath(actorRef.path.toString)
 
   /**
-   * Creates an [[akka.camel.internal.component.ActorEndpointPath]] from the remaining part of the endpoint URI (the part after the scheme, without the parameters of the URI).
-   * Expects the remaining part of the URI (the actor path) in a format: path:%s
+   * Creates an [[akka.camel.internal.component.ActorEndpointPath]] from the uri
+   * Expects the uri in the akka [[akka.actor.ActorPath]] format, i.e 'akka://system/user/someactor'.
+   * parameters can be optionally added to the actor path to indicate auto-acknowledgement and replyTimeout for a [[akka.camel.Consumer]] actor.
    */
   def fromCamelPath(camelPath: String): ActorEndpointPath = camelPath match {
-    case id if id startsWith "path:" ⇒ new ActorEndpointPath(id substring 5)
-    case _                           ⇒ throw new IllegalArgumentException("Invalid path: [%s] - should be path:<actorPath>" format camelPath)
+    case id if id startsWith "akka://" ⇒ new ActorEndpointPath(id.split('?')(0))
+    case _                             ⇒ throw new IllegalArgumentException("Invalid path: [%s] - should be an actorPath starting with 'akka://', optionally followed by options" format camelPath)
   }
 }
