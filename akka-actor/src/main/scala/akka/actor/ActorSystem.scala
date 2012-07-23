@@ -509,13 +509,12 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props)
 
   def stop(actor: ActorRef): Unit = {
-    implicit val timeout = settings.CreationTimeout
     val path = actor.path
     val guard = guardian.path
     val sys = systemGuardian.path
     path.parent match {
-      case `guard` ⇒ Await.result(guardian ? StopChild(actor), timeout.duration)
-      case `sys`   ⇒ Await.result(systemGuardian ? StopChild(actor), timeout.duration)
+      case `guard` ⇒ guardian ! StopChild(actor)
+      case `sys`   ⇒ systemGuardian ! StopChild(actor)
       case _       ⇒ actor.asInstanceOf[InternalActorRef].stop()
     }
   }
