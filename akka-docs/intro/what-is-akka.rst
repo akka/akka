@@ -1,4 +1,3 @@
-
 .. _what-is-akka:
 
 ###############
@@ -107,7 +106,7 @@ The Typesafe Stack is all fully open source.
 Typesafe Console
 ================
 
-On top of the Typesafe Stack we have also have commercial product called Typesafe
+On top of the Typesafe Stack we also have a commercial product called Typesafe
 Console which provides the following features:
 
 #. Slick Web UI with real-time view into the system
