@@ -14,7 +14,7 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.testkit.JavaTestKit;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 
 public class TestKitSampleTest {
   

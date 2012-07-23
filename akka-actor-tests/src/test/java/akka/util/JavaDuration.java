@@ -4,6 +4,7 @@
 package akka.util;
 
 import org.junit.Test;
+import scala.concurrent.util.Duration;
 
 public class JavaDuration {
 

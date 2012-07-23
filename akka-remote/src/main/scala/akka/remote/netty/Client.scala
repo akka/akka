@@ -17,7 +17,8 @@ import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, Remote
 import akka.AkkaException
 import akka.event.Logging
 import akka.actor.{ DeadLetter, Address, ActorRef }
-import akka.util.{ NonFatal, Switch }
+import akka.util.Switch
+import scala.util.control.NonFatal
 import org.jboss.netty.handler.ssl.SslHandler
 
 /**

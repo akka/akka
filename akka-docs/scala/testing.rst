@@ -707,10 +707,3 @@ Some `Specs2 <http://specs2.org>`_ users have contributed examples of how to wor
 
 * Specifications are by default executed concurrently, which requires some care
   when writing the tests or alternatively the ``sequential`` keyword.
-
-You can use the following two examples as guidelines:
-
-.. includecode:: code/docs/testkit/Specs2DemoSpec.scala
-
-.. includecode:: code/docs/testkit/Specs2DemoAcceptance.scala
-

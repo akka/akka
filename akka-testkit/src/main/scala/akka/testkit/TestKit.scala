@@ -3,16 +3,16 @@
  */
 package akka.testkit
 
+import language.postfixOps
+
 import akka.actor._
-import Actor._
-import akka.util.Duration
-import akka.util.duration._
+import akka.actor.Actor._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
 import atomic.AtomicInteger
 import scala.annotation.tailrec
-import akka.actor.ActorSystem
-import akka.util.Timeout
-import akka.util.BoxedType
+import akka.util.{ Timeout, BoxedType }
 import scala.annotation.varargs
 import akka.japi.PurePartialFunction
 

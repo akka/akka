@@ -4,11 +4,13 @@
 
 package akka.camel
 
+import language.postfixOps
+
+import internal.component.DurationTypeConverter
 import org.apache.camel.model.{ RouteDefinition, ProcessorDefinition }
 import akka.actor._
-import akka.util.Duration
-import akka.util.duration._
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
@@ -33,11 +35,6 @@ trait Consumer extends Actor with CamelSupport with ConsumerConfig {
     // and remains null. CustomRouteTest provides a test to verify this.
     camel.registerConsumer(endpointUri, this, activationTimeout)
   }
-}
-
-case object DefaultConsumerParameters {
-  val replyTimeout = 1 minute
-  val autoAck = true
 }
 
 trait ConsumerConfig { this: CamelSupport ⇒

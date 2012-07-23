@@ -5,10 +5,10 @@
 package docs.circuitbreaker
 
 //#imports1
-import akka.util.duration._ // small d is important here
+import scala.concurrent.util.duration._ // small d is important here
 import akka.pattern.CircuitBreaker
 import akka.actor.Actor
-import akka.dispatch.Future
+import scala.concurrent.Future
 import akka.event.Logging
 
 //#imports1

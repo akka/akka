@@ -7,7 +7,7 @@ package akka.camel
 import internal.component.CamelPath
 import akka.actor.ActorRef
 import org.apache.camel.model.ProcessorDefinition
-import akka.util.Duration
+import scala.concurrent.util.Duration
 
 /**
  * Wraps a [[org.apache.camel.model.ProcessorDefinition]].

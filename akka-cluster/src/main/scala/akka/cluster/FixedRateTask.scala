@@ -5,19 +5,16 @@
 package akka.cluster
 
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
-import akka.actor.Scheduler
-import akka.util.Duration
-import akka.actor.Cancellable
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
+import akka.actor.{ Scheduler, Cancellable }
+import scala.concurrent.util.Duration
 
 /**
  * INTERNAL API
  */
 private[akka] object FixedRateTask {
-  def apply(scheduler: Scheduler, initalDelay: Duration, delay: Duration)(f: ⇒ Unit): FixedRateTask = {
+  def apply(scheduler: Scheduler, initalDelay: Duration, delay: Duration)(f: ⇒ Unit): FixedRateTask =
     new FixedRateTask(scheduler, initalDelay, delay, new Runnable { def run(): Unit = f })
-  }
 }
 
 /**

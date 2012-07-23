@@ -10,7 +10,7 @@ import com.typesafe.config.Config
 import akka.actor.{ Extension, ExtendedActorSystem, Address, DynamicAccess }
 import akka.event.Logging
 import java.util.concurrent.ConcurrentHashMap
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
 
@@ -145,7 +145,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    */
   private[akka] val bindings: Seq[ClassSerializer] = {
     val configuredBindings = for ((k: String, v: String) ← settings.SerializationBindings if v != "none") yield {
-      val c = system.dynamicAccess.getClassFor(k).fold(throw _, identity[Class[_]])
+      val c = system.dynamicAccess.getClassFor[Any](k).fold(throw _, identity[Class[_]])
       (c, serializers(v))
     }
     sort(configuredBindings)
@@ -168,11 +168,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * serializerMap is a Map whose keys is the class that is serializable and values is the serializer
    * to be used for that class.
    */
-  private val serializerMap: ConcurrentHashMap[Class[_], Serializer] = {
-    val serializerMap = new ConcurrentHashMap[Class[_], Serializer]
-    for ((c, s) ← bindings) serializerMap.put(c, s)
-    serializerMap
-  }
+  private val serializerMap: ConcurrentHashMap[Class[_], Serializer] =
+    (new ConcurrentHashMap[Class[_], Serializer] /: bindings) { case (map, (c, s)) ⇒ map.put(c, s); map }
 
   /**
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)

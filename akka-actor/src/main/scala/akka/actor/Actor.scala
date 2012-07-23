@@ -122,10 +122,34 @@ class InvalidActorNameException(message: String) extends AkkaException(message)
 /**
  * An ActorInitializationException is thrown when the the initialization logic for an Actor fails.
  */
-class ActorInitializationException private[akka] (actor: ActorRef, message: String, cause: Throwable)
-  extends AkkaException(message, cause) /*with NoStackTrace*/ {
+class ActorInitializationException private[akka] (val actor: ActorRef, message: String, cause: Throwable)
+  extends AkkaException(message, cause) {
   def this(msg: String) = this(null, msg, null)
   def this(actor: ActorRef, msg: String) = this(actor, msg, null)
+}
+
+/**
+ * A PreRestartException is thrown when the preRestart() method failed.
+ *
+ * @param actor is the actor whose preRestart() hook failed
+ * @param cause is the exception thrown by that actor within preRestart()
+ * @param origCause is the exception which caused the restart in the first place
+ * @param msg is the message which was optionally passed into preRestart()
+ */
+class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, val origCause: Throwable, val msg: Option[Any])
+  extends ActorInitializationException(actor, "exception in preRestart(" + origCause.getClass + ", " + msg.map(_.getClass) + ")", cause) {
+}
+
+/**
+ * A PostRestartException is thrown when constructor or postRestart() method
+ * fails during a restart attempt.
+ *
+ * @param actor is the actor whose constructor or postRestart() hook failed
+ * @param cause is the exception thrown by that actor within preRestart()
+ * @param origCause is the exception which caused the restart in the first place
+ */
+class PostRestartException private[akka] (actor: ActorRef, cause: Throwable, val origCause: Throwable)
+  extends ActorInitializationException(actor, "exception post restart (" + origCause.getClass + ")", cause) {
 }
 
 /**

@@ -4,25 +4,26 @@
 
 package akka.pattern
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
-import akka.actor.Props
-import akka.actor.Actor
-import akka.util.Duration
-import akka.util.duration._
-import akka.dispatch.{ Future, Promise, Await }
+import akka.actor.{ Props, Actor }
+import scala.concurrent.{ Future, Promise, Await }
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 
 object PatternSpec {
   case class Work(duration: Duration)
   class TargetActor extends Actor {
     def receive = {
-      case Work(duration) ⇒ duration.sleep()
+      case Work(duration) ⇒ Thread.sleep(duration.toMillis)
     }
   }
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PatternSpec extends AkkaSpec {
-
+  implicit val ec = system.dispatcher
   import PatternSpec._
 
   "pattern.gracefulStop" must {
@@ -48,16 +49,16 @@ class PatternSpec extends AkkaSpec {
 
   "pattern.after" must {
     "be completed successfully eventually" in {
-      val f = after(1 second, using = system.scheduler)(Promise.successful(5))
+      val f = after(1 second, using = system.scheduler)(Promise.successful(5).future)
 
-      val r = Future.firstCompletedOf(Seq(Promise[Int](), f))
+      val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
       Await.result(r, remaining) must be(5)
     }
 
     "be completed abnormally eventually" in {
-      val f = after(1 second, using = system.scheduler)(Promise.failed(new IllegalStateException("Mexico")))
+      val f = after(1 second, using = system.scheduler)(Promise.failed(new IllegalStateException("Mexico")).future)
 
-      val r = Future.firstCompletedOf(Seq(Promise[Int](), f))
+      val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
       intercept[IllegalStateException] { Await.result(r, remaining) }.getMessage must be("Mexico")
     }
   }

@@ -7,6 +7,7 @@ package akka.testkit
 import akka.actor._
 import java.util.concurrent.atomic.AtomicLong
 import akka.dispatch._
+import scala.concurrent.Await
 import akka.pattern.ask
 
 /**

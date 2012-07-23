@@ -4,9 +4,11 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit._
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 import akka.event.Logging
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -145,7 +147,7 @@ object FSMTimingSpec {
   }
 
   def resume(actorRef: ActorRef): Unit = actorRef match {
-    case l: ActorRefWithCell ⇒ l.resume()
+    case l: ActorRefWithCell ⇒ l.resume(inResponseToFailure = false)
     case _                   ⇒
   }
 

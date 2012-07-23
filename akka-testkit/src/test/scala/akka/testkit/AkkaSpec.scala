@@ -3,20 +3,19 @@
  */
 package akka.testkit
 
+import language.{ postfixOps, reflectiveCalls }
+
 import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
-import akka.actor.ActorSystem
-import akka.actor.{ Actor, ActorRef, Props }
+import akka.actor.{ Actor, ActorRef, Props, ActorSystem, PoisonPill, DeadLetter }
 import akka.event.{ Logging, LoggingAdapter }
-import akka.util.duration._
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import akka.actor.PoisonPill
-import akka.actor.DeadLetter
+import scala.concurrent.util.duration._
+import scala.concurrent.Await
+import com.typesafe.config.{ Config, ConfigFactory }
 import java.util.concurrent.TimeoutException
-import akka.dispatch.{ Await, MessageDispatcher }
-import akka.dispatch.Dispatchers
+import akka.dispatch.{ MessageDispatcher, Dispatchers }
 import akka.pattern.ask
+import akka.actor.ActorSystemImpl
 
 object TimingTest extends Tag("timing")
 object LongRunningTest extends Tag("long-running")
@@ -78,7 +77,9 @@ abstract class AkkaSpec(_system: ActorSystem)
     beforeShutdown()
     system.shutdown()
     try system.awaitTermination(5 seconds) catch {
-      case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
+      case _: TimeoutException ⇒
+        system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
+        println(system.asInstanceOf[ActorSystemImpl].printTree)
     }
     atTermination()
   }

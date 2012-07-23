@@ -8,7 +8,7 @@ import internal._
 import akka.actor._
 import org.apache.camel.{ ProducerTemplate, CamelContext }
 import com.typesafe.config.Config
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit._
 
 /**

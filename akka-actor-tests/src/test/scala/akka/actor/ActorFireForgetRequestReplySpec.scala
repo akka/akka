@@ -6,8 +6,8 @@ package akka.actor
 
 import akka.testkit._
 import org.scalatest.BeforeAndAfterEach
-import akka.util.duration._
-import akka.dispatch.Await
+import scala.concurrent.util.duration._
+import scala.concurrent.Await
 import akka.pattern.ask
 
 object ActorFireForgetRequestReplySpec {
@@ -87,7 +87,7 @@ class ActorFireForgetRequestReplySpec extends AkkaSpec with BeforeAndAfterEach w
         actor.isTerminated must be(false)
         actor ! "Die"
         state.finished.await
-        1.second.dilated.sleep()
+        Thread.sleep(1.second.dilated.toMillis)
         actor.isTerminated must be(true)
         system.stop(supervisor)
       }

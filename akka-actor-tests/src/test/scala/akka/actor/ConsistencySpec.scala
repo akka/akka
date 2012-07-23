@@ -1,8 +1,10 @@
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
 import akka.dispatch.UnboundedMailbox
-import akka.util.duration._
+import scala.concurrent.util.duration._
 
 object ConsistencySpec {
   val config = """

@@ -4,25 +4,13 @@
 package akka.cluster
 
 import scala.collection.immutable.SortedSet
-
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.Address
-import akka.actor.Cancellable
-import akka.actor.Props
-import akka.actor.RootActorPath
+import scala.concurrent.util.{ Deadline, Duration }
+import scala.concurrent.forkjoin.ThreadLocalRandom
+import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, RootActorPath, PoisonPill, Scheduler }
 import akka.actor.Status.Failure
-import akka.actor.PoisonPill
-import akka.actor.Scheduler
 import akka.routing.ScatterGatherFirstCompletedRouter
-import akka.util.Deadline
-import akka.util.Duration
 import akka.util.Timeout
-import akka.jsr166y.ThreadLocalRandom
-import akka.pattern.AskTimeoutException
-import akka.pattern.ask
-import akka.pattern.pipe
+import akka.pattern.{ AskTimeoutException, ask, pipe }
 import MemberStatus._
 
 /**
@@ -557,7 +545,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
       gossipToRandomNodeOf(
         if (preferredGossipTargets.nonEmpty) preferredGossipTargets
-        else localGossip.members.toIndexedSeq[Member].map(_.address) // Fall back to localGossip; important to not accidentally use `map` of the SortedSet, since the original order is not preserved)
+        else localGossip.members.toIndexedSeq.map(_.address) // Fall back to localGossip; important to not accidentally use `map` of the SortedSet, since the original order is not preserved)
         )
     }
   }

@@ -4,32 +4,28 @@
 
 package akka.cluster
 
+import language.implicitConversions
+
+import akka.actor._
+import akka.actor.Status._
+import akka.ConfigurationException
+import akka.dispatch.MonitorableThreadFactory
+import akka.event.Logging
+import akka.pattern._
+import akka.remote._
+import akka.routing._
+import akka.util._
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
+import scala.concurrent.util.{ Duration, Deadline }
+import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.annotation.tailrec
+import scala.collection.immutable.SortedSet
+
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-import scala.annotation.tailrec
-import scala.collection.immutable.SortedSet
-
-import akka.ConfigurationException
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ActorSystemImpl
-import akka.actor.Address
-import akka.actor.Cancellable
-import akka.actor.DefaultScheduler
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.Props
-import akka.actor.Scheduler
-import akka.dispatch.Await
-import akka.dispatch.MonitorableThreadFactory
-import akka.event.Logging
-import akka.pattern.ask
-import akka.remote.RemoteActorRefProvider
-import akka.util.Duration
 import akka.util.internal.HashedWheelTimer
 
 /**

@@ -5,16 +5,17 @@
 package akka.dispatch
 
 import java.util.concurrent._
-import akka.event.Logging.Error
+import akka.event.Logging.{ Error, LogEventException }
 import akka.actor._
-import akka.actor.ActorSystem
-import scala.annotation.tailrec
 import akka.event.EventStream
 import com.typesafe.config.Config
 import akka.serialization.SerializationExtension
-import akka.event.Logging.LogEventException
-import akka.jsr166y.{ ForkJoinTask, ForkJoinPool }
-import akka.util.{ Unsafe, Duration, NonFatal, Index }
+import akka.util.{ Unsafe, Index }
+import scala.annotation.tailrec
+import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
+import scala.concurrent.util.Duration
+import scala.concurrent.{ ExecutionContext, Await, Awaitable }
+import scala.util.control.NonFatal
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
@@ -89,7 +90,7 @@ private[akka] case class Suspend() extends SystemMessage // sent to self from Ac
 /**
  * INTERNAL API
  */
-private[akka] case class Resume() extends SystemMessage // sent to self from ActorCell.resume
+private[akka] case class Resume(inResponseToFailure: Boolean) extends SystemMessage // sent to self from ActorCell.resume
 /**
  * INTERNAL API
  */
@@ -123,88 +124,6 @@ final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cl
 }
 
 /**
- * Java API to create ExecutionContexts
- */
-object ExecutionContexts {
-
-  /**
-   * Creates an ExecutionContext from the given ExecutorService
-   */
-  def fromExecutorService(e: ExecutorService): ExecutionContextExecutorService =
-    new ExecutionContext.WrappedExecutorService(e)
-
-  /**
-   * Creates an ExecutionContext from the given Executor
-   */
-  def fromExecutor(e: Executor): ExecutionContextExecutor =
-    new ExecutionContext.WrappedExecutor(e)
-}
-
-object ExecutionContext {
-  implicit def defaultExecutionContext(implicit system: ActorSystem): ExecutionContext = system.dispatcher
-
-  /**
-   * Creates an ExecutionContext from the given ExecutorService
-   */
-  def fromExecutorService(e: ExecutorService): ExecutionContext with ExecutorService = new WrappedExecutorService(e)
-
-  /**
-   * Creates an ExecutionContext from the given Executor
-   */
-  def fromExecutor(e: Executor): ExecutionContext with Executor = new WrappedExecutor(e)
-
-  /**
-   * Internal Akka use only
-   */
-  private[akka] class WrappedExecutorService(val executor: ExecutorService) extends ExecutorServiceDelegate with ExecutionContextExecutorService {
-    override def reportFailure(t: Throwable): Unit = t match {
-      case e: LogEventException ⇒ e.getCause.printStackTrace()
-      case _                    ⇒ t.printStackTrace()
-    }
-  }
-
-  /**
-   * Internal Akka use only
-   */
-  private[akka] class WrappedExecutor(val executor: Executor) extends ExecutionContextExecutor {
-    override final def execute(runnable: Runnable): Unit = executor.execute(runnable)
-    override def reportFailure(t: Throwable): Unit = t match {
-      case e: LogEventException ⇒ e.getCause.printStackTrace()
-      case _                    ⇒ t.printStackTrace()
-    }
-  }
-}
-
-/**
- * Union interface since Java does not support union types
- */
-trait ExecutionContextExecutor extends ExecutionContext with Executor
-
-/**
- * Union interface since Java does not support union types
- */
-trait ExecutionContextExecutorService extends ExecutionContextExecutor with ExecutorService
-
-/**
- * An ExecutionContext is essentially the same thing as a java.util.concurrent.Executor
- * This interface/trait exists to decouple the concept of execution from Actors & MessageDispatchers
- * It is also needed to provide a fallback implicit default instance (in the companion object).
- */
-trait ExecutionContext {
-
-  /**
-   * Submits the runnable for execution
-   */
-  def execute(runnable: Runnable): Unit
-
-  /**
-   * Failed tasks should call reportFailure to let the ExecutionContext
-   * log the problem or whatever is appropriate for the implementation.
-   */
-  def reportFailure(t: Throwable): Unit
-}
-
-/**
  * INTERNAL API
  */
 private[akka] trait LoadMetrics { self: Executor ⇒
@@ -226,8 +145,7 @@ private[akka] object MessageDispatcher {
   def printActors: Unit = if (debug) {
     for {
       d ← actors.keys
-      val c = println(d + " inhabitants: " + d.inhabitants)
-      a ← actors.valueIterator(d)
+      a ← { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
     } {
       val status = if (a.isTerminated) " (terminated)" else " (alive)"
       val messages = a match {
@@ -289,25 +207,21 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   /**
    * Detaches the specified actor instance from this dispatcher
    */
-  final def detach(actor: ActorCell): Unit = try {
-    unregister(actor)
-  } finally {
-    ifSensibleToDoSoThenScheduleShutdown()
-  }
+  final def detach(actor: ActorCell): Unit = try unregister(actor) finally ifSensibleToDoSoThenScheduleShutdown()
 
-  final def execute(runnable: Runnable): Unit = {
+  final override def execute(runnable: Runnable): Unit = {
     val invocation = TaskInvocation(eventStream, runnable, taskCleanup)
     addInhabitants(+1)
     try {
       executeTask(invocation)
     } catch {
-      case t ⇒
+      case t: Throwable ⇒
         addInhabitants(-1)
         throw t
     }
   }
 
-  def reportFailure(t: Throwable): Unit = t match {
+  override def reportFailure(t: Throwable): Unit = t match {
     case e: LogEventException ⇒ prerequisites.eventStream.publish(e.event)
     case _                    ⇒ prerequisites.eventStream.publish(Error(t, getClass.getName, getClass, t.getMessage))
   }
@@ -392,7 +306,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
   def suspend(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
     if ((mbox.actor eq actor) && (mbox.dispatcher eq this))
-      mbox.becomeSuspended()
+      mbox.suspend()
   }
 
   /*
@@ -400,7 +314,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   def resume(actor: ActorCell): Unit = {
     val mbox = actor.mailbox
-    if ((mbox.actor eq actor) && (mbox.dispatcher eq this) && mbox.becomeOpen())
+    if ((mbox.actor eq actor) && (mbox.dispatcher eq this) && mbox.resume())
       registerForExecution(mbox, false, false)
   }
 
@@ -576,7 +490,7 @@ object ForkJoinExecutorConfigurator {
     final override def setRawResult(u: Unit): Unit = ()
     final override def getRawResult(): Unit = ()
     final override def exec(): Boolean = try { mailbox.run; true } catch {
-      case anything ⇒
+      case anything: Throwable ⇒
         val t = Thread.currentThread
         t.getUncaughtExceptionHandler match {
           case null ⇒

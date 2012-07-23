@@ -1,8 +1,11 @@
 package akka.agent
 
-import akka.dispatch.{ Await, Future }
-import akka.util.{ Duration, Timeout }
-import akka.util.duration._
+import language.postfixOps
+
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
+import akka.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
@@ -51,6 +54,7 @@ class AgentSpec extends AkkaSpec {
     }
 
     "maintain order between alter and alterOff" in {
+      import system.dispatcher
       val l1, l2 = new CountDownLatch(1)
       val agent = Agent("a")
 

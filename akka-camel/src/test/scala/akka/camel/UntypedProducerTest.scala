@@ -4,6 +4,8 @@
 
 package akka.camel
 
+import language.postfixOps
+
 import org.apache.camel.{ Exchange, Processor }
 import org.apache.camel.builder.RouteBuilder
 import org.apache.camel.component.mock.MockEndpoint
@@ -11,8 +13,8 @@ import org.apache.camel.component.mock.MockEndpoint
 import akka.camel.TestSupport.SharedCamelSystem
 import akka.actor.Props
 import akka.pattern._
-import akka.dispatch.Await
-import akka.util.duration._
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
 import org.scalatest._
 import matchers.MustMatchers
 

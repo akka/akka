@@ -4,7 +4,7 @@
 
 package akka.testkit
 
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import java.util.concurrent.{ CyclicBarrier, TimeUnit, TimeoutException }
 import akka.actor.ActorSystem
 

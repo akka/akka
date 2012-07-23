@@ -21,7 +21,7 @@ import java.io._
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.channels.FileChannel
 import akka.event.LoggingAdapter
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 
 // returned from journal replay
 sealed trait JournalItem

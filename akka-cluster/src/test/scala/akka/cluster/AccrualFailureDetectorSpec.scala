@@ -7,8 +7,8 @@ package akka.cluster
 import akka.actor.Address
 import akka.testkit.{ LongRunningTest, AkkaSpec }
 import scala.collection.immutable.TreeMap
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AccrualFailureDetectorSpec extends AkkaSpec("""

@@ -4,7 +4,7 @@
 package akka.remote.netty
 
 import com.typesafe.config.Config
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit._
 import java.net.InetAddress
 import akka.ConfigurationException

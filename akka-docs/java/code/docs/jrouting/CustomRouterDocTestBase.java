@@ -13,10 +13,10 @@ import static org.junit.Assert.assertEquals;
 
 import akka.actor.*;
 import akka.routing.*;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 import akka.util.Timeout;
-import akka.dispatch.Await;
-import akka.dispatch.Future;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
 import akka.dispatch.Dispatchers;
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;

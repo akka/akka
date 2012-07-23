@@ -20,7 +20,7 @@ import org.jboss.netty.util.{ DefaultObjectSizeEstimator, HashedWheelTimer }
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
 import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
 import com.google.protobuf.MessageLite
 

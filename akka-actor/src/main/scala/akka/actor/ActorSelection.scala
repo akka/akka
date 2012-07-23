@@ -2,6 +2,9 @@
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
+
+import language.implicitConversions
+
 import java.util.regex.Pattern
 import akka.util.Helpers
 

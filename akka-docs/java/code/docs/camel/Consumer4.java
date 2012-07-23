@@ -2,8 +2,8 @@ package docs.camel;
 //#Consumer4
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
-import akka.util.Duration;
-import akka.util.FiniteDuration;
+import scala.concurrent.util.Duration;
+import scala.concurrent.util.FiniteDuration;
 
 import java.util.concurrent.TimeUnit;
 
