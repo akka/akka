@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 
 import scala.concurrent.Await
