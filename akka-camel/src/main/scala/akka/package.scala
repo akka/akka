@@ -14,5 +14,5 @@ package object camel {
    * from("file://data/input/CamelConsumer").to(actor)
    * }}}
    */
-  implicit def toActorRouteDefinition(definition: ProcessorDefinition[_]) = new ActorRouteDefinition(definition)
+  implicit def toActorRouteDefinition[T <: ProcessorDefinition[T]](definition: ProcessorDefinition[T]) = new ActorRouteDefinition(definition)
 }
