@@ -72,9 +72,7 @@ object AkkaBuild extends Build {
     base = file("akka-actor"),
     settings = defaultSettings ++ OSGi.actor ++ Seq(
       autoCompilerPlugins := true,
-      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
       libraryDependencies <+= scalaVersion { v => "org.scala-lang" % "scala-reflect" % v },
-      scalacOptions += "-P:continuations:enable",
       packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
       artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle")),
       // to fix scaladoc generation
@@ -101,8 +99,6 @@ object AkkaBuild extends Build {
     dependencies = Seq(testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       autoCompilerPlugins := true,
-      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
-      scalacOptions += "-P:continuations:enable",
       libraryDependencies ++= Dependencies.actorTests
     )
   )
