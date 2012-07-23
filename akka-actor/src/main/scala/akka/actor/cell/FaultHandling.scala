@@ -49,12 +49,13 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       val failedActor = actor
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
       if (failedActor ne null) {
+        val optionalMessage = if (currentMessage ne null) Some(currentMessage.message) else None
         try {
           // if the actor fails in preRestart, we can do nothing but log it: it’s best-effort
-          if (failedActor.context ne null) failedActor.preRestart(cause, Option(currentMessage.message))
+          if (failedActor.context ne null) failedActor.preRestart(cause, optionalMessage)
         } catch {
           case NonFatal(e) ⇒
-            val ex = new PreRestartException(self, e, cause, Option(currentMessage.message))
+            val ex = new PreRestartException(self, e, cause, optionalMessage)
             publish(Error(ex, self.path.toString, clazz(failedActor), e.getMessage))
         } finally {
           clearActorFields(failedActor)
