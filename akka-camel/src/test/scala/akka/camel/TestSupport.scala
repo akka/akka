@@ -7,19 +7,19 @@ package akka.camel
 import language.postfixOps
 import language.implicitConversions
 
-import akka.actor.{ Props, ActorSystem, Actor }
 import scala.concurrent.util.duration._
 import java.util.concurrent.{ TimeoutException, ExecutionException, TimeUnit }
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, Suite }
 import org.scalatest.matchers.{ BePropertyMatcher, BePropertyMatchResult }
 import scala.concurrent.util.{ FiniteDuration, Duration }
 import scala.reflect.ClassTag
+import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 
 private[camel] object TestSupport {
 
-  def start(actor: ⇒ Actor)(implicit system: ActorSystem) = {
+  def start(actor: ⇒ Actor)(implicit system: ActorSystem): ActorRef = {
     val actorRef = system.actorOf(Props(actor))
-    CamelExtension(system).awaitActivation(actorRef, 1 second)
+    CamelExtension(system).awaitActivation(actorRef, 10 seconds)
     actorRef
   }
 

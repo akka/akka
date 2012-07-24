@@ -20,21 +20,16 @@ class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCa
   implicit val timeout = Timeout(10 seconds)
   def template: ProducerTemplate = camel.template
 
-  def testActorWithEndpoint(uri: String): ActorRef = { system.actorOf(Props(new TestConsumer(uri))) }
-
   "ActivationAware must be notified when endpoint is activated" in {
-    val actor = testActorWithEndpoint("direct:actor-1")
-    try {
-      camel.awaitActivation(actor, 1 second)
-    } catch {
-      case e: ActivationTimeoutException ⇒ fail("Failed to get notification within 1 second")
-    }
+    val latch = new TestLatch(0)
+    val actor = system.actorOf(Props(new TestConsumer("direct:actor-1", latch)))
+    camel.awaitActivation(actor, 10 second) must be === actor
 
     template.requestBody("direct:actor-1", "test") must be("received test")
   }
 
   "ActivationAware must be notified when endpoint is de-activated" in {
-    val latch = TestLatch()
+    val latch = TestLatch(1)
     val actor = start(new Consumer {
       def endpointUri = "direct:a3"
       def receive = { case _ ⇒ {} }
@@ -44,30 +39,33 @@ class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCa
         latch.countDown()
       }
     })
-    camel.awaitActivation(actor, 1 second)
+    camel.awaitActivation(actor, 10 second)
 
     system.stop(actor)
-    camel.awaitDeactivation(actor, 1 second)
-    Await.ready(latch, 1 second)
+    camel.awaitDeactivation(actor, 10 second)
+    Await.ready(latch, 10 second)
   }
 
   "ActivationAware must time out when waiting for endpoint de-activation for too long" in {
-    val actor = start(new TestConsumer("direct:a5"))
-    camel.awaitActivation(actor, 1 second)
+    val latch = new TestLatch(0)
+    val actor = start(new TestConsumer("direct:a5", latch))
+    camel.awaitActivation(actor, 10 second)
     intercept[DeActivationTimeoutException] {
       camel.awaitDeactivation(actor, 1 millis)
     }
   }
 
   "awaitActivation must fail if notification timeout is too short and activation is not complete yet" in {
-    val actor = testActorWithEndpoint("direct:actor-4")
-    intercept[ActivationTimeoutException] {
-      camel.awaitActivation(actor, 1 millis)
-    }
+    val latch = new TestLatch(1)
+    try {
+      val actor = system.actorOf(Props(new TestConsumer("direct:actor-4", latch)))
+      intercept[ActivationTimeoutException] { camel.awaitActivation(actor, 1 millis) }
+    } finally latch.countDown()
   }
 
-  class TestConsumer(uri: String) extends Consumer {
+  class TestConsumer(uri: String, latch: TestLatch) extends Consumer {
     def endpointUri = uri
+    Await.ready(latch, 60 seconds)
     override def receive = {
       case msg: CamelMessage ⇒ sender ! "received " + msg.body
     }
