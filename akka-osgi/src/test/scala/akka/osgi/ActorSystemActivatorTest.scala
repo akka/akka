@@ -1,10 +1,15 @@
+/**
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.osgi
+
+import language.postfixOps
 
 import org.scalatest.WordSpec
 import akka.actor.ActorSystem
 import akka.pattern.ask
-import akka.dispatch.Await
-import akka.util.duration._
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
 import akka.util.Timeout
 import de.kalpatec.pojosr.framework.launch.BundleDescriptor
 import test.{ RuntimeNameActorSystemActivator, TestActivators, PingPongActorSystemActivator }

@@ -3,17 +3,18 @@
  */
 package akka.testkit
 
+import language.postfixOps
+
 import akka.actor._
-import Actor._
-import akka.util.Duration
-import akka.util.duration._
+import akka.actor.Actor._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
 import atomic.AtomicInteger
 import scala.annotation.tailrec
-import akka.actor.ActorSystem
-import akka.util.Timeout
-import akka.util.BoxedType
+import akka.util.{ Timeout, BoxedType }
 import scala.annotation.varargs
+import scala.reflect.ClassTag
 import akka.japi.PurePartialFunction
 
 object TestActor {
@@ -324,7 +325,7 @@ trait TestKitBase {
   /**
    * Same as `expectMsgType[T](remaining)`, but correctly treating the timeFactor.
    */
-  def expectMsgType[T](implicit m: Manifest[T]): T = expectMsgClass_internal(remaining, m.erasure.asInstanceOf[Class[T]])
+  def expectMsgType[T](implicit t: ClassTag[T]): T = expectMsgClass_internal(remaining, t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
    * Receive one message from the test actor and assert that it conforms to the
@@ -333,7 +334,7 @@ trait TestKitBase {
    *
    * @return the received object
    */
-  def expectMsgType[T](max: Duration)(implicit m: Manifest[T]): T = expectMsgClass_internal(max.dilated, m.erasure.asInstanceOf[Class[T]])
+  def expectMsgType[T](max: Duration)(implicit t: ClassTag[T]): T = expectMsgClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
    * Same as `expectMsgClass(remaining, c)`, but correctly treating the timeFactor.

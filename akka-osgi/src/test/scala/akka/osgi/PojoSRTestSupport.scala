@@ -1,3 +1,6 @@
+/**
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.osgi
 
 import de.kalpatec.pojosr.framework.launch.{ BundleDescriptor, PojoServiceRegistryFactory, ClasspathScanner }
@@ -13,6 +16,7 @@ import java.util.jar.JarInputStream
 import java.io.{ FileInputStream, FileOutputStream, File }
 import org.scalatest.{ BeforeAndAfterAll, Suite }
 import java.util.{ UUID, Date, ServiceLoader, HashMap }
+import scala.reflect.ClassTag
 
 /**
  * Trait that provides support for building akka-osgi tests using PojoSR
@@ -52,8 +56,8 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
    * Convenience method to find a service by interface.  If the service is not already available in the OSGi Service
    * Registry, this method will wait for a few seconds for the service to appear.
    */
-  def serviceForType[T](implicit manifest: Manifest[T]): T =
-    context.getService(awaitReference(manifest.erasure)).asInstanceOf[T]
+  def serviceForType[T](implicit t: ClassTag[T]): T =
+    context.getService(awaitReference(t.runtimeClass)).asInstanceOf[T]
 
   def awaitReference(serviceType: Class[_]): ServiceReference = awaitReference(serviceType, START_WAIT_TIME)
 

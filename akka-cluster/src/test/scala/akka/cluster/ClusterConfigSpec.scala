@@ -4,10 +4,12 @@
 
 package akka.cluster
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
-import akka.util.duration._
-import akka.util.Duration
 import akka.dispatch.Dispatchers
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterConfigSpec extends AkkaSpec {

@@ -4,19 +4,20 @@
 
 package akka.camel
 
-import internal._
-import akka.util.{ Timeout, Duration }
-import akka.dispatch.Future
+import akka.camel.internal._
+import akka.util.Timeout
+import scala.concurrent.Future
 import java.util.concurrent.TimeoutException
 import akka.actor.{ ActorSystem, Props, ActorRef }
 import akka.pattern._
+import scala.concurrent.util.Duration
 
 /**
  * Activation trait that can be used to wait on activation or de-activation of Camel endpoints.
  * The Camel endpoints are activated asynchronously. This trait can signal when an endpoint is activated or de-activated.
  */
 trait Activation {
-  import akka.dispatch.Await
+  import scala.concurrent.Await
 
   def system: ActorSystem //FIXME Why is this here, what's it needed for and who should use it?
 
@@ -51,10 +52,10 @@ trait Activation {
    * @param timeout the timeout for the Future
    */
   def activationFutureFor(endpoint: ActorRef, timeout: Duration): Future[ActorRef] =
-    (activationTracker.ask(AwaitActivation(endpoint))(Timeout(timeout))).map[ActorRef] {
+    (activationTracker.ask(AwaitActivation(endpoint))(Timeout(timeout))).map[ActorRef]({
       case EndpointActivated(_)               ⇒ endpoint
       case EndpointFailedToActivate(_, cause) ⇒ throw cause
-    }
+    })(system.dispatcher)
 
   /**
    * Similar to awaitDeactivation but returns a future instead.
@@ -62,10 +63,10 @@ trait Activation {
    * @param timeout the timeout of the Future
    */
   def deactivationFutureFor(endpoint: ActorRef, timeout: Duration): Future[Unit] =
-    (activationTracker.ask(AwaitDeActivation(endpoint))(Timeout(timeout))).map[Unit] {
+    (activationTracker.ask(AwaitDeActivation(endpoint))(Timeout(timeout))).map[Unit]({
       case EndpointDeActivated(_)               ⇒ ()
       case EndpointFailedToDeActivate(_, cause) ⇒ throw cause
-    }
+    })(system.dispatcher)
 }
 
 /**

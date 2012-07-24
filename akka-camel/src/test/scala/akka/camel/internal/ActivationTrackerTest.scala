@@ -1,10 +1,12 @@
 package akka.camel.internal
 
+import language.postfixOps
+
 import org.scalatest.matchers.MustMatchers
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
 import akka.actor.{ Props, ActorSystem }
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import akka.camel._
 import akka.testkit.{ TimingTest, TestProbe, TestKit }
 
@@ -53,46 +55,34 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
   }
 
   "ActivationTracker forwards de-activation message to all awaiting parties" taggedAs TimingTest in {
-    given("Actor is activated")
     publish(EndpointActivated(actor.ref))
-    given("Actor is deactivated")
     publish(EndpointDeActivated(actor.ref))
 
-    when("Multiple parties await deactivation")
     awaiting.awaitDeActivation()
     anotherAwaiting.awaitDeActivation()
 
-    then("all awaiting parties are notified")
     awaiting.verifyDeActivated()
     anotherAwaiting.verifyDeActivated()
   }
 
   "ActivationTracker forwards de-activation message even if deactivation happened earlier" taggedAs TimingTest in {
-    given("Actor is activated")
     publish(EndpointActivated(actor.ref))
 
-    given("Someone is awaiting de-activation")
     awaiting.awaitDeActivation()
 
-    when("Actor is de-activated")
     publish(EndpointDeActivated(actor.ref))
 
-    then("Awaiting gets notified")
     awaiting.verifyDeActivated()
   }
 
   "ActivationTracker forwards de-activation message even if someone awaits de-activation even before activation happens" taggedAs TimingTest in {
-    given("Someone is awaiting de-activation")
     val awaiting = new Awaiting(actor)
     awaiting.awaitDeActivation()
 
-    given("Actor is activated")
     publish(EndpointActivated(actor.ref))
 
-    when("Actor is de-activated")
     publish(EndpointDeActivated(actor.ref))
 
-    then("Awaiting gets notified")
     awaiting.verifyDeActivated()
   }
 

@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import com.typesafe.config._
 import akka.routing._
 import java.util.concurrent.{ TimeUnit }
@@ -139,7 +139,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
     val deployment = config.withFallback(default)
 
-    val routees = deployment.getStringList("routees.paths").asScala.toSeq
+    val routees = Vector() ++ deployment.getStringList("routees.paths").asScala
 
     val nrOfInstances = deployment.getInt("nr-of-instances")
 

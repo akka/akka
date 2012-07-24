@@ -5,7 +5,7 @@ import org.apache.camel.processor.SendProcessor
 import akka.actor.{ Props, ActorRef, Terminated, Actor }
 import org.apache.camel.Endpoint
 import akka.camel._
-import akka.util.NonFatal
+import scala.util.control.NonFatal
 
 /**
  * Watches the end of life of <code>Producer</code>s.

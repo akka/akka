@@ -12,8 +12,7 @@ import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.{ ListBuffer }
 import scala.annotation.tailrec
-
-import java.nio.ByteBuffer
+import scala.reflect.ClassTag
 
 object ByteIterator {
   object ByteArrayIterator {
@@ -302,7 +301,7 @@ object ByteIterator {
     }
 
     final override def toByteString: ByteString = {
-      if (iterators.tail isEmpty) iterators.head.toByteString
+      if (iterators.tail.isEmpty) iterators.head.toByteString
       else {
         val result = iterators.foldLeft(ByteString.empty) { _ ++ _.toByteString }
         clear()
@@ -455,7 +454,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     acc
   }
 
-  override def toArray[B >: Byte](implicit arg0: ClassManifest[B]): Array[B] = {
+  override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = {
     val target = Array.ofDim[B](len)
     copyToArray(target)
     target

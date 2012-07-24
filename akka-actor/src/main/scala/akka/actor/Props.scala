@@ -4,9 +4,13 @@
 
 package akka.actor
 
+import language.existentials
+
 import akka.dispatch._
 import akka.japi.Creator
+import scala.reflect.ClassTag
 import akka.routing._
+import akka.util.Reflect
 
 /**
  * Factory for Props instances.
@@ -48,8 +52,8 @@ object Props {
    *
    * Scala API.
    */
-  def apply[T <: Actor: ClassManifest](): Props =
-    default.withCreator(implicitly[ClassManifest[T]].erasure.asInstanceOf[Class[_ <: Actor]])
+  def apply[T <: Actor: ClassTag](): Props =
+    default.withCreator(implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[_ <: Actor]])
 
   /**
    * Returns a Props that has default values except for "creator" which will be a function that creates an instance
@@ -185,10 +189,5 @@ case class Props(
  * able to optimize serialization.
  */
 private[akka] case class FromClassCreator(clazz: Class[_ <: Actor]) extends Function0[Actor] {
-  def apply(): Actor = try clazz.newInstance catch {
-    case iae: IllegalAccessException ⇒
-      val ctor = clazz.getDeclaredConstructor()
-      ctor.setAccessible(true)
-      ctor.newInstance()
-  }
+  def apply(): Actor = Reflect.instantiate(clazz)
 }

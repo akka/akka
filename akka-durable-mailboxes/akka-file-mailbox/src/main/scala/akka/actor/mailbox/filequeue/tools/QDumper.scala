@@ -17,6 +17,8 @@
 
 package akka.actor.mailbox.filequeue.tools
 
+import language.reflectiveCalls
+
 import java.io.{ FileNotFoundException, IOException }
 import scala.collection.mutable
 import akka.actor.mailbox.filequeue._

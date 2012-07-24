@@ -4,12 +4,13 @@
 
 package akka.actor
 
-import java.util.concurrent.atomic.AtomicLong
 import akka.dispatch._
 import akka.routing._
-import akka.AkkaException
 import akka.event._
-import akka.util.{ NonFatal, Switch, Helpers }
+import akka.util.{ Switch, Helpers }
+import scala.util.control.NonFatal
+import scala.concurrent.{ Future, Promise }
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Interface for all ActorRef providers to implement.
@@ -361,9 +362,7 @@ class LocalActorRefProvider(
 
     def provider: ActorRefProvider = LocalActorRefProvider.this
 
-    override def stop(): Unit = stopped switchOn {
-      terminationFuture.complete(causeOfTermination.toLeft(()))
-    }
+    override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.toLeft(())) }
 
     override def isTerminated: Boolean = stopped.isOn
 
@@ -458,7 +457,9 @@ class LocalActorRefProvider(
 
   def dispatcher: MessageDispatcher = system.dispatcher
 
-  lazy val terminationFuture: Promise[Unit] = Promise[Unit]()(dispatcher)
+  lazy val terminationPromise: Promise[Unit] = Promise[Unit]()
+
+  def terminationFuture: Future[Unit] = terminationPromise.future
 
   @volatile
   private var extraNames: Map[String, InternalActorRef] = Map()

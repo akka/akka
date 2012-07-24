@@ -3,6 +3,8 @@
  */
 package docs.io
 
+import language.postfixOps
+
 //#imports
 import akka.actor._
 import akka.util.{ ByteString, ByteStringBuilder }

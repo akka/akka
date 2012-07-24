@@ -4,14 +4,16 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
 import akka.testkit._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import java.util.concurrent.atomic._
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 import java.util.UUID.{ randomUUID ⇒ newUuid }
 
@@ -115,6 +117,30 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
       expectMsg(("postStop", id, 0))
       expectNoMsg(1 seconds)
       system.stop(supervisor)
+    }
+
+    "clear the behavior stack upon restart" in {
+      case class Become(recv: ActorContext ⇒ Receive)
+      val a = system.actorOf(Props(new Actor {
+        def receive = {
+          case Become(beh) ⇒ context.become(beh(context), discardOld = false); sender ! "ok"
+          case x           ⇒ sender ! 42
+        }
+      }))
+      a ! "hello"
+      expectMsg(42)
+      a ! Become(ctx ⇒ {
+        case "fail" ⇒ throw new RuntimeException("buh")
+        case x      ⇒ ctx.sender ! 43
+      })
+      expectMsg("ok")
+      a ! "hello"
+      expectMsg(43)
+      EventFilter[RuntimeException]("buh", occurrences = 1) intercept {
+        a ! "fail"
+      }
+      a ! "hello"
+      expectMsg(42)
     }
   }
 

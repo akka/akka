@@ -6,7 +6,8 @@ import akka.testkit._
 import akka.actor.{ Props, Actor }
 import akka.testkit.AkkaSpec
 import org.scalatest.BeforeAndAfterEach
-import akka.dispatch.{ Await, PinnedDispatcher, Dispatchers }
+import akka.dispatch.{ PinnedDispatcher, Dispatchers }
+import scala.concurrent.Await
 import akka.pattern.ask
 
 object PinnedActorSpec {

@@ -9,12 +9,15 @@ import akka.dispatch._
 import akka.pattern.ask
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
+import scala.concurrent.util.Duration
 import java.io.Closeable
-import akka.dispatch.Await.{ Awaitable, CanAwait }
+import scala.concurrent.{ Await, Awaitable, CanAwait, Future }
+import scala.util.control.NonFatal
 import akka.util._
 import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import akka.actor.cell.ChildrenContainer
 
 object ActorSystem {
 
@@ -506,13 +509,12 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props)
 
   def stop(actor: ActorRef): Unit = {
-    implicit val timeout = settings.CreationTimeout
     val path = actor.path
     val guard = guardian.path
     val sys = systemGuardian.path
     path.parent match {
-      case `guard` ⇒ Await.result(guardian ? StopChild(actor), timeout.duration)
-      case `sys`   ⇒ Await.result(systemGuardian ? StopChild(actor), timeout.duration)
+      case `guard` ⇒ guardian ! StopChild(actor)
+      case `sys`   ⇒ systemGuardian ! StopChild(actor)
       case _       ⇒ actor.asInstanceOf[InternalActorRef].stop()
     }
   }
@@ -586,6 +588,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def start(): this.type = _start
 
   private lazy val terminationCallbacks = {
+    implicit val d = dispatcher
     val callbacks = new TerminationCallbacks
     terminationFuture onComplete (_ ⇒ callbacks.run)
     callbacks
@@ -659,7 +662,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
                 instance //Profit!
             }
           } catch {
-            case t ⇒
+            case t: Throwable ⇒
               extensions.remove(ext, inProcessOfRegistration) //In case shit hits the fan, remove the inProcess signal
               throw t //Escalate to caller
           } finally {
@@ -698,19 +701,30 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
       node match {
         case wc: ActorRefWithCell ⇒
           val cell = wc.underlying
-          indent + "-> " + node.path.name + " " + Logging.simpleName(node) + " " +
+          (if (indent.isEmpty) "-> " else indent.dropRight(1) + "⌊-> ") +
+            node.path.name + " " + Logging.simpleName(node) + " " +
             (cell match {
               case real: ActorCell ⇒ if (real.actor ne null) real.actor.getClass else "null"
               case _               ⇒ Logging.simpleName(cell)
             }) +
+            (cell match {
+              case real: ActorCell ⇒ " status=" + real.mailbox.status
+              case _               ⇒ ""
+            }) +
             " " + (cell.childrenRefs match {
-              case ActorCell.TerminatingChildrenContainer(_, toDie, reason) ⇒
+              case ChildrenContainer.TerminatingChildrenContainer(_, toDie, reason) ⇒
                 "Terminating(" + reason + ")" +
-                  (toDie.toSeq.sorted mkString ("\n" + indent + "        toDie: ", "\n" + indent + "               ", ""))
+                  (toDie.toSeq.sorted mkString ("\n" + indent + "   |    toDie: ", "\n" + indent + "   |           ", ""))
+              case x @ (ChildrenContainer.TerminatedChildrenContainer | ChildrenContainer.EmptyChildrenContainer) ⇒ x.toString
+              case n: ChildrenContainer.NormalChildrenContainer ⇒ n.c.size + " children"
               case x ⇒ Logging.simpleName(x)
             }) +
             (if (cell.childrenRefs.children.isEmpty) "" else "\n") +
-            (cell.childrenRefs.children.toSeq.sorted map (printNode(_, indent + "   |")) mkString ("\n"))
+            ({
+              val children = cell.childrenRefs.children.toSeq.sorted
+              val bulk = children.dropRight(1) map (printNode(_, indent + "   |"))
+              bulk ++ (children.lastOption map (printNode(_, indent + "    ")))
+            } mkString ("\n"))
         case _ ⇒
           indent + node.path.name + " " + Logging.simpleName(node)
       }

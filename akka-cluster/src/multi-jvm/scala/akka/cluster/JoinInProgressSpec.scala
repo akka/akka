@@ -8,7 +8,7 @@ import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.util.Deadline
 
 object JoinInProgressMultiJvmSpec extends MultiNodeConfig {

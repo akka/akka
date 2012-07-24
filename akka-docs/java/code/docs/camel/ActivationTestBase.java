@@ -6,9 +6,9 @@ package docs.camel;
     import akka.camel.Camel;
     import akka.camel.CamelExtension;
     import akka.camel.javaapi.UntypedConsumerActor;
-    import akka.dispatch.Future;
-    import akka.util.Duration;
-    import akka.util.FiniteDuration;
+    import scala.concurrent.Future;
+    import scala.concurrent.util.Duration;
+    import scala.concurrent.util.FiniteDuration;
     import static java.util.concurrent.TimeUnit.SECONDS;
 //#CamelActivation
 

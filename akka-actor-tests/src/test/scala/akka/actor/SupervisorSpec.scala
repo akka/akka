@@ -4,13 +4,15 @@
 
 package akka.actor
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfterEach
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.{ Die, Ping }
 import akka.testkit.TestEvent._
 import akka.testkit._
 import java.util.concurrent.atomic.AtomicInteger
-import akka.dispatch.Await
+import scala.concurrent.Await
 import akka.pattern.ask
 
 object SupervisorSpec {
@@ -339,7 +341,12 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
         OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 10 seconds)(classOf[Exception] :: Nil))))
 
       val dyingProps = Props(new Actor {
-        if (inits.incrementAndGet % 2 == 0) throw new IllegalStateException("Don't wanna!")
+        val init = inits.getAndIncrement()
+        if (init % 3 == 1) throw new IllegalStateException("Don't wanna!")
+
+        override def preRestart(cause: Throwable, msg: Option[Any]) {
+          if (init % 3 == 0) throw new IllegalStateException("Don't wanna!")
+        }
 
         def receive = {
           case Ping ⇒ sender ! PongMessage
@@ -349,16 +356,20 @@ class SupervisorSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSende
             throw e
         }
       })
-      val dyingActor = Await.result((supervisor ? dyingProps).mapTo[ActorRef], timeout.duration)
+      supervisor ! dyingProps
+      val dyingActor = expectMsgType[ActorRef]
 
-      filterEvents(EventFilter[RuntimeException]("Expected", occurrences = 1),
-        EventFilter[IllegalStateException]("error while creating actor", occurrences = 1)) {
+      filterEvents(
+        EventFilter[RuntimeException]("Expected", occurrences = 1),
+        EventFilter[PreRestartException]("Don't wanna!", occurrences = 1),
+        EventFilter[PostRestartException]("Don't wanna!", occurrences = 1)) {
           intercept[RuntimeException] {
             Await.result(dyingActor.?(DieReply)(DilatedTimeout), DilatedTimeout)
           }
         }
 
-      Await.result(dyingActor.?(Ping)(DilatedTimeout), DilatedTimeout) must be === PongMessage
+      dyingActor ! Ping
+      expectMsg(PongMessage)
 
       inits.get must be(3)
 

@@ -3,10 +3,12 @@
  */
 package sample.fsm.dining.fsm
 
+import language.postfixOps
+
 import akka.actor._
 import akka.actor.FSM._
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 
 /*
 * Some messages for the chopstick

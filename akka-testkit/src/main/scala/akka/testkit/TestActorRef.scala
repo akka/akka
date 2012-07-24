@@ -7,6 +7,8 @@ package akka.testkit
 import akka.actor._
 import java.util.concurrent.atomic.AtomicLong
 import akka.dispatch._
+import scala.concurrent.Await
+import scala.reflect.ClassTag
 import akka.pattern.ask
 
 /**
@@ -120,10 +122,10 @@ object TestActorRef {
   def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit system: ActorSystem): TestActorRef[T] =
     new TestActorRef(system.asInstanceOf[ActorSystemImpl], system.dispatchers.prerequisites, props, supervisor.asInstanceOf[InternalActorRef], name)
 
-  def apply[T <: Actor](implicit m: Manifest[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
+  def apply[T <: Actor](implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
-  def apply[T <: Actor](name: String)(implicit m: Manifest[T], system: ActorSystem): TestActorRef[T] = apply[T](Props({
-    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[T](m.erasure, Seq()) match {
+  def apply[T <: Actor](name: String)(implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](Props({
+    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[T](t.runtimeClass, Seq()) match {
       case Right(value) ⇒ value
       case Left(exception) ⇒ throw new ActorInitializationException(null,
         "Could not instantiate Actor" +

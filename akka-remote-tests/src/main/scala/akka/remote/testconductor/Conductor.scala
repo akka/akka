@@ -3,28 +3,26 @@
  */
 package akka.remote.testconductor
 
+import language.postfixOps
+
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
 import RemoteConnection.getAddrString
 import TestConductorProtocol._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
 import com.typesafe.config.ConfigFactory
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.pattern.ask
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.dispatch.Await
-import akka.event.LoggingAdapter
-import akka.actor.PoisonPill
-import akka.event.Logging
+import scala.concurrent.Await
+import akka.event.{ LoggingAdapter, Logging }
 import scala.util.control.NoStackTrace
 import akka.event.LoggingReceive
-import akka.actor.Address
 import java.net.InetSocketAddress
-import akka.dispatch.Future
-import akka.actor.OneForOneStrategy
-import akka.actor.SupervisorStrategy
+import scala.concurrent.Future
+import akka.actor.{ OneForOneStrategy, SupervisorStrategy, Status, Address, PoisonPill }
 import java.util.concurrent.ConcurrentHashMap
-import akka.actor.Status
-import akka.util.{ Deadline, Timeout, Duration }
+import java.util.concurrent.TimeUnit.MILLISECONDS
+import akka.util.{ Timeout }
+import scala.concurrent.util.{ Deadline, Duration }
 
 sealed trait Direction {
   def includes(other: Direction): Boolean
@@ -88,6 +86,7 @@ trait Conductor { this: TestConductorExt ⇒
     if (_controller ne null) throw new RuntimeException("TestConductorServer was already started")
     _controller = system.actorOf(Props(new Controller(participants, controllerPort)), "controller")
     import Settings.BarrierTimeout
+    import system.dispatcher
     controller ? GetSockAddr flatMap { case sockAddr: InetSocketAddress ⇒ startClient(name, sockAddr) map (_ ⇒ sockAddr) }
   }
 
@@ -444,6 +443,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case GetAddress(node) ⇒
           if (nodes contains node) sender ! ToClient(AddressReply(node, nodes(node).addr))
           else addrInterest += node -> ((addrInterest get node getOrElse Set()) + sender)
+        case _: Done ⇒ //FIXME what should happen?
       }
     case op: CommandOp ⇒
       op match {
@@ -569,7 +569,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       val together = if (clients.exists(_.fsm == sender)) sender :: arrived else arrived
       val enterDeadline = getDeadline(timeout)
       // we only allow the deadlines to get shorter
-      if (enterDeadline < deadline) {
+      if (enterDeadline.timeLeft < deadline.timeLeft) {
         setTimer("Timeout", StateTimeout, enterDeadline.timeLeft, false)
         handleBarrier(d.copy(arrived = together, deadline = enterDeadline))
       } else

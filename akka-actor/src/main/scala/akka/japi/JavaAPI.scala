@@ -4,7 +4,10 @@
 
 package akka.japi
 
+import language.implicitConversions
+
 import scala.Some
+import scala.reflect.ClassTag
 import scala.util.control.NoStackTrace
 
 /**
@@ -184,10 +187,7 @@ object Option {
  * This class hold common utilities for Java
  */
 object Util {
-  /**
-   * Given a Class returns a Scala Manifest of that Class
-   */
-  def manifest[T](clazz: Class[T]): Manifest[T] = Manifest.classType(clazz)
+  def classTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
 
   def arrayToSeq[T](arr: Array[T]): Seq[T] = arr.toSeq
 

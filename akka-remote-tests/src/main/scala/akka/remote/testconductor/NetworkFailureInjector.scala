@@ -3,6 +3,8 @@
  */
 package akka.remote.testconductor
 
+import language.postfixOps
+
 import java.net.InetSocketAddress
 
 import scala.annotation.tailrec
@@ -14,8 +16,8 @@ import org.jboss.netty.channel.{ SimpleChannelHandler, MessageEvent, Channels, C
 import akka.actor.{ Props, LoggingFSM, Address, ActorSystem, ActorRef, ActorLogging, Actor, FSM }
 import akka.event.Logging
 import akka.remote.netty.ChannelAddress
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 
 /**
  * INTERNAL API.

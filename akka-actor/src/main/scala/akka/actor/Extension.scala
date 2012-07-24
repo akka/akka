@@ -3,6 +3,8 @@
  */
 package akka.actor
 
+import scala.reflect.ClassTag
+
 /**
  * The basic ActorSystem covers all that is needed for locally running actors,
  * using futures and so on. In addition, more features can hook into it and
@@ -92,12 +94,12 @@ trait ExtensionIdProvider {
  *   }
  * }}}
  */
-abstract class ExtensionKey[T <: Extension](implicit m: ClassManifest[T]) extends ExtensionId[T] with ExtensionIdProvider {
-  def this(clazz: Class[T]) = this()(ClassManifest.fromClass(clazz))
+abstract class ExtensionKey[T <: Extension](implicit m: ClassTag[T]) extends ExtensionId[T] with ExtensionIdProvider {
+  def this(clazz: Class[T]) = this()(ClassTag(clazz))
 
   override def lookup(): ExtensionId[T] = this
   def createExtension(system: ExtendedActorSystem): T =
-    system.dynamicAccess.createInstanceFor[T](m.erasure, Seq(classOf[ExtendedActorSystem] -> system)) match {
+    system.dynamicAccess.createInstanceFor[T](m.runtimeClass, Seq(classOf[ExtendedActorSystem] -> system)) match {
       case Left(ex) ⇒ throw ex
       case Right(r) ⇒ r
     }

@@ -1,7 +1,13 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
+
 package docs.camel
 
+import language.postfixOps
+
 object Consumers {
-  {
+  object Sample1 {
     //#Consumer1
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -14,7 +20,7 @@ object Consumers {
     }
     //#Consumer1
   }
-  {
+  object Sample2 {
     //#Consumer2
     import akka.camel.{ CamelMessage, Consumer }
 
@@ -27,7 +33,7 @@ object Consumers {
     }
     //#Consumer2
   }
-  {
+  object Sample3 {
     //#Consumer3
     import akka.camel.{ CamelMessage, Consumer }
     import akka.camel.Ack
@@ -50,10 +56,10 @@ object Consumers {
     }
     //#Consumer3
   }
-  {
+  object Sample4 {
     //#Consumer4
     import akka.camel.{ CamelMessage, Consumer }
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
 
     class Consumer4 extends Consumer {
       def endpointUri = "jetty:http://localhost:8877/camel/default"

@@ -3,18 +3,13 @@
  */
 package akka.cluster
 
-import akka.actor.ReceiveTimeout
-import akka.actor.ActorLogging
+import language.postfixOps
+
+import akka.actor.{ ReceiveTimeout, ActorLogging, ActorRef, Address, Actor, RootActorPath, Props }
 import java.security.MessageDigest
-import akka.pattern.CircuitBreaker
-import akka.actor.ActorRef
-import akka.pattern.CircuitBreakerOpenException
-import akka.actor.Address
-import akka.actor.Actor
-import akka.actor.RootActorPath
-import akka.actor.Props
-import akka.util.duration._
-import akka.util.Deadline
+import akka.pattern.{ CircuitBreaker, CircuitBreakerOpenException }
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Deadline
 
 /**
  * Sent at regular intervals for failure detection.

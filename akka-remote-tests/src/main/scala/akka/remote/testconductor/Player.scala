@@ -3,30 +3,23 @@
  */
 package akka.remote.testconductor
 
-import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
+import language.postfixOps
+
+import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, PoisonPill, Status, Address, Scheduler }
 import RemoteConnection.getAddrString
-import akka.util.duration._
-import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
-import com.typesafe.config.ConfigFactory
+import scala.concurrent.util.{ Duration, Deadline }
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
 import akka.util.Timeout
-import akka.util.Duration
+import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent, WriteCompletionEvent, ExceptionEvent }
+import com.typesafe.config.ConfigFactory
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.pattern.{ ask, pipe, AskTimeoutException }
-import akka.dispatch.Await
-import scala.util.control.NoStackTrace
-import akka.actor.Status
-import akka.event.LoggingAdapter
-import akka.actor.PoisonPill
-import akka.event.Logging
-import akka.dispatch.Future
-import java.net.InetSocketAddress
-import akka.actor.Address
-import org.jboss.netty.channel.ExceptionEvent
-import org.jboss.netty.channel.WriteCompletionEvent
-import java.net.ConnectException
-import akka.util.Deadline
-import akka.actor.Scheduler
 import java.util.concurrent.TimeoutException
+import akka.pattern.{ ask, pipe, AskTimeoutException }
+import scala.concurrent.Future
+import scala.util.control.NoStackTrace
+import akka.event.{ LoggingAdapter, Logging }
+import java.net.{ InetSocketAddress, ConnectException }
 
 /**
  * The Player is the client component of the
@@ -184,7 +177,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     case Event(Disconnected, _) ⇒
       log.info("disconnected from TestConductor")
       throw new ConnectionFailure("disconnect")
-    case Event(ToServer(Done), Data(Some(channel), _)) ⇒
+    case Event(ToServer(_: Done), Data(Some(channel), _)) ⇒
       channel.write(Done)
       stay
     case Event(ToServer(msg), d @ Data(Some(channel), None)) ⇒
@@ -202,36 +195,35 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case BarrierResult(b, success) ⇒
           runningOp match {
             case Some((barrier, requester)) ⇒
-              if (b != barrier) {
-                requester ! Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
-              } else if (!success) {
-                requester ! Status.Failure(new RuntimeException("barrier failed: " + b))
-              } else {
-                requester ! b
-              }
+              val response =
+                if (b != barrier) Status.Failure(new RuntimeException("wrong barrier " + b + " received while waiting for " + barrier))
+                else if (!success) Status.Failure(new RuntimeException("barrier failed: " + b))
+                else b
+              requester ! response
             case None ⇒
               log.warning("did not expect {}", op)
           }
           stay using d.copy(runningOp = None)
         case AddressReply(node, addr) ⇒
           runningOp match {
-            case Some((_, requester)) ⇒
-              requester ! addr
-            case None ⇒
-              log.warning("did not expect {}", op)
+            case Some((_, requester)) ⇒ requester ! addr
+            case None                 ⇒ log.warning("did not expect {}", op)
           }
           stay using d.copy(runningOp = None)
         case t: ThrottleMsg ⇒
           import settings.QueryTimeout
+          import context.dispatcher // FIXME is this the right EC for the future below?
           TestConductor().failureInjector ? t map (_ ⇒ ToServer(Done)) pipeTo self
           stay
         case d: DisconnectMsg ⇒
           import settings.QueryTimeout
+          import context.dispatcher // FIXME is this the right EC for the future below?
           TestConductor().failureInjector ? d map (_ ⇒ ToServer(Done)) pipeTo self
           stay
         case TerminateMsg(exit) ⇒
           System.exit(exit)
           stay // needed because Java doesn’t have Nothing
+        case _: Done ⇒ stay //FIXME what should happen?
       }
   }
 

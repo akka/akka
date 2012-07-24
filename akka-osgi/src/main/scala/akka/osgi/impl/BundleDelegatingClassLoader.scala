@@ -1,8 +1,12 @@
+/**
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.osgi.impl
+
+import language.existentials
 
 import java.net.URL
 import java.util.Enumeration
-
 import org.osgi.framework.{ BundleContext, Bundle }
 
 /*

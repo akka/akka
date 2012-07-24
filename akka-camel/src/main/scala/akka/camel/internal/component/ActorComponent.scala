@@ -4,6 +4,8 @@
 
 package akka.camel.internal.component
 
+import language.postfixOps
+
 import java.util.{ Map ⇒ JMap }
 
 import org.apache.camel._
@@ -13,11 +15,14 @@ import akka.actor._
 import akka.pattern._
 
 import scala.reflect.BeanProperty
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.control.NonFatal
 import java.util.concurrent.{ TimeoutException, CountDownLatch }
+import akka.util.Timeout
 import akka.camel.internal.CamelExchangeAdapter
-import akka.util.{ NonFatal, Duration, Timeout }
 import akka.camel.{ ActorNotRegisteredException, Camel, Ack, FailureResult, CamelMessage }
-import java.util.concurrent.TimeUnit.MILLISECONDS
 /**
  * For internal use only.
  * Creates Camel [[org.apache.camel.Endpoint]]s that send messages to [[akka.camel.Consumer]] actors through an [[akka.camel.internal.component.ActorProducer]].
@@ -143,48 +148,30 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
    * @return (doneSync) true to continue execute synchronously, false to continue being executed asynchronously
    */
   private[camel] def processExchangeAdapter(exchange: CamelExchangeAdapter, callback: AsyncCallback): Boolean = {
-
-    // these notify methods are just a syntax sugar
-    def notifyDoneSynchronously[A](a: A = null): Unit = callback.done(true)
-    def notifyDoneAsynchronously[A](a: A = null): Unit = callback.done(false)
-
-    def message: CamelMessage = messageFor(exchange)
-
-    if (exchange.isOutCapable) { //InOut
-      sendAsync(message, onComplete = forwardResponseTo(exchange) andThen notifyDoneAsynchronously)
-    } else { // inOnly
-      if (endpoint.autoAck) { //autoAck
-        fireAndForget(message, exchange)
-        notifyDoneSynchronously()
-        true // done sync
-      } else { //manualAck
-        sendAsync(message, onComplete = forwardAckTo(exchange) andThen notifyDoneAsynchronously)
-      }
+    if (!exchange.isOutCapable && endpoint.autoAck) {
+      fireAndForget(messageFor(exchange), exchange)
+      callback.done(true)
+      true // done sync
+    } else {
+      val action: PartialFunction[Either[Throwable, Any], Unit] =
+        if (exchange.isOutCapable) {
+          case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
+          case Right(msg)                    ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
+          case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+          case Left(throwable)               ⇒ exchange.setFailure(FailureResult(throwable))
+        } else {
+          case Right(Ack)                    ⇒ () /* no response message to set */
+          case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
+          case Right(msg)                    ⇒ exchange.setFailure(FailureResult(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
+          case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+          case Left(throwable)               ⇒ exchange.setFailure(FailureResult(throwable))
+        }
+      val async = try actorFor(endpoint.path).ask(messageFor(exchange))(Timeout(endpoint.replyTimeout)) catch { case NonFatal(e) ⇒ Future.failed(e) }
+      implicit val ec = camel.system.dispatcher // FIXME which ExecutionContext should be used here?
+      async.onComplete(action andThen { _ ⇒ callback.done(false) })
+      false
     }
 
-  }
-  private def forwardResponseTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
-    case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
-    case Right(msg)                    ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
-    case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
-    case Left(throwable)               ⇒ exchange.setFailure(FailureResult(throwable))
-  }
-
-  private def forwardAckTo(exchange: CamelExchangeAdapter): PartialFunction[Either[Throwable, Any], Unit] = {
-    case Right(Ack)                    ⇒ { /* no response message to set */ }
-    case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
-    case Right(msg)                    ⇒ exchange.setFailure(FailureResult(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
-    case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
-    case Left(throwable)               ⇒ exchange.setFailure(FailureResult(throwable))
-  }
-
-  private def sendAsync(message: CamelMessage, onComplete: PartialFunction[Either[Throwable, Any], Unit]): Boolean = {
-    try {
-      actorFor(endpoint.path).ask(message)(Timeout(endpoint.replyTimeout)).onComplete(onComplete)
-    } catch {
-      case NonFatal(e) ⇒ onComplete(Left(e))
-    }
-    false // Done async
   }
 
   private def fireAndForget(message: CamelMessage, exchange: CamelExchangeAdapter): Unit =

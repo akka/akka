@@ -3,15 +3,17 @@
  */
 package akka.routing
 
+import language.postfixOps
+
 import akka.actor.Actor
 import akka.testkit._
 import akka.actor.Props
-import akka.dispatch.Await
-import akka.util.duration._
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
 import akka.actor.ActorRef
 import java.util.concurrent.atomic.AtomicInteger
 import akka.pattern.ask
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import java.util.concurrent.TimeoutException
 
 object ResizerSpec {
@@ -172,7 +174,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
       val router = system.actorOf(Props(new Actor {
         def receive = {
-          case d: Duration ⇒ d.dilated.sleep; sender ! "done"
+          case d: Duration ⇒ Thread.sleep(d.dilated.toMillis); sender ! "done"
           case "echo"      ⇒ sender ! "reply"
         }
       }).withRouter(RoundRobinRouter(resizer = Some(resizer))))
@@ -219,26 +221,25 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
       val router = system.actorOf(Props(new Actor {
         def receive = {
-          case n: Int ⇒
-            (n millis).dilated.sleep
+          case n: Int ⇒ Thread.sleep((n millis).dilated.toMillis)
         }
       }).withRouter(RoundRobinRouter(resizer = Some(resizer))))
 
       // put some pressure on the router
       for (m ← 0 to 5) {
         router ! 100
-        (5 millis).dilated.sleep
+        Thread.sleep((5 millis).dilated.toMillis)
       }
 
       val z = Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size
       z must be >= (2)
 
-      (300 millis).dilated.sleep
+      Thread.sleep((300 millis).dilated.toMillis)
 
       // let it cool down
       for (m ← 0 to 5) {
         router ! 1
-        (500 millis).dilated.sleep
+        Thread.sleep((500 millis).dilated.toMillis)
       }
 
       awaitCond(

@@ -3,6 +3,8 @@
  */
 package akka.actor.dispatch
 
+import language.postfixOps
+
 import java.rmi.RemoteException
 import java.util.concurrent.{ TimeUnit, CountDownLatch, ConcurrentHashMap }
 import java.util.concurrent.atomic.{ AtomicLong, AtomicInteger }
@@ -18,8 +20,11 @@ import akka.dispatch._
 import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
-import akka.util.{ Timeout, Switch, Duration }
-import akka.util.duration._
+import akka.util.{ Timeout, Switch }
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.{ Await, Future, Promise }
+import scala.annotation.tailrec
 
 object ActorModelSpec {
 
@@ -154,7 +159,7 @@ object ActorModelSpec {
     try {
       await(deadline)(stops == dispatcher.stops.get)
     } catch {
-      case e ⇒
+      case e: Throwable ⇒
         system.eventStream.publish(Error(e, dispatcher.toString, dispatcher.getClass, "actual: stops=" + dispatcher.stops.get +
           " required: stops=" + stops))
         throw e
@@ -211,7 +216,7 @@ object ActorModelSpec {
       await(deadline)(stats.msgsProcessed.get() == msgsProcessed)
       await(deadline)(stats.restarts.get() == restarts)
     } catch {
-      case e ⇒
+      case e: Throwable ⇒
         system.eventStream.publish(Error(e,
           Option(dispatcher).toString,
           (Option(dispatcher) getOrElse this).getClass,
@@ -222,16 +227,16 @@ object ActorModelSpec {
     }
   }
 
-  def await(until: Long)(condition: ⇒ Boolean): Unit = try {
-    while (System.currentTimeMillis() <= until) {
-      try {
-        if (condition) return else Thread.sleep(25)
-      } catch {
-        case e: InterruptedException ⇒
-      }
+  @tailrec def await(until: Long)(condition: ⇒ Boolean): Unit = if (System.currentTimeMillis() <= until) {
+    var done = false
+    try {
+      done = condition
+      if (!done) Thread.sleep(25)
+    } catch {
+      case e: InterruptedException ⇒
     }
-    throw new AssertionError("await failed")
-  }
+    if (!done) await(until)(condition)
+  } else throw new AssertionError("await failed")
 }
 
 abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with DefaultTimeout {
@@ -343,7 +348,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       assertNoCountDown(done, 1000, "Should not process messages while suspended")
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, suspensions = 1)
 
-      a.resume
+      a.resume(inResponseToFailure = false)
       assertCountDown(done, 3.seconds.dilated.toMillis, "Should resume processing of messages when resumed")
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, msgsProcessed = 1,
         suspensions = 1, resumes = 1)
@@ -408,9 +413,9 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val a = newTestActor(dispatcher.id)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
-        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)) }
+        val f3 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
         val f4 = a ? Reply("foo2")
-        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)) }
+        val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
         val f6 = a ? Reply("bar2")
 
         assert(Await.result(f1, timeout.duration) === "foo")

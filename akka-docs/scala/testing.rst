@@ -219,7 +219,7 @@ assertions concerning received messages. Here is the full list:
     An object which is an instance of the given type (after erasure) must be
     received within the allotted time frame; the object will be returned. This
     method is approximately equivalent to
-    ``expectMsgClass(manifest[T].erasure)``.
+    ``expectMsgClass(implicitly[ClassTag[T]].runtimeClass)``.
 
   * :meth:`expectMsgAnyOf[T](d: Duration, obj: T*): T`
 
@@ -707,10 +707,3 @@ Some `Specs2 <http://specs2.org>`_ users have contributed examples of how to wor
 
 * Specifications are by default executed concurrently, which requires some care
   when writing the tests or alternatively the ``sequential`` keyword.
-
-You can use the following two examples as guidelines:
-
-.. includecode:: code/docs/testkit/Specs2DemoSpec.scala
-
-.. includecode:: code/docs/testkit/Specs2DemoAcceptance.scala
-

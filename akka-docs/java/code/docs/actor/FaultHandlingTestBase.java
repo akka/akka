@@ -12,9 +12,9 @@ import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
-import akka.dispatch.Await;
+import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;
 
@@ -195,7 +195,7 @@ public class FaultHandlingTestBase {
 
     //#escalate-restart
     superprops = new Props(Supervisor2.class);
-    supervisor = system.actorOf(superprops, "supervisor2");
+    supervisor = system.actorOf(superprops);
     child = (ActorRef) Await.result(ask(supervisor, new Props(Child.class), 5000), timeout);
     child.tell(23);
     assert Await.result(ask(child, "get", 5000), timeout).equals(23);

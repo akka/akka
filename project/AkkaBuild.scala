@@ -20,10 +20,17 @@ import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
 
+  lazy val desiredScalaVersion = "2.10.0-M5"
+
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
-    scalaVersion := "2.9.2"
+    //scalaVersion := desiredScalaVersion
+    scalaVersion := "2.10.0-SNAPSHOT",
+    scalaVersion in update <<= (scalaVersion) apply {
+      case  "2.10.0-SNAPSHOT" =>  desiredScalaVersion
+      case x => x
+    }
   )
 
   lazy val akka = Project(
@@ -40,7 +47,7 @@ object AkkaBuild extends Build {
         """|import akka.actor._
            |import akka.dispatch._
            |import com.typesafe.config.ConfigFactory
-           |import akka.util.duration._
+           |import scala.concurrent.util.duration._
            |import akka.util.Timeout
            |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG")
            |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=RemoteActorRefProvider").withFallback(config)
@@ -57,7 +64,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, /*akkaSbtPlugin,*/ samples, tutorials, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -65,8 +72,7 @@ object AkkaBuild extends Build {
     base = file("akka-actor"),
     settings = defaultSettings ++ OSGi.actor ++ Seq(
       autoCompilerPlugins := true,
-      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
-      scalacOptions += "-P:continuations:enable",
+      libraryDependencies <+= scalaVersion { v => "org.scala-lang" % "scala-reflect" % v },
       packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
       artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle")),
       // to fix scaladoc generation
@@ -93,8 +99,6 @@ object AkkaBuild extends Build {
     dependencies = Seq(testkit % "compile;test->test"),
     settings = defaultSettings ++ Seq(
       autoCompilerPlugins := true,
-      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
-      scalacOptions += "-P:continuations:enable",
       libraryDependencies ++= Dependencies.actorTests
     )
   )
@@ -329,6 +333,8 @@ object AkkaBuild extends Build {
 
   override lazy val settings = super.settings ++ buildSettings ++ Seq(
       resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
+      //resolvers += "Sonatype Releases Repo" at "https://oss.sonatype.org/content/repositories/releases/",
+      resolvers += "Typesafe 2.10 Freshness" at "http://typesafe.artifactoryonline.com/typesafe/scala-fresh-2.10.x/",
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
     )
 
@@ -397,7 +403,7 @@ object AkkaBuild extends Build {
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
 
     // compile options
-    scalacOptions ++= Seq("-encoding", "UTF-8", "-deprecation", "-unchecked") ++ (
+    scalacOptions ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls") ++ (
       if (true || (System getProperty "java.runtime.version" startsWith "1.7")) Seq() else Seq("-optimize")), // -optimize fails with jdk7
     javacOptions  ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
 
@@ -481,22 +487,17 @@ object Dependencies {
 
   val testkit = Seq(Test.scalatest, Test.junit)
 
-  val actorTests = Seq(
-    Test.junit, Test.scalatest, Test.commonsMath, Test.mockito,
-    Test.scalacheck, protobuf
-  )
+  val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf)
 
-  val remote = Seq(
-    netty, protobuf, uncommonsMath, Test.junit, Test.scalatest
-  )
+  val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
   val slf4j = Seq(slf4jApi, Test.logback)
 
-  val agent = Seq(scalaStm, Test.scalatest, Test.junit)
+  val agent = Seq(scalaStm, scalaActors, Test.scalatest, Test.junit)
 
-  val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
+  val transactor = Seq(scalaStm, scalaActors, Test.scalatest, Test.junit)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
@@ -512,55 +513,44 @@ object Dependencies {
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
-  val docs = Seq(Test.scalatest, Test.junit, Test.specs2, Test.junitIntf)
+  val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
 
   val zeroMQ = Seq(protobuf, Dependency.zeroMQ, Test.scalatest, Test.junit)
 }
 
 object Dependency {
 
-  // Versions
-
-  object V {
-    val Camel        = "2.8.0"
-    val Logback      = "1.0.4"
-    val Netty        = "3.5.2.Final"
-    val OSGi         = "4.2.0"
-    val Protobuf     = "2.4.1"
-    val ScalaStm     = "0.5"
-    val Scalatest    = "1.6.1"
-    val Slf4j        = "1.6.4"
-    val UncommonsMath = "1.2.2a"
-  }
+  def v(a: String): String = a+"_"+AkkaBuild.desiredScalaVersion
 
   // Compile
-  val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint" % "0.3.2"  // ApacheV2
-  val config        = "com.typesafe"                % "config"                 % "0.4.1"      // ApacheV2
-  val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
-  val netty         = "io.netty"                    % "netty"                  % V.Netty      // ApacheV2
-  val osgiCore      = "org.osgi"                    % "org.osgi.core"          % V.OSGi       // ApacheV2
-  val protobuf      = "com.google.protobuf"         % "protobuf-java"          % V.Protobuf   // New BSD
-  val scalaStm      = "org.scala-tools"             % "scala-stm_2.9.1"        % V.ScalaStm   // Modified BSD (Scala)
-  val slf4jApi      = "org.slf4j"                   % "slf4j-api"              % V.Slf4j      // MIT
-  val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"        % V.UncommonsMath // ApacheV2
-  val zeroMQ        = "org.zeromq"                  % "zeromq-scala-binding_2.9.1"  % "0.0.6" // ApacheV2
+  val config        = "com.typesafe"                % "config"                       % "0.4.1"       // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.8.0"       // ApacheV2
+  val netty         = "io.netty"                    % "netty"                        % "3.5.1.Final" // ApacheV2
+  val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
+  //val scalaStm      = "org.scala-tools"             % "scala-stm"                    % "0.5"         // Modified BSD (Scala)
+  val scalaStm      = "scala-stm"                   % "scala-stm"                    % "0.6-SNAPSHOT" //"0.5"         // Modified BSD (Scala)
+  val scalaActors   = "org.scala-lang" % "scala-actors" % "2.10.0-SNAPSHOT"
+  val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.6.4"       // MIT
+  val zeroMQ        = "org.zeromq"                  % v("zeromq-scala-binding")      % "0.0.6"       // ApacheV2
+  val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a"      // ApacheV2
+  val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
+  val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
 
   // Test
 
   object Test {
-    val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3" % "test"  // ApacheV2
-    val commonsMath = "org.apache.commons"          % "commons-math"        % "2.1"        % "test" // ApacheV2
-    val commonsIo   = "commons-io"                  % "commons-io"          % "2.0.1"      % "test"// ApacheV2
-    val junit       = "junit"                       % "junit"               % "4.5"        % "test" // Common Public License 1.0
-    val logback     = "ch.qos.logback"              % "logback-classic"     % V.Logback    % "test" // EPL 1.0 / LGPL 2.1
-    val mockito     = "org.mockito"                 % "mockito-all"         % "1.8.1"      % "test" // MIT
-    val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"   % "test" // ApacheV2
-    val scalatest   = "org.scalatest"               % "scalatest_2.9.1"     % V.Scalatest  % "test" // ApacheV2
-    val scalacheck  = "org.scala-tools.testing"     % "scalacheck_2.9.1"    % "1.9"        % "test" // New BSD
-    val specs2      = "org.specs2"                  % "specs2_2.9.1"        % "1.9"        % "test" // Modified BSD / ApacheV2
-    val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"         % "1.0.0"      % "test" // ApacheV2
-    val log4j       = "log4j"                       % "log4j"               % "1.2.14"     % "test" // ApacheV2
-    val junitIntf   = "com.novocode"                % "junit-interface"     % "0.8"        % "test" // MIT
+    val commonsMath = "org.apache.commons"          % "commons-math"                 % "2.1"              % "test" // ApacheV2
+    val commonsIo   = "commons-io"                  % "commons-io"                   % "2.0.1"            % "test" // ApacheV2
+    val junit       = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
+    val logback     = "ch.qos.logback"              % "logback-classic"              % "1.0.4"            % "test" // EPL 1.0 / LGPL 2.1
+    val mockito     = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
+    val scalatest   = "org.scalatest"               % v("scalatest")                 % "1.9-2.10.0-M5-B2" % "test" // ApacheV2
+    val scalacheck  = "org.scalacheck"              % v("scalacheck")                % "1.10.0"           % "test" // New BSD
+    val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test"  // ApacheV2
+    val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
+    val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
+    val log4j       = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
+    val junitIntf   = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
   }
 }
 
@@ -572,7 +562,7 @@ object OSGi {
 
   val agent = exports(Seq("akka.agent.*"))
 
-  val camel = exports(Seq("akka.camel.*", "akka.camelexamples"))
+  val camel = exports(Seq("akka.camel.*"))
 
   val cluster = exports(Seq("akka.cluster.*"))
 

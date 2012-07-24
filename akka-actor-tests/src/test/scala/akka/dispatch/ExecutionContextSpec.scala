@@ -3,6 +3,7 @@ package akka.dispatch
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import java.util.concurrent.{ ExecutorService, Executor, Executors }
+import scala.concurrent.ExecutionContext
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
@@ -18,12 +19,12 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
         val executorService: ExecutorService with ExecutionContext = ExecutionContext.fromExecutorService(es)
         executorService must not be (null)
 
-        val jExecutor: ExecutionContextExecutor = ExecutionContexts.fromExecutor(es)
+        /*val jExecutor: ExecutionContextExecutor = ExecutionContext.fromExecutor(es)
         jExecutor must not be (null)
 
         val jExecutorService: ExecutionContextExecutorService = ExecutionContexts.fromExecutorService(es)
         jExecutorService must not be (null)
-
+        */
       } finally {
         es.shutdown
       }

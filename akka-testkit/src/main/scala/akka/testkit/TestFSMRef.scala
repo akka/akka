@@ -5,7 +5,7 @@
 package akka.testkit
 
 import akka.actor._
-import akka.util._
+import scala.concurrent.util.Duration
 import akka.dispatch.DispatcherPrerequisites
 
 /**

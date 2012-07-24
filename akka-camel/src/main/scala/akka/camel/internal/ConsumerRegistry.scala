@@ -14,7 +14,7 @@ import akka.actor._
 import collection.mutable
 import org.apache.camel.model.RouteDefinition
 import org.apache.camel.CamelContext
-import akka.util.Duration
+import scala.concurrent.util.Duration
 
 /**
  * For internal use only.

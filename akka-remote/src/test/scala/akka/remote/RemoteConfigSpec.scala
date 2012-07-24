@@ -3,10 +3,12 @@
  */
 package akka.remote
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
 import akka.actor.ExtendedActorSystem
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 import akka.remote.netty.NettyRemoteTransport
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

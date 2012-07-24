@@ -4,6 +4,8 @@
 
 package akka.remote
 
+import language.existentials
+
 import akka.remote.RemoteProtocol._
 import com.google.protobuf.ByteString
 import akka.actor.ExtendedActorSystem

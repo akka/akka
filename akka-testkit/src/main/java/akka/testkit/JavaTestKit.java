@@ -11,7 +11,7 @@ import akka.event.Logging.LogEvent;
 import akka.japi.PurePartialFunction;
 import akka.japi.CachingPartialFunction;
 import akka.japi.Util;
-import akka.util.Duration;
+import scala.concurrent.util.Duration;
 
 /**
  * Java API for the TestProbe. Proper JavaDocs to come once JavaDoccing is implemented.
@@ -191,12 +191,12 @@ public class JavaTestKit {
 
   public Object[] expectMsgAllOf(Object... msgs) {
     return (Object[]) p.expectMsgAllOf(Util.arrayToSeq(msgs)).toArray(
-        Util.manifest(Object.class));
+        Util.classTag(Object.class));
   }
 
   public Object[] expectMsgAllOf(Duration max, Object... msgs) {
     return (Object[]) p.expectMsgAllOf(max, Util.arrayToSeq(msgs)).toArray(
-        Util.manifest(Object.class));
+        Util.classTag(Object.class));
   }
 
   @SuppressWarnings("unchecked")
@@ -241,7 +241,7 @@ public class JavaTestKit {
             public T match(Object msg) {
               return ReceiveWhile.this.match(msg);
             }
-          }).toArray(Util.manifest(clazz));
+          }).toArray(Util.classTag(clazz));
     }
 
     protected RuntimeException noMatch() {

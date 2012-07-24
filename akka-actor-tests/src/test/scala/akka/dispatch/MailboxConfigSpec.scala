@@ -3,15 +3,15 @@
  */
 package akka.dispatch
 
+import language.postfixOps
+
 import java.util.concurrent.{ ConcurrentLinkedQueue, BlockingQueue }
-
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll }
-
 import com.typesafe.config.Config
-
 import akka.actor.{ RepointableRef, Props, DeadLetter, ActorSystem, ActorRefWithCell, ActorRef, ActorCell }
 import akka.testkit.AkkaSpec
-import akka.util.duration.intToDurationInt
+import scala.concurrent.{ Future, Promise, Await }
+import scala.concurrent.util.duration.intToDurationInt
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -76,7 +76,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       }
     })
     t.start
-    result
+    result.future
   }
 
   def createMessageInvocation(msg: Any): Envelope = Envelope(msg, system.deadLetters, system)

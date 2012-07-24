@@ -4,9 +4,11 @@
 
 package docs.transactor
 
+import language.postfixOps
+
 import akka.actor._
 import akka.transactor._
-import akka.util.duration._
+import scala.concurrent.util.duration._
 import akka.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._
@@ -138,8 +140,8 @@ class TransactorDocSpec extends AkkaSpec {
     import CoordinatedExample._
 
     //#run-coordinated-example
-    import akka.dispatch.Await
-    import akka.util.duration._
+    import scala.concurrent.Await
+    import scala.concurrent.util.duration._
     import akka.util.Timeout
     import akka.pattern.ask
 
@@ -166,7 +168,7 @@ class TransactorDocSpec extends AkkaSpec {
     import CoordinatedApi._
 
     //#implicit-timeout
-    import akka.util.duration._
+    import scala.concurrent.util.duration._
     import akka.util.Timeout
 
     implicit val timeout = Timeout(5 seconds)

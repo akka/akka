@@ -4,13 +4,15 @@
 
 package akka.camel.internal.component
 
+import language.postfixOps
+
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.apache.camel.{ CamelContext, ProducerTemplate, AsyncCallback }
 import java.util.concurrent.atomic.AtomicBoolean
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 import akka.testkit.{ TestKit, TestProbe }
 import java.lang.String
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
@@ -275,6 +277,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
     val sys = mock[ActorSystem]
     val config = ConfigFactory.defaultReference()
+    when(sys.dispatcher) thenReturn system.dispatcher
     when(sys.settings) thenReturn (new Settings(this.getClass.getClassLoader, config, "mocksystem"))
     when(sys.name) thenReturn ("mocksystem")
 
@@ -322,17 +325,12 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
       callbackReceived.countDown()
     }
 
-    private[this] def valueWithin(implicit timeout: Duration) = {
+    private[this] def valueWithin(implicit timeout: Duration) =
       if (!callbackReceived.await(timeout.toNanos, TimeUnit.NANOSECONDS)) fail("Callback not received!")
-      callbackValue.get
-    }
+      else callbackValue.get
 
-    def expectDoneSyncWithin(implicit timeout: Duration) {
-      if (!valueWithin(timeout)) fail("Expected to be done Synchronously")
-    }
-    def expectDoneAsyncWithin(implicit timeout: Duration) {
-      if (valueWithin(timeout)) fail("Expected to be done Asynchronously")
-    }
+    def expectDoneSyncWithin(implicit timeout: Duration): Unit = if (!valueWithin(timeout)) fail("Expected to be done Synchronously")
+    def expectDoneAsyncWithin(implicit timeout: Duration): Unit = if (valueWithin(timeout)) fail("Expected to be done Asynchronously")
 
   }
 

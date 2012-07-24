@@ -3,9 +3,11 @@
  */
 package akka.actor
 
+import language.postfixOps
+
 import akka.testkit._
-import akka.util.duration._
-import akka.util.Duration
+import scala.concurrent.util.duration._
+import scala.concurrent.util.Duration
 
 object FSMTransitionSpec {
 
@@ -71,16 +73,11 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
     "not fail when listener goes away" in {
       val forward = system.actorOf(Props(new Forwarder(testActor)))
       val fsm = system.actorOf(Props(new MyFSM(testActor)))
-      val sup = system.actorOf(Props(new Actor {
-        context.watch(fsm)
-        override val supervisorStrategy = OneForOneStrategy(withinTimeRange = Duration.Inf)(List(classOf[Throwable]))
-        def receive = { case _ ⇒ }
-      }))
 
-      within(300 millis) {
+      within(1 second) {
         fsm ! FSM.SubscribeTransitionCallBack(forward)
         expectMsg(FSM.CurrentState(fsm, 0))
-        system.stop(forward)
+        akka.pattern.gracefulStop(forward, 5 seconds)
         fsm ! "tick"
         expectNoMsg
       }

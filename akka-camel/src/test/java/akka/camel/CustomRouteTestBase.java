@@ -4,7 +4,7 @@ import akka.actor.*;
 import akka.camel.internal.component.CamelPath;
 import akka.camel.javaapi.UntypedConsumerActor;
 import akka.camel.javaapi.UntypedProducerActor;
-import akka.util.FiniteDuration;
+import scala.concurrent.util.FiniteDuration;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;

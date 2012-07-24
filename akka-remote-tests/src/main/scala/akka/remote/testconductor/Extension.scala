@@ -1,17 +1,11 @@
 package akka.remote.testconductor
 
-import akka.actor.ExtensionKey
-import akka.actor.Extension
-import akka.actor.ExtendedActorSystem
+import akka.actor.{ ExtensionKey, Extension, ExtendedActorSystem, ActorContext, ActorRef, Address, ActorSystemImpl, Props }
 import akka.remote.RemoteActorRefProvider
-import akka.actor.ActorContext
-import akka.util.{ Duration, Timeout }
+import akka.util.Timeout
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.ActorRef
 import java.util.concurrent.ConcurrentHashMap
-import akka.actor.Address
-import akka.actor.ActorSystemImpl
-import akka.actor.Props
+import scala.concurrent.util.Duration
 
 /**
  * Access to the [[akka.remote.testconductor.TestConductorExt]] extension:

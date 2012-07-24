@@ -3,20 +3,21 @@
  */
 package akka.routing
 
+import language.implicitConversions
+import language.postfixOps
+
 import akka.actor._
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 import akka.ConfigurationException
 import akka.pattern.pipe
 import com.typesafe.config.Config
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
-import akka.jsr166y.ThreadLocalRandom
-import akka.util.Unsafe
+import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.dispatch.Dispatchers
 import scala.annotation.tailrec
-import scala.runtime.ScalaRunTime
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -72,7 +73,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   if (routerConfig.resizer.isEmpty && _routees.isEmpty)
     throw new ActorInitializationException("router " + routerConfig + " did not register routees!")
 
-  start()
+  start(sendSupervise = false)
 
   /*
    * end of construction
@@ -1074,8 +1075,9 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
     {
       case (sender, message) ⇒
         val provider: ActorRefProvider = routeeProvider.context.asInstanceOf[ActorCell].systemImpl.provider
+        implicit val ec = provider.dispatcher
         val asker = akka.pattern.PromiseActorRef(provider, within)
-        asker.result.pipeTo(sender)
+        asker.result.future.pipeTo(sender)
         toAll(asker, routeeProvider.routees)
     }
   }

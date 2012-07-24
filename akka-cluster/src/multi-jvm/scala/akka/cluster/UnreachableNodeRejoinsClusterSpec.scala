@@ -10,7 +10,7 @@ import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Address
 import akka.remote.testconductor.{ RoleName, Direction }
-import akka.util.duration._
+import scala.concurrent.util.duration._
 
 object UnreachableNodeRejoinsClusterMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")

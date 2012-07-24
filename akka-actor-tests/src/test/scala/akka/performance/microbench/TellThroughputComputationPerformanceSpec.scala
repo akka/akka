@@ -4,8 +4,8 @@ import akka.performance.workbench.PerformanceSpec
 import akka.actor._
 import java.util.concurrent.{ ThreadPoolExecutor, CountDownLatch, TimeUnit }
 import akka.dispatch._
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.util.Duration
+import scala.concurrent.util.duration._
 
 // -server -Xms512M -Xmx1024M -XX:+UseParallelGC -Dbenchmark=true -Dbenchmark.repeatFactor=500
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
