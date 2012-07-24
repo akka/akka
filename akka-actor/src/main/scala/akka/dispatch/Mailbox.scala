@@ -128,7 +128,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * Reduce the suspend count by one. Caller does not need to worry about whether
    * status was Scheduled or not.
    *
-   * @returns true if the suspend count reached zero
+   * @return true if the suspend count reached zero
    */
   @tailrec
   final def resume(): Boolean = status match {
@@ -143,7 +143,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * Increment the suspend count by one. Caller does not need to worry about whether
    * status was Scheduled or not.
    *
-   * @returns true if the previous suspend count was zero
+   * @return true if the previous suspend count was zero
    */
   @tailrec
   final def suspend(): Boolean = status match {
