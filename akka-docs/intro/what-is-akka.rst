@@ -11,8 +11,8 @@ applications is too hard. Most of the time it's because we are using the wrong
 tools and the wrong level of abstraction. Akka is here to change that. Using the
 Actor Model we raise the abstraction level and provide a better platform to build
 correct, concurrent, and scalable applications. For fault-tolerance we adopt the
-"Let it crash" model which the telecom industry has used with great success in to
-build applications that self-heal and systems that never stop. Actors also provides
+"Let it crash" model which the telecom industry has used with great success to
+build applications that self-heal and systems that never stop. Actors also provide
 the abstraction for transparent distribution and the basis for truly scalable and
 fault-tolerant applications.
 
