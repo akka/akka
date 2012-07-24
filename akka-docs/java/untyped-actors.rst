@@ -1,4 +1,3 @@
-
 .. _untyped-actors-java:
 
 ################
@@ -350,9 +349,10 @@ involves creating an internal actor for handling this reply, which needs to
 have a timeout after which it is destroyed in order not to leak resources; see
 more below.
 
-To complete the future with an exception you need send a Failure message to the sender.
-This is *not done automatically* when an actor throws an exception while processing a
-message.
+.. warning::
+
+    To complete the future with an exception you need send a Failure message to the sender.
+    This is *not done automatically* when an actor throws an exception while processing a message.
 
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java#reply-exception
 
