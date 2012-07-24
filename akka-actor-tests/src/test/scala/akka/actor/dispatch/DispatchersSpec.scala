@@ -6,7 +6,7 @@ package akka.actor.dispatch
 import language.postfixOps
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
-import scala.reflect.{ Manifest }
+import scala.reflect.ClassTag
 import akka.dispatch._
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
@@ -50,7 +50,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
   val id = "id"
 
   def instance(dispatcher: MessageDispatcher): (MessageDispatcher) ⇒ Boolean = _ == dispatcher
-  def ofType[T <: MessageDispatcher: Manifest]: (MessageDispatcher) ⇒ Boolean = _.getClass == manifest[T].erasure
+  def ofType[T <: MessageDispatcher: ClassTag]: (MessageDispatcher) ⇒ Boolean = _.getClass == implicitly[ClassTag[T]].runtimeClass
 
   def typesAndValidators: Map[String, (MessageDispatcher) ⇒ Boolean] = Map(
     "BalancingDispatcher" -> ofType[BalancingDispatcher],

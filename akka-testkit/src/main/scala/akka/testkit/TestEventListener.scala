@@ -13,6 +13,7 @@ import akka.event.Logging
 import java.lang.{ Iterable ⇒ JIterable }
 import scala.collection.JavaConverters
 import scala.concurrent.util.Duration
+import scala.reflect.ClassTag
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
@@ -158,8 +159,8 @@ object EventFilter {
    * `null` does NOT work (passing `null` disables the
    * source filter).''
    */
-  def apply[A <: Throwable: Manifest](message: String = null, source: String = null, start: String = "", pattern: String = null, occurrences: Int = Int.MaxValue): EventFilter =
-    ErrorFilter(manifest[A].erasure, Option(source),
+  def apply[A <: Throwable: ClassTag](message: String = null, source: String = null, start: String = "", pattern: String = null, occurrences: Int = Int.MaxValue): EventFilter =
+    ErrorFilter(implicitly[ClassTag[A]].runtimeClass, Option(source),
       if (message ne null) Left(message) else Option(pattern) map (new Regex(_)) toRight start,
       message ne null)(occurrences)
 

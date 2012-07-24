@@ -219,7 +219,7 @@ assertions concerning received messages. Here is the full list:
     An object which is an instance of the given type (after erasure) must be
     received within the allotted time frame; the object will be returned. This
     method is approximately equivalent to
-    ``expectMsgClass(manifest[T].erasure)``.
+    ``expectMsgClass(implicitly[ClassTag[T]].runtimeClass)``.
 
   * :meth:`expectMsgAnyOf[T](d: Duration, obj: T*): T`
 

@@ -20,6 +20,7 @@ import scala.runtime.NonLocalReturnControl
 import akka.pattern.ask
 import java.lang.{ IllegalStateException, ArithmeticException }
 import java.util.concurrent._
+import scala.reflect.ClassTag
 
 object FutureSpec {
 
@@ -123,7 +124,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
   "A Future" when {
 
-    "awaiting a result" that {
+    "awaiting a result" which {
       "is not completed" must {
         behave like emptyFuture { test ⇒
           val latch = new TestLatch
@@ -169,7 +170,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
     }
 
-    "from an Actor" that {
+    "from an Actor" which {
       "returns a result" must {
         behave like futureWithResult { test ⇒
           val actor = system.actorOf(Props[TestActor])
@@ -192,7 +193,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
     }
 
-    "using flatMap with an Actor" that {
+    "using flatMap with an Actor" which {
       "will return a result" must {
         behave like futureWithResult { test ⇒
           val actor1 = system.actorOf(Props[TestActor])
@@ -966,7 +967,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "cast using mapTo" in { f((future, result) ⇒ Await.result(future.mapTo[Boolean].recover({ case _: ClassCastException ⇒ false }), timeout.duration) must be(false)) }
   }
 
-  def futureWithException[E <: Throwable: Manifest](f: ((Future[Any], String) ⇒ Unit) ⇒ Unit) {
+  def futureWithException[E <: Throwable: ClassTag](f: ((Future[Any], String) ⇒ Unit) ⇒ Unit) {
     "be completed" in { f((future, _) ⇒ future must be('completed)) }
     "contain a value" in {
       f((future, message) ⇒ {
@@ -1047,5 +1048,5 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
   }
 
-  def checkType[A: Manifest, B](in: Future[A], refmanifest: Manifest[B]): Boolean = manifest[A] == refmanifest
+  def checkType[A: ClassTag, B](in: Future[A], reftag: ClassTag[B]): Boolean = implicitly[ClassTag[A]].runtimeClass == reftag.runtimeClass
 }

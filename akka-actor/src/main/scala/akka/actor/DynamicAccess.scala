@@ -32,7 +32,7 @@ abstract class DynamicAccess {
       val constructor = clazz.getDeclaredConstructor(types: _*)
       constructor.setAccessible(true)
       val obj = constructor.newInstance(values: _*).asInstanceOf[T]
-      val t = classManifest[T].erasure
+      val t = implicitly[ClassTag[T]].runtimeClass
       if (t.isInstance(obj)) Right(obj) else Left(new ClassCastException(clazz + " is not a subtype of " + t))
     }
   }
@@ -93,7 +93,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
   override def getClassFor[T: ClassTag](fqcn: String): Either[Throwable, Class[_ <: T]] =
     try {
       val c = classLoader.loadClass(fqcn).asInstanceOf[Class[_ <: T]]
-      val t = classManifest[T].erasure
+      val t = implicitly[ClassTag[T]].runtimeClass
       if (t.isAssignableFrom(c)) Right(c) else Left(new ClassCastException(t + " is not assignable from " + c))
     } catch {
       case NonFatal(e) ⇒ Left(e)
@@ -107,7 +107,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
         val constructor = c.getDeclaredConstructor(types: _*)
         constructor.setAccessible(true)
         val obj = constructor.newInstance(values: _*)
-        val t = classManifest[T].erasure
+        val t = implicitly[ClassTag[T]].runtimeClass
         if (t.isInstance(obj)) Right(obj) else Left(new ClassCastException(fqcn + " is not a subtype of " + t))
       }
     })
@@ -117,7 +117,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
       withErrorHandling {
         val module = c.getDeclaredField("MODULE$")
         module.setAccessible(true)
-        val t = classManifest[T].erasure
+        val t = implicitly[ClassTag[T]].runtimeClass
         module.get(null) match {
           case null                  ⇒ Left(new NullPointerException)
           case x if !t.isInstance(x) ⇒ Left(new ClassCastException(fqcn + " is not a subtype of " + t))

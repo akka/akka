@@ -9,10 +9,10 @@ import language.implicitConversions
 import internal.CamelExchangeAdapter
 import org.apache.camel.impl.DefaultExchange
 import org.apache.camel.{ Exchange, ExchangePattern }
-import akka.camel.TestSupport.{ SharedCamelSystem, MessageSugar }
+import akka.camel.TestSupport.{ SharedCamelSystem }
 import org.scalatest.FunSuite
 
-class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem with MessageSugar {
+class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem {
 
   //TODO: Get rid of implicit.
   // It is here, as was easier to add this implicit than to rewrite the whole test...
@@ -20,22 +20,22 @@ class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem with Mess
 
   test("mustSetInMessageFromRequestMessage") {
     val e1 = sampleInOnly
-    e1.setRequest(Message("x"))
+    e1.setRequest(CamelMessage("x", Map.empty))
     assert(e1.getIn.getBody === "x")
     val e2 = sampleInOut
-    e2.setRequest(Message("y"))
+    e2.setRequest(CamelMessage("y", Map.empty))
     assert(e2.getIn.getBody === "y")
   }
 
   test("mustSetOutMessageFromResponseMessage") {
     val e1 = sampleInOut
-    e1.setResponse(Message("y"))
+    e1.setResponse(CamelMessage("y", Map.empty))
     assert(e1.getOut.getBody === "y")
   }
 
   test("mustSetInMessageFromResponseMessage") {
     val e1 = sampleInOnly
-    e1.setResponse(Message("x"))
+    e1.setResponse(CamelMessage("x", Map.empty))
     assert(e1.getIn.getBody === "x")
   }
 
@@ -50,17 +50,17 @@ class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem with Mess
 
   test("mustCreateRequestMessageFromInMessage") {
     val m = sampleInOnly.toRequestMessage
-    assert(m === Message("test-in", Map("key-in" -> "val-in")))
+    assert(m === CamelMessage("test-in", Map("key-in" -> "val-in")))
   }
 
   test("mustCreateResponseMessageFromInMessage") {
     val m = sampleInOnly.toResponseMessage
-    assert(m === Message("test-in", Map("key-in" -> "val-in")))
+    assert(m === CamelMessage("test-in", Map("key-in" -> "val-in")))
   }
 
   test("mustCreateResponseMessageFromOutMessage") {
     val m = sampleInOut.toResponseMessage
-    assert(m === Message("test-out", Map("key-out" -> "val-out")))
+    assert(m === CamelMessage("test-out", Map("key-out" -> "val-out")))
   }
 
   test("mustCreateFailureMessageFromExceptionAndInMessage") {
@@ -83,17 +83,17 @@ class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem with Mess
 
   test("mustCreateRequestMessageFromInMessageWithAdditionalHeader") {
     val m = sampleInOnly.toRequestMessage(Map("x" -> "y"))
-    assert(m === Message("test-in", Map("key-in" -> "val-in", "x" -> "y")))
+    assert(m === CamelMessage("test-in", Map("key-in" -> "val-in", "x" -> "y")))
   }
 
   test("mustCreateResponseMessageFromInMessageWithAdditionalHeader") {
     val m = sampleInOnly.toResponseMessage(Map("x" -> "y"))
-    assert(m === Message("test-in", Map("key-in" -> "val-in", "x" -> "y")))
+    assert(m === CamelMessage("test-in", Map("key-in" -> "val-in", "x" -> "y")))
   }
 
   test("mustCreateResponseMessageFromOutMessageWithAdditionalHeader") {
     val m = sampleInOut.toResponseMessage(Map("x" -> "y"))
-    assert(m === Message("test-out", Map("key-out" -> "val-out", "x" -> "y")))
+    assert(m === CamelMessage("test-out", Map("key-out" -> "val-out", "x" -> "y")))
   }
 
   test("mustCreateFailureMessageFromExceptionAndInMessageWithAdditionalHeader") {

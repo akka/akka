@@ -11,6 +11,7 @@ import scala.collection.JavaConversions._
 import akka.japi.{ Function ⇒ JFunction }
 import org.apache.camel.{ CamelContext, Message ⇒ JCamelMessage }
 import akka.AkkaException
+import scala.reflect.ClassTag
 
 /**
  * An immutable representation of a Camel message.
@@ -132,7 +133,7 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
    * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    */
-  def bodyAs[T](implicit m: Manifest[T], camelContext: CamelContext): T = getBodyAs(m.erasure.asInstanceOf[Class[T]], camelContext)
+  def bodyAs[T](implicit t: ClassTag[T], camelContext: CamelContext): T = getBodyAs(t.runtimeClass.asInstanceOf[Class[T]], camelContext)
 
   /**
    * Returns the body of the message converted to the type as given by the <code>clazz</code>
@@ -152,7 +153,7 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
    * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    */
-  def withBodyAs[T](implicit m: Manifest[T], camelContext: CamelContext): CamelMessage = withBodyAs(m.erasure.asInstanceOf[Class[T]])
+  def withBodyAs[T](implicit t: ClassTag[T], camelContext: CamelContext): CamelMessage = withBodyAs(t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
    * Creates a CamelMessage with current <code>body</code> converted to type <code>clazz</code>.
@@ -172,7 +173,7 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    *
    */
-  def headerAs[T](name: String)(implicit m: Manifest[T], camelContext: CamelContext): Option[T] = header(name).map(camelContext.getTypeConverter.mandatoryConvertTo[T](m.erasure.asInstanceOf[Class[T]], _))
+  def headerAs[T](name: String)(implicit t: ClassTag[T], camelContext: CamelContext): Option[T] = header(name).map(camelContext.getTypeConverter.mandatoryConvertTo[T](t.runtimeClass.asInstanceOf[Class[T]], _))
 
   /**
    * Returns the header with given <code>name</code> converted to type as given by the <code>clazz</code>
@@ -183,7 +184,7 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * <p>
    * Java API
    */
-  def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext): T = headerAs[T](name)(Manifest.classType(clazz), camelContext).get
+  def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext): T = headerAs[T](name)(ClassTag(clazz), camelContext).get
 
 }
 

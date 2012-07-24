@@ -13,6 +13,7 @@ import java.util.concurrent.{ TimeoutException, ExecutionException, TimeUnit }
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, Suite }
 import org.scalatest.matchers.{ BePropertyMatcher, BePropertyMatchResult }
 import scala.concurrent.util.{ FiniteDuration, Duration }
+import scala.reflect.ClassTag
 
 private[camel] object TestSupport {
 
@@ -41,12 +42,6 @@ private[camel] object TestSupport {
 
     def routeCount = camel.context.getRoutes().size()
     def routes = camel.context.getRoutes
-  }
-
-  @deprecated
-  trait MessageSugar {
-    def Message(body: Any) = akka.camel.CamelMessage(body, Map.empty)
-    def Message(body: Any, headers: Map[String, Any]) = akka.camel.CamelMessage(body, headers)
   }
 
   trait SharedCamelSystem extends BeforeAndAfterAll { this: Suite ⇒
@@ -82,8 +77,8 @@ private[camel] object TestSupport {
     duration millis
   }
 
-  def anInstanceOf[T](implicit manifest: Manifest[T]) = {
-    val clazz = manifest.erasure.asInstanceOf[Class[T]]
+  def anInstanceOf[T](implicit tag: ClassTag[T]) = {
+    val clazz = tag.runtimeClass.asInstanceOf[Class[T]]
     new BePropertyMatcher[AnyRef] {
       def apply(left: AnyRef) = BePropertyMatchResult(
         clazz.isAssignableFrom(left.getClass),
