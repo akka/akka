@@ -62,7 +62,7 @@ class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCa
   "awaitActivation must fail if notification timeout is too short and activation is not complete yet" in {
     val actor = testActorWithEndpoint("direct:actor-4")
     intercept[ActivationTimeoutException] {
-      camel.awaitActivation(actor, 0 seconds)
+      camel.awaitActivation(actor, 1 millis)
     }
   }
 
