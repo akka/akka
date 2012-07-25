@@ -15,15 +15,16 @@ import TestSupport._
 import org.scalatest.WordSpec
 import akka.testkit.TestLatch
 import scala.concurrent.Await
+import java.util.concurrent.TimeoutException
 
 class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCamelSystem {
-  implicit val timeout = Timeout(10 seconds)
+  implicit val timeout = 10 seconds
   def template: ProducerTemplate = camel.template
 
   "ActivationAware must be notified when endpoint is activated" in {
     val latch = new TestLatch(0)
     val actor = system.actorOf(Props(new TestConsumer("direct:actor-1", latch)))
-    camel.awaitActivation(actor, 10 second) must be === actor
+    Await.result(camel.activationFutureFor(actor), 10 seconds) must be === actor
 
     template.requestBody("direct:actor-1", "test") must be("received test")
   }
@@ -39,27 +40,25 @@ class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCa
         latch.countDown()
       }
     })
-    camel.awaitActivation(actor, 10 second)
+    Await.result(camel.activationFutureFor(actor), timeout)
 
     system.stop(actor)
-    camel.awaitDeactivation(actor, 10 second)
+    Await.result(camel.deactivationFutureFor(actor), timeout)
     Await.ready(latch, 10 second)
   }
 
   "ActivationAware must time out when waiting for endpoint de-activation for too long" in {
     val latch = new TestLatch(0)
     val actor = start(new TestConsumer("direct:a5", latch))
-    camel.awaitActivation(actor, 10 second)
-    intercept[DeActivationTimeoutException] {
-      camel.awaitDeactivation(actor, 1 millis)
-    }
+    Await.result(camel.activationFutureFor(actor), timeout)
+    intercept[TimeoutException] { Await.result(camel.deactivationFutureFor(actor), 1 millis) }
   }
 
-  "awaitActivation must fail if notification timeout is too short and activation is not complete yet" in {
+  "activationFutureFor must fail if notification timeout is too short and activation is not complete yet" in {
     val latch = new TestLatch(1)
     try {
       val actor = system.actorOf(Props(new TestConsumer("direct:actor-4", latch)))
-      intercept[ActivationTimeoutException] { camel.awaitActivation(actor, 1 millis) }
+      intercept[TimeoutException] { Await.result(camel.activationFutureFor(actor), 1 millis) }
     } finally latch.countDown()
   }
 

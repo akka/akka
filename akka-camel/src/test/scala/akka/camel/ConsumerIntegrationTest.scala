@@ -9,147 +9,147 @@ import language.existentials
 
 import akka.actor._
 import org.scalatest.matchers.MustMatchers
-import scala.concurrent.util.duration._
-import TestSupport._
 import org.scalatest.WordSpec
+import akka.camel.TestSupport._
 import org.apache.camel.model.RouteDefinition
 import org.apache.camel.builder.Builder
 import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException }
 import java.util.concurrent.{ ExecutionException, TimeUnit, TimeoutException }
 import akka.testkit.TestLatch
-import scala.concurrent.Await
 import akka.actor.Status.Failure
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
 
 class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedCamelSystem {
-  private val defaultTimeout = 10
-  "Consumer must throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
-    val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
+  "ConsumerIntegrationTest" must {
+    implicit val defaultTimeout = 10.seconds
 
-    intercept[FailedToCreateRouteException] {
-      camel.awaitActivation(actorRef, timeout = defaultTimeout seconds)
+    "Consumer must throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
+      val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
+      intercept[FailedToCreateRouteException] { Await.result(camel.activationFutureFor(actorRef), defaultTimeout) }
     }
-  }
 
-  "Consumer must support in-out messaging" in {
-    start(new Consumer {
-      def endpointUri = "direct:a1"
-      def receive = {
-        case m: CamelMessage ⇒ sender ! "received " + m.bodyAs[String]
-      }
-    })
-    camel.sendTo("direct:a1", msg = "some message") must be("received some message")
-  }
-
-  "Consumer must time-out if consumer is slow" in {
-    val SHORT_TIMEOUT = 10 millis
-    val LONG_WAIT = 200 millis
-
-    start(new Consumer {
-      override def replyTimeout = SHORT_TIMEOUT
-
-      def endpointUri = "direct:a3"
-      def receive = { case _ ⇒ { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }
-    })
-
-    val exception = intercept[CamelExecutionException] {
-      camel.sendTo("direct:a3", msg = "some msg 3")
+    "Consumer must support in-out messaging" in {
+      start(new Consumer {
+        def endpointUri = "direct:a1"
+        def receive = {
+          case m: CamelMessage ⇒ sender ! "received " + m.bodyAs[String]
+        }
+      })
+      camel.sendTo("direct:a1", msg = "some message") must be("received some message")
     }
-    exception.getCause.getClass must be(classOf[TimeoutException])
-  }
 
-  "Consumer must process messages even after actor restart" in {
-    val restarted = TestLatch()
-    val consumer = start(new Consumer {
-      def endpointUri = "direct:a2"
+    "Consumer must time-out if consumer is slow" in {
+      val SHORT_TIMEOUT = 10 millis
+      val LONG_WAIT = 200 millis
 
-      def receive = {
-        case "throw"         ⇒ throw new Exception
-        case m: CamelMessage ⇒ sender ! "received " + m.bodyAs[String]
+      start(new Consumer {
+        override def replyTimeout = SHORT_TIMEOUT
+
+        def endpointUri = "direct:a3"
+        def receive = { case _ ⇒ { Thread.sleep(LONG_WAIT.toMillis); sender ! "done" } }
+      })
+
+      val exception = intercept[CamelExecutionException] {
+        camel.sendTo("direct:a3", msg = "some msg 3")
       }
+      exception.getCause.getClass must be(classOf[TimeoutException])
+    }
 
-      override def postRestart(reason: Throwable) {
-        restarted.countDown()
-      }
-    })
-    consumer ! "throw"
-    Await.ready(restarted, defaultTimeout seconds)
+    "Consumer must process messages even after actor restart" in {
+      val restarted = TestLatch()
+      val consumer = start(new Consumer {
+        def endpointUri = "direct:a2"
 
-    val response = camel.sendTo("direct:a2", msg = "xyz")
-    response must be("received xyz")
-  }
+        def receive = {
+          case "throw"         ⇒ throw new Exception
+          case m: CamelMessage ⇒ sender ! "received " + m.bodyAs[String]
+        }
 
-  "Consumer must unregister itself when stopped" in {
-    val consumer = start(new TestActor())
-    camel.awaitActivation(consumer, defaultTimeout seconds)
+        override def postRestart(reason: Throwable) {
+          restarted.countDown()
+        }
+      })
+      consumer ! "throw"
+      Await.ready(restarted, defaultTimeout)
 
-    camel.routeCount must be > (0)
+      val response = camel.sendTo("direct:a2", msg = "xyz")
+      response must be("received xyz")
+    }
 
-    system.stop(consumer)
-    camel.awaitDeactivation(consumer, defaultTimeout seconds)
+    "Consumer must unregister itself when stopped" in {
+      val consumer = start(new TestActor())
+      Await.result(camel.activationFutureFor(consumer), defaultTimeout)
 
-    camel.routeCount must be(0)
-  }
+      camel.routeCount must be > (0)
 
-  "Consumer must register on uri passed in through constructor" in {
-    val consumer = start(new TestActor("direct://test"))
-    camel.awaitActivation(consumer, defaultTimeout seconds)
+      system.stop(consumer)
+      Await.result(camel.deactivationFutureFor(consumer), defaultTimeout)
 
-    camel.routeCount must be > (0)
-    camel.routes.get(0).getEndpoint.getEndpointUri must be("direct://test")
-    system.stop(consumer)
-    camel.awaitDeactivation(consumer, defaultTimeout seconds)
+      camel.routeCount must be(0)
+    }
 
-    camel.routeCount must be(0)
-  }
+    "Consumer must register on uri passed in through constructor" in {
+      val consumer = start(new TestActor("direct://test"))
+      Await.result(camel.activationFutureFor(consumer), defaultTimeout)
 
-  "Error passing consumer supports error handling through route modification" in {
-    start(new ErrorThrowingConsumer("direct:error-handler-test") with ErrorPassing {
-      override def onRouteDefinition(rd: RouteDefinition) = {
-        rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
-      }
-    })
-    camel.sendTo("direct:error-handler-test", msg = "hello") must be("error: hello")
-  }
+      camel.routeCount must be > (0)
+      camel.routes.get(0).getEndpoint.getEndpointUri must be("direct://test")
+      system.stop(consumer)
+      Await.result(camel.deactivationFutureFor(consumer), defaultTimeout)
 
-  "Error passing consumer supports redelivery through route modification" in {
-    start(new FailingOnceConsumer("direct:failing-once-concumer") with ErrorPassing {
-      override def onRouteDefinition(rd: RouteDefinition) = {
-        rd.onException(classOf[Exception]).maximumRedeliveries(1).end
-      }
-    })
-    camel.sendTo("direct:failing-once-concumer", msg = "hello") must be("accepted: hello")
-  }
+      camel.routeCount must be(0)
+    }
 
-  "Consumer supports manual Ack" in {
-    start(new ManualAckConsumer() {
-      def endpointUri = "direct:manual-ack"
-      def receive = { case _ ⇒ sender ! Ack }
-    })
-    camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeout, TimeUnit.SECONDS) must be(null) //should not timeout
-  }
+    "Error passing consumer supports error handling through route modification" in {
+      start(new ErrorThrowingConsumer("direct:error-handler-test") with ErrorPassing {
+        override def onRouteDefinition(rd: RouteDefinition) = {
+          rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
+        }
+      })
+      camel.sendTo("direct:error-handler-test", msg = "hello") must be("error: hello")
+    }
 
-  "Consumer handles manual Ack failure" in {
-    val someException = new Exception("e1")
-    start(new ManualAckConsumer() {
-      def endpointUri = "direct:manual-ack"
-      def receive = { case _ ⇒ sender ! Failure(someException) }
-    })
+    "Error passing consumer supports redelivery through route modification" in {
+      start(new FailingOnceConsumer("direct:failing-once-concumer") with ErrorPassing {
+        override def onRouteDefinition(rd: RouteDefinition) = {
+          rd.onException(classOf[Exception]).maximumRedeliveries(1).end
+        }
+      })
+      camel.sendTo("direct:failing-once-concumer", msg = "hello") must be("accepted: hello")
+    }
 
-    intercept[ExecutionException] {
-      camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeout, TimeUnit.SECONDS)
-    }.getCause.getCause must be(someException)
-  }
+    "Consumer supports manual Ack" in {
+      start(new ManualAckConsumer() {
+        def endpointUri = "direct:manual-ack"
+        def receive = { case _ ⇒ sender ! Ack }
+      })
+      camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeout.toSeconds, TimeUnit.SECONDS) must be(null) //should not timeout
+    }
 
-  "Consumer should time-out, if manual Ack not received within replyTimeout and should give a human readable error message" in {
-    start(new ManualAckConsumer() {
-      override def replyTimeout = 10 millis
-      def endpointUri = "direct:manual-ack"
-      def receive = { case _ ⇒ }
-    })
+    "Consumer handles manual Ack failure" in {
+      val someException = new Exception("e1")
+      start(new ManualAckConsumer() {
+        def endpointUri = "direct:manual-ack"
+        def receive = { case _ ⇒ sender ! Failure(someException) }
+      })
 
-    intercept[ExecutionException] {
-      camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeout, TimeUnit.SECONDS)
-    }.getCause.getCause.getMessage must include("Failed to get Ack")
+      intercept[ExecutionException] {
+        camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeout.toSeconds, TimeUnit.SECONDS)
+      }.getCause.getCause must be(someException)
+    }
+
+    "Consumer should time-out, if manual Ack not received within replyTimeout and should give a human readable error message" in {
+      start(new ManualAckConsumer() {
+        override def replyTimeout = 10 millis
+        def endpointUri = "direct:manual-ack"
+        def receive = { case _ ⇒ }
+      })
+
+      intercept[ExecutionException] {
+        camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeout.toSeconds, TimeUnit.SECONDS)
+      }.getCause.getCause.getMessage must include("Failed to get Ack")
+    }
   }
 }
 

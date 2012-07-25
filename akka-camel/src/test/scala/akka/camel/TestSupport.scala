@@ -14,12 +14,14 @@ import org.scalatest.matchers.{ BePropertyMatcher, BePropertyMatchResult }
 import scala.concurrent.util.{ FiniteDuration, Duration }
 import scala.reflect.ClassTag
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
+import concurrent.Await
+import akka.util.Timeout
 
 private[camel] object TestSupport {
 
   def start(actor: ⇒ Actor)(implicit system: ActorSystem): ActorRef = {
     val actorRef = system.actorOf(Props(actor))
-    CamelExtension(system).awaitActivation(actorRef, 10 seconds)
+    Await.result(CamelExtension(system).activationFutureFor(actorRef)(10 seconds), 10 seconds)
     actorRef
   }
 

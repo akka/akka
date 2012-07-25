@@ -11,9 +11,11 @@ import org.scalatest.WordSpec
 import akka.camel.TestSupport.SharedCamelSystem
 import scala.concurrent.util.duration._
 import akka.actor.{ ActorRef, Props }
+import akka.util.Timeout
+import scala.concurrent.Await
 
 class ProducerRegistryTest extends WordSpec with MustMatchers with SharedCamelSystem {
-
+  implicit val timeout = 5.seconds
   "A ProducerRegistry" must {
     def newEmptyActor: ActorRef = system.actorOf(Props.empty)
     def registerProcessorFor(actorRef: ActorRef) = camel.registerProducer(actorRef, "mock:mock")._2
@@ -21,10 +23,10 @@ class ProducerRegistryTest extends WordSpec with MustMatchers with SharedCamelSy
     "register a started SendProcessor for the producer, which is stopped when the actor is stopped" in {
       val actorRef = newEmptyActor
       val processor = registerProcessorFor(actorRef)
-      camel.awaitActivation(actorRef, 5 second)
+      Await.result(camel.activationFutureFor(actorRef), timeout)
       processor.isStarted must be(true)
       system.stop(actorRef)
-      camel.awaitDeactivation(actorRef, 5 second)
+      Await.result(camel.deactivationFutureFor(actorRef), timeout)
       (processor.isStopping || processor.isStopped) must be(true)
     }
     "remove and stop the SendProcessor if the actorRef is registered" in {
