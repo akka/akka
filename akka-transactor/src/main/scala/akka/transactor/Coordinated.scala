@@ -95,7 +95,7 @@ object Coordinated {
  * The coordinated transaction will wait for the other transactions before committing.
  * If any of the coordinated transactions fail then they all fail.
  *
- * @see [[akka.actor.Transactor]] for an actor that implements coordinated transactions
+ * @see [[akka.transactor.Transactor]] for an actor that implements coordinated transactions
  */
 class Coordinated(val message: Any, member: CommitBarrier.Member) {
 

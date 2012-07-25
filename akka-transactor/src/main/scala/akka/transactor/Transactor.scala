@@ -39,7 +39,7 @@ case class SendTo(actor: ActorRef, message: Option[Any] = None)
  * <br/>
  *
  * To coordinate with other transactors override the `coordinate` method.
- * The `coordinate` method maps a message to a set of [[akka.actor.Transactor.SendTo]]
+ * The `coordinate` method maps a message to a set of [[akka.transactor.SendTo]]
  * objects, pairs of `ActorRef` and a message.
  * You can use the `include` and `sendTo` methods to easily coordinate with other transactors.
  * The `include` method will send on the same message that was received to other transactors.

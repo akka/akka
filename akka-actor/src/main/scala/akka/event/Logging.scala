@@ -237,7 +237,7 @@ trait LoggingBus extends ActorEventBus {
 
 /**
  * This is a “marker” class which is inserted as originator class into
- * [[akka.event.LogEvent]] when the string representation was supplied
+ * [[akka.event.Logging.LogEvent]] when the string representation was supplied
  * directly.
  */
 class DummyClassForStringSources

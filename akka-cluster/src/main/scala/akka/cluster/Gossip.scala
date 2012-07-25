@@ -125,7 +125,7 @@ case class Gossip(
    * Checks if we have a cluster convergence. If there are any unreachable nodes then we can't have a convergence -
    * waiting for user to act (issuing DOWN) or leader to act (issuing DOWN through auto-down).
    *
-   * @returns Some(convergedGossip) if convergence have been reached and None if not
+   * @return Some(convergedGossip) if convergence have been reached and None if not
    */
   def convergence: Boolean = {
     val unreachable = overview.unreachable
