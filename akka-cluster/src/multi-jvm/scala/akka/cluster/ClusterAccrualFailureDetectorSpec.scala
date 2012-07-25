@@ -34,7 +34,7 @@ abstract class ClusterAccrualFailureDetectorSpec
     "receive heartbeats so that all member nodes in the cluster are marked 'available'" taggedAs LongRunningTest in {
       awaitClusterUp(first, second, third)
 
-      5.seconds.dilated.sleep // let them heartbeat
+      Thread.sleep(5.seconds.dilated.toMillis) // let them heartbeat
       cluster.failureDetector.isAvailable(first) must be(true)
       cluster.failureDetector.isAvailable(second) must be(true)
       cluster.failureDetector.isAvailable(third) must be(true)

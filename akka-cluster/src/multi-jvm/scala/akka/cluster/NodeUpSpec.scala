@@ -54,7 +54,7 @@ abstract class NodeUpSpec
 
       // let it run for a while to make sure that nothing bad happens
       for (n ← 1 to 20) {
-        100.millis.dilated.sleep()
+        Thread.sleep(100.millis.dilated.toMillis)
         unexpected.get must be(SortedSet.empty)
         cluster.latestGossip.members.forall(_.status == MemberStatus.Up) must be(true)
       }

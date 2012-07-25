@@ -20,6 +20,7 @@ import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
+import scala.reflect.classTag
 
 /**
  * The Player is the client component of the
@@ -62,7 +63,7 @@ trait Player { this: TestConductorExt ⇒
       }
     }))
 
-    a ? client mapTo
+    a ? client mapTo classTag[Done]
   }
 
   /**
@@ -104,7 +105,7 @@ trait Player { this: TestConductorExt ⇒
    */
   def getAddressFor(name: RoleName): Future[Address] = {
     import Settings.QueryTimeout
-    client ? ToServer(GetAddress(name)) mapTo
+    client ? ToServer(GetAddress(name)) mapTo classTag[Address]
   }
 }
 

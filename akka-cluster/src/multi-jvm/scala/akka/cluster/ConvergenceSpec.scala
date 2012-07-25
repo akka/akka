@@ -106,7 +106,7 @@ abstract class ConvergenceSpec
           log.debug("assertNotMovedUp#" + n)
           assertNotMovedUp
           // wait and then check again
-          1.second.dilated.sleep
+          Thread.sleep(1.second.dilated.toMillis)
         }
       }
 

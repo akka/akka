@@ -9,10 +9,10 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.util.duration._
 import akka.actor.ActorSystem
-import akka.util.Deadline
+import scala.concurrent.util.Deadline
 import java.util.concurrent.TimeoutException
 import scala.collection.immutable.SortedSet
-import akka.dispatch.Await
+import scala.concurrent.Await
 import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.remote.testconductor.RoleName
