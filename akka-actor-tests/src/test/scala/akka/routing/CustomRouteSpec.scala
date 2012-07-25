@@ -4,33 +4,45 @@
 package akka.routing
 
 import akka.testkit.AkkaSpec
-import akka.actor.Props
-import akka.actor.OneForOneStrategy
-import akka.actor.SupervisorStrategy
-import akka.dispatch.Dispatchers
-import akka.testkit.ExtractRoute
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CustomRouteSpec extends AkkaSpec {
 
-  class MyRouter extends RouterConfig {
+  //#custom-router
+  import akka.actor.{ ActorRef, Props, SupervisorStrategy }
+  import akka.dispatch.Dispatchers
+
+  class MyRouter(target: ActorRef) extends RouterConfig {
     override def createRoute(p: Props, prov: RouteeProvider): Route = {
       prov.createAndRegisterRoutees(p, 1, Nil)
 
       {
-        case (sender, message) ⇒ toAll(sender, prov.routees)
+        case (sender, message: String) ⇒ Seq(Destination(sender, target))
+        case (sender, message)         ⇒ toAll(sender, prov.routees)
       }
     }
     override def supervisorStrategy = SupervisorStrategy.defaultStrategy
     override def routerDispatcher = Dispatchers.DefaultDispatcherId
   }
+  //#custom-router
 
   "A custom RouterConfig" must {
 
     "be testable" in {
-      val router = system.actorOf(Props.empty.withRouter(new MyRouter))
+      //#test-route
+      import akka.pattern.ask
+      import akka.testkit.ExtractRoute
+      import scala.concurrent.Await
+      import scala.concurrent.util.duration._
+
+      val target = system.actorOf(Props.empty)
+      val router = system.actorOf(Props.empty.withRouter(new MyRouter(target)))
       val route = ExtractRoute(router)
-      route(testActor -> "hallo").size must be(1)
+      val r = Await.result(router.ask(CurrentRoutees)(1 second).mapTo[RouterRoutees], 1 second)
+      r.routees.size must be(1)
+      route(testActor -> "hallo") must be(Seq(Destination(testActor, target)))
+      route(testActor -> 12) must be(Seq(Destination(testActor, r.routees.head)))
+      //#test-route
     }
 
   }

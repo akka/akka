@@ -707,3 +707,17 @@ Some `Specs2 <http://specs2.org>`_ users have contributed examples of how to wor
 
 * Specifications are by default executed concurrently, which requires some care
   when writing the tests or alternatively the ``sequential`` keyword.
+
+Testing Custom Router Logic
+===========================
+
+Given the following custom (dummy) router:
+
+.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/CustomRouteSpec.scala#custom-router
+
+This might be tested by dispatching messages and asserting their reception at
+the right destinations, but that can be inconvenient. Therefore exists the
+:obj:`ExtractRoute` extractor, which can be used like so:
+
+.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/CustomRouteSpec.scala#test-route
+
