@@ -848,7 +848,7 @@ trait LoggingAdapter {
   }
 
   def format(t: String, arg: Any*): String = {
-    val sb = new StringBuilder //FIXME add some decent size hint here
+    val sb = new StringBuilder(64)
     var p = 0
     var rest = t
     while (p < arg.length) {
