@@ -185,7 +185,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 }
 
 /**
- * For internal use only. Converts Strings to [[akka.util.Duration]]s
+ * For internal use only. Converts Strings to [[scala.concurrent.util.Duration]]
  */
 private[camel] object DurationTypeConverter extends TypeConverter {
   override def convertTo[T](`type`: Class[T], value: AnyRef): T = `type`.cast(try {

@@ -241,10 +241,10 @@ object ByteString {
 }
 
 /**
- * A [[http://en.wikipedia.org/wiki/Rope_(computer_science) Rope-like]] immutable
- * data structure containing bytes. The goal of this structure is to reduce
- * copying of arrays when concatenating and slicing sequences of bytes, and also
- * providing a thread safe way of working with bytes.
+ * A rope-like immutable data structure containing bytes.
+ * The goal of this structure is to reduce copying of arrays
+ * when concatenating and slicing sequences of bytes,
+ * and also providing a thread safe way of working with bytes.
  *
  * TODO: Add performance characteristics
  */

@@ -34,8 +34,8 @@ object CircuitBreaker {
    *
    * @param scheduler Reference to Akka scheduler
    * @param maxFailures Maximum number of failures before opening the circuit
-   * @param callTimeout [[akka.util.Duration]] of time after which to consider a call a failure
-   * @param resetTimeout [[akka.util.Duration]] of time after which to attempt to close the circuit
+   * @param callTimeout [[scala.concurrent.util.Duration]] of time after which to consider a call a failure
+   * @param resetTimeout [[scala.concurrent.util.Duration]] of time after which to attempt to close the circuit
    */
   def apply(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration): CircuitBreaker =
     new CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)(syncExecutionContext)
@@ -48,8 +48,8 @@ object CircuitBreaker {
    *
    * @param scheduler Reference to Akka scheduler
    * @param maxFailures Maximum number of failures before opening the circuit
-   * @param callTimeout [[akka.util.Duration]] of time after which to consider a call a failure
-   * @param resetTimeout [[akka.util.Duration]] of time after which to attempt to close the circuit
+   * @param callTimeout [[scala.concurrent.util.Duration]] of time after which to consider a call a failure
+   * @param resetTimeout [[scala.concurrent.util.Duration]] of time after which to attempt to close the circuit
    */
   def create(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration): CircuitBreaker =
     apply(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)
@@ -71,9 +71,9 @@ object CircuitBreaker {
  *
  * @param scheduler Reference to Akka scheduler
  * @param maxFailures Maximum number of failures before opening the circuit
- * @param callTimeout [[akka.util.Duration]] of time after which to consider a call a failure
- * @param resetTimeout [[akka.util.Duration]] of time after which to attempt to close the circuit
- * @param executor [[akka.dispatch.ExecutionContext]] used for execution of state transition listeners
+ * @param callTimeout [[scala.concurrent.util.Duration]] of time after which to consider a call a failure
+ * @param resetTimeout [[scala.concurrent.util.Duration]] of time after which to attempt to close the circuit
+ * @param executor [[scala.concurrent.ExecutionContext]] used for execution of state transition listeners
  */
 class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)(implicit executor: ExecutionContext) extends AbstractCircuitBreaker {
 
@@ -152,7 +152,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   /**
    * Adds a callback to execute when circuit breaker opens
    *
-   * The callback is run in the [[akka.dispatch.ExecutionContext]] supplied in the constructor.
+   * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
    *
    * @param callback Handler to be invoked on state change
    * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
@@ -175,7 +175,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   /**
    * Adds a callback to execute when circuit breaker transitions to half-open
    *
-   * The callback is run in the [[akka.dispatch.ExecutionContext]] supplied in the constructor.
+   * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
    *
    * @param callback Handler to be invoked on state change
    * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
@@ -198,7 +198,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
   /**
    * Adds a callback to execute when circuit breaker state closes
    *
-   * The callback is run in the [[akka.dispatch.ExecutionContext]] supplied in the constructor.
+   * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
    *
    * @param callback Handler to be invoked on state change
    * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
@@ -281,7 +281,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
     /**
      * Notifies the listeners of the transition event via a Future executed in implicit parameter ExecutionContext
      *
-     * @return Promise which executes listener in supplied [[akka.dispatch.ExecutionContext]]
+     * @return Promise which executes listener in supplied [[scala.concurrent.ExecutionContext]]
      */
     protected def notifyTransitionListeners() {
       if (hasListeners) {

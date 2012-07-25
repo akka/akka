@@ -13,7 +13,7 @@ import akka.util.Deadline
 import java.util.concurrent.TimeoutException
 import scala.collection.immutable.SortedSet
 import akka.dispatch.Await
-import akka.util.Duration
+import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.remote.testconductor.RoleName
 
