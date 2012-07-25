@@ -96,7 +96,7 @@ abstract class PurePartialFunction[A, B] extends scala.runtime.AbstractFunction1
   def apply(x: A, isCheck: Boolean): B
 
   final def isDefinedAt(x: A): Boolean = try { apply(x, true); true } catch { case NoMatch ⇒ false }
-  final def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError }
+  final def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError(x) }
 }
 
 /**

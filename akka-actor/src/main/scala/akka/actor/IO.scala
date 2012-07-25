@@ -663,8 +663,8 @@ object IO {
         if (left > more.length)
           (Cont(step(left - more.length)), Chunk.empty)
         else
-          (Done(), Chunk(more drop left))
-      case eof @ EOF(None)  ⇒ (Done(), eof)
+          (Done(()), Chunk(more drop left))
+      case eof @ EOF(None)  ⇒ (Done(()), eof)
       case eof @ EOF(cause) ⇒ (Cont(step(left), cause), eof)
     }
 
