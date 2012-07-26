@@ -485,7 +485,7 @@ private[akka] class VirtualPathContainer(
   override val getParent: InternalActorRef,
   val log: LoggingAdapter) extends MinimalActorRef {
 
-  private val children = new ConcurrentHashMap[String, InternalActorRef]
+  protected[this] val children = new ConcurrentHashMap[String, InternalActorRef]
 
   def addChild(name: String, ref: InternalActorRef): Unit = {
     children.put(name, ref) match {

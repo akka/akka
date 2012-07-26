@@ -39,6 +39,7 @@ private[akka] class RemoteActorRefProvider(
   override def systemGuardian: LocalActorRef = local.systemGuardian
   override def terminationFuture: Future[Unit] = local.terminationFuture
   override def dispatcher: MessageDispatcher = local.dispatcher
+  override def createThreadActor(queue: scala.collection.mutable.Queue[(Any, ActorRef)]): ActorRef = local.createThreadActor(queue)
   override def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = local.registerTempActor(actorRef, path)
   override def unregisterTempActor(path: ActorPath): Unit = local.unregisterTempActor(path)
   override def tempPath(): ActorPath = local.tempPath()
