@@ -3,6 +3,8 @@
  */
 package akka.cluster
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
