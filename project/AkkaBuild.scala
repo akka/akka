@@ -15,7 +15,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import java.lang.Boolean.getBoolean
 import sbt.Tests
-import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags, sphinx }
+import Sphinx.{ sphinxDocs, sphinxTags }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -30,7 +30,7 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Sphinx.settings ++ Publish.versionSettings ++
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
       Dist.settings ++ mimaSettings ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
@@ -38,7 +38,8 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id),
       initialCommands in ThisBuild :=
-        """|import akka.actor._
+        """|import language.postfixOps
+           |import akka.actor._
            |import akka.dispatch._
            |import com.typesafe.config.ConfigFactory
            |import scala.concurrent.util.duration._
@@ -50,13 +51,7 @@ object AkkaBuild extends Build {
            |implicit def ec = system.dispatcher
            |implicit val timeout = Timeout(5 seconds)
            |""".stripMargin,
-      initialCommands in Test in ThisBuild += "import akka.testkit._",
-      // online version of docs
-      sphinxDocs <<= baseDirectory / "akka-docs",
-      sphinxTags in sphinxHtml += "online",
-      sphinxPygments <<= sphinxPygments in LocalProject(docs.id),
-      sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
-      sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
+      initialCommands in Test in ThisBuild += "import akka.testkit._"
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, /*akkaSbtPlugin,*/ samples, tutorials, osgi, osgiAries, docs)
   )
@@ -319,7 +314,9 @@ object AkkaBuild extends Build {
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
+      // online version of docs
+      sphinxTags in Sphinx.Html += "online"
     )
   )
 

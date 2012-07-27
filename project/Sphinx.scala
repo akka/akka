@@ -23,17 +23,20 @@ object Sphinx {
     sphinxDocs <<= baseDirectory,
     sphinxTarget <<= crossTarget / "sphinx",
     sphinxPygmentsDir <<= sphinxDocs { _ / "_sphinx" / "pygments" },
-    sphinxTags in sphinxHtml := Seq.empty,
-    sphinxTags in sphinxLatex := Seq.empty,
+    sphinxTags in Html := Seq.empty,
+    sphinxTags in Latex := Seq.empty,
     sphinxPygments <<= pygmentsTask,
-    sphinxHtml <<= buildTask("html", sphinxTags in sphinxHtml),
-    sphinxLatex <<= buildTask("latex", sphinxTags in sphinxLatex),
+    sphinxHtml <<= buildTask("html", sphinxTags in Html),
+    sphinxLatex <<= buildTask("latex", sphinxTags in Latex),
     sphinxPdf <<= pdfTask,
     sphinx <<= sphinxTask
   )
 
-  def pygmentsTask = (sphinxPygmentsDir, sphinxTarget, streams) map {
-    (pygments, baseTarget, s) => Sphinx.synchronized {
+  lazy val Latex = Configuration("sphinx-latex", "tags for LaTeX version of docs", true, Nil, false)
+  lazy val Html = Configuration("sphinx-html", "tags for HTML version of docs", true, Nil, false)
+
+  def pygmentsTask = (sphinxDocs, sphinxPygmentsDir, sphinxTarget, streams) map {
+    (cwd, pygments, baseTarget, s) => {
       val target = baseTarget / "site-packages"
       val empty = (target * "*.egg").get.isEmpty
       if (empty) {
@@ -42,8 +45,8 @@ object Sphinx {
         val logger = newLogger(s)
         val command = Seq("easy_install", "--install-dir", target.absolutePath, pygments.absolutePath)
         val env = "PYTHONPATH" -> target.absolutePath
-        s.log.debug("Command: " + command.mkString(" "))
-        val exitCode = Process(command, pygments, env) ! logger
+        s.log.debug("Command: " + command.mkString(" ") + "\nEnv:" + env)
+        val exitCode = Process(command, cwd, env) ! logger
         if (exitCode != 0) sys.error("Failed to install custom Sphinx pygments styles.")
         (pygments * ("*.egg-info" | "build" | "temp")).get.foreach(IO.delete)
         s.log.info("Sphinx pygments styles installed at: " + target)
@@ -54,7 +57,7 @@ object Sphinx {
 
   def buildTask(builder: String, tagsKey: SettingKey[Seq[String]]) = {
     (cacheDirectory, sphinxDocs, sphinxTarget, sphinxPygments, tagsKey, streams) map {
-      (cacheDir, docs, baseTarget, pygments, tags, s) => Sphinx.synchronized {
+      (cacheDir, docs, baseTarget, pygments, tags, s) => {
         val target = baseTarget / builder
         val doctrees = baseTarget / "doctrees"
         val cache = cacheDir / "sphinx" / builder
@@ -86,7 +89,7 @@ object Sphinx {
   }
 
   def pdfTask = (sphinxLatex, streams) map {
-    (latex, s) => Sphinx.synchronized {
+    (latex, s) => {
       val pdf = latex / "Akka.pdf"
       def failed = sys.error("Failed to build Sphinx pdf documentation.")
       if (!pdf.exists) {
@@ -109,7 +112,7 @@ object Sphinx {
   }
 
   def sphinxTask = (sphinxHtml, sphinxPdf, sphinxTarget, streams) map {
-    (html, pdf, baseTarget, s) => Sphinx.synchronized {
+    (html, pdf, baseTarget, s) => {
       val target = baseTarget / "docs"
       IO.delete(target)
       IO.copyDirectory(html, target)
