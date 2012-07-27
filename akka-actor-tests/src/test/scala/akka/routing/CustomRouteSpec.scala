@@ -3,6 +3,8 @@
  */
 package akka.routing
 
+import language.postfixOps
+
 import akka.testkit.AkkaSpec
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
