@@ -292,7 +292,7 @@ object SupervisorHierarchySpec {
       case Init -> Stress ⇒
         self ! Work(familySize * 1000)
         // set timeout for completion of the whole test (i.e. including Finishing and Stopping)
-        setTimer("phase", StateTimeout, 60 seconds, false)
+        setTimer("phase", StateTimeout, 30.seconds.dilated, false)
     }
 
     val workSchedule = 250.millis
