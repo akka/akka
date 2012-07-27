@@ -23,14 +23,17 @@ object Sphinx {
     sphinxDocs <<= baseDirectory,
     sphinxTarget <<= crossTarget / "sphinx",
     sphinxPygmentsDir <<= sphinxDocs { _ / "_sphinx" / "pygments" },
-    sphinxTags in sphinxHtml := Seq.empty,
-    sphinxTags in sphinxLatex := Seq.empty,
+    sphinxTags in Html := Seq.empty,
+    sphinxTags in Latex := Seq.empty,
     sphinxPygments <<= pygmentsTask,
-    sphinxHtml <<= buildTask("html", sphinxTags in sphinxHtml),
-    sphinxLatex <<= buildTask("latex", sphinxTags in sphinxLatex),
+    sphinxHtml <<= buildTask("html", sphinxTags in Html),
+    sphinxLatex <<= buildTask("latex", sphinxTags in Latex),
     sphinxPdf <<= pdfTask,
     sphinx <<= sphinxTask
   )
+
+  lazy val Latex = Configuration("sphinx-latex", "tags for LaTeX version of docs", true, Nil, false)
+  lazy val Html = Configuration("sphinx-html", "tags for HTML version of docs", true, Nil, false)
 
   def pygmentsTask = (sphinxDocs, sphinxPygmentsDir, sphinxTarget, streams) map {
     (cwd, pygments, baseTarget, s) => {
