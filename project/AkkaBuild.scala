@@ -37,9 +37,9 @@ object AkkaBuild extends Build {
       // online version of docs
       sphinxDocs <<= baseDirectory / "akka-docs",
       sphinxTags in sphinxHtml += "online",
-      sphinxPygments <<= sphinxPygments in LocalProject(docs.id),
-      sphinxLatex <<= sphinxLatex in LocalProject(docs.id),
-      sphinxPdf <<= sphinxPdf in LocalProject(docs.id)
+      sphinxPygments <<= sphinxPygments in LocalProject(docs.id) map identity,
+      sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
+      sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, actorMigration, samples, tutorials, docs)
   )
