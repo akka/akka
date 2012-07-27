@@ -325,7 +325,6 @@ object AkkaBuild extends Build {
   override lazy val settings = super.settings ++ buildSettings ++ Seq(
       resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
       resolvers += "Sonatype Releases Repo" at "https://oss.sonatype.org/content/repositories/releases/",
-      resolvers += "Typesafe 2.10 Freshness" at "http://typesafe.artifactoryonline.com/typesafe/scala-fresh-2.10.x/", //FIXME REMOVE
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
     )
 
@@ -484,9 +483,9 @@ object Dependencies {
 
   val slf4j = Seq(slf4jApi, Test.logback)
 
-  val agent = Seq(scalaStm, scalaActors, Test.scalatest, Test.junit)
+  val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val transactor = Seq(scalaStm, scalaActors, Test.scalatest, Test.junit)
+  val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
@@ -513,9 +512,9 @@ object Dependency {
   val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.8.0"       // ApacheV2
   val netty         = "io.netty"                    % "netty"                        % "3.5.1.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
-  val scalaStm      = "scala-stm"                   %% "scala-stm"                   % "0.6"         // Modified BSD (Scala)
+  val scalaStm      = "org.scala-tools"            %% "scala-stm"                    % "0.6"         // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.6.4"       // MIT
-  val zeroMQClient  = "org.zeromq"                  %% "zeromq-scala-binding"        % "0.0.6"       // ApacheV2
+  val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % "0.0.6"       // ApacheV2
   val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a"      // ApacheV2
   val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
   val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
@@ -528,8 +527,8 @@ object Dependency {
     val junit       = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"              % "1.0.4"            % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
-    val scalatest   = "org.scalatest"               %% "scalatest"                   % "1.9-2.10.0-M6-B2" % "test" // ApacheV2
-    val scalacheck  = "org.scalacheck"              %% "scalacheck"                  % "1.10.0"           % "test" // New BSD
+    val scalatest   = "org.scalatest"              %% "scalatest"                    % "1.9-2.10.0-M6-B2" % "test" // ApacheV2
+    val scalacheck  = "org.scalacheck"             %% "scalacheck"                   % "1.10.0"           % "test" // New BSD
     val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
     val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
     val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
