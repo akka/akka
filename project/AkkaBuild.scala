@@ -513,9 +513,7 @@ object Dependency {
   val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.8.0"       // ApacheV2
   val netty         = "io.netty"                    % "netty"                        % "3.5.1.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
-  val scalaStm      = "scala-stm"                   % "scala-stm"                    % "0.6-SNAPSHOT"         // FIXME REPLACE WITH BELOW
-  val scalaActors   = "org.scala-lang"              % "scala-actors" % "2.10.0-M6" // FIXME REMOVE
-  //val scalaStm      = "org.scala-tools"             %% "scala-stm"          % "0.6"         // Modified BSD (Scala)
+  val scalaStm      = "scala-stm"                   %% "scala-stm"                   % "0.6"         // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.6.4"       // MIT
   val zeroMQClient  = "org.zeromq"                  %% "zeromq-scala-binding"        % "0.0.6"       // ApacheV2
   val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a"      // ApacheV2
