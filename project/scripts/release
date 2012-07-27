@@ -216,7 +216,7 @@ fi
 # build the release
 echolog "Building the release..."
 try sbt build-release
-try cp akka-spring/src/main/resources/akka/spring/akka-*.xsd ${release_dir}
+#try cp akka-spring/src/main/resources/akka/spring/akka-*.xsd ${release_dir}
 echolog "Creating gzipped tar download..."
 try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka-${version}.tgz akka-${version}
 echolog "Successfully created local release"

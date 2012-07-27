@@ -33,7 +33,7 @@ object Sphinx {
   )
 
   def pygmentsTask = (sphinxPygmentsDir, sphinxTarget, streams) map {
-    (pygments, baseTarget, s) => {
+    (pygments, baseTarget, s) => Sphinx.synchronized {
       val target = baseTarget / "site-packages"
       val empty = (target * "*.egg").get.isEmpty
       if (empty) {
@@ -54,7 +54,7 @@ object Sphinx {
 
   def buildTask(builder: String, tagsKey: SettingKey[Seq[String]]) = {
     (cacheDirectory, sphinxDocs, sphinxTarget, sphinxPygments, tagsKey, streams) map {
-      (cacheDir, docs, baseTarget, pygments, tags, s) => {
+      (cacheDir, docs, baseTarget, pygments, tags, s) => Sphinx.synchronized {
         val target = baseTarget / builder
         val doctrees = baseTarget / "doctrees"
         val cache = cacheDir / "sphinx" / builder
@@ -86,7 +86,7 @@ object Sphinx {
   }
 
   def pdfTask = (sphinxLatex, streams) map {
-    (latex, s) => {
+    (latex, s) => Sphinx.synchronized {
       val pdf = latex / "Akka.pdf"
       def failed = sys.error("Failed to build Sphinx pdf documentation.")
       if (!pdf.exists) {
@@ -109,7 +109,7 @@ object Sphinx {
   }
 
   def sphinxTask = (sphinxHtml, sphinxPdf, sphinxTarget, streams) map {
-    (html, pdf, baseTarget, s) => {
+    (html, pdf, baseTarget, s) => Sphinx.synchronized {
       val target = baseTarget / "docs"
       IO.delete(target)
       IO.copyDirectory(html, target)
