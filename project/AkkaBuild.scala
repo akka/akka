@@ -44,7 +44,8 @@ object AkkaBuild extends Build {
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id),
       initialCommands in ThisBuild :=
-        """|import akka.actor._
+        """|import language.postfixOps
+           |import akka.actor._
            |import akka.dispatch._
            |import com.typesafe.config.ConfigFactory
            |import scala.concurrent.util.duration._
