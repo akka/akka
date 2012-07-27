@@ -56,7 +56,7 @@ object Sphinx {
     (cacheDirectory, sphinxDocs, sphinxTarget, sphinxPygments, tagsKey, streams) map {
       (cacheDir, docs, baseTarget, pygments, tags, s) => {
         val target = baseTarget / builder
-        val doctrees = baseTarget / "doctrees"
+        val doctrees = baseTarget / "doctrees" / builder
         val cache = cacheDir / "sphinx" / builder
         val cached = FileFunction.cached(cache)(FilesInfo.hash, FilesInfo.exists) { (in, out) =>
           val changes = in.modified
