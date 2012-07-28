@@ -36,7 +36,7 @@ object AkkaBuild extends Build {
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
-      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id),
+      Dist.distExclude := Seq(actorTests.id, remoteTests.id, cluster.id, akkaSbtPlugin.id, docs.id),
       initialCommands in ThisBuild :=
         """|import language.postfixOps
            |import akka.actor._
@@ -67,7 +67,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, /*akkaSbtPlugin,*/ samples, tutorials, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, /*cluster,*/ slf4j, agent, transactor, mailboxes, zeroMQ, kernel, /*akkaSbtPlugin,*/ samples, tutorials, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
