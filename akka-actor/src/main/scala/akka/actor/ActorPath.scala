@@ -32,7 +32,7 @@ object ActorPath {
  * is sorted by path elements FROM RIGHT TO LEFT, where RootActorPath >
  * ChildActorPath in case the number of elements is different.
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * The Address under which this path can be reached; walks up the tree to
@@ -103,7 +103,7 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
  * Root of the hierarchy of ActorPaths. There is exactly root per ActorSystem
  * and node (for remote-enabled or clustered systems).
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 final case class RootActorPath(address: Address, name: String = "/") extends ActorPath {
 
   override def parent: ActorPath = this
@@ -126,7 +126,7 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
   }
 }
 
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 final class ChildActorPath(val parent: ActorPath, val name: String) extends ActorPath {
   if (name.indexOf('/') != -1) throw new IllegalArgumentException("/ is a path separator and is not legal in ActorPath names: [%s]" format name)
 
