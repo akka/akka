@@ -67,7 +67,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, /*akkaSbtPlugin,*/ samples, tutorials, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -264,6 +264,7 @@ object AkkaBuild extends Build {
     base = file("akka-sbt-plugin"),
     settings = defaultSettings ++ Seq(
       sbtPlugin := true,
+      scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
       scalaVersion := "2.9.1"
     )
   )
@@ -406,7 +407,7 @@ object AkkaBuild extends Build {
 
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
-    javacOptions in Compile ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
+    javacOptions in Compile ++= Seq("-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
