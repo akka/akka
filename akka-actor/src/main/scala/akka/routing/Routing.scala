@@ -310,7 +310,7 @@ trait Router extends Actor {
  * INTERNAL API
  */
 private object Router {
-
+  @SerialVersionUID(1L)
   case object Resize
 
   val defaultSupervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
@@ -325,6 +325,7 @@ private object Router {
  *
  * Router implementations may choose to handle this message differently.
  */
+@SerialVersionUID(1L)
 case class Broadcast(message: Any)
 
 /**
@@ -333,6 +334,7 @@ case class Broadcast(message: Any)
  * about what routees the router is routing over.
  */
 abstract class CurrentRoutees
+@SerialVersionUID(1L)
 case object CurrentRoutees extends CurrentRoutees {
   /**
    * Java API: get the singleton instance
@@ -343,6 +345,7 @@ case object CurrentRoutees extends CurrentRoutees {
 /**
  * Message used to carry information about what routees the router is currently using.
  */
+@SerialVersionUID(1L)
 case class RouterRoutees(routees: Iterable[ActorRef])
 
 /**
@@ -351,6 +354,7 @@ case class RouterRoutees(routees: Iterable[ActorRef])
  * sender should match the sender of the original request, but e.g. the scatter-
  * gather router needs to receive the replies with an AskActorRef instead.
  */
+@SerialVersionUID(1L)
 case class Destination(sender: ActorRef, recipient: ActorRef)
 
 /**
@@ -1132,6 +1136,7 @@ case object DefaultResizer {
 }
 
 //FIXME DOCUMENT ME
+@SerialVersionUID(1L)
 case class DefaultResizer(
   /**
    * The fewest number of routees the router should ever have.

@@ -405,6 +405,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
  * When a message is sent to an Actor that is terminated before receiving the message, it will be sent as a DeadLetter
  * to the ActorSystem's EventStream
  */
+@SerialVersionUID(1L)
 case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 
 private[akka] object DeadLetterActorRef {
