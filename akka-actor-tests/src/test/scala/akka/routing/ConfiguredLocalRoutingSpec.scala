@@ -231,7 +231,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
 
     "deliver messages in a random fashion" in {
       val connectionCount = 10
-      val iterationCount = 10
+      val iterationCount = 100
       val doneLatch = new TestLatch(connectionCount)
 
       val counter = new AtomicInteger
