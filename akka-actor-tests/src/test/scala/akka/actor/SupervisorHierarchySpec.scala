@@ -53,12 +53,12 @@ object SupervisorHierarchySpec {
     }
   }
 
+  case class Children(refs: Vector[ActorRef])
   case class Event(msg: Any) { val time: Long = System.nanoTime }
   case class ErrorLog(msg: String, log: Vector[Event])
-  case class Failure(directive: Directive, log: Vector[Event]) extends RuntimeException with NoStackTrace {
-    override def toString = "Failure(" + directive + ")"
+  case class Failure(directive: Directive, log: Map[ActorRef, Vector[Event]], depth: Int) extends RuntimeException with NoStackTrace {
+    override def toString = "Failure(" + directive + ", " + depth + ")"
   }
-  val strategy = OneForOneStrategy() { case Failure(directive, _) ⇒ directive }
 
   val config = ConfigFactory.parseString("""
     hierarchy {
@@ -97,54 +97,86 @@ object SupervisorHierarchySpec {
     override def dispatcher(): MessageDispatcher = instance
   }
 
-  class Hierarchy(depth: Int, breadth: Int, listener: ActorRef) extends Actor {
+  class Hierarchy(size: Int, breadth: Int, listener: ActorRef) extends Actor {
 
     override def preStart {
-      if (depth > 1)
-        for (_ ← 1 to breadth)
-          context.watch(context.actorOf(Props(new Hierarchy(depth - 1, breadth, listener)).withDispatcher("hierarchy")))
-      listener ! self
+      val s = size - 1 // subtract myself
+      if (s > 0) {
+        val kids = Random.nextInt(Math.min(breadth, s)) + 1
+        val sizes = s / kids
+        var rest = s % kids
+        def kidSize = if (rest > 0) { rest -= 1; sizes + 1 } else sizes
+        for (_ ← 1 to kids)
+          context.watch(context.actorOf(Props(new Hierarchy(kidSize, breadth, listener)).withDispatcher("hierarchy")))
+      } else context.parent ! Children(Vector(self))
     }
     override def postRestart(cause: Throwable) {
       cause match {
-        case Failure(_, l) ⇒ log = l
+        case Failure(_, l, _) ⇒ log = l get self getOrElse Vector(Event("log lost"))
       }
       log :+= Event("restarted")
     }
 
-    override def supervisorStrategy = strategy
+    override val supervisorStrategy = OneForOneStrategy() {
+      case Failure(directive, _, 0) ⇒
+        log :+= Event("applying " + directive + " to " + sender)
+        directive
+      case f @ Failure(directive, logs, x) ⇒
+        import SupervisorStrategy._
+        directive match {
+          case Restart ⇒ failed = true
+          case Resume  ⇒ suspended = true
+          case _       ⇒
+        }
+        log :+= Event("escalating " + f)
+        throw Failure(directive, logs + (self -> log), x - 1)
+    }
     override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
       // do not scrap children
     }
 
     override def postStop {
-      if (failed || suspended) {
+      if (failed || (suspended && !stopping)) {
         listener ! ErrorLog("not resumed (" + failed + ", " + suspended + ")", log)
       }
     }
 
     var failed = false
     var suspended = false
+    var stopping = false
     var log = Vector.empty[Event]
-    def check(msg: Any) = {
+    def check(msg: Any): Boolean = {
       suspended = false
       log :+= Event(msg)
       if (failed) {
         listener ! ErrorLog("processing message while failed", log)
         failed = false
-        context stop self
-      }
+        stop()
+        false
+      } else true
     }
+
+    def stop() {
+      stopping = true
+      context stop self
+    }
+
+    var gotKidsFrom = Set.empty[ActorRef]
+    var kids = Vector.empty[ActorRef]
 
     def receive = new Receive {
       val handler: Receive = {
-        case f @ Failure(Resume, _) ⇒ suspended = true; throw f.copy(log = log)
-        case f: Failure             ⇒ failed = true; throw f.copy(log = log)
-        case "ping"                 ⇒ Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
-        case Terminated(_)          ⇒ listener ! ErrorLog("terminating", log); context stop self
+        case f @ Failure(Resume, _, _) ⇒ suspended = true; throw f.copy(log = Map(self -> log))
+        case f: Failure                ⇒ failed = true; throw f.copy(log = Map(self -> log))
+        case "ping"                    ⇒ Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
+        case Terminated(_)             ⇒ listener ! ErrorLog("terminating", log); stop()
+        case Children(refs) ⇒
+          kids ++= refs
+          gotKidsFrom += sender
+          if (context.children forall (gotKidsFrom contains)) context.parent ! Children(kids :+ self)
       }
       override def isDefinedAt(msg: Any) = handler.isDefinedAt(msg)
-      override def apply(msg: Any) = { check(msg); handler(msg) }
+      override def apply(msg: Any) = { if (check(msg)) handler(msg) }
     }
   }
 
@@ -213,13 +245,6 @@ object SupervisorHierarchySpec {
    * all are terminated, transfer them to a WeakHashMap and verify that 
    * they are indeed GCed
    * 
-   * TODO RK: make hierarchy construction stochastic so that it includes
-   * different breadth (including the degenerate breadth-1 case).
-   * 
-   * TODO RK: also test Escalate by adding an exception with a `var depth`
-   * which gets decremented within the supervisor and gets handled when zero
-   * is reached (Restart resolution)
-   * 
    * TODO RK: also test exceptions during recreate
    * 
    * TODO RK: also test recreate including terminating children
@@ -230,7 +255,10 @@ object SupervisorHierarchySpec {
   class StressTest(testActor: ActorRef, depth: Int, breadth: Int) extends Actor with LoggingFSM[State, Null] {
     import context.system
 
-    override def supervisorStrategy = strategy
+    // don’t escalate from this one!
+    override val supervisorStrategy = OneForOneStrategy() {
+      case Failure(directive, _, _) ⇒ directive
+    }
 
     var children = Vector.empty[ActorRef]
     var idleChildren = Vector.empty[ActorRef]
@@ -250,7 +278,6 @@ object SupervisorHierarchySpec {
         Fail(children(pick), if (x > 0.25) Restart else Resume)
     })
 
-    val familySize = ((1 - BigInt(breadth).pow(depth)) / (1 - breadth)).toInt
     var hierarchy: ActorRef = _
 
     override def preRestart(cause: Throwable, msg: Option[Any]) {
@@ -269,33 +296,42 @@ object SupervisorHierarchySpec {
 
     when(Idle) {
       case Event(Init, _) ⇒
-        hierarchy = context.watch(context.actorOf(Props(new Hierarchy(depth, breadth, self)).withDispatcher("hierarchy")))
+        hierarchy = context.watch(context.actorOf(Props(new Hierarchy(size = 500, breadth = breadth, self)).withDispatcher("hierarchy")))
         setTimer("phase", StateTimeout, 5 seconds, false)
         goto(Init)
     }
 
     when(Init) {
-      case Event(ref: ActorRef, _) ⇒
-        if (idleChildren.nonEmpty || pingChildren.nonEmpty)
-          throw new IllegalStateException("received unexpected child " + children.size)
-        children :+= ref
-        if (children.size == familySize) {
-          idleChildren = children
+      case Event(Children(refs), _) ⇒
+        children = refs
+        idleChildren = refs
+        if (children.toSet.size != children.size) {
+          testActor ! "children not unique"
+          stop()
+        } else {
           goto(Stress)
-        } else stay
+        }
       case Event(StateTimeout, _) ⇒
-        testActor ! "only got %d out of %d refs".format(children.size, familySize)
+        testActor ! "did not get children list"
         stop()
     }
 
     onTransition {
       case Init -> Stress ⇒
-        self ! Work(familySize * 1000)
+        self ! Work(500000)
         // set timeout for completion of the whole test (i.e. including Finishing and Stopping)
         setTimer("phase", StateTimeout, 30.seconds.dilated, false)
     }
 
     val workSchedule = 250.millis
+
+    private def randomDepth: Int = Random.nextFloat match {
+      case x if x > 0.1  ⇒ 0
+      case x if x > 0.03 ⇒ 1
+      case _             ⇒ 2
+    }
+
+    var ignoreNotResumedLogs = true
 
     when(Stress) {
       case Event(w: Work, _) if idleChildren.isEmpty ⇒
@@ -304,7 +340,7 @@ object SupervisorHierarchySpec {
       case Event(Work(x), _) if x > 0 ⇒
         nextJob.next match {
           case Ping(ref)      ⇒ ref ! "ping"
-          case Fail(ref, dir) ⇒ ref ! Failure(dir, Vector.empty)
+          case Fail(ref, dir) ⇒ ref ! Failure(dir, Map.empty, randomDepth)
         }
         if (idleChildren.nonEmpty) self ! Work(x - 1)
         else context.system.scheduler.scheduleOnce(workSchedule, self, Work(x - 1))
@@ -338,7 +374,9 @@ object SupervisorHierarchySpec {
     }
 
     onTransition {
-      case _ -> Stopping ⇒ context stop hierarchy
+      case _ -> Stopping ⇒
+        ignoreNotResumedLogs = false
+        context stop hierarchy
     }
 
     when(Stopping, stateTimeout = 5 seconds) {
@@ -354,7 +392,8 @@ object SupervisorHierarchySpec {
 
     when(Failed, stateTimeout = 5 seconds) {
       case Event(e: ErrorLog, _) ⇒
-        errors :+= sender -> e
+        if (!e.msg.startsWith("not resumed") || !ignoreNotResumedLogs)
+          errors :+= sender -> e
         stay
       case Event(Terminated(r), _) if r == hierarchy ⇒
         printErrors()
@@ -364,7 +403,8 @@ object SupervisorHierarchySpec {
         printErrors()
         testActor ! "timeout in Failed"
         stop
-      case Event("pong", _) ⇒ stay // don’t care?
+      case Event("pong", _)  ⇒ stay // don’t care?
+      case Event(w: Work, _) ⇒ stay
     }
 
     def printErrors(): Unit = {
@@ -494,7 +534,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       system.eventStream.publish(Mute(EventFilter[Failure]()))
       system.eventStream.publish(Mute(EventFilter.warning(start = "received dead letter")))
 
-      val fsm = system.actorOf(Props(new StressTest(testActor, 6, 3)), "stressTest")
+      val fsm = system.actorOf(Props(new StressTest(testActor, depth = 6, breadth = 6)), "stressTest")
 
       fsm ! FSM.SubscribeTransitionCallBack(system.actorOf(Props(new Actor {
         def receive = {

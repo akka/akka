@@ -36,10 +36,11 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
    * a restart with dying children)
    * might well be replaced by ref to a Cancellable in the future (see #2299)
    */
-  private var _failed = false
-  private def isFailed: Boolean = _failed
-  private def setFailed(): Unit = _failed = true
-  private def clearFailed(): Unit = _failed = false
+  private var _failed: ActorRef = null
+  private def isFailed: Boolean = _failed != null
+  private def setFailed(perpetrator: ActorRef): Unit = _failed = perpetrator
+  private def clearFailed(): Unit = _failed = null
+  private def perpetrator: ActorRef = _failed
 
   /**
    * Do re-create the actor in response to a failure.
@@ -85,11 +86,12 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
    *        prompted this action.
    */
   protected def faultResume(inResponseToFailure: Boolean): Unit = {
+    val perp = perpetrator
     // done always to keep that suspend counter balanced
     // must happen “atomically”
     try resumeNonRecursive()
     finally if (inResponseToFailure) clearFailed()
-    resumeChildren()
+    resumeChildren(perp)
   }
 
   protected def terminate() {
@@ -106,7 +108,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
         // do not process normal messages while waiting for all children to terminate
         suspendNonRecursive()
         // do not propagate failures during shutdown to the supervisor
-        setFailed()
+        setFailed(self)
         if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "stopping"))
       }
     } else {
@@ -120,11 +122,10 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     // prevent any further messages to be processed until the actor has been restarted
     if (!isFailed) try {
       suspendNonRecursive()
-      setFailed()
       // suspend children
       val skip: Set[ActorRef] = currentMessage match {
-        case Envelope(Failed(`t`), child) ⇒ Set(child)
-        case _                            ⇒ Set.empty
+        case Envelope(Failed(_), child) ⇒ setFailed(child); Set(child)
+        case _                          ⇒ setFailed(self); Set.empty
       }
       suspendChildren(skip)
       // tell supervisor

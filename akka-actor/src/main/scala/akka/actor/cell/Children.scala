@@ -7,12 +7,12 @@ package akka.actor.cell
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.util.control.NonFatal
-
 import akka.actor.{ RepointableRef, Props, NoSerializationVerificationNeeded, InvalidActorNameException, InternalActorRef, ChildRestartStats, ActorRef }
 import akka.actor.ActorCell
 import akka.actor.ActorPath.ElementRegex
 import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Helpers }
+import akka.actor.ChildRestartStats
 
 private[akka] trait Children { this: ActorCell ⇒
 
@@ -119,8 +119,11 @@ private[akka] trait Children { this: ActorCell ⇒
       case _ ⇒
     }
 
-  protected def resumeChildren(): Unit =
-    childrenRefs.stats foreach (_.child.asInstanceOf[InternalActorRef].resume(inResponseToFailure = false))
+  protected def resumeChildren(perp: ActorRef): Unit =
+    childrenRefs.stats foreach {
+      case ChildRestartStats(child: InternalActorRef, _, _) ⇒
+        child.resume(inResponseToFailure = perp == child)
+    }
 
   def getChildByName(name: String): Option[ChildRestartStats] = childrenRefs.getByName(name)
 
