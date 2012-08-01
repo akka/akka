@@ -383,14 +383,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "fold" in {
-        val actors = (1 to 10).toList map { _ ⇒
-          system.actorOf(Props(new Actor {
-            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); sender.tell(add) }
-          }))
-        }
-        val timeout = 10000
-        def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200))(timeout).mapTo[Int] }
-        Await.result(Future.fold(futures)(0)(_ + _), timeout millis) must be(45)
+        Await.result(Future.fold((1 to 10).toList map { i ⇒ Future(i) })(0)(_ + _), remaining) must be(55)
       }
 
       "zip" in {
@@ -412,30 +405,17 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "fold by composing" in {
-        val actors = (1 to 10).toList map { _ ⇒
-          system.actorOf(Props(new Actor {
-            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); sender.tell(add) }
-          }))
-        }
-        def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200))(10000).mapTo[Int] }
-        Await.result(futures.foldLeft(Future(0))((fr, fa) ⇒ for (r ← fr; a ← fa) yield (r + a)), timeout.duration) must be(45)
+        val futures = (1 to 10).toList map { i ⇒ Future(i) }
+        Await.result(futures.foldLeft(Future(0))((fr, fa) ⇒ for (r ← fr; a ← fa) yield (r + a)), timeout.duration) must be(55)
       }
 
       "fold with an exception" in {
         filterException[IllegalArgumentException] {
-          val actors = (1 to 10).toList map { _ ⇒
-            system.actorOf(Props(new Actor {
-              def receive = {
-                case (add: Int, wait: Int) ⇒
-                  Thread.sleep(wait)
-                  if (add == 6) sender ! Status.Failure(new IllegalArgumentException("shouldFoldResultsWithException: expected"))
-                  else sender.tell(add)
-              }
-            }))
+          val futures = (1 to 10).toList map {
+            case 6 ⇒ Future(throw new IllegalArgumentException("shouldFoldResultsWithException: expected"))
+            case i ⇒ Future(i)
           }
-          val timeout = 10000
-          def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100))(timeout).mapTo[Int] }
-          intercept[Throwable] { Await.result(Future.fold(futures)(0)(_ + _), timeout millis) }.getMessage must be("shouldFoldResultsWithException: expected")
+          intercept[Throwable] { Await.result(Future.fold(futures)(0)(_ + _), remaining) }.getMessage must be("shouldFoldResultsWithException: expected")
         }
       }
 
@@ -460,31 +440,17 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "shouldReduceResults" in {
-        val actors = (1 to 10).toList map { _ ⇒
-          system.actorOf(Props(new Actor {
-            def receive = { case (add: Int, wait: Int) ⇒ Thread.sleep(wait); sender.tell(add) }
-          }))
-        }
-        val timeout = 10000
-        def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 200))(timeout).mapTo[Int] }
-        assert(Await.result(Future.reduce(futures)(_ + _), timeout millis) === 45)
+        val futures = (1 to 10).toList map { i ⇒ Future(i) }
+        assert(Await.result(Future.reduce(futures)(_ + _), remaining) === 55)
       }
 
       "shouldReduceResultsWithException" in {
         filterException[IllegalArgumentException] {
-          val actors = (1 to 10).toList map { _ ⇒
-            system.actorOf(Props(new Actor {
-              def receive = {
-                case (add: Int, wait: Int) ⇒
-                  Thread.sleep(wait)
-                  if (add == 6) sender ! Status.Failure(new IllegalArgumentException("shouldFoldResultsWithException: expected"))
-                  else sender.tell(add)
-              }
-            }))
+          val futures = (1 to 10).toList map {
+            case 6 ⇒ Future(throw new IllegalArgumentException("shouldReduceResultsWithException: expected"))
+            case i ⇒ Future(i)
           }
-          val timeout = 10000
-          def futures = actors.zipWithIndex map { case (actor: ActorRef, idx: Int) ⇒ actor.?((idx, idx * 100))(timeout).mapTo[Int] }
-          intercept[Throwable] { Await.result(Future.reduce(futures)(_ + _), timeout millis) }.getMessage must be === "shouldFoldResultsWithException: expected"
+          intercept[Throwable] { Await.result(Future.reduce(futures)(_ + _), remaining) }.getMessage must be === "shouldReduceResultsWithException: expected"
         }
       }
 
