@@ -9,7 +9,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.util.duration._
-import akka.util.Deadline
+import scala.concurrent.util.Deadline
 
 object JoinInProgressMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -54,7 +54,7 @@ abstract class JoinInProgressSpec
       runOn(first) {
         val until = Deadline.now + 5.seconds
         while (!until.isOverdue) {
-          200.millis.sleep
+          Thread.sleep(200)
           cluster.failureDetector.isAvailable(second) must be(true)
         }
       }

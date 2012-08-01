@@ -4,6 +4,7 @@ import akka.actor.{ Props, ActorSystem }
 import akka.camel.CamelExtension
 
 import language.postfixOps
+import akka.util.Timeout
 
 object Introduction {
   def foo = {
@@ -91,16 +92,12 @@ object Introduction {
     val camel = CamelExtension(system)
     val actorRef = system.actorOf(Props[MyEndpoint])
     // get a future reference to the activation of the endpoint of the Consumer Actor
-    val activationFuture = camel.activationFutureFor(actorRef, 10 seconds)
-    // or, block wait on the activation
-    camel.awaitActivation(actorRef, 10 seconds)
+    val activationFuture = camel.activationFutureFor(actorRef)(timeout = 10 seconds)
     //#CamelActivation
     //#CamelDeactivation
     system.stop(actorRef)
     // get a future reference to the deactivation of the endpoint of the Consumer Actor
-    val deactivationFuture = camel.activationFutureFor(actorRef, 10 seconds)
-    // or, block wait on the deactivation
-    camel.awaitDeactivation(actorRef, 10 seconds)
+    val deactivationFuture = camel.deactivationFutureFor(actorRef)(timeout = 10 seconds)
     //#CamelDeactivation
   }
 

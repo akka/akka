@@ -4,7 +4,6 @@
 package akka.remote.testconductor
 
 import language.postfixOps
-
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props }
 import RemoteConnection.getAddrString
 import TestConductorProtocol._
@@ -23,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.util.{ Timeout }
 import scala.concurrent.util.{ Deadline, Duration }
+import scala.reflect.classTag
 
 sealed trait Direction {
   def includes(other: Direction): Boolean
@@ -97,7 +97,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def sockAddr: Future[InetSocketAddress] = {
     import Settings.QueryTimeout
-    controller ? GetSockAddr mapTo
+    controller ? GetSockAddr mapTo classTag[InetSocketAddress]
   }
 
   /**
@@ -120,7 +120,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Double): Future[Done] = {
     import Settings.QueryTimeout
-    controller ? Throttle(node, target, direction, rateMBit.toFloat) mapTo
+    controller ? Throttle(node, target, direction, rateMBit.toFloat) mapTo classTag[Done]
   }
 
   /**
@@ -135,7 +135,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def blackhole(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
     import Settings.QueryTimeout
-    controller ? Throttle(node, target, direction, 0f) mapTo
+    controller ? Throttle(node, target, direction, 0f) mapTo classTag[Done]
   }
 
   /**
@@ -148,7 +148,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def passThrough(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
     import Settings.QueryTimeout
-    controller ? Throttle(node, target, direction, -1f) mapTo
+    controller ? Throttle(node, target, direction, -1f) mapTo classTag[Done]
   }
 
   /**
@@ -161,7 +161,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def disconnect(node: RoleName, target: RoleName): Future[Done] = {
     import Settings.QueryTimeout
-    controller ? Disconnect(node, target, false) mapTo
+    controller ? Disconnect(node, target, false) mapTo classTag[Done]
   }
 
   /**
@@ -174,7 +174,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def abort(node: RoleName, target: RoleName): Future[Done] = {
     import Settings.QueryTimeout
-    controller ? Disconnect(node, target, true) mapTo
+    controller ? Disconnect(node, target, true) mapTo classTag[Done]
   }
 
   /**
@@ -187,7 +187,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def shutdown(node: RoleName, exitValue: Int): Future[Done] = {
     import Settings.QueryTimeout
-    controller ? Terminate(node, exitValue) mapTo
+    controller ? Terminate(node, exitValue) mapTo classTag[Done]
   }
 
   /**
@@ -198,7 +198,7 @@ trait Conductor { this: TestConductorExt ⇒
   // TODO: uncomment (and implement in Controller) if really needed
   //  def kill(node: RoleName): Future[Done] = {
   //    import Settings.QueryTimeout
-  //    controller ? Terminate(node, -1) mapTo
+  //    controller ? Terminate(node, -1) mapTo classTag[Done]
   //  }
 
   /**
@@ -206,7 +206,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def getNodes: Future[Iterable[RoleName]] = {
     import Settings.QueryTimeout
-    controller ? GetNodes mapTo
+    controller ? GetNodes mapTo classTag[Iterable[RoleName]]
   }
 
   /**
@@ -219,7 +219,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def removeNode(node: RoleName): Future[Done] = {
     import Settings.QueryTimeout
-    controller ? Remove(node) mapTo
+    controller ? Remove(node) mapTo classTag[Done]
   }
 
 }
@@ -239,7 +239,7 @@ private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorR
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
     val channel = event.getChannel
     log.debug("connection from {}", getAddrString(channel))
-    val fsm: ActorRef = Await.result(controller ? Controller.CreateServerFSM(channel) mapTo, Duration.Inf)
+    val fsm: ActorRef = Await.result(controller ? Controller.CreateServerFSM(channel) mapTo classTag[ActorRef], Duration.Inf)
     clients.put(channel, fsm)
   }
 

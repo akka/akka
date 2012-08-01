@@ -29,7 +29,7 @@ trait Listeners { self: Actor ⇒
   /**
    * Chain this into the receive function.
    *
-   * {{ def receive = listenerManagement orElse … }}
+   * {{{ def receive = listenerManagement orElse … }}}
    */
   protected def listenerManagement: Actor.Receive = {
     case Listen(l) ⇒ listeners add l

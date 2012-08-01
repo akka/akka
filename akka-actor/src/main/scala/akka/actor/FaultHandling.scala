@@ -124,7 +124,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   /**
    * When supervisorStrategy is not specified for an actor this
    * is used by default. The child will be stopped when
-   * [[akka.ActorInitializationException]] or [[akka.ActorKilledException]]
+   * [[akka.actor.ActorInitializationException]] or [[akka.ActorKilledException]]
    * is thrown. It will be restarted for other `Exception` types.
    * The error is escalated if it's a `Throwable`, i.e. `Error`.
    */

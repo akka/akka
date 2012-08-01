@@ -3,6 +3,8 @@
  */
 package akka.cluster
 
+import language.implicitConversions
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.{ Address, ExtendedActorSystem }
@@ -12,7 +14,7 @@ import akka.testkit._
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 import org.scalatest.Suite
-import org.scalatest.TestFailedException
+import org.scalatest.exceptions.TestFailedException
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
@@ -73,7 +75,7 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
     }
     super.withFixture(test)
   } catch {
-    case t ⇒
+    case t: Throwable ⇒
       failed = true
       throw t
   }

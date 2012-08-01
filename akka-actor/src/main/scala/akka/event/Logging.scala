@@ -237,7 +237,7 @@ trait LoggingBus extends ActorEventBus {
 
 /**
  * This is a “marker” class which is inserted as originator class into
- * [[akka.event.LogEvent]] when the string representation was supplied
+ * [[akka.event.Logging.LogEvent]] when the string representation was supplied
  * directly.
  */
 class DummyClassForStringSources
@@ -848,7 +848,7 @@ trait LoggingAdapter {
   }
 
   def format(t: String, arg: Any*): String = {
-    val sb = new StringBuilder //FIXME add some decent size hint here
+    val sb = new StringBuilder(64)
     var p = 0
     var rest = t
     while (p < arg.length) {

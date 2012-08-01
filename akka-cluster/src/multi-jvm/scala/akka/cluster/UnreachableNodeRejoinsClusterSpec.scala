@@ -3,6 +3,8 @@
  */
 package akka.cluster
 
+import language.postfixOps
+
 import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -61,7 +63,7 @@ abstract class UnreachableNodeRejoinsClusterSpec
       // let them send at least one heartbeat to each other after the gossip convergence
       // because for new joining nodes we remove them from the failure detector when
       // receive gossip
-      2.seconds.dilated.sleep
+      Thread.sleep(2.seconds.dilated.toMillis)
 
       runOn(first) {
         // pull network for victim node from all nodes

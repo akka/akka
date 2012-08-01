@@ -7,10 +7,12 @@ package akka.camel;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import scala.concurrent.util.FiniteDuration;
+import scala.concurrent.Await;
+import scala.concurrent.util.Duration;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -22,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 public class ConsumerJavaTestBase {
 
     static ActorSystem system = ActorSystem.create("test");
-    static Camel camel = (Camel) CamelExtension.get(system);
+    static Camel camel = CamelExtension.get(system);
 
 
     @AfterClass
@@ -31,9 +33,11 @@ public class ConsumerJavaTestBase {
     }
 
     @Test
-    public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() {
-        ActorRef ref = system.actorOf(new Props().withCreator(SampleErrorHandlingConsumer.class));
-        camel.awaitActivation(ref, new FiniteDuration(1, TimeUnit.SECONDS));
+    public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() throws Exception {
+        Duration timeout = Duration.create(1, TimeUnit.SECONDS);
+        ActorRef ref = Await.result(
+          camel.activationFutureFor(system.actorOf(new Props(SampleErrorHandlingConsumer.class)), timeout),
+          timeout);
 
         String result = camel.template().requestBody("direct:error-handler-test-java", "hello", String.class);
         assertEquals("error: hello", result);

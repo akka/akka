@@ -70,7 +70,7 @@ object FSM {
   /**
    * Signifies that the [[akka.actor.FSM]] is shutting itself down because of
    * an error, e.g. if the state to transition into does not exist. You can use
-   * this to communicate a more precise cause to the [[akka.actor.FSM$onTermination]] block.
+   * this to communicate a more precise cause to the [[akka.actor.FSM.onTermination]] block.
    */
   case class Failure(cause: Any) extends Reason
 

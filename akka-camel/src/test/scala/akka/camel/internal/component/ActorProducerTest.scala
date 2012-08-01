@@ -13,7 +13,6 @@ import org.apache.camel.{ CamelContext, ProducerTemplate, AsyncCallback }
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
-import akka.testkit.{ TestKit, TestProbe }
 import java.lang.String
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import akka.camel._
@@ -27,6 +26,7 @@ import akka.actor.Status.Failure
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem.Settings
 import akka.event.LoggingAdapter
+import akka.testkit.{ TimingTest, TestKit, TestProbe }
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
 
@@ -46,12 +46,12 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
       "in-only" must {
         def producer = given(outCapable = false)
 
-        "pass the message to the consumer" in {
+        "pass the message to the consumer" taggedAs TimingTest in {
           producer.processExchangeAdapter(exchange)
           within(1 second)(probe.expectMsg(message))
         }
 
-        "not expect response and not block" in {
+        "not expect response and not block" taggedAs TimingTest in {
           time(producer.processExchangeAdapter(exchange)) must be < (200 millis)
         }
 
@@ -76,7 +76,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
             time(producer.processExchangeAdapter(exchange))
           }
 
-          "timeout after replyTimeout" in {
+          "timeout after replyTimeout" taggedAs TimingTest in {
             val duration = process()
             duration must (be >= (100 millis) and be < (300 millis))
           }

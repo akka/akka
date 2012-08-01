@@ -14,12 +14,14 @@ import org.scalatest.matchers.{ BePropertyMatcher, BePropertyMatchResult }
 import scala.concurrent.util.{ FiniteDuration, Duration }
 import scala.reflect.ClassTag
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
+import concurrent.Await
+import akka.util.Timeout
 
 private[camel] object TestSupport {
 
   def start(actor: ⇒ Actor)(implicit system: ActorSystem): ActorRef = {
     val actorRef = system.actorOf(Props(actor))
-    CamelExtension(system).awaitActivation(actorRef, 10 seconds)
+    Await.result(CamelExtension(system).activationFutureFor(actorRef)(10 seconds), 10 seconds)
     actorRef
   }
 
@@ -36,7 +38,7 @@ private[camel] object TestSupport {
         camel.template.asyncRequestBody(to, msg).get(timeout.toNanos, TimeUnit.NANOSECONDS)
       } catch {
         case e: ExecutionException ⇒ throw e.getCause
-        case e: TimeoutException   ⇒ throw new AssertionError("Failed to get response to message [%s], send to endpoint [%s], within [%s]" format (msg, to, timeout), e)
+        case e: TimeoutException   ⇒ throw new AssertionError("Failed to get response to message [%s], send to endpoint [%s], within [%s]".format(msg, to, timeout))
       }
     }
 

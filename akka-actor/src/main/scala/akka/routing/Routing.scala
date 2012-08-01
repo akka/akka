@@ -277,7 +277,7 @@ trait CustomRoute {
 
 /**
  * Base trait for `Router` actors. Override `receive` to handle custom
- * messages which the corresponding [[akka.actor.RouterConfig]] lets
+ * messages which the corresponding [[akka.routing.RouterConfig]] lets
  * through by returning an empty route.
  */
 trait Router extends Actor {

@@ -32,8 +32,8 @@ object Sphinx {
     sphinx <<= sphinxTask
   )
 
-  def pygmentsTask = (sphinxPygmentsDir, sphinxTarget, streams) map {
-    (pygments, baseTarget, s) => {
+  def pygmentsTask = (sphinxDocs, sphinxPygmentsDir, sphinxTarget, streams) map {
+    (cwd, pygments, baseTarget, s) => {
       val target = baseTarget / "site-packages"
       val empty = (target * "*.egg").get.isEmpty
       if (empty) {
@@ -42,8 +42,8 @@ object Sphinx {
         val logger = newLogger(s)
         val command = Seq("easy_install", "--install-dir", target.absolutePath, pygments.absolutePath)
         val env = "PYTHONPATH" -> target.absolutePath
-        s.log.debug("Command: " + command.mkString(" "))
-        val exitCode = Process(command, pygments, env) ! logger
+        s.log.debug("Command: " + command.mkString(" ") + "\nEnv:" + env)
+        val exitCode = Process(command, cwd, env) ! logger
         if (exitCode != 0) sys.error("Failed to install custom Sphinx pygments styles.")
         (pygments * ("*.egg-info" | "build" | "temp")).get.foreach(IO.delete)
         s.log.info("Sphinx pygments styles installed at: " + target)
@@ -56,7 +56,7 @@ object Sphinx {
     (cacheDirectory, sphinxDocs, sphinxTarget, sphinxPygments, tagsKey, streams) map {
       (cacheDir, docs, baseTarget, pygments, tags, s) => {
         val target = baseTarget / builder
-        val doctrees = baseTarget / "doctrees"
+        val doctrees = baseTarget / "doctrees" / builder
         val cache = cacheDir / "sphinx" / builder
         val cached = FileFunction.cached(cache)(FilesInfo.hash, FilesInfo.exists) { (in, out) =>
           val changes = in.modified

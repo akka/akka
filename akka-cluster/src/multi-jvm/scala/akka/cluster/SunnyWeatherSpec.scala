@@ -68,7 +68,7 @@ abstract class SunnyWeatherSpec
         awaitUpConvergence(roles.size)
         assertLeaderIn(roles)
         if (n % 5 == 0) log.info("Passed period [{}]", n)
-        1.seconds.sleep
+        Thread.sleep(1000)
       }
 
       enterBarrier("after")

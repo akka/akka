@@ -30,7 +30,7 @@ object SubclassifiedIndex {
       val kids = subkeys flatMap (_ addValue value)
       if (!(values contains value)) {
         values += value
-        kids :+ (key, values)
+        kids :+ ((key, values))
       } else kids
     }
 
@@ -43,7 +43,7 @@ object SubclassifiedIndex {
       val kids = subkeys flatMap (_ removeValue value)
       if (values contains value) {
         values -= value
-        kids :+ (key, values)
+        kids :+ ((key, values))
       } else kids
     }
 
@@ -104,7 +104,7 @@ class SubclassifiedIndex[K, V] private (private var values: Set[V])(implicit sc:
       val v = values + value
       val n = new Nonroot(key, v)
       integrate(n)
-      n.addValue(key, value) :+ (key, v)
+      n.addValue(key, value) :+ ((key, v))
     } else ch
   }
 

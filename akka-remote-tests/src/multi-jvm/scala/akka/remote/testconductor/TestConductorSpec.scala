@@ -3,11 +3,13 @@
  */
 package akka.remote.testconductor
 
+import language.postfixOps
+
 import com.typesafe.config.ConfigFactory
 import akka.actor.Props
 import akka.actor.Actor
 import scala.concurrent.Await
-import scala.concurrent.Await.Awaitable
+import scala.concurrent.Awaitable
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
 import akka.testkit.ImplicitSender

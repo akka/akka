@@ -405,7 +405,7 @@ class LocalActorRefProvider(
       case Terminated(_)                ⇒ context.stop(self)
       case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ Status.Failure(e) })
       case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ Status.Failure(e) })
-      case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
+      case StopChild(child)             ⇒ context.stop(child)
       case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
 

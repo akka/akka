@@ -70,7 +70,7 @@ trait AskSupport {
    *   } pipeTo nextActor
    * }}}
    *
-   * [see [[scala.concurrent.Future]] for a description of `flow`]
+   * See [[scala.concurrent.Future]] for a description of `flow`
    */
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef match {
     case ref: InternalActorRef if ref.isTerminated ⇒
@@ -119,7 +119,7 @@ trait AskSupport {
      *   } pipeTo nextActor
      * }}}
      *
-     * [see the [[scala.concurrent.Future]] companion object for a description of `flow`]
+     * See the [[scala.concurrent.Future]] companion object for a description of `flow`
      */
     def ask(message: Any)(implicit timeout: Timeout): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
 
@@ -149,7 +149,7 @@ trait AskSupport {
      *   } pipeTo nextActor
      * }}}
      *
-     * [see the [[scala.concurrent.Future]] companion object for a description of `flow`]
+     * See the [[scala.concurrent.Future]] companion object for a description of `flow`
      */
     def ?(message: Any)(implicit timeout: Timeout): Future[Any] = akka.pattern.ask(actorRef, message)(timeout)
   }
