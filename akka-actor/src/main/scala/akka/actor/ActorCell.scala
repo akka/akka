@@ -386,7 +386,7 @@ private[akka] class ActorCell(
       val instance = props.creator.apply()
 
       if (instance eq null)
-        throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
+        throw ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
       // If no becomes were issued, the actors behavior is its receive method
       behaviorStack = if (behaviorStack.isEmpty) instance.receive :: behaviorStack else behaviorStack
@@ -407,12 +407,12 @@ private[akka] class ActorCell(
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
       case NonFatal(i: InstantiationException) ⇒
-        throw new ActorInitializationException(self,
+        throw ActorInitializationException(self,
           """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new UntypedActorFactory ... )
                or is missing an appropriate, reachable no-args constructor.
             """, i.getCause)
-      case NonFatal(e) ⇒ throw new ActorInitializationException(self, "exception during creation", e)
+      case NonFatal(e) ⇒ throw ActorInitializationException(self, "exception during creation", e)
     }
   }
 

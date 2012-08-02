@@ -148,7 +148,7 @@ class CallingThreadDispatcher(
         val queue = mbox.queue
         queue.enter
         runQueue(mbox, queue)
-      case x ⇒ throw new ActorInitializationException("expected CallingThreadMailbox, got " + x.getClass)
+      case x ⇒ throw ActorInitializationException("expected CallingThreadMailbox, got " + x.getClass)
     }
   }
 
