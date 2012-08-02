@@ -131,8 +131,19 @@ object SupervisorHierarchySpec {
         log :+= Event("escalating " + f)
         throw Failure(directive, logs + (self -> log), x - 1)
     }
+
+    def abort(msg: String) {
+      listener ! ErrorLog(msg, log)
+      stopping = true
+      context stop self
+    }
+
+    var preRestartCalled = false
     override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
       // do not scrap children
+      if (preRestartCalled) abort("preRestart called twice")
+      log :+= Event("preRestart")
+      preRestartCalled = true
     }
 
     override def postStop {
@@ -149,16 +160,10 @@ object SupervisorHierarchySpec {
       suspended = false
       log :+= Event(msg)
       if (failed) {
-        listener ! ErrorLog("processing message while failed", log)
+        abort("processing message while failed")
         failed = false
-        stop()
         false
       } else true
-    }
-
-    def stop() {
-      stopping = true
-      context stop self
     }
 
     var gotKidsFrom = Set.empty[ActorRef]
@@ -169,7 +174,7 @@ object SupervisorHierarchySpec {
         case f @ Failure(Resume, _, _) ⇒ suspended = true; throw f.copy(log = Map(self -> log))
         case f: Failure                ⇒ failed = true; throw f.copy(log = Map(self -> log))
         case "ping"                    ⇒ Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
-        case Terminated(_)             ⇒ listener ! ErrorLog("terminating", log); stop()
+        case Terminated(_)             ⇒ abort("terminating")
         case Children(refs) ⇒
           kids ++= refs
           gotKidsFrom += sender
@@ -248,8 +253,6 @@ object SupervisorHierarchySpec {
    * TODO RK: also test exceptions during recreate
    * 
    * TODO RK: also test recreate including terminating children
-   * 
-   * TODO RK: also verify that preRestart is not called more than once per instance
    */
 
   class StressTest(testActor: ActorRef, depth: Int, breadth: Int) extends Actor with LoggingFSM[State, Null] {
