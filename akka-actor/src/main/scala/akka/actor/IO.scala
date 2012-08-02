@@ -1037,14 +1037,10 @@ final class IOManagerActor extends Actor with ActorLogging {
 
     case IO.Write(handle, data) ⇒
       if (channels contains handle) {
-        val queue = {
-          val existing = writes get handle
-          if (existing.isDefined) existing.get
-          else {
-            val q = new WriteBuffer(bufferSize)
-            writes update (handle, q)
-            q
-          }
+        val queue = writes get handle getOrElse {
+          val q = new WriteBuffer(bufferSize)
+          writes update (handle, q)
+          q
         }
         if (queue.isEmpty) addOps(handle, OP_WRITE)
         queue enqueue data
@@ -1053,11 +1049,9 @@ final class IOManagerActor extends Actor with ActorLogging {
       run()
 
     case IO.Close(handle: IO.WriteHandle) ⇒
-      if (writes get handle filterNot (_.isEmpty) isDefined) {
-        closing += handle
-      } else {
-        cleanup(handle, None)
-      }
+      //If we still have pending writes, add to set of closing handles
+      if (writes get handle exists (_.isEmpty == false)) closing += handle
+      else cleanup(handle, None)
       run()
 
     case IO.Close(handle) ⇒
