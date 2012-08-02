@@ -23,7 +23,6 @@
 		<scalatest.version>1.9-2.10.0-M5-B2</scalatest.version>
 		<exam.version>2.5.0</exam.version>
 		<pax.runner.version>1.7.6</pax.runner.version>
-		<url.version>1.4.2</url.version>
 		<felix.version>4.0.3</felix.version>
 		<akka.version>2.1-SNAPSHOT</akka.version>
 		<akka.config.version>0.4.1</akka.config.version>

@@ -6,12 +6,13 @@ package akka.osgi.test
 import org.junit.runner.RunWith
 import org.junit._
 import org.junit.Assert._
-//import org.scalatest.{ BeforeAndAfterAll, Suite }
-//import org.scalatest.matchers.MustMatchers
+import org.scalatest.{ BeforeAndAfterAll, Suite }
+import org.scalatest.matchers.MustMatchers
+import org.scalatest.junit.{ AssertionsForJUnit, JUnitSuite }
 import org.ops4j.pax.exam.junit.{ JUnit4TestRunner, Configuration }
 import org.ops4j.pax.exam.Option
 import org.ops4j.pax.exam.CoreOptions._
-import org.osgi.framework.{BundleContext, BundleActivator}
+import org.osgi.framework.{ BundleContext, BundleActivator }
 import javax.inject.Inject
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
@@ -29,11 +30,11 @@ import PingPong._
  * @author Nepomuk Seiler
  */
 @RunWith(classOf[JUnit4TestRunner])
-class LocalActorTest /* extends Suite with MustMatchers */ {
+class LocalActorTest extends JUnitSuite /*  with Suite with MustMatchers */ {
 
   @Inject
   var ctx: BundleContext = _
-  
+
   var activator: BundleActivator = _
 
   @Configuration
@@ -46,7 +47,7 @@ class LocalActorTest /* extends Suite with MustMatchers */ {
       mavenBundle("com.typesafe.akka", "akka-osgi", Versions.AKKA),
       mavenBundle("com.typesafe", "config", "0.4.1"),
       mavenBundle("org.scalatest", "scalatest_2.10.0-M5", "1.9-2.10.0-M5-B2"),
-      felix.version("4.0.3"))
+      felix.version("3.2.2"))
   }
 
   /**
@@ -57,8 +58,8 @@ class LocalActorTest /* extends Suite with MustMatchers */ {
     activator = new TestActivator
     activator.start(ctx)
   }
-  
-   /**
+
+  /**
    * Imitating a bundle shutdown
    */
   @After
@@ -73,16 +74,16 @@ class LocalActorTest /* extends Suite with MustMatchers */ {
 
   @Test
   def testActorSystem() {
-	  val sysRef = ctx.getServiceReference(classOf[ActorSystem].getName)
-	  assertNotNull(sysRef)
-	  
-	  val system = ctx.getService(sysRef).asInstanceOf[ActorSystem]
-	  assertNotNull(system)
-	  
-	  val pong = system.actorOf(Props[PongActor], name = "pong")
-	  implicit val timeout = Timeout(5 seconds)
-      val result = Await.result(pong ? Ping, timeout.duration) //must be(Pong)
-      assertEquals("Pong", result.toString)
+    val sysRef = ctx.getServiceReference(classOf[ActorSystem].getName)
+    assertNotNull(sysRef)
+
+    val system = ctx.getService(sysRef).asInstanceOf[ActorSystem]
+    assertNotNull(system)
+
+    val pong = system.actorOf(Props[PongActor], name = "pong")
+    implicit val timeout = Timeout(5 seconds)
+    val result = Await.result(pong ? Ping, timeout.duration) //must be(Pong)
+    assertEquals("Pong", result.toString)
   }
 
 }

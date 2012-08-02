@@ -7,6 +7,6 @@ import org.osgi.framework.BundleContext
 class TestActivator extends ActorSystemActivator {
 
   def configure(context: BundleContext, system: ActorSystem) {
-	 registerService(context, system)
+    registerService(context, system)
   }
 }

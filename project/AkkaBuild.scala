@@ -67,7 +67,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, /*akkaSbtPlugin,*/ samples, tutorials, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, /*akkaSbtPlugin,*/ samples, tutorials, osgi, osgiAries, osgiTests, docs)
   )
 
   lazy val actor = Project(
@@ -255,6 +255,16 @@ object AkkaBuild extends Build {
     dependencies = Seq(osgi % "compile;test->test"),
     settings = defaultSettings ++ OSGi.osgiAries ++ Seq(
       libraryDependencies ++= Dependencies.osgiAries,
+      parallelExecution in Test := false
+    )
+  )
+
+  lazy val osgiTests = Project(
+    id = "akka-osgi-tests",
+    base = file("akka-osgi-tests"),
+    dependencies = Seq(osgi % "compile;test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.osgiTests,
       parallelExecution in Test := false
     )
   )
@@ -511,6 +521,8 @@ object Dependencies {
 
   val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
 
+  val osgiTests = Seq(osgiCore, Test.scalatest, Test.junit, Test.paxExamUnit, Test.paxInject, Test.paxExamRunner, Test.paxLinkAssembly, Test.paxExamForge, Test.paxRunner, Test.javaxInject, Test.slf4j, Test.equinox, Test.equinoxCommon, Test.equinoxPax)
+
   val tutorials = Seq(Test.scalatest, Test.junit)
 
   val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
@@ -546,6 +558,21 @@ object Dependency {
     val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
     val junitIntf   = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
+    
+    val paxExamUnit = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.5.0"            % "test" // TODO License
+    val paxInject   = "org.ops4j.pax.exam"          % "pax-exam-inject"              % "2.5.0"            % "test" // TODO License
+    val paxExamRunner   = "org.ops4j.pax.exam"      % "pax-exam-container-paxrunner" % "2.5.0"            % "test" // TODO License
+    val paxLinkAssembly = "org.ops4j.pax.exam"      % "pax-exam-link-assembly"       % "2.5.0"            % "test" // TODO License
+    val paxExamForge    = "org.ops4j.pax.exam"      % "pax-exam-testforge"           % "2.5.0"            % "test" // TODO License
+    val paxRunner   = "org.ops4j.pax.runner"        % "pax-runner-no-jcl"            % "1.7.6"            % "test" // TODO License
+    val javaxInject = "javax.inject"                % "javax.inject"                 % "1"                % "test" // TODO License
+
+    val equinox     = "org.eclipse.equinox"         % "osgi"                         % "3.1.1"            % "test" // EPL
+    val equinoxCommon  = "org.eclipse.equinox"      % "common"                       % "3.3.0-v20070426"  % "test" // EPL
+    val equinoxPax  = "org.ops4j.pax.runner"        % "pax-runner-platform-equinox"  % "1.7.6"            % "test"
+    val felix       = "org.apache.felix"            % "org.apache.felix.framework"   % "4.0.2"            % "test" // ApacheV2
+    val slf4j       = "org.slf4j"                   % "slf4j-simple"                 % "1.6.1"            % "test" // ApacheV2
+
   }
 }
 
