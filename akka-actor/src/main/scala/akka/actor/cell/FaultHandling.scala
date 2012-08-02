@@ -91,7 +91,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     // must happen “atomically”
     try resumeNonRecursive()
     finally if (inResponseToFailure) clearFailed()
-    resumeChildren(perp)
+    resumeChildren(inResponseToFailure, perp)
   }
 
   protected def terminate() {
@@ -117,7 +117,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     }
   }
 
-  final def handleInvokeFailure(t: Throwable, message: String): Unit = {
+  final def handleInvokeFailure(childrenNotToSuspend: Iterable[ActorRef], t: Throwable, message: String): Unit = {
     publish(Error(t, self.path.toString, clazz(actor), message))
     // prevent any further messages to be processed until the actor has been restarted
     if (!isFailed) try {
@@ -127,7 +127,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
         case Envelope(Failed(_), child) ⇒ setFailed(child); Set(child)
         case _                          ⇒ setFailed(self); Set.empty
       }
-      suspendChildren(skip)
+      suspendChildren(skip ++ childrenNotToSuspend)
       // tell supervisor
       t match { // Wrap InterruptedExceptions and rethrow
         case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t)), self); throw t
@@ -156,30 +156,32 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     }
   }
 
-  private def finishRecreate(cause: Throwable, failedActor: Actor): Unit = try {
-    try resumeNonRecursive()
-    finally clearFailed() // must happen in any case, so that failure is propagated
-
+  private def finishRecreate(cause: Throwable, failedActor: Actor): Unit = {
     // need to keep a snapshot of the surviving children before the new actor instance creates new ones
     val survivors = children
 
-    val freshActor = newActor()
-    actor = freshActor // this must happen before postRestart has a chance to fail
-    if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
+    try {
+      try resumeNonRecursive()
+      finally clearFailed() // must happen in any case, so that failure is propagated
 
-    freshActor.postRestart(cause)
-    if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
+      val freshActor = newActor()
+      actor = freshActor // this must happen before postRestart has a chance to fail
+      if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
 
-    // only after parent is up and running again do restart the children which were not stopped
-    survivors foreach (child ⇒
-      try child.asInstanceOf[InternalActorRef].restart(cause)
-      catch {
-        case NonFatal(e) ⇒ publish(Error(e, self.path.toString, clazz(freshActor), "restarting " + child))
-      })
-  } catch {
-    case NonFatal(e) ⇒
-      clearActorFields(actor) // in order to prevent preRestart() from happening again
-      handleInvokeFailure(new PostRestartException(self, e, cause), e.getMessage)
+      freshActor.postRestart(cause)
+      if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
+
+      // only after parent is up and running again do restart the children which were not stopped
+      survivors foreach (child ⇒
+        try child.asInstanceOf[InternalActorRef].restart(cause)
+        catch {
+          case NonFatal(e) ⇒ publish(Error(e, self.path.toString, clazz(freshActor), "restarting " + child))
+        })
+    } catch {
+      case NonFatal(e) ⇒
+        clearActorFields(actor) // in order to prevent preRestart() from happening again
+        handleInvokeFailure(survivors, new PostRestartException(self, e, cause), e.getMessage)
+    }
   }
 
   final protected def handleFailure(child: ActorRef, cause: Throwable): Unit = getChildByRef(child) match {
@@ -196,7 +198,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
      */
     try actor.supervisorStrategy.handleChildTerminated(this, child, children)
     catch {
-      case NonFatal(e) ⇒ handleInvokeFailure(e, "handleChildTerminated failed")
+      case NonFatal(e) ⇒ handleInvokeFailure(Nil, e, "handleChildTerminated failed")
     }
     /*
      * if the removal changed the state of the (terminating) children container,

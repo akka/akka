@@ -119,10 +119,10 @@ private[akka] trait Children { this: ActorCell ⇒
       case _ ⇒
     }
 
-  protected def resumeChildren(perp: ActorRef): Unit =
+  protected def resumeChildren(inResponseToFailure: Boolean, perp: ActorRef): Unit =
     childrenRefs.stats foreach {
       case ChildRestartStats(child: InternalActorRef, _, _) ⇒
-        child.resume(inResponseToFailure = perp == child)
+        child.resume(inResponseToFailure = inResponseToFailure && perp == child)
     }
 
   def getChildByName(name: String): Option[ChildRestartStats] = childrenRefs.getByName(name)

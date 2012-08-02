@@ -271,7 +271,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       }
     }
     // if something happened while processing, fail this actor (most probable: exception in supervisorStrategy)
-    if (failure ne null) actor.handleInvokeFailure(failure, failure.getMessage)
+    if (failure ne null) actor.handleInvokeFailure(Nil, failure, failure.getMessage)
   }
 
   /**
