@@ -86,7 +86,7 @@ public class FutureDocTestBase {
       ExecutorService yourExecutorServiceGoesHere = Executors.newSingleThreadExecutor();
       //#diy-execution-context
       ExecutionContext ec =
-        ExecutionContext$.MODULE$.fromExecutorService(yourExecutorServiceGoesHere);
+        ExecutionContexts.fromExecutorService(yourExecutorServiceGoesHere);
 
       //Use ec with your Futures
       Future<String> f1 = Futures.successful("foo");
