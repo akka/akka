@@ -310,7 +310,7 @@ trait Router extends Actor {
  * INTERNAL API
  */
 private object Router {
-
+  @SerialVersionUID(1L)
   case object Resize
 
   val defaultSupervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
@@ -325,6 +325,7 @@ private object Router {
  *
  * Router implementations may choose to handle this message differently.
  */
+@SerialVersionUID(1L)
 case class Broadcast(message: Any)
 
 /**
@@ -333,6 +334,7 @@ case class Broadcast(message: Any)
  * about what routees the router is routing over.
  */
 abstract class CurrentRoutees
+@SerialVersionUID(1L)
 case object CurrentRoutees extends CurrentRoutees {
   /**
    * Java API: get the singleton instance
@@ -343,6 +345,7 @@ case object CurrentRoutees extends CurrentRoutees {
 /**
  * Message used to carry information about what routees the router is currently using.
  */
+@SerialVersionUID(1L)
 case class RouterRoutees(routees: Iterable[ActorRef])
 
 /**
@@ -351,6 +354,7 @@ case class RouterRoutees(routees: Iterable[ActorRef])
  * sender should match the sender of the original request, but e.g. the scatter-
  * gather router needs to receive the replies with an AskActorRef instead.
  */
+@SerialVersionUID(1L)
 case class Destination(sender: ActorRef, recipient: ActorRef)
 
 /**
@@ -359,7 +363,7 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
  * from lower-precedence sources. The decision whether or not to create a
  * router is taken in the LocalActorRefProvider based on Props.
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 abstract class NoRouter extends RouterConfig
 case object NoRouter extends NoRouter {
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null // FIXME, null, really??
@@ -391,7 +395,7 @@ case object FromConfig extends FromConfig {
  * This can be used when the dispatcher to be used for the head Router needs to be configured
  * (defaults to default-dispatcher).
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   extends RouterConfig
   with Serializable {
@@ -462,7 +466,7 @@ object RoundRobinRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
                             val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                             val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
@@ -581,7 +585,7 @@ object RandomRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
                         val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                         val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
@@ -707,7 +711,7 @@ object SmallestMailboxRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
                                  val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                                  val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
@@ -907,7 +911,7 @@ object BroadcastRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
                            val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                            val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
@@ -1018,7 +1022,7 @@ object ScatterGatherFirstCompletedRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
                                              override val resizer: Option[Resizer] = None,
                                              val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
@@ -1132,6 +1136,7 @@ case object DefaultResizer {
 }
 
 //FIXME DOCUMENT ME
+@SerialVersionUID(1L)
 case class DefaultResizer(
   /**
    * The fewest number of routees the router should ever have.
