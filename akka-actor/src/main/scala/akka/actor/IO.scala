@@ -26,7 +26,7 @@ import scala.collection.mutable
 import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
 import java.util.UUID
-import java.io.{EOFException, IOException}
+import java.io.{ EOFException, IOException }
 
 /**
  * IO messages and iteratees.
