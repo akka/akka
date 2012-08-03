@@ -11,7 +11,9 @@ import scala.annotation.tailrec
 /**
  * All Batchables are automatically batched when submitted to a BatchingExecutor
  */
-private[akka] trait Batchable extends Runnable
+private[akka] trait Batchable extends Runnable {
+  def isBatchable: Boolean
+}
 
 /**
  * Mixin trait for an Executor
@@ -100,9 +102,9 @@ private[akka] trait BatchingExecutor extends Executor {
     }
   }
 
-  protected def unbatchedExecute(r: Runnable): Unit = super.execute(r)
+  protected def unbatchedExecute(r: Runnable): Unit
 
-  abstract override def execute(runnable: Runnable): Unit = {
+  override def execute(runnable: Runnable): Unit = {
     if (batchable(runnable)) { // If we can batch the runnable
       _tasksLocal.get match {
         case null ⇒ unbatchedExecute(new Batch(List(runnable))) // If we aren't in batching mode yet, enqueue batch
@@ -112,5 +114,9 @@ private[akka] trait BatchingExecutor extends Executor {
   }
 
   /** Override this to define which runnables will be batched. */
-  def batchable(runnable: Runnable): Boolean = runnable.isInstanceOf[Batchable]
+  def batchable(runnable: Runnable): Boolean = runnable match {
+    case b: Batchable                           ⇒ b.isBatchable
+    case _: scala.concurrent.OnCompleteRunnable ⇒ true
+    case _                                      ⇒ false
+  }
 }

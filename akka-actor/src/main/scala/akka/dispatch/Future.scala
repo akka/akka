@@ -128,9 +128,11 @@ object Futures {
    */
   def sequence[A](in: JIterable[Future[A]], executor: ExecutionContext): Future[JIterable[A]] = {
     implicit val d = executor
-    scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[A]())) { (fr, fa) ⇒
-      for (r ← fr; a ← fa) yield { r add a; r }
-    }
+    scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[A]()))((fr, fa) ⇒
+      for (r ← fr; a ← fa) yield {
+        r add a
+        r
+      })
   }
 
   /**
