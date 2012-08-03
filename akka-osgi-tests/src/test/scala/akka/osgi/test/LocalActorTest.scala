@@ -12,6 +12,8 @@ import org.scalatest.junit.{ AssertionsForJUnit, JUnitSuite }
 import org.ops4j.pax.exam.junit.{ JUnit4TestRunner, Configuration }
 import org.ops4j.pax.exam.Option
 import org.ops4j.pax.exam.CoreOptions._
+import org.openengsb.labs.paxexam.karaf.options.KarafDistributionOption.karafDistributionConfiguration
+
 import org.osgi.framework.{ BundleContext, BundleActivator }
 import javax.inject.Inject
 import com.typesafe.config.ConfigFactory
@@ -30,7 +32,7 @@ import PingPong._
  * @author Nepomuk Seiler
  */
 @RunWith(classOf[JUnit4TestRunner])
-class LocalActorTest extends JUnitSuite /*  with Suite with MustMatchers */ {
+class LocalActorTest extends JUnitSuite /* with Suite with MustMatchers */ {
 
   @Inject
   var ctx: BundleContext = _
@@ -46,8 +48,11 @@ class LocalActorTest extends JUnitSuite /*  with Suite with MustMatchers */ {
       mavenBundle("com.typesafe.akka", "akka-actor", Versions.AKKA),
       mavenBundle("com.typesafe.akka", "akka-osgi", Versions.AKKA),
       mavenBundle("com.typesafe", "config", "0.4.1"),
-      mavenBundle("org.scalatest", "scalatest_2.10.0-M5", "1.9-2.10.0-M5-B2"),
-      felix.version("3.2.2"))
+      //mavenBundle("org.scalatest", "scalatest_2.10.0-M5", "1.9-2.10.0-M5-B2"),
+      bundle("http://repository.mukis.de/scalatest_2.10.0_1.9.2_M6.jar"),
+      karafDistributionConfiguration().frameworkUrl(
+        maven().groupId("org.apache.karaf").artifactId("apache-karaf").`type`("zip"))
+        .karafVersion("2.2.8").name("Apache Karaf"))
   }
 
   /**

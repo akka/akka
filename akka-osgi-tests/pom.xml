@@ -88,12 +88,33 @@
 		</dependency>
 		<!-- Pax Exam Dependencies -->
 		<dependency>
+  			<groupId>org.openengsb.labs.paxexam.karaf</groupId>
+    			<artifactId>paxexam-karaf-container</artifactId>
+    			<version>1.0.0</version>
+   			 <scope>test</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>org.ops4j.pax.exam</groupId>
 			<artifactId>pax-exam-junit4</artifactId>
 			<version>${exam.version}</version>
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+ 			 <groupId>org.apache.karaf</groupId>
+  			<artifactId>apache-karaf</artifactId>
+  			<version>2.2.7</version>
+  			<type>zip</type>
+  			<scope>test</scope>
+  			<exclusions>
+    				<exclusion>
+     				<groupId>org.apache.karaf.shell</groupId>
+      				<artifactId>org.apache.karaf.shell.dev</artifactId>
+    				</exclusion>
+  			</exclusions>
+		</dependency>
+		<!-- 
 		<dependency>
 			<groupId>org.ops4j.pax.exam</groupId>
 			<artifactId>pax-exam-container-paxrunner</artifactId>
@@ -126,7 +147,7 @@
 			<version>${exam.version}</version>
 			<scope>test</scope>
 		</dependency>
-
+		-->
 		<!-- OSGi Container -->
 		<dependency>
 			<groupId>org.apache.felix</groupId>

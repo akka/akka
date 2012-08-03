@@ -521,7 +521,7 @@ object Dependencies {
 
   val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
 
-  val osgiTests = Seq(osgiCore, Test.scalatest, Test.junit, Test.paxExamUnit, Test.paxInject, Test.paxExamRunner, Test.paxLinkAssembly, Test.paxExamForge, Test.paxRunner, Test.javaxInject, Test.slf4j, Test.equinox, Test.equinoxCommon, Test.equinoxPax)
+  val osgiTests = Seq(osgiCore, Test.scalatest, Test.junit, Test.paxExamUnit , Test.karaf , Test.paxKaraf, Test.commonsIo1 )
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
@@ -547,6 +547,7 @@ object Dependency {
 
   object Test {
     val commonsMath = "org.apache.commons"          % "commons-math"                 % "2.1"              % "test" // ApacheV2
+    val commonsIo1  = "org.apache.commons"          % "commons-io"                   % "1.3.2"            % "test" // ApacheV2
     val commonsIo   = "commons-io"                  % "commons-io"                   % "2.0.1"            % "test" // ApacheV2
     val junit       = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"              % "1.0.4"            % "test" // EPL 1.0 / LGPL 2.1
@@ -559,7 +560,12 @@ object Dependency {
     val log4j       = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
     val junitIntf   = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
     
+    
+    val karaf       = "org.apache.karaf.shell"      % "org.apache.karaf.shell.dev"   % "2.2.8"            % "test" // ApacheV2
+    val paxKaraf    = "org.openengsb.labs.paxexam.karaf" % "paxexam-karaf-container" % "1.0.0"            % "test" // 
     val paxExamUnit = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.5.0"            % "test" // TODO License
+
+    /*
     val paxInject   = "org.ops4j.pax.exam"          % "pax-exam-inject"              % "2.5.0"            % "test" // TODO License
     val paxExamRunner   = "org.ops4j.pax.exam"      % "pax-exam-container-paxrunner" % "2.5.0"            % "test" // TODO License
     val paxLinkAssembly = "org.ops4j.pax.exam"      % "pax-exam-link-assembly"       % "2.5.0"            % "test" // TODO License
@@ -572,7 +578,7 @@ object Dependency {
     val equinoxPax  = "org.ops4j.pax.runner"        % "pax-runner-platform-equinox"  % "1.7.6"            % "test"
     val felix       = "org.apache.felix"            % "org.apache.felix.framework"   % "4.0.2"            % "test" // ApacheV2
     val slf4j       = "org.slf4j"                   % "slf4j-simple"                 % "1.6.1"            % "test" // ApacheV2
-
+    */
   }
 }
 
