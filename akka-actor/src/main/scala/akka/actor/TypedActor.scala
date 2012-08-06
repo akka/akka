@@ -494,7 +494,7 @@ object TypedProps {
  * TypedProps is a TypedActor configuration object, that is thread safe and fully sharable.
  * It's used in TypedActorFactory.typedActorOf to configure a TypedActor instance.
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 case class TypedProps[T <: AnyRef] protected[TypedProps] (
   interfaces: Seq[Class[_]],
   creator: () ⇒ T,
