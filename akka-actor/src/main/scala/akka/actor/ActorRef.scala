@@ -475,6 +475,14 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
   override protected def writeReplace(): AnyRef = DeadLetterActorRef.serialized
 }
 
+private[akka] trait PathContainer[T <: ActorRef] {
+  def addChild(name: String, ref: T): Unit
+
+  def removeChild(name: String): Unit
+
+  def getChild(name: String): T
+}
+
 /**
  * Internal implementation detail used for paths like “/temp”
  *
@@ -486,7 +494,7 @@ private[akka] class VirtualPathContainer(
   override val getParent: InternalActorRef,
   val log: LoggingAdapter) extends MinimalActorRef {
 
-  private val children = new ConcurrentHashMap[String, InternalActorRef]
+  protected[this] val children = new ConcurrentHashMap[String, InternalActorRef]
 
   def addChild(name: String, ref: InternalActorRef): Unit = {
     children.put(name, ref) match {
