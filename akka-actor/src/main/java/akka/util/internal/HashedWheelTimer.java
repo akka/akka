@@ -386,12 +386,12 @@ public class HashedWheelTimer implements Timer {
         }
 
         private long waitForNextTick() {
-            long deadline = startTime + tickDuration * tick;
+            final long deadline = startTime + tickDuration * tick;
 
             for (;;) {
                 final long currentTime = System.nanoTime();
 
-                long sleepTime = tickDuration * tick - (currentTime - startTime);
+                long sleepTime = TimeUnit.NANOSECONDS.toMillis((tickDuration * tick) - (currentTime - startTime));
 
                 // Check if we run on windows, as if thats the case we will need
                 // to round the sleepTime as workaround for a bug that only affect
@@ -407,9 +407,7 @@ public class HashedWheelTimer implements Timer {
                 }
 
                 try {
-                    long milliSeconds = TimeUnit.NANOSECONDS.toMillis(sleepTime);
-                    int nanoSeconds = (int) (sleepTime - (milliSeconds * 1000000));
-                    Thread.sleep(milliSeconds, nanoSeconds);
+                    Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
                     if (shutdown()) {
                         return -1;
