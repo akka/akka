@@ -262,10 +262,8 @@ public class HashedWheelTimer implements Timer {
 
     void scheduleTimeout(HashedWheelTimeout timeout, long delay) {
         // Prepare the required parameters to schedule the timeout object.
-        long relativeIndex = (delay + tickDuration - 1) / tickDuration;
-        if (relativeIndex == 0) {
-          relativeIndex = 1;
-        }
+        final long relativeIndex = Math.max(1, (delay + tickDuration - 1) / tickDuration); // If relative index < 1 then it should be 1
+
         final long remainingRounds = relativeIndex / wheel.length;
 
         // Add the timeout to the wheel.
