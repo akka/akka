@@ -54,7 +54,7 @@ class AgentDocSpec extends AkkaSpec {
 
   "send and sendOff" in {
     val agent = Agent(0)
-
+    import system.dispatcher
     //#send
     // send a value
     agent send 7
