@@ -3,6 +3,8 @@
  */
 package akka.remote.router
 
+import language.postfixOps
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props

@@ -4,6 +4,8 @@
 
 package akka.cluster
 
+import language.implicitConversions
+
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec

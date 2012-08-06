@@ -292,7 +292,7 @@ object SupervisorHierarchySpec {
       case Init -> Stress ⇒
         self ! Work(familySize * 1000)
         // set timeout for completion of the whole test (i.e. including Finishing and Stopping)
-        setTimer("phase", StateTimeout, 60 seconds, false)
+        setTimer("phase", StateTimeout, 30.seconds.dilated, false)
     }
 
     val workSchedule = 250.millis
@@ -483,6 +483,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       EventFilter[Exception]("expected", occurrences = 1) intercept {
         boss ! "fail"
       }
+      awaitCond(worker.asInstanceOf[LocalActorRef].underlying.mailbox.isSuspended)
       worker ! "ping"
       expectNoMsg(2 seconds)
       latch.countDown()

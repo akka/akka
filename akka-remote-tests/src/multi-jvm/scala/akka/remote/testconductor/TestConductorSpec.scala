@@ -3,6 +3,8 @@
  */
 package akka.remote.testconductor
 
+import language.postfixOps
+
 import com.typesafe.config.ConfigFactory
 import akka.actor.Props
 import akka.actor.Actor

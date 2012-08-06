@@ -16,6 +16,7 @@ import annotation.tailrec
  * for example a remote transport would want to associate additional
  * information with an address, then this must be done externally.
  */
+@SerialVersionUID(1L)
 final case class Address private (protocol: String, system: String, host: Option[String], port: Option[Int]) {
 
   def this(protocol: String, system: String) = this(protocol, system, None, None)

@@ -8,6 +8,18 @@ import scala.annotation.tailrec
 import akka.actor.{ UnstartedCell, ActorRef }
 import akka.routing.{ RoutedActorRef, RoutedActorCell, Route }
 
+/**
+ * This object can be used to extract the `Route` out of a RoutedActorRef.
+ * These are the refs which represent actors created from [[akka.actor.Props]]
+ * having a [[akka.routing.RouterConfig]]. Use this extractor if you want to
+ * test the routing directly, i.e. without actually dispatching messages.
+ *
+ * {{{
+ * val router = system.actorOf(Props[...].withRouter(new MyRouter))
+ * val route = ExtractRoute(router)
+ * route(sender -> message) must be(...)
+ * }}}
+ */
 object ExtractRoute {
   def apply(ref: ActorRef): Route = {
     @tailrec def rec(tries: Int = 10): Route = {

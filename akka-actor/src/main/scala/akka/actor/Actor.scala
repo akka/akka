@@ -29,6 +29,7 @@ trait NoSerializationVerificationNeeded
 /**
  * Internal use only
  */
+@SerialVersionUID(1L)
 private[akka] case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
 
 abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful
@@ -36,6 +37,7 @@ abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 /**
  * A message all Actors will understand, that when processed will terminate the Actor permanently.
  */
+@SerialVersionUID(1L)
 case object PoisonPill extends PoisonPill {
   /**
    * Java API: get the singleton instance
@@ -48,6 +50,7 @@ abstract class Kill extends AutoReceivedMessage with PossiblyHarmful
  * A message all Actors will understand, that when processed will make the Actor throw an ActorKilledException,
  * which will trigger supervision.
  */
+@SerialVersionUID(1L)
 case object Kill extends Kill {
   /**
    * Java API: get the singleton instance
@@ -58,6 +61,7 @@ case object Kill extends Kill {
 /**
  * When Death Watch is used, the watcher will receive a Terminated(watched) message when watched is terminated.
  */
+@SerialVersionUID(1L)
 case class Terminated(@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean) extends AutoReceivedMessage
 
 abstract class ReceiveTimeout extends PossiblyHarmful
@@ -66,6 +70,7 @@ abstract class ReceiveTimeout extends PossiblyHarmful
  * When using ActorContext.setReceiveTimeout, the singleton instance of ReceiveTimeout will be sent
  * to the Actor when there hasn't been any message for that long.
  */
+@SerialVersionUID(1L)
 case object ReceiveTimeout extends ReceiveTimeout {
   /**
    * Java API: get the singleton instance
@@ -83,22 +88,26 @@ sealed trait SelectionPath extends AutoReceivedMessage
 /**
  * Internal use only
  */
+@SerialVersionUID(1L)
 private[akka] case class SelectChildName(name: String, next: Any) extends SelectionPath
 
 /**
  * Internal use only
  */
+@SerialVersionUID(1L)
 private[akka] case class SelectChildPattern(pattern: Pattern, next: Any) extends SelectionPath
 
 /**
  * Internal use only
  */
+@SerialVersionUID(1L)
 private[akka] case class SelectParent(next: Any) extends SelectionPath
 
 /**
  * IllegalActorStateException is thrown when a core invariant in the Actor implementation has been violated.
  * For instance, if you try to create an Actor that doesn't extend Actor.
  */
+@SerialVersionUID(1L)
 class IllegalActorStateException private[akka] (message: String, cause: Throwable = null)
   extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
@@ -107,6 +116,7 @@ class IllegalActorStateException private[akka] (message: String, cause: Throwabl
 /**
  * ActorKilledException is thrown when an Actor receives the akka.actor.Kill message
  */
+@SerialVersionUID(1L)
 class ActorKilledException private[akka] (message: String, cause: Throwable)
   extends AkkaException(message, cause)
   with NoStackTrace {
@@ -117,11 +127,13 @@ class ActorKilledException private[akka] (message: String, cause: Throwable)
  * An InvalidActorNameException is thrown when you try to convert something, usually a String, to an Actor name
  * which doesn't validate.
  */
+@SerialVersionUID(1L)
 class InvalidActorNameException(message: String) extends AkkaException(message)
 
 /**
  * An ActorInitializationException is thrown when the the initialization logic for an Actor fails.
  */
+@SerialVersionUID(1L)
 class ActorInitializationException private[akka] (val actor: ActorRef, message: String, cause: Throwable)
   extends AkkaException(message, cause) {
   def this(msg: String) = this(null, msg, null)
@@ -136,6 +148,7 @@ class ActorInitializationException private[akka] (val actor: ActorRef, message: 
  * @param origCause is the exception which caused the restart in the first place
  * @param msg is the message which was optionally passed into preRestart()
  */
+@SerialVersionUID(1L)
 class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, val origCause: Throwable, val msg: Option[Any])
   extends ActorInitializationException(actor, "exception in preRestart(" + origCause.getClass + ", " + msg.map(_.getClass) + ")", cause) {
 }
@@ -148,6 +161,7 @@ class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, val 
  * @param cause is the exception thrown by that actor within preRestart()
  * @param origCause is the exception which caused the restart in the first place
  */
+@SerialVersionUID(1L)
 class PostRestartException private[akka] (actor: ActorRef, cause: Throwable, val origCause: Throwable)
   extends ActorInitializationException(actor, "exception post restart (" + origCause.getClass + ")", cause) {
 }
@@ -157,6 +171,7 @@ class PostRestartException private[akka] (actor: ActorRef, cause: Throwable, val
  * Technically it's only "null" which is an InvalidMessageException but who knows,
  * there might be more of them in the future, or not.
  */
+@SerialVersionUID(1L)
 class InvalidMessageException private[akka] (message: String, cause: Throwable = null)
   extends AkkaException(message, cause) {
   def this(msg: String) = this(msg, null)
@@ -166,6 +181,7 @@ class InvalidMessageException private[akka] (message: String, cause: Throwable =
  * A DeathPactException is thrown by an Actor that receives a Terminated(someActor) message
  * that it doesn't handle itself, effectively crashing the Actor and escalating to the supervisor.
  */
+@SerialVersionUID(1L)
 case class DeathPactException private[akka] (dead: ActorRef)
   extends AkkaException("Monitored actor [" + dead + "] terminated")
   with NoStackTrace
@@ -174,11 +190,13 @@ case class DeathPactException private[akka] (dead: ActorRef)
  * When an InterruptedException is thrown inside an Actor, it is wrapped as an ActorInterruptedException as to
  * avoid cascading interrupts to other threads than the originally interrupted one.
  */
+@SerialVersionUID(1L)
 class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaException(cause.getMessage, cause) with NoStackTrace
 
 /**
  * This message is published to the EventStream whenever an Actor receives a message it doesn't understand
  */
+@SerialVersionUID(1L)
 case class UnhandledMessage(@BeanProperty message: Any, @BeanProperty sender: ActorRef, @BeanProperty recipient: ActorRef)
 
 /**
@@ -191,12 +209,14 @@ object Status {
   /**
    * This class/message type is preferably used to indicate success of some operation performed.
    */
+  @SerialVersionUID(1L)
   case class Success(status: AnyRef) extends Status
 
   /**
    * This class/message type is preferably used to indicate failure of some operation performed.
    * As an example, it is used to signal failure with AskSupport is used (ask/?).
    */
+  @SerialVersionUID(1L)
   case class Failure(cause: Throwable) extends Status
 }
 
@@ -224,6 +244,7 @@ object Actor {
   /**
    * emptyBehavior is a Receive-expression that matches no messages at all, ever.
    */
+  @SerialVersionUID(1L)
   object emptyBehavior extends Receive {
     def isDefinedAt(x: Any) = false
     def apply(x: Any) = throw new UnsupportedOperationException("Empty behavior apply()")

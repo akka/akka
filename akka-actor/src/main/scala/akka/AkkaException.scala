@@ -11,7 +11,7 @@ package akka
  *   <li>toString that includes exception name, message and uuid</li>
  * </ul>
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 class AkkaException(message: String, cause: Throwable) extends RuntimeException(message, cause) with Serializable {
   def this(msg: String) = this(msg, null)
 
