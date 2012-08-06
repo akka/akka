@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 import java.lang.{ Double ⇒ JDouble }
 import scala.concurrent.util.Duration
 
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 case class Timeout(duration: Duration) {
   def this(timeout: Long) = this(Duration(timeout, TimeUnit.MILLISECONDS))
   def this(length: Long, unit: TimeUnit) = this(Duration(length, unit))

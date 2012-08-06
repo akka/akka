@@ -27,7 +27,7 @@ import annotation.tailrec
  * context.actorOf(someProps, "someName", Deploy(scope = RemoteScope("someOtherNodeName")))
  * }}}
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 final case class Deploy(
   path: String = "",
   config: Config = ConfigFactory.empty,
@@ -76,7 +76,7 @@ trait Scope {
   def withFallback(other: Scope): Scope
 }
 
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 abstract class LocalScope extends Scope
 
 //FIXME docs
@@ -92,7 +92,7 @@ case object LocalScope extends LocalScope {
 /**
  * This is the default value and as such allows overrides.
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 abstract class NoScopeGiven extends Scope
 case object NoScopeGiven extends NoScopeGiven {
   def withFallback(other: Scope): Scope = other
