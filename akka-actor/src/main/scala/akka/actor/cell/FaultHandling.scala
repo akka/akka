@@ -5,11 +5,11 @@
 package akka.actor.cell
 
 import scala.annotation.tailrec
-
 import akka.actor.{ PreRestartException, PostRestartException, InternalActorRef, Failed, ActorRef, ActorInterruptedException, ActorCell, Actor }
 import akka.dispatch.{ Envelope, ChildTerminated }
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
+import akka.dispatch.SystemMessage
 
 private[akka] trait FaultHandling { this: ActorCell ⇒
 
@@ -189,7 +189,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     case None        ⇒ publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
   }
 
-  final protected def handleChildTerminated(child: ActorRef): Unit = {
+  final protected def handleChildTerminated(child: ActorRef): SystemMessage = {
     val status = removeChildAndGetStateChange(child)
     /*
      * if this fails, we do nothing in case of terminating/restarting state, 
@@ -205,9 +205,9 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
      * then we are continuing the previously suspended recreate/terminate action
      */
     status match {
-      case Some(ChildrenContainer.Recreation(cause)) ⇒ finishRecreate(cause, actor)
-      case Some(ChildrenContainer.Termination)       ⇒ finishTerminate()
-      case _                                         ⇒
+      case Some(ChildrenContainer.Recreation(cause, todo)) ⇒ finishRecreate(cause, actor); SystemMessage.reverse(todo)
+      case Some(ChildrenContainer.Termination) ⇒ finishTerminate(); null
+      case _ ⇒ null
     }
   }
 }

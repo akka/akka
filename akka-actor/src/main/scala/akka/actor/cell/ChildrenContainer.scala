@@ -7,6 +7,7 @@ package akka.actor.cell
 import scala.collection.immutable.TreeMap
 
 import akka.actor.{ InvalidActorNameException, ChildStats, ChildRestartStats, ChildNameReserved, ActorRef }
+import akka.dispatch.SystemMessage
 
 /**
  * INTERNAL API
@@ -43,7 +44,7 @@ private[akka] object ChildrenContainer {
 
   sealed trait SuspendReason
   case object UserRequest extends SuspendReason
-  case class Recreation(cause: Throwable) extends SuspendReason
+  case class Recreation(cause: Throwable, var todo: SystemMessage = null) extends SuspendReason
   case object Termination extends SuspendReason
 
   trait EmptyChildrenContainer extends ChildrenContainer {

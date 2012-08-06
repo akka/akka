@@ -53,11 +53,10 @@ object SupervisorHierarchySpec {
 
   case class Ready(ref: ActorRef)
   case class Died(ref: ActorRef)
-  case class Cleared(ref: ActorRef)
   case object Abort
   case class Event(msg: Any) { val time: Long = System.nanoTime }
   case class ErrorLog(msg: String, log: Vector[Event])
-  case class Failure(directive: Directive, stop: Boolean, depth: Int, var failPre: Int, var failPost: Int)
+  case class Failure(directive: Directive, stop: Boolean, depth: Int, var failPre: Int, var failPost: Int, stopKids: Int)
     extends RuntimeException with NoStackTrace {
     override def toString = productPrefix + productIterator.mkString("(", ",", ")")
   }
@@ -153,32 +152,52 @@ object SupervisorHierarchySpec {
       if (preRestartCalled) abort("preRestart called twice")
       else {
         log :+= Event("preRestart")
-        stateCache.put(self, stateCache.get(self).copy(log = log))
         preRestartCalled = true
         cause match {
-          case f: Failure if f.failPre > 0 ⇒ f.failPre -= 1; throw f
-          case _                           ⇒
+          case f: Failure ⇒
+            context.children.take(f.stopKids) foreach { child ⇒
+              log :+= Event("killing " + child)
+              context.unwatch(child)
+              context.stop(child)
+            }
+            stateCache.put(self, stateCache.get(self).copy(log = log))
+            if (f.failPre > 0) {
+              f.failPre -= 1
+              throw f
+            }
+          case _ ⇒ stateCache.put(self, stateCache.get(self).copy(log = log))
         }
       }
     }
 
     override val supervisorStrategy = OneForOneStrategy() {
-      case Failure(directive, stop, 0, _, failPost) ⇒
+      case Failure(directive, stop, 0, _, failPost, _) ⇒
         log :+= Event("applying (" + directive + ", " + stop + ", " + failPost + ") to " + sender)
         if (myLevel > 3 && failPost == 0 && stop) Stop else directive
-      case PostRestartException(_, Failure(directive, stop, 0, _, failPost), _) ⇒
+      case PostRestartException(_, Failure(directive, stop, 0, _, failPost, _), _) ⇒
         log :+= Event("re-applying (" + directive + ", " + stop + ", " + failPost + ") to " + sender)
         if (myLevel > 3 && failPost == 0 && stop) Stop else directive
-      case f @ Failure(directive, _, x, _, _) ⇒
+      case f: Failure ⇒
         import SupervisorStrategy._
-        setFlags(directive)
+        setFlags(f.directive)
         log :+= Event("escalating " + f)
-        throw f.copy(depth = x - 1)
+        throw f.copy(depth = f.depth - 1)
+      case _ ⇒ sender ! Dump(0); Resume
     }
 
     override def postRestart(cause: Throwable) {
-      log = stateCache.get(self).log
+      val state = stateCache.get(self)
+      log = state.log
       log :+= Event("restarted " + suspendCount)
+      state.kids foreach {
+        case (child, kidSize) ⇒
+          val name = child.path.name
+          if (context.actorFor(name).isTerminated) {
+            listener ! Died(child)
+            val props = Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1))
+            context.watch(context.actorOf(props, name))
+          }
+      }
       cause match {
         case f: Failure if f.failPost > 0 ⇒ f.failPost -= 1; throw f
         case PostRestartException(`self`, f: Failure, _) if f.failPost > 0 ⇒ f.failPost -= 1; throw f
@@ -208,15 +227,22 @@ object SupervisorHierarchySpec {
 
     def receive = new Receive {
       val handler: Receive = {
-        case f: Failure      ⇒ setFlags(f.directive); throw f
-        case "ping"          ⇒ Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
-        case Dump(0)         ⇒ abort("dump")
-        case Dump(level)     ⇒ context.children foreach (_ ! Dump(level - 1))
-        case Terminated(ref) ⇒ listener ! Died(ref)
-        case Cleared(ref) ⇒
-          val kids = stateCache.get(self).kids(ref)
-          val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1))
-          context.watch(context.actorOf(props, ref.path.name))
+        case f: Failure  ⇒ setFlags(f.directive); throw f
+        case "ping"      ⇒ Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
+        case Dump(0)     ⇒ abort("dump")
+        case Dump(level) ⇒ context.children foreach (_ ! Dump(level - 1))
+        case Terminated(ref) ⇒
+          /*
+           * It might be that we acted upon this death already in postRestart 
+           * (if the unwatch() came too late), so just ignore in this case.
+           */
+          val name = ref.path.name
+          if (context.actorFor(name).isTerminated) {
+            listener ! Died(ref)
+            val kids = stateCache.get(self).kids(ref)
+            val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1))
+            context.watch(context.actorOf(props, name))
+          }
         case Abort ⇒ abort("terminating")
       }
       override def isDefinedAt(msg: Any) = handler.isDefinedAt(msg)
@@ -295,8 +321,6 @@ object SupervisorHierarchySpec {
    * Terminated, which would screw things up big time. Solution is to let the
    * supervisor do all, including notifying the FSM of the death of the guy.
    * 
-   * TODO RK: also test recreate including terminating children
-   * 
    * TODO RK: test exceptions in constructor
    */
 
@@ -307,6 +331,7 @@ object SupervisorHierarchySpec {
     override val supervisorStrategy = OneForOneStrategy() {
       case f: Failure                           ⇒ f.directive
       case OriginalRestartException(f: Failure) ⇒ f.directive
+      case _                                    ⇒ Stop
     }
 
     var children = Vector.empty[ActorRef]
@@ -397,8 +422,15 @@ object SupervisorHierarchySpec {
         stay
       case Event(Work, x) if x > 0 ⇒
         nextJob.next match {
-          case Ping(ref)      ⇒ ref ! "ping"
-          case Fail(ref, dir) ⇒ ref ! Failure(dir, stop = random012 > 0, depth = random012, failPre = random012, failPost = random012)
+          case Ping(ref) ⇒ ref ! "ping"
+          case Fail(ref, dir) ⇒
+            val f = Failure(dir, stop = random012 > 0, depth = random012, failPre = random012, failPost = random012,
+              stopKids = random012 match {
+                case 0 ⇒ 0
+                case 1 ⇒ Random.nextInt(breadth / 2)
+                case 2 ⇒ 1000
+              })
+            ref ! f
         }
         if (idleChildren.nonEmpty) self ! Work
         else context.system.scheduler.scheduleOnce(workSchedule, self, Work)
@@ -406,7 +438,7 @@ object SupervisorHierarchySpec {
       case Event(Work, _) ⇒ if (pingChildren.isEmpty) goto(LastPing) else goto(Finishing)
       case Event(Died(ref), _) ⇒
         bury(ref)
-        stay replying (Cleared(ref))
+        stay
       case Event("pong", _) ⇒
         pingChildren -= sender
         idleChildren :+= sender
@@ -427,7 +459,6 @@ object SupervisorHierarchySpec {
         if (pingChildren.isEmpty) goto(LastPing) else stay
       case Event(Died(ref), _) ⇒
         bury(ref)
-        sender ! Cleared(ref)
         if (pingChildren.isEmpty) goto(LastPing) else stay
     }
 
@@ -445,7 +476,6 @@ object SupervisorHierarchySpec {
         if (pingChildren.isEmpty) goto(Stopping) else stay
       case Event(Died(ref), _) ⇒
         bury(ref)
-        sender ! Cleared(ref)
         if (pingChildren.isEmpty) goto(Stopping) else stay
     }
 

@@ -113,6 +113,11 @@ private[akka] trait Children { this: ActorCell ⇒
 
   protected def isTerminating = childrenRefs.isTerminating
 
+  protected def recreationOrNull = childrenRefs match {
+    case TerminatingChildrenContainer(_, _, r: Recreation) ⇒ r
+    case _ ⇒ null
+  }
+
   protected def suspendChildren(skip: Set[ActorRef] = Set.empty): Unit =
     childrenRefs.stats foreach {
       case ChildRestartStats(child, _, _) if !(skip contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()

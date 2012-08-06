@@ -300,21 +300,46 @@ private[akka] class ActorCell(
    * MESSAGE PROCESSING
    */
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
-  final def systemInvoke(message: SystemMessage): Unit = try {
-    message match {
-      case Create()                  ⇒ create()
-      case Recreate(cause)           ⇒ faultRecreate(cause)
-      case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
-      case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
-      case Suspend()                 ⇒ faultSuspend()
-      case Resume(inRespToFailure)   ⇒ faultResume(inRespToFailure)
-      case Terminate()               ⇒ terminate()
-      case Supervise(child)          ⇒ supervise(child)
-      case ChildTerminated(child)    ⇒ handleChildTerminated(child)
-      case NoMessage                 ⇒ // only here to suppress warning
+  @tailrec final def systemInvoke(message: SystemMessage): Unit = {
+    /*
+     * When recreate/suspend/resume are received while restarting (i.e. between
+     * preRestart and postRestart, waiting for children to terminate), these 
+     * must not be executed immediately, but instead queued and released after
+     * finishRecreate returns. This can only ever be triggered by 
+     * ChildTerminated, and ChildTerminated is not one of the queued message
+     * types (hence the overwrite further down). Mailbox sets message.next=null
+     * before systemInvoke, so this will only be non-null during such a replay.
+     */
+    var todo = message.next
+    try {
+      message match {
+        case Create()                  ⇒ create()
+        case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
+        case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
+        case Recreate(cause) ⇒
+          recreationOrNull match {
+            case null ⇒ faultRecreate(cause)
+            case r    ⇒ message.next = r.todo; r.todo = message
+          }
+        case Suspend() ⇒
+          recreationOrNull match {
+            case null ⇒ faultSuspend()
+            case r    ⇒ message.next = r.todo; r.todo = message
+          }
+        case Resume(inRespToFailure) ⇒
+          recreationOrNull match {
+            case null ⇒ faultResume(inRespToFailure)
+            case r    ⇒ message.next = r.todo; r.todo = message
+          }
+        case Terminate()            ⇒ terminate()
+        case Supervise(child)       ⇒ supervise(child)
+        case ChildTerminated(child) ⇒ todo = handleChildTerminated(child)
+        case NoMessage              ⇒ // only here to suppress warning
+      }
+    } catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(Nil, e, "error while processing " + message)
     }
-  } catch {
-    case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(Nil, e, "error while processing " + message)
+    if (todo != null) systemInvoke(todo)
   }
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
