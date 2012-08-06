@@ -91,6 +91,7 @@ public class HashedWheelTimer implements Timer {
     final ReusableIterator<HashedWheelTimeout>[] iterators;
     final int mask;
     final ReadWriteLock lock = new ReentrantReadWriteLock();
+    final boolean isWindows = System.getProperty("os.name", "").toLowerCase().indexOf("win") >= 0;
     volatile int wheelCursor;
     private LoggingAdapter logger;
 
@@ -387,20 +388,28 @@ public class HashedWheelTimer implements Timer {
         }
 
         private long waitForNextTick() {
-            long deadline = startTime + tickDuration * tick;
+            final long deadline = startTime + tickDuration * tick;
 
             for (;;) {
                 final long currentTime = System.nanoTime();
-                final long sleepTime = (tickDuration * tick - (currentTime - startTime));
+
+                long sleepTime = TimeUnit.NANOSECONDS.toMillis((tickDuration * tick) - (currentTime - startTime));
+
+                // Check if we run on windows, as if thats the case we will need
+                // to round the sleepTime as workaround for a bug that only affect
+                // the JVM if it runs on windows.
+                //
+                // See https://github.com/netty/netty/issues/356
+                if (isWindows) {
+                  sleepTime = (sleepTime / 10) * 10;
+                }
 
                 if (sleepTime <= 0) {
                     break;
                 }
 
                 try {
-                    long milliSeconds = TimeUnit.NANOSECONDS.toMillis(sleepTime);
-                    int nanoSeconds = (int) (sleepTime - (milliSeconds * 1000000));
-                    Thread.sleep(milliSeconds, nanoSeconds);
+                    Thread.sleep(sleepTime);
                 } catch (InterruptedException e) {
                     if (shutdown()) {
                         return -1;
