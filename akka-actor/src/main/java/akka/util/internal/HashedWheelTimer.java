@@ -264,23 +264,18 @@ public class HashedWheelTimer implements Timer {
     }
 
     void scheduleTimeout(HashedWheelTimeout timeout, long delay) {
-        // delay must be equal to or greater than tickDuration so that the
-        // worker thread never misses the timeout.
-        if (delay < tickDuration) {
-            delay = tickDuration;
-        }
-
         // Prepare the required parameters to schedule the timeout object.
-        final long lastRoundDelay = delay % roundDuration;
-        final long lastTickDelay = delay % tickDuration;
-        final long relativeIndex = lastRoundDelay / tickDuration + (lastTickDelay != 0? 1 : 0);
-        final long remainingRounds = delay / roundDuration - (delay % roundDuration == 0? 1 : 0);
+        long relativeIndex = (delay + tickDuration - 1) / tickDuration;
+        if (relativeIndex == 0) {
+          relativeIndex = 1;
+        }
+        final long remainingRounds = relativeIndex / wheel.length;
 
         // Add the timeout to the wheel.
         lock.readLock().lock();
         try {
             if (shutdown) throw new IllegalStateException("cannot enqueue after shutdown");
-            int stopIndex = (int) (wheelCursor + relativeIndex & mask);
+            int stopIndex = (int) ((wheelCursor + relativeIndex) & mask);
             timeout.stopIndex = stopIndex;
             timeout.remainingRounds = remainingRounds;
             wheel[stopIndex].add(timeout);
@@ -391,7 +386,12 @@ public class HashedWheelTimer implements Timer {
             for (;;) {
                 final long currentTime = System.nanoTime();
 
-                long sleepTime = tickDuration * tick - (currentTime - startTime);
+                long sleepTimeMs = (deadline - currentTime + 999999) / 1000000;
+
+                if (sleepTimeMs <= 0) {
+                    tick += 1;
+                    return currentTime;
+                }
 
                 // Check if we run on windows, as if thats the case we will need
                 // to round the sleepTime as workaround for a bug that only affect
@@ -399,27 +399,17 @@ public class HashedWheelTimer implements Timer {
                 //
                 // See https://github.com/netty/netty/issues/356
                 if (isWindows) {
-                  sleepTime = (sleepTime / 10) * 10;
+                  sleepTimeMs = (sleepTimeMs / 10) * 10;
                 }
-
-                if (sleepTime <= 0) {
-                    break;
-                }
-
+                
                 try {
-                    long milliSeconds = TimeUnit.NANOSECONDS.toMillis(sleepTime);
-                    int nanoSeconds = (int) (sleepTime - (milliSeconds * 1000000));
-                    Thread.sleep(milliSeconds, nanoSeconds);
+                    Thread.sleep(sleepTimeMs);
                 } catch (InterruptedException e) {
                     if (shutdown()) {
                         return -1;
                     }
                 }
             }
-
-            // Increase the tick.
-            tick ++;
-            return deadline;
         }
     }
 
