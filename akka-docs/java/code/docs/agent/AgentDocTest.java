@@ -5,6 +5,7 @@ package docs.agent;
 
 import static org.junit.Assert.*;
 
+import scala.concurrent.ExecutionContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,10 +31,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class AgentDocTest {
 
   private static ActorSystem testSystem;
+  private static ExecutionContext ec;
 
   @BeforeClass
   public static void beforeAll() {
     testSystem = ActorSystem.create("AgentDocTest", AkkaSpec.testConf());
+    ec = testSystem.dispatcher();
   }
 
   @AfterClass
@@ -81,7 +84,7 @@ public class AgentDocTest {
 
     //#send-off
     // sendOff a function
-    agent.sendOff(longRunningOrBlockingFunction);
+    agent.sendOff(longRunningOrBlockingFunction, ec);
     //#send-off
 
     //#read-await
