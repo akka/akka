@@ -126,7 +126,7 @@ object Futures {
 
   /**
    * Java API.
-   Reduces the results of the supplied futures and binary function.
+   * Reduces the results of the supplied futures and binary function.
    */
   def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, R], executor: ExecutionContext): Future[R] =
     Future.reduce[T, R](scala.collection.JavaConversions.iterableAsScalaIterable(futures))(fun.apply)(executor)
