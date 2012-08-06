@@ -90,6 +90,12 @@ trait ActorRefProvider {
   def unregisterTempActor(path: ActorPath): Unit
 
   /**
+   * Creates a `ThreadActorRef` bound to the current thread in this hierarchy. Cleanup of ThreadActorRef is done implicitly when CRUD is done ThreadActorRefs or when GC collects the thread.
+   * NOTE: ThreadActorRefs impose substantial perfomance penalties.
+   */
+  def createThreadActor(queue: collection.mutable.Queue[(Any, ActorRef)]): ActorRef
+
+  /**
    * Actor factory with create-only semantics: will create an actor as
    * described by props with the given supervisor and path (may be different
    * in case of remote supervision). If systemService is true, deployment is
@@ -478,8 +484,9 @@ class LocalActorRefProvider(
     new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
-        case "temp" ⇒ tempContainer
-        case other  ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
+        case "temp"    ⇒ tempContainer
+        case "threads" ⇒ threadContainer
+        case other     ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
       }
     }
 
@@ -488,7 +495,19 @@ class LocalActorRefProvider(
   lazy val systemGuardian: LocalActorRef =
     new LocalActorRef(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system")
 
+  private val threadPath = (rootPath / "threads")
+
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
+
+  lazy val threadContainer = new ThreadPathContainer(system.provider, threadPath, rootGuardian, log)
+
+  def createThreadActor(queue: collection.mutable.Queue[(Any, ActorRef)]): ActorRef = {
+    // no need for unique id as threads ids are unique within one JVM
+    val path = threadPath / ("thread-" + Thread.currentThread().getId().toString)
+    val res = new ThreadActorRef(system.provider, path, queue, Thread.currentThread())
+    threadContainer.addChild(path.name, res)
+    res
+  }
 
   def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = {
     assert(path.parent eq tempNode, "cannot registerTempActor() with anything not obtained from tempPath()")
@@ -560,3 +579,37 @@ class LocalActorRefProvider(
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 }
 
+/**
+ * LocalActorRefProvider with default stopping policy. Used only for migration purposes.
+ */
+final class MigrationLocalRefProvider(_systemName: String,
+                                      _settings: ActorSystem.Settings,
+                                      _eventStream: EventStream,
+                                      _scheduler: Scheduler,
+                                      _deployer: Deployer)
+  extends LocalActorRefProvider(_systemName, _settings, _eventStream, _scheduler, _deployer) {
+
+  def this(systemName: String,
+           settings: ActorSystem.Settings,
+           eventStream: EventStream,
+           scheduler: Scheduler,
+           dynamicAccess: DynamicAccess) =
+    this(systemName,
+      settings,
+      eventStream,
+      scheduler,
+      new Deployer(settings, dynamicAccess))
+
+  /**
+   * Children of this system are stopped by default.
+   */
+  override def guardianSupervisionStrategy = {
+    import akka.actor.SupervisorStrategy._
+    OneForOneStrategy() {
+      case _: ActorKilledException         ⇒ Stop
+      case _: ActorInitializationException ⇒ Stop
+      case _: Exception                    ⇒ Stop
+    }
+  }
+
+}

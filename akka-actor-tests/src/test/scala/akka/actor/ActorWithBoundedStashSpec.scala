@@ -52,8 +52,6 @@ class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testC
 
   implicit val sys = system
 
-  override def atStartup { system.eventStream.publish(Mute(EventFilter[Exception]("Crashing..."))) }
-
   def myProps(creator: ⇒ Actor): Props = Props(creator).withDispatcher("my-dispatcher")
 
   "An Actor with Stash and BoundedDequeBasedMailbox" must {
