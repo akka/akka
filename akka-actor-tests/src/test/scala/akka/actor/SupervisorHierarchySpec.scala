@@ -21,6 +21,7 @@ import akka.testkit.{ ImplicitSender, EventFilter, DefaultTimeout, AkkaSpec }
 import akka.testkit.{ filterException, duration2TestDuration, TestLatch }
 import akka.testkit.TestEvent.Mute
 import java.util.concurrent.ConcurrentHashMap
+import java.lang.ref.WeakReference
 
 object SupervisorHierarchySpec {
   class FireWorkerException(msg: String) extends Exception(msg)
@@ -50,10 +51,14 @@ object SupervisorHierarchySpec {
     }
   }
 
-  case class Children(refs: Vector[ActorRef])
+  case class Ready(ref: ActorRef)
+  case class Died(ref: ActorRef)
+  case class Cleared(ref: ActorRef)
+  case object Abort
   case class Event(msg: Any) { val time: Long = System.nanoTime }
   case class ErrorLog(msg: String, log: Vector[Event])
-  case class Failure(directive: Directive, depth: Int, var failPre: Int, var failPost: Int) extends RuntimeException with NoStackTrace {
+  case class Failure(directive: Directive, stop: Boolean, depth: Int, var failPre: Int, var failPost: Int)
+    extends RuntimeException with NoStackTrace {
     override def toString = productPrefix + productIterator.mkString("(", ",", ")")
   }
   case class Dump(level: Int)
@@ -100,10 +105,10 @@ object SupervisorHierarchySpec {
    * upon Restart or would have to be managed by the highest supervisor (which
    * is undesirable).
    */
-  case class HierarchyState(log: Vector[Event], kids: Map[String, Int])
+  case class HierarchyState(log: Vector[Event], kids: Map[ActorRef, Int])
   val stateCache = new ConcurrentHashMap[ActorRef, HierarchyState]()
 
-  class Hierarchy(size: Int, breadth: Int, listener: ActorRef) extends Actor {
+  class Hierarchy(size: Int, breadth: Int, listener: ActorRef, myLevel: Int) extends Actor {
 
     var failed = false
     var suspended = false
@@ -111,6 +116,7 @@ object SupervisorHierarchySpec {
     def abort(msg: String) {
       listener ! ErrorLog(msg, log)
       log = Vector(Event("log sent"))
+      context.parent ! Abort
       context stop self
     }
 
@@ -124,8 +130,9 @@ object SupervisorHierarchySpec {
 
     override def preStart {
       log :+= Event("started")
+      listener ! Ready(self)
       val s = size - 1 // subtract myself
-      val kidInfo: Map[String, Int] =
+      val kidInfo: Map[ActorRef, Int] =
         if (s > 0) {
           val kids = Random.nextInt(Math.min(breadth, s)) + 1
           val sizes = s / kids
@@ -133,15 +140,10 @@ object SupervisorHierarchySpec {
           val propsTemplate = Props.empty.withDispatcher("hierarchy")
           (1 to kids).map { (id) ⇒
             val kidSize = if (rest > 0) { rest -= 1; sizes + 1 } else sizes
-            val props = propsTemplate.withCreator(new Hierarchy(kidSize, breadth, listener))
-            val name = id.toString
-            context.watch(context.actorOf(props, name))
-            (name, kidSize)
+            val props = propsTemplate.withCreator(new Hierarchy(kidSize, breadth, listener, myLevel + 1))
+            (context.watch(context.actorOf(props, id.toString)), kidSize)
           }(collection.breakOut)
-        } else {
-          context.parent ! Children(Vector(self))
-          Map()
-        }
+        } else Map()
       stateCache.put(self, HierarchyState(log, kidInfo))
     }
 
@@ -154,20 +156,20 @@ object SupervisorHierarchySpec {
         stateCache.put(self, stateCache.get(self).copy(log = log))
         preRestartCalled = true
         cause match {
-          case f @ Failure(_, _, x, _) if x > 0 ⇒ f.failPre = x - 1; throw f
-          case _                                ⇒
+          case f: Failure if f.failPre > 0 ⇒ f.failPre -= 1; throw f
+          case _                           ⇒
         }
       }
     }
 
     override val supervisorStrategy = OneForOneStrategy() {
-      case Failure(directive, 0, _, _) ⇒
-        log :+= Event("applying " + directive + " to " + sender)
-        directive
-      case OriginalRestartException(f: Failure) ⇒
-        log :+= Event("re-applying " + f.directive + " to " + sender)
-        f.directive
-      case f @ Failure(directive, x, _, _) ⇒
+      case Failure(directive, stop, 0, _, failPost) ⇒
+        log :+= Event("applying (" + directive + ", " + stop + ", " + failPost + ") to " + sender)
+        if (myLevel > 3 && failPost == 0 && stop) Stop else directive
+      case PostRestartException(_, Failure(directive, stop, 0, _, failPost), _) ⇒
+        log :+= Event("re-applying (" + directive + ", " + stop + ", " + failPost + ") to " + sender)
+        if (myLevel > 3 && failPost == 0 && stop) Stop else directive
+      case f @ Failure(directive, _, x, _, _) ⇒
         import SupervisorStrategy._
         setFlags(directive)
         log :+= Event("escalating " + f)
@@ -178,8 +180,9 @@ object SupervisorHierarchySpec {
       log = stateCache.get(self).log
       log :+= Event("restarted " + suspendCount)
       cause match {
-        case f @ Failure(_, _, _, x) if x > 0 ⇒ f.failPost = x - 1; throw f
-        case _                                ⇒
+        case f: Failure if f.failPost > 0 ⇒ f.failPost -= 1; throw f
+        case PostRestartException(`self`, f: Failure, _) if f.failPost > 0 ⇒ f.failPost -= 1; throw f
+        case _ ⇒
       }
     }
 
@@ -203,20 +206,18 @@ object SupervisorHierarchySpec {
       } else true
     }
 
-    var gotKidsFrom = Set.empty[ActorRef]
-    var kids = Vector.empty[ActorRef]
-
     def receive = new Receive {
       val handler: Receive = {
-        case f: Failure    ⇒ setFlags(f.directive); throw f
-        case "ping"        ⇒ Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
-        case Dump(0)       ⇒ context stop self
-        case Dump(level)   ⇒ context.children foreach (_ ! Dump(level - 1))
-        case Terminated(_) ⇒ abort("terminating")
-        case Children(refs) ⇒
-          kids ++= refs
-          gotKidsFrom += sender
-          if (context.children forall (gotKidsFrom contains)) context.parent ! Children(kids :+ self)
+        case f: Failure      ⇒ setFlags(f.directive); throw f
+        case "ping"          ⇒ Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
+        case Dump(0)         ⇒ abort("dump")
+        case Dump(level)     ⇒ context.children foreach (_ ! Dump(level - 1))
+        case Terminated(ref) ⇒ listener ! Died(ref)
+        case Cleared(ref) ⇒
+          val kids = stateCache.get(self).kids(ref)
+          val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1))
+          context.watch(context.actorOf(props, ref.path.name))
+        case Abort ⇒ abort("terminating")
       }
       override def isDefinedAt(msg: Any) = handler.isDefinedAt(msg)
       override def apply(msg: Any) = { if (check(msg)) handler(msg) }
@@ -224,6 +225,7 @@ object SupervisorHierarchySpec {
   }
 
   case object Work
+  case class GCcheck(kids: Vector[WeakReference[ActorRef]])
 
   sealed trait Action
   case class Ping(ref: ActorRef) extends Action
@@ -236,6 +238,7 @@ object SupervisorHierarchySpec {
   case object Finishing extends State
   case object LastPing extends State
   case object Stopping extends State
+  case object GC extends State
   case object Failed extends State
 
   /*
@@ -282,18 +285,22 @@ object SupervisorHierarchySpec {
    * - accumulate ErrorLog messages
    * - upon termination of the hierarchy send back failed result and print
    *   the logs, merged and in chronological order.
-   * 
-   * TODO RK: also test Stop directive, and keep a complete list of all 
-   * actors ever created, then verify after stop()ping the hierarchy that
-   * all are terminated, transfer them to a WeakHashMap and verify that 
-   * they are indeed GCed
+   *   
+   * Remark about test failures which lead to stopping:
+   * The FSM needs to know not the send more things to the dead guy, but it
+   * also must not watch all targets, because the dead guy’s supervisor also
+   * watches him and creates a new guy in response to the Terminated; given
+   * that there is no ordering relationship guaranteed by DeathWatch it could
+   * happen that the new guy sends his Ready before the FSM has gotten the
+   * Terminated, which would screw things up big time. Solution is to let the
+   * supervisor do all, including notifying the FSM of the death of the guy.
    * 
    * TODO RK: also test recreate including terminating children
    * 
    * TODO RK: test exceptions in constructor
    */
 
-  class StressTest(testActor: ActorRef, depth: Int, breadth: Int) extends Actor with LoggingFSM[State, Int] {
+  class StressTest(testActor: ActorRef, size: Int, breadth: Int) extends Actor with LoggingFSM[State, Int] {
     import context.system
 
     // don’t escalate from this one!
@@ -335,24 +342,24 @@ object SupervisorHierarchySpec {
     }
 
     // number of Work packages to execute for the test
-    startWith(Idle, 500000)
+    startWith(Idle, size * 1000)
 
     when(Idle) {
       case Event(Init, _) ⇒
-        hierarchy = context.watch(context.actorOf(Props(new Hierarchy(size = 500, breadth = breadth, self)).withDispatcher("hierarchy"), "head"))
+        hierarchy = context.watch(context.actorOf(Props(new Hierarchy(size, breadth, self, 0)).withDispatcher("hierarchy"), "head"))
         setTimer("phase", StateTimeout, 5 seconds, false)
         goto(Init)
     }
 
     when(Init) {
-      case Event(Children(refs), _) ⇒
-        children = refs
-        idleChildren = refs
-        if (children.toSet.size != children.size) {
+      case Event(Ready(ref), _) ⇒
+        if (children contains ref) {
           testActor ! "children not unique"
           stop()
         } else {
-          goto(Stress)
+          children :+= ref
+          if (children.size == size) goto(Stress)
+          else stay
         }
       case Event(StateTimeout, _) ⇒
         testActor ! "did not get children list"
@@ -362,6 +369,7 @@ object SupervisorHierarchySpec {
     onTransition {
       case Init -> Stress ⇒
         self ! Work
+        idleChildren = children
         // set timeout for completion of the whole test (i.e. including Finishing and Stopping)
         setTimer("phase", StateTimeout, 50.seconds.dilated, false)
     }
@@ -373,23 +381,32 @@ object SupervisorHierarchySpec {
       case x if x > 0.03 ⇒ 1
       case _             ⇒ 2
     }
+    private def bury(ref: ActorRef): Unit = {
+      val deadGuy = ref.path.elements
+      val deadGuySize = deadGuy.size
+      val isChild = (other: ActorRef) ⇒ other.path.elements.take(deadGuySize) == deadGuy
+      idleChildren = idleChildren filterNot isChild
+      pingChildren = pingChildren filterNot isChild
+    }
 
     var ignoreNotResumedLogs = true
 
     when(Stress) {
       case Event(Work, _) if idleChildren.isEmpty ⇒
-        ignoreNotResumedLogs = false
-        context stop hierarchy
-        goto(Failed)
+        context.system.scheduler.scheduleOnce(workSchedule, self, Work)
+        stay
       case Event(Work, x) if x > 0 ⇒
         nextJob.next match {
           case Ping(ref)      ⇒ ref ! "ping"
-          case Fail(ref, dir) ⇒ ref ! Failure(dir, random012, random012, random012)
+          case Fail(ref, dir) ⇒ ref ! Failure(dir, stop = random012 > 0, depth = random012, failPre = random012, failPost = random012)
         }
         if (idleChildren.nonEmpty) self ! Work
         else context.system.scheduler.scheduleOnce(workSchedule, self, Work)
         stay using (x - 1)
       case Event(Work, _) ⇒ if (pingChildren.isEmpty) goto(LastPing) else goto(Finishing)
+      case Event(Died(ref), _) ⇒
+        bury(ref)
+        stay replying (Cleared(ref))
       case Event("pong", _) ⇒
         pingChildren -= sender
         idleChildren :+= sender
@@ -408,6 +425,10 @@ object SupervisorHierarchySpec {
         pingChildren -= sender
         idleChildren :+= sender
         if (pingChildren.isEmpty) goto(LastPing) else stay
+      case Event(Died(ref), _) ⇒
+        bury(ref)
+        sender ! Cleared(ref)
+        if (pingChildren.isEmpty) goto(LastPing) else stay
     }
 
     onTransition {
@@ -422,6 +443,10 @@ object SupervisorHierarchySpec {
         pingChildren -= sender
         idleChildren :+= sender
         if (pingChildren.isEmpty) goto(Stopping) else stay
+      case Event(Died(ref), _) ⇒
+        bury(ref)
+        sender ! Cleared(ref)
+        if (pingChildren.isEmpty) goto(Stopping) else stay
     }
 
     onTransition {
@@ -432,10 +457,52 @@ object SupervisorHierarchySpec {
 
     when(Stopping, stateTimeout = 5 seconds) {
       case Event(Terminated(r), _) if r == hierarchy ⇒
-        testActor ! "stressTestSuccessful"
-        stop
+        val undead = children filterNot (_.isTerminated)
+        if (undead.nonEmpty) {
+          log.info("undead:\n" + undead.mkString("\n"))
+          testActor ! "stressTestFailed (" + undead.size + " undead)"
+          stop
+        } else if (false) {
+          /*
+           * This part of the test is normally disabled, because it does not 
+           * work reliably: even though I found only these weak references
+           * using YourKit just now, GC wouldn’t collect them and the test
+           * failed. I’m leaving this code in so that manual inspection remains 
+           * an option (by setting the above condition to “true”).
+           */
+          val weak = children map (new WeakReference(_))
+          children = Vector.empty
+          pingChildren = Set.empty
+          idleChildren = Vector.empty
+          context.system.scheduler.scheduleOnce(workSchedule, self, GCcheck(weak))
+          System.gc()
+          goto(GC)
+        } else {
+          testActor ! "stressTestSuccessful"
+          stop
+        }
       case Event(StateTimeout, _) ⇒
         testActor ! "timeout in Stopping"
+        stop
+      case Event(e: ErrorLog, _) ⇒
+        errors :+= sender -> e
+        goto(Failed)
+    }
+
+    when(GC, stateTimeout = 10 seconds) {
+      case Event(GCcheck(weak), _) ⇒
+        val next = weak filter (_.get ne null)
+        if (next.nonEmpty) {
+          println(next.size + " left")
+          context.system.scheduler.scheduleOnce(workSchedule, self, GCcheck(next))
+          System.gc()
+          stay
+        } else {
+          testActor ! "stressTestSuccessful"
+          stop
+        }
+      case Event(StateTimeout, _) ⇒
+        testActor ! "timeout in GC"
         stop
     }
 
@@ -473,7 +540,7 @@ object SupervisorHierarchySpec {
     }
 
     def printErrors(): Unit = {
-      val merged = errors flatMap {
+      val merged = errors.sortBy(_._1.toString) flatMap {
         case (ref, ErrorLog(msg, log)) ⇒
           println(ref + " " + msg)
           log map (l ⇒ (l.time, ref, l.msg.toString))
@@ -482,13 +549,24 @@ object SupervisorHierarchySpec {
     }
 
     whenUnhandled {
+      case Event(Ready(ref), _) ⇒
+        children :+= ref
+        idleChildren :+= ref
+        stay
       case Event(e: ErrorLog, _) ⇒
-        errors :+= sender -> e
-        // don’t stop the hierarchy, that is going to happen all by itself and in the right order
-        goto(Failed)
+        if (e.msg.startsWith("not resumed")) stay
+        else {
+          errors :+= sender -> e
+          // don’t stop the hierarchy, that is going to happen all by itself and in the right order
+          goto(Failed)
+        }
       case Event(StateTimeout, _) ⇒
-        println("pingChildren:\n" + pingChildren.mkString("\n"))
+        println("pingChildren:\n" + pingChildren.view.map(_.path.toString).toSeq.sorted.mkString("\n"))
+        ignoreNotResumedLogs = false
         context stop hierarchy
+        goto(Failed)
+      case Event(Abort, _) ⇒
+        log.info("received Abort")
         goto(Failed)
       case Event(msg, _) ⇒
         testActor ! ("received unexpected msg: " + msg)
@@ -597,9 +675,9 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
 
     "survive being stressed" in {
       system.eventStream.publish(Mute(EventFilter[Failure](), EventFilter[PreRestartException](), EventFilter[PostRestartException]()))
-      system.eventStream.publish(Mute(EventFilter.warning(start = "received dead letter")))
+      system.eventStream.publish(Mute(EventFilter.warning(start = "received dead ")))
 
-      val fsm = system.actorOf(Props(new StressTest(testActor, depth = 6, breadth = 6)), "stressTest")
+      val fsm = system.actorOf(Props(new StressTest(testActor, size = 500, breadth = 6)), "stressTest")
 
       fsm ! FSM.SubscribeTransitionCallBack(system.actorOf(Props(new Actor {
         def receive = {
