@@ -370,7 +370,7 @@ object SupervisorHierarchySpec {
     def printErrors(): Unit = {
       val merged = errors flatMap {
         case (ref, ErrorLog(msg, log)) ⇒
-          println(ref + " " + msg)
+          println("Error: " + ref + " " + msg)
           log map (l ⇒ (l.time, ref, l.msg.toString))
       }
       merged.sorted foreach println
