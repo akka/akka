@@ -24,6 +24,7 @@ trait Function2[T1, T2, R] {
  * A Procedure is like a Function, but it doesn't produce a return value.
  */
 trait Procedure[T] {
+  @throws(classOf[Exception])
   def apply(param: T)
 }
 
@@ -31,6 +32,7 @@ trait Procedure[T] {
  * A Procedure is like a Function, but it doesn't produce a return value.
  */
 trait Procedure2[T1, T2] {
+  @throws(classOf[Exception])
   def apply(param: T1, param2: T2)
 }
 
@@ -38,14 +40,16 @@ trait Procedure2[T1, T2] {
  * An executable piece of code that takes no parameters and doesn't return any value.
  */
 trait SideEffect {
-  def apply()
+  @throws(classOf[Exception])
+  def apply(): Unit
 }
 
 /**
  * An executable piece of code that takes no parameters and doesn't return any value.
  */
 trait Effect {
-  def apply()
+  @throws(classOf[Exception])
+  def apply(): Unit
 }
 
 /**
@@ -55,6 +59,7 @@ trait Creator[T] {
   /**
    * This method must return a different instance upon every call.
    */
+  @throws(classOf[Exception])
   def create(): T
 }
 
