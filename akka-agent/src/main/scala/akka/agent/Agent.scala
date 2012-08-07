@@ -214,7 +214,7 @@ class Agent[T](initialValue: T, system: ActorSystem) {
   /**
    * Resumes processing of `send` actions for the agent.
    */
-  def resume(): Unit = updater.resume(inResponseToFailure = false)
+  def resume(): Unit = updater.resume(inResponseToFailure = null)
 
   /**
    * Closes the agents and makes it eligible for garbage collection.

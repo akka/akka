@@ -22,6 +22,7 @@ import akka.testkit.{ filterException, duration2TestDuration, TestLatch }
 import akka.testkit.TestEvent.Mute
 import java.util.concurrent.ConcurrentHashMap
 import java.lang.ref.WeakReference
+import akka.event.Logging
 
 object SupervisorHierarchySpec {
   class FireWorkerException(msg: String) extends Exception(msg)
@@ -54,9 +55,11 @@ object SupervisorHierarchySpec {
   case class Ready(ref: ActorRef)
   case class Died(ref: ActorRef)
   case object Abort
+  case object PingOfDeath
+  case object PongOfDeath
   case class Event(msg: Any) { val time: Long = System.nanoTime }
   case class ErrorLog(msg: String, log: Vector[Event])
-  case class Failure(directive: Directive, stop: Boolean, depth: Int, var failPre: Int, var failPost: Int, stopKids: Int)
+  case class Failure(directive: Directive, stop: Boolean, depth: Int, var failPre: Int, var failPost: Int, val failConstr: Int, stopKids: Int)
     extends RuntimeException with NoStackTrace {
     override def toString = productPrefix + productIterator.mkString("(", ",", ")")
   }
@@ -83,15 +86,19 @@ object SupervisorHierarchySpec {
         Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) {
 
         override def suspend(cell: ActorCell): Unit = {
-          val a = cell.actor.asInstanceOf[Hierarchy]
-          a.log :+= Event("suspended " + cell.mailbox.status / 4)
+          cell.actor match {
+            case h: Hierarchy ⇒ h.log :+= Event("suspended " + cell.mailbox.suspendCount)
+            case _            ⇒
+          }
           super.suspend(cell)
         }
 
         override def resume(cell: ActorCell): Unit = {
-          val a = cell.actor.asInstanceOf[Hierarchy]
           super.resume(cell)
-          a.log :+= Event("resumed " + cell.mailbox.status / 4)
+          cell.actor match {
+            case h: Hierarchy ⇒ h.log :+= Event("resumed " + cell.mailbox.suspendCount)
+            case _            ⇒
+          }
         }
 
       }
@@ -104,10 +111,19 @@ object SupervisorHierarchySpec {
    * upon Restart or would have to be managed by the highest supervisor (which
    * is undesirable).
    */
-  case class HierarchyState(log: Vector[Event], kids: Map[ActorRef, Int])
+  case class HierarchyState(log: Vector[Event], kids: Map[ActorRef, Int], failConstr: Failure)
   val stateCache = new ConcurrentHashMap[ActorRef, HierarchyState]()
 
   class Hierarchy(size: Int, breadth: Int, listener: ActorRef, myLevel: Int) extends Actor {
+
+    var log = Vector.empty[Event]
+
+    stateCache.get(self) match {
+      case hs @ HierarchyState(_, _, f: Failure) if f.failConstr > 0 ⇒
+        stateCache.put(self, hs.copy(failConstr = f.copy(failConstr = f.failConstr - 1)))
+        throw f
+      case _ ⇒
+    }
 
     var failed = false
     var suspended = false
@@ -125,7 +141,7 @@ object SupervisorHierarchySpec {
       case _       ⇒
     }
 
-    def suspendCount = context.asInstanceOf[ActorCell].mailbox.status / 4
+    def suspendCount = context.asInstanceOf[ActorCell].mailbox.suspendCount
 
     override def preStart {
       log :+= Event("started")
@@ -143,7 +159,7 @@ object SupervisorHierarchySpec {
             (context.watch(context.actorOf(props, id.toString)), kidSize)
           }(collection.breakOut)
         } else Map()
-      stateCache.put(self, HierarchyState(log, kidInfo))
+      stateCache.put(self, HierarchyState(log, kidInfo, null))
     }
 
     var preRestartCalled = false
@@ -170,20 +186,31 @@ object SupervisorHierarchySpec {
       }
     }
 
-    override val supervisorStrategy = OneForOneStrategy() {
-      case Failure(directive, stop, 0, _, failPost, _) ⇒
-        log :+= Event("applying (" + directive + ", " + stop + ", " + failPost + ") to " + sender)
-        if (myLevel > 3 && failPost == 0 && stop) Stop else directive
-      case PostRestartException(_, Failure(directive, stop, 0, _, failPost, _), _) ⇒
-        log :+= Event("re-applying (" + directive + ", " + stop + ", " + failPost + ") to " + sender)
-        if (myLevel > 3 && failPost == 0 && stop) Stop else directive
-      case f: Failure ⇒
-        import SupervisorStrategy._
-        setFlags(f.directive)
-        log :+= Event("escalating " + f)
-        throw f.copy(depth = f.depth - 1)
-      case _ ⇒ sender ! Dump(0); Resume
+    val unwrap: PartialFunction[Throwable, (Throwable, Throwable)] = {
+      case x @ PostRestartException(_, f: Failure, _) ⇒ (f, x)
+      case x @ ActorInitializationException(_, _, f: Failure) ⇒ (f, x)
+      case x ⇒ (x, x)
     }
+    override val supervisorStrategy = OneForOneStrategy()(unwrap andThen {
+      case _ if pongsToGo > 0 ⇒ Resume
+      case (f: Failure, orig) ⇒
+        if (f.depth > 0) {
+          setFlags(f.directive)
+          log :+= Event("escalating " + f)
+          throw f.copy(depth = f.depth - 1)
+        }
+        val prefix = orig match {
+          case f: Failure ⇒ "applying "
+          case _          ⇒ "re-applying "
+        }
+        log :+= Event(prefix + f + " to " + sender)
+        if (myLevel > 3 && f.failPost == 0 && f.stop) Stop else f.directive
+      case (_, x) ⇒
+        log :+= Event("unhandled exception" + Logging.stackTraceFor(x))
+        sender ! Dump(0)
+        context.system.scheduler.scheduleOnce(1 second, self, Dump(0))
+        Resume
+    })
 
     override def postRestart(cause: Throwable) {
       val state = stateCache.get(self)
@@ -194,7 +221,7 @@ object SupervisorHierarchySpec {
           val name = child.path.name
           if (context.actorFor(name).isTerminated) {
             listener ! Died(child)
-            val props = Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1))
+            val props = Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
             context.watch(context.actorOf(props, name))
           }
       }
@@ -208,10 +235,11 @@ object SupervisorHierarchySpec {
     override def postStop {
       if (failed || suspended) {
         listener ! ErrorLog("not resumed (" + failed + ", " + suspended + ")", log)
+      } else {
+        stateCache.put(self, HierarchyState(log, Map(), null))
       }
     }
 
-    var log = Vector.empty[Event]
     def check(msg: Any): Boolean = {
       suspended = false
       log :+= Event(msg)
@@ -222,12 +250,21 @@ object SupervisorHierarchySpec {
       } else if (context.asInstanceOf[ActorCell].mailbox.isSuspended) {
         abort("processing message while suspended")
         false
+      } else if (!Thread.currentThread.getName.startsWith("SupervisorHierarchySpec-hierarchy")) {
+        abort("running on wrong thread " + Thread.currentThread + " dispatcher=" + context.props.dispatcher + "=>" +
+          context.asInstanceOf[ActorCell].dispatcher.id)
+        false
       } else true
     }
 
+    var pongsToGo = 0
+
     def receive = new Receive {
       val handler: Receive = {
-        case f: Failure  ⇒ setFlags(f.directive); throw f
+        case f: Failure ⇒
+          setFlags(f.directive)
+          stateCache.put(self, stateCache.get(self).copy(failConstr = f.copy()))
+          throw f
         case "ping"      ⇒ Thread.sleep((Random.nextFloat * 1.03).toLong); sender ! "pong"
         case Dump(0)     ⇒ abort("dump")
         case Dump(level) ⇒ context.children foreach (_ ! Dump(level - 1))
@@ -237,13 +274,27 @@ object SupervisorHierarchySpec {
            * (if the unwatch() came too late), so just ignore in this case.
            */
           val name = ref.path.name
-          if (context.actorFor(name).isTerminated) {
+          if (pongsToGo == 0 && context.actorFor(name).isTerminated) {
             listener ! Died(ref)
             val kids = stateCache.get(self).kids(ref)
-            val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1))
+            val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
             context.watch(context.actorOf(props, name))
           }
         case Abort ⇒ abort("terminating")
+        case PingOfDeath ⇒
+          if (size > 1) {
+            pongsToGo = context.children.size
+            context.children foreach (_ ! PingOfDeath)
+          } else {
+            context stop self
+            context.parent ! PongOfDeath
+          }
+        case PongOfDeath ⇒
+          pongsToGo -= 1
+          if (pongsToGo == 0) {
+            context stop self
+            context.parent ! PongOfDeath
+          }
       }
       override def isDefinedAt(msg: Any) = handler.isDefinedAt(msg)
       override def apply(msg: Any) = { if (check(msg)) handler(msg) }
@@ -289,6 +340,9 @@ object SupervisorHierarchySpec {
    *   100 millis
    * - when receiving a Work() while all actors are "pinged", stop the
    *   hierarchy and go to the Stopping state
+   * - make sure to remove all actors which die in the course of the test
+   *   from the pinged and idle sets (others will be spawned from within the
+   *   hierarchy)
    * 
    * Finishing:
    * - after dealing out the last action, wait for the outstanding "pong"
@@ -320,8 +374,6 @@ object SupervisorHierarchySpec {
    * happen that the new guy sends his Ready before the FSM has gotten the
    * Terminated, which would screw things up big time. Solution is to let the
    * supervisor do all, including notifying the FSM of the death of the guy.
-   * 
-   * TODO RK: test exceptions in constructor
    */
 
   class StressTest(testActor: ActorRef, size: Int, breadth: Int) extends Actor with LoggingFSM[State, Int] {
@@ -329,9 +381,10 @@ object SupervisorHierarchySpec {
 
     // don’t escalate from this one!
     override val supervisorStrategy = OneForOneStrategy() {
-      case f: Failure                           ⇒ f.directive
-      case OriginalRestartException(f: Failure) ⇒ f.directive
-      case _                                    ⇒ Stop
+      case f: Failure                               ⇒ f.directive
+      case OriginalRestartException(f: Failure)     ⇒ f.directive
+      case ActorInitializationException(f: Failure) ⇒ f.directive
+      case _                                        ⇒ Stop
     }
 
     var children = Vector.empty[ActorRef]
@@ -424,7 +477,7 @@ object SupervisorHierarchySpec {
         nextJob.next match {
           case Ping(ref) ⇒ ref ! "ping"
           case Fail(ref, dir) ⇒
-            val f = Failure(dir, stop = random012 > 0, depth = random012, failPre = random012, failPost = random012,
+            val f = Failure(dir, stop = random012 > 0, depth = random012, failPre = random012, failPost = random012, failConstr = random012,
               stopKids = random012 match {
                 case 0 ⇒ 0
                 case 1 ⇒ Random.nextInt(breadth / 2)
@@ -482,10 +535,11 @@ object SupervisorHierarchySpec {
     onTransition {
       case _ -> Stopping ⇒
         ignoreNotResumedLogs = false
-        context stop hierarchy
+        hierarchy ! PingOfDeath
     }
 
     when(Stopping, stateTimeout = 5 seconds) {
+      case Event(PongOfDeath, _) ⇒ stay
       case Event(Terminated(r), _) if r == hierarchy ⇒
         val undead = children filterNot (_.isTerminated)
         if (undead.nonEmpty) {
@@ -548,34 +602,50 @@ object SupervisorHierarchySpec {
         testActor ! "stressTestFailed"
         stop
       case Event(StateTimeout, _) ⇒
-        getErrors()
+        getErrors(hierarchy, 2)
         printErrors()
         testActor ! "timeout in Failed"
         stop
-      case Event("pong", _) ⇒ stay // don’t care?
-      case Event(Work, _)   ⇒ stay
+      case Event("pong", _)  ⇒ stay // don’t care?
+      case Event(Work, _)    ⇒ stay
+      case Event(Died(_), _) ⇒ stay
     }
 
-    def getErrors() = {
-      def rec(target: ActorRef, depth: Int): Unit = {
-        target match {
-          case l: LocalActorRef ⇒
-            errors :+= target -> ErrorLog("forced", l.underlying.actor.asInstanceOf[Hierarchy].log)
-            if (depth > 0) {
-              l.underlying.children foreach (rec(_, depth - 1))
-            }
-        }
+    def getErrors(target: ActorRef, depth: Int): Unit = {
+      target match {
+        case l: LocalActorRef ⇒
+          l.underlying.actor match {
+            case h: Hierarchy ⇒ errors :+= target -> ErrorLog("forced", h.log)
+            case _            ⇒ errors :+= target -> ErrorLog("fetched", stateCache.get(target).log)
+          }
+          if (depth > 0) {
+            l.underlying.children foreach (getErrors(_, depth - 1))
+          }
       }
-      rec(hierarchy, 2)
+    }
+
+    def getErrorsUp(target: ActorRef): Unit = {
+      target match {
+        case l: LocalActorRef ⇒
+          l.underlying.actor match {
+            case h: Hierarchy ⇒ errors :+= target -> ErrorLog("forced", h.log)
+            case _            ⇒ errors :+= target -> ErrorLog("fetched", stateCache.get(target).log)
+          }
+          if (target != hierarchy) getErrorsUp(l.getParent)
+      }
     }
 
     def printErrors(): Unit = {
+      errors collect {
+        case (origin, ErrorLog("dump", _))                              ⇒ getErrors(origin, 1)
+        case (origin, ErrorLog(msg, _)) if msg startsWith "not resumed" ⇒ getErrorsUp(origin)
+      }
       val merged = errors.sortBy(_._1.toString) flatMap {
         case (ref, ErrorLog(msg, log)) ⇒
           println(ref + " " + msg)
           log map (l ⇒ (l.time, ref, l.msg.toString))
       }
-      merged.sorted foreach println
+      merged.sorted.distinct foreach println
     }
 
     whenUnhandled {
@@ -704,8 +774,12 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
     }
 
     "survive being stressed" in {
-      system.eventStream.publish(Mute(EventFilter[Failure](), EventFilter[PreRestartException](), EventFilter[PostRestartException]()))
-      system.eventStream.publish(Mute(EventFilter.warning(start = "received dead ")))
+      system.eventStream.publish(Mute(
+        EventFilter[Failure](),
+        EventFilter[ActorInitializationException](),
+        EventFilter[NoSuchElementException]("head of empty list"),
+        EventFilter.error(start = "changing Resume into Restart"),
+        EventFilter.warning(start = "received dead ")))
 
       val fsm = system.actorOf(Props(new StressTest(testActor, size = 500, breadth = 6)), "stressTest")
 

@@ -124,10 +124,10 @@ private[akka] trait Children { this: ActorCell ⇒
       case _ ⇒
     }
 
-  protected def resumeChildren(inResponseToFailure: Boolean, perp: ActorRef): Unit =
+  protected def resumeChildren(inResponseToFailure: Throwable, perp: ActorRef): Unit =
     childrenRefs.stats foreach {
       case ChildRestartStats(child: InternalActorRef, _, _) ⇒
-        child.resume(inResponseToFailure = inResponseToFailure && perp == child)
+        child.resume(if (perp == child) inResponseToFailure else null)
     }
 
   def getChildByName(name: String): Option[ChildRestartStats] = childrenRefs.getByName(name)
@@ -188,6 +188,8 @@ private[akka] trait Children { this: ActorCell ⇒
             unreserveChild(name)
             throw e
         }
+      // mailbox==null during RoutedActorCell constructor, where suspends are queued otherwise
+      if (mailbox ne null) for (_ ← 1 to mailbox.suspendCount) actor.suspend()
       addChild(actor)
       actor
     }

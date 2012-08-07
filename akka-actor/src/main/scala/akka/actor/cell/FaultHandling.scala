@@ -10,6 +10,7 @@ import akka.dispatch.{ Envelope, ChildTerminated }
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
 import akka.dispatch.SystemMessage
+import akka.event.Logging
 
 private[akka] trait FaultHandling { this: ActorCell ⇒
 
@@ -66,7 +67,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause, failedActor)
     } else {
       // need to keep that suspend counter balanced
-      faultResume(inResponseToFailure = false)
+      faultResume(inResponseToFailure = null)
     }
 
   /**
@@ -85,13 +86,19 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
    * @param inResponseToFailure signifies if it was our own failure which
    *        prompted this action.
    */
-  protected def faultResume(inResponseToFailure: Boolean): Unit = {
-    val perp = perpetrator
-    // done always to keep that suspend counter balanced
-    // must happen “atomically”
-    try resumeNonRecursive()
-    finally if (inResponseToFailure) clearFailed()
-    resumeChildren(inResponseToFailure, perp)
+  protected def faultResume(inResponseToFailure: Throwable): Unit = {
+    if ((actor == null || actor.context == null) && inResponseToFailure != null) {
+      system.eventStream.publish(Error(self.path.toString, clazz(actor),
+        "changing Resume into Restart after " + inResponseToFailure))
+      faultRecreate(inResponseToFailure)
+    } else {
+      val perp = perpetrator
+      // done always to keep that suspend counter balanced
+      // must happen “atomically”
+      try resumeNonRecursive()
+      finally if (inResponseToFailure != null) clearFailed()
+      resumeChildren(inResponseToFailure, perp)
+    }
   }
 
   protected def terminate() {
@@ -135,7 +142,8 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       }
     } catch {
       case NonFatal(e) ⇒
-        publish(Error(e, self.path.toString, clazz(actor), "emergency stop: exception in failure handling"))
+        publish(Error(e, self.path.toString, clazz(actor),
+          "emergency stop: exception in failure handling for " + t.getClass + Logging.stackTraceFor(t)))
         try children foreach stop
         finally finishTerminate()
     }

@@ -108,6 +108,9 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   final def shouldProcessMessage: Boolean = (status & shouldNotProcessMask) == 0
 
   @inline
+  final def suspendCount: Int = status / suspendUnit
+
+  @inline
   final def isSuspended: Boolean = (status & suspendMask) != 0
 
   @inline

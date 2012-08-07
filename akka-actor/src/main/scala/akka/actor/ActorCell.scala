@@ -188,7 +188,7 @@ private[akka] trait Cell {
   /**
    * Recursively resume this actor and all its children.
    */
-  def resume(inResponseToFailure: Boolean): Unit
+  def resume(inResponseToFailure: Throwable): Unit
   /**
    * Restart this actor (will recursively restart or stop all children).
    */
