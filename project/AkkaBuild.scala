@@ -50,7 +50,10 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       autoCompilerPlugins := true,
       libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
+      libraryDependencies ++= Dependencies.actor,
+
       scalacOptions += "-P:continuations:enable",
+
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       previousArtifact := akkaPreviousArtifact("akka-actor")
@@ -453,6 +456,10 @@ object Dependencies {
 
   val testkit = Seq(Test.scalatest, Test.junit)
 
+  val actor = Seq(
+    config
+  )
+
   val actorTests = Seq(
     Test.junit, Test.scalatest, Test.commonsMath, Test.mockito,
     Test.scalacheck, protobuf, jacksonMapper
@@ -534,6 +541,7 @@ object Dependency {
 
   val beanstalk     = "beanstalk"                   % "beanstalk_client"       % "1.4.5"      // New BSD
   val bookkeeper    = "org.apache.hadoop.zookeeper" % "bookkeeper"             % V.Zookeeper  // ApacheV2
+  val config        = "com.typesafe"                % "config"                 % "0.3.1"      // ApacheV2
   val camelCore     = "org.apache.camel"            % "camel-core"             % V.Camel      // ApacheV2
   val camelSpring   = "org.apache.camel"            % "camel-spring"           % V.Camel      // ApacheV2
   val commonsCodec  = "commons-codec"               % "commons-codec"          % "1.4"        // ApacheV2
