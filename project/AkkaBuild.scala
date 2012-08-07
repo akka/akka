@@ -67,7 +67,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -81,6 +81,16 @@ object AkkaBuild extends Build {
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
       previousArtifact := akkaPreviousArtifact("akka-actor")
+    )
+  )
+
+  lazy val dataflow = Project(
+    id = "akka-dataflow",
+    base = file("akka-dataflow"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ OSGi.dataflow ++ Seq(
+      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
+      scalacOptions += "-P:continuations:enable"
     )
   )
 
@@ -572,6 +582,8 @@ object OSGi {
   val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
 
   val slf4j = exports(Seq("akka.event.slf4j.*"))
+
+  val dataflow = exports(Seq("akka.dataflow.*"))
 
   val transactor = exports(Seq("akka.transactor.*"))
 
