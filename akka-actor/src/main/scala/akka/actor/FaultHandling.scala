@@ -273,7 +273,7 @@ abstract class SupervisorStrategy {
    * <b>IMPORTANT:</b>
    *
    * If the child is the currently failing one, it will already have been
-   * suspended, hence `suspendFirst` is false. If the child is not the
+   * suspended, hence `suspendFirst` must be false. If the child is not the
    * currently failing one, then it did not request this treatment and is
    * therefore not prepared to be resumed without prior suspend.
    */
