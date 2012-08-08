@@ -530,7 +530,7 @@ object Dependencies {
 
 object Dependency {
   // Compile
-  val config        = "com.typesafe"                % "config"                       % "0.4.1"       // ApacheV2
+  val config        = "com.typesafe"                % "config"                       % "0.5.0"         // ApacheV2
   val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.8.0"       // ApacheV2
   val netty         = "io.netty"                    % "netty"                        % "3.5.1.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
