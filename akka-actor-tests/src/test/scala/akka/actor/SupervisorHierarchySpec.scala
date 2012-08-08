@@ -167,7 +167,7 @@ object SupervisorHierarchySpec {
       // do not scrap children
       if (preRestartCalled) abort("preRestart called twice")
       else {
-        log :+= Event("preRestart")
+        log :+= Event("preRestart " + cause)
         preRestartCalled = true
         cause match {
           case f: Failure ⇒
@@ -196,7 +196,7 @@ object SupervisorHierarchySpec {
       case (f: Failure, orig) ⇒
         if (f.depth > 0) {
           setFlags(f.directive)
-          log :+= Event("escalating " + f)
+          log :+= Event("escalating " + f + " from " + sender)
           throw f.copy(depth = f.depth - 1)
         }
         val prefix = orig match {
@@ -206,7 +206,7 @@ object SupervisorHierarchySpec {
         log :+= Event(prefix + f + " to " + sender)
         if (myLevel > 3 && f.failPost == 0 && f.stop) Stop else f.directive
       case (_, x) ⇒
-        log :+= Event("unhandled exception" + Logging.stackTraceFor(x))
+        log :+= Event("unhandled exception from " + sender + Logging.stackTraceFor(x))
         sender ! Dump(0)
         context.system.scheduler.scheduleOnce(1 second, self, Dump(0))
         Resume
@@ -215,7 +215,7 @@ object SupervisorHierarchySpec {
     override def postRestart(cause: Throwable) {
       val state = stateCache.get(self)
       log = state.log
-      log :+= Event("restarted " + suspendCount)
+      log :+= Event("restarted " + suspendCount + " " + cause)
       state.kids foreach {
         case (child, kidSize) ⇒
           val name = child.path.name
