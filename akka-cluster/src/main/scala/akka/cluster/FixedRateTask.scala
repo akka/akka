@@ -8,12 +8,15 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 import akka.actor.{ Scheduler, Cancellable }
 import scala.concurrent.util.Duration
+import concurrent.ExecutionContext
 
 /**
  * INTERNAL API
  */
 private[akka] object FixedRateTask {
-  def apply(scheduler: Scheduler, initalDelay: Duration, delay: Duration)(f: ⇒ Unit): FixedRateTask =
+  def apply(scheduler: Scheduler,
+            initalDelay: Duration,
+            delay: Duration)(f: ⇒ Unit)(implicit executor: ExecutionContext): FixedRateTask =
     new FixedRateTask(scheduler, initalDelay, delay, new Runnable { def run(): Unit = f })
 }
 
@@ -24,7 +27,10 @@ private[akka] object FixedRateTask {
  * for inaccuracy in scheduler. It will start when constructed, using the
  * initialDelay.
  */
-private[akka] class FixedRateTask(scheduler: Scheduler, initalDelay: Duration, delay: Duration, task: Runnable)
+private[akka] class FixedRateTask(scheduler: Scheduler,
+                                  initalDelay: Duration,
+                                  delay: Duration,
+                                  task: Runnable)(implicit executor: ExecutionContext)
   extends Runnable with Cancellable {
 
   private val delayNanos = delay.toNanos

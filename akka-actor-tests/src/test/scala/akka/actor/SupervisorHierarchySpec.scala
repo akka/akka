@@ -307,7 +307,7 @@ object SupervisorHierarchySpec {
           case Fail(ref, dir) ⇒ ref ! Failure(dir, Vector.empty)
         }
         if (idleChildren.nonEmpty) self ! Work(x - 1)
-        else context.system.scheduler.scheduleOnce(workSchedule, self, Work(x - 1))
+        else context.system.scheduler.scheduleOnce(workSchedule, self, Work(x - 1))(context.dispatcher)
         stay
       case Event(Work(_), _) ⇒ if (pingChildren.isEmpty) goto(LastPing) else goto(Finishing)
       case Event("pong", _) ⇒

@@ -40,7 +40,7 @@ private[akka] trait ReceiveTimeout { this: ActorCell ⇒
     if (Duration.Undefined != recvtimeout._1 && !mailbox.hasMessages) {
       recvtimeout._2.cancel() //Cancel any ongoing future
       //Only reschedule if desired and there are currently no more messages to be processed
-      receiveTimeoutData = (recvtimeout._1, system.scheduler.scheduleOnce(recvtimeout._1, self, akka.actor.ReceiveTimeout))
+      receiveTimeoutData = (recvtimeout._1, system.scheduler.scheduleOnce(recvtimeout._1, self, akka.actor.ReceiveTimeout)(this.dispatcher))
     } else cancelReceiveTimeout()
 
   }
