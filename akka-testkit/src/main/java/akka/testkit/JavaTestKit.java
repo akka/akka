@@ -8,8 +8,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.event.Logging;
 import akka.event.Logging.LogEvent;
-import akka.japi.PurePartialFunction;
-import akka.japi.CachingPartialFunction;
+import akka.japi.JavaPartialFunction;
 import akka.japi.Util;
 import scala.concurrent.util.Duration;
 
@@ -79,7 +78,7 @@ public class JavaTestKit {
     abstract protected boolean ignore(Object msg);
 
     public IgnoreMsg() {
-      p.ignoreMsg(new PurePartialFunction<Object, Object>() {
+      p.ignoreMsg(new JavaPartialFunction<Object, Object>() {
         public Boolean apply(Object in, boolean isCheck) {
           return ignore(in);
         }
@@ -148,7 +147,7 @@ public class JavaTestKit {
       final Object received = p.receiveOne(max);
       try {
         result = match(received);
-      } catch (PurePartialFunction.NoMatchException ex) {
+      } catch (JavaPartialFunction.NoMatchException ex) {
         throw new AssertionError("while expecting '" + hint
             + "' received unexpected: " + received);
       }
@@ -157,7 +156,7 @@ public class JavaTestKit {
     abstract protected T match(Object msg);
 
     protected RuntimeException noMatch() {
-      throw PurePartialFunction.noMatch();
+      throw JavaPartialFunction.noMatch();
     }
 
     public T get() {
@@ -245,7 +244,7 @@ public class JavaTestKit {
     }
 
     protected RuntimeException noMatch() {
-      throw PurePartialFunction.noMatch();
+      throw JavaPartialFunction.noMatch();
     }
 
     @SuppressWarnings("unchecked")

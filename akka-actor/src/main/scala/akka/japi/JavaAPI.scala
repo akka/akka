@@ -48,7 +48,7 @@ trait Creator[T] {
   def create(): T
 }
 
-object PurePartialFunction {
+object JavaPartialFunction {
   sealed abstract class NoMatchException extends RuntimeException with NoStackTrace
   case object NoMatch extends NoMatchException
   final def noMatch(): RuntimeException = NoMatch
@@ -66,7 +66,7 @@ object PurePartialFunction {
  * <i>that</i> expensive).
  *
  * {{{
- * new PurePartialFunction<Object, String>() {
+ * new JavaPartialFunction<Object, String>() {
  *   public String apply(Object in, boolean isCheck) {
  *     if (in instanceof TheThing) {
  *       if (isCheck) return null; // to spare the expensive or side-effecting code
@@ -90,32 +90,14 @@ object PurePartialFunction {
  * does not throw `noMatch()` it will continue with calling
  * `PurePartialFunction.apply(x, false)`.
  */
-abstract class PurePartialFunction[A, B] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
-  import PurePartialFunction._
+abstract class JavaPartialFunction[A, B] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
+  import JavaPartialFunction._
 
   def apply(x: A, isCheck: Boolean): B
 
   final def isDefinedAt(x: A): Boolean = try { apply(x, true); true } catch { case NoMatch ⇒ false }
   final def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError(x) }
-}
-
-/**
- * This is a specialized variant of PartialFunction which is <b><i>only
- * applicable if you know that `isDefinedAt(x)` is always called before
- * `apply(x)`—with the same `x` of course.</i></b>
- *
- * `match(x)` will be called for `isDefinedAt(x)` only, and its semantics
- * are the same as for [[akka.japi.PurePartialFunction]] (apart from the
- * missing because unneeded boolean argument).
- */
-abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
-  import PurePartialFunction._
-
-  def `match`(x: A): B
-
-  var cache: B = _
-  final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
-  final def apply(x: A): B = cache
+  final override def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 ⇒ B1): B1 = try apply(x, false) catch { case NoMatch ⇒ default(x) }
 }
 
 /**

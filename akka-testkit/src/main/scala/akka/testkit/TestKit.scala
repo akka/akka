@@ -15,7 +15,6 @@ import scala.annotation.tailrec
 import akka.util.{ Timeout, BoxedType }
 import scala.annotation.varargs
 import scala.reflect.ClassTag
-import akka.japi.PurePartialFunction
 
 object TestActor {
   type Ignore = Option[PartialFunction[AnyRef, Boolean]]
@@ -48,6 +47,8 @@ object TestActor {
     override def msg: AnyRef = throw new IllegalActorStateException("last receive did not dequeue a message")
     override def sender: ActorRef = throw new IllegalActorStateException("last receive did not dequeue a message")
   }
+
+  val FALSE = (x: Any) ⇒ false
 }
 
 class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
@@ -67,7 +68,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
         case KeepRunning ⇒ autopilot
         case other       ⇒ other
       }
-      val observe = ignore map (ignoreFunc ⇒ if (ignoreFunc isDefinedAt x) !ignoreFunc(x) else true) getOrElse true
+      val observe = ignore map (ignoreFunc ⇒ !ignoreFunc.applyOrElse(x, FALSE)) getOrElse true
       if (observe) queue.offerLast(RealMessage(x, sender))
   }
 
@@ -712,4 +713,28 @@ trait ImplicitSender { this: TestKit ⇒
 
 trait DefaultTimeout { this: TestKit ⇒
   implicit val timeout: Timeout = testKitSettings.DefaultTimeout
+}
+
+/**
+ * INTERNAL API
+ *
+ * This is a specialized variant of PartialFunction which is <b><i>only
+ * applicable if you know that `isDefinedAt(x)` is always called before
+ * `apply(x)`—with the same `x` of course.</i></b>
+ *
+ * `match(x)` will be called for `isDefinedAt(x)` only, and its semantics
+ * are the same as for [[akka.japi.PurePartialFunction]] (apart from the
+ * missing because unneeded boolean argument).
+ *
+ * This class is used internal to JavaTestKit and should not be extended
+ * by client code directly.
+ */
+private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
+  import akka.japi.JavaPartialFunction._
+
+  def `match`(x: A): B
+
+  var cache: B = _
+  final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
+  final def apply(x: A): B = cache
 }
