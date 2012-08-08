@@ -67,7 +67,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause, failedActor)
     } else {
       // need to keep that suspend counter balanced
-      faultResume(inResponseToFailure = null)
+      faultResume(causedByFailure = null)
     }
 
   /**
@@ -83,21 +83,21 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
   /**
    * Do resume the actor in response to a failure.
    *
-   * @param inResponseToFailure signifies if it was our own failure which
+   * @param causedByFailure signifies if it was our own failure which
    *        prompted this action.
    */
-  protected def faultResume(inResponseToFailure: Throwable): Unit = {
-    if ((actor == null || actor.context == null) && inResponseToFailure != null) {
+  protected def faultResume(causedByFailure: Throwable): Unit = {
+    if ((actor == null || actor.context == null) && causedByFailure != null) {
       system.eventStream.publish(Error(self.path.toString, clazz(actor),
-        "changing Resume into Restart after " + inResponseToFailure))
-      faultRecreate(inResponseToFailure)
+        "changing Resume into Restart after " + causedByFailure))
+      faultRecreate(causedByFailure)
     } else {
       val perp = perpetrator
       // done always to keep that suspend counter balanced
       // must happen “atomically”
       try resumeNonRecursive()
-      finally if (inResponseToFailure != null) clearFailed()
-      resumeChildren(inResponseToFailure, perp)
+      finally if (causedByFailure != null) clearFailed()
+      resumeChildren(causedByFailure, perp)
     }
   }
 
@@ -134,7 +134,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
         case Envelope(Failed(_), child) ⇒ setFailed(child); Set(child)
         case _                          ⇒ setFailed(self); Set.empty
       }
-      suspendChildren(skip ++ childrenNotToSuspend)
+      suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       // tell supervisor
       t match { // Wrap InterruptedExceptions and rethrow
         case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t)), self); throw t

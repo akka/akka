@@ -118,16 +118,16 @@ private[akka] trait Children { this: ActorCell ⇒
     case _ ⇒ null
   }
 
-  protected def suspendChildren(skip: Set[ActorRef] = Set.empty): Unit =
+  protected def suspendChildren(exceptFor: Set[ActorRef] = Set.empty): Unit =
     childrenRefs.stats foreach {
-      case ChildRestartStats(child, _, _) if !(skip contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()
+      case ChildRestartStats(child, _, _) if !(exceptFor contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()
       case _ ⇒
     }
 
-  protected def resumeChildren(inResponseToFailure: Throwable, perp: ActorRef): Unit =
+  protected def resumeChildren(causedByFailure: Throwable, perp: ActorRef): Unit =
     childrenRefs.stats foreach {
       case ChildRestartStats(child: InternalActorRef, _, _) ⇒
-        child.resume(if (perp == child) inResponseToFailure else null)
+        child.resume(if (perp == child) causedByFailure else null)
     }
 
   def getChildByName(name: String): Option[ChildRestartStats] = childrenRefs.getByName(name)

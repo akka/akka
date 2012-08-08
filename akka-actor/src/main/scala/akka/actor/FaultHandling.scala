@@ -265,7 +265,7 @@ abstract class SupervisorStrategy {
    * is not the currently failing child</b>. Suspend/resume needs to be done in
    * matching pairs, otherwise actors will wake up too soon or never at all.
    */
-  final def resumeChild(child: ActorRef, cause: Throwable): Unit = child.asInstanceOf[InternalActorRef].resume(inResponseToFailure = cause)
+  final def resumeChild(child: ActorRef, cause: Throwable): Unit = child.asInstanceOf[InternalActorRef].resume(causedByFailure = cause)
 
   /**
    * Restart the given child, possibly suspending it first.

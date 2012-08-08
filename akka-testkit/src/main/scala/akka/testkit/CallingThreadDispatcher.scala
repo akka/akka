@@ -171,7 +171,7 @@ class CallingThreadDispatcher(
         if (switched && !wasActive) {
           runQueue(mbox, queue)
         }
-      case m ⇒ m.systemEnqueue(actor.self, Resume(inResponseToFailure = null))
+      case m ⇒ m.systemEnqueue(actor.self, Resume(causedByFailure = null))
     }
   }
 

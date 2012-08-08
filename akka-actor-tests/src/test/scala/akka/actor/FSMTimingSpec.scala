@@ -147,7 +147,7 @@ object FSMTimingSpec {
   }
 
   def resume(actorRef: ActorRef): Unit = actorRef match {
-    case l: ActorRefWithCell ⇒ l.resume(inResponseToFailure = null)
+    case l: ActorRefWithCell ⇒ l.resume(causedByFailure = null)
     case _                   ⇒
   }
 

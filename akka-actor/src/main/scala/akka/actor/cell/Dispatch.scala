@@ -62,7 +62,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   final def suspend(): Unit = dispatcher.systemDispatch(this, Suspend())
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def resume(inResponseToFailure: Throwable): Unit = dispatcher.systemDispatch(this, Resume(inResponseToFailure))
+  final def resume(causedByFailure: Throwable): Unit = dispatcher.systemDispatch(this, Resume(causedByFailure))
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   final def restart(cause: Throwable): Unit = dispatcher.systemDispatch(this, Recreate(cause))
