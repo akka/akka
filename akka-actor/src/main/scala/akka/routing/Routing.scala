@@ -71,7 +71,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   }
 
   if (routerConfig.resizer.isEmpty && _routees.isEmpty)
-    throw new ActorInitializationException("router " + routerConfig + " did not register routees!")
+    throw ActorInitializationException("router " + routerConfig + " did not register routees!")
 
   start(sendSupervise = false)
 
@@ -284,7 +284,7 @@ trait Router extends Actor {
 
   val ref = context match {
     case x: RoutedActorCell ⇒ x
-    case _                  ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef, not in " + context.getClass)
+    case _                  ⇒ throw ActorInitializationException("Router actor can only be used in RoutedActorRef, not in " + context.getClass)
   }
 
   final def receive = ({

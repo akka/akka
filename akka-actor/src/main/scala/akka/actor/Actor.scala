@@ -8,6 +8,7 @@ import akka.AkkaException
 import scala.reflect.BeanProperty
 import scala.util.control.NoStackTrace
 import java.util.regex.Pattern
+import scala.annotation.tailrec
 
 /**
  * Marker trait to show which Messages are automatically handled by Akka
@@ -108,40 +109,49 @@ private[akka] case class SelectParent(next: Any) extends SelectionPath
  * For instance, if you try to create an Actor that doesn't extend Actor.
  */
 @SerialVersionUID(1L)
-class IllegalActorStateException private[akka] (message: String, cause: Throwable = null)
-  extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null)
-}
+case class IllegalActorStateException private[akka] (message: String) extends AkkaException(message)
 
 /**
  * ActorKilledException is thrown when an Actor receives the akka.actor.Kill message
  */
 @SerialVersionUID(1L)
-class ActorKilledException private[akka] (message: String, cause: Throwable)
-  extends AkkaException(message, cause)
-  with NoStackTrace {
-  def this(msg: String) = this(msg, null)
-}
+case class ActorKilledException private[akka] (message: String) extends AkkaException(message) with NoStackTrace
 
 /**
  * An InvalidActorNameException is thrown when you try to convert something, usually a String, to an Actor name
  * which doesn't validate.
  */
 @SerialVersionUID(1L)
-class InvalidActorNameException(message: String) extends AkkaException(message)
+case class InvalidActorNameException(message: String) extends AkkaException(message)
 
 /**
  * An ActorInitializationException is thrown when the the initialization logic for an Actor fails.
+ *
+ * There is an extractor which works for ActorInitializationException and its subtypes:
+ *
+ * {{{
+ * ex match {
+ *   case ActorInitializationException(actor, message, cause) => ...
+ * }
+ * }}}
  */
 @SerialVersionUID(1L)
-class ActorInitializationException private[akka] (val actor: ActorRef, message: String, cause: Throwable)
+class ActorInitializationException protected (actor: ActorRef, message: String, cause: Throwable)
   extends AkkaException(message, cause) {
-  def this(msg: String) = this(null, msg, null)
-  def this(actor: ActorRef, msg: String) = this(actor, msg, null)
+  def getActor: ActorRef = actor
+}
+object ActorInitializationException {
+  private[akka] def apply(actor: ActorRef, message: String, cause: Throwable = null): ActorInitializationException =
+    new ActorInitializationException(actor, message, cause)
+  private[akka] def apply(message: String): ActorInitializationException = new ActorInitializationException(null, message, null)
+  def unapply(ex: ActorInitializationException): Option[(ActorRef, String, Throwable)] = Some((ex.getActor, ex.getMessage, ex.getCause))
 }
 
 /**
- * A PreRestartException is thrown when the preRestart() method failed.
+ * A PreRestartException is thrown when the preRestart() method failed; this
+ * exception is not propagated to the supervisor, as it originates from the
+ * already failed instance, hence it is only visible as log entry on the event
+ * stream.
  *
  * @param actor is the actor whose preRestart() hook failed
  * @param cause is the exception thrown by that actor within preRestart()
@@ -149,9 +159,12 @@ class ActorInitializationException private[akka] (val actor: ActorRef, message: 
  * @param msg is the message which was optionally passed into preRestart()
  */
 @SerialVersionUID(1L)
-class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, val origCause: Throwable, val msg: Option[Any])
-  extends ActorInitializationException(actor, "exception in preRestart(" + origCause.getClass + ", " + msg.map(_.getClass) + ")", cause) {
-}
+case class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable, messageOption: Option[Any])
+  extends ActorInitializationException(actor,
+    "exception in preRestart(" +
+      (if (originalCause == null) "null" else originalCause.getClass) + ", " +
+      (messageOption match { case Some(m: AnyRef) ⇒ m.getClass; case _ ⇒ "None" }) +
+      ")", cause)
 
 /**
  * A PostRestartException is thrown when constructor or postRestart() method
@@ -162,20 +175,33 @@ class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, val 
  * @param origCause is the exception which caused the restart in the first place
  */
 @SerialVersionUID(1L)
-class PostRestartException private[akka] (actor: ActorRef, cause: Throwable, val origCause: Throwable)
-  extends ActorInitializationException(actor, "exception post restart (" + origCause.getClass + ")", cause) {
+case class PostRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable)
+  extends ActorInitializationException(actor,
+    "exception post restart (" + (if (originalCause == null) "null" else originalCause.getClass) + ")", cause)
+
+/**
+ * This is an extractor for retrieving the original cause (i.e. the first
+ * failure) from a [[akka.actor.PostRestartException]]. In the face of multiple
+ * “nested” restarts it will walk the origCause-links until it arrives at a
+ * non-PostRestartException type.
+ */
+@SerialVersionUID(1L)
+object OriginalRestartException {
+  def unapply(ex: PostRestartException): Option[Throwable] = {
+    @tailrec def rec(ex: PostRestartException): Option[Throwable] = ex match {
+      case PostRestartException(_, _, e: PostRestartException) ⇒ rec(e)
+      case PostRestartException(_, _, e)                       ⇒ Some(e)
+    }
+    rec(ex)
+  }
 }
 
 /**
- * InvalidMessageException is thrown when an invalid message is sent to an Actor.
- * Technically it's only "null" which is an InvalidMessageException but who knows,
- * there might be more of them in the future, or not.
+ * InvalidMessageException is thrown when an invalid message is sent to an Actor;
+ * Currently only `null` is an invalid message.
  */
 @SerialVersionUID(1L)
-class InvalidMessageException private[akka] (message: String, cause: Throwable = null)
-  extends AkkaException(message, cause) {
-  def this(msg: String) = this(msg, null)
-}
+case class InvalidMessageException private[akka] (message: String) extends AkkaException(message)
 
 /**
  * A DeathPactException is thrown by an Actor that receives a Terminated(someActor) message
@@ -323,7 +349,7 @@ trait Actor {
   protected[akka] implicit val context: ActorContext = {
     val contextStack = ActorCell.contextStack.get
     if ((contextStack.isEmpty) || (contextStack.head eq null))
-      throw new ActorInitializationException(
+      throw ActorInitializationException(
         "\n\tYou cannot create an instance of [" + getClass.getName + "] explicitly using the constructor (new)." +
           "\n\tYou have to use one of the factory methods to create a new actor. Either use:" +
           "\n\t\t'val actor = context.actorOf(Props[MyActor])'        (to create a supervised child actor from within an actor), or" +

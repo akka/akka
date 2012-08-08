@@ -81,7 +81,7 @@ private[akka] class RepointableActorRef(
 
   def suspend(): Unit = underlying.suspend()
 
-  def resume(inResponseToFailure: Boolean): Unit = underlying.resume(inResponseToFailure)
+  def resume(causedByFailure: Throwable): Unit = underlying.resume(causedByFailure)
 
   def stop(): Unit = underlying.stop()
 
@@ -171,7 +171,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
 
   def system: ActorSystem = systemImpl
   def suspend(): Unit = { lock.lock(); try suspendCount += 1 finally lock.unlock() }
-  def resume(inResponseToFailure: Boolean): Unit = { lock.lock(); try suspendCount -= 1 finally lock.unlock() }
+  def resume(causedByFailure: Throwable): Unit = { lock.lock(); try suspendCount -= 1 finally lock.unlock() }
   def restart(cause: Throwable): Unit = { lock.lock(); try suspendCount -= 1 finally lock.unlock() }
   def stop(): Unit = sendSystemMessage(Terminate())
   def isTerminated: Boolean = false
