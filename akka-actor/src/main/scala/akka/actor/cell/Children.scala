@@ -7,12 +7,12 @@ package akka.actor.cell
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.util.control.NonFatal
-
 import akka.actor.{ RepointableRef, Props, NoSerializationVerificationNeeded, InvalidActorNameException, InternalActorRef, ChildRestartStats, ActorRef }
 import akka.actor.ActorCell
 import akka.actor.ActorPath.ElementRegex
 import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Helpers }
+import akka.actor.ChildRestartStats
 
 private[akka] trait Children { this: ActorCell ⇒
 
@@ -113,14 +113,22 @@ private[akka] trait Children { this: ActorCell ⇒
 
   protected def isTerminating = childrenRefs.isTerminating
 
-  protected def suspendChildren(skip: Set[ActorRef] = Set.empty): Unit =
+  protected def recreationOrNull = childrenRefs match {
+    case TerminatingChildrenContainer(_, _, r: Recreation) ⇒ r
+    case _ ⇒ null
+  }
+
+  protected def suspendChildren(exceptFor: Set[ActorRef] = Set.empty): Unit =
     childrenRefs.stats foreach {
-      case ChildRestartStats(child, _, _) if !(skip contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()
+      case ChildRestartStats(child, _, _) if !(exceptFor contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()
       case _ ⇒
     }
 
-  protected def resumeChildren(): Unit =
-    childrenRefs.stats foreach (_.child.asInstanceOf[InternalActorRef].resume(inResponseToFailure = false))
+  protected def resumeChildren(causedByFailure: Throwable, perp: ActorRef): Unit =
+    childrenRefs.stats foreach {
+      case ChildRestartStats(child: InternalActorRef, _, _) ⇒
+        child.resume(if (perp == child) causedByFailure else null)
+    }
 
   def getChildByName(name: String): Option[ChildRestartStats] = childrenRefs.getByName(name)
 
@@ -180,6 +188,8 @@ private[akka] trait Children { this: ActorCell ⇒
             unreserveChild(name)
             throw e
         }
+      // mailbox==null during RoutedActorCell constructor, where suspends are queued otherwise
+      if (mailbox ne null) for (_ ← 1 to mailbox.suspendCount) actor.suspend()
       addChild(actor)
       actor
     }

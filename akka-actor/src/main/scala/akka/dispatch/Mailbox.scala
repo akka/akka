@@ -108,6 +108,9 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   final def shouldProcessMessage: Boolean = (status & shouldNotProcessMask) == 0
 
   @inline
+  final def suspendCount: Int = status / suspendUnit
+
+  @inline
   final def isSuspended: Boolean = (status & suspendMask) != 0
 
   @inline
@@ -271,7 +274,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       }
     }
     // if something happened while processing, fail this actor (most probable: exception in supervisorStrategy)
-    if (failure ne null) actor.handleInvokeFailure(failure, failure.getMessage)
+    if (failure ne null) actor.handleInvokeFailure(Nil, failure, failure.getMessage)
   }
 
   /**

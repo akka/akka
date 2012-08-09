@@ -69,7 +69,7 @@ trait Stash {
   private val mailbox: DequeBasedMessageQueue = {
     context.asInstanceOf[ActorCell].mailbox.messageQueue match {
       case queue: DequeBasedMessageQueue ⇒ queue
-      case other ⇒ throw new ActorInitializationException(self, "DequeBasedMailbox required, got: " + other.getClass() + """
+      case other ⇒ throw ActorInitializationException(self, "DequeBasedMailbox required, got: " + other.getClass() + """
 An (unbounded) deque-based mailbox can be configured as follows:
   my-custom-dispatcher {
     mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"

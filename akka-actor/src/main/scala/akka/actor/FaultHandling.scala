@@ -253,7 +253,7 @@ abstract class SupervisorStrategy {
   def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
     val directive = if (decider.isDefinedAt(cause)) decider(cause) else Escalate //FIXME applyOrElse in Scala 2.10
     directive match {
-      case Resume   ⇒ resumeChild(child); true
+      case Resume   ⇒ resumeChild(child, cause); true
       case Restart  ⇒ processFailure(context, true, child, cause, stats, children); true
       case Stop     ⇒ processFailure(context, false, child, cause, stats, children); true
       case Escalate ⇒ false
@@ -265,7 +265,7 @@ abstract class SupervisorStrategy {
    * is not the currently failing child</b>. Suspend/resume needs to be done in
    * matching pairs, otherwise actors will wake up too soon or never at all.
    */
-  final def resumeChild(child: ActorRef): Unit = child.asInstanceOf[InternalActorRef].resume(inResponseToFailure = true)
+  final def resumeChild(child: ActorRef, cause: Throwable): Unit = child.asInstanceOf[InternalActorRef].resume(causedByFailure = cause)
 
   /**
    * Restart the given child, possibly suspending it first.
@@ -273,7 +273,7 @@ abstract class SupervisorStrategy {
    * <b>IMPORTANT:</b>
    *
    * If the child is the currently failing one, it will already have been
-   * suspended, hence `suspendFirst` is false. If the child is not the
+   * suspended, hence `suspendFirst` must be false. If the child is not the
    * currently failing one, then it did not request this treatment and is
    * therefore not prepared to be resumed without prior suspend.
    */

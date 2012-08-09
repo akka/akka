@@ -191,7 +191,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   /*
    * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).
    */
-  def resume(inResponseToFailure: Boolean): Unit
+  def resume(causedByFailure: Throwable): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
   def stop(): Unit
@@ -288,7 +288,7 @@ private[akka] class LocalActorRef private[akka] (
   /**
    * Resumes a suspended actor.
    */
-  override def resume(inResponseToFailure: Boolean): Unit = actorCell.resume(inResponseToFailure)
+  override def resume(causedByFailure: Throwable): Unit = actorCell.resume(causedByFailure)
 
   /**
    * Shuts down the actor and its message queue
@@ -388,7 +388,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override def getChild(names: Iterator[String]): InternalActorRef = if (names.forall(_.isEmpty)) this else Nobody
 
   override def suspend(): Unit = ()
-  override def resume(inResponseToFailure: Boolean): Unit = ()
+  override def resume(causedByFailure: Throwable): Unit = ()
   override def stop(): Unit = ()
   override def isTerminated = false
 
