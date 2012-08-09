@@ -217,7 +217,7 @@ public class JavaTestKit {
   }
 
   public abstract class ReceiveWhile<T> {
-    abstract protected T match(Object msg);
+    abstract protected T match(Object msg) throws Exception;
 
     private Object results;
 
@@ -237,8 +237,8 @@ public class JavaTestKit {
     public ReceiveWhile(Class<T> clazz, Duration max, Duration idle, int messages) {
       results = p.receiveWhile(max, idle, messages,
           new CachingPartialFunction<Object, T>() {
-            public T match(Object msg) {
-              return ReceiveWhile.this.match(msg);
+            public T match(Object msg) throws Exception {
+                return ReceiveWhile.this.match(msg);
             }
           }).toArray(Util.classTag(clazz));
     }

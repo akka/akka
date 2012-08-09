@@ -93,6 +93,7 @@ object JavaPartialFunction {
 abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
   import JavaPartialFunction._
 
+  @throws(classOf[Exception])
   def apply(x: A, isCheck: Boolean): B
 
   final def isDefinedAt(x: A): Boolean = try { apply(x, true); true } catch { case NoMatch ⇒ false }

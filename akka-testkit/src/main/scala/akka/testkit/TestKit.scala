@@ -732,6 +732,7 @@ trait DefaultTimeout { this: TestKit ⇒
 private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractPartialFunction[A, B] {
   import akka.japi.JavaPartialFunction._
 
+  @throws(classOf[Exception])
   def `match`(x: A): B
 
   var cache: B = _
