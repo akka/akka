@@ -11,7 +11,6 @@ import scala.concurrent.util.Duration
 import scala.util.control.NonFatal
 import akka.util.ByteString
 import java.net.{ SocketAddress, InetSocketAddress }
-import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.{
   SelectableChannel,
@@ -27,6 +26,8 @@ import scala.collection.mutable
 import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
 import java.util.UUID
+import java.io.{ EOFException, IOException }
+
 /**
  * IO messages and iteratees.
  *
@@ -176,6 +177,13 @@ object IO {
    * For more information see [[java.net.Socket.setReuseAddress]]
    */
   case class ReuseAddress(on: Boolean) extends SocketOption with ServerSocketOption
+
+  /**
+   * [[akka.actor.IO.ServerSocketOption]] to set the maximum backlog of connections. 0 or negative means that the platform default will be used.
+   * For more information see [[http://docs.oracle.com/javase/7/docs/api/java/nio/channels/ServerSocketChannel.html#bind(java.net.SocketAddress, int)]]
+   * @param numberOfConnections
+   */
+  case class Backlog(numberOfConnections: Int) extends ServerSocketOption
 
   /**
    * [[akka.actor.IO.SocketOption]] to set the SO_SNDBUF option for this
@@ -806,13 +814,30 @@ object IO {
  * An IOManager does not need to be manually stopped when not in use as it will
  * automatically enter an idle state when it has no channels to manage.
  */
-final class IOManager private (system: ActorSystem) extends Extension { //FIXME how about taking an ActorContext
+final class IOManager private (system: ExtendedActorSystem) extends Extension { //FIXME how about taking an ActorContext
+
   /**
    * A reference to the [[akka.actor.IOManagerActor]] that performs the actual
    * IO. It communicates with other actors using subclasses of
    * [[akka.actor.IO.IOMessage]].
    */
-  val actor = system.actorOf(Props[IOManagerActor], "io-manager")
+  val actor = {
+    val c = system.settings.config.getConfig("akka.io")
+    val readBufferSize = {
+      val sz = c.getBytes("read-buffer-size")
+      require(sz <= Int.MaxValue && sz > 0)
+      sz.toInt
+    }
+
+    val selectInterval = {
+      val i = c.getInt("select-interval")
+      require(i > 0)
+      i
+    }
+    val defaultBacklog = c.getInt("default-backlog")
+
+    system.actorOf(Props(new IOManagerActor(readBufferSize, selectInterval, defaultBacklog)), "io-manager")
+  }
 
   /**
    * Create a ServerSocketChannel listening on an address. Messages will be
@@ -898,10 +923,12 @@ object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
  *
  * Use [[akka.actor.IOManager]] to retrieve an instance of this Actor.
  */
-final class IOManagerActor extends Actor with ActorLogging {
+final class IOManagerActor(
+  val readBufferSize: Int,
+  val selectInterval: Int,
+  /** force a select when lastSelect reaches this amount */
+  val defaultBacklog: Int) extends Actor with ActorLogging {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
-
-  private val bufferSize = 8192 // FIXME TODO: make configurable
 
   private type ReadChannel = ReadableByteChannel with SelectableChannel
   private type WriteChannel = WritableByteChannel with SelectableChannel
@@ -918,13 +945,10 @@ final class IOManagerActor extends Actor with ActorLogging {
   private val closing = mutable.Set.empty[IO.Handle]
 
   /** Buffer used for all reads */
-  private val buffer = ByteBuffer.allocate(bufferSize)
+  private val buffer = ByteBuffer.allocate(readBufferSize)
 
   /** a counter that is incremented each time a message is retrieved */
   private var lastSelect = 0
-
-  /** force a select when lastSelect reaches this amount */
-  private val selectAt = 100 // FIXME TODO: make configurable
 
   /** true while the selector is open and channels.nonEmpty */
   private var running = false
@@ -952,10 +976,14 @@ final class IOManagerActor extends Actor with ActorLogging {
       }
     }
     lastSelect += 1
-    if (lastSelect >= selectAt) select()
+    if (lastSelect >= selectInterval)
+      running = select()
   }
 
-  private def select() {
+  /**
+   * @return true if we should be running and false if not
+   */
+  private def select(): Boolean = try {
     if (selector.isOpen) {
       // TODO: Make select behaviour configurable.
       // Blocking 1ms reduces allocations during idle times, non blocking gives better performance.
@@ -965,12 +993,13 @@ final class IOManagerActor extends Actor with ActorLogging {
       while (keys.hasNext) {
         val key = keys.next()
         keys.remove()
-        if (key.isValid) { process(key) }
+        if (key.isValid) process(key)
       }
-      if (channels.isEmpty) running = false
+      if (channels.isEmpty) false else running
     } else {
-      running = false
+      false
     }
+  } finally {
     lastSelect = 0
   }
 
@@ -994,7 +1023,7 @@ final class IOManagerActor extends Actor with ActorLogging {
 
   def receive = {
     case Select ⇒
-      select()
+      running = select()
       if (running) self ! Select
       selectSent = running
 
@@ -1002,18 +1031,20 @@ final class IOManagerActor extends Actor with ActorLogging {
       val channel = ServerSocketChannel open ()
       channel configureBlocking false
 
+      var backlog = defaultBacklog
       val sock = channel.socket
       options foreach {
         case IO.ReceiveBufferSize(size) ⇒ forwardFailure(sock.setReceiveBufferSize(size))
         case IO.ReuseAddress(on)        ⇒ forwardFailure(sock.setReuseAddress(on))
         case IO.PerformancePreferences(connTime, latency, bandwidth) ⇒
           forwardFailure(sock.setPerformancePreferences(connTime, latency, bandwidth))
+        case IO.Backlog(number) ⇒ backlog = number
       }
 
-      channel.socket bind (address, 1000) // FIXME TODO: make backlog configurable
+      channel.socket bind (address, backlog)
       channels update (server, channel)
       channel register (selector, OP_ACCEPT, server)
-      server.owner ! IO.Listening(server, channel.socket.getLocalSocketAddress())
+      server.owner ! IO.Listening(server, sock.getLocalSocketAddress())
       run()
 
     case IO.Connect(socket, address, options) ⇒
@@ -1037,27 +1068,21 @@ final class IOManagerActor extends Actor with ActorLogging {
 
     case IO.Write(handle, data) ⇒
       if (channels contains handle) {
-        val queue = {
-          val existing = writes get handle
-          if (existing.isDefined) existing.get
-          else {
-            val q = new WriteBuffer(bufferSize)
-            writes update (handle, q)
-            q
-          }
+        val queue = writes get handle getOrElse {
+          val q = new WriteBuffer(readBufferSize)
+          writes update (handle, q)
+          q
         }
         if (queue.isEmpty) addOps(handle, OP_WRITE)
         queue enqueue data
-        if (queue.length >= bufferSize) write(handle, channels(handle).asInstanceOf[WriteChannel])
+        if (queue.length >= readBufferSize) write(handle, channels(handle).asInstanceOf[WriteChannel])
       }
       run()
 
     case IO.Close(handle: IO.WriteHandle) ⇒
-      if (writes get handle filterNot (_.isEmpty) isDefined) {
-        closing += handle
-      } else {
-        cleanup(handle, None)
-      }
+      //If we still have pending writes, add to set of closing handles
+      if (writes get handle exists (_.isEmpty == false)) closing += handle
+      else cleanup(handle, None)
       run()
 
     case IO.Close(handle) ⇒
@@ -1089,12 +1114,12 @@ final class IOManagerActor extends Actor with ActorLogging {
       case server: IO.ServerHandle  ⇒ accepted -= server
       case writable: IO.WriteHandle ⇒ writes -= writable
     }
-    channels.get(handle) match {
-      case Some(channel) ⇒
-        channel.close
-        channels -= handle
-        if (!handle.owner.isTerminated) handle.owner ! IO.Closed(handle, cause)
-      case None ⇒
+    channels.get(handle) foreach {
+      channel ⇒
+        try channel.close finally {
+          channels -= handle
+          if (!handle.owner.isTerminated) handle.owner ! IO.Closed(handle, cause)
+        }
     }
   }
 
@@ -1115,7 +1140,7 @@ final class IOManagerActor extends Actor with ActorLogging {
       removeOps(socket, OP_CONNECT)
       socket.owner ! IO.Connected(socket, channel.socket.getRemoteSocketAddress())
     } else {
-      cleanup(socket, None) // TODO: Add a cause
+      cleanup(socket, Some(new IllegalStateException("Channel for socket handle [%s] didn't finish connect" format socket)))
     }
   }
 
@@ -1144,7 +1169,7 @@ final class IOManagerActor extends Actor with ActorLogging {
     buffer.clear
     val readLen = channel read buffer
     if (readLen == -1) {
-      cleanup(handle, None) // TODO: Add a cause
+      cleanup(handle, Some(new EOFException("Elvis has left the building")))
     } else if (readLen > 0) {
       buffer.flip
       handle.owner ! IO.Read(handle, ByteString(buffer))
