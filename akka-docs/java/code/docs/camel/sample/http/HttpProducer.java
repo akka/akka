@@ -26,7 +26,7 @@ public class HttpProducer extends UntypedProducerActor{
       CamelMessage camelMessage = (CamelMessage) message;
       Set<String> httpPath = new HashSet<String>();
       httpPath.add(Exchange.HTTP_PATH);
-      return camelMessage.addHeaders(camelMessage.getHeaders(httpPath));
+      return camelMessage.withHeaders(camelMessage.getHeaders(httpPath));
     } else return super.onTransformOutgoingMessage(message);
   }
 
