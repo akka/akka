@@ -249,7 +249,10 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   private def scheduleShutdownAction(): Unit = {
     // IllegalStateException is thrown if scheduler has been shutdown
-    try scheduler.scheduleOnce(shutdownTimeout, shutdownAction) catch {
+    try scheduler.scheduleOnce(shutdownTimeout, shutdownAction)(new ExecutionContext {
+      override def execute(runnable: Runnable): Unit = runnable.run()
+      override def reportFailure(t: Throwable): Unit = MessageDispatcher.this.reportFailure(t)
+    }) catch {
       case _: IllegalStateException ⇒ shutdown()
     }
   }

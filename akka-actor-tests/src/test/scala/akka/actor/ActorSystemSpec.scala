@@ -130,7 +130,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
         Thread.sleep(50.millis.dilated.toMillis)
         callbackWasRun = true
       }
-
+      import system.dispatcher
       system2.scheduler.scheduleOnce(200.millis.dilated) { system2.shutdown() }
 
       system2.awaitTermination(5 seconds)
@@ -164,6 +164,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
 
     "reliable deny creation of actors while shutting down" in {
       val system = ActorSystem()
+      import system.dispatcher
       system.scheduler.scheduleOnce(200 millis) { system.shutdown() }
       var failing = false
       var created = Vector.empty[ActorRef]

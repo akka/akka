@@ -187,6 +187,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
 
       { (msg: PollMsg) ⇒
         // for negative timeout values, schedule Poll token -duration into the future
+        import context.dispatcher
         context.system.scheduler.scheduleOnce(d, self, msg)
         ()
       }

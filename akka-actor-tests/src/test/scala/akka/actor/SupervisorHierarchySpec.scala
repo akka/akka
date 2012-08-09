@@ -208,7 +208,7 @@ object SupervisorHierarchySpec {
       case (_, x) ⇒
         log :+= Event("unhandled exception from " + sender + Logging.stackTraceFor(x))
         sender ! Dump(0)
-        context.system.scheduler.scheduleOnce(1 second, self, Dump(0))
+        context.system.scheduler.scheduleOnce(1 second, self, Dump(0))(context.dispatcher)
         Resume
     })
 
@@ -471,7 +471,7 @@ object SupervisorHierarchySpec {
 
     when(Stress) {
       case Event(Work, _) if idleChildren.isEmpty ⇒
-        context.system.scheduler.scheduleOnce(workSchedule, self, Work)
+        context.system.scheduler.scheduleOnce(workSchedule, self, Work)(context.dispatcher)
         stay
       case Event(Work, x) if x > 0 ⇒
         nextJob.next match {
@@ -486,7 +486,7 @@ object SupervisorHierarchySpec {
             ref ! f
         }
         if (idleChildren.nonEmpty) self ! Work
-        else context.system.scheduler.scheduleOnce(workSchedule, self, Work)
+        else context.system.scheduler.scheduleOnce(workSchedule, self, Work)(context.dispatcher)
         stay using (x - 1)
       case Event(Work, _) ⇒ if (pingChildren.isEmpty) goto(LastPing) else goto(Finishing)
       case Event(Died(ref), _) ⇒
@@ -558,7 +558,7 @@ object SupervisorHierarchySpec {
           children = Vector.empty
           pingChildren = Set.empty
           idleChildren = Vector.empty
-          context.system.scheduler.scheduleOnce(workSchedule, self, GCcheck(weak))
+          context.system.scheduler.scheduleOnce(workSchedule, self, GCcheck(weak))(context.dispatcher)
           System.gc()
           goto(GC)
         } else {
@@ -578,7 +578,7 @@ object SupervisorHierarchySpec {
         val next = weak filter (_.get ne null)
         if (next.nonEmpty) {
           println(next.size + " left")
-          context.system.scheduler.scheduleOnce(workSchedule, self, GCcheck(next))
+          context.system.scheduler.scheduleOnce(workSchedule, self, GCcheck(next))(context.dispatcher)
           System.gc()
           stay
         } else {

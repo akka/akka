@@ -87,22 +87,19 @@ object FSM {
   /**
    * Internal API
    */
-  private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit system: ActorSystem) {
+  private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext) {
     private var ref: Option[Cancellable] = _
+    private val scheduler = context.system.scheduler
+    private implicit val executionContext = context.dispatcher
 
-    def schedule(actor: ActorRef, timeout: Duration) {
-      if (repeat) {
-        ref = Some(system.scheduler.schedule(timeout, timeout, actor, this))
-      } else {
-        ref = Some(system.scheduler.scheduleOnce(timeout, actor, this))
-      }
-    }
+    def schedule(actor: ActorRef, timeout: Duration): Unit =
+      ref = Some(
+        if (repeat) scheduler.schedule(timeout, timeout, actor, this)
+        else scheduler.scheduleOnce(timeout, actor, this))
 
-    def cancel {
-      if (ref.isDefined) {
-        ref.get.cancel()
-        ref = None
-      }
+    def cancel(): Unit = if (ref.isDefined) {
+      ref.get.cancel()
+      ref = None
     }
   }
 
@@ -348,7 +345,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
     if (timers contains name) {
       timers(name).cancel
     }
-    val timer = Timer(name, msg, repeat, timerGen.next)(context.system)
+    val timer = Timer(name, msg, repeat, timerGen.next)(context)
     timer.schedule(self, timeout)
     timers(name) = timer
     stay
@@ -601,6 +598,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
       if (timeout.isDefined) {
         val t = timeout.get
         if (t.finite_? && t.length >= 0) {
+          import context.dispatcher
           timeoutFuture = Some(context.system.scheduler.scheduleOnce(t, self, TimeoutMarker(generation)))
         }
       }

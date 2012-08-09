@@ -12,7 +12,7 @@ import scala.concurrent.Await
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FixedRateTaskSpec extends AkkaSpec {
-
+  import system.dispatcher
   "Task scheduled at fixed rate" must {
     "adjust for scheduler inaccuracy" taggedAs TimingTest in {
       val startTime = System.nanoTime

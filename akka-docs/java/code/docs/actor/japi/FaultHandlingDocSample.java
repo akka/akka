@@ -138,7 +138,9 @@ public class FaultHandlingDocSample {
       log.debug("received message {}", msg);
       if (msg.equals(Start) && progressListener == null) {
         progressListener = getSender();
-        getContext().system().scheduler().schedule(Duration.Zero(), Duration.parse("1 second"), getSelf(), Do);
+        getContext().system().scheduler().schedule(
+            Duration.Zero(), Duration.parse("1 second"), getSelf(), Do, getContext().dispatcher()
+        );
       } else if (msg.equals(Do)) {
         counterService.tell(new Increment(1), getSelf());
         counterService.tell(new Increment(1), getSelf());
@@ -296,7 +298,9 @@ public class FaultHandlingDocSample {
         // Tell the counter that there is no storage for the moment
         counter.tell(new UseStorage(null), getSelf());
         // Try to re-establish storage after while
-        getContext().system().scheduler().scheduleOnce(Duration.parse("10 seconds"), getSelf(), Reconnect);
+        getContext().system().scheduler().scheduleOnce(
+                Duration.parse("10 seconds"), getSelf(), Reconnect, getContext().dispatcher()
+        );
       } else if (msg.equals(Reconnect)) {
         // Re-establish storage after the scheduled delay
         initStorage();

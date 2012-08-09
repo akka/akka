@@ -33,6 +33,7 @@ object ZeromqDocSpec {
     val memory = ManagementFactory.getMemoryMXBean
     val os = ManagementFactory.getOperatingSystemMXBean
     val ser = SerializationExtension(context.system)
+    import context.dispatcher
 
     override def preStart() {
       context.system.scheduler.schedule(1 second, 1 second, self, Tick)

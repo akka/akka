@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.dispatch.Dispatchers
 import scala.annotation.tailrec
+import concurrent.ExecutionContext
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -1221,7 +1222,7 @@ case class DefaultResizer(
     } else if (requestedCapacity < 0) {
       val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length + requestedCapacity)
       routeeProvider.unregisterRoutees(abandon)
-      delayedStop(routeeProvider.context.system.scheduler, abandon)
+      delayedStop(routeeProvider.context.system.scheduler, abandon)(routeeProvider.context.dispatcher)
     }
   }
 
@@ -1229,7 +1230,8 @@ case class DefaultResizer(
    * Give concurrent messages a chance to be placed in mailbox before
    * sending PoisonPill.
    */
-  protected def delayedStop(scheduler: Scheduler, abandon: IndexedSeq[ActorRef]): Unit = {
+  protected def delayedStop(scheduler: Scheduler,
+                            abandon: IndexedSeq[ActorRef])(implicit executor: ExecutionContext): Unit = {
     if (abandon.nonEmpty) {
       if (stopDelay <= Duration.Zero) {
         abandon foreach (_ ! PoisonPill)

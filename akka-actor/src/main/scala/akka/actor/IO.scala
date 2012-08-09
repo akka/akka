@@ -27,6 +27,7 @@ import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom
 import java.util.UUID
 import java.io.{ EOFException, IOException }
+import akka.actor.IOManager.Settings
 
 /**
  * IO messages and iteratees.
@@ -815,29 +816,23 @@ object IO {
  * automatically enter an idle state when it has no channels to manage.
  */
 final class IOManager private (system: ExtendedActorSystem) extends Extension { //FIXME how about taking an ActorContext
-
+  val settings: Settings = {
+    val c = system.settings.config.getConfig("akka.io")
+    Settings(
+      readBufferSize = {
+        val sz = c.getBytes("read-buffer-size")
+        require(sz <= Int.MaxValue && sz > 0)
+        sz.toInt
+      },
+      selectInterval = c.getInt("select-interval"),
+      defaultBacklog = c.getInt("default-backlog"))
+  }
   /**
    * A reference to the [[akka.actor.IOManagerActor]] that performs the actual
    * IO. It communicates with other actors using subclasses of
    * [[akka.actor.IO.IOMessage]].
    */
-  val actor = {
-    val c = system.settings.config.getConfig("akka.io")
-    val readBufferSize = {
-      val sz = c.getBytes("read-buffer-size")
-      require(sz <= Int.MaxValue && sz > 0)
-      sz.toInt
-    }
-
-    val selectInterval = {
-      val i = c.getInt("select-interval")
-      require(i > 0)
-      i
-    }
-    val defaultBacklog = c.getInt("default-backlog")
-
-    system.actorOf(Props(new IOManagerActor(readBufferSize, selectInterval, defaultBacklog)), "io-manager")
-  }
+  val actor: ActorRef = system.actorOf(Props(new IOManagerActor(settings)), "io-manager")
 
   /**
    * Create a ServerSocketChannel listening on an address. Messages will be
@@ -916,6 +911,12 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
 object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
   override def lookup: IOManager.type = this
   override def createExtension(system: ExtendedActorSystem): IOManager = new IOManager(system)
+
+  @SerialVersionUID(1L)
+  case class Settings(readBufferSize: Int, selectInterval: Int, defaultBacklog: Int) {
+    require(readBufferSize <= Int.MaxValue && readBufferSize > 0)
+    require(selectInterval > 0)
+  }
 }
 
 /**
@@ -923,12 +924,9 @@ object IOManager extends ExtensionId[IOManager] with ExtensionIdProvider {
  *
  * Use [[akka.actor.IOManager]] to retrieve an instance of this Actor.
  */
-final class IOManagerActor(
-  val readBufferSize: Int,
-  val selectInterval: Int,
-  /** force a select when lastSelect reaches this amount */
-  val defaultBacklog: Int) extends Actor with ActorLogging {
+final class IOManagerActor(val settings: Settings) extends Actor with ActorLogging {
   import SelectionKey.{ OP_READ, OP_WRITE, OP_ACCEPT, OP_CONNECT }
+  import settings.{ defaultBacklog, selectInterval, readBufferSize }
 
   private type ReadChannel = ReadableByteChannel with SelectableChannel
   private type WriteChannel = WritableByteChannel with SelectableChannel
