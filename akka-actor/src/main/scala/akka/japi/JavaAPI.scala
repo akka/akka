@@ -5,10 +5,10 @@
 package akka.japi
 
 import language.implicitConversions
-
 import scala.Some
 import scala.reflect.ClassTag
 import scala.util.control.NoStackTrace
+import scala.runtime.AbstractPartialFunction
 
 /**
  * A Function interface. Used to create first-class-functions is Java.
@@ -90,13 +90,13 @@ object JavaPartialFunction {
  * does not throw `noMatch()` it will continue with calling
  * `PurePartialFunction.apply(x, false)`.
  */
-abstract class JavaPartialFunction[A, B] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
+abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
   import JavaPartialFunction._
 
   def apply(x: A, isCheck: Boolean): B
 
   final def isDefinedAt(x: A): Boolean = try { apply(x, true); true } catch { case NoMatch ⇒ false }
-  final def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError(x) }
+  final override def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError(x) }
   final override def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 ⇒ B1): B1 = try apply(x, false) catch { case NoMatch ⇒ default(x) }
 }
 

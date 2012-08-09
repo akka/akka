@@ -729,12 +729,12 @@ trait DefaultTimeout { this: TestKit ⇒
  * This class is used internal to JavaTestKit and should not be extended
  * by client code directly.
  */
-private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
+private[testkit] abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractPartialFunction[A, B] {
   import akka.japi.JavaPartialFunction._
 
   def `match`(x: A): B
 
   var cache: B = _
   final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
-  final def apply(x: A): B = cache
+  final override def apply(x: A): B = cache
 }
