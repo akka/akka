@@ -443,6 +443,7 @@ private[akka] class ActorCell(
     }
 
   private def supervise(child: ActorRef, uid: Int): Unit = if (!isTerminating) {
+    // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
     addChild(child).uid = uid
     handleSupervise(child)
     if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))

@@ -34,6 +34,11 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   final def isTerminated: Boolean = mailbox.isClosed
 
+  /**
+   * Start this cell, i.e. attach it to the dispatcher. The UID must reasonably
+   * be different from the previous UID of a possible actor with the same path,
+   * which can be achieved by using ThreadLocalRandom.current.nextInt().
+   */
   final def start(sendSupervise: Boolean, uid: Int): this.type = {
 
     /*

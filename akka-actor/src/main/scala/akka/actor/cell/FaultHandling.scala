@@ -194,6 +194,11 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
 
   final protected def handleFailure(child: ActorRef, cause: Throwable, uid: Int): Unit =
     getChildByRef(child) match {
+      /*
+       * only act upon the failure, if it comes from a currently known child;
+       * the UID protects against reception of a Failed from a child which was
+       * killed in preRestart and re-created in postRestart
+       */
       case Some(stats) if stats.uid == uid ⇒
         if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, getAllChildStats)) throw cause
       case _ ⇒ publish(Debug(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
