@@ -17,6 +17,7 @@ import java.util.concurrent.locks.ReentrantLock
 import akka.event.Logging.Warning
 import scala.collection.mutable.Queue
 import akka.actor.cell.ChildrenContainer
+import scala.concurrent.forkjoin.ThreadLocalRandom
 
 /**
  * This actor ref starts out with some dummy cell (by default just enqueuing
@@ -54,8 +55,9 @@ private[akka] class RepointableActorRef(
    * This is protected so that others can have different initialization.
    */
   def initialize(): this.type = {
-    swapCell(new UnstartedCell(system, this, props, supervisor))
-    supervisor.sendSystemMessage(Supervise(this))
+    val uid = ThreadLocalRandom.current.nextInt()
+    swapCell(new UnstartedCell(system, this, props, supervisor, uid))
+    supervisor.sendSystemMessage(Supervise(this, uid))
     this
   }
 
@@ -67,7 +69,7 @@ private[akka] class RepointableActorRef(
    */
   def activate(): this.type = {
     underlying match {
-      case u: UnstartedCell ⇒ u.replaceWith(newCell())
+      case u: UnstartedCell ⇒ u.replaceWith(newCell(u))
       case _                ⇒ // this happens routinely for things which were created async=false
     }
     this
@@ -77,7 +79,9 @@ private[akka] class RepointableActorRef(
    * This is called by activate() to obtain the cell which is to replace the
    * unstarted cell. The cell must be fully functional.
    */
-  def newCell(): Cell = new ActorCell(system, this, props, supervisor).start(sendSupervise = false)
+  def newCell(old: Cell): Cell =
+    new ActorCell(system, this, props, supervisor)
+      .start(sendSupervise = false, old.asInstanceOf[UnstartedCell].uid)
 
   def suspend(): Unit = underlying.suspend()
 
@@ -118,7 +122,7 @@ private[akka] class RepointableActorRef(
   protected def writeReplace(): AnyRef = SerializedActorRef(path)
 }
 
-private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: RepointableActorRef, val props: Props, val supervisor: InternalActorRef)
+private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: RepointableActorRef, val props: Props, val supervisor: InternalActorRef, val uid: Int)
   extends Cell {
 
   /*

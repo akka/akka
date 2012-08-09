@@ -30,8 +30,8 @@ trait NoSerializationVerificationNeeded
 /**
  * Internal use only
  */
-@SerialVersionUID(1L)
-private[akka] case class Failed(cause: Throwable) extends AutoReceivedMessage with PossiblyHarmful
+@SerialVersionUID(2L)
+private[akka] case class Failed(cause: Throwable, uid: Int) extends AutoReceivedMessage with PossiblyHarmful
 
 abstract class PoisonPill extends AutoReceivedMessage with PossiblyHarmful
 
