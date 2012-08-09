@@ -78,7 +78,7 @@ private[akka] sealed trait SystemMessage extends PossiblyHarmful {
 /**
  * INTERNAL API
  */
-private[akka] case class Create() extends SystemMessage // send to self from Dispatcher.register
+private[akka] case class Create(uid: Int) extends SystemMessage // send to self from Dispatcher.register
 /**
  * INTERNAL API
  */
@@ -98,7 +98,7 @@ private[akka] case class Terminate() extends SystemMessage // sent to self from 
 /**
  * INTERNAL API
  */
-private[akka] case class Supervise(child: ActorRef) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+private[akka] case class Supervise(child: ActorRef, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 /**
  * INTERNAL API
  */

@@ -290,6 +290,7 @@ private[akka] class ActorCell(
   protected final def lookupRoot = self
   final def provider = system.provider
 
+  protected var uid: Int = 0
   private[this] var _actor: Actor = _
   def actor: Actor = _actor
   protected def actor_=(a: Actor): Unit = _actor = a
@@ -313,7 +314,7 @@ private[akka] class ActorCell(
     var todo = message.next
     try {
       message match {
-        case Create()                  ⇒ create()
+        case Create(uid)               ⇒ create(uid)
         case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
         case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
         case Recreate(cause) ⇒
@@ -332,7 +333,7 @@ private[akka] class ActorCell(
             case r    ⇒ message.next = r.todo; r.todo = message
           }
         case Terminate()            ⇒ terminate()
-        case Supervise(child)       ⇒ supervise(child)
+        case Supervise(child, uid)  ⇒ supervise(child, uid)
         case ChildTerminated(child) ⇒ todo = handleChildTerminated(child)
         case NoMessage              ⇒ // only here to suppress warning
       }
@@ -362,7 +363,7 @@ private[akka] class ActorCell(
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case Failed(cause)            ⇒ handleFailure(sender, cause)
+      case Failed(cause, uid)       ⇒ handleFailure(sender, cause, uid)
       case t: Terminated            ⇒ watchedActorTerminated(t.actor); receiveMessage(t)
       case Kill                     ⇒ throw new ActorKilledException("Kill")
       case PoisonPill               ⇒ self.stop()
@@ -423,8 +424,9 @@ private[akka] class ActorCell(
     }
   }
 
-  private def create(): Unit = if (isNormal) {
+  private def create(uid: Int): Unit =
     try {
+      this.uid = uid
       val created = newActor()
       actor = created
       created.preStart()
@@ -439,10 +441,9 @@ private[akka] class ActorCell(
             """, i.getCause)
       case NonFatal(e) ⇒ throw ActorInitializationException(self, "exception during creation", e)
     }
-  }
 
-  private def supervise(child: ActorRef): Unit = if (!isTerminating) {
-    addChild(child)
+  private def supervise(child: ActorRef, uid: Int): Unit = if (!isTerminating) {
+    addChild(child).uid = uid
     handleSupervise(child)
     if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
   }

@@ -24,7 +24,7 @@ private[akka] case object ChildNameReserved extends ChildStats
  * ChildRestartStats is the statistics kept by every parent Actor for every child Actor
  * and is used for SupervisorStrategies to know how to deal with problems that occur for the children.
  */
-case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L)
+case class ChildRestartStats(child: ActorRef, var uid: Int = 0, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L)
   extends ChildStats {
 
   //FIXME How about making ChildRestartStats immutable and then move these methods into the actual supervisor strategies?

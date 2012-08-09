@@ -367,13 +367,13 @@ class LocalActorRefProvider(
     override def isTerminated: Boolean = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
-      case Failed(ex) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
-      case _                            ⇒ log.error(this + " received unexpected message [" + message + "]")
+      case Failed(ex, _) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
+      case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
     })
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
-        case Supervise(_)       ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case Supervise(_, _)    ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case ChildTerminated(_) ⇒ stop()
         case _                  ⇒ log.error(this + " received unexpected system message [" + message + "]")
       }

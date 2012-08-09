@@ -131,14 +131,14 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       suspendNonRecursive()
       // suspend children
       val skip: Set[ActorRef] = currentMessage match {
-        case Envelope(Failed(_), child) ⇒ setFailed(child); Set(child)
-        case _                          ⇒ setFailed(self); Set.empty
+        case Envelope(Failed(_, _), child) ⇒ setFailed(child); Set(child)
+        case _                             ⇒ setFailed(self); Set.empty
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       // tell supervisor
       t match { // Wrap InterruptedExceptions and rethrow
-        case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t)), self); throw t
-        case _                       ⇒ parent.tell(Failed(t), self)
+        case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t), uid), self); throw t
+        case _                       ⇒ parent.tell(Failed(t, uid), self)
       }
     } catch {
       case NonFatal(e) ⇒
@@ -192,10 +192,12 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     }
   }
 
-  final protected def handleFailure(child: ActorRef, cause: Throwable): Unit = getChildByRef(child) match {
-    case Some(stats) ⇒ if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, getAllChildStats)) throw cause
-    case None        ⇒ publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
-  }
+  final protected def handleFailure(child: ActorRef, cause: Throwable, uid: Int): Unit =
+    getChildByRef(child) match {
+      case Some(stats) if stats.uid == uid ⇒
+        if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, getAllChildStats)) throw cause
+      case _ ⇒ publish(Debug(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
+    }
 
   final protected def handleChildTerminated(child: ActorRef): SystemMessage = {
     val status = removeChildAndGetStateChange(child)

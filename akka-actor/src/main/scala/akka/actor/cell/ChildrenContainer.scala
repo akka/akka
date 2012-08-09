@@ -106,7 +106,7 @@ private[akka] object ChildrenContainer {
       case _ ⇒ None
     }
 
-    override def children: Iterable[ActorRef] = c.values.view.collect { case ChildRestartStats(child, _, _) ⇒ child }
+    override def children: Iterable[ActorRef] = c.values.view.collect { case ChildRestartStats(child, _, _, _) ⇒ child }
 
     override def stats: Iterable[ChildRestartStats] = c.values.view.collect { case c: ChildRestartStats ⇒ c }
 
@@ -167,7 +167,7 @@ private[akka] object ChildrenContainer {
       case _ ⇒ None
     }
 
-    override def children: Iterable[ActorRef] = c.values.view.collect { case ChildRestartStats(child, _, _) ⇒ child }
+    override def children: Iterable[ActorRef] = c.values.view.collect { case ChildRestartStats(child, _, _, _) ⇒ child }
 
     override def stats: Iterable[ChildRestartStats] = c.values.view.collect { case c: ChildRestartStats ⇒ c }
 

@@ -35,11 +35,11 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
 
   _props.routerConfig.verifyConfig()
 
-  override def newCell(): Cell = new RoutedActorCell(system, this, props, supervisor)
+  override def newCell(old: Cell): Cell = new RoutedActorCell(system, this, props, supervisor, old.asInstanceOf[UnstartedCell].uid)
 
 }
 
-private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef)
+private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef, _uid: Int)
   extends ActorCell(
     _system,
     _ref,
@@ -73,7 +73,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   if (routerConfig.resizer.isEmpty && _routees.isEmpty)
     throw ActorInitializationException("router " + routerConfig + " did not register routees!")
 
-  start(sendSupervise = false)
+  start(sendSupervise = false, _uid)
 
   /*
    * end of construction
