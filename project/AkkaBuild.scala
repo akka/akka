@@ -416,7 +416,7 @@ object AkkaBuild extends Build {
 
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
-    javacOptions in Compile ++= Seq("-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
+    javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
