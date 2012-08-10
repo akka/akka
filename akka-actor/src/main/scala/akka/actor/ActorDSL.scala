@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit
  * expires. The default timeout is taken from configuration item
  * `akka.actor.dsl.default-timeout`.
  */
-object ActorDSL extends dsl.Inbox {
+object ActorDSL extends dsl.Inbox with dsl.Creators {
 
   protected object Extension extends ExtensionKey[Extension]
 

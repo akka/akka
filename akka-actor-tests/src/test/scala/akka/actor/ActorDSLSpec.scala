@@ -85,4 +85,18 @@ class ActorDSLSpec extends AkkaSpec {
 
   }
 
+  "A lightweight creator" must {
+
+    "support creating regular actors" in {
+      val a = actor()(new Act {
+        become {
+          case "hello" ⇒ sender ! "hi"
+        }
+      })
+      implicit val i = inbox()
+      a ! "hello"
+      i.receive() must be("hi")
+    }
+
+  }
 }
