@@ -93,9 +93,51 @@ class ActorDSLSpec extends AkkaSpec {
           case "hello" ⇒ sender ! "hi"
         }
       })
+      
       implicit val i = inbox()
       a ! "hello"
       i.receive() must be("hi")
+    }
+
+    "support setup/teardown" in {
+      val a = actor()(new Act {
+        setup { testActor ! "started" }
+        teardown { testActor ! "stopped" }
+      })
+      
+      system stop a
+      expectMsg("started")
+      expectMsg("stopped")
+    }
+
+    "support restart" in {
+      val a = actor()(new Act {
+        become {
+          case "die" ⇒ throw new Exception
+        }
+        whenFailing { (cause, msg) ⇒ testActor ! (cause, msg) }
+        whenRestarted { cause ⇒ testActor ! cause }
+      })
+      
+      EventFilter[Exception](occurrences = 1) intercept {
+        a ! "die"
+      }
+      expectMsgPF() { case (x: Exception, Some("die")) ⇒ }
+      expectMsgPF() { case _: Exception ⇒ }
+    }
+    
+    "supported nested declaration" in {
+      val system = this.system
+      val a = actor(system, "fred")(new Act {
+        val b = actor("barney")(new Act {
+          setup { context.parent ! s"hello from ${self}" }
+        })
+        become {
+          case x => testActor ! x
+        }
+      })
+      expectMsg("hello from Actor[akka://ActorDSLSpec/user/fred/barney]")
+      lastSender must be(a)
     }
 
   }

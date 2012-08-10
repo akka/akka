@@ -42,6 +42,31 @@ import java.util.concurrent.TimeUnit
  * calling thread until an answer from the actor is received or the timeout
  * expires. The default timeout is taken from configuration item
  * `akka.actor.dsl.default-timeout`.
+ *
+ * When defining actors in the REPL, say, you may want to have a look at the
+ * `Act` trait:
+ *
+ * {{{
+ * import ActorDSL._
+ *
+ * val system: ActorSystem = ...
+ *
+ * val a = actor(system, "fred")(new Act {
+ *     val b = actor("barney")(new Act {
+ *         ...
+ *       })
+ *
+ *     become {
+ *       case msg => ...
+ *     }
+ *   })
+ * }}}
+ *
+ * Note that `actor` can be used with an implicit [[akka.actor.ActorRefFactory]]
+ * as shown with `"barney"`, but since nested declarations share the same
+ * lexical context `"fred"`’s [[akka.actor.ActorContext]] would be ambiguous
+ * if the [[akka.actor.ActorSystem]] were declared `implicit` (this could also
+ * be circumvented by shadowing the name `system` within `"fred"`).
  */
 object ActorDSL extends dsl.Inbox with dsl.Creators {
 

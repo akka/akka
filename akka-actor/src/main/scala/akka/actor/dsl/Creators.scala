@@ -26,37 +26,80 @@ import scala.reflect.ClassTag
 
 trait Creators { this: ActorDSL.type ⇒
 
+  /**
+   * This trait provides a DSL for writing the inner workings of an actor, e.g.
+   * for quickly trying things out in the REPL. It makes the following keywords
+   * available:
+   *
+   *  - `become` mapped to `context.become(_, discardOld = false)`
+   *
+   *  - `unbecome` mapped to `context.unbecome`
+   *
+   *  - `setup` for implementing `preStart()`
+   *
+   *  - `whenFailing` for implementing `preRestart()`
+   *
+   *  - `whenRestarted` for implementing `postRestart()`
+   *
+   *  - `teardown` for implementing `postStop`
+   *
+   * Using the life-cycle keywords multiple times results in replacing the
+   * content of the respective hook.
+   */
   trait Act extends Actor {
-    /*
-    whenFailing { (cause, optMsg) => ... } // preRestart
-    whenRestarted { cause => ... }         // postRestart
-    */
+
     private[this] var preStartFun: () ⇒ Unit = null
     private[this] var postStopFun: () ⇒ Unit = null
     private[this] var preRestartFun: (Throwable, Option[Any]) ⇒ Unit = null
     private[this] var postRestartFun: Throwable ⇒ Unit = null
 
-    def become(r: Receive) =
-      context.become(r, false)
+    /**
+     * Add the given behavior on top of the behavior stack for this actor. This
+     * stack is cleared upon restart. Use `unbecome()` to pop an element off
+     * this stack.
+     */
+    def become(r: Receive) = context.become(r, discardOld = false)
 
-    def unbecome(): Unit =
-      context.unbecome()
+    /**
+     * Pop the active behavior from the behavior stack of this actor. This stack
+     * is cleared upon restart.
+     */
+    def unbecome(): Unit = context.unbecome()
 
-    def setup(body: ⇒ Unit): Unit =
-      preStartFun = () ⇒ body
+    /**
+     * Replace the `preStart` action with the supplied thunk. Default action
+     * is to call `super.preStart()`
+     */
+    def setup(body: ⇒ Unit): Unit = preStartFun = () ⇒ body
 
-    def teardown(body: ⇒ Unit): Unit =
-      postStopFun = () ⇒ body
+    /**
+     * Replace the `preRestart` action with the supplied function. Default
+     * action is to call `super.preRestart()`, which will kill all children
+     * and invoke `postStop()`.
+     */
+    def whenFailing(body: (Throwable, Option[Any]) ⇒ Unit): Unit = preRestartFun = body
 
-    override def preStart(): Unit =
-      if (preStartFun != null) preStartFun()
+    /**
+     * Replace the `postRestart` action with the supplied function. Default
+     * action is to call `super.postRestart` which will call `preStart()`.
+     */
+    def whenRestarted(body: Throwable ⇒ Unit): Unit = postRestartFun = body
 
-    override def postStop(): Unit =
-      if (postStopFun != null) postStopFun()
+    /**
+     * Replace the `postStop` action with the supplied thunk. Default action
+     * is to call `super.postStop`.
+     */
+    def teardown(body: ⇒ Unit): Unit = postStopFun = () ⇒ body
 
-    override def receive: Receive = {
-      case _ ⇒ /* do nothing */
-    }
+    override def preStart(): Unit = if (preStartFun != null) preStartFun() else super.preStart()
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = if (preRestartFun != null) preRestartFun(cause, msg) else super.preRestart(cause, msg)
+    override def postRestart(cause: Throwable): Unit = if (postRestartFun != null) postRestartFun(cause) else super.postRestart(cause)
+    override def postStop(): Unit = if (postStopFun != null) postStopFun() else super.postStop()
+
+    /**
+     * Default behavior of the actor is empty, use `become` to change this.
+     */
+    override def receive: Receive = Actor.emptyBehavior
   }
 
   private def mkProps(classOfActor: Class[_], ctor: () ⇒ Actor): Props =
@@ -65,13 +108,54 @@ trait Creators { this: ActorDSL.type ⇒
     else
       Props(creator = ctor)
 
+  /**
+   * Create an actor from the given thunk which must produce an [[akka.actor.Actor]].
+   *
+   * @param name is the name, which must be unique within the context of its
+   *        parent; defaults to `null` which will assign a name automatically.
+   * @param ctor is a by-name argument which captures an [[akka.actor.Actor]]
+   *        factory; <b>do not make the generated object accessible to code
+   *        outside and do not return the same object upon subsequent invocations.</b>
+   * @param factory is an implicit [[akka.actor.ActorRefFactory]], which can
+   *        either be an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]],
+   *        where the latter is always implicitly available within an [[akka.actor.Actor]].
+   */
   def actor[T <: Actor: ClassTag](name: String = null)(ctor: ⇒ T)(implicit factory: ActorRefFactory): ActorRef = {
     // configure dispatcher/mailbox based on runtime class
     val classOfActor = implicitly[ClassTag[T]].runtimeClass
     val props = mkProps(classOfActor, () ⇒ ctor)
-    factory.actorOf(props, if (name == null) "anonymous-actor" else name) //TODO: attach ID
+
+    if (name == null) factory.actorOf(props)
+    else factory.actorOf(props, name)
   }
 
-  def actor[T <: Actor: ClassTag](factory: ActorRefFactory, name: String)(ctor: ⇒ T): ActorRef = null
+  /**
+   * Create an actor from the given thunk which must produce an [[akka.actor.Actor]].
+   *
+   * @param name is the name, which must be unique within the context of its
+   *        parent; defaults to `null` which will assign a name automatically.
+   * @param ctor is a by-name argument which captures an [[akka.actor.Actor]]
+   *        factory; <b>do not make the generated object accessible to code
+   *        outside and do not return the same object upon subsequent invocations.</b>
+   * @param factory is an implicit [[akka.actor.ActorRefFactory]], which can
+   *        either be an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]],
+   *        where the latter is always implicitly available within an [[akka.actor.Actor]].
+   */
+  def actor[T <: Actor: ClassTag](factory: ActorRefFactory, name: String)(ctor: ⇒ T): ActorRef =
+    actor(name)(ctor)(implicitly[ClassTag[T]], factory)
+
+  /**
+   * Create an actor with an automatically generated name from the given thunk
+   * which must produce an [[akka.actor.Actor]].
+   *
+   * @param ctor is a by-name argument which captures an [[akka.actor.Actor]]
+   *        factory; <b>do not make the generated object accessible to code
+   *        outside and do not return the same object upon subsequent invocations.</b>
+   * @param factory is an implicit [[akka.actor.ActorRefFactory]], which can
+   *        either be an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]],
+   *        where the latter is always implicitly available within an [[akka.actor.Actor]].
+   */
+  def actor[T <: Actor: ClassTag](factory: ActorRefFactory)(ctor: ⇒ T): ActorRef =
+    actor(null: String)(ctor)(implicitly[ClassTag[T]], factory)
 
 }
