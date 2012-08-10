@@ -29,18 +29,19 @@ import java.util.concurrent.TimeUnit
  *
  * implicit val system: ActorSystem = ...
  *
- * implicit val recv = newInbox()
+ * implicit val i = inbox()
  * someActor ! someMsg // replies will go to `recv`
  *
- * val reply = receive(recv, 5 seconds)
- * val transformedReply = select(recv, 5 seconds) {
+ * val reply = i.receive()
+ * val transformedReply = i.select(5 seconds) {
  *   case x: Int => 2 * x
  * }
  * }}}
  *
  * The `receive` and `select` methods are synchronous, i.e. they block the
  * calling thread until an answer from the actor is received or the timeout
- * expires.
+ * expires. The default timeout is taken from configuration item
+ * `akka.actor.dsl.default-timeout`.
  */
 object ActorDSL extends dsl.Inbox {
 

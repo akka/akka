@@ -146,16 +146,12 @@ trait Inbox { this: ActorDSL.type ⇒
 
   /**
    * Create a new actor which will internally queue up messages it gets so that
-   * they can be interrogated with the `receiveMessage()` and `selectMessage()`
-   * methods below. It will be created as top-level actor in the ActorSystem
-   * which is implicitly (or explicitly) supplied.
-   *
-   * <b>IMPORTANT:</b>
-   *
-   * Be sure to terminate this actor using `system.stop(ref)` where `system` is
-   * the actor system with which the actor was created.
+   * they can be interrogated with the [[akka.actor.dsl.Inbox!.Inbox!.receive]]
+   * and [[akka.actor.dsl.Inbox!.Inbox!.select]] methods. It will be created as
+   * a system actor in the ActorSystem which is implicitly (or explicitly)
+   * supplied.
    */
-  def inbox()(implicit system: ActorSystem) = new Inbox(system)
+  def inbox()(implicit system: ActorSystem): Inbox = new Inbox(system)
 
   class Inbox(system: ActorSystem) {
 
@@ -163,10 +159,9 @@ trait Inbox { this: ActorDSL.type ⇒
     private val defaultTimeout: FiniteDuration = Extension(system).DSLDefaultTimeout
 
     /**
-     * Receive a single message using the actor reference supplied; this must be
-     * an actor created using `newReceiver()` above. The supplied timeout is used
-     * for cleanup purposes and its precision is subject to the resolution of the
-     * system’s scheduler (usually 100ms, but configurable).
+     * Receive a single message from the internal `receiver` actor. The supplied
+     * timeout is used for cleanup purposes and its precision is subject to the
+     * resolution of the system’s scheduler (usually 100ms, but configurable).
      */
     def receive(timeout: FiniteDuration = defaultTimeout): Any = {
       implicit val t = Timeout(timeout + extraTime)
@@ -175,16 +170,20 @@ trait Inbox { this: ActorDSL.type ⇒
 
     /**
      * Receive a single message for which the given partial function is defined
-     * and return the transformed result, using the actor reference supplied;
-     * this must be an actor created using `newReceiver()` above. The supplied
-     * timeout is used for cleanup purposes and its precision is subject to the
-     * resolution of the system’s scheduler (usually 100ms, but configurable).
+     * and return the transformed result, using the internal `receiver` actor.
+     * The supplied timeout is used for cleanup purposes and its precision is
+     * subject to the resolution of the system’s scheduler (usually 100ms, but
+     * configurable).
      */
     def select[T](timeout: FiniteDuration = defaultTimeout)(predicate: PartialFunction[Any, T]): T = {
       implicit val t = Timeout(timeout + extraTime)
       predicate(Await.result(receiver ? Select(Deadline.now + timeout, predicate), Duration.Inf))
     }
 
+    /**
+     * Overridden finalizer which will try to stop the actor once this Inbox
+     * is no longer referenced.
+     */
     override def finalize() {
       system.stop(receiver)
     }
