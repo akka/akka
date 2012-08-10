@@ -130,7 +130,7 @@ class ActorDSLSpec extends AkkaSpec {
       val system = this.system
       val a = actor(system, "fred")(new Act {
         val b = actor("barney")(new Act {
-          setup { context.parent ! s"hello from ${self}" }
+          setup { context.parent ! s"hello from $self" }
         })
         become {
           case x => testActor ! x
@@ -138,6 +138,26 @@ class ActorDSLSpec extends AkkaSpec {
       })
       expectMsg("hello from Actor[akka://ActorDSLSpec/user/fred/barney]")
       lastSender must be(a)
+    }
+    
+    "support Stash" in {
+      val a = actor()(new ActWithStash {
+        become {
+          case 1 => stash()
+          case 2 => testActor ! 2; unstashAll(); become {
+            case 1 => testActor ! 1; unbecome()
+          }
+        }
+      })
+      
+      a ! 1
+      a ! 2
+      expectMsg(2)
+      expectMsg(1)
+      a ! 1
+      a ! 2
+      expectMsg(2)
+      expectMsg(1)
     }
 
   }

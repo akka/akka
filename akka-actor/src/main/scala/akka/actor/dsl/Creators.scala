@@ -102,6 +102,13 @@ trait Creators { this: ActorDSL.type ⇒
     override def receive: Receive = Actor.emptyBehavior
   }
 
+  /**
+   * Use this trait when defining an [[akka.actor.Actor]] with [[akka.actor.Stash]],
+   * since just using `actor()(new Act with Stash{})` will not be able to see the
+   * Stash component due to type erasure.
+   */
+  trait ActWithStash extends Act with Stash
+
   private def mkProps(classOfActor: Class[_], ctor: () ⇒ Actor): Props =
     if (classOf[Stash].isAssignableFrom(classOfActor))
       Props(creator = ctor, dispatcher = "akka.actor.default-stash-dispatcher")

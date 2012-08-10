@@ -67,6 +67,11 @@ import java.util.concurrent.TimeUnit
  * lexical context `"fred"`’s [[akka.actor.ActorContext]] would be ambiguous
  * if the [[akka.actor.ActorSystem]] were declared `implicit` (this could also
  * be circumvented by shadowing the name `system` within `"fred"`).
+ * 
+ * <b>Note:</b> If you want to use an `Act with Stash`, you should use the 
+ * `ActWithStash` trait in order to have the actor run on a special dispatcher
+ * (`"akka.actor.default-stash-dispatcher"`) which has the necessary deque-based
+ * mailbox setting.
  */
 object ActorDSL extends dsl.Inbox with dsl.Creators {
 
