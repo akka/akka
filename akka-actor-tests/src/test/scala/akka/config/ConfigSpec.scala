@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
-import akka.actor.ActorSystem
+import akka.actor.{ IOManager, ActorSystem }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) {
@@ -108,6 +108,20 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
           getBoolean("router-misconfiguration") must be(false)
           settings.DebugRouterMisconfiguration must be(false)
+        }
+
+        // IO config
+        {
+          val io = config.getConfig("akka.io")
+          val ioExtSettings = IOManager(system).settings
+          ioExtSettings.readBufferSize must be(8192)
+          io.getBytes("read-buffer-size") must be(ioExtSettings.readBufferSize)
+
+          ioExtSettings.selectInterval must be(100)
+          io.getInt("select-interval") must be(ioExtSettings.selectInterval)
+
+          ioExtSettings.defaultBacklog must be(1000)
+          io.getInt("default-backlog") must be(ioExtSettings.defaultBacklog)
         }
       }
     }

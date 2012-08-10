@@ -12,6 +12,7 @@ import akka.event.EventStream
 import scala.annotation.tailrec
 import java.util.concurrent.{ ConcurrentHashMap }
 import akka.event.LoggingAdapter
+import scala.concurrent.forkjoin.ThreadLocalRandom
 
 /**
  * Immutable and serializable handle to an actor, which may or may not reside
@@ -262,7 +263,7 @@ private[akka] class LocalActorRef private[akka] (
    * that is reached).
    */
   private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
-  actorCell.start(sendSupervise = true)
+  actorCell.start(sendSupervise = true, ThreadLocalRandom.current.nextInt())
 
   protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor)

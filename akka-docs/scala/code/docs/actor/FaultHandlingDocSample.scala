@@ -91,6 +91,7 @@ class Worker extends Actor with ActorLogging {
   var progressListener: Option[ActorRef] = None
   val counterService = context.actorOf(Props[CounterService], name = "counter")
   val totalCount = 51
+  import context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
 
   def receive = LoggingReceive {
     case Start if progressListener.isEmpty ⇒
@@ -103,7 +104,6 @@ class Worker extends Actor with ActorLogging {
       counterService ! Increment(1)
 
       // Send current progress to the initial sender
-      import context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
       counterService ? GetCurrentCount map {
         case CurrentCount(_, count) ⇒ Progress(100.0 * count / totalCount)
       } pipeTo progressListener.get
@@ -142,6 +142,8 @@ class CounterService extends Actor {
   var counter: Option[ActorRef] = None
   var backlog = IndexedSeq.empty[(ActorRef, Any)]
   val MaxBacklog = 10000
+
+  import context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
 
   override def preStart() {
     initStorage()

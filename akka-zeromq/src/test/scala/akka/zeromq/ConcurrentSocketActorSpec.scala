@@ -47,6 +47,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
       val context = Context()
       val publisher = zmq.newSocket(SocketType.Pub, context, Bind(endpoint))
       val subscriber = zmq.newSocket(SocketType.Sub, context, Listener(subscriberProbe.ref), Connect(endpoint), SubscribeAll)
+      import system.dispatcher
       val msgGenerator = system.scheduler.schedule(100 millis, 10 millis, new Runnable {
         var number = 0
         def run() {
@@ -130,6 +131,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
     var genMessages: Cancellable = null
 
     override def preStart() = {
+      import system.dispatcher
       genMessages = system.scheduler.schedule(100 millis, 10 millis, self, "genMessage")
     }
 

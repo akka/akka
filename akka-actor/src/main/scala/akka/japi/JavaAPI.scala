@@ -5,15 +5,16 @@
 package akka.japi
 
 import language.implicitConversions
-
 import scala.Some
 import scala.reflect.ClassTag
 import scala.util.control.NoStackTrace
+import scala.runtime.AbstractPartialFunction
 
 /**
  * A Function interface. Used to create first-class-functions is Java.
  */
 trait Function[T, R] {
+  @throws(classOf[Exception])
   def apply(param: T): R
 }
 
@@ -21,6 +22,7 @@ trait Function[T, R] {
  * A Function interface. Used to create 2-arg first-class-functions is Java.
  */
 trait Function2[T1, T2, R] {
+  @throws(classOf[Exception])
   def apply(arg1: T1, arg2: T2): R
 }
 
@@ -28,6 +30,7 @@ trait Function2[T1, T2, R] {
  * A Procedure is like a Function, but it doesn't produce a return value.
  */
 trait Procedure[T] {
+  @throws(classOf[Exception])
   def apply(param: T): Unit
 }
 
@@ -35,6 +38,7 @@ trait Procedure[T] {
  * An executable piece of code that takes no parameters and doesn't return any value.
  */
 trait Effect {
+  @throws(classOf[Exception])
   def apply(): Unit
 }
 
@@ -45,10 +49,11 @@ trait Creator[T] {
   /**
    * This method must return a different instance upon every call.
    */
+  @throws(classOf[Exception])
   def create(): T
 }
 
-object PurePartialFunction {
+object JavaPartialFunction {
   sealed abstract class NoMatchException extends RuntimeException with NoStackTrace
   case object NoMatch extends NoMatchException
   final def noMatch(): RuntimeException = NoMatch
@@ -66,7 +71,7 @@ object PurePartialFunction {
  * <i>that</i> expensive).
  *
  * {{{
- * new PurePartialFunction<Object, String>() {
+ * new JavaPartialFunction<Object, String>() {
  *   public String apply(Object in, boolean isCheck) {
  *     if (in instanceof TheThing) {
  *       if (isCheck) return null; // to spare the expensive or side-effecting code
@@ -90,32 +95,15 @@ object PurePartialFunction {
  * does not throw `noMatch()` it will continue with calling
  * `PurePartialFunction.apply(x, false)`.
  */
-abstract class PurePartialFunction[A, B] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
-  import PurePartialFunction._
+abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
+  import JavaPartialFunction._
 
+  @throws(classOf[Exception])
   def apply(x: A, isCheck: Boolean): B
 
   final def isDefinedAt(x: A): Boolean = try { apply(x, true); true } catch { case NoMatch ⇒ false }
-  final def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError(x) }
-}
-
-/**
- * This is a specialized variant of PartialFunction which is <b><i>only
- * applicable if you know that `isDefinedAt(x)` is always called before
- * `apply(x)`—with the same `x` of course.</i></b>
- *
- * `match(x)` will be called for `isDefinedAt(x)` only, and its semantics
- * are the same as for [[akka.japi.PurePartialFunction]] (apart from the
- * missing because unneeded boolean argument).
- */
-abstract class CachingPartialFunction[A, B <: AnyRef] extends scala.runtime.AbstractFunction1[A, B] with PartialFunction[A, B] {
-  import PurePartialFunction._
-
-  def `match`(x: A): B
-
-  var cache: B = _
-  final def isDefinedAt(x: A): Boolean = try { cache = `match`(x); true } catch { case NoMatch ⇒ cache = null.asInstanceOf[B]; false }
-  final def apply(x: A): B = cache
+  final override def apply(x: A): B = try apply(x, false) catch { case NoMatch ⇒ throw new MatchError(x) }
+  final override def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 ⇒ B1): B1 = try apply(x, false) catch { case NoMatch ⇒ default(x) }
 }
 
 /**

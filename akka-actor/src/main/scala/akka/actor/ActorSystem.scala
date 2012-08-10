@@ -610,22 +610,13 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
    * cannot schedule a task. Once scheduled, the task MUST be executed. If
    * executed upon close(), the task may execute before its timeout.
    */
-  protected def createScheduler(): Scheduler = {
-    val hwt = new HashedWheelTimer(log,
-      threadFactory.copy(threadFactory.name + "-scheduler"),
-      settings.SchedulerTickDuration,
-      settings.SchedulerTicksPerWheel)
-    // note that dispatcher is by-name parameter in DefaultScheduler constructor,
-    // because dispatcher is not initialized when the scheduler is created
-    def safeDispatcher = dispatcher match {
-      case null ⇒
-        val exc = new IllegalStateException("Scheduler is using dispatcher before it has been initialized")
-        log.error(exc, exc.getMessage)
-        throw exc
-      case dispatcher ⇒ dispatcher
-    }
-    new DefaultScheduler(hwt, log, safeDispatcher)
-  }
+  protected def createScheduler(): Scheduler =
+    new DefaultScheduler(
+      new HashedWheelTimer(log,
+        threadFactory.copy(threadFactory.name + "-scheduler"),
+        settings.SchedulerTickDuration,
+        settings.SchedulerTicksPerWheel),
+      log)
 
   /*
    * This is called after the last actor has signaled its termination, i.e.

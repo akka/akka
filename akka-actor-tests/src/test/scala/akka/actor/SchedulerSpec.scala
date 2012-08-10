@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout {
   private val cancellables = new ConcurrentLinkedQueue[Cancellable]()
+  import system.dispatcher
 
   def collectCancellable(c: Cancellable): Cancellable = {
     cancellables.add(c)

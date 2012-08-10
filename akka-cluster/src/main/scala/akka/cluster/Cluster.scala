@@ -15,7 +15,6 @@ import akka.pattern._
 import akka.remote._
 import akka.routing._
 import akka.util._
-import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import scala.concurrent.util.{ Duration, Deadline }
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -27,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.util.internal.HashedWheelTimer
+import concurrent.{ ExecutionContext, Await }
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -121,31 +121,41 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       log.info("Using a dedicated scheduler for cluster. Default scheduler can be used if configured " +
         "with 'akka.scheduler.tick-duration' [{} ms] <=  'akka.cluster.scheduler.tick-duration' [{} ms].",
         system.settings.SchedulerTickDuration.toMillis, SchedulerTickDuration.toMillis)
-      val threadFactory = system.threadFactory match {
-        case tf: MonitorableThreadFactory ⇒ tf.copy(name = tf.name + "-cluster-scheduler")
-        case tf                           ⇒ tf
-      }
-      val hwt = new HashedWheelTimer(log,
-        threadFactory,
-        SchedulerTickDuration, SchedulerTicksPerWheel)
-      new DefaultScheduler(hwt, log, system.dispatcher)
+      new DefaultScheduler(
+        new HashedWheelTimer(log,
+          system.threadFactory match {
+            case tf: MonitorableThreadFactory ⇒ tf.copy(name = tf.name + "-cluster-scheduler")
+            case tf                           ⇒ tf
+          },
+          SchedulerTickDuration,
+          SchedulerTicksPerWheel),
+        log)
     } else {
-      // delegate to system.scheduler, but don't close
+      // delegate to system.scheduler, but don't close over system
       val systemScheduler = system.scheduler
       new Scheduler with Closeable {
-        // we are using system.scheduler, which we are not responsible for closing
-        def close(): Unit = ()
-        def schedule(initialDelay: Duration, frequency: Duration, receiver: ActorRef, message: Any): Cancellable =
+        override def close(): Unit = () // we are using system.scheduler, which we are not responsible for closing
+
+        override def schedule(initialDelay: Duration, frequency: Duration,
+                              receiver: ActorRef, message: Any)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, frequency, receiver, message)
-        def schedule(initialDelay: Duration, frequency: Duration)(f: ⇒ Unit): Cancellable =
+
+        override def schedule(initialDelay: Duration, frequency: Duration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, frequency)(f)
-        def schedule(initialDelay: Duration, frequency: Duration, runnable: Runnable): Cancellable =
+
+        override def schedule(initialDelay: Duration, frequency: Duration,
+                              runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, frequency, runnable)
-        def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable =
+
+        override def scheduleOnce(delay: Duration,
+                                  runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay, runnable)
-        def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable =
+
+        override def scheduleOnce(delay: Duration, receiver: ActorRef,
+                                  message: Any)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay, receiver, message)
-        def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable =
+
+        override def scheduleOnce(delay: Duration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay)(f)
       }
     }

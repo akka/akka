@@ -121,7 +121,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
         case class FF(fail: Failed)
         val strategy = new OneForOneStrategy(maxNrOfRetries = 0)(SupervisorStrategy.makeDecider(List(classOf[Exception]))) {
           override def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]) = {
-            testActor.tell(FF(Failed(cause)), child)
+            testActor.tell(FF(Failed(cause, 0)), child)
             super.handleFailure(context, child, cause, stats, children)
           }
         }
@@ -137,8 +137,8 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
 
         failed ! Kill
         val result = receiveWhile(3 seconds, messages = 3) {
-          case FF(Failed(_: ActorKilledException)) if lastSender eq failed ⇒ 1
-          case FF(Failed(DeathPactException(`failed`))) if lastSender eq brother ⇒ 2
+          case FF(Failed(_: ActorKilledException, _)) if lastSender eq failed ⇒ 1
+          case FF(Failed(DeathPactException(`failed`), _)) if lastSender eq brother ⇒ 2
           case Terminated(`brother`) ⇒ 3
         }
         testActor.isTerminated must not be true

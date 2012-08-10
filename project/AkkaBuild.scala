@@ -418,7 +418,7 @@ object AkkaBuild extends Build {
 
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
-    javacOptions in Compile ++= Seq("-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
+    javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
@@ -534,7 +534,7 @@ object Dependency {
   // Compile
   val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.8.0" exclude("org.slf4j", "slf4j-api")      // ApacheV2
   val config        = "com.typesafe"                % "config"                       % "0.5.0"         // ApacheV2
-  val netty         = "io.netty"                    % "netty"                        % "3.5.1.Final" // ApacheV2
+  val netty         = "io.netty"                    % "netty"                        % "3.5.3.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
   val scalaStm      = "org.scala-tools"            %% "scala-stm"                    % "0.6"         // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.6.4"       // MIT
