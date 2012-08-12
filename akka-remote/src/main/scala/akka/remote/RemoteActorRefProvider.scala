@@ -22,7 +22,6 @@ class RemoteConnectionException(msg: String) extends RemoteException(msg)
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
  */
-@deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class RemoteActorRefProvider(
   val systemName: String,
   val settings: ActorSystem.Settings,
