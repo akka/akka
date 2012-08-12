@@ -61,11 +61,10 @@ trait Consumer extends Actor with CamelSupport {
    * By default it returns an identity function, override this method to
    * return a custom route definition handler.
    */
-  //FIXME: write a test confirming onRouteDefinition gets called
   def onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_] = (rd) ⇒ getRouteDefinitionHandler(rd)
 
   /**
-   * Java API. Returns the Mapper function that will be used as a route definition handler
+   * ''Java API''. Returns the Mapper function that will be used as a route definition handler
    * for creating custom route to this consumer. By default it returns an identity function, override this method to
    * return a custom route definition handler.
    */

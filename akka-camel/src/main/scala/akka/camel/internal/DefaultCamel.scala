@@ -9,7 +9,7 @@ import akka.camel.{ CamelSettings, Camel }
 import scala.util.control.NonFatal
 import scala.concurrent.util.Duration
 
-import org.apache.camel.{ ProducerTemplate, CamelContext }
+import org.apache.camel.ProducerTemplate
 import concurrent.{ Future, ExecutionContext }
 import akka.util.Timeout
 import akka.pattern.ask
@@ -29,7 +29,7 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
    */
   private[camel] implicit val log = Logging(system, "Camel")
 
-  lazy val context: CamelContext = {
+  lazy val context: DefaultCamelContext = {
     val ctx = new DefaultCamelContext
     if (!settings.jmxStatistics) ctx.disableJMX()
     ctx.setName(system.name)
