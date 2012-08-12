@@ -42,7 +42,7 @@ public class ConsumerJavaTestBase {
                     ExecutionContext executionContext = system.dispatcher();
                     try {
                         ActorRef ref = Await.result(
-                                camel.activationFutureFor(system.actorOf(new Props(SampleErrorHandlingConsumer.class)), timeout, executionContext),
+                                camel.activationFutureFor(system.actorOf(new Props(SampleErrorHandlingConsumer.class), "sample-error-handling-consumer"), timeout, executionContext),
                                 timeout);
                         return camel.template().requestBody("direct:error-handler-test-java", "hello", String.class);
                     }

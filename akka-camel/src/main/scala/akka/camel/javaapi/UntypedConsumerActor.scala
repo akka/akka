@@ -7,6 +7,7 @@ package akka.camel.javaapi
 import akka.actor.UntypedActor
 import akka.camel._
 import org.apache.camel.{ ProducerTemplate, CamelContext }
+import org.apache.camel.impl.DefaultCamelContext
 
 /**
  * Subclass this abstract class to create an MDB-style untyped consumer actor. This
@@ -21,10 +22,10 @@ abstract class UntypedConsumerActor extends UntypedActor with Consumer {
   def getEndpointUri(): String
 
   /**
-   * ''Java API'': Returns the [[org.apache.camel.CamelContext]]
+   * ''Java API'': Returns the [[org.apache.camel.impl.DefaultCamelContext]]
    * @return the CamelContext
    */
-  protected def getCamelContext(): CamelContext = camelContext
+  protected def getCamelContext(): DefaultCamelContext = camelContext
 
   /**
    * ''Java API'': Returns the [[org.apache.camel.ProducerTemplate]]

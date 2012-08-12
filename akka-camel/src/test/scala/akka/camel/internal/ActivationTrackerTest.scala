@@ -25,7 +25,7 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     anotherAwaiting = new Awaiting(actor)
   }
 
-  val at = system.actorOf(Props[ActivationTracker])
+  val at = system.actorOf(Props[ActivationTracker], name = "activationTrackker")
 
   "ActivationTracker forwards activation message to all awaiting parties" taggedAs TimingTest in {
     awaiting.awaitActivation()
