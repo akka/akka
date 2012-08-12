@@ -13,7 +13,7 @@ import scala.concurrent.Future
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
  */
-private[akka] class RemoteActorRefProvider(
+class RemoteActorRefProvider(
   val systemName: String,
   val settings: ActorSystem.Settings,
   val eventStream: EventStream,
