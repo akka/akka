@@ -4,13 +4,11 @@
 
 package akka.camel.internal.component
 
-import language.postfixOps
-
 import org.scalatest.matchers.MustMatchers
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 import org.scalatest.WordSpec
-import org.apache.camel.NoTypeConversionAvailableException
+import org.apache.camel.{ TypeConversionException, NoTypeConversionAvailableException }
 
 class DurationConverterSpec extends WordSpec with MustMatchers {
   import DurationTypeConverter._
@@ -20,21 +18,21 @@ class DurationConverterSpec extends WordSpec with MustMatchers {
   }
 
   "DurationTypeConverter must do the roundtrip" in {
-    convertTo(classOf[Duration], DurationTypeConverter.toString(10 seconds)) must be(10 seconds)
+    convertTo(classOf[Duration], (10 seconds).toString()) must be(10 seconds)
   }
 
   "DurationTypeConverter must throw if invalid format" in {
-    convertTo(classOf[Duration], "abc nanos") must be === null
+    tryConvertTo(classOf[Duration], "abc nanos") must be === null
 
-    intercept[NoTypeConversionAvailableException] {
+    intercept[TypeConversionException] {
       mandatoryConvertTo(classOf[Duration], "abc nanos") must be(10 nanos)
     }.getValue must be === "abc nanos"
   }
 
   "DurationTypeConverter must throw if doesn't end with time unit" in {
-    convertTo(classOf[Duration], "10233") must be === null
+    tryConvertTo(classOf[Duration], "10233") must be === null
 
-    intercept[NoTypeConversionAvailableException] {
+    intercept[TypeConversionException] {
       mandatoryConvertTo(classOf[Duration], "10233") must be(10 nanos)
     }.getValue must be === "10233"
   }

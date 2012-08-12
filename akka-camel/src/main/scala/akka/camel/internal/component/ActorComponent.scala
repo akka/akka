@@ -23,6 +23,8 @@ import java.util.concurrent.{ TimeoutException, CountDownLatch }
 import akka.util.Timeout
 import akka.camel.internal.CamelExchangeAdapter
 import akka.camel.{ ActorNotRegisteredException, Camel, Ack, FailureResult, CamelMessage }
+import support.TypeConverterSupport
+
 /**
  * For internal use only.
  * Creates Camel [[org.apache.camel.Endpoint]]s that send messages to [[akka.camel.Consumer]] actors through an [[akka.camel.internal.component.ActorProducer]].
@@ -187,21 +189,15 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 /**
  * For internal use only. Converts Strings to [[scala.concurrent.util.Duration]]
  */
-private[camel] object DurationTypeConverter extends TypeConverter {
-  override def convertTo[T](`type`: Class[T], value: AnyRef): T = `type`.cast(try {
-    val d = Duration(value.toString)
-    if (`type`.isInstance(d)) d else null
-  } catch {
-    case NonFatal(_) ⇒ null
-  })
+private[camel] object DurationTypeConverter extends TypeConverterSupport {
 
-  def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef): T = convertTo(`type`, value)
-  def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef): T = convertTo(`type`, value) match {
-    case null ⇒ throw new NoTypeConversionAvailableException(value, `type`)
-    case some ⇒ some
-  }
-  def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef): T = mandatoryConvertTo(`type`, value)
-  def toString(duration: Duration): String = duration.toNanos + " nanos"
+  @throws(classOf[TypeConversionException])
+  def convertTo[T](valueType: Class[T], exchange: Exchange, value: AnyRef): T = valueType.cast(try {
+    val d = Duration(value.toString)
+    if (valueType.isInstance(d)) d else null
+  } catch {
+    case NonFatal(throwable) ⇒ throw new TypeConversionException(value, valueType, throwable)
+  })
 }
 
 /**
