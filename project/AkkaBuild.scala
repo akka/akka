@@ -282,7 +282,16 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(fsmSample, helloSample, helloKernelSample, remoteSample)
+    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample)
+  )
+
+  lazy val camelSample = Project(
+    id = "akka-sample-camel",
+    base = file("akka-samples/akka-sample-camel"),
+    dependencies = Seq(actor, camel),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.camelSample
+    )
   )
 
   lazy val fsmSample = Project(
@@ -517,11 +526,14 @@ object Dependencies {
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
 
+  val camelSample = Seq(CamelSample.camelJetty)
+
   val osgi = Seq(osgiCore,Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
   val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
 
   val tutorials = Seq(Test.scalatest, Test.junit)
+
 
   val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
 
@@ -530,7 +542,7 @@ object Dependencies {
 
 object Dependency {
   // Compile
-  val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.8.0" exclude("org.slf4j", "slf4j-api")      // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.0" exclude("org.slf4j", "slf4j-api")      // ApacheV2
   val config        = "com.typesafe"                % "config"                       % "0.5.0"         // ApacheV2
   val netty         = "io.netty"                    % "netty"                        % "3.5.3.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
@@ -557,6 +569,12 @@ object Dependency {
     val log4j       = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
     val junitIntf   = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
   }
+
+  // Camel Sample
+  object CamelSample {
+    val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % "2.10.0" // ApacheV2
+  }
+
 }
 
 // OSGi settings

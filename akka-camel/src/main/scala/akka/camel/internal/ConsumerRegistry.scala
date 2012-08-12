@@ -91,6 +91,7 @@ private[camel] class IdempotentCamelConsumerRegistry(camelContext: CamelContext)
         log.debug("Published actor [{}] at endpoint [{}]", consumerConfig, endpointUri)
       case UnregisterConsumer(consumer) ⇒
         camelContext.stopRoute(consumer.path.toString)
+        camelContext.removeRoute(consumer.path.toString)
         context.sender ! EndpointDeActivated(consumer)
         log.debug("Unpublished actor [{}] from endpoint [{}]", consumer, consumer.path)
     }
