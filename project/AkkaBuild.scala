@@ -67,7 +67,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -81,6 +81,16 @@ object AkkaBuild extends Build {
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
       previousArtifact := akkaPreviousArtifact("akka-actor")
+    )
+  )
+
+  lazy val dataflow = Project(
+    id = "akka-dataflow",
+    base = file("akka-dataflow"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ OSGi.dataflow ++ Seq(
+      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
+      scalacOptions += "-P:continuations:enable"
     )
   )
 
@@ -406,7 +416,7 @@ object AkkaBuild extends Build {
 
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
-    javacOptions in Compile ++= Seq("-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
+    javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
@@ -520,9 +530,9 @@ object Dependencies {
 
 object Dependency {
   // Compile
-  val config        = "com.typesafe"                % "config"                       % "0.4.1"       // ApacheV2
-  val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.8.0"       // ApacheV2
-  val netty         = "io.netty"                    % "netty"                        % "3.5.1.Final" // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.8.0" exclude("org.slf4j", "slf4j-api")      // ApacheV2
+  val config        = "com.typesafe"                % "config"                       % "0.5.0"         // ApacheV2
+  val netty         = "io.netty"                    % "netty"                        % "3.5.3.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
   val scalaStm      = "org.scala-tools"            %% "scala-stm"                    % "0.6"         // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.6.4"       // MIT
@@ -572,6 +582,8 @@ object OSGi {
   val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
 
   val slf4j = exports(Seq("akka.event.slf4j.*"))
+
+  val dataflow = exports(Seq("akka.dataflow.*"))
 
   val transactor = exports(Seq("akka.transactor.*"))
 

@@ -8,7 +8,6 @@ import language.postfixOps
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, PoisonPill, Status, Address, Scheduler }
 import RemoteConnection.getAddrString
 import scala.concurrent.util.{ Duration, Deadline }
-import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.util.Timeout
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent, WriteCompletionEvent, ExceptionEvent }
@@ -16,11 +15,11 @@ import com.typesafe.config.ConfigFactory
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeoutException
 import akka.pattern.{ ask, pipe, AskTimeoutException }
-import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
 import scala.reflect.classTag
+import concurrent.{ ExecutionContext, Await, Future }
 
 /**
  * The Player is the client component of the
@@ -143,7 +142,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
   val settings = TestConductor().Settings
 
   val handler = new PlayerHandler(controllerAddr, settings.ClientReconnects, settings.ReconnectBackoff,
-    self, Logging(context.system, "PlayerHandler"), context.system.scheduler)
+    self, Logging(context.system, "PlayerHandler"), context.system.scheduler)(context.dispatcher)
 
   startWith(Connecting, Data(None, None))
 
@@ -256,7 +255,7 @@ private[akka] class PlayerHandler(
   backoff: Duration,
   fsm: ActorRef,
   log: LoggingAdapter,
-  scheduler: Scheduler)
+  scheduler: Scheduler)(implicit executor: ExecutionContext)
   extends SimpleChannelUpstreamHandler {
 
   import ClientFSM._

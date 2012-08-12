@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.dispatch.Dispatchers
 import scala.annotation.tailrec
+import concurrent.ExecutionContext
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -35,11 +36,11 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
 
   _props.routerConfig.verifyConfig()
 
-  override def newCell(): Cell = new RoutedActorCell(system, this, props, supervisor)
+  override def newCell(old: Cell): Cell = new RoutedActorCell(system, this, props, supervisor, old.asInstanceOf[UnstartedCell].uid)
 
 }
 
-private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef)
+private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef, _uid: Int)
   extends ActorCell(
     _system,
     _ref,
@@ -71,9 +72,9 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   }
 
   if (routerConfig.resizer.isEmpty && _routees.isEmpty)
-    throw new ActorInitializationException("router " + routerConfig + " did not register routees!")
+    throw ActorInitializationException("router " + routerConfig + " did not register routees!")
 
-  start(sendSupervise = false)
+  start(sendSupervise = false, _uid)
 
   /*
    * end of construction
@@ -284,7 +285,7 @@ trait Router extends Actor {
 
   val ref = context match {
     case x: RoutedActorCell ⇒ x
-    case _                  ⇒ throw new ActorInitializationException("Router actor can only be used in RoutedActorRef, not in " + context.getClass)
+    case _                  ⇒ throw ActorInitializationException("Router actor can only be used in RoutedActorRef, not in " + context.getClass)
   }
 
   final def receive = ({
@@ -1221,7 +1222,7 @@ case class DefaultResizer(
     } else if (requestedCapacity < 0) {
       val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length + requestedCapacity)
       routeeProvider.unregisterRoutees(abandon)
-      delayedStop(routeeProvider.context.system.scheduler, abandon)
+      delayedStop(routeeProvider.context.system.scheduler, abandon)(routeeProvider.context.dispatcher)
     }
   }
 
@@ -1229,7 +1230,8 @@ case class DefaultResizer(
    * Give concurrent messages a chance to be placed in mailbox before
    * sending PoisonPill.
    */
-  protected def delayedStop(scheduler: Scheduler, abandon: IndexedSeq[ActorRef]): Unit = {
+  protected def delayedStop(scheduler: Scheduler,
+                            abandon: IndexedSeq[ActorRef])(implicit executor: ExecutionContext): Unit = {
     if (abandon.nonEmpty) {
       if (stopDelay <= Duration.Zero) {
         abandon foreach (_ ! PoisonPill)

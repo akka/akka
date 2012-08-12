@@ -188,7 +188,7 @@ private[akka] trait Cell {
   /**
    * Recursively resume this actor and all its children.
    */
-  def resume(inResponseToFailure: Boolean): Unit
+  def resume(causedByFailure: Throwable): Unit
   /**
    * Restart this actor (will recursively restart or stop all children).
    */
@@ -290,6 +290,7 @@ private[akka] class ActorCell(
   protected final def lookupRoot = self
   final def provider = system.provider
 
+  protected var uid: Int = 0
   private[this] var _actor: Actor = _
   def actor: Actor = _actor
   protected def actor_=(a: Actor): Unit = _actor = a
@@ -300,21 +301,46 @@ private[akka] class ActorCell(
    * MESSAGE PROCESSING
    */
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
-  final def systemInvoke(message: SystemMessage): Unit = try {
-    message match {
-      case Create()                  ⇒ create()
-      case Recreate(cause)           ⇒ faultRecreate(cause)
-      case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
-      case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
-      case Suspend()                 ⇒ faultSuspend()
-      case Resume(inRespToFailure)   ⇒ faultResume(inRespToFailure)
-      case Terminate()               ⇒ terminate()
-      case Supervise(child)          ⇒ supervise(child)
-      case ChildTerminated(child)    ⇒ handleChildTerminated(child)
-      case NoMessage                 ⇒ // only here to suppress warning
+  @tailrec final def systemInvoke(message: SystemMessage): Unit = {
+    /*
+     * When recreate/suspend/resume are received while restarting (i.e. between
+     * preRestart and postRestart, waiting for children to terminate), these 
+     * must not be executed immediately, but instead queued and released after
+     * finishRecreate returns. This can only ever be triggered by 
+     * ChildTerminated, and ChildTerminated is not one of the queued message
+     * types (hence the overwrite further down). Mailbox sets message.next=null
+     * before systemInvoke, so this will only be non-null during such a replay.
+     */
+    var todo = message.next
+    try {
+      message match {
+        case Create(uid)               ⇒ create(uid)
+        case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
+        case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
+        case Recreate(cause) ⇒
+          recreationOrNull match {
+            case null ⇒ faultRecreate(cause)
+            case r    ⇒ message.next = r.todo; r.todo = message
+          }
+        case Suspend() ⇒
+          recreationOrNull match {
+            case null ⇒ faultSuspend()
+            case r    ⇒ message.next = r.todo; r.todo = message
+          }
+        case Resume(inRespToFailure) ⇒
+          recreationOrNull match {
+            case null ⇒ faultResume(inRespToFailure)
+            case r    ⇒ message.next = r.todo; r.todo = message
+          }
+        case Terminate()            ⇒ terminate()
+        case Supervise(child, uid)  ⇒ supervise(child, uid)
+        case ChildTerminated(child) ⇒ todo = handleChildTerminated(child)
+        case NoMessage              ⇒ // only here to suppress warning
+      }
+    } catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(Nil, e, "error while processing " + message)
     }
-  } catch {
-    case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(e, "error while processing " + message)
+    if (todo != null) systemInvoke(todo)
   }
 
   //Memory consistency is handled by the Mailbox (reading mailbox status then processing messages, then writing mailbox status
@@ -327,7 +353,7 @@ private[akka] class ActorCell(
     }
     currentMessage = null // reset current message after successful invocation
   } catch {
-    case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(e, e.getMessage)
+    case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(Nil, e, e.getMessage)
   } finally {
     checkReceiveTimeout // Reschedule receive timeout
   }
@@ -337,7 +363,7 @@ private[akka] class ActorCell(
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case Failed(cause)            ⇒ handleFailure(sender, cause)
+      case Failed(cause, uid)       ⇒ handleFailure(sender, cause, uid)
       case t: Terminated            ⇒ watchedActorTerminated(t.actor); receiveMessage(t)
       case Kill                     ⇒ throw new ActorKilledException("Kill")
       case PoisonPill               ⇒ self.stop()
@@ -386,7 +412,7 @@ private[akka] class ActorCell(
       val instance = props.creator.apply()
 
       if (instance eq null)
-        throw new ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
+        throw ActorInitializationException(self, "Actor instance passed to actorOf can't be 'null'")
 
       // If no becomes were issued, the actors behavior is its receive method
       behaviorStack = if (behaviorStack.isEmpty) instance.receive :: behaviorStack else behaviorStack
@@ -398,8 +424,9 @@ private[akka] class ActorCell(
     }
   }
 
-  private def create(): Unit = if (isNormal) {
+  private def create(uid: Int): Unit =
     try {
+      this.uid = uid
       val created = newActor()
       actor = created
       created.preStart()
@@ -407,17 +434,17 @@ private[akka] class ActorCell(
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
       case NonFatal(i: InstantiationException) ⇒
-        throw new ActorInitializationException(self,
+        throw ActorInitializationException(self,
           """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new UntypedActorFactory ... )
                or is missing an appropriate, reachable no-args constructor.
             """, i.getCause)
-      case NonFatal(e) ⇒ throw new ActorInitializationException(self, "exception during creation", e)
+      case NonFatal(e) ⇒ throw ActorInitializationException(self, "exception during creation", e)
     }
-  }
 
-  private def supervise(child: ActorRef): Unit = if (!isTerminating) {
-    addChild(child)
+  private def supervise(child: ActorRef, uid: Int): Unit = if (!isTerminating) {
+    // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
+    addChild(child).uid = uid
     handleSupervise(child)
     if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
   }

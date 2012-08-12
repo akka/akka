@@ -19,6 +19,9 @@ import akka.testkit._
 class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "schedule a one-off task" in {
     //#schedule-one-off-message
+    //Use the system's dispatcher as ExecutionContext
+    import system.dispatcher
+
     //Schedules to send the "foo"-message to the testActor after 50ms
     system.scheduler.scheduleOnce(50 milliseconds, testActor, "foo")
     //#schedule-one-off-message
@@ -42,6 +45,9 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
         case Tick ⇒ //Do something
       }
     }))
+    //Use system's dispatcher as ExecutionContext
+    import system.dispatcher
+
     //This will schedule to send the Tick-message
     //to the tickActor after 0ms repeating every 50ms
     val cancellable =

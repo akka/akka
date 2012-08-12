@@ -178,6 +178,8 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
   val coreSender = context.actorOf(Props(new ClusterCoreSender(selfAddress)).
     withDispatcher(UseDispatcher), name = "coreSender")
 
+  import context.dispatcher
+
   // start periodic gossip to random nodes in cluster
   val gossipTask =
     FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(GossipInterval), GossipInterval) {

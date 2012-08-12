@@ -46,7 +46,7 @@ public class SchedulerDocTestBase {
   public void scheduleOneOffTask() {
     //#schedule-one-off-message
     //Schedules to send the "foo"-message to the testActor after 50ms
-    system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS), testActor, "foo");
+    system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS), testActor, "foo", system.dispatcher());
     //#schedule-one-off-message
 
     //#schedule-one-off-thunk
@@ -56,7 +56,7 @@ public class SchedulerDocTestBase {
       public void run() {
         testActor.tell(System.currentTimeMillis());
       }
-    });
+    }, system.dispatcher());
     //#schedule-one-off-thunk
   }
 
@@ -80,7 +80,7 @@ public class SchedulerDocTestBase {
     //This will schedule to send the Tick-message
     //to the tickActor after 0ms repeating every 50ms
     Cancellable cancellable = system.scheduler().schedule(Duration.Zero(), Duration.create(50, TimeUnit.MILLISECONDS),
-        tickActor, "Tick");
+        tickActor, "Tick", system.dispatcher());
 
     //This cancels further Ticks to be sent
     cancellable.cancel();

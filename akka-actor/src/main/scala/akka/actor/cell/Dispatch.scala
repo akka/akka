@@ -5,7 +5,6 @@
 package akka.actor.cell
 
 import scala.annotation.tailrec
-
 import akka.actor.{ ActorRef, ActorCell }
 import akka.dispatch.{ Terminate, SystemMessage, Suspend, Resume, Recreate, MessageDispatcher, Mailbox, Envelope, Create }
 import akka.util.Unsafe
@@ -35,7 +34,12 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   final def isTerminated: Boolean = mailbox.isClosed
 
-  final def start(sendSupervise: Boolean): this.type = {
+  /**
+   * Start this cell, i.e. attach it to the dispatcher. The UID must reasonably
+   * be different from the previous UID of a possible actor with the same path,
+   * which can be achieved by using ThreadLocalRandom.current.nextInt().
+   */
+  final def start(sendSupervise: Boolean, uid: Int): this.type = {
 
     /*
      * Create the mailbox and enqueue the Create() message to ensure that
@@ -45,11 +49,11 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     mailbox.setActor(this)
 
     // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-    mailbox.systemEnqueue(self, Create())
+    mailbox.systemEnqueue(self, Create(uid))
 
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-      parent.sendSystemMessage(akka.dispatch.Supervise(self))
+      parent.sendSystemMessage(akka.dispatch.Supervise(self, uid))
     }
 
     // This call is expected to start off the actor by scheduling its mailbox.
@@ -62,7 +66,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   final def suspend(): Unit = dispatcher.systemDispatch(this, Suspend())
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def resume(inResponseToFailure: Boolean): Unit = dispatcher.systemDispatch(this, Resume(inResponseToFailure))
+  final def resume(causedByFailure: Throwable): Unit = dispatcher.systemDispatch(this, Resume(causedByFailure))
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   final def restart(cause: Throwable): Unit = dispatcher.systemDispatch(this, Recreate(cause))

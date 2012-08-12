@@ -78,7 +78,7 @@ private[akka] sealed trait SystemMessage extends PossiblyHarmful {
 /**
  * INTERNAL API
  */
-private[akka] case class Create() extends SystemMessage // send to self from Dispatcher.register
+private[akka] case class Create(uid: Int) extends SystemMessage // send to self from Dispatcher.register
 /**
  * INTERNAL API
  */
@@ -90,7 +90,7 @@ private[akka] case class Suspend() extends SystemMessage // sent to self from Ac
 /**
  * INTERNAL API
  */
-private[akka] case class Resume(inResponseToFailure: Boolean) extends SystemMessage // sent to self from ActorCell.resume
+private[akka] case class Resume(causedByFailure: Throwable) extends SystemMessage // sent to self from ActorCell.resume
 /**
  * INTERNAL API
  */
@@ -98,7 +98,7 @@ private[akka] case class Terminate() extends SystemMessage // sent to self from 
 /**
  * INTERNAL API
  */
-private[akka] case class Supervise(child: ActorRef) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+private[akka] case class Supervise(child: ActorRef, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 /**
  * INTERNAL API
  */
@@ -116,7 +116,13 @@ private[akka] case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends S
  */
 private[akka] case object NoMessage extends SystemMessage // switched into the mailbox to signal termination
 
-final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Runnable {
+final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Batchable {
+  final override def isBatchable: Boolean = runnable match {
+    case b: Batchable                           ⇒ b.isBatchable
+    case _: scala.concurrent.OnCompleteRunnable ⇒ true
+    case _                                      ⇒ false
+  }
+
   def run(): Unit =
     try runnable.run() catch {
       case NonFatal(e) ⇒ eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
@@ -163,7 +169,7 @@ private[akka] object MessageDispatcher {
   implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
 
-abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with Executor with ExecutionContext {
+abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
@@ -209,8 +215,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   final def detach(actor: ActorCell): Unit = try unregister(actor) finally ifSensibleToDoSoThenScheduleShutdown()
 
-  final override def execute(runnable: Runnable): Unit = {
-    val invocation = TaskInvocation(eventStream, runnable, taskCleanup)
+  final override protected def unbatchedExecute(r: Runnable): Unit = {
+    val invocation = TaskInvocation(eventStream, r, taskCleanup)
     addInhabitants(+1)
     try {
       executeTask(invocation)
@@ -243,7 +249,10 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   private def scheduleShutdownAction(): Unit = {
     // IllegalStateException is thrown if scheduler has been shutdown
-    try scheduler.scheduleOnce(shutdownTimeout, shutdownAction) catch {
+    try scheduler.scheduleOnce(shutdownTimeout, shutdownAction)(new ExecutionContext {
+      override def execute(runnable: Runnable): Unit = runnable.run()
+      override def reportFailure(t: Throwable): Unit = MessageDispatcher.this.reportFailure(t)
+    }) catch {
       case _: IllegalStateException ⇒ shutdown()
     }
   }

@@ -7,7 +7,6 @@ package akka.actor.cell
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.util.control.NonFatal
-
 import akka.actor.{ RepointableRef, Props, NoSerializationVerificationNeeded, InvalidActorNameException, InternalActorRef, ChildRestartStats, ActorRef }
 import akka.actor.ActorCell
 import akka.actor.ActorPath.ElementRegex
@@ -68,10 +67,11 @@ private[akka] trait Children { this: ActorCell ⇒
     swapChildrenRefs(c, c.unreserve(name)) || unreserveChild(name)
   }
 
-  final protected def addChild(ref: ActorRef): Boolean = {
-    @tailrec def rec(): Boolean = {
+  final protected def addChild(ref: ActorRef): ChildRestartStats = {
+    @tailrec def rec(): ChildRestartStats = {
       val c = childrenRefs
-      swapChildrenRefs(c, c.add(ref)) || rec()
+      val nc = c.add(ref)
+      if (swapChildrenRefs(c, nc)) nc.getByName(ref.path.name).get else rec()
     }
     /*
      * This does not need to check getByRef every tailcall, because the change 
@@ -80,7 +80,10 @@ private[akka] trait Children { this: ActorCell ⇒
      * somebody who calls attachChild, and there we are guaranteed that that 
      * child cannot yet have died (since it has not yet been created).
      */
-    if (childrenRefs.getByRef(ref).isEmpty) rec() else false
+    childrenRefs.getByRef(ref) match {
+      case Some(old) ⇒ old
+      case None      ⇒ rec()
+    }
   }
 
   @tailrec final protected def shallDie(ref: ActorRef): Boolean = {
@@ -113,14 +116,22 @@ private[akka] trait Children { this: ActorCell ⇒
 
   protected def isTerminating = childrenRefs.isTerminating
 
-  protected def suspendChildren(skip: Set[ActorRef] = Set.empty): Unit =
+  protected def recreationOrNull = childrenRefs match {
+    case TerminatingChildrenContainer(_, _, r: Recreation) ⇒ r
+    case _ ⇒ null
+  }
+
+  protected def suspendChildren(exceptFor: Set[ActorRef] = Set.empty): Unit =
     childrenRefs.stats foreach {
-      case ChildRestartStats(child, _, _) if !(skip contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()
+      case ChildRestartStats(child, _, _, _) if !(exceptFor contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()
       case _ ⇒
     }
 
-  protected def resumeChildren(): Unit =
-    childrenRefs.stats foreach (_.child.asInstanceOf[InternalActorRef].resume(inResponseToFailure = false))
+  protected def resumeChildren(causedByFailure: Throwable, perp: ActorRef): Unit =
+    childrenRefs.stats foreach {
+      case ChildRestartStats(child: InternalActorRef, _, _, _) ⇒
+        child.resume(if (perp == child) causedByFailure else null)
+    }
 
   def getChildByName(name: String): Option[ChildRestartStats] = childrenRefs.getByName(name)
 
@@ -180,6 +191,8 @@ private[akka] trait Children { this: ActorCell ⇒
             unreserveChild(name)
             throw e
         }
+      // mailbox==null during RoutedActorCell constructor, where suspends are queued otherwise
+      if (mailbox ne null) for (_ ← 1 to mailbox.suspendCount) actor.suspend()
       addChild(actor)
       actor
     }

@@ -5,11 +5,12 @@
 package akka.actor.cell
 
 import scala.annotation.tailrec
-
 import akka.actor.{ PreRestartException, PostRestartException, InternalActorRef, Failed, ActorRef, ActorInterruptedException, ActorCell, Actor }
 import akka.dispatch.{ Envelope, ChildTerminated }
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
+import akka.dispatch.SystemMessage
+import akka.event.Logging
 
 private[akka] trait FaultHandling { this: ActorCell ⇒
 
@@ -36,10 +37,11 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
    * a restart with dying children)
    * might well be replaced by ref to a Cancellable in the future (see #2299)
    */
-  private var _failed = false
-  private def isFailed: Boolean = _failed
-  private def setFailed(): Unit = _failed = true
-  private def clearFailed(): Unit = _failed = false
+  private var _failed: ActorRef = null
+  private def isFailed: Boolean = _failed != null
+  private def setFailed(perpetrator: ActorRef): Unit = _failed = perpetrator
+  private def clearFailed(): Unit = _failed = null
+  private def perpetrator: ActorRef = _failed
 
   /**
    * Do re-create the actor in response to a failure.
@@ -65,7 +67,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause, failedActor)
     } else {
       // need to keep that suspend counter balanced
-      faultResume(inResponseToFailure = false)
+      faultResume(causedByFailure = null)
     }
 
   /**
@@ -81,15 +83,22 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
   /**
    * Do resume the actor in response to a failure.
    *
-   * @param inResponseToFailure signifies if it was our own failure which
+   * @param causedByFailure signifies if it was our own failure which
    *        prompted this action.
    */
-  protected def faultResume(inResponseToFailure: Boolean): Unit = {
-    // done always to keep that suspend counter balanced
-    // must happen “atomically”
-    try resumeNonRecursive()
-    finally if (inResponseToFailure) clearFailed()
-    resumeChildren()
+  protected def faultResume(causedByFailure: Throwable): Unit = {
+    if ((actor == null || actor.context == null) && causedByFailure != null) {
+      system.eventStream.publish(Error(self.path.toString, clazz(actor),
+        "changing Resume into Restart after " + causedByFailure))
+      faultRecreate(causedByFailure)
+    } else {
+      val perp = perpetrator
+      // done always to keep that suspend counter balanced
+      // must happen “atomically”
+      try resumeNonRecursive()
+      finally if (causedByFailure != null) clearFailed()
+      resumeChildren(causedByFailure, perp)
+    }
   }
 
   protected def terminate() {
@@ -106,7 +115,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
         // do not process normal messages while waiting for all children to terminate
         suspendNonRecursive()
         // do not propagate failures during shutdown to the supervisor
-        setFailed()
+        setFailed(self)
         if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "stopping"))
       }
     } else {
@@ -115,26 +124,26 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     }
   }
 
-  final def handleInvokeFailure(t: Throwable, message: String): Unit = {
+  final def handleInvokeFailure(childrenNotToSuspend: Iterable[ActorRef], t: Throwable, message: String): Unit = {
     publish(Error(t, self.path.toString, clazz(actor), message))
     // prevent any further messages to be processed until the actor has been restarted
     if (!isFailed) try {
       suspendNonRecursive()
-      setFailed()
       // suspend children
       val skip: Set[ActorRef] = currentMessage match {
-        case Envelope(Failed(`t`), child) ⇒ Set(child)
-        case _                            ⇒ Set.empty
+        case Envelope(Failed(_, _), child) ⇒ setFailed(child); Set(child)
+        case _                             ⇒ setFailed(self); Set.empty
       }
-      suspendChildren(skip)
+      suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       // tell supervisor
       t match { // Wrap InterruptedExceptions and rethrow
-        case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t)), self); throw t
-        case _                       ⇒ parent.tell(Failed(t), self)
+        case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t), uid), self); throw t
+        case _                       ⇒ parent.tell(Failed(t, uid), self)
       }
     } catch {
       case NonFatal(e) ⇒
-        publish(Error(e, self.path.toString, clazz(actor), "emergency stop: exception in failure handling"))
+        publish(Error(e, self.path.toString, clazz(actor),
+          "emergency stop: exception in failure handling for " + t.getClass + Logging.stackTraceFor(t)))
         try children foreach stop
         finally finishTerminate()
     }
@@ -155,38 +164,47 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     }
   }
 
-  private def finishRecreate(cause: Throwable, failedActor: Actor): Unit = try {
-    try resumeNonRecursive()
-    finally clearFailed() // must happen in any case, so that failure is propagated
-
+  private def finishRecreate(cause: Throwable, failedActor: Actor): Unit = {
     // need to keep a snapshot of the surviving children before the new actor instance creates new ones
     val survivors = children
 
-    val freshActor = newActor()
-    actor = freshActor // this must happen before postRestart has a chance to fail
-    if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
+    try {
+      try resumeNonRecursive()
+      finally clearFailed() // must happen in any case, so that failure is propagated
 
-    freshActor.postRestart(cause)
-    if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
+      val freshActor = newActor()
+      actor = freshActor // this must happen before postRestart has a chance to fail
+      if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
 
-    // only after parent is up and running again do restart the children which were not stopped
-    survivors foreach (child ⇒
-      try child.asInstanceOf[InternalActorRef].restart(cause)
-      catch {
-        case NonFatal(e) ⇒ publish(Error(e, self.path.toString, clazz(freshActor), "restarting " + child))
-      })
-  } catch {
-    case NonFatal(e) ⇒
-      clearActorFields(actor) // in order to prevent preRestart() from happening again
-      handleInvokeFailure(new PostRestartException(self, e, cause), e.getMessage)
+      freshActor.postRestart(cause)
+      if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
+
+      // only after parent is up and running again do restart the children which were not stopped
+      survivors foreach (child ⇒
+        try child.asInstanceOf[InternalActorRef].restart(cause)
+        catch {
+          case NonFatal(e) ⇒ publish(Error(e, self.path.toString, clazz(freshActor), "restarting " + child))
+        })
+    } catch {
+      case NonFatal(e) ⇒
+        clearActorFields(actor) // in order to prevent preRestart() from happening again
+        handleInvokeFailure(survivors, new PostRestartException(self, e, cause), e.getMessage)
+    }
   }
 
-  final protected def handleFailure(child: ActorRef, cause: Throwable): Unit = getChildByRef(child) match {
-    case Some(stats) ⇒ if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, getAllChildStats)) throw cause
-    case None        ⇒ publish(Warning(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
-  }
+  final protected def handleFailure(child: ActorRef, cause: Throwable, uid: Int): Unit =
+    getChildByRef(child) match {
+      /*
+       * only act upon the failure, if it comes from a currently known child;
+       * the UID protects against reception of a Failed from a child which was
+       * killed in preRestart and re-created in postRestart
+       */
+      case Some(stats) if stats.uid == uid ⇒
+        if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, getAllChildStats)) throw cause
+      case _ ⇒ publish(Debug(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
+    }
 
-  final protected def handleChildTerminated(child: ActorRef): Unit = {
+  final protected def handleChildTerminated(child: ActorRef): SystemMessage = {
     val status = removeChildAndGetStateChange(child)
     /*
      * if this fails, we do nothing in case of terminating/restarting state, 
@@ -195,16 +213,16 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
      */
     try actor.supervisorStrategy.handleChildTerminated(this, child, children)
     catch {
-      case NonFatal(e) ⇒ handleInvokeFailure(e, "handleChildTerminated failed")
+      case NonFatal(e) ⇒ handleInvokeFailure(Nil, e, "handleChildTerminated failed")
     }
     /*
      * if the removal changed the state of the (terminating) children container,
      * then we are continuing the previously suspended recreate/terminate action
      */
     status match {
-      case Some(ChildrenContainer.Recreation(cause)) ⇒ finishRecreate(cause, actor)
-      case Some(ChildrenContainer.Termination)       ⇒ finishTerminate()
-      case _                                         ⇒
+      case Some(ChildrenContainer.Recreation(cause, todo)) ⇒ finishRecreate(cause, actor); SystemMessage.reverse(todo)
+      case Some(ChildrenContainer.Termination) ⇒ finishTerminate(); null
+      case _ ⇒ null
     }
   }
 }

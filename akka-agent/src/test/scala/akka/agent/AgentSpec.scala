@@ -39,6 +39,7 @@ class AgentSpec extends AkkaSpec {
     "maintain order between send and sendOff" in {
       val countDown = new CountDownFunction[String]
       val l1, l2 = new CountDownLatch(1)
+      import system.dispatcher
 
       val agent = Agent("a")
       agent send (_ + "b")
@@ -58,10 +59,10 @@ class AgentSpec extends AkkaSpec {
       val l1, l2 = new CountDownLatch(1)
       val agent = Agent("a")
 
-      val r1 = agent.alter(_ + "b")(5000)
-      val r2 = agent.alterOff((s: String) ⇒ { l1.countDown; l2.await(5, TimeUnit.SECONDS); s + "c" })(5000)
+      val r1 = agent.alter(_ + "b")
+      val r2 = agent.alterOff((s: String) ⇒ { l1.countDown; l2.await(5, TimeUnit.SECONDS); s + "c" })
       l1.await(5, TimeUnit.SECONDS)
-      val r3 = agent.alter(_ + "d")(5000)
+      val r3 = agent.alter(_ + "d")
       val result = Future.sequence(Seq(r1, r2, r3)).map(_.mkString(":"))
       l2.countDown
 
