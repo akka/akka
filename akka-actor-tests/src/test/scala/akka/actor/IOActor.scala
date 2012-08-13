@@ -353,18 +353,20 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
           case IO.Closed(socket, cause) ⇒
             state(socket)(IO EOF)
             state -= socket
+            testActor ! "eof"
         }
       }))
       expectMsg("Wejkipejki")
       val s = new Socket(dest.getAddress, dest.getPort)
       try {
-        val expected = Seq("ole", "dole", "doff", "kinke", "lane", "koff", "ole", "dole", "dinke", "dane", "ole", "dole", "doff")
+        val expectedReceive = Seq("ole", "dole", "doff", "kinke", "lane", "koff", "ole", "dole", "dinke", "dane", "ole", "dole")
+        val expectedSend = expectedReceive ++ Seq("doff")
         val out = s.getOutputStream
-        out.write(expected.mkString("", CRLF.utf8String, CRLF.utf8String).getBytes("UTF-8"))
+        out.write(expectedSend.mkString(CRLF.utf8String).getBytes("UTF-8"))
         out.flush()
-        for (word ← expected) expectMsg(word)
+        for (word ← expectedReceive) expectMsg(word)
         s.close()
-        expectNoMsg(500.millis)
+        expectMsg("eof")
       } finally {
         if (!s.isClosed) s.close()
       }
