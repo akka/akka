@@ -301,7 +301,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
       // add joining node as Joining
       // add self in case someone else joins before self has joined (Set discards duplicates)
-      val newMembers = localMembers :+ Member(node, Joining) :+ Member(selfAddress, Joining)
+      val newMembers = localMembers + Member(node, Joining) + Member(selfAddress, Joining)
       val newGossip = localGossip copy (overview = newOverview, members = newMembers)
 
       val versionedGossip = newGossip :+ vclockNode
