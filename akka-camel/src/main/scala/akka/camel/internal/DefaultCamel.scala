@@ -28,6 +28,7 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
 
   lazy val context: CamelContext = {
     val ctx = new DefaultCamelContext
+    if (!settings.jmxStatistics) ctx.disableJMX()
     ctx.setName(system.name)
     ctx.setStreamCaching(true)
     ctx.addComponent("akka", new ActorComponent(this, system))
