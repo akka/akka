@@ -415,7 +415,7 @@ object AkkaBuild extends Build {
 
   lazy val defaultMultiJvmScalatestOptions: Seq[String] = {
     val excludeTags = (useExcludeTestTags -- useIncludeTestTags).toSeq
-    Seq("-r", "org.scalatest.akka.QuietReporter") ++
+    Seq("-C", "org.scalatest.akka.QuietReporter") ++
     (if (excludeTags.isEmpty) Seq.empty else Seq("-l", if (multiNodeEnabled) excludeTags.mkString("\"", " ", "\"") else excludeTags.mkString(" "))) ++
     (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
   }
