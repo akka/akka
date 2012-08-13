@@ -30,7 +30,7 @@ class HttpServer(port: Int) extends Actor {
       state(socket)(IO Chunk bytes)
 
     case IO.Closed(socket, cause) ⇒
-      state(socket)(IO EOF None)
+      state(socket)(IO EOF)
       state -= socket
 
   }

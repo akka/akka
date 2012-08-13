@@ -13,8 +13,8 @@ import scala.concurrent.util.duration._
 import scala.util.continuations._
 import akka.testkit._
 import akka.dispatch.MessageDispatcher
-import java.net.{ SocketAddress }
 import akka.pattern.ask
+import java.net.{ Socket, InetSocketAddress, InetAddress, SocketAddress }
 
 object IOActorSpec {
 
@@ -58,24 +58,22 @@ object IOActorSpec {
       case bytes: ByteString ⇒
         val source = sender
         socket write bytes
-        state flatMap { _ ⇒
-          IO take bytes.length map (source ! _) recover {
-            case e ⇒ source ! Status.Failure(e)
-          }
-        }
+        state flatMap { _ ⇒ IO take bytes.length map (source ! _) }
 
       case IO.Read(`socket`, bytes) ⇒
         state(IO Chunk bytes)
 
       case IO.Closed(`socket`, cause) ⇒
-        state(IO EOF cause)
-        throw (cause getOrElse new RuntimeException("Socket closed"))
-
+        state(cause)
+        throw cause match {
+          case IO.Error(e) ⇒ e
+          case _           ⇒ new RuntimeException("Socket closed")
+        }
     }
 
     override def postStop {
       socket.close()
-      state(IO EOF None)
+      state(IO EOF)
     }
   }
 
@@ -180,29 +178,29 @@ object IOActorSpec {
         val source = sender
         socket write cmd.bytes
         state flatMap { _ ⇒
-          readResult map (source !) recover {
-            case e ⇒ source ! Status.Failure(e)
-          }
+          readResult map (source !)
         }
 
       case IO.Read(`socket`, bytes) ⇒
         state(IO Chunk bytes)
 
       case IO.Closed(`socket`, cause) ⇒
-        state(IO EOF cause)
-        throw (cause getOrElse new RuntimeException("Socket closed"))
-
+        state(cause)
+        throw cause match {
+          case IO.Error(t) ⇒ t
+          case _           ⇒ new RuntimeException("Socket closed")
+        }
     }
 
     override def postStop {
       socket.close()
-      state(IO EOF None)
+      state(IO.EOF)
     }
 
     def readResult: IO.Iteratee[Any] = {
       IO take 1 map (_.utf8String) flatMap {
         case "+" ⇒ IO takeUntil EOL map (msg ⇒ msg.utf8String)
-        case "-" ⇒ IO takeUntil EOL flatMap (err ⇒ IO throwErr new RuntimeException(err.utf8String))
+        case "-" ⇒ IO takeUntil EOL flatMap (err ⇒ IO.Failure(new RuntimeException(err.utf8String)))
         case "$" ⇒
           IO takeUntil EOL map (_.utf8String.toInt) flatMap {
             case -1 ⇒ IO Done None
@@ -221,10 +219,10 @@ object IOActorSpec {
                   case (Right(m), List(Some(k: String), Some(v: String))) ⇒ Right(m + (k -> v))
                   case (Right(_), _) ⇒ Left("Unexpected Response")
                   case (left, _) ⇒ left
-                } fold (msg ⇒ IO throwErr new RuntimeException(msg), IO Done _)
+                } fold (msg ⇒ IO.Failure(new RuntimeException(msg)), IO Done _)
               }
           }
-        case _ ⇒ IO throwErr new RuntimeException("Unexpected Response")
+        case _ ⇒ IO.Failure(new RuntimeException("Unexpected Response"))
       }
     }
   }
@@ -329,6 +327,46 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
         system.stop(client1)
         system.stop(client2)
         system.stop(server)
+      }
+    }
+
+    "takeUntil must fail on EOF before predicate when used with repeat" in {
+      val CRLF = ByteString("\r\n")
+      val dest = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() })
+
+      val a = system.actorOf(Props(new Actor {
+        val state = IO.IterateeRef.Map.async[IO.Handle]()(context.dispatcher)
+
+        override def preStart {
+          IOManager(context.system) listen dest
+        }
+
+        def receive = {
+          case _: IO.Listening ⇒ testActor ! "Wejkipejki"
+          case IO.NewClient(server) ⇒
+            val socket = server.accept()
+            state(socket) flatMap (_ ⇒ IO.repeat(for (input ← IO.takeUntil(CRLF)) yield testActor ! input.utf8String))
+
+          case IO.Read(socket, bytes) ⇒
+            state(socket)(IO Chunk bytes)
+
+          case IO.Closed(socket, cause) ⇒
+            state(socket)(IO EOF)
+            state -= socket
+        }
+      }))
+      expectMsg("Wejkipejki")
+      val s = new Socket(dest.getAddress, dest.getPort)
+      try {
+        val expected = Seq("ole", "dole", "doff", "kinke", "lane", "koff", "ole", "dole", "dinke", "dane", "ole", "dole", "doff")
+        val out = s.getOutputStream
+        out.write(expected.mkString("", CRLF.utf8String, CRLF.utf8String).getBytes("UTF-8"))
+        out.flush()
+        for (word ← expected) expectMsg(word)
+        s.close()
+        expectNoMsg(500.millis)
+      } finally {
+        if (!s.isClosed) s.close()
       }
     }
   }
