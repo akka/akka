@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit
  * implicit val system: ActorSystem = ...
  *
  * implicit val i = inbox()
- * someActor ! someMsg // replies will go to `recv`
+ * someActor ! someMsg // replies will go to `i`
  *
  * val reply = i.receive()
  * val transformedReply = i.select(5 seconds) {
@@ -63,12 +63,13 @@ import java.util.concurrent.TimeUnit
  * }}}
  *
  * Note that `actor` can be used with an implicit [[akka.actor.ActorRefFactory]]
- * as shown with `"barney"`, but since nested declarations share the same
- * lexical context `"fred"`’s [[akka.actor.ActorContext]] would be ambiguous
+ * as shown with `"barney"` (where the [[akka.actor.ActorContext serves this
+ * purpose), but since nested declarations share the same
+ * lexical context `"fred"`’s ActorContext would be ambiguous
  * if the [[akka.actor.ActorSystem]] were declared `implicit` (this could also
  * be circumvented by shadowing the name `system` within `"fred"`).
- * 
- * <b>Note:</b> If you want to use an `Act with Stash`, you should use the 
+ *
+ * <b>Note:</b> If you want to use an `Act with Stash`, you should use the
  * `ActWithStash` trait in order to have the actor run on a special dispatcher
  * (`"akka.actor.default-stash-dispatcher"`) which has the necessary deque-based
  * mailbox setting.
@@ -80,7 +81,17 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
   protected class Extension(val system: ExtendedActorSystem) extends akka.actor.Extension with InboxExtension {
 
     val boss = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props.empty, "dsl").asInstanceOf[RepointableActorRef]
-    while (!boss.isStarted) Thread.sleep(10)
+
+    {
+      val timeout = system.settings.CreationTimeout.duration
+      val deadline = Deadline.now + timeout
+      while (!boss.isStarted) {
+        if (deadline.hasTimeLeft)
+          if (system.isTerminated) throw new IllegalStateException("actor system is already shutdown")
+          else Thread.sleep(10)
+        else throw new TimeoutException("failed to create /system/dsl actor within " + timeout)
+      }
+    }
 
     lazy val config = system.settings.config.getConfig("akka.actor.dsl")
 

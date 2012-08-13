@@ -88,68 +88,98 @@ class ActorDSLSpec extends AkkaSpec {
   "A lightweight creator" must {
 
     "support creating regular actors" in {
-      val a = actor()(new Act {
+      val a = actor(new Act {
         become {
           case "hello" ⇒ sender ! "hi"
         }
       })
-      
+
       implicit val i = inbox()
       a ! "hello"
       i.receive() must be("hi")
     }
 
     "support setup/teardown" in {
-      val a = actor()(new Act {
-        setup { testActor ! "started" }
-        teardown { testActor ! "stopped" }
+      val a = actor(new Act {
+        whenStarting { testActor ! "started" }
+        whenStopping { testActor ! "stopped" }
       })
-      
+
       system stop a
       expectMsg("started")
       expectMsg("stopped")
     }
 
     "support restart" in {
-      val a = actor()(new Act {
+      val a = actor(new Act {
         become {
           case "die" ⇒ throw new Exception
         }
         whenFailing { (cause, msg) ⇒ testActor ! (cause, msg) }
         whenRestarted { cause ⇒ testActor ! cause }
       })
-      
+
       EventFilter[Exception](occurrences = 1) intercept {
         a ! "die"
       }
       expectMsgPF() { case (x: Exception, Some("die")) ⇒ }
       expectMsgPF() { case _: Exception ⇒ }
     }
-    
+
+    "support superviseWith" in {
+      val a = actor(new Act {
+        val system = null // shadow the implicit system
+        superviseWith(OneForOneStrategy() {
+          case e: Exception if e.getMessage == "hello" ⇒ SupervisorStrategy.Stop
+          case _: Exception                            ⇒ SupervisorStrategy.Resume
+        })
+        val child = actor("child")(new Act {
+          whenFailing { (_, _) ⇒ }
+          become {
+            case ref: ActorRef ⇒ whenStopping(ref ! "stopped")
+            case ex: Exception ⇒ throw ex
+          }
+        })
+        become {
+          case x ⇒ child ! x
+        }
+      })
+      a ! testActor
+      EventFilter[Exception](occurrences = 1) intercept {
+        a ! new Exception
+      }
+      expectNoMsg(1 second)
+      EventFilter[Exception]("hello", occurrences = 1) intercept {
+        a ! new Exception("hello")
+      }
+      expectMsg("stopped")
+    }
+
     "supported nested declaration" in {
       val system = this.system
       val a = actor(system, "fred")(new Act {
         val b = actor("barney")(new Act {
-          setup { context.parent ! s"hello from $self" }
+          whenStarting { context.parent ! s"hello from $self" }
         })
         become {
-          case x => testActor ! x
+          case x ⇒ testActor ! x
         }
       })
       expectMsg("hello from Actor[akka://ActorDSLSpec/user/fred/barney]")
       lastSender must be(a)
     }
-    
+
     "support Stash" in {
-      val a = actor()(new ActWithStash {
+      val a = actor(new ActWithStash {
         become {
-          case 1 => stash()
-          case 2 => testActor ! 2; unstashAll(); become {
-            case 1 => testActor ! 1; unbecome()
-          }
+          case 1 ⇒ stash()
+          case 2 ⇒
+            testActor ! 2; unstashAll(); become {
+              case 1 ⇒ testActor ! 1; unbecome()
+            }
         }
       })
-      
+
       a ! 1
       a ! 2
       expectMsg(2)

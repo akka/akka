@@ -11,7 +11,7 @@ import scala.collection.immutable.TreeSet
 import scala.concurrent.util.{ Duration, FiniteDuration }
 import scala.concurrent.util.duration._
 import akka.actor.Cancellable
-import akka.actor.{ Actor, Stash }
+import akka.actor.{ Actor, Stash, SupervisorStrategy }
 import scala.collection.mutable.Queue
 import akka.actor.{ ActorSystem, ActorRefFactory }
 import akka.actor.ActorRef
@@ -52,6 +52,7 @@ trait Creators { this: ActorDSL.type ⇒
     private[this] var postStopFun: () ⇒ Unit = null
     private[this] var preRestartFun: (Throwable, Option[Any]) ⇒ Unit = null
     private[this] var postRestartFun: Throwable ⇒ Unit = null
+    private[this] var strategy: SupervisorStrategy = null
 
     /**
      * Add the given behavior on top of the behavior stack for this actor. This
@@ -67,10 +68,15 @@ trait Creators { this: ActorDSL.type ⇒
     def unbecome(): Unit = context.unbecome()
 
     /**
+     * Set the supervisor strategy of this actor, i.e. how it supervises its children.
+     */
+    def superviseWith(s: SupervisorStrategy): Unit = strategy = s
+
+    /**
      * Replace the `preStart` action with the supplied thunk. Default action
      * is to call `super.preStart()`
      */
-    def setup(body: ⇒ Unit): Unit = preStartFun = () ⇒ body
+    def whenStarting(body: ⇒ Unit): Unit = preStartFun = () ⇒ body
 
     /**
      * Replace the `preRestart` action with the supplied function. Default
@@ -89,12 +95,13 @@ trait Creators { this: ActorDSL.type ⇒
      * Replace the `postStop` action with the supplied thunk. Default action
      * is to call `super.postStop`.
      */
-    def teardown(body: ⇒ Unit): Unit = postStopFun = () ⇒ body
+    def whenStopping(body: ⇒ Unit): Unit = postStopFun = () ⇒ body
 
     override def preStart(): Unit = if (preStartFun != null) preStartFun() else super.preStart()
     override def preRestart(cause: Throwable, msg: Option[Any]): Unit = if (preRestartFun != null) preRestartFun(cause, msg) else super.preRestart(cause, msg)
     override def postRestart(cause: Throwable): Unit = if (postRestartFun != null) postRestartFun(cause) else super.postRestart(cause)
     override def postStop(): Unit = if (postStopFun != null) postStopFun() else super.postStop()
+    override def supervisorStrategy: SupervisorStrategy = if (strategy != null) strategy else super.supervisorStrategy
 
     /**
      * Default behavior of the actor is empty, use `become` to change this.
@@ -118,8 +125,6 @@ trait Creators { this: ActorDSL.type ⇒
   /**
    * Create an actor from the given thunk which must produce an [[akka.actor.Actor]].
    *
-   * @param name is the name, which must be unique within the context of its
-   *        parent; defaults to `null` which will assign a name automatically.
    * @param ctor is a by-name argument which captures an [[akka.actor.Actor]]
    *        factory; <b>do not make the generated object accessible to code
    *        outside and do not return the same object upon subsequent invocations.</b>
@@ -127,7 +132,26 @@ trait Creators { this: ActorDSL.type ⇒
    *        either be an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]],
    *        where the latter is always implicitly available within an [[akka.actor.Actor]].
    */
-  def actor[T <: Actor: ClassTag](name: String = null)(ctor: ⇒ T)(implicit factory: ActorRefFactory): ActorRef = {
+  def actor[T <: Actor: ClassTag](ctor: ⇒ T)(implicit factory: ActorRefFactory): ActorRef = {
+    // configure dispatcher/mailbox based on runtime class
+    val classOfActor = implicitly[ClassTag[T]].runtimeClass
+    val props = mkProps(classOfActor, () ⇒ ctor)
+    factory.actorOf(props)
+  }
+
+  /**
+   * Create an actor from the given thunk which must produce an [[akka.actor.Actor]].
+   *
+   * @param name is the name, which must be unique within the context of its
+   *        parent.
+   * @param ctor is a by-name argument which captures an [[akka.actor.Actor]]
+   *        factory; <b>do not make the generated object accessible to code
+   *        outside and do not return the same object upon subsequent invocations.</b>
+   * @param factory is an implicit [[akka.actor.ActorRefFactory]], which can
+   *        either be an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]],
+   *        where the latter is always implicitly available within an [[akka.actor.Actor]].
+   */
+  def actor[T <: Actor: ClassTag](name: String)(ctor: ⇒ T)(implicit factory: ActorRefFactory): ActorRef = {
     // configure dispatcher/mailbox based on runtime class
     val classOfActor = implicitly[ClassTag[T]].runtimeClass
     val props = mkProps(classOfActor, () ⇒ ctor)
