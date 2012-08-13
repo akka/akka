@@ -10,9 +10,10 @@ public class HttpTransformer extends UntypedActor{
   public void onReceive(Object message) {
     if (message instanceof CamelMessage) {
       CamelMessage camelMessage = (CamelMessage) message;
-      CamelMessage replacedMessage = camelMessage.mapBody(new Function<String, String>(){
-        public String apply(String body) {
-          return body.replaceAll("Akka ", "AKKA ");
+      CamelMessage replacedMessage = camelMessage.mapBody(new Function<Object, String>(){
+        public String apply(Object body) {
+          String text = new String((byte[])body);
+          return text.replaceAll("Akka ", "AKKA ");
         }
       });
       getSender().tell(replacedMessage);

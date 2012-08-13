@@ -97,7 +97,6 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
       camel.routes.get(0).getEndpoint.getEndpointUri must be("direct://test")
       system.stop(consumer)
       Await.result(camel.deactivationFutureFor(consumer), defaultTimeout)
-
       camel.routeCount must be(0)
     }
 
