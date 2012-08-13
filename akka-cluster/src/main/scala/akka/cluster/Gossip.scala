@@ -84,7 +84,7 @@ case class Gossip(
    */
   def :+(member: Member): Gossip = {
     if (members contains member) this
-    else this copy (members = members :+ member)
+    else this copy (members = members + member)
   }
 
   /**
@@ -113,7 +113,7 @@ case class Gossip(
 
     // 4. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
     //    and exclude unreachable
-    val mergedMembers = Gossip.emptyMembers :++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
+    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
 
     // 5. fresh seen table
     val mergedSeen = Map.empty[Address, VectorClock]

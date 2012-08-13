@@ -83,19 +83,6 @@ object Member {
     case (Up, Up)           ⇒ m1
   }
 
-  // FIXME Workaround for https://issues.scala-lang.org/browse/SI-5986
-  // SortedSet + and ++ operators replaces existing element
-  // Use these :+ and :++ operators for the Gossip members
-  implicit def sortedSetWorkaround(sortedSet: SortedSet[Member]): SortedSetWorkaround = new SortedSetWorkaround(sortedSet)
-  class SortedSetWorkaround(sortedSet: SortedSet[Member]) {
-    implicit def :+(elem: Member): SortedSet[Member] = {
-      if (sortedSet.contains(elem)) sortedSet
-      else sortedSet + elem
-    }
-
-    implicit def :++(elems: GenTraversableOnce[Member]): SortedSet[Member] =
-      sortedSet ++ (elems.toSet diff sortedSet)
-  }
 }
 
 /**
