@@ -71,15 +71,9 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       val producer = Await.result[ActorRef](supervisor.ask(Props(new TestProducer("direct:producer-test-2"))).mapTo[ActorRef], timeoutDuration)
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
-        val future = producer.ask(message)(timeoutDuration).failed
-
-        Await.ready(future, timeoutDuration).value match {
-          case Some(Right(e: AkkaCamelException)) ⇒
-            // a failure response must have been returned by the producer
-            e.getMessage must be("failure")
-            e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
-          case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
-        }
+        val e = intercept[AkkaCamelException] { Await.result(producer.ask(message)(timeoutDuration), timeoutDuration) }
+        e.getMessage must be("failure")
+        e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
       }
       Await.ready(latch, timeoutDuration)
       deadActor must be(Some(producer))
@@ -121,15 +115,9 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
 
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
-        val future = producer.ask(message)(timeoutDuration).failed
-
-        Await.ready(future, timeoutDuration).value match {
-          case Some(Right(e: AkkaCamelException)) ⇒
-            // a failure response must have been returned by the producer
-            e.getMessage must be("failure")
-            e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
-          case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
-        }
+        val e = intercept[AkkaCamelException] { Await.result(producer.ask(message)(timeoutDuration), timeoutDuration) }
+        e.getMessage must be("failure")
+        e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
       }
     }
 
@@ -154,14 +142,9 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
 
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
-        val future = producer.ask(message)(timeoutDuration).failed
-        Await.ready(future, timeoutDuration).value match {
-          case Some(Right(e: AkkaCamelException)) ⇒
-            // a failure response must have been returned by the forward target
-            e.getMessage must be("failure")
-            e.headers must be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
-          case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
-        }
+        val e = intercept[AkkaCamelException] { Await.result(producer.ask(message)(timeoutDuration), timeoutDuration) }
+        e.getMessage must be("failure")
+        e.headers must be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
       }
     }
 
@@ -204,13 +187,9 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
 
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
-        val future = producer.ask(message)(timeoutDuration).failed
-        Await.ready(future, timeoutDuration).value match {
-          case Some(Right(e: AkkaCamelException)) ⇒
-            e.getMessage must be("failure")
-            e.headers must be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
-          case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
-        }
+        val e = intercept[AkkaCamelException] { Await.result(producer.ask(message)(timeoutDuration), timeoutDuration) }
+        e.getMessage must be("failure")
+        e.headers must be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
       }
     }
 
