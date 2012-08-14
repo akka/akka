@@ -40,7 +40,7 @@ private[camel] trait ConsumerRegistry { this: Activation ⇒
    */
   private[camel] def registerConsumer(endpointUri: String, consumer: Consumer, activationTimeout: Duration) = {
     idempotentRegistry ! RegisterConsumer(endpointUri, consumer.self, consumer)
-    Await.result(activationFutureFor(consumer.self)(activationTimeout), activationTimeout)
+    Await.result(activationFutureFor(consumer.self)(activationTimeout, consumer.context.dispatcher), activationTimeout)
   }
 }
 

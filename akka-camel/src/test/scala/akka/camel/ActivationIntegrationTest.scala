@@ -20,6 +20,7 @@ import java.util.concurrent.TimeoutException
 class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCamelSystem {
   implicit val timeout = 10 seconds
   def template: ProducerTemplate = camel.template
+  import system.dispatcher
 
   "ActivationAware must be notified when endpoint is activated" in {
     val latch = new TestLatch(0)

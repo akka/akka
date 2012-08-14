@@ -16,6 +16,8 @@ import scala.concurrent.Await
 
 class ProducerRegistryTest extends WordSpec with MustMatchers with SharedCamelSystem {
   implicit val timeout = 5.seconds
+  implicit val ec = system.dispatcher
+
   "A ProducerRegistry" must {
     def newEmptyActor: ActorRef = system.actorOf(Props.empty)
     def registerProcessorFor(actorRef: ActorRef) = camel.registerProducer(actorRef, "mock:mock")._2
