@@ -58,7 +58,7 @@ After extracting data from a ``ByteIterator``, the remaining content can also be
 .. includecode:: code/akka/docs/io/BinaryCoding.scala
    :include: rest-to-seq
     
-with no copying from bytes to rest involved. In general, conversions from ByteString to ByteIterator and vice versa are O(1) for non-chunked ``ByteString``s and (at worst) O(nChunks) for chunked ByteStrings.
+with no copying from bytes to rest involved. In general, conversions from ByteString to ByteIterator and vice versa are O(1) for non-chunked ByteStrings and (at worst) O(nChunks) for chunked ByteStrings.
 
 
 Encoding of data also is very natural, using ``ByteStringBuilder``
