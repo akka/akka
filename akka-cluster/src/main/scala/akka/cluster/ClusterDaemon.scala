@@ -75,7 +75,7 @@ private[cluster] object InternalClusterAction {
   /**
    * Marker interface for periodic tick messages
    */
-  trait Tick
+  sealed trait Tick
 
   case object GossipTick extends Tick
 
