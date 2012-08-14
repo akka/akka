@@ -16,6 +16,8 @@ import scala.concurrent.Await
 import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.remote.testconductor.RoleName
+import akka.actor.Props
+import akka.actor.Actor
 
 object LargeClusterMultiJvmSpec extends MultiNodeConfig {
   // each jvm simulates a datacenter with many nodes
@@ -78,6 +80,7 @@ abstract class LargeClusterSpec
   with MultiNodeClusterSpec {
 
   import LargeClusterMultiJvmSpec._
+  import ClusterEvent._
 
   var systems: IndexedSeq[ActorSystem] = IndexedSeq(system)
   val nodesPerDatacenter = system.settings.config.getInt(
@@ -143,15 +146,16 @@ abstract class LargeClusterSpec
 
       val latch = TestLatch(clusterNodes.size)
       clusterNodes foreach { c ⇒
-        c.registerListener(new MembershipChangeListener {
-          override def notify(members: SortedSet[Member]): Unit = {
-            if (!latch.isOpen && members.size == totalNodes && members.forall(_.status == MemberStatus.Up)) {
-              log.debug("All [{}] nodes Up in [{}], it took [{}], received [{}] gossip messages",
-                totalNodes, c.selfAddress, tookMillis, gossipCount(c))
-              latch.countDown()
-            }
+        c.subscribe(system.actorOf(Props(new Actor {
+          def receive = {
+            case MembersChanged(members) ⇒
+              if (!latch.isOpen && members.size == totalNodes && members.forall(_.status == MemberStatus.Up)) {
+                log.debug("All [{}] nodes Up in [{}], it took [{}], received [{}] gossip messages",
+                  totalNodes, c.selfAddress, tookMillis, gossipCount(c))
+                latch.countDown()
+              }
           }
-        })
+        })), classOf[MembersChanged])
       }
 
       runOn(from) {
@@ -271,15 +275,16 @@ abstract class LargeClusterSpec
 
         val latch = TestLatch(nodesPerDatacenter)
         systems foreach { sys ⇒
-          Cluster(sys).registerListener(new MembershipChangeListener {
-            override def notify(members: SortedSet[Member]): Unit = {
-              if (!latch.isOpen && members.size == liveNodes && Cluster(sys).latestGossip.overview.unreachable.size == unreachableNodes) {
-                log.info("Detected [{}] unreachable nodes in [{}], it took [{}], received [{}] gossip messages",
-                  unreachableNodes, Cluster(sys).selfAddress, tookMillis, gossipCount(Cluster(sys)))
-                latch.countDown()
-              }
+          Cluster(sys).subscribe(sys.actorOf(Props(new Actor {
+            def receive = {
+              case MembersChanged(members) ⇒
+                if (!latch.isOpen && members.size == liveNodes && Cluster(sys).latestGossip.overview.unreachable.size == unreachableNodes) {
+                  log.info("Detected [{}] unreachable nodes in [{}], it took [{}], received [{}] gossip messages",
+                    unreachableNodes, Cluster(sys).selfAddress, tookMillis, gossipCount(Cluster(sys)))
+                  latch.countDown()
+                }
             }
-          })
+          })), classOf[MembersChanged])
         }
 
         runOn(firstDatacenter) {

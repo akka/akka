@@ -10,6 +10,8 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.actor.Address
+import akka.actor.Props
+import akka.actor.Actor
 
 object MembershipChangeListenerLeavingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -34,6 +36,7 @@ abstract class MembershipChangeListenerLeavingSpec
   with MultiNodeClusterSpec {
 
   import MembershipChangeListenerLeavingMultiJvmSpec._
+  import ClusterEvent._
 
   "A registered MembershipChangeListener" must {
     "be notified when new node is LEAVING" taggedAs LongRunningTest in {
@@ -52,13 +55,14 @@ abstract class MembershipChangeListenerLeavingSpec
       runOn(third) {
         val latch = TestLatch()
         val expectedAddresses = Set(first, second, third) map address
-        cluster.registerListener(new MembershipChangeListener {
-          def notify(members: SortedSet[Member]) {
-            if (members.map(_.address) == expectedAddresses &&
-              members.exists(m ⇒ m.address == address(second) && m.status == MemberStatus.Leaving))
-              latch.countDown()
+        cluster.subscribe(system.actorOf(Props(new Actor {
+          def receive = {
+            case MembersChanged(members) ⇒
+              if (members.map(_.address) == expectedAddresses &&
+                members.exists(m ⇒ m.address == address(second) && m.status == MemberStatus.Leaving))
+                latch.countDown()
           }
-        })
+        })), classOf[MembersChanged])
         enterBarrier("registered-listener")
         latch.await
       }

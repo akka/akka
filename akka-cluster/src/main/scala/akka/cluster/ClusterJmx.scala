@@ -59,10 +59,8 @@ private[akka] class ClusterJmx(clusterNode: Cluster, log: LoggingAdapter) {
       def getClusterStatus: String = {
         val gossip = clusterNode.latestGossip
         val unreachable = gossip.overview.unreachable
-        val metaData = gossip.meta
         "\nMembers:\n\t" + gossip.members.mkString("\n\t") +
-          { if (unreachable.nonEmpty) "\nUnreachable:\n\t" + unreachable.mkString("\n\t") else "" } +
-          { if (metaData.nonEmpty) "\nMeta Data:\t" + metaData.toString else "" }
+          { if (unreachable.nonEmpty) "\nUnreachable:\n\t" + unreachable.mkString("\n\t") else "" }
       }
 
       def getMemberStatus: String = clusterNode.status.toString

@@ -13,7 +13,7 @@ object Gossip {
 }
 
 /**
- * Represents the state of the cluster; cluster ring membership, ring convergence, meta data -
+ * Represents the state of the cluster; cluster ring membership, ring convergence -
  * all versioned by a vector clock.
  *
  * When a node is joining the `Member`, with status `Joining`, is added to `members`.
@@ -46,7 +46,6 @@ object Gossip {
 case class Gossip(
   overview: GossipOverview = GossipOverview(),
   members: SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
-  meta: Map[String, Array[Byte]] = Map.empty,
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {
@@ -97,7 +96,7 @@ case class Gossip(
   }
 
   /**
-   * Merges two Gossip instances including membership tables, meta-data tables and the VectorClock histories.
+   * Merges two Gossip instances including membership tables, and the VectorClock histories.
    */
   def merge(that: Gossip): Gossip = {
     import Member.ordering
@@ -105,20 +104,17 @@ case class Gossip(
     // 1. merge vector clocks
     val mergedVClock = this.version merge that.version
 
-    // 2. merge meta-data
-    val mergedMeta = this.meta ++ that.meta
-
-    // 3. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
+    // 2. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
     val mergedUnreachable = Member.pickHighestPriority(this.overview.unreachable, that.overview.unreachable)
 
-    // 4. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
+    // 3. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
     //    and exclude unreachable
     val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
 
-    // 5. fresh seen table
+    // 4. fresh seen table
     val mergedSeen = Map.empty[Address, VectorClock]
 
-    Gossip(GossipOverview(mergedSeen, mergedUnreachable), mergedMembers, mergedMeta, mergedVClock)
+    Gossip(GossipOverview(mergedSeen, mergedUnreachable), mergedMembers, mergedVClock)
   }
 
   /**
@@ -178,7 +174,6 @@ case class Gossip(
     "Gossip(" +
       "overview = " + overview +
       ", members = [" + members.mkString(", ") +
-      "], meta = [" + meta.mkString(", ") +
       "], version = " + version +
       ")"
 }

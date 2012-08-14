@@ -11,7 +11,8 @@ import akka.actor.Status.Failure
 import akka.routing.ScatterGatherFirstCompletedRouter
 import akka.util.Timeout
 import akka.pattern.{ AskTimeoutException, ask, pipe }
-import MemberStatus._
+import akka.cluster.MemberStatus._
+import akka.cluster.ClusterEvent._
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -124,9 +125,7 @@ private[cluster] trait ClusterEnvironment {
   private[cluster] def selfAddress: Address
   private[cluster] def scheduler: Scheduler
   private[cluster] def seedNodes: IndexedSeq[Address]
-  private[cluster] def notifyMembershipChangeListeners(members: SortedSet[Member]): Unit
-  private[cluster] def publishLatestGossip(gossip: Gossip): Unit
-  private[cluster] def publishLatestStats(stats: ClusterStats): Unit
+  private[cluster] def eventBus: ClusterEventBus
   private[cluster] def shutdown(): Unit
 }
 
@@ -274,7 +273,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     // wipe the failure detector since we are starting fresh and shouldn't care about the past
     failureDetector.reset()
 
-    notifyListeners(localGossip)
+    publish(localGossip)
 
     coreSender ! SendClusterMessage(address, ClusterUserAction.Join(selfAddress))
   }
@@ -316,7 +315,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
         gossipTo(node)
       }
 
-      notifyListeners(localGossip)
+      publish(localGossip)
     }
   }
 
@@ -335,7 +334,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
       latestGossip = seenVersionedGossip
 
       log.info("Cluster Node [{}] - Marked address [{}] as LEAVING", selfAddress, address)
-      notifyListeners(localGossip)
+      publish(localGossip)
     }
   }
 
@@ -362,7 +361,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     // just cleaning up the gossip state
     latestGossip = Gossip()
     // make sure the final (removed) state is always published
-    notifyListeners(localGossip)
+    publish(localGossip)
     environment.shutdown()
   }
 
@@ -413,7 +412,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     val versionedGossip = newGossip :+ vclockNode
     latestGossip = versionedGossip seen selfAddress
 
-    notifyListeners(localGossip)
+    publish(localGossip)
   }
 
   /**
@@ -507,7 +506,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
         }
 
         stats = stats.incrementReceivedGossipCount
-        notifyListeners(localGossip)
+        publish(localGossip)
 
         if (envelope.conversation &&
           (conflict || (winningGossip ne remoteGossip) || (latestGossip ne remoteGossip))) {
@@ -709,7 +708,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
           log.info("Cluster Node [{}] - Leader is marking unreachable node [{}] as DOWN", selfAddress, member.address)
         }
 
-        notifyListeners(localGossip)
+        publish(localGossip)
       }
     }
   }
@@ -763,7 +762,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
         log.error("Cluster Node [{}] - Marking node(s) as UNREACHABLE [{}]", selfAddress, newlyDetectedUnreachableMembers.mkString(", "))
 
-        notifyListeners(localGossip)
+        publish(localGossip)
       }
     }
   }
@@ -803,18 +802,21 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
   def gossipTo(address: Address, gossipMsg: GossipEnvelope): Unit = if (address != selfAddress)
     coreSender ! SendClusterMessage(address, gossipMsg)
 
-  def notifyListeners(oldGossip: Gossip): Unit = {
+  def publish(oldGossip: Gossip): Unit = {
     if (PublishStateInterval == Duration.Zero) publishState()
-
-    val oldMembersStatus = oldGossip.members.map(m ⇒ (m.address, m.status))
-    val newMembersStatus = latestGossip.members.map(m ⇒ (m.address, m.status))
-    if (newMembersStatus != oldMembersStatus)
-      environment notifyMembershipChangeListeners latestGossip.members
+    publishMembers(oldGossip.members)
   }
 
   def publishState(): Unit = {
-    environment.publishLatestGossip(latestGossip)
-    environment.publishLatestStats(stats)
+    environment.eventBus publish MembershipGossipChanged(latestGossip)
+    environment.eventBus publish InternalStatsChanged(stats)
+  }
+
+  def publishMembers(oldMembers: SortedSet[Member]): Unit = {
+    val oldMembersStatus = oldMembers.map(m ⇒ (m.address, m.status))
+    val newMembersStatus = latestGossip.members.map(m ⇒ (m.address, m.status))
+    if (newMembersStatus != oldMembersStatus)
+      environment.eventBus publish MembersChanged(latestGossip.members)
   }
 
   def ping(p: Ping): Unit = sender ! Pong(p)

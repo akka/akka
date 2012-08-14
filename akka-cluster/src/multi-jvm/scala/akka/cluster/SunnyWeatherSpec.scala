@@ -11,6 +11,8 @@ import akka.testkit._
 import scala.concurrent.util.duration._
 import java.util.concurrent.atomic.AtomicReference
 import scala.collection.immutable.SortedSet
+import akka.actor.Props
+import akka.actor.Actor
 
 object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -40,6 +42,7 @@ abstract class SunnyWeatherSpec
   with MultiNodeClusterSpec {
 
   import SunnyWeatherMultiJvmSpec._
+  import ClusterEvent._
 
   "A normal cluster" must {
     "be healthy" taggedAs LongRunningTest in {
@@ -55,12 +58,13 @@ abstract class SunnyWeatherSpec
       log.info("5 joined")
 
       val unexpected = new AtomicReference[SortedSet[Member]]
-      cluster.registerListener(new MembershipChangeListener {
-        def notify(members: SortedSet[Member]) {
-          // we don't expected any changes to the cluster
-          unexpected.set(members)
+      cluster.subscribe(system.actorOf(Props(new Actor {
+        def receive = {
+          case MembersChanged(members) ⇒
+            // we don't expected any changes to the cluster
+            unexpected.set(members)
         }
-      })
+      })), classOf[MembersChanged])
 
       for (n ← 1 to 30) {
         enterBarrier("period-" + n)
