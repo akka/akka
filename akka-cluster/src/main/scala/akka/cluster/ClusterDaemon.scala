@@ -72,15 +72,20 @@ private[cluster] object InternalClusterAction {
    */
   case class InitJoinAck(address: Address) extends ClusterMessage
 
-  case object GossipTick
+  /**
+   * Marker interface for periodic tick messages
+   */
+  trait Tick
 
-  case object HeartbeatTick
+  case object GossipTick extends Tick
 
-  case object ReapUnreachableTick
+  case object HeartbeatTick extends Tick
 
-  case object LeaderActionsTick
+  case object ReapUnreachableTick extends Tick
 
-  case object PublishStateTick
+  case object LeaderActionsTick extends Tick
+
+  case object PublishStateTick extends Tick
 
   case class SendClusterMessage(to: Address, msg: ClusterMessage)
 
@@ -223,7 +228,16 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     publishStateTask foreach { _.cancel() }
   }
 
-  def receive = {
+  def uninitialized: Actor.Receive = {
+    case JoinSeedNode                    ⇒ joinSeedNode()
+    case InitJoin                        ⇒ // skip, not ready yet
+    case InitJoinAck(address)            ⇒ join(address)
+    case JoinTo(address)                 ⇒ join(address)
+    case Failure(e: AskTimeoutException) ⇒ joinSeedNodeTimeout()
+    case _: Tick                         ⇒ // ignore periodic tasks until initialized
+  }
+
+  def initialized: Actor.Receive = {
     case msg: GossipEnvelope              ⇒ receiveGossip(msg)
     case msg: GossipMergeConflict         ⇒ receiveGossipMerge(msg)
     case GossipTick                       ⇒ gossip()
@@ -231,10 +245,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     case ReapUnreachableTick              ⇒ reapUnreachableMembers()
     case LeaderActionsTick                ⇒ leaderActions()
     case PublishStateTick                 ⇒ publishState()
-    case JoinSeedNode                     ⇒ joinSeedNode()
     case InitJoin                         ⇒ initJoin()
-    case InitJoinAck(address)             ⇒ join(address)
-    case Failure(e: AskTimeoutException)  ⇒ joinSeedNodeTimeout()
     case JoinTo(address)                  ⇒ join(address)
     case ClusterUserAction.Join(address)  ⇒ joining(address)
     case ClusterUserAction.Down(address)  ⇒ downing(address)
@@ -246,10 +257,14 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
   }
 
+  def receive = uninitialized
+
   def joinSeedNode(): Unit = {
-    val seedRoutees = environment.seedNodes.collect { case a if a != selfAddress ⇒ self.path.toStringWithAddress(a) }
-    if (seedRoutees.isEmpty) join(selfAddress)
+    // only the node which is named first in the list of seed nodes will join itself
+    if (environment.seedNodes.isEmpty || environment.seedNodes.head == selfAddress)
+      join(selfAddress)
     else {
+      val seedRoutees = environment.seedNodes.collect { case a if a != selfAddress ⇒ self.path.toStringWithAddress(a) }
       implicit val within = Timeout(SeedNodeTimeout)
       val seedRouter = context.actorOf(Props.empty.withRouter(ScatterGatherFirstCompletedRouter(routees = seedRoutees, within = within.duration)))
       seedRouter ! InitJoin
@@ -259,7 +274,10 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
   def initJoin(): Unit = sender ! InitJoinAck(selfAddress)
 
-  def joinSeedNodeTimeout(): Unit = join(selfAddress)
+  def joinSeedNodeTimeout(): Unit = {
+    // try again later, first seed node must be started before other seed nodes can join
+    clusterScheduler.scheduleOnce(SeedNodeTimeout, self, JoinSeedNode)
+  }
 
   /**
    * Try to join this cluster node with the node specified by 'address'.
@@ -276,7 +294,11 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
     notifyListeners(localGossip)
 
-    coreSender ! SendClusterMessage(address, ClusterUserAction.Join(selfAddress))
+    context.become(initialized)
+    if (address == selfAddress)
+      joining(address)
+    else
+      coreSender ! SendClusterMessage(address, ClusterUserAction.Join(selfAddress))
   }
 
   /**
