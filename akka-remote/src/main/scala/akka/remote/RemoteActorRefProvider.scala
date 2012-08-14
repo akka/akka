@@ -24,7 +24,7 @@ private[akka] class RemoteActorRefProvider(
 
   val deployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
-  private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, deployer)
+  private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, dynamicAccess, deployer)
 
   @volatile
   private var _log = local.log

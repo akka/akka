@@ -61,6 +61,23 @@ case class ChildRestartStats(child: ActorRef, var uid: Int = 0, var maxNrOfRetri
   }
 }
 
+/**
+ * Implement this interface in order to configure the supervisorStrategy for
+ * the top-level guardian actor (`/user`). An instance of this class must be
+ * instantiable using a no-arg constructor.
+ */
+trait SupervisorStrategyConfigurator {
+  def create(): SupervisorStrategy
+}
+
+class DefaultSupervisorStrategy extends SupervisorStrategyConfigurator {
+  override def create(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
+}
+
+class StoppingSupervisorStrategy extends SupervisorStrategyConfigurator {
+  override def create(): SupervisorStrategy = SupervisorStrategy.stoppingStrategy
+}
+
 trait SupervisorStrategyLowPriorityImplicits { this: SupervisorStrategy.type ⇒
 
   /**
@@ -133,9 +150,19 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
       case _: ActorInitializationException ⇒ Stop
       case _: ActorKilledException         ⇒ Stop
       case _: Exception                    ⇒ Restart
-      case _                               ⇒ Escalate
     }
     OneForOneStrategy()(defaultDecider)
+  }
+
+  /**
+   * This strategy resembles Erlang in that failing children are always
+   * terminated.
+   */
+  final val stoppingStrategy: SupervisorStrategy = {
+    def stoppingDecider: Decider = {
+      case _: Exception ⇒ Stop
+    }
+    OneForOneStrategy()(stoppingDecider)
   }
 
   /**
