@@ -165,7 +165,7 @@ If you want to see all messages that are received through remoting at DEBUG log 
       }
     }
 
-Also see the logging options for TestKit: :ref:`actor.logging`.
+Also see the logging options for TestKit: :ref:`actor.logging-scala`.
 
 Translating Log Source to String and Class
 ------------------------------------------
