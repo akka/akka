@@ -16,12 +16,13 @@ import scala.reflect.ClassTag
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import concurrent.Await
 import akka.util.Timeout
+import akka.testkit.AkkaSpec
 
 private[camel] object TestSupport {
 
   def start(actor: ⇒ Actor)(implicit system: ActorSystem): ActorRef = {
     val actorRef = system.actorOf(Props(actor))
-    Await.result(CamelExtension(system).activationFutureFor(actorRef)(10 seconds), 10 seconds)
+    Await.result(CamelExtension(system).activationFutureFor(actorRef)(10 seconds, system.dispatcher), 10 seconds)
     actorRef
   }
 
@@ -47,7 +48,7 @@ private[camel] object TestSupport {
   }
 
   trait SharedCamelSystem extends BeforeAndAfterAll { this: Suite ⇒
-    implicit lazy val system = ActorSystem("test")
+    implicit lazy val system = ActorSystem("test", AkkaSpec.testConf)
     implicit lazy val camel = CamelExtension(system)
 
     abstract override protected def afterAll() {
@@ -62,7 +63,7 @@ private[camel] object TestSupport {
 
     override protected def beforeEach() {
       super.beforeEach()
-      system = ActorSystem("test")
+      system = ActorSystem("test", AkkaSpec.testConf)
       camel = CamelExtension(system)
     }
 

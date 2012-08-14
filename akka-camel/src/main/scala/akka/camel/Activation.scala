@@ -6,10 +6,10 @@ package akka.camel
 
 import akka.camel.internal._
 import akka.util.Timeout
-import scala.concurrent.Future
 import akka.actor.{ ActorSystem, Props, ActorRef }
 import akka.pattern._
 import scala.concurrent.util.Duration
+import concurrent.{ ExecutionContext, Future }
 
 /**
  * Activation trait that can be used to wait on activation or de-activation of Camel endpoints.
@@ -27,11 +27,11 @@ trait Activation {
    * @param endpoint the endpoint to be activated
    * @param timeout the timeout for the Future
    */
-  def activationFutureFor(endpoint: ActorRef)(implicit timeout: Duration): Future[ActorRef] =
+  def activationFutureFor(endpoint: ActorRef)(implicit timeout: Duration, executor: ExecutionContext): Future[ActorRef] =
     (activationTracker.ask(AwaitActivation(endpoint))(Timeout(timeout))).map[ActorRef]({
-      case EndpointActivated(`endpoint`)      ⇒ endpoint
-      case EndpointFailedToActivate(_, cause) ⇒ throw cause
-    })(system.dispatcher)
+      case EndpointActivated(`endpoint`)               ⇒ endpoint
+      case EndpointFailedToActivate(`endpoint`, cause) ⇒ throw cause
+    })
 
   /**
    * Produces a Future which will be completed when the given endpoint has been deactivated or
@@ -40,9 +40,9 @@ trait Activation {
    * @param endpoint the endpoint to be deactivated
    * @param timeout the timeout of the Future
    */
-  def deactivationFutureFor(endpoint: ActorRef)(implicit timeout: Duration): Future[Unit] =
-    (activationTracker.ask(AwaitDeActivation(endpoint))(Timeout(timeout))).map[Unit]({
-      case EndpointDeActivated(`endpoint`)      ⇒ ()
-      case EndpointFailedToDeActivate(_, cause) ⇒ throw cause
-    })(system.dispatcher)
+  def deactivationFutureFor(endpoint: ActorRef)(implicit timeout: Duration, executor: ExecutionContext): Future[ActorRef] =
+    (activationTracker.ask(AwaitDeActivation(endpoint))(Timeout(timeout))).map[ActorRef]({
+      case EndpointDeActivated(`endpoint`)               ⇒ endpoint
+      case EndpointFailedToDeActivate(`endpoint`, cause) ⇒ throw cause
+    })
 }

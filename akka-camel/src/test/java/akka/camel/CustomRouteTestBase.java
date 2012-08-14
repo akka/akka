@@ -5,6 +5,7 @@ import akka.camel.internal.component.CamelPath;
 import akka.camel.javaapi.UntypedConsumerActor;
 import akka.camel.javaapi.UntypedProducerActor;
 import scala.concurrent.Await;
+import scala.concurrent.ExecutionContext;
 import scala.concurrent.util.Duration;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
@@ -59,8 +60,9 @@ public class CustomRouteTestBase {
   public void testCustomConsumerRoute() throws Exception {
     MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockConsumer", MockEndpoint.class);
     Duration timeout = Duration.create(10, TimeUnit.SECONDS);
+    ExecutionContext executionContext = system.dispatcher();
     ActorRef consumer = Await.result(
-            camel.activationFutureFor(system.actorOf(new Props(TestConsumer.class), "testConsumer"), timeout),
+            camel.activationFutureFor(system.actorOf(new Props(TestConsumer.class), "testConsumer"), timeout, executionContext),
             timeout);
     camel.context().addRoutes(new CustomRouteBuilder("direct:testRouteConsumer",consumer));
     camel.template().sendBody("direct:testRouteConsumer", "test");
@@ -72,11 +74,12 @@ public class CustomRouteTestBase {
   public void testCustomAckConsumerRoute() throws Exception {
     MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockAck", MockEndpoint.class);
     Duration timeout = Duration.create(10, TimeUnit.SECONDS);
+    ExecutionContext executionContext = system.dispatcher();
     ActorRef consumer = Await.result(
       camel.activationFutureFor(
         system.actorOf(
           new Props( new UntypedActorFactory(){ public Actor create() { return new TestAckConsumer("direct:testConsumerAck","mock:mockAck"); } }), "testConsumerAck"),
-      timeout),
+      timeout, executionContext),
     timeout);
     camel.context().addRoutes(new CustomRouteBuilder("direct:testAck", consumer, false, timeout));
     camel.template().sendBody("direct:testAck", "test");
@@ -87,10 +90,11 @@ public class CustomRouteTestBase {
   @Test
   public void testCustomAckConsumerRouteFromUri() throws Exception {
     MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockAckUri", MockEndpoint.class);
+      ExecutionContext executionContext = system.dispatcher();
     Duration timeout = Duration.create(10, TimeUnit.SECONDS);
     ActorRef consumer = Await.result(
         camel.activationFutureFor(system.actorOf(new Props( new UntypedActorFactory(){ public Actor create() { return new TestAckConsumer("direct:testConsumerAckFromUri","mock:mockAckUri"); } }), "testConsumerAckUri"),
-      timeout),
+      timeout, executionContext),
     timeout);
     camel.context().addRoutes(new CustomRouteBuilder("direct:testAckFromUri","akka://test/user/testConsumerAckUri?autoAck=false"));
     camel.template().sendBody("direct:testAckFromUri", "test");
@@ -101,9 +105,10 @@ public class CustomRouteTestBase {
   @Test(expected=CamelExecutionException.class)
   public void testCustomTimeoutConsumerRoute() throws Exception {
     Duration timeout = Duration.create(10, TimeUnit.SECONDS);
+    ExecutionContext executionContext = system.dispatcher();
     ActorRef consumer = Await.result(
       camel.activationFutureFor(system.actorOf(new Props( new UntypedActorFactory(){ public Actor create() { return new TestAckConsumer("direct:testConsumerException","mock:mockException"); } }), "testConsumerException"),
-      timeout),
+      timeout, executionContext),
     timeout);
     camel.context().addRoutes(new CustomRouteBuilder("direct:testException", consumer, false, Duration.create(0, TimeUnit.SECONDS)));
     camel.template().sendBody("direct:testException", "test");
