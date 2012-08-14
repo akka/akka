@@ -15,18 +15,24 @@ import org.apache.camel.model.RouteDefinition
 import org.apache.camel.builder.Builder
 import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException }
 import java.util.concurrent.{ ExecutionException, TimeUnit, TimeoutException }
-import akka.testkit.TestLatch
+import akka.testkit._
 import akka.actor.Status.Failure
 import scala.concurrent.Await
 import scala.concurrent.util.duration._
+import akka.actor.Status.Failure
+import akka.actor.ActorKilledException
 
 class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedCamelSystem {
   "ConsumerIntegrationTest" must {
     implicit val defaultTimeout = 10.seconds
 
     "Consumer must throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
-      val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
-      intercept[FailedToCreateRouteException] { Await.result(camel.activationFutureFor(actorRef), defaultTimeout) }
+      filterEvents(EventFilter[ActorInitializationException](occurrences = 1), EventFilter[FailedToCreateRouteException](occurrences = 1)) {
+        val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
+        intercept[FailedToCreateRouteException] {
+          Await.result(camel.activationFutureFor(actorRef), defaultTimeout)
+        }
+      }
     }
 
     "Consumer must support in-out messaging" in {
@@ -70,11 +76,13 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
           restarted.countDown()
         }
       })
-      consumer ! "throw"
-      Await.ready(restarted, defaultTimeout)
+      filterEvents(EventFilter[Exception](occurrences = 1)) {
+        consumer ! "throw"
+        Await.ready(restarted, defaultTimeout)
 
-      val response = camel.sendTo("direct:a2", msg = "xyz")
-      response must be("received xyz")
+        val response = camel.sendTo("direct:a2", msg = "xyz")
+        response must be("received xyz")
+      }
     }
 
     "Consumer must unregister itself when stopped" in {
@@ -106,7 +114,9 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
           rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
         }
       })
-      camel.sendTo("direct:error-handler-test", msg = "hello") must be("error: hello")
+      filterEvents(EventFilter[Exception](occurrences = 1)) {
+        camel.sendTo("direct:error-handler-test", msg = "hello") must be("error: hello")
+      }
     }
 
     "Error passing consumer supports redelivery through route modification" in {
@@ -115,7 +125,9 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
           rd.onException(classOf[Exception]).maximumRedeliveries(1).end
         }
       })
-      camel.sendTo("direct:failing-once-concumer", msg = "hello") must be("accepted: hello")
+      filterEvents(EventFilter[Exception](occurrences = 1)) {
+        camel.sendTo("direct:failing-once-concumer", msg = "hello") must be("accepted: hello")
+      }
     }
 
     "Consumer supports manual Ack" in {

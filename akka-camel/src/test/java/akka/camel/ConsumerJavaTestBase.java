@@ -7,13 +7,14 @@ package akka.camel;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.testkit.JavaTestKit;
 import scala.concurrent.Await;
 import scala.concurrent.util.Duration;
 import org.junit.AfterClass;
 import org.junit.Test;
-
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import akka.testkit.AkkaSpec;
+import akka.testkit.JavaTestKit.EventFilter;
 
 import static org.junit.Assert.assertEquals;
 
@@ -23,7 +24,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class ConsumerJavaTestBase {
 
-    static ActorSystem system = ActorSystem.create("test");
+    static ActorSystem system = ActorSystem.create("test", AkkaSpec.testConf());
     static Camel camel = CamelExtension.get(system);
 
 
@@ -34,12 +35,22 @@ public class ConsumerJavaTestBase {
 
     @Test
     public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() throws Exception {
-        Duration timeout = Duration.create(1, TimeUnit.SECONDS);
-        ActorRef ref = Await.result(
-          camel.activationFutureFor(system.actorOf(new Props(SampleErrorHandlingConsumer.class)), timeout),
-          timeout);
-
-        String result = camel.template().requestBody("direct:error-handler-test-java", "hello", String.class);
-        assertEquals("error: hello", result);
+        new JavaTestKit(system) {{
+            String result = new EventFilter<String>(Exception.class) {
+                protected String run() {
+                    Duration timeout = Duration.create(1, TimeUnit.SECONDS);
+                    try {
+                        ActorRef ref = Await.result(
+                                camel.activationFutureFor(system.actorOf(new Props(SampleErrorHandlingConsumer.class)), timeout),
+                                timeout);
+                        return camel.template().requestBody("direct:error-handler-test-java", "hello", String.class);
+                    }
+                    catch (Exception e) {
+                        return e.getMessage();
+                    }
+                }
+            }.occurrences(1).exec();
+            assertEquals("error: hello", result);
+        }};
     }
 }
