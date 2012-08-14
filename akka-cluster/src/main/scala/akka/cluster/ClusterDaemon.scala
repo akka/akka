@@ -8,6 +8,7 @@ import scala.concurrent.util.{ Deadline, Duration }
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, RootActorPath, PoisonPill, Scheduler }
 import akka.actor.Status.Failure
+import akka.event.EventStream
 import akka.routing.ScatterGatherFirstCompletedRouter
 import akka.util.Timeout
 import akka.pattern.{ AskTimeoutException, ask, pipe }
@@ -125,7 +126,6 @@ private[cluster] trait ClusterEnvironment {
   private[cluster] def selfAddress: Address
   private[cluster] def scheduler: Scheduler
   private[cluster] def seedNodes: IndexedSeq[Address]
-  private[cluster] def eventBus: ClusterEventBus
   private[cluster] def shutdown(): Unit
 }
 
@@ -808,16 +808,18 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
   }
 
   def publishState(): Unit = {
-    environment.eventBus publish MembershipGossipChanged(latestGossip)
-    environment.eventBus publish InternalStatsChanged(stats)
+    eventStream publish MembershipGossipChanged(latestGossip)
+    eventStream publish InternalStatsChanged(stats)
   }
 
   def publishMembers(oldMembers: SortedSet[Member]): Unit = {
     val oldMembersStatus = oldMembers.map(m ⇒ (m.address, m.status))
     val newMembersStatus = latestGossip.members.map(m ⇒ (m.address, m.status))
     if (newMembersStatus != oldMembersStatus)
-      environment.eventBus publish MembersChanged(latestGossip.members)
+      eventStream publish MembersChanged(latestGossip.members)
   }
+
+  def eventStream: EventStream = context.system.eventStream
 
   def ping(p: Ping): Unit = sender ! Pong(p)
 }

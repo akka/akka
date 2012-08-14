@@ -103,8 +103,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   @volatile
   private[cluster] var _latestStats = ClusterStats()
 
-  private[cluster] val eventBus: ClusterEventBus = new ClusterEventBus
-
   // ========================================================
   // ===================== WORK DAEMONS =====================
   // ========================================================
@@ -167,7 +165,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       }
     }).withDispatcher(UseDispatcher), name = "clusterEventBusListener")
 
-    eventBus.subscribe(listener, classOf[ClusterDomainEvent])
+    subscribe(listener, classOf[ClusterDomainEvent])
     listener
   }
 
@@ -261,7 +259,12 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
    * The `to` Class can be [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
    * or subclass.
    */
-  def subscribe(subscriber: ActorRef, to: Class[_]): Unit = eventBus.subscribe(subscriber, to)
+  def subscribe(subscriber: ActorRef, to: Class[_]): Unit = system.eventStream.subscribe(subscriber, to)
+
+  /**
+   * Subscribe to cluster domain events.
+   */
+  def unsubscribe(subscriber: ActorRef): Unit = system.eventStream.unsubscribe(subscriber)
 
   /**
    * Try to join this cluster node with the node specified by 'address'.
@@ -299,7 +302,7 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", selfAddress)
 
       system.stop(clusterDaemons)
-      eventBus.unsubscribe(eventBusListener)
+      unsubscribe(eventBusListener)
       system.stop(eventBusListener)
 
       scheduler.close()
