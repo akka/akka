@@ -411,7 +411,7 @@ class LocalActorRefProvider(
    */
   def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
-  private lazy val guardianSupervisorStrategyConfigurator =
+  private def guardianSupervisorStrategyConfigurator =
     dynamicAccess.createInstanceFor[SupervisorStrategyConfigurator](settings.SupervisorStrategyClass, Seq()).fold(throw _, x ⇒ x)
 
   /**

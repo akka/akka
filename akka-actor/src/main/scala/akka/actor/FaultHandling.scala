@@ -70,11 +70,11 @@ trait SupervisorStrategyConfigurator {
   def create(): SupervisorStrategy
 }
 
-class DefaultSupervisorStrategy extends SupervisorStrategyConfigurator {
+final class DefaultSupervisorStrategy extends SupervisorStrategyConfigurator {
   override def create(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
 }
 
-class StoppingSupervisorStrategy extends SupervisorStrategyConfigurator {
+final class StoppingSupervisorStrategy extends SupervisorStrategyConfigurator {
   override def create(): SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 }
 
@@ -156,7 +156,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 
   /**
    * This strategy resembles Erlang in that failing children are always
-   * terminated.
+   * terminated (one-for-one).
    */
   final val stoppingStrategy: SupervisorStrategy = {
     def stoppingDecider: Decider = {
