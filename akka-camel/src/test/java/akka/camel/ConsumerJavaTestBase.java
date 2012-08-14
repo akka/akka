@@ -8,6 +8,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import scala.concurrent.Await;
+import scala.concurrent.ExecutionContext;
 import scala.concurrent.util.Duration;
 import org.junit.AfterClass;
 import org.junit.Test;
@@ -35,8 +36,9 @@ public class ConsumerJavaTestBase {
     @Test
     public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() throws Exception {
         Duration timeout = Duration.create(1, TimeUnit.SECONDS);
+        ExecutionContext executionContext = system.dispatcher();
         ActorRef ref = Await.result(
-          camel.activationFutureFor(system.actorOf(new Props(SampleErrorHandlingConsumer.class)), timeout),
+          camel.activationFutureFor(system.actorOf(new Props(SampleErrorHandlingConsumer.class)), timeout, executionContext),
           timeout);
 
         String result = camel.template().requestBody("direct:error-handler-test-java", "hello", String.class);

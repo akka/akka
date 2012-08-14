@@ -21,7 +21,7 @@ private[camel] object TestSupport {
 
   def start(actor: ⇒ Actor)(implicit system: ActorSystem): ActorRef = {
     val actorRef = system.actorOf(Props(actor))
-    Await.result(CamelExtension(system).activationFutureFor(actorRef)(10 seconds), 10 seconds)
+    Await.result(CamelExtension(system).activationFutureFor(actorRef)(10 seconds, system.dispatcher), 10 seconds)
     actorRef
   }
 
