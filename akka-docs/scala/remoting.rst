@@ -72,7 +72,9 @@ Once you obtained a reference to the actor you can interact with it they same wa
 
   actor ! "Pretty awesome feature"
 
-For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
+.. note::
+
+  For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
 
 Creating Actors Remotely
 ^^^^^^^^^^^^^^^^^^^^^^^^

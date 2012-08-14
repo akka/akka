@@ -61,7 +61,9 @@ As you can see from the example above the following pattern is used to find an `
 
     akka://<actorsystemname>@<hostname>:<port>/<actor path>
 
-For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
+.. note::
+
+  For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
 
 Creating Actors Remotely
 ^^^^^^^^^^^^^^^^^^^^^^^^
