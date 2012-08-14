@@ -34,13 +34,15 @@ abstract class JoinSeedNodeSpec
 
   import JoinSeedNodeMultiJvmSpec._
 
-  override def seedNodes = IndexedSeq(seed3, seed2, seed1)
+  override def seedNodes = IndexedSeq(seed1, seed2, seed3)
 
   "A cluster with configured seed nodes" must {
     "be able to start the seed nodes concurrently" taggedAs LongRunningTest in {
-      // without looking up the addresses first there might be
-      // [akka://JoinSeedNodeSpec/user/TestConductorClient] cannot write GetAddress(RoleName(seed2)) while waiting for seed1
-      //      roles foreach address
+
+      runOn(seed1) {
+        // test that first seed doesn't have to be started first
+        Thread.sleep(3000)
+      }
 
       runOn(seed1, seed2, seed3) {
         awaitUpConvergence(3)
