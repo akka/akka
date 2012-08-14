@@ -15,7 +15,7 @@ import akka.util.Reflect
 /**
  * Factory for Props instances.
  *
- * Props is a ActorRef configuration object, that is thread safe and fully sharable.
+ * Props is a ActorRef configuration object, that is immutable, so it is thread safe and fully sharable.
  *
  * Used when creating new actors through; <code>ActorSystem.actorOf</code> and <code>ActorContext.actorOf</code>.
  */
@@ -82,7 +82,7 @@ object Props {
 }
 
 /**
- * Props is a ActorRef configuration object, that is thread safe and fully sharable.
+ * Props is a ActorRef configuration object, that is immutable, so it is thread safe and fully sharable.
  * Used when creating new actors through; <code>ActorSystem.actorOf</code> and <code>ActorContext.actorOf</code>.
  *
  * In case of providing code which creates the actual Actor instance, that must not return the same instance multiple times.

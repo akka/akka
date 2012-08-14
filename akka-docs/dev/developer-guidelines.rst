@@ -13,7 +13,7 @@ Akka is using ``Scalariform`` to format the source code as part of the build. So
 Process
 -------
 
-* Make sure you have signed the Akka CLA, if not, ask for it on the Mailing List.
+* Make sure you have signed the Akka CLA, if not, `sign it online <http://www.typesafe.com/contribute/cla>`_.
 * Pick a ticket, if there is no ticket for your work then create one first.
 * Start working in a feature branch. Name it something like ``wip-<ticket number>-<descriptive name>-<your username>``.
 * When you are done, create a GitHub Pull-Request towards the targeted branch and email the Akka Mailing List that you want it reviewed
