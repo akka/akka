@@ -850,17 +850,14 @@ private[cluster] final class JoinSeedNodeProcess(environment: ClusterEnvironment
 
   context.setReceiveTimeout(environment.settings.SeedNodeTimeout)
 
-  override def preStart(): Unit = {
-    self ! JoinSeedNode
-  }
+  override def preStart(): Unit = self ! JoinSeedNode
 
   def receive = {
     case JoinSeedNode ⇒
       // send InitJoin to all seed nodes (except myself)
-      val seedRefs = environment.seedNodes.collect {
+      environment.seedNodes.collect {
         case a if a != selfAddress ⇒ context.system.actorFor(context.parent.path.toStringWithAddress(a))
-      }
-      seedRefs foreach { _ ! InitJoin }
+      } foreach { _ ! InitJoin }
     case InitJoinAck(address) ⇒
       // first InitJoinAck reply
       context.parent ! JoinTo(address)
