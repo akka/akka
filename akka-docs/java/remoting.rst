@@ -43,6 +43,11 @@ As you can see in the example above there are four things you need to add to get
   communicate across the network.
 * Add port number - the port the actor system should listen on, set to 0 to have it chosen automatically
 
+.. note::
+  The port number needs to be unique for each actor system on the same machine even if the actor
+  systems have different names. This is because each actor system has its own network subsystem
+  listening for connections and handling messages as not to interfere with other actor systems.
+
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
 There are lots of more properties that are related to remoting in Akka. We refer to the following
 reference file for more information:
