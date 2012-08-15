@@ -896,7 +896,7 @@ object ClusterEvent {
   /**
    * Marker interface for cluster domain events.
    */
-  trait ClusterDomainEvent
+  sealed trait ClusterDomainEvent
 
   /**
    * Current snapshot state of the cluster. Sent to new subscriber.
