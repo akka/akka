@@ -417,7 +417,11 @@ class LocalActorRefProvider(
   /**
    * Overridable supervision strategy to be used by the “/user” guardian.
    */
-  protected def rootGuardianStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy
+  protected def rootGuardianStrategy: SupervisorStrategy = OneForOneStrategy() {
+    case ex ⇒
+      log.error(ex, "guardian failed, shutting down system")
+      SupervisorStrategy.Stop
+  }
 
   /**
    * Overridable supervision strategy to be used by the “/user” guardian.

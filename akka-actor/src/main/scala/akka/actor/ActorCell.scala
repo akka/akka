@@ -182,19 +182,19 @@ private[akka] trait Cell {
    */
   def systemImpl: ActorSystemImpl
   /**
-   * Recursively suspend this actor and all its children.
+   * Recursively suspend this actor and all its children. Must not throw exceptions.
    */
   def suspend(): Unit
   /**
-   * Recursively resume this actor and all its children.
+   * Recursively resume this actor and all its children. Must not throw exceptions.
    */
   def resume(causedByFailure: Throwable): Unit
   /**
-   * Restart this actor (will recursively restart or stop all children).
+   * Restart this actor (will recursively restart or stop all children). Must not throw exceptions.
    */
   def restart(cause: Throwable): Unit
   /**
-   * Recursively terminate this actor and all its children.
+   * Recursively terminate this actor and all its children. Must not throw exceptions.
    */
   def stop(): Unit
   /**
@@ -217,11 +217,13 @@ private[akka] trait Cell {
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
    * schedule the actor to run, depending on which type of cell it is.
+   * Must not throw exceptions.
    */
   def tell(message: Any, sender: ActorRef): Unit
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
    * schedule the actor to run, depending on which type of cell it is.
+   * Must not throw exceptions.
    */
   def sendSystemMessage(msg: SystemMessage): Unit
   /**
@@ -259,6 +261,14 @@ private[akka] object ActorCell {
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
   final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
+
+  final def catchingSend(system: ActorSystem, source: String, clazz: Class[_], code: ⇒ Unit): Unit = {
+    try code
+    catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        system.eventStream.publish(Error(e, source, clazz, "swallowing exception during message send"))
+    }
+  }
 }
 
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)

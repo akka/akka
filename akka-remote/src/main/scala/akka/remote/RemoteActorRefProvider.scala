@@ -229,9 +229,11 @@ private[akka] class RemoteActorRef private[akka] (
 
   def isTerminated: Boolean = !running
 
-  def sendSystemMessage(message: SystemMessage): Unit = remote.send(message, None, this)
+  def sendSystemMessage(message: SystemMessage): Unit =
+    ActorCell.catchingSend(remote.system, path.toString, classOf[RemoteActorRef], remote.send(message, None, this))
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = remote.send(message, Option(sender), this)
+  override def !(message: Any)(implicit sender: ActorRef = null): Unit =
+    ActorCell.catchingSend(remote.system, path.toString, classOf[RemoteActorRef], remote.send(message, Option(sender), this))
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 

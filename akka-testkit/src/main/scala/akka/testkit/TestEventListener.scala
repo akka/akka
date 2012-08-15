@@ -14,6 +14,7 @@ import java.lang.{ Iterable ⇒ JIterable }
 import scala.collection.JavaConverters
 import scala.concurrent.util.Duration
 import scala.reflect.ClassTag
+import akka.actor.NoSerializationVerificationNeeded
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
@@ -39,7 +40,7 @@ object TestEvent {
   object Mute {
     def apply(filter: EventFilter, filters: EventFilter*): Mute = new Mute(filter +: filters.toSeq)
   }
-  case class Mute(filters: Seq[EventFilter]) extends TestEvent {
+  case class Mute(filters: Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
      * Java API
      */
@@ -48,7 +49,7 @@ object TestEvent {
   object UnMute {
     def apply(filter: EventFilter, filters: EventFilter*): UnMute = new UnMute(filter +: filters.toSeq)
   }
-  case class UnMute(filters: Seq[EventFilter]) extends TestEvent {
+  case class UnMute(filters: Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
      * Java API
      */

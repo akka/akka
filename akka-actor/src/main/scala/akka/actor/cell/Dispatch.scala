@@ -63,20 +63,26 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def suspend(): Unit = dispatcher.systemDispatch(this, Suspend())
+  final def suspend(): Unit =
+    ActorCell.catchingSend(system, self.path.toString, clazz(actor), dispatcher.systemDispatch(this, Suspend()))
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def resume(causedByFailure: Throwable): Unit = dispatcher.systemDispatch(this, Resume(causedByFailure))
+  final def resume(causedByFailure: Throwable): Unit =
+    ActorCell.catchingSend(system, self.path.toString, clazz(actor), dispatcher.systemDispatch(this, Resume(causedByFailure)))
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def restart(cause: Throwable): Unit = dispatcher.systemDispatch(this, Recreate(cause))
+  final def restart(cause: Throwable): Unit =
+    ActorCell.catchingSend(system, self.path.toString, clazz(actor), dispatcher.systemDispatch(this, Recreate(cause)))
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-  final def stop(): Unit = dispatcher.systemDispatch(this, Terminate())
+  final def stop(): Unit =
+    ActorCell.catchingSend(system, self.path.toString, clazz(actor), dispatcher.systemDispatch(this, Terminate()))
 
   def tell(message: Any, sender: ActorRef): Unit =
-    dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender, system))
+    ActorCell.catchingSend(system, self.path.toString, clazz(actor),
+      dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender, system)))
 
-  override def sendSystemMessage(message: SystemMessage): Unit = dispatcher.systemDispatch(this, message)
+  override def sendSystemMessage(message: SystemMessage): Unit =
+    ActorCell.catchingSend(system, self.path.toString, clazz(actor), dispatcher.systemDispatch(this, message))
 
 }

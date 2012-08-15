@@ -147,24 +147,16 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
        * lock, double-tap (well, N-tap, really); concurrent modification is
        * still not possible because we’re the only thread accessing the queues.
        */
-      var interrupted = false
       while (systemQueue.nonEmpty || queue.nonEmpty) {
         while (systemQueue.nonEmpty) {
           val msg = systemQueue.dequeue()
-          try cell.sendSystemMessage(msg)
-          catch {
-            case _: InterruptedException ⇒ interrupted = true
-          }
+          cell.sendSystemMessage(msg)
         }
         if (queue.nonEmpty) {
           val envelope = queue.dequeue()
-          try cell.tell(envelope.message, envelope.sender)
-          catch {
-            case _: InterruptedException ⇒ interrupted = true
-          }
+          cell.tell(envelope.message, envelope.sender)
         }
       }
-      if (interrupted) throw new InterruptedException
     } finally try
       self.swapCell(cell)
     finally try
