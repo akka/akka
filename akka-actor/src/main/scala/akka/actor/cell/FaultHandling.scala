@@ -136,9 +136,12 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       // tell supervisor
-      t match { // Wrap InterruptedExceptions and rethrow
-        case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t), uid), self); throw t
-        case _                       ⇒ parent.tell(Failed(t, uid), self)
+      t match { // Wrap InterruptedExceptions and, clear the flag and rethrow
+        case _: InterruptedException ⇒
+          parent.tell(Failed(new ActorInterruptedException(t), uid), self)
+          Thread.interrupted()
+          throw t
+        case _ ⇒ parent.tell(Failed(t, uid), self)
       }
     } catch {
       case NonFatal(e) ⇒
