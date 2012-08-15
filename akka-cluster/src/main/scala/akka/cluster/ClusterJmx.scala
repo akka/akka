@@ -57,9 +57,8 @@ private[akka] class ClusterJmx(clusterNode: Cluster, log: LoggingAdapter) {
        * }}}
        */
       def getClusterStatus: String = {
-        val gossip = clusterNode.latestGossip
-        val unreachable = gossip.overview.unreachable
-        "\nMembers:\n\t" + gossip.members.mkString("\n\t") +
+        val unreachable = clusterNode.unreachableMembers
+        "\nMembers:\n\t" + clusterNode.members.mkString("\n\t") +
           { if (unreachable.nonEmpty) "\nUnreachable:\n\t" + unreachable.mkString("\n\t") else "" }
       }
 
@@ -69,7 +68,7 @@ private[akka] class ClusterJmx(clusterNode: Cluster, log: LoggingAdapter) {
 
       def isSingleton: Boolean = clusterNode.isSingletonCluster
 
-      def isConvergence: Boolean = clusterNode.convergence.isDefined
+      def isConvergence: Boolean = clusterNode.convergence
 
       def isAvailable: Boolean = clusterNode.isAvailable
 

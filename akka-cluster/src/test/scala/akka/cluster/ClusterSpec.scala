@@ -25,7 +25,7 @@ object ClusterSpec {
       auto-join                    = off
       auto-down                    = off
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
-      publish-state-interval = 0 s # always, when it happens
+      publish-stats-interval = 0 s # always, when it happens
     }
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
     akka.remote.netty.port = 0
@@ -70,13 +70,14 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "initially become singleton cluster when joining itself and reach convergence" in {
-      cluster.isSingletonCluster must be(false) // auto-join = off
+      cluster.members.size must be(0) // auto-join = off
       cluster.join(selfAddress)
+      Thread.sleep(5000)
       awaitCond(cluster.isSingletonCluster)
       cluster.self.address must be(selfAddress)
-      cluster.latestGossip.members.map(_.address) must be(Set(selfAddress))
+      cluster.members.map(_.address) must be(Set(selfAddress))
       cluster.status must be(MemberStatus.Joining)
-      cluster.convergence.isDefined must be(true)
+      cluster.convergence must be(true)
       leaderActions()
       cluster.status must be(MemberStatus.Up)
     }

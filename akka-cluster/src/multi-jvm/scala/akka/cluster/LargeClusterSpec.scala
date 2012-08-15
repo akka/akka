@@ -40,7 +40,7 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
       auto-join = off
       auto-down = on
       failure-detector.acceptable-heartbeat-pause = 10s
-      publish-state-interval = 0 s # always, when it happens
+      publish-stats-interval = 0 s # always, when it happens
     }
     akka.loglevel = INFO
     akka.actor.default-dispatcher.fork-join-executor {
@@ -164,7 +164,7 @@ abstract class LargeClusterSpec
 
       Await.ready(latch, remaining)
 
-      awaitCond(clusterNodes.forall(_.convergence.isDefined))
+      awaitCond(clusterNodes.forall(_.convergence))
       val counts = clusterNodes.map(gossipCount(_))
       val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / clusterNodes.size, counts.min, counts.max)
       log.info("Convergence of [{}] nodes reached, it took [{}], received [{}] gossip messages per node",
@@ -276,15 +276,23 @@ abstract class LargeClusterSpec
         val latch = TestLatch(nodesPerDatacenter)
         systems foreach { sys ⇒
           Cluster(sys).subscribe(sys.actorOf(Props(new Actor {
+            var gotExpectedLiveNodes = false
+            var gotExpectedUnreachableNodes = false
             def receive = {
-              case MembersChanged(members) ⇒
-                if (!latch.isOpen && members.size == liveNodes && Cluster(sys).latestGossip.overview.unreachable.size == unreachableNodes) {
-                  log.info("Detected [{}] unreachable nodes in [{}], it took [{}], received [{}] gossip messages",
-                    unreachableNodes, Cluster(sys).selfAddress, tookMillis, gossipCount(Cluster(sys)))
-                  latch.countDown()
-                }
+              case MembersChanged(members) if !latch.isOpen ⇒
+                gotExpectedLiveNodes = members.size == liveNodes
+                checkDone()
+              case UnreachableMembersChanged(unreachable) if !latch.isOpen ⇒
+                gotExpectedUnreachableNodes = unreachable.size == unreachableNodes
+                checkDone()
+              case _ ⇒ // not interesting
             }
-          })), classOf[MembersChanged])
+            def checkDone(): Unit = if (gotExpectedLiveNodes && gotExpectedUnreachableNodes) {
+              log.info("Detected [{}] unreachable nodes in [{}], it took [{}], received [{}] gossip messages",
+                unreachableNodes, Cluster(sys).selfAddress, tookMillis, gossipCount(Cluster(sys)))
+              latch.countDown()
+            }
+          })), classOf[ClusterDomainEvent])
         }
 
         runOn(firstDatacenter) {
@@ -295,7 +303,7 @@ abstract class LargeClusterSpec
 
         runOn(firstDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter) {
           Await.ready(latch, remaining)
-          awaitCond(systems.forall(Cluster(_).convergence.isDefined))
+          awaitCond(systems.forall(Cluster(_).convergence))
           val mergeCount = systems.map(sys ⇒ Cluster(sys).latestStats.mergeCount).sum
           val counts = systems.map(sys ⇒ gossipCount(Cluster(sys)))
           val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / nodesPerDatacenter, counts.min, counts.max)

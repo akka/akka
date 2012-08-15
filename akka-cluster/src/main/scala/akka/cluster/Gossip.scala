@@ -8,11 +8,16 @@ import akka.actor.Address
 import scala.collection.immutable.SortedSet
 import MemberStatus._
 
-object Gossip {
+/**
+ * Internal API
+ */
+private[cluster] object Gossip {
   val emptyMembers: SortedSet[Member] = SortedSet.empty
 }
 
 /**
+ * INTERNAL API
+ *
  * Represents the state of the cluster; cluster ring membership, ring convergence -
  * all versioned by a vector clock.
  *
@@ -43,7 +48,7 @@ object Gossip {
  * `Removed` by removing it from the `members` set and sending a `Removed` command to the
  * removed node telling it to shut itself down.
  */
-case class Gossip(
+private[cluster] case class Gossip(
   overview: GossipOverview = GossipOverview(),
   members: SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
   version: VectorClock = VectorClock()) // vector clock version
@@ -93,6 +98,15 @@ case class Gossip(
   def seen(address: Address): Gossip = {
     if (overview.seen.contains(address) && overview.seen(address) == version) this
     else this copy (overview = overview copy (seen = overview.seen + (address -> version)))
+  }
+
+  /**
+   * The nodes that have seen current version of the Gossip.
+   */
+  def seenBy: Set[Address] = {
+    overview.seen.collect {
+      case (address, vclock) if vclock == version ⇒ address
+    }.toSet
   }
 
   /**
@@ -147,8 +161,7 @@ case class Gossip(
     !hasUnreachable && allMembersInSeen && seenSame
   }
 
-  def isLeader(address: Address): Boolean =
-    members.nonEmpty && (address == members.head.address)
+  def isLeader(address: Address): Boolean = leader == Some(address)
 
   def leader: Option[Address] = members.headOption.map(_.address)
 
@@ -179,9 +192,10 @@ case class Gossip(
 }
 
 /**
+ * INTERNAL API
  * Represents the overview of the cluster, holds the cluster convergence table and set with unreachable nodes.
  */
-case class GossipOverview(
+private[cluster] case class GossipOverview(
   seen: Map[Address, VectorClock] = Map.empty,
   unreachable: Set[Member] = Set.empty) {
 
@@ -195,13 +209,15 @@ case class GossipOverview(
 }
 
 /**
+ * INTERNAL API
  * Envelope adding a sender address to the gossip.
  */
-case class GossipEnvelope(from: Address, gossip: Gossip, conversation: Boolean = true) extends ClusterMessage
+private[cluster] case class GossipEnvelope(from: Address, gossip: Gossip, conversation: Boolean = true) extends ClusterMessage
 
 /**
+ * INTERNAL API
  * When conflicting versions of received and local [[akka.cluster.Gossip]] is detected
  * it's forwarded to the leader for conflict resolution.
  */
-case class GossipMergeConflict(a: GossipEnvelope, b: GossipEnvelope) extends ClusterMessage
+private[cluster] case class GossipMergeConflict(a: GossipEnvelope, b: GossipEnvelope) extends ClusterMessage
 

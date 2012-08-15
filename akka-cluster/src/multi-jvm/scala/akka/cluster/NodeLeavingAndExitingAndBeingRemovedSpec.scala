@@ -43,10 +43,10 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
 
       runOn(first, third) {
         // verify that the 'second' node is no longer part of the 'members' set
-        awaitCond(cluster.latestGossip.members.forall(_.address != address(second)), reaperWaitingTime)
+        awaitCond(cluster.members.forall(_.address != address(second)), reaperWaitingTime)
 
         // verify that the 'second' node is not part of the 'unreachable' set
-        awaitCond(cluster.latestGossip.overview.unreachable.forall(_.address != address(second)), reaperWaitingTime)
+        awaitCond(cluster.unreachableMembers.forall(_.address != address(second)), reaperWaitingTime)
       }
 
       runOn(second) {

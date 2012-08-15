@@ -60,7 +60,7 @@ abstract class NodeUpSpec
       for (n ← 1 to 20) {
         Thread.sleep(100.millis.dilated.toMillis)
         unexpected.get must be(SortedSet.empty)
-        cluster.latestGossip.members.forall(_.status == MemberStatus.Up) must be(true)
+        cluster.members.forall(_.status == MemberStatus.Up) must be(true)
       }
 
       enterBarrier("after-2")

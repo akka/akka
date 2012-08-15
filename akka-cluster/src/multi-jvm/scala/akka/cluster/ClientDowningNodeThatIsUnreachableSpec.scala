@@ -50,7 +50,7 @@ abstract class ClientDowningNodeThatIsUnreachableSpec
         enterBarrier("down-third-node")
 
         awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(thirdAddress))
-        cluster.latestGossip.members.exists(_.address == thirdAddress) must be(false)
+        cluster.members.exists(_.address == thirdAddress) must be(false)
       }
 
       runOn(third) {

@@ -65,15 +65,15 @@ abstract class ConvergenceSpec
 
         within(28 seconds) {
           // third becomes unreachable
-          awaitCond(cluster.latestGossip.overview.unreachable.size == 1)
-          awaitCond(cluster.latestGossip.members.size == 2)
-          awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
+          awaitCond(cluster.unreachableMembers.size == 1)
+          awaitCond(cluster.members.size == 2)
+          awaitCond(cluster.members.forall(_.status == MemberStatus.Up))
           awaitSeenSameState(first, second)
           // still one unreachable
-          cluster.latestGossip.overview.unreachable.size must be(1)
-          cluster.latestGossip.overview.unreachable.head.address must be(thirdAddress)
+          cluster.unreachableMembers.size must be(1)
+          cluster.unreachableMembers.head.address must be(thirdAddress)
           // and therefore no convergence
-          cluster.convergence.isDefined must be(false)
+          cluster.convergence must be(false)
 
         }
       }
@@ -88,18 +88,18 @@ abstract class ConvergenceSpec
       }
 
       def memberStatus(address: Address): Option[MemberStatus] =
-        cluster.latestGossip.members.collectFirst { case m if m.address == address ⇒ m.status }
+        cluster.members.collectFirst { case m if m.address == address ⇒ m.status }
 
       def assertNotMovedUp: Unit = {
         within(20 seconds) {
-          awaitCond(cluster.latestGossip.members.size == 3)
+          awaitCond(cluster.members.size == 3)
           awaitSeenSameState(first, second, fourth)
           memberStatus(first) must be(Some(MemberStatus.Up))
           memberStatus(second) must be(Some(MemberStatus.Up))
           // leader is not allowed to move the new node to Up
           memberStatus(fourth) must be(Some(MemberStatus.Joining))
           // still no convergence
-          cluster.convergence.isDefined must be(false)
+          cluster.convergence must be(false)
         }
       }
 

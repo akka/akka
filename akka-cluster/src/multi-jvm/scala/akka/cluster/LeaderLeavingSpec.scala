@@ -44,7 +44,7 @@ abstract class LeaderLeavingSpec
 
       awaitClusterUp(first, second, third)
 
-      val oldLeaderAddress = cluster.leader
+      val oldLeaderAddress = cluster.leader.get
 
       within(leaderHandoffWaitingTime) {
 
@@ -90,10 +90,10 @@ abstract class LeaderLeavingSpec
           exitingLatch.await
 
           // verify that the LEADER is no longer part of the 'members' set
-          awaitCond(cluster.latestGossip.members.forall(_.address != oldLeaderAddress))
+          awaitCond(cluster.members.forall(_.address != oldLeaderAddress))
 
           // verify that the LEADER is not part of the 'unreachable' set
-          awaitCond(cluster.latestGossip.overview.unreachable.forall(_.address != oldLeaderAddress))
+          awaitCond(cluster.unreachableMembers.forall(_.address != oldLeaderAddress))
 
           // verify that we have a new LEADER
           awaitCond(cluster.leader != oldLeaderAddress)
