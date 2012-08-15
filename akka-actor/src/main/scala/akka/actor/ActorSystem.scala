@@ -23,7 +23,7 @@ import collection.immutable.Stack
 
 object ActorSystem {
 
-  val Version = "2.0.3-SNAPSHOT"
+  val Version = "2.0.3"
 
   val EnvHome = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None

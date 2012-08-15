@@ -7,7 +7,7 @@
 http://www.springframework.org/schema/beans
 http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
 http://akka.io/schema/akka
-http://akka.io/akka-2.0.3-SNAPSHOT.xsd">
+http://akka.io/akka-2.0.3.xsd">
 
 
   <akka:property-placeholder location="akka-test.conf"/>
