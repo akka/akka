@@ -14,10 +14,10 @@ import akka.dispatch.SystemMessage
  */
 private[akka] trait ChildrenContainer {
 
-  def add(child: ActorRef): ChildrenContainer
+  def add(name: String, stats: ChildRestartStats): ChildrenContainer
   def remove(child: ActorRef): ChildrenContainer
 
-  def getByName(name: String): Option[ChildRestartStats]
+  def getByName(name: String): Option[ChildStats]
   def getByRef(actor: ActorRef): Option[ChildRestartStats]
 
   def children: Iterable[ActorRef]
@@ -50,8 +50,7 @@ private[akka] object ChildrenContainer {
 
   trait EmptyChildrenContainer extends ChildrenContainer {
     val emptyStats = TreeMap.empty[String, ChildStats]
-    override def add(child: ActorRef): ChildrenContainer =
-      new NormalChildrenContainer(emptyStats.updated(child.path.name, ChildRestartStats(child)))
+    override def add(name: String, stats: ChildRestartStats): ChildrenContainer = new NormalChildrenContainer(emptyStats.updated(name, stats))
     override def remove(child: ActorRef): ChildrenContainer = this
     override def getByName(name: String): Option[ChildRestartStats] = None
     override def getByRef(actor: ActorRef): Option[ChildRestartStats] = None
@@ -75,7 +74,7 @@ private[akka] object ChildrenContainer {
    * empty state while calling handleChildTerminated() for the last time.
    */
   object TerminatedChildrenContainer extends EmptyChildrenContainer {
-    override def add(child: ActorRef): ChildrenContainer = this
+    override def add(name: String, stats: ChildRestartStats): ChildrenContainer = this
     override def reserve(name: String): ChildrenContainer =
       throw new IllegalStateException("cannot reserve actor name '" + name + "': already terminated")
     override def isTerminating: Boolean = true
@@ -91,22 +90,18 @@ private[akka] object ChildrenContainer {
    */
   class NormalChildrenContainer(val c: TreeMap[String, ChildStats]) extends ChildrenContainer {
 
-    override def add(child: ActorRef): ChildrenContainer =
-      new NormalChildrenContainer(c.updated(child.path.name, ChildRestartStats(child)))
+    override def add(name: String, stats: ChildRestartStats): ChildrenContainer = new NormalChildrenContainer(c.updated(name, stats))
 
     override def remove(child: ActorRef): ChildrenContainer = NormalChildrenContainer(c - child.path.name)
 
-    override def getByName(name: String): Option[ChildRestartStats] = c.get(name) match {
-      case s @ Some(_: ChildRestartStats) ⇒ s.asInstanceOf[Option[ChildRestartStats]]
-      case _                              ⇒ None
-    }
+    override def getByName(name: String): Option[ChildStats] = c.get(name)
 
     override def getByRef(actor: ActorRef): Option[ChildRestartStats] = c.get(actor.path.name) match {
       case c @ Some(crs: ChildRestartStats) if (crs.child == actor) ⇒ c.asInstanceOf[Option[ChildRestartStats]]
       case _ ⇒ None
     }
 
-    override def children: Iterable[ActorRef] = c.values.view.collect { case ChildRestartStats(child, _, _, _) ⇒ child }
+    override def children: Iterable[ActorRef] = c.values.view.collect { case ChildRestartStats(child, _, _) ⇒ child }
 
     override def stats: Iterable[ChildRestartStats] = c.values.view.collect { case c: ChildRestartStats ⇒ c }
 
@@ -146,7 +141,7 @@ private[akka] object ChildrenContainer {
   case class TerminatingChildrenContainer(c: TreeMap[String, ChildStats], toDie: Set[ActorRef], reason: SuspendReason)
     extends ChildrenContainer {
 
-    override def add(child: ActorRef): ChildrenContainer = copy(c.updated(child.path.name, ChildRestartStats(child)))
+    override def add(name: String, stats: ChildRestartStats): ChildrenContainer = copy(c.updated(name, stats))
 
     override def remove(child: ActorRef): ChildrenContainer = {
       val t = toDie - child
@@ -157,17 +152,14 @@ private[akka] object ChildrenContainer {
       else copy(c - child.path.name, t)
     }
 
-    override def getByName(name: String): Option[ChildRestartStats] = c.get(name) match {
-      case s @ Some(_: ChildRestartStats) ⇒ s.asInstanceOf[Option[ChildRestartStats]]
-      case _                              ⇒ None
-    }
+    override def getByName(name: String): Option[ChildStats] = c.get(name)
 
     override def getByRef(actor: ActorRef): Option[ChildRestartStats] = c.get(actor.path.name) match {
       case c @ Some(crs: ChildRestartStats) if (crs.child == actor) ⇒ c.asInstanceOf[Option[ChildRestartStats]]
       case _ ⇒ None
     }
 
-    override def children: Iterable[ActorRef] = c.values.view.collect { case ChildRestartStats(child, _, _, _) ⇒ child }
+    override def children: Iterable[ActorRef] = c.values.view.collect { case ChildRestartStats(child, _, _) ⇒ child }
 
     override def stats: Iterable[ChildRestartStats] = c.values.view.collect { case c: ChildRestartStats ⇒ c }
 

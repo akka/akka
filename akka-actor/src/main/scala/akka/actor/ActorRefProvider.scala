@@ -429,7 +429,7 @@ class LocalActorRefProvider(
    */
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
-  lazy val rootGuardian: InternalActorRef =
+  lazy val rootGuardian: LocalActorRef =
     new LocalActorRef(system, Props(new Guardian(rootGuardianStrategy)), theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
@@ -438,11 +438,15 @@ class LocalActorRefProvider(
       }
     }
 
-  lazy val guardian: LocalActorRef =
+  lazy val guardian: LocalActorRef = {
+    rootGuardian.underlying.reserveChild("user")
     new LocalActorRef(system, Props(new Guardian(guardianStrategy)), rootGuardian, rootPath / "user")
+  }
 
-  lazy val systemGuardian: LocalActorRef =
+  lazy val systemGuardian: LocalActorRef = {
+    rootGuardian.underlying.reserveChild("system")
     new LocalActorRef(system, Props(new Guardian(systemGuardianStrategy)), rootGuardian, rootPath / "system")
+  }
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 

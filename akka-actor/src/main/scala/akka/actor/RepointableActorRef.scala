@@ -108,8 +108,8 @@ private[akka] class RepointableActorRef(
         case ""   ⇒ getChild(name)
         case other ⇒
           underlying.getChildByName(other) match {
-            case Some(crs) ⇒ crs.child.asInstanceOf[InternalActorRef].getChild(name)
-            case None      ⇒ Nobody
+            case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef].getChild(name)
+            case _                            ⇒ Nobody
           }
       }
     } else this

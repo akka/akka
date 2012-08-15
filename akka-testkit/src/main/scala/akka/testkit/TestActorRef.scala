@@ -25,7 +25,17 @@ class TestActorRef[T <: Actor](
   _props: Props,
   _supervisor: InternalActorRef,
   name: String)
-  extends LocalActorRef(
+  extends {
+    private val disregard = _supervisor match {
+      case l: LocalActorRef ⇒ l.underlying.reserveChild(name)
+      case r: RepointableActorRef ⇒ r.underlying match {
+        case u: UnstartedCell ⇒ throw new IllegalStateException("cannot attach a TestActor to an unstarted top-level actor, ensure that it is started by sending a message and observing the reply")
+        case c: ActorCell     ⇒ c.reserveChild(name)
+        case o                ⇒ _system.log.error("trying to attach child {} to unknown type of supervisor cell {}, this is not going to end well", name, o.getClass)
+      }
+      case s ⇒ _system.log.error("trying to attach child {} to unknown type of supervisor {}, this is not going to end well", name, s.getClass)
+    }
+  } with LocalActorRef(
     _system,
     _props.withDispatcher(
       if (_props.dispatcher == Dispatchers.DefaultDispatcherId) CallingThreadDispatcher.Id
@@ -119,8 +129,9 @@ object TestActorRef {
   def apply[T <: Actor](props: Props, name: String)(implicit system: ActorSystem): TestActorRef[T] =
     apply[T](props, system.asInstanceOf[ActorSystemImpl].guardian, name)
 
-  def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit system: ActorSystem): TestActorRef[T] =
+  def apply[T <: Actor](props: Props, supervisor: ActorRef, name: String)(implicit system: ActorSystem): TestActorRef[T] = {
     new TestActorRef(system.asInstanceOf[ActorSystemImpl], system.dispatchers.prerequisites, props, supervisor.asInstanceOf[InternalActorRef], name)
+  }
 
   def apply[T <: Actor](implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
