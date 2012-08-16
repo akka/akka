@@ -846,8 +846,8 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
   }
 
   def publishLeader(oldGossip: Gossip): Unit = {
-    if (latestGossip.leader != oldGossip.leader)
-      eventStream publish LeaderChanged(latestGossip.leader)
+    if (latestGossip.leader != oldGossip.leader || latestGossip.convergence != oldGossip.convergence)
+      eventStream publish LeaderChanged(latestGossip.leader, latestGossip.convergence)
   }
 
   def publishSeen(oldGossip: Gossip): Unit = {
@@ -919,11 +919,15 @@ object ClusterEvent {
   case class UnreachableMembersChanged(unreachable: Set[Member]) extends ClusterDomainEvent
 
   /**
+   * Leader of the cluster members changed, and/or convergence status.
+   */
+  case class LeaderChanged(leader: Option[Address], convergence: Boolean) extends ClusterDomainEvent
+
+  /**
+   * INTERNAL API
    * The nodes that have seen current version of the Gossip.
    */
-  case class SeenChanged(convergence: Boolean, seenBy: Set[Address]) extends ClusterDomainEvent
-
-  case class LeaderChanged(leader: Option[Address]) extends ClusterDomainEvent
+  private[cluster] case class SeenChanged(convergence: Boolean, seenBy: Set[Address]) extends ClusterDomainEvent
 
   /**
    * INTERNAL API

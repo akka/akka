@@ -176,11 +176,11 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
       override def postStop(): Unit = unsubscribe(self)
 
       def receive = {
-        case s: CurrentClusterState                 ⇒ state = s
+        case SeenChanged(convergence, seenBy)       ⇒ state = state.copy(convergence = convergence, seenBy = seenBy)
         case MembersChanged(members)                ⇒ state = state.copy(members = members)
         case UnreachableMembersChanged(unreachable) ⇒ state = state.copy(unreachable = unreachable)
-        case LeaderChanged(leader)                  ⇒ state = state.copy(leader = leader)
-        case SeenChanged(convergence, seenBy)       ⇒ state = state.copy(convergence = convergence, seenBy = seenBy)
+        case LeaderChanged(leader, convergence)     ⇒ state = state.copy(leader = leader, convergence = convergence)
+        case s: CurrentClusterState                 ⇒ state = s
         case CurrentInternalStats(stats)            ⇒ _latestStats = stats
         case _                                      ⇒ // ignore, not interesting
       }
