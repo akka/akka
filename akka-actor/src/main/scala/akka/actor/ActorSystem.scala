@@ -560,7 +560,6 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     def systemEnqueue(receiver: ActorRef, handle: SystemMessage): Unit =
       deadLetters ! DeadLetter(handle, receiver, receiver)
     def systemDrain(newContents: SystemMessage): SystemMessage = null
-    def systemAppend(message: SystemMessage): Unit = {}
     def hasSystemMessages = false
   }
 

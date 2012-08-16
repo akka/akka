@@ -139,7 +139,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       t match { // Wrap InterruptedExceptions and, clear the flag and rethrow
         case _: InterruptedException ⇒
           parent.tell(Failed(new ActorInterruptedException(t), uid), self)
-          Thread.interrupted()
+          Thread.interrupted() // clear interrupted flag on the thread
           throw t
         case _ ⇒ parent.tell(Failed(t, uid), self)
       }
