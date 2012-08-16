@@ -120,13 +120,15 @@ Summary of the essential parts for using Akka with SBT:
 
 SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <https://github.com/harrah/xsbt/wiki/Setup>`_
 
-``build.sbt`` file::
+``build.sbt`` file:
+
+.. parsed-literal::
 
     name := "My Project"
 
     version := "1.0"
 
-    scalaVersion := "2.10.0-M6"
+    scalaVersion := "|scalaVersion|"
 
     resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 

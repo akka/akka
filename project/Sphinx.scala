@@ -11,6 +11,7 @@ import java.io.File
 object Sphinx {
   val sphinxDocs = SettingKey[File]("sphinx-docs")
   val sphinxTarget = SettingKey[File]("sphinx-target")
+  val sphinxScalaVersion = TaskKey[String]("sphinx-scala-version")
   val sphinxPygmentsDir = SettingKey[File]("sphinx-pygments-dir")
   val sphinxTags = SettingKey[Seq[String]]("sphinx-tags")
   val sphinxPygments = TaskKey[File]("sphinx-pygments", "Sphinx: install pygments styles")
@@ -22,6 +23,7 @@ object Sphinx {
   lazy val settings = Seq(
     sphinxDocs <<= baseDirectory,
     sphinxTarget <<= crossTarget / "sphinx",
+    sphinxScalaVersion <<= scalaVersionTask,
     sphinxPygmentsDir <<= sphinxDocs { _ / "_sphinx" / "pygments" },
     sphinxTags in sphinxHtml := Seq.empty,
     sphinxTags in sphinxLatex := Seq.empty,
@@ -31,6 +33,12 @@ object Sphinx {
     sphinxPdf <<= pdfTask,
     sphinx <<= sphinxTask
   )
+
+  def scalaVersionTask = (scalaVersion, streams) map { (v, s) =>
+    s.log.info("writing version file")
+    IO.write(file("akka-docs/epilog_rst"), ".. |scalaVersion| replace:: " + v + "\n")
+    v
+  }
 
   def pygmentsTask = (sphinxDocs, sphinxPygmentsDir, sphinxTarget, streams) map {
     (cwd, pygments, baseTarget, s) => {
@@ -50,7 +58,7 @@ object Sphinx {
       }
       target
     }
-  }
+  } dependsOn sphinxScalaVersion
 
   def buildTask(builder: String, tagsKey: SettingKey[Seq[String]]) = {
     (cacheDirectory, sphinxDocs, sphinxTarget, sphinxPygments, tagsKey, streams) map {

@@ -24,7 +24,9 @@ You can add it as a plugin by adding the following to your project/plugins.sbt::
 
 You can then add multi-JVM testing to ``project/Build.scala`` by including the ``MultiJvm``
 settings and config. For example, here is how the akka-remote project adds
-multi-JVM testing::
+multi-JVM testing:
+
+.. parsed-literal::
 
    import sbt._
    import Keys._
@@ -47,7 +49,7 @@ multi-JVM testing::
      lazy val buildSettings = Defaults.defaultSettings ++ Seq(
        organization := "com.typesafe.akka",
        version      := "2.1-SNAPSHOT",
-       scalaVersion := "2.10.0-M6",
+       scalaVersion := "|scalaVersion|",
        crossPaths   := false
      )
 

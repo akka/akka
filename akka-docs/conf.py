@@ -25,6 +25,10 @@ highlight_language = 'scala'
 add_function_parentheses = False
 show_authors = True
 
+f = open('epilog_rst', 'U')
+rst_epilog = "\n" + f.read()
+f.close()
+
 # -- Options for HTML output ---------------------------------------------------
 
 html_theme = 'akka'
