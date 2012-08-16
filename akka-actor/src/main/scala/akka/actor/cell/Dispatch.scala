@@ -7,7 +7,9 @@ package akka.actor.cell
 import scala.annotation.tailrec
 import akka.actor.{ ActorRef, ActorCell }
 import akka.dispatch.{ Terminate, SystemMessage, Suspend, Resume, Recreate, MessageDispatcher, Mailbox, Envelope, Create }
+import akka.event.Logging.Error
 import akka.util.Unsafe
+import scala.util.control.NonFatal
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -64,25 +66,48 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   final def suspend(): Unit =
-    ActorCell.catchingSend(system, self.path.toString, clazz(actor), dispatcher.systemDispatch(this, Suspend()))
+    try dispatcher.systemDispatch(this, Suspend())
+    catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+    }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   final def resume(causedByFailure: Throwable): Unit =
-    ActorCell.catchingSend(system, self.path.toString, clazz(actor), dispatcher.systemDispatch(this, Resume(causedByFailure)))
+    try dispatcher.systemDispatch(this, Resume(causedByFailure))
+    catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+    }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   final def restart(cause: Throwable): Unit =
-    ActorCell.catchingSend(system, self.path.toString, clazz(actor), dispatcher.systemDispatch(this, Recreate(cause)))
+    try dispatcher.systemDispatch(this, Recreate(cause))
+    catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+    }
 
   // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
   final def stop(): Unit =
-    ActorCell.catchingSend(system, self.path.toString, clazz(actor), dispatcher.systemDispatch(this, Terminate()))
+    try dispatcher.systemDispatch(this, Terminate())
+    catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+    }
 
   def tell(message: Any, sender: ActorRef): Unit =
-    ActorCell.catchingSend(system, self.path.toString, clazz(actor),
-      dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender, system)))
+    try dispatcher.dispatch(this, Envelope(message, if (sender eq null) system.deadLetters else sender, system))
+    catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+    }
 
   override def sendSystemMessage(message: SystemMessage): Unit =
-    ActorCell.catchingSend(system, self.path.toString, clazz(actor), dispatcher.systemDispatch(this, message))
+    try dispatcher.systemDispatch(this, message)
+    catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        system.eventStream.publish(Error(e, self.path.toString, clazz(actor), "swallowing exception during message send"))
+    }
 
 }

@@ -7,8 +7,10 @@ package akka.remote
 import akka.actor._
 import akka.dispatch._
 import akka.event.{ Logging, LoggingAdapter, EventStream }
+import akka.event.Logging.Error
 import akka.serialization.{ Serialization, SerializationExtension }
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -230,10 +232,18 @@ private[akka] class RemoteActorRef private[akka] (
   def isTerminated: Boolean = !running
 
   def sendSystemMessage(message: SystemMessage): Unit =
-    ActorCell.catchingSend(remote.system, path.toString, classOf[RemoteActorRef], remote.send(message, None, this))
+    try remote.send(message, None, this)
+    catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        remote.system.eventStream.publish(Error(e, path.toString, classOf[RemoteActorRef], "swallowing exception during message send"))
+    }
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit =
-    ActorCell.catchingSend(remote.system, path.toString, classOf[RemoteActorRef], remote.send(message, Option(sender), this))
+    try remote.send(message, Option(sender), this)
+    catch {
+      case e @ (_: InterruptedException | NonFatal(_)) ⇒
+        remote.system.eventStream.publish(Error(e, path.toString, classOf[RemoteActorRef], "swallowing exception during message send"))
+    }
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 

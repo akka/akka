@@ -261,14 +261,6 @@ private[akka] object ActorCell {
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
   final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
-
-  final def catchingSend(system: ActorSystem, source: String, clazz: Class[_], code: ⇒ Unit): Unit = {
-    try code
-    catch {
-      case e @ (_: InterruptedException | NonFatal(_)) ⇒
-        system.eventStream.publish(Error(e, source, clazz, "swallowing exception during message send"))
-    }
-  }
 }
 
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)
