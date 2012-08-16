@@ -46,7 +46,7 @@ abstract class LeaderElectionSpec
       awaitClusterUp(first, second, third, fourth)
 
       if (myself != controller) {
-        cluster.isLeader must be(myself == sortedRoles.head)
+        clusterView.isLeader must be(myself == sortedRoles.head)
         assertLeaderIn(sortedRoles)
       }
 
@@ -87,7 +87,7 @@ abstract class LeaderElectionSpec
 
           awaitUpConvergence(currentRoles.size - 1)
           val nextExpectedLeader = remainingRoles.head
-          cluster.isLeader must be(myself == nextExpectedLeader)
+          clusterView.isLeader must be(myself == nextExpectedLeader)
           assertLeaderIn(remainingRoles)
 
           enterBarrier("completed")

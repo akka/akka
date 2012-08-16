@@ -16,7 +16,7 @@ object NodeJoinMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("akka.cluster.leader-actions-interval = 5 s") // increase the leader action task interval
+      .withFallback(ConfigFactory.parseString("akka.clusterView.leader-actions-interval = 5 s") // increase the leader action task interval
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
@@ -42,7 +42,7 @@ abstract class NodeJoinSpec
         cluster.join(first)
       }
 
-      awaitCond(cluster.latestGossip.members.exists { member ⇒ member.address == address(second) && member.status == MemberStatus.Joining })
+      awaitCond(clusterView.members.exists { member ⇒ member.address == address(second) && member.status == MemberStatus.Joining })
 
       enterBarrier("after")
     }

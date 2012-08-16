@@ -32,7 +32,7 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val HeartbeatInterval: Duration = Duration(getMilliseconds("akka.cluster.heartbeat-interval"), MILLISECONDS)
   final val LeaderActionsInterval: Duration = Duration(getMilliseconds("akka.cluster.leader-actions-interval"), MILLISECONDS)
   final val UnreachableNodesReaperInterval: Duration = Duration(getMilliseconds("akka.cluster.unreachable-nodes-reaper-interval"), MILLISECONDS)
-  final val PublishStateInterval: Duration = Duration(getMilliseconds("akka.cluster.publish-state-interval"), MILLISECONDS)
+  final val PublishStatsInterval: Duration = Duration(getMilliseconds("akka.cluster.publish-stats-interval"), MILLISECONDS)
   final val AutoJoin: Boolean = getBoolean("akka.cluster.auto-join")
   final val AutoDown: Boolean = getBoolean("akka.cluster.auto-down")
   final val JoinTimeout: Duration = Duration(getMilliseconds("akka.cluster.join-timeout"), MILLISECONDS)

@@ -9,6 +9,8 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.util.duration._
+import akka.actor.Props
+import akka.actor.Actor
 
 object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -32,6 +34,7 @@ abstract class NodeLeavingAndExitingSpec
   with MultiNodeClusterSpec {
 
   import NodeLeavingAndExitingMultiJvmSpec._
+  import ClusterEvent._
 
   "A node that is LEAVING a non-singleton cluster" must {
 
@@ -44,15 +47,16 @@ abstract class NodeLeavingAndExitingSpec
         val leavingLatch = TestLatch()
         val exitingLatch = TestLatch()
         val expectedAddresses = roles.toSet map address
-        cluster.registerListener(new MembershipChangeListener {
-          def notify(members: SortedSet[Member]) {
-            def check(status: MemberStatus): Boolean =
-              (members.map(_.address) == expectedAddresses &&
-                members.exists(m ⇒ m.address == secondAddess && m.status == status))
-            if (check(MemberStatus.Leaving)) leavingLatch.countDown()
-            if (check(MemberStatus.Exiting)) exitingLatch.countDown()
+        cluster.subscribe(system.actorOf(Props(new Actor {
+          def receive = {
+            case MembersChanged(members) ⇒
+              def check(status: MemberStatus): Boolean =
+                (members.map(_.address) == expectedAddresses &&
+                  members.exists(m ⇒ m.address == secondAddess && m.status == status))
+              if (check(MemberStatus.Leaving)) leavingLatch.countDown()
+              if (check(MemberStatus.Exiting)) exitingLatch.countDown()
           }
-        })
+        })), classOf[MembersChanged])
         enterBarrier("registered-listener")
 
         runOn(third) {

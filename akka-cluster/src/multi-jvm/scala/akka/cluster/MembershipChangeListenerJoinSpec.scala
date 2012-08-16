@@ -10,6 +10,8 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.util.duration._
+import akka.actor.Props
+import akka.actor.Actor
 
 object MembershipChangeListenerJoinMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -17,7 +19,7 @@ object MembershipChangeListenerJoinMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("akka.cluster.leader-actions-interval = 5 s") // increase the leader action task interval to allow time checking for JOIN before leader moves it to UP
+      .withFallback(ConfigFactory.parseString("akka.clusterView.leader-actions-interval = 5 s") // increase the leader action task interval to allow time checking for JOIN before leader moves it to UP
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
@@ -29,6 +31,7 @@ abstract class MembershipChangeListenerJoinSpec
   with MultiNodeClusterSpec {
 
   import MembershipChangeListenerJoinMultiJvmSpec._
+  import ClusterEvent._
 
   "A registered MembershipChangeListener" must {
     "be notified when new node is JOINING" taggedAs LongRunningTest in {
@@ -36,12 +39,13 @@ abstract class MembershipChangeListenerJoinSpec
       runOn(first) {
         val joinLatch = TestLatch()
         val expectedAddresses = Set(first, second) map address
-        cluster.registerListener(new MembershipChangeListener {
-          def notify(members: SortedSet[Member]) {
-            if (members.map(_.address) == expectedAddresses && members.exists(_.status == MemberStatus.Joining))
-              joinLatch.countDown()
+        cluster.subscribe(system.actorOf(Props(new Actor {
+          def receive = {
+            case MembersChanged(members) ⇒
+              if (members.map(_.address) == expectedAddresses && members.exists(_.status == MemberStatus.Joining))
+                joinLatch.countDown()
           }
-        })
+        })), classOf[MembersChanged])
         enterBarrier("registered-listener")
 
         joinLatch.await

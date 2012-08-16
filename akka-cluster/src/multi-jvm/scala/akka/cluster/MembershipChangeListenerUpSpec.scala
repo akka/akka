@@ -8,6 +8,8 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
+import akka.actor.Props
+import akka.actor.Actor
 
 object MembershipChangeListenerUpMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -26,6 +28,7 @@ abstract class MembershipChangeListenerUpSpec
   with MultiNodeClusterSpec {
 
   import MembershipChangeListenerUpMultiJvmSpec._
+  import ClusterEvent._
 
   "A set of connected cluster systems" must {
 
@@ -36,12 +39,13 @@ abstract class MembershipChangeListenerUpSpec
       runOn(first, second) {
         val latch = TestLatch()
         val expectedAddresses = Set(first, second) map address
-        cluster.registerListener(new MembershipChangeListener {
-          def notify(members: SortedSet[Member]) {
-            if (members.map(_.address) == expectedAddresses && members.forall(_.status == MemberStatus.Up))
-              latch.countDown()
+        cluster.subscribe(system.actorOf(Props(new Actor {
+          def receive = {
+            case MembersChanged(members) ⇒
+              if (members.map(_.address) == expectedAddresses && members.forall(_.status == MemberStatus.Up))
+                latch.countDown()
           }
-        })
+        })), classOf[MembersChanged])
         enterBarrier("listener-1-registered")
         cluster.join(first)
         latch.await
@@ -58,12 +62,13 @@ abstract class MembershipChangeListenerUpSpec
 
       val latch = TestLatch()
       val expectedAddresses = Set(first, second, third) map address
-      cluster.registerListener(new MembershipChangeListener {
-        def notify(members: SortedSet[Member]) {
-          if (members.map(_.address) == expectedAddresses && members.forall(_.status == MemberStatus.Up))
-            latch.countDown()
+      cluster.subscribe(system.actorOf(Props(new Actor {
+        def receive = {
+          case MembersChanged(members) ⇒
+            if (members.map(_.address) == expectedAddresses && members.forall(_.status == MemberStatus.Up))
+              latch.countDown()
         }
-      })
+      })), classOf[MembersChanged])
       enterBarrier("listener-2-registered")
 
       runOn(third) {
