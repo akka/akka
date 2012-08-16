@@ -22,7 +22,7 @@ import akka.actor.RootActorPath
 object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.cluster {
-      auto-join                         = off
+      auto-join                         = on
       auto-down                         = off
       gossip-interval                   = 200 ms
       heartbeat-interval                = 400 ms

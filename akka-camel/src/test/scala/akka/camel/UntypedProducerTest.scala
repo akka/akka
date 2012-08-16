@@ -16,6 +16,7 @@ import akka.pattern._
 import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import org.scalatest._
+import akka.testkit._
 import matchers.MustMatchers
 
 class UntypedProducerTest extends WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with SharedCamelSystem with GivenWhenThen {
@@ -49,13 +50,15 @@ class UntypedProducerTest extends WordSpec with MustMatchers with BeforeAndAfter
       val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
 
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
-      val future = producer.ask(message)(timeout).failed
+      filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
+        val future = producer.ask(message)(timeout).failed
 
-      Await.ready(future, timeout).value match {
-        case Some(Right(e: AkkaCamelException)) ⇒
-          e.getMessage must be("failure")
-          e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
-        case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
+        Await.ready(future, timeout).value match {
+          case Some(Right(e: AkkaCamelException)) ⇒
+            e.getMessage must be("failure")
+            e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
+          case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
+        }
       }
     }
   }
@@ -67,7 +70,6 @@ class UntypedProducerTest extends WordSpec with MustMatchers with BeforeAndAfter
 
       mockEndpoint.expectedBodiesReceived("received test")
       producer.tell(CamelMessage("test", Map[String, Any]()), producer)
-
       mockEndpoint.assertIsSatisfied
     }
 

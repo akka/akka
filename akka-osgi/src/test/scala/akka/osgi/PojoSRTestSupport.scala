@@ -13,10 +13,11 @@ import org.osgi.framework._
 import java.net.URL
 
 import java.util.jar.JarInputStream
-import java.io.{ FileInputStream, FileOutputStream, File }
+import java.io._
 import org.scalatest.{ BeforeAndAfterAll, Suite }
 import java.util.{ UUID, Date, ServiceLoader, HashMap }
 import scala.reflect.ClassTag
+import scala.Some
 
 /**
  * Trait that provides support for building akka-osgi tests using PojoSR
@@ -32,6 +33,8 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
    */
   def testBundles: Seq[BundleDescriptor]
 
+  val bufferedLoadingErrors = new ByteArrayOutputStream()
+
   lazy val context: BundleContext = {
     val config = new HashMap[String, AnyRef]()
     System.setProperty("org.osgi.framework.storage", "target/akka-osgi/" + UUID.randomUUID().toString)
@@ -40,7 +43,15 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
     bundles.addAll(testBundles)
     config.put(PojoServiceRegistryFactory.BUNDLE_DESCRIPTORS, bundles)
 
-    ServiceLoader.load(classOf[PojoServiceRegistryFactory]).iterator.next.newPojoServiceRegistry(config).getBundleContext
+    val oldErr = System.err
+    System.setErr(new PrintStream(bufferedLoadingErrors))
+    try {
+      ServiceLoader.load(classOf[PojoServiceRegistryFactory]).iterator.next.newPojoServiceRegistry(config).getBundleContext
+    } catch {
+      case e: Throwable ⇒ oldErr.write(bufferedLoadingErrors.toByteArray); throw e
+    } finally {
+      System.setErr(oldErr)
+    }
   }
 
   // Ensure bundles get stopped at the end of the test to release resources and stop threads
@@ -72,6 +83,14 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
   }
 
   protected def buildTestBundles(builders: Seq[BundleDescriptorBuilder]): Seq[BundleDescriptor] = builders map (_.build)
+
+  def filterErrors()(block: ⇒ Unit): Unit = {
+    try {
+      block
+    } catch {
+      case e: Throwable ⇒ System.err.write(bufferedLoadingErrors.toByteArray); throw e
+    }
+  }
 }
 
 object PojoSRTestSupport {

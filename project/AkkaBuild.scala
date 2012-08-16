@@ -502,6 +502,50 @@ object AkkaBuild extends Build {
   def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.0"): Option[sbt.ModuleID] =
     if (enableMiMa) Some(organization % id % version) // the artifact to compare binary compatibility with
     else None
+
+  // OSGi settings
+
+  object OSGi {
+
+    val actor = exports(Seq("akka*"))
+
+    val agent = exports(Seq("akka.agent.*"))
+
+    val camel = exports(Seq("akka.camel.*"))
+
+    val cluster = exports(Seq("akka.cluster.*"))
+
+    val fileMailbox = exports(Seq("akka.actor.mailbox.*"))
+
+    val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
+
+    val osgi = exports(Seq("akka.osgi")) ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.impl"))
+
+    val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
+
+    val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
+
+    val slf4j = exports(Seq("akka.event.slf4j.*"))
+
+    val dataflow = exports(Seq("akka.dataflow.*"))
+
+    val transactor = exports(Seq("akka.transactor.*"))
+
+    val zeroMQ = exports(Seq("akka.zeromq.*"))
+
+    def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
+      OsgiKeys.importPackage := defaultImports,
+      OsgiKeys.exportPackage := packages,
+      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
+      artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle"))
+    )
+
+    def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
+    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
+    def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
+    def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
+
+  }
 }
 
 // Dependencies
@@ -581,47 +625,5 @@ object Dependency {
   object CamelSample {
     val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % "2.10.0" // ApacheV2
   }
-
-}
-
-// OSGi settings
-
-object OSGi {
-
-  val actor = exports(Seq("akka*"))
-
-  val agent = exports(Seq("akka.agent.*"))
-
-  val camel = exports(Seq("akka.camel.*"))
-
-  val cluster = exports(Seq("akka.cluster.*"))
-
-  val fileMailbox = exports(Seq("akka.actor.mailbox.*"))
-
-  val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
-
-  val osgi = exports(Seq("akka.osgi")) ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.impl"))
-
-  val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
-
-  val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
-
-  val slf4j = exports(Seq("akka.event.slf4j.*"))
-
-  val dataflow = exports(Seq("akka.dataflow.*"))
-
-  val transactor = exports(Seq("akka.transactor.*"))
-
-  val zeroMQ = exports(Seq("akka.zeromq.*"))
-
-  def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
-    OsgiKeys.importPackage := defaultImports,
-    OsgiKeys.exportPackage := packages
-  )
-
-  def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
-  def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
-  def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
-  def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
 
 }
