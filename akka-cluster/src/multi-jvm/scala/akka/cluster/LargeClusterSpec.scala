@@ -137,9 +137,9 @@ abstract class LargeClusterSpec
 
       val clusterNodes = ifNode(from)(joiningClusterNodes)(systems.map(Cluster(_)).toSet)
       val startGossipCounts = Map.empty[Cluster, Long] ++
-        clusterNodes.map(c ⇒ (c -> c.latestStats.receivedGossipCount))
+        clusterNodes.map(c ⇒ (c -> c.readView.latestStats.receivedGossipCount))
       def gossipCount(c: Cluster): Long = {
-        c.latestStats.receivedGossipCount - startGossipCounts(c)
+        c.readView.latestStats.receivedGossipCount - startGossipCounts(c)
       }
       val startTime = System.nanoTime
       def tookMillis: String = TimeUnit.NANOSECONDS.toMillis(System.nanoTime - startTime) + " ms"
@@ -164,7 +164,7 @@ abstract class LargeClusterSpec
 
       Await.ready(latch, remaining)
 
-      awaitCond(clusterNodes.forall(_.convergence))
+      awaitCond(clusterNodes.forall(_.readView.convergence))
       val counts = clusterNodes.map(gossipCount(_))
       val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / clusterNodes.size, counts.min, counts.max)
       log.info("Convergence of [{}] nodes reached, it took [{}], received [{}] gossip messages per node",
@@ -266,9 +266,9 @@ abstract class LargeClusterSpec
 
       within(30.seconds + (3.seconds * liveNodes)) {
         val startGossipCounts = Map.empty[Cluster, Long] ++
-          systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).latestStats.receivedGossipCount))
+          systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).readView.latestStats.receivedGossipCount))
         def gossipCount(c: Cluster): Long = {
-          c.latestStats.receivedGossipCount - startGossipCounts(c)
+          c.readView.latestStats.receivedGossipCount - startGossipCounts(c)
         }
         val startTime = System.nanoTime
         def tookMillis: String = TimeUnit.NANOSECONDS.toMillis(System.nanoTime - startTime) + " ms"
@@ -303,8 +303,8 @@ abstract class LargeClusterSpec
 
         runOn(firstDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter) {
           Await.ready(latch, remaining)
-          awaitCond(systems.forall(Cluster(_).convergence))
-          val mergeCount = systems.map(sys ⇒ Cluster(sys).latestStats.mergeCount).sum
+          awaitCond(systems.forall(Cluster(_).readView.convergence))
+          val mergeCount = systems.map(sys ⇒ Cluster(sys).readView.latestStats.mergeCount).sum
           val counts = systems.map(sys ⇒ gossipCount(Cluster(sys)))
           val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / nodesPerDatacenter, counts.min, counts.max)
           log.info("Convergence of [{}] nodes reached after failure, it took [{}], received [{}] gossip messages per node, merged [{}] times",

@@ -33,10 +33,11 @@ trait ClusterNodeMBean {
 /**
  * Internal API
  */
-private[akka] class ClusterJmx(clusterNode: Cluster, log: LoggingAdapter) {
+private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
 
   private val mBeanServer = ManagementFactory.getPlatformMBeanServer
   private val clusterMBeanName = new ObjectName("akka:type=Cluster")
+  private def clusterView = cluster.readView
 
   /**
    * Creates the cluster JMX MBean and registers it in the MBean server.
@@ -57,34 +58,34 @@ private[akka] class ClusterJmx(clusterNode: Cluster, log: LoggingAdapter) {
        * }}}
        */
       def getClusterStatus: String = {
-        val unreachable = clusterNode.unreachableMembers
-        "\nMembers:\n\t" + clusterNode.members.mkString("\n\t") +
+        val unreachable = clusterView.unreachableMembers
+        "\nMembers:\n\t" + clusterView.members.mkString("\n\t") +
           { if (unreachable.nonEmpty) "\nUnreachable:\n\t" + unreachable.mkString("\n\t") else "" }
       }
 
-      def getMemberStatus: String = clusterNode.status.toString
+      def getMemberStatus: String = clusterView.status.toString
 
-      def getLeader: String = clusterNode.leader.toString
+      def getLeader: String = clusterView.leader.toString
 
-      def isSingleton: Boolean = clusterNode.isSingletonCluster
+      def isSingleton: Boolean = clusterView.isSingletonCluster
 
-      def isConvergence: Boolean = clusterNode.convergence
+      def isConvergence: Boolean = clusterView.convergence
 
-      def isAvailable: Boolean = clusterNode.isAvailable
+      def isAvailable: Boolean = clusterView.isAvailable
 
-      def isRunning: Boolean = clusterNode.isRunning
+      def isRunning: Boolean = clusterView.isRunning
 
       // JMX commands
 
-      def join(address: String) = clusterNode.join(AddressFromURIString(address))
+      def join(address: String) = cluster.join(AddressFromURIString(address))
 
-      def leave(address: String) = clusterNode.leave(AddressFromURIString(address))
+      def leave(address: String) = cluster.leave(AddressFromURIString(address))
 
-      def down(address: String) = clusterNode.down(AddressFromURIString(address))
+      def down(address: String) = cluster.down(AddressFromURIString(address))
     }
     try {
       mBeanServer.registerMBean(mbean, clusterMBeanName)
-      log.info("Cluster Node [{}] - registered cluster JMX MBean [{}]", clusterNode.selfAddress, clusterMBeanName)
+      log.info("Cluster Node [{}] - registered cluster JMX MBean [{}]", clusterView.selfAddress, clusterMBeanName)
     } catch {
       case e: InstanceAlreadyExistsException ⇒ // ignore - we are running multiple cluster nodes in the same JVM (probably for testing)
     }
@@ -94,6 +95,7 @@ private[akka] class ClusterJmx(clusterNode: Cluster, log: LoggingAdapter) {
    * Unregisters the cluster JMX MBean from MBean server.
    */
   def unregisterMBean(): Unit = {
+    clusterView.close()
     try {
       mBeanServer.unregisterMBean(clusterMBeanName)
     } catch {

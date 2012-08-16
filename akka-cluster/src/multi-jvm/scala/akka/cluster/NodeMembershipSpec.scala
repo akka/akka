@@ -38,12 +38,12 @@ abstract class NodeMembershipSpec
 
       runOn(first, second) {
         cluster.join(first)
-        awaitCond(cluster.members.size == 2)
-        assertMembers(cluster.members, first, second)
+        awaitCond(clusterView.members.size == 2)
+        assertMembers(clusterView.members, first, second)
         awaitCond {
-          cluster.members.forall(_.status == MemberStatus.Up)
+          clusterView.members.forall(_.status == MemberStatus.Up)
         }
-        awaitCond(cluster.convergence)
+        awaitCond(clusterView.convergence)
       }
 
       enterBarrier("after-1")
@@ -55,12 +55,12 @@ abstract class NodeMembershipSpec
         cluster.join(first)
       }
 
-      awaitCond(cluster.members.size == 3)
-      assertMembers(cluster.members, first, second, third)
+      awaitCond(clusterView.members.size == 3)
+      assertMembers(clusterView.members, first, second, third)
       awaitCond {
-        cluster.members.forall(_.status == MemberStatus.Up)
+        clusterView.members.forall(_.status == MemberStatus.Up)
       }
-      awaitCond(cluster.convergence)
+      awaitCond(clusterView.convergence)
 
       enterBarrier("after-2")
     }

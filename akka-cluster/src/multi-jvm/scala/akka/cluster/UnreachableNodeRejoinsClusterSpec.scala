@@ -80,13 +80,13 @@ abstract class UnreachableNodeRejoinsClusterSpec
         within(30 seconds) {
           // victim becomes all alone
           awaitCond({
-            val members = cluster.members
-            cluster.unreachableMembers.size == (roles.size - 1) &&
+            val members = clusterView.members
+            clusterView.unreachableMembers.size == (roles.size - 1) &&
               members.size == 1 &&
               members.forall(_.status == MemberStatus.Up)
           })
-          cluster.unreachableMembers.map(_.address) must be((allButVictim map address).toSet)
-          cluster.convergence must be(false)
+          clusterView.unreachableMembers.map(_.address) must be((allButVictim map address).toSet)
+          clusterView.convergence must be(false)
         }
       }
 
@@ -95,17 +95,17 @@ abstract class UnreachableNodeRejoinsClusterSpec
         within(30 seconds) {
           // victim becomes unreachable
           awaitCond({
-            val members = cluster.members
-            cluster.unreachableMembers.size == 1 &&
+            val members = clusterView.members
+            clusterView.unreachableMembers.size == 1 &&
               members.size == (roles.size - 1) &&
               members.forall(_.status == MemberStatus.Up)
           })
           awaitSeenSameState(allButVictim map address: _*)
           // still one unreachable
-          cluster.unreachableMembers.size must be(1)
-          cluster.unreachableMembers.head.address must be(node(victim).address)
+          clusterView.unreachableMembers.size must be(1)
+          clusterView.unreachableMembers.head.address must be(node(victim).address)
           // and therefore no convergence
-          cluster.convergence must be(false)
+          clusterView.convergence must be(false)
         }
       }
 

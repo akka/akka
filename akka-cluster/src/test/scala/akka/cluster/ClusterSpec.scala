@@ -44,6 +44,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   val failureDetector = new FailureDetectorPuppet(system)
 
   val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector)
+  def clusterView = cluster.readView
 
   def leaderActions(): Unit = {
     cluster.clusterCore ! LeaderActionsTick
@@ -70,16 +71,16 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "initially become singleton cluster when joining itself and reach convergence" in {
-      cluster.members.size must be(0) // auto-join = off
+      clusterView.members.size must be(0) // auto-join = off
       cluster.join(selfAddress)
       Thread.sleep(5000)
-      awaitCond(cluster.isSingletonCluster)
-      cluster.self.address must be(selfAddress)
-      cluster.members.map(_.address) must be(Set(selfAddress))
-      cluster.status must be(MemberStatus.Joining)
-      cluster.convergence must be(true)
+      awaitCond(clusterView.isSingletonCluster)
+      clusterView.self.address must be(selfAddress)
+      clusterView.members.map(_.address) must be(Set(selfAddress))
+      clusterView.status must be(MemberStatus.Joining)
+      clusterView.convergence must be(true)
       leaderActions()
-      cluster.status must be(MemberStatus.Up)
+      clusterView.status must be(MemberStatus.Up)
     }
 
   }

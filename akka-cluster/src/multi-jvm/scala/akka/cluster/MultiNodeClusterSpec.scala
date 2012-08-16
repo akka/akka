@@ -97,6 +97,8 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
     }
   }
 
+  def clusterView: ClusterReadView = cluster.readView
+
   /**
    * Get the cluster node to use.
    */
@@ -106,11 +108,11 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
    * Use this method for the initial startup of the cluster node.
    */
   def startClusterNode(): Unit = {
-    if (cluster.members.isEmpty) {
+    if (clusterView.members.isEmpty) {
       cluster join myself
-      awaitCond(cluster.members.exists(_.address == address(myself)))
+      awaitCond(clusterView.members.exists(_.address == address(myself)))
     } else
-      cluster.self
+      clusterView.self
   }
 
   /**
@@ -168,8 +170,8 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   def assertLeaderIn(nodesInCluster: Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
     nodesInCluster.length must not be (0)
     val expectedLeader = roleOfLeader(nodesInCluster)
-    cluster.isLeader must be(ifNode(expectedLeader)(true)(false))
-    cluster.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
+    clusterView.isLeader must be(ifNode(expectedLeader)(true)(false))
+    clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
   }
 
   /**
@@ -181,12 +183,12 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
     canNotBePartOfMemberRing: Seq[Address] = Seq.empty[Address],
     timeout: Duration = 20.seconds): Unit = {
     within(timeout) {
-      awaitCond(cluster.members.size == numberOfMembers)
-      awaitCond(cluster.members.forall(_.status == MemberStatus.Up))
-      awaitCond(cluster.convergence)
+      awaitCond(clusterView.members.size == numberOfMembers)
+      awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
+      awaitCond(clusterView.convergence)
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitCond(
-          canNotBePartOfMemberRing forall (address ⇒ !(cluster.members exists (_.address == address))))
+          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
     }
   }
 
@@ -194,7 +196,7 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
    * Wait until the specified nodes have seen the same gossip overview.
    */
   def awaitSeenSameState(addresses: Address*): Unit =
-    awaitCond((addresses.toSet -- cluster.seenBy).isEmpty)
+    awaitCond((addresses.toSet -- clusterView.seenBy).isEmpty)
 
   def roleOfLeader(nodesInCluster: Seq[RoleName] = roles): RoleName = {
     nodesInCluster.length must not be (0)

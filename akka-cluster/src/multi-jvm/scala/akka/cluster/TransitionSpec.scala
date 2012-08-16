@@ -42,18 +42,18 @@ abstract class TransitionSpec
   def nonLeader(roles: RoleName*) = roles.toSeq.sorted.tail
 
   def memberStatus(address: Address): MemberStatus = {
-    val statusOption = (cluster.members ++ cluster.unreachableMembers).collectFirst {
+    val statusOption = (clusterView.members ++ clusterView.unreachableMembers).collectFirst {
       case m if m.address == address ⇒ m.status
     }
     statusOption must not be (None)
     statusOption.get
   }
 
-  def memberAddresses: Set[Address] = cluster.members.map(_.address)
+  def memberAddresses: Set[Address] = clusterView.members.map(_.address)
 
   def members: Set[RoleName] = memberAddresses.flatMap(roleName(_))
 
-  def seenLatestGossip: Set[RoleName] = cluster.seenBy flatMap roleName
+  def seenLatestGossip: Set[RoleName] = clusterView.seenBy flatMap roleName
 
   def awaitSeen(addresses: Address*): Unit = awaitCond {
     (seenLatestGossip map address) == addresses.toSet
@@ -90,10 +90,10 @@ abstract class TransitionSpec
     def gossipTo(toRole: RoleName): Unit = {
       gossipBarrierCounter += 1
       runOn(toRole) {
-        val oldCount = cluster.latestStats.receivedGossipCount
+        val oldCount = clusterView.latestStats.receivedGossipCount
         enterBarrier("before-gossip-" + gossipBarrierCounter)
         awaitCond {
-          cluster.latestStats.receivedGossipCount != oldCount // received gossip
+          clusterView.latestStats.receivedGossipCount != oldCount // received gossip
         }
         // gossip chat will synchronize the views
         awaitCond((Set(fromRole, toRole) -- seenLatestGossip).isEmpty)
@@ -120,11 +120,11 @@ abstract class TransitionSpec
 
       runOn(first) {
         startClusterNode()
-        cluster.isSingletonCluster must be(true)
-        cluster.status must be(Joining)
-        cluster.convergence must be(true)
+        clusterView.isSingletonCluster must be(true)
+        clusterView.status must be(Joining)
+        clusterView.convergence must be(true)
         leaderActions()
-        cluster.status must be(Up)
+        clusterView.status must be(Up)
       }
 
       enterBarrier("after-1")
@@ -141,7 +141,7 @@ abstract class TransitionSpec
         memberStatus(first) must be(Up)
         memberStatus(second) must be(Joining)
         awaitCond(seenLatestGossip == Set(first, second))
-        cluster.convergence must be(true)
+        clusterView.convergence must be(true)
       }
       enterBarrier("convergence-joining-2")
 
@@ -158,7 +158,7 @@ abstract class TransitionSpec
         awaitCond(memberStatus(second) == Up)
         seenLatestGossip must be(Set(first, second))
         memberStatus(first) must be(Up)
-        cluster.convergence must be(true)
+        clusterView.convergence must be(true)
       }
 
       enterBarrier("after-2")
@@ -174,7 +174,7 @@ abstract class TransitionSpec
         awaitMembers(first, second, third)
         memberStatus(third) must be(Joining)
         awaitCond(seenLatestGossip == Set(second, third))
-        cluster.convergence must be(false)
+        clusterView.convergence must be(false)
       }
       enterBarrier("third-joined-second")
 
@@ -185,7 +185,7 @@ abstract class TransitionSpec
         memberStatus(third) must be(Joining)
         awaitCond(memberStatus(second) == Up)
         seenLatestGossip must be(Set(first, second, third))
-        cluster.convergence must be(true)
+        clusterView.convergence must be(true)
       }
 
       first gossipTo third
@@ -195,7 +195,7 @@ abstract class TransitionSpec
         memberStatus(second) must be(Up)
         memberStatus(third) must be(Joining)
         seenLatestGossip must be(Set(first, second, third))
-        cluster.convergence must be(true)
+        clusterView.convergence must be(true)
       }
 
       enterBarrier("convergence-joining-3")
@@ -213,7 +213,7 @@ abstract class TransitionSpec
       runOn(nonLeader(first, second, third).head) {
         memberStatus(third) must be(Up)
         seenLatestGossip must be(Set(leader(first, second, third), myself))
-        cluster.convergence must be(false)
+        clusterView.convergence must be(false)
       }
 
       // first non-leader gossipTo the other non-leader
@@ -225,7 +225,7 @@ abstract class TransitionSpec
       runOn(nonLeader(first, second, third).tail.head) {
         memberStatus(third) must be(Up)
         seenLatestGossip must be(Set(first, second, third))
-        cluster.convergence must be(true)
+        clusterView.convergence must be(true)
       }
 
       // first non-leader gossipTo the leader
@@ -235,7 +235,7 @@ abstract class TransitionSpec
         memberStatus(second) must be(Up)
         memberStatus(third) must be(Up)
         seenLatestGossip must be(Set(first, second, third))
-        cluster.convergence must be(true)
+        clusterView.convergence must be(true)
       }
 
       enterBarrier("after-3")
@@ -245,7 +245,7 @@ abstract class TransitionSpec
       runOn(third) {
         markNodeAsUnavailable(second)
         reapUnreachable()
-        cluster.unreachableMembers must contain(Member(second, Up))
+        clusterView.unreachableMembers must contain(Member(second, Up))
         seenLatestGossip must be(Set(third))
       }
 
@@ -254,8 +254,8 @@ abstract class TransitionSpec
       third gossipTo first
 
       runOn(first, third) {
-        cluster.unreachableMembers must contain(Member(second, Up))
-        cluster.convergence must be(false)
+        clusterView.unreachableMembers must contain(Member(second, Up))
+        clusterView.convergence must be(false)
       }
 
       runOn(first) {
@@ -268,10 +268,10 @@ abstract class TransitionSpec
       first gossipTo third
 
       runOn(first, third) {
-        cluster.unreachableMembers must contain(Member(second, Down))
+        clusterView.unreachableMembers must contain(Member(second, Down))
         memberStatus(second) must be(Down)
         seenLatestGossip must be(Set(first, third))
-        cluster.convergence must be(true)
+        clusterView.convergence must be(true)
       }
 
       enterBarrier("after-6")

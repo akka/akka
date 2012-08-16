@@ -69,7 +69,7 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
  *  if (Cluster(system).isLeader) { ... }
  * }}}
  */
-class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector) extends Extension with ClusterEnvironment {
+class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetector) extends Extension with ClusterEnvironment {
 
   import ClusterEvent._
 
@@ -87,21 +87,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   private val log = Logging(system, "Cluster")
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
-
-  /**
-   * Read view of cluster state, updated via subscription of
-   * cluster events published on the event bus.
-   */
-  @volatile
-  private var state: CurrentClusterState = CurrentClusterState()
-
-  /**
-   * INTERNAL API
-   * Read only view of internal cluster stats, updated periodically by
-   * ClusterCoreDaemon via event bus. Access with `latestStats`.
-   */
-  @volatile
-  private var _latestStats = ClusterStats()
 
   // ========================================================
   // ===================== WORK DAEMONS =====================
@@ -169,22 +154,12 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
   }
 
-  // create actor that subscribes to the cluster eventBus to update current read view state
-  private val eventBusListener: ActorRef = {
-    system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new Actor {
-      override def preStart(): Unit = subscribe(self, classOf[ClusterDomainEvent])
-      override def postStop(): Unit = unsubscribe(self)
-
-      def receive = {
-        case SeenChanged(convergence, seenBy)       ⇒ state = state.copy(convergence = convergence, seenBy = seenBy)
-        case MembersChanged(members)                ⇒ state = state.copy(members = members)
-        case UnreachableMembersChanged(unreachable) ⇒ state = state.copy(unreachable = unreachable)
-        case LeaderChanged(leader, convergence)     ⇒ state = state.copy(leader = leader, convergence = convergence)
-        case s: CurrentClusterState                 ⇒ state = s
-        case CurrentInternalStats(stats)            ⇒ _latestStats = stats
-        case _                                      ⇒ // ignore, not interesting
-      }
-    }).withDispatcher(UseDispatcher), name = "clusterEventBusListener")
+  @volatile
+  private var readViewStarted = false
+  private[cluster] lazy val readView: ClusterReadView = {
+    val readView = new ClusterReadView(this)
+    readViewStarted = true
+    readView
   }
 
   system.registerOnTermination(shutdown())
@@ -198,73 +173,10 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   // ===================== PUBLIC API =====================
   // ======================================================
 
-  def self: Member = {
-    state.members.find(_.address == selfAddress).orElse(state.unreachable.find(_.address == selfAddress)).
-      getOrElse(Member(selfAddress, MemberStatus.Removed))
-  }
-
   /**
    * Returns true if the cluster node is up and running, false if it is shut down.
    */
   def isRunning: Boolean = _isRunning.get
-
-  /**
-   * Current cluster members, sorted with leader first.
-   */
-  def members: SortedSet[Member] = state.members
-
-  /**
-   * Members that has been detected as unreachable.
-   */
-  def unreachableMembers: Set[Member] = state.unreachable
-
-  /**
-   * Member status for this node ([[akka.cluster.MemberStatus]]).
-   *
-   * NOTE: If the node has been removed from the cluster (and shut down) then it's status is set to the 'REMOVED' tombstone state
-   *       and is no longer present in the node ring or any other part of the gossiping state. However in order to maintain the
-   *       model and the semantics the user would expect, this method will in this situation return `MemberStatus.Removed`.
-   */
-  def status: MemberStatus = self.status
-
-  /**
-   * Is this node the leader?
-   */
-  def isLeader: Boolean = leader == Some(selfAddress)
-
-  /**
-   * Get the address of the current leader.
-   */
-  def leader: Option[Address] = state.leader
-
-  /**
-   * Is this node a singleton cluster?
-   */
-  def isSingletonCluster: Boolean = members.size == 1
-
-  /**
-   * Checks if we have a cluster convergence.
-   */
-  def convergence: Boolean = state.convergence
-
-  /**
-   * The nodes that has seen current version of the Gossip.
-   */
-  def seenBy: Set[Address] = state.seenBy
-
-  /**
-   * Returns true if the node is UP or JOINING.
-   */
-  def isAvailable: Boolean = {
-    val myself = self
-    !unreachableMembers.contains(myself) && !myself.status.isUnavailable
-  }
-
-  /**
-   * Make it possible to override/configure seedNodes from tests without
-   * specifying in config. Addresses are unknown before startup time.
-   */
-  def seedNodes: IndexedSeq[Address] = SeedNodes
 
   /**
    * Subscribe to cluster domain events.
@@ -305,9 +217,10 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   // ========================================================
 
   /**
-   * INTERNAL API
+   * Make it possible to override/configure seedNodes from tests without
+   * specifying in config. Addresses are unknown before startup time.
    */
-  private[cluster] def latestStats: ClusterStats = _latestStats
+  private[cluster] def seedNodes: IndexedSeq[Address] = SeedNodes
 
   /**
    * INTERNAL API.
@@ -321,8 +234,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     if (_isRunning.compareAndSet(true, false)) {
       log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", selfAddress)
 
-      system.stop(eventBusListener)
       system.stop(clusterDaemons)
+      if (readViewStarted) readView.close()
 
       scheduler.close()
 

@@ -19,7 +19,7 @@ object MembershipChangeListenerJoinMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("akka.cluster.leader-actions-interval = 5 s") // increase the leader action task interval to allow time checking for JOIN before leader moves it to UP
+      .withFallback(ConfigFactory.parseString("akka.clusterView.leader-actions-interval = 5 s") // increase the leader action task interval to allow time checking for JOIN before leader moves it to UP
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 

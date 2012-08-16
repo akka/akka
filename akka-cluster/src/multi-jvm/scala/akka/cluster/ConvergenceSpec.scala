@@ -65,15 +65,15 @@ abstract class ConvergenceSpec
 
         within(28 seconds) {
           // third becomes unreachable
-          awaitCond(cluster.unreachableMembers.size == 1)
-          awaitCond(cluster.members.size == 2)
-          awaitCond(cluster.members.forall(_.status == MemberStatus.Up))
+          awaitCond(clusterView.unreachableMembers.size == 1)
+          awaitCond(clusterView.members.size == 2)
+          awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
           awaitSeenSameState(first, second)
           // still one unreachable
-          cluster.unreachableMembers.size must be(1)
-          cluster.unreachableMembers.head.address must be(thirdAddress)
+          clusterView.unreachableMembers.size must be(1)
+          clusterView.unreachableMembers.head.address must be(thirdAddress)
           // and therefore no convergence
-          cluster.convergence must be(false)
+          clusterView.convergence must be(false)
 
         }
       }
@@ -88,18 +88,18 @@ abstract class ConvergenceSpec
       }
 
       def memberStatus(address: Address): Option[MemberStatus] =
-        cluster.members.collectFirst { case m if m.address == address ⇒ m.status }
+        clusterView.members.collectFirst { case m if m.address == address ⇒ m.status }
 
       def assertNotMovedUp: Unit = {
         within(20 seconds) {
-          awaitCond(cluster.members.size == 3)
+          awaitCond(clusterView.members.size == 3)
           awaitSeenSameState(first, second, fourth)
           memberStatus(first) must be(Some(MemberStatus.Up))
           memberStatus(second) must be(Some(MemberStatus.Up))
           // leader is not allowed to move the new node to Up
           memberStatus(fourth) must be(Some(MemberStatus.Joining))
           // still no convergence
-          cluster.convergence must be(false)
+          clusterView.convergence must be(false)
         }
       }
 

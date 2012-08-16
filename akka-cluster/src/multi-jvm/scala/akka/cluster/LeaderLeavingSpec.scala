@@ -44,11 +44,11 @@ abstract class LeaderLeavingSpec
 
       awaitClusterUp(first, second, third)
 
-      val oldLeaderAddress = cluster.leader.get
+      val oldLeaderAddress = clusterView.leader.get
 
       within(leaderHandoffWaitingTime) {
 
-        if (cluster.isLeader) {
+        if (clusterView.isLeader) {
 
           enterBarrier("registered-listener")
 
@@ -56,13 +56,13 @@ abstract class LeaderLeavingSpec
           enterBarrier("leader-left")
 
           // verify that a NEW LEADER have taken over
-          awaitCond(!cluster.isLeader)
+          awaitCond(!clusterView.isLeader)
 
           // verify that the LEADER is shut down
           awaitCond(!cluster.isRunning)
 
           // verify that the LEADER is REMOVED
-          awaitCond(cluster.status == MemberStatus.Removed)
+          awaitCond(clusterView.status == MemberStatus.Removed)
 
         } else {
 
@@ -90,13 +90,13 @@ abstract class LeaderLeavingSpec
           exitingLatch.await
 
           // verify that the LEADER is no longer part of the 'members' set
-          awaitCond(cluster.members.forall(_.address != oldLeaderAddress))
+          awaitCond(clusterView.members.forall(_.address != oldLeaderAddress))
 
           // verify that the LEADER is not part of the 'unreachable' set
-          awaitCond(cluster.unreachableMembers.forall(_.address != oldLeaderAddress))
+          awaitCond(clusterView.unreachableMembers.forall(_.address != oldLeaderAddress))
 
           // verify that we have a new LEADER
-          awaitCond(cluster.leader != oldLeaderAddress)
+          awaitCond(clusterView.leader != oldLeaderAddress)
         }
 
         enterBarrier("finished")
