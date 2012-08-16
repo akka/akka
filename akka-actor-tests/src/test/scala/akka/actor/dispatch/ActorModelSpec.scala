@@ -20,7 +20,7 @@ import akka.dispatch._
 import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
-import akka.util.{ Timeout, Switch }
+import akka.util.Switch
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 import scala.concurrent.{ Await, Future, Promise }
@@ -51,6 +51,8 @@ object ActorModelSpec {
   case class WaitAck(time: Long, latch: CountDownLatch) extends ActorModelMessage
 
   case object Interrupt extends ActorModelMessage
+
+  case class InterruptNicely(expect: Any) extends ActorModelMessage
 
   case object Restart extends ActorModelMessage
 
@@ -91,6 +93,7 @@ object ActorModelSpec {
       case CountDownNStop(l)            ⇒ ack; l.countDown(); context.stop(self); busy.switchOff()
       case Restart                      ⇒ ack; busy.switchOff(); throw new Exception("Restart requested")
       case Interrupt                    ⇒ ack; sender ! Status.Failure(new ActorInterruptedException(new InterruptedException("Ping!"))); busy.switchOff(); throw new InterruptedException("Ping!")
+      case InterruptNicely(msg)         ⇒ ack; sender ! msg; busy.switchOff(); Thread.currentThread().interrupt()
       case ThrowException(e: Throwable) ⇒ ack; busy.switchOff(); throw e
       case DoubleStop                   ⇒ ack; context.stop(self); context.stop(self); busy.switchOff
     }
@@ -406,10 +409,9 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       }
     }
 
-    "continue to process messages when a thread gets interrupted" in {
+    "continue to process messages when a thread gets interrupted and throws an exception" in {
       filterEvents(EventFilter[InterruptedException](), EventFilter[akka.event.Logging.EventHandlerException]()) {
         implicit val dispatcher = interceptedDispatcher()
-        implicit val timeout = Timeout(5 seconds)
         val a = newTestActor(dispatcher.id)
         val f1 = a ? Reply("foo")
         val f2 = a ? Reply("bar")
@@ -418,12 +420,32 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val f5 = try { a ? Interrupt } catch { case ie: InterruptedException ⇒ Promise.failed(new ActorInterruptedException(ie)).future }
         val f6 = a ? Reply("bar2")
 
-        assert(Await.result(f1, timeout.duration) === "foo")
-        assert(Await.result(f2, timeout.duration) === "bar")
-        assert(Await.result(f4, timeout.duration) === "foo2")
-        assert(intercept[ActorInterruptedException](Await.result(f3, timeout.duration)).getCause.getMessage === "Ping!")
-        assert(Await.result(f6, timeout.duration) === "bar2")
-        assert(intercept[ActorInterruptedException](Await.result(f5, timeout.duration)).getCause.getMessage === "Ping!")
+        assert(Await.result(f1, remaining) === "foo")
+        assert(Await.result(f2, remaining) === "bar")
+        assert(Await.result(f4, remaining) === "foo2")
+        assert(intercept[ActorInterruptedException](Await.result(f3, remaining)).getCause.getMessage === "Ping!")
+        assert(Await.result(f6, remaining) === "bar2")
+        assert(intercept[ActorInterruptedException](Await.result(f5, remaining)).getCause.getMessage === "Ping!")
+      }
+    }
+
+    "continue to process messages without failure when a thread gets interrupted and doesn't throw an exception" in {
+      filterEvents(EventFilter[InterruptedException]()) {
+        implicit val dispatcher = interceptedDispatcher()
+        val a = newTestActor(dispatcher.id)
+        val f1 = a ? Reply("foo")
+        val f2 = a ? Reply("bar")
+        val f3 = a ? InterruptNicely("baz")
+        val f4 = a ? Reply("foo2")
+        val f5 = a ? InterruptNicely("baz2")
+        val f6 = a ? Reply("bar2")
+
+        assert(Await.result(f1, remaining) === "foo")
+        assert(Await.result(f2, remaining) === "bar")
+        assert(Await.result(f3, remaining) === "baz")
+        assert(Await.result(f4, remaining) === "foo2")
+        assert(Await.result(f5, remaining) === "baz2")
+        assert(Await.result(f6, remaining) === "bar2")
       }
     }
 
@@ -438,10 +460,10 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val f5 = a ? ThrowException(new RemoteException("RemoteException"))
         val f6 = a ? Reply("bar2")
 
-        assert(Await.result(f1, timeout.duration) === "foo")
-        assert(Await.result(f2, timeout.duration) === "bar")
-        assert(Await.result(f4, timeout.duration) === "foo2")
-        assert(Await.result(f6, timeout.duration) === "bar2")
+        assert(Await.result(f1, remaining) === "foo")
+        assert(Await.result(f2, remaining) === "bar")
+        assert(Await.result(f4, remaining) === "foo2")
+        assert(Await.result(f6, remaining) === "bar2")
         assert(f3.value.isEmpty)
         assert(f5.value.isEmpty)
       }

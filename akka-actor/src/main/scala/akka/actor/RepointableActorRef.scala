@@ -164,7 +164,10 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
           }
         }
       }
-      if (interrupted) throw new InterruptedException
+      if (interrupted) {
+        Thread.interrupted() // clear interrupted flag before throwing according to java convention
+        throw new InterruptedException
+      }
     } finally try
       self.swapCell(cell)
     finally try
