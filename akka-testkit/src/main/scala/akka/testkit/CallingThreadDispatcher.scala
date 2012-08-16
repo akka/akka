@@ -262,7 +262,7 @@ class CallingThreadDispatcher(
       runQueue(mbox, queue, intex)
     } else {
       if (intex ne null) {
-        Thread.interrupted // clear flag
+        Thread.interrupted // clear interrupted flag before throwing according to java convention
         throw intex
       }
     }

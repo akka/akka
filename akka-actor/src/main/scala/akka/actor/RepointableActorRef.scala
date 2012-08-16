@@ -153,19 +153,19 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
           val msg = systemQueue.dequeue()
           try cell.sendSystemMessage(msg)
           catch {
-            case _: InterruptedException ⇒ interrupted = true; Thread.interrupted() // clear interrupted flag on the thread
+            case _: InterruptedException ⇒ interrupted = true
           }
         }
         if (queue.nonEmpty) {
           val envelope = queue.dequeue()
           try cell.tell(envelope.message, envelope.sender)
           catch {
-            case _: InterruptedException ⇒ interrupted = true; Thread.interrupted() // clear interrupted flag on the thread
+            case _: InterruptedException ⇒ interrupted = true
           }
         }
       }
       if (interrupted) {
-        Thread.interrupted() // clear interrupted flag on the thread
+        Thread.interrupted() // clear interrupted flag before throwing according to java convention
         throw new InterruptedException
       }
     } finally try
