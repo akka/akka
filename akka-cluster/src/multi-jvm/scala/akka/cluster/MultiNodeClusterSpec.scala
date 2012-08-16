@@ -29,7 +29,7 @@ object MultiNodeClusterSpec {
       leader-actions-interval           = 200 ms
       unreachable-nodes-reaper-interval = 200 ms
       periodic-tasks-initial-delay      = 300 ms
-      publish-state-interval            = 0 s # always, when it happens
+      publish-stats-interval            = 0 s # always, when it happens
     }
     akka.test {
       single-expect-default = 5 s
@@ -97,6 +97,8 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
     }
   }
 
+  def clusterView: ClusterReadView = cluster.readView
+
   /**
    * Get the cluster node to use.
    */
@@ -106,11 +108,11 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
    * Use this method for the initial startup of the cluster node.
    */
   def startClusterNode(): Unit = {
-    if (cluster.latestGossip.members.isEmpty) {
+    if (clusterView.members.isEmpty) {
       cluster join myself
-      awaitCond(cluster.latestGossip.members.exists(_.address == address(myself)))
+      awaitCond(clusterView.members.exists(_.address == address(myself)))
     } else
-      cluster.self
+      clusterView.self
   }
 
   /**
@@ -168,8 +170,8 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   def assertLeaderIn(nodesInCluster: Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
     nodesInCluster.length must not be (0)
     val expectedLeader = roleOfLeader(nodesInCluster)
-    cluster.isLeader must be(ifNode(expectedLeader)(true)(false))
-    cluster.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
+    clusterView.isLeader must be(ifNode(expectedLeader)(true)(false))
+    clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
   }
 
   /**
@@ -181,25 +183,20 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
     canNotBePartOfMemberRing: Seq[Address] = Seq.empty[Address],
     timeout: Duration = 20.seconds): Unit = {
     within(timeout) {
-      awaitCond(cluster.latestGossip.members.size == numberOfMembers)
-      awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
-      awaitCond(cluster.convergence.isDefined)
+      awaitCond(clusterView.members.size == numberOfMembers)
+      awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
+      awaitCond(clusterView.convergence)
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitCond(
-          canNotBePartOfMemberRing forall (address ⇒ !(cluster.latestGossip.members exists (_.address == address))))
+          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
     }
   }
 
   /**
    * Wait until the specified nodes have seen the same gossip overview.
    */
-  def awaitSeenSameState(addresses: Address*): Unit = {
-    awaitCond {
-      val seen = cluster.latestGossip.overview.seen
-      val seenVectorClocks = addresses.flatMap(seen.get(_))
-      seenVectorClocks.size == addresses.size && seenVectorClocks.toSet.size == 1
-    }
-  }
+  def awaitSeenSameState(addresses: Address*): Unit =
+    awaitCond((addresses.toSet -- clusterView.seenBy).isEmpty)
 
   def roleOfLeader(nodesInCluster: Seq[RoleName] = roles): RoleName = {
     nodesInCluster.length must not be (0)

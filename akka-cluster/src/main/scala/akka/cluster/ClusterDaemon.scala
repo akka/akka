@@ -8,8 +8,11 @@ import scala.concurrent.util.{ Deadline, Duration }
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, ReceiveTimeout, RootActorPath, PoisonPill, Scheduler }
 import akka.actor.Status.Failure
+import akka.event.EventStream
 import akka.util.Timeout
-import MemberStatus._
+import akka.cluster.MemberStatus._
+import akka.cluster.ClusterEvent._
+import language.existentials
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -83,13 +86,16 @@ private[cluster] object InternalClusterAction {
 
   case object LeaderActionsTick extends Tick
 
-  case object PublishStateTick extends Tick
+  case object PublishStatsTick extends Tick
 
   case class SendClusterMessage(to: Address, msg: ClusterMessage)
 
   case class SendGossipTo(address: Address)
 
   case object GetClusterCoreRef
+
+  case class Subscribe(subscriber: ActorRef, to: Class[_])
+  case class Unsubscribe(subscriber: ActorRef)
 
   case class Ping(timestamp: Long = System.currentTimeMillis) extends ClusterMessage
   case class Pong(ping: Ping, timestamp: Long = System.currentTimeMillis) extends ClusterMessage
@@ -127,9 +133,6 @@ private[cluster] trait ClusterEnvironment {
   private[cluster] def selfAddress: Address
   private[cluster] def scheduler: Scheduler
   private[cluster] def seedNodes: IndexedSeq[Address]
-  private[cluster] def notifyMembershipChangeListeners(members: SortedSet[Member]): Unit
-  private[cluster] def publishLatestGossip(gossip: Gossip): Unit
-  private[cluster] def publishLatestStats(stats: ClusterStats): Unit
   private[cluster] def shutdown(): Unit
 }
 
@@ -209,9 +212,9 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
   // start periodic publish of current state
   private val publishStateTask: Option[Cancellable] =
-    if (PublishStateInterval == Duration.Zero) None
-    else Some(FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(PublishStateInterval), PublishStateInterval) {
-      self ! PublishStateTick
+    if (PublishStatsInterval == Duration.Zero) None
+    else Some(FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval), PublishStatsInterval) {
+      self ! PublishStatsTick
     })
 
   override def preStart(): Unit = {
@@ -234,9 +237,11 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
   }
 
   def uninitialized: Actor.Receive = {
-    case InitJoin        ⇒ // skip, not ready yet
-    case JoinTo(address) ⇒ join(address)
-    case _: Tick         ⇒ // ignore periodic tasks until initialized
+    case InitJoin                  ⇒ // skip, not ready yet
+    case JoinTo(address)           ⇒ join(address)
+    case Subscribe(subscriber, to) ⇒ subscribe(subscriber, to)
+    case Unsubscribe(subscriber)   ⇒ unsubscribe(subscriber)
+    case _: Tick                   ⇒ // ignore periodic tasks until initialized
   }
 
   def initialized: Actor.Receive = {
@@ -246,7 +251,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     case HeartbeatTick                    ⇒ heartbeat()
     case ReapUnreachableTick              ⇒ reapUnreachableMembers()
     case LeaderActionsTick                ⇒ leaderActions()
-    case PublishStateTick                 ⇒ publishState()
+    case PublishStatsTick                 ⇒ publishInternalStats()
     case InitJoin                         ⇒ initJoin()
     case JoinTo(address)                  ⇒ join(address)
     case ClusterUserAction.Join(address)  ⇒ joining(address)
@@ -255,6 +260,8 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     case Exit(address)                    ⇒ exiting(address)
     case Remove(address)                  ⇒ removing(address)
     case SendGossipTo(address)            ⇒ gossipTo(address)
+    case Subscribe(subscriber, to)        ⇒ subscribe(subscriber, to)
+    case Unsubscribe(subscriber)          ⇒ unsubscribe(subscriber)
     case p: Ping                          ⇒ ping(p)
 
   }
@@ -276,7 +283,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     // wipe the failure detector since we are starting fresh and shouldn't care about the past
     failureDetector.reset()
 
-    notifyListeners(localGossip)
+    publish(localGossip)
 
     context.become(initialized)
     if (address == selfAddress)
@@ -322,7 +329,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
         gossipTo(node)
       }
 
-      notifyListeners(localGossip)
+      publish(localGossip)
     }
   }
 
@@ -341,7 +348,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
       latestGossip = seenVersionedGossip
 
       log.info("Cluster Node [{}] - Marked address [{}] as LEAVING", selfAddress, address)
-      notifyListeners(localGossip)
+      publish(localGossip)
     }
   }
 
@@ -368,7 +375,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     // just cleaning up the gossip state
     latestGossip = Gossip()
     // make sure the final (removed) state is always published
-    notifyListeners(localGossip)
+    publish(localGossip)
     environment.shutdown()
   }
 
@@ -419,7 +426,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     val versionedGossip = newGossip :+ vclockNode
     latestGossip = versionedGossip seen selfAddress
 
-    notifyListeners(localGossip)
+    publish(localGossip)
   }
 
   /**
@@ -513,7 +520,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
         }
 
         stats = stats.incrementReceivedGossipCount
-        notifyListeners(localGossip)
+        publish(localGossip)
 
         if (envelope.conversation &&
           (conflict || (winningGossip ne remoteGossip) || (latestGossip ne remoteGossip))) {
@@ -715,7 +722,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
           log.info("Cluster Node [{}] - Leader is marking unreachable node [{}] as DOWN", selfAddress, member.address)
         }
 
-        notifyListeners(localGossip)
+        publish(localGossip)
       }
     }
   }
@@ -769,7 +776,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
         log.error("Cluster Node [{}] - Marking node(s) as UNREACHABLE [{}]", selfAddress, newlyDetectedUnreachableMembers.mkString(", "))
 
-        notifyListeners(localGossip)
+        publish(localGossip)
       }
     }
   }
@@ -809,19 +816,64 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
   def gossipTo(address: Address, gossipMsg: GossipEnvelope): Unit = if (address != selfAddress)
     coreSender ! SendClusterMessage(address, gossipMsg)
 
-  def notifyListeners(oldGossip: Gossip): Unit = {
-    if (PublishStateInterval == Duration.Zero) publishState()
-
-    val oldMembersStatus = oldGossip.members.map(m ⇒ (m.address, m.status))
-    val newMembersStatus = latestGossip.members.map(m ⇒ (m.address, m.status))
-    if (newMembersStatus != oldMembersStatus)
-      environment notifyMembershipChangeListeners latestGossip.members
+  def subscribe(subscriber: ActorRef, to: Class[_]): Unit = {
+    subscriber ! CurrentClusterState(
+      members = latestGossip.members,
+      unreachable = latestGossip.overview.unreachable,
+      convergence = latestGossip.convergence,
+      seenBy = latestGossip.seenBy,
+      leader = latestGossip.leader)
+    eventStream.subscribe(subscriber, to)
   }
 
-  def publishState(): Unit = {
-    environment.publishLatestGossip(latestGossip)
-    environment.publishLatestStats(stats)
+  def unsubscribe(subscriber: ActorRef): Unit =
+    eventStream.unsubscribe(subscriber)
+
+  def publish(oldGossip: Gossip): Unit = {
+    publishMembers(oldGossip)
+    publishUnreachableMembers(oldGossip)
+    publishLeader(oldGossip)
+    publishSeen(oldGossip)
+    if (PublishStatsInterval == Duration.Zero) publishInternalStats()
   }
+
+  def publishMembers(oldGossip: Gossip): Unit = {
+    if (!isSame(oldGossip.members, latestGossip.members))
+      eventStream publish MembersChanged(latestGossip.members)
+  }
+
+  def publishUnreachableMembers(oldGossip: Gossip): Unit = {
+    if (!isSame(oldGossip.overview.unreachable, latestGossip.overview.unreachable))
+      eventStream publish UnreachableMembersChanged(latestGossip.overview.unreachable)
+  }
+
+  def isSame(oldMembers: Set[Member], newMembers: Set[Member]): Boolean = {
+    def oldMembersStatus = oldMembers.map(m ⇒ (m.address, m.status))
+    def newMembersStatus = newMembers.map(m ⇒ (m.address, m.status))
+    (newMembers eq oldMembers) || ((newMembers.size == oldMembers.size) && (newMembersStatus == oldMembersStatus))
+  }
+
+  def publishLeader(oldGossip: Gossip): Unit = {
+    if (latestGossip.leader != oldGossip.leader || latestGossip.convergence != oldGossip.convergence)
+      eventStream publish LeaderChanged(latestGossip.leader, latestGossip.convergence)
+  }
+
+  def publishSeen(oldGossip: Gossip): Unit = {
+    val oldConvergence = oldGossip.convergence
+    val newConvergence = latestGossip.convergence
+    val oldSeenBy = oldGossip.seenBy
+    val newSeenBy = latestGossip.seenBy
+
+    if (newConvergence != oldConvergence || newSeenBy != oldSeenBy) {
+      eventStream publish SeenChanged(newConvergence, newSeenBy)
+    }
+  }
+
+  def publishInternalStats(): Unit = {
+    eventStream publish CurrentInternalStats(stats)
+  }
+
+  def eventStream: EventStream = context.system.eventStream
 
   def ping(p: Ping): Unit = sender ! Pong(p)
 }
@@ -890,6 +942,53 @@ private[cluster] final class ClusterCoreSender(selfAddress: Address) extends Act
       log.debug("Cluster Node [{}] - Trying to send [{}] to [{}]", selfAddress, msg.getClass.getSimpleName, to)
       clusterCoreConnectionFor(to) ! msg
   }
+}
+
+/**
+ * Domain events published to the event bus.
+ */
+object ClusterEvent {
+  /**
+   * Marker interface for cluster domain events.
+   */
+  sealed trait ClusterDomainEvent
+
+  /**
+   * Current snapshot state of the cluster. Sent to new subscriber.
+   */
+  case class CurrentClusterState(
+    members: SortedSet[Member] = SortedSet.empty,
+    unreachable: Set[Member] = Set.empty,
+    convergence: Boolean = false,
+    seenBy: Set[Address] = Set.empty,
+    leader: Option[Address] = None) extends ClusterDomainEvent
+
+  /**
+   * Set of cluster members or their status have changed.
+   */
+  case class MembersChanged(members: SortedSet[Member]) extends ClusterDomainEvent
+
+  /**
+   * Set of unreachable cluster members or their status have changed.
+   */
+  case class UnreachableMembersChanged(unreachable: Set[Member]) extends ClusterDomainEvent
+
+  /**
+   * Leader of the cluster members changed, and/or convergence status.
+   */
+  case class LeaderChanged(leader: Option[Address], convergence: Boolean) extends ClusterDomainEvent
+
+  /**
+   * INTERNAL API
+   * The nodes that have seen current version of the Gossip.
+   */
+  private[cluster] case class SeenChanged(convergence: Boolean, seenBy: Set[Address]) extends ClusterDomainEvent
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] case class CurrentInternalStats(stats: ClusterStats) extends ClusterDomainEvent
+
 }
 
 /**

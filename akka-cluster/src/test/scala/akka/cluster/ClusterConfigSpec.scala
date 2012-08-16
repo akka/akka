@@ -31,7 +31,7 @@ class ClusterConfigSpec extends AkkaSpec {
       HeartbeatInterval must be(1 second)
       LeaderActionsInterval must be(1 second)
       UnreachableNodesReaperInterval must be(1 second)
-      PublishStateInterval must be(1 second)
+      PublishStatsInterval must be(10 second)
       JoinTimeout must be(60 seconds)
       AutoJoin must be(true)
       AutoDown must be(false)

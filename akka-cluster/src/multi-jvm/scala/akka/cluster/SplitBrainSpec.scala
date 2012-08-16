@@ -78,10 +78,10 @@ abstract class SplitBrainSpec
       }
 
       runOn(side1: _*) {
-        awaitCond(cluster.latestGossip.overview.unreachable.map(_.address) == (side2.toSet map address), 20 seconds)
+        awaitCond(clusterView.unreachableMembers.map(_.address) == (side2.toSet map address), 20 seconds)
       }
       runOn(side2: _*) {
-        awaitCond(cluster.latestGossip.overview.unreachable.map(_.address) == (side1.toSet map address), 20 seconds)
+        awaitCond(clusterView.unreachableMembers.map(_.address) == (side1.toSet map address), 20 seconds)
       }
 
       enterBarrier("after-2")
@@ -91,16 +91,16 @@ abstract class SplitBrainSpec
 
       runOn(side1: _*) {
         // auto-down = on
-        awaitCond(cluster.latestGossip.overview.unreachable.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
-        cluster.latestGossip.overview.unreachable.map(_.address) must be(side2.toSet map address)
+        awaitCond(clusterView.unreachableMembers.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
+        clusterView.unreachableMembers.map(_.address) must be(side2.toSet map address)
         awaitUpConvergence(side1.size, side2 map address)
         assertLeader(side1: _*)
       }
 
       runOn(side2: _*) {
         // auto-down = on
-        awaitCond(cluster.latestGossip.overview.unreachable.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
-        cluster.latestGossip.overview.unreachable.map(_.address) must be(side1.toSet map address)
+        awaitCond(clusterView.unreachableMembers.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
+        clusterView.unreachableMembers.map(_.address) must be(side1.toSet map address)
         awaitUpConvergence(side2.size, side1 map address)
         assertLeader(side2: _*)
       }
