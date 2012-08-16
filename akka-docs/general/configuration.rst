@@ -142,7 +142,7 @@ before or after using them to construct an actor system:
 
 .. code-block:: scala
 
-  Welcome to Scala version 2.9.1.final (Java HotSpot(TM) 64-Bit Server VM, Java 1.6.0_27).
+  Welcome to Scala version 2.10.0-M6 (Java HotSpot(TM) 64-Bit Server VM, Java 1.6.0_27).
   Type in expressions to have them evaluated.
   Type :help for more information.
 
