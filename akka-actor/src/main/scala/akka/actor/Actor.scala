@@ -217,7 +217,7 @@ case class DeathPactException private[akka] (dead: ActorRef)
  * avoid cascading interrupts to other threads than the originally interrupted one.
  */
 @SerialVersionUID(1L)
-class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaException(cause.getMessage, cause) with NoStackTrace
+class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaException(cause.getMessage, cause)
 
 /**
  * This message is published to the EventStream whenever an Actor receives a message it doesn't understand

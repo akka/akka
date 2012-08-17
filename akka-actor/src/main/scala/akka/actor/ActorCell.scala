@@ -13,7 +13,7 @@ import scala.util.control.NonFatal
 
 import akka.actor.cell.ChildrenContainer
 import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, MessageDispatcher, Envelope, Create, ChildTerminated }
-import akka.event.Logging.{ LogEvent, Debug }
+import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
 
 /**
@@ -182,19 +182,19 @@ private[akka] trait Cell {
    */
   def systemImpl: ActorSystemImpl
   /**
-   * Recursively suspend this actor and all its children.
+   * Recursively suspend this actor and all its children. Must not throw exceptions.
    */
   def suspend(): Unit
   /**
-   * Recursively resume this actor and all its children.
+   * Recursively resume this actor and all its children. Must not throw exceptions.
    */
   def resume(causedByFailure: Throwable): Unit
   /**
-   * Restart this actor (will recursively restart or stop all children).
+   * Restart this actor (will recursively restart or stop all children). Must not throw exceptions.
    */
   def restart(cause: Throwable): Unit
   /**
-   * Recursively terminate this actor and all its children.
+   * Recursively terminate this actor and all its children. Must not throw exceptions.
    */
   def stop(): Unit
   /**
@@ -213,15 +213,17 @@ private[akka] trait Cell {
   /**
    * Get the stats for the named child, if that exists.
    */
-  def getChildByName(name: String): Option[ChildRestartStats]
+  def getChildByName(name: String): Option[ChildStats]
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
    * schedule the actor to run, depending on which type of cell it is.
+   * Must not throw exceptions.
    */
   def tell(message: Any, sender: ActorRef): Unit
   /**
    * Enqueue a message to be sent to the actor; may or may not actually
    * schedule the actor to run, depending on which type of cell it is.
+   * Must not throw exceptions.
    */
   def sendSystemMessage(msg: SystemMessage): Unit
   /**
@@ -368,7 +370,7 @@ private[akka] class ActorCell(
       case Kill                     ⇒ throw new ActorKilledException("Kill")
       case PoisonPill               ⇒ self.stop()
       case SelectParent(m)          ⇒ parent.tell(m, msg.sender)
-      case SelectChildName(name, m) ⇒ for (c ← getChildByName(name)) c.child.tell(m, msg.sender)
+      case SelectChildName(name, m) ⇒ getChildByName(name) match { case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender); case _ ⇒ }
       case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
   }
@@ -444,9 +446,13 @@ private[akka] class ActorCell(
 
   private def supervise(child: ActorRef, uid: Int): Unit = if (!isTerminating) {
     // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
-    addChild(child).uid = uid
-    handleSupervise(child)
-    if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
+    initChild(child) match {
+      case Some(crs) ⇒
+        crs.uid = uid
+        handleSupervise(child)
+        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
+      case None ⇒ publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))
+    }
   }
 
   // future extension point

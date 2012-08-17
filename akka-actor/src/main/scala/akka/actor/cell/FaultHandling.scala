@@ -204,7 +204,11 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
        */
       case Some(stats) if stats.uid == uid ⇒
         if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, getAllChildStats)) throw cause
-      case _ ⇒ publish(Debug(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
+      case Some(stats) ⇒
+        publish(Debug(self.path.toString, clazz(actor),
+          "dropping Failed(" + cause + ") from old child " + child + " (uid=" + stats.uid + " != " + uid + ")"))
+      case None ⇒
+        publish(Debug(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
     }
 
   final protected def handleChildTerminated(child: ActorRef): SystemMessage = {

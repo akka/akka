@@ -295,16 +295,6 @@ trait ActorRefFactory {
 }
 
 /**
- * Internal Akka use only, used in implementation of system.actorOf.
- */
-private[akka] case class CreateChild(props: Props, name: String)
-
-/**
- * Internal Akka use only, used in implementation of system.actorOf.
- */
-private[akka] case class CreateRandomNameChild(props: Props)
-
-/**
  * Internal Akka use only, used in implementation of system.stop(child).
  */
 private[akka] case class StopChild(child: ActorRef)
@@ -317,6 +307,7 @@ class LocalActorRefProvider(
   override val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   override val scheduler: Scheduler,
+  val dynamicAccess: DynamicAccess,
   override val deployer: Deployer) extends ActorRefProvider {
 
   // this is the constructor needed for reflectively instantiating the provider
@@ -329,6 +320,7 @@ class LocalActorRefProvider(
       settings,
       eventStream,
       scheduler,
+      dynamicAccess,
       new Deployer(settings, dynamicAccess))
 
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
@@ -380,65 +372,12 @@ class LocalActorRefProvider(
     }
   }
 
-  /**
-   * Overridable supervision strategy to be used by the “/user” guardian.
-   */
-  protected def guardianSupervisionStrategy: SupervisorStrategy = {
-    import akka.actor.SupervisorStrategy._
-    OneForOneStrategy() {
-      case _: ActorKilledException         ⇒ Stop
-      case _: ActorInitializationException ⇒ Stop
-      case _: Exception                    ⇒ Restart
-    }
-  }
-
-  /*
-   * Guardians can be asked by ActorSystem to create children, i.e. top-level
-   * actors. Therefore these need to answer to these requests, forwarding any
-   * exceptions which might have occurred.
-   */
-  private class Guardian extends Actor {
-
-    override val supervisorStrategy: SupervisorStrategy = guardianSupervisionStrategy
+  private class Guardian(override val supervisorStrategy: SupervisorStrategy, isSystem: Boolean) extends Actor {
 
     def receive = {
-      case Terminated(_)                ⇒ context.stop(self)
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ Status.Failure(e) })
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ Status.Failure(e) })
-      case StopChild(child)             ⇒ context.stop(child)
-      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
-    }
-
-    // guardian MUST NOT lose its children during restart
-    override def preRestart(cause: Throwable, msg: Option[Any]) {}
-  }
-
-  /**
-   * Overridable supervision strategy to be used by the “/system” guardian.
-   */
-  protected def systemGuardianSupervisionStrategy: SupervisorStrategy = {
-    import akka.actor.SupervisorStrategy._
-    OneForOneStrategy() {
-      case _: ActorKilledException | _: ActorInitializationException ⇒ Stop
-      case _: Exception ⇒ Restart
-    }
-  }
-
-  /*
-   * Guardians can be asked by ActorSystem to create children, i.e. top-level
-   * actors. Therefore these need to answer to these requests, forwarding any
-   * exceptions which might have occurred.
-   */
-  private class SystemGuardian extends Actor {
-
-    override val supervisorStrategy: SupervisorStrategy = systemGuardianSupervisionStrategy
-
-    def receive = {
-      case Terminated(_)                ⇒ eventStream.stopDefaultLoggers(); context.stop(self)
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ Status.Failure(e) })
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ Status.Failure(e) })
-      case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
-      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case Terminated(_)    ⇒ if (isSystem) eventStream.stopDefaultLoggers(); context.stop(self)
+      case StopChild(child) ⇒ context.stop(child)
+      case m                ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
 
     // guardian MUST NOT lose its children during restart
@@ -472,10 +411,30 @@ class LocalActorRefProvider(
    */
   def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
-  private val guardianProps = Props(new Guardian)
+  private def guardianSupervisorStrategyConfigurator =
+    dynamicAccess.createInstanceFor[SupervisorStrategyConfigurator](settings.SupervisorStrategyClass, Seq()).fold(throw _, x ⇒ x)
 
-  lazy val rootGuardian: InternalActorRef =
-    new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
+  /**
+   * Overridable supervision strategy to be used by the “/user” guardian.
+   */
+  protected def rootGuardianStrategy: SupervisorStrategy = OneForOneStrategy() {
+    case ex ⇒
+      log.error(ex, "guardian failed, shutting down system")
+      SupervisorStrategy.Stop
+  }
+
+  /**
+   * Overridable supervision strategy to be used by the “/user” guardian.
+   */
+  protected def guardianStrategy: SupervisorStrategy = guardianSupervisorStrategyConfigurator.create()
+
+  /**
+   * Overridable supervision strategy to be used by the “/user” guardian.
+   */
+  protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
+
+  lazy val rootGuardian: LocalActorRef =
+    new LocalActorRef(system, Props(new Guardian(rootGuardianStrategy, isSystem = false)), theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
         case "temp" ⇒ tempContainer
@@ -483,10 +442,15 @@ class LocalActorRefProvider(
       }
     }
 
-  lazy val guardian: LocalActorRef = new LocalActorRef(system, guardianProps, rootGuardian, rootPath / "user")
+  lazy val guardian: LocalActorRef = {
+    rootGuardian.underlying.reserveChild("user")
+    new LocalActorRef(system, Props(new Guardian(guardianStrategy, isSystem = false)), rootGuardian, rootPath / "user")
+  }
 
-  lazy val systemGuardian: LocalActorRef =
-    new LocalActorRef(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system")
+  lazy val systemGuardian: LocalActorRef = {
+    rootGuardian.underlying.reserveChild("system")
+    new LocalActorRef(system, Props(new Guardian(systemGuardianStrategy, isSystem = true)), rootGuardian, rootPath / "system")
+  }
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
@@ -559,4 +523,3 @@ class LocalActorRefProvider(
 
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 }
-

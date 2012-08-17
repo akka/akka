@@ -4,7 +4,6 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit._
 import org.scalatest.junit.JUnitSuite
 import com.typesafe.config.ConfigFactory
@@ -12,9 +11,9 @@ import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import scala.collection.JavaConverters
 import java.util.concurrent.{ TimeUnit, RejectedExecutionException, CountDownLatch, ConcurrentLinkedQueue }
-import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Future
+import akka.pattern.ask
 
 class JavaExtensionSpec extends JavaExtension with JUnitSuite
 
@@ -59,6 +58,12 @@ object ActorSystemSpec {
   class Terminater extends Actor {
     def receive = {
       case "run" ⇒ context.stop(self)
+    }
+  }
+
+  class Strategy extends SupervisorStrategyConfigurator {
+    def create() = OneForOneStrategy() {
+      case _ ⇒ SupervisorStrategy.Escalate
     }
   }
 
@@ -185,6 +190,46 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       }
 
       created filter (ref ⇒ !ref.isTerminated && !ref.asInstanceOf[ActorRefWithCell].underlying.isInstanceOf[UnstartedCell]) must be(Seq())
+    }
+
+    "shut down when /user fails" in {
+      implicit val system = ActorSystem("Stop", AkkaSpec.testConf)
+      EventFilter[ActorKilledException]() intercept {
+        system.actorFor("/user") ! Kill
+        awaitCond(system.isTerminated)
+      }
+    }
+
+    "allow configuration of guardian supervisor strategy" in {
+      implicit val system = ActorSystem("Stop",
+        ConfigFactory.parseString("akka.actor.guardian-supervisor-strategy=akka.actor.StoppingSupervisorStrategy")
+          .withFallback(AkkaSpec.testConf))
+      val a = system.actorOf(Props(new Actor {
+        def receive = {
+          case "die" ⇒ throw new Exception("hello")
+        }
+      }))
+      val probe = TestProbe()
+      probe.watch(a)
+      EventFilter[Exception]("hello", occurrences = 1) intercept {
+        a ! "die"
+      }
+      probe.expectMsg(Terminated(a)(true))
+    }
+
+    "shut down when /user escalates" in {
+      implicit val system = ActorSystem("Stop",
+        ConfigFactory.parseString("akka.actor.guardian-supervisor-strategy=\"akka.actor.ActorSystemSpec$Strategy\"")
+          .withFallback(AkkaSpec.testConf))
+      val a = system.actorOf(Props(new Actor {
+        def receive = {
+          case "die" ⇒ throw new Exception("hello")
+        }
+      }))
+      EventFilter[Exception]("hello") intercept {
+        a ! "die"
+        awaitCond(system.isTerminated)
+      }
     }
 
   }
