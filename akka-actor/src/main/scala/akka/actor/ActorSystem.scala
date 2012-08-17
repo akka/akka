@@ -502,11 +502,11 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   protected def systemImpl: ActorSystemImpl = this
 
-  private[akka] def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name)
+  private[akka] def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name, systemService = true)
 
-  def actorOf(props: Props, name: String): ActorRef = guardian.underlying.attachChild(props, name)
+  def actorOf(props: Props, name: String): ActorRef = guardian.underlying.attachChild(props, name, systemService = false)
 
-  def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props)
+  def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props, systemService = false)
 
   def stop(actor: ActorRef): Unit = {
     val path = actor.path

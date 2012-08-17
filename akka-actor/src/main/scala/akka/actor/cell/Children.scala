@@ -26,10 +26,14 @@ private[akka] trait Children { this: ActorCell ⇒
   final def children: Iterable[ActorRef] = childrenRefs.children
   final def getChildren(): java.lang.Iterable[ActorRef] = children.asJava
 
-  def actorOf(props: Props): ActorRef = makeChild(this, props, randomName(), async = false)
-  def actorOf(props: Props, name: String): ActorRef = makeChild(this, props, checkName(name), async = false)
-  private[akka] def attachChild(props: Props): ActorRef = makeChild(this, props, randomName(), async = true)
-  private[akka] def attachChild(props: Props, name: String): ActorRef = makeChild(this, props, checkName(name), async = true)
+  def actorOf(props: Props): ActorRef =
+    makeChild(this, props, randomName(), async = false, systemService = false)
+  def actorOf(props: Props, name: String): ActorRef =
+    makeChild(this, props, checkName(name), async = false, systemService = false)
+  private[akka] def attachChild(props: Props, systemService: Boolean): ActorRef =
+    makeChild(this, props, randomName(), async = true, systemService = systemService)
+  private[akka] def attachChild(props: Props, name: String, systemService: Boolean): ActorRef =
+    makeChild(this, props, checkName(name), async = true, systemService = systemService)
 
   @volatile private var _nextNameDoNotCallMeDirectly = 0L
   final protected def randomName(): String = {
@@ -163,7 +167,7 @@ private[akka] trait Children { this: ActorCell ⇒
     }
   }
 
-  private def makeChild(cell: ActorCell, props: Props, name: String, async: Boolean): ActorRef = {
+  private def makeChild(cell: ActorCell, props: Props, name: String, async: Boolean, systemService: Boolean): ActorRef = {
     if (cell.system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
       val ser = SerializationExtension(cell.system)
       ser.serialize(props.creator) match {
@@ -185,7 +189,7 @@ private[akka] trait Children { this: ActorCell ⇒
       val actor =
         try {
           cell.provider.actorOf(cell.systemImpl, props, cell.self, cell.self.path / name,
-            systemService = false, deploy = None, lookupDeploy = true, async = async)
+            systemService = systemService, deploy = None, lookupDeploy = true, async = async)
         } catch {
           case NonFatal(e) ⇒
             unreserveChild(name)
