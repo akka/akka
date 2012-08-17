@@ -29,7 +29,7 @@ class RemoteConfigSpec extends AkkaSpec(
       RemoteTransport must be("akka.remote.netty.NettyRemoteTransport")
       UntrustedMode must be(false)
       RemoteSystemDaemonAckTimeout must be(30 seconds)
-      LogRemoteLifeCycleEvents must be(false)
+      LogRemoteLifeCycleEvents must be(true)
     }
 
     "be able to parse Netty config elements" in {
