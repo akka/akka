@@ -69,7 +69,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, patterns, samples, tutorials, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -270,6 +270,15 @@ object AkkaBuild extends Build {
     )
   )
 
+  lazy val patterns = Project(
+    id = "akka-patterns",
+    base = file("akka-patterns"),
+    dependencies = Seq(actor, testkit % "test->test"),
+    settings = defaultSettings ++ OSGi.patterns ++ Seq(
+      libraryDependencies ++= Dependencies.patterns
+    )
+  )
+
   lazy val akkaSbtPlugin = Project(
     id = "akka-sbt-plugin",
     base = file("akka-sbt-plugin"),
@@ -351,7 +360,7 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
-      remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
+      remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries, patterns),
     settings = defaultSettings ++ Sphinx.settings ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -535,6 +544,8 @@ object AkkaBuild extends Build {
 
     val zeroMQ = exports(Seq("akka.zeromq.*"))
 
+    val patterns = exports(Seq("akka.patterns.*"))
+
     def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
       OsgiKeys.importPackage := defaultImports,
       OsgiKeys.exportPackage := packages,
@@ -584,6 +595,8 @@ object Dependencies {
   val osgi = Seq(osgiCore,Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
   val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
+
+  val patterns = Seq(Test.scalatest, Test.junit)
 
   val tutorials = Seq(Test.scalatest, Test.junit)
 
