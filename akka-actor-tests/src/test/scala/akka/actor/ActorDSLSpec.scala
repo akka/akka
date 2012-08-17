@@ -7,7 +7,7 @@ package akka.actor
 import language.postfixOps
 
 import akka.testkit.{ AkkaSpec, EventFilter }
-import ActorDSL._
+import akka.actor.ActorDSL._
 import akka.event.Logging.Warning
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.util.duration._
@@ -159,7 +159,7 @@ class ActorDSLSpec extends AkkaSpec {
       val system = this.system
       val a = actor(system, "fred")(new Act {
         val b = actor("barney")(new Act {
-          whenStarting { context.parent ! s"hello from $self" }
+          whenStarting { context.parent ! ("hello from " + self) }
         })
         become {
           case x ⇒ testActor ! x
