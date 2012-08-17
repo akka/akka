@@ -77,7 +77,9 @@ Once you obtained a reference to the actor you can interact with it they same wa
 
   actor ! "Pretty awesome feature"
 
-For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
+.. note::
+
+  For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
 
 Creating Actors Remotely
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -280,6 +282,16 @@ you simply register as listener to the below described types in on the ``ActorSy
     To subscribe to any outbound-related events, subscribe to ``RemoteClientLifeCycleEvent``
     To subscribe to any inbound-related events, subscribe to ``RemoteServerLifeCycleEvent``
     To subscribe to any remote events, subscribe to ``RemoteLifeCycleEvent``
+
+By default an event listener is registered which logs all of the events
+described below. This default was chosen to help setting up a system, but it is
+quite common to switch this logging off once that phase of the project is
+finished.
+
+.. note::
+  In order to switch off the logging, set
+  ``akka.remote.log-remote-lifecycle-events = off`` in your
+  ``application.conf``.
 
 To intercept when an outbound connection is disconnected, you listen to ``RemoteClientDisconnected`` which
 holds the transport used (RemoteTransport) and the outbound address that was disconnected (Address).
