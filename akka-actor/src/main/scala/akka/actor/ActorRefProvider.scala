@@ -372,10 +372,10 @@ class LocalActorRefProvider(
     }
   }
 
-  private class Guardian(override val supervisorStrategy: SupervisorStrategy) extends Actor {
+  private class Guardian(override val supervisorStrategy: SupervisorStrategy, isSystem: Boolean) extends Actor {
 
     def receive = {
-      case Terminated(_)    ⇒ if (context.self.path.name == "system") eventStream.stopDefaultLoggers(); context.stop(self)
+      case Terminated(_)    ⇒ if (isSystem) eventStream.stopDefaultLoggers(); context.stop(self)
       case StopChild(child) ⇒ context.stop(child)
       case m                ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
@@ -434,7 +434,7 @@ class LocalActorRefProvider(
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   lazy val rootGuardian: LocalActorRef =
-    new LocalActorRef(system, Props(new Guardian(rootGuardianStrategy)), theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
+    new LocalActorRef(system, Props(new Guardian(rootGuardianStrategy, isSystem = false)), theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
         case "temp" ⇒ tempContainer
@@ -444,12 +444,12 @@ class LocalActorRefProvider(
 
   lazy val guardian: LocalActorRef = {
     rootGuardian.underlying.reserveChild("user")
-    new LocalActorRef(system, Props(new Guardian(guardianStrategy)), rootGuardian, rootPath / "user")
+    new LocalActorRef(system, Props(new Guardian(guardianStrategy, isSystem = false)), rootGuardian, rootPath / "user")
   }
 
   lazy val systemGuardian: LocalActorRef = {
     rootGuardian.underlying.reserveChild("system")
-    new LocalActorRef(system, Props(new Guardian(systemGuardianStrategy)), rootGuardian, rootPath / "system")
+    new LocalActorRef(system, Props(new Guardian(systemGuardianStrategy, isSystem = true)), rootGuardian, rootPath / "system")
   }
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)

@@ -227,7 +227,6 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
         }
       }))
       EventFilter[Exception]("hello") intercept {
-        Thread.sleep(250)
         a ! "die"
         awaitCond(system.isTerminated)
       }

@@ -27,7 +27,7 @@ private[akka] case object ChildNameReserved extends ChildStats
 case class ChildRestartStats(child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L)
   extends ChildStats {
 
-  var uid = 0
+  var uid: Int = 0
 
   //FIXME How about making ChildRestartStats immutable and then move these methods into the actual supervisor strategies?
   def requestRestartPermission(retriesWindow: (Option[Int], Option[Int])): Boolean =
