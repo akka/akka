@@ -10,6 +10,8 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.util.duration._
+import akka.actor.Props
+import akka.actor.Actor
 
 object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -36,6 +38,7 @@ abstract class MembershipChangeListenerExitingSpec
   with MultiNodeClusterSpec {
 
   import MembershipChangeListenerExitingMultiJvmSpec._
+  import ClusterEvent._
 
   "A registered MembershipChangeListener" must {
     "be notified when new node is EXITING" taggedAs LongRunningTest in {
@@ -53,12 +56,13 @@ abstract class MembershipChangeListenerExitingSpec
 
       runOn(third) {
         val exitingLatch = TestLatch()
-        cluster.registerListener(new MembershipChangeListener {
-          def notify(members: SortedSet[Member]) {
-            if (members.size == 3 && members.exists(m ⇒ m.address == address(second) && m.status == MemberStatus.Exiting))
-              exitingLatch.countDown()
+        cluster.subscribe(system.actorOf(Props(new Actor {
+          def receive = {
+            case MembersChanged(members) ⇒
+              if (members.size == 3 && members.exists(m ⇒ m.address == address(second) && m.status == MemberStatus.Exiting))
+                exitingLatch.countDown()
           }
-        })
+        })), classOf[MembersChanged])
         enterBarrier("registered-listener")
         exitingLatch.await
       }

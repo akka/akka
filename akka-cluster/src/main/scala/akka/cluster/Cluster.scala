@@ -69,13 +69,9 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
  *  if (Cluster(system).isLeader) { ... }
  * }}}
  */
-class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector) extends Extension with ClusterEnvironment {
+class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetector) extends Extension with ClusterEnvironment {
 
-  /**
-   * Represents the state for this Cluster. Implemented using optimistic lockless concurrency.
-   * All state is represented by this immutable case class and managed by an AtomicReference.
-   */
-  private case class State(memberMembershipChangeListeners: Set[MembershipChangeListener] = Set.empty)
+  import ClusterEvent._
 
   if (!system.provider.isInstanceOf[RemoteActorRefProvider])
     throw new ConfigurationException("ActorSystem[" + system + "] needs to have a 'RemoteActorRefProvider' enabled in the configuration")
@@ -91,23 +87,6 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   private val log = Logging(system, "Cluster")
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
-
-  private val state = new AtomicReference[State](State())
-
-  /**
-   * Read only view of cluster state, updated periodically by
-   * ClusterCoreDaemon. Access with `latestGossip`.
-   */
-  @volatile
-  private[cluster] var _latestGossip: Gossip = Gossip()
-
-  /**
-   * INTERNAL API
-   * Read only view of internal cluster stats, updated periodically by
-   * ClusterCoreDaemon. Access with `latestStats`.
-   */
-  @volatile
-  private[cluster] var _latestStats = ClusterStats()
 
   // ========================================================
   // ===================== WORK DAEMONS =====================
@@ -175,6 +154,14 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
   }
 
+  @volatile
+  private var readViewStarted = false
+  private[cluster] lazy val readView: ClusterReadView = {
+    val readView = new ClusterReadView(this)
+    readViewStarted = true
+    readView
+  }
+
   system.registerOnTermination(shutdown())
 
   private val clusterJmx = new ClusterJmx(this, log)
@@ -186,87 +173,25 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   // ===================== PUBLIC API =====================
   // ======================================================
 
-  def self: Member = latestGossip.member(selfAddress)
-
   /**
    * Returns true if the cluster node is up and running, false if it is shut down.
    */
   def isRunning: Boolean = _isRunning.get
 
   /**
-   * Latest gossip.
+   * Subscribe to cluster domain events.
+   * The `to` Class can be [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
+   * or subclass. A snapshot of [[akka.cluster.ClusterEvent.CurrentClusterState]]
+   * will also be sent to the subscriber.
    */
-  def latestGossip: Gossip = _latestGossip
+  def subscribe(subscriber: ActorRef, to: Class[_]): Unit =
+    clusterCore ! InternalClusterAction.Subscribe(subscriber, to)
 
   /**
-   * Member status for this node ([[akka.cluster.MemberStatus]]).
-   *
-   * NOTE: If the node has been removed from the cluster (and shut down) then it's status is set to the 'REMOVED' tombstone state
-   *       and is no longer present in the node ring or any other part of the gossiping state. However in order to maintain the
-   *       model and the semantics the user would expect, this method will in this situation return `MemberStatus.Removed`.
+   * Unsubscribe to cluster domain events.
    */
-  def status: MemberStatus = self.status
-
-  /**
-   * Is this node the leader?
-   */
-  def isLeader: Boolean = latestGossip.isLeader(selfAddress)
-
-  /**
-   * Get the address of the current leader.
-   */
-  def leader: Address = latestGossip.leader match {
-    case Some(x) ⇒ x
-    case None    ⇒ throw new IllegalStateException("There is no leader in this cluster")
-  }
-
-  /**
-   * Is this node a singleton cluster?
-   */
-  def isSingletonCluster: Boolean = latestGossip.isSingletonCluster
-
-  /**
-   * Checks if we have a cluster convergence.
-   *
-   * @return Some(convergedGossip) if convergence have been reached and None if not
-   */
-  def convergence: Option[Gossip] = latestGossip match {
-    case gossip if gossip.convergence ⇒ Some(gossip)
-    case _                            ⇒ None
-  }
-
-  /**
-   * Returns true if the node is UP or JOINING.
-   */
-  def isAvailable: Boolean = latestGossip.isAvailable(selfAddress)
-
-  /**
-   * Make it possible to override/configure seedNodes from tests without
-   * specifying in config. Addresses are unknown before startup time.
-   */
-  def seedNodes: IndexedSeq[Address] = SeedNodes
-
-  /**
-   * Registers a listener to subscribe to cluster membership changes.
-   */
-  @tailrec
-  final def registerListener(listener: MembershipChangeListener): Unit = {
-    val localState = state.get
-    val newListeners = localState.memberMembershipChangeListeners + listener
-    val newState = localState copy (memberMembershipChangeListeners = newListeners)
-    if (!state.compareAndSet(localState, newState)) registerListener(listener) // recur
-  }
-
-  /**
-   * Unsubscribes to cluster membership changes.
-   */
-  @tailrec
-  final def unregisterListener(listener: MembershipChangeListener): Unit = {
-    val localState = state.get
-    val newListeners = localState.memberMembershipChangeListeners - listener
-    val newState = localState copy (memberMembershipChangeListeners = newListeners)
-    if (!state.compareAndSet(localState, newState)) unregisterListener(listener) // recur
-  }
+  def unsubscribe(subscriber: ActorRef): Unit =
+    clusterCore ! InternalClusterAction.Unsubscribe(subscriber)
 
   /**
    * Try to join this cluster node with the node specified by 'address'.
@@ -292,6 +217,12 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
   // ========================================================
 
   /**
+   * Make it possible to override/configure seedNodes from tests without
+   * specifying in config. Addresses are unknown before startup time.
+   */
+  private[cluster] def seedNodes: IndexedSeq[Address] = SeedNodes
+
+  /**
    * INTERNAL API.
    *
    * Shuts down all connections to other members, the cluster daemon and the periodic gossip and cleanup tasks.
@@ -303,10 +234,8 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     if (_isRunning.compareAndSet(true, false)) {
       log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", selfAddress)
 
-      // FIXME isTerminated check can be removed when ticket #2221 is fixed
-      // now it prevents logging if system is shutdown (or in progress of shutdown)
-      if (!clusterDaemons.isTerminated)
-        system.stop(clusterDaemons)
+      system.stop(clusterDaemons)
+      if (readViewStarted) readView.close()
 
       scheduler.close()
 
@@ -316,41 +245,5 @@ class Cluster(system: ExtendedActorSystem, val failureDetector: FailureDetector)
     }
   }
 
-  /**
-   * INTERNAL API
-   */
-  private[cluster] def notifyMembershipChangeListeners(members: SortedSet[Member]): Unit = {
-    // FIXME run callbacks async (to not block the cluster)
-    state.get.memberMembershipChangeListeners foreach { _ notify members }
-  }
-
-  /**
-   * INTERNAL API
-   */
-  private[cluster] def latestStats: ClusterStats = _latestStats
-
-  /**
-   * INTERNAL API
-   */
-  private[cluster] def publishLatestGossip(gossip: Gossip): Unit = _latestGossip = gossip
-
-  /**
-   * INTERNAL API
-   */
-  private[cluster] def publishLatestStats(stats: ClusterStats): Unit = _latestStats = stats
-
 }
 
-/**
- * Interface for membership change listener.
- */
-trait MembershipChangeListener {
-  def notify(members: SortedSet[Member]): Unit
-}
-
-/**
- * Interface for meta data change listener.
- */
-trait MetaDataChangeListener {
-  def notify(meta: Map[String, Array[Byte]]): Unit
-}

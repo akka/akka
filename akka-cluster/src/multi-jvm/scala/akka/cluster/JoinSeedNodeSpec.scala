@@ -13,6 +13,7 @@ import scala.concurrent.util.duration._
 object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
   val seed2 = role("seed2")
+  val seed3 = role("seed3")
   val ordinary1 = role("ordinary1")
   val ordinary2 = role("ordinary2")
 
@@ -25,6 +26,7 @@ class JoinSeedNodeMultiJvmNode1 extends JoinSeedNodeSpec with FailureDetectorPup
 class JoinSeedNodeMultiJvmNode2 extends JoinSeedNodeSpec with FailureDetectorPuppetStrategy
 class JoinSeedNodeMultiJvmNode3 extends JoinSeedNodeSpec with FailureDetectorPuppetStrategy
 class JoinSeedNodeMultiJvmNode4 extends JoinSeedNodeSpec with FailureDetectorPuppetStrategy
+class JoinSeedNodeMultiJvmNode5 extends JoinSeedNodeSpec with FailureDetectorPuppetStrategy
 
 abstract class JoinSeedNodeSpec
   extends MultiNodeSpec(JoinSeedNodeMultiJvmSpec)
@@ -32,37 +34,24 @@ abstract class JoinSeedNodeSpec
 
   import JoinSeedNodeMultiJvmSpec._
 
-  override def seedNodes = IndexedSeq(seed1, seed2)
+  override def seedNodes = IndexedSeq(seed1, seed2, seed3)
 
   "A cluster with configured seed nodes" must {
-    "start the seed nodes sequentially" taggedAs LongRunningTest in {
-      // without looking up the addresses first there might be
-      // [akka://JoinSeedNodeSpec/user/TestConductorClient] cannot write GetAddress(RoleName(seed2)) while waiting for seed1
-      roles foreach address
+    "be able to start the seed nodes concurrently" taggedAs LongRunningTest in {
 
       runOn(seed1) {
-        startClusterNode()
+        // test that first seed doesn't have to be started first
+        Thread.sleep(3000)
       }
-      enterBarrier("seed1-started")
 
-      runOn(seed2) {
-        startClusterNode()
-      }
-      enterBarrier("seed2-started")
-
-      runOn(seed1, seed2) {
-        awaitUpConvergence(2)
+      runOn(seed1, seed2, seed3) {
+        awaitUpConvergence(3)
       }
       enterBarrier("after-1")
     }
 
     "join the seed nodes at startup" taggedAs LongRunningTest in {
-
-      startClusterNode()
-      enterBarrier("all-started")
-
-      awaitUpConvergence(4)
-
+      awaitUpConvergence(roles.size)
       enterBarrier("after-2")
     }
   }
