@@ -61,6 +61,10 @@ As you can see from the example above the following pattern is used to find an `
 
     akka://<actorsystemname>@<hostname>:<port>/<actor path>
 
+Once you obtained a reference to the actor you can interact with it they same way you would with a local actor, e.g.::
+
+  actor.tell("Pretty awesome feature", getSelf());
+
 .. note::
 
   For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.

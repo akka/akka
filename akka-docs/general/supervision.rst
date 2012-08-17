@@ -68,6 +68,8 @@ An actor system will during its creation start at least three actors, shown in
 the image above. For more information about the consequences for actor paths
 see :ref:`toplevel-paths`.
 
+.. _user-guardian:
+
 ``/user``: The Guardian Actor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -89,7 +91,7 @@ will shut down the whole actor system.
 This special guardian has been introduced in order to achieve an orderly
 shut-down sequence where logging remains active while all normal actors
 terminate, even though logging itself is implemented using actors. This is
-realized by having the system guardian watch the guardian and initiate its own
+realized by having the system guardian watch the user guardian and initiate its own
 shut-down upon reception of the :class:`Terminated` message. The top-level
 system actors are supervised using a strategy which will restart indefinitely
 upon all types of :class:`Exception` except for
