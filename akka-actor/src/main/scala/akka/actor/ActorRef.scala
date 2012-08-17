@@ -306,8 +306,8 @@ private[akka] class LocalActorRef private[akka] (
    */
   protected def getSingleChild(name: String): InternalActorRef =
     actorCell.getChildByName(name) match {
-      case Some(crs) ⇒ crs.child.asInstanceOf[InternalActorRef]
-      case None      ⇒ Nobody
+      case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef]
+      case _                            ⇒ Nobody
     }
 
   override def getChild(names: Iterator[String]): InternalActorRef = {

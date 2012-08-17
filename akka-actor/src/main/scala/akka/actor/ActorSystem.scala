@@ -133,6 +133,7 @@ object ActorSystem {
 
     final val ConfigVersion = getString("akka.version")
     final val ProviderClass = getString("akka.actor.provider")
+    final val SupervisorStrategyClass = getString("akka.actor.guardian-supervisor-strategy")
     final val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
 
     final val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
