@@ -162,6 +162,11 @@ trait Inbox { this: ActorDSL.type ⇒
      * Receive a single message from the internal `receiver` actor. The supplied
      * timeout is used for cleanup purposes and its precision is subject to the
      * resolution of the system’s scheduler (usually 100ms, but configurable).
+     *
+     * <b>Warning:</b> This method blocks the current thread until a message is
+     * received, thus it can introduce dead-locks (directly as well as
+     * indirectly by causing starvation of the thread pool). <b>Do not use
+     * this method within an actor!</b>
      */
     def receive(timeout: FiniteDuration = defaultTimeout): Any = {
       implicit val t = Timeout(timeout + extraTime)
@@ -174,6 +179,11 @@ trait Inbox { this: ActorDSL.type ⇒
      * The supplied timeout is used for cleanup purposes and its precision is
      * subject to the resolution of the system’s scheduler (usually 100ms, but
      * configurable).
+     *
+     * <b>Warning:</b> This method blocks the current thread until a message is
+     * received, thus it can introduce dead-locks (directly as well as
+     * indirectly by causing starvation of the thread pool). <b>Do not use
+     * this method within an actor!</b>
      */
     def select[T](timeout: FiniteDuration = defaultTimeout)(predicate: PartialFunction[Any, T]): T = {
       implicit val t = Timeout(timeout + extraTime)
