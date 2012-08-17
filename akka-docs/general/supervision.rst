@@ -55,6 +55,65 @@ actors cannot be orphaned or attached to supervisors from the outside, which
 might otherwise catch them unawares. In addition, this yields a natural and
 clean shutdown procedure for (sub-trees of) actor applications.
 
+.. _toplevel-supervisors:
+
+The Top-Level Supervisors
+-------------------------
+
+.. image:: guardians.png
+   :align: center
+   :width: 360
+
+An actor system will during its creation start at least three actors, shown in
+the image above. For more information about the consequences for actor paths
+see :ref:`toplevel-paths`.
+
+.. _user-guardian:
+
+``/user``: The Guardian Actor
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The actor which is probably most interacted with is the parent of all
+user-created actors, the guardian named ``"/user"``. Actors created using
+``system.actorOf()`` are children of this actor. This means that when this
+guardian terminates, all normal actors in the system will be shutdown, too. It
+also means that this guardian’s supervisor strategy determines how the
+top-level normal actors are supervised. Since Akka 2.1 it is possible to
+configure this using the setting ``akka.actor.guardian-supervisor-strategy``,
+which takes the fully-qualified class-name of a
+:class:`SupervisorStrategyConfigurator`. When the guardian escalates a failure,
+the root guardian’s response will be to terminate the guardian, which in effect
+will shut down the whole actor system.
+
+``/system``: The System Guardian
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This special guardian has been introduced in order to achieve an orderly
+shut-down sequence where logging remains active while all normal actors
+terminate, even though logging itself is implemented using actors. This is
+realized by having the system guardian watch the user guardian and initiate its own
+shut-down upon reception of the :class:`Terminated` message. The top-level
+system actors are supervised using a strategy which will restart indefinitely
+upon all types of :class:`Exception` except for
+:class:`ActorInitializationException` and :class:`ActorKilledException`, which
+will terminate the child in question.  All other throwables are escalated,
+which will shut down the whole actor system.
+
+``/``: The Root Guardian
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The root guardian is the grand-parent of all so-called “top-level” actors and
+supervises all the special actors mentioned in :ref:`toplevel-paths` using the
+``SupervisorStrategy.stoppingStrategy``, whose purpose is to terminate the
+child upon any type of :class:`Exception`. All other throwables will be
+escalated … but to whom? Since every real actor has a supervisor, the
+supervisor of the root guardian cannot be a real actor. And because this means
+that it is “outside of the bubble”, it is called the “bubble-walker”. This is a
+synthetic :class:`ActorRef` which in effect stops its child upon the first sign
+of trouble and sets the actor system’s ``isTerminated`` status to ``true`` as
+soon as the root guardian is fully terminated (all children recursively
+stopped).
+
 .. _supervision-restart:
 
 What Restarting Means

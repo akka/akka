@@ -316,21 +316,36 @@ the address of this actor system, in which case it will be resolved to the
 actor’s local reference. Otherwise, it will be represented by a remote actor
 reference.
 
-Special Paths used by Akka
---------------------------
+.. _toplevel-paths:
+
+Top-Level Scopes for Actor Paths
+--------------------------------
 
 At the root of the path hierarchy resides the root guardian above which all
-other actors are found. The next level consists of the following:
+other actors are found; its name is ``"/"``. The next level consists of the
+following:
 
 - ``"/user"`` is the guardian actor for all user-created top-level actors;
-  actors created using :meth:`ActorSystem.actorOf` are found at the next level.
+  actors created using :meth:`ActorSystem.actorOf` are found below this one.
 - ``"/system"`` is the guardian actor for all system-created top-level actors,
   e.g. logging listeners or actors automatically deployed by configuration at
   the start of the actor system.
 - ``"/deadLetters"`` is the dead letter actor, which is where all messages sent to
-  stopped or non-existing actors are re-routed.
+  stopped or non-existing actors are re-routed (on a best-effort basis: messages
+  may be lost even within the local JVM).
 - ``"/temp"`` is the guardian for all short-lived system-created actors, e.g.
   those which are used in the implementation of :meth:`ActorRef.ask`.
 - ``"/remote"`` is an artificial path below which all actors reside whose
   supervisors are remote actor references
+
+The need to structure the name space for actors like this arises from a central
+and very simple design goal: everything in the hierarchy is an actor, and all
+actors function in the same way. Hence you can not only look up the actors you
+created, you can also look up the system guardian and send it a message (which
+it will dutifully discard in this case). This powerful principle means that
+there are no quirks to remember, it makes the whole system more uniform and
+consistent.
+
+If you want to read more about the top-level structure of an actor system, have
+a look at :ref:`toplevel-supervisors`.
 
