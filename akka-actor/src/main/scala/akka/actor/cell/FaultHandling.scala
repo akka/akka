@@ -136,9 +136,12 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       }
       suspendChildren(exceptFor = skip ++ childrenNotToSuspend)
       // tell supervisor
-      t match { // Wrap InterruptedExceptions and rethrow
-        case _: InterruptedException ⇒ parent.tell(Failed(new ActorInterruptedException(t), uid), self); throw t
-        case _                       ⇒ parent.tell(Failed(t, uid), self)
+      t match { // Wrap InterruptedExceptions and, clear the flag and rethrow
+        case _: InterruptedException ⇒
+          parent.tell(Failed(new ActorInterruptedException(t), uid), self)
+          Thread.interrupted() // clear interrupted flag before throwing according to java convention
+          throw t
+        case _ ⇒ parent.tell(Failed(t, uid), self)
       }
     } catch {
       case NonFatal(e) ⇒
@@ -201,7 +204,11 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
        */
       case Some(stats) if stats.uid == uid ⇒
         if (!actor.supervisorStrategy.handleFailure(this, child, cause, stats, getAllChildStats)) throw cause
-      case _ ⇒ publish(Debug(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
+      case Some(stats) ⇒
+        publish(Debug(self.path.toString, clazz(actor),
+          "dropping Failed(" + cause + ") from old child " + child + " (uid=" + stats.uid + " != " + uid + ")"))
+      case None ⇒
+        publish(Debug(self.path.toString, clazz(actor), "dropping Failed(" + cause + ") from unknown child " + child))
     }
 
   final protected def handleChildTerminated(child: ActorRef): SystemMessage = {

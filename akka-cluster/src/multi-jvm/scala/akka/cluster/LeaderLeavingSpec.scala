@@ -9,6 +9,8 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.util.duration._
+import akka.actor.Props
+import akka.actor.Actor
 
 object LeaderLeavingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -32,6 +34,7 @@ abstract class LeaderLeavingSpec
   with MultiNodeClusterSpec {
 
   import LeaderLeavingMultiJvmSpec._
+  import ClusterEvent._
 
   val leaderHandoffWaitingTime = 30.seconds
 
@@ -41,11 +44,11 @@ abstract class LeaderLeavingSpec
 
       awaitClusterUp(first, second, third)
 
-      val oldLeaderAddress = cluster.leader
+      val oldLeaderAddress = clusterView.leader.get
 
       within(leaderHandoffWaitingTime) {
 
-        if (cluster.isLeader) {
+        if (clusterView.isLeader) {
 
           enterBarrier("registered-listener")
 
@@ -53,28 +56,29 @@ abstract class LeaderLeavingSpec
           enterBarrier("leader-left")
 
           // verify that a NEW LEADER have taken over
-          awaitCond(!cluster.isLeader)
+          awaitCond(!clusterView.isLeader)
 
           // verify that the LEADER is shut down
           awaitCond(!cluster.isRunning)
 
           // verify that the LEADER is REMOVED
-          awaitCond(cluster.status == MemberStatus.Removed)
+          awaitCond(clusterView.status == MemberStatus.Removed)
 
         } else {
 
           val leavingLatch = TestLatch()
           val exitingLatch = TestLatch()
           val expectedAddresses = roles.toSet map address
-          cluster.registerListener(new MembershipChangeListener {
-            def notify(members: SortedSet[Member]) {
-              def check(status: MemberStatus): Boolean =
-                (members.map(_.address) == expectedAddresses &&
-                  members.exists(m ⇒ m.address == oldLeaderAddress && m.status == status))
-              if (check(MemberStatus.Leaving)) leavingLatch.countDown()
-              if (check(MemberStatus.Exiting)) exitingLatch.countDown()
+          cluster.subscribe(system.actorOf(Props(new Actor {
+            def receive = {
+              case MembersChanged(members) ⇒
+                def check(status: MemberStatus): Boolean =
+                  (members.map(_.address) == expectedAddresses &&
+                    members.exists(m ⇒ m.address == oldLeaderAddress && m.status == status))
+                if (check(MemberStatus.Leaving)) leavingLatch.countDown()
+                if (check(MemberStatus.Exiting)) exitingLatch.countDown()
             }
-          })
+          })), classOf[MembersChanged])
           enterBarrier("registered-listener")
 
           enterBarrier("leader-left")
@@ -86,13 +90,13 @@ abstract class LeaderLeavingSpec
           exitingLatch.await
 
           // verify that the LEADER is no longer part of the 'members' set
-          awaitCond(cluster.latestGossip.members.forall(_.address != oldLeaderAddress))
+          awaitCond(clusterView.members.forall(_.address != oldLeaderAddress))
 
           // verify that the LEADER is not part of the 'unreachable' set
-          awaitCond(cluster.latestGossip.overview.unreachable.forall(_.address != oldLeaderAddress))
+          awaitCond(clusterView.unreachableMembers.forall(_.address != oldLeaderAddress))
 
           // verify that we have a new LEADER
-          awaitCond(cluster.leader != oldLeaderAddress)
+          awaitCond(clusterView.leader != oldLeaderAddress)
         }
 
         enterBarrier("finished")

@@ -228,8 +228,11 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
         if (Mailbox.debug) println(actor.self + " processing message " + next)
         actor invoke next
         processAllSystemMessages()
-        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0))
+        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0)) {
           processMailbox(left - 1, deadlineNs)
+        } else if (Thread.interrupted()) {
+          throw new InterruptedException("Interrupted while processing actor messages")
+        }
       }
     }
 
@@ -241,7 +244,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * already dequeued message to deadLetters.
    */
   final def processAllSystemMessages() {
-    var failure: Throwable = null
+    var interruption: Throwable = null
     var nextMessage = systemDrain(null)
     while ((nextMessage ne null) && !isClosed) {
       val msg = nextMessage
@@ -251,9 +254,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       try {
         actor systemInvoke msg
       } catch {
-        case NonFatal(e) ⇒
-          if (failure eq null) failure = e
-          actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system message " + msg + ": " + e.getMessage))
+        // we know here that systemInvoke ensures that only InterruptedException and "fatal" exceptions get rethrown
+        case e: InterruptedException ⇒ interruption = e
       }
       // don’t ever execute normal message when system message present!
       if ((nextMessage eq null) && !isClosed) nextMessage = systemDrain(null)
@@ -269,12 +271,16 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       msg.next = null
       try dlm.systemEnqueue(actor.self, msg)
       catch {
+        case e: InterruptedException ⇒ interruption = e
         case NonFatal(e) ⇒ actor.system.eventStream.publish(
           Error(e, actor.self.path.toString, this.getClass, "error while enqueuing " + msg + " to deadLetters: " + e.getMessage))
       }
     }
-    // if something happened while processing, fail this actor (most probable: exception in supervisorStrategy)
-    if (failure ne null) actor.handleInvokeFailure(Nil, failure, failure.getMessage)
+    // if we got an interrupted exception while handling system messages, then rethrow it
+    if (interruption ne null) {
+      Thread.interrupted() // clear interrupted flag before throwing according to java convention
+      throw interruption
+    }
   }
 
   /**

@@ -269,8 +269,8 @@ class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf)
     val a = system.actorOf(Props[FooActor])
     Await.result(a ? "pigdog", timeout.duration) must be("pigdog")
 
-    intercept[NotSerializableException] {
-      Await.result(a ? new AnyRef, timeout.duration)
+    EventFilter[NotSerializableException](occurrences = 1) intercept {
+      a ! (new AnyRef)
     }
     system stop a
   }

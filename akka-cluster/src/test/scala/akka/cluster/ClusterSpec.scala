@@ -25,7 +25,7 @@ object ClusterSpec {
       auto-join                    = off
       auto-down                    = off
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
-      publish-state-interval = 0 s # always, when it happens
+      publish-stats-interval = 0 s # always, when it happens
     }
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
     akka.remote.netty.port = 0
@@ -44,6 +44,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   val failureDetector = new FailureDetectorPuppet(system)
 
   val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector)
+  def clusterView = cluster.readView
 
   def leaderActions(): Unit = {
     cluster.clusterCore ! LeaderActionsTick
@@ -70,15 +71,16 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "initially become singleton cluster when joining itself and reach convergence" in {
-      cluster.isSingletonCluster must be(false) // auto-join = off
+      clusterView.members.size must be(0) // auto-join = off
       cluster.join(selfAddress)
-      awaitCond(cluster.isSingletonCluster)
-      cluster.self.address must be(selfAddress)
-      cluster.latestGossip.members.map(_.address) must be(Set(selfAddress))
-      cluster.status must be(MemberStatus.Joining)
-      cluster.convergence.isDefined must be(true)
+      Thread.sleep(5000)
+      awaitCond(clusterView.isSingletonCluster)
+      clusterView.self.address must be(selfAddress)
+      clusterView.members.map(_.address) must be(Set(selfAddress))
+      clusterView.status must be(MemberStatus.Joining)
+      clusterView.convergence must be(true)
       leaderActions()
-      cluster.status must be(MemberStatus.Up)
+      clusterView.status must be(MemberStatus.Up)
     }
 
   }

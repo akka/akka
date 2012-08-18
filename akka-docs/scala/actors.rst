@@ -22,10 +22,13 @@ its syntax from Erlang.
 Creating Actors
 ===============
 
-Since Akka enforces parental supervision every actor is supervised and
-(potentially) the supervisor of its children; it is advisable that you
-familiarize yourself with :ref:`actor-systems` and :ref:`supervision` and it
-may also help to read :ref:`actorOf-vs-actorFor`.
+.. note::
+
+  Since Akka enforces parental supervision every actor is supervised and
+  (potentially) the supervisor of its children, it is advisable that you
+  familiarize yourself with :ref:`actor-systems` and :ref:`supervision` and it
+  may also help to read :ref:`actorOf-vs-actorFor` (the whole of
+  :ref:`addressing` is recommended reading in any case).
 
 Defining an Actor class
 -----------------------

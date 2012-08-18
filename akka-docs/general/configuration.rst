@@ -140,9 +140,9 @@ when you are uncertain of what configuration is used.
 If in doubt, you can also easily and nicely inspect configuration objects
 before or after using them to construct an actor system:
 
-.. code-block:: scala
+.. parsed-literal::
 
-  Welcome to Scala version 2.9.1.final (Java HotSpot(TM) 64-Bit Server VM, Java 1.6.0_27).
+  Welcome to Scala version |scalaVersion| (Java HotSpot(TM) 64-Bit Server VM, Java 1.6.0_27).
   Type in expressions to have them evaluated.
   Type :help for more information.
 

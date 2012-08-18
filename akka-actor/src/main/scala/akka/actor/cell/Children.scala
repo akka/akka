@@ -7,11 +7,12 @@ package akka.actor.cell
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.util.control.NonFatal
-import akka.actor.{ RepointableRef, Props, NoSerializationVerificationNeeded, InvalidActorNameException, InternalActorRef, ChildRestartStats, ActorRef }
+import akka.actor._
 import akka.actor.ActorCell
 import akka.actor.ActorPath.ElementRegex
 import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Helpers }
+import akka.actor.ChildNameReserved
 
 private[akka] trait Children { this: ActorCell ⇒
 
@@ -26,10 +27,14 @@ private[akka] trait Children { this: ActorCell ⇒
   final def children: Iterable[ActorRef] = childrenRefs.children
   final def getChildren(): java.lang.Iterable[ActorRef] = children.asJava
 
-  def actorOf(props: Props): ActorRef = makeChild(this, props, randomName(), async = false)
-  def actorOf(props: Props, name: String): ActorRef = makeChild(this, props, checkName(name), async = false)
-  private[akka] def attachChild(props: Props): ActorRef = makeChild(this, props, randomName(), async = true)
-  private[akka] def attachChild(props: Props, name: String): ActorRef = makeChild(this, props, checkName(name), async = true)
+  def actorOf(props: Props): ActorRef =
+    makeChild(this, props, randomName(), async = false, systemService = false)
+  def actorOf(props: Props, name: String): ActorRef =
+    makeChild(this, props, checkName(name), async = false, systemService = false)
+  private[akka] def attachChild(props: Props, systemService: Boolean): ActorRef =
+    makeChild(this, props, randomName(), async = true, systemService = systemService)
+  private[akka] def attachChild(props: Props, name: String, systemService: Boolean): ActorRef =
+    makeChild(this, props, checkName(name), async = true, systemService = systemService)
 
   @volatile private var _nextNameDoNotCallMeDirectly = 0L
   final protected def randomName(): String = {
@@ -57,7 +62,7 @@ private[akka] trait Children { this: ActorCell ⇒
   @inline private def swapChildrenRefs(oldChildren: ChildrenContainer, newChildren: ChildrenContainer): Boolean =
     Unsafe.instance.compareAndSwapObject(this, AbstractActorCell.childrenOffset, oldChildren, newChildren)
 
-  @tailrec final protected def reserveChild(name: String): Boolean = {
+  @tailrec final def reserveChild(name: String): Boolean = {
     val c = childrenRefs
     swapChildrenRefs(c, c.reserve(name)) || reserveChild(name)
   }
@@ -67,24 +72,16 @@ private[akka] trait Children { this: ActorCell ⇒
     swapChildrenRefs(c, c.unreserve(name)) || unreserveChild(name)
   }
 
-  final protected def addChild(ref: ActorRef): ChildRestartStats = {
-    @tailrec def rec(): ChildRestartStats = {
-      val c = childrenRefs
-      val nc = c.add(ref)
-      if (swapChildrenRefs(c, nc)) nc.getByName(ref.path.name).get else rec()
+  @tailrec final protected def initChild(ref: ActorRef): Option[ChildRestartStats] =
+    childrenRefs.getByName(ref.path.name) match {
+      case old @ Some(_: ChildRestartStats) ⇒ old.asInstanceOf[Option[ChildRestartStats]]
+      case Some(ChildNameReserved) ⇒
+        val crs = ChildRestartStats(ref)
+        val name = ref.path.name
+        val c = childrenRefs
+        if (swapChildrenRefs(c, c.add(name, crs))) Some(crs) else initChild(ref)
+      case None ⇒ None
     }
-    /*
-     * This does not need to check getByRef every tailcall, because the change 
-     * cannot happen in that direction as a race: the only entity removing a 
-     * child is the actor itself, and the only entity which could be racing is 
-     * somebody who calls attachChild, and there we are guaranteed that that 
-     * child cannot yet have died (since it has not yet been created).
-     */
-    childrenRefs.getByRef(ref) match {
-      case Some(old) ⇒ old
-      case None      ⇒ rec()
-    }
-  }
 
   @tailrec final protected def shallDie(ref: ActorRef): Boolean = {
     val c = childrenRefs
@@ -123,17 +120,17 @@ private[akka] trait Children { this: ActorCell ⇒
 
   protected def suspendChildren(exceptFor: Set[ActorRef] = Set.empty): Unit =
     childrenRefs.stats foreach {
-      case ChildRestartStats(child, _, _, _) if !(exceptFor contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()
+      case ChildRestartStats(child, _, _) if !(exceptFor contains child) ⇒ child.asInstanceOf[InternalActorRef].suspend()
       case _ ⇒
     }
 
   protected def resumeChildren(causedByFailure: Throwable, perp: ActorRef): Unit =
     childrenRefs.stats foreach {
-      case ChildRestartStats(child: InternalActorRef, _, _, _) ⇒
+      case ChildRestartStats(child: InternalActorRef, _, _) ⇒
         child.resume(if (perp == child) causedByFailure else null)
     }
 
-  def getChildByName(name: String): Option[ChildRestartStats] = childrenRefs.getByName(name)
+  def getChildByName(name: String): Option[ChildStats] = childrenRefs.getByName(name)
 
   protected def getChildByRef(ref: ActorRef): Option[ChildRestartStats] = childrenRefs.getByRef(ref)
 
@@ -163,7 +160,7 @@ private[akka] trait Children { this: ActorCell ⇒
     }
   }
 
-  private def makeChild(cell: ActorCell, props: Props, name: String, async: Boolean): ActorRef = {
+  private def makeChild(cell: ActorCell, props: Props, name: String, async: Boolean, systemService: Boolean): ActorRef = {
     if (cell.system.settings.SerializeAllCreators && !props.creator.isInstanceOf[NoSerializationVerificationNeeded]) {
       val ser = SerializationExtension(cell.system)
       ser.serialize(props.creator) match {
@@ -185,7 +182,7 @@ private[akka] trait Children { this: ActorCell ⇒
       val actor =
         try {
           cell.provider.actorOf(cell.systemImpl, props, cell.self, cell.self.path / name,
-            systemService = false, deploy = None, lookupDeploy = true, async = async)
+            systemService = systemService, deploy = None, lookupDeploy = true, async = async)
         } catch {
           case NonFatal(e) ⇒
             unreserveChild(name)
@@ -193,7 +190,7 @@ private[akka] trait Children { this: ActorCell ⇒
         }
       // mailbox==null during RoutedActorCell constructor, where suspends are queued otherwise
       if (mailbox ne null) for (_ ← 1 to mailbox.suspendCount) actor.suspend()
-      addChild(actor)
+      initChild(actor)
       actor
     }
   }

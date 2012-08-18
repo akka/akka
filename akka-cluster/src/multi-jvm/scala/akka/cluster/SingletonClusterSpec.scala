@@ -42,14 +42,14 @@ abstract class SingletonClusterSpec
     "become singleton cluster when started with 'auto-join=on' and 'seed-nodes=[]'" taggedAs LongRunningTest in {
       startClusterNode()
       awaitUpConvergence(1)
-      cluster.isSingletonCluster must be(true)
+      clusterView.isSingletonCluster must be(true)
 
       enterBarrier("after-1")
     }
 
     "not be singleton cluster when joined with other node" taggedAs LongRunningTest in {
       awaitClusterUp(first, second)
-      cluster.isSingletonCluster must be(false)
+      clusterView.isSingletonCluster must be(false)
       assertLeader(first, second)
 
       enterBarrier("after-2")
@@ -63,7 +63,7 @@ abstract class SingletonClusterSpec
         markNodeAsUnavailable(secondAddress)
 
         awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Seq(secondAddress), 30.seconds)
-        cluster.isSingletonCluster must be(true)
+        clusterView.isSingletonCluster must be(true)
         assertLeader(first)
       }
 

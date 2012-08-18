@@ -40,13 +40,15 @@ object AkkaBuild extends Build {
       initialCommands in ThisBuild :=
         """|import language.postfixOps
            |import akka.actor._
-           |import akka.dispatch._
+           |import ActorDSL._
+           |import scala.concurrent._
            |import com.typesafe.config.ConfigFactory
            |import scala.concurrent.util.duration._
            |import akka.util.Timeout
            |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG")
            |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=RemoteActorRefProvider").withFallback(config)
            |var system: ActorSystem = null
+           |implicit def _system = system
            |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.shutdown()!") }
            |implicit def ec = system.dispatcher
            |implicit val timeout = Timeout(5 seconds)
@@ -282,7 +284,7 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample)
+    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample)
   )
 
   lazy val camelSample = Project(
@@ -319,6 +321,13 @@ object AkkaBuild extends Build {
     id = "akka-sample-remote",
     base = file("akka-samples/akka-sample-remote"),
     dependencies = Seq(actor, remote, kernel),
+    settings = defaultSettings
+  )
+
+  lazy val clusterSample = Project(
+    id = "akka-sample-cluster",
+    base = file("akka-samples/akka-sample-cluster"),
+    dependencies = Seq(cluster),
     settings = defaultSettings
   )
 

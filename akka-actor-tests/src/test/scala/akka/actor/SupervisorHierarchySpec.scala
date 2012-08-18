@@ -538,7 +538,7 @@ object SupervisorHierarchySpec {
         hierarchy ! PingOfDeath
     }
 
-    when(Stopping, stateTimeout = 5 seconds) {
+    when(Stopping, stateTimeout = 5.seconds.dilated) {
       case Event(PongOfDeath, _) ⇒ stay
       case Event(Terminated(r), _) if r == hierarchy ⇒
         val undead = children filterNot (_.isTerminated)
@@ -566,8 +566,8 @@ object SupervisorHierarchySpec {
           stop
         }
       case Event(StateTimeout, _) ⇒
-        testActor ! "timeout in Stopping"
-        stop
+        errors :+= self -> ErrorLog("timeout while Stopping", Vector.empty)
+        goto(Failed)
       case Event(e: ErrorLog, _) ⇒
         errors :+= sender -> e
         goto(Failed)

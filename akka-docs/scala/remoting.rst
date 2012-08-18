@@ -40,6 +40,11 @@ As you can see in the example above there are four things you need to add to get
   communicate across the network.
 * Add port number - the port the actor system should listen on, set to 0 to have it chosen automatically
 
+.. note::
+  The port number needs to be unique for each actor system on the same machine even if the actor
+  systems have different names. This is because each actor system has its own network subsystem
+  listening for connections and handling messages as not to interfere with other actor systems.
+
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
 There are lots of more properties that are related to remoting in Akka. We refer to the following
 reference file for more information:
@@ -72,7 +77,9 @@ Once you obtained a reference to the actor you can interact with it they same wa
 
   actor ! "Pretty awesome feature"
 
-For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
+.. note::
+
+  For more details on how actor addresses and paths are formed and used, please refer to :ref:`addressing`.
 
 Creating Actors Remotely
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -275,6 +282,16 @@ you simply register as listener to the below described types in on the ``ActorSy
     To subscribe to any outbound-related events, subscribe to ``RemoteClientLifeCycleEvent``
     To subscribe to any inbound-related events, subscribe to ``RemoteServerLifeCycleEvent``
     To subscribe to any remote events, subscribe to ``RemoteLifeCycleEvent``
+
+By default an event listener is registered which logs all of the events
+described below. This default was chosen to help setting up a system, but it is
+quite common to switch this logging off once that phase of the project is
+finished.
+
+.. note::
+  In order to switch off the logging, set
+  ``akka.remote.log-remote-lifecycle-events = off`` in your
+  ``application.conf``.
 
 To intercept when an outbound connection is disconnected, you listen to ``RemoteClientDisconnected`` which
 holds the transport used (RemoteTransport) and the outbound address that was disconnected (Address).

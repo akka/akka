@@ -53,7 +53,7 @@ which is a ``PartialFunction[Throwable, Directive]``. This
 is the piece which maps child failure types to their corresponding directives.
 
 Default Supervisor Strategy
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``Escalate`` is used if the defined strategy doesn't cover the exception that was thrown.
 
@@ -68,6 +68,23 @@ exceptions are handled by default:
 If the exception escalate all the way up to the root guardian it will handle it
 in the same way as the default strategy defined above.
 
+Stopping Supervisor Strategy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Closer to the Erlang way is the strategy to just stop children when they fail
+and then take corrective action in the supervisor when DeathWatch signals the
+loss of the child. This strategy is also provided pre-packaged as
+:obj:`SupervisorStrategy.stoppingStrategy` with an accompanying
+:class:`StoppingSupervisorStrategy` configurator to be used when you want the
+``"/user"`` guardian to apply it.
+
+Supervision of Top-Level Actors
+-------------------------------
+
+Toplevel actors means those which are created using ``system.actorOf()``, and
+they are children of the :ref:`User Guardian <user-guardian>`. There are no
+special rules applied in this case, the guardian simply applies the configured
+strategy.
 
 Test Application
 ----------------

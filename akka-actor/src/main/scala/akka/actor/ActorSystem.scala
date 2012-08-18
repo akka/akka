@@ -133,6 +133,7 @@ object ActorSystem {
 
     final val ConfigVersion = getString("akka.version")
     final val ProviderClass = getString("akka.actor.provider")
+    final val SupervisorStrategyClass = getString("akka.actor.guardian-supervisor-strategy")
     final val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
 
     final val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
@@ -502,11 +503,11 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   protected def systemImpl: ActorSystemImpl = this
 
-  private[akka] def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name)
+  private[akka] def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name, systemService = true)
 
-  def actorOf(props: Props, name: String): ActorRef = guardian.underlying.attachChild(props, name)
+  def actorOf(props: Props, name: String): ActorRef = guardian.underlying.attachChild(props, name, systemService = false)
 
-  def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props)
+  def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props, systemService = false)
 
   def stop(actor: ActorRef): Unit = {
     val path = actor.path
