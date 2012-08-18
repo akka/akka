@@ -597,7 +597,7 @@ object Dependency {
   // Compile
   val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.0" exclude("org.slf4j", "slf4j-api")      // ApacheV2
   val config        = "com.typesafe"                % "config"                       % "0.5.0"         // ApacheV2
-  val netty         = "io.netty"                    % "netty"                        % "3.5.3.Final" // ApacheV2
+  val netty         = "io.netty"                    % "netty"                        % "3.5.4.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
   val scalaStm      = "org.scala-tools"            %% "scala-stm"                    % "0.6"         // Modified BSD (Scala)
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.6.4"       // MIT
