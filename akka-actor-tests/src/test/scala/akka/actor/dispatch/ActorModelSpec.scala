@@ -446,6 +446,8 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         assert(Await.result(f4, remaining) === "foo2")
         assert(Await.result(f5, remaining) === "baz2")
         assert(Await.result(f6, remaining) === "bar2")
+        // clear the interrupted flag (only needed for the CallingThreadDispatcher) so the next test can continue normally
+        Thread.interrupted()
       }
     }
 
