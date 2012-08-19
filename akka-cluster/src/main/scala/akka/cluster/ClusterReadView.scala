@@ -61,7 +61,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   def isRunning: Boolean = cluster.isRunning
 
   /**
-   * Current cluster members, sorted with leader first.
+   * Current cluster members, sorted by address.
    */
   def members: SortedSet[Member] = state.members
 
