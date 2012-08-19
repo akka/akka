@@ -58,11 +58,11 @@ abstract class MembershipChangeListenerExitingSpec
         val exitingLatch = TestLatch()
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
-            case MembersChanged(members) ⇒
-              if (members.size == 3 && members.exists(m ⇒ m.address == address(second) && m.status == MemberStatus.Exiting))
-                exitingLatch.countDown()
+            case MemberExited(m) if m.address == address(second) ⇒
+              exitingLatch.countDown()
+            case _ ⇒ // ignore
           }
-        })), classOf[MembersChanged])
+        })), classOf[MemberEvent])
         enterBarrier("registered-listener")
         exitingLatch.await
       }
