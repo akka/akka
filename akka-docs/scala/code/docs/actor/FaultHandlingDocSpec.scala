@@ -113,7 +113,8 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
         //#stop
         watch(child) // have testActor watch “child”
         child ! new IllegalArgumentException // break it
-        expectMsg(Terminated(child)(existenceConfirmed = true))
+        val t = expectMsg(Terminated(child)(true, 0))
+        t.existenceConfirmed must be(true)
         child.isTerminated must be(true)
         //#stop
       }
@@ -127,7 +128,8 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
         expectMsg(0)
 
         child2 ! new Exception("CRASH") // escalate failure
-        expectMsg(Terminated(child2)(existenceConfirmed = true))
+        val t = expectMsg(Terminated(child2)(true, 0))
+        t.existenceConfirmed must be(true)
         //#escalate-kill
         //#escalate-restart
         val supervisor2 = system.actorOf(Props[Supervisor2], "supervisor2")

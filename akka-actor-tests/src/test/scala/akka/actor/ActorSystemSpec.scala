@@ -214,7 +214,8 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       EventFilter[Exception]("hello", occurrences = 1) intercept {
         a ! "die"
       }
-      probe.expectMsg(Terminated(a)(true))
+      val t = probe.expectMsg(Terminated(a)(true, 0))
+      t.existenceConfirmed must be(true)
     }
 
     "shut down when /user escalates" in {
