@@ -72,7 +72,7 @@ private[akka] trait Children { this: ActorCell ⇒
     swapChildrenRefs(c, c.unreserve(name)) || unreserveChild(name)
   }
 
-  @tailrec final protected def initChild(ref: ActorRef): Option[ChildRestartStats] =
+  @tailrec final def initChild(ref: ActorRef): Option[ChildRestartStats] =
     childrenRefs.getByName(ref.path.name) match {
       case old @ Some(_: ChildRestartStats) ⇒ old.asInstanceOf[Option[ChildRestartStats]]
       case Some(ChildNameReserved) ⇒

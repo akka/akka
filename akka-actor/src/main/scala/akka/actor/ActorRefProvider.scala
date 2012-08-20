@@ -443,13 +443,19 @@ class LocalActorRefProvider(
     }
 
   lazy val guardian: LocalActorRef = {
-    rootGuardian.underlying.reserveChild("user")
-    new LocalActorRef(system, Props(new Guardian(guardianStrategy, isSystem = false)), rootGuardian, rootPath / "user")
+    val cell = rootGuardian.underlying
+    cell.reserveChild("user")
+    val ref = new LocalActorRef(system, Props(new Guardian(guardianStrategy, isSystem = false)), rootGuardian, rootPath / "user")
+    cell.initChild(ref)
+    ref
   }
 
   lazy val systemGuardian: LocalActorRef = {
-    rootGuardian.underlying.reserveChild("system")
-    new LocalActorRef(system, Props(new Guardian(systemGuardianStrategy, isSystem = true)), rootGuardian, rootPath / "system")
+    val cell = rootGuardian.underlying
+    cell.reserveChild("system")
+    val ref = new LocalActorRef(system, Props(new Guardian(systemGuardianStrategy, isSystem = true)), rootGuardian, rootPath / "system")
+    cell.initChild(ref)
+    ref
   }
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
