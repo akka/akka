@@ -183,14 +183,14 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
   def start(): Unit
 
   /**
-   * Shuts down a specific client connected to the supplied remote address returns true if successful
+   * Attempts to shut down a specific client connected to the supplied remote address
    */
-  def shutdownClientConnection(address: Address): Boolean
+  def shutdownClientConnection(address: Address): Unit
 
   /**
-   * Restarts a specific client connected to the supplied remote address, but only if the client is not shut down
+   * Attempts to restart a specific client connected to the supplied remote address, but only if the client is not shut down
    */
-  def restartClientConnection(address: Address): Boolean
+  def restartClientConnection(address: Address): Unit
 
   /**
    * Sends the given message to the recipient supplying the sender if any
