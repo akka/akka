@@ -81,6 +81,7 @@ class DataflowSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "futureComposingWithContinuationsFailureCastNothing" in {
+      pending
       filterException[ClassCastException] {
 
         val actor = system.actorOf(Props[TestActor])
