@@ -7,18 +7,19 @@ import language.postfixOps
 
 import akka.testkit._
 import akka.actor.{ Actor, Props }
-import akka.actor.Status.Failure
+import akka.actor.Status
 import akka.util.Timeout
 import scala.concurrent.util.duration._
 import java.lang.IllegalStateException
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.util.{ Failure, Success }
 
 object FutureDocSpec {
 
   class MyActor extends Actor {
     def receive = {
       case x: String       ⇒ sender ! x.toUpperCase
-      case x: Int if x < 0 ⇒ sender ! Failure(new ArithmeticException("Negative values not supported"))
+      case x: Int if x < 0 ⇒ sender ! Status.Failure(new ArithmeticException("Negative values not supported"))
       case x: Int          ⇒ sender ! x
     }
   }
@@ -312,7 +313,7 @@ class FutureDocSpec extends AkkaSpec {
     def watchSomeTV = ()
     //#and-then
     val result = Future { loadPage(url) } andThen {
-      case Left(exception) ⇒ log(exception)
+      case Failure(exception) ⇒ log(exception)
     } andThen {
       case _ ⇒ watchSomeTV
     }
@@ -358,8 +359,8 @@ class FutureDocSpec extends AkkaSpec {
       def doSomethingOnFailure(t: Throwable) = ()
       //#onComplete
       future onComplete {
-        case Right(result) ⇒ doSomethingOnSuccess(result)
-        case Left(failure) ⇒ doSomethingOnFailure(failure)
+        case Success(result)  ⇒ doSomethingOnSuccess(result)
+        case Failure(failure) ⇒ doSomethingOnFailure(failure)
       }
       //#onComplete
       Await.result(future, 1 second) must be("foo")

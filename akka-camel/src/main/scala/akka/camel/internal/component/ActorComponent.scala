@@ -24,6 +24,7 @@ import akka.util.Timeout
 import akka.camel.internal.CamelExchangeAdapter
 import akka.camel.{ ActorNotRegisteredException, Camel, Ack, FailureResult, CamelMessage }
 import support.TypeConverterSupport
+import scala.util.{ Failure, Success, Try }
 
 /**
  * For internal use only.
@@ -155,18 +156,18 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
       callback.done(true)
       true // done sync
     } else {
-      val action: PartialFunction[Either[Throwable, Any], Unit] =
+      val action: PartialFunction[Try[Any], Unit] =
         if (exchange.isOutCapable) {
-          case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
-          case Right(msg)                    ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
-          case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
-          case Left(throwable)               ⇒ exchange.setFailure(FailureResult(throwable))
+          case Success(failure: FailureResult) ⇒ exchange.setFailure(failure)
+          case Success(msg)                    ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
+          case Failure(e: TimeoutException)    ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+          case Failure(throwable)              ⇒ exchange.setFailure(FailureResult(throwable))
         } else {
-          case Right(Ack)                    ⇒ () /* no response message to set */
-          case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
-          case Right(msg)                    ⇒ exchange.setFailure(FailureResult(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
-          case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
-          case Left(throwable)               ⇒ exchange.setFailure(FailureResult(throwable))
+          case Success(Ack)                    ⇒ () /* no response message to set */
+          case Success(failure: FailureResult) ⇒ exchange.setFailure(failure)
+          case Success(msg)                    ⇒ exchange.setFailure(FailureResult(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
+          case Failure(e: TimeoutException)    ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+          case Failure(throwable)              ⇒ exchange.setFailure(FailureResult(throwable))
         }
       val async = try actorFor(endpoint.path).ask(messageFor(exchange))(Timeout(endpoint.replyTimeout)) catch { case NonFatal(e) ⇒ Future.failed(e) }
       implicit val ec = camel.system.dispatcher // FIXME which ExecutionContext should be used here?

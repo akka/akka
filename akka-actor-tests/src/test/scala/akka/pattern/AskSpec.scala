@@ -11,6 +11,7 @@ import scala.concurrent.Await
 import akka.testkit.DefaultTimeout
 import akka.actor.{ Props, ActorRef }
 import akka.util.Timeout
+import scala.util.Failure
 
 class AskSpec extends AkkaSpec {
 
@@ -22,8 +23,8 @@ class AskSpec extends AkkaSpec {
       val f = dead.ask(42)(1 second)
       f.isCompleted must be(true)
       f.value.get match {
-        case Left(_: AskTimeoutException) ⇒
-        case v                            ⇒ fail(v + " was not Left(AskTimeoutException)")
+        case Failure(_: AskTimeoutException) ⇒
+        case v                               ⇒ fail(v + " was not Left(AskTimeoutException)")
       }
     }
 
@@ -33,8 +34,8 @@ class AskSpec extends AkkaSpec {
       val f = empty ? 3.14
       f.isCompleted must be(true)
       f.value.get match {
-        case Left(_: AskTimeoutException) ⇒
-        case v                            ⇒ fail(v + " was not Left(AskTimeoutException)")
+        case Failure(_: AskTimeoutException) ⇒
+        case v                               ⇒ fail(v + " was not Left(AskTimeoutException)")
       }
     }
 

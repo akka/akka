@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import scala.reflect.ClassTag
 import akka.serialization.{ JavaSerializer, SerializationExtension }
 import java.io.ObjectStreamException
+import scala.util.{ Try, Success, Failure }
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
@@ -302,8 +303,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
             if (m.returnsFuture_?) {
               val s = sender
               m(me).asInstanceOf[Future[Any]] onComplete {
-                case Left(f)  ⇒ s ! Status.Failure(f)
-                case Right(r) ⇒ s ! r
+                case Failure(f) ⇒ s ! Status.Failure(f)
+                case Success(r) ⇒ s ! r
               }
             } else {
               sender ! m(me)
@@ -408,9 +409,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
             val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
-              case None | Some(Right(null)) ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
-              case Some(Right(joption))     ⇒ joption.asInstanceOf[AnyRef]
-              case Some(Left(ex))           ⇒ throw ex
+              case None | Some(Success(null)) ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
+              case Some(t: Try[_])            ⇒ t.get.asInstanceOf[AnyRef]
             }
           case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration).asInstanceOf[AnyRef]
         }

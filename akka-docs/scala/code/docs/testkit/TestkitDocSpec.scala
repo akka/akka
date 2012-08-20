@@ -4,6 +4,7 @@
 package docs.testkit
 
 import language.postfixOps
+import scala.util.Success
 
 //#imports-test-probe
 import akka.testkit.TestProbe
@@ -129,7 +130,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     // hypothetical message stimulating a '42' answer
     val future = actorRef ? Say42
     val result = future.value.get match {
-      case Right(x: Int) ⇒ x
+      case Success(x: Int) ⇒ x
     }
     result must be(42)
     //#test-behavior

@@ -11,6 +11,7 @@ import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.util.Timeout
 import scala.concurrent.Future
+import scala.util.Success
 
 object LocalActorRefProviderSpec {
   val config = """
@@ -53,9 +54,9 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
         implicit val timeout = Timeout(5 seconds)
         val actors = for (j ← 1 to 4) yield Future(system.actorOf(Props(c ⇒ { case _ ⇒ }), address))
         val set = Set() ++ actors.map(a ⇒ Await.ready(a, timeout.duration).value match {
-          case Some(Right(a: ActorRef))                  ⇒ 1
-          case Some(Left(ex: InvalidActorNameException)) ⇒ 2
-          case x                                         ⇒ x
+          case Some(Success(a: ActorRef)) ⇒ 1
+          case Some(Success(ex: InvalidActorNameException)) ⇒ 2
+          case x ⇒ x
         })
         set must be === Set(1, 2)
       }

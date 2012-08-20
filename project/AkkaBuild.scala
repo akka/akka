@@ -24,7 +24,11 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
-    scalaVersion := "2.10.0-M6"
+    scalaVersion := "2.10.0-SNAPSHOT",
+    scalaVersion in update <<= (scalaVersion) apply {
+      case "2.10.0-SNAPSHOT" => "2.10.0-M6"
+      case x => x
+    }
   )
 
   lazy val akka = Project(
@@ -347,6 +351,7 @@ object AkkaBuild extends Build {
   // Settings
 
   override lazy val settings = super.settings ++ buildSettings ++ Seq(
+      resolvers += "Scala Community 2.10.0-SNAPSHOT" at "https://scala-webapps.epfl.ch/jenkins/job/community-nightly/ws/target/repositories/8e83577d99af1d718fe369c4a4ee92737b9cf669",
       resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
       resolvers += "Sonatype Releases Repo" at "https://oss.sonatype.org/content/repositories/releases/",
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
@@ -580,7 +585,10 @@ object Dependency {
   val config        = "com.typesafe"                % "config"                       % "0.5.0"       // ApacheV2
   val netty         = "io.netty"                    % "netty"                        % "3.5.4.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
-  val scalaStm      = "org.scala-tools"             % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
+  // TODO FIXME use live version
+  // val scalaStm      = "org.scala-tools"            %% "scala-stm"                    % "0.6"         // Modified BSD (Scala)
+   val scalaStm      = "org.scala-tools"            % "scala-stm"                    % "0.7-SNAPSHOT"   // Modified BSD (Scala)
+
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.6.4"       // MIT
   val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding"         % "0.0.6" cross CrossVersion.full // ApacheV2
   val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a"      // ApacheV2
