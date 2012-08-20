@@ -2,13 +2,6 @@ package akka.remote.actmote
 
 import akka.actor.ActorRef
 
-/**
- * Created with IntelliJ IDEA.
- * User: Varga Endre Sándor
- * Date: 2012.08.20.
- * Time: 10:47
- * To change this template use File | Settings | File Templates.
- */
 // TODO: have a better name
 // TODO: Use futures instead of callbacks??
 
