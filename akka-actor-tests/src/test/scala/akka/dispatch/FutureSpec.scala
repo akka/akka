@@ -897,7 +897,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "filter result" in {
       f { (future, result) ⇒
         Await.result((future filter (_ ⇒ true)), timeout.duration) must be(result)
-        (evaluating { Await.result((future filter (_ ⇒ false)), timeout.duration) } must produce[java.util.NoSuchElementException]).getMessage must endWith(result.toString)
+        evaluating { Await.result((future filter (_ ⇒ false)), timeout.duration) } must produce[java.util.NoSuchElementException]
       }
     }
     "transform result with map" in { f((future, result) ⇒ Await.result((future map (_.toString.length)), timeout.duration) must be(result.toString.length)) }
@@ -938,7 +938,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "contain a value" in {
       f((future, message) ⇒ {
         future.value must be('defined)
-        future.value.get must be('left)
+        future.value.get must be('failure)
         future.value.get match {
           case Failure(f) ⇒ f.getMessage must be(message)
         }

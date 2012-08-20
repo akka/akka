@@ -5,13 +5,13 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit._
 import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import akka.util.Timeout
 import scala.concurrent.Future
 import scala.util.Success
+import scala.util.Failure
 
 object LocalActorRefProviderSpec {
   val config = """
@@ -55,7 +55,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
         val actors = for (j ← 1 to 4) yield Future(system.actorOf(Props(c ⇒ { case _ ⇒ }), address))
         val set = Set() ++ actors.map(a ⇒ Await.ready(a, timeout.duration).value match {
           case Some(Success(a: ActorRef)) ⇒ 1
-          case Some(Success(ex: InvalidActorNameException)) ⇒ 2
+          case Some(Failure(ex: InvalidActorNameException)) ⇒ 2
           case x ⇒ x
         })
         set must be === Set(1, 2)
