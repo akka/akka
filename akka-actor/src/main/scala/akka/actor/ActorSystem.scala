@@ -18,6 +18,7 @@ import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.cell.ChildrenContainer
+import scala.concurrent.util.FiniteDuration
 
 object ActorSystem {
 
@@ -131,38 +132,38 @@ object ActorSystem {
     import scala.collection.JavaConverters._
     import config._
 
-    final val ConfigVersion = getString("akka.version")
-    final val ProviderClass = getString("akka.actor.provider")
-    final val SupervisorStrategyClass = getString("akka.actor.guardian-supervisor-strategy")
-    final val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
-    final val UnstartedTimeoutMs = getMilliseconds("akka.actor.unstarted-push-timeout")
+    final val ConfigVersion: String = getString("akka.version")
+    final val ProviderClass: String = getString("akka.actor.provider")
+    final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
+    final val CreationTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
+    final val UnstartedPushTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.actor.unstarted-push-timeout"), MILLISECONDS))
 
-    final val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
-    final val SerializeAllCreators = getBoolean("akka.actor.serialize-creators")
+    final val SerializeAllMessages: Boolean = getBoolean("akka.actor.serialize-messages")
+    final val SerializeAllCreators: Boolean = getBoolean("akka.actor.serialize-creators")
 
-    final val LogLevel = getString("akka.loglevel")
-    final val StdoutLogLevel = getString("akka.stdout-loglevel")
+    final val LogLevel: String = getString("akka.loglevel")
+    final val StdoutLogLevel: String = getString("akka.stdout-loglevel")
     final val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
-    final val EventHandlerStartTimeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
-    final val LogConfigOnStart = config.getBoolean("akka.log-config-on-start")
+    final val EventHandlerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
+    final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
 
-    final val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
-    final val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
-    final val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
-    final val FsmDebugEvent = getBoolean("akka.actor.debug.fsm")
-    final val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
-    final val DebugUnhandledMessage = getBoolean("akka.actor.debug.unhandled")
-    final val DebugRouterMisconfiguration = getBoolean("akka.actor.debug.router-misconfiguration")
+    final val AddLoggingReceive: Boolean = getBoolean("akka.actor.debug.receive")
+    final val DebugAutoReceive: Boolean = getBoolean("akka.actor.debug.autoreceive")
+    final val DebugLifecycle: Boolean = getBoolean("akka.actor.debug.lifecycle")
+    final val FsmDebugEvent: Boolean = getBoolean("akka.actor.debug.fsm")
+    final val DebugEventStream: Boolean = getBoolean("akka.actor.debug.event-stream")
+    final val DebugUnhandledMessage: Boolean = getBoolean("akka.actor.debug.unhandled")
+    final val DebugRouterMisconfiguration: Boolean = getBoolean("akka.actor.debug.router-misconfiguration")
 
-    final val Home = config.getString("akka.home") match {
+    final val Home: Option[String] = config.getString("akka.home") match {
       case "" ⇒ None
       case x  ⇒ Some(x)
     }
 
-    final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tick-duration"), MILLISECONDS)
-    final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticks-per-wheel")
-    final val Daemonicity = getBoolean("akka.daemonic")
-    final val JvmExitOnFatalError = getBoolean("akka.jvm-exit-on-fatal-error")
+    final val SchedulerTickDuration: FiniteDuration = Duration(getMilliseconds("akka.scheduler.tick-duration"), MILLISECONDS)
+    final val SchedulerTicksPerWheel: Int = getInt("akka.scheduler.ticks-per-wheel")
+    final val Daemonicity: Boolean = getBoolean("akka.daemonic")
+    final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")
 
     if (ConfigVersion != Version)
       throw new akka.ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")

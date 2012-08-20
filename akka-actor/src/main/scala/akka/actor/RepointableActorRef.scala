@@ -134,7 +134,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
   val systemQueue: Queue[SystemMessage] = Queue()
   var suspendCount: Int = 0
 
-  private def timeout = system.settings.UnstartedTimeoutMs
+  private def timeout = system.settings.UnstartedPushTimeout.duration.toMillis
 
   def replaceWith(cell: Cell): Unit = {
     lock.lock()
