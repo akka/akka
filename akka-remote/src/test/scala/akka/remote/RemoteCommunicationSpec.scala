@@ -37,7 +37,6 @@ class RemoteCommunicationSpec extends AkkaSpec("""
 akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
   remote {
-    transport = "akka.remote.actmote.ActorManagedRemoting"
     log-received-messages = on
     log-sent-messages = on
   }
