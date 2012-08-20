@@ -182,7 +182,7 @@ public class FaultHandlingTestBase {
     final TestProbe probe = new TestProbe(system);
     probe.watch(child);
     child.tell(new IllegalArgumentException());
-    probe.expectMsg(new Terminated(child, true));
+    probe.expectMsgClass(Terminated.class);
     //#stop
 
     //#escalate-kill
@@ -190,7 +190,7 @@ public class FaultHandlingTestBase {
     probe.watch(child);
     assert Await.result(ask(child, "get", 5000), timeout).equals(0);
     child.tell(new Exception());
-    probe.expectMsg(new Terminated(child, true));
+    probe.expectMsgClass(Terminated.class);
     //#escalate-kill
 
     //#escalate-restart
