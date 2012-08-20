@@ -14,6 +14,9 @@ code could share it for the profit of all. Where applicable it might also make
 sense to add to the ``akka.pattern`` package for creating an `OTP-like library
 <http://www.erlang.org/doc/man_index.html>`_.
 
+You might find some of the patterns described in the Scala chapter of 
+:ref:`howto-scala` useful even though the example code is written in Scala.
+
 Template Pattern
 ================
 
