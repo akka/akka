@@ -409,5 +409,20 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         Await.ready(latch, 5 seconds)
       }
     }
+
+    "be able to check for existence of children" in {
+      val parent = system.actorOf(Props(new Actor {
+
+        val child = context.actorOf(
+          Props(new Actor {
+            def receive = { case _ ⇒ }
+          }), "child")
+
+        def receive = { case name: String ⇒ sender ! context.childExists(name) }
+      }), "parent")
+
+      assert(Await.result((parent ? "child"), remaining) === true)
+      assert(Await.result((parent ? "whatnot"), remaining) === false)
+    }
   }
 }

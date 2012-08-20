@@ -103,6 +103,11 @@ trait ActorContext extends ActorRefFactory {
   def children: Iterable[ActorRef]
 
   /**
+   * Returns true if a child with the given name exists.
+   */
+  def childExists(name: String): Boolean
+
+  /**
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
    * Importing this member will place a implicit MessageDispatcher in scope.
    */
