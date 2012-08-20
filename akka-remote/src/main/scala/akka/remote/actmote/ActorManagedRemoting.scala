@@ -18,7 +18,7 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
 
   @volatile var headActor: ActorRef = _ // TODO: make this threadsafe and think about startup sequence
   @volatile var address: Address = _
-  @volatile var transport: DummyTransportProvider = _
+  @volatile var transport: DummyTransportConnector = _
 
   def log: LoggingAdapter = Logging(system.eventStream, "ActorManagedRemoting(" + address + ")")
 
@@ -40,7 +40,7 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
   def start() {
     // This is not very threadsafe, but multiple concurrent calls to start() should not happen in practice
     if (headActor eq null) {
-      transport = new DummyTransportProvider(system, provider)
+      transport = new DummyTransportConnector(system, provider)
       // TODO: reuse passive connections must be configurable
       headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider, transport, true)), HeadActorName)
 
@@ -76,33 +76,16 @@ private[actmote] case object Listen
 private[actmote] case class ShutdownEndpoint(address: Address) extends RemotingCommand
 private[actmote] case class RestartEndpoint(address: Address) extends RemotingCommand
 private[actmote] case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) extends RemotingCommand
-private[actmote] case class IncomingConnection(handle: TransportHandle) extends RemotingCommand
-private[actmote] case class CreatedConnection(handle: TransportHandle)
-
-// TODO: have a better name
-// TODO: Use futures instead of callbacks??
-trait TransportProvider {
-  def address: Address
-  def connect(remote: Address, onSuccess: TransportHandle ⇒ Unit, onFailure: Throwable ⇒ Unit): Unit
-  def setConnectionHandler(handler: TransportHandle ⇒ Unit): Unit
-  def shutdown(): Unit
-}
-
-trait TransportHandle {
-  def remoteAddress: Address
-  def close(): Unit
-  def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit
-  def setReadHandler(handler: RemoteMessage ⇒ Unit): Unit
-}
 
 class UnexpectedException(cause: Throwable) extends Exception("Unexpected exception received from transport layer", cause)
 
 // HeadActor MUST WATCH his endpoint Actors
-class HeadActor(val provider: RemoteActorRefProvider, val transport: TransportProvider, val usePassiveConnections: Boolean) extends Actor {
+class HeadActor(val provider: RemoteActorRefProvider, val transport: TransportConnector, val usePassiveConnections: Boolean) extends Actor {
   private var address: Address = _
   private val endpointTable = scala.collection.mutable.Map[Address, ActorRef]()
 
   import akka.actor.SupervisorStrategy._
+  import actmote.TransportConnector.IncomingConnection
 
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
     case _: UnexpectedException ⇒ Restart
@@ -127,19 +110,19 @@ class HeadActor(val provider: RemoteActorRefProvider, val transport: TransportPr
     }
     case IncomingConnection(handle) ⇒ {
       val endpoint = createEndpoint(handle.remoteAddress, Some(handle))
-      handle.setReadHandler { msg ⇒ endpoint ! EndpointActor.ReadEvent(msg) } // Is this needed?
+      handle.responsibleActor = endpoint
       if (usePassiveConnections)
         endpointTable += handle.remoteAddress -> endpoint
     }
   }
 
   private def listen = {
-    transport.setConnectionHandler(handle ⇒ self ! IncomingConnection(handle))
+    transport.responsibleActor = self
     address = transport.address
     address
   }
 
-  private def createEndpoint(remote: Address, handleOption: Option[TransportHandle]) = {
+  private def createEndpoint(remote: Address, handleOption: Option[TransportConnectorHandle]) = {
     // Use parameter names here
     context.actorOf(Props(new EndpointActor(
       provider,
@@ -157,9 +140,6 @@ class HeadActor(val provider: RemoteActorRefProvider, val transport: TransportPr
 }
 
 object EndpointActor {
-  case class ReadEvent(msg: RemoteMessage)
-  case class ConnectionInitialized(handle: TransportHandle)
-  case class ConnectionFailed(reason: Throwable)
   case object AttemptConnect
 
   sealed trait EndpointState
@@ -168,15 +148,16 @@ object EndpointActor {
 
   sealed trait EndpointData
   case class Transient(queue: List[Send]) extends EndpointData
-  case class Handle(handle: TransportHandle) extends EndpointData
+  case class Handle(handle: TransportConnectorHandle) extends EndpointData
 }
 
 // TODO: Error handling (borked connection, etc...), handling closed connections
-class EndpointActor(val provider: RemoteActorRefProvider, val address: Address, val remoteAddress: Address, val transport: TransportProvider, handleOption: Option[TransportHandle]) extends Actor
+class EndpointActor(val provider: RemoteActorRefProvider, val address: Address, val remoteAddress: Address, val transport: TransportConnector, handleOption: Option[TransportConnectorHandle]) extends Actor
   with RemoteMessageDispatchHelper
   with FSM[EndpointActor.EndpointState, EndpointActor.EndpointData] {
 
   import EndpointActor._
+  import actmote.TransportConnector._
 
   override val log = Logging(context.system.eventStream, "EndpointActor(remote = " + remoteAddress + ")")
   def useUntrustedMode: Boolean = false //TODO: coming from configuration
@@ -220,7 +201,7 @@ class EndpointActor(val provider: RemoteActorRefProvider, val address: Address, 
   }
 
   when(Connected) {
-    case Event(ReadEvent(msg), handleState)                                      ⇒ receiveMessage(msg); stay using handleState
+    case Event(MessageArrived(msg), handleState)                                 ⇒ receiveMessage(msg); stay using handleState
     case Event(Send(msg, senderOption, recipient), handleState @ Handle(handle)) ⇒ handle.write(msg, senderOption, recipient); stay using handleState
   }
 
@@ -230,17 +211,14 @@ class EndpointActor(val provider: RemoteActorRefProvider, val address: Address, 
 
   private def attemptConnect() {
     try {
-      transport.connect(
-        remoteAddress,
-        handle ⇒ self ! ConnectionInitialized(handle),
-        reason ⇒ self ! ConnectionFailed(reason))
+      transport.connect(remoteAddress, self)
     } catch {
       case e: Exception ⇒ throw new UnexpectedException(e)
     }
   }
 
-  private def registerReadCallback(handle: TransportHandle) {
-    handle.setReadHandler { msg ⇒ self ! ReadEvent(msg) }
+  private def registerReadCallback(handle: TransportConnectorHandle) {
+    handle.responsibleActor = self
   }
 
 }

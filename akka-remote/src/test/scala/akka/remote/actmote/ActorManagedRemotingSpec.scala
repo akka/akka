@@ -45,7 +45,7 @@ akka {
 
   val transportUnderTest = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.asInstanceOf[ActorManagedRemoting]
   val transportHeadActor = transportUnderTest.headActor
-  val transportProvider = transportUnderTest.transport.asInstanceOf[DummyTransportProvider]
+  val transportProvider = transportUnderTest.transport.asInstanceOf[DummyTransportConnector]
 
   val outboundLink = transportUnderTest.address -> remoteAddress
   val inboundLink = remoteAddress -> transportUnderTest.address
@@ -198,6 +198,8 @@ akka {
       assert(outboundConnectionPresent)
       assert(!inboundConnectionPresent)
     }
+
+    //TODO: test for different actor systems living on the same host and port but with different names
 
     /*"not reuse exising inbound connections if use-passive-connections is cleared" in withCleanTransport {
       // Do a bidirectional communication step first

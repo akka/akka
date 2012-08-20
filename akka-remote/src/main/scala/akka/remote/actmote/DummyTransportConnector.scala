@@ -6,18 +6,19 @@ import akka.actor._
 import akka.remote.RemoteProtocol._
 import akka.serialization.Serialization
 
-class DummyTransportProvider(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) extends TransportProvider {
+class DummyTransportConnector(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) extends TransportConnector {
   import DummyTransportMedium._
+  import actmote.TransportConnector._
 
+  // TODO: get rid of lock if possible
   val lock = new AnyRef
   val settings = new NettySettings(provider.remoteSettings.config.getConfig("akka.remote.netty"), provider.remoteSettings.systemName)
 
-  // Should think about the lifecycle of the handler (null -> ref -> null) and concurrency issuess
-  private var _connectionHandler: TransportHandle ⇒ Unit = _
+  @volatile var responsibleActor: ActorRef = _
+
   private var _isTerminated = false
   private var handles = List[DummyHandle]()
 
-  def connectionHandler = lock synchronized _connectionHandler
   def isTerminated = lock synchronized _isTerminated
 
   // Access should be synchronized?
@@ -35,7 +36,7 @@ class DummyTransportProvider(val system: ExtendedActorSystem, val provider: Remo
     }
   }
 
-  def connect(remote: Address, onSuccess: TransportHandle ⇒ Unit, onFailure: Throwable ⇒ Unit) {
+  def connect(remote: Address, responsibleActorForConnection: ActorRef) {
     lock.synchronized {
       if (_isTerminated) throw new IllegalStateException("Cannot connect: already terminated")
 
@@ -45,38 +46,41 @@ class DummyTransportProvider(val system: ExtendedActorSystem, val provider: Remo
       if (DummyTransportMedium.crashSet(address)) {
         throw new NullPointerException
       } else if (DummyTransportMedium.rejectSet(address)) {
-        onFailure(new IllegalStateException("Rejected"))
+
+        responsibleActorForConnection ! ConnectionFailed(new IllegalStateException("Rejected"))
       } else if (!DummyTransportMedium.droppingSet(address)) {
 
-        val connectionResult: Option[(DummyHandle, DummyHandle)] = registerConnection(address -> remote, this)
+        val connectionResult: Option[(DummyHandle, DummyHandle)] = registerConnection(address -> remote, this, responsibleActorForConnection)
         // TODO: rewrite it using match - case
         if (connectionResult.isDefined) {
           val (localHandle, remoteHandle) = connectionResult.get
           handles ::= localHandle
-          onSuccess(localHandle)
+          responsibleActorForConnection ! ConnectionInitialized(localHandle)
         } else {
-          onFailure(new IllegalArgumentException("Remote address does not reachable"))
+          responsibleActorForConnection ! ConnectionFailed(new IllegalArgumentException("Remote address does not reachable"))
         }
       }
-    }
-  }
-
-  def setConnectionHandler(handler: TransportHandle ⇒ Unit) {
-    lock.synchronized {
-      _connectionHandler = handler
     }
   }
 
   override def toString = "DummyTransport(" + address + ")"
 }
 
-class DummyHandle(val owner: DummyTransportProvider, val address: Address, val remoteAddress: Address, val server: Boolean) extends TransportHandle {
+class DummyHandle(val owner: DummyTransportConnector, val address: Address, val remoteAddress: Address, val server: Boolean) extends TransportConnectorHandle {
   import DummyTransportMedium._
+  import actmote.TransportConnector._
+
+  @volatile private var _responsibleActor: ActorRef = _
+  def responsibleActor = _responsibleActor
+  def responsibleActor_=(actor: ActorRef) {
+    _responsibleActor = actor
+    queue.reverse.foreach {
+      _responsibleActor ! MessageArrived(_)
+    }
+  }
 
   val key = if (server) remoteAddress -> address else address -> remoteAddress
-  // TODO: This emulates queueing at the receiver side until the connection is accepted
-  @volatile var queue = List[RemoteMessage]()
-  @volatile var handler: RemoteMessage ⇒ Unit = (msg) ⇒ queue ::= msg
+  @volatile var queue = List[RemoteMessage]() // Simulates the internal buffer of the trasport layer -- queues messages until connection accepted
 
   def close() {
     // TODO: Notify other endpoint
@@ -89,18 +93,18 @@ class DummyHandle(val owner: DummyTransportProvider, val address: Address, val r
     DummyTransportMedium.activityLog ::= SendAttempt(msg, address, remoteAddress)
     handlesForConnection(key) match {
       case Some((clientHandle, serverHandle)) ⇒ {
+
         val remoteHandle = if (server) clientHandle else serverHandle
         val msgProtocol = createRemoteMessageProtocolBuilder(recipient, msg, senderOption).build
-        remoteHandle.handler(new RemoteMessage(msgProtocol, remoteHandle.owner.system))
+
+        if (remoteHandle.responsibleActor == null) {
+          queue ::= new RemoteMessage(msgProtocol, remoteHandle.owner.system)
+        } else {
+          remoteHandle.responsibleActor ! MessageArrived(new RemoteMessage(msgProtocol, remoteHandle.owner.system))
+        }
       }
       case None ⇒ // Error
     }
-  }
-
-  def setReadHandler(handler: RemoteMessage ⇒ Unit) {
-    // ACHTUNG!! We must dequeue the messages in the queue first! Not thread safe at all, must think about another solution
-    queue.reverse.foreach { msg ⇒ handler(msg) }
-    this.handler = handler
   }
 
   // --- Methods lifted shamelessly from RemoteTransport
@@ -122,19 +126,30 @@ class DummyHandle(val owner: DummyTransportProvider, val address: Address, val r
   }
 }
 
+case class HostAndPort(host: String, port: Int)
+
+// TODO: make this a class instead of an object - reason: Parallel tests
+// Use a system extension
 object DummyTransportMedium {
   sealed trait Activity
   case class ConnectionAttempt(link: (Address, Address)) extends Activity
   case class SendAttempt(msg: Any, sender: Address, recipient: Address) extends Activity
 
-  @volatile private var transportTable = Map[Address, DummyTransportProvider]()
-  @volatile private var connectionTable = Map[(Address, Address), (DummyHandle, DummyHandle)]()
+  @volatile private var transportTable = Map[HostAndPort, DummyTransportConnector]()
+  @volatile private var connectionTable = Map[(HostAndPort, HostAndPort), (DummyHandle, DummyHandle)]()
 
   @volatile var activityLog = List[Activity]()
 
   @volatile var droppingSet = Set[Address]()
   @volatile var rejectSet = Set[Address]()
   @volatile var crashSet = Set[Address]()
+
+  def addressToHostAndPort(address: Address) = (address.host, address.port) match {
+    case (Some(host), Some(port)) ⇒ HostAndPort(address.host.get, address.port.get)
+    case _                        ⇒ throw new IllegalArgumentException("DummyConnector only supports addresses with hostname and port specified")
+  }
+
+  def logicalLinkToNetworkLink(link: (Address, Address)): (HostAndPort, HostAndPort) = addressToHostAndPort(link._1) -> addressToHostAndPort(link._2)
 
   def silentDrop(source: Address) {
     droppingSet += source
@@ -155,32 +170,35 @@ object DummyTransportMedium {
   }
 
   def clear() {
-    transportTable = Map[Address, DummyTransportProvider]()
-    connectionTable = Map[(Address, Address), (DummyHandle, DummyHandle)]()
+    transportTable = Map[HostAndPort, DummyTransportConnector]()
+    connectionTable = Map[(HostAndPort, HostAndPort), (DummyHandle, DummyHandle)]()
     activityLog = List[Activity]()
   }
 
-  def lookupTransport(address: Address) = transportTable.get(address)
+  def lookupTransport(address: Address) = transportTable.get(addressToHostAndPort(address))
 
-  def existsTransport(address: Address) = transportTable.contains(address)
+  def existsTransport(address: Address) = transportTable.contains(addressToHostAndPort(address))
 
-  def registerTransport(address: Address, transport: DummyTransportProvider) {
-    transportTable += address -> transport
+  def registerTransport(address: Address, transport: DummyTransportConnector) {
+    transportTable += addressToHostAndPort(address) -> transport
   }
 
-  def isConnected(link: (Address, Address)): Boolean = connectionTable.contains(link)
+  def isConnected(link: (Address, Address)): Boolean = connectionTable.contains(logicalLinkToNetworkLink(link))
 
-  def registerConnection(link: (Address, Address), clientProvider: DummyTransportProvider): Option[(DummyHandle, DummyHandle)] = connectionTable.get(link) match {
+  def registerConnection(link: (Address, Address), clientProvider: DummyTransportConnector, responsibleActor: ActorRef): Option[(DummyHandle, DummyHandle)] = connectionTable.get(logicalLinkToNetworkLink(link)) match {
     case Some(handlePair) ⇒ Some(handlePair)
     case None ⇒ {
       val (address, remote) = link
 
       // TODO: replace with foreach
-      val remoteTransport: Option[DummyTransportProvider] = lookupTransport(remote)
+      val remoteTransport: Option[DummyTransportConnector] = lookupTransport(remote)
       if (remoteTransport.isDefined) {
+
+        import actmote.TransportConnector.IncomingConnection
+
         val handlePair = new DummyHandle(clientProvider, address, remote, false) -> new DummyHandle(remoteTransport.get, remote, address, true)
-        connectionTable += link -> handlePair
-        remoteTransport.get.connectionHandler(handlePair._2)
+        connectionTable += logicalLinkToNetworkLink(link) -> handlePair
+        remoteTransport.get.responsibleActor ! IncomingConnection(handlePair._2)
         Some(handlePair)
       } else {
         None
@@ -189,10 +207,10 @@ object DummyTransportMedium {
   }
 
   def removeConnection(link: (Address, Address)) {
-    connectionTable = connectionTable - link
+    connectionTable = connectionTable - logicalLinkToNetworkLink(link)
   }
 
-  def handlesForConnection(link: (Address, Address)): Option[(DummyHandle, DummyHandle)] = connectionTable.get(link)
+  def handlesForConnection(link: (Address, Address)): Option[(DummyHandle, DummyHandle)] = connectionTable.get(logicalLinkToNetworkLink(link))
 
 }
 
