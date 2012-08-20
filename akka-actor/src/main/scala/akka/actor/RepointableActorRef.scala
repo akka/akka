@@ -4,20 +4,18 @@
 
 package akka.actor
 
-import akka.util.Unsafe
-import scala.annotation.tailrec
-import akka.dispatch.SystemMessage
-import akka.dispatch.Mailbox
-import akka.dispatch.Terminate
-import akka.dispatch.Envelope
-import akka.dispatch.Supervise
-import akka.dispatch.Create
-import akka.dispatch.MessageDispatcher
+import java.io.ObjectStreamException
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
-import akka.event.Logging.Warning
+
+import scala.annotation.tailrec
 import scala.collection.mutable.Queue
-import akka.actor.cell.ChildrenContainer
 import scala.concurrent.forkjoin.ThreadLocalRandom
+
+import akka.actor.cell.ChildrenContainer
+import akka.dispatch.{ Envelope, Supervise, SystemMessage, Terminate }
+import akka.event.Logging.Warning
+import akka.util.Unsafe
 
 /**
  * This actor ref starts out with some dummy cell (by default just enqueuing
@@ -134,7 +132,9 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
   // use Envelope to keep on-send checks in the same place
   val queue: Queue[Envelope] = Queue()
   val systemQueue: Queue[SystemMessage] = Queue()
-  var suspendCount = 0
+  var suspendCount: Int = 0
+
+  private def timeout = system.settings.UnstartedTimeoutMs
 
   def replaceWith(cell: Cell): Unit = {
     lock.lock()
@@ -166,30 +166,50 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
   }
 
   def system: ActorSystem = systemImpl
-  def suspend(): Unit = { lock.lock(); try suspendCount += 1 finally lock.unlock() }
-  def resume(causedByFailure: Throwable): Unit = { lock.lock(); try suspendCount -= 1 finally lock.unlock() }
-  def restart(cause: Throwable): Unit = { lock.lock(); try suspendCount -= 1 finally lock.unlock() }
+  def suspend(): Unit = {
+    lock.lock()
+    try suspendCount += 1
+    finally lock.unlock()
+  }
+  def resume(causedByFailure: Throwable): Unit = {
+    lock.lock()
+    try suspendCount -= 1
+    finally lock.unlock()
+  }
+  def restart(cause: Throwable): Unit = {
+    lock.lock()
+    try suspendCount -= 1
+    finally lock.unlock()
+  }
   def stop(): Unit = sendSystemMessage(Terminate())
   def isTerminated: Boolean = false
   def parent: InternalActorRef = supervisor
   def childrenRefs: ChildrenContainer = ChildrenContainer.EmptyChildrenContainer
   def getChildByName(name: String): Option[ChildRestartStats] = None
   def tell(message: Any, sender: ActorRef): Unit = {
-    lock.lock()
-    try {
-      if (self.underlying eq this) queue enqueue Envelope(message, sender, system)
-      else self.underlying.tell(message, sender)
-    } finally {
-      lock.unlock()
+    if (lock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
+      try {
+        if (self.underlying eq this) queue enqueue Envelope(message, sender, system)
+        else self.underlying.tell(message, sender)
+      } finally {
+        lock.unlock()
+      }
+    } else {
+      system.deadLetters.tell(DeadLetter(message, sender, self))
     }
   }
   def sendSystemMessage(msg: SystemMessage): Unit = {
-    lock.lock()
-    try {
-      if (self.underlying eq this) systemQueue enqueue msg
-      else self.underlying.sendSystemMessage(msg)
-    } finally {
-      lock.unlock()
+    if (lock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
+      try {
+        if (self.underlying eq this) systemQueue enqueue msg
+        else self.underlying.sendSystemMessage(msg)
+      } finally {
+        lock.unlock()
+      }
+    } else {
+      // FIXME: once we have guaranteed delivery of system messages, hook this in!
+      system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to lock timeout"))
+      system.deadLetters.tell(DeadLetter(msg, self, self))
     }
   }
   def isLocal = true

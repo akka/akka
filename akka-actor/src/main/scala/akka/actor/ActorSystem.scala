@@ -135,6 +135,7 @@ object ActorSystem {
     final val ProviderClass = getString("akka.actor.provider")
     final val SupervisorStrategyClass = getString("akka.actor.guardian-supervisor-strategy")
     final val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
+    final val UnstartedTimeoutMs = getMilliseconds("akka.actor.unstarted-push-timeout")
 
     final val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
     final val SerializeAllCreators = getBoolean("akka.actor.serialize-creators")
