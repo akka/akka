@@ -40,13 +40,10 @@ object Member {
   }
 
   /**
-   * `Member` ordering type class, sorts members by host and port with the exception that
-   * it puts all members that are in MemberStatus.EXITING last.
+   * `Member` ordering type class, sorts members by host and port.
    */
-  implicit val ordering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) ⇒
-    if (a.status == Exiting && b.status != Exiting) false
-    else if (a.status != Exiting && b.status == Exiting) true
-    else addressOrdering.compare(a.address, b.address) < 0
+  implicit val ordering: Ordering[Member] = new Ordering[Member] {
+    def compare(a: Member, b: Member): Int = addressOrdering.compare(a.address, b.address)
   }
 
   def apply(address: Address, status: MemberStatus): Member = new Member(address, status)

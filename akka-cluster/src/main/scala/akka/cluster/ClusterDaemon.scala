@@ -572,7 +572,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     val localGossip = latestGossip
     val localMembers = localGossip.members
 
-    val isLeader = localMembers.nonEmpty && (selfAddress == localMembers.head.address)
+    val isLeader = localGossip.isLeader(selfAddress)
 
     if (isLeader && isAvailable) {
       // only run the leader actions if we are the LEADER and available
