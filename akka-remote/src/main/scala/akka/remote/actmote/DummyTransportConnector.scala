@@ -6,7 +6,7 @@ import akka.actor._
 import akka.remote.RemoteProtocol._
 import akka.serialization.Serialization
 
-class DummyTransportConnector(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) extends TransportConnector {
+class DummyTransportConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends TransportConnector(_system, _provider) {
   import DummyTransportMedium._
   import actmote.TransportConnector._
 

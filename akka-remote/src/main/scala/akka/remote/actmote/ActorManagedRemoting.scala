@@ -93,6 +93,7 @@ class HeadActor(val provider: RemoteActorRefProvider, val transport: TransportCo
 
   def receive = {
     case Listen                    ⇒ sender ! listen
+    // TODO: Passive clients should NOT close the connection
     case ShutdownEndpoint(address) ⇒ endpointTable.remove(address).foreach(context.stop(_)) // Need separate table for ALL endpoints, and usable endpoints
     case RestartEndpoint(address)  ⇒ // TODO: Not yet supported
     case s @ Send(message, senderOption, recipientRef) ⇒ {
@@ -176,6 +177,7 @@ class EndpointActor(val provider: RemoteActorRefProvider, val address: Address, 
   // TODO: Limit queue
   when(WaitConnect, stateTimeout = 1 second) {
     case Event(AttemptConnect, _)                               ⇒ attemptConnect(); stay using stateData
+    // TODO: log send if it is configured
     case Event(s @ Send(_, _, _), Transient(queue))             ⇒ stay using Transient(s :: queue)
     case Event(ConnectionInitialized(handle), Transient(queue)) ⇒ goto(Connected) using Handle(handle)
     case Event(ConnectionFailed(reason), _) ⇒ {

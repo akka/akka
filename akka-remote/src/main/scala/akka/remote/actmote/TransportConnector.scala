@@ -1,6 +1,7 @@
 package akka.remote.actmote
 
-import akka.actor.ActorRef
+import akka.actor.{ ExtendedActorSystem, ActorRef }
+import akka.remote.RemoteActorRefProvider
 
 // TODO: have a better name
 // TODO: Use futures instead of callbacks??
@@ -17,7 +18,8 @@ object TransportConnector {
   case class Disconnected(handle: TransportConnectorHandle) extends ConnectorEvent
 }
 
-trait TransportConnector {
+abstract class TransportConnector(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) {
+
   import akka.actor.Address
 
   def responsibleActor: ActorRef
