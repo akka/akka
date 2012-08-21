@@ -8,6 +8,9 @@ The 2.1 release contains several structural changes that require some
 simple, mechanical source-level changes in client code. Several things have
 been moved to Scala standard library, such as ``Future``.
 
+When migrating from 1.3.x to 2.1.x you should first follow the instructions for
+migrating `1.3.x to 2.0.x <http://doc.akka.io/docs/akka/2.0.3/project/migration-guide-1.3.x-2.0.x.html>`_.
+
 Scala Version
 =============
 
