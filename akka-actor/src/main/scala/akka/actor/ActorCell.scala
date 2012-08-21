@@ -103,6 +103,11 @@ trait ActorContext extends ActorRefFactory {
   def children: Iterable[ActorRef]
 
   /**
+   * Get the child with the given name if it exists.
+   */
+  def child(name: String): Option[ActorRef]
+
+  /**
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
    * Importing this member will place a implicit MessageDispatcher in scope.
    */
@@ -149,6 +154,12 @@ trait UntypedActorContext extends ActorContext {
    * please note that the backing map is thread-safe but not immutable
    */
   def getChildren(): java.lang.Iterable[ActorRef]
+
+  /**
+   * Returns a reference to the named child or null if no child with
+   * that name exists.
+   */
+  def getChild(name: String): ActorRef
 
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
