@@ -27,7 +27,11 @@ private[akka] trait Children { this: ActorCell ⇒
   final def children: Iterable[ActorRef] = childrenRefs.children
   final def getChildren(): java.lang.Iterable[ActorRef] = children.asJava
 
-  final def childExists(name: String): Boolean = childrenRefs.getByName(name).isDefined
+  final def child(name: String): Option[ActorRef] = childrenRefs.getByName(name).flatMap({
+    case s: ChildRestartStats ⇒ Some(s.child)
+    case ChildNameReserved    ⇒ None
+  })
+  final def getChild(name: String): ActorRef = child(name).getOrElse(null)
 
   def actorOf(props: Props): ActorRef =
     makeChild(this, props, randomName(), async = false, systemService = false)
