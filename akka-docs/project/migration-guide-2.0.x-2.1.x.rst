@@ -40,7 +40,6 @@ Search                               Replace with
 ``akka.dispatch.Await``              ``scala.concurrent.Await``
 ``akka.dispatch.Future``             ``scala.concurrent.Future``
 ``akka.dispatch.Promise``            ``scala.concurrent.Promise``
-``akka.dispatch.Promise``            ``scala.concurrent.Promise``
 ``akka.dispatch.ExecutionContext``   ``scala.concurrent.ExecutionContext``
 ``akka.util.Duration``               ``scala.concurrent.util.Duration``
 ``akka.util.duration``               ``scala.concurrent.util.duration``
@@ -91,7 +90,7 @@ v2.0::
 
 v2.1::
 
-  def square(i: Int): Future[Int] = Promise.successful(i * i).future
+  def square(i: Int): Future[Int] = Future successful i * i
 
 v2.0::
 
@@ -128,7 +127,7 @@ v2.1::
       ExecutionContext ec =
         ExecutionContexts.fromExecutorService(yourExecutorServiceGoesHere);
 
-      //Use ec with your Futures
+      //No need to pass the ExecutionContext here
       Future<String> f1 = Futures.successful("foo");
 
       // Then you shut the ExecutorService down somewhere at the end of your program/application.
@@ -154,10 +153,11 @@ v2.1::
 
 v2.0::
 
-    Future<String> future1 = Futures.successful("value", system.dispatcher()).andThen(new OnComplete<String>() {
+    Future<String> future1 = Futures.successful("value", system.dispatcher()).andThen(
+      new OnComplete<String>() {
         public void onComplete(Throwable failure, String result) {
-            if (failure != null)
-                sendToIssueTracker(failure);
+          if (failure != null)
+              sendToIssueTracker(failure);
         }
     }).andThen(new OnComplete<String>() {
       public void onComplete(Throwable failure, String result) {
@@ -196,7 +196,8 @@ v2.1 Scala::
 
 v2.0 Java::
 
-  ActorRef router2 = system.actorOf(new Props(ExampleActor.class).withRouter(RoundRobinRouter.create(routees)));
+  ActorRef router2 = system.actorOf(new Props(ExampleActor.class).withRouter(
+    RoundRobinRouter.create(routees)));
 
 v2.1 Java::
 
@@ -205,8 +206,8 @@ v2.1 Java::
 Failing Send
 ============
 
-When failing to send to an actor with bounded or durable mailbox the message will 
-silently be delivered to deadletters instead of throwing an exception.
+When failing to send to a remote actor or actor with bounded or durable mailbox the message will 
+silently be delivered to ``ActorSystem.deadletters`` instead of throwing an exception.
 
 Graceful Stop Exception
 =======================
@@ -215,7 +216,7 @@ If the target actor of ``akka.pattern.gracefulStop`` isn't terminated within the
 timeout the ``Future`` is completed with failure ``akka.pattern.AskTimeoutException``.
 In 2.0 it was ``akka.actor.ActorTimeoutException``.
 
-PoisonPill and ReceiveTimeout - Java
+getInstance for singeltons - Java
 ====================================
 
 v2.0::
