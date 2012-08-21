@@ -5,16 +5,15 @@
 package akka.actor
 
 import java.io.{ ObjectOutputStream, NotSerializableException }
-
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeSet
 import scala.concurrent.util.Duration
 import scala.util.control.NonFatal
-
 import akka.actor.cell.ChildrenContainer
 import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, MessageDispatcher, Envelope, Create, ChildTerminated }
 import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
+import akka.dispatch.NullMessage
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -371,7 +370,7 @@ private[akka] class ActorCell(
     checkReceiveTimeout // Reschedule receive timeout
   }
 
-  def autoReceiveMessage(msg: Envelope): Unit = {
+  def autoReceiveMessage(msg: Envelope): Unit = if (msg.message != NullMessage) {
     if (system.settings.DebugAutoReceive)
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
