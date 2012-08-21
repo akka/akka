@@ -1,35 +1,35 @@
 .. _support:
 
-`Commercial Support <http://typesafe.com>`__
-============================================
+Commercial Support
+==================
 
 Commercial support is provided by `Typesafe <http://typesafe.com>`_.
 Akka is now part of the `Typesafe Stack <http://typesafe.com/stack>`_.
 
-`Mailing List <http://groups.google.com/group/akka-user>`_
-==========================================================
+Mailing List
+============
 
 `Akka User Google Group <http://groups.google.com/group/akka-user>`_
 
 `Akka Developer Google Group <http://groups.google.com/group/akka-dev>`_
 
 
-`Downloads <http://akka.io/downloads/>`_
-========================================
+Downloads
+=========
 
 `<http://akka.io/downloads/>`_
 
 
-`Source Code <http://github.com/akka/akka>`_
-==============================================
+Source Code
+===========
 
 Akka uses Git and is hosted at `Github <http://github.com>`_.
 
 * Akka: clone the Akka repository from `<http://github.com/akka/akka>`_
 
 
-`Releases Repository <http://repo.akka.io/releases/>`_
-======================================================
+Releases Repository
+===================
 
 The Akka Maven repository can be found at http://repo.akka.io/releases/.
 
@@ -49,8 +49,8 @@ underlying repositories directly.
 * http://databinder.net/repo/
 
 
-`Snapshots Repository <http://repo.akka.io/snapshots/>`_
-========================================================
+Snapshots Repository
+====================
 
 Nightly builds are available in http://repo.akka.io/snapshots/ and proxied through
 http://repo.typesafe.com/typesafe/snapshots/ as both ``SNAPSHOT`` and

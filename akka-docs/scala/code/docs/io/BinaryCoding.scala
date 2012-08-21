@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2012 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.docs.io
+package docs.io
 
 //#imports
 import akka.actor._
