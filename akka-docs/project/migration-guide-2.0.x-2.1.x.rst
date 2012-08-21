@@ -247,3 +247,13 @@ v2.0::
 v2.1::
 
   probe.reply("world")  
+
+log-remote-lifecycle-events
+===========================
+
+Default value of akka.remote.log-remote-lifecycle-events has changed to **on**.
+If you don't want these in the log you need to add this to your configuration::
+
+  akka.remote.log-remote-lifecycle-events = off
+
+
