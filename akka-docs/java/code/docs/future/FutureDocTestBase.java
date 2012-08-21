@@ -526,8 +526,7 @@ public class FutureDocTestBase {
         return "foo";
       }
     }, ec);
-    Future<String> result = Futures.firstCompletedOf(
-      Arrays.asList(future, delayed), ec);
+    Future<String> result = future.either(delayed);
     //#after
     Await.result(result, Duration.create(2, SECONDS));
   }
