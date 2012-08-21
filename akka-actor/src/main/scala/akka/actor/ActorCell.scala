@@ -359,12 +359,11 @@ private[akka] class ActorCell(
     checkReceiveTimeout // Reschedule receive timeout
   }
 
-  def autoReceiveMessage(msg: Envelope): Unit = {
+  def autoReceiveMessage(msg: Envelope): Unit = if (msg.message != NullMessage) {
     if (system.settings.DebugAutoReceive)
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case NullMessage        ⇒ // do nothing
       case Failed(cause, uid) ⇒ handleFailure(sender, cause, uid)
       case t @ Terminated(actor) ⇒
         getChildByRef(actor) match {
