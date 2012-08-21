@@ -103,7 +103,7 @@ trait ActorContext extends ActorRefFactory {
   def children: Iterable[ActorRef]
 
   /**
-   * Returns true if a child with the given name exists.
+   * Get the child with the given name if it exists.
    */
   def child(name: String): Option[ActorRef]
 
