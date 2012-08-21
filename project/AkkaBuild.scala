@@ -35,7 +35,7 @@ object AkkaBuild extends Build {
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
+      Unidoc.unidocExclude := Seq(samples.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id),
       initialCommands in ThisBuild :=
         """|import language.postfixOps
@@ -69,7 +69,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -331,22 +331,6 @@ object AkkaBuild extends Build {
     settings = defaultSettings
   )
 
-  lazy val tutorials = Project(
-    id = "akka-tutorials",
-    base = file("akka-tutorials"),
-    settings = parentSettings,
-    aggregate = Seq(firstTutorial)
-  )
-
-  lazy val firstTutorial = Project(
-    id = "akka-tutorial-first",
-    base = file("akka-tutorials/akka-tutorial-first"),
-    dependencies = Seq(actor, testkit),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.tutorials
-    )
-  )
-
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
@@ -584,9 +568,6 @@ object Dependencies {
   val osgi = Seq(osgiCore,Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
   val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
-
-  val tutorials = Seq(Test.scalatest, Test.junit)
-
 
   val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
 
