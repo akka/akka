@@ -13,6 +13,7 @@ import scala.concurrent.util.Duration
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import com.typesafe.config.Config
+import scala.concurrent.util.FiniteDuration
 
 /**
  * INTERNAL API
@@ -514,7 +515,7 @@ case class UnboundedMailbox() extends MailboxType {
 /**
  * BoundedMailbox is the default bounded MailboxType used by Akka Actors.
  */
-case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
+case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: FiniteDuration) extends MailboxType {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
     Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))
@@ -573,7 +574,7 @@ case class UnboundedDequeBasedMailbox() extends MailboxType {
 /**
  * BoundedDequeBasedMailbox is an bounded MailboxType, backed by a Deque.
  */
-case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
+case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTimeOut: FiniteDuration) extends MailboxType {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
     Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))
