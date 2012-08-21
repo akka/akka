@@ -206,7 +206,7 @@ but processed afterwards.
 Normally stopping a child (i.e. not in response to a failure) will not
 automatically terminate the other children in an all-for-one strategy, that can
 easily be done by watching their lifecycle: if the :class:`Terminated` message
-is not handled by the supervisor, it will throw a :class:`DeathPathException`
+is not handled by the supervisor, it will throw a :class:`DeathPactException`
 which (depending on its supervisor) will restart it, and the default
 :meth:`preRestart` action will terminate all children. Of course this can be
 handled explicitly as well.
