@@ -48,6 +48,11 @@ As you can see in the example above there are four things you need to add to get
   systems have different names. This is because each actor system has its own network subsystem
   listening for connections and handling messages as not to interfere with other actor systems.
 
+.. _remoting-java-configuration:
+
+Remote Configuration
+^^^^^^^^^^^^^^^^^^^^
+
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
 There are lots of more properties that are related to remoting in Akka. We refer to the following
 reference file for more information:
@@ -345,13 +350,7 @@ This will prevent the client to send these messages to the server:
 
 Here is how to turn it on in the config::
 
-    akka {
-      actor {
-        remote {
-          untrusted-mode = on
-        }
-      }
-    }
+    akka.remote.untrusted-mode = on
 
 Secure Cookie Handshake
 -----------------------
@@ -369,13 +368,25 @@ as the ``require-cookie`` option turned on.
 
 Here is an example config::
 
-    akka {
-      actor {
-        remote {
-          netty {
-            secure-cookie = "090A030E0F0A05010900000A0C0E0C0B03050D05"
-            require-cookie = on
-          }
-        }
-      }
+    akka.remote.netty {
+      secure-cookie = "090A030E0F0A05010900000A0C0E0C0B03050D05"
+      require-cookie = on
     }
+
+SSL
+---
+
+SSL can be used for the remote transport by activating the ``akka.remote.netty.ssl``
+configuration section. See description of the settings in the :ref:`remoting-java-configuration`.
+
+The SSL support is implemented with Java Secure Socket Extension, please consult the offical 
+`Java Secure Socket Extension documentation <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html>`_
+and related resources for troubleshooting.
+  
+.. note::
+
+  When using SHA1PRNG on Linux it's recommended specify ``-Djava.security.egd=file:/dev/./urandom`` as argument 
+  to the JVM to prevent blocking. It is NOT as secure because it reuses the seed.
+  Use '/dev/./urandom', not '/dev/urandom' as that doesn't work according to 
+  `Bug ID: 6202721 <http://bugs.sun.com/view_bug.do?bug_id=6202721>`_.
+  
