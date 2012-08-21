@@ -14,6 +14,40 @@ code could share it for the profit of all. Where applicable it might also make
 sense to add to the ``akka.pattern`` package for creating an `OTP-like library
 <http://www.erlang.org/doc/man_index.html>`_.
 
+Throttling Messages
+===================
+
+Contributed by: Kaspar Fischer
+
+A message throttler that ensures that messages are not sent out at too high a rate.
+
+The pattern is described `here <http://letitcrash.com/post/28901663062/throttling-messages-in-akka-2>`_.
+
+Balancing Workload Across Nodes
+===============================
+
+Contributed by: Derek Wyatt
+
+Often times, people want the functionality of the BalancingDispatcher with the 
+stipulation that the Actors doing the work have distinct Mailboxes on remote 
+nodes. In this post we’ll explore the implementation of such a concept.
+
+The pattern is described `here <http://letitcrash.com/post/29044669086/balancing-workload-across-nodes-with-akka-2>`_.
+
+Ordered Termination
+===================
+
+Contributed by: Derek Wyatt
+
+When an Actor stops, its children stop in an undefined order. Child termination is 
+asynchronous and thus non-deterministic.
+
+If an Actor has children that have order dependencies, then you might need to ensure 
+a particular shutdown order of those children so that their postStop() methods get 
+called in the right order.
+
+The pattern is described `here <http://letitcrash.com/post/29773618510/an-akka-2-terminator>`_.
+
 Template Pattern
 ================
 
