@@ -235,3 +235,10 @@ and is use like this:
 .. includecode:: code/docs/future/FutureDocTestBase.java
    :include: try-recover
 
+After
+-----
+
+``akka.pattern.Patterns.after`` makes it easy to complete a ``Future`` with a value or exception after a timeout.
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: imports8,after

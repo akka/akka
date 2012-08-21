@@ -48,6 +48,11 @@ import scala.concurrent.ExecutionContext$;
 
 //#imports7
 
+//#imports8
+import static akka.pattern.Patterns.after;
+
+//#imports8
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -506,6 +511,24 @@ public class FutureDocTestBase {
       //#fallback-to
     }
 
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void useAfter() throws Exception {
+    //#after
+    final ExecutionContext ec = system.dispatcher();
+    Future<String> failExc = Futures.failed(new IllegalStateException("OHNOES1"));
+    Future<String> delayed = Patterns.after(Duration.parse("500 millis"),
+      system.scheduler(), ec,  failExc);
+    Future<String> future = future(new Callable<String>() {
+      public String call() throws InterruptedException {
+        Thread.sleep(1000);
+        return "foo";
+      }
+    }, ec);
+    Future<String> result = future.either(delayed);
+    //#after
+    Await.result(result, Duration.create(2, SECONDS));
   }
 
   public static class MyActor extends UntypedActor {

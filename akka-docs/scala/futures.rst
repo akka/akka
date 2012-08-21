@@ -261,3 +261,10 @@ and is use like this:
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: try-recover
 
+After
+-----
+
+``akka.pattern.after`` makes it easy to complete a ``Future`` with a value or exception after a timeout.
+
+.. includecode:: code/docs/future/FutureDocSpec.scala
+   :include: after

@@ -377,4 +377,16 @@ class FutureDocSpec extends AkkaSpec {
     intercept[IllegalArgumentException] { Await.result(otherFuture, 1 second) }
   }
 
+  "demonstrate usage of pattern.after" in {
+    //#after
+    import akka.pattern.after
+
+    val delayed = after(200 millis, using = system.scheduler)(Future.failed(
+      new IllegalStateException("OHNOES")))
+    val future = Future { Thread.sleep(1000); "foo" }
+    val result = future either delayed
+    //#after
+    intercept[IllegalStateException] { Await.result(result, 2 second) }
+  }
+
 }
