@@ -10,6 +10,7 @@ import akka.dispatch.{ Terminate, SystemMessage, Suspend, Resume, Recreate, Mess
 import akka.event.Logging.Error
 import akka.util.Unsafe
 import scala.util.control.NonFatal
+import akka.dispatch.NullMessage
 
 private[akka] trait Dispatch { this: ActorCell ⇒
 
@@ -56,6 +57,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
       parent.sendSystemMessage(akka.dispatch.Supervise(self, uid))
+      parent.tell(NullMessage)
     }
 
     // This call is expected to start off the actor by scheduling its mailbox.

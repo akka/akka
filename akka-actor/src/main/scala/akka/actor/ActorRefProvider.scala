@@ -360,6 +360,7 @@ class LocalActorRefProvider(
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
       case Failed(ex, _) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
+      case NullMessage                     ⇒ // do nothing
       case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
     })
 

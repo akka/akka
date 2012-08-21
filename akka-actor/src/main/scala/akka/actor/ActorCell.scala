@@ -5,16 +5,15 @@
 package akka.actor
 
 import java.io.{ ObjectOutputStream, NotSerializableException }
-
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeSet
 import scala.concurrent.util.Duration
 import scala.util.control.NonFatal
-
 import akka.actor.cell.ChildrenContainer
 import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, MessageDispatcher, Envelope, Create, ChildTerminated }
 import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
+import akka.dispatch.NullMessage
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -365,6 +364,7 @@ private[akka] class ActorCell(
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
     msg.message match {
+      case NullMessage        ⇒ // do nothing
       case Failed(cause, uid) ⇒ handleFailure(sender, cause, uid)
       case t @ Terminated(actor) ⇒
         getChildByRef(actor) match {

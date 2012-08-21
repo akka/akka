@@ -38,6 +38,13 @@ object Envelope {
 }
 
 /**
+ * This message is sent directly after the Supervise system message in order
+ * to form a barrier wrt. the first real message sent by the child, so that e.g.
+ * Failed() cannot overtake Supervise(). Processing this does nothing.
+ */
+case object NullMessage extends AutoReceivedMessage
+
+/**
  * INTERNAL API
  */
 private[akka] object SystemMessage {
