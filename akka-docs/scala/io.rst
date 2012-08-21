@@ -48,27 +48,27 @@ In this example, the data is to be stored in arrays of ``a``, ``b`` and ``data``
 
 Decoding of such frames can be efficiently implemented in the following fashion:
 
-.. includecode:: code/akka/docs/io/BinaryCoding.scala
+.. includecode:: code/docs/io/BinaryCoding.scala
    :include: decoding
 
 This implementation naturally follows the example data format. In a true Scala application, one might, of course, want use specialized immutable Short/Long/Double containers instead of mutable Arrays.
 
 After extracting data from a ``ByteIterator``, the remaining content can also be turned back into a ``ByteString`` using the ``toSeq`` method
 
-.. includecode:: code/akka/docs/io/BinaryCoding.scala
+.. includecode:: code/docs/io/BinaryCoding.scala
    :include: rest-to-seq
     
 with no copying from bytes to rest involved. In general, conversions from ByteString to ByteIterator and vice versa are O(1) for non-chunked ByteStrings and (at worst) O(nChunks) for chunked ByteStrings.
 
 Encoding of data also is very natural, using ``ByteStringBuilder``
 
-.. includecode:: code/akka/docs/io/BinaryCoding.scala
+.. includecode:: code/docs/io/BinaryCoding.scala
    :include: encoding
 
  
 The encoded data then can be sent over socket (see ``IOManager``):
  
-.. includecode:: code/akka/docs/io/BinaryCoding.scala
+.. includecode:: code/docs/io/BinaryCoding.scala
    :include: sending
 
 
