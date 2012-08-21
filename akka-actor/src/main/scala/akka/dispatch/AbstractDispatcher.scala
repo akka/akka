@@ -41,6 +41,14 @@ object Envelope {
  * This message is sent directly after the Supervise system message in order
  * to form a barrier wrt. the first real message sent by the child, so that e.g.
  * Failed() cannot overtake Supervise(). Processing this does nothing.
+ * 
+ * Detailed explanation:
+ * 
+ * The race happens because Supervise and Failed may be queued between the 
+ * parent's check for system messages and dequeue(). Thus, if the parent
+ * processes the NullMessage first (by way of that tiny race window), it is
+ * guaranteed to then find the Supervise system message in its mailbox prior
+ * to turning its attention to the next real message.
  */
 case object NullMessage extends AutoReceivedMessage
 
