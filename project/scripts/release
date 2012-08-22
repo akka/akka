@@ -221,8 +221,12 @@ fi
 
 # build the release
 echolog "Building the release..."
-try sbt build-release
-#try cp akka-spring/src/main/resources/akka/spring/akka-*.xsd ${release_dir}
+if [ ! $dry_run ]; then
+  RELEASE_OPT="-Dpublish.maven.central=true"
+else
+  RELEASE_OPT=""
+fi
+try sbt $RELEASE_OPT build-release
 echolog "Creating gzipped tar download..."
 try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka-${version}.tgz akka-${version}
 echolog "Successfully created local release"
