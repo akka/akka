@@ -276,7 +276,8 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       sbtPlugin := true,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
-      scalaVersion := "2.9.1"
+      scalaVersion := "2.9.1",
+      scalaBinaryVersion <<= scalaVersion
     )
   )
 
