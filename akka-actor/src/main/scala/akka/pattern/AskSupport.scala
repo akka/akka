@@ -262,7 +262,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
     case _: Terminate ⇒ stop()
     case Watch(watchee, watcher) ⇒
       if (watchee == this && watcher != this) {
-        if (!addWatcher(watcher)) watcher ! Terminated(watchee)(existenceConfirmed = true, 0)
+        if (!addWatcher(watcher)) watcher ! Terminated(watchee)(existenceConfirmed = true)
       } else System.err.println("BUG: illegal Watch(%s,%s) for %s".format(watchee, watcher, this))
     case Unwatch(watchee, watcher) ⇒
       if (watchee == this && watcher != this) remWatcher(watcher)
@@ -281,7 +281,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       result tryComplete Failure(new ActorKilledException("Stopped"))
       val watchers = clearWatchers()
       if (!watchers.isEmpty) {
-        val termination = Terminated(this)(existenceConfirmed = true, 0)
+        val termination = Terminated(this)(existenceConfirmed = true)
         watchers foreach { w ⇒ try w.tell(termination, this) catch { case NonFatal(t) ⇒ /* FIXME LOG THIS */ } }
       }
     }

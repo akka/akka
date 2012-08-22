@@ -214,7 +214,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       EventFilter[Exception]("hello", occurrences = 1) intercept {
         a ! "die"
       }
-      val t = probe.expectMsg(Terminated(a)(true, 0))
+      val t = probe.expectMsg(Terminated(a)(true))
       t.existenceConfirmed must be(true)
     }
 
