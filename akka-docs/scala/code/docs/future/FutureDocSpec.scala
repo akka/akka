@@ -108,7 +108,7 @@ class FutureDocSpec extends AkkaSpec {
     }
     val result = Await.result(f2, 1 second)
     result must be(10)
-    f1.value must be(Some(Right("HelloWorld")))
+    f1.value must be(Some(Success("HelloWorld")))
     //#map
   }
 

@@ -24,11 +24,7 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
-    scalaVersion := "2.10.0-SNAPSHOT",
-    scalaVersion in update <<= (scalaVersion) apply {
-      case "2.10.0-SNAPSHOT" => "2.10.0-M6"
-      case x => x
-    }
+    scalaVersion := "2.10.0-M7"
   )
 
   lazy val akka = Project(
@@ -425,6 +421,8 @@ object AkkaBuild extends Build {
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
     javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
 
+    crossVersion := CrossVersion.full,
+
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
@@ -585,9 +583,7 @@ object Dependency {
   val config        = "com.typesafe"                % "config"                       % "0.5.0"       // ApacheV2
   val netty         = "io.netty"                    % "netty"                        % "3.5.4.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
-  // TODO FIXME use live version
-  // val scalaStm      = "org.scala-tools"            %% "scala-stm"                    % "0.6"         // Modified BSD (Scala)
-   val scalaStm      = "org.scala-tools"            % "scala-stm"                    % "0.7-SNAPSHOT"   // Modified BSD (Scala)
+  val scalaStm      = "org.scala-tools"             % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
 
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.6.4"       // MIT
   val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding"         % "0.0.6" cross CrossVersion.full // ApacheV2
@@ -603,7 +599,7 @@ object Dependency {
     val junit       = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"              % "1.0.4"            % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
-    val scalatest   = "org.scalatest"               % "scalatest"                    % "1.9-2.10.0-M6-B2" % "test" cross CrossVersion.full // ApacheV2
+    val scalatest   = "org.scalatest"               % "scalatest"                    % "1.9-2.10.0-M7-B1" % "test" cross CrossVersion.full // ApacheV2
     val scalacheck  = "org.scalacheck"              % "scalacheck"                   % "1.10.0"           % "test" cross CrossVersion.full // New BSD
     val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
     val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2

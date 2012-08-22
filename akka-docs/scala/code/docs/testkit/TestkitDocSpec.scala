@@ -217,7 +217,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val future = probe.ref ? "hello"
     probe.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
     probe.reply("world")
-    assert(future.isCompleted && future.value == Some(Right("world")))
+    assert(future.isCompleted && future.value == Some(Success("world")))
     //#test-probe-reply
   }
 
