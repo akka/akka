@@ -31,16 +31,16 @@ Modules
 
 Akka is very modular and has many JARs for containing different features.
 
-- ``akka-actor-2.1-SNAPSHOT.jar`` -- Classic Actors, Typed Actors, IO Actor etc.
-- ``akka-remote-2.1-SNAPSHOT.jar`` -- Remote Actors
-- ``akka-testkit-2.1-SNAPSHOT.jar`` -- Toolkit for testing Actor systems
-- ``akka-kernel-2.1-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server
-- ``akka-transactor-2.1-SNAPSHOT.jar`` -- Transactors - transactional actors, integrated with Scala STM
-- ``akka-agent-2.1-SNAPSHOT.jar`` -- Agents, integrated with Scala STM
-- ``akka-camel-2.1-SNAPSHOT.jar`` -- Apache Camel integration
-- ``akka-zeromq-2.1-SNAPSHOT.jar`` -- ZeroMQ integration
-- ``akka-slf4j-2.1-SNAPSHOT.jar`` -- SLF4J Event Handler Listener
-- ``akka-<storage-system>-mailbox-2.1-SNAPSHOT.jar`` -- Akka durable mailboxes
+- ``akka-actor-2.1-M2.jar`` -- Classic Actors, Typed Actors, IO Actor etc.
+- ``akka-remote-2.1-M2.jar`` -- Remote Actors
+- ``akka-testkit-2.1-M2.jar`` -- Toolkit for testing Actor systems
+- ``akka-kernel-2.1-M2.jar`` -- Akka microkernel for running a bare-bones mini application server
+- ``akka-transactor-2.1-M2.jar`` -- Transactors - transactional actors, integrated with Scala STM
+- ``akka-agent-2.1-M2.jar`` -- Agents, integrated with Scala STM
+- ``akka-camel-2.1-M2.jar`` -- Apache Camel integration
+- ``akka-zeromq-2.1-M2.jar`` -- ZeroMQ integration
+- ``akka-slf4j-2.1-M2.jar`` -- SLF4J Event Handler Listener
+- ``akka-<storage-system>-mailbox-2.1-M2.jar`` -- Akka durable mailboxes
 
 How to see the JARs dependencies of each Akka module is described in the
 :ref:`dependencies` section.
@@ -96,14 +96,14 @@ Summary of the essential parts for using Akka with Maven:
     <url>http://repo.typesafe.com/typesafe/releases/</url>
   </repository>
 
-2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 2.1-SNAPSHOT:
+2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 2.1-M2:
 
 .. code-block:: xml
 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
     <artifactId>akka-actor</artifactId>
-    <version>2.1-SNAPSHOT</version>
+    <version>2.1-M2</version>
   </dependency>
 
 **Note**: for snapshot versions both ``SNAPSHOT`` and timestamped versions are published.
@@ -132,7 +132,7 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.1-SNAPSHOT"
+    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.1-M2"
 
 
 Using Akka with Eclipse

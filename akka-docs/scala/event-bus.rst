@@ -46,7 +46,7 @@ The classifiers presented here are part of the Akka distribution, but rolling
 your own in case you do not find a perfect match is not difficult, check the
 implementation of the existing ones on `github`_.
 
-.. _github: https://github.com/akka/akka/blob/master/akka-actor/src/main/scala/akka/event/EventBus.scala
+.. _github: http://github.com/akka/akka/tree/v2.1-M2/akka-actor/src/main/scala/akka/event/EventBus.scala
 
 Lookup Classification
 ---------------------

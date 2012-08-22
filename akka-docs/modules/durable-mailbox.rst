@@ -94,10 +94,10 @@ added in concrete subclass like this:
 .. includecode:: code/docs/actor/mailbox/DurableMailboxDocSpec.scala
    :include: custom-mailbox-test
 
-You find DurableMailboxDocSpec in ``akka-mailboxes-common-test-2.1-SNAPSHOT.jar``.
+You find DurableMailboxDocSpec in ``akka-mailboxes-common-test-2.1-M2.jar``.
 Add this dependency::
 
-  "com.typesafe.akka" % "akka-mailboxes-common-test" % "2.1-SNAPSHOT"
+  "com.typesafe.akka" % "akka-mailboxes-common-test" % "2.1-M2"
 
 For more inspiration you can look at the old implementations based on Redis, MongoDB, Beanstalk,
 and ZooKeeper, which can be found in Akka git repository tag

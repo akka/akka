@@ -51,7 +51,7 @@ multi-JVM testing (Simplified for clarity):
 
     lazy val buildSettings = Defaults.defaultSettings ++ Seq(
       organization := "com.typesafe.akka",
-      version      := "2.1-SNAPSHOT",
+      version      := "2.1-M2",
       scalaVersion := "|scalaVersion|",
       crossPaths   := false
     )

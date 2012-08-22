@@ -129,7 +129,7 @@ An ``ActivationTimeoutException`` is thrown if the endpoint could not be activat
 Deactivation of a Consumer or a Producer actor happens when the actor is terminated. For a Consumer, the route to the actor is stopped. For a Producer, the `SendProcessor`_ is stopped.
 A ``DeActivationTimeoutException`` is thrown if the associated camel objects could not be deactivated within the specified timeout.
 
-.. _Camel: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/Camel.scala
+.. _Camel: http://github.com/akka/akka/tree/v2.1-M2/akka-camel/src/main/scala/akka/camel/Camel.scala
 .. _CamelContext: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/CamelContext.java
 .. _ProducerTemplate: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/ProducerTemplate.java
 .. _SendProcessor: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/processor/SendProcessor.java
@@ -143,7 +143,7 @@ trait. For example, the following actor class (Consumer1) implements the
 endpointUri method, which is declared in the Consumer trait, in order to receive
 messages from the ``file:data/input/actor`` Camel endpoint.
 
-.. _Consumer: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/Consumer.scala
+.. _Consumer: http://github.com/akka/akka/tree/v2.1-M2/akka-camel/src/main/scala/akka/camel/Consumer.scala
 
 .. includecode:: code/docs/camel/Consumers.scala#Consumer1
 
@@ -153,7 +153,7 @@ actor. Messages consumed by actors from Camel endpoints are of type
 `CamelMessage`_. These are immutable representations of Camel messages.
 
 .. _file component: http://camel.apache.org/file2.html
-.. _Message: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/CamelMessage.scala
+.. _Message: http://github.com/akka/akka/tree/v2.1-M2/akka-camel/src/main/scala/akka/camel/CamelMessage.scala
 
 
 Here's another example that sets the endpointUri to
@@ -173,7 +173,7 @@ client the response type should be `CamelMessage`_. For any other response type,
 new CamelMessage object is created by akka-camel with the actor response as message
 body.
 
-.. _CamelMessage: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/CamelMessage.scala
+.. _CamelMessage: http://github.com/akka/akka/tree/v2.1-M2/akka-camel/src/main/scala/akka/camel/CamelMessage.scala
 
 .. _camel-acknowledgements:
 
@@ -218,7 +218,7 @@ The timeout on the consumer actor can be overridden with the ``replyTimeout``, a
 
 .. includecode:: code/docs/camel/Consumers.scala#Consumer4
 .. _Exchange: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/Exchange.java
-.. _ask: http://github.com/akka/akka/blob/master/akka-actor/src/main/scala/akka/pattern/AskSupport.scala
+.. _ask: http://github.com/akka/akka/tree/v2.1-M2/akka-actor/src/main/scala/akka/pattern/AskSupport.scala
 
 Producer Actors
 ===============
@@ -292,7 +292,7 @@ For initiating a a two-way message exchange, one of the
 
 .. includecode:: code/docs/camel/Producers.scala#RequestProducerTemplate
 
-.. _Producer: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/Producer.scala
+.. _Producer: http://github.com/akka/akka/tree/v2.1-M2/akka-camel/src/main/scala/akka/camel/Producer.scala
 .. _ProducerTemplate: https://svn.apache.org/repos/asf/camel/tags/camel-2.8.0/camel-core/src/main/java/org/apache/camel/ProducerTemplate.java
 
 .. _camel-asynchronous-routing:
@@ -357,7 +357,7 @@ Akka Camel components
 Akka actors can be accessed from Camel routes using the `actor`_ Camel component. This component can be used to
 access any Akka actor (not only consumer actors) from Camel routes, as described in the following sections.
 
-.. _actor: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/internal/component/ActorComponent.scala
+.. _actor: http://github.com/akka/akka/tree/v2.1-M2/akka-camel/src/main/scala/akka/camel/internal/component/ActorComponent.scala
 
 .. _access-to-actors:
 
@@ -368,7 +368,7 @@ To access actors from custom Camel routes, the `actor`_ Camel
 component should be used. It fully supports Camel's `asynchronous routing
 engine`_.
 
-.. _actor: http://github.com/akka/akka/blob/master/akka-camel/src/main/scala/akka/camel/internal/component/ActorComponent.scala
+.. _actor: http://github.com/akka/akka/tree/v2.1-M2/akka-camel/src/main/scala/akka/camel/internal/component/ActorComponent.scala
 .. _asynchronous routing engine: http://camel.apache.org/asynchronous-routing-engine.html
 
 This component accepts the following endpoint URI format:
