@@ -10,6 +10,7 @@ import org.apache.camel.{ ProducerTemplate, CamelContext }
 import com.typesafe.config.Config
 import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit._
+import scala.concurrent.util.FiniteDuration
 
 /**
  * Camel trait encapsulates the underlying camel machinery.
@@ -47,14 +48,14 @@ class CamelSettings private[camel] (config: Config) {
   /**
    * Configured setting for how long the actor should wait for activation before it fails.
    */
-  final val activationTimeout: Duration = Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
+  final val activationTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
 
   /**
    * Configured setting, when endpoint is out-capable (can produce responses) replyTimeout is the maximum time
    * the endpoint can take to send the response before the message exchange fails.
    * This setting is used for out-capable, in-only, manually acknowledged communication.
    */
-  final val replyTimeout: Duration = Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
+  final val replyTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
 
   /**
    * Configured setting which determines whether one-way communications between an endpoint and this consumer actor

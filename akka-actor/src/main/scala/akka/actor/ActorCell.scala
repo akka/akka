@@ -5,16 +5,15 @@
 package akka.actor
 
 import java.io.{ ObjectOutputStream, NotSerializableException }
-
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeSet
 import scala.concurrent.util.Duration
 import scala.util.control.NonFatal
-
 import akka.actor.cell.ChildrenContainer
 import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, MessageDispatcher, Envelope, Create, ChildTerminated }
 import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
+import akka.dispatch.NullMessage
 
 /**
  * The actor context - the view of the actor cell from the actor.
@@ -103,6 +102,11 @@ trait ActorContext extends ActorRefFactory {
   def children: Iterable[ActorRef]
 
   /**
+   * Get the child with the given name if it exists.
+   */
+  def child(name: String): Option[ActorRef]
+
+  /**
    * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
    * Importing this member will place a implicit MessageDispatcher in scope.
    */
@@ -149,6 +153,12 @@ trait UntypedActorContext extends ActorContext {
    * please note that the backing map is thread-safe but not immutable
    */
   def getChildren(): java.lang.Iterable[ActorRef]
+
+  /**
+   * Returns a reference to the named child or null if no child with
+   * that name exists.
+   */
+  def getChild(name: String): ActorRef
 
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
@@ -360,7 +370,7 @@ private[akka] class ActorCell(
     checkReceiveTimeout // Reschedule receive timeout
   }
 
-  def autoReceiveMessage(msg: Envelope): Unit = {
+  def autoReceiveMessage(msg: Envelope): Unit = if (msg.message != NullMessage) {
     if (system.settings.DebugAutoReceive)
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 

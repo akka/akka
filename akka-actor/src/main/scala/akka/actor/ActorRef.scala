@@ -468,8 +468,9 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
       if (w.watchee != this && w.watcher != this)
         w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
       true
-    case w: Unwatch ⇒ true // Just ignore
-    case _          ⇒ false
+    case w: Unwatch  ⇒ true // Just ignore
+    case NullMessage ⇒ true
+    case _           ⇒ false
   }
 
   @throws(classOf[java.io.ObjectStreamException])

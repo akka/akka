@@ -13,6 +13,7 @@ import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
 import scala.concurrent.util.{ Duration, Deadline }
 import scala.concurrent.util.duration._
 import scala.util.control.NonFatal
+import scala.util.Success
 
 /**
  * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
@@ -306,8 +307,8 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Durati
       val deadline = callTimeout.fromNow
       val bodyFuture = try body catch { case NonFatal(t) ⇒ Future.failed(t) }
       bodyFuture.onComplete({
-        case Right(_) if !deadline.isOverdue() ⇒ callSucceeds()
-        case _                                 ⇒ callFails()
+        case s: Success[_] if !deadline.isOverdue() ⇒ callSucceeds()
+        case _                                      ⇒ callFails()
       })(CircuitBreaker.syncExecutionContext)
       bodyFuture
     }

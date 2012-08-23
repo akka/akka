@@ -12,6 +12,7 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.concurrent.{ Future, Promise, ExecutionContext }
 import akka.util.{ Timeout, Unsafe }
+import scala.util.{ Success, Failure }
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
@@ -249,13 +250,12 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit = state match {
     case Stopped | _: StoppedWithPath ⇒ provider.deadLetters ! message
-    case _ ⇒ if (!(result.tryComplete {
+    case _ ⇒ if (!(result.tryComplete(
       message match {
-        case Status.Success(r) ⇒ Right(r)
-        case Status.Failure(f) ⇒ Left(f)
-        case other             ⇒ Right(other)
-      }
-    })) provider.deadLetters ! message
+        case Status.Success(r) ⇒ Success(r)
+        case Status.Failure(f) ⇒ Failure(f)
+        case other             ⇒ Success(other)
+      }))) provider.deadLetters ! message
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
@@ -278,7 +278,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   @tailrec
   override def stop(): Unit = {
     def ensureCompleted(): Unit = {
-      result.tryComplete(Left(new ActorKilledException("Stopped")))
+      result tryComplete Failure(new ActorKilledException("Stopped"))
       val watchers = clearWatchers()
       if (!watchers.isEmpty) {
         val termination = Terminated(this)(existenceConfirmed = true)
@@ -308,7 +308,7 @@ private[akka] object PromiseActorRef {
     implicit val ec = provider.dispatcher // TODO should we take an ExecutionContext in the method signature?
     val result = Promise[Any]()
     val a = new PromiseActorRef(provider, result)
-    val f = provider.scheduler.scheduleOnce(timeout.duration) { result.tryComplete(Left(new AskTimeoutException("Timed out"))) }
+    val f = provider.scheduler.scheduleOnce(timeout.duration) { result tryComplete Failure(new AskTimeoutException("Timed out")) }
     result.future onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a
   }

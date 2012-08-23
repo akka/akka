@@ -9,6 +9,7 @@ import akka.util.{ Timeout }
 import akka.dispatch.{ Unwatch, Watch }
 import scala.concurrent.Future
 import scala.concurrent.util.Duration
+import scala.util.Success
 
 trait GracefulStopSupport {
   /**
@@ -45,8 +46,8 @@ trait GracefulStopSupport {
         internalTarget.sendSystemMessage(Watch(target, ref))
         val f = ref.result.future
         f onComplete { // Just making sure we're not leaking here
-          case Right(Terminated(`target`)) ⇒ ()
-          case _                           ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
+          case Success(Terminated(`target`)) ⇒ ()
+          case _                             ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
         }
         target ! PoisonPill
         f map {

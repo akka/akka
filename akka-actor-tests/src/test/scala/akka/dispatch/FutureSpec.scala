@@ -21,6 +21,7 @@ import akka.pattern.ask
 import java.lang.{ IllegalStateException, ArithmeticException }
 import java.util.concurrent._
 import scala.reflect.ClassTag
+import scala.util.{ Failure, Success, Try }
 
 object FutureSpec {
 
@@ -75,22 +76,22 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     }
     "completed with a result" must {
       val result = "test value"
-      val future = Promise[String]().complete(Right(result)).future
+      val future = Promise[String]().complete(Success(result)).future
       behave like futureWithResult(_(future, result))
     }
     "completed with an exception" must {
       val message = "Expected Exception"
-      val future = Promise[String]().complete(Left(new RuntimeException(message))).future
+      val future = Promise[String]().complete(Failure(new RuntimeException(message))).future
       behave like futureWithException[RuntimeException](_(future, message))
     }
     "completed with an InterruptedException" must {
       val message = "Boxed InterruptedException"
-      val future = Promise[String]().complete(Left(new InterruptedException(message))).future
+      val future = Promise[String]().complete(Failure(new InterruptedException(message))).future
       behave like futureWithException[RuntimeException](_(future, message))
     }
     "completed with a NonLocalReturnControl" must {
       val result = "test value"
-      val future = Promise[String]().complete(Left(new NonLocalReturnControl[String]("test", result))).future
+      val future = Promise[String]().complete(Failure(new NonLocalReturnControl[String]("test", result))).future
       behave like futureWithResult(_(future, result))
     }
 
@@ -155,13 +156,13 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         "pass checks" in {
           filterException[ArithmeticException] {
             check({ (future: Future[Int], actions: List[FutureAction]) ⇒
-              def wrap[T](f: Future[T]): Either[Throwable, T] = FutureSpec.ready(f, timeout.duration).value.get
+              def wrap[T](f: Future[T]): Try[T] = FutureSpec.ready(f, timeout.duration).value.get
               val result = (future /: actions)(_ /: _)
               val expected = (wrap(future) /: actions)(_ /: _)
               ((wrap(result), expected) match {
-                case (Right(a), Right(b)) ⇒ a == b
-                case (Left(a), Left(b)) if a.toString == b.toString ⇒ true
-                case (Left(a), Left(b)) if a.getStackTrace.isEmpty || b.getStackTrace.isEmpty ⇒ a.getClass.toString == b.getClass.toString
+                case (Success(a), Success(b)) ⇒ a == b
+                case (Failure(a), Failure(b)) if a.toString == b.toString ⇒ true
+                case (Failure(a), Failure(b)) if a.getStackTrace.isEmpty || b.getStackTrace.isEmpty ⇒ a.getClass.toString == b.getClass.toString
                 case _ ⇒ false
               }) :| result.value.get.toString + " is expected to be " + expected.toString
             }, minSuccessful(10000), workers(4))
@@ -360,7 +361,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       "andThen like a boss" in {
         val q = new LinkedBlockingQueue[Int]
         for (i ← 1 to 1000) {
-          Await.result(Future { q.add(1); 3 } andThen { case _ ⇒ q.add(2) } andThen { case Right(0) ⇒ q.add(Int.MaxValue) } andThen { case _ ⇒ q.add(3); }, timeout.duration) must be(3)
+          Await.result(Future { q.add(1); 3 } andThen { case _ ⇒ q.add(2) } andThen { case Success(0) ⇒ q.add(Int.MaxValue) } andThen { case _ ⇒ q.add(3); }, timeout.duration) must be(3)
           q.poll() must be(1)
           q.poll() must be(2)
           q.poll() must be(3)
@@ -821,7 +822,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         p1 must not be ('completed)
         f4 must not be ('completed)
 
-        p1 complete Right("Hello")
+        p1 complete Success("Hello")
 
         FutureSpec.ready(latch(7), TestLatch.DefaultTimeout)
 
@@ -889,14 +890,14 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
   def futureWithResult(f: ((Future[Any], Any) ⇒ Unit) ⇒ Unit) {
     "be completed" in { f((future, _) ⇒ future must be('completed)) }
-    "contain a value" in { f((future, result) ⇒ future.value must be(Some(Right(result)))) }
+    "contain a value" in { f((future, result) ⇒ future.value must be(Some(Success(result)))) }
     "return result with 'get'" in { f((future, result) ⇒ Await.result(future, timeout.duration) must be(result)) }
     "return result with 'Await.result'" in { f((future, result) ⇒ Await.result(future, timeout.duration) must be(result)) }
     "not timeout" in { f((future, _) ⇒ FutureSpec.ready(future, 0 millis)) }
     "filter result" in {
       f { (future, result) ⇒
         Await.result((future filter (_ ⇒ true)), timeout.duration) must be(result)
-        (evaluating { Await.result((future filter (_ ⇒ false)), timeout.duration) } must produce[java.util.NoSuchElementException]).getMessage must endWith(result.toString)
+        evaluating { Await.result((future filter (_ ⇒ false)), timeout.duration) } must produce[java.util.NoSuchElementException]
       }
     }
     "transform result with map" in { f((future, result) ⇒ Await.result((future map (_.toString.length)), timeout.duration) must be(result.toString.length)) }
@@ -937,8 +938,10 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "contain a value" in {
       f((future, message) ⇒ {
         future.value must be('defined)
-        future.value.get must be('left)
-        future.value.get.left.get.getMessage must be(message)
+        future.value.get must be('failure)
+        future.value.get match {
+          case Failure(f) ⇒ f.getMessage must be(message)
+        }
       })
     }
     "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } must produce[java.lang.Exception]).getMessage must be(message)) }
@@ -976,23 +979,17 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
   case class IntDiv(n: Int) extends IntAction { def apply(that: Int) = that / n }
 
   sealed trait FutureAction {
-    def /:(that: Either[Throwable, Int]): Either[Throwable, Int]
+    def /:(that: Try[Int]): Try[Int]
     def /:(that: Future[Int]): Future[Int]
   }
 
   case class MapAction(action: IntAction) extends FutureAction {
-    def /:(that: Either[Throwable, Int]): Either[Throwable, Int] = that match {
-      case Left(e)  ⇒ that
-      case Right(r) ⇒ try { Right(action(r)) } catch { case e if NonFatal(e) ⇒ Left(e) }
-    }
+    def /:(that: Try[Int]): Try[Int] = that map action.apply
     def /:(that: Future[Int]): Future[Int] = that map action.apply
   }
 
   case class FlatMapAction(action: IntAction) extends FutureAction {
-    def /:(that: Either[Throwable, Int]): Either[Throwable, Int] = that match {
-      case Left(e)  ⇒ that
-      case Right(r) ⇒ try { Right(action(r)) } catch { case e if NonFatal(e) ⇒ Left(e) }
-    }
+    def /:(that: Try[Int]): Try[Int] = that map action.apply
     def /:(that: Future[Int]): Future[Int] = that flatMap (n ⇒ Future.successful(action(n)))
   }
 

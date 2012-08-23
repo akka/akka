@@ -9,6 +9,18 @@ represented by a special data type, :class:`Duration`. Values of this type may
 represent infinite (:obj:`Duration.Inf`, :obj:`Duration.MinusInf`) or finite
 durations.
 
+Finite vs. Infinite
+===================
+
+Since trying to convert an infinite duration into a concrete time unit like
+seconds will throw an exception, there are different types available for
+distinguishing the two kinds at compile time:
+
+* :class:`FiniteDuration` is guaranteed to be finite, calling :meth:`toNanos`
+  and friends is safe
+* :class:`Duration` can be finite or infinite, so this type should only be used
+  when finite-ness does not matter; this is a supertype of :class:`FiniteDuration`
+
 Scala
 =====
 

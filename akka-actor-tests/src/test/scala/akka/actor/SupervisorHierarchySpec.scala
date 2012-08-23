@@ -567,6 +567,7 @@ object SupervisorHierarchySpec {
         }
       case Event(StateTimeout, _) ⇒
         errors :+= self -> ErrorLog("timeout while Stopping", Vector.empty)
+        context stop hierarchy
         goto(Failed)
       case Event(e: ErrorLog, _) ⇒
         errors :+= sender -> e
@@ -592,7 +593,7 @@ object SupervisorHierarchySpec {
 
     var errors = Vector.empty[(ActorRef, ErrorLog)]
 
-    when(Failed, stateTimeout = 5 seconds) {
+    when(Failed, stateTimeout = 5.seconds.dilated) {
       case Event(e: ErrorLog, _) ⇒
         if (!e.msg.startsWith("not resumed") || !ignoreNotResumedLogs)
           errors :+= sender -> e
@@ -602,7 +603,7 @@ object SupervisorHierarchySpec {
         testActor ! "stressTestFailed"
         stop
       case Event(StateTimeout, _) ⇒
-        getErrors(hierarchy, 2)
+        getErrors(hierarchy, 10)
         printErrors()
         testActor ! "timeout in Failed"
         stop

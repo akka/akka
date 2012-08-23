@@ -8,6 +8,7 @@ import akka.dispatch._
 import akka.routing._
 import akka.event._
 import akka.util.{ Switch, Helpers }
+import scala.util.{ Success, Failure }
 import scala.util.control.NonFatal
 import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.atomic.AtomicLong
@@ -354,12 +355,12 @@ class LocalActorRefProvider(
 
     def provider: ActorRefProvider = LocalActorRefProvider.this
 
-    override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.toLeft(())) }
-
+    override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.map(Failure(_)).getOrElse(Success(()))) }
     override def isTerminated: Boolean = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
       case Failed(ex, _) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
+      case NullMessage                     ⇒ // do nothing
       case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
     })
 
@@ -443,13 +444,19 @@ class LocalActorRefProvider(
     }
 
   lazy val guardian: LocalActorRef = {
-    rootGuardian.underlying.reserveChild("user")
-    new LocalActorRef(system, Props(new Guardian(guardianStrategy, isSystem = false)), rootGuardian, rootPath / "user")
+    val cell = rootGuardian.underlying
+    cell.reserveChild("user")
+    val ref = new LocalActorRef(system, Props(new Guardian(guardianStrategy, isSystem = false)), rootGuardian, rootPath / "user")
+    cell.initChild(ref)
+    ref
   }
 
   lazy val systemGuardian: LocalActorRef = {
-    rootGuardian.underlying.reserveChild("system")
-    new LocalActorRef(system, Props(new Guardian(systemGuardianStrategy, isSystem = true)), rootGuardian, rootPath / "system")
+    val cell = rootGuardian.underlying
+    cell.reserveChild("system")
+    val ref = new LocalActorRef(system, Props(new Guardian(systemGuardianStrategy, isSystem = true)), rootGuardian, rootPath / "system")
+    cell.initChild(ref)
+    ref
   }
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)

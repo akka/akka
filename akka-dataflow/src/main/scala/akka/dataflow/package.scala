@@ -9,6 +9,7 @@ import language.implicitConversions
 import scala.util.continuations._
 import scala.concurrent.{ Promise, Future, ExecutionContext }
 import scala.util.control.NonFatal
+import scala.util.Failure
 
 package object dataflow {
   /**
@@ -33,10 +34,10 @@ package object dataflow {
       new Runnable {
         def run = try {
           (reify(body) foreachFull (r ⇒ p.success(r).future, f ⇒ p.failure(f).future): Future[Any]) onFailure {
-            case NonFatal(e) ⇒ p tryComplete Left(e)
+            case NonFatal(e) ⇒ p tryComplete Failure(e)
           }
         } catch {
-          case NonFatal(e) ⇒ p tryComplete Left(e)
+          case NonFatal(e) ⇒ p tryComplete Failure(e)
         }
       })
     p.future

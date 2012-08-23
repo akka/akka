@@ -24,7 +24,7 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
-    scalaVersion := "2.10.0-M6"
+    scalaVersion := "2.10.0-M7"
   )
 
   lazy val akka = Project(
@@ -35,7 +35,7 @@ object AkkaBuild extends Build {
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      Unidoc.unidocExclude := Seq(samples.id, tutorials.id),
+      Unidoc.unidocExclude := Seq(samples.id),
       Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id),
       initialCommands in ThisBuild :=
         """|import language.postfixOps
@@ -69,7 +69,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, tutorials, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -276,7 +276,8 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       sbtPlugin := true,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
-      scalaVersion := "2.9.1"
+      scalaVersion := "2.9.1",
+      scalaBinaryVersion <<= scalaVersion
     )
   )
 
@@ -331,22 +332,6 @@ object AkkaBuild extends Build {
     settings = defaultSettings
   )
 
-  lazy val tutorials = Project(
-    id = "akka-tutorials",
-    base = file("akka-tutorials"),
-    settings = parentSettings,
-    aggregate = Seq(firstTutorial)
-  )
-
-  lazy val firstTutorial = Project(
-    id = "akka-tutorial-first",
-    base = file("akka-tutorials/akka-tutorial-first"),
-    dependencies = Seq(actor, testkit),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.tutorials
-    )
-  )
-
   lazy val docs = Project(
     id = "akka-docs",
     base = file("akka-docs"),
@@ -363,6 +348,7 @@ object AkkaBuild extends Build {
   // Settings
 
   override lazy val settings = super.settings ++ buildSettings ++ Seq(
+      resolvers += "Scala Community 2.10.0-SNAPSHOT" at "https://scala-webapps.epfl.ch/jenkins/job/community-nightly/ws/target/repositories/8e83577d99af1d718fe369c4a4ee92737b9cf669",
       resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
       resolvers += "Sonatype Releases Repo" at "https://oss.sonatype.org/content/repositories/releases/",
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
@@ -435,6 +421,8 @@ object AkkaBuild extends Build {
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
     javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
+
+    crossVersion := CrossVersion.full,
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
@@ -585,9 +573,6 @@ object Dependencies {
 
   val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
 
-  val tutorials = Seq(Test.scalatest, Test.junit)
-
-
   val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
 
   val zeroMQ = Seq(protobuf, zeroMQClient, Test.scalatest, Test.junit)
@@ -595,13 +580,14 @@ object Dependencies {
 
 object Dependency {
   // Compile
-  val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.0" exclude("org.slf4j", "slf4j-api")      // ApacheV2
-  val config        = "com.typesafe"                % "config"                       % "0.5.0"         // ApacheV2
-  val netty         = "io.netty"                    % "netty"                        % "3.5.3.Final" // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.0" exclude("org.slf4j", "slf4j-api") // ApacheV2
+  val config        = "com.typesafe"                % "config"                       % "0.5.0"       // ApacheV2
+  val netty         = "io.netty"                    % "netty"                        % "3.5.4.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
-  val scalaStm      = "org.scala-tools"            %% "scala-stm"                    % "0.6"         // Modified BSD (Scala)
+  val scalaStm      = "org.scala-tools"             % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
+
   val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.6.4"       // MIT
-  val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % "0.0.6"       // ApacheV2
+  val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding"         % "0.0.6" cross CrossVersion.full // ApacheV2
   val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a"      // ApacheV2
   val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
   val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
@@ -614,8 +600,8 @@ object Dependency {
     val junit       = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
     val logback     = "ch.qos.logback"              % "logback-classic"              % "1.0.4"            % "test" // EPL 1.0 / LGPL 2.1
     val mockito     = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
-    val scalatest   = "org.scalatest"              %% "scalatest"                    % "1.9-2.10.0-M6-B2" % "test" // ApacheV2
-    val scalacheck  = "org.scalacheck"             %% "scalacheck"                   % "1.10.0"           % "test" // New BSD
+    val scalatest   = "org.scalatest"               % "scalatest"                    % "1.9-2.10.0-M7-B1" % "test" cross CrossVersion.full // ApacheV2
+    val scalacheck  = "org.scalacheck"              % "scalacheck"                   % "1.10.0"           % "test" cross CrossVersion.full // New BSD
     val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
     val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
     val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2

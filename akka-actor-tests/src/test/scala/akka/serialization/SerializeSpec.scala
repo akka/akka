@@ -254,7 +254,7 @@ class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf)
     val b = system.actorOf(Props(new FooActor))
     system stop b
 
-    val c = system.actorOf(Props().withCreator(new UntypedActorFactory {
+    val c = system.actorOf(Props.empty.withCreator(new UntypedActorFactory {
       def create() = new FooUntypedActor
     }))
     system stop c

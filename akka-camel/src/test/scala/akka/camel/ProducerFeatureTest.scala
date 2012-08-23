@@ -19,6 +19,7 @@ import scala.concurrent.util.duration._
 import akka.util.Timeout
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
+import scala.util.Success
 
 /**
  * Tests the features of the Camel Producer.

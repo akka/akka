@@ -181,7 +181,7 @@ actor system from top to bottom by passing messages from parent to child until
 either the target is reached or failure is certain, i.e. a name in the path
 does not exist (in practice this process will be optimized using caches, but it
 still has added cost compared to using the physical actor path, which can for
-example to obtained from the sender reference included in replies from that
+example be obtained from the sender reference included in replies from that
 actor). The messages passed are handled automatically by Akka, so this process
 is not visible to client code.
 

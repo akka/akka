@@ -6,7 +6,7 @@ Developer Guidelines
 Code Style
 ----------
 
-The Akka code style follows `this document <http://davetron5000.github.com/scala-style/ScalaStyleGuide.pdf>`_ .
+The Akka code style follows the `Scala Style Guide <http://docs.scala-lang.org/style/>`_ .
 
 Akka is using ``Scalariform`` to format the source code as part of the build. So just hack away and then run ``sbt compile`` and it will reformat the code according to Akka standards.
 
