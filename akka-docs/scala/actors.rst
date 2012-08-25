@@ -108,6 +108,9 @@ Here is an example:
   meaning of an actor restart, which is described here:
   :ref:`supervision-restart`.
 
+  Also avoid passing mutable state into the constructor of the Actor, since
+  the call-by-name block can be executed by another thread.
+
 Props
 -----
 
