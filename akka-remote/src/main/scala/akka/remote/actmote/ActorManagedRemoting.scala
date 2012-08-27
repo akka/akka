@@ -114,6 +114,36 @@ object HeadActor {
   case class Pass(endpoint: ActorRef) extends EndpointPolicy
   // TODO: what type should be used for points in time?
   case class Failed(timeOfFailure: Long) extends EndpointPolicy
+
+  // TODO: How to handle passive connections?
+  class EndpointRegistry {
+    private val addressToEndpointAndPolicy = scala.collection.mutable.Map[Address, EndpointPolicy]()
+    private val endpointToAddress = scala.collection.mutable.Map[ActorRef, Address]()
+
+    def getEndpointWithPolicy(address: Address) = addressToEndpointAndPolicy.get(address)
+
+    def registerEndpoint(address: Address, endpoint: ActorRef) {
+      addressToEndpointAndPolicy += address -> Pass(endpoint)
+      endpointToAddress += endpoint -> address
+    }
+
+    def markFailed(endpoint: ActorRef, timeOfFailure: Long) {
+      val address = endpointToAddress(endpoint)
+      endpointToAddress.remove(endpoint)
+      addressToEndpointAndPolicy(address) = Failed(timeOfFailure)
+    }
+
+    def markPass(endpoint: ActorRef) {
+      val address = endpointToAddress(endpoint)
+      addressToEndpointAndPolicy(address) = Pass(endpoint)
+    }
+
+    def remove(endpoint: ActorRef) {
+      val address = endpointToAddress(endpoint)
+      endpointToAddress.remove(endpoint)
+      addressToEndpointAndPolicy.remove(address)
+    }
+  }
 }
 
 // TODO: HeadActor MUST WATCH his endpoint Actors
@@ -132,7 +162,8 @@ class HeadActor(
   private var address: Address = _
   // Mapping between addresses and endpoint actors. If passive connections are turned off, incoming connections
   // will be not part of this map!
-  private val clientTable = scala.collection.mutable.Map[Address, EndpointPolicy]()
+  val endpoints = new EndpointRegistry()
+
   private var transport: RemoteTransport = _
 
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
@@ -147,16 +178,16 @@ class HeadActor(
     case s @ Send(message, senderOption, recipientRef) ⇒ {
       val recipientAddress = recipientRef.path.address
 
-      clientTable.get(recipientAddress) match {
+      endpoints.getEndpointWithPolicy(recipientAddress) match {
         case Some(Pass(endpoint)) ⇒ endpoint ! s
         case Some(Failed(timeOfFailure)) ⇒ if (retryLatchOpen(timeOfFailure)) {
           val endpoint = createEndpoint(recipientAddress, None)
-          clientTable(recipientAddress) = Pass(endpoint)
+          endpoints.markPass(endpoint)
           endpoint ! s
         } else { /* TODO: Retry latch is not open yet, send message to dead letters */ }
         case None ⇒ {
           val endpoint = createEndpoint(recipientAddress, None)
-          clientTable += recipientAddress -> Pass(endpoint)
+          endpoints.registerEndpoint(recipientAddress, endpoint)
           endpoint ! s
         }
       }
@@ -165,10 +196,16 @@ class HeadActor(
     case IncomingConnection(handle) ⇒ {
       val endpoint = createEndpoint(handle.remoteAddress, Some(handle))
       handle.responsibleActor = endpoint
-      if (settings.UsePassiveConnections)
-        clientTable += handle.remoteAddress -> Pass(endpoint)
+      if (settings.UsePassiveConnections) {
+        endpoints.registerEndpoint(address, endpoint)
+      }
     }
-    case Terminated(endpoint) ⇒
+    case Terminated(endpoint) ⇒ {
+      //TODO: add real time of failure
+      //TODO: Terminate does NOT euqal failed!
+      //endpoints.markFailed(endpoint, 0)
+      endpoints.remove(endpoint)
+    }
   }
 
   private def listenAndGetAddress = {
