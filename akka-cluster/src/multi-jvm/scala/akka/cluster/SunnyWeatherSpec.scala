@@ -60,11 +60,12 @@ abstract class SunnyWeatherSpec
       val unexpected = new AtomicReference[SortedSet[Member]]
       cluster.subscribe(system.actorOf(Props(new Actor {
         def receive = {
-          case MembersChanged(members) ⇒
+          case event: MemberEvent ⇒
             // we don't expected any changes to the cluster
-            unexpected.set(members)
+            unexpected.set(unexpected.get + event.member)
+          case _: CurrentClusterState ⇒ // ignore
         }
-      })), classOf[MembersChanged])
+      })), classOf[MemberEvent])
 
       for (n ← 1 to 30) {
         enterBarrier("period-" + n)

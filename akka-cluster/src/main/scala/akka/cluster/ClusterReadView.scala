@@ -6,9 +6,9 @@ package akka.cluster
 
 import java.io.Closeable
 import scala.collection.immutable.SortedSet
-
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl, Address, Props }
 import akka.cluster.ClusterEvent._
+import akka.actor.PoisonPill
 
 /**
  * INTERNAL API
@@ -39,13 +39,24 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
       override def postStop(): Unit = cluster.unsubscribe(self)
 
       def receive = {
-        case SeenChanged(convergence, seenBy)       ⇒ state = state.copy(convergence = convergence, seenBy = seenBy)
-        case MembersChanged(members)                ⇒ state = state.copy(members = members)
-        case UnreachableMembersChanged(unreachable) ⇒ state = state.copy(unreachable = unreachable)
-        case LeaderChanged(leader, convergence)     ⇒ state = state.copy(leader = leader, convergence = convergence)
-        case s: CurrentClusterState                 ⇒ state = s
-        case CurrentInternalStats(stats)            ⇒ _latestStats = stats
-        case _                                      ⇒ // ignore, not interesting
+        case SeenChanged(convergence, seenBy) ⇒
+          state = state.copy(convergence = convergence, seenBy = seenBy)
+        case MemberRemoved(member) ⇒
+          state = state.copy(members = state.members - member, unreachable = state.unreachable - member)
+        case MemberUnreachable(member) ⇒
+          // replace current member with new member (might have different status, only address is used in equals)
+          state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
+        case MemberDowned(member) ⇒
+          // replace current member with new member (might have different status, only address is used in equals)
+          state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
+        case event: MemberEvent ⇒
+          // replace current member with new member (might have different status, only address is used in equals)
+          state = state.copy(members = state.members - event.member + event.member)
+        case LeaderChanged(leader, convergence) ⇒ state = state.copy(leader = leader, convergence = convergence)
+        case ConvergenceChanged(convergence)    ⇒ state = state.copy(convergence = convergence)
+        case s: CurrentClusterState             ⇒ state = s
+        case CurrentInternalStats(stats)        ⇒ _latestStats = stats
+        case _                                  ⇒ // ignore, not interesting
       }
     }).withDispatcher(cluster.settings.UseDispatcher), name = "clusterEventBusListener")
   }
@@ -121,8 +132,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   /**
    * Unsubscribe to cluster events.
    */
-  def close(): Unit = {
-    cluster.system.stop(eventBusListener)
+  def close(): Unit = if (!eventBusListener.isTerminated) {
+    eventBusListener ! PoisonPill
   }
 
 }

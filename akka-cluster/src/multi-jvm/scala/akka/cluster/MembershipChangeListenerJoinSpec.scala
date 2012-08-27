@@ -40,12 +40,16 @@ abstract class MembershipChangeListenerJoinSpec
         val joinLatch = TestLatch()
         val expectedAddresses = Set(first, second) map address
         cluster.subscribe(system.actorOf(Props(new Actor {
+          var members = Set.empty[Member]
           def receive = {
-            case MembersChanged(members) ⇒
-              if (members.map(_.address) == expectedAddresses && members.exists(_.status == MemberStatus.Joining))
+            case state: CurrentClusterState ⇒ members = state.members
+            case MemberJoined(m) ⇒
+              members = members - m + m
+              if (members.map(_.address) == expectedAddresses)
                 joinLatch.countDown()
+            case _ ⇒ // ignore
           }
-        })), classOf[MembersChanged])
+        })), classOf[MemberEvent])
         enterBarrier("registered-listener")
 
         joinLatch.await

@@ -46,23 +46,22 @@ abstract class NodeLeavingAndExitingSpec
         val secondAddess = address(second)
         val leavingLatch = TestLatch()
         val exitingLatch = TestLatch()
-        val expectedAddresses = roles.toSet map address
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
-            case MembersChanged(members) ⇒
-              def check(status: MemberStatus): Boolean =
-                (members.map(_.address) == expectedAddresses &&
-                  members.exists(m ⇒ m.address == secondAddess && m.status == status))
-              if (check(MemberStatus.Leaving)) leavingLatch.countDown()
-              if (check(MemberStatus.Exiting)) exitingLatch.countDown()
+            case MemberLeft(m) if m.address == secondAddess   ⇒ leavingLatch.countDown()
+            case MemberExited(m) if m.address == secondAddess ⇒ exitingLatch.countDown()
+
           }
-        })), classOf[MembersChanged])
+        })), classOf[MemberEvent])
         enterBarrier("registered-listener")
 
         runOn(third) {
           cluster.leave(second)
         }
         enterBarrier("second-left")
+
+        val expectedAddresses = roles.toSet map address
+        awaitCond(clusterView.members.map(_.address) == expectedAddresses)
 
         // Verify that 'second' node is set to LEAVING
         leavingLatch.await
