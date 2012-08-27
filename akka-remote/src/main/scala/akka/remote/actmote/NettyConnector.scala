@@ -21,6 +21,7 @@ import java.util.concurrent.{ TimeUnit, Executors }
 import util.control.NonFatal
 import scala.Some
 import akka.actor.DeadLetter
+import org.jboss.netty.handler.ssl.SslHandler
 
 private[akka] object ChannelHandle extends ChannelLocal[Option[NettyConnectorHandle]] {
   override def initialValue(channel: Channel) = None
@@ -203,8 +204,52 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
     setAddressFromChannel(channel)
   }
 
-  def connect(remote: Address, responsibleActorForConnection: ActorRef) {
+  //TODO: to be called externally
+  startup()
 
+  def sendSecureCookie(connection: ChannelFuture): Boolean = {
+    val future =
+      if (!connection.isSuccess || !settings.EnableSSL) connection
+      else connection.getChannel.getPipeline.get[SslHandler](classOf[SslHandler]).handshake().awaitUninterruptibly()
+
+    if (!future.isSuccess) {
+      //TODO: Log error
+      //notifyListeners(RemoteClientError(future.getCause, netty, remoteAddress))
+      false
+    } else {
+      //ChannelAddress.set(connection.getChannel, Some(remoteAddress))
+      val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
+      if (settings.SecureCookie.nonEmpty) handshake.setCookie(settings.SecureCookie.get)
+      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
+        .setSystem(address.system)
+        .setHostname(address.host.get)
+        .setPort(address.port.get)
+        .build)
+      connection.getChannel.write(createControlEnvelope(handshake.build))
+      true
+    }
+  }
+
+  def connect(remoteAddress: Address, responsibleActorForConnection: ActorRef) {
+    val name = Logging.simpleName(this) + "@" + remoteAddress
+    val remoteIP = InetAddress.getByName(remoteAddress.host.get)
+    val remotePort = remoteAddress.port.get
+    val connectionFuture = clientBootstrap(name, address, remoteAddress).connect(new InetSocketAddress(remoteIP, remotePort))
+
+    // TODO: WARNING!!! This is BLOCKING!!! Refactor connection buildup into a two-phase process
+    val channel = connectionFuture.awaitUninterruptibly.getChannel
+
+    if (sendSecureCookie(connectionFuture)) {
+      //notifyListeners(RemoteClientStarted(netty, remoteAddress))
+      val handle: NettyConnectorHandle = new NettyConnectorHandle(this, connectionFuture.getChannel)
+      ChannelHandle.set(connectionFuture.getChannel, Some(handle))
+
+      responsibleActorForConnection.tell(ConnectionInitialized(handle), responsibleActorForConnection)
+    } else {
+      // TODO: Notify responsibleActor about error in connection
+      //connection.getChannel.close()
+      //openChannels.remove(connection.getChannel)
+    }
   }
 
   def shutdown() {
@@ -287,7 +332,10 @@ private[akka] class NettyConnectorServerHandler(
 
             //ChannelAddress.set(event.getChannel, Option(inbound))
             ChannelHandle.set(event.getChannel, Some(handle))
-            connector.responsibleActor ! ConnectionInitialized(handle)
+            connector.responsibleActor ! IncomingConnection(handle)
+          //TODO: Block the Netty pipeline
+          //TODO: Document that the threadpool should contain enough threads
+          //Thread.sleep(500) // TODO: just for trying
           //netty.bindClient(inbound, new PassiveRemoteClient(event.getChannel, netty, inbound))
 
           //netty.notifyListeners(RemoteServerClientConnected(netty, Option(inbound)))
@@ -365,7 +413,7 @@ private[akka] class ActiveRemoteClientHandler(
 
         case other ⇒
         //TODO: this exception should be thrown in ActorManagedRemoting
-        //throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.netty, client.remoteAddress)
+        //throw new RemoteClientException("Unknown message received in remoteAddress client handler: " + other, client.netty, client.remoteAddress)
       }
     } catch {
       case e: Exception ⇒ //TODO: notify endpoint of error
