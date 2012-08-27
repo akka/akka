@@ -90,14 +90,14 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
 // Cut out
 trait LifeCycleNotificationHelper {
   def provider: RemoteActorRefProvider
-  def system: ExtendedActorSystem
+  def extendedSystem: ExtendedActorSystem
   def log: LoggingAdapter
 
   def useUntrustedMode = provider.remoteSettings.UntrustedMode
   def logRemoteLifeCycleEvents = provider.remoteSettings.LogRemoteLifeCycleEvents
 
   def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
-    system.eventStream.publish(message)
+    extendedSystem.eventStream.publish(message)
     if (logRemoteLifeCycleEvents) log.log(message.logLevel, "{}", message)
   }
 }
@@ -126,7 +126,7 @@ class HeadActor(
   import actmote.TransportConnector.IncomingConnection
   import HeadActor._
 
-  val system = context.system
+  val extendedSystem = context.system.asInstanceOf[ExtendedActorSystem]
   val log = Logging(context.system.eventStream, "HeadActor")
 
   private var address: Address = _
@@ -231,13 +231,12 @@ class EndpointActor(
   handleOption: Option[TransportConnectorHandle]) extends Actor
   with RemoteMessageDispatchHelper
   with FSM[EndpointActor.EndpointState, EndpointActor.EndpointData]
-  with LifeCycleNotificationHelper
-{
+  with LifeCycleNotificationHelper {
 
   import EndpointActor._
   import actmote.TransportConnector._
 
-  val system = context.system
+  val extendedSystem = context.system.asInstanceOf[ExtendedActorSystem]
 
   override val log = Logging(context.system.eventStream, "EndpointActor(remote = " + remoteAddress + ")")
   val isServer = handleOption.isDefined
@@ -245,7 +244,7 @@ class EndpointActor(
   val queueLimit: Int = 10 //TODO: read from config
 
   def notifyError(reason: Throwable) {
-    if (isServer){
+    if (isServer) {
       notifyListeners(RemoteServerError(reason, transport))
     } else {
       notifyListeners(RemoteClientError(reason, transport, remoteAddress))
@@ -265,23 +264,22 @@ class EndpointActor(
     }
   }
 
-
   when(WaitConnect) {
-    case Event(AttemptConnect, _)                   ⇒ attemptConnect(); stay using stateData
+    case Event(AttemptConnect, _) ⇒ attemptConnect(); stay using stateData
     // TODO: log send if it is configured
     case Event(s @ Send(msg, _, _), Transient(queue)) ⇒ {
       if (queue.size >= queueLimit) {
         log.warning("Endpoint queue is full; dropping message: {}", msg)
-        system.deadLetters ! msg
+        extendedSystem.deadLetters ! msg
         stay using Transient(queue)
       } else {
         stay using Transient(s :: queue)
       }
     }
-    case Event(ConnectionInitialized(handle), _)    ⇒ goto(Connected) using Handle(handle)
+    case Event(ConnectionInitialized(handle), _) ⇒ goto(Connected) using Handle(handle)
     case Event(ConnectionFailed(reason), Transient(queue)) ⇒ {
       // Give up
-      queue.reverse.foreach { case Send(message, _, _) => system.deadLetters ! message }
+      queue.reverse.foreach { case Send(message, _, _) ⇒ extendedSystem.deadLetters ! message }
       notifyError(reason)
       throw new EndpointOpenException(remoteAddress, "falied to connect", reason)
     }
@@ -300,11 +298,11 @@ class EndpointActor(
   }
 
   when(Connected) {
-    case Event(MessageArrived(msg), handleState)                                 ⇒ receiveMessage(msg); stay using handleState
+    case Event(MessageArrived(msg), handleState) ⇒ receiveMessage(msg); stay using handleState
     case Event(Send(msg, senderOption, recipient), handleState @ Handle(handle)) ⇒ try {
       handle.write(msg, senderOption, recipient); stay using handleState
     } catch {
-      case NonFatal(reason) => {
+      case NonFatal(reason) ⇒ {
         notifyError(reason)
         throw new EndpointWriteException(remoteAddress, "failed to write to transport", reason)
       }
