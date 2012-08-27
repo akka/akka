@@ -29,6 +29,7 @@ object RemoteCommunicationSpecTemplate {
   }
 }
 
+// TODO: Make ports dynamic
 abstract class RemoteCommunicationSpecTemplate(localConfig: String, remoteConfig: String) extends AkkaSpec(localConfig) with ImplicitSender with DefaultTimeout {
   import RemoteCommunicationSpecTemplate._
 
