@@ -17,6 +17,9 @@ akka {
     log-received-messages = on
     log-sent-messages = on
   }
+  remote.managed {
+    connector = "akka.remote.actmote.DummyTransportConnector"
+  }
   remote.netty {
     hostname = localhost
     port = 12345
@@ -27,7 +30,7 @@ akka {
     /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
   }
 }
-""") with ImplicitSender with DefaultTimeout {
+                                                """) with ImplicitSender with DefaultTimeout {
 
   val conf = ConfigFactory.parseString("akka.remote.netty.port=12346").withFallback(system.settings.config)
   val remoteSystem = ActorSystem("remote-sys", conf)
@@ -90,7 +93,7 @@ akka {
 
     "shut down the underlying transport provider properly when shutting down" in {
       transportUnderTest.start
-      val underlyingTransport = transportUnderTest.transport
+      val underlyingTransport = transportUnderTest.transport.asInstanceOf[DummyTransportConnector]
       transportUnderTest.shutdown
       assert(underlyingTransport.isTerminated)
     }

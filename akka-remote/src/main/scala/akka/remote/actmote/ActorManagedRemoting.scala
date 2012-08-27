@@ -15,10 +15,23 @@ import scala.concurrent.util.duration._
 class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
 
   val HeadActorName = "remoteTransportHeadActor"
+  val managedRemoteSettings = new ActorManagedRemotingSettings(provider.remoteSettings.config.getConfig("akka.remote.managed"))
 
   @volatile var headActor: ActorRef = _ // TODO: make this threadsafe and think about startup sequence
   @volatile var address: Address = _
-  @volatile var transport: DummyTransportConnector = _
+  @volatile var transport: TransportConnector = _
+
+  def loadTransport = {
+    val fqn = managedRemoteSettings.Connector
+    val args = Seq(
+      classOf[ExtendedActorSystem] -> system,
+      classOf[RemoteActorRefProvider] -> provider)
+
+    system.dynamicAccess.createInstanceFor[TransportConnector](fqn, args) match {
+      case Left(problem)    ⇒ println(problem); throw new RemoteTransportException("Could not load transport connector " + fqn, problem)
+      case Right(connector) ⇒ connector
+    }
+  }
 
   def log: LoggingAdapter = Logging(system.eventStream, "ActorManagedRemoting(" + address + ")")
 
@@ -38,9 +51,9 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
   }
 
   def start() {
+    transport = loadTransport
     // This is not very threadsafe, but multiple concurrent calls to start() should not happen in practice
     if (headActor eq null) {
-      transport = new DummyTransportConnector(system, provider)
       // TODO: reuse passive connections must be configurable
       headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider, transport, true)), HeadActorName)
 
@@ -82,7 +95,9 @@ class UnexpectedException(cause: Throwable) extends Exception("Unexpected except
 // HeadActor MUST WATCH his endpoint Actors
 class HeadActor(val provider: RemoteActorRefProvider, val transport: TransportConnector, val usePassiveConnections: Boolean) extends Actor {
   private var address: Address = _
-  private val endpointTable = scala.collection.mutable.Map[Address, ActorRef]()
+  private val clientTable = scala.collection.mutable.Map[Address, ActorRef]()
+  // TODO: Is this necessarily needed
+  private val endpoints = scala.collection.mutable.Set[ActorRef]()
 
   import akka.actor.SupervisorStrategy._
   import actmote.TransportConnector.IncomingConnection
@@ -94,16 +109,16 @@ class HeadActor(val provider: RemoteActorRefProvider, val transport: TransportCo
   def receive = {
     case Listen                    ⇒ sender ! listen
     // TODO: Passive clients should NOT close the connection
-    case ShutdownEndpoint(address) ⇒ endpointTable.remove(address).foreach(context.stop(_)) // Need separate table for ALL endpoints, and usable endpoints
+    case ShutdownEndpoint(address) ⇒ clientTable.remove(address).foreach(context.stop(_)) // Need separate table for ALL endpoints, and usable endpoints
     case RestartEndpoint(address)  ⇒ // TODO: Not yet supported
     case s @ Send(message, senderOption, recipientRef) ⇒ {
       val recipientAddress = recipientRef.path.address
 
-      endpointTable.get(recipientAddress) match {
+      clientTable.get(recipientAddress) match {
         case Some(endpoint) ⇒ endpoint ! s
         case None ⇒ {
           val endpoint = createEndpoint(recipientAddress, None)
-          endpointTable += recipientAddress -> endpoint
+          clientTable += recipientAddress -> endpoint
           endpoint ! s
         }
       }
@@ -113,7 +128,7 @@ class HeadActor(val provider: RemoteActorRefProvider, val transport: TransportCo
       val endpoint = createEndpoint(handle.remoteAddress, Some(handle))
       handle.responsibleActor = endpoint
       if (usePassiveConnections)
-        endpointTable += handle.remoteAddress -> endpoint
+        clientTable += handle.remoteAddress -> endpoint
     }
   }
 
@@ -124,7 +139,7 @@ class HeadActor(val provider: RemoteActorRefProvider, val transport: TransportCo
   }
 
   private def createEndpoint(remote: Address, handleOption: Option[TransportConnectorHandle]) = {
-    // Use parameter names here
+    // TODO:
     context.actorOf(Props(new EndpointActor(
       provider,
       address,
@@ -134,7 +149,7 @@ class HeadActor(val provider: RemoteActorRefProvider, val transport: TransportCo
   }
 
   override def postStop() {
-    endpointTable.values.foreach(context.stop(_))
+    clientTable.values.foreach(context.stop(_))
     transport.shutdown()
   }
 
@@ -165,7 +180,7 @@ class EndpointActor(val provider: RemoteActorRefProvider, val address: Address, 
 
   handleOption match {
     case Some(handle) ⇒ {
-      startWith(Connected, Handle(handle));
+      startWith(Connected, Handle(handle))
       registerReadCallback(handle)
     }
     case None ⇒ {
@@ -174,18 +189,14 @@ class EndpointActor(val provider: RemoteActorRefProvider, val address: Address, 
     }
   }
 
-  // TODO: Limit queue
-  when(WaitConnect, stateTimeout = 1 second) {
-    case Event(AttemptConnect, _)                               ⇒ attemptConnect(); stay using stateData
+  // TODO: Limit queue, make timeout configurable
+  when(WaitConnect) {
+    case Event(AttemptConnect, _)                   ⇒ attemptConnect(); stay using stateData
     // TODO: log send if it is configured
-    case Event(s @ Send(_, _, _), Transient(queue))             ⇒ stay using Transient(s :: queue)
-    case Event(ConnectionInitialized(handle), Transient(queue)) ⇒ goto(Connected) using Handle(handle)
+    case Event(s @ Send(_, _, _), Transient(queue)) ⇒ stay using Transient(s :: queue)
+    case Event(ConnectionInitialized(handle), _)    ⇒ goto(Connected) using Handle(handle)
     case Event(ConnectionFailed(reason), _) ⇒ {
       //TODO: log reason
-      attemptConnect()
-      stay using stateData
-    }
-    case Event(StateTimeout, _) ⇒ {
       attemptConnect()
       stay using stateData
     }
@@ -215,6 +226,7 @@ class EndpointActor(val provider: RemoteActorRefProvider, val address: Address, 
     try {
       transport.connect(remoteAddress, self)
     } catch {
+      // TODO: throw TransportException
       case e: Exception ⇒ throw new UnexpectedException(e)
     }
   }
