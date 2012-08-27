@@ -8,6 +8,7 @@ import akka.dispatch._
 import akka.routing._
 import akka.event._
 import akka.util.{ Switch, Helpers }
+import scala.util.{ Success, Failure }
 import scala.util.control.NonFatal
 import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.atomic.AtomicLong
@@ -354,8 +355,7 @@ class LocalActorRefProvider(
 
     def provider: ActorRefProvider = LocalActorRefProvider.this
 
-    override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.toLeft(())) }
-
+    override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.map(Failure(_)).getOrElse(Success(()))) }
     override def isTerminated: Boolean = stopped.isOn
 
     override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {

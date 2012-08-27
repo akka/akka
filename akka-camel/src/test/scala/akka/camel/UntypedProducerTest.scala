@@ -53,8 +53,8 @@ class UntypedProducerTest extends WordSpec with MustMatchers with BeforeAndAfter
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
         val future = producer.ask(message)(timeout).failed
 
-        Await.ready(future, timeout).value match {
-          case Some(Right(e: AkkaCamelException)) ⇒
+        Await.result(future, timeout) match {
+          case e: AkkaCamelException ⇒
             e.getMessage must be("failure")
             e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
           case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)

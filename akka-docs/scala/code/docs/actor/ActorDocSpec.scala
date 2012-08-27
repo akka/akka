@@ -221,7 +221,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "creating a Props config" in {
     //#creating-props-config
     import akka.actor.Props
-    val props1 = Props()
+    val props1 = Props.empty
     val props2 = Props[MyActor]
     val props3 = Props(new MyActor)
     val props4 = Props(

@@ -120,11 +120,11 @@ abstract class TransitionSpec
 
       runOn(first) {
         startClusterNode()
-        clusterView.isSingletonCluster must be(true)
-        clusterView.status must be(Joining)
-        clusterView.convergence must be(true)
+        awaitCond(clusterView.isSingletonCluster)
+        awaitMemberStatus(myself, Joining)
+        awaitCond(clusterView.convergence)
         leaderActions()
-        awaitCond(clusterView.status == Up)
+        awaitMemberStatus(myself, Up)
       }
 
       enterBarrier("after-1")
@@ -156,7 +156,7 @@ abstract class TransitionSpec
       runOn(first, second) {
         // gossip chat will synchronize the views
         awaitMemberStatus(second, Up)
-        seenLatestGossip must be(Set(first, second))
+        awaitCond(seenLatestGossip == Set(first, second))
         awaitMemberStatus(first, Up)
         clusterView.convergence must be(true)
       }
@@ -184,17 +184,17 @@ abstract class TransitionSpec
         awaitMembers(first, second, third)
         awaitMemberStatus(third, Joining)
         awaitMemberStatus(second, Up)
-        seenLatestGossip must be(Set(first, second, third))
+        awaitCond(seenLatestGossip == Set(first, second, third))
         clusterView.convergence must be(true)
       }
 
       first gossipTo third
       runOn(first, second, third) {
-        members must be(Set(first, second, third))
+        awaitMembers(first, second, third)
         awaitMemberStatus(first, Up)
         awaitMemberStatus(second, Up)
         awaitMemberStatus(third, Joining)
-        seenLatestGossip must be(Set(first, second, third))
+        awaitCond(seenLatestGossip == Set(first, second, third))
         clusterView.convergence must be(true)
       }
 
@@ -212,7 +212,7 @@ abstract class TransitionSpec
       leader(first, second, third) gossipTo nonLeader(first, second, third).head
       runOn(nonLeader(first, second, third).head) {
         awaitMemberStatus(third, Up)
-        seenLatestGossip must be(Set(leader(first, second, third), myself))
+        awaitCond(seenLatestGossip == Set(leader(first, second, third), myself))
         clusterView.convergence must be(false)
       }
 
@@ -224,7 +224,7 @@ abstract class TransitionSpec
       }
       runOn(nonLeader(first, second, third).tail.head) {
         awaitMemberStatus(third, Up)
-        seenLatestGossip must be(Set(first, second, third))
+        awaitCond(seenLatestGossip == Set(first, second, third))
         clusterView.convergence must be(true)
       }
 
@@ -234,7 +234,7 @@ abstract class TransitionSpec
         awaitMemberStatus(first, Up)
         awaitMemberStatus(second, Up)
         awaitMemberStatus(third, Up)
-        seenLatestGossip must be(Set(first, second, third))
+        awaitCond(seenLatestGossip == Set(first, second, third))
         clusterView.convergence must be(true)
       }
 
@@ -245,8 +245,8 @@ abstract class TransitionSpec
       runOn(third) {
         markNodeAsUnavailable(second)
         reapUnreachable()
-        clusterView.unreachableMembers must contain(Member(second, Up))
-        seenLatestGossip must be(Set(third))
+        awaitCond(clusterView.unreachableMembers.contains(Member(second, Up)))
+        awaitCond(seenLatestGossip == Set(third))
       }
 
       enterBarrier("after-second-unavailble")
@@ -254,8 +254,8 @@ abstract class TransitionSpec
       third gossipTo first
 
       runOn(first, third) {
-        clusterView.unreachableMembers must contain(Member(second, Up))
-        clusterView.convergence must be(false)
+        awaitCond(clusterView.unreachableMembers.contains(Member(second, Up)))
+        awaitCond(!clusterView.convergence)
       }
 
       runOn(first) {
@@ -268,9 +268,9 @@ abstract class TransitionSpec
       first gossipTo third
 
       runOn(first, third) {
-        clusterView.unreachableMembers must contain(Member(second, Down))
+        awaitCond(clusterView.unreachableMembers.contains(Member(second, Down)))
         awaitMemberStatus(second, Down)
-        seenLatestGossip must be(Set(first, third))
+        awaitCond(seenLatestGossip == Set(first, third))
         clusterView.convergence must be(true)
       }
 

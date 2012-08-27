@@ -81,6 +81,7 @@ class DataflowSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "futureComposingWithContinuationsFailureCastNothing" in {
+      pending
       filterException[ClassCastException] {
 
         val actor = system.actorOf(Props[TestActor])
@@ -121,7 +122,7 @@ class DataflowSpec extends AkkaSpec with DefaultTimeout {
       val a, b, c = Promise[Int]()
 
       val result2 = flow {
-        val n = (a << c).value.get.right.get + 10
+        val n = (a << c).value.get.get + 10
         b << (c() - 2)
         a() + n * b()
       }

@@ -375,14 +375,8 @@ private[akka] class ActorCell(
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case Failed(cause, uid) ⇒ handleFailure(sender, cause, uid)
-      case t @ Terminated(actor) ⇒
-        getChildByRef(actor) match {
-          case Some(crs) if crs.uid == t.uid ⇒ removeChild(actor)
-          case _                             ⇒
-        }
-        watchedActorTerminated(t.actor)
-        receiveMessage(t)
+      case Failed(cause, uid)       ⇒ handleFailure(sender, cause, uid)
+      case t: Terminated            ⇒ watchedActorTerminated(t.actor); receiveMessage(t)
       case Kill                     ⇒ throw new ActorKilledException("Kill")
       case PoisonPill               ⇒ self.stop()
       case SelectParent(m)          ⇒ parent.tell(m, msg.sender)

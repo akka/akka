@@ -63,10 +63,7 @@ case object Kill extends Kill {
  * When Death Watch is used, the watcher will receive a Terminated(watched) message when watched is terminated.
  */
 @SerialVersionUID(1L)
-case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
-  @BeanProperty val existenceConfirmed: Boolean,
-  private[akka] val uid: Int)
-  extends AutoReceivedMessage
+case class Terminated private[akka] (@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean) extends AutoReceivedMessage
 
 abstract class ReceiveTimeout extends PossiblyHarmful
 

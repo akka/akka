@@ -67,11 +67,25 @@ object Publish {
   }
 
   def akkaPublishTo: Initialize[Option[Resolver]] = {
-    defaultPublishTo { default =>
-      val property = Option(System.getProperty("akka.publish.repository"))
-      val repo = property map { "Akka Publish Repository" at _ }
-      repo orElse Some(Resolver.file("Default Local Repository", default))
+    (defaultPublishTo, version) { (default, v) =>
+      akkaPublishRepository orElse
+      sonatypeRepo(v) orElse
+      Some(Resolver.file("Default Local Repository", default))
     }
+  }
+
+  def sonatypeRepo(version: String): Option[Resolver] = {
+    Option(sys.props("publish.maven.central")) filter (_.toLowerCase == "true") map { _ =>
+      val nexus = "https://oss.sonatype.org/"
+      if(version endsWith "-SNAPSHOT") ("snapshots" at nexus + "content/repositories/snapshots")
+      else ("releases"  at nexus + "service/local/staging/deploy/maven2")
+    }
+  }
+
+
+  def akkaPublishRepository: Option[Resolver] = {
+      val property = Option(System.getProperty("akka.publish.repository"))
+      property map { "Akka Publish Repository" at _ }
   }
 
   def akkaCredentials: Seq[Credentials] = {

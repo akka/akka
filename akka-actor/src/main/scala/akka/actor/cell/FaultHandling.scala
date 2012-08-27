@@ -11,6 +11,7 @@ import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
 import akka.dispatch.SystemMessage
 import akka.event.Logging
+import akka.dispatch.NullMessage
 
 private[akka] trait FaultHandling { this: ActorCell ⇒
 
@@ -157,6 +158,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     try if (a ne null) a.postStop()
     finally try dispatcher.detach(this)
     finally try parent.sendSystemMessage(ChildTerminated(self))
+    finally try parent.tell(NullMessage) // read ScalaDoc of NullMessage to see why
     finally try tellWatchersWeDied(a)
     finally try unwatchWatchedActors(a)
     finally {

@@ -93,7 +93,7 @@ public class JavaFutureTests {
     Throwable exception = new NullPointerException();
     cf.failure(exception);
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-    assertEquals(f.value().get().left().get(), exception);
+    assertEquals(f.value().get().failed().get(), exception);
   }
 
   @Test

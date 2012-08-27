@@ -10,6 +10,7 @@ import scala.concurrent.{ Future, Promise, ExecutionContext, ExecutionContextExe
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 import java.util.concurrent.{ Executor, ExecutorService, ExecutionException, Callable, TimeoutException }
+import scala.util.{ Try, Success, Failure }
 
 /**
  * ExecutionContexts is the Java API for ExecutionContexts
@@ -227,10 +228,10 @@ abstract class OnFailure extends japi.CallbackBridge[Throwable] {
  *
  * Java API
  */
-abstract class OnComplete[-T] extends japi.CallbackBridge[Either[Throwable, T]] {
-  protected final override def internal(value: Either[Throwable, T]): Unit = value match {
-    case Left(t)  ⇒ onComplete(t, null.asInstanceOf[T])
-    case Right(r) ⇒ onComplete(null, r)
+abstract class OnComplete[-T] extends japi.CallbackBridge[Try[T]] {
+  protected final override def internal(value: Try[T]): Unit = value match {
+    case Failure(t) ⇒ onComplete(t, null.asInstanceOf[T])
+    case Success(r) ⇒ onComplete(null, r)
   }
 
   /**

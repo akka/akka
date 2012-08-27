@@ -94,7 +94,7 @@ private[akka] trait Children { this: ActorCell ⇒
     swapChildrenRefs(c, c.shallDie(ref)) || shallDie(ref)
   }
 
-  @tailrec final protected def removeChild(ref: ActorRef): ChildrenContainer = {
+  @tailrec final private def removeChild(ref: ActorRef): ChildrenContainer = {
     val c = childrenRefs
     val n = c.remove(ref)
     if (swapChildrenRefs(c, n)) n
