@@ -44,11 +44,11 @@ abstract class NodeUpSpec
       val unexpected = new AtomicReference[SortedSet[Member]](SortedSet.empty)
       cluster.subscribe(system.actorOf(Props(new Actor {
         def receive = {
-          case MembersChanged(members) ⇒
-            if (members.size != 2 || members.exists(_.status != MemberStatus.Up))
-              unexpected.set(members)
+          case event: MemberEvent ⇒
+            unexpected.set(unexpected.get + event.member)
+          case _: CurrentClusterState ⇒ // ignore
         }
-      })), classOf[MembersChanged])
+      })), classOf[MemberEvent])
       enterBarrier("listener-registered")
 
       runOn(second) {

@@ -68,20 +68,20 @@ abstract class LeaderLeavingSpec
 
           val leavingLatch = TestLatch()
           val exitingLatch = TestLatch()
-          val expectedAddresses = roles.toSet map address
+
           cluster.subscribe(system.actorOf(Props(new Actor {
             def receive = {
-              case MembersChanged(members) ⇒
-                def check(status: MemberStatus): Boolean =
-                  (members.map(_.address) == expectedAddresses &&
-                    members.exists(m ⇒ m.address == oldLeaderAddress && m.status == status))
-                if (check(MemberStatus.Leaving)) leavingLatch.countDown()
-                if (check(MemberStatus.Exiting)) exitingLatch.countDown()
+              case MemberLeft(m) if m.address == oldLeaderAddress ⇒ leavingLatch.countDown()
+              case MemberExited(m) if m.address == oldLeaderAddress ⇒ exitingLatch.countDown()
+              case _ ⇒ // ignore
             }
-          })), classOf[MembersChanged])
+          })), classOf[MemberEvent])
           enterBarrier("registered-listener")
 
           enterBarrier("leader-left")
+
+          val expectedAddresses = roles.toSet map address
+          awaitCond(clusterView.members.map(_.address) == expectedAddresses)
 
           // verify that the LEADER is LEAVING
           leavingLatch.await
