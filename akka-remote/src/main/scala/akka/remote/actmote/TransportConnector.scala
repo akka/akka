@@ -25,6 +25,7 @@ abstract class TransportConnector(val system: ExtendedActorSystem, val provider:
   def responsibleActor: ActorRef
   def responsibleActor_=(actor: ActorRef): Unit
   def address: Address
+  // TODO: Document that all retry logic MUST be in connect
   def connect(remote: Address, responsibleActorForConnection: ActorRef = responsibleActor): Unit
   def shutdown(): Unit
 }
