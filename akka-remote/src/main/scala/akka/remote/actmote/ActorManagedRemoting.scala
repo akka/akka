@@ -59,7 +59,7 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
       headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider, transport, managedRemoteSettings)), HeadActorName)
 
       val timeout = new Timeout(5 seconds)
-      val addressFuture = headActor.ask(Listen)(timeout).mapTo[Address]
+      val addressFuture = headActor.ask(Listen(this))(timeout).mapTo[Address]
 
       this.address = Await.result(addressFuture, timeout.duration)
       notifyListeners(RemoteServerStarted(this))
@@ -87,8 +87,23 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
 
 }
 
+// Cut out
+trait LifeCycleNotificationHelper {
+  def provider: RemoteActorRefProvider
+  def system: ExtendedActorSystem
+  def log: LoggingAdapter
+
+  def useUntrustedMode = provider.remoteSettings.UntrustedMode
+  def logRemoteLifeCycleEvents = provider.remoteSettings.LogRemoteLifeCycleEvents
+
+  def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
+    system.eventStream.publish(message)
+    if (logRemoteLifeCycleEvents) log.log(message.logLevel, "{}", message)
+  }
+}
+
 private[actmote] sealed trait RemotingCommand
-private[actmote] case object Listen
+private[actmote] case class Listen(transport: RemoteTransport)
 // No longer needed, if shutdownClient and restartClient are removed from RemoteTransport API
 //private[actmote] case class ShutdownEndpoint(address: Address) extends RemotingCommand
 //private[actmote] case class RestartEndpoint(address: Address) extends RemotingCommand
@@ -104,24 +119,28 @@ object HeadActor {
 // TODO: HeadActor MUST WATCH his endpoint Actors
 class HeadActor(
   val provider: RemoteActorRefProvider,
-  val transport: TransportConnector,
-  val settings: ActorManagedRemotingSettings) extends Actor {
+  val connector: TransportConnector,
+  val settings: ActorManagedRemotingSettings) extends Actor with LifeCycleNotificationHelper {
 
   import akka.actor.SupervisorStrategy._
   import actmote.TransportConnector.IncomingConnection
   import HeadActor._
 
+  val system = context.system
+  val log = Logging(context.system.eventStream, "HeadActor")
+
   private var address: Address = _
   // Mapping between addresses and endpoint actors. If passive connections are turned off, incoming connections
   // will be not part of this map!
   private val clientTable = scala.collection.mutable.Map[Address, EndpointPolicy]()
+  private var transport: RemoteTransport = _
 
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-    case _: EndpointException ⇒ Restart
+    case _: EndpointException ⇒ Stop
   }
 
   def receive = {
-    case Listen ⇒ sender ! listen
+    case Listen(transport) ⇒ this.transport = transport; sender ! listenAndGetAddress
     // This is not supported as these calls are only coming
     //case ShutdownEndpoint(address) ⇒
     //case RestartEndpoint(address)  ⇒
@@ -149,23 +168,28 @@ class HeadActor(
       if (settings.UsePassiveConnections)
         clientTable += handle.remoteAddress -> Pass(endpoint)
     }
+    case Terminated(endpoint) ⇒
   }
 
-  private def listen = {
-    transport.responsibleActor = self
-    // TODO: rename transport call address to listen, and add startup semanticss
-    address = transport.address
+  private def listenAndGetAddress = {
+    connector.responsibleActor = self
+    // TODO: rename transport call address to listen, and add startup semantics
+    // TODO: also make it async
+    address = connector.address
+    notifyListeners(RemoteServerStarted(transport))
     address
   }
 
   private def createEndpoint(remote: Address, handleOption: Option[TransportConnectorHandle]) = {
-    context.actorOf(Props(new EndpointActor(
+    val endpoint = context.actorOf(Props(new EndpointActor(
       provider,
       address,
       remote,
+      connector,
       transport,
       settings,
       handleOption)))
+    context.watch(endpoint)
   }
 
   // TODO: implement this and make configurable
@@ -173,7 +197,8 @@ class HeadActor(
 
   override def postStop() {
     // TODO: All the children actors are stopped already?
-    transport.shutdown()
+    notifyListeners(RemoteServerShutdown(transport))
+    connector.shutdown()
   }
 
 }
@@ -190,50 +215,75 @@ object EndpointActor {
   case class Handle(handle: TransportConnectorHandle) extends EndpointData
 }
 
-class EndpointException(msg: String) extends Exception(msg)
+class EndpointException(remoteAddress: Address, msg: String, cause: Throwable) extends Exception(msg + "; remoteAddress = " + remoteAddress, cause)
+class EndpointWriteException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
+class EndpointCloseException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
+class EndpointOpenException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 
 // TODO: Error handling (borked connection, etc...), handling closed connections
 class EndpointActor(
   val provider: RemoteActorRefProvider,
   val address: Address,
   val remoteAddress: Address,
-  val transport: TransportConnector,
+  val connector: TransportConnector,
+  val transport: RemoteTransport,
   val settings: ActorManagedRemotingSettings,
   handleOption: Option[TransportConnectorHandle]) extends Actor
   with RemoteMessageDispatchHelper
-  with FSM[EndpointActor.EndpointState, EndpointActor.EndpointData] {
+  with FSM[EndpointActor.EndpointState, EndpointActor.EndpointData]
+  with LifeCycleNotificationHelper
+{
 
   import EndpointActor._
   import actmote.TransportConnector._
 
-  override val log = Logging(context.system.eventStream, "EndpointActor(remote = " + remoteAddress + ")")
+  val system = context.system
 
-  val useUntrustedMode: Boolean = provider.remoteSettings.UntrustedMode
+  override val log = Logging(context.system.eventStream, "EndpointActor(remote = " + remoteAddress + ")")
+  val isServer = handleOption.isDefined
+
+  val queueLimit: Int = 10 //TODO: read from config
+
+  def notifyError(reason: Throwable) {
+    if (isServer){
+      notifyListeners(RemoteServerError(reason, transport))
+    } else {
+      notifyListeners(RemoteClientError(reason, transport, remoteAddress))
+    }
+  }
 
   handleOption match {
     case Some(handle) ⇒ {
       startWith(Connected, Handle(handle))
       registerReadCallback(handle)
+      notifyListeners(RemoteServerClientConnected(transport, Some(remoteAddress)))
     }
     case None ⇒ {
+      notifyListeners(RemoteClientStarted(transport, remoteAddress))
       startWith(WaitConnect, Transient(Nil))
       self ! AttemptConnect
     }
   }
 
-  // TODO: Limit queue
+
   when(WaitConnect) {
     case Event(AttemptConnect, _)                   ⇒ attemptConnect(); stay using stateData
     // TODO: log send if it is configured
-    case Event(s @ Send(_, _, _), Transient(queue)) ⇒ stay using Transient(s :: queue)
+    case Event(s @ Send(msg, _, _), Transient(queue)) ⇒ {
+      if (queue.size >= queueLimit) {
+        log.warning("Endpoint queue is full; dropping message: {}", msg)
+        system.deadLetters ! msg
+        stay using Transient(queue)
+      } else {
+        stay using Transient(s :: queue)
+      }
+    }
     case Event(ConnectionInitialized(handle), _)    ⇒ goto(Connected) using Handle(handle)
-    case Event(ConnectionFailed(reason), _) ⇒ {
+    case Event(ConnectionFailed(reason), Transient(queue)) ⇒ {
       // Give up
-      //TODO: log reason
-      //TODO: send messages to deadLetters
-      //TODO: limit retries
-      attemptConnect()
-      stay using stateData
+      queue.reverse.foreach { case Send(message, _, _) => system.deadLetters ! message }
+      notifyError(reason)
+      throw new EndpointOpenException(remoteAddress, "falied to connect", reason)
     }
   }
 
@@ -242,6 +292,7 @@ class EndpointActor(
     case WaitConnect -> Connected ⇒ (stateData, nextStateData) match {
       case (Transient(queue), Handle(handle)) ⇒ {
         registerReadCallback(handle)
+        notifyListeners(RemoteClientConnected(transport, remoteAddress))
         queue.reverse.foreach { case Send(message, senderOption, recipient) ⇒ handle.write(message, senderOption, recipient) }
       }
       case _ ⇒ //This should never happen
@@ -250,22 +301,39 @@ class EndpointActor(
 
   when(Connected) {
     case Event(MessageArrived(msg), handleState)                                 ⇒ receiveMessage(msg); stay using handleState
-    case Event(Send(msg, senderOption, recipient), handleState @ Handle(handle)) ⇒ handle.write(msg, senderOption, recipient); stay using handleState
+    case Event(Send(msg, senderOption, recipient), handleState @ Handle(handle)) ⇒ try {
+      handle.write(msg, senderOption, recipient); stay using handleState
+    } catch {
+      case NonFatal(reason) => {
+        notifyError(reason)
+        throw new EndpointWriteException(remoteAddress, "failed to write to transport", reason)
+      }
+    }
   }
 
   onTermination {
     case StopEvent(_, Connected, Handle(handle)) ⇒ try {
       handle.close()
+      if (!isServer) {
+        notifyListeners(RemoteClientDisconnected(transport, remoteAddress))
+        notifyListeners(RemoteClientShutdown(transport, remoteAddress))
+      }
     } catch {
-      case NonFatal(e) ⇒ log.error(e, "failure while shutting down [{}]", remoteAddress)
+      case NonFatal(reason) ⇒ {
+        notifyError(reason)
+        log.error(reason, "failure while shutting down [{}]", remoteAddress)
+      }
     }
   }
 
   private def attemptConnect() {
     try {
-      transport.connect(remoteAddress, self)
+      connector.connect(remoteAddress, self)
     } catch {
-      case e: Exception ⇒ throw new RemoteTransportException("Unexpected error while trying to connect to " + remoteAddress, e)
+      case NonFatal(reason) ⇒ {
+        notifyError(reason)
+        throw new EndpointOpenException(remoteAddress, "failed to connect", reason)
+      }
     }
   }
 
