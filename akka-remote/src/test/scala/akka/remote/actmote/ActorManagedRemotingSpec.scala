@@ -19,7 +19,7 @@ akka {
   }
   remote.managed {
     connector = "akka.remote.actmote.DummyTransportConnector"
-    use-passive-connections = false
+    use-passive-connections = true
   }
   remote.netty {
     hostname = localhost
@@ -85,12 +85,13 @@ akka {
       awaitCond(outboundConnectionPresent)
     }
 
-    "be able to cleanly close open connections" in withCleanTransport {
+    // Shutting down client connections are no longer supported!!
+    /*"be able to cleanly close open connections" in withCleanTransport {
       remoteReference ! "discard"
       awaitCond(outboundConnectionPresent)
       transportUnderTest.shutdownClientConnection(remoteAddress)
       awaitCond(!outboundConnectionPresent)
-    }
+    }*/
 
     "shut down the underlying transport provider properly when shutting down" in {
       transportUnderTest.start
@@ -147,7 +148,7 @@ akka {
       assert(connectAttempts === 1)
     }
 
-    //TODO: connector must handle the timeouts
+    //TODO: connector must handle the timeouts and reconnects
     /*"retry connecting if it is failed first" in withCleanTransport {
       DummyTransportMedium.reject(transportUnderTest.address)
       remoteReference ! "discard"
@@ -166,7 +167,7 @@ akka {
         case SendAttempt("discard", localAddress, remoteAddress) ⇒ true
         case _ ⇒ false
       }
-    }*/
+    }
 
     "retry connecting if it timed out first" in withCleanTransport {
       DummyTransportMedium.silentDrop(transportUnderTest.address)
@@ -186,7 +187,7 @@ akka {
         case SendAttempt("discard", localAddress, remoteAddress) ⇒ true
         case _ ⇒ false
       }
-    }
+    }*/
 
     // TEST watches
 
