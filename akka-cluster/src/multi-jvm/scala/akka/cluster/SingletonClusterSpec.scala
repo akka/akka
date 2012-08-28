@@ -33,7 +33,7 @@ class SingletonClusterWithAccrualFailureDetectorMultiJvmNode2 extends SingletonC
 
 abstract class SingletonClusterSpec
   extends MultiNodeSpec(SingletonClusterMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec with FailureDetectorStrategy {
 
   import SingletonClusterMultiJvmSpec._
 

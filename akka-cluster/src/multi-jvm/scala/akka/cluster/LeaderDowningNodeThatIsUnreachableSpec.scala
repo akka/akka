@@ -35,7 +35,7 @@ class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode4 
 
 abstract class LeaderDowningNodeThatIsUnreachableSpec
   extends MultiNodeSpec(LeaderDowningNodeThatIsUnreachableMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec with FailureDetectorStrategy {
 
   import LeaderDowningNodeThatIsUnreachableMultiJvmSpec._
 

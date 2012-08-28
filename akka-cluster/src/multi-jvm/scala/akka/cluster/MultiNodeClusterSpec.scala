@@ -38,7 +38,7 @@ object MultiNodeClusterSpec {
     """)
 }
 
-trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends Suite { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
@@ -90,11 +90,21 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   /**
    * The cluster node instance. Needs to be lazily created.
    */
-  private lazy val clusterNode = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector) {
-    override def seedNodes: IndexedSeq[Address] = {
-      val testSeedNodes = MultiNodeClusterSpec.this.seedNodes
-      if (testSeedNodes.isEmpty) super.seedNodes
-      else testSeedNodes map address
+  private lazy val clusterNode = this match {
+    case x: FailureDetectorStrategy ⇒ createTestCluster(x.failureDetector)
+    case _ if seedNodes.nonEmpty ⇒
+      createTestCluster(new AccrualFailureDetector(system, new ClusterSettings(system.settings.config, system.name)))
+    case _ ⇒ Cluster(system)
+
+  }
+
+  private def createTestCluster(failureDetector: FailureDetector): Cluster = {
+    new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector) {
+      override def seedNodes: IndexedSeq[Address] = {
+        val testSeedNodes = MultiNodeClusterSpec.this.seedNodes
+        if (testSeedNodes.isEmpty) super.seedNodes
+        else testSeedNodes map address
+      }
     }
   }
 
@@ -215,3 +225,4 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   def roleName(addr: Address): Option[RoleName] = roles.find(address(_) == addr)
 
 }
+

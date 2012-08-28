@@ -33,6 +33,7 @@ class TransitionMultiJvmNode3 extends TransitionSpec with FailureDetectorPuppetS
 abstract class TransitionSpec
   extends MultiNodeSpec(TransitionMultiJvmSpec)
   with MultiNodeClusterSpec
+  with FailureDetectorStrategy
   with ImplicitSender {
 
   import TransitionMultiJvmSpec._

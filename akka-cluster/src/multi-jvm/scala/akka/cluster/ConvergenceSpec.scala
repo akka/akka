@@ -35,7 +35,7 @@ class ConvergenceWithAccrualFailureDetectorMultiJvmNode4 extends ConvergenceSpec
 
 abstract class ConvergenceSpec
   extends MultiNodeSpec(ConvergenceMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec with FailureDetectorStrategy {
 
   import ConvergenceMultiJvmSpec._
 

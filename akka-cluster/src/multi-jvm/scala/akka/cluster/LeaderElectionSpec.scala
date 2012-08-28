@@ -33,7 +33,7 @@ class LeaderElectionWithAccrualFailureDetectorMultiJvmNode5 extends LeaderElecti
 
 abstract class LeaderElectionSpec
   extends MultiNodeSpec(LeaderElectionMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec with FailureDetectorStrategy {
 
   import LeaderElectionMultiJvmSpec._
 

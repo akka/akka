@@ -20,7 +20,6 @@ import akka.testkit._
 import scala.concurrent.util.duration._
 import akka.cluster.MultiNodeClusterSpec
 import com.typesafe.config.ConfigFactory
-import akka.cluster.FailureDetectorPuppetStrategy
 import akka.cluster.Cluster
 
 object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
@@ -50,10 +49,10 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
 
 }
 
-class ClusterRoundRobinRoutedActorMultiJvmNode1 extends ClusterRoundRobinRoutedActorSpec with FailureDetectorPuppetStrategy
-class ClusterRoundRobinRoutedActorMultiJvmNode2 extends ClusterRoundRobinRoutedActorSpec with FailureDetectorPuppetStrategy
-class ClusterRoundRobinRoutedActorMultiJvmNode3 extends ClusterRoundRobinRoutedActorSpec with FailureDetectorPuppetStrategy
-class ClusterRoundRobinRoutedActorMultiJvmNode4 extends ClusterRoundRobinRoutedActorSpec with FailureDetectorPuppetStrategy
+class ClusterRoundRobinRoutedActorMultiJvmNode1 extends ClusterRoundRobinRoutedActorSpec
+class ClusterRoundRobinRoutedActorMultiJvmNode2 extends ClusterRoundRobinRoutedActorSpec
+class ClusterRoundRobinRoutedActorMultiJvmNode3 extends ClusterRoundRobinRoutedActorSpec
+class ClusterRoundRobinRoutedActorMultiJvmNode4 extends ClusterRoundRobinRoutedActorSpec
 
 abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRoundRobinRoutedActorMultiJvmSpec)
   with MultiNodeClusterSpec
@@ -62,9 +61,6 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
   // sorted in the order used by the cluster
   lazy val sortedRoles = Seq(first, second, third, fourth).sorted
-
-  // FIXME make this use of Cluster(system) more easy to use in tests
-  override def cluster: Cluster = Cluster(system)
 
   "A cluster router configured with a RoundRobin router" must {
     "start cluster" taggedAs LongRunningTest in {

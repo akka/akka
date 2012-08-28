@@ -30,7 +30,7 @@ class ClientDowningNodeThatIsUpWithAccrualFailureDetectorMultiJvmNode4 extends C
 
 abstract class ClientDowningNodeThatIsUpSpec
   extends MultiNodeSpec(ClientDowningNodeThatIsUpMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec with FailureDetectorStrategy {
 
   import ClientDowningNodeThatIsUpMultiJvmSpec._
 

@@ -30,7 +30,7 @@ class ClientDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode4 
 
 abstract class ClientDowningNodeThatIsUnreachableSpec
   extends MultiNodeSpec(ClientDowningNodeThatIsUnreachableMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec with FailureDetectorStrategy {
 
   import ClientDowningNodeThatIsUnreachableMultiJvmSpec._
 

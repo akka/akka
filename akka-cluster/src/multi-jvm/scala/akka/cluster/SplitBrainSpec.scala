@@ -43,7 +43,7 @@ class SplitBrainWithAccrualFailureDetectorMultiJvmNode5 extends SplitBrainSpec w
 
 abstract class SplitBrainSpec
   extends MultiNodeSpec(SplitBrainMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec with FailureDetectorStrategy {
 
   import SplitBrainMultiJvmSpec._
 

@@ -35,7 +35,7 @@ class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode4 exten
 
 abstract class UnreachableNodeRejoinsClusterSpec
   extends MultiNodeSpec(UnreachableNodeRejoinsClusterMultiJvmSpec)
-  with MultiNodeClusterSpec {
+  with MultiNodeClusterSpec with FailureDetectorStrategy {
   import UnreachableNodeRejoinsClusterMultiJvmSpec._
 
   def allBut(role: RoleName, roles: Seq[RoleName] = roles): Seq[RoleName] = {
