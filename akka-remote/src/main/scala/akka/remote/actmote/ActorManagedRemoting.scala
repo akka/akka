@@ -175,7 +175,7 @@ class HeadActor(
     case Listen(transport) ⇒ {
       this.transport = transport
       startupFuture = sender
-      listenAndGetAddress
+      connector.listen(self)
     }
 
     case ConnectorInitialized(address) => {
@@ -217,7 +217,6 @@ class HeadActor(
 
     case IncomingConnection(handle) ⇒ {
       val endpoint = createEndpoint(handle.remoteAddress, Some(handle))
-      handle.responsibleActor = endpoint
       if (settings.UsePassiveConnections) {
         endpoints.registerEndpoint(address, endpoint)
       }
@@ -229,11 +228,6 @@ class HeadActor(
       //endpoints.markFailed(endpoint, 0)
       endpoints.remove(endpoint)
     }
-  }
-
-  private def listenAndGetAddress {
-    connector.responsibleActor = self
-    connector.listen
   }
 
   private def createEndpoint(remote: Address, handleOption: Option[TransportConnectorHandle]) = {
@@ -316,7 +310,7 @@ class EndpointActor(
   handleOption match {
     case Some(handle) ⇒ {
       startWith(Connected, Handle(handle))
-      registerAndOpen(handle)
+      handle.open(self)
       notifyListeners(RemoteServerClientConnected(transport, Some(remoteAddress)))
     }
     case None ⇒ {
@@ -351,7 +345,7 @@ class EndpointActor(
     // Send messages that were queued up during connection attempts
     case WaitConnect -> Connected ⇒ (stateData, nextStateData) match {
       case (Transient(queue), Handle(handle)) ⇒ {
-        registerAndOpen(handle)
+        handle.open(self)
         notifyListeners(RemoteClientConnected(transport, remoteAddress))
         queue.reverse.foreach { case Send(message, senderOption, recipient) ⇒ handle.write(message, senderOption, recipient) }
       }
@@ -395,11 +389,6 @@ class EndpointActor(
         throw new EndpointOpenException(remoteAddress, "failed to connect", reason)
       }
     }
-  }
-
-  private def registerAndOpen(handle: TransportConnectorHandle) {
-    handle.responsibleActor = self
-    handle.open()
   }
 
 }

@@ -28,7 +28,7 @@ object TransportConnector {
    * === More specifically this message ===
    *  - is allowed to be sent only after [[akka.remote.actmote.TransportConnector.listen]] has been already called and the startup has been successful
    *  - must be sent before any [[akka.remote.actmote.TransportConnector.ConnectionInitialized]], [[akka.remote.actmote.TransportConnector.ConnectionFailed]], [[akka.remote.actmote.TransportConnector.Disconnected]] or [[akka.remote.actmote.TransportConnector.MessageArrived]] has been sent
-   *  - is not allowed to be ''sent'' after [[akka.remote.actmote.TransportConnector.shutdown()]] has been called, although it might be received'' after the call.
+   *  - is not allowed to be ''sent'' after [[akka.remote.actmote.TransportConnector.shutdown()]] has been called, although it might be ''received'' after the call.
    *  - must be sent after the Connector successfully finished initialization and has been bound to a local address
    *  - must be sent at most once between calls [[akka.remote.actmote.TransportConnector.listen]] and [[akka.remote.actmote.TransportConnector.shutdown()]]
    *  - must be only sent to the responsible actor of the connector
@@ -132,7 +132,7 @@ object TransportConnector {
  * an underlying transport mechanism, creating connections and returning [[akka.remote.actmote.TransportConnectorHandle]]
  * objects representing the created communication channels.
  *
- * Connectors need a responsible actor to whom their forward lifecycle messages. This must be set before any other
+ * Connectors need a responsible actor to whom their forward lifecycle messages. This must be set by calling listen() before any other
  * operation is invoked on the connector.
  *
  * Most of the calls are asynchronous and their behavior and assumptions regarding the invoker
@@ -144,9 +144,8 @@ object TransportConnector {
  *  - A !→ B -- if A happens, B cannot happen afterwards
  *
  * === Startup ===
- *  - (setting responsibleActor) ← (any operation on the Connector except shutdown())
- *  - (call to listen()) → ((exception is thrown) || (ConnectorInitialized(address A) is sent) || (ConnectorFailed is sent))
- *  - (call to listen()) ← (call to connect())
+ *  - (call to listen(actor A)) → ((exception is thrown) || (ConnectorInitialized(address A) is sent to A) || (ConnectorFailed is sent to A))
+ *  - (call to listen(actor A)) ← (call to connect())
  *  - (ConnectorFailed is sent) !→ (any other operation on the connector except shutdown())
  *
  * === Connecting outbound ===
@@ -168,48 +167,34 @@ object TransportConnector {
 abstract class TransportConnector(val system: ExtendedActorSystem, val provider: RemoteActorRefProvider) {
 
   /**
-   * Returns the actor responsible for handling the lifecycle events of the Connector
-   * @return ActorRef to the responsible actor
-   */
-  def responsibleActor: ActorRef
-
-  /**
-   * Sets the actor responsible for handling the lifecycle events of the Connector
-   * @param actor the actor that will receive the lifecycle events from the connector
-   */
-  def responsibleActor_=(actor: ActorRef): Unit
-
-  /**
    * Asynchronously attempts to start up the transport layer wrapped by the connector and sends
    * the bound local address after success to the responsible actor.
    *
    * === More specifically ===
-   *  - listen() is not allowed to be called before the responsible actor is set
    *  - listen() is allowed to be called at most once until a [[akka.remote.actmote.TransportConnector.shutdown()]] is called
    *  - after the call to listen() exactly one of the following events must happen and must happen exactly once:
    *    - initialization fails and an exception is thrown to the caller
    *    - initialization succeeds and a ConnectorInitialized message is eventually sent to the responsible actor containing the locally bound address
    *    - initialization fails and a ConnectorFailed message is eventually sent to the responsible actor containing a Throwable
    */
-  def listen: Unit
+  def listen(responsibleActor: ActorRef): Unit
 
   /**
    * Asynchronously attempts to connect to the specified remote address and sends the handle representing the channel
-   * after success to the actor provided as a parameter. If this parameter is not specified the responsible actor for
-   * the connector is used.
+   * after success to the actor provided as a parameter.
    *
    * === More specifically ===
    *  - connect() is only allowed to be called after listen() was called, and a [[akka.remote.actmote.TransportConnector.ConnectorInitialized]] message has been received and before shutdown() was called
    *  - after the call to connect exactly one of the following events must happen and must happen exactly once:
    *    - connection fails and an exception is thrown to the caller
-   *    - connection succeeds and a ConnectionInitialized message is eventually sent to the specified actor (or the responsible actor for the connector if no actor is specified) containing the handle for the connection
-   *    - connection fails and a ConnectionFailed message is eventually sent to the specified actor (or the responsible actor for the connector if no actor is specified) containing the handle for the connection
+   *    - connection succeeds and a ConnectionInitialized message is eventually sent to the specified actor
+   *    - connection fails and a ConnectionFailed message is eventually sent to the specified actor
    *  - the caller of connect() can safely assume, that the connection is potentially unrecoverable if it indicates a failure. In other words, the caller can safely assume
    *  that the connector handles retries and other reasonable error handling mechanisms, so retries on the caller side will most likely fail and therefore unnecessary.
    * @param remote Remote address to be connected to
    * @param responsibleActorForConnection Actor that will receive the lifecycle events for the connection
    */
-  def connect(remote: Address, responsibleActorForConnection: ActorRef = responsibleActor): Unit
+  def connect(remote: Address, responsibleActorForConnection: ActorRef): Unit
 
   /**
    * Shuts down the transport layer wrapped by the connector and releases all the corresponding resources.
@@ -228,8 +213,8 @@ abstract class TransportConnector(val system: ExtendedActorSystem, val provider:
  * [[akka.remote.actmote.ActorManagedRemoting]]. Handles are responsible for providing an API for sending
  * and receiving from the underlying channel and handle some lifecycle messages, notably Disconnect.
  *
- * Handles need a responsible actor to whom their forward lifecycle messages. This must be set before any other
- * operation is invoked on the connector.
+ * Handles need a responsible actor to whom their forward lifecycle messages. This must be set by calling open() before any other
+ * operation (except close()) is invoked on the connector.
  *
  * Most of the calls are asynchronous and their behavior and assumptions regarding the invoker
  * are specified below.
@@ -245,9 +230,8 @@ abstract class TransportConnector(val system: ExtendedActorSystem, val provider:
  *  - (IncomingConnection(handle H) is sent to the responsible actor of the corresponding connector) ← (any other operation on H)
  *
  * === Initialization ===
- *  - (setting responsibleActor) ← (call to open())
- *  - (call to open()) ← (any operation on the handle except close())
- *  - (call to open()) ← (MessageArrived(message M) is sent to the responsible actor)
+ *  - (call to open(actor A)) ← (any operation on the handle except close())
+ *  - (call to open(actor A)) ← (MessageArrived(message M) is sent to the responsible actor A)
  *
  * '''NOTE: In rare cases the reception of ConnectionFailed() may happen before the actor called open().'''
  *
@@ -264,18 +248,6 @@ trait TransportConnectorHandle {
   import akka.remote.RemoteActorRef
 
   /**
-   * Returns the actor responsible for handling the lifecycle events of the Handle
-   * @return the responsible actor
-   */
-  def responsibleActor: ActorRef
-
-  /**
-   * Sets the actor responsible for handling the lifecycle events of the Handle
-   * @param actor the actor that will receive the lifecycle events from the handle
-   */
-  def responsibleActor_=(actor: ActorRef): Unit
-
-  /**
    * Returns the address of the remote endpoint of the channel this handle represents. This call is synchronous and
    * can be assumed to always succeed.
    * @return address of the remote endpoint
@@ -290,13 +262,12 @@ trait TransportConnectorHandle {
    * may indicate failure by sending a ConnectionFailed message, or it may handle it a transport specific way.
    *
    * === More specifically ===
-   *  - open() is only allowed to be called after the responsible actor has been set
    *  - after close() have been called, it is not allowed to call open()
    *  - no write() calls are allowed on the handle before open() is called
    *  - no MessageArrived messages are sent before open() is called. Any messages must be buffered by the connector
    *    until open() is called.
    */
-  def open()
+  def open(responsibleActor: ActorRef)
 
   /**
    * Asynchronously sends the specified message to a remote actor. The sender actor might be specified or omitted.
