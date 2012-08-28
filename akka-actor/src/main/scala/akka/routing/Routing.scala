@@ -247,6 +247,43 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
     if (resizer.isEmpty) registerRoutees(createRoutees(props, nrOfInstances, routees))
 
   /**
+   * Adjust number of routees by creating new routees and register them if
+   * `nrOfInstances` is positive, otherwise if negative unregister
+   * routees and send [[akka.actor.PoisonPill]] after the specified delay.
+   * The reason for the delay is to give concurrent messages a chance to be
+   * placed in mailbox before sending PoisonPill.
+   */
+  def adjustRoutees(props: Props, nrOfInstances: Int, stopDelay: Duration): Unit = {
+    if (nrOfInstances > 0) {
+      registerRoutees(createRoutees(props, nrOfInstances, Nil))
+    } else if (nrOfInstances < 0) {
+      val currentRoutees = routees
+      val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length + nrOfInstances)
+      unregisterRoutees(abandon)
+      delayedStop(context.system.scheduler, abandon, stopDelay)
+    }
+  }
+
+  /**
+   * Give concurrent messages a chance to be placed in mailbox before
+   * sending PoisonPill.
+   */
+  protected def delayedStop(
+    scheduler: Scheduler,
+    abandon: IndexedSeq[ActorRef], stopDelay: Duration): Unit = {
+    if (abandon.nonEmpty) {
+      if (stopDelay <= Duration.Zero) {
+        abandon foreach (_ ! PoisonPill)
+      } else {
+        import context.dispatcher
+        scheduler.scheduleOnce(stopDelay) {
+          abandon foreach (_ ! PoisonPill)
+        }
+      }
+    }
+  }
+
+  /**
    * All routees of the router
    */
   def routees: IndexedSeq[ActorRef] = routedCell.routees
@@ -1218,31 +1255,7 @@ case class DefaultResizer(
     val currentRoutees = routeeProvider.routees
     val requestedCapacity = capacity(currentRoutees)
 
-    if (requestedCapacity > 0) {
-      val newRoutees = routeeProvider.createRoutees(props, requestedCapacity, Nil)
-      routeeProvider.registerRoutees(newRoutees)
-    } else if (requestedCapacity < 0) {
-      val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length + requestedCapacity)
-      routeeProvider.unregisterRoutees(abandon)
-      delayedStop(routeeProvider.context.system.scheduler, abandon)(routeeProvider.context.dispatcher)
-    }
-  }
-
-  /**
-   * Give concurrent messages a chance to be placed in mailbox before
-   * sending PoisonPill.
-   */
-  protected def delayedStop(scheduler: Scheduler,
-                            abandon: IndexedSeq[ActorRef])(implicit executor: ExecutionContext): Unit = {
-    if (abandon.nonEmpty) {
-      if (stopDelay <= Duration.Zero) {
-        abandon foreach (_ ! PoisonPill)
-      } else {
-        scheduler.scheduleOnce(stopDelay) {
-          abandon foreach (_ ! PoisonPill)
-        }
-      }
-    }
+    routeeProvider.adjustRoutees(props, requestedCapacity, stopDelay)
   }
 
   /**
