@@ -15,7 +15,6 @@ import akka.testkit.ImplicitSender
 import akka.actor.ExtendedActorSystem
 import akka.actor.Address
 import akka.cluster.InternalClusterAction._
-import akka.remote.RemoteActorRefProvider
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName
 
@@ -27,7 +26,7 @@ object ClusterSpec {
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
       publish-stats-interval = 0 s # always, when it happens
     }
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.netty.port = 0
     # akka.loglevel = DEBUG
     """
@@ -39,7 +38,7 @@ object ClusterSpec {
 class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   import ClusterSpec._
 
-  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address
+  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[ClusterActorRefProvider].transport.address
 
   val failureDetector = new FailureDetectorPuppet(system)
 

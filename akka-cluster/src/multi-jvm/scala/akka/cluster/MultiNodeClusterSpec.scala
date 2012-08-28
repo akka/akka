@@ -21,6 +21,7 @@ import akka.actor.RootActorPath
 
 object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
+    akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
       auto-join                         = on
       auto-down                         = off

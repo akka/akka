@@ -73,15 +73,13 @@ class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetec
 
   import ClusterEvent._
 
-  if (!system.provider.isInstanceOf[RemoteActorRefProvider])
-    throw new ConfigurationException("ActorSystem[" + system + "] needs to have a 'RemoteActorRefProvider' enabled in the configuration")
-
-  private val remote: RemoteActorRefProvider = system.provider.asInstanceOf[RemoteActorRefProvider]
+  if (!system.provider.isInstanceOf[ClusterActorRefProvider])
+    throw new ConfigurationException("ActorSystem[" + system + "] needs to have a 'ClusterActorRefProvider' enabled in the configuration")
 
   val settings = new ClusterSettings(system.settings.config, system.name)
   import settings._
 
-  val selfAddress = remote.transport.address
+  val selfAddress = system.provider.asInstanceOf[ClusterActorRefProvider].transport.address
 
   private val _isRunning = new AtomicBoolean(true)
   private val log = Logging(system, "Cluster")
