@@ -112,11 +112,13 @@ object TransportConnector {
   /**
    * Sent to the responsible actor of a [[akka.remote.actmote.TransportConnectorHandle]] after a connection was closed
    * by the remote endpoint of the connection. It is the responsibility of the connector to detect disconnects when
-   * using a connectionless transport (e.g UDP).
+   * using a connectionless transport (e.g UDP). Disconnect is a best-effort service, it is not guaranteed that
+   * a Disconnect arrives for every possible channel close scenario.
    *
    * === More specifically this message ===
    *  - must be sent to the actor responsible for the handle
-   *  - must be sent shortly after the remote endpoint closed the connection
+   *  - must be sent shortly after the remote endpoint has been successfully recognized to be closed
+   *  - is not guaranteed to be sent after the remote endpoint closed its corresponding shandle
    * @param handle
    */
   case class Disconnected(handle: TransportConnectorHandle) extends ConnectorEvent
@@ -131,13 +133,13 @@ object TransportConnector {
  * Connectors need a responsible actor to whom their forward lifecycle messages. This must be set before any other
  * operation is invoked on the connector.
  *
- * Most of the calls are asynchronous and their behavior and assumptions concerning the invoker
+ * Most of the calls are asynchronous and their behavior and assumptions regarding the invoker
  * are specified below.
  *
  * The overall behavior is specified by the following notation
  *  - A → B -- if A happens, then eventually B happens
  *  - A ← B -- if B happens, then A must have happened some time before B
- *  - A !→ -- if A happens, B cannot happen afterwards
+ *  - A !→ B -- if A happens, B cannot happen afterwards
  *
  * === Startup ===
  *  - (setting responsibleActor) ← (any operation on the Connector except shutdown())
@@ -222,18 +224,18 @@ abstract class TransportConnector(val system: ExtendedActorSystem, val provider:
 /**
  * An SPI layer for abstracting communication channels created by [[akka.remote.actmote.TransportConnector]] to be used by
  * [[akka.remote.actmote.ActorManagedRemoting]]. Handles are responsible for providing an API for sending
- * and receiving from the underlying channel and handle some lifecylce messages, notably Disconnect.
+ * and receiving from the underlying channel and handle some lifecycle messages, notably Disconnect.
  *
  * Handles need a responsible actor to whom their forward lifecycle messages. This must be set before any other
  * operation is invoked on the connector.
  *
- * Most of the calls are asynchronous and their behavior and assumptions concerning the invoker
+ * Most of the calls are asynchronous and their behavior and assumptions regarding the invoker
  * are specified below.
  *
  * The overall behavior is specified by the following notation
  *  - A → B -- if A happens, then eventually B happens
  *  - A ← B -- if B happens, then A must have happened some time before B
- *  - A !→ -- if A happens, B cannot happen afterwards
+ *  - A !→ B -- if A happens, B cannot happen afterwards
  *
  * === Accepting outbound and inbound connection ===
  *  - (ConnectionInitialized(handle H) is sent to the actor specified in [[akka.remote.actmote.TransportConnector.connect()]]) ← (any other operation on H)
@@ -245,7 +247,7 @@ abstract class TransportConnector(val system: ExtendedActorSystem, val provider:
  *  - (call to open()) ← (any operation on the handle except close())
  *  - (call to open()) ← (MessageArrived(message M) is sent to the responsible actor)
  *
- * '''NOTE: In rare cases the reception of ConnectionFailed() happens before the actor even called stop.'''
+ * '''NOTE: In rare cases the reception of ConnectionFailed() may happen before the actor called open().'''
  *
  * === Disconnecting and failures ===
  *  - (Disconnect is sent) !→ (any operation on the handle except close())
@@ -281,7 +283,7 @@ trait TransportConnectorHandle {
   // TODO: fire off a Future when everything is ready on the handle
   /**
    * Notifies the [[akka.remote.actmote.TransportConnector]] that the responsibleActor is set on the handle, and the
-   * actor is ready to receive events. If the handle represents an inbound connection it is the responsibility of
+   * actor is ready to receive events. If the handle represents an inbound channel it is the responsibility of
    * the connector to buffer arriving messages until the handle is opened. If the message buffer gets full, the Connector
    * may indicate failure by sending a ConnectionFailed message, or it may handle it a transport specific way.
    *
@@ -302,7 +304,7 @@ trait TransportConnectorHandle {
    *  - write() is only allowed after open() has been called
    *  - after calling write(message M) the connector eventually ''may'' deliver the message to the remote endpoint
    *    and a MessageArrived(M) event is sent to its responsible actor.
-   * - for any two writes, write(A) and then write(B), exactly one of the following events will happen
+   *  - for any two writes, write(A) and then write(B), exactly one of the following events will happen
    *   - no message is received
    *   - A is received
    *   - B is received
