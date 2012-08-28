@@ -66,23 +66,25 @@ class ClusterRouteeProvider(_context: ActorContext, _resizer: Option[Resizer])
   // need this counter as instance variable since Resizer may call createRoutees several times
   private val childNameCounter = new AtomicInteger
 
-  override def createRoutees(props: Props, nrOfInstances: Int, _routees: Iterable[String]): IndexedSeq[ActorRef] = {
+  override def registerRouteesFor(paths: Iterable[String]): Unit =
+    throw new ConfigurationException("Cluster deployment can not be combined with routees for [%s]"
+      format context.self.path.toString)
+
+  override def createRoutees(props: Props, nrOfInstances: Int): Unit = {
     val nodes = upNodes
-    if (_routees.nonEmpty) {
-      throw new ConfigurationException("Cluster deployment can not be combined with routees for [%s]"
-        format context.self.path.toString)
-    } else if (nodes.isEmpty) {
+    if (nodes.isEmpty) {
       IndexedSeq.empty
     } else {
       val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
       // FIXME We could count number of routees per node and select nodes with least routees first
       val nodesIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
-      IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
+      val refs = IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
         val name = "c" + childNameCounter.incrementAndGet
         val deploy = Deploy("", ConfigFactory.empty(), props.routerConfig, RemoteScope(nodesIter.next))
         impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
           systemService = false, Some(deploy), lookupDeploy = false, async = false)
       })
+      registerRoutees(refs)
     }
   }
 

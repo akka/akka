@@ -96,7 +96,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
    * Not thread safe, but intended to be called from protected points, such as
    * `RouterConfig.createRoute` and `Resizer.resize`
    */
-  private[akka] def addRoutees(newRoutees: IndexedSeq[ActorRef]): Unit = {
+  private[akka] def addRoutees(newRoutees: Iterable[ActorRef]): Unit = {
     _routees = _routees ++ newRoutees
     // subscribe to Terminated messages for all route destinations, to be handled by Router actor
     newRoutees foreach watch
@@ -212,7 +212,7 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
    * Not thread safe, but intended to be called from protected points, such as
    * `RouterConfig.createRoute` and `Resizer.resize`.
    */
-  def registerRoutees(routees: IndexedSeq[ActorRef]): Unit = routedCell.addRoutees(routees)
+  def registerRoutees(routees: Iterable[ActorRef]): Unit = routedCell.addRoutees(routees)
 
   /**
    * Adds the routees to the router.
@@ -234,31 +234,38 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
    */
   def unregisterRoutees(routees: IndexedSeq[ActorRef]): Unit = routedCell.removeRoutees(routees)
 
-  def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
-    (nrOfInstances, routees) match {
-      case (x, Nil) if x <= 0 ⇒
-        throw new IllegalArgumentException(
-          "Must specify nrOfInstances or routees for [%s]" format context.self.path.toString)
-      case (x, Nil) ⇒ (1 to x).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
-      case (_, xs)  ⇒ xs.map(context.actorFor(_))(scala.collection.breakOut)
-    }
-
-  def createAndRegisterRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): Unit =
-    if (resizer.isEmpty) registerRoutees(createRoutees(props, nrOfInstances, routees))
+  /**
+   * Looks up routes with specified paths and registers them.
+   */
+  def registerRouteesFor(paths: Iterable[String]): Unit = {
+    val routees = paths.map(context.actorFor(_))(scala.collection.breakOut)
+    registerRoutees(routees)
+  }
 
   /**
-   * Adjust number of routees by creating new routees and register them if
-   * `nrOfInstances` is positive, otherwise if negative unregister
-   * routees and send [[akka.actor.PoisonPill]] after the specified delay.
+   * Creates new routees from specified `Props` and registers them.
+   */
+  def createRoutees(props: Props, nrOfInstances: Int): Unit = {
+    if (nrOfInstances <= 0) throw new IllegalArgumentException(
+      "Must specify nrOfInstances or routees for [%s]" format context.self.path.toString)
+    else {
+      val routees = (1 to nrOfInstances).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
+      registerRoutees(routees)
+    }
+  }
+
+  /**
+   * Remove specified number of routees by unregister them
+   * and sending [[akka.actor.PoisonPill]] after the specified delay.
    * The reason for the delay is to give concurrent messages a chance to be
    * placed in mailbox before sending PoisonPill.
    */
-  def adjustRoutees(props: Props, nrOfInstances: Int, stopDelay: Duration): Unit = {
-    if (nrOfInstances > 0) {
-      registerRoutees(createRoutees(props, nrOfInstances, Nil))
-    } else if (nrOfInstances < 0) {
+  def removeRoutees(nrOfInstances: Int, stopDelay: Duration): Unit = {
+    if (nrOfInstances <= 0) {
+      throw new IllegalArgumentException("Expected positive nrOfInstances, got [%s]".format(nrOfInstances))
+    } else if (nrOfInstances > 0) {
       val currentRoutees = routees
-      val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length + nrOfInstances)
+      val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length - nrOfInstances)
       unregisterRoutees(abandon)
       delayedStop(context.system.scheduler, abandon, stopDelay)
     }
@@ -268,9 +275,7 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
    * Give concurrent messages a chance to be placed in mailbox before
    * sending PoisonPill.
    */
-  protected def delayedStop(
-    scheduler: Scheduler,
-    abandon: IndexedSeq[ActorRef], stopDelay: Duration): Unit = {
+  protected def delayedStop(scheduler: Scheduler, abandon: IndexedSeq[ActorRef], stopDelay: Duration): Unit = {
     if (abandon.nonEmpty) {
       if (stopDelay <= Duration.Zero) {
         abandon foreach (_ ! PoisonPill)
@@ -549,14 +554,17 @@ trait RoundRobinLike { this: RouterConfig ⇒
   def routees: Iterable[String]
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
-    routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
+    if (resizer.isEmpty) {
+      if (routees.isEmpty) routeeProvider.createRoutees(props, nrOfInstances)
+      else routeeProvider.registerRouteesFor(routees)
+    }
 
     val next = new AtomicLong(0)
 
     def getNext(): ActorRef = {
-      val _routees = routeeProvider.routees
-      if (_routees.isEmpty) routeeProvider.context.system.deadLetters
-      else _routees((next.getAndIncrement % _routees.size).asInstanceOf[Int])
+      val currentRoutees = routeeProvider.routees
+      if (currentRoutees.isEmpty) routeeProvider.context.system.deadLetters
+      else currentRoutees((next.getAndIncrement % currentRoutees.size).asInstanceOf[Int])
     }
 
     {
@@ -668,12 +676,15 @@ trait RandomLike { this: RouterConfig ⇒
   def routees: Iterable[String]
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
-    routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
+    if (resizer.isEmpty) {
+      if (routees.isEmpty) routeeProvider.createRoutees(props, nrOfInstances)
+      else routeeProvider.registerRouteesFor(routees)
+    }
 
     def getNext(): ActorRef = {
-      val _routees = routeeProvider.routees
-      if (_routees.isEmpty) routeeProvider.context.system.deadLetters
-      else _routees(ThreadLocalRandom.current.nextInt(_routees.size))
+      val currentRoutees = routeeProvider.routees
+      if (currentRoutees.isEmpty) routeeProvider.context.system.deadLetters
+      else currentRoutees(ThreadLocalRandom.current.nextInt(currentRoutees.size))
     }
 
     {
@@ -848,7 +859,10 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
   }
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
-    routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
+    if (resizer.isEmpty) {
+      if (routees.isEmpty) routeeProvider.createRoutees(props, nrOfInstances)
+      else routeeProvider.registerRouteesFor(routees)
+    }
 
     // Worst-case a 2-pass inspection with mailbox size checking done on second pass, and only until no one empty is found.
     // Lowest score wins, score 0 is autowin
@@ -996,7 +1010,10 @@ trait BroadcastLike { this: RouterConfig ⇒
   def routees: Iterable[String]
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
-    routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
+    if (resizer.isEmpty) {
+      if (routees.isEmpty) routeeProvider.createRoutees(props, nrOfInstances)
+      else routeeProvider.registerRouteesFor(routees)
+    }
 
     {
       case (sender, message) ⇒ toAll(sender, routeeProvider.routees)
@@ -1114,7 +1131,10 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
   def within: Duration
 
   def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
-    routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
+    if (resizer.isEmpty) {
+      if (routees.isEmpty) routeeProvider.createRoutees(props, nrOfInstances)
+      else routeeProvider.registerRouteesFor(routees)
+    }
 
     {
       case (sender, message) ⇒
@@ -1255,7 +1275,8 @@ case class DefaultResizer(
     val currentRoutees = routeeProvider.routees
     val requestedCapacity = capacity(currentRoutees)
 
-    routeeProvider.adjustRoutees(props, requestedCapacity, stopDelay)
+    if (requestedCapacity > 0) routeeProvider.createRoutees(props, requestedCapacity)
+    else if (requestedCapacity < 0) routeeProvider.removeRoutees(-requestedCapacity, stopDelay)
   }
 
   /**
