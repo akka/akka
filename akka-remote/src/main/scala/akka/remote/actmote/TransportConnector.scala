@@ -155,7 +155,7 @@ abstract class TransportConnector(val system: ExtendedActorSystem, val provider:
    *    - initialization succeeds and a ConnectorInitialized message is eventually sent to the responsible actor containing the locally bound address
    *    - initialization fails and a ConnectorFailed message is eventually sent to the responsible actor containing a Throwable
    */
-  def listen: Unit
+  def address: Address //TODO: change to listen with the semantics
 
   /**
    * Asynchronously attempts to connect to the specified remote address and sends the handle representing the channel
