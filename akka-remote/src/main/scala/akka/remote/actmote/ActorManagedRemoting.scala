@@ -6,6 +6,7 @@ import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.pattern.gracefulStop
 import akka.remote._
+import actmote.TransportConnector._
 import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -62,7 +63,6 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
       val addressFuture = headActor.ask(Listen(this))(timeout).mapTo[Address]
 
       this.address = Await.result(addressFuture, timeout.duration)
-      notifyListeners(RemoteServerStarted(this))
     }
   }
 
@@ -165,14 +165,32 @@ class HeadActor(
   val endpoints = new EndpointRegistry()
 
   private var transport: RemoteTransport = _
+  private var startupFuture: ActorRef = _
 
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
     case _: EndpointException ⇒ Stop
   }
 
   def receive = {
-    case Listen(transport) ⇒ this.transport = transport; sender ! listenAndGetAddress
-    // This is not supported as these calls are only coming
+    case Listen(transport) ⇒ {
+      this.transport = transport
+      startupFuture = sender
+      listenAndGetAddress
+    }
+
+    case ConnectorInitialized(address) => {
+      this.address = address
+      startupFuture ! address
+      notifyListeners(RemoteServerStarted(transport))
+    }
+
+    case ConnectorFailed(reason) => {
+      notifyListeners(RemoteServerError(reason, transport))
+      startupFuture ! Status.Failure(reason)
+    }
+
+
+    // This is not supported as these will be removed from API
     //case ShutdownEndpoint(address) ⇒
     //case RestartEndpoint(address)  ⇒
     case s @ Send(message, senderOption, recipientRef) ⇒ {
@@ -184,7 +202,10 @@ class HeadActor(
           val endpoint = createEndpoint(recipientAddress, None)
           endpoints.markPass(endpoint)
           endpoint ! s
-        } else { /* TODO: Retry latch is not open yet, send message to dead letters */ }
+        } else {
+          log.warning("Endpoint failed earlier and retry latch is not open yet; dropping message: {}", message)
+          extendedSystem.deadLetters ! message
+        }
         case None ⇒ {
           val endpoint = createEndpoint(recipientAddress, None)
           endpoints.registerEndpoint(recipientAddress, endpoint)
@@ -193,6 +214,7 @@ class HeadActor(
       }
 
     }
+
     case IncomingConnection(handle) ⇒ {
       val endpoint = createEndpoint(handle.remoteAddress, Some(handle))
       handle.responsibleActor = endpoint
@@ -200,6 +222,7 @@ class HeadActor(
         endpoints.registerEndpoint(address, endpoint)
       }
     }
+
     case Terminated(endpoint) ⇒ {
       //TODO: add real time of failure
       //TODO: Terminate does NOT euqal failed!
@@ -208,13 +231,9 @@ class HeadActor(
     }
   }
 
-  private def listenAndGetAddress = {
+  private def listenAndGetAddress {
     connector.responsibleActor = self
-    // TODO: rename transport call address to listen, and add startup semantics
-    // TODO: also make it async
-    address = connector.address
-    notifyListeners(RemoteServerStarted(transport))
-    address
+    connector.listen
   }
 
   private def createEndpoint(remote: Address, handleOption: Option[TransportConnectorHandle]) = {
@@ -233,9 +252,15 @@ class HeadActor(
   private def retryLatchOpen(timeOfFailure: Long) = false
 
   override def postStop() {
-    // TODO: All the children actors are stopped already?
-    notifyListeners(RemoteServerShutdown(transport))
-    connector.shutdown()
+    try {
+      connector.shutdown()
+      notifyListeners(RemoteServerShutdown(transport))
+    } catch {
+      case NonFatal(e) => {
+        notifyListeners(RemoteServerError(e, transport))
+        log.error(e, "Unable to shut down the underlying TransportConnector")
+      }
+    }
   }
 
 }
@@ -291,7 +316,7 @@ class EndpointActor(
   handleOption match {
     case Some(handle) ⇒ {
       startWith(Connected, Handle(handle))
-      registerReadCallback(handle)
+      registerAndOpen(handle)
       notifyListeners(RemoteServerClientConnected(transport, Some(remoteAddress)))
     }
     case None ⇒ {
@@ -326,7 +351,7 @@ class EndpointActor(
     // Send messages that were queued up during connection attempts
     case WaitConnect -> Connected ⇒ (stateData, nextStateData) match {
       case (Transient(queue), Handle(handle)) ⇒ {
-        registerReadCallback(handle)
+        registerAndOpen(handle)
         notifyListeners(RemoteClientConnected(transport, remoteAddress))
         queue.reverse.foreach { case Send(message, senderOption, recipient) ⇒ handle.write(message, senderOption, recipient) }
       }
@@ -356,7 +381,7 @@ class EndpointActor(
     } catch {
       case NonFatal(reason) ⇒ {
         notifyError(reason)
-        log.error(reason, "failure while shutting down [{}]", remoteAddress)
+        log.error(reason, "failure while shutting down endpoint for [{}]", remoteAddress)
       }
     }
   }
@@ -372,8 +397,9 @@ class EndpointActor(
     }
   }
 
-  private def registerReadCallback(handle: TransportConnectorHandle) {
+  private def registerAndOpen(handle: TransportConnectorHandle) {
     handle.responsibleActor = self
+    handle.open()
   }
 
 }

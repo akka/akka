@@ -8,6 +8,7 @@ import akka.actor.Address
 // TODO: have a better name
 // TODO: Use futures instead of callbacks??
 // TODO: Have a TestKit for Connectors
+// TODO: listen and open can simply receive the responsible actor as parameter, so setters and getters will be unnecessary
 
 /**
  * Contains all the event classes that a [[akka.remote.actmote.TransportConnector]] or
@@ -46,8 +47,9 @@ object TransportConnector {
    *  - must be sent after the Connector successfully finished initialization and has been bound to a local address
    *  - must be sent at most once between calls [[akka.remote.actmote.TransportConnector.listen]] and [[akka.remote.actmote.TransportConnector.shutdown()]]
    *  - must be only sent to the responsible actor of the connector
+   *  @param reason the cause of the failure
    */
-  case object ConnectorFailed
+  case class ConnectorFailed(reason: Throwable)
 
   /**
    * Sent to the responsible actor of a [[akka.remote.actmote.TransportConnector]] after an inbound connection
@@ -104,7 +106,7 @@ object TransportConnector {
    *  - must be sent shortly after failing to establish an outbound connection, and it is a reasonable assumption, that retrying to establish the connection in some short time window will fail. In other words
    *    it is assumed, that a connection failure is only reported after retrying several times, or after applying any other failure handling mechanisms appropriate for the underlying transport.
    *  - must be sent to the actor specified as a parameter to the call [[akka.remote.actmote.TransportConnector.connect()]]
-   * @param reason
+   * @param reason the cause of the failure
    */
   // TODO: separate case class for any handle failure?
   case class ConnectionFailed(reason: Throwable) extends ConnectorEvent
@@ -189,7 +191,7 @@ abstract class TransportConnector(val system: ExtendedActorSystem, val provider:
    *    - initialization succeeds and a ConnectorInitialized message is eventually sent to the responsible actor containing the locally bound address
    *    - initialization fails and a ConnectorFailed message is eventually sent to the responsible actor containing a Throwable
    */
-  def address: Address //TODO: change to listen with the semantics
+  def listen: Unit
 
   /**
    * Asynchronously attempts to connect to the specified remote address and sends the handle representing the channel
