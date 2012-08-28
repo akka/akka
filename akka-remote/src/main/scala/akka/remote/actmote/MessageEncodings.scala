@@ -5,13 +5,6 @@ import akka.actor._
 import akka.serialization.Serialization
 import akka.remote.MessageSerializer
 
-/**
- * Created with IntelliJ IDEA.
- * User: Varga Endre Sándor
- * Date: 2012.08.20.
- * Time: 14:58
- * To change this template use File | Settings | File Templates.
- */
 trait MessageEncodings {
   def address: Address
   def system: ExtendedActorSystem
