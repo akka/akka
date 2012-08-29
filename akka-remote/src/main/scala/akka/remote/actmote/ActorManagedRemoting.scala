@@ -13,8 +13,7 @@ import scala.concurrent.Future
 import scala.concurrent.util.duration._
 import util.control.NonFatal
 
-// TODO: Add notifications
-// TODO: Log meaningful event -> check old remoting code
+// TODO: Log meaningful events -> check old remoting code
 class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
 
   val HeadActorName = "remoteTransportHeadActor"
@@ -43,7 +42,7 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
       try {
         val stopped: Future[Boolean] = gracefulStop(headActor, 5 seconds)(system)
         // the actor has been stopped
-        if (Await.result(stopped, 6 seconds)) {
+        if (Await.result(stopped, managedRemoteSettings.ShutdownTimeout)) {
           headActor = null
           transport = null
         }
@@ -59,7 +58,7 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
       transport = loadTransport
       headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider, transport, managedRemoteSettings)), HeadActorName)
 
-      val timeout = new Timeout(5 seconds)
+      val timeout = new Timeout(managedRemoteSettings.StartupTimeout)
       val addressFuture = headActor.ask(Listen(this))(timeout).mapTo[Address]
 
       this.address = Await.result(addressFuture, timeout.duration)
@@ -169,6 +168,7 @@ class HeadActor(
 
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
     case _: EndpointException ⇒ Stop
+    case NonFatal(_) => Stop // What exceptions should we escalate?
   }
 
   def receive = {
@@ -362,6 +362,10 @@ class EndpointActor(
         notifyError(reason)
         throw new EndpointWriteException(remoteAddress, "failed to write to transport", reason)
       }
+    }
+    case Event(Disconnected(_), handleState) => {
+      //TODO: handle disconnects
+      stay using handleState
     }
   }
 
