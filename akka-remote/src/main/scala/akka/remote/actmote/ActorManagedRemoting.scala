@@ -292,7 +292,6 @@ class EndpointActor(
   val transport: RemoteTransport,
   val settings: ActorManagedRemotingSettings,
   handleOption: Option[TransportConnectorHandle]) extends Actor
-  with RemoteMessageDispatchHelper
   with FSM[EndpointActor.EndpointState, EndpointActor.EndpointData]
   with LifeCycleNotificationHelper {
 
@@ -363,7 +362,6 @@ class EndpointActor(
   }
 
   when(Connected) {
-    case Event(MessageArrived(msg), handleState) ⇒ receiveMessage(msg); stay using handleState
     case Event(Send(msg, senderOption, recipient), handleState @ Handle(handle)) ⇒ try {
       if (provider.remoteSettings.LogSend) {
         log.debug("Sending message {} from {} to {}", msg, senderOption, recipient)

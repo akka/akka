@@ -1,14 +1,14 @@
 package akka.remote.actmote
 
 import akka.actor._
-import akka.remote.RemoteActorRefProvider
-import akka.remote.RemoteMessage
+import akka.remote._
 import akka.actor.Address
+import akka.actor.Terminated
+import akka.dispatch.SystemMessage
+import akka.actor.Terminated
+import akka.event.LoggingAdapter
 
-// TODO: have a better name
-// TODO: Use futures instead of callbacks??
 // TODO: Have a TestKit for Connectors
-// TODO: listen and open can simply receive the responsible actor as parameter, so setters and getters will be unnecessary
 
 /**
  * Contains all the event classes that a [[akka.remote.actmote.TransportConnector]] or
@@ -27,7 +27,7 @@ object TransportConnector {
    *
    * === More specifically this message ===
    *  - is allowed to be sent only after [[akka.remote.actmote.TransportConnector.listen]] has been already called and the startup has been successful
-   *  - must be sent before any [[akka.remote.actmote.TransportConnector.ConnectionInitialized]], [[akka.remote.actmote.TransportConnector.ConnectionFailed]], [[akka.remote.actmote.TransportConnector.Disconnected]] or [[akka.remote.actmote.TransportConnector.MessageArrived]] has been sent
+   *  - must be sent before any [[akka.remote.actmote.TransportConnector.ConnectionInitialized]], [[akka.remote.actmote.TransportConnector.ConnectionFailed]] or [[akka.remote.actmote.TransportConnector.Disconnected]] has been sent or [[akka.remote.actmote.TransportConnectorHandle.dispatchMessage()]] has been called
    *  - is not allowed to be ''sent'' after [[akka.remote.actmote.TransportConnector.shutdown()]] has been called, although it might be ''received'' after the call.
    *  - must be sent after the Connector successfully finished initialization and has been bound to a local address
    *  - must be sent at most once between calls [[akka.remote.actmote.TransportConnector.listen]] and [[akka.remote.actmote.TransportConnector.shutdown()]]
@@ -42,7 +42,7 @@ object TransportConnector {
    *
    * === More specifically this message ===
    *  - is allowed to be sent only after [[akka.remote.actmote.TransportConnector.listen]] has been already called and the startup has been successful
-   *  - must be sent before any [[akka.remote.actmote.TransportConnector.ConnectionInitialized]], [[akka.remote.actmote.TransportConnector.ConnectionFailed]], [[akka.remote.actmote.TransportConnector.Disconnected]] or [[akka.remote.actmote.TransportConnector.MessageArrived]] has been sent
+   *  - must be sent before any [[akka.remote.actmote.TransportConnector.ConnectionInitialized]], [[akka.remote.actmote.TransportConnector.ConnectionFailed]], [[akka.remote.actmote.TransportConnector.Disconnected]] ohas been sent or [[akka.remote.actmote.TransportConnectorHandle.dispatchMessage()]] has been called
    *  - is not allowed to be ''sent'' after [[akka.remote.actmote.TransportConnector.shutdown()]] has been called, although it might be ''received'' after the call.
    *  - must be sent after the Connector successfully finished initialization and has been bound to a local address
    *  - must be sent at most once between calls [[akka.remote.actmote.TransportConnector.listen]] and [[akka.remote.actmote.TransportConnector.shutdown()]]
@@ -65,20 +65,6 @@ object TransportConnector {
   case class IncomingConnection(handle: TransportConnectorHandle) extends ConnectorEvent
 
   /**
-   * Sent to the responsible actor of a [[akka.remote.actmote.TransportConnectorHandle]] after a message has been
-   * successfully received by the underlying transport layer.
-   *
-   * === More specifically this message ===
-   *  - is allowed to be sent only after an [[akka.remote.actmote.TransportConnector.IncomingConnection]] or a [[akka.remote.actmote.TransportConnector.ConnectionInitialized]] message has been already sent
-   *  - is not allowed to be sent after a [[akka.remote.actmote.TransportConnector.Disconnected]] or a [[akka.remote.actmote.TransportConnector.ConnectionFailed]] message has been sent for the corresponding handle
-   *  - is not allowed to be ''sent'' after the corresponding handle has been closed, although it might be ''received'' after the call
-   *  - must be sent shortly after an incoming message has been successfully received and parsed by the transport
-   *  - must be only sent to the responsible actor of the handle
-   *@param msg The [[akka.remote.RemoteMessage]] containing the received Akka message
-   */
-  case class MessageArrived(msg: RemoteMessage) extends ConnectorEvent
-
-  /**
    * Sent to the responsible actor of a [[akka.remote.actmote.TransportConnectorHandle]] after a connection was initiated
    * by the responsible actor by calling [[akka.remote.actmote.TransportConnector.connect()]] and the connection has been
    * successfully established.
@@ -87,7 +73,7 @@ object TransportConnector {
    *  - is allowed to be sent only after [[akka.remote.actmote.TransportConnector.connect()]] has been already called
    *  - is not allowed to be sent after a [[akka.remote.actmote.TransportConnector.Disconnected]] or a [[akka.remote.actmote.TransportConnector.ConnectionFailed]] message has been sent to the corresponding actors
    *  - is not allowed to be sent after [[akka.remote.actmote.TransportConnectorHandle.close()]] has been called on the corresponding handle, but might be ''received'' after the call
-   *  - must be sent before any [[akka.remote.actmote.TransportConnector.MessageArrived]] message has been sent for the handle
+   *  - must be sent before any message has been dispatched by calling [[akka.remote.actmote.TransportConnectorHandle.dispatchMessage()]]
    *  - must be sent shortly after an outbound connection is successfully established and the handle is ready for use
    *  - must be sent to the actor specified as a parameter to the call [[akka.remote.actmote.TransportConnector.connect()]]
    * @param handle the handle representing the established connection
@@ -108,7 +94,7 @@ object TransportConnector {
    *  - must be sent to the actor specified as a parameter to the call [[akka.remote.actmote.TransportConnector.connect()]]
    * @param reason the cause of the failure
    */
-  // TODO: separate case class for any handle failure?
+  // TODO: separate case class for different failure cases?
   case class ConnectionFailed(reason: Throwable) extends ConnectorEvent
 
   /**
@@ -231,7 +217,7 @@ abstract class TransportConnector(val system: ExtendedActorSystem, val provider:
  *
  * === Initialization ===
  *  - (call to open(actor A)) ← (any operation on the handle except close())
- *  - (call to open(actor A)) ← (MessageArrived(message M) is sent to the responsible actor A)
+ *  - (call to open(actor A)) ← (the message is delivered via dispatchMessage(message M))
  *
  * '''NOTE: In rare cases the reception of ConnectionFailed() may happen before the actor called open().'''
  *
@@ -242,7 +228,7 @@ abstract class TransportConnector(val system: ExtendedActorSystem, val provider:
  * === Closing ===
  *  - (call to close()) !→ (any other operation on the handle)
  */
-trait TransportConnectorHandle {
+abstract class TransportConnectorHandle(val provider: RemoteActorRefProvider) {
 
   import akka.actor.{ Address, ActorRef }
   import akka.remote.RemoteActorRef
@@ -254,7 +240,13 @@ trait TransportConnectorHandle {
    */
   def remoteAddress: Address
 
-  // TODO: fire off a Future when everything is ready on the handle
+  /**
+   * Returns the address of the local endpoint of the channel this handle represents. This class is synchronous and
+   * can be assumed to always succeed.
+   * @return address of the local endpoint
+   */
+  def localAddress: Address
+
   /**
    * Notifies the [[akka.remote.actmote.TransportConnector]] that the responsibleActor is set on the handle, and the
    * actor is ready to receive events. If the handle represents an inbound channel it is the responsibility of
@@ -264,10 +256,10 @@ trait TransportConnectorHandle {
    * === More specifically ===
    *  - after close() have been called, it is not allowed to call open()
    *  - no write() calls are allowed on the handle before open() is called
-   *  - no MessageArrived messages are sent before open() is called. Any messages must be buffered by the connector
+   *  - no messages are dispatched via dispatchMessage() before open() is called. Any messages must be buffered by the connector
    *    until open() is called.
    */
-  def open(responsibleActor: ActorRef)
+  def open(responsibleActor: ActorRef): Unit
 
   /**
    * Asynchronously sends the specified message to a remote actor. The sender actor might be specified or omitted.
@@ -276,7 +268,7 @@ trait TransportConnectorHandle {
    * === More specifically ===
    *  - write() is only allowed after open() has been called
    *  - after calling write(message M) the connector eventually ''may'' deliver the message to the remote endpoint
-   *    and a MessageArrived(M) event is sent to its responsible actor.
+   *    after which dispatchMessage(M) will be called on the handle of the remote endpoint.
    *  - for any two writes, write(A) and then write(B), exactly one of the following events will happen
    *   - no message is received
    *   - A is received
@@ -302,5 +294,53 @@ trait TransportConnectorHandle {
    *  - the remote endpoint of the channel eventually ''may'' receive a Disconnect message
    */
   def close(): Unit
+
+  /**
+   * Call this method with an inbound RemoteMessage and this will take care of security (see: "useUntrustedMode")
+   * as well as making sure that the message ends up at its destination (best effort).
+   * There is also a fair amount of logging produced by this method, which is good for debugging.
+   *
+   * === More specifically ===
+   *  - dispatchMessage() is allowed to be called only after an [[akka.remote.actmote.TransportConnector.IncomingConnection]] or a [[akka.remote.actmote.TransportConnector.ConnectionInitialized]] message has been already sent
+   *  - dispatchMessage() is not allowed to be called after a [[akka.remote.actmote.TransportConnector.Disconnected]] or a [[akka.remote.actmote.TransportConnector.ConnectionFailed]] message has been sent for the corresponding handle
+   *  - dispatchMessage() is not allowed to be called after the corresponding handle has been closed
+   *  - must be called shortly after an incoming message has been successfully received and parsed by the transport
+   *
+   * @param remoteMessage the incoming message to be dispatched to the correct actor
+   * @param log
+   */
+  protected final def dispatchMessage(remoteMessage: RemoteMessage, log: LoggingAdapter): Unit = {
+    val useUntrustedMode = provider.remoteSettings.UntrustedMode
+    val log = provider.log
+    val remoteDaemon = provider.remoteDaemon
+
+    remoteMessage.recipient match {
+      case `remoteDaemon` ⇒
+        if (provider.remoteSettings.LogReceive) log.debug("received daemon message {}", remoteMessage)
+        remoteMessage.payload match {
+          case m @ (_: DaemonMsg | _: Terminated) ⇒
+            try remoteDaemon ! m catch {
+              case e: Exception ⇒ log.error(e, "exception while processing remote command {} from {}", m, remoteMessage.sender)
+            }
+          case x ⇒ log.warning("remoteDaemon received illegal message {} from {}", x, remoteMessage.sender)
+        }
+      case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
+        if (provider.remoteSettings.LogReceive) log.debug("received local message {}", remoteMessage)
+        remoteMessage.payload match {
+          case msg: PossiblyHarmful if useUntrustedMode ⇒ log.warning("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type {}", msg.getClass)
+          case msg: SystemMessage                       ⇒ l.sendSystemMessage(msg)
+          case msg                                      ⇒ l.!(msg)(remoteMessage.sender)
+        }
+      case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal ⇒
+        if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", remoteMessage)
+        remoteMessage.originalReceiver match {
+          case AddressFromURIString(address) if address == provider.transport.address ⇒
+            // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
+            r.!(remoteMessage.payload)(remoteMessage.sender)
+          case r ⇒ log.error("dropping message {} for non-local recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, localAddress, provider.transport.address)
+        }
+      case r ⇒ log.error("dropping message {} for unknown recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, localAddress, provider.transport.address)
+    }
+  }
 }
 
