@@ -60,7 +60,8 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
     log.info("Starting remoting")
     if (headActor eq null) {
       transport = loadTransport
-      headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider.remoteSettings, transport, managedRemoteSettings)), HeadActorName)
+      val notifier = new DefaultLifeCycleNotifier(provider.remoteSettings, this, system.eventStream, log) // TODO: this uses the logger of this class... might be a problem
+      headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider.remoteSettings, transport, managedRemoteSettings, notifier)), HeadActorName)
 
       val timeout = new Timeout(managedRemoteSettings.StartupTimeout)
       val addressFuture = headActor.ask(Listen(this))(timeout).mapTo[Address]
@@ -95,12 +96,24 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
 
 }
 
-// Cut out
-trait LifeCycleNotificationHelper {
-  def remoteSettings: RemoteSettings
-  def eventStream: EventStream
-  def log: LoggingAdapter
+trait LifeCycleNotifier {
+  protected def notifyListeners(message: RemoteLifeCycleEvent): Unit
 
+  def remoteClientError(reason: Throwable, remoteAddress: Address): Unit
+  def remoteClientDisconnected(remoteAddress: Address): Unit
+  def remoteClientConnected(remoteAddress: Address): Unit
+  def remoteClientStarted(remoteAddress: Address): Unit
+  def remoteClientShutdown(remoteAddress: Address): Unit
+
+  def remoteServerStarted(): Unit
+  def remoteServerShutdown(): Unit
+  def remoteServerError(reason: Throwable): Unit
+  def remoteServerClientConnected(remoteAddress: Address)
+  def remoteServerClientDisconnected(remoteAddress: Address)
+  def remoteServerClientClosed(remoteAddress: Address)
+}
+
+class DefaultLifeCycleNotifier(remoteSettings: RemoteSettings, remoteTransport: RemoteTransport, eventStream: EventStream, log: LoggingAdapter) extends LifeCycleNotifier {
   //private def useUntrustedMode = remoteSettings.UntrustedMode
   private def logRemoteLifeCycleEvents = remoteSettings.LogRemoteLifeCycleEvents
 
@@ -108,6 +121,19 @@ trait LifeCycleNotificationHelper {
     eventStream.publish(message)
     if (logRemoteLifeCycleEvents) log.log(message.logLevel, "{}", message)
   }
+
+  def remoteClientError(reason: Throwable, remoteAddress: Address) { notifyListeners(RemoteClientError(reason, remoteTransport, remoteAddress)) }
+  def remoteClientDisconnected(remoteAddress: Address) { notifyListeners(RemoteClientDisconnected(remoteTransport, remoteAddress)) }
+  def remoteClientConnected(remoteAddress: Address) { notifyListeners(RemoteClientConnected(remoteTransport, remoteAddress)) }
+  def remoteClientStarted(remoteAddress: Address) { notifyListeners(RemoteClientStarted(remoteTransport, remoteAddress)) }
+  def remoteClientShutdown(remoteAddress: Address) { notifyListeners(RemoteClientShutdown(remoteTransport, remoteAddress)) }
+
+  def remoteServerStarted() { notifyListeners(RemoteServerStarted(remoteTransport)) }
+  def remoteServerShutdown() { notifyListeners(RemoteServerShutdown(remoteTransport)) }
+  def remoteServerError(reason: Throwable) { notifyListeners(RemoteServerError(reason, remoteTransport)) }
+  def remoteServerClientConnected(remoteAddress: Address) { notifyListeners(RemoteServerClientConnected(remoteTransport, Some(remoteAddress))) }
+  def remoteServerClientDisconnected(remoteAddress: Address) { notifyListeners(RemoteServerClientDisconnected(remoteTransport, Some(remoteAddress))) }
+  def remoteServerClientClosed(remoteAddress: Address) { notifyListeners(RemoteServerClientClosed(remoteTransport, Some(remoteAddress))) }
 }
 
 private[actmote] sealed trait RemotingCommand
@@ -162,7 +188,8 @@ object HeadActor {
 class HeadActor(
   val remoteSettings: RemoteSettings,
   val connector: TransportConnector,
-  val settings: ActorManagedRemotingSettings) extends Actor with LifeCycleNotificationHelper {
+  val settings: ActorManagedRemotingSettings,
+  val notifier: LifeCycleNotifier) extends Actor {
 
   import akka.actor.SupervisorStrategy._
   import actmote.TransportConnector.IncomingConnection
@@ -180,7 +207,7 @@ class HeadActor(
   private var transport: RemoteTransport = _
   private var startupFuture: ActorRef = _
 
-  private val retryLatchEnabled = settings.RetryLatchClosedFor == 0
+  private val retryLatchEnabled = settings.RetryLatchClosedFor.length == 0
 
   private def failureStrategy = if (!retryLatchEnabled) {
     // This strategy keeps all the messages in the stash of the endpoint so restart will transfer the queue
@@ -208,11 +235,11 @@ class HeadActor(
     case ConnectorInitialized(address) ⇒ {
       this.address = address
       startupFuture ! address
-      notifyListeners(RemoteServerStarted(transport))
+      notifier.remoteServerStarted()
     }
 
     case ConnectorFailed(reason) ⇒ {
-      notifyListeners(RemoteServerError(reason, transport))
+      notifier.remoteServerError(reason)
       startupFuture ! Status.Failure(reason)
     }
 
@@ -255,7 +282,7 @@ class HeadActor(
 
   private def createEndpoint(remote: Address, handleOption: Option[TransportConnectorHandle]) = {
     val endpoint = context.actorOf(Props(new EndpointActor(
-      transport,
+      notifier,
       connector,
       remoteSettings,
       settings,
@@ -271,10 +298,10 @@ class HeadActor(
   override def postStop() {
     try {
       connector.shutdown()
-      notifyListeners(RemoteServerShutdown(transport))
+      notifier.remoteServerShutdown()
     } catch {
       case NonFatal(e) ⇒ {
-        notifyListeners(RemoteServerError(e, transport))
+        notifier.remoteServerError(e)
         log.error(e, "Unable to shut down the underlying TransportConnector")
       }
     }
@@ -294,33 +321,31 @@ class EndpointOpenException(remoteAddress: Address, msg: String, cause: Throwabl
 //TODO: Does stash deliver all messages to dead letters on stop?
 //TODO: Even if they are delivered to dead letters, they are wrapped in Send(). Is this a problem?
 // TODO: Set up deque based mailbox somewhere..
-// TODO: decouple endpoint as much from external collaborators as possible and make individually testable!!!
 class EndpointActor(
-  val transport: RemoteTransport,
+  val notifier: LifeCycleNotifier,
   val connector: TransportConnector,
   val remoteSettings: RemoteSettings,
   val settings: ActorManagedRemotingSettings,
   val address: Address,
   val remoteAddress: Address,
-  private var handleOption: Option[TransportConnectorHandle]) extends Actor
-  with Stash
-  with LifeCycleNotificationHelper {
+  private var handleOption: Option[TransportConnectorHandle]) extends Actor with Stash {
 
   import EndpointActor._
 
   val extendedSystem = context.system.asInstanceOf[ExtendedActorSystem]
   val eventStream = extendedSystem.eventStream
 
-  override val log = Logging(eventStream, "EndpointActor(remote = " + remoteAddress + ")")
+  val log = Logging(eventStream, "EndpointActor(remote = " + remoteAddress + ")")
   val isServer = handleOption.isDefined
 
+  // TODO: Propagate it to the stash size
   val queueLimit: Int = settings.PreConnectBufferSize
 
   private def notifyError(reason: Throwable) {
     if (isServer) {
-      notifyListeners(RemoteServerError(reason, transport))
+      notifier.remoteServerError(reason)
     } else {
-      notifyListeners(RemoteClientError(reason, transport, remoteAddress))
+      notifier.remoteClientError(reason, remoteAddress)
     }
   }
 
@@ -338,11 +363,11 @@ class EndpointActor(
     handleOption match {
       case Some(handle) ⇒ {
         handle.open(self)
-        notifyListeners(RemoteServerClientConnected(transport, Some(remoteAddress)))
+        notifier.remoteServerClientConnected(remoteAddress)
         context.become(connected)
       }
       case None ⇒ {
-        notifyListeners(RemoteClientStarted(transport, remoteAddress))
+        notifier.remoteClientStarted(remoteAddress)
         self ! AttemptConnect
       }
     }
@@ -357,7 +382,7 @@ class EndpointActor(
       handle.open(self)
       // Requeue all stored send messages
       unstashAll()
-      notifyListeners(RemoteClientConnected(transport, remoteAddress))
+      notifier.remoteClientConnected(remoteAddress)
       context.become(connected)
     }
     case ConnectionFailed(reason) ⇒ {
@@ -394,8 +419,8 @@ class EndpointActor(
       handleOption foreach { _.close() }
 
       if (!isServer) {
-        notifyListeners(RemoteClientDisconnected(transport, remoteAddress))
-        notifyListeners(RemoteClientShutdown(transport, remoteAddress))
+        notifier.remoteClientDisconnected(remoteAddress)
+        notifier.remoteClientShutdown(remoteAddress)
       }
 
     } catch {
