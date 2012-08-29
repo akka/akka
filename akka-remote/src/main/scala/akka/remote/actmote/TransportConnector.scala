@@ -224,7 +224,7 @@ abstract class TransportConnector(val system: ExtendedActorSystem, val provider:
  * === Disconnecting and failures ===
  *  - (Disconnect is sent) !→ (any operation on the handle except close())
  *
-
+ *
  * === Closing ===
  *  - (call to close()) !→ (any other operation on the handle)
  */
@@ -287,7 +287,7 @@ abstract class TransportConnectorHandle(val provider: RemoteActorRefProvider) {
   /**
    * Closes the underlying transport channel. Remote endpoint of the channel or connection ''may'' be notified, but this
    * is not guaranteed in the case of connectionless transports.
-
+   *
    * === More specifically ===
    *  - close() is allowed to be called at any time
    *  - no operations are allowed on the handle after close() has been called
@@ -309,7 +309,8 @@ abstract class TransportConnectorHandle(val provider: RemoteActorRefProvider) {
    * @param remoteMessage the incoming message to be dispatched to the correct actor
    * @param log
    */
-  protected final def dispatchMessage(remoteMessage: RemoteMessage, log: LoggingAdapter): Unit = {
+  // TODO: Think about the visibility of this method
+  final def dispatchMessage(remoteMessage: RemoteMessage, log: LoggingAdapter): Unit = {
     val useUntrustedMode = provider.remoteSettings.UntrustedMode
     val log = provider.log
     val remoteDaemon = provider.remoteDaemon

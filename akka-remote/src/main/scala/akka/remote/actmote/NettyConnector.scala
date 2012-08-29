@@ -204,8 +204,12 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
     setAddressFromChannel(channel)
   }
 
-  //TODO: to be called externally
-  startup()
+  def listen(responsibleActor: ActorRef) {
+    this.responsibleActor = responsibleActor
+    startup()
+    // TODO: Exception handling and stuffs
+    responsibleActor ! ConnectorInitialized(address)
+  }
 
   def sendSecureCookie(connection: ChannelFuture): Boolean = {
     val future =
@@ -241,7 +245,7 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
 
     if (sendSecureCookie(connectionFuture)) {
       //notifyListeners(RemoteClientStarted(netty, remoteAddress))
-      val handle: NettyConnectorHandle = new NettyConnectorHandle(this, connectionFuture.getChannel)
+      val handle: NettyConnectorHandle = new NettyConnectorHandle(provider, this, connectionFuture.getChannel)
       ChannelHandle.set(connectionFuture.getChannel, Some(handle))
 
       responsibleActorForConnection.tell(ConnectionInitialized(handle), responsibleActorForConnection)
@@ -317,7 +321,7 @@ private[akka] class NettyConnectorServerHandler(
     event.getMessage match {
       case remote: AkkaRemoteProtocol if remote.hasMessage ⇒ ChannelHandle.get(event.getChannel) match {
         // TODO: refactor notifying handle owner
-        case Some(handle) ⇒ handle.responsibleActor ! MessageArrived(new RemoteMessage(remote.getMessage, connector.system))
+        case Some(handle) ⇒ handle.dispatchMessage(new RemoteMessage(remote.getMessage, connector.system), handle.provider.log) // TODO: Using the logger of ActorRefProvider -- this is just a hack
         case None         ⇒ //TODO: signal and error and terminate the connection
       }
 
@@ -328,12 +332,12 @@ private[akka] class NettyConnectorServerHandler(
           case CommandType.CONNECT ⇒
             val origin = instruction.getOrigin
             val inbound = Address("akka", origin.getSystem, origin.getHostname, origin.getPort)
-            val handle = new NettyConnectorHandle(connector, event.getChannel)
+            val handle = new NettyConnectorHandle(connector.provider, connector, event.getChannel)
 
             //ChannelAddress.set(event.getChannel, Option(inbound))
             ChannelHandle.set(event.getChannel, Some(handle))
             connector.responsibleActor ! IncomingConnection(handle)
-          //TODO: Block the Netty pipeline
+          //TODO: Block the Netty pipeline -- Update, use Channel.setReadable in channelOpen
           //TODO: Document that the threadpool should contain enough threads
           //Thread.sleep(500) // TODO: just for trying
           //netty.bindClient(inbound, new PassiveRemoteClient(event.getChannel, netty, inbound))
@@ -408,7 +412,7 @@ private[akka] class ActiveRemoteClientHandler(
           }
 
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
-          handle.responsibleActor ! MessageArrived(new RemoteMessage(arp.getMessage, connector.system))
+          handle.dispatchMessage(new RemoteMessage(arp.getMessage, connector.system), handle.provider.log) // TODO: Using the logger of ActorRefProvider -- this is just a hack
         //client.netty.receiveMessage(new RemoteMessage(arp.getMessage, client.netty.system))
 
         case other ⇒
@@ -446,18 +450,24 @@ private[akka] class ActiveRemoteClientHandler(
   }
 }
 
-class NettyConnectorHandle(connector: NettyConnector, channel: Channel) extends TransportConnectorHandle {
+class NettyConnectorHandle(provider: RemoteActorRefProvider, connector: NettyConnector, channel: Channel) extends TransportConnectorHandle(provider) {
   @volatile var responsibleActor: ActorRef = _
-  def remoteAddress = null // TODO:
+  override def remoteAddress = null // TODO:
+  override def localAddress = provider.transport.address // TODO: ugly, just receive from the Connector instead
 
-  def close() {
+  override def open(responsibleActor: ActorRef) {
+    this.responsibleActor = responsibleActor
+    // TODO: use Channel.setReadable() magic
+  }
+
+  override def close() {
     // TODO: channel is removed from channelgroup?
     ChannelHandle.remove(channel)
     channel.close()
   }
 
   // TODO: document dropping policy
-  def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) {
+  override def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) {
     import connector.system.deadLetters
     try {
       val request = (msg, senderOption, recipient)

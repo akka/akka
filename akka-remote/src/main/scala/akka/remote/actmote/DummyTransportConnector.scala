@@ -1,14 +1,15 @@
 package akka.remote.actmote
 
 import akka.remote._
+import actmote.DummyHandle.HandleState
 import akka.remote.netty.NettySettings
 import akka.actor._
 import akka.remote.RemoteProtocol._
 import akka.serialization.Serialization
+import actmote.TransportConnector._
 
 class DummyTransportConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends TransportConnector(_system, _provider) {
   import DummyTransportMedium._
-  import actmote.TransportConnector._
 
   // TODO: get rid of lock if possible
   val lock = new AnyRef
@@ -19,24 +20,31 @@ class DummyTransportConnector(_system: ExtendedActorSystem, _provider: RemoteAct
   private var _isTerminated = false
   private var handles = List[DummyHandle]()
 
-  def isTerminated = lock synchronized _isTerminated
+  def isTerminated = lock synchronized {
+    _isTerminated && handles.filter(_.state != DummyHandle.Closed).isEmpty
+  }
 
   // Access should be synchronized?
+
+  override def listen(responsibleActor: ActorRef) {
+    this.responsibleActor = responsibleActor
+    responsibleActor ! ConnectorInitialized(address)
+  }
 
   val address = Address("akka", provider.remoteSettings.systemName, settings.Hostname, settings.PortSelector) // Does not handle dynamic ports, used only for testing
 
   registerTransport(address, this)
 
-  def shutdown() {
+  override def shutdown() {
     // Remove locks if possible
     lock.synchronized {
       if (_isTerminated) throw new IllegalStateException("Cannot shutdown: already terminated")
-      handles foreach { _.close }
+      //handles foreach { _.close }
       _isTerminated = true
     }
   }
 
-  def connect(remote: Address, responsibleActorForConnection: ActorRef) {
+  override def connect(remote: Address, responsibleActorForConnection: ActorRef) {
     lock.synchronized {
       if (_isTerminated) throw new IllegalStateException("Cannot connect: already terminated")
 
@@ -66,41 +74,51 @@ class DummyTransportConnector(_system: ExtendedActorSystem, _provider: RemoteAct
   override def toString = "DummyTransport(" + address + ")"
 }
 
-class DummyHandle(val owner: DummyTransportConnector, val address: Address, val remoteAddress: Address, val server: Boolean) extends TransportConnectorHandle {
+object DummyHandle {
+  sealed trait HandleState
+  case object Limbo extends HandleState
+  case object Open extends HandleState
+  case object Closed extends HandleState
+}
+
+class DummyHandle(val owner: DummyTransportConnector, val localAddress: Address, val remoteAddress: Address, val server: Boolean) extends TransportConnectorHandle(owner.provider) {
   import DummyTransportMedium._
-  import actmote.TransportConnector._
+  import DummyHandle._
 
   @volatile private var _responsibleActor: ActorRef = _
-  def responsibleActor = _responsibleActor
-  def responsibleActor_=(actor: ActorRef) {
-    _responsibleActor = actor
-    queue.reverse.foreach {
-      _responsibleActor ! MessageArrived(_)
+  @volatile var state: HandleState = Limbo
+
+  override def open(responsibleActor: ActorRef) {
+    _responsibleActor = responsibleActor
+    state = Open
+    queue.reverse.foreach { msg ⇒
+      dispatchMessage(msg, owner.provider.log) // TODO: Now using the logger of ActorRefProvider, but this is just a hack
     }
   }
 
-  val key = if (server) remoteAddress -> address else address -> remoteAddress
+  val key = if (server) remoteAddress -> localAddress else localAddress -> remoteAddress
   @volatile var queue = List[RemoteMessage]() // Simulates the internal buffer of the trasport layer -- queues messages until connection accepted
 
-  def close() {
+  override def close() {
+    state = Closed
     // TODO: Notify other endpoint
     if (owner.isTerminated) throw new IllegalStateException("Cannot close handle: transport already terminated")
     removeConnection(key)
   }
 
-  def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) {
+  override def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) {
     if (owner.isTerminated) throw new IllegalStateException("Cannot write to handle: transport already terminated")
-    DummyTransportMedium.activityLog ::= SendAttempt(msg, address, remoteAddress)
+    DummyTransportMedium.activityLog ::= SendAttempt(msg, localAddress, remoteAddress)
     handlesForConnection(key) match {
       case Some((clientHandle, serverHandle)) ⇒ {
 
         val remoteHandle = if (server) clientHandle else serverHandle
         val msgProtocol = createRemoteMessageProtocolBuilder(recipient, msg, senderOption).build
 
-        if (remoteHandle.responsibleActor == null) {
+        if (remoteHandle.state == Limbo) {
           queue ::= new RemoteMessage(msgProtocol, remoteHandle.owner.system)
-        } else {
-          remoteHandle.responsibleActor ! MessageArrived(new RemoteMessage(msgProtocol, remoteHandle.owner.system))
+        } else if (remoteHandle.state == Open) {
+          remoteHandle.dispatchMessage(new RemoteMessage(msgProtocol, remoteHandle.owner.system), provider.log) // TODO: Now using the logger of ActorRefProvider, but this is just a hack
         }
       }
       case None ⇒ // Error
@@ -109,7 +127,7 @@ class DummyHandle(val owner: DummyTransportConnector, val address: Address, val 
 
   // --- Methods lifted shamelessly from RemoteTransport
   private def toRemoteActorRefProtocol(actor: ActorRef): ActorRefProtocol =
-    ActorRefProtocol.newBuilder.setPath(actor.path.toStringWithAddress(address)).build
+    ActorRefProtocol.newBuilder.setPath(actor.path.toStringWithAddress(localAddress)).build
 
   /**
    * Returns a new RemoteMessageProtocol containing the serialized representation of the given parameters.
@@ -118,7 +136,7 @@ class DummyHandle(val owner: DummyTransportConnector, val address: Address, val 
     val messageBuilder = RemoteMessageProtocol.newBuilder.setRecipient(toRemoteActorRefProtocol(recipient))
     if (senderOption.isDefined) messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
 
-    Serialization.currentTransportAddress.withValue(address) {
+    Serialization.currentTransportAddress.withValue(localAddress) {
       messageBuilder.setMessage(MessageSerializer.serialize(owner.system, message.asInstanceOf[AnyRef]))
     }
 
