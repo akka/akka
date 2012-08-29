@@ -10,5 +10,6 @@ private[akka] class ActorManagedRemotingSettings(config: Config) {
   val UsePassiveConnections: Boolean = getBoolean("use-passive-connections")
   val StartupTimeout: Duration = Duration.fromNanos(getNanoseconds("startup-timeout"))
   val ShutdownTimeout: Duration = Duration.fromNanos(getNanoseconds("shutdown-timeout"))
+  val PreConnectBufferSize: Int = getInt("preconnect-buffer-size")
 
 }

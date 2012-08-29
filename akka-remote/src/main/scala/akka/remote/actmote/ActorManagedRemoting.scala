@@ -13,7 +13,6 @@ import scala.concurrent.Future
 import scala.concurrent.util.duration._
 import util.control.NonFatal
 
-// TODO: Log meaningful events -> check old remoting code
 class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
 
   val HeadActorName = "remoteTransportHeadActor"
@@ -45,15 +44,19 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
         if (Await.result(stopped, managedRemoteSettings.ShutdownTimeout)) {
           headActor = null
           transport = null
+          log.info("Remoting stopped successfully")
         }
+
       } catch {
-        case e: akka.pattern.AskTimeoutException ⇒ // the actor wasn't stopped within 5 seconds
+        case e: akka.pattern.AskTimeoutException ⇒ log.warning("Shutdown timed out")
+        case NonFatal(e) => log.error(e, "Shutdown failed")
       }
     }
   }
 
   // Start assumes that it cannot be followed by another start() without having a shutdown() first
   def start() {
+    log.info("Starting remoting")
     if (headActor eq null) {
       transport = loadTransport
       headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider, transport, managedRemoteSettings)), HeadActorName)
@@ -61,7 +64,12 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
       val timeout = new Timeout(managedRemoteSettings.StartupTimeout)
       val addressFuture = headActor.ask(Listen(this))(timeout).mapTo[Address]
 
-      this.address = Await.result(addressFuture, timeout.duration)
+      try {
+        this.address = Await.result(addressFuture, timeout.duration)
+      } catch {
+        case e: akka.pattern.AskTimeoutException => throw new RemoteTransportException("Startup timed out", e)
+        case NonFatal(e) => throw new RemoteTransportException("Startup failed", e)
+      }
     }
   }
 
@@ -276,7 +284,6 @@ class EndpointWriteException(remoteAddress: Address, msg: String, cause: Throwab
 class EndpointCloseException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 class EndpointOpenException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 
-// TODO: Error handling (borked connection, etc...), handling closed connections
 class EndpointActor(
   val provider: RemoteActorRefProvider,
   val address: Address,
@@ -297,7 +304,7 @@ class EndpointActor(
   override val log = Logging(context.system.eventStream, "EndpointActor(remote = " + remoteAddress + ")")
   val isServer = handleOption.isDefined
 
-  val queueLimit: Int = 10 //TODO: read from config
+  val queueLimit: Int = settings.PreConnectBufferSize
 
   def notifyError(reason: Throwable) {
     if (isServer) {
@@ -322,7 +329,7 @@ class EndpointActor(
 
   when(WaitConnect) {
     case Event(AttemptConnect, _) ⇒ attemptConnect(); stay using stateData
-    // TODO: log send if it is configured
+
     case Event(s @ Send(msg, _, _), Transient(queue)) ⇒ {
       if (queue.size >= queueLimit) {
         log.warning("Endpoint queue is full; dropping message: {}", msg)
@@ -333,6 +340,7 @@ class EndpointActor(
       }
     }
     case Event(ConnectionInitialized(handle), _) ⇒ goto(Connected) using Handle(handle)
+
     case Event(ConnectionFailed(reason), Transient(queue)) ⇒ {
       // Give up
       queue.reverse.foreach { case Send(message, _, _) ⇒ extendedSystem.deadLetters ! message }
@@ -347,6 +355,7 @@ class EndpointActor(
       case (Transient(queue), Handle(handle)) ⇒ {
         handle.open(self)
         notifyListeners(RemoteClientConnected(transport, remoteAddress))
+        log.debug("Sending {} buffered messages to [{}]", queue.size, remoteAddress)
         queue.reverse.foreach { case Send(message, senderOption, recipient) ⇒ handle.write(message, senderOption, recipient) }
       }
       case _ ⇒ //This should never happen
@@ -356,6 +365,9 @@ class EndpointActor(
   when(Connected) {
     case Event(MessageArrived(msg), handleState) ⇒ receiveMessage(msg); stay using handleState
     case Event(Send(msg, senderOption, recipient), handleState @ Handle(handle)) ⇒ try {
+      if (provider.remoteSettings.LogSend) {
+        log.debug("Sending message {} from {} to {}", msg, senderOption, recipient)
+      }
       handle.write(msg, senderOption, recipient); stay using handleState
     } catch {
       case NonFatal(reason) ⇒ {
@@ -371,11 +383,15 @@ class EndpointActor(
 
   onTermination {
     case StopEvent(_, Connected, Handle(handle)) ⇒ try {
+      log.debug("Shutting down endpoint for [{}]", remoteAddress)
+
       handle.close()
+
       if (!isServer) {
         notifyListeners(RemoteClientDisconnected(transport, remoteAddress))
         notifyListeners(RemoteClientShutdown(transport, remoteAddress))
       }
+
     } catch {
       case NonFatal(reason) ⇒ {
         notifyError(reason)
@@ -386,6 +402,7 @@ class EndpointActor(
 
   private def attemptConnect() {
     try {
+      log.debug("Endpoint connecting to [{}]", remoteAddress)
       connector.connect(remoteAddress, self)
     } catch {
       case NonFatal(reason) ⇒ {
