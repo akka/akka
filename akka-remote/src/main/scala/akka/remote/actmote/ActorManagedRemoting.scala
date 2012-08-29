@@ -50,7 +50,7 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
 
       } catch {
         case e: akka.pattern.AskTimeoutException ⇒ log.warning("Shutdown timed out")
-        case NonFatal(e) => log.error(e, "Shutdown failed")
+        case NonFatal(e)                         ⇒ log.error(e, "Shutdown failed")
       }
     }
   }
@@ -68,8 +68,8 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
       try {
         this.address = Await.result(addressFuture, timeout.duration)
       } catch {
-        case e: akka.pattern.AskTimeoutException => throw new RemoteTransportException("Startup timed out", e)
-        case NonFatal(e) => throw new RemoteTransportException("Startup failed", e)
+        case e: akka.pattern.AskTimeoutException ⇒ throw new RemoteTransportException("Startup timed out", e)
+        case NonFatal(e)                         ⇒ throw new RemoteTransportException("Startup failed", e)
       }
     }
   }
@@ -176,7 +176,7 @@ class HeadActor(
 
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
     case _: EndpointException ⇒ Stop
-    case NonFatal(_) => Stop // What exceptions should we escalate?
+    case NonFatal(_)          ⇒ Stop // What exceptions should we escalate?
   }
 
   def receive = {
@@ -186,17 +186,16 @@ class HeadActor(
       connector.listen(self)
     }
 
-    case ConnectorInitialized(address) => {
+    case ConnectorInitialized(address) ⇒ {
       this.address = address
       startupFuture ! address
       notifyListeners(RemoteServerStarted(transport))
     }
 
-    case ConnectorFailed(reason) => {
+    case ConnectorFailed(reason) ⇒ {
       notifyListeners(RemoteServerError(reason, transport))
       startupFuture ! Status.Failure(reason)
     }
-
 
     // This is not supported as these will be removed from API
     //case ShutdownEndpoint(address) ⇒
@@ -258,7 +257,7 @@ class HeadActor(
       connector.shutdown()
       notifyListeners(RemoteServerShutdown(transport))
     } catch {
-      case NonFatal(e) => {
+      case NonFatal(e) ⇒ {
         notifyListeners(RemoteServerError(e, transport))
         log.error(e, "Unable to shut down the underlying TransportConnector")
       }
@@ -373,7 +372,7 @@ class EndpointActor(
         throw new EndpointWriteException(remoteAddress, "failed to write to transport", reason)
       }
     }
-    case Event(Disconnected(_), handleState) => {
+    case Event(Disconnected(_), handleState) ⇒ {
       //TODO: handle disconnects
       stay using handleState
     }
