@@ -12,6 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.util.duration._
 import util.control.NonFatal
+import concurrent.util.Deadline
 
 class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
 
@@ -119,8 +120,7 @@ private[actmote] case class Send(message: Any, senderOption: Option[ActorRef], r
 object HeadActor {
   sealed trait EndpointPolicy
   case class Pass(endpoint: ActorRef) extends EndpointPolicy
-  // TODO: what type should be used for points in time?
-  case class Failed(timeOfFailure: Long) extends EndpointPolicy
+  case class Failed(timeOfFailure: Deadline) extends EndpointPolicy
 
   // TODO: How to handle passive connections?
   class EndpointRegistry {
@@ -134,7 +134,7 @@ object HeadActor {
       endpointToAddress += endpoint -> address
     }
 
-    def markFailed(endpoint: ActorRef, timeOfFailure: Long) {
+    def markFailed(endpoint: ActorRef, timeOfFailure: Deadline) {
       val address = endpointToAddress(endpoint)
       endpointToAddress.remove(endpoint)
       addressToEndpointAndPolicy(address) = Failed(timeOfFailure)
@@ -250,8 +250,8 @@ class HeadActor(
     context.watch(endpoint)
   }
 
-  // TODO: implement this and make configurable
-  private def retryLatchOpen(timeOfFailure: Long) = false
+  // TODO: de-correlate retries
+  private def retryLatchOpen(timeOfFailure: Deadline) = (Deadline.now + settings.RetryLatchClosedFor).isOverdue()
 
   override def postStop() {
     try {
