@@ -281,18 +281,8 @@ class HeadActor(
 
 }
 
-//TODO: Does stash deliver all messages to dead letters on stop?
-//TODO: Even if they are delivered to dead letters, they are wrapped in Send(). Is this a problem?
 object EndpointActor {
   case object AttemptConnect
-
-  sealed trait EndpointState
-  case object WaitConnect extends EndpointState
-  case object Connected extends EndpointState
-
-  sealed trait EndpointData
-  case object Transient extends EndpointData
-  case class Handle(handle: TransportConnectorHandle) extends EndpointData
 }
 
 class EndpointException(remoteAddress: Address, msg: String, cause: Throwable) extends Exception(msg + "; remoteAddress = " + remoteAddress, cause)
@@ -300,8 +290,10 @@ class EndpointWriteException(remoteAddress: Address, msg: String, cause: Throwab
 class EndpointCloseException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 class EndpointOpenException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 
-// TODO: FSM is no longer needed, use become/unbecome
+//TODO: Does stash deliver all messages to dead letters on stop?
+//TODO: Even if they are delivered to dead letters, they are wrapped in Send(). Is this a problem?
 // TODO: Set up deque based mailbox somewhere..
+// TODO: decouple endpoint as much from external collaborators as possible and make individually testable!!!
 class EndpointActor(
   val provider: RemoteActorRefProvider,
   val address: Address,
@@ -309,9 +301,8 @@ class EndpointActor(
   val connector: TransportConnector,
   val transport: RemoteTransport,
   val settings: ActorManagedRemotingSettings,
-  handleOption: Option[TransportConnectorHandle]) extends Actor
+  private var handleOption: Option[TransportConnectorHandle]) extends Actor
   with Stash
-  with FSM[EndpointActor.EndpointState, EndpointActor.EndpointData]
   with LifeCycleNotificationHelper {
 
   import EndpointActor._
@@ -324,7 +315,7 @@ class EndpointActor(
 
   val queueLimit: Int = settings.PreConnectBufferSize
 
-  def notifyError(reason: Throwable) {
+  private def notifyError(reason: Throwable) {
     if (isServer) {
       notifyListeners(RemoteServerError(reason, transport))
     } else {
@@ -332,49 +323,55 @@ class EndpointActor(
     }
   }
 
-  handleOption match {
-    case Some(handle) ⇒ {
-      startWith(Connected, Handle(handle))
-      handle.open(self)
-      notifyListeners(RemoteServerClientConnected(transport, Some(remoteAddress)))
-    }
-    case None ⇒ {
-      notifyListeners(RemoteClientStarted(transport, remoteAddress))
-      startWith(WaitConnect, Transient)
-      self ! AttemptConnect
+  override def postRestart(reason: Throwable) {
+    super.postRestart(reason)
+    // Clear handle to force reconnect
+    handleOption = None
+  }
+
+  override def preStart {
+    initialize()
+  }
+
+  private def initialize() {
+    handleOption match {
+      case Some(handle) ⇒ {
+        handle.open(self)
+        notifyListeners(RemoteServerClientConnected(transport, Some(remoteAddress)))
+        context.become(connected)
+      }
+      case None ⇒ {
+        notifyListeners(RemoteClientStarted(transport, remoteAddress))
+        self ! AttemptConnect
+      }
     }
   }
 
-  when(WaitConnect) {
-    case Event(AttemptConnect, _)                ⇒ attemptConnect(); stay using stateData
-
-    case Event(s @ Send(msg, _, _), Transient)   ⇒ stash(); stay using stateData
-    case Event(ConnectionInitialized(handle), _) ⇒ goto(Connected) using Handle(handle)
-
-    case Event(ConnectionFailed(reason), Transient) ⇒ {
+  // Unconnected state
+  def receive = {
+    case AttemptConnect      ⇒ attemptConnect()
+    case s @ Send(msg, _, _) ⇒ stash()
+    case ConnectionInitialized(handle) ⇒ {
+      handleOption = Some(handle)
+      handle.open(self)
+      // Requeue all stored send messages
+      unstashAll()
+      notifyListeners(RemoteClientConnected(transport, remoteAddress))
+      context.become(connected)
+    }
+    case ConnectionFailed(reason) ⇒ {
       // Give up
       throw new EndpointOpenException(remoteAddress, "falied to connect", reason)
     }
   }
 
-  onTransition {
-    // Send messages that were queued up during connection attempts
-    case WaitConnect -> Connected ⇒ (stateData, nextStateData) match {
-      case (Transient, Handle(handle)) ⇒ {
-        handle.open(self)
-        notifyListeners(RemoteClientConnected(transport, remoteAddress))
-        unstashAll()
-      }
-      case _ ⇒ //This should never happen
-    }
-  }
-
-  when(Connected) {
-    case Event(Send(msg, senderOption, recipient), handleState @ Handle(handle)) ⇒ try {
+  // Connected state
+  def connected: Receive = {
+    case Send(msg, senderOption, recipient) ⇒ try {
       if (provider.remoteSettings.LogSend) {
         log.debug("Sending message {} from {} to {}", msg, senderOption, recipient)
       }
-      handle.write(msg, senderOption, recipient); stay using handleState
+      handleOption.foreach { _.write(msg, senderOption, recipient) }
     } catch {
       case NonFatal(reason) ⇒ {
         stash() // Retry if policy is retry and not stash
@@ -382,17 +379,16 @@ class EndpointActor(
         throw new EndpointWriteException(remoteAddress, "failed to write to transport", reason)
       }
     }
-    case Event(Disconnected(_), handleState) ⇒ {
-      //TODO: handle disconnects
-      stay using handleState
+    case Disconnected(_) ⇒ {
+      //TODO: notify head
     }
   }
 
-  onTermination {
-    case StopEvent(_, Connected, Handle(handle)) ⇒ try {
+  override def postStop {
+    try {
       log.debug("Shutting down endpoint for [{}]", remoteAddress)
 
-      handle.close()
+      handleOption foreach { _.close() }
 
       if (!isServer) {
         notifyListeners(RemoteClientDisconnected(transport, remoteAddress))
