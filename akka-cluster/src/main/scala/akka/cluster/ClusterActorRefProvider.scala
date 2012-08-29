@@ -33,12 +33,17 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
   override def parseConfig(path: String, config: Config): Option[Deploy] = {
     super.parseConfig(path, config) match {
       case d @ Some(deploy) ⇒
-        if (deploy.config.getBoolean("cluster")) {
+        if (deploy.config.getBoolean("cluster.enabled")) {
           if (deploy.scope != NoScopeGiven)
             throw new ConfigurationException("Cluster deployment can't be combined with scope [%s]".format(deploy.scope))
           if (deploy.routerConfig.isInstanceOf[RemoteRouterConfig])
             throw new ConfigurationException("Cluster deployment can't be combined with [%s]".format(deploy.routerConfig))
-          Some(deploy.copy(routerConfig = ClusterRouterConfig(deploy.routerConfig)))
+
+          val totalInstances = deploy.config.getInt("nr-of-instances")
+          val maxInstancesPerNode = deploy.config.getInt("cluster.max-nr-of-instances-per-node")
+          Some(deploy.copy(
+            routerConfig = ClusterRouterConfig(deploy.routerConfig, totalInstances, maxInstancesPerNode),
+            scope = ClusterScope))
         } else d
       case None ⇒ None
     }

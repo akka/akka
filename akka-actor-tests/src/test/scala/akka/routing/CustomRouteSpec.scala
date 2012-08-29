@@ -15,8 +15,8 @@ class CustomRouteSpec extends AkkaSpec {
   import akka.dispatch.Dispatchers
 
   class MyRouter(target: ActorRef) extends RouterConfig {
-    override def createRoute(props: Props, provider: RouteeProvider): Route = {
-      provider.createRoutees(props, 1)
+    override def createRoute(provider: RouteeProvider): Route = {
+      provider.createRoutees(1)
 
       {
         case (sender, message: String) ⇒ Seq(Destination(sender, target))

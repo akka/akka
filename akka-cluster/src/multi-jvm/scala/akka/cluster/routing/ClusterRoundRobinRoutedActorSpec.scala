@@ -40,8 +40,9 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
       akka.actor.deployment {
         /service-hello {
           router = round-robin
-          nr-of-instances = 3
-          cluster = on
+          nr-of-instances = 10
+          cluster.enabled = on
+          cluster.max-nr-of-instances-per-node = 2
         }
       }
       """)).
@@ -59,52 +60,66 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
   with ImplicitSender with DefaultTimeout {
   import ClusterRoundRobinRoutedActorMultiJvmSpec._
 
-  // sorted in the order used by the cluster
-  lazy val sortedRoles = Seq(first, second, third, fourth).sorted
+  lazy val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "service-hello")
+
+  def receiveReplies(expectedReplies: Int): Map[Address, Int] = {
+    val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
+    (receiveWhile(5 seconds, messages = expectedReplies) {
+      case ref: ActorRef ⇒ ref.path.address match {
+        case Address(_, _, None, None) ⇒ cluster.selfAddress
+        case a                         ⇒ a
+      }
+    }).foldLeft(zero) {
+      case (replyMap, address) ⇒ replyMap + (address -> (replyMap(address) + 1))
+    }
+  }
 
   "A cluster router configured with a RoundRobin router" must {
-    "start cluster" taggedAs LongRunningTest in {
-      awaitClusterUp(first, second, third, fourth)
+    "start cluster with 2 nodes" taggedAs LongRunningTest in {
+      awaitClusterUp(first, second)
       enterBarrier("after-1")
     }
 
-    "be locally instantiated on a cluster node and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
+    "deploy routees to the member nodes in the cluster" taggedAs LongRunningTest in {
 
-      runOn(sortedRoles.dropRight(1): _*) {
-        enterBarrier("start", "broadcast-end", "end")
-      }
-
-      runOn(sortedRoles.last) {
-        enterBarrier("start")
-        val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "service-hello")
+      runOn(first) {
         actor.isInstanceOf[RoutedActorRef] must be(true)
 
-        val connectionCount = 3
         val iterationCount = 10
-
-        for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
+        for (i ← 0 until iterationCount) {
           actor ! "hit"
         }
 
-        val replies: Map[Address, Int] = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
-          case ref: ActorRef ⇒ ref.path.address
-        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
-          case (replyMap, address) ⇒ replyMap + (address -> (replyMap(address) + 1))
-        }
+        val replies = receiveReplies(iterationCount)
 
-        enterBarrier("broadcast-end")
-        actor ! Broadcast(PoisonPill)
-
-        enterBarrier("end")
-        replies.values foreach { _ must be(iterationCount) }
-        replies.get(node(fourth).address) must be(None)
-
-        // shut down the actor before we let the other node(s) shut down so we don't try to send
-        // "Terminate" to a shut down node
-        system.stop(actor)
+        replies(first) must be > (0)
+        replies(second) must be > (0)
+        replies(third) must be(0)
+        replies(fourth) must be(0)
+        replies.values.sum must be(iterationCount)
       }
 
       enterBarrier("after-2")
+    }
+
+    "deploy routees to new nodes in the cluster" taggedAs LongRunningTest in {
+
+      // add third and fourth
+      awaitClusterUp(first, second, third, fourth)
+
+      runOn(first) {
+        val iterationCount = 10
+        for (i ← 0 until iterationCount) {
+          actor ! "hit"
+        }
+
+        val replies = receiveReplies(iterationCount)
+
+        replies.values.foreach { _ must be > (0) }
+        replies.values.sum must be(iterationCount)
+      }
+
+      enterBarrier("after-3")
     }
   }
 }

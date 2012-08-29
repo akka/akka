@@ -29,10 +29,11 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) ext
   def this(local: RouterConfig, nodes: java.lang.Iterable[Address]) = this(local, nodes.asScala)
   def this(local: RouterConfig, nodes: Array[Address]) = this(local, nodes: Iterable[Address])
 
-  override def createRouteeProvider(context: ActorContext) = new RemoteRouteeProvider(nodes, context, resizer)
+  override def createRouteeProvider(context: ActorContext, routeeProps: Props) =
+    new RemoteRouteeProvider(nodes, context, routeeProps, resizer)
 
-  override def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
-    local.createRoute(routeeProps, routeeProvider)
+  override def createRoute(routeeProvider: RouteeProvider): Route = {
+    local.createRoute(routeeProvider)
   }
 
   override def createActor(): Router = local.createActor()
@@ -55,8 +56,8 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) ext
  *
  * Routee paths may not be combined with remote target nodes.
  */
-class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _resizer: Option[Resizer])
-  extends RouteeProvider(_context, _resizer) {
+class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _routeeProps: Props, _resizer: Option[Resizer])
+  extends RouteeProvider(_context, _routeeProps, _resizer) {
 
   if (nodes.isEmpty) throw new ConfigurationException("Must specify list of remote target.nodes for [%s]"
     format context.self.path.toString)
@@ -68,12 +69,12 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _re
     throw new ConfigurationException("Remote target.nodes can not be combined with routees for [%s]"
       format context.self.path.toString)
 
-  override def createRoutees(props: Props, nrOfInstances: Int): Unit = {
+  override def createRoutees(nrOfInstances: Int): Unit = {
     val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
     val refs = IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
       val name = "c" + i
-      val deploy = Deploy("", ConfigFactory.empty(), props.routerConfig, RemoteScope(nodeAddressIter.next))
-      impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
+      val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(nodeAddressIter.next))
+      impl.provider.actorOf(impl, routeeProps, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
         systemService = false, Some(deploy), lookupDeploy = false, async = false)
     })
     registerRoutees(refs)

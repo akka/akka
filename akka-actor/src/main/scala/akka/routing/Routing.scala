@@ -48,7 +48,6 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
     _supervisor) {
 
   private[akka] val routerConfig = _props.routerConfig
-  private[akka] val routeeProps = _props.copy(routerConfig = NoRouter)
   private[akka] val resizeInProgress = new AtomicBoolean
   private val resizeCounter = new AtomicLong
 
@@ -61,12 +60,13 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   def routeeProvider = _routeeProvider
 
   val route = {
-    _routeeProvider = routerConfig.createRouteeProvider(this)
-    val r = routerConfig.createRoute(routeeProps, routeeProvider)
+    val routeeProps = _props.copy(routerConfig = NoRouter)
+    _routeeProvider = routerConfig.createRouteeProvider(this, routeeProps)
+    val r = routerConfig.createRoute(routeeProvider)
     // initial resize, before message send
     routerConfig.resizer foreach { r ⇒
       if (r.isTimeForResize(resizeCounter.getAndIncrement()))
-        r.resize(routeeProps, routeeProvider)
+        r.resize(routeeProvider)
     }
     r
   }
@@ -160,9 +160,10 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
  */
 trait RouterConfig {
 
-  def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route
+  def createRoute(routeeProvider: RouteeProvider): Route
 
-  def createRouteeProvider(context: ActorContext): RouteeProvider = new RouteeProvider(context, resizer)
+  def createRouteeProvider(context: ActorContext, routeeProps: Props): RouteeProvider =
+    new RouteeProvider(context, routeeProps, resizer)
 
   def createActor(): Router = new Router {
     override def supervisorStrategy: SupervisorStrategy = RouterConfig.this.supervisorStrategy
@@ -204,7 +205,7 @@ trait RouterConfig {
  * Uses `context.actorOf` to create routees from nrOfInstances property
  * and `context.actorFor` lookup routees from paths.
  */
-class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
+class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resizer: Option[Resizer]) {
 
   /**
    * Adds the routees to the router.
@@ -245,11 +246,11 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
   /**
    * Creates new routees from specified `Props` and registers them.
    */
-  def createRoutees(props: Props, nrOfInstances: Int): Unit = {
+  def createRoutees(nrOfInstances: Int): Unit = {
     if (nrOfInstances <= 0) throw new IllegalArgumentException(
       "Must specify nrOfInstances or routees for [%s]" format context.self.path.toString)
     else {
-      val routees = (1 to nrOfInstances).map(_ ⇒ context.actorOf(props))(scala.collection.breakOut)
+      val routees = (1 to nrOfInstances).map(_ ⇒ context.actorOf(routeeProps))(scala.collection.breakOut)
       registerRoutees(routees)
     }
   }
@@ -301,16 +302,16 @@ class RouteeProvider(val context: ActorContext, val resizer: Option[Resizer]) {
  * @see akka.routing.RouterConfig
  */
 abstract class CustomRouterConfig extends RouterConfig {
-  override def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+  override def createRoute(routeeProvider: RouteeProvider): Route = {
     // as a bonus, this prevents closing of props and context in the returned Route PartialFunction
-    val customRoute = createCustomRoute(props, routeeProvider)
+    val customRoute = createCustomRoute(routeeProvider)
 
     {
       case (sender, message) ⇒ customRoute.destinationsFor(sender, message)
     }
   }
 
-  def createCustomRoute(props: Props, routeeProvider: RouteeProvider): CustomRoute
+  def createCustomRoute(routeeProvider: RouteeProvider): CustomRoute
 
 }
 
@@ -334,7 +335,7 @@ trait Router extends Actor {
 
     case Router.Resize ⇒
       val ab = ref.resizeInProgress
-      if (ab.get) try ref.routerConfig.resizer foreach (_.resize(ref.routeeProps, ref.routeeProvider)) finally ab.set(false)
+      if (ab.get) try ref.routerConfig.resizer foreach (_.resize(ref.routeeProvider)) finally ab.set(false)
 
     case Terminated(child) ⇒
       ref.removeRoutees(IndexedSeq(child))
@@ -409,7 +410,7 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
 @SerialVersionUID(1L)
 abstract class NoRouter extends RouterConfig
 case object NoRouter extends NoRouter {
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null // FIXME, null, really??
+  def createRoute(routeeProvider: RouteeProvider): Route = null // FIXME, null, really??
   def routerDispatcher: String = ""
   def supervisorStrategy = null // FIXME null, really??
   override def withFallback(other: RouterConfig): RouterConfig = other
@@ -448,7 +449,7 @@ class FromConfig(val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
   override def verifyConfig(): Unit =
     throw new ConfigurationException("router needs external configuration from file (e.g. application.conf)")
 
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = null
+  def createRoute(routeeProvider: RouteeProvider): Route = null
 
   def supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy
 }
@@ -553,9 +554,9 @@ trait RoundRobinLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+  def createRoute(routeeProvider: RouteeProvider): Route = {
     if (resizer.isEmpty) {
-      if (routees.isEmpty) routeeProvider.createRoutees(props, nrOfInstances)
+      if (routees.isEmpty) routeeProvider.createRoutees(nrOfInstances)
       else routeeProvider.registerRouteesFor(routees)
     }
 
@@ -675,9 +676,9 @@ trait RandomLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+  def createRoute(routeeProvider: RouteeProvider): Route = {
     if (resizer.isEmpty) {
-      if (routees.isEmpty) routeeProvider.createRoutees(props, nrOfInstances)
+      if (routees.isEmpty) routeeProvider.createRoutees(nrOfInstances)
       else routeeProvider.registerRouteesFor(routees)
     }
 
@@ -858,9 +859,9 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
     case _                   ⇒ 0
   }
 
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+  def createRoute(routeeProvider: RouteeProvider): Route = {
     if (resizer.isEmpty) {
-      if (routees.isEmpty) routeeProvider.createRoutees(props, nrOfInstances)
+      if (routees.isEmpty) routeeProvider.createRoutees(nrOfInstances)
       else routeeProvider.registerRouteesFor(routees)
     }
 
@@ -1009,9 +1010,9 @@ trait BroadcastLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+  def createRoute(routeeProvider: RouteeProvider): Route = {
     if (resizer.isEmpty) {
-      if (routees.isEmpty) routeeProvider.createRoutees(props, nrOfInstances)
+      if (routees.isEmpty) routeeProvider.createRoutees(nrOfInstances)
       else routeeProvider.registerRouteesFor(routees)
     }
 
@@ -1130,9 +1131,9 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
   def within: Duration
 
-  def createRoute(props: Props, routeeProvider: RouteeProvider): Route = {
+  def createRoute(routeeProvider: RouteeProvider): Route = {
     if (resizer.isEmpty) {
-      if (routees.isEmpty) routeeProvider.createRoutees(props, nrOfInstances)
+      if (routees.isEmpty) routeeProvider.createRoutees(nrOfInstances)
       else routeeProvider.registerRouteesFor(routees)
     }
 
@@ -1175,7 +1176,7 @@ trait Resizer {
    * This method is invoked only in the context of the Router actor in order to safely
    * create/stop children.
    */
-  def resize(props: Props, routeeProvider: RouteeProvider): Unit
+  def resize(routeeProvider: RouteeProvider): Unit
 }
 
 case object DefaultResizer {
@@ -1271,11 +1272,11 @@ case class DefaultResizer(
 
   def isTimeForResize(messageCounter: Long): Boolean = (messageCounter % messagesPerResize == 0)
 
-  def resize(props: Props, routeeProvider: RouteeProvider): Unit = {
+  def resize(routeeProvider: RouteeProvider): Unit = {
     val currentRoutees = routeeProvider.routees
     val requestedCapacity = capacity(currentRoutees)
 
-    if (requestedCapacity > 0) routeeProvider.createRoutees(props, requestedCapacity)
+    if (requestedCapacity > 0) routeeProvider.createRoutees(requestedCapacity)
     else if (requestedCapacity < 0) routeeProvider.removeRoutees(-requestedCapacity, stopDelay)
   }
 
