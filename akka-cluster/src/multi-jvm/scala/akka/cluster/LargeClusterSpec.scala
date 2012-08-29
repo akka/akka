@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit
 import akka.remote.testconductor.RoleName
 import akka.actor.Props
 import akka.actor.Actor
+import akka.cluster.MemberStatus._
 
 object LargeClusterMultiJvmSpec extends MultiNodeConfig {
   // each jvm simulates a datacenter with many nodes
@@ -147,15 +148,20 @@ abstract class LargeClusterSpec
       val latch = TestLatch(clusterNodes.size)
       clusterNodes foreach { c ⇒
         c.subscribe(system.actorOf(Props(new Actor {
+          var upCount = 0
           def receive = {
-            case MembersChanged(members) ⇒
-              if (!latch.isOpen && members.size == totalNodes && members.forall(_.status == MemberStatus.Up)) {
+            case state: CurrentClusterState ⇒
+              upCount = state.members.count(_.status == Up)
+            case MemberUp(_) if !latch.isOpen ⇒
+              upCount += 1
+              if (upCount == totalNodes) {
                 log.debug("All [{}] nodes Up in [{}], it took [{}], received [{}] gossip messages",
                   totalNodes, c.selfAddress, tookMillis, gossipCount(c))
                 latch.countDown()
               }
+            case _ ⇒ // ignore
           }
-        })), classOf[MembersChanged])
+        })), classOf[MemberEvent])
       }
 
       runOn(from) {
@@ -276,18 +282,20 @@ abstract class LargeClusterSpec
         val latch = TestLatch(nodesPerDatacenter)
         systems foreach { sys ⇒
           Cluster(sys).subscribe(sys.actorOf(Props(new Actor {
-            var gotExpectedLiveNodes = false
-            var gotExpectedUnreachableNodes = false
+            var gotUnreachable = Set.empty[Member]
             def receive = {
-              case MembersChanged(members) if !latch.isOpen ⇒
-                gotExpectedLiveNodes = members.size == liveNodes
+              case state: CurrentClusterState ⇒
+                gotUnreachable = state.unreachable
                 checkDone()
-              case UnreachableMembersChanged(unreachable) if !latch.isOpen ⇒
-                gotExpectedUnreachableNodes = unreachable.size == unreachableNodes
+              case MemberUnreachable(m) if !latch.isOpen ⇒
+                gotUnreachable = gotUnreachable + m
+                checkDone()
+              case MemberDowned(m) if !latch.isOpen ⇒
+                gotUnreachable = gotUnreachable + m
                 checkDone()
               case _ ⇒ // not interesting
             }
-            def checkDone(): Unit = if (gotExpectedLiveNodes && gotExpectedUnreachableNodes) {
+            def checkDone(): Unit = if (gotUnreachable.size == unreachableNodes) {
               log.info("Detected [{}] unreachable nodes in [{}], it took [{}], received [{}] gossip messages",
                 unreachableNodes, Cluster(sys).selfAddress, tookMillis, gossipCount(Cluster(sys)))
               latch.countDown()

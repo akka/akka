@@ -16,13 +16,18 @@ object ClusterApp {
       def receive = {
         case state: CurrentClusterState ⇒
           println("Current members: " + state.members)
-        case MembersChanged(members) ⇒
-          println("Current members: " + members)
+        case MemberJoined(member) ⇒
+          println("Member joined: " + member)
+        case MemberUp(member) ⇒
+          println("Member is Up: " + member)
+        case MemberUnreachable(member) ⇒
+          println("Member detected as unreachable: " + member)
+        case _ ⇒ // ignore
 
       }
     }))
 
-    Cluster(system).subscribe(clusterListener, classOf[MembersChanged])
+    Cluster(system).subscribe(clusterListener, classOf[ClusterDomainEvent])
   }
 
 }

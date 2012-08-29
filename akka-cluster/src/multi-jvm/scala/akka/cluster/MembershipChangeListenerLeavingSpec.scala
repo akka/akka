@@ -54,15 +54,13 @@ abstract class MembershipChangeListenerLeavingSpec
 
       runOn(third) {
         val latch = TestLatch()
-        val expectedAddresses = Set(first, second, third) map address
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
-            case MembersChanged(members) ⇒
-              if (members.map(_.address) == expectedAddresses &&
-                members.exists(m ⇒ m.address == address(second) && m.status == MemberStatus.Leaving))
-                latch.countDown()
+            case MemberLeft(m) if m.address == address(second) ⇒
+              latch.countDown()
+            case _ ⇒ // ignore
           }
-        })), classOf[MembersChanged])
+        })), classOf[MemberEvent])
         enterBarrier("registered-listener")
         latch.await
       }
