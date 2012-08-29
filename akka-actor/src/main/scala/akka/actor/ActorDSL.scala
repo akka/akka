@@ -80,17 +80,15 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
 
   protected class Extension(val system: ExtendedActorSystem) extends akka.actor.Extension with InboxExtension {
 
-    val boss = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props.empty, "dsl").asInstanceOf[RepointableActorRef]
+    val boss = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(
+      new Actor {
+        def receive = { case any ⇒ sender ! any }
+      }), "dsl").asInstanceOf[RepointableActorRef]
 
     {
-      val timeout = system.settings.CreationTimeout.duration
-      val deadline = Deadline.now + timeout
-      while (!boss.isStarted) {
-        if (deadline.hasTimeLeft)
-          if (system.isTerminated) throw new IllegalStateException("actor system is already shutdown")
-          else Thread.sleep(10)
-        else throw new TimeoutException("failed to create /system/dsl actor within " + timeout)
-      }
+      implicit val timeout = system.settings.CreationTimeout
+      if (Await.result(boss ? "OK", system.settings.CreationTimeout.duration) != "OK")
+        throw new IllegalStateException("Creation of boss actor did not succeed!")
     }
 
     lazy val config = system.settings.config.getConfig("akka.actor.dsl")

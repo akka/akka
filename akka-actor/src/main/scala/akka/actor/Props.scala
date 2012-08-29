@@ -74,11 +74,6 @@ object Props {
    * using the supplied thunk.
    */
   def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
-
-  /**
-   * Returns a new Props whose creator will instantiate an Actor that has the behavior specified
-   */
-  def apply(behavior: ActorContext ⇒ Actor.Receive): Props = apply(new Actor { def receive = behavior(context) })
 }
 
 /**
