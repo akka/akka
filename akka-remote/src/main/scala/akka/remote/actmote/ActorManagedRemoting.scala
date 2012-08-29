@@ -1,18 +1,18 @@
 package akka.remote.actmote
 
 import akka.actor._
-import akka.event.Logging
-import akka.event.LoggingAdapter
+import akka.event._
 import akka.pattern.ask
 import akka.pattern.gracefulStop
 import akka.remote._
-import actmote.TransportConnector._
 import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.util.duration._
 import util.control.NonFatal
 import concurrent.util.Deadline
+import scala.Some
+import actmote.TransportConnector._
 
 class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
 
@@ -60,7 +60,7 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
     log.info("Starting remoting")
     if (headActor eq null) {
       transport = loadTransport
-      headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider, transport, managedRemoteSettings)), HeadActorName)
+      headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider.remoteSettings, transport, managedRemoteSettings)), HeadActorName)
 
       val timeout = new Timeout(managedRemoteSettings.StartupTimeout)
       val addressFuture = headActor.ask(Listen(this))(timeout).mapTo[Address]
@@ -97,15 +97,15 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
 
 // Cut out
 trait LifeCycleNotificationHelper {
-  def provider: RemoteActorRefProvider
-  def extendedSystem: ExtendedActorSystem
+  def remoteSettings: RemoteSettings
+  def eventStream: EventStream
   def log: LoggingAdapter
 
-  def useUntrustedMode = provider.remoteSettings.UntrustedMode
-  def logRemoteLifeCycleEvents = provider.remoteSettings.LogRemoteLifeCycleEvents
+  //private def useUntrustedMode = remoteSettings.UntrustedMode
+  private def logRemoteLifeCycleEvents = remoteSettings.LogRemoteLifeCycleEvents
 
-  def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
-    extendedSystem.eventStream.publish(message)
+  protected def notifyListeners(message: RemoteLifeCycleEvent): Unit = {
+    eventStream.publish(message)
     if (logRemoteLifeCycleEvents) log.log(message.logLevel, "{}", message)
   }
 }
@@ -160,7 +160,7 @@ object HeadActor {
 
 // TODO: HeadActor MUST WATCH his endpoint Actors
 class HeadActor(
-  val provider: RemoteActorRefProvider,
+  val remoteSettings: RemoteSettings,
   val connector: TransportConnector,
   val settings: ActorManagedRemotingSettings) extends Actor with LifeCycleNotificationHelper {
 
@@ -169,7 +169,8 @@ class HeadActor(
   import HeadActor._
 
   val extendedSystem = context.system.asInstanceOf[ExtendedActorSystem]
-  val log = Logging(context.system.eventStream, "HeadActor")
+  val eventStream = context.system.eventStream
+  val log = Logging(eventStream, "HeadActor")
 
   private var address: Address = _
   // Mapping between addresses and endpoint actors. If passive connections are turned off, incoming connections
@@ -254,12 +255,12 @@ class HeadActor(
 
   private def createEndpoint(remote: Address, handleOption: Option[TransportConnectorHandle]) = {
     val endpoint = context.actorOf(Props(new EndpointActor(
-      provider,
+      transport,
+      connector,
+      remoteSettings,
+      settings,
       address,
       remote,
-      connector,
-      transport,
-      settings,
       handleOption)))
     context.watch(endpoint)
   }
@@ -295,22 +296,22 @@ class EndpointOpenException(remoteAddress: Address, msg: String, cause: Throwabl
 // TODO: Set up deque based mailbox somewhere..
 // TODO: decouple endpoint as much from external collaborators as possible and make individually testable!!!
 class EndpointActor(
-  val provider: RemoteActorRefProvider,
+  val transport: RemoteTransport,
+  val connector: TransportConnector,
+  val remoteSettings: RemoteSettings,
+  val settings: ActorManagedRemotingSettings,
   val address: Address,
   val remoteAddress: Address,
-  val connector: TransportConnector,
-  val transport: RemoteTransport,
-  val settings: ActorManagedRemotingSettings,
   private var handleOption: Option[TransportConnectorHandle]) extends Actor
   with Stash
   with LifeCycleNotificationHelper {
 
   import EndpointActor._
-  import actmote.TransportConnector._
 
   val extendedSystem = context.system.asInstanceOf[ExtendedActorSystem]
+  val eventStream = extendedSystem.eventStream
 
-  override val log = Logging(context.system.eventStream, "EndpointActor(remote = " + remoteAddress + ")")
+  override val log = Logging(eventStream, "EndpointActor(remote = " + remoteAddress + ")")
   val isServer = handleOption.isDefined
 
   val queueLimit: Int = settings.PreConnectBufferSize
@@ -368,7 +369,7 @@ class EndpointActor(
   // Connected state
   def connected: Receive = {
     case Send(msg, senderOption, recipient) ⇒ try {
-      if (provider.remoteSettings.LogSend) {
+      if (remoteSettings.LogSend) {
         log.debug("Sending message {} from {} to {}", msg, senderOption, recipient)
       }
       handleOption.foreach { _.write(msg, senderOption, recipient) }
@@ -379,8 +380,10 @@ class EndpointActor(
         throw new EndpointWriteException(remoteAddress, "failed to write to transport", reason)
       }
     }
-    case Disconnected(_) ⇒ {
-      //TODO: notify head
+    case d @ Disconnected(_) ⇒ {
+      // notify head
+      // there is an implicit assumption that parent is the HeadActor
+      context.parent ! d
     }
   }
 
