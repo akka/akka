@@ -114,15 +114,9 @@ An (unbounded) deque-based mailbox can be configured as follows:
   }
 
   /**
-   *  Overridden callback. Prepends all messages in the stash to the mailbox,
-   *  clears the stash, stops all children and invokes the postStop() callback of the superclass.
+   *  Overridden callback. Prepends all messages in the stash to the mailbox and clears the stash.
    */
-  override def preRestart(reason: Throwable, message: Option[Any]) {
-    try unstashAll() finally {
-      context.children foreach context.stop
-      postStop()
-    }
-  }
+  override def postStop(): Unit = unstashAll()
 
 }
 
