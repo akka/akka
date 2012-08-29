@@ -123,6 +123,7 @@ object HeadActor {
   case class Failed(timeOfFailure: Deadline) extends EndpointPolicy
 
   // TODO: How to handle passive connections?
+  // TODO: Implement pruning of old entries
   class EndpointRegistry {
     private val addressToEndpointAndPolicy = scala.collection.mutable.Map[Address, EndpointPolicy]()
     private val endpointToAddress = scala.collection.mutable.Map[ActorRef, Address]()
@@ -145,10 +146,14 @@ object HeadActor {
       addressToEndpointAndPolicy(address) = Pass(endpoint)
     }
 
-    def remove(endpoint: ActorRef) {
+    def removeIfNotLatched(endpoint: ActorRef) {
       val address = endpointToAddress(endpoint)
+      addressToEndpointAndPolicy.get(address) match {
+        case Some(Failed(_)) ⇒ //Leave it be. It contains only the last failure time, but not the endpoint ref
+        case _               ⇒ addressToEndpointAndPolicy.remove(address)
+      }
+      // The endpoint is already stopped, always remove it
       endpointToAddress.remove(endpoint)
-      addressToEndpointAndPolicy.remove(address)
     }
   }
 }
@@ -174,9 +179,22 @@ class HeadActor(
   private var transport: RemoteTransport = _
   private var startupFuture: ActorRef = _
 
+  private val retryLatchEnabled = settings.RetryLatchClosedFor == 0
+
+  private def failureStrategy = if (!retryLatchEnabled) {
+    // This strategy keeps all the messages in the stash of the endpoint so restart will transfer the queue
+    // to the restarted endpoint -- thus no messages are lost
+    Restart
+  } else {
+    // This strategy throws away all the messages enqueued in the endpoint (in its stash), registers the time of failure,
+    // keeps throwing away messages until the retry latch becomes open (RetryLatchClosedFor)
+    endpoints.markFailed(sender, Deadline.now)
+    Stop
+  }
+
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-    case _: EndpointException ⇒ Stop
-    case NonFatal(_)          ⇒ Stop // What exceptions should we escalate?
+    case _: EndpointException ⇒ failureStrategy
+    case NonFatal(_)          ⇒ failureStrategy
   }
 
   def receive = {
@@ -230,10 +248,7 @@ class HeadActor(
     }
 
     case Terminated(endpoint) ⇒ {
-      //TODO: add real time of failure
-      //TODO: Terminate does NOT euqal failed!
-      //endpoints.markFailed(endpoint, 0)
-      endpoints.remove(endpoint)
+      endpoints.removeIfNotLatched(endpoint)
     }
   }
 
@@ -266,6 +281,8 @@ class HeadActor(
 
 }
 
+//TODO: Does stash deliver all messages to dead letters on stop?
+//TODO: Even if they are delivered to dead letters, they are wrapped in Send(). Is this a problem?
 object EndpointActor {
   case object AttemptConnect
 
@@ -274,7 +291,7 @@ object EndpointActor {
   case object Connected extends EndpointState
 
   sealed trait EndpointData
-  case class Transient(queue: List[Send]) extends EndpointData
+  case object Transient extends EndpointData
   case class Handle(handle: TransportConnectorHandle) extends EndpointData
 }
 
@@ -283,6 +300,8 @@ class EndpointWriteException(remoteAddress: Address, msg: String, cause: Throwab
 class EndpointCloseException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 class EndpointOpenException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 
+// TODO: FSM is no longer needed, use become/unbecome
+// TODO: Set up deque based mailbox somewhere..
 class EndpointActor(
   val provider: RemoteActorRefProvider,
   val address: Address,
@@ -291,6 +310,7 @@ class EndpointActor(
   val transport: RemoteTransport,
   val settings: ActorManagedRemotingSettings,
   handleOption: Option[TransportConnectorHandle]) extends Actor
+  with Stash
   with FSM[EndpointActor.EndpointState, EndpointActor.EndpointData]
   with LifeCycleNotificationHelper {
 
@@ -320,29 +340,19 @@ class EndpointActor(
     }
     case None ⇒ {
       notifyListeners(RemoteClientStarted(transport, remoteAddress))
-      startWith(WaitConnect, Transient(Nil))
+      startWith(WaitConnect, Transient)
       self ! AttemptConnect
     }
   }
 
   when(WaitConnect) {
-    case Event(AttemptConnect, _) ⇒ attemptConnect(); stay using stateData
+    case Event(AttemptConnect, _)                ⇒ attemptConnect(); stay using stateData
 
-    case Event(s @ Send(msg, _, _), Transient(queue)) ⇒ {
-      if (queue.size >= queueLimit) {
-        log.warning("Endpoint queue is full; dropping message: {}", msg)
-        extendedSystem.deadLetters ! msg
-        stay using Transient(queue)
-      } else {
-        stay using Transient(s :: queue)
-      }
-    }
+    case Event(s @ Send(msg, _, _), Transient)   ⇒ stash(); stay using stateData
     case Event(ConnectionInitialized(handle), _) ⇒ goto(Connected) using Handle(handle)
 
-    case Event(ConnectionFailed(reason), Transient(queue)) ⇒ {
+    case Event(ConnectionFailed(reason), Transient) ⇒ {
       // Give up
-      queue.reverse.foreach { case Send(message, _, _) ⇒ extendedSystem.deadLetters ! message }
-      notifyError(reason)
       throw new EndpointOpenException(remoteAddress, "falied to connect", reason)
     }
   }
@@ -350,11 +360,10 @@ class EndpointActor(
   onTransition {
     // Send messages that were queued up during connection attempts
     case WaitConnect -> Connected ⇒ (stateData, nextStateData) match {
-      case (Transient(queue), Handle(handle)) ⇒ {
+      case (Transient, Handle(handle)) ⇒ {
         handle.open(self)
         notifyListeners(RemoteClientConnected(transport, remoteAddress))
-        log.debug("Sending {} buffered messages to [{}]", queue.size, remoteAddress)
-        queue.reverse.foreach { case Send(message, senderOption, recipient) ⇒ handle.write(message, senderOption, recipient) }
+        unstashAll()
       }
       case _ ⇒ //This should never happen
     }
@@ -368,6 +377,7 @@ class EndpointActor(
       handle.write(msg, senderOption, recipient); stay using handleState
     } catch {
       case NonFatal(reason) ⇒ {
+        stash() // Retry if policy is retry and not stash
         notifyError(reason)
         throw new EndpointWriteException(remoteAddress, "failed to write to transport", reason)
       }
