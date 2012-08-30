@@ -160,7 +160,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
       enterBarrier("after-4")
     }
 
-    "deploy to other node when a node is down" taggedAs LongRunningTest in {
+    "deploy to other node when a node becomes down" taggedAs LongRunningTest in {
 
       runOn(first) {
         def currentRoutees = Await.result(router2 ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees
