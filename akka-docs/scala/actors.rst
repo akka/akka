@@ -108,6 +108,11 @@ Here is an example:
   meaning of an actor restart, which is described here:
   :ref:`supervision-restart`.
 
+.. warning::
+
+  Also avoid passing mutable state into the constructor of the Actor, since
+  the call-by-name block can be executed by another thread.
+
 Props
 -----
 
@@ -380,7 +385,7 @@ futures, because this is likely to be a common combination. Please note that
 all of the above is completely non-blocking and asynchronous: ``ask`` produces
 a :class:`Future`, three of which are composed into a new future using the
 for-comprehension and then ``pipeTo`` installs an ``onComplete``-handler on the
-future to effect the submission of the aggregated :class:`Result` to another
+future to affect the submission of the aggregated :class:`Result` to another
 actor.
 
 Using ``ask`` will send a message to the receiving Actor as with ``tell``, and

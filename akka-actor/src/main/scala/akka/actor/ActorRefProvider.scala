@@ -438,8 +438,9 @@ class LocalActorRefProvider(
     new LocalActorRef(system, Props(new Guardian(rootGuardianStrategy, isSystem = false)), theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
-        case "temp" ⇒ tempContainer
-        case other  ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
+        case "temp"        ⇒ tempContainer
+        case "deadLetters" ⇒ deadLetters
+        case other         ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
       }
     }
 

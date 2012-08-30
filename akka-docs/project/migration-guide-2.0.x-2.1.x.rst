@@ -201,7 +201,18 @@ v2.0 Java::
 
 v2.1 Java::
 
-  ActorRef router2 = system.actorOf(new Props().withRouter(RoundRobinRouter.create(routees)));  
+  ActorRef router2 = system.actorOf(new Props().withRouter(RoundRobinRouter.create(routees)));
+
+Props: Function-based creation
+==============================
+
+v2.0 Scala::
+
+  Props(context => { case someMessage => context.sender ! someMessage })
+
+v2.1 Scala::
+
+  Props(new Actor { def receive = { case someMessage => sender ! someMessage } })
 
 Failing Send
 ============
@@ -255,5 +266,12 @@ Default value of akka.remote.log-remote-lifecycle-events has changed to **on**.
 If you don't want these in the log you need to add this to your configuration::
 
   akka.remote.log-remote-lifecycle-events = off
+
+Stash postStop
+==============
+
+Both Actors and UntypedActors using ``Stash`` now overrides postStop to make sure that
+stashed messages are put into the dead letters when the actor stops, make sure you call
+super.postStop if you override it.
 
 

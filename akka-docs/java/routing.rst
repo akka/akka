@@ -75,7 +75,8 @@ How Routing is Designed within Akka
 
 Routers behave like single actors, but they should also not hinder scalability.
 This apparent contradiction is solved by making routers be represented by a
-special :class:`RoutedActorRef`, which dispatches incoming messages destined
+special :class:`RoutedActorRef` (implementation detail, what the user gets is
+an :class:`ActorRef` as usual) which dispatches incoming messages destined
 for the routees without actually invoking the router actor’s behavior (and thus
 avoiding its mailbox; the single router actor’s task is to manage all aspects
 related to the lifecycle of the routees). This means that the code which decides
