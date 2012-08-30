@@ -7,9 +7,9 @@ Futures (Scala)
 Introduction
 ------------
 
-In Akka, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure used to
-retrieve the result of some concurrent operation. This operation is usually performed by an ``Actor``
-or by the ``Dispatcher`` directly. This result can be accessed synchronously (blocking) or asynchronously (non-blocking).
+In Scala, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure used to
+retrieve the result of some concurrent operation. This result can be accessed synchronously (blocking)
+or asynchronously (non-blocking).
 
 Execution Contexts
 ------------------
@@ -28,7 +28,7 @@ Use With Actors
 There are generally two ways of getting a reply from an ``Actor``: the first is by a sent message (``actor ! msg``),
 which only works if the original sender was an ``Actor``) and the second is through a ``Future``.
 
-Using an ``Actor``\'s ``?`` method to send a message will return a Future. To wait for and retrieve the actual result the simplest method is:
+Using an ``Actor``\'s ``?`` method to send a message will return a ``Future``. To wait for and retrieve the actual result the simplest method is:
 
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: ask-blocking
@@ -61,7 +61,7 @@ with the return value of the block used to complete the ``Future`` (in this case
 Unlike a ``Future`` that is returned from an ``Actor``, this ``Future`` is properly typed,
 and we also avoid the overhead of managing an ``Actor``.
 
-You can also create already completed Futures using the ``Promise`` companion, which can be either successes:
+You can also create already completed Futures using the ``Future`` companion, which can be either successes:
 
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: successful
@@ -74,7 +74,7 @@ Or failures:
 Functional Futures
 ------------------
 
-Akka's ``Future`` has several monadic methods that are very similar to the ones used by Scala's collections.
+Scala's ``Future`` has several monadic methods that are very similar to the ones used by Scala's collections.
 These allow you to create 'pipelines' or 'streams' that the result will travel through.
 
 Future is a Monad
@@ -185,20 +185,20 @@ That's all it takes!
 
 
 If the sequence passed to ``fold`` is empty, it will return the start-value, in the case above, that will be 0.
-In some cases you don't have a start-value and you're able to use the value of the first completing Future in the sequence
+In some cases you don't have a start-value and you're able to use the value of the first completing ``Future`` in the sequence
 as the start-value, you can use ``reduce``, it works like this:
 
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: reduce
 
-Same as with ``fold``, the execution will be done asynchronously when the last of the Future is completed,
+Same as with ``fold``, the execution will be done asynchronously when the last of the ``Future`` is completed,
 you can also parallelize it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
 
 Callbacks
 ---------
 
-Sometimes you just want to listen to a ``Future`` being completed, and react to that not by creating a new Future, but by side-effecting.
-For this Akka supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which the latter two are specializations of the first.
+Sometimes you just want to listen to a ``Future`` being completed, and react to that not by creating a new ``Future``, but by side-effecting.
+For this Scala supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which the latter two are specializations of the first.
 
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: onSuccess
