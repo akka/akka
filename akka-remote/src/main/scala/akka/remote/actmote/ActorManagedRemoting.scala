@@ -97,8 +97,6 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
 }
 
 trait LifeCycleNotifier {
-  protected def notifyListeners(message: RemoteLifeCycleEvent): Unit
-
   def remoteClientError(reason: Throwable, remoteAddress: Address): Unit
   def remoteClientDisconnected(remoteAddress: Address): Unit
   def remoteClientConnected(remoteAddress: Address): Unit
@@ -138,10 +136,9 @@ class DefaultLifeCycleNotifier(remoteSettings: RemoteSettings, remoteTransport: 
 
 private[actmote] sealed trait RemotingCommand
 private[actmote] case class Listen(transport: RemoteTransport)
-// No longer needed, if shutdownClient and restartClient are removed from RemoteTransport API
-//private[actmote] case class ShutdownEndpoint(address: Address) extends RemotingCommand
-//private[actmote] case class RestartEndpoint(address: Address) extends RemotingCommand
-private[actmote] case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) extends RemotingCommand
+private[actmote] case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) extends RemotingCommand {
+  override def toString = "Remote message " + senderOption.getOrElse("UNKNOWN") + " -> " + recipient
+}
 
 object HeadActor {
   sealed trait EndpointPolicy
@@ -280,14 +277,14 @@ class HeadActor(
     }
   }
 
-  private def createEndpoint(remote: Address, handleOption: Option[TransportConnectorHandle]) = {
+  private def createEndpoint(remoteAddress: Address, handleOption: Option[TransportConnectorHandle]) = {
     val endpoint = context.actorOf(Props(new EndpointActor(
       notifier,
       connector,
       remoteSettings,
       settings,
       address,
-      remote,
+      remoteAddress,
       handleOption)))
     context.watch(endpoint)
   }
@@ -317,9 +314,8 @@ class EndpointException(remoteAddress: Address, msg: String, cause: Throwable) e
 class EndpointWriteException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 class EndpointCloseException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 class EndpointOpenException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
+class EndpointFailedException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 
-//TODO: Does stash deliver all messages to dead letters on stop?
-//TODO: Even if they are delivered to dead letters, they are wrapped in Send(). Is this a problem?
 // TODO: Set up deque based mailbox somewhere..
 class EndpointActor(
   val notifier: LifeCycleNotifier,
@@ -353,9 +349,11 @@ class EndpointActor(
     super.postRestart(reason)
     // Clear handle to force reconnect
     handleOption = None
+    initialize()
   }
 
   override def preStart {
+    super.preStart()
     initialize()
   }
 
@@ -405,10 +403,11 @@ class EndpointActor(
         throw new EndpointWriteException(remoteAddress, "failed to write to transport", reason)
       }
     }
+    case ConnectionFailed(reason) => {
+      throw new EndpointFailedException(remoteAddress, "endpoint failed", reason)
+    }
     case d @ Disconnected(_) ⇒ {
-      // notify head
-      // there is an implicit assumption that parent is the HeadActor
-      context.parent ! d
+      context.stop(self)
     }
   }
 
