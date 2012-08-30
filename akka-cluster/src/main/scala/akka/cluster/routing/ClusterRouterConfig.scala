@@ -8,7 +8,6 @@ import scala.collection.immutable.SortedSet
 import com.typesafe.config.ConfigFactory
 import akka.ConfigurationException
 import akka.actor.Actor
-import akka.actor.ActorContext
 import akka.actor.ActorRef
 import akka.actor.ActorSystemImpl
 import akka.actor.Address
@@ -31,6 +30,7 @@ import akka.cluster.ClusterScope
 import akka.routing.RoundRobinRouter
 import akka.routing.Destination
 import java.lang.IllegalStateException
+import akka.routing.RouterContext
 
 /**
  * [[akka.routing.RouterConfig]] implementation for deployment on cluster nodes.
@@ -40,7 +40,7 @@ import java.lang.IllegalStateException
  */
 case class ClusterRouterConfig(local: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int) extends RouterConfig {
 
-  override def createRouteeProvider(context: ActorContext, routeeProps: Props) =
+  override def createRouteeProvider(context: RouterContext, routeeProps: Props) =
     new ClusterRouteeProvider(context, routeeProps, resizer, totalInstances, maxInstancesPerNode)
 
   override def createRoute(routeeProvider: RouteeProvider): Route = {
@@ -73,7 +73,7 @@ case class ClusterRouterConfig(local: RouterConfig, totalInstances: Int, maxInst
  * Deploys new routees on the cluster nodes.
  */
 private[akka] class ClusterRouteeProvider(
-  _context: ActorContext,
+  _context: RouterContext,
   _routeeProps: Props,
   _resizer: Option[Resizer],
   totalInstances: Int,
