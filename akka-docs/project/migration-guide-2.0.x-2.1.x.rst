@@ -201,7 +201,18 @@ v2.0 Java::
 
 v2.1 Java::
 
-  ActorRef router2 = system.actorOf(new Props().withRouter(RoundRobinRouter.create(routees)));  
+  ActorRef router2 = system.actorOf(new Props().withRouter(RoundRobinRouter.create(routees)));
+
+Props: Function-based creation
+==============================
+
+v2.0 Scala::
+
+  Props(context => { case someMessage => context.sender ! someMessage })
+
+v2.1 Scala::
+
+  Props(new Actor { def receive = { case someMessage => sender ! someMessage } })
 
 Failing Send
 ============
