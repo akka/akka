@@ -267,4 +267,11 @@ If you don't want these in the log you need to add this to your configuration::
 
   akka.remote.log-remote-lifecycle-events = off
 
+Stash postStop
+==============
+
+Both Actors and UntypedActors using ``Stash`` now overrides postStop to make sure that
+stashed messages are put into the dead letters when the actor stops, make sure you call
+super.postStop if you override it.
+
 
