@@ -87,7 +87,7 @@ object TransportConnector {
    *
    * === More specifically this message ===
    *  - is allowed to be sent only after [[akka.remote.actmote.TransportConnector.connect()]] has been already called
-   *  - is not allowed to be sent after a [[akka.remote.actmote.TransportConnector.Disconnected]] or a [[akka.remote.actmote.TransportConnector.ConnectorInitialized]] message has been sent to the corresponding actors
+   *  - is not allowed to be sent after a [[akka.remote.actmote.TransportConnector.Disconnected]]
    *  - is not allowed to be sent after [[akka.remote.actmote.TransportConnectorHandle.close()]] has been called on the corresponding handle, but might be ''received'' after the call
    *  - must be sent shortly after failing to establish an outbound connection, and it is a reasonable assumption, that retrying to establish the connection in some short time window will fail. In other words
    *    it is assumed, that a connection failure is only reported after retrying several times, or after applying any other failure handling mechanisms appropriate for the underlying transport.
