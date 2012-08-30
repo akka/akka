@@ -3,19 +3,20 @@
  */
 package akka.cluster
 
+import com.typesafe.config.Config
+
+import akka.ConfigurationException
 import akka.actor.ActorSystem
+import akka.actor.Deploy
 import akka.actor.DynamicAccess
+import akka.actor.NoScopeGiven
 import akka.actor.Scheduler
+import akka.actor.Scope
+import akka.cluster.routing.ClusterRouterConfig
 import akka.event.EventStream
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteDeployer
-import akka.actor.Deploy
-import com.typesafe.config.Config
-import akka.ConfigurationException
-import akka.actor.NoScopeGiven
 import akka.routing.RemoteRouterConfig
-import akka.cluster.routing.ClusterRouterConfig
-import akka.actor.Scope
 
 class ClusterActorRefProvider(
   _systemName: String,

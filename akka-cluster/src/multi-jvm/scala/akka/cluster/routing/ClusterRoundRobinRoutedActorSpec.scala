@@ -3,27 +3,23 @@
  */
 package akka.cluster.routing
 
-import language.postfixOps
+import scala.concurrent.Await
+import scala.concurrent.util.duration._
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.PoisonPill
 import akka.actor.Address
-import scala.concurrent.Await
+import akka.actor.Props
+import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.routing.Broadcast
+import akka.routing.CurrentRoutees
 import akka.routing.RoundRobinRouter
 import akka.routing.RoutedActorRef
-import akka.testkit._
-import scala.concurrent.util.duration._
-import akka.cluster.MultiNodeClusterSpec
-import com.typesafe.config.ConfigFactory
-import akka.cluster.Cluster
-import akka.actor.Deploy
-import akka.routing.CurrentRoutees
 import akka.routing.RouterRoutees
+import akka.testkit._
 
 object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
 

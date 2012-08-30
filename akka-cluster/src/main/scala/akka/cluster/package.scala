@@ -5,9 +5,9 @@
 package akka.cluster
 
 import language.implicitConversions
+import akka.actor.Deploy
 import akka.actor.Props
 import akka.routing.RouterConfig
-import akka.actor.Deploy
 
 package object routing {
 

@@ -3,11 +3,12 @@
  */
 package akka.cluster.routing
 
+import java.lang.IllegalStateException
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.immutable.SortedSet
 import com.typesafe.config.ConfigFactory
+
 import akka.ConfigurationException
-import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystemImpl
 import akka.actor.Address
@@ -20,16 +21,12 @@ import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.remote.RemoteScope
+import akka.routing.Destination
 import akka.routing.Resizer
 import akka.routing.Route
 import akka.routing.RouteeProvider
 import akka.routing.Router
 import akka.routing.RouterConfig
-import java.lang.IllegalStateException
-import akka.cluster.ClusterScope
-import akka.routing.RoundRobinRouter
-import akka.routing.Destination
-import java.lang.IllegalStateException
 import akka.routing.RouterContext
 
 /**
