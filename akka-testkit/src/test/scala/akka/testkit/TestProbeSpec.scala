@@ -68,11 +68,14 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "be able to expect primitive types" in {
-      for (_ ← 1 to 4) testActor ! 42
+      for (_ ← 1 to 7) testActor ! 42
       expectMsgType[Int] must be(42)
       expectMsgAnyClassOf(classOf[Int]) must be(42)
       expectMsgAllClassOf(classOf[Int]) must be(Seq(42))
       expectMsgAllConformingOf(classOf[Int]) must be(Seq(42))
+      expectMsgAllConformingOf(5 seconds, classOf[Int]) must be(Seq(42))
+      expectMsgAllClassOf(classOf[Int]) must be(Seq(42))
+      expectMsgAllClassOf(5 seconds, classOf[Int]) must be(Seq(42))
     }
 
   }
