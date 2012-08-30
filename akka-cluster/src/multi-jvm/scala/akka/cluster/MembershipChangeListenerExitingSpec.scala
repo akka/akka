@@ -12,6 +12,7 @@ import akka.testkit._
 import scala.concurrent.util.duration._
 import akka.actor.Props
 import akka.actor.Actor
+import akka.cluster.MemberStatus._
 
 object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -57,6 +58,9 @@ abstract class MembershipChangeListenerExitingSpec
         val exitingLatch = TestLatch()
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
+            case state: CurrentClusterState ⇒
+              if (state.members.exists(m ⇒ m.address == address(second) && m.status == Exiting))
+                exitingLatch.countDown()
             case MemberExited(m) if m.address == address(second) ⇒
               exitingLatch.countDown()
             case _ ⇒ // ignore
