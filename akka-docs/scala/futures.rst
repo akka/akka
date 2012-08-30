@@ -148,7 +148,7 @@ Here we have 2 actors processing a single message each. Once the 2 results are a
 (note that we don't block to get these results!), they are being added together and sent to a third ``Actor``,
 which replies with a string, which we assign to 'result'.
 
-This is fine when dealing with a known amount of Actors, but can grow unwieldy if we have more then a handful.
+This is fine when dealing with a known amount of Actors, but can grow unwieldy if we have more than a handful.
 The ``sequence`` and ``traverse`` helper methods can make it easier to handle more complex use cases.
 Both of these methods are ways of turning, for a subclass ``T`` of ``Traversable``, ``T[Future[A]]`` into a ``Future[T[A]]``.
 For example:
