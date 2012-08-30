@@ -181,7 +181,6 @@ object HeadActor {
   }
 }
 
-// TODO: HeadActor MUST WATCH his endpoint Actors
 class HeadActor(
   val remoteSettings: RemoteSettings,
   val connector: TransportConnector,
@@ -285,7 +284,7 @@ class HeadActor(
       settings,
       address,
       remoteAddress,
-      handleOption)))
+      handleOption)).withDispatcher("akka.actor.default-stash-dispatcher"))
     context.watch(endpoint)
   }
 
@@ -316,7 +315,6 @@ class EndpointCloseException(remoteAddress: Address, msg: String, cause: Throwab
 class EndpointOpenException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 class EndpointFailedException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 
-// TODO: Set up deque based mailbox somewhere..
 class EndpointActor(
   val notifier: LifeCycleNotifier,
   val connector: TransportConnector,
@@ -366,6 +364,7 @@ class EndpointActor(
       }
       case None ⇒ {
         notifier.remoteClientStarted(remoteAddress)
+        //TODO: Do this only when not restarting a passive connection
         self ! AttemptConnect
       }
     }
@@ -403,7 +402,7 @@ class EndpointActor(
         throw new EndpointWriteException(remoteAddress, "failed to write to transport", reason)
       }
     }
-    case ConnectionFailed(reason) => {
+    case ConnectionFailed(reason) ⇒ {
       throw new EndpointFailedException(remoteAddress, "endpoint failed", reason)
     }
     case d @ Disconnected(_) ⇒ {
