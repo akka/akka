@@ -21,6 +21,7 @@ import scala.concurrent.util.duration._
 import akka.cluster.MultiNodeClusterSpec
 import com.typesafe.config.ConfigFactory
 import akka.cluster.Cluster
+import akka.actor.Deploy
 
 object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
 
@@ -41,8 +42,8 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
         /service-hello {
           router = round-robin
           nr-of-instances = 10
-          cluster.enabled = on
-          cluster.max-nr-of-instances-per-node = 2
+          #cluster.enabled = on
+          #cluster.max-nr-of-instances-per-node = 2
         }
       }
       """)).
@@ -60,7 +61,12 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
   with ImplicitSender with DefaultTimeout {
   import ClusterRoundRobinRoutedActorMultiJvmSpec._
 
-  lazy val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "service-hello")
+  //  lazy val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "service-hello")
+  lazy val router = {
+    import akka.cluster.routing.ClusterRouterProps
+    system.actorOf(Props[SomeActor].withClusterRouter(RoundRobinRouter(),
+      totalInstances = 10, maxInstancesPerNode = 2), "service-foo")
+  }
 
   def receiveReplies(expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
@@ -83,11 +89,11 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
     "deploy routees to the member nodes in the cluster" taggedAs LongRunningTest in {
 
       runOn(first) {
-        actor.isInstanceOf[RoutedActorRef] must be(true)
+        router.isInstanceOf[RoutedActorRef] must be(true)
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
-          actor ! "hit"
+          router ! "hit"
         }
 
         val replies = receiveReplies(iterationCount)
@@ -110,7 +116,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
       runOn(first) {
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
-          actor ! "hit"
+          router ! "hit"
         }
 
         val replies = receiveReplies(iterationCount)

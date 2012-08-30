@@ -28,6 +28,7 @@ import akka.routing.Router
 import akka.routing.RouterConfig
 import java.lang.IllegalStateException
 import akka.cluster.ClusterScope
+import akka.routing.RoundRobinRouter
 
 /**
  * [[akka.routing.RouterConfig]] implementation for deployment on cluster nodes.
@@ -75,10 +76,18 @@ class ClusterRouteeProvider(
     throw new ConfigurationException("Cluster deployment can not be combined with routees for [%s]"
       format context.self.path.toString)
 
+  /**
+   * Note that nrOfInstances is ignored for cluster routers, instead
+   * the `totalInstances` parameter is used. That is the same when
+   * using config to define `nr-of-instances`, but when defining the
+   * router programatically or using [[akka.routing.Resizer]] they
+   * might be different. `totalInstances` is the relevant parameter
+   * to use for cluster routers.
+   */
   override def createRoutees(nrOfInstances: Int): Unit = {
     val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
 
-    for (i ← 1 to nrOfInstances; target ← selectDeploymentTarget) {
+    for (i ← 1 to totalInstances; target ← selectDeploymentTarget) {
       val name = "c" + childNameCounter.incrementAndGet
       val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(target))
       var ref = impl.provider.actorOf(impl, routeeProps, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
@@ -150,5 +159,21 @@ class ClusterRouteeProvider(
 
   }), name = "cluster-listener")
 
+}
+
+/**
+ * Sugar to define cluster aware router programatically.
+ * Usage Java API:
+ * [[[
+ * context.actorOf(ClusterRouterPropsDecorator.decorate(new Props(MyActor.class),
+ *   new RoundRobinRouter(0), 10, 2), "myrouter");
+ * ]]]
+ *
+ * Corresponding for Scala API is found in [[akka.cluster.routing.ClusterRouterProps]].
+ *
+ */
+object ClusterRouterPropsDecorator {
+  def decorate(props: Props, router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int): Props =
+    props.withClusterRouter(router, totalInstances, maxInstancesPerNode)
 }
 

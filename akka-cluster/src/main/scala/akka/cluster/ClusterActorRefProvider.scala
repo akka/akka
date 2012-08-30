@@ -25,7 +25,7 @@ class ClusterActorRefProvider(
   _dynamicAccess: DynamicAccess) extends RemoteActorRefProvider(
   _systemName, _settings, _eventStream, _scheduler, _dynamicAccess) {
 
-  override val deployer: RemoteDeployer = new ClusterDeployer(settings, dynamicAccess)
+  override val deployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
 
 }
 
