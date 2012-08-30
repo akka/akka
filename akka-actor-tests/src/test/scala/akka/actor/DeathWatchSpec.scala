@@ -99,7 +99,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
       filterException[ActorKilledException] {
         val supervisor = system.actorOf(Props(new Supervisor(
           OneForOneStrategy(maxNrOfRetries = 2)(List(classOf[Exception])))))
-        val terminalProps = Props(context ⇒ { case x ⇒ context.sender ! x })
+        val terminalProps = Props(new Actor { def receive = { case x ⇒ sender ! x } })
         val terminal = Await.result((supervisor ? terminalProps).mapTo[ActorRef], timeout.duration)
 
         val monitor = startWatching(terminal)
@@ -150,7 +150,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout �
       val parent = system.actorOf(Props(new Actor {
         def receive = {
           case "NKOTB" ⇒
-            val currentKid = context.watch(context.actorOf(Props(ctx ⇒ { case "NKOTB" ⇒ ctx stop ctx.self }), "kid"))
+            val currentKid = context.watch(context.actorOf(Props(new Actor { def receive = { case "NKOTB" ⇒ context stop self } }), "kid"))
             currentKid forward "NKOTB"
             context become {
               case Terminated(`currentKid`) ⇒
