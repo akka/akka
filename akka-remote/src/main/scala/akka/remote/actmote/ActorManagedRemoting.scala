@@ -397,7 +397,8 @@ class EndpointActor(
       handleOption.foreach { _.write(msg, senderOption, recipient) }
     } catch {
       case NonFatal(reason) ⇒ {
-        stash() // Retry if policy is retry and not stash
+        // We do not retry messages, so we drop attempt
+        // the message may still got through, so we do not send to deadLetters either
         notifyError(reason)
         throw new EndpointWriteException(remoteAddress, "failed to write to transport", reason)
       }
