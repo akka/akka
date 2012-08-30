@@ -345,14 +345,12 @@ class EndpointActor(
   }
 
   override def postRestart(reason: Throwable) {
-    super.postRestart(reason)
     // Clear handle to force reconnect
     handleOption = None
     initialize()
   }
 
   override def preStart {
-    super.preStart()
     initialize()
   }
 
