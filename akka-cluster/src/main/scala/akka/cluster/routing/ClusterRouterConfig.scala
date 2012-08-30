@@ -150,10 +150,16 @@ class ClusterRouteeProvider(
       case other: MemberEvent ⇒
         // other events means that it is no longer interesting, such as
         // MemberJoined, MemberLeft, MemberExited, MemberUnreachable, MemberRemoved
-        upNodes -= other.member.address
+        val address = other.member.address
+        upNodes -= address
+
+        // unregister routees that live on that node
+        val affectedRoutes = routees.filter(fullAddress(_) == address)
+        unregisterRoutees(affectedRoutes)
 
         // createRoutees will not create more than createRoutees and maxInstancesPerNode
-        createRoutees(totalInstances) // Here we
+        // this is useful when totalInstances < upNodes.size
+        createRoutees(totalInstances)
 
     }
 
