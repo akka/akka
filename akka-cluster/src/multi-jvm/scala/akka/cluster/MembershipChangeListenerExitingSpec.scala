@@ -22,7 +22,6 @@ object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
         akka.cluster {
-          leader-actions-interval           = 5 s  # increase the leader action task interval
           unreachable-nodes-reaper-interval = 300 s # turn "off" reaping to unreachable node set
         }
       """)
