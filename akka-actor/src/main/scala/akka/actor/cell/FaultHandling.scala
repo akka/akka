@@ -155,7 +155,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
 
   private def finishTerminate() {
     val a = actor
-    // The following order is crucial for things to work properly. Only cahnge this if you're very confident and lucky.
+    // The following order is crucial for things to work properly. Only chnage this if you're very confident and lucky.
     try if (a ne null) a.postStop()
     finally try dispatcher.detach(this)
     finally try parent.sendSystemMessage(ChildTerminated(self))
