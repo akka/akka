@@ -313,7 +313,8 @@ class EndpointException(remoteAddress: Address, msg: String, cause: Throwable) e
 class EndpointWriteException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 class EndpointCloseException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
 class EndpointOpenException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
-class EndpointFailedException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
+class EndpointConnectionFailedException(remoteAddress: Address, msg: String, cause: Throwable) extends EndpointException(remoteAddress, msg, cause)
+class EndpointConnectorProtocolViolated(remoteAddress: Address, msg: String) extends EndpointException(remoteAddress, msg, null)
 
 class EndpointActor(
   val notifier: LifeCycleNotifier,
@@ -404,7 +405,7 @@ class EndpointActor(
       }
     }
     case ConnectionFailed(reason) ⇒ {
-      throw new EndpointFailedException(remoteAddress, "endpoint failed", reason)
+      throw new EndpointConnectionFailedException(remoteAddress, "endpoint failed", reason)
     }
     case d @ Disconnected(_) ⇒ {
       context.stop(self)
@@ -428,6 +429,10 @@ class EndpointActor(
         log.error(reason, "failure while shutting down endpoint for [{}]", remoteAddress)
       }
     }
+  }
+
+  override def unhandled(message: Any) {
+    throw new EndpointConnectorProtocolViolated(remoteAddress, "Endpoint <-> Connector protocol violated; unexpected message: " + message)
   }
 
   private def attemptConnect() {
