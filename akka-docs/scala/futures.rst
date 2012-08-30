@@ -7,8 +7,8 @@ Futures (Scala)
 Introduction
 ------------
 
-In Scala, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure used to
-retrieve the result of some concurrent operation. This result can be accessed synchronously (blocking)
+In the Scala Standard Library, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure
+used to retrieve the result of some concurrent operation. This result can be accessed synchronously (blocking)
 or asynchronously (non-blocking).
 
 Execution Contexts

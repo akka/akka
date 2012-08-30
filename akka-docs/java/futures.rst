@@ -6,8 +6,8 @@ Futures (Java)
 Introduction
 ------------
 
-In Scala, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure used
-to retrieve the result of some concurrent operation. This result can be accessed synchronously (blocking)
+In the Scala Standard Library, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure
+used to retrieve the result of some concurrent operation. This result can be accessed synchronously (blocking)
 or asynchronously (non-blocking). To be able to use this from Java, Akka provides a java friendly interface
 in ``akka.dispatch.Futures``.
 
