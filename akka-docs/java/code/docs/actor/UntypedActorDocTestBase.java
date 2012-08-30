@@ -317,7 +317,7 @@ public class UntypedActorDocTestBase {
     Procedure<Object> angry = new Procedure<Object>() {
       @Override
       public void apply(Object message) {
-        if (message.equals("foo")) {
+        if (message.equals("bar")) {
           getSender().tell("I am already angry?");
         } else if (message.equals("foo")) {
           getContext().become(happy);
