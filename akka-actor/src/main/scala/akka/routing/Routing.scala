@@ -527,8 +527,9 @@ trait RoundRobinLike { this: RouterConfig ⇒
     val next = new AtomicLong(0)
 
     def getNext(): ActorRef = {
-      val _routees = routeeProvider.routees
-      _routees((next.getAndIncrement % _routees.size).asInstanceOf[Int])
+      val currentRoutees = routeeProvider.routees
+      if (currentRoutees.isEmpty) routeeProvider.context.system.deadLetters
+      else currentRoutees((next.getAndIncrement % currentRoutees.size).asInstanceOf[Int])
     }
 
     {
@@ -653,8 +654,9 @@ trait RandomLike { this: RouterConfig ⇒
     routeeProvider.createAndRegisterRoutees(props, nrOfInstances, routees)
 
     def getNext(): ActorRef = {
-      val _routees = routeeProvider.routees
-      _routees(ThreadLocalRandom.current.nextInt(_routees.size))
+      val currentRoutees = routeeProvider.routees
+      if (currentRoutees.isEmpty) routeeProvider.context.system.deadLetters
+      else currentRoutees(ThreadLocalRandom.current.nextInt(currentRoutees.size))
     }
 
     {
