@@ -13,7 +13,7 @@ import akka.testkit._
 
 object LookupRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
-  class SomeActor extends Actor with Serializable {
+  class SomeActor extends Actor {
     def receive = {
       case "identify" ⇒ sender ! self
     }

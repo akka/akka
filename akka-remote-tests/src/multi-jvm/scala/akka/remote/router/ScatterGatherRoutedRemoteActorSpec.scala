@@ -22,7 +22,7 @@ import akka.actor.Address
 
 object ScatterGatherRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
-  class SomeActor extends Actor with Serializable {
+  class SomeActor extends Actor {
     def receive = {
       case "hit" ⇒ sender ! self
     }
