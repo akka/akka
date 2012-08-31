@@ -169,6 +169,7 @@ private[akka] class ClusterRouterActor extends Router {
     case s: CurrentClusterState ⇒
       import Member.addressOrdering
       routeeProvider.upNodes = s.members.collect { case m if m.status == MemberStatus.Up ⇒ m.address }
+      routeeProvider.createRoutees()
 
     case MemberUp(m) ⇒
       routeeProvider.upNodes += m.address
