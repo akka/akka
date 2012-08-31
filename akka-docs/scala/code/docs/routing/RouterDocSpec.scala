@@ -4,9 +4,9 @@
 package docs.routing
 
 import RouterDocSpec.MyActor
-import akka.actor.{ Props, Actor }
 import akka.testkit.AkkaSpec
 import akka.routing.RoundRobinRouter
+import akka.actor.{ActorRef, Props, Actor}
 
 object RouterDocSpec {
   class MyActor extends Actor {
