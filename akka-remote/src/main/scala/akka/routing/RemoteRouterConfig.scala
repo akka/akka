@@ -17,6 +17,7 @@ import akka.actor.SupervisorStrategy
 import akka.actor.Address
 import scala.collection.JavaConverters._
 import java.util.concurrent.atomic.AtomicInteger
+import java.lang.IllegalStateException
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -44,6 +45,8 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) ext
   override def resizer: Option[Resizer] = local.resizer
 
   override def withFallback(other: RouterConfig): RouterConfig = other match {
+    case RemoteRouterConfig(local: RemoteRouterConfig, nodes) ⇒ throw new IllegalStateException(
+      "RemoteRouterConfig is not allowed to wrap a RemoteRouterConfig")
     case RemoteRouterConfig(local, nodes) ⇒ copy(local = this.local.withFallback(local))
     case _                                ⇒ copy(local = this.local.withFallback(other))
   }

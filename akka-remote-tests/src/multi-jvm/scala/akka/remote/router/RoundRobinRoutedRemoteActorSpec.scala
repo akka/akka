@@ -136,11 +136,7 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
         // at least more than one actor per node
         repliesFrom.size must be > (3)
         val repliesFromAddresses = repliesFrom.map(_.path.address)
-        repliesFromAddresses.size must be(3)
-        repliesFromAddresses must contain(node(first).address)
-        repliesFromAddresses must contain(node(second).address)
-        repliesFromAddresses must contain(node(third).address)
-        repliesFromAddresses must not contain (node(fourth).address)
+        repliesFromAddresses must be === (Set(node(first), node(second), node(third)).map(_.address))
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node

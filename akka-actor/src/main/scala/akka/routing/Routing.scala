@@ -505,7 +505,9 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
   def withSupervisorStrategy(strategy: SupervisorStrategy): RoundRobinRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Override to use the resizer defined in code if not defined in config.
+   * Uses the resizer of the given Routerconfig if this RouterConfig
+   * doesn't have one, i.e. the resizer defined in code is used if
+   * resizer was not defined in config.
    */
   override def withFallback(other: RouterConfig): RouterConfig = {
     if (this.resizer.isEmpty && other.resizer.isDefined) copy(resizer = other.resizer)
@@ -632,7 +634,9 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
   def withSupervisorStrategy(strategy: SupervisorStrategy): RandomRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Override to use the resizer defined in code if not defined in config.
+   * Uses the resizer of the given Routerconfig if this RouterConfig
+   * doesn't have one, i.e. the resizer defined in code is used if
+   * resizer was not defined in config.
    */
   override def withFallback(other: RouterConfig): RouterConfig = {
     if (this.resizer.isEmpty && other.resizer.isDefined) copy(resizer = other.resizer)
@@ -766,7 +770,9 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
   def withSupervisorStrategy(strategy: SupervisorStrategy): SmallestMailboxRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Override to use the resizer defined in code if not defined in config.
+   * Uses the resizer of the given Routerconfig if this RouterConfig
+   * doesn't have one, i.e. the resizer defined in code is used if
+   * resizer was not defined in config.
    */
   override def withFallback(other: RouterConfig): RouterConfig = {
     if (this.resizer.isEmpty && other.resizer.isDefined) copy(resizer = other.resizer)
@@ -974,7 +980,9 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
   def withSupervisorStrategy(strategy: SupervisorStrategy): BroadcastRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Override to use the resizer defined in code if not defined in config.
+   * Uses the resizer of the given Routerconfig if this RouterConfig
+   * doesn't have one, i.e. the resizer defined in code is used if
+   * resizer was not defined in config.
    */
   override def withFallback(other: RouterConfig): RouterConfig = {
     if (this.resizer.isEmpty && other.resizer.isDefined) copy(resizer = other.resizer)
@@ -1098,7 +1106,9 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
   def withSupervisorStrategy(strategy: SupervisorStrategy) = copy(supervisorStrategy = strategy)
 
   /**
-   * Override to use the resizer defined in code if not defined in config.
+   * Uses the resizer of the given Routerconfig if this RouterConfig
+   * doesn't have one, i.e. the resizer defined in code is used if
+   * resizer was not defined in config.
    */
   override def withFallback(other: RouterConfig): RouterConfig = {
     if (this.resizer.isEmpty && other.resizer.isDefined) copy(resizer = other.resizer)
