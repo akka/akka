@@ -15,8 +15,9 @@ import akka.remote.RemoteScope
 import akka.actor.AddressFromURIString
 import akka.actor.SupervisorStrategy
 import akka.actor.Address
-
 import scala.collection.JavaConverters._
+import java.util.concurrent.atomic.AtomicInteger
+import java.lang.IllegalStateException
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -44,8 +45,10 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) ext
   override def resizer: Option[Resizer] = local.resizer
 
   override def withFallback(other: RouterConfig): RouterConfig = other match {
+    case RemoteRouterConfig(local: RemoteRouterConfig, nodes) ⇒ throw new IllegalStateException(
+      "RemoteRouterConfig is not allowed to wrap a RemoteRouterConfig")
     case RemoteRouterConfig(local, nodes) ⇒ copy(local = this.local.withFallback(local))
-    case _                                ⇒ this
+    case _                                ⇒ copy(local = this.local.withFallback(other))
   }
 }
 
@@ -60,6 +63,8 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _re
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
   private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
+  // need this counter as instance variable since Resizer may call createRoutees several times
+  private val childNameCounter = new AtomicInteger
 
   override def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
     (nrOfInstances, routees, nodes) match {
@@ -69,7 +74,7 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _re
       case (n, Nil, ys) ⇒
         val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
         IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
-          val name = "c" + i
+          val name = "c" + childNameCounter.incrementAndGet
           val deploy = Deploy("", ConfigFactory.empty(), props.routerConfig, RemoteScope(nodeAddressIter.next))
           impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
             systemService = false, Some(deploy), lookupDeploy = false, async = false)
