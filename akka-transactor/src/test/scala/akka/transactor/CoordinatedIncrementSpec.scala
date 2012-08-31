@@ -68,8 +68,6 @@ object CoordinatedIncrement {
 class CoordinatedIncrementSpec extends AkkaSpec(CoordinatedIncrement.config) with BeforeAndAfterAll {
   import CoordinatedIncrement._
 
-  implicit val timeout = Timeout(5.seconds.dilated)
-
   val numCounters = 4
 
   def actorOfs = {
@@ -80,13 +78,14 @@ class CoordinatedIncrementSpec extends AkkaSpec(CoordinatedIncrement.config) wit
   }
 
   "Coordinated increment" should {
+    implicit val timeout = Timeout(100.millis.dilated)
     "increment all counters by one with successful transactions" in {
       val (counters, failer) = actorOfs
       val coordinated = Coordinated()
       counters(0) ! coordinated(Increment(counters.tail))
       coordinated.await
       for (counter ← counters) {
-        Await.result((counter ? GetCount).mapTo[Int], timeout.duration) must be === 1
+        Await.result((counter ? GetCount).mapTo[Int], remaining) must be === 1
       }
       counters foreach (system.stop(_))
       system.stop(failer)
@@ -103,7 +102,7 @@ class CoordinatedIncrementSpec extends AkkaSpec(CoordinatedIncrement.config) wit
         counters(0) ! Coordinated(Increment(counters.tail :+ failer))
         coordinated.await
         for (counter ← counters) {
-          Await.result(counter ? GetCount, timeout.duration) must be === 0
+          Await.result(counter ? GetCount, remaining) must be === 0
         }
         counters foreach (system.stop(_))
         system.stop(failer)
