@@ -4,7 +4,7 @@
 
 package akka.actor.cell
 
-import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorCell, Actor }
+import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorCell, Actor, Address, NodeUnreachable }
 import akka.dispatch.{ Watch, Unwatch }
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
@@ -17,6 +17,10 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   override final def watch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
       if (a != self && !watching.contains(a)) {
+        // start subscription to NodeUnreachable if non-local subject and not already subscribing
+        if (!a.isLocal && !isSubscribingToNodeUnreachable)
+          system.eventStream.subscribe(self, classOf[NodeUnreachable])
+
         a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
         watching += a
       }
@@ -90,6 +94,21 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     } else {
       publish(Warning(self.path.toString, clazz(actor), "BUG: illegal Unwatch(%s,%s) for %s".format(watchee, watcher, self)))
     }
+  }
+
+  protected def watchedNodeUnreachable(address: Address): Iterable[Terminated] = {
+    val subjects = watching filter { _.path.address == address }
+    subjects foreach watchedActorTerminated
+
+    // FIXME should we cleanup (remove watchedBy) since we know they are dead?
+
+    // FIXME existenceConfirmed?
+    subjects map { Terminated(_)(existenceConfirmed = false) }
+  }
+
+  private def isSubscribingToNodeUnreachable: Boolean = watching.exists {
+    case a: InternalActorRef if !a.isLocal ⇒ true
+    case _                                 ⇒ false
   }
 
 }

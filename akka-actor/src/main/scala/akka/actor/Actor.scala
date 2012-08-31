@@ -65,6 +65,17 @@ case object Kill extends Kill {
 @SerialVersionUID(1L)
 case class Terminated private[akka] (@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean) extends AutoReceivedMessage
 
+/**
+ * INTERNAL API
+ *
+ * Used for remote death watch. Failure detector publish this to the
+ * `eventStream` when a remote node is detected to be unreachable.
+ * [[akka.actor.DeathWatch]] subscribes to the `eventStream` and translates this
+ * event to [[akka.actor.Terminated]], which is received by the watcher.
+ */
+@SerialVersionUID(1L)
+private[akka] case class NodeUnreachable(address: Address) extends AutoReceivedMessage
+
 abstract class ReceiveTimeout extends PossiblyHarmful
 
 /**
