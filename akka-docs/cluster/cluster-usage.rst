@@ -14,42 +14,13 @@ For introduction to the Akka Cluster concepts please see :ref:`cluster`.
 Preparing Your Project for Clustering
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project::
+The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project:
 
-  "com.typesafe.akka" % "akka-cluster" % "2.1-SNAPSHOT"
+.. parsed-literal::
 
-Instead of 2.1-SNAPSHOT you should pick a timestamped Akka version from `<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-cluster/>`_.
+  "com.typesafe.akka" % "akka-cluster_|scalaVersion|" % "2.1-SNAPSHOT"
 
-The following sbt build file illustrates what to use with Scala 2.10.0-M7 and Akka 2.1-SNAPSHOT
-
-  import sbt._
-  import sbt.Keys._
-
-  object ProjectBuild extends Build {
-
-    lazy val root = Project(
-      id = "root",
-      base = file("."),
-      settings = Project.defaultSettings ++ Seq(
-        name := "Akka Cluster Example",
-        organization := "org.test",
-        version := "0.1-SNAPSHOT",
-        scalaVersion := "2.10.0-M7",
-        
-        resolvers += "Sonatype Releases Repo" at "https://oss.sonatype.org/content/repositories/releases/",
-        resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
-        resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases",
-        resolvers += "Typesafe Snapshots" at "http://repo.typesafe.com/typesafe/snapshots/",
-        
-
-        libraryDependencies ++= Seq(
-          "com.typesafe.akka" % "akka-cluster"  % "2.1-20120822-000942")
-      )
-    )
-  }
-
-Pick a timestamped Akka version from `<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-cluster/>`_.
-
+If you are using the latest nightly build you should pick a timestamped Akka version from `<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-cluster/>`_.
 
 A Simple Cluster Example
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -66,14 +37,11 @@ Try it out:
    :language: none
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-scala`
-settings and the ``akka.cluster.seed-nodes`` to your ``application.conf`` file:
-
-.. literalinclude:: ../../akka-samples/akka-sample-remote/src/main/resources/common.conf
-   :language: none
+settings and the ``akka.cluster.seed-nodes`` to your ``application.conf`` file.
 
 The seed nodes are configured contact points for initial, automatic, join of the cluster.
 
-Note that if you are going to starting the nodes on different machines you need to specify the
+Note that if you are going to start the nodes on different machines you need to specify the
 ip-addresses or host names of the machines in ``application.conf`` instead of ``127.0.0.1``
 
 2. Add the following main program to your project, place it in ``src/main/scala``:
@@ -87,16 +55,16 @@ ip-addresses or host names of the machines in ``application.conf`` instead of ``
   run-main sample.cluster.ClusterApp 2551
 
 2551 corresponds to the port of the first seed-nodes element in the configuration.
-In the log output you see that the cluster node has been started and changed status to Up.
+In the log output you see that the cluster node has been started and changed status to 'Up'.
 
 4. Start the second seed node. Open a sbt session in another terminal window and run::
 
   run-main sample.cluster.ClusterApp 2552
 
 
-2552 corresponds to the port of the first seed-nodes element in the configuration.
+2552 corresponds to the port of the second seed-nodes element in the configuration.
 In the log output you see that the cluster node has been started and joins the other seed node
-and becomes a member of the cluster. It's status changed to Up.
+and becomes a member of the cluster. It's status changed to 'Up'.
 
 Switch over to the first terminal window and see in the log output that the member joined.
 
@@ -157,8 +125,8 @@ Automatic vs. Manual Downing
 
 When a member is considered by the failure detector to be unreachable the
 leader is not allowed to perform its duties, such as changing status of
-new joining members to Up. The status of the unreachable member must be
-changed to Down. This can be performed automatically or manually. By 
+new joining members to 'Up'. The status of the unreachable member must be
+changed to 'Down'. This can be performed automatically or manually. By 
 default it must be done manually, using using JMX or the provided script.
 
 It can also be performed programatically with ``Cluster(system).down``.
