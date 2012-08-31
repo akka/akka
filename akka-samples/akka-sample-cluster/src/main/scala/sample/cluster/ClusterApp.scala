@@ -8,24 +8,26 @@ object ClusterApp {
 
   def main(args: Array[String]): Unit = {
 
+    // Override the configuration of the port 
+    // when specified as program argument
     if (args.nonEmpty) System.setProperty("akka.remote.netty.port", args(0))
 
     // Create an Akka system
     val system = ActorSystem("ClusterSystem")
-    val clusterListener = system.actorOf(Props(new Actor {
+    val clusterListener = system.actorOf(Props(new Actor with ActorLogging {
       def receive = {
         case state: CurrentClusterState ⇒
-          println("Current members: " + state.members)
+          log.info("Current members: {}", state.members)
         case MemberJoined(member) ⇒
-          println("Member joined: " + member)
+          log.info("Member joined: {}", member)
         case MemberUp(member) ⇒
-          println("Member is Up: " + member)
+          log.info("Member is Up: {}", member)
         case MemberUnreachable(member) ⇒
-          println("Member detected as unreachable: " + member)
+          log.info("Member detected as unreachable: {}", member)
         case _ ⇒ // ignore
 
       }
-    }))
+    }), name = "clusterListener")
 
     Cluster(system).subscribe(clusterListener, classOf[ClusterDomainEvent])
   }

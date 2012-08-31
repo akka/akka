@@ -854,6 +854,16 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
  * When at least one reply has been received it stops itself after
  * an idle SeedNodeTimeout.
  *
+ * The seed nodes can be started in any order, but they will not be "active",
+ * until they have been able to join another seed node (seed1).
+ * They will retry the join procedure.
+ * So one possible startup scenario is:
+ * 1. seed2 started, but doesn't get any ack from seed1 or seed3
+ * 2. seed3 started, doesn't get any ack from seed1 or seed3 (seed2 doesn't reply)
+ * 3. seed1 is started and joins itself
+ * 4. seed2 retries the join procedure and gets an ack from seed1, and then joins to seed1
+ * 5. seed3 retries the join procedure and gets acks from seed2 first, and then joins to seed2
+ *
  */
 private[cluster] final class JoinSeedNodeProcess(environment: ClusterEnvironment) extends Actor with ActorLogging {
   import InternalClusterAction._
