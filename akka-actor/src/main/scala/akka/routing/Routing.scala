@@ -859,7 +859,9 @@ trait SmallestMailboxLike { this: RouterConfig ⇒
                          currentScore: Long = Long.MaxValue,
                          at: Int = 0,
                          deep: Boolean = false): ActorRef =
-      if (at >= targets.size) {
+      if (targets.isEmpty)
+        routeeProvider.context.system.deadLetters
+      else if (at >= targets.size) {
         if (deep) {
           if (proposedTarget.isTerminated) targets(ThreadLocalRandom.current.nextInt(targets.size)) else proposedTarget
         } else getNext(targets, proposedTarget, currentScore, 0, deep = true)
