@@ -11,6 +11,7 @@ import akka.testkit._
 import scala.concurrent.util.duration._
 import akka.actor.Props
 import akka.actor.Actor
+import akka.cluster.MemberStatus._
 
 object LeaderLeavingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -62,7 +63,7 @@ abstract class LeaderLeavingSpec
           awaitCond(!cluster.isRunning)
 
           // verify that the LEADER is REMOVED
-          awaitCond(clusterView.status == MemberStatus.Removed)
+          awaitCond(clusterView.status == Removed)
 
         } else {
 
@@ -71,6 +72,11 @@ abstract class LeaderLeavingSpec
 
           cluster.subscribe(system.actorOf(Props(new Actor {
             def receive = {
+              case state: CurrentClusterState ⇒
+                if (state.members.exists(m ⇒ m.address == oldLeaderAddress && m.status == Leaving))
+                  leavingLatch.countDown()
+                if (state.members.exists(m ⇒ m.address == oldLeaderAddress && m.status == Exiting))
+                  exitingLatch.countDown()
               case MemberLeft(m) if m.address == oldLeaderAddress ⇒ leavingLatch.countDown()
               case MemberExited(m) if m.address == oldLeaderAddress ⇒ exitingLatch.countDown()
               case _ ⇒ // ignore
