@@ -11,6 +11,7 @@ import akka.testkit._
 import scala.concurrent.util.duration._
 import akka.actor.Props
 import akka.actor.Actor
+import akka.cluster.MemberStatus._
 
 object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -48,6 +49,11 @@ abstract class NodeLeavingAndExitingSpec
         val exitingLatch = TestLatch()
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
+            case state: CurrentClusterState ⇒
+              if (state.members.exists(m ⇒ m.address == secondAddess && m.status == Leaving))
+                leavingLatch.countDown()
+              if (state.members.exists(m ⇒ m.address == secondAddess && m.status == Exiting))
+                exitingLatch.countDown()
             case MemberLeft(m) if m.address == secondAddess   ⇒ leavingLatch.countDown()
             case MemberExited(m) if m.address == secondAddess ⇒ exitingLatch.countDown()
 
