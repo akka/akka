@@ -6,9 +6,10 @@ Futures (Java)
 Introduction
 ------------
 
-In Akka, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure used
-to retrieve the result of some concurrent operation. This operation is usually performed by an ``Actor`` or
-by the ``Dispatcher`` directly. This result can be accessed synchronously (blocking) or asynchronously (non-blocking).
+In the Scala Standard Library, a `Future <http://en.wikipedia.org/wiki/Futures_and_promises>`_ is a data structure
+used to retrieve the result of some concurrent operation. This result can be accessed synchronously (blocking)
+or asynchronously (non-blocking). To be able to use this from Java, Akka provides a java friendly interface
+in ``akka.dispatch.Futures``.
 
 Execution Contexts
 ------------------
@@ -27,7 +28,7 @@ Use with Actors
 There are generally two ways of getting a reply from an ``UntypedActor``: the first is by a sent message (``actorRef.tell(msg)``),
 which only works if the original sender was an ``UntypedActor``) and the second is through a ``Future``.
 
-Using the ``ActorRef``\'s ``ask`` method to send a message will return a Future.
+Using the ``ActorRef``\'s ``ask`` method to send a message will return a ``Future``.
 To wait for and retrieve the actual result the simplest method is:
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
@@ -68,7 +69,7 @@ Or failures:
 Functional Futures
 ------------------
 
-Akka's ``Future`` has several monadic methods that are very similar to the ones used by ``Scala``'s collections.
+Scala's ``Future`` has several monadic methods that are very similar to the ones used by ``Scala``'s collections.
 These allow you to create 'pipelines' or 'streams' that the result will travel through.
 
 Future is a Monad
@@ -81,12 +82,12 @@ The return value of the ``map`` method is another ``Future`` that will contain t
 .. includecode:: code/docs/future/FutureDocTestBase.java
    :include: imports2,map
 
-In this example we are joining two strings together within a Future. Instead of waiting for f1 to complete,
+In this example we are joining two strings together within a ``Future``. Instead of waiting for f1 to complete,
 we apply our function that calculates the length of the string using the ``map`` method.
-Now we have a second Future, f2, that will eventually contain an ``Integer``.
-When our original ``Future``, f1, completes, it will also apply our function and complete the second Future
+Now we have a second ``Future``, f2, that will eventually contain an ``Integer``.
+When our original ``Future``, f1, completes, it will also apply our function and complete the second ``Future``
 with its result. When we finally ``get`` the result, it will contain the number 10.
-Our original Future still contains the string "HelloWorld" and is unaffected by the ``map``.
+Our original ``Future`` still contains the string "HelloWorld" and is unaffected by the ``map``.
 
 Something to note when using these methods: if the ``Future`` is still being processed when one of these methods are called,
 it will be the completing thread that actually does the work.
@@ -115,7 +116,7 @@ to have this done concurrently, and for that we use ``flatMap``:
 .. includecode:: code/docs/future/FutureDocTestBase.java
    :include: flat-map
 
-Now our second Future is executed concurrently as well. This technique can also be used to combine the results
+Now our second ``Future`` is executed concurrently as well. This technique can also be used to combine the results
 of several Futures into a single calculation, which will be better explained in the following sections.
 
 If you need to do conditional propagation, you can use ``filter``:
@@ -157,7 +158,7 @@ That's all it takes!
 
 
 If the sequence passed to ``fold`` is empty, it will return the start-value, in the case above, that will be empty String.
-In some cases you don't have a start-value and you're able to use the value of the first completing Future
+In some cases you don't have a start-value and you're able to use the value of the first completing ``Future``
 in the sequence as the start-value, you can use ``reduce``, it works like this:
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
@@ -172,7 +173,7 @@ Callbacks
 ---------
 
 Sometimes you just want to listen to a ``Future`` being completed, and react to that not by creating a new Future, but by side-effecting.
-For this Akka supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which the latter two are specializations of the first.
+For this Scala supports ``onComplete``, ``onSuccess`` and ``onFailure``, of which the latter two are specializations of the first.
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
    :include: onSuccess
@@ -188,8 +189,8 @@ Ordering
 
 Since callbacks are executed in any order and potentially in parallel,
 it can be tricky at the times when you need sequential ordering of operations.
-But there's a solution! And it's name is ``andThen``, and it creates a new Future with
-the specified callback, a Future that will have the same result as the Future it's called on,
+But there's a solution! And it's name is ``andThen``, and it creates a new ``Future`` with
+the specified callback, a ``Future`` that will have the same result as the ``Future`` it's called on,
 which allows for ordering like in the following sample:
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
