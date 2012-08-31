@@ -17,20 +17,22 @@ import actmote.TransportConnector._
 class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
 
   val HeadActorName = "remoteTransportHeadActor"
-  val managedRemoteSettings = new ActorManagedRemotingSettings(provider.remoteSettings.config.getConfig("akka.remote.managed"))
+  val managedRemoteSettings = new ActorManagedRemotingSettings(provider.remoteSettings.config)
 
   @volatile var headActor: ActorRef = _
   @volatile var address: Address = _
-  @volatile var transport: TransportConnector = _
+  @volatile var connector: TransportConnector = _
 
-  def loadTransport = {
+  def loadConnector = {
     val fqn = managedRemoteSettings.Connector
     val args = Seq(
       classOf[ExtendedActorSystem] -> system,
       classOf[RemoteActorRefProvider] -> provider)
 
     system.dynamicAccess.createInstanceFor[TransportConnector](fqn, args) match {
-      case Left(problem)    ⇒ println(problem); throw new RemoteTransportException("Could not load transport connector " + fqn, problem)
+      case Left(problem) ⇒ {
+        throw new RemoteTransportException("Could not load transport connector " + fqn, problem)
+      }
       case Right(connector) ⇒ connector
     }
   }
@@ -44,7 +46,7 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
         // the actor has been stopped
         if (Await.result(stopped, managedRemoteSettings.ShutdownTimeout)) {
           headActor = null
-          transport = null
+          connector = null
           log.info("Remoting stopped successfully")
         }
 
@@ -59,9 +61,9 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
   def start() {
     log.info("Starting remoting")
     if (headActor eq null) {
-      transport = loadTransport
+      connector = loadConnector
       val notifier = new DefaultLifeCycleNotifier(provider.remoteSettings, this, system.eventStream, log) // TODO: this uses the logger of this class... might be a problem
-      headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider.remoteSettings, transport, managedRemoteSettings, notifier)), HeadActorName)
+      headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider.remoteSettings, connector, managedRemoteSettings, notifier)), HeadActorName)
 
       val timeout = new Timeout(managedRemoteSettings.StartupTimeout)
       val addressFuture = headActor.ask(Listen(this))(timeout).mapTo[Address]
@@ -170,13 +172,16 @@ object HeadActor {
     }
 
     def removeIfNotLatched(endpoint: ActorRef) {
-      val address = endpointToAddress(endpoint)
-      addressToEndpointAndPolicy.get(address) match {
-        case Some(Failed(_)) ⇒ //Leave it be. It contains only the last failure time, but not the endpoint ref
-        case _               ⇒ addressToEndpointAndPolicy.remove(address)
+      // TODO: This is ugly and used only because passive connectins are not handled properly yet...
+      if (endpointToAddress.get(endpoint).isDefined) {
+        val address = endpointToAddress(endpoint)
+        addressToEndpointAndPolicy.get(address) match {
+          case Some(Failed(_)) ⇒ //Leave it be. It contains only the last failure time, but not the endpoint ref
+          case _               ⇒ addressToEndpointAndPolicy.remove(address)
+        }
+        // The endpoint is already stopped, always remove it
+        endpointToAddress.remove(endpoint)
       }
-      // The endpoint is already stopped, always remove it
-      endpointToAddress.remove(endpoint)
     }
   }
 }
@@ -203,7 +208,7 @@ class HeadActor(
   private var transport: RemoteTransport = _
   private var startupFuture: ActorRef = _
 
-  private val retryLatchEnabled = settings.RetryLatchClosedFor.length == 0
+  private val retryLatchEnabled = settings.RetryLatchClosedFor.length > 0
 
   private def failureStrategy = if (!retryLatchEnabled) {
     // This strategy keeps all the messages in the stash of the endpoint so restart will transfer the queue

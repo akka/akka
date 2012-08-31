@@ -144,7 +144,7 @@ class EndpointActorSpec extends AkkaSpec with ImplicitSender with DefaultTimeout
       assert(sendsEqual)
     }
 
-    "if restarted on failure reconnect to remote, and send messages without loss" in {
+    "if restarted on failure: reconnect to remote, and send messages without loss" in {
       val connector = mockConnector
       val handleOne = mockHandle
       @volatile var endpointActor: ActorRef = null
@@ -183,7 +183,7 @@ class EndpointActorSpec extends AkkaSpec with ImplicitSender with DefaultTimeout
       val toSendPartThree = (21 to 30) map { i ⇒ Send(i, Some(self), null) } toList;
       toSendPartThree foreach { endpointActor ! _ }
 
-      // 7. assert that connection was requested
+      // 7. assert that a connection was requested (reconnect)
       awaitCond(connector.connectingTo == remoteAddress && connector.connectingWith == endpointActor)
 
       // 8. send last bunch of messages

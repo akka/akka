@@ -17,20 +17,13 @@ class DummyTransportConnector(_system: ExtendedActorSystem, _provider: RemoteAct
   @volatile var responsibleActor: ActorRef = _
 
   private var _isTerminated = false
-  private var handles = List[DummyHandle]()
+  private var handles = List[DummyHandle]() //TODO: unsynchronized
 
   def isTerminated = lock synchronized {
-    _isTerminated && handles.filter(_.state != DummyHandle.Closed).isEmpty
+    _isTerminated && handles.forall(_.state == DummyHandle.Closed)
   }
 
-  // Using the fact that system startup uses the caller thread, so different actor systems initializations in the
-  // same test will run on the same thread (the test's) and receive the same medium. Other tests, running on different
-  // threads will obtain a completely isolated DummyTransportMedium
-  val dummyMediumThreadLocal = new ThreadLocal[DummyTransportMedium] {
-    override def initialValue() = new DummyTransportMedium()
-  }
-
-  def dummyMedium = dummyMediumThreadLocal.get()
+  val dummyMedium = DummyTransportMedium()
 
   // Access should be synchronized?
 
@@ -149,18 +142,20 @@ class DummyHandle(val owner: DummyTransportConnector, val localAddress: Address,
 
 case class HostAndPort(host: String, port: Int)
 
-object DummyTransportMediumProvider extends ExtensionId[DummyTransportMedium] with ExtensionIdProvider {
-
-  def lookup() = ???
-
-  def createExtension(system: ExtendedActorSystem) = ???
-
-}
-
 object DummyTransportMedium {
   sealed trait Activity
   case class ConnectionAttempt(link: (Address, Address)) extends Activity
   case class SendAttempt(msg: Any, sender: Address, recipient: Address) extends Activity
+
+  // Using the fact that system startup uses the caller thread, so different actor systems initializations in the
+  // same test will run on the same thread (the test's) and receive the same medium. Other tests, running on different
+  // threads will obtain a completely isolated DummyTransportMedium
+
+  def apply() = dummyMediumThreadLocal.get
+
+  private val dummyMediumThreadLocal = new ThreadLocal[DummyTransportMedium] {
+    override def initialValue() = new DummyTransportMedium()
+  }
 }
 
 class DummyTransportMedium extends Extension {
@@ -242,7 +237,9 @@ class DummyTransportMedium extends Extension {
 
   def handlesForConnection(link: (Address, Address)): Option[(DummyHandle, DummyHandle)] = Option(connectionTable.get(logicalLinkToNetworkLink(link)))
 
-  def isConnected(link: (Address, Address)): Boolean = connectionTable.contains(logicalLinkToNetworkLink(link))
+  def isConnected(link: (Address, Address)): Boolean = {
+    connectionTable.containsKey(logicalLinkToNetworkLink(link))
+  }
 
   // Not atomic! Be careful...
   def registerConnection(link: (Address, Address), clientProvider: DummyTransportConnector, responsibleActor: ActorRef): Option[(DummyHandle, DummyHandle)] = Option(connectionTable.get(logicalLinkToNetworkLink(link))) match {
