@@ -60,7 +60,6 @@ trait ConsumerConfig { this: CamelSupport ⇒
   /**
    * The route definition handler for creating a custom route to this consumer instance.
    */
-  //FIXME: write a test confirming onRouteDefinition gets called
   def onRouteDefinition(rd: RouteDefinition): ProcessorDefinition[_] = rd
 
 }
