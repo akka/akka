@@ -568,7 +568,11 @@ object SupervisorHierarchySpec {
       case Event(StateTimeout, _) ⇒
         errors :+= self -> ErrorLog("timeout while Stopping", Vector.empty)
         context stop hierarchy
-        goto(Failed)
+        println(system.asInstanceOf[ActorSystemImpl].printTree)
+        getErrors(hierarchy, 10)
+        printErrors()
+        testActor ! "timeout in Stopping"
+        stop
       case Event(e: ErrorLog, _) ⇒
         errors :+= sender -> e
         goto(Failed)
