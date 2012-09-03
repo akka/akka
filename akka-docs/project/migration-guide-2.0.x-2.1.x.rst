@@ -275,3 +275,26 @@ stashed messages are put into the dead letters when the actor stops, make sure y
 super.postStop if you override it.
 
 
+Forward of Terminated message
+=============================
+
+Forward of ``Terminated`` message is no longer supported. Instead, if you forward
+``Terminated`` you should send the information in you own message.
+
+v2.0::
+
+  context.watch(subject)
+
+  def receive = {
+    case t @ Terminated => someone forward t
+  }
+
+v2.1::
+
+  case class MyTerminated(subject: ActorRef)
+
+  context.watch(subject)
+
+  def receive = {
+    case Terminated(s) => someone forward MyTerminated(s)
+  }

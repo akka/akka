@@ -125,6 +125,8 @@ trait ActorContext extends ActorRefFactory {
 
   /**
    * Registers this actor as a Monitor for the provided ActorRef.
+   * This actor will receive a Terminated(watched) message when watched
+   * is terminated.
    * @return the provided ActorRef
    */
   def watch(subject: ActorRef): ActorRef
@@ -376,8 +378,8 @@ private[akka] class ActorCell(
 
     msg.message match {
       case Failed(cause, uid)       ⇒ handleFailure(sender, cause, uid)
-      case t: Terminated            ⇒ watchedActorTerminated(t.actor); receiveMessage(t)
-      case NodeUnreachable(address) ⇒ watchedNodeUnreachable(address) foreach receiveMessage
+      case t: Terminated            ⇒ watchedActorTerminated(t)
+      case NodeUnreachable(address) ⇒ watchedNodeUnreachable(address)
       case Kill                     ⇒ throw new ActorKilledException("Kill")
       case PoisonPill               ⇒ self.stop()
       case SelectParent(m)          ⇒ parent.tell(m, msg.sender)

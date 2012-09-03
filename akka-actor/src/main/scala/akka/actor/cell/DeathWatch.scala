@@ -36,7 +36,14 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
       a
   }
 
-  protected def watchedActorTerminated(ref: ActorRef): Unit = watching -= ref
+  /**
+   * When this actor is watching the subject of [[akka.actor.Terminated]] message
+   * it will be propagated to user's receive.
+   */
+  protected def watchedActorTerminated(t: Terminated): Unit = if (watching.contains(t.actor)) {
+    watching -= t.actor
+    receiveMessage(t)
+  }
 
   protected def tellWatchersWeDied(actor: Actor): Unit = {
     if (!watchedBy.isEmpty) {
@@ -96,14 +103,13 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     }
   }
 
-  protected def watchedNodeUnreachable(address: Address): Iterable[Terminated] = {
+  protected def watchedNodeUnreachable(address: Address): Unit = {
     val subjects = watching filter { _.path.address == address }
-    subjects foreach watchedActorTerminated
 
     // FIXME should we cleanup (remove watchedBy) since we know they are dead?
 
     // FIXME existenceConfirmed?
-    subjects map { Terminated(_)(existenceConfirmed = false) }
+    subjects foreach { self ! Terminated(_)(existenceConfirmed = false) }
   }
 
   private def isSubscribingToNodeUnreachable: Boolean = watching.exists {
