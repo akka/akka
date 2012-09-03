@@ -106,7 +106,7 @@ object TransportConnector {
    * === More specifically this message ===
    *  - must be sent to the actor responsible for the handle
    *  - must be sent shortly after the remote endpoint has been successfully recognized to be closed
-   *  - is not guaranteed to be sent after the remote endpoint closed its corresponding shandle
+   *  - is not guaranteed to be sent after the remote endpoint closed its corresponding handle
    * @param handle
    */
   case class Disconnected(handle: TransportConnectorHandle) extends ConnectorEvent
@@ -263,26 +263,29 @@ abstract class TransportConnectorHandle(val provider: RemoteActorRefProvider) {
 
   /**
    * Asynchronously sends the specified message to a remote actor. The sender actor might be specified or omitted.
-   * Writes guarantee ordering of messages, but not their reception.
+   * Writes guarantee ordering of messages, but not their reception. The call to write synchronously returns with
+   * a Boolean indicating that the channel was ready at the time of call. Return value false indicated that the channel
+   * is not ready for delivery and the sender needs to wait until the channel becomes ready again.
    *
    * === More specifically ===
    *  - write() is only allowed after open() has been called
-   *  - after calling write(message M) the connector eventually ''may'' deliver the message to the remote endpoint
+   *  - after calling write(message M) with a return value true the connector eventually ''may'' deliver the message to the remote endpoint
    *    after which dispatchMessage(M) will be called on the handle of the remote endpoint.
-   *  - for any two writes, write(A) and then write(B), exactly one of the following events will happen
+   *  - for any two successful writes, write(A) and then write(B), exactly one of the following events will happen
    *   - no message is received
    *   - A is received
    *   - B is received
    *   - A and then B is received
    *  - for any two writes, write(A) and then write(B), none of the following events may happen
    *   - receiving multiple copies of A or B
-   *   - receivng A after B
+   *   - receiving A after B
    *
    * @param msg message to be sent to the remote actor
    * @param senderOption optional sender reference
    * @param recipient recipient actor at the remote system
+   * @return false if the channel is saturated and the sender needs to back off
    */
-  def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit
+  def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Boolean
 
   /**
    * Closes the underlying transport channel. Remote endpoint of the channel or connection ''may'' be notified, but this

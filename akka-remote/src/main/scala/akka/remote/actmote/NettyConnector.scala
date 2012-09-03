@@ -467,12 +467,13 @@ class NettyConnectorHandle(provider: RemoteActorRefProvider, connector: NettyCon
   }
 
   // TODO: document dropping policy
-  override def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) {
+  override def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) = {
     import connector.system.deadLetters
     try {
       val request = (msg, senderOption, recipient)
       if (!channel.isWritable) {
-        deadLetters ! DeadLetter(msg, senderOption.getOrElse(deadLetters), recipient)
+        //deadLetters ! DeadLetter(msg, senderOption.getOrElse(deadLetters), recipient)
+        false // TODO: correctly implement backoff (now just returning false to make compiler happy)
       } else {
         val f = channel.write(request)
         f.addListener(
@@ -485,9 +486,11 @@ class NettyConnectorHandle(provider: RemoteActorRefProvider, connector: NettyCon
                 /// If the connection goes down we'll get the error reporting done by the pipeline.
               }
           })
+        true
       }
     } catch {
-      case NonFatal(e) ⇒ // TODO: signal error to enpoint actor
+      case NonFatal(e) ⇒ true // TODO: just to make the compiler happy, must be considered carefully
+      // TODO: signal error to enpoint actor
       //netty.notifyListeners(RemoteClientError(e, netty, remoteAddress))
     }
   }

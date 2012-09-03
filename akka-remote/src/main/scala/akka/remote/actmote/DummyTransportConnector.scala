@@ -103,7 +103,7 @@ class DummyHandle(val owner: DummyTransportConnector, val localAddress: Address,
     dummyMedium.removeConnection(key)
   }
 
-  override def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) {
+  override def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) = {
     if (owner.isTerminated) throw new IllegalStateException("Cannot write to handle: transport already terminated")
     dummyMedium.logSend(msg, localAddress, remoteAddress)
     dummyMedium.handlesForConnection(key) foreach {
@@ -119,6 +119,7 @@ class DummyHandle(val owner: DummyTransportConnector, val localAddress: Address,
         }
       }
     }
+    true //TODO: implement emulation of a temporarily non-writable channel
   }
 
   // --- Methods lifted shamelessly from RemoteTransport

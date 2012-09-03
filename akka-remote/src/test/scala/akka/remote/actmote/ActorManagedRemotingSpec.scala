@@ -154,26 +154,20 @@ akka {
         case _                    ⇒ false
       }
 
-      awaitCond(connectAttempts == 1)
+      awaitCond(connectAttempts >= 1, 5 seconds)
 
       dummyMedium.allow(transportUnderTest.address)
 
       // Next message will trigger reconnect
       remoteReference ! "discard"
-      awaitCond(outboundConnectionPresent)
+      awaitCond(outboundConnectionPresent, 5 seconds)
 
       // And finally all messages arrive
       awaitCond(activityLog.count {
         case SendAttempt("discard", localAddress, remoteAddress) ⇒ true
         case _ ⇒ false
-      } == 2)
+      } == 2, 5 seconds)
     }
-
-    // TEST watches
-
-    /*"accept inbound connections and create endpoint actors" in withCleanTransport {
-      fail
-    }*/
 
     /*"reuse exising inbound connections if use-passive-connections is set" in withCleanTransport {
       // Do a bidirectional communication step first
@@ -185,8 +179,6 @@ akka {
       assert(!inboundConnectionPresent)
     }*/
 
-    //TODO: test for different actor systems living on the same host and port but with different names
-
     /*"not reuse exising inbound connections if use-passive-connections is cleared" in withCleanTransport {
       // Do a bidirectional communication step first
       remoteReference ! "ping"
@@ -195,54 +187,8 @@ akka {
       }
       assert(outboundConnectionPresent)
       assert(inboundConnectionPresent)
-    }
+      } */
 
-    "throttle connection attempts after reaching a configurable limit" in withCleanTransport {
-      fail
-    }*/
-
-    /*"restart endpoint if an unexpected error (bug) happens without affecting other endpoints" in withCleanTransport {
-      dummyMedium.crash(transportUnderTest.address)
-      remoteReference ! "discard"
-
-      def connectAttempts = activityLog.count {
-        case ConnectionAttempt(_) ⇒ true
-        case _                    ⇒ false
-      }
-
-      awaitCond(connectAttempts > 0, 5 seconds)
-      dummyMedium.allow(transportUnderTest.address)
-      awaitCond(outboundConnectionPresent)
-    }*/
-
-    /*
-    "Passive connections must be not closed on the passive side" in withCleanTransport {
-      fail
-    }
-
-    "reconnect endpoints if connection problems occur" in withCleanTransport {
-      fail
-    }
-
-    "reset connection if a malformed message arrives" in withCleanTransport {
-      fail
-    }
-    
-    "drop messages after the number undeliverable messages reach a configurable limit" in withCleanTransport {
-    }
-
-    "appropriately dispatch incoming messages" in withCleanTransport {
-      fail
-    }
-
-    "reject and log if a misrouted message arrives" in withCleanTransport {
-      fail
-    }
-
-    "reject and log if an unauthenticated message arrives" in withCleanTransport {
-      fail
-    }
-    */
   }
 
 }

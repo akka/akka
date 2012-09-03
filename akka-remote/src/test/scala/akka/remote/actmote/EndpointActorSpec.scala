@@ -74,7 +74,8 @@ class EndpointActorSpec extends AkkaSpec with ImplicitSender with DefaultTimeout
     val writeLog = new CopyOnWriteArrayList[Send]()
 
     def open(responsibleActor: ActorRef) { openedWith = responsibleActor }
-    def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) { writeLog.add(Send(msg, senderOption, recipient)) }
+    // TODO: test backoff behavior
+    def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) = { writeLog.add(Send(msg, senderOption, recipient)); true }
     def close() { closed = true }
   }
 

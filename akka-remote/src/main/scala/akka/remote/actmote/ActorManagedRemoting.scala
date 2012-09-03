@@ -62,7 +62,8 @@ class ActorManagedRemoting(_system: ExtendedActorSystem, _provider: RemoteActorR
     log.info("Starting remoting")
     if (headActor eq null) {
       connector = loadConnector
-      val notifier = new DefaultLifeCycleNotifier(provider.remoteSettings, this, system.eventStream, log) // TODO: this uses the logger of this class... might be a problem
+      // NOTE: Notifier will use the logger of this class
+      val notifier = new DefaultLifeCycleNotifier(provider.remoteSettings, this, system.eventStream, log)
       headActor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new HeadActor(provider.remoteSettings, connector, managedRemoteSettings, notifier)), HeadActorName)
 
       val timeout = new Timeout(managedRemoteSettings.StartupTimeout)
@@ -145,7 +146,8 @@ private[actmote] case class Send(message: Any, senderOption: Option[ActorRef], r
 object HeadActor {
   sealed trait EndpointPolicy
   case class Pass(endpoint: ActorRef) extends EndpointPolicy
-  case class Failed(timeOfFailure: Deadline) extends EndpointPolicy
+  case class Latched(timeOfFailure: Deadline) extends EndpointPolicy
+  //case class PassPassive(endpointOption: Option[ActorRef])
 
   // TODO: How to handle passive connections?
   // TODO: Implement pruning of old entries
@@ -163,7 +165,7 @@ object HeadActor {
     def markFailed(endpoint: ActorRef, timeOfFailure: Deadline) {
       val address = endpointToAddress(endpoint)
       endpointToAddress.remove(endpoint)
-      addressToEndpointAndPolicy(address) = Failed(timeOfFailure)
+      addressToEndpointAndPolicy(address) = Latched(timeOfFailure)
     }
 
     def markPass(endpoint: ActorRef) {
@@ -176,8 +178,8 @@ object HeadActor {
       if (endpointToAddress.get(endpoint).isDefined) {
         val address = endpointToAddress(endpoint)
         addressToEndpointAndPolicy.get(address) match {
-          case Some(Failed(_)) ⇒ //Leave it be. It contains only the last failure time, but not the endpoint ref
-          case _               ⇒ addressToEndpointAndPolicy.remove(address)
+          case Some(Latched(_)) ⇒ //Leave it be. It contains only the last failure time, but not the endpoint ref
+          case _                ⇒ addressToEndpointAndPolicy.remove(address)
         }
         // The endpoint is already stopped, always remove it
         endpointToAddress.remove(endpoint)
@@ -221,7 +223,7 @@ class HeadActor(
     Stop
   }
 
-  override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+  override val supervisorStrategy = OneForOneStrategy() {
     case _: EndpointException ⇒ failureStrategy
     case NonFatal(_)          ⇒ failureStrategy
   }
@@ -252,7 +254,7 @@ class HeadActor(
 
       endpoints.getEndpointWithPolicy(recipientAddress) match {
         case Some(Pass(endpoint)) ⇒ endpoint ! s
-        case Some(Failed(timeOfFailure)) ⇒ if (retryLatchOpen(timeOfFailure)) {
+        case Some(Latched(timeOfFailure)) ⇒ if (retryLatchOpen(timeOfFailure)) {
           val endpoint = createEndpoint(recipientAddress, None)
           endpoints.markPass(endpoint)
           endpoint ! s
@@ -398,7 +400,11 @@ class EndpointActor(
       if (remoteSettings.LogSend) {
         log.debug("Sending message {} from {} to {}", msg, senderOption, recipient)
       }
-      handleOption.foreach { _.write(msg, senderOption, recipient) }
+      // Handle must be always defined at this point
+      if (!handleOption.get.write(msg, senderOption, recipient)) {
+        stash()
+        backoff()
+      }
     } catch {
       case NonFatal(reason) ⇒ {
         // We do not retry messages, so we drop attempt
@@ -436,6 +442,10 @@ class EndpointActor(
 
   override def unhandled(message: Any) {
     throw new EndpointConnectorProtocolViolated(remoteAddress, "Endpoint <-> Connector protocol violated; unexpected message: " + message)
+  }
+
+  private def backoff() {
+    //TODO: implement some backoff mechanism
   }
 
   private def attemptConnect() {
