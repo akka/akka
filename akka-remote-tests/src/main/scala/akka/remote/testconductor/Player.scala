@@ -134,6 +134,9 @@ private[akka] object ClientFSM {
  * coordinator and react to the [[akka.remote.testconductor.Conductor]]’s
  * requests for failure injection.
  *
+ * Note that you can't perform requests concurrently, e.g. enter barrier
+ * from one thread and ask for node address from another thread.
+ *
  * INTERNAL API.
  */
 private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {

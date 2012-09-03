@@ -117,7 +117,7 @@ class FutureDocSpec extends AkkaSpec {
     val f1 = Future {
       "Hello" + "World"
     }
-    val f2 = Promise.successful(3).future
+    val f2 = Future.successful(3)
     val f3 = f1 map { x ⇒
       f2 map { y ⇒
         x.length * y
@@ -132,7 +132,7 @@ class FutureDocSpec extends AkkaSpec {
     val f1 = Future {
       "Hello" + "World"
     }
-    val f2 = Promise.successful(3).future
+    val f2 = Future.successful(3)
     val f3 = f1 flatMap { x ⇒
       f2 map { y ⇒
         x.length * y
@@ -145,7 +145,7 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of filter" in {
     //#filter
-    val future1 = Promise.successful(4).future
+    val future1 = Future.successful(4)
     val future2 = future1.filter(_ % 2 == 0)
     val result = Await.result(future2, 1 second)
     result must be(4)
@@ -290,8 +290,8 @@ class FutureDocSpec extends AkkaSpec {
     val msg1 = -1
     //#try-recover
     val future = akka.pattern.ask(actor, msg1) recoverWith {
-      case e: ArithmeticException        ⇒ Promise.successful(0).future
-      case foo: IllegalArgumentException ⇒ Promise.failed[Int](new IllegalStateException("All br0ken!")).future
+      case e: ArithmeticException        ⇒ Future.successful(0)
+      case foo: IllegalArgumentException ⇒ Future.failed[Int](new IllegalStateException("All br0ken!"))
     }
     //#try-recover
     Await.result(future, 1 second) must be(0)
@@ -343,7 +343,7 @@ class FutureDocSpec extends AkkaSpec {
       Await.result(future, 1 second) must be("foo")
     }
     {
-      val future = Promise.failed[String](new IllegalStateException("OHNOES")).future
+      val future = Future.failed[String](new IllegalStateException("OHNOES"))
       //#onFailure
       future onFailure {
         case ise: IllegalStateException if ise.getMessage == "OHNOES" ⇒
@@ -367,12 +367,12 @@ class FutureDocSpec extends AkkaSpec {
     }
   }
 
-  "demonstrate usage of Promise.success & Promise.failed" in {
+  "demonstrate usage of Future.successful & Future.failed" in {
     //#successful
-    val future = Promise.successful("Yay!").future
+    val future = Future.successful("Yay!")
     //#successful
     //#failed
-    val otherFuture = Promise.failed[String](new IllegalArgumentException("Bang!")).future
+    val otherFuture = Future.failed[String](new IllegalArgumentException("Bang!"))
     //#failed
     Await.result(future, 1 second) must be("Yay!")
     intercept[IllegalArgumentException] { Await.result(otherFuture, 1 second) }

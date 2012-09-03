@@ -32,6 +32,9 @@ object RoutingSpec {
         router = round-robin
         nr-of-instances = 3
       }
+      /router3 {
+        router = round-robin
+      }
       /myrouter {
         router = "akka.routing.RoutingSpec$MyRouter"
         foo = bar
@@ -123,12 +126,12 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
       val theActor = system.actorOf(Props(new TheActor), "theActor")
       theActor ! "doIt"
-      Await.ready(doneLatch, 1 seconds)
+      Await.ready(doneLatch, remaining)
     }
 
     "use configured nr-of-instances when FromConfig" in {
       val router = system.actorOf(Props[TestActor].withRouter(FromConfig), "router1")
-      Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(3)
+      Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size must be(3)
       watch(router)
       system.stop(router)
       expectMsgType[Terminated]
@@ -136,7 +139,22 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
     "use configured nr-of-instances when router is specified" in {
       val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(nrOfInstances = 2)), "router2")
-      Await.result(router ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees.size must be(3)
+      Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size must be(3)
+      system.stop(router)
+    }
+
+    "use specified resizer when resizer not configured" in {
+      val latch = TestLatch(1)
+      val resizer = new Resizer {
+        def isTimeForResize(messageCounter: Long): Boolean = messageCounter == 0
+        def resize(props: Props, routeeProvider: RouteeProvider): Unit = {
+          routeeProvider.registerRoutees(routeeProvider.createRoutees(props, nrOfInstances = 3, Nil))
+          latch.countDown()
+        }
+      }
+      val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(resizer = Some(resizer))), "router3")
+      Await.ready(latch, remaining)
+      Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size must be(3)
       system.stop(router)
     }
 
@@ -223,7 +241,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routedActor ! "hello"
       routedActor ! "end"
 
-      Await.ready(doneLatch, 5 seconds)
+      Await.ready(doneLatch, remaining)
 
       counter.get must be(1)
     }
@@ -270,7 +288,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
       routedActor ! Broadcast("end")
       //now wait some and do validations.
-      Await.ready(doneLatch, 5 seconds)
+      Await.ready(doneLatch, remaining)
 
       for (i ← 0 until connectionCount) {
         val counter = counters.get(i).get
@@ -302,7 +320,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
 
-      Await.ready(doneLatch, 5 seconds)
+      Await.ready(doneLatch, remaining)
 
       counter1.get must be(1)
       counter2.get must be(1)
@@ -340,7 +358,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
 
-      Await.ready(doneLatch, 5 seconds)
+      Await.ready(doneLatch, remaining)
 
       counter1.get must be(1)
       counter2.get must be(1)
@@ -431,7 +449,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routedActor ! 1
       routedActor ! "end"
 
-      Await.ready(doneLatch, 5 seconds)
+      Await.ready(doneLatch, remaining)
 
       counter1.get must be(1)
       counter2.get must be(1)
@@ -462,7 +480,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routedActor ? 1
       routedActor ! "end"
 
-      Await.ready(doneLatch, 5 seconds)
+      Await.ready(doneLatch, remaining)
 
       counter1.get must be(1)
       counter2.get must be(1)

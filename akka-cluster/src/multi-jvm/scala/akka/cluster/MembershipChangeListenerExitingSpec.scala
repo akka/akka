@@ -12,6 +12,7 @@ import akka.testkit._
 import scala.concurrent.util.duration._
 import akka.actor.Props
 import akka.actor.Actor
+import akka.cluster.MemberStatus._
 
 object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -22,7 +23,6 @@ object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
         akka.cluster {
-          leader-actions-interval           = 5 s  # increase the leader action task interval
           unreachable-nodes-reaper-interval = 300 s # turn "off" reaping to unreachable node set
         }
       """)
@@ -56,9 +56,13 @@ abstract class MembershipChangeListenerExitingSpec
 
       runOn(third) {
         val exitingLatch = TestLatch()
+        val secondAddress = address(second)
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
-            case MemberExited(m) if m.address == address(second) ⇒
+            case state: CurrentClusterState ⇒
+              if (state.members.exists(m ⇒ m.address == secondAddress && m.status == Exiting))
+                exitingLatch.countDown()
+            case MemberExited(m) if m.address == secondAddress ⇒
               exitingLatch.countDown()
             case _ ⇒ // ignore
           }
