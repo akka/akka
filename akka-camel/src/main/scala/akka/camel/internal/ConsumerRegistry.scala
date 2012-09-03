@@ -15,7 +15,6 @@ import collection.mutable
 import org.apache.camel.model.RouteDefinition
 import org.apache.camel.CamelContext
 import scala.concurrent.util.Duration
-import concurrent.Await
 import akka.util.Timeout
 
 /**
@@ -32,15 +31,14 @@ private[camel] trait ConsumerRegistry { this: Activation ⇒
    */
   private[this] lazy val idempotentRegistry = system.actorOf(Props(new IdempotentCamelConsumerRegistry(context)))
   /**
-   * For internal use only. BLOCKING
+   * For internal use only.
    * @param endpointUri the URI to register the consumer on
    * @param consumer the consumer
    * @param activationTimeout the timeout for activation
    * @return the actorRef to the consumer
    */
-  private[camel] def registerConsumer(endpointUri: String, consumer: Consumer, activationTimeout: Duration) = {
+  private[camel] def registerConsumer(endpointUri: String, consumer: Consumer, activationTimeout: Duration) {
     idempotentRegistry ! RegisterConsumer(endpointUri, consumer.self, consumer)
-    Await.result(activationFutureFor(consumer.self)(activationTimeout, consumer.context.dispatcher), activationTimeout)
   }
 }
 

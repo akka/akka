@@ -36,7 +36,9 @@ private[camel] trait ProducerRegistry { this: Camel ⇒
   private val camelObjects = new ConcurrentHashMap[ActorRef, (Endpoint, SendProcessor)]()
   private val watcher = system.actorOf(Props(new ProducerWatcher(this))) //FIXME should this really be top level?
 
-  private def registerWatch(actorRef: ActorRef): Unit = watcher ! RegisterProducer(actorRef)
+  private def registerWatch(actorRef: ActorRef) {
+    watcher ! RegisterProducer(actorRef)
+  }
 
   /**
    * For internal use only.
