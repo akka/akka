@@ -26,6 +26,17 @@ private[camel] object TestSupport {
     actorRef
   }
 
+  def start(actor: ⇒ Actor, name: String)(implicit system: ActorSystem): ActorRef = {
+    val actorRef = system.actorOf(Props(actor), name = name)
+    Await.result(CamelExtension(system).activationFutureFor(actorRef)(10 seconds, system.dispatcher), 10 seconds)
+    actorRef
+  }
+
+  def stop(actorRef: ActorRef)(implicit system: ActorSystem) {
+    system.stop(actorRef)
+    Await.result(CamelExtension(system).deactivationFutureFor(actorRef)(10 seconds, system.dispatcher), 10 seconds)
+  }
+
   private[camel] implicit def camelToTestWrapper(camel: Camel) = new CamelTestWrapper(camel)
 
   class CamelTestWrapper(camel: Camel) {
