@@ -56,12 +56,13 @@ abstract class MembershipChangeListenerExitingSpec
 
       runOn(third) {
         val exitingLatch = TestLatch()
+        val secondAddress = address(second)
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
             case state: CurrentClusterState ⇒
-              if (state.members.exists(m ⇒ m.address == address(second) && m.status == Exiting))
+              if (state.members.exists(m ⇒ m.address == secondAddress && m.status == Exiting))
                 exitingLatch.countDown()
-            case MemberExited(m) if m.address == address(second) ⇒
+            case MemberExited(m) if m.address == secondAddress ⇒
               exitingLatch.countDown()
             case _ ⇒ // ignore
           }

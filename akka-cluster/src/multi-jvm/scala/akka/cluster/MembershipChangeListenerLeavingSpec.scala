@@ -54,12 +54,13 @@ abstract class MembershipChangeListenerLeavingSpec
 
       runOn(third) {
         val latch = TestLatch()
+        val secondAddress = address(second)
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
             case state: CurrentClusterState ⇒
-              if (state.members.exists(m ⇒ m.address == address(second) && m.status == Leaving))
+              if (state.members.exists(m ⇒ m.address == secondAddress && m.status == Leaving))
                 latch.countDown()
-            case MemberLeft(m) if m.address == address(second) ⇒
+            case MemberLeft(m) if m.address == secondAddress ⇒
               latch.countDown()
             case _ ⇒ // ignore
           }
