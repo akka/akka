@@ -10,7 +10,7 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.util.duration._
 import util.control.NonFatal
-import concurrent.util.Deadline
+import concurrent.util.{ Duration, Deadline }
 import scala.Some
 import actmote.TransportConnector._
 
@@ -149,6 +149,8 @@ object HeadActor {
   case class Latched(timeOfFailure: Deadline) extends EndpointPolicy
   //case class PassPassive(endpointOption: Option[ActorRef])
 
+  case object Prune
+
   // TODO: How to handle passive connections?
   // TODO: Implement pruning of old entries
   class EndpointRegistry {
@@ -156,6 +158,13 @@ object HeadActor {
     private val endpointToAddress = scala.collection.mutable.Map[ActorRef, Address]()
 
     def getEndpointWithPolicy(address: Address) = addressToEndpointAndPolicy.get(address)
+
+    def prune(pruneAge: Duration) {
+      addressToEndpointAndPolicy.retain {
+        case (address, Pass(_))               ⇒ true
+        case (address, Latched(timeOfFaiure)) ⇒ (Deadline.now + pruneAge).isOverdue()
+      }
+    }
 
     def registerEndpoint(address: Address, endpoint: ActorRef) {
       addressToEndpointAndPolicy += address -> Pass(endpoint)
@@ -211,6 +220,7 @@ class HeadActor(
   private var startupFuture: ActorRef = _
 
   private val retryLatchEnabled = settings.RetryLatchClosedFor.length > 0
+  val pruneInterval: Duration = if (retryLatchEnabled) settings.RetryLatchClosedFor * 2 else Duration.Zero
 
   private def failureStrategy = if (!retryLatchEnabled) {
     // This strategy keeps all the messages in the stash of the endpoint so restart will transfer the queue
@@ -226,6 +236,13 @@ class HeadActor(
   override val supervisorStrategy = OneForOneStrategy() {
     case _: EndpointException ⇒ failureStrategy
     case NonFatal(_)          ⇒ failureStrategy
+  }
+
+  override def preStart() {
+    // Prune old latch entries (if latching is enabled) to avoid memleaks
+    if (retryLatchEnabled) {
+      context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)(context.system.dispatcher)
+    }
   }
 
   def receive = {
@@ -268,7 +285,6 @@ class HeadActor(
           endpoint ! s
         }
       }
-
     }
 
     case IncomingConnection(handle) ⇒ {
@@ -280,6 +296,10 @@ class HeadActor(
 
     case Terminated(endpoint) ⇒ {
       endpoints.removeIfNotLatched(endpoint)
+    }
+
+    case Prune ⇒ {
+      endpoints.prune(settings.RetryLatchClosedFor)
     }
   }
 
