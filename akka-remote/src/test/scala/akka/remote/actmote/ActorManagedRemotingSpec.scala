@@ -24,6 +24,7 @@ akka {
     shutdown-timeout = 5 s
     preconnect-buffer-size = 1000
     retry-latch-closed-for = 0
+    flow-control-backoff = 50 ms
   }
   remote.netty {
     hostname = localhost

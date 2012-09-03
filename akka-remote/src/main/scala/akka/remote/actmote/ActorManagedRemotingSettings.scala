@@ -12,5 +12,6 @@ private[akka] class ActorManagedRemotingSettings(config: Config) {
   val ShutdownTimeout: Duration = Duration.fromNanos(getNanoseconds("akka.remote.managed.shutdown-timeout"))
   val PreConnectBufferSize: Int = getInt("akka.remote.managed.preconnect-buffer-size") //TODO: rename
   val RetryLatchClosedFor: Duration = Duration.fromNanos(getNanoseconds("akka.remote.managed.retry-latch-closed-for"))
+  val FlowControlBackoff: Duration = Duration.fromNanos(getNanoseconds("akka.remote.managed.flow-control-backoff"))
 
 }

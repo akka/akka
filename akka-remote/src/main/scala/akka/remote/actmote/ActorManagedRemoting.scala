@@ -151,8 +151,6 @@ object HeadActor {
 
   case object Prune
 
-  // TODO: How to handle passive connections?
-  // TODO: Implement pruning of old entries
   class EndpointRegistry {
     private val addressToEndpointAndPolicy = scala.collection.mutable.Map[Address, EndpointPolicy]()
     private val endpointToAddress = scala.collection.mutable.Map[ActorRef, Address]()
@@ -183,7 +181,6 @@ object HeadActor {
     }
 
     def removeIfNotLatched(endpoint: ActorRef) {
-      // TODO: This is ugly and used only because passive connectins are not handled properly yet...
       if (endpointToAddress.get(endpoint).isDefined) {
         val address = endpointToAddress(endpoint)
         addressToEndpointAndPolicy.get(address) match {
@@ -362,6 +359,7 @@ class EndpointActor(
 
   // TODO: Propagate it to the stash size
   val queueLimit: Int = settings.PreConnectBufferSize
+  private var backingOff = false
 
   private def notifyError(reason: Throwable) {
     if (isServer) {
@@ -390,7 +388,7 @@ class EndpointActor(
       }
       case None ⇒ {
         notifier.remoteClientStarted(remoteAddress)
-        //TODO: Do this only when not restarting a passive connection
+        // We retry passive connections as well
         self ! AttemptConnect
       }
     }
@@ -417,13 +415,17 @@ class EndpointActor(
   // Connected state
   def connected: Receive = {
     case Send(msg, senderOption, recipient) ⇒ try {
-      if (remoteSettings.LogSend) {
-        log.debug("Sending message {} from {} to {}", msg, senderOption, recipient)
-      }
-      // Handle must be always defined at this point
-      if (!handleOption.get.write(msg, senderOption, recipient)) {
+      if (!backingOff) {
+        if (remoteSettings.LogSend) {
+          log.debug("Sending message {} from {} to {}", msg, senderOption, recipient)
+        }
+        // Handle must be always defined at this point
+        if (!handleOption.get.write(msg, senderOption, recipient)) {
+          stash()
+          backoff()
+        }
+      } else {
         stash()
-        backoff()
       }
     } catch {
       case NonFatal(reason) ⇒ {
@@ -465,7 +467,8 @@ class EndpointActor(
   }
 
   private def backoff() {
-    //TODO: implement some backoff mechanism
+    backingOff = true
+    context.system.scheduler.scheduleOnce(settings.FlowControlBackoff) { backingOff = false }(context.dispatcher)
   }
 
   private def attemptConnect() {
