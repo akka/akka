@@ -3,6 +3,7 @@ package docs.camel;
 import akka.actor.Status;
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
+import akka.dispatch.Mapper;
 import org.apache.camel.builder.Builder;
 import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.model.RouteDefinition;
@@ -10,6 +11,13 @@ import scala.Option;
 
 public class ErrorThrowingConsumer extends UntypedConsumerActor{
   private String uri;
+
+  private static Mapper<RouteDefinition, ProcessorDefinition<?>> mapper = new Mapper<RouteDefinition, ProcessorDefinition<?>>() {
+    public ProcessorDefinition<?> apply(RouteDefinition rd) {
+        // Catch any exception and handle it by returning the exception message as response
+        return rd.onException(Exception.class).handled(true).transform(Builder.exceptionMessage()).end();
+    }
+  };
 
   public ErrorThrowingConsumer(String uri){
     this.uri = uri;
@@ -29,9 +37,8 @@ public class ErrorThrowingConsumer extends UntypedConsumerActor{
   }
 
   @Override
-  public ProcessorDefinition<?> onRouteDefinition(RouteDefinition rd) {
-    // Catch any exception and handle it by returning the exception message as response
-    return rd.onException(Exception.class).handled(true).transform(Builder.exceptionMessage()).end();
+  public Mapper<RouteDefinition, ProcessorDefinition<?>> getRouteDefinitionHandler() {
+    return mapper;
   }
 
   @Override

@@ -23,11 +23,6 @@ class MessageScalaTest extends FunSuite with MustMatchers with SharedCamelSystem
     }
   }
 
-  test("mustReturnDoubleHeader") {
-    val message = CamelMessage("test", Map("test" -> 1.4))
-    message.header("test").get must be(1.4)
-  }
-
   test("mustConvertDoubleHeaderToString") {
     val message = CamelMessage("test", Map("test" -> 1.4))
     message.headerAs[String]("test").get must be("1.4")
@@ -47,32 +42,14 @@ class MessageScalaTest extends FunSuite with MustMatchers with SharedCamelSystem
   }
 
   test("mustSetBodyAndPreserveHeaders") {
-    CamelMessage("test1", Map("A" -> "1")).withBody("test2") must be(
+    CamelMessage("test1", Map("A" -> "1")).copy(body = "test2") must be(
       CamelMessage("test2", Map("A" -> "1")))
 
   }
 
   test("mustSetHeadersAndPreserveBody") {
-    CamelMessage("test1", Map("A" -> "1")).withHeaders(Map("C" -> "3")) must be(
+    CamelMessage("test1", Map("A" -> "1")).copy(headers = Map("C" -> "3")) must be(
       CamelMessage("test1", Map("C" -> "3")))
-
-  }
-
-  test("mustAddHeaderAndPreserveBodyAndHeaders") {
-    CamelMessage("test1", Map("A" -> "1")).addHeader("B" -> "2") must be(
-      CamelMessage("test1", Map("A" -> "1", "B" -> "2")))
-
-  }
-
-  test("mustAddHeadersAndPreserveBodyAndHeaders") {
-    CamelMessage("test1", Map("A" -> "1")).addHeaders(Map("B" -> "2")) must be(
-      CamelMessage("test1", Map("A" -> "1", "B" -> "2")))
-
-  }
-
-  test("mustRemoveHeadersAndPreserveBodyAndRemainingHeaders") {
-    CamelMessage("test1", Map("A" -> "1", "B" -> "2")).withoutHeader("B") must be(
-      CamelMessage("test1", Map("A" -> "1")))
 
   }
 }

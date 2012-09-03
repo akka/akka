@@ -5,9 +5,9 @@ import org.scalatest.matchers.MustMatchers
 import scala.concurrent.util.duration._
 import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
 import akka.actor.{ Props, ActorSystem }
-import scala.concurrent.util.Duration
 import akka.camel._
 import akka.testkit.{ TimingTest, TestProbe, TestKit }
+import akka.camel.internal.ActivationProtocol._
 import scala.concurrent.util.FiniteDuration
 
 class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
@@ -25,7 +25,7 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     anotherAwaiting = new Awaiting(actor)
   }
 
-  val at = system.actorOf(Props[ActivationTracker])
+  val at = system.actorOf(Props[ActivationTracker], name = "activationTrackker")
 
   "ActivationTracker forwards activation message to all awaiting parties" taggedAs TimingTest in {
     awaiting.awaitActivation()

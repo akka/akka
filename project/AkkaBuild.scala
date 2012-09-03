@@ -639,7 +639,7 @@ object Dependencies {
 
   val kernel = Seq(Test.scalatest, Test.junit)
 
-  val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
+  val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
 
   val camelSample = Seq(CamelSample.camelJetty)
 
@@ -655,10 +655,12 @@ object Dependencies {
 
   val multiNodeSample = Seq(Test.scalatest)
 }
-
+object V {
+  val Camel  = "2.10.0"
+}
 object Dependency {
   // Compile
-  val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.0" exclude("org.slf4j", "slf4j-api") // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"                   % V.Camel exclude("org.slf4j", "slf4j-api") // ApacheV2
   val config        = "com.typesafe"                % "config"                       % "0.5.2"       // ApacheV2
   val netty         = "io.netty"                    % "netty"                        % "3.5.4.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
@@ -689,7 +691,7 @@ object Dependency {
 
   // Camel Sample
   object CamelSample {
-    val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % "2.10.0" // ApacheV2
+    val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % V.Camel // ApacheV2
   }
 
 }

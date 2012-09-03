@@ -19,11 +19,12 @@ import akka.util.Timeout
 import akka.testkit.AkkaSpec
 
 private[camel] object TestSupport {
+  def start(actor: ⇒ Actor, name: String)(implicit system: ActorSystem, timeout: Timeout): ActorRef =
+    Await.result(CamelExtension(system).activationFutureFor(system.actorOf(Props(actor), name))(timeout, system.dispatcher), timeout.duration)
 
-  def start(actor: ⇒ Actor)(implicit system: ActorSystem): ActorRef = {
-    val actorRef = system.actorOf(Props(actor))
-    Await.result(CamelExtension(system).activationFutureFor(actorRef)(10 seconds, system.dispatcher), 10 seconds)
-    actorRef
+  def stop(actorRef: ActorRef)(implicit system: ActorSystem, timeout: Timeout) {
+    system.stop(actorRef)
+    Await.result(CamelExtension(system).deactivationFutureFor(actorRef)(timeout, system.dispatcher), timeout.duration)
   }
 
   private[camel] implicit def camelToTestWrapper(camel: Camel) = new CamelTestWrapper(camel)

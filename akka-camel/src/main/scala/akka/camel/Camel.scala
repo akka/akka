@@ -6,7 +6,8 @@ package akka.camel
 
 import internal._
 import akka.actor._
-import org.apache.camel.{ ProducerTemplate, CamelContext }
+import org.apache.camel.ProducerTemplate
+import org.apache.camel.impl.DefaultCamelContext
 import com.typesafe.config.Config
 import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit._
@@ -17,16 +18,16 @@ import scala.concurrent.util.FiniteDuration
  * '''Note:''' `CamelContext` and `ProducerTemplate` are stopped when the associated actor system is shut down.
  * This trait can be obtained through the [[akka.camel.CamelExtension]] object.
  */
-trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with Activation {
+trait Camel extends Extension with Activation {
   /**
    * Underlying camel context.
    *
    * It can be used to configure camel manually, i.e. when the user wants to add new routes or endpoints,
    * i.e. {{{camel.context.addRoutes(...)}}}
    *
-   * @see [[org.apache.camel.CamelContext]]
+   * @see [[org.apache.camel.impl.DefaultCamelContext]]
    */
-  def context: CamelContext
+  def context: DefaultCamelContext
 
   /**
    * The Camel ProducerTemplate.
@@ -38,6 +39,16 @@ trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with A
    * The settings for the CamelExtension
    */
   def settings: CamelSettings
+
+  /**
+   * For internal use only. Returns the camel supervisor actor.
+   */
+  private[camel] def supervisor: ActorRef
+
+  /**
+   * For internal use only. Returns the associated ActorSystem.
+   */
+  private[camel] def system: ActorSystem
 }
 
 /**
@@ -68,6 +79,12 @@ class CamelSettings private[camel] (config: Config) {
    *
    */
   final val jmxStatistics: Boolean = config.getBoolean("akka.camel.jmx")
+
+  /**
+   * enables or disables streamingCache on the Camel Context
+   */
+  final val streamingCache: Boolean = config.getBoolean("akka.camel.streamingCache")
+
 }
 
 /**

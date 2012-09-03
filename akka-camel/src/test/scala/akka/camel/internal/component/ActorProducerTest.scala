@@ -11,7 +11,7 @@ import org.mockito.Mockito._
 import org.apache.camel.{ CamelContext, ProducerTemplate, AsyncCallback }
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import concurrent.util.{ FiniteDuration, Duration }
 import java.lang.String
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import akka.camel._
@@ -21,14 +21,17 @@ import akka.camel.TestSupport._
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
 import org.mockito.{ ArgumentMatcher, Matchers, Mockito }
 import org.scalatest.matchers.MustMatchers
-import akka.actor.Status.Failure
+import akka.actor.Status.{ Success, Failure }
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem.Settings
 import akka.event.LoggingAdapter
 import akka.testkit.{ TimingTest, TestKit, TestProbe }
-import scala.concurrent.util.FiniteDuration
+import org.apache.camel.impl.DefaultCamelContext
+import concurrent.{ Await, Promise, Future }
+import akka.util.Timeout
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
+  implicit val timeout = Timeout(10 seconds)
 
   "ActorProducer" when {
 
@@ -54,7 +57,45 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         "not expect response and not block" taggedAs TimingTest in {
           time(producer.processExchangeAdapter(exchange)) must be < (200 millis)
         }
+      }
 
+      "manualAck" when {
+
+        "response is Ack" must {
+          "process the exchange" in {
+            producer = given(outCapable = false, autoAck = false)
+            import system.dispatcher
+            val future = Future {
+              producer.processExchangeAdapter(exchange)
+            }
+            within(1 second) {
+              probe.expectMsgType[CamelMessage]
+              info("message sent to consumer")
+              probe.sender ! Ack
+            }
+            verify(exchange, never()).setResponse(any[CamelMessage])
+            info("no response forwarded to exchange")
+            Await.ready(future, timeout.duration)
+          }
+        }
+        "the consumer does not respond wit Ack" must {
+          "not block forever" in {
+            producer = given(outCapable = false, autoAck = false)
+            import system.dispatcher
+            val future = Future {
+              producer.processExchangeAdapter(exchange)
+            }
+            within(1 second) {
+              probe.expectMsgType[CamelMessage]
+              info("message sent to consumer")
+            }
+            verify(exchange, never()).setResponse(any[CamelMessage])
+            info("no response forwarded to exchange")
+            intercept[TimeoutException] {
+              Await.ready(future, camel.settings.replyTimeout - (1 seconds))
+            }
+          }
+        }
       }
 
       "out capable" when {
@@ -93,9 +134,6 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
         }
 
       }
-
-      //TODO: write more tests for synchronous process(exchange) method
-
     }
 
     "asynchronous" when {
@@ -284,8 +322,21 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     def camelWithMocks = new DefaultCamel(sys) {
       override val log = mock[LoggingAdapter]
       override lazy val template = mock[ProducerTemplate]
-      override lazy val context = mock[CamelContext]
-      override val settings = mock[CamelSettings]
+      override lazy val context = mock[DefaultCamelContext]
+      override val settings = new CamelSettings(ConfigFactory.parseString(
+        """
+          akka {
+            camel {
+              jmx = off
+              streamingCache = on
+              consumer {
+                 auto-ack = on
+                 reply-timeout = 2s
+                 activation-timeout = 10s
+              }
+            }
+          }
+        """))
     }
     camel = camelWithMocks
 
@@ -351,6 +402,6 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     def receive = {
       case msg ⇒ sender ! "received " + msg
     }
-  }))
+  }), name = "echoActor")
 
 }
