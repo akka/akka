@@ -74,11 +74,11 @@ case class Terminated private[akka] (@BeanProperty actor: ActorRef)(@BeanPropert
  *
  * Used for remote death watch. Failure detector publish this to the
  * `eventStream` when a remote node is detected to be unreachable.
- * [[akka.actor.DeathWatch]] subscribes to the `eventStream` and translates this
- * event to [[akka.actor.Terminated]], which is received by the watcher.
+ * The watcher ([[akka.actor.DeathWatch]]) subscribes to the `eventStream`
+ * and translates this event to [[akka.actor.Terminated]], which is sent itself.
  */
 @SerialVersionUID(1L)
-private[akka] case class NodeUnreachable(address: Address) extends AutoReceivedMessage
+private[akka] case class AddressTerminated(address: Address) extends AutoReceivedMessage
 
 abstract class ReceiveTimeout extends PossiblyHarmful
 

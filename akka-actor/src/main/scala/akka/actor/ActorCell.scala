@@ -377,14 +377,14 @@ private[akka] class ActorCell(
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case Failed(cause, uid)       ⇒ handleFailure(sender, cause, uid)
-      case t: Terminated            ⇒ watchedActorTerminated(t)
-      case NodeUnreachable(address) ⇒ watchedNodeUnreachable(address)
-      case Kill                     ⇒ throw new ActorKilledException("Kill")
-      case PoisonPill               ⇒ self.stop()
-      case SelectParent(m)          ⇒ parent.tell(m, msg.sender)
-      case SelectChildName(name, m) ⇒ getChildByName(name) match { case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender); case _ ⇒ }
-      case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+      case Failed(cause, uid)         ⇒ handleFailure(sender, cause, uid)
+      case t: Terminated              ⇒ watchedActorTerminated(t)
+      case AddressTerminated(address) ⇒ addressTerminated(address)
+      case Kill                       ⇒ throw new ActorKilledException("Kill")
+      case PoisonPill                 ⇒ self.stop()
+      case SelectParent(m)            ⇒ parent.tell(m, msg.sender)
+      case SelectChildName(name, m)   ⇒ getChildByName(name) match { case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender); case _ ⇒ }
+      case SelectChildPattern(p, m)   ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
   }
 

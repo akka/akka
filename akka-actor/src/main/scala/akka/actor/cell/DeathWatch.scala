@@ -4,7 +4,7 @@
 
 package akka.actor.cell
 
-import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorCell, Actor, Address, NodeUnreachable }
+import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorCell, Actor, Address, AddressTerminated }
 import akka.dispatch.{ Watch, Unwatch }
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
@@ -17,12 +17,10 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   override final def watch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
       if (a != self && !watching.contains(a)) {
-        // start subscription to NodeUnreachable if non-local subject and not already subscribing
-        if (!a.isLocal && !isSubscribingToNodeUnreachable)
-          system.eventStream.subscribe(self, classOf[NodeUnreachable])
-
-        a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-        watching += a
+        maintainAddressTerminatedSubscription(a) {
+          a.sendSystemMessage(Watch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+          watching += a
+        }
       }
       a
   }
@@ -30,8 +28,10 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   override final def unwatch(subject: ActorRef): ActorRef = subject match {
     case a: InternalActorRef ⇒
       if (a != self && watching.contains(a)) {
-        a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-        watching -= a
+        maintainAddressTerminatedSubscription(a) {
+          a.sendSystemMessage(Unwatch(a, self)) // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
+          watching -= a
+        }
       }
       a
   }
@@ -41,7 +41,9 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    * it will be propagated to user's receive.
    */
   protected def watchedActorTerminated(t: Terminated): Unit = if (watching.contains(t.actor)) {
-    watching -= t.actor
+    maintainAddressTerminatedSubscription(t.actor) {
+      watching -= t.actor
+    }
     receiveMessage(t)
   }
 
@@ -67,7 +69,10 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
             case NonFatal(t) ⇒ publish(Error(t, self.path.toString, clazz(actor), "deathwatch"))
           }
         }
-      } finally watching = ActorCell.emptyActorRefSet
+      } finally {
+        watching = ActorCell.emptyActorRefSet
+        unsubscribeAddressTerminated()
+      }
     }
   }
 
@@ -76,7 +81,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     val watcherSelf = watcher == self
 
     if (watcheeSelf && !watcherSelf) {
-      if (!watchedBy.contains(watcher)) {
+      if (!watchedBy.contains(watcher)) maintainAddressTerminatedSubscription(watcher) {
         watchedBy += watcher
         if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now monitoring " + watcher))
       }
@@ -92,7 +97,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     val watcherSelf = watcher == self
 
     if (watcheeSelf && !watcherSelf) {
-      if (watchedBy.contains(watcher)) {
+      if (watchedBy.contains(watcher)) maintainAddressTerminatedSubscription(watcher) {
         watchedBy -= watcher
         if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "stopped monitoring " + watcher))
       }
@@ -103,18 +108,49 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     }
   }
 
-  protected def watchedNodeUnreachable(address: Address): Unit = {
-    val subjects = watching filter { _.path.address == address }
+  protected def addressTerminated(address: Address): Unit = {
+    // cleanup watchedBy since we know they are dead
+    for (a ← watchedBy; if a.path.address == address) maintainAddressTerminatedSubscription(a) {
+      watchedBy -= a
+    }
 
-    // FIXME should we cleanup (remove watchedBy) since we know they are dead?
-
+    // send Terminated to self for all matching subjects
     // FIXME existenceConfirmed?
-    subjects foreach { self ! Terminated(_)(existenceConfirmed = false) }
+    for (a ← watching; if a.path.address == address) {
+      self ! Terminated(a)(existenceConfirmed = false)
+    }
   }
 
-  private def isSubscribingToNodeUnreachable: Boolean = watching.exists {
-    case a: InternalActorRef if !a.isLocal ⇒ true
-    case _                                 ⇒ false
+  /**
+   * Starts subscription to AddressTerminated if not already subscribing and the
+   * block adds a non-local ref to watching or watchedBy.
+   * Ends subscription to AddressTerminated if subscribing and the
+   * block removes the last non-local ref from watching and watchedBy.
+   */
+  private def maintainAddressTerminatedSubscription[T](change: ActorRef)(block: ⇒ T): T = {
+    def isNonLocal(ref: ActorRef) = ref match {
+      case a: InternalActorRef if !a.isLocal ⇒ true
+      case _                                 ⇒ false
+    }
+
+    def hasNonLocalAddress: Boolean = {
+      (watching exists isNonLocal) || (watchedBy exists isNonLocal)
+    }
+
+    if (isNonLocal(change)) {
+      val had = hasNonLocalAddress
+      val result = block
+      val has = hasNonLocalAddress
+      if (had && !has) unsubscribeAddressTerminated()
+      else if (!had && has) subscribeAddressTerminated()
+      result
+    } else {
+      block
+    }
   }
+
+  private def unsubscribeAddressTerminated(): Unit = system.eventStream.unsubscribe(self, classOf[AddressTerminated])
+
+  private def subscribeAddressTerminated(): Unit = system.eventStream.subscribe(self, classOf[AddressTerminated])
 
 }
