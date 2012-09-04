@@ -12,10 +12,15 @@ akka {
   remote.managed {
     connector = "akka.remote.actmote.NettyConnector"
     use-passive-connections = false
+    startup-timeout = 5 s
+    shutdown-timeout = 5 s
+    preconnect-buffer-size = 1000
+    retry-latch-closed-for = 0
+    flow-control-backoff = 50 ms
   }
   remote.netty {
     hostname = localhost
-    port = 12345
+    port = 0
   }
   actor.deployment {
     /blub.remote = "akka://remote-sys@localhost:12346"

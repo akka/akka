@@ -5,7 +5,7 @@ import akka.testkit.{ EventFilter, DefaultTimeout, ImplicitSender, AkkaSpec }
 import com.typesafe.config.ConfigFactory
 import concurrent.{ Future, Await }
 import akka.pattern.ask
-import akka.remote.RemoteActorRef
+import akka.remote.{ RemoteActorRefProvider, RemoteActorRef }
 
 object RemoteCommunicationSpecTemplate {
   class Echo extends Actor {
@@ -42,7 +42,10 @@ abstract class RemoteCommunicationSpecTemplate(localConfig: String, remoteConfig
     }
   }), "echo")
 
-  val here = system.actorFor("akka://remote-sys@localhost:12346/user/echo")
+  def localPort = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address.port.get
+  def remotePort = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address.port.get
+
+  val here = system.actorFor("akka://remote-sys@localhost:" + remotePort + "/user/echo")
 
   override def atTermination() {
     other.shutdown()
@@ -59,7 +62,7 @@ abstract class RemoteCommunicationSpecTemplate(localConfig: String, remoteConfig
 
     "send error message for wrong address" in {
       EventFilter.error(start = "dropping", occurrences = 1).intercept {
-        system.actorFor("akka://remotesys@localhost:12346/user/echo") ! "ping"
+        system.actorFor("akka://remotesys@localhost:" + remotePort + "/user/echo") ! "ping"
       }(other)
     }
 
@@ -72,13 +75,13 @@ abstract class RemoteCommunicationSpecTemplate(localConfig: String, remoteConfig
 
     "send dead letters on remote if actor does not exist" in {
       EventFilter.warning(pattern = "dead.*buh", occurrences = 1).intercept {
-        system.actorFor("akka://remote-sys@localhost:12346/does/not/exist") ! "buh"
+        system.actorFor("akka://remote-sys@localhost:" + remotePort + "/does/not/exist") ! "buh"
       }(other)
     }
 
     "create and supervise children on remote node" in {
       val r = system.actorOf(Props[Echo], "blub")
-      r.path.toString must be === "akka://remote-sys@localhost:12346/remote/RemoteCommunicationSpecTemplate@localhost:12345/user/blub"
+      r.path.toString must be === "akka://remote-sys@localhost:" + remotePort + "/remote/RemoteCommunicationSpecTemplate@localhost:" + localPort + "/user/blub"
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
