@@ -93,11 +93,6 @@ private[akka] final class ActivationTracker extends Actor with ActorLogging {
 
   }
 
-  /**
-   * Subscribes self to messages of type <code>ActivationMessage</code>
-   */
-  override def preStart(): Unit = context.system.eventStream.subscribe(self, classOf[ActivationMessage])
-
   override def receive = {
     case msg @ ActivationMessage(ref) ⇒
       (activations.getOrElseUpdate(ref, new ActivationStateMachine).receive orElse logStateWarning(ref))(msg)

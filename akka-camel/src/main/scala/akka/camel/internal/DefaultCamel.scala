@@ -1,6 +1,6 @@
 package akka.camel.internal
 
-import akka.actor.ActorSystem
+import akka.actor.{ ActorRef, Props, ActorSystem }
 import akka.camel.internal.component.{ DurationTypeConverter, ActorComponent }
 import org.apache.camel.impl.DefaultCamelContext
 import scala.Predef._
@@ -10,7 +10,9 @@ import scala.util.control.NonFatal
 import scala.concurrent.util.Duration
 
 import org.apache.camel.{ ProducerTemplate, CamelContext }
-
+import concurrent.{ Future, ExecutionContext }
+import akka.util.Timeout
+import akka.pattern.ask
 /**
  * For internal use only.
  * Creates an instance of the Camel subsystem.
@@ -21,6 +23,7 @@ import org.apache.camel.{ ProducerTemplate, CamelContext }
  * Also by not creating extra internal actor system we are conserving resources.
  */
 private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
+  val supervisor = system.actorOf(Props[CamelSupervisor], "camel-supervisor")
   /**
    * For internal use only.
    */
@@ -65,4 +68,31 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
     }
     log.debug("Stopped CamelContext[{}] for ActorSystem[{}]", context.getName, system.name)
   }
+
+  /**
+   * Produces a Future with the specified endpoint that will be completed when the endpoint has been activated,
+   * or if it times out, which will happen after the specified Timeout.
+   *
+   * @param endpoint the endpoint to be activated
+   * @param timeout the timeout for the Future
+   */
+  def activationFutureFor(endpoint: ActorRef)(implicit timeout: Duration, executor: ExecutionContext): Future[ActorRef] =
+
+    (supervisor.ask(AwaitActivation(endpoint))(Timeout(timeout))).map[ActorRef]({
+      case EndpointActivated(`endpoint`)               ⇒ endpoint
+      case EndpointFailedToActivate(`endpoint`, cause) ⇒ throw cause
+    })
+
+  /**
+   * Produces a Future which will be completed when the given endpoint has been deactivated or
+   * or if it times out, which will happen after the specified Timeout.
+   *
+   * @param endpoint the endpoint to be deactivated
+   * @param timeout the timeout of the Future
+   */
+  def deactivationFutureFor(endpoint: ActorRef)(implicit timeout: Duration, executor: ExecutionContext): Future[ActorRef] =
+    (supervisor.ask(AwaitDeActivation(endpoint))(Timeout(timeout))).map[ActorRef]({
+      case EndpointDeActivated(`endpoint`)               ⇒ endpoint
+      case EndpointFailedToDeActivate(`endpoint`, cause) ⇒ throw cause
+    })
 }
