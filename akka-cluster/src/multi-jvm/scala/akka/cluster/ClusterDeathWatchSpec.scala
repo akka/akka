@@ -10,13 +10,16 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.actor.Props
 import akka.actor.Actor
+import akka.actor.Address
 import akka.actor.RootActorPath
 import akka.actor.Terminated
+import akka.actor.Address
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
+  val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
@@ -24,6 +27,7 @@ object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
 class ClusterDeathWatchMultiJvmNode1 extends ClusterDeathWatchSpec with FailureDetectorPuppetStrategy
 class ClusterDeathWatchMultiJvmNode2 extends ClusterDeathWatchSpec with FailureDetectorPuppetStrategy
 class ClusterDeathWatchMultiJvmNode3 extends ClusterDeathWatchSpec with FailureDetectorPuppetStrategy
+class ClusterDeathWatchMultiJvmNode4 extends ClusterDeathWatchSpec with FailureDetectorPuppetStrategy
 
 abstract class ClusterDeathWatchSpec
   extends MultiNodeSpec(ClusterDeathWatchMultiJvmSpec)
@@ -43,19 +47,18 @@ abstract class ClusterDeathWatchSpec
         val path3 = RootActorPath(third) / "user" / "subject"
         val watchEstablished = TestLatch(1)
         system.actorOf(Props(new Actor {
-
           context.watch(context.actorFor(path2))
           context.watch(context.actorFor(path3))
           watchEstablished.countDown
-
           def receive = {
             case t: Terminated ⇒ testActor ! t.actor.path
           }
-        }), name = "observer")
+        }), name = "observer1")
 
         watchEstablished.await
         enterBarrier("watch-established")
         expectMsg(path2)
+        expectNoMsg
         enterBarrier("second-terminated")
 
         markNodeAsUnavailable(third)
@@ -64,7 +67,7 @@ abstract class ClusterDeathWatchSpec
 
       }
 
-      runOn(second, third) {
+      runOn(second, third, fourth) {
         system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }), name = "subject")
         enterBarrier("subjected-started")
         enterBarrier("watch-established")
@@ -77,6 +80,38 @@ abstract class ClusterDeathWatchSpec
 
       enterBarrier("after")
 
+    }
+
+    "receive Terminated when watched node is unknown host" taggedAs LongRunningTest in {
+      runOn(first) {
+        val path = RootActorPath(Address("akka", system.name, "unknownhost", 2552)) / "user" / "subject"
+        system.actorOf(Props(new Actor {
+          context.watch(context.actorFor(path))
+          def receive = {
+            case t: Terminated ⇒ testActor ! t.actor.path
+          }
+        }), name = "observer2")
+
+        expectMsg(path)
+      }
+
+      enterBarrier("after")
+    }
+
+    "receive Terminated when watched path doesn't exist" taggedAs LongRunningTest in {
+      runOn(first) {
+        val path = RootActorPath(second) / "user" / "non-existing"
+        system.actorOf(Props(new Actor {
+          context.watch(context.actorFor(path))
+          def receive = {
+            case t: Terminated ⇒ testActor ! t.actor.path
+          }
+        }), name = "observer3")
+
+        expectMsg(path)
+      }
+
+      enterBarrier("after")
     }
 
   }
