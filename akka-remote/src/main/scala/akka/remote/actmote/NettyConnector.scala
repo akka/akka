@@ -27,6 +27,8 @@ private[akka] object ChannelHandle extends ChannelLocal[Option[NettyConnectorHan
   override def initialValue(channel: Channel) = None
 }
 
+class ConnectionCancelledException(msg: String) extends Exception(msg)
+
 class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends TransportConnector(_system, _provider) with MessageEncodings {
   @volatile var responsibleActor: ActorRef = _
   @volatile var address: Address = _
@@ -152,7 +154,7 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
         new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
     }
 
-  val clientChannelFactory = settings.UseDispatcherForIO match {
+  private val clientChannelFactory = settings.UseDispatcherForIO match {
     case Some(id) ⇒
       val d = system.dispatchers.lookup(id)
       new NioClientSocketChannelFactory(d, d)
@@ -177,7 +179,6 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
   private def clientBootstrap(name: String, localAddress: Address, remoteAddress: Address) = {
     val b = new ClientBootstrap(clientChannelFactory)
     // TODO: is it valid to reuse the client and server timers?
-    // TODO: instantiate a handle (currently null)
     b.setPipelineFactory(PipelineFactory(Seq(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, timer, this, null)), withTimeout = true, isClient = true))
     b.setOption("tcpNoDelay", true)
     b.setOption("keepAlive", true)
@@ -190,7 +191,7 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
     b
   }
 
-  private[akka] def setAddressFromChannel(ch: Channel) = {
+  private[akka] def setAddressFromChannel(ch: Channel) {
     val addr = ch.getLocalAddress match {
       case sa: InetSocketAddress ⇒ sa
       case x                     ⇒ throw new RemoteTransportException("unknown local address type " + x.getClass, null)
@@ -198,7 +199,7 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
     address = Address("akka", provider.remoteSettings.systemName, settings.Hostname, addr.getPort)
   }
 
-  def startup() {
+  private def startup() {
     channel = serverBootstrap.bind(new InetSocketAddress(ip, settings.PortSelector))
     openChannels.add(channel)
     setAddressFromChannel(channel)
@@ -206,31 +207,36 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
 
   def listen(responsibleActor: ActorRef) {
     this.responsibleActor = responsibleActor
-    startup()
-    // TODO: Exception handling and stuffs
-    responsibleActor ! ConnectorInitialized(address)
+    try {
+      startup()
+      responsibleActor ! ConnectorInitialized(address)
+    } catch {
+      case NonFatal(e) ⇒ responsibleActor ! ConnectorFailed(e)
+    }
   }
 
-  def sendSecureCookie(connection: ChannelFuture): Boolean = {
-    val future =
-      if (!connection.isSuccess || !settings.EnableSSL) connection
-      else connection.getChannel.getPipeline.get[SslHandler](classOf[SslHandler]).handshake().awaitUninterruptibly()
+  def sendSecureCookie(channel: Channel): ChannelFuture = {
+    val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
+    if (settings.SecureCookie.nonEmpty) handshake.setCookie(settings.SecureCookie.get)
+    handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
+      .setSystem(address.system)
+      .setHostname(address.host.get)
+      .setPort(address.port.get)
+      .build)
+    channel.write(createControlEnvelope(handshake.build))
+  }
 
-    if (!future.isSuccess) {
-      //TODO: Log error
-      //notifyListeners(RemoteClientError(future.getCause, netty, remoteAddress))
-      false
-    } else {
-      //ChannelAddress.set(connection.getChannel, Some(remoteAddress))
-      val handshake = RemoteControlProtocol.newBuilder.setCommandType(CommandType.CONNECT)
-      if (settings.SecureCookie.nonEmpty) handshake.setCookie(settings.SecureCookie.get)
-      handshake.setOrigin(RemoteProtocol.AddressProtocol.newBuilder
-        .setSystem(address.system)
-        .setHostname(address.host.get)
-        .setPort(address.port.get)
-        .build)
-      connection.getChannel.write(createControlEnvelope(handshake.build))
-      true
+  private class ConnectionFinalStepListener(responsibleActorForConnection: ActorRef) extends ChannelFutureListener {
+    def operationComplete(future: ChannelFuture) {
+      if (!future.isSuccess) {
+        responsibleActorForConnection ! ConnectionFailed(future.getCause)
+      } else if (future.isCancelled) {
+        responsibleActorForConnection ! ConnectionFailed(new ConnectionCancelledException("Connection was cancelled during sending the secure cookie"))
+      } else {
+        val handle = new NettyConnectorHandle(provider, NettyConnector.this, future.getChannel)
+        ChannelHandle.set(future.getChannel, Some(handle))
+        responsibleActorForConnection ! ConnectionInitialized(handle)
+      }
     }
   }
 
@@ -240,20 +246,31 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
     val remotePort = remoteAddress.port.get
     val connectionFuture = clientBootstrap(name, address, remoteAddress).connect(new InetSocketAddress(remoteIP, remotePort))
 
-    // TODO: WARNING!!! This is BLOCKING!!! Refactor connection buildup into a two-phase process
-    val channel = connectionFuture.awaitUninterruptibly.getChannel
-
-    if (sendSecureCookie(connectionFuture)) {
-      //notifyListeners(RemoteClientStarted(netty, remoteAddress))
-      val handle: NettyConnectorHandle = new NettyConnectorHandle(provider, this, connectionFuture.getChannel)
-      ChannelHandle.set(connectionFuture.getChannel, Some(handle))
-
-      responsibleActorForConnection.tell(ConnectionInitialized(handle), responsibleActorForConnection)
-    } else {
-      // TODO: Notify responsibleActor about error in connection
-      //connection.getChannel.close()
-      //openChannels.remove(connection.getChannel)
-    }
+    connectionFuture.addListener(new ChannelFutureListener {
+      def operationComplete(future: ChannelFuture) {
+        if (!future.isSuccess) {
+          responsibleActorForConnection ! ConnectionFailed(future.getCause)
+        } else if (future.isCancelled) {
+          responsibleActorForConnection ! ConnectionFailed(new ConnectionCancelledException("Connection was cancelled: " + name))
+        } else {
+          if (settings.EnableSSL) {
+            connectionFuture.getChannel.getPipeline.get[SslHandler](classOf[SslHandler]).handshake().addListener(new ChannelFutureListener {
+              def operationComplete(future: ChannelFuture) {
+                if (!future.isSuccess) {
+                  responsibleActorForConnection ! ConnectionFailed(future.getCause)
+                } else if (future.isCancelled) {
+                  responsibleActorForConnection ! ConnectionFailed(new ConnectionCancelledException("Connection was cancelled during SSL handshake: " + name))
+                } else {
+                  sendSecureCookie(future.getChannel)
+                }
+              }
+            })
+          } else {
+            sendSecureCookie(future.getChannel).addListener(new ConnectionFinalStepListener(responsibleActorForConnection))
+          }
+        }
+      }
+    })
   }
 
   def shutdown() {
