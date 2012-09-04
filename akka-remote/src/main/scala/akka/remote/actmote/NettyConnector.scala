@@ -3,11 +3,16 @@ package akka.remote.actmote
 import akka.actor._
 import akka.remote._
 import actmote.TransportConnector._
+import actmote.TransportConnector.ConnectionFailed
+import actmote.TransportConnector.ConnectionInitialized
+import actmote.TransportConnector.ConnectorFailed
+import actmote.TransportConnector.ConnectorInitialized
+import actmote.TransportConnector.IncomingConnection
 import akka.remote.netty._
 import org.jboss.netty.util._
 import org.jboss.netty.channel._
 import akka.event.Logging
-import group.ChannelGroup
+import group._
 import org.jboss.netty.handler.timeout._
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.execution.{ OrderedMemoryAwareThreadPoolExecutor, ExecutionHandler }
@@ -22,12 +27,15 @@ import util.control.NonFatal
 import scala.Some
 import akka.actor.DeadLetter
 import org.jboss.netty.handler.ssl.SslHandler
+import scala.Some
+import akka.actor.DeadLetter
 
 private[akka] object ChannelHandle extends ChannelLocal[Option[NettyConnectorHandle]] {
   override def initialValue(channel: Channel) = None
 }
 
 class ConnectionCancelledException(msg: String) extends Exception(msg)
+class CleanShutdownFailedException extends Exception("Connector was unable to cleanly shut down")
 
 class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends TransportConnector(_system, _provider) with MessageEncodings {
   @volatile var responsibleActor: ActorRef = _
@@ -37,7 +45,7 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
 
   // TODO replace by system.scheduler
   private val timer: HashedWheelTimer = new HashedWheelTimer(system.threadFactory)
-  private lazy val log = Logging(system.eventStream, "NettyConnector")
+  lazy val log = Logging(system.eventStream, "NettyConnector")
   /**
    * Backing scaffolding for the default implementation of NettyRemoteSupport.createPipeline.
    */
@@ -230,10 +238,12 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
     def operationComplete(future: ChannelFuture) {
       if (!future.isSuccess) {
         responsibleActorForConnection ! ConnectionFailed(future.getCause)
+        future.getChannel.close()
       } else if (future.isCancelled) {
         responsibleActorForConnection ! ConnectionFailed(new ConnectionCancelledException("Connection was cancelled during sending the secure cookie"))
+        future.getChannel.close()
       } else {
-        val handle = new NettyConnectorHandle(provider, NettyConnector.this, future.getChannel)
+        val handle = new NettyConnectorHandle(provider, NettyConnector.this, future.getChannel, address)
         ChannelHandle.set(future.getChannel, Some(handle))
         responsibleActorForConnection ! ConnectionInitialized(handle)
       }
@@ -258,8 +268,10 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
               def operationComplete(future: ChannelFuture) {
                 if (!future.isSuccess) {
                   responsibleActorForConnection ! ConnectionFailed(future.getCause)
+                  future.getChannel.close()
                 } else if (future.isCancelled) {
                   responsibleActorForConnection ! ConnectionFailed(new ConnectionCancelledException("Connection was cancelled during SSL handshake: " + name))
+                  future.getChannel.close()
                 } else {
                   sendSecureCookie(future.getChannel)
                 }
@@ -286,15 +298,19 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
           b.setCookie(settings.SecureCookie.get)
         b.build
       }
+      // TODO: Another blocking call. Need to chain callbacks...
       openChannels.write(createControlEnvelope(shutdownSignal)).awaitUninterruptibly
       openChannels.disconnect
-      openChannels.close.awaitUninterruptibly
-      serverBootstrap.releaseExternalResources()
-      //TODO: this is the task of the ActorManagedRemotes
-      //netty.notifyListeners(RemoteServerShutdown(netty))
+      openChannels.close.addListener(new ChannelGroupFutureListener {
+        def operationComplete(future: ChannelGroupFuture) {
+          if (future.isPartialFailure) {
+            responsibleActor ! ConnectorFailed(new CleanShutdownFailedException)
+          }
+          serverBootstrap.releaseExternalResources()
+        }
+      })
     } catch {
-      //TODO: this is the task of the ActorManagedRemotes
-      case e: Exception ⇒ //netty.notifyListeners(RemoteServerError(e, netty))
+      case e: Exception ⇒ responsibleActor ! ConnectorFailed(e)
     }
   }
 }
@@ -304,33 +320,27 @@ private[akka] class NettyConnectorServerHandler(
   val openChannels: ChannelGroup,
   val connector: NettyConnector) extends SimpleChannelUpstreamHandler {
 
-  //import netty.settings
-
-  //WARNING!! Removed setting the address from here -- check Server for original code
+  val log = connector.log
 
   /**
    * ChannelOpen overridden to store open channels for a clean postStop of a node.
    * If a channel is closed before, it is automatically removed from the open channels group.
    */
-  override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) = openChannels.add(ctx.getChannel)
+  override def channelOpen(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
+    openChannels.add(ctx.getChannel)
+  }
 
-  // TODO might want to log or otherwise signal that a TCP connection has been established here.
-  override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = ()
+  override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
+    log.info("Inbound TCP connection established with {}", event.getChannel.getRemoteAddress)
+  }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    // TODO disconnects are not handled yet in ActorManagedRemoting
-    //netty.notifyListeners(RemoteServerClientDisconnected(netty, ChannelAddress.get(ctx.getChannel)))
+    log.info("Inbound TCP connection closed from {}", event.getChannel.getRemoteAddress)
+    ChannelHandle.get(event.getChannel).foreach { handle ⇒ handle.responsibleActor ! Disconnected(handle) }
   }
 
   override def channelClosed(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {
-    // TODO disconnects are not handled yet in ActorManagedRemoting
-
-    //val address = ChannelAddress.get(ctx.getChannel)
-    //if (address.isDefined && settings.UsePassiveConnections)
-    //  netty.unbindClient(address.get)
-
-    //netty.notifyListeners(RemoteServerClientClosed(netty, address))
-    //ChannelAddress.remove(ctx.getChannel)
+    // ChannelGroup automatically removes the closed Channels
     ChannelHandle.remove(ctx.getChannel)
   }
 
@@ -349,7 +359,7 @@ private[akka] class NettyConnectorServerHandler(
           case CommandType.CONNECT ⇒
             val origin = instruction.getOrigin
             val inbound = Address("akka", origin.getSystem, origin.getHostname, origin.getPort)
-            val handle = new NettyConnectorHandle(connector.provider, connector, event.getChannel)
+            val handle = new NettyConnectorHandle(connector.provider, connector, event.getChannel, connector.address)
 
             //ChannelAddress.set(event.getChannel, Option(inbound))
             ChannelHandle.set(event.getChannel, Some(handle))
@@ -374,8 +384,9 @@ private[akka] class NettyConnectorServerHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    // TODO: Notify ActorManagedRemoting endpoint
-    //netty.notifyListeners(RemoteServerError(event.getCause, netty))
+    ChannelHandle.get(event.getChannel).foreach { handle ⇒
+      handle.responsibleActor ! ConnectionFailed(event.getCause)
+    }
     event.getChannel.close()
   }
 }
@@ -467,10 +478,9 @@ private[akka] class ActiveRemoteClientHandler(
   }
 }
 
-class NettyConnectorHandle(provider: RemoteActorRefProvider, connector: NettyConnector, channel: Channel) extends TransportConnectorHandle(provider) {
+class NettyConnectorHandle(provider: RemoteActorRefProvider, connector: NettyConnector, channel: Channel, val localAddress: Address) extends TransportConnectorHandle(provider) {
   @volatile var responsibleActor: ActorRef = _
-  override def remoteAddress = null // TODO:
-  override def localAddress = provider.transport.address // TODO: ugly, just receive from the Connector instead
+  override def remoteAddress = Address("akka", "SYSTEMHERE", "HOSTHERE", 1111) // TODO:
 
   override def open(responsibleActor: ActorRef) {
     this.responsibleActor = responsibleActor
@@ -478,19 +488,16 @@ class NettyConnectorHandle(provider: RemoteActorRefProvider, connector: NettyCon
   }
 
   override def close() {
-    // TODO: channel is removed from channelgroup?
     ChannelHandle.remove(channel)
     channel.close()
   }
 
-  // TODO: document dropping policy
   override def write(msg: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) = {
     import connector.system.deadLetters
     try {
       val request = (msg, senderOption, recipient)
       if (!channel.isWritable) {
-        //deadLetters ! DeadLetter(msg, senderOption.getOrElse(deadLetters), recipient)
-        false // TODO: correctly implement backoff (now just returning false to make compiler happy)
+        false
       } else {
         val f = channel.write(request)
         f.addListener(
@@ -498,17 +505,21 @@ class NettyConnectorHandle(provider: RemoteActorRefProvider, connector: NettyCon
 
             def operationComplete(future: ChannelFuture): Unit =
               if (future.isCancelled || !future.isSuccess) request match {
-                case (msg, sender, recipient) ⇒ deadLetters ! DeadLetter(msg, sender.getOrElse(deadLetters), recipient)
-                // We don't call notifyListeners here since we don't think failed message deliveries are errors
-                /// If the connection goes down we'll get the error reporting done by the pipeline.
+                case (msg, sender, recipient) ⇒ {
+                  deadLetters ! DeadLetter(msg, sender.getOrElse(deadLetters), recipient)
+                  // Message loss (that is signalled by the transport!) causes the connection to restart.
+                  // I do not think there is reason to try to keep it alive.
+                  responsibleActor ! ConnectionFailed(future.getCause)
+                }
               }
           })
         true
       }
     } catch {
-      case NonFatal(e) ⇒ true // TODO: just to make the compiler happy, must be considered carefully
-      // TODO: signal error to enpoint actor
-      //netty.notifyListeners(RemoteClientError(e, netty, remoteAddress))
+      case NonFatal(e) ⇒ {
+        responsibleActor ! ConnectionFailed(e)
+        true // the return value does not relevant here as the above line forces restart of the connection anyways
+      }
     }
   }
 }
