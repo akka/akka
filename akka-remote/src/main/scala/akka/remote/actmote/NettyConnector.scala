@@ -187,7 +187,7 @@ class NettyConnector(_system: ExtendedActorSystem, _provider: RemoteActorRefProv
   private def clientBootstrap(name: String, localAddress: Address, remoteAddress: Address) = {
     val b = new ClientBootstrap(clientChannelFactory)
     // TODO: is it valid to reuse the client and server timers?
-    b.setPipelineFactory(PipelineFactory(Seq(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, timer, this, null)), withTimeout = true, isClient = true))
+    b.setPipelineFactory(PipelineFactory(Seq(new ActiveRemoteClientHandler(name, b, remoteAddress, localAddress, timer, this)), withTimeout = true, isClient = true))
     b.setOption("tcpNoDelay", true)
     b.setOption("keepAlive", true)
     b.setOption("connectTimeoutMillis", settings.ConnectionTimeout.toMillis)
@@ -398,8 +398,7 @@ private[akka] class ActiveRemoteClientHandler(
   val remoteAddress: Address,
   val localAddress: Address,
   val timer: HashedWheelTimer,
-  val connector: NettyConnector,
-  val handle: NettyConnectorHandle) //TODO: handle should be stored in ChannelLocal?
+  val connector: NettyConnector) //TODO: handle should be stored in ChannelLocal?
   extends IdleStateAwareChannelHandler {
 
   def runOnceNow(thunk: ⇒ Unit): Unit = timer.newTimeout(new TimerTask() {
@@ -429,6 +428,7 @@ private[akka] class ActiveRemoteClientHandler(
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) {
+    val handle = ChannelHandle.get(event.getChannel)
     try {
       event.getMessage match {
         case arp: AkkaRemoteProtocol if arp.hasInstruction ⇒
@@ -461,17 +461,26 @@ private[akka] class ActiveRemoteClientHandler(
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
+    val handle = ChannelHandle.get(event.getChannel)
     handle.responsibleActor ! Disconnected(handle)
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) {
-    handle.responsibleActor ! ConnectionFailed(event.getCause)
+    val handle = ChannelHandle.get(event.getChannel)
+    if (handle == null) {
+      connector.log.error("Connection failed before handle was created {}", event.getCause)
+    } else if (handle.responsibleActor == null) {
+      connector.log.error("Connection failed before handle.open() was caled: {}", event.getCause)
+      event.getChannel.close()
+    } else {
+      handle.responsibleActor ! ConnectionFailed(event.getCause)
+    }
   }
 }
 
 class NettyConnectorHandle(provider: RemoteActorRefProvider, connector: NettyConnector, channel: Channel, val localAddress: Address) extends TransportConnectorHandle(provider) {
   @volatile var responsibleActor: ActorRef = _
-  @volatile var remoteAddress:Address = _
+  @volatile var remoteAddress: Address = _
 
   override def open(responsibleActor: ActorRef) {
     this.responsibleActor = responsibleActor
