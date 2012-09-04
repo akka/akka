@@ -332,7 +332,8 @@ private[akka] class NettyConnectorServerHandler(
     val handle = new NettyConnectorHandle(connector.provider, connector, event.getChannel, connector.address)
     ChannelHandle.set(event.getChannel, handle)
     openChannels.add(event.getChannel)
-    event.getChannel.setReadable(false) // Block incoming stream of data until open() is called on the matching handle
+    // We leave the channel readable, because we need some Akka related messages handled to establish the connection
+    // SEE: messageReceived
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) {
@@ -366,6 +367,10 @@ private[akka] class NettyConnectorServerHandler(
             val origin = instruction.getOrigin
             val handle: NettyConnectorHandle = ChannelHandle.get(event.getChannel)
             handle.remoteAddress = Address("akka", origin.getSystem, origin.getHostname, origin.getPort)
+            // Block incoming stream of data until open() is called on the matching handle
+            // We must do it now as the Akka protocol specific messages were already exchanged, but the ActorManagedTransport
+            // is not ready yet to receive the other messages
+            event.getChannel.setReadable(false)
             // Handle is ready, pass to ActorManagedRemoting
             connector.responsibleActor ! IncomingConnection(handle)
           case CommandType.SHUTDOWN  ⇒ //Will be unbound in channelClosed
