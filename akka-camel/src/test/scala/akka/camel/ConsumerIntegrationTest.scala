@@ -186,6 +186,7 @@ class ErrorRespondingConsumer(override val endpointUri: String) extends Consumer
   }
 
   final override def preRestart(reason: Throwable, message: Option[Any]) {
+    super.preRestart(reason, message)
     sender ! Failure(reason)
   }
 }
