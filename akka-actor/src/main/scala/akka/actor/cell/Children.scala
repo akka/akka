@@ -78,16 +78,17 @@ private[akka] trait Children { this: ActorCell ⇒
     swapChildrenRefs(c, c.unreserve(name)) || unreserveChild(name)
   }
 
-  @tailrec final def initChild(ref: ActorRef): Option[ChildRestartStats] =
-    childrenRefs.getByName(ref.path.name) match {
+  @tailrec final def initChild(ref: ActorRef): Option[ChildRestartStats] = {
+    val cc = childrenRefs
+    cc.getByName(ref.path.name) match {
       case old @ Some(_: ChildRestartStats) ⇒ old.asInstanceOf[Option[ChildRestartStats]]
       case Some(ChildNameReserved) ⇒
         val crs = ChildRestartStats(ref)
         val name = ref.path.name
-        val c = childrenRefs
-        if (swapChildrenRefs(c, c.add(name, crs))) Some(crs) else initChild(ref)
+        if (swapChildrenRefs(cc, cc.add(name, crs))) Some(crs) else initChild(ref)
       case None ⇒ None
     }
+  }
 
   @tailrec final protected def shallDie(ref: ActorRef): Boolean = {
     val c = childrenRefs
