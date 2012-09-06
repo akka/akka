@@ -20,8 +20,13 @@ import akka.testkit.AkkaSpec
 
 private[camel] object TestSupport {
 
-  def start(actor: ⇒ Actor)(implicit system: ActorSystem): ActorRef =
-    Await.result(CamelExtension(system).activationFutureFor(system.actorOf(Props(actor)))(10 seconds, system.dispatcher), 10 seconds)
+  def start(actor: ⇒ Actor, name: String)(implicit system: ActorSystem): ActorRef =
+    Await.result(CamelExtension(system).activationFutureFor(system.actorOf(Props(actor), name))(10 seconds, system.dispatcher), 10 seconds)
+
+  def stop(actorRef: ActorRef)(implicit system: ActorSystem) {
+    system.stop(actorRef)
+    Await.result(CamelExtension(system).deactivationFutureFor(actorRef)(10 seconds, system.dispatcher), 10 seconds)
+  }
 
   private[camel] implicit def camelToTestWrapper(camel: Camel) = new CamelTestWrapper(camel)
 

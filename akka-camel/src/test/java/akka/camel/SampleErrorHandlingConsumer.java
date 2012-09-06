@@ -6,6 +6,7 @@ package akka.camel;
 
 import akka.actor.Status;
 import akka.camel.javaapi.UntypedConsumerActor;
+import akka.dispatch.Mapper;
 import scala.concurrent.util.Duration;
 import org.apache.camel.builder.Builder;
 import org.apache.camel.model.ProcessorDefinition;
@@ -16,15 +17,19 @@ import scala.Option;
  * @author Martin Krasser
  */
 public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
-
+    private Mapper<RouteDefinition, ProcessorDefinition<?>> mapper = new Mapper<RouteDefinition, ProcessorDefinition<?>>() {
+      public ProcessorDefinition<?> apply(RouteDefinition rd) {
+        return rd.onException(Exception.class).handled(true).transform(Builder.exceptionMessage()).end();
+      }
+    };
     public String getEndpointUri() {
         return "direct:error-handler-test-java";
     }
 
     @Override
     //TODO write test confirming this gets called in java
-    public ProcessorDefinition onRouteDefinition(RouteDefinition rd) {
-        return rd.onException(Exception.class).handled(true).transform(Builder.exceptionMessage()).end();
+    public Mapper<RouteDefinition, ProcessorDefinition<?>> getRouteDefinitionHandler() {
+      return mapper;
     }
 
     @Override

@@ -46,6 +46,12 @@ private[camel] case class AddWatch(actorRef: ActorRef)
 
 /**
  * For internal use only.
+ * Provides a Producer with the required camel objects to function.
+ */
+private[camel] case class CamelProducerObjects(endpoint: Endpoint, processor: SendProcessor)
+
+/**
+ * For internal use only.
  * Thrown by registrars to indicate that the actor could not be de-activated.
  */
 private[camel] class ActorDeActivationException(val actorRef: ActorRef, val cause: Throwable) extends Exception(cause) {
@@ -123,7 +129,7 @@ private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Acto
           val processor = new SendProcessor(endpoint)
           camelObjects += producer -> (endpoint, processor)
           processor.start()
-          producer ! (endpoint, processor)
+          producer ! CamelProducerObjects(endpoint, processor)
           activationTracker ! EndpointActivated(producer)
         } catch {
           case NonFatal(e) ⇒ throw new ActorActivationException(producer, e)
