@@ -156,15 +156,13 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
       case "broadcast"        ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
       case fqn ⇒
         val args = Seq(classOf[Config] -> deployment)
-        dynamicAccess.createInstanceFor[RouterConfig](fqn, args) match {
-          case Right(router) ⇒ router
-          case Left(exception) ⇒
-            throw new IllegalArgumentException(
-              ("Cannot instantiate router [%s], defined in [%s], " +
-                "make sure it extends [akka.routing.RouterConfig] and has constructor with " +
-                "[com.typesafe.config.Config] parameter")
-                .format(fqn, key), exception)
-        }
+        dynamicAccess.createInstanceFor[RouterConfig](fqn, args).recover({
+          case exception ⇒ throw new IllegalArgumentException(
+            ("Cannot instantiate router [%s], defined in [%s], " +
+              "make sure it extends [akka.routing.RouterConfig] and has constructor with " +
+              "[com.typesafe.config.Config] parameter")
+              .format(fqn, key), exception)
+        }).get
     }
 
     Some(Deploy(key, deployment, router, NoScopeGiven))

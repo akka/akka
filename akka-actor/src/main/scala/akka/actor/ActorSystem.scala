@@ -19,6 +19,7 @@ import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, R
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.cell.ChildrenContainer
 import scala.concurrent.util.FiniteDuration
+import util.{ Failure, Success }
 
 object ActorSystem {
 
@@ -540,10 +541,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
       classOf[Scheduler] -> scheduler,
       classOf[DynamicAccess] -> dynamicAccess)
 
-    dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments) match {
-      case Left(e)  ⇒ throw e
-      case Right(p) ⇒ p
-    }
+    dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
   }
 
   def deadLetters: ActorRef = provider.deadLetters
@@ -678,13 +676,12 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   private def loadExtensions() {
     import scala.collection.JavaConversions._
     settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
-      dynamicAccess.getObjectFor[AnyRef](fqcn).fold(_ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Seq()), Right(_)) match {
-        case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
-        case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
-        case Right(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
-        case Left(problem)                 ⇒ log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
+      dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Seq()) } match {
+        case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
+        case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
+        case Success(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
+        case Failure(problem)                ⇒ log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
       }
-
     }
   }
 

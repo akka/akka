@@ -25,13 +25,7 @@ object Envelope {
     if (msg eq null) throw new InvalidMessageException("Message is null")
     if (system.settings.SerializeAllMessages && !msg.isInstanceOf[NoSerializationVerificationNeeded]) {
       val ser = SerializationExtension(system)
-      ser.serialize(msg) match { //Verify serializability
-        case Left(t) ⇒ throw t
-        case Right(bytes) ⇒ ser.deserialize(bytes, msg.getClass) match { //Verify deserializability
-          case Left(t) ⇒ throw t
-          case _       ⇒ //All good
-        }
-      }
+      ser.deserialize(ser.serialize(msg).get, msg.getClass).get
     }
     new Envelope(message, sender)
   }
@@ -426,14 +420,13 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
       case "bounded"   ⇒ new BoundedMailbox(prerequisites.settings, config)
       case fqcn ⇒
         val args = Seq(classOf[ActorSystem.Settings] -> prerequisites.settings, classOf[Config] -> config)
-        prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args) match {
-          case Right(instance) ⇒ instance
-          case Left(exception) ⇒
+        prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
+          case exception ⇒
             throw new IllegalArgumentException(
               ("Cannot instantiate MailboxType [%s], defined in [%s], " +
                 "make sure it has constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters")
                 .format(fqcn, config.getString("id")), exception)
-        }
+        }).get
     }
   }
 
@@ -445,13 +438,12 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
         val args = Seq(
           classOf[Config] -> config,
           classOf[DispatcherPrerequisites] -> prerequisites)
-        prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args) match {
-          case Right(instance) ⇒ instance
-          case Left(exception) ⇒ throw new IllegalArgumentException(
+        prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args).recover({
+          case exception ⇒ throw new IllegalArgumentException(
             ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
                 make sure it has an accessible constructor with a [%s,%s] signature""")
               .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]), exception)
-        }
+        }).get
     }
   }
 }
