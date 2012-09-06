@@ -101,17 +101,13 @@ trait LoggingBus extends ActorEventBus {
           loggerName ← defaultLoggers
           if loggerName != StandardOutLogger.getClass.getName
         } yield {
-          try {
-            system.dynamicAccess.getClassFor[Actor](loggerName) match {
-              case Right(actorClass) ⇒ addLogger(system, actorClass, level, logName)
-              case Left(exception)   ⇒ throw exception
-            }
-          } catch {
-            case e: Exception ⇒
-              throw new ConfigurationException(
-                "Event Handler specified in config can't be loaded [" + loggerName +
-                  "] due to [" + e.toString + "]", e)
-          }
+          system.dynamicAccess.getClassFor[Actor](loggerName).map({
+            case actorClass ⇒ addLogger(system, actorClass, level, logName)
+          }).recover({
+            case e ⇒ throw new ConfigurationException(
+              "Event Handler specified in config can't be loaded [" + loggerName +
+                "] due to [" + e.toString + "]", e)
+          }).get
         }
       guard.withGuard {
         loggers = myloggers

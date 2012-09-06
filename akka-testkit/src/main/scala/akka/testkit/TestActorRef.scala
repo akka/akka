@@ -136,14 +136,13 @@ object TestActorRef {
   def apply[T <: Actor](implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
   def apply[T <: Actor](name: String)(implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](Props({
-    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[T](t.runtimeClass, Seq()) match {
-      case Right(value) ⇒ value
-      case Left(exception) ⇒ throw ActorInitializationException(null,
+    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[T](t.runtimeClass, Seq()).recover({
+      case exception ⇒ throw ActorInitializationException(null,
         "Could not instantiate Actor" +
           "\nMake sure Actor is NOT defined inside a class/trait," +
           "\nif so put it outside the class/trait, f.e. in a companion object," +
           "\nOR try to change: 'actorOf(Props[MyActor]' to 'actorOf(Props(new MyActor)'.", exception)
-    }
+    }).get
   }), name)
 
   /**
