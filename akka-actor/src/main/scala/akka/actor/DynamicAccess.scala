@@ -1,5 +1,5 @@
 /**
- *  CopySuccess (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
 
@@ -28,7 +28,7 @@ abstract class DynamicAccess {
   def createInstanceFor[T: ClassTag](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Try[T]
 
   /**
-   * Obtain a `Class[_]` object loaded with the Success class loader (i.e. the one
+   * Obtain a `Class[_]` object loaded with the right class loader (i.e. the one
    * returned by `classLoader`).
    */
   def getClassFor[T: ClassTag](fqcn: String): Try[Class[_ <: T]]
