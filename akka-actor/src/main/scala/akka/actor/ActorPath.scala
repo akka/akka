@@ -19,7 +19,7 @@ object ActorPath {
    * Since Actors form a tree, it is addressable using an URL, therefor an Actor Name has to conform to:
    * http://www.ietf.org/rfc/rfc2396.txt
    */
-  val ElementRegex = """[-\w:@&=+,.!~*'_;][-\w:@&=+,.!~*'$_;]*""".r
+  val ElementRegex = """(?:[-\w:@&=+,.!~*'_;]|%\p{XDigit}{2})(?:[-\w:@&=+,.!~*'$_;]|%\p{XDigit}{2})*""".r
 }
 
 /**
