@@ -31,7 +31,6 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
   val camelContext = camel.context
   // to make testing equality of messages easier, otherwise the breadcrumb shows up in the result.
   camelContext.setUseBreadcrumb(false)
-
   val timeoutDuration = 1 second
   implicit val timeout = Timeout(timeoutDuration)
   override protected def beforeAll { camelContext.addRoutes(new TestRoute(system)) }

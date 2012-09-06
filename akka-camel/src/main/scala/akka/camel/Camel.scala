@@ -17,7 +17,7 @@ import scala.concurrent.util.FiniteDuration
  * '''Note:''' `CamelContext` and `ProducerTemplate` are stopped when the associated actor system is shut down.
  * This trait can be obtained through the [[akka.camel.CamelExtension]] object.
  */
-trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with Activation {
+trait Camel extends Extension with Activation {
   /**
    * Underlying camel context.
    *
@@ -38,6 +38,16 @@ trait Camel extends ConsumerRegistry with ProducerRegistry with Extension with A
    * The settings for the CamelExtension
    */
   def settings: CamelSettings
+
+  /**
+   * For internal use only. Returns the camel supervisor actor.
+   */
+  private[camel] def supervisor: ActorRef
+
+  /**
+   * For internal use only. Returns the associated ActorSystem.
+   */
+  private[camel] def system: ActorSystem
 }
 
 /**

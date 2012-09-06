@@ -4,6 +4,7 @@
 
 package akka.camel
 
+import internal.ActorActivationException
 import language.postfixOps
 import language.existentials
 
@@ -26,7 +27,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
     implicit def ec: ExecutionContext = system.dispatcher
 
     "Consumer must throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
-      filterEvents(EventFilter[ActorInitializationException](occurrences = 1), EventFilter[FailedToCreateRouteException](occurrences = 1)) {
+      filterEvents(EventFilter[ActorActivationException](occurrences = 1)) {
         val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
         intercept[FailedToCreateRouteException] {
           Await.result(camel.activationFutureFor(actorRef), defaultTimeout)
