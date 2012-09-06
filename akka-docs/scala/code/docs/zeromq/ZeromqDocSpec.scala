@@ -49,12 +49,12 @@ object ZeromqDocSpec {
         val timestamp = System.currentTimeMillis
 
         // use akka SerializationExtension to convert to bytes
-        val heapPayload = ser.serialize(Heap(timestamp, currentHeap.getUsed, currentHeap.getMax)).fold(throw _, identity)
+        val heapPayload = ser.serialize(Heap(timestamp, currentHeap.getUsed, currentHeap.getMax)).get
         // the first frame is the topic, second is the message
         pubSocket ! ZMQMessage(Seq(Frame("health.heap"), Frame(heapPayload)))
 
         // use akka SerializationExtension to convert to bytes
-        val loadPayload = ser.serialize(Load(timestamp, os.getSystemLoadAverage)).fold(throw _, identity)
+        val loadPayload = ser.serialize(Load(timestamp, os.getSystemLoadAverage)).get
         // the first frame is the topic, second is the message
         pubSocket ! ZMQMessage(Seq(Frame("health.load"), Frame(loadPayload)))
     }
@@ -71,18 +71,12 @@ object ZeromqDocSpec {
     def receive = {
       // the first frame is the topic, second is the message
       case m: ZMQMessage if m.firstFrameAsString == "health.heap" ⇒
-        ser.deserialize(m.payload(1), classOf[Heap]) match {
-          case Right(Heap(timestamp, used, max)) ⇒
-            log.info("Used heap {} bytes, at {}", used, timestampFormat.format(new Date(timestamp)))
-          case Left(e) ⇒ throw e
-        }
+        val Heap(timestamp, used, max) = ser.deserialize(m.payload(1), classOf[Heap]).get
+        log.info("Used heap {} bytes, at {}", used, timestampFormat.format(new Date(timestamp)))
 
       case m: ZMQMessage if m.firstFrameAsString == "health.load" ⇒
-        ser.deserialize(m.payload(1), classOf[Load]) match {
-          case Right(Load(timestamp, loadAverage)) ⇒
-            log.info("Load average {}, at {}", loadAverage, timestampFormat.format(new Date(timestamp)))
-          case Left(e) ⇒ throw e
-        }
+        val Load(timestamp, loadAverage) = ser.deserialize(m.payload(1), classOf[Load]).get
+        log.info("Load average {}, at {}", loadAverage, timestampFormat.format(new Date(timestamp)))
     }
   }
   //#logger
@@ -97,13 +91,10 @@ object ZeromqDocSpec {
     def receive = {
       // the first frame is the topic, second is the message
       case m: ZMQMessage if m.firstFrameAsString == "health.heap" ⇒
-        ser.deserialize(m.payload(1), classOf[Heap]) match {
-          case Right(Heap(timestamp, used, max)) ⇒
-            if ((used.toDouble / max) > 0.9) count += 1
-            else count = 0
-            if (count > 10) log.warning("Need more memory, using {} %", (100.0 * used / max))
-          case Left(e) ⇒ throw e
-        }
+        val Heap(timestamp, used, max) = ser.deserialize(m.payload(1), classOf[Heap]).get
+        if ((used.toDouble / max) > 0.9) count += 1
+        else count = 0
+        if (count > 10) log.warning("Need more memory, using {} %", (100.0 * used / max))
     }
   }
   //#alerter

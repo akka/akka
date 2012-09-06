@@ -87,50 +87,23 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
     }
 
     "serialize Address" in {
-      val b = serialize(addr) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(bytes)    ⇒ bytes
-      }
-      deserialize(b.asInstanceOf[Array[Byte]], classOf[Address]) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(add)      ⇒ assert(add === addr)
-      }
+      assert(deserialize(serialize(addr).get, classOf[Address]).get === addr)
     }
 
     "serialize Person" in {
-
-      val b = serialize(person) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(bytes)    ⇒ bytes
-      }
-      deserialize(b.asInstanceOf[Array[Byte]], classOf[Person]) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(p)        ⇒ assert(p === person)
-      }
+      assert(deserialize(serialize(person).get, classOf[Person]).get === person)
     }
 
     "serialize record with default serializer" in {
-
       val r = Record(100, person)
-      val b = serialize(r) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(bytes)    ⇒ bytes
-      }
-      deserialize(b.asInstanceOf[Array[Byte]], classOf[Record]) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(p)        ⇒ assert(p === r)
-      }
+      assert(deserialize(serialize(r).get, classOf[Record]).get === r)
     }
 
     "not serialize ActorCell" in {
       val a = system.actorOf(Props(new Actor {
         def receive = {
           case o: ObjectOutputStream ⇒
-            try {
-              o.writeObject(this)
-            } catch {
-              case _: NotSerializableException ⇒ testActor ! "pass"
-            }
+            try o.writeObject(this) catch { case _: NotSerializableException ⇒ testActor ! "pass" }
         }
       }))
       a ! new ObjectOutputStream(new ByteArrayOutputStream())

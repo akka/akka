@@ -79,15 +79,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
     }
 
     def verifySerialization(msg: DaemonMsgCreate): Unit = {
-      val bytes = ser.serialize(msg) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(bytes)    ⇒ bytes
-      }
-      ser.deserialize(bytes.asInstanceOf[Array[Byte]], classOf[DaemonMsgCreate]) match {
-        case Left(exception)           ⇒ fail(exception)
-        case Right(m: DaemonMsgCreate) ⇒ assertDaemonMsgCreate(msg, m)
-        case other                     ⇒ throw new MatchError(other)
-      }
+      assertDaemonMsgCreate(msg, ser.deserialize(ser.serialize(msg).get, classOf[DaemonMsgCreate]).get.asInstanceOf[DaemonMsgCreate])
     }
 
     def assertDaemonMsgCreate(expected: DaemonMsgCreate, got: DaemonMsgCreate): Unit = {

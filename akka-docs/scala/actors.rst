@@ -75,7 +75,8 @@ a top level actor, that is supervised by the system (internal guardian actor).
 
 The name parameter is optional, but you should preferably name your actors, since
 that is used in log messages and for identifying actors. The name must not be empty
-or start with ``$``. If the given name is already in use by another child to the
+or start with ``$``, but it may contain URL encoded characters (eg. ``%20`` for a blank space).
+If the given name is already in use by another child to the
 same parent actor an `InvalidActorNameException` is thrown.
 
 Actors are automatically started asynchronously when created.

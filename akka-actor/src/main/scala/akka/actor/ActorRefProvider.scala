@@ -413,7 +413,7 @@ class LocalActorRefProvider(
   def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
   private def guardianSupervisorStrategyConfigurator =
-    dynamicAccess.createInstanceFor[SupervisorStrategyConfigurator](settings.SupervisorStrategyClass, Seq()).fold(throw _, x ⇒ x)
+    dynamicAccess.createInstanceFor[SupervisorStrategyConfigurator](settings.SupervisorStrategyClass, Seq()).get
 
   /**
    * Overridable supervision strategy to be used by the “/user” guardian.
