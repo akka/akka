@@ -72,10 +72,9 @@ class RemoteActorRefProvider(
         classOf[ExtendedActorSystem] -> system,
         classOf[RemoteActorRefProvider] -> this)
 
-      system.dynamicAccess.createInstanceFor[RemoteTransport](fqn, args) match {
-        case Left(problem) ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
-        case Right(remote) ⇒ remote
-      }
+      system.dynamicAccess.createInstanceFor[RemoteTransport](fqn, args).recover({
+        case problem ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
+      }).get
     }
 
     _log = Logging(eventStream, "RemoteActorRefProvider(" + transport.address + ")")

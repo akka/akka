@@ -181,6 +181,18 @@ v2.1::
       }
     }, ec);
 
+API changes of DynamicAccess
+============================
+
+All methods with scala.Either[Throwable, X] have been changed to used scala.util.Try[X].
+
+DynamicAccess.withErrorHandling has been removed since scala.util.Try now fulfills that role.
+
+API changes of Serialization
+============================
+
+All methods with scala.Either[Throwable, X] have been changed to used scala.util.Try[X].
+
 Empty Props
 ===========
 
