@@ -4,7 +4,7 @@
 package akka.zeromq
 
 import org.zeromq.ZMQ.{ Socket, Poller }
-import org.zeromq.{ ZMQ ⇒ JZMQ }
+import org.zeromq.{ ZMQ ⇒ JZMQ, ZMQException }
 import akka.actor._
 import scala.collection.immutable
 import scala.annotation.tailrec
@@ -19,6 +19,7 @@ private[zeromq] object ConcurrentSocketActor {
   private sealed trait PollMsg
   private case object Poll extends PollMsg
   private case object PollCareful extends PollMsg
+  private case object PollReqRep extends PollMsg
 
   private case object Flush
 
@@ -32,7 +33,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
   private val noBytes = Array[Byte]()
   private val zmqContext = params collectFirst { case c: Context ⇒ c } getOrElse DefaultContext
 
-  private var deserializer = params collectFirst { case d: Deserializer ⇒ d } getOrElse new ZMQMessageDeserializer
+  private val deserializer = deserializerFromParams
   private val socketType = {
     import SocketType.{ ZMQSocketType ⇒ ST }
     params.collectFirst { case t: ST ⇒ t }.getOrElse(throw new IllegalArgumentException("A socket type is required"))
@@ -40,6 +41,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
 
   private val socket: Socket = zmqContext.socket(socketType)
   private val poller: Poller = zmqContext.poller
+  private val log = Logging(context.system, this)
 
   private val pendingSends = new ListBuffer[immutable.Seq[Frame]]
 
@@ -93,7 +95,6 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
     case MulticastHops(value)        ⇒ socket.setMulticastHops(value)
     case SendBufferSize(value)       ⇒ socket.setSendBufferSize(value)
     case ReceiveBufferSize(value)    ⇒ socket.setReceiveBufferSize(value)
-    case d: Deserializer             ⇒ deserializer = d
   }
 
   private def handleSocketOptionQuery(msg: SocketOptionQuery): Unit =
@@ -127,7 +128,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
     socketType match {
       case Pub | Push                          ⇒ // don’t poll
       case Sub | Pull | Pair | Dealer | Router ⇒ self ! Poll
-      case Req | Rep                           ⇒ self ! PollCareful
+      case Req | Rep                           ⇒ self ! PollReqRep //PollCareful
     }
   }
 
@@ -135,6 +136,9 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
     params filter (_.isInstanceOf[SocketConnectOption]) foreach { self ! _ }
     params filter (_.isInstanceOf[PubSubOption]) foreach { self ! _ }
   }
+
+  private def deserializerFromParams: Deserializer =
+    params collectFirst { case d: Deserializer ⇒ d } getOrElse new ZMQMessageDeserializer
 
   private def setupSocket() = params foreach {
     case _: SocketConnectOption | _: PubSubOption | _: SocketMeta ⇒ // ignore, handled differently
@@ -178,7 +182,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
       // for positive timeout values, do poll (i.e. block this thread)
       val pollLength = duration.toUnit(ext.pollTimeUnit).toLong
       (msg: PollMsg) ⇒
-        poller.poll(pollLength)
+        if (msg != PollReqRep) poller.poll(pollLength)
         self ! msg
     } else {
       val d = -duration
@@ -199,8 +203,21 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
       case frames ⇒ notifyListener(deserializer(frames)); doPoll(mode, togo - 1)
     }
 
-  @tailrec private def receiveMessage(mode: PollMsg, currentFrames: Vector[Frame] = Vector.empty): immutable.Seq[Frame] =
-    if (mode == PollCareful && (poller.poll(0) <= 0)) {
+  private def receiveMessage(mode: PollMsg, currentFrames: Vector[Frame] = Vector.empty): Seq[Frame] =
+    if (mode == PollReqRep) {
+      try {
+        socket.recv(JZMQ.NOBLOCK) match {
+          case null ⇒ /*EAGAIN*/
+            if (currentFrames.isEmpty) currentFrames else receiveMessage(mode, currentFrames)
+          case bytes ⇒
+            val frames = currentFrames :+ Frame(if (bytes.length == 0) noBytes else bytes)
+            if (socket.hasReceiveMore) receiveMessage(mode, frames) else frames
+        }
+      } catch {
+        case e: ZMQException ⇒ Vector.empty
+        case a: Exception    ⇒ throw a
+      }
+    } else if (mode == PollCareful && (poller.poll(0) <= 0)) {
       if (currentFrames.isEmpty) currentFrames else throw new IllegalStateException("Received partial transmission!")
     } else {
       socket.recv(if (mode == Poll) JZMQ.NOBLOCK else 0) match {
