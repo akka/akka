@@ -15,9 +15,17 @@ import org.apache.camel.processor.SendProcessor
  *
  * @author Martin Krasser
  */
-trait ProducerSupport extends CamelSupport { this: Actor ⇒
+trait ProducerSupport extends Actor with CamelSupport {
+  private[this] lazy val (_endpoint, _processor) = camel.registerProducer(self, endpointUri)
+  protected[this] def endpoint = _endpoint
+  protected[this] def processor = _processor
 
-  protected[this] lazy val (endpoint: Endpoint, processor: SendProcessor) = camel.registerProducer(self, endpointUri)
+  override def preStart() {
+    super.preStart()
+    //make sure registerProducer is called
+    endpoint
+    processor
+  }
 
   /**
    * CamelMessage headers to copy by default from request message to response-message.

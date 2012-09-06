@@ -169,6 +169,7 @@ public class CustomRouteTestBase {
       this.uri = uri;
     }
 
+    @Override
     public String getEndpointUri() {
       return uri;
     }
