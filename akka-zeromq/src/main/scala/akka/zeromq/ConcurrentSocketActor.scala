@@ -31,7 +31,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   private val noBytes = Array[Byte]()
   private val zmqContext = params collectFirst { case c: Context ⇒ c } getOrElse DefaultContext
 
-  private val deserializer = deserializerFromParams
+  private var deserializer = params collectFirst { case d: Deserializer ⇒ d } getOrElse new ZMQMessageDeserializer
   private val socketType = {
     import SocketType.{ ZMQSocketType ⇒ ST }
     params.collectFirst { case t: ST ⇒ t }.getOrElse(throw new IllegalArgumentException("A socket type is required"))
@@ -39,7 +39,6 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
 
   private val socket: Socket = zmqContext.socket(socketType)
   private val poller: Poller = zmqContext.poller
-  private val log = Logging(context.system, this)
 
   private val pendingSends = new ListBuffer[Seq[Frame]]
 
@@ -93,6 +92,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     case MulticastHops(value)        ⇒ socket.setMulticastHops(value)
     case SendBufferSize(value)       ⇒ socket.setSendBufferSize(value)
     case ReceiveBufferSize(value)    ⇒ socket.setReceiveBufferSize(value)
+    case d: Deserializer             ⇒ deserializer = d
   }
 
   private def handleSocketOptionQuery(msg: SocketOptionQuery): Unit =
@@ -134,9 +134,6 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     params filter (_.isInstanceOf[SocketConnectOption]) foreach { self ! _ }
     params filter (_.isInstanceOf[PubSubOption]) foreach { self ! _ }
   }
-
-  private def deserializerFromParams: Deserializer =
-    params collectFirst { case d: Deserializer ⇒ d } getOrElse new ZMQMessageDeserializer
 
   private def setupSocket() = params foreach {
     case _: SocketConnectOption | _: PubSubOption | _: SocketMeta ⇒ // ignore, handled differently
