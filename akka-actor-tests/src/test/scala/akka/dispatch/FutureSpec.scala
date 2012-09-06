@@ -20,7 +20,7 @@ import scala.runtime.NonLocalReturnControl
 import akka.pattern.ask
 import java.lang.{ IllegalStateException, ArithmeticException }
 import java.util.concurrent._
-import scala.reflect.ClassTag
+import scala.reflect.{ ClassTag, classTag }
 import scala.util.{ Failure, Success, Try }
 
 object FutureSpec {
@@ -260,7 +260,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           } yield b + "-" + c
 
           Await.result(future1, timeout.duration) must be("10-14")
-          assert(checkType(future1, scala.reflect.classTag[String]))
+          assert(checkType(future1, classTag[String]))
           intercept[ClassCastException] { Await.result(future2, timeout.duration) }
           system.stop(actor)
         }
@@ -479,7 +479,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           }
         }))
 
-        val oddFutures = List.fill(100)(oddActor ? 'GetNext mapTo scala.reflect.classTag[Int])
+        val oddFutures = List.fill(100)(oddActor ? 'GetNext mapTo classTag[Int])
 
         assert(Await.result(Future.sequence(oddFutures), timeout.duration).sum === 10000)
         system.stop(oddActor)
