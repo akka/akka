@@ -372,8 +372,8 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     val f: Future[Result] =
       for {
         x ← ask(actorA, Request).mapTo[Int] // call pattern directly
-        s ← actorB ask Request mapTo manifest[String] // call by implicit conversion
-        d ← actorC ? Request mapTo manifest[Double] // call by symbolic name
+        s ← (actorB ask Request).mapTo[String] // call by implicit conversion
+        d ← (actorC ? Request).mapTo[Double] // call by symbolic name
       } yield Result(x, s, d)
 
     f pipeTo actorD // .. or ..

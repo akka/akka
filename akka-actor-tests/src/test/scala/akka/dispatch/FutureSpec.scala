@@ -260,7 +260,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           } yield b + "-" + c
 
           Await.result(future1, timeout.duration) must be("10-14")
-          assert(checkType(future1, manifest[String]))
+          assert(checkType(future1, scala.reflect.classTag[String]))
           intercept[ClassCastException] { Await.result(future2, timeout.duration) }
           system.stop(actor)
         }
@@ -479,7 +479,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
           }
         }))
 
-        val oddFutures = List.fill(100)(oddActor ? 'GetNext mapTo manifest[Int])
+        val oddFutures = List.fill(100)(oddActor ? 'GetNext mapTo scala.reflect.classTag[Int])
 
         assert(Await.result(Future.sequence(oddFutures), timeout.duration).sum === 10000)
         system.stop(oddActor)
@@ -939,9 +939,8 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       f((future, message) ⇒ {
         future.value must be('defined)
         future.value.get must be('failure)
-        future.value.get match {
-          case Failure(f) ⇒ f.getMessage must be(message)
-        }
+        val Failure(f) = future.value.get
+        f.getMessage must be(message)
       })
     }
     "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } must produce[java.lang.Exception]).getMessage must be(message)) }
