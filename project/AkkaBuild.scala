@@ -131,8 +131,9 @@ object AkkaBuild extends Build {
   lazy val remoteTests = Project(
     id = "akka-remote-tests",
     base = file("akka-remote-tests"),
-    dependencies = Seq(remote, actorTests % "test->test", testkit % "test->test"),
+    dependencies = Seq(remote, actorTests % "test->test", testkit % "compile;test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      libraryDependencies ++= Dependencies.remoteTests,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -147,7 +148,7 @@ object AkkaBuild extends Build {
   lazy val cluster = Project(
     id = "akka-cluster",
     base = file("akka-cluster"),
-    dependencies = Seq(remote, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
+    dependencies = Seq(remote, remoteTests % "test->test;multi-jvm->multi-jvm", testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
@@ -548,11 +549,13 @@ object Dependencies {
 
   val actor = Seq(config)
 
-  val testkit = Seq(Test.scalatest, Test.junit)
+  val testkit = Seq(Compile.scalatest, Compile.junit, Test.junit, Test.junit)
 
   val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf)
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
+
+  val remoteTests = Seq(Compile.scalatest, Test.junit, Test.scalatest)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
@@ -610,6 +613,11 @@ object Dependency {
     val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
     val junitIntf   = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
+  }
+
+  object Compile {
+    val junit       = "junit"                       % "junit"                        % "4.10"             % "compile" // Common Public License 1.0
+    val scalatest   = "org.scalatest"               % "scalatest"                    % "1.9-2.10.0-M7-B1" % "compile" cross CrossVersion.full // ApacheV2
   }
 
   // Camel Sample

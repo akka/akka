@@ -16,9 +16,6 @@ import java.util.concurrent.TimeoutException
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
 
-object TimingTest extends Tag("timing")
-object LongRunningTest extends Tag("long-running")
-
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
       akka {
@@ -36,7 +33,7 @@ object AkkaSpec {
           }
         }
       }
-      """)
+                                                    """)
 
   def mapToConfig(map: Map[String, Any]): Config = {
     import scala.collection.JavaConverters._
@@ -117,7 +114,9 @@ class AkkaSpecSpec extends WordSpec with MustMatchers {
         "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
         "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
       val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
-      val spec = new AkkaSpec(system) { val ref = Seq(testActor, system.actorOf(Props.empty, "name")) }
+      val spec = new AkkaSpec(system) {
+        val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
+      }
       spec.ref foreach (_.isTerminated must not be true)
       system.shutdown()
       spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
