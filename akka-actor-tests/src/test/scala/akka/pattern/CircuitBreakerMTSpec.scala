@@ -10,7 +10,9 @@ import scala.concurrent.{ Promise, Future, Await }
 class CircuitBreakerMTSpec extends AkkaSpec {
   implicit val ec = system.dispatcher
   "A circuit breaker being called by many threads" must {
-    val breaker = new CircuitBreaker(system.scheduler, 5, 100.millis.dilated, 500.millis.dilated)
+    val callTimeout = 1.second.dilated
+    val resetTimeout = 2.seconds.dilated
+    val breaker = new CircuitBreaker(system.scheduler, 5, callTimeout, resetTimeout)
 
     def openBreaker(): Unit =
       Await.ready(Future.sequence((1 to 5).map(_ ⇒ breaker.withCircuitBreaker(Future(throw new RuntimeException("FAIL"))).failed)), 1.second.dilated)
@@ -47,7 +49,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
 
       openBreaker()
 
-      Await.ready(halfOpenLatch, 2.seconds.dilated)
+      Await.ready(halfOpenLatch, resetTimeout + 1.seconds.dilated)
 
       val futures = for (i ← 1 to 100) yield breaker.withCircuitBreaker(Future {
         Thread.sleep(10); "succeed"
@@ -66,7 +68,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       breaker.onHalfOpen(halfOpenLatch.countDown())
       openBreaker()
       Await.ready(halfOpenLatch, 5.seconds.dilated)
-      Await.ready(breaker.withCircuitBreaker(Future("succeed")), 1.second.dilated)
+      Await.ready(breaker.withCircuitBreaker(Future("succeed")), resetTimeout)
 
       val futures = (1 to 100) map {
         i ⇒
