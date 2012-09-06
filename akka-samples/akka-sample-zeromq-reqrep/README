@@ -1,0 +1,26 @@
+ZeroMQ Req/Rep pattern.
+=====
+
+Requirements
+------------
+
+To build and run FSM you need [Simple Build Tool][sbt] (sbt).
+
+Running
+-------
+
+First time, 'sbt update' to get dependencies, then to run Ants use 'sbt run'.
+Here is an example. First type 'sbt' to start SBT interactively, the run 'update' and 'run':
+> cd $AKKA_HOME
+
+> % sbt
+
+> > project akka-sample-zeromq-reqrep
+
+> > run
+
+Notice
+------
+
+[akka]: http://akka.io
+[sbt]: http://code.google.com/p/simple-build-tool/
