@@ -30,7 +30,7 @@ private[camel] trait ConsumerRegistry { this: Activation ⇒
   /**
    * For internal use only.
    */
-  private[this] lazy val idempotentRegistry = system.actorOf(Props(new IdempotentCamelConsumerRegistry(context)))
+  private[this] lazy val idempotentRegistry = system.actorOf(Props(new IdempotentCamelConsumerRegistry(context)), name = "camelConsumerRegistry")
   /**
    * For internal use only. BLOCKING
    * @param endpointUri the URI to register the consumer on
@@ -58,7 +58,7 @@ private[camel] class IdempotentCamelConsumerRegistry(camelContext: CamelContext)
 
   val activated = new mutable.HashSet[ActorRef]
 
-  val registrator = context.actorOf(Props(new CamelConsumerRegistrator))
+  val registrator = context.actorOf(Props(new CamelConsumerRegistrator), name = "camelConsumerRegistrator")
 
   def receive = {
     case msg @ RegisterConsumer(_, consumer, _) ⇒

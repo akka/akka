@@ -14,6 +14,8 @@ import org.scalatest.WordSpec
 import akka.event.LoggingAdapter
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.ConfigFactory
+import org.apache.camel.impl.DefaultCamelContext
+import org.apache.camel.spi.Registry
 
 class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers with MockitoSugar {
 
@@ -26,7 +28,7 @@ class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers
   def camelWithMocks = new DefaultCamel(sys) {
     override val log = mock[LoggingAdapter]
     override lazy val template = mock[ProducerTemplate]
-    override lazy val context = mock[CamelContext]
+    override lazy val context = mock[DefaultCamelContext]
     override val settings = mock[CamelSettings]
   }
 
@@ -62,5 +64,4 @@ class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers
     verify(camel.context).stop()
 
   }
-
 }

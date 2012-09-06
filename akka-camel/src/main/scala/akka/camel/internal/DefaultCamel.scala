@@ -26,7 +26,7 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
    */
   private[camel] implicit val log = Logging(system, "Camel")
 
-  lazy val context: CamelContext = {
+  lazy val context: DefaultCamelContext = {
     val ctx = new DefaultCamelContext
     if (!settings.jmxStatistics) ctx.disableJMX()
     ctx.setName(system.name)

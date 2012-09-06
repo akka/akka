@@ -568,7 +568,7 @@ object Dependencies {
 
   val kernel = Seq(Test.scalatest, Test.junit)
 
-  val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito)
+  val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito, Test.logback, Test.httpClient, Test.httpmime, Test.camelJetty, Test.commonsIo)
 
   val camelSample = Seq(CamelSample.camelJetty)
 
@@ -610,6 +610,9 @@ object Dependency {
     val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
     val log4j       = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
     val junitIntf   = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
+    val httpClient  = "org.apache.httpcomponents"   % "httpclient"                   % "4.2.1"            % "test" // ApacheV2
+    val httpmime    = "org.apache.httpcomponents"   % "httpmime"                     % "4.2.1"            % "test" // ApacheV2
+    val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % "2.10.0"           % "test" // ApacheV2
   }
 
   // Camel Sample

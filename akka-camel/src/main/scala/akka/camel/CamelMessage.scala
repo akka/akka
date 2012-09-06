@@ -12,15 +12,20 @@ import akka.japi.{ Function ⇒ JFunction }
 import org.apache.camel.{ CamelContext, Message ⇒ JCamelMessage }
 import akka.AkkaException
 import scala.reflect.ClassTag
+import javax.activation.{ DataHandler, DataSource }
+import akka.util.ByteString
+import java.io.{ IOException, BufferedInputStream, ByteArrayInputStream, ByteArrayOutputStream }
+import io.{ Codec, Source }
 
 /**
  * An immutable representation of a Camel message.
  *
  * @author Martin Krasser
  */
-case class CamelMessage(body: Any, headers: Map[String, Any]) {
+case class CamelMessage(body: Any, headers: Map[String, Any], attachments: Map[String, Attachment] = Map()) {
 
-  def this(body: Any, headers: JMap[String, Any]) = this(body, headers.toMap) //for Java
+  def this(body: Any, headers: JMap[String, Any]) = this(body, headers.toMap, Map[String, Attachment]()) //for Java
+  def this(body: Any, headers: JMap[String, Any], attachments: JMap[String, Attachment]) = this(body, headers.toMap, attachments.toMap) //for Java
 
   override def toString: String = "CamelMessage(%s, %s)" format (body, headers)
 
@@ -60,23 +65,6 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * Java API
    */
   def getHeader(name: String): Any = headers(name)
-
-  /**
-   * Creates a CamelMessage with a transformed body using a <code>transformer</code> function.
-   */
-  def mapBody[A, B](transformer: A ⇒ B): CamelMessage = withBody(transformer(body.asInstanceOf[A]))
-
-  /**
-   * Creates a CamelMessage with a transformed body using a <code>transformer</code> function.
-   * <p>
-   * Java API
-   */
-  def mapBody[A, B](transformer: JFunction[A, B]): CamelMessage = withBody(transformer(body.asInstanceOf[A]))
-
-  /**
-   * Creates a CamelMessage with a given <code>body</code>.
-   */
-  def withBody(body: Any): CamelMessage = CamelMessage(body, this.headers)
 
   /**
    * Creates a new CamelMessage with given <code>headers</code>.
@@ -122,10 +110,43 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    */
   def withoutHeader(headerName: String): CamelMessage = copy(this.body, this.headers - headerName)
 
-  def copyContentTo(to: JCamelMessage): Unit = {
-    to.setBody(this.body)
-    for ((name, value) ← this.headers) to.getHeaders.put(name, value.asInstanceOf[AnyRef])
-  }
+  /**
+   * Returns the header with given <code>name</code> converted to type <code>T</code>. Throws
+   * <code>NoSuchElementException</code> if the header doesn't exist.
+   * <p>
+   * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
+   * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
+   *
+   */
+  def headerAs[T](name: String)(implicit t: ClassTag[T], camelContext: CamelContext): Option[T] = header(name).map(camelContext.getTypeConverter.mandatoryConvertTo[T](t.runtimeClass.asInstanceOf[Class[T]], _))
+
+  /**
+   * Returns the header with given <code>name</code> converted to type as given by the <code>clazz</code>
+   * parameter. Throws <code>NoSuchElementException</code> if the header doesn't exist.
+   * <p>
+   * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
+   * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
+   * <p>
+   * Java API
+   */
+  def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext): T = headerAs[T](name)(ClassTag(clazz), camelContext).get
+
+  /**
+   * Creates a CamelMessage with a transformed body using a <code>transformer</code> function.
+   */
+  def mapBody[A, B](transformer: A ⇒ B): CamelMessage = withBody(transformer(body.asInstanceOf[A]))
+
+  /**
+   * Creates a CamelMessage with a transformed body using a <code>transformer</code> function.
+   * <p>
+   * Java API
+   */
+  def mapBody[A, B](transformer: JFunction[A, B]): CamelMessage = withBody(transformer(body.asInstanceOf[A]))
+
+  /**
+   * Creates a CamelMessage with a given <code>body</code>.
+   */
+  def withBody(body: Any): CamelMessage = CamelMessage(body, this.headers)
 
   /**
    * Returns the body of the message converted to the type <code>T</code>. Conversion is done
@@ -166,25 +187,93 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
   def withBodyAs[T](clazz: Class[T])(implicit camelContext: CamelContext): CamelMessage = withBody(getBodyAs(clazz, camelContext))
 
   /**
-   * Returns the header with given <code>name</code> converted to type <code>T</code>. Throws
-   * <code>NoSuchElementException</code> if the header doesn't exist.
-   * <p>
-   * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
-   * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
-   *
+   * Returns those attachments from this message whose name is contained in <code>names</code>.
    */
-  def headerAs[T](name: String)(implicit t: ClassTag[T], camelContext: CamelContext): Option[T] = header(name).map(camelContext.getTypeConverter.mandatoryConvertTo[T](t.runtimeClass.asInstanceOf[Class[T]], _))
+  def attachments(names: Set[String]): Map[String, Attachment] = attachments filterKeys names
 
   /**
-   * Returns the header with given <code>name</code> converted to type as given by the <code>clazz</code>
-   * parameter. Throws <code>NoSuchElementException</code> if the header doesn't exist.
-   * <p>
-   * The CamelContext is accessible in a [[akka.camel.javaapi.UntypedConsumerActor]] and [[akka.camel.javaapi.UntypedProducerActor]]
-   * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
+   * Returns those attachments from this message whose name is contained in <code>names</code>.
+   * The returned attachments map is backed up by an immutable attachment map. Any attempt to modify
+   * the returned map will throw an exception.
    * <p>
    * Java API
    */
-  def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext): T = headerAs[T](name)(ClassTag(clazz), camelContext).get
+  def getAttachments(names: JSet[String]): JMap[String, Attachment] = attachments(names.toSet)
+
+  /**
+   * Returns all attachments from this message. The returned attachments map is backed up by this
+   * message's immutable attachments map. Any attempt to modify the returned map will throw an
+   * exception.
+   * <p>
+   * Java API
+   */
+  def getAttachments: JMap[String, Attachment] = attachments
+
+  /**
+   * Returns the attachment with given <code>name</code>. Throws <code>NoSuchElementException</code>
+   * if the attachment doesn't exist.
+   */
+  def attachment(name: String): Option[Attachment] = attachments.get(name)
+
+  /**
+   * Returns the attachment with given <code>name</code>. Throws <code>NoSuchElementException</code>
+   * if the attachment doesn't exist.
+   * <p>
+   * Java API
+   */
+  def getAttachment(name: String): Attachment = attachments(name)
+
+  /**
+   * Creates a new CamelMessage with given <code>attachments</code>.
+   */
+  def withAttachments(attachments: Map[String, Attachment]): CamelMessage = copy(this.body, this.headers, attachments)
+
+  /**
+   * Creates a new CamelMessage with given <code>attachments</code>. A copy of the attachments map is made.
+   * <p>
+   * Java API
+   */
+  def withAttachments(attachments: JMap[String, Attachment]): CamelMessage = withAttachments(attachments.toMap)
+
+  /**
+   * Creates a new CamelMessage with given <code>attachments</code> added to the current attachments.
+   */
+  def addAttachments[A](attachments: Map[String, Attachment]): CamelMessage = copy(this.body, this.headers, this.attachments ++ attachments)
+
+  /**
+   * Creates a new CamelMessage with given <code>attachments</code> added to the current attachments.
+   * A copy of the attachments map is made.
+   * <p>
+   * Java API
+   */
+  def addAttachments(attachments: JMap[String, Attachment]): CamelMessage = addAttachments(attachments.toMap)
+
+  /**
+   * Creates a new CamelMessage with the given <code>attachment</code> added to the current attachments.
+   */
+  def addAttachment(attachment: (String, Attachment)): CamelMessage = copy(this.body, this.headers, this.attachments + attachment)
+
+  /**
+   * Creates a new CamelMessage with the given attachment, represented by <code>name</code> and
+   * <code>value</code> added to the existing attachments.
+   * <p>
+   * Java API
+   */
+  def addAttachment(name: String, value: Attachment): CamelMessage = addAttachment((name, value))
+
+  /**
+   * Creates a new CamelMessage where the attachment with given <code>attachmentName</code> is removed from
+   * the existing attachments.
+   */
+  def withoutAttachment(attachmentName: String): CamelMessage = copy(this.body, this.headers, this.attachments - attachmentName)
+
+  def copyContentTo(to: JCamelMessage): Unit = {
+    to.setBody(this.body)
+    for ((name, value) ← this.headers) to.getHeaders.put(name, value.asInstanceOf[AnyRef])
+    for ((name, value) ← this.attachments) {
+      to.getAttachments.put(name, value.createDataHandler)
+    }
+  }
 
 }
 
@@ -224,8 +313,55 @@ object CamelMessage {
    * @param headers additional headers to set on the created CamelMessage in addition to those
    *                in the Camel message.
    */
-  def from(camelMessage: JCamelMessage, headers: Map[String, Any]): CamelMessage = CamelMessage(camelMessage.getBody, headers ++ camelMessage.getHeaders)
+  def from(camelMessage: JCamelMessage, headers: Map[String, Any]): CamelMessage = {
+    val attachments = camelMessage.getAttachments.map {
+      case (key, dataHandler) ⇒ {
+        val in = new BufferedInputStream(dataHandler.getInputStream)
+        try {
+          var readin = new Array[Byte](8196)
+          var read = 0
+          val builder = ByteString.newBuilder
+          while (-1 != read) {
+            read = in.read(readin)
+            if (read != -1) {
+              builder.putBytes(readin, 0, read)
+            }
+          }
+          val byteString = builder.result
+          (key -> Attachment(dataHandler.getName, dataHandler.getContentType, byteString))
+        } finally {
+          in.close()
+        }
+      }
+    }.toMap
+    CamelMessage(camelMessage.getBody, headers ++ camelMessage.getHeaders, attachments)
+  }
+}
 
+/**
+ * Apache Camel uses [[javax.activation.DataHandler]] for an attachment.
+ * DataHandlers are not immutable, so in akka-camel an Attachment keeps the bytes of
+ * the original attachment in an immutable [[akka.util.ByteString]].
+ */
+case class Attachment(name: String, contentType: String, bytes: ByteString) {
+  /**
+   * Internal API.
+   * Creates a DataHandler for the attachment. [[org.apache.camel.Message]] uses DataHandlers to support attachments.
+   * The Attachment needs to be converted to a DataHandler when it is sent to Camel.
+   */
+  private[camel] def createDataHandler: DataHandler = {
+    new DataHandler(new DataSource {
+      private val bytesCopy = bytes.toArray
+      def getName = name
+
+      // according to DataHandler javadocs an IOException should be thrown if the handler does not support overwriting data.
+      def getOutputStream = throw new IOException("Attachment DataHandler does not support overwriting the data")
+
+      def getContentType = contentType
+
+      def getInputStream = new ByteArrayInputStream(bytesCopy)
+    })
+  }
 }
 
 /**
