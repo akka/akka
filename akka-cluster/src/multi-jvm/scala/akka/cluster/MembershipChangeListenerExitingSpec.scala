@@ -26,12 +26,12 @@ object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
           unreachable-nodes-reaper-interval = 300 s # turn "off" reaping to unreachable node set
         }
       """)
-        .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet)))
 }
 
-class MembershipChangeListenerExitingMultiJvmNode1 extends MembershipChangeListenerExitingSpec with FailureDetectorPuppetStrategy
-class MembershipChangeListenerExitingMultiJvmNode2 extends MembershipChangeListenerExitingSpec with FailureDetectorPuppetStrategy
-class MembershipChangeListenerExitingMultiJvmNode3 extends MembershipChangeListenerExitingSpec with FailureDetectorPuppetStrategy
+class MembershipChangeListenerExitingMultiJvmNode1 extends MembershipChangeListenerExitingSpec
+class MembershipChangeListenerExitingMultiJvmNode2 extends MembershipChangeListenerExitingSpec
+class MembershipChangeListenerExitingMultiJvmNode3 extends MembershipChangeListenerExitingSpec
 
 abstract class MembershipChangeListenerExitingSpec
   extends MultiNodeSpec(MembershipChangeListenerExitingMultiJvmSpec)
