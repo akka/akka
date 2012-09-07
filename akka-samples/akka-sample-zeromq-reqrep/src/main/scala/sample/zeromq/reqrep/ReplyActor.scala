@@ -13,7 +13,8 @@ class ReplyActor extends Actor {
 
   def receive = {
     case m: ZMQMessage ⇒
-      val message = Util.randomString(random, maxMessageSize)
+      //val message = Util.randomString(random, maxMessageSize)
+      val message = "world"
       sender ! ZMQMessage(Seq(Frame(message)))
     case _ ⇒
       sender ! ZMQMessage(Seq(Frame("didn't understand?")))
