@@ -49,12 +49,13 @@ abstract class MultiNodeConfig {
         akka.remote {
           log-received-messages = on
           log-sent-messages = on
+          log-remote-lifecycle-events = off
         }
         akka.actor.debug {
           receive = on
           fsm = on
         }
-        """)
+                                """)
     else
       ConfigFactory.parseString("akka.loglevel = INFO")
 

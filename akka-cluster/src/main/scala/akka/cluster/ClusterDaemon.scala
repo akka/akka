@@ -87,6 +87,8 @@ private[cluster] object InternalClusterAction {
 
   case object ReapUnreachableTick extends Tick
 
+  case object MetricsTick extends Tick
+
   case object LeaderActionsTick extends Tick
 
   case object PublishStatsTick extends Tick
@@ -140,6 +142,8 @@ private[cluster] trait ClusterEnvironment {
   private[cluster] def selfAddress: Address
   private[cluster] def scheduler: Scheduler
   private[cluster] def seedNodes: IndexedSeq[Address]
+  private[cluster] def subscribe(subscriber: ActorRef, to: Class[_]): Unit
+  private[cluster] def unsubscribe(subscriber: ActorRef): Unit
   private[cluster] def shutdown(): Unit
 }
 
@@ -153,8 +157,11 @@ private[cluster] final class ClusterDaemon(environment: ClusterEnvironment) exte
   val configuredDispatcher = environment.settings.UseDispatcher
   val core = context.actorOf(Props(new ClusterCoreDaemon(environment)).
     withDispatcher(configuredDispatcher), name = "core")
-  val heartbeat = context.actorOf(Props(new ClusterHeartbeatDaemon(environment)).
-    withDispatcher(configuredDispatcher), name = "heartbeat")
+
+  context.actorOf(Props(new ClusterHeartbeatDaemon(environment)).withDispatcher(configuredDispatcher), name = "heartbeat")
+
+  if (environment.settings.MetricsEnabled) Some(context.actorOf(Props(
+    new ClusterNodeMetricsCollector(environment)).withDispatcher(configuredDispatcher), name = "metrics"))
 
   def receive = {
     case InternalClusterAction.GetClusterCoreRef ⇒ sender ! core
@@ -220,7 +227,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     }
 
   // start periodic publish of current state
-  private val publishStateTask: Option[Cancellable] =
+  private val publishStatsTask: Option[Cancellable] =
     if (PublishStatsInterval == Duration.Zero) None
     else Some(FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval), PublishStatsInterval) {
       self ! PublishStatsTick
@@ -242,7 +249,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     heartbeatTask.cancel()
     failureDetectorReaperTask.cancel()
     leaderActionsTask.cancel()
-    publishStateTask foreach { _.cancel() }
+    publishStatsTask foreach { _.cancel() }
   }
 
   def uninitialized: Actor.Receive = {
