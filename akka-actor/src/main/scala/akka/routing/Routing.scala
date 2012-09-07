@@ -105,8 +105,8 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`
    */
-  private[akka] def removeRoutees(abandonedRoutees: IndexedSeq[ActorRef]): Unit = {
-    _routees = _routees diff abandonedRoutees
+  private[akka] def removeRoutees(abandonedRoutees: Iterable[ActorRef]): Unit = {
+    _routees = _routees diff abandonedRoutees.toSeq
     abandonedRoutees foreach unwatch
   }
 
@@ -204,6 +204,8 @@ trait RouterConfig {
  */
 class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resizer: Option[Resizer]) {
 
+  import scala.collection.JavaConverters._
+
   /**
    * Adds the routees to the router.
    * Adds death watch of the routees so that they are removed when terminated.
@@ -219,10 +221,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * `RouterConfig.createRoute` and `Resizer.resize`.
    * Java API.
    */
-  def registerRoutees(routees: java.util.List[ActorRef]): Unit = {
-    import scala.collection.JavaConverters._
-    registerRoutees(routees.asScala.toIndexedSeq)
-  }
+  def registerRoutees(routees: java.lang.Iterable[ActorRef]): Unit = registerRoutees(routees.asScala)
 
   /**
    * Removes routees from the router. This method doesn't stop the routees.
@@ -230,7 +229,16 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * Not thread safe, but intended to be called from protected points, such as
    * `Resizer.resize`.
    */
-  def unregisterRoutees(routees: IndexedSeq[ActorRef]): Unit = routedCell.removeRoutees(routees)
+  def unregisterRoutees(routees: Iterable[ActorRef]): Unit = routedCell.removeRoutees(routees)
+
+  /**
+   * Removes routees from the router. This method doesn't stop the routees.
+   * Removes death watch of the routees.
+   * Not thread safe, but intended to be called from protected points, such as
+   * `Resizer.resize`.
+   * JAVA API
+   */
+  def unregisterRoutees(routees: java.lang.Iterable[ActorRef]): Unit = unregisterRoutees(routees.asScala)
 
   /**
    * Looks up routes with specified paths and registers them.
@@ -239,6 +247,12 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
     val routees = paths.map(context.actorFor(_))(scala.collection.breakOut)
     registerRoutees(routees)
   }
+
+  /**
+   * Looks up routes with specified paths and registers them.
+   * JAVA API
+   */
+  def registerRouteesFor(paths: java.util.List[String]): Unit = registerRouteesFor(paths.asScala)
 
   /**
    * Creates new routees from specified `Props` and registers them.
@@ -273,7 +287,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * Give concurrent messages a chance to be placed in mailbox before
    * sending PoisonPill.
    */
-  protected def delayedStop(scheduler: Scheduler, abandon: IndexedSeq[ActorRef], stopDelay: Duration): Unit = {
+  protected def delayedStop(scheduler: Scheduler, abandon: Iterable[ActorRef], stopDelay: Duration): Unit = {
     if (abandon.nonEmpty) {
       if (stopDelay <= Duration.Zero) {
         abandon foreach (_ ! PoisonPill)
@@ -290,6 +304,12 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * All routees of the router
    */
   def routees: IndexedSeq[ActorRef] = routedCell.routees
+
+  /**
+   * All routees of the router
+   * JAVA API
+   */
+  def getRoutees(): java.util.List[ActorRef] = routees.asJava
 
   private def routedCell = context.asInstanceOf[RoutedActorCell]
 }
