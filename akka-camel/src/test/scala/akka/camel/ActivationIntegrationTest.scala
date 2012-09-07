@@ -57,11 +57,14 @@ class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCa
   "activationFutureFor must fail if notification timeout is too short and activation is not complete yet" in {
     val latch = new TestLatch(1)
     val actor = system.actorOf(Props(new TestConsumer("direct:actor-4", latch)), "direct-actor-4")
-    intercept[TimeoutException] { Await.result(camel.activationFutureFor(actor), 1 millis) }
-    latch.countDown()
-    // after the latch is removed, complete the wait for completion so this test does not later on
-    // print errors because of the registerConsumer timing out.
-    Await.result(camel.activationFutureFor(actor), timeout)
+    try {
+      intercept[TimeoutException] { Await.result(camel.activationFutureFor(actor), 1 millis) }
+    } finally {
+      latch.countDown()
+      // after the latch is removed, complete the wait for completion so this test does not later on
+      // print errors because of the registerConsumer timing out.
+      Await.result(camel.activationFutureFor(actor), timeout)
+    }
   }
 
   class TestConsumer(uri: String, latch: TestLatch) extends Consumer {

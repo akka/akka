@@ -8,6 +8,7 @@ import akka.camel.CamelMessage
 import akka.actor.Status.Failure
 
 import language.existentials
+import org.apache.camel.model.ProcessorDefinition
 
 object CustomRoute {
   object Sample1 {
@@ -48,7 +49,7 @@ object CustomRoute {
       def receive = {
         case msg: CamelMessage ⇒ throw new Exception("error: %s" format msg.body)
       }
-      override def onRouteDefinition(rd: RouteDefinition) = {
+      override def onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_] = (rd) ⇒ {
         // Catch any exception and handle it by returning the exception message as response
         rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
       }

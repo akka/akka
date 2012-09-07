@@ -20,7 +20,7 @@ import scala.concurrent.util.FiniteDuration
  */
 trait Camel extends Extension with Activation {
   /**
-   * Underlying camel context.
+   * Returns the underlying camel context.
    *
    * It can be used to configure camel manually, i.e. when the user wants to add new routes or endpoints,
    * i.e. {{{camel.context.addRoutes(...)}}}
@@ -30,13 +30,13 @@ trait Camel extends Extension with Activation {
   def context: DefaultCamelContext
 
   /**
-   * The Camel ProducerTemplate.
+   * Returns the Camel ProducerTemplate.
    * @see [[org.apache.camel.ProducerTemplate]]
    */
   def template: ProducerTemplate
 
   /**
-   * The settings for the CamelExtension
+   * Returns the settings for the CamelExtension
    */
   def settings: CamelSettings
 
