@@ -15,5 +15,6 @@ setup(
     description  = __doc__, 
     author       = "Akka", 
     packages     = ['styles'], 
-    entry_points = entry_points 
+    entry_points = entry_points,
+    html_use_smartypants = false 
 ) 
