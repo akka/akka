@@ -14,9 +14,9 @@ The best way to start learning Akka is to download the Typesafe Stack and either
 the Akka Getting Started Tutorials or check out one of Akka Template Projects. Both comes
 in several flavours depending on your development environment preferences.
 
-- `Download Typesafe Stack <http://typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html>`_
-- `Getting Started Tutorials <http://typesafe.com/resources/getting-started/tutorials/index.html>`_
-- `Template Projects <http://typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
+- `Download Typesafe Stack <http://typesafe.com/stack/download>`_
+- `Getting Started Tutorials <http://typesafe.com/resources/getting-started>`_
+- `Template Projects <http://typesafe.com/stack/download#template>`_
 
 Download
 --------
