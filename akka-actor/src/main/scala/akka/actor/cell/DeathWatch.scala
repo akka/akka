@@ -110,8 +110,8 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   protected def addressTerminated(address: Address): Unit = {
     // cleanup watchedBy since we know they are dead
-    for (a ← watchedBy; if a.path.address == address) maintainAddressTerminatedSubscription(a) {
-      watchedBy -= a
+    maintainAddressTerminatedSubscription() {
+      for (a ← watchedBy; if a.path.address == address) watchedBy -= a
     }
 
     // send Terminated to self for all matching subjects
@@ -127,17 +127,15 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
    * Ends subscription to AddressTerminated if subscribing and the
    * block removes the last non-local ref from watching and watchedBy.
    */
-  private def maintainAddressTerminatedSubscription[T](change: ActorRef)(block: ⇒ T): T = {
+  private def maintainAddressTerminatedSubscription[T](change: ActorRef = null)(block: ⇒ T): T = {
     def isNonLocal(ref: ActorRef) = ref match {
+      case null                              ⇒ true
       case a: InternalActorRef if !a.isLocal ⇒ true
       case _                                 ⇒ false
     }
 
-    def hasNonLocalAddress: Boolean = {
-      (watching exists isNonLocal) || (watchedBy exists isNonLocal)
-    }
-
     if (isNonLocal(change)) {
+      def hasNonLocalAddress: Boolean = ((watching exists isNonLocal) || (watchedBy exists isNonLocal))
       val had = hasNonLocalAddress
       val result = block
       val has = hasNonLocalAddress

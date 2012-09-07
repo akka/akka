@@ -78,7 +78,7 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("third-terminated")
       }
 
-      enterBarrier("after")
+      enterBarrier("after-1")
 
     }
 
@@ -95,7 +95,7 @@ abstract class ClusterDeathWatchSpec
         expectMsg(path)
       }
 
-      enterBarrier("after")
+      enterBarrier("after-2")
     }
 
     "receive Terminated when watched path doesn't exist" taggedAs LongRunningTest in {
@@ -111,7 +111,7 @@ abstract class ClusterDeathWatchSpec
         expectMsg(path)
       }
 
-      enterBarrier("after")
+      enterBarrier("after-3")
     }
 
   }
