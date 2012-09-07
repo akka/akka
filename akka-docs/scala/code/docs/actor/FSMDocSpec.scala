@@ -5,11 +5,11 @@ package docs.actor
 
 import language.postfixOps
 
+import akka.testkit.{ AkkaSpec ⇒ MyFavoriteTestFrameWorkPlusAkkaTestKit }
 //#test-code
-import akka.testkit.AkkaSpec
 import akka.actor.Props
 
-class FSMDocSpec extends AkkaSpec {
+class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
 
   "simple finite state machine" must {
     //#fsm-code-elided
