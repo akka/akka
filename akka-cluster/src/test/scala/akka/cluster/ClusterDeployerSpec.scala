@@ -20,6 +20,7 @@ object ClusterDeployerSpec {
           cluster.enabled = on
           cluster.max-nr-of-instances-per-node = 3
           cluster.deploy-on-own-node = off
+          cluster.routees-path = "/user/myservice"
         }
       }
       akka.remote.netty.port = 0
@@ -45,7 +46,7 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
         Deploy(
           service,
           deployment.get.config,
-          ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(20, 3, false)),
+          ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(20, 3, false, "/user/myservice")),
           ClusterScope)))
     }
 

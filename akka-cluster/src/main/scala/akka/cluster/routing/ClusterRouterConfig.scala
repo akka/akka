@@ -29,6 +29,7 @@ import akka.routing.RouteeProvider
 import akka.routing.Router
 import akka.routing.RouterConfig
 import akka.routing.RemoteRouterConfig
+import akka.actor.RootActorPath
 
 /**
  * [[akka.routing.RouterConfig]] implementation for deployment on cluster nodes.
@@ -68,7 +69,14 @@ case class ClusterRouterConfig(local: RouterConfig, settings: ClusterRouterSetti
   }
 }
 
-case class ClusterRouterSettings(totalInstances: Int, maxInstancesPerNode: Int, deployOnOwnNode: Boolean)
+case class ClusterRouterSettings(
+  totalInstances: Int,
+  maxInstancesPerNode: Int,
+  deployOnOwnNode: Boolean,
+  routeesPath: String) {
+
+  def isRouteesPathDefined: Boolean = ((routeesPath ne null) && routeesPath != "")
+}
 
 /**
  * INTERNAL API
@@ -102,10 +110,15 @@ private[akka] class ClusterRouteeProvider(
     val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
 
     for (i ← 1 to settings.totalInstances; target ← selectDeploymentTarget) {
-      val name = "c" + childNameCounter.incrementAndGet
-      val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(target))
-      var ref = impl.provider.actorOf(impl, routeeProps, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
-        systemService = false, Some(deploy), lookupDeploy = false, async = false)
+      val ref =
+        if (settings.isRouteesPathDefined) {
+          context.actorFor(target.toString + settings.routeesPath)
+        } else {
+          val name = "c" + childNameCounter.incrementAndGet
+          val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(target))
+          impl.provider.actorOf(impl, routeeProps, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
+            systemService = false, Some(deploy), lookupDeploy = false, async = false)
+        }
       // must register each one, since registered routees are used in selectDeploymentTarget
       registerRoutees(Some(ref))
     }
@@ -217,7 +230,13 @@ private[akka] class ClusterRouterActor extends Router {
  */
 object ClusterRouterPropsDecorator {
   def decorate(props: Props, router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int,
-               deployOnOwnNode: Boolean): Props =
+               deployOnOwnNode: Boolean): Props = {
     props.withClusterRouter(router, totalInstances, maxInstancesPerNode, deployOnOwnNode)
+  }
+
+  def decorate(props: Props, router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int,
+               deployOnOwnNode: Boolean, routeesPath: String): Props = {
+    props.withClusterRouter(router, totalInstances, maxInstancesPerNode, deployOnOwnNode, routeesPath)
+  }
 }
 

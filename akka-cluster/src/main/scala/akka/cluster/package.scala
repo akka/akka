@@ -33,10 +33,10 @@ package object routing {
      */
 
     def withClusterRouter(router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int,
-                          deployOnOwnNode: Boolean = true): Props = {
+                          deployOnOwnNode: Boolean = true, routeesPath: String = ""): Props = {
       props.withRouter(router).withDeploy(
         Deploy(routerConfig = ClusterRouterConfig(router,
-          ClusterRouterSettings(totalInstances, maxInstancesPerNode, deployOnOwnNode))))
+          ClusterRouterSettings(totalInstances, maxInstancesPerNode, deployOnOwnNode, routeesPath))))
     }
   }
 
