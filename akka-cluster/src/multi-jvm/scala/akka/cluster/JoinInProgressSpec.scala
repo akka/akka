@@ -25,7 +25,7 @@ object JoinInProgressMultiJvmSpec extends MultiNodeConfig {
               threshold = 4
               acceptable-heartbeat-pause = 1 second
             }
-          }""") // increase the leader action task interval
+          }""")
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 

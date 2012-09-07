@@ -7,15 +7,14 @@ import language.{ postfixOps, reflectiveCalls }
 
 import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
-import akka.actor.{ Actor, ActorRef, Props, ActorSystem, PoisonPill, DeadLetter }
+import akka.actor.{ Actor, Props, ActorSystem, PoisonPill, DeadLetter, ActorSystemImpl }
 import akka.event.{ Logging, LoggingAdapter }
 import scala.concurrent.util.duration._
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future }
 import com.typesafe.config.{ Config, ConfigFactory }
 import java.util.concurrent.TimeoutException
-import akka.dispatch.{ MessageDispatcher, Dispatchers }
+import akka.dispatch.Dispatchers
 import akka.pattern.ask
-import akka.actor.ActorSystemImpl
 
 object TimingTest extends Tag("timing")
 object LongRunningTest extends Tag("long-running")
@@ -90,9 +89,8 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   protected def atTermination() {}
 
-  def spawn(dispatcherId: String = Dispatchers.DefaultDispatcherId)(body: ⇒ Unit) {
-    system.actorOf(Props(ctx ⇒ { case "go" ⇒ try body finally ctx.stop(ctx.self) }).withDispatcher(dispatcherId)) ! "go"
-  }
+  def spawn(dispatcherId: String = Dispatchers.DefaultDispatcherId)(body: ⇒ Unit): Unit =
+    Future(body)(system.dispatchers.lookup(dispatcherId))
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

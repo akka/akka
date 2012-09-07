@@ -192,7 +192,9 @@ object SupervisorHierarchySpec {
       case x ⇒ (x, x)
     }
     override val supervisorStrategy = OneForOneStrategy()(unwrap andThen {
-      case _ if pongsToGo > 0 ⇒ Resume
+      case _: Failure if pongsToGo > 0 ⇒
+        log :+= Event("pongOfDeath resuming " + sender)
+        Resume
       case (f: Failure, orig) ⇒
         if (f.depth > 0) {
           setFlags(f.directive)
@@ -224,6 +226,9 @@ object SupervisorHierarchySpec {
             val props = Props(new Hierarchy(kidSize, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
             context.watch(context.actorOf(props, name))
           }
+      }
+      if (context.children.size != state.kids.size) {
+        abort("invariant violated: " + state.kids.size + " != " + context.children.size)
       }
       cause match {
         case f: Failure if f.failPost > 0 ⇒ f.failPost -= 1; throw f
@@ -279,11 +284,14 @@ object SupervisorHierarchySpec {
             val kids = stateCache.get(self).kids(ref)
             val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
             context.watch(context.actorOf(props, name))
+          } else {
+            log :+= Event(sender + " terminated while pongOfDeath")
           }
         case Abort ⇒ abort("terminating")
         case PingOfDeath ⇒
           if (size > 1) {
             pongsToGo = context.children.size
+            log :+= Event("sending " + pongsToGo + " pingOfDeath")
             context.children foreach (_ ! PingOfDeath)
           } else {
             context stop self
@@ -567,8 +575,12 @@ object SupervisorHierarchySpec {
         }
       case Event(StateTimeout, _) ⇒
         errors :+= self -> ErrorLog("timeout while Stopping", Vector.empty)
-        context stop hierarchy
-        goto(Failed)
+        println(system.asInstanceOf[ActorSystemImpl].printTree)
+        getErrors(hierarchy, 10)
+        printErrors()
+        idleChildren foreach println
+        testActor ! "timeout in Stopping"
+        stop
       case Event(e: ErrorLog, _) ⇒
         errors :+= sender -> e
         goto(Failed)

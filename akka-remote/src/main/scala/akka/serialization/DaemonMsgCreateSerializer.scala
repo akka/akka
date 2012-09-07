@@ -13,6 +13,7 @@ import akka.remote.RemoteProtocol.{ DaemonMsgCreateProtocol, DeployProtocol, Pro
 import akka.routing.{ NoRouter, RouterConfig }
 import akka.actor.FromClassCreator
 import scala.reflect.ClassTag
+import util.{ Failure, Success }
 
 /**
  * Serializes akka's internal DaemonMsgCreate using protobuf
@@ -88,14 +89,10 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
 
     def props = {
       val creator =
-        if (proto.getProps.hasFromClassCreator) {
-          system.dynamicAccess.getClassFor[Actor](proto.getProps.getFromClassCreator) match {
-            case Right(clazz) ⇒ FromClassCreator(clazz)
-            case Left(e)      ⇒ throw e
-          }
-        } else {
+        if (proto.getProps.hasFromClassCreator)
+          FromClassCreator(system.dynamicAccess.getClassFor[Actor](proto.getProps.getFromClassCreator).get)
+        else
           deserialize(proto.getProps.getCreator, classOf[() ⇒ Actor])
-        }
 
       val routerConfig =
         if (proto.getProps.hasRouterConfig) deserialize(proto.getProps.getRouterConfig, classOf[RouterConfig])
@@ -115,26 +112,22 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
       supervisor = deserializeActorRef(system, proto.getSupervisor))
   }
 
-  protected def serialize(any: AnyRef): ByteString =
-    serialization.serialize(any) match {
-      case Right(bytes) ⇒ ByteString.copyFrom(bytes)
-      case Left(e)      ⇒ throw e
-    }
+  protected def serialize(any: AnyRef): ByteString = ByteString.copyFrom(serialization.serialize(any).get)
 
   protected def deserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray
     serialization.deserialize(bytes, clazz) match {
-      case Right(x: T)  ⇒ x
-      case Right(other) ⇒ throw new IllegalArgumentException("Can't deserialize to [%s], got [%s]".format(clazz.getName, other))
-      case Left(e) ⇒
+      case Success(x: T)  ⇒ x
+      case Success(other) ⇒ throw new IllegalArgumentException("Can't deserialize to [%s], got [%s]".format(clazz.getName, other))
+      case Failure(e) ⇒
         // Fallback to the java serializer, because some interfaces don't implement java.io.Serializable,
         // but the impl instance does. This could be optimized by adding java serializers in reference.conf:
         // com.typesafe.config.Config
         // akka.routing.RouterConfig
         // akka.actor.Scope
         serialization.deserialize(bytes, classOf[java.io.Serializable]) match {
-          case Right(x: T) ⇒ x
-          case _           ⇒ throw e // the first exception
+          case Success(x: T) ⇒ x
+          case _             ⇒ throw e // the first exception
         }
     }
   }

@@ -17,14 +17,23 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.routing.Broadcast
 import akka.routing.RoundRobinRouter
 import akka.routing.RoutedActorRef
+import akka.routing.Resizer
+import akka.routing.RouteeProvider
 import akka.testkit._
 import scala.concurrent.util.duration._
 
 object RoundRobinRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
-  class SomeActor extends Actor with Serializable {
+  class SomeActor extends Actor {
     def receive = {
       case "hit" ⇒ sender ! self
+    }
+  }
+
+  class TestResizer extends Resizer {
+    def isTimeForResize(messageCounter: Long): Boolean = messageCounter <= 10
+    def resize(routeeProvider: RouteeProvider): Unit = {
+      routeeProvider.createRoutees(nrOfInstances = 1)
     }
   }
 
@@ -39,6 +48,9 @@ object RoundRobinRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
       /service-hello.router = "round-robin"
       /service-hello.nr-of-instances = 3
       /service-hello.target.nodes = ["@first@", "@second@", "@third@"]
+
+      /service-hello2.router = "round-robin"
+      /service-hello2.target.nodes = ["@first@", "@second@", "@third@"]
     """)
 }
 
@@ -84,6 +96,46 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
         enterBarrier("end")
         replies.values foreach { _ must be(iterationCount) }
         replies.get(node(fourth).address) must be(None)
+
+        // shut down the actor before we let the other node(s) shut down so we don't try to send
+        // "Terminate" to a shut down node
+        system.stop(actor)
+        enterBarrier("done")
+      }
+    }
+  }
+
+  "A new remote actor configured with a RoundRobin router and Resizer" must {
+    "be locally instantiated on a remote node after several resize rounds" taggedAs LongRunningTest in {
+
+      runOn(first, second, third) {
+        enterBarrier("start", "broadcast-end", "end", "done")
+      }
+
+      runOn(fourth) {
+        enterBarrier("start")
+        val actor = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(
+          resizer = Some(new TestResizer))), "service-hello2")
+        actor.isInstanceOf[RoutedActorRef] must be(true)
+
+        val iterationCount = 9
+
+        val repliesFrom: Set[ActorRef] =
+          (for {
+            i ← 0 until iterationCount
+          } yield {
+            actor ! "hit"
+            receiveOne(5 seconds) match { case ref: ActorRef ⇒ ref }
+          }).toSet
+
+        enterBarrier("broadcast-end")
+        actor ! Broadcast(PoisonPill)
+
+        enterBarrier("end")
+        // at least more than one actor per node
+        repliesFrom.size must be > (3)
+        val repliesFromAddresses = repliesFrom.map(_.path.address)
+        repliesFromAddresses must be === (Set(node(first), node(second), node(third)).map(_.address))
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
         // "Terminate" to a shut down node

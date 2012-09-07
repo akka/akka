@@ -12,6 +12,7 @@ import akka.testkit._
 import akka.actor.Address
 import akka.actor.Props
 import akka.actor.Actor
+import akka.cluster.MemberStatus._
 
 object MembershipChangeListenerLeavingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -21,7 +22,6 @@ object MembershipChangeListenerLeavingMultiJvmSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
-        akka.clusterView.leader-actions-interval           = 5 s
         akka.cluster.unreachable-nodes-reaper-interval = 300 s # turn "off"
       """))
       .withFallback(MultiNodeClusterSpec.clusterConfig))
@@ -54,9 +54,13 @@ abstract class MembershipChangeListenerLeavingSpec
 
       runOn(third) {
         val latch = TestLatch()
+        val secondAddress = address(second)
         cluster.subscribe(system.actorOf(Props(new Actor {
           def receive = {
-            case MemberLeft(m) if m.address == address(second) ⇒
+            case state: CurrentClusterState ⇒
+              if (state.members.exists(m ⇒ m.address == secondAddress && m.status == Leaving))
+                latch.countDown()
+            case MemberLeft(m) if m.address == secondAddress ⇒
               latch.countDown()
             case _ ⇒ // ignore
           }

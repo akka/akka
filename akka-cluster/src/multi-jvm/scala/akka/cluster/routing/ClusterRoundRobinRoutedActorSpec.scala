@@ -3,6 +3,7 @@
  */
 package akka.cluster.routing
 
+import language.postfixOps
 import scala.concurrent.Await
 import scala.concurrent.util.duration._
 import com.typesafe.config.ConfigFactory

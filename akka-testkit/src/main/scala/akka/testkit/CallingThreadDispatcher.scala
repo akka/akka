@@ -237,11 +237,15 @@ class CallingThreadDispatcher(
         try {
           if (Mailbox.debug) println(mbox.actor.self + " processing message " + handle)
           mbox.actor.invoke(handle)
+          if (Thread.interrupted()) { // clear interrupted flag before we continue
+            intex = new InterruptedException("Interrupted during message processing")
+            log.error(intex, "Interrupted during message processing")
+          }
           true
         } catch {
           case ie: InterruptedException ⇒
             log.error(ie, "Interrupted during message processing")
-            Thread.currentThread().interrupt()
+            Thread.interrupted() // clear interrupted flag before continuing
             intex = ie
             true
           case NonFatal(e) ⇒
@@ -262,7 +266,7 @@ class CallingThreadDispatcher(
       runQueue(mbox, queue, intex)
     } else {
       if (intex ne null) {
-        Thread.interrupted // clear interrupted flag before throwing according to java convention
+        Thread.interrupted() // clear interrupted flag before throwing according to java convention
         throw intex
       }
     }

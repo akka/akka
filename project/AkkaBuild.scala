@@ -7,7 +7,7 @@ package akka
 import sbt._
 import sbt.Keys._
 import com.typesafe.sbtmultijvm.MultiJvmPlugin
-import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests }
+import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName }
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
@@ -24,7 +24,7 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
-    scalaVersion := "2.10.0-M7"
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-M7")
   )
 
   lazy val akka = Project(
@@ -467,7 +467,9 @@ object AkkaBuild extends Build {
 
   lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
+    compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
+    Option(System.getProperty("akka.test.multi-node.java")).map(x => Seq(multiNodeJavaName in MultiJvm := x)).getOrElse(Seq.empty) ++
     ((executeMultiJvmTests, multiNodeEnabled) match {
       case (true, true) =>
         executeTests in Test <<= ((executeTests in Test), (multiNodeExecuteTests in MultiJvm)) map {
@@ -483,6 +485,7 @@ object AkkaBuild extends Build {
         }
       case (false, _) => Seq.empty
     })
+
 
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     // MiMa
@@ -581,7 +584,7 @@ object Dependencies {
 object Dependency {
   // Compile
   val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.0" exclude("org.slf4j", "slf4j-api") // ApacheV2
-  val config        = "com.typesafe"                % "config"                       % "0.5.0"       // ApacheV2
+  val config        = "com.typesafe"                % "config"                       % "0.5.2"       // ApacheV2
   val netty         = "io.netty"                    % "netty"                        % "3.5.4.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
   val scalaStm      = "org.scala-tools"             % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)

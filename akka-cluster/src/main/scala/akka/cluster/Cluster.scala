@@ -46,9 +46,9 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
     val failureDetector = {
       import clusterSettings.{ FailureDetectorImplementationClass ⇒ fqcn }
       system.dynamicAccess.createInstanceFor[FailureDetector](
-        fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> clusterSettings)).fold(
-          e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString),
-          identity)
+        fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> clusterSettings)).recover({
+          case e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
+        }).get
     }
 
     new Cluster(system, failureDetector)

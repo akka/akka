@@ -117,7 +117,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
       "used with TestActorRef" in {
         val a = TestActorRef(Props(new Actor {
-          val nested = TestActorRef(Props(self ⇒ { case _ ⇒ }))
+          val nested = TestActorRef(Props(new Actor { def receive = { case _ ⇒ } }))
           def receive = { case _ ⇒ sender ! nested }
         }))
         a must not be (null)
@@ -128,7 +128,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
       "used with ActorRef" in {
         val a = TestActorRef(Props(new Actor {
-          val nested = context.actorOf(Props(self ⇒ { case _ ⇒ }))
+          val nested = context.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
           def receive = { case _ ⇒ sender ! nested }
         }))
         a must not be (null)
