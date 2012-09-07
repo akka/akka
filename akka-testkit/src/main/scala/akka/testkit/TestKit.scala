@@ -568,7 +568,7 @@ trait TestKitBase {
     val message =
       if (max == 0.seconds) {
         queue.pollFirst
-      } else if (max.finite_?) {
+      } else if (max.isFinite) {
         queue.pollFirst(max.length, max.unit)
       } else {
         queue.takeFirst

@@ -597,7 +597,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
       val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
       if (timeout.isDefined) {
         val t = timeout.get
-        if (t.finite_? && t.length >= 0) {
+        if (t.isFinite && t.length >= 0) {
           import context.dispatcher
           timeoutFuture = Some(context.system.scheduler.scheduleOnce(t, self, TimeoutMarker(generation)))
         }
