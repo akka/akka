@@ -1,16 +1,13 @@
-/**
- *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
- */
-package akka.remote
+package akka.remote.actmote
 
-import akka.testkit._
 import akka.actor._
-import com.typesafe.config._
-import scala.concurrent.Future
-import scala.concurrent.Await
+import akka.testkit.{ EventFilter, DefaultTimeout, ImplicitSender, AkkaSpec }
+import com.typesafe.config.ConfigFactory
+import concurrent.{ Future, Await }
 import akka.pattern.ask
+import akka.remote.{ RemoteActorRefProvider, RemoteActorRef }
 
-object RemoteCommunicationSpec {
+object RemoteCommunicationSpecTemplate {
   class Echo extends Actor {
     var target: ActorRef = context.system.deadLetters
 
@@ -32,29 +29,11 @@ object RemoteCommunicationSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RemoteCommunicationSpec extends AkkaSpec("""
-akka {
-  actor.provider = "akka.remote.RemoteActorRefProvider"
-  remote {
-    log-received-messages = on
-    log-sent-messages = on
-  }
-  remote.netty {
-    hostname = localhost
-    port = 12345
-  }
-  actor.deployment {
-    /blub.remote = "akka://remote-sys@localhost:12346"
-    /looker/child.remote = "akka://remote-sys@localhost:12346"
-    /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
-  }
-}
-""") with ImplicitSender with DefaultTimeout {
+// TODO: Make ports dynamic
+abstract class RemoteCommunicationSpecTemplate(localConfig: String, remoteConfig: String) extends AkkaSpec(localConfig) with ImplicitSender with DefaultTimeout {
+  import RemoteCommunicationSpecTemplate._
 
-  import RemoteCommunicationSpec._
-
-  val conf = ConfigFactory.parseString("akka.remote.netty.port=12346").withFallback(system.settings.config)
+  val conf = ConfigFactory.parseString(remoteConfig).withFallback(system.settings.config)
   val other = ActorSystem("remote-sys", conf)
 
   val remote = other.actorOf(Props(new Actor {
@@ -63,7 +42,10 @@ akka {
     }
   }), "echo")
 
-  val here = system.actorFor("akka://remote-sys@localhost:12346/user/echo")
+  def localPort = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address.port.get
+  def remotePort = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address.port.get
+
+  val here = system.actorFor("akka://remote-sys@localhost:" + remotePort + "/user/echo")
 
   override def atTermination() {
     other.shutdown()
@@ -80,7 +62,7 @@ akka {
 
     "send error message for wrong address" in {
       EventFilter.error(start = "dropping", occurrences = 1).intercept {
-        system.actorFor("akka://remotesys@localhost:12346/user/echo") ! "ping"
+        system.actorFor("akka://remotesys@localhost:" + remotePort + "/user/echo") ! "ping"
       }(other)
     }
 
@@ -93,13 +75,13 @@ akka {
 
     "send dead letters on remote if actor does not exist" in {
       EventFilter.warning(pattern = "dead.*buh", occurrences = 1).intercept {
-        system.actorFor("akka://remote-sys@localhost:12346/does/not/exist") ! "buh"
+        system.actorFor("akka://remote-sys@localhost:" + remotePort + "/does/not/exist") ! "buh"
       }(other)
     }
 
     "create and supervise children on remote node" in {
       val r = system.actorOf(Props[Echo], "blub")
-      r.path.toString must be === "akka://remote-sys@localhost:12346/remote/RemoteCommunicationSpec@localhost:12345/user/blub"
+      r.path.toString must be === "akka://remote-sys@localhost:" + remotePort + "/remote/RemoteCommunicationSpecTemplate@localhost:" + localPort + "/user/blub"
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
