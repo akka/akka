@@ -4,6 +4,7 @@
 package akka.routing
 
 import com.typesafe.config.ConfigFactory
+import akka.actor.ActorContext
 import akka.actor.ActorRef
 import akka.actor.ActorSystemImpl
 import akka.actor.Deploy
@@ -28,7 +29,7 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) ext
   def this(local: RouterConfig, nodes: java.lang.Iterable[Address]) = this(local, nodes.asScala)
   def this(local: RouterConfig, nodes: Array[Address]) = this(local, nodes: Iterable[Address])
 
-  override def createRouteeProvider(context: RouterContext, routeeProps: Props) =
+  override def createRouteeProvider(context: ActorContext, routeeProps: Props) =
     new RemoteRouteeProvider(nodes, context, routeeProps, resizer)
 
   override def createRoute(routeeProvider: RouteeProvider): Route = {
@@ -55,7 +56,7 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) ext
  *
  * Routee paths may not be combined with remote target nodes.
  */
-class RemoteRouteeProvider(nodes: Iterable[Address], _context: RouterContext, _routeeProps: Props, _resizer: Option[Resizer])
+class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _routeeProps: Props, _resizer: Option[Resizer])
   extends RouteeProvider(_context, _routeeProps, _resizer) {
 
   if (nodes.isEmpty) throw new ConfigurationException("Must specify list of remote target.nodes for [%s]"

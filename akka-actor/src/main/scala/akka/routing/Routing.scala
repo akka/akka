@@ -5,11 +5,11 @@ package akka.routing
 
 import language.implicitConversions
 import language.postfixOps
+
 import akka.actor._
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
 import akka.ConfigurationException
-import akka.pattern.pipe
 import akka.pattern.pipe
 import com.typesafe.config.Config
 import scala.collection.JavaConversions.iterableAsScalaIterable
@@ -19,7 +19,6 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.dispatch.Dispatchers
 import scala.annotation.tailrec
 import concurrent.ExecutionContext
-import akka.dispatch.MessageDispatcher
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -46,7 +45,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
     _system,
     _ref,
     _props.copy(creator = () ⇒ _props.routerConfig.createActor(), dispatcher = _props.routerConfig.routerDispatcher),
-    _supervisor) with RouterContext {
+    _supervisor) {
 
   private[akka] val routerConfig = _props.routerConfig
   private[akka] val resizeInProgress = new AtomicBoolean
@@ -142,27 +141,6 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
 }
 
 /**
- * Contextual information for [[akka.routing.RouterConfig]]
- * [[akka.routing.RouteeProvider]]
- * It's a subset of [[akka.actor.ActorContext]].
- */
-trait RouterContext {
-
-  def system: ActorSystem
-
-  def self: ActorRef
-
-  implicit def dispatcher: MessageDispatcher
-
-  def actorOf(props: Props): ActorRef
-
-  def actorOf(props: Props, name: String): ActorRef
-
-  def actorFor(path: String): ActorRef
-
-}
-
-/**
  * This trait represents a router factory: it produces the actual router actor
  * and creates the routing table (a function which determines the recipients
  * for each message which is to be dispatched). The resulting RoutedActorRef
@@ -184,7 +162,7 @@ trait RouterConfig {
 
   def createRoute(routeeProvider: RouteeProvider): Route
 
-  def createRouteeProvider(context: RouterContext, routeeProps: Props): RouteeProvider =
+  def createRouteeProvider(context: ActorContext, routeeProps: Props): RouteeProvider =
     new RouteeProvider(context, routeeProps, resizer)
 
   def createActor(): Router = new Router {
@@ -227,7 +205,7 @@ trait RouterConfig {
  * Uses `context.actorOf` to create routees from nrOfInstances property
  * and `context.actorFor` lookup routees from paths.
  */
-class RouteeProvider(val context: RouterContext, val routeeProps: Props, val resizer: Option[Resizer]) {
+class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resizer: Option[Resizer]) {
 
   /**
    * Adds the routees to the router.
