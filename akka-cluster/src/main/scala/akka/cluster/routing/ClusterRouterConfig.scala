@@ -7,7 +7,6 @@ import java.lang.IllegalStateException
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.immutable.SortedSet
 import com.typesafe.config.ConfigFactory
-
 import akka.ConfigurationException
 import akka.actor.Actor
 import akka.actor.ActorContext
@@ -29,6 +28,7 @@ import akka.routing.Route
 import akka.routing.RouteeProvider
 import akka.routing.Router
 import akka.routing.RouterConfig
+import akka.routing.RemoteRouterConfig
 
 /**
  * [[akka.routing.RouterConfig]] implementation for deployment on cluster nodes.
@@ -36,10 +36,10 @@ import akka.routing.RouterConfig
  * which makes it possible to mix this with the built-in routers such as
  * [[akka.routing.RoundRobinRouter]] or custom routers.
  */
-case class ClusterRouterConfig(local: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int) extends RouterConfig {
+case class ClusterRouterConfig(local: RouterConfig, settings: ClusterRouterSettings) extends RouterConfig {
 
   override def createRouteeProvider(context: ActorContext, routeeProps: Props) =
-    new ClusterRouteeProvider(context, routeeProps, resizer, totalInstances, maxInstancesPerNode)
+    new ClusterRouteeProvider(context, routeeProps, resizer, settings)
 
   override def createRoute(routeeProvider: RouteeProvider): Route = {
     val localRoute = local.createRoute(routeeProvider)
@@ -59,10 +59,16 @@ case class ClusterRouterConfig(local: RouterConfig, totalInstances: Int, maxInst
   override def resizer: Option[Resizer] = local.resizer
 
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case ClusterRouterConfig(local, _, _) ⇒ copy(local = this.local.withFallback(local))
-    case _                                ⇒ copy(local = this.local.withFallback(other))
+    case ClusterRouterConfig(_: RemoteRouterConfig, _) ⇒ throw new IllegalStateException(
+      "ClusterRouterConfig is not allowed to wrap a RemoteRouterConfig")
+    case ClusterRouterConfig(_: ClusterRouterConfig, _) ⇒ throw new IllegalStateException(
+      "ClusterRouterConfig is not allowed to wrap a ClusterRouterConfig")
+    case ClusterRouterConfig(local, _) ⇒ copy(local = this.local.withFallback(local))
+    case _                             ⇒ copy(local = this.local.withFallback(other))
   }
 }
+
+case class ClusterRouterSettings(totalInstances: Int, maxInstancesPerNode: Int, deployOnOwnNode: Boolean)
 
 /**
  * INTERNAL API
@@ -74,8 +80,7 @@ private[akka] class ClusterRouteeProvider(
   _context: ActorContext,
   _routeeProps: Props,
   _resizer: Option[Resizer],
-  totalInstances: Int,
-  maxInstancesPerNode: Int)
+  settings: ClusterRouterSettings)
   extends RouteeProvider(_context, _routeeProps, _resizer) {
 
   // need this counter as instance variable since Resizer may call createRoutees several times
@@ -96,7 +101,7 @@ private[akka] class ClusterRouteeProvider(
   override def createRoutees(nrOfInstances: Int): Unit = {
     val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
 
-    for (i ← 1 to totalInstances; target ← selectDeploymentTarget) {
+    for (i ← 1 to settings.totalInstances; target ← selectDeploymentTarget) {
       val name = "c" + childNameCounter.incrementAndGet
       val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(target))
       var ref = impl.provider.actorOf(impl, routeeProps, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
@@ -106,14 +111,14 @@ private[akka] class ClusterRouteeProvider(
     }
   }
 
-  private[routing] def createRoutees(): Unit = createRoutees(totalInstances)
+  private[routing] def createRoutees(): Unit = createRoutees(settings.totalInstances)
 
   private def selectDeploymentTarget: Option[Address] = {
     val currentRoutees = routees
-    val currentNodes = upNodes
-    if (currentRoutees.size >= totalInstances) {
+    val currentNodes = availbleNodes
+    if (currentRoutees.size >= settings.totalInstances) {
       None
-    } else if (currentNodes.isEmpty) {
+    } else if (currentNodes.isEmpty && settings.deployOnOwnNode) {
       // use my own node, cluster information not updated yet
       Some(cluster.selfAddress)
     } else {
@@ -124,7 +129,7 @@ private[akka] class ClusterRouteeProvider(
           }
 
       val (address, count) = numberOfRouteesPerNode.minBy(_._2)
-      if (count < maxInstancesPerNode) Some(address) else None
+      if (count < settings.maxInstancesPerNode) Some(address) else None
     }
   }
 
@@ -140,8 +145,12 @@ private[akka] class ClusterRouteeProvider(
 
   import Member.addressOrdering
   @volatile
-  private[routing] var upNodes: SortedSet[Address] = cluster.readView.members.collect {
-    case m if m.status == MemberStatus.Up ⇒ m.address
+  private[routing] var availbleNodes: SortedSet[Address] = cluster.readView.members.collect {
+    case m if isAvailble(m) ⇒ m.address
+  }
+
+  private[routing] def isAvailble(m: Member): Boolean = {
+    m.status == MemberStatus.Up && (settings.deployOnOwnNode || m.address != cluster.selfAddress)
   }
 
 }
@@ -169,11 +178,11 @@ private[akka] class ClusterRouterActor extends Router {
   override def routerReceive: Receive = {
     case s: CurrentClusterState ⇒
       import Member.addressOrdering
-      routeeProvider.upNodes = s.members.collect { case m if m.status == MemberStatus.Up ⇒ m.address }
+      routeeProvider.availbleNodes = s.members.collect { case m if routeeProvider.isAvailble(m) ⇒ m.address }
       routeeProvider.createRoutees()
 
-    case MemberUp(m) ⇒
-      routeeProvider.upNodes += m.address
+    case m: MemberEvent if routeeProvider.isAvailble(m.member) ⇒
+      routeeProvider.availbleNodes += m.member.address
       // createRoutees will create routees based on
       // totalInstances and maxInstancesPerNode
       routeeProvider.createRoutees()
@@ -182,7 +191,7 @@ private[akka] class ClusterRouterActor extends Router {
       // other events means that it is no longer interesting, such as
       // MemberJoined, MemberLeft, MemberExited, MemberUnreachable, MemberRemoved
       val address = other.member.address
-      routeeProvider.upNodes -= address
+      routeeProvider.availbleNodes -= address
 
       // unregister routees that live on that node
       val affectedRoutes = routeeProvider.routees.filter(fullAddress(_) == address)
@@ -200,14 +209,15 @@ private[akka] class ClusterRouterActor extends Router {
  * Usage Java API:
  * [[[
  * context.actorOf(ClusterRouterPropsDecorator.decorate(new Props(MyActor.class),
- *   new RoundRobinRouter(0), 10, 2), "myrouter");
+ *   new RoundRobinRouter(0), 10, 2, true), "myrouter");
  * ]]]
  *
  * Corresponding for Scala API is found in [[akka.cluster.routing.ClusterRouterProps]].
  *
  */
 object ClusterRouterPropsDecorator {
-  def decorate(props: Props, router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int): Props =
-    props.withClusterRouter(router, totalInstances, maxInstancesPerNode)
+  def decorate(props: Props, router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int,
+               deployOnOwnNode: Boolean): Props =
+    props.withClusterRouter(router, totalInstances, maxInstancesPerNode, deployOnOwnNode)
 }
 

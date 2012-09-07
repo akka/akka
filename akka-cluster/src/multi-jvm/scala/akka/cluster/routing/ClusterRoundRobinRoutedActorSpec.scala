@@ -40,8 +40,19 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
         /router1 {
           router = round-robin
           nr-of-instances = 10
-          cluster.enabled = on
-          cluster.max-nr-of-instances-per-node = 2
+          cluster {
+            enabled = on
+            max-nr-of-instances-per-node = 2
+          }
+        }
+        /router3 {
+          router = round-robin
+          nr-of-instances = 10
+          cluster {
+            enabled = on
+            max-nr-of-instances-per-node = 1
+            deploy-on-own-node = off
+          }
         }
       }
       """)).
@@ -63,8 +74,9 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
   lazy val router2 = {
     import akka.cluster.routing.ClusterRouterProps
     system.actorOf(Props[SomeActor].withClusterRouter(RoundRobinRouter(),
-      totalInstances = 3, maxInstancesPerNode = 1), "router2")
+      totalInstances = 3, maxInstancesPerNode = 1, deployOnOwnNode = true), "router2")
   }
+  lazy val router3 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router3")
 
   def receiveReplies(expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)
@@ -83,7 +95,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
     case a                         ⇒ a
   }
 
-  "A cluster router configured with a RoundRobin router" must {
+  "A cluster router with a RoundRobin router" must {
     "start cluster with 2 nodes" taggedAs LongRunningTest in {
       awaitClusterUp(first, second)
       enterBarrier("after-1")
@@ -130,10 +142,28 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       enterBarrier("after-3")
     }
-  }
 
-  "A programatically defined RoundRobin cluster router" must {
-    "deploy routees to the member nodes in the cluster" taggedAs LongRunningTest in {
+    "deploy routees to only remote nodes when deploy-on-own-node = off" taggedAs LongRunningTest in {
+
+      runOn(first) {
+        val iterationCount = 10
+        for (i ← 0 until iterationCount) {
+          router3 ! "hit"
+        }
+
+        val replies = receiveReplies(iterationCount)
+
+        replies(first) must be(0)
+        replies(second) must be > (0)
+        replies(third) must be > (0)
+        replies(fourth) must be > (0)
+        replies.values.sum must be(iterationCount)
+      }
+
+      enterBarrier("after-4")
+    }
+
+    "deploy programatically defined routees to the member nodes in the cluster" taggedAs LongRunningTest in {
 
       runOn(first) {
         router2.isInstanceOf[RoutedActorRef] must be(true)
@@ -153,10 +183,10 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-4")
+      enterBarrier("after-5")
     }
 
-    "deploy to other node when a node becomes down" taggedAs LongRunningTest in {
+    "deploy programatically defined routees to other node when a node becomes down" taggedAs LongRunningTest in {
 
       runOn(first) {
         def currentRoutees = Await.result(router2 ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees
@@ -181,7 +211,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
         replies.values.sum must be(iterationCount)
       }
 
-      enterBarrier("after-5")
+      enterBarrier("after-6")
     }
   }
 }

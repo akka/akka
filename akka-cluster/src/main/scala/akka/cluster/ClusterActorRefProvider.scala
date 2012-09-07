@@ -4,7 +4,6 @@
 package akka.cluster
 
 import com.typesafe.config.Config
-
 import akka.ConfigurationException
 import akka.actor.ActorSystem
 import akka.actor.Deploy
@@ -17,6 +16,7 @@ import akka.event.EventStream
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteDeployer
 import akka.routing.RemoteRouterConfig
+import akka.cluster.routing.ClusterRouterSettings
 
 class ClusterActorRefProvider(
   _systemName: String,
@@ -40,11 +40,13 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
           if (deploy.routerConfig.isInstanceOf[RemoteRouterConfig])
             throw new ConfigurationException("Cluster deployment can't be combined with [%s]".format(deploy.routerConfig))
 
-          val totalInstances = deploy.config.getInt("nr-of-instances")
-          val maxInstancesPerNode = deploy.config.getInt("cluster.max-nr-of-instances-per-node")
+          val clusterRouterSettings = ClusterRouterSettings(
+            totalInstances = deploy.config.getInt("nr-of-instances"),
+            maxInstancesPerNode = deploy.config.getInt("cluster.max-nr-of-instances-per-node"),
+            deployOnOwnNode = deploy.config.getBoolean("cluster.deploy-on-own-node"))
+
           Some(deploy.copy(
-            routerConfig = ClusterRouterConfig(deploy.routerConfig, totalInstances, maxInstancesPerNode),
-            scope = ClusterScope))
+            routerConfig = ClusterRouterConfig(deploy.routerConfig, clusterRouterSettings), scope = ClusterScope))
         } else d
       case None ⇒ None
     }

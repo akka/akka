@@ -17,7 +17,7 @@ package object routing {
    * [[[
    * import akka.cluster.routing.ClusterRouterProps
    * context.actorOf(Props[SomeActor].withClusterRouter(RoundRobinRouter(),
-   *   totalInstances = 10, maxInstancesPerNode = 2), "myrouter")
+   *   totalInstances = 10, maxInstancesPerNode = 2, deployOnOwnNode = true), "myrouter")
    * ]]]
    *
    * Corresponding for Java API is found in [[akka.cluster.routing.ClusterRouterPropsDecorator]].
@@ -28,13 +28,15 @@ package object routing {
      * Without this helper it would look as ugly as:
      * val router = RoundRobinRouter(nrOfInstances = 10)
      * val actor = system.actorOf(Props[SomeActor].withRouter(router).withDeploy(
-     *  Deploy(routerConfig = ClusterRouterConfig(router, totalInstances = router.nrOfInstances, maxInstancesPerNode = 2))),
-     *  "myrouter")
+     *  Deploy(routerConfig = ClusterRouterConfig(router, totalInstances = router.nrOfInstances, maxInstancesPerNode = 2,
+     *    deployOnOwnNode = true))), "myrouter")
      */
 
-    def withClusterRouter(router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int): Props = {
+    def withClusterRouter(router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int,
+                          deployOnOwnNode: Boolean = true): Props = {
       props.withRouter(router).withDeploy(
-        Deploy(routerConfig = ClusterRouterConfig(router, totalInstances, maxInstancesPerNode)))
+        Deploy(routerConfig = ClusterRouterConfig(router,
+          ClusterRouterSettings(totalInstances, maxInstancesPerNode, deployOnOwnNode))))
     }
   }
 

@@ -8,6 +8,7 @@ import akka.actor._
 import akka.routing._
 import com.typesafe.config._
 import akka.cluster.routing.ClusterRouterConfig
+import akka.cluster.routing.ClusterRouterSettings
 
 object ClusterDeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
@@ -18,6 +19,7 @@ object ClusterDeployerSpec {
           nr-of-instances = 20
           cluster.enabled = on
           cluster.max-nr-of-instances-per-node = 3
+          cluster.deploy-on-own-node = off
         }
       }
       akka.remote.netty.port = 0
@@ -43,7 +45,7 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
         Deploy(
           service,
           deployment.get.config,
-          ClusterRouterConfig(RoundRobinRouter(20), 20, 3),
+          ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(20, 3, false)),
           ClusterScope)))
     }
 
