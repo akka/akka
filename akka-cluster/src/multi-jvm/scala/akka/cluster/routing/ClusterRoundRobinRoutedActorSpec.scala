@@ -60,7 +60,7 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
           cluster {
             enabled = on
             max-nr-of-instances-per-node = 1
-            deploy-on-own-node = off
+            routees-on-own-node = off
           }
         }
         /router4 {
@@ -68,7 +68,6 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
           nr-of-instances = 10
           cluster {
             enabled = on
-            max-nr-of-instances-per-node = 2
             routees-path = "/user/myservice"
           }
         }
@@ -92,7 +91,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
   lazy val router2 = {
     import akka.cluster.routing.ClusterRouterProps
     system.actorOf(Props[SomeActor].withClusterRouter(RoundRobinRouter(),
-      totalInstances = 3, maxInstancesPerNode = 1, deployOnOwnNode = true), "router2")
+      totalInstances = 3, maxInstancesPerNode = 1), "router2")
   }
   lazy val router3 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router3")
   lazy val router4 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router4")
@@ -206,7 +205,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
       enterBarrier("after-5")
     }
 
-    "deploy routees to only remote nodes when deploy-on-own-node = off" taggedAs LongRunningTest in {
+    "deploy routees to only remote nodes when routees-on-own-node = off" taggedAs LongRunningTest in {
 
       runOn(first) {
         val iterationCount = 10

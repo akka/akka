@@ -14,12 +14,18 @@ object ClusterDeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
       akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
       akka.actor.deployment {
-        /user/service2 {
+        /user/service1 {
           router = round-robin
           nr-of-instances = 20
           cluster.enabled = on
           cluster.max-nr-of-instances-per-node = 3
-          cluster.deploy-on-own-node = off
+          cluster.routees-on-own-node = off
+        }
+        /user/service2 {
+          router = round-robin
+          nr-of-instances = 20
+          cluster.enabled = on
+          cluster.routees-on-own-node = off
           cluster.routees-path = "/user/myservice"
         }
       }
@@ -37,7 +43,20 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
 
   "A RemoteDeployer" must {
 
-    "be able to parse 'akka.actor.deployment._' with specified cluster settings" in {
+    "be able to parse 'akka.actor.deployment._' with specified cluster lookup routee settings" in {
+      val service = "/user/service1"
+      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
+      deployment must not be (None)
+
+      deployment must be(Some(
+        Deploy(
+          service,
+          deployment.get.config,
+          ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(20, 3, false, "")),
+          ClusterScope)))
+    }
+
+    "be able to parse 'akka.actor.deployment._' with specified cluster deploy routee settings" in {
       val service = "/user/service2"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment must not be (None)
@@ -46,7 +65,7 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
         Deploy(
           service,
           deployment.get.config,
-          ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(20, 3, false, "/user/myservice")),
+          ClusterRouterConfig(RoundRobinRouter(20), ClusterRouterSettings(20, 1, false, "/user/myservice")),
           ClusterScope)))
     }
 

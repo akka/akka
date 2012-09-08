@@ -71,9 +71,14 @@ case class ClusterRouterConfig(local: RouterConfig, settings: ClusterRouterSetti
 
 case class ClusterRouterSettings(
   totalInstances: Int,
-  maxInstancesPerNode: Int,
-  deployOnOwnNode: Boolean,
-  routeesPath: String) {
+  maxInstancesPerNode: Int = 1,
+  routeesOnOwnNode: Boolean = true,
+  routeesPath: String = "") {
+
+  if (totalInstances <= 0) throw new IllegalArgumentException("totalInstances of cluster router must be > 0")
+  if (maxInstancesPerNode <= 0) throw new IllegalArgumentException("maxInstancesPerNode of cluster router must be > 0")
+  if (isRouteesPathDefined && maxInstancesPerNode != 1)
+    throw new IllegalArgumentException("maxInstancesPerNode of cluster router must be 1 when routeesPath is defined")
 
   def isRouteesPathDefined: Boolean = ((routeesPath ne null) && routeesPath != "")
 }
@@ -131,7 +136,7 @@ private[akka] class ClusterRouteeProvider(
     val currentNodes = availbleNodes
     if (currentRoutees.size >= settings.totalInstances) {
       None
-    } else if (currentNodes.isEmpty && settings.deployOnOwnNode) {
+    } else if (currentNodes.isEmpty && settings.routeesOnOwnNode) {
       // use my own node, cluster information not updated yet
       Some(cluster.selfAddress)
     } else {
@@ -163,7 +168,7 @@ private[akka] class ClusterRouteeProvider(
   }
 
   private[routing] def isAvailble(m: Member): Boolean = {
-    m.status == MemberStatus.Up && (settings.deployOnOwnNode || m.address != cluster.selfAddress)
+    m.status == MemberStatus.Up && (settings.routeesOnOwnNode || m.address != cluster.selfAddress)
   }
 
 }
@@ -219,24 +224,29 @@ private[akka] class ClusterRouterActor extends Router {
 
 /**
  * Sugar to define cluster aware router programatically.
- * Usage Java API:
+ * Java API.
+ * When creating and deploying routees:
  * [[[
  * context.actorOf(ClusterRouterPropsDecorator.decorate(new Props(MyActor.class),
- *   new RoundRobinRouter(0), 10, 2, true), "myrouter");
+ *   new RoundRobinRouter(0), 10, 2), "myrouter");
+ * ]]]
+ * When looking up routees:
+ * [[[
+ * context.actorOf(ClusterRouterPropsDecorator.decorate(new Props(MyActor.class),
+ *   new RoundRobinRouter(0), 10, "/user/myservice"), "myrouter");
  * ]]]
  *
  * Corresponding for Scala API is found in [[akka.cluster.routing.ClusterRouterProps]].
  *
  */
 object ClusterRouterPropsDecorator {
-  def decorate(props: Props, router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int,
-               deployOnOwnNode: Boolean): Props = {
-    props.withClusterRouter(router, totalInstances, maxInstancesPerNode, deployOnOwnNode)
-  }
+  def decorate(props: Props, router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int): Props =
+    decorate(props, router, ClusterRouterSettings(totalInstances, maxInstancesPerNode))
 
-  def decorate(props: Props, router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int,
-               deployOnOwnNode: Boolean, routeesPath: String): Props = {
-    props.withClusterRouter(router, totalInstances, maxInstancesPerNode, deployOnOwnNode, routeesPath)
-  }
+  def decorate(props: Props, router: RouterConfig, totalInstances: Int, routeesPath: String): Props =
+    decorate(props, router, ClusterRouterSettings(totalInstances, routeesPath = routeesPath))
+
+  def decorate(props: Props, router: RouterConfig, settings: ClusterRouterSettings): Props =
+    props.withClusterRouter(router, settings)
 }
 

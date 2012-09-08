@@ -13,30 +13,34 @@ package object routing {
 
   /**
    * Sugar to define cluster aware router programatically.
-   * Usage Scala API:
+   *
+   * When creating and deploying routees:
    * [[[
    * import akka.cluster.routing.ClusterRouterProps
    * context.actorOf(Props[SomeActor].withClusterRouter(RoundRobinRouter(),
-   *   totalInstances = 10, maxInstancesPerNode = 2, deployOnOwnNode = true), "myrouter")
+   *   totalInstances = 10, maxInstancesPerNode = 2), "myrouter")
+   * ]]]
+   *
+   * When looking up routees:
+   * [[[
+   * import akka.cluster.routing.ClusterRouterProps
+   * context.actorOf(Props[SomeActor].withClusterRouter(RoundRobinRouter(),
+   *   totalInstances = 10, routeesPath = "/user/myservice"), "myrouter")
    * ]]]
    *
    * Corresponding for Java API is found in [[akka.cluster.routing.ClusterRouterPropsDecorator]].
    */
   implicit class ClusterRouterProps(val props: Props) extends AnyVal {
 
-    /*
-     * Without this helper it would look as ugly as:
-     * val router = RoundRobinRouter(nrOfInstances = 10)
-     * val actor = system.actorOf(Props[SomeActor].withRouter(router).withDeploy(
-     *  Deploy(routerConfig = ClusterRouterConfig(router, totalInstances = router.nrOfInstances, maxInstancesPerNode = 2,
-     *    deployOnOwnNode = true))), "myrouter")
-     */
+    def withClusterRouter(router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int): Props =
+      withClusterRouter(router, ClusterRouterSettings(totalInstances, maxInstancesPerNode))
 
-    def withClusterRouter(router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int,
-                          deployOnOwnNode: Boolean = true, routeesPath: String = ""): Props = {
+    def withClusterRouter(router: RouterConfig, totalInstances: Int, routeesPath: String): Props =
+      withClusterRouter(router, ClusterRouterSettings(totalInstances, routeesPath = routeesPath))
+
+    def withClusterRouter(router: RouterConfig, settings: ClusterRouterSettings): Props = {
       props.withRouter(router).withDeploy(
-        Deploy(routerConfig = ClusterRouterConfig(router,
-          ClusterRouterSettings(totalInstances, maxInstancesPerNode, deployOnOwnNode, routeesPath))))
+        Deploy(routerConfig = ClusterRouterConfig(router, settings)))
     }
   }
 
