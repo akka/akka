@@ -252,7 +252,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * Looks up routes with specified paths and registers them.
    * JAVA API
    */
-  def registerRouteesFor(paths: java.util.List[String]): Unit = registerRouteesFor(paths.asScala)
+  def registerRouteesFor(paths: java.lang.Iterable[String]): Unit = registerRouteesFor(paths.asScala)
 
   /**
    * Creates new routees from specified `Props` and registers them.
