@@ -4,59 +4,7 @@
 
 package akka.routing
 
-import scala.collection.immutable.{ TreeSet, Seq }
-import scala.collection.mutable.{ Buffer, Map }
-
-// =============================================================================================
-// Adapted from HashRing.scala in Debasish Ghosh's Redis Client, licensed under Apache 2 license
-// =============================================================================================
-
-/**
- * Consistent Hashing node ring abstraction.
- *
- * Not thread-safe, to be used from within an Actor or protected some other way.
- */
-class ConsistentHash[T](nodes: Seq[T], replicas: Int) {
-  private val cluster = Buffer[T]()
-  private var sortedKeys = TreeSet[Long]()
-  private var ring = Map[Long, T]()
-
-  nodes.foreach(this += _)
-
-  def +=(node: T): Unit = {
-    cluster += node
-    (1 to replicas) foreach { replica ⇒
-      val key = hashFor((node + ":" + replica).getBytes("UTF-8"))
-      ring += (key -> node)
-      sortedKeys = sortedKeys + key
-    }
-  }
-
-  def -=(node: T): Unit = {
-    cluster -= node
-    (1 to replicas) foreach { replica ⇒
-      val key = hashFor((node + ":" + replica).getBytes("UTF-8"))
-      ring -= key
-      sortedKeys = sortedKeys - key
-    }
-  }
-
-  def nodeFor(key: Array[Byte]): T = {
-    val hash = hashFor(key)
-    if (sortedKeys contains hash) ring(hash)
-    else {
-      if (hash < sortedKeys.firstKey) ring(sortedKeys.firstKey)
-      else if (hash > sortedKeys.lastKey) ring(sortedKeys.lastKey)
-      else ring(sortedKeys.rangeImpl(None, Some(hash)).lastKey)
-    }
-  }
-
-  private def hashFor(bytes: Array[Byte]): Long = {
-    val hash = MurmurHash.arrayHash(bytes)
-    if (hash == Int.MinValue) hash + 1
-    math.abs(hash)
-  }
-}
+import scala.collection.immutable.TreeMap
 
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
@@ -79,6 +27,89 @@ class ConsistentHash[T](nodes: Seq[T], replicas: Int) {
  */
 
 import java.lang.Integer.{ rotateLeft ⇒ rotl }
+
+// =============================================================================================
+// Adapted from HashRing.scala in Debasish Ghosh's Redis Client, licensed under Apache 2 license
+// =============================================================================================
+
+/**
+ * Consistent Hashing node ring abstraction.
+ *
+ * A good explanation of Consistent Hashing:
+ * http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html
+ *
+ * Note that toString of the ring nodes are used for the node
+ * hash, i.e. make sure it is different for different nodes.
+ *
+ * Not thread-safe, to be used from within an Actor or protected some other way.
+ */
+class ConsistentHash[T](nodes: Iterable[T], replicas: Int) {
+  private var ring = TreeMap[Int, T]()
+
+  if (replicas < 1) throw new IllegalArgumentException("replicas must be >= 1")
+
+  nodes.foreach(this += _)
+
+  /**
+   * Adds a node to the ring.
+   */
+  def +=(node: T): Unit = {
+    (1 to replicas) foreach { replica ⇒
+      ring += (nodeHashFor(node, replica) -> node)
+    }
+  }
+
+  /**
+   * Adds a node to the ring.
+   * JAVA API
+   */
+  def add(node: T): Unit = this += node
+
+  /**
+   * Removes a node from the ring.
+   */
+  def -=(node: T): Unit = {
+    (1 to replicas) foreach { replica ⇒
+      ring -= nodeHashFor(node, replica)
+    }
+  }
+
+  /**
+   * Removes a node from the ring.
+   * JAVA API
+   */
+  def remove(node: T): Unit = this -= node
+
+  /**
+   * Get the node responsible for the data key.
+   * Can only be used if nodes exists in the ring,
+   * otherwise throws `IllegalStateException`
+   */
+  def nodeFor(key: Array[Byte]): T = {
+    if (isEmpty) throw new IllegalStateException("Can't get node for [%s] from an empty ring" format key)
+    val hash = hashFor(key)
+    def nextClockwise: T = {
+      val (ringKey, node) = ring.rangeImpl(Some(hash), None).headOption.getOrElse(ring.head)
+      node
+    }
+    ring.getOrElse(hash, nextClockwise)
+  }
+
+  /**
+   * Is the ring empty, i.e. no nodes added or all removed.
+   */
+  def isEmpty: Boolean = ring.isEmpty
+
+  private def nodeHashFor(node: T, replica: Int): Int = {
+    hashFor((node + ":" + replica).getBytes("UTF-8"))
+  }
+
+  private def hashFor(bytes: Array[Byte]): Int = {
+    val hash = MurmurHash.arrayHash(bytes)
+    if (hash == Int.MinValue) hash + 1
+    math.abs(hash)
+  }
+}
 
 /**
  * A class designed to generate well-distributed non-cryptographic
