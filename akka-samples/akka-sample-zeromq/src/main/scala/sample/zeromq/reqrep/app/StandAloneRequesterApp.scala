@@ -1,14 +1,18 @@
-package sample.zeromq.reqrep
+package sample.zeromq.reqrep.app
 
-import org.zeromq.ZMQ
 import util.Random
+import org.zeromq.ZMQ
 import compat.Platform
+import sample.zeromq.Util
 
-object RequesterApp extends App {
-
+/**
+ * Makes a series of requests and check that the returned value
+ * is the same that has been sent.
+ */
+object StandAloneRequesterApp extends App {
   val random = new Random()
-  val maxMessageSize = 10
-  val numMessages = 20
+  val maxMessageSize = 1000
+  val numMessages = 20000
   val host = "tcp://127.0.0.1:1234"
 
   val context = ZMQ.context(1)
@@ -18,13 +22,16 @@ object RequesterApp extends App {
   val startTime = Platform.currentTime
   for (_ ← 0 to numMessages) {
     val message = Util.randomString(random, maxMessageSize)
-    socket.send(message.getBytes(), 0)
+    socket.send(message.getBytes("UTF-8"), 0)
     val res = socket.recv(0)
+
+    if (!message.equals(new String(res))) {
+      throw new Exception("Message not received properly")
+    }
   }
   val endTime = Platform.currentTime
 
   val durationInSeconds = (endTime - startTime).toDouble / 1000
   println("Duration: " + durationInSeconds.toString)
   println("Throughput: " + (numMessages.toDouble / durationInSeconds).toString)
-
 }

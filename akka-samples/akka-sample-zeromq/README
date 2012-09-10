@@ -1,4 +1,4 @@
-ZeroMQ Req/Rep pattern.
+ZeroMQ Pub/Sub pattern.
 =====
 
 Requirements
@@ -15,7 +15,7 @@ Here is an example. First type 'sbt' to start SBT interactively, the run 'update
 
 > % sbt
 
-> > project akka-sample-zeromq-reqrep
+> > project akka-sample-zeromq-pubsub
 
 > > run
 
