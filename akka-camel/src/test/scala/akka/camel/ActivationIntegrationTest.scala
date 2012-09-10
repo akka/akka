@@ -10,11 +10,10 @@ import org.scalatest.matchers.MustMatchers
 import scala.concurrent.util.duration._
 import org.apache.camel.ProducerTemplate
 import akka.actor._
-import akka.util.Timeout
 import TestSupport._
 import org.scalatest.WordSpec
 import akka.testkit.TestLatch
-import scala.concurrent.Await
+import concurrent.Await
 import java.util.concurrent.TimeoutException
 
 class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCamelSystem {
@@ -24,7 +23,7 @@ class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCa
 
   "ActivationAware must be notified when endpoint is activated" in {
     val latch = new TestLatch(0)
-    val actor = system.actorOf(Props(new TestConsumer("direct:actor-1", latch)))
+    val actor = system.actorOf(Props(new TestConsumer("direct:actor-1", latch)), "act-direct-actor-1")
     Await.result(camel.activationFutureFor(actor), 10 seconds) must be === actor
 
     template.requestBody("direct:actor-1", "test") must be("received test")
@@ -40,32 +39,42 @@ class ActivationIntegrationTest extends WordSpec with MustMatchers with SharedCa
         super.postStop()
         latch.countDown()
       }
-    })
+    }, name = "direct-a3")
     Await.result(camel.activationFutureFor(actor), timeout)
 
     system.stop(actor)
     Await.result(camel.deactivationFutureFor(actor), timeout)
-    Await.ready(latch, 10 second)
+    Await.ready(latch, timeout)
   }
 
   "ActivationAware must time out when waiting for endpoint de-activation for too long" in {
     val latch = new TestLatch(0)
-    val actor = start(new TestConsumer("direct:a5", latch))
+    val actor = start(new TestConsumer("direct:a5", latch), name = "direct-a5")
     Await.result(camel.activationFutureFor(actor), timeout)
     intercept[TimeoutException] { Await.result(camel.deactivationFutureFor(actor), 1 millis) }
   }
 
   "activationFutureFor must fail if notification timeout is too short and activation is not complete yet" in {
     val latch = new TestLatch(1)
+    val actor = system.actorOf(Props(new TestConsumer("direct:actor-4", latch)), "direct-actor-4")
     try {
-      val actor = system.actorOf(Props(new TestConsumer("direct:actor-4", latch)))
       intercept[TimeoutException] { Await.result(camel.activationFutureFor(actor), 1 millis) }
-    } finally latch.countDown()
+    } finally {
+      latch.countDown()
+      // after the latch is removed, complete the wait for completion so this test does not later on
+      // print errors because of the registerConsumer timing out.
+      Await.result(camel.activationFutureFor(actor), timeout)
+    }
   }
 
   class TestConsumer(uri: String, latch: TestLatch) extends Consumer {
     def endpointUri = uri
-    Await.ready(latch, 60 seconds)
+
+    override def preStart() {
+      Await.ready(latch, 60 seconds)
+      super.preStart()
+    }
+
     override def receive = {
       case msg: CamelMessage ⇒ sender ! "received " + msg.body
     }

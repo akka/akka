@@ -4,10 +4,10 @@
 
 package akka.camel
 
-import akka.actor.Actor
-import internal.CamelExchangeAdapter
+import akka.actor.{ ActorRef, Actor }
+import internal.{ CamelProducerObjects, CamelExchangeAdapter, Register }
 import akka.actor.Status.Failure
-import org.apache.camel.{ Endpoint, Exchange, ExchangePattern, AsyncCallback }
+import org.apache.camel.{ Endpoint, ExchangePattern, AsyncCallback }
 import org.apache.camel.processor.SendProcessor
 
 /**
@@ -15,9 +15,14 @@ import org.apache.camel.processor.SendProcessor
  *
  * @author Martin Krasser
  */
-trait ProducerSupport extends CamelSupport { this: Actor ⇒
+trait ProducerSupport extends Actor with CamelSupport {
+  private var messages: Map[ActorRef, Any] = Map[ActorRef, Any]()
+  private var camelObjects: Option[(Endpoint, SendProcessor)] = None
 
-  protected[this] lazy val (endpoint: Endpoint, processor: SendProcessor) = camel.registerProducer(self, endpointUri)
+  override def preStart() {
+    super.preStart()
+    camel.supervisor ! Register(self, endpointUri)
+  }
 
   /**
    * CamelMessage headers to copy by default from request message to response-message.
@@ -54,11 +59,12 @@ trait ProducerSupport extends CamelSupport { this: Actor ⇒
    * sender and senderFuture are preserved.
    *
    * @see CamelMessage#canonicalize(Any)
-   *
+   * @param endpoint the endpoint
+   * @param processor the processor
    * @param msg message to produce
    * @param pattern exchange pattern
    */
-  protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
+  protected def produce(endpoint: Endpoint, processor: SendProcessor, msg: Any, pattern: ExchangePattern): Unit = {
     // Need copies of sender reference here since the callback could be done
     // later by another thread.
     val producer = self
@@ -85,12 +91,24 @@ trait ProducerSupport extends CamelSupport { this: Actor ⇒
    * @see Producer#produce(Any, ExchangePattern)
    */
   protected def produce: Receive = {
+    case CamelProducerObjects(e, p) ⇒
+      if (camelObjects.isEmpty) {
+        camelObjects = Some((e, p))
+        messages.foreach { case (sender, msg) ⇒ self.tell(msg, sender) }
+        messages = Map()
+      }
     case res: MessageResult ⇒ routeResponse(res.message)
     case res: FailureResult ⇒
       val e = new AkkaCamelException(res.cause, res.headers)
       routeResponse(Failure(e))
       throw e
-    case msg ⇒ produce(transformOutgoingMessage(msg), if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
+    case msg ⇒
+      if (camelObjects.isEmpty) {
+        messages = messages + (sender -> msg)
+      } else {
+        val (endpoint, processor) = camelObjects.get
+        produce(endpoint, processor, transformOutgoingMessage(msg), if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
+      }
   }
 
   /**

@@ -4,20 +4,22 @@
 
 package akka.camel
 
-import language.postfixOps
-
-import internal.component.DurationTypeConverter
+import internal.Register
 import org.apache.camel.model.{ RouteDefinition, ProcessorDefinition }
 import akka.actor._
 import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import akka.dispatch.Mapper
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
  *
  * @author Martin Krasser
  */
-trait Consumer extends Actor with CamelSupport with ConsumerConfig {
+trait Consumer extends Actor with CamelSupport {
+  private val identityRouteMapper = new Mapper[RouteDefinition, ProcessorDefinition[_]]() {
+    override def checkedApply(rd: RouteDefinition): ProcessorDefinition[_] = rd
+  }
+
   /**
    * Must return the Camel endpoint URI that the consumer wants to consume messages from.
    */
@@ -33,11 +35,8 @@ trait Consumer extends Actor with CamelSupport with ConsumerConfig {
     // with order of execution of trait body in the Java version (UntypedConsumerActor)
     // where getEndpointUri is called before its constructor (where a uri is set to return from getEndpointUri) 
     // and remains null. CustomRouteTest provides a test to verify this.
-    camel.registerConsumer(endpointUri, this, activationTimeout)
+    camel.supervisor ! Register(self, endpointUri, Some(ConsumerConfig(activationTimeout, replyTimeout, autoAck, onRouteDefinition)))
   }
-}
-
-trait ConsumerConfig { this: CamelSupport ⇒
   /**
    * How long the actor should wait for activation before it fails.
    */
@@ -58,9 +57,22 @@ trait ConsumerConfig { this: CamelSupport ⇒
   def autoAck: Boolean = camel.settings.autoAck
 
   /**
-   * The route definition handler for creating a custom route to this consumer instance.
+   * Returns the route definition handler for creating a custom route to this consumer.
+   * By default it returns an identity function, override this method to
+   * return a custom route definition handler.
    */
-  //FIXME: write a test confirming onRouteDefinition gets called
-  def onRouteDefinition(rd: RouteDefinition): ProcessorDefinition[_] = rd
+  def onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_] = (rd) ⇒ getRouteDefinitionHandler(rd)
 
+  /**
+   * ''Java API''. Returns the Mapper function that will be used as a route definition handler
+   * for creating custom route to this consumer. By default it returns an identity function, override this method to
+   * return a custom route definition handler.
+   */
+  def getRouteDefinitionHandler: Mapper[RouteDefinition, ProcessorDefinition[_]] = identityRouteMapper
 }
+
+/**
+ * For internal use only.
+ * Captures the configuration of the Consumer.
+ */
+private[camel] case class ConsumerConfig(activationTimeout: Duration, replyTimeout: Duration, autoAck: Boolean, onRouteDefinition: RouteDefinition ⇒ ProcessorDefinition[_])

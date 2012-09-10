@@ -27,6 +27,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem.Settings
 import akka.event.LoggingAdapter
 import akka.testkit.{ TimingTest, TestKit, TestProbe }
+import org.apache.camel.impl.DefaultCamelContext
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
 
@@ -284,7 +285,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     def camelWithMocks = new DefaultCamel(sys) {
       override val log = mock[LoggingAdapter]
       override lazy val template = mock[ProducerTemplate]
-      override lazy val context = mock[CamelContext]
+      override lazy val context = mock[DefaultCamelContext]
       override val settings = mock[CamelSettings]
     }
     camel = camelWithMocks
@@ -351,6 +352,6 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
     def receive = {
       case msg ⇒ sender ! "received " + msg
     }
-  }))
+  }), name = "echoActor")
 
 }
