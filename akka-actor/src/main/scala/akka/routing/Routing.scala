@@ -645,13 +645,13 @@ object RandomRouter {
  * class MyActor extends Actor {
  *   override val supervisorStrategy = ...
  *
- *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(5)))
+ *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RandomRouter(5)))
  *
  *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
- *     RoundRobinRouter(5, supervisorStrategy = this.supervisorStrategy)))
+ *     RandomRouter(5, supervisorStrategy = this.supervisorStrategy)))
  *
  *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
- *     RoundRobinRouter(5, supervisorStrategy = OneForOneStrategy() {
+ *     RandomRouter(5, supervisorStrategy = OneForOneStrategy() {
  *       ...
  *     })))
  * }
@@ -785,13 +785,13 @@ object SmallestMailboxRouter {
  * class MyActor extends Actor {
  *   override val supervisorStrategy = ...
  *
- *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(5)))
+ *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(SmallestMailboxRouter(5)))
  *
  *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
- *     RoundRobinRouter(5, supervisorStrategy = this.supervisorStrategy)))
+ *     SmallestMailboxRouter(5, supervisorStrategy = this.supervisorStrategy)))
  *
  *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
- *     RoundRobinRouter(5, supervisorStrategy = OneForOneStrategy() {
+ *     SmallestMailboxRouter(5, supervisorStrategy = OneForOneStrategy() {
  *       ...
  *     })))
  * }
@@ -1000,13 +1000,13 @@ object BroadcastRouter {
  * class MyActor extends Actor {
  *   override val supervisorStrategy = ...
  *
- *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(5)))
+ *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(BroadcastRouter(5)))
  *
  *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
- *     RoundRobinRouter(5, supervisorStrategy = this.supervisorStrategy)))
+ *     BroadcastRouter(5, supervisorStrategy = this.supervisorStrategy)))
  *
  *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
- *     RoundRobinRouter(5, supervisorStrategy = OneForOneStrategy() {
+ *     BroadcastRouter(5, supervisorStrategy = OneForOneStrategy() {
  *       ...
  *     })))
  * }
@@ -1124,13 +1124,13 @@ object ScatterGatherFirstCompletedRouter {
  * class MyActor extends Actor {
  *   override val supervisorStrategy = ...
  *
- *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(RoundRobinRouter(5)))
+ *   val poolAsAWhole = context.actorOf(Props[SomeActor].withRouter(ScatterGatherFirstCompletedRouter(5)))
  *
  *   val poolIndividuals = context.actorOf(Props[SomeActor].withRouter(
- *     RoundRobinRouter(5, supervisorStrategy = this.supervisorStrategy)))
+ *     ScatterGatherFirstCompletedRouter(5, supervisorStrategy = this.supervisorStrategy)))
  *
  *   val specialChild = context.actorOf(Props[SomeActor].withRouter(
- *     RoundRobinRouter(5, supervisorStrategy = OneForOneStrategy() {
+ *     ScatterGatherFirstCompletedRouter(5, supervisorStrategy = OneForOneStrategy() {
  *       ...
  *     })))
  * }
