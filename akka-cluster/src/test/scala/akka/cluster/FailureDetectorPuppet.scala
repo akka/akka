@@ -6,14 +6,13 @@ package akka.cluster
 
 import akka.actor.{ Address, ActorSystem }
 import akka.event.{ Logging, LogSource }
+import akka.remote.testkit.MultiNodeConfig
 
 /**
  * User controllable "puppet" failure detector.
  */
 class FailureDetectorPuppet(system: ActorSystem, settings: ClusterSettings) extends FailureDetector {
   import java.util.concurrent.ConcurrentHashMap
-
-  def this(system: ActorSystem) = this(system, new ClusterSettings(system.settings.config, system.name))
 
   trait Status
   object Up extends Status
@@ -63,3 +62,4 @@ class FailureDetectorPuppet(system: ActorSystem, settings: ClusterSettings) exte
     connections.clear()
   }
 }
+

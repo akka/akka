@@ -29,8 +29,8 @@ object JoinInProgressMultiJvmSpec extends MultiNodeConfig {
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
-class JoinInProgressMultiJvmNode1 extends JoinInProgressSpec with AccrualFailureDetectorStrategy
-class JoinInProgressMultiJvmNode2 extends JoinInProgressSpec with AccrualFailureDetectorStrategy
+class JoinInProgressMultiJvmNode1 extends JoinInProgressSpec
+class JoinInProgressMultiJvmNode2 extends JoinInProgressSpec
 
 abstract class JoinInProgressSpec
   extends MultiNodeSpec(JoinInProgressMultiJvmSpec)

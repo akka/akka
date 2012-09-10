@@ -23,10 +23,12 @@ case class Heartbeat(from: Address) extends ClusterMessage
  * Instantiated as a single instance for each Cluster - e.g. heartbeats are serialized
  * to Cluster message after message, but concurrent with other types of messages.
  */
-private[cluster] final class ClusterHeartbeatDaemon(environment: ClusterEnvironment) extends Actor with ActorLogging {
+private[cluster] final class ClusterHeartbeatDaemon extends Actor with ActorLogging {
+
+  val failureDetector = Cluster(context.system).failureDetector
 
   def receive = {
-    case Heartbeat(from) ⇒ environment.failureDetector heartbeat from
+    case Heartbeat(from) ⇒ failureDetector heartbeat from
   }
 
 }
@@ -53,7 +55,7 @@ private[cluster] object ClusterHeartbeatSender {
  * address and thereby reduce the risk of irregular heartbeats to healty
  * nodes due to broken connections to other nodes.
  */
-private[cluster] final class ClusterHeartbeatSender(environment: ClusterEnvironment) extends Actor with ActorLogging {
+private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogging {
   import ClusterHeartbeatSender._
 
   /**
@@ -78,8 +80,7 @@ private[cluster] final class ClusterHeartbeatSender(environment: ClusterEnvironm
       val workerName = encodeChildName(to.toString)
       val worker = context.actorFor(workerName) match {
         case notFound if notFound.isTerminated ⇒
-          context.actorOf(Props(new ClusterHeartbeatSenderWorker(
-            environment.settings.SendCircuitBreakerSettings, clusterHeartbeatConnectionFor(to))), workerName)
+          context.actorOf(Props(new ClusterHeartbeatSenderWorker(clusterHeartbeatConnectionFor(to))), workerName)
         case child ⇒ child
       }
       worker ! msg
@@ -96,17 +97,19 @@ private[cluster] final class ClusterHeartbeatSender(environment: ClusterEnvironm
  *
  * @see ClusterHeartbeatSender
  */
-private[cluster] final class ClusterHeartbeatSenderWorker(
-  cbSettings: CircuitBreakerSettings, toRef: ActorRef)
+private[cluster] final class ClusterHeartbeatSenderWorker(toRef: ActorRef)
   extends Actor with ActorLogging {
 
   import ClusterHeartbeatSender._
 
-  val breaker = CircuitBreaker(context.system.scheduler,
-    cbSettings.maxFailures, cbSettings.callTimeout, cbSettings.resetTimeout).
-    onHalfOpen(log.debug("CircuitBreaker Half-Open for: [{}]", toRef)).
-    onOpen(log.debug("CircuitBreaker Open for [{}]", toRef)).
-    onClose(log.debug("CircuitBreaker Closed for [{}]", toRef))
+  val breaker = {
+    val cbSettings = Cluster(context.system).settings.SendCircuitBreakerSettings
+    CircuitBreaker(context.system.scheduler,
+      cbSettings.maxFailures, cbSettings.callTimeout, cbSettings.resetTimeout).
+      onHalfOpen(log.debug("CircuitBreaker Half-Open for: [{}]", toRef)).
+      onOpen(log.debug("CircuitBreaker Open for [{}]", toRef)).
+      onClose(log.debug("CircuitBreaker Closed for [{}]", toRef))
+  }
 
   // make sure it will cleanup when not used any more
   context.setReceiveTimeout(30 seconds)

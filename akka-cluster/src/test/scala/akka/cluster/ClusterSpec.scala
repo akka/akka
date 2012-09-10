@@ -26,8 +26,10 @@ object ClusterSpec {
       auto-down                    = off
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
       publish-stats-interval = 0 s # always, when it happens
+      failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet
     }
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.port = 0
     # akka.loglevel = DEBUG
     """
@@ -41,9 +43,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
   val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address
 
-  val failureDetector = new FailureDetectorPuppet(system)
-
-  val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector)
+  val cluster = Cluster(system)
   def clusterView = cluster.readView
 
   def leaderActions(): Unit = {
