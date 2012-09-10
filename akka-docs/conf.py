@@ -50,6 +50,7 @@ html_show_sourcelink = False
 html_show_sphinx = False
 html_show_copyright = True
 htmlhelp_basename = 'Akkadoc'
+html_use_smartypants = False
 html_add_permalinks = ''
 
 html_context = {
