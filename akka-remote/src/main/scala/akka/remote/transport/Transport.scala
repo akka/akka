@@ -1,7 +1,7 @@
 package akka.remote.transport
 
-import concurrent.{Promise, Future}
-import akka.actor.{ActorRef, Address}
+import concurrent.{ Promise, Future }
+import akka.actor.{ ActorRef, Address }
 import akka.util.ByteString
 
 object Transport {
@@ -110,7 +110,7 @@ object AssociationHandle {
  * Handles are responsible for providing an API for sending and receiving from the underlying channel.
  *
  * To register an actor for processing incoming payload data, the actor must be registered by completing the Promise
- * returned by [[akka.remote.transport.AssociationHandle.readHandlerPromise]]. Incoming data is not processed until
+ * returned by [[akka.remote.transport.AssociationHandle#readHandlerPromise]]. Incoming data is not processed until
  * this registration takes place.
  */
 trait AssociationHandle {
