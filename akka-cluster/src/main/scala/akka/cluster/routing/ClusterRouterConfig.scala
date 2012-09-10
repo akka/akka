@@ -30,6 +30,7 @@ import akka.routing.Router
 import akka.routing.RouterConfig
 import akka.routing.RemoteRouterConfig
 import akka.actor.RootActorPath
+import akka.actor.ActorCell
 
 /**
  * [[akka.routing.RouterConfig]] implementation for deployment on cluster nodes.
@@ -121,8 +122,7 @@ private[akka] class ClusterRouteeProvider(
         } else {
           val name = "c" + childNameCounter.incrementAndGet
           val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(target))
-          impl.provider.actorOf(impl, routeeProps, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
-            systemService = false, Some(deploy), lookupDeploy = false, async = false)
+          context.asInstanceOf[ActorCell].attachChild(routeeProps.withDeploy(deploy), name, systemService = false)
         }
       // must register each one, since registered routees are used in selectDeploymentTarget
       registerRoutees(Some(ref))
