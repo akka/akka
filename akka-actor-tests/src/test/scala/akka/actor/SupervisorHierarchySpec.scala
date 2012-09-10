@@ -18,11 +18,13 @@ import akka.actor.SupervisorStrategy.seqThrowable2Decider
 import akka.dispatch.{ MessageDispatcher, DispatcherPrerequisites, DispatcherConfigurator, Dispatcher }
 import akka.pattern.ask
 import akka.testkit.{ ImplicitSender, EventFilter, DefaultTimeout, AkkaSpec }
-import akka.testkit.{ filterException, duration2TestDuration, TestLatch }
+import akka.testkit.{ filterException, filterEvents, duration2TestDuration, TestLatch }
 import akka.testkit.TestEvent.Mute
 import java.util.concurrent.ConcurrentHashMap
 import java.lang.ref.WeakReference
 import akka.event.Logging
+import java.util.concurrent.atomic.AtomicInteger
+import java.lang.System.identityHashCode
 
 object SupervisorHierarchySpec {
   class FireWorkerException(msg: String) extends Exception(msg)
@@ -57,7 +59,7 @@ object SupervisorHierarchySpec {
   case object Abort
   case object PingOfDeath
   case object PongOfDeath
-  case class Event(msg: Any) { val time: Long = System.nanoTime }
+  case class Event(msg: Any, identity: Long) { val time: Long = System.nanoTime }
   case class ErrorLog(msg: String, log: Vector[Event])
   case class Failure(directive: Directive, stop: Boolean, depth: Int, var failPre: Int, var failPost: Int, val failConstr: Int, stopKids: Int)
     extends RuntimeException with NoStackTrace {
@@ -87,7 +89,7 @@ object SupervisorHierarchySpec {
 
         override def suspend(cell: ActorCell): Unit = {
           cell.actor match {
-            case h: Hierarchy ⇒ h.log :+= Event("suspended " + cell.mailbox.suspendCount)
+            case h: Hierarchy ⇒ h.log :+= Event("suspended " + cell.mailbox.suspendCount, identityHashCode(cell.actor))
             case _            ⇒
           }
           super.suspend(cell)
@@ -96,7 +98,7 @@ object SupervisorHierarchySpec {
         override def resume(cell: ActorCell): Unit = {
           super.resume(cell)
           cell.actor match {
-            case h: Hierarchy ⇒ h.log :+= Event("resumed " + cell.mailbox.suspendCount)
+            case h: Hierarchy ⇒ h.log :+= Event("resumed " + cell.mailbox.suspendCount, identityHashCode(cell.actor))
             case _            ⇒
           }
         }
@@ -119,8 +121,9 @@ object SupervisorHierarchySpec {
     var log = Vector.empty[Event]
 
     stateCache.get(self) match {
-      case hs @ HierarchyState(_, _, f: Failure) if f.failConstr > 0 ⇒
-        stateCache.put(self, hs.copy(failConstr = f.copy(failConstr = f.failConstr - 1)))
+      case hs @ HierarchyState(l: Vector[Event], _, f: Failure) if f.failConstr > 0 ⇒
+        val log = l :+ Event("Failed in constructor", identityHashCode(this))
+        stateCache.put(self, hs.copy(log = log, failConstr = f.copy(failConstr = f.failConstr - 1)))
         throw f
       case _ ⇒
     }
@@ -130,7 +133,7 @@ object SupervisorHierarchySpec {
 
     def abort(msg: String) {
       listener ! ErrorLog(msg, log)
-      log = Vector(Event("log sent"))
+      log = Vector(Event("log sent", identityHashCode(this)))
       context.parent ! Abort
       context stop self
     }
@@ -144,7 +147,7 @@ object SupervisorHierarchySpec {
     def suspendCount = context.asInstanceOf[ActorCell].mailbox.suspendCount
 
     override def preStart {
-      log :+= Event("started")
+      log :+= Event("started", identityHashCode(this))
       listener ! Ready(self)
       val s = size - 1 // subtract myself
       val kidInfo: Map[ActorRef, Int] =
@@ -167,12 +170,12 @@ object SupervisorHierarchySpec {
       // do not scrap children
       if (preRestartCalled) abort("preRestart called twice")
       else {
-        log :+= Event("preRestart " + cause)
+        log :+= Event("preRestart " + cause, identityHashCode(this))
         preRestartCalled = true
         cause match {
           case f: Failure ⇒
             context.children.take(f.stopKids) foreach { child ⇒
-              log :+= Event("killing " + child)
+              log :+= Event("killing " + child, identityHashCode(this))
               context.unwatch(child)
               context.stop(child)
             }
@@ -193,22 +196,22 @@ object SupervisorHierarchySpec {
     }
     override val supervisorStrategy = OneForOneStrategy()(unwrap andThen {
       case _: Failure if pongsToGo > 0 ⇒
-        log :+= Event("pongOfDeath resuming " + sender)
+        log :+= Event("pongOfDeath resuming " + sender, identityHashCode(this))
         Resume
       case (f: Failure, orig) ⇒
         if (f.depth > 0) {
           setFlags(f.directive)
-          log :+= Event("escalating " + f + " from " + sender)
+          log :+= Event("escalating " + f + " from " + sender, identityHashCode(this))
           throw f.copy(depth = f.depth - 1)
         }
         val prefix = orig match {
           case f: Failure ⇒ "applying "
           case _          ⇒ "re-applying "
         }
-        log :+= Event(prefix + f + " to " + sender)
+        log :+= Event(prefix + f + " to " + sender, identityHashCode(this))
         if (myLevel > 3 && f.failPost == 0 && f.stop) Stop else f.directive
       case (_, x) ⇒
-        log :+= Event("unhandled exception from " + sender + Logging.stackTraceFor(x))
+        log :+= Event("unhandled exception from " + sender + Logging.stackTraceFor(x), identityHashCode(this))
         sender ! Dump(0)
         context.system.scheduler.scheduleOnce(1 second, self, Dump(0))(context.dispatcher)
         Resume
@@ -217,7 +220,7 @@ object SupervisorHierarchySpec {
     override def postRestart(cause: Throwable) {
       val state = stateCache.get(self)
       log = state.log
-      log :+= Event("restarted " + suspendCount + " " + cause)
+      log :+= Event("restarted " + suspendCount + " " + cause, identityHashCode(this))
       state.kids foreach {
         case (child, kidSize) ⇒
           val name = child.path.name
@@ -247,7 +250,7 @@ object SupervisorHierarchySpec {
 
     def check(msg: Any): Boolean = {
       suspended = false
-      log :+= Event(msg)
+      log :+= Event(msg, identityHashCode(this))
       if (failed) {
         abort("processing message while failed")
         failed = false
@@ -285,13 +288,13 @@ object SupervisorHierarchySpec {
             val props = Props(new Hierarchy(kids, breadth, listener, myLevel + 1)).withDispatcher("hierarchy")
             context.watch(context.actorOf(props, name))
           } else {
-            log :+= Event(sender + " terminated while pongOfDeath")
+            log :+= Event(sender + " terminated while pongOfDeath", identityHashCode(this))
           }
         case Abort ⇒ abort("terminating")
         case PingOfDeath ⇒
           if (size > 1) {
             pongsToGo = context.children.size
-            log :+= Event("sending " + pongsToGo + " pingOfDeath")
+            log :+= Event("sending " + pongsToGo + " pingOfDeath", identityHashCode(this))
             context.children foreach (_ ! PingOfDeath)
           } else {
             context stop self
@@ -656,7 +659,7 @@ object SupervisorHierarchySpec {
       val merged = errors.sortBy(_._1.toString) flatMap {
         case (ref, ErrorLog(msg, log)) ⇒
           println("Error: " + ref + " " + msg)
-          log map (l ⇒ (l.time, ref, l.msg.toString))
+          log map (l ⇒ (l.time, ref, l.identity, l.msg.toString))
       }
       merged.sorted.distinct foreach println
     }
@@ -786,12 +789,54 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       expectMsg("pong")
     }
 
+    "handle failure in creation where supervision startegy returns Resume" in {
+      val createAttempt = new AtomicInteger(0)
+      val preStartCalled = new AtomicInteger(0)
+      val postRestartCalled = new AtomicInteger(0)
+
+      filterEvents(
+        EventFilter[Failure](),
+        EventFilter[ActorInitializationException](),
+        EventFilter[IllegalArgumentException]("OH NO!"),
+        EventFilter.error(start = "changing Resume into Create")) {
+          val failResumer = system.actorOf(Props(new Actor {
+            override def supervisorStrategy = OneForOneStrategy() { case e: ActorInitializationException ⇒ SupervisorStrategy.Resume }
+
+            val child = context.actorOf(Props(new Actor {
+              if (createAttempt.incrementAndGet() < 3) {
+                throw new IllegalArgumentException("OH NO!")
+              }
+              override def preStart() = {
+                preStartCalled.incrementAndGet()
+              }
+              override def postRestart(reason: Throwable) = {
+                postRestartCalled.incrementAndGet()
+              }
+              override def receive = {
+                case m ⇒ sender ! m
+              }
+            }), "failChild")
+
+            def receive = {
+              case m ⇒ child.forward(m)
+            }
+          }), "failResumer")
+
+          failResumer ! "blahonga"
+          expectMsg("blahonga")
+        }
+      createAttempt.get must equal(3)
+      preStartCalled.get must equal(1)
+      postRestartCalled.get must equal(0)
+    }
+
     "survive being stressed" in {
       system.eventStream.publish(Mute(
         EventFilter[Failure](),
         EventFilter[ActorInitializationException](),
         EventFilter[NoSuchElementException]("head of empty list"),
         EventFilter.error(start = "changing Resume into Restart"),
+        EventFilter.error(start = "changing Resume into Create"),
         EventFilter.warning(start = "received dead ")))
 
       val fsm = system.actorOf(Props(new StressTest(testActor, size = 500, breadth = 6)), "stressTest")
@@ -810,4 +855,3 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
     }
   }
 }
-

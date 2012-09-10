@@ -436,7 +436,7 @@ private[akka] class ActorCell(
     }
   }
 
-  private def create(uid: Int): Unit =
+  protected def create(uid: Int): Unit =
     try {
       this.uid = uid
       val created = newActor()
@@ -446,12 +446,15 @@ private[akka] class ActorCell(
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
       case NonFatal(i: InstantiationException) ⇒
+        actor = null // ensure that we know that we failed during creation
         throw ActorInitializationException(self,
           """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new UntypedActorFactory ... )
                or is missing an appropriate, reachable no-args constructor.
             """, i.getCause)
-      case NonFatal(e) ⇒ throw ActorInitializationException(self, "exception during creation", e)
+      case NonFatal(e) ⇒
+        actor = null // ensure that we know that we failed during creation
+        throw ActorInitializationException(self, "exception during creation", e)
     }
 
   private def supervise(child: ActorRef, uid: Int): Unit = if (!isTerminating) {

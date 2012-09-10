@@ -88,7 +88,13 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
    *        prompted this action.
    */
   protected def faultResume(causedByFailure: Throwable): Unit = {
-    if ((actor == null || actor.context == null) && causedByFailure != null) {
+    if (actor == null) {
+      system.eventStream.publish(Error(self.path.toString, clazz(actor),
+        "changing Resume into Create after " + causedByFailure))
+      try resumeNonRecursive()
+      finally clearFailed()
+      create(uid)
+    } else if (actor.context == null && causedByFailure != null) {
       system.eventStream.publish(Error(self.path.toString, clazz(actor),
         "changing Resume into Restart after " + causedByFailure))
       faultRecreate(causedByFailure)
