@@ -88,11 +88,8 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
   import ClusterRoundRobinRoutedActorMultiJvmSpec._
 
   lazy val router1 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router1")
-  lazy val router2 = {
-    import akka.cluster.routing.ClusterRouterProps
-    system.actorOf(Props[SomeActor].withClusterRouter(RoundRobinRouter(),
-      totalInstances = 3, maxInstancesPerNode = 1), "router2")
-  }
+  lazy val router2 = system.actorOf(Props[SomeActor].withRouter(ClusterRouterConfig(RoundRobinRouter(),
+    ClusterRouterSettings(totalInstances = 3, maxInstancesPerNode = 1))), "router2")
   lazy val router3 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router3")
   lazy val router4 = system.actorOf(Props[SomeActor].withRouter(RoundRobinRouter()), "router4")
 
@@ -275,5 +272,6 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
 
       enterBarrier("after-8")
     }
+
   }
 }

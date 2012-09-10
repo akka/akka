@@ -70,11 +70,51 @@ case class ClusterRouterConfig(local: RouterConfig, settings: ClusterRouterSetti
   }
 }
 
-case class ClusterRouterSettings(
+object ClusterRouterSettings {
+  /**
+   * Settings for create and deploy of the routees
+   */
+  def apply(totalInstances: Int, maxInstancesPerNode: Int, routeesOnOwnNode: Boolean): ClusterRouterSettings =
+    new ClusterRouterSettings(totalInstances, maxInstancesPerNode, routeesOnOwnNode)
+
+  /**
+   * Settings for remote deployment of the routees, allowed to use routees on own node
+   */
+  def apply(totalInstances: Int, maxInstancesPerNode: Int): ClusterRouterSettings =
+    apply(totalInstances, maxInstancesPerNode, routeesOnOwnNode = true)
+
+  /**
+   * Settings for lookup of the routees
+   */
+  def apply(totalInstances: Int, routeesPath: String, routeesOnOwnNode: Boolean): ClusterRouterSettings =
+    new ClusterRouterSettings(totalInstances, routeesPath, routeesOnOwnNode)
+
+  /**
+   * Settings for lookup of the routees, allowed to use routees on own node
+   */
+  def apply(totalInstances: Int, routeesPath: String): ClusterRouterSettings =
+    apply(totalInstances, routeesPath, routeesOnOwnNode = true)
+}
+
+case class ClusterRouterSettings private[akka] (
   totalInstances: Int,
-  maxInstancesPerNode: Int = 1,
-  routeesOnOwnNode: Boolean = true,
-  routeesPath: String = "") {
+  maxInstancesPerNode: Int,
+  routeesPath: String,
+  routeesOnOwnNode: Boolean) {
+
+  /**
+   * Settings for create and deploy of the routees
+   * JAVA API
+   */
+  def this(totalInstances: Int, maxInstancesPerNode: Int, routeesOnOwnNode: Boolean) =
+    this(totalInstances, maxInstancesPerNode, routeesPath = "", routeesOnOwnNode)
+
+  /**
+   * Settings for lookup of the routees
+   * JAVA API
+   */
+  def this(totalInstances: Int, routeesPath: String, routeesOnOwnNode: Boolean) =
+    this(totalInstances, maxInstancesPerNode = 1, routeesPath, routeesOnOwnNode)
 
   if (totalInstances <= 0) throw new IllegalArgumentException("totalInstances of cluster router must be > 0")
   if (maxInstancesPerNode <= 0) throw new IllegalArgumentException("maxInstancesPerNode of cluster router must be > 0")
@@ -221,32 +261,3 @@ private[akka] class ClusterRouterActor extends Router {
 
   }
 }
-
-/**
- * Sugar to define cluster aware router programatically.
- * Java API.
- * When creating and deploying routees:
- * [[[
- * context.actorOf(ClusterRouterPropsDecorator.decorate(new Props(MyActor.class),
- *   new RoundRobinRouter(0), 10, 2), "myrouter");
- * ]]]
- * When looking up routees:
- * [[[
- * context.actorOf(ClusterRouterPropsDecorator.decorate(new Props(MyActor.class),
- *   new RoundRobinRouter(0), 10, "/user/myservice"), "myrouter");
- * ]]]
- *
- * Corresponding for Scala API is found in [[akka.cluster.routing.ClusterRouterProps]].
- *
- */
-object ClusterRouterPropsDecorator {
-  def decorate(props: Props, router: RouterConfig, totalInstances: Int, maxInstancesPerNode: Int): Props =
-    decorate(props, router, ClusterRouterSettings(totalInstances, maxInstancesPerNode))
-
-  def decorate(props: Props, router: RouterConfig, totalInstances: Int, routeesPath: String): Props =
-    decorate(props, router, ClusterRouterSettings(totalInstances, routeesPath = routeesPath))
-
-  def decorate(props: Props, router: RouterConfig, settings: ClusterRouterSettings): Props =
-    props.withClusterRouter(router, settings)
-}
-
