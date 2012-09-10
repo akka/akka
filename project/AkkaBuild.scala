@@ -77,8 +77,6 @@ object AkkaBuild extends Build {
     base = file("akka-actor"),
     settings = defaultSettings ++ OSGi.actor ++ Seq(
       autoCompilerPlugins := true,
-      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
-      artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle")),
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
@@ -275,6 +273,7 @@ object AkkaBuild extends Build {
     base = file("akka-sbt-plugin"),
     settings = defaultSettings ++ Seq(
       sbtPlugin := true,
+      publishMavenStyle := false, // SBT Plugins should be published as Ivy
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
       scalaVersion := "2.9.1",
       scalaBinaryVersion <<= scalaVersion
