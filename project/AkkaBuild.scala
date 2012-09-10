@@ -283,12 +283,12 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample, zeroMQReqRepSample)
+    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample, zeroMQSample)
   )
 
-  lazy val zeroMQReqRepSample = Project(
-    id = "akka-sample-zeromq-reqrep",
-    base = file("akka-samples/akka-sample-zeromq-reqrep"),
+  lazy val zeroMQSample = Project(
+    id = "akka-sample-zeromq",
+    base = file("akka-samples/akka-sample-zeromq"),
     dependencies = Seq(actor, camel, zeroMQ),
     settings = defaultSettings
   )

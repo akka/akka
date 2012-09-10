@@ -1,4 +1,4 @@
-package sample.zeromq.reqrep
+package sample.zeromq
 
 import util.Random
 
