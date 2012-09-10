@@ -60,8 +60,8 @@ trait Transport {
   /**
    * Asynchronously attempts to setup the transport layer to listen and accept incoming associations. The result of the
    * attempt is wrapped by a Future returned by this method. The pair contained in the future contains a Promise for an
-   * ActorRef. By finishing this Promise with an ActorRef that ActorRef becomes responsible for handling incoming
-   * associations. Until the Promise is not finished, no associations are processed.
+   * ActorRef. By completing this Promise with an ActorRef that ActorRef becomes responsible for handling incoming
+   * associations. Until the Promise is not completed, no associations are processed.
    *
    * @return
    *   A Future containing a pair of the bound local address and a Promise of an ActorRef that must be fulfilled
@@ -86,8 +86,11 @@ trait Transport {
 
   /**
    * Shuts down the transport layer and releases all the corresponding resources.
+   *
+   * @return
+   *   A Future that completes after shutdown is completed
    */
-  def shutdown(): Unit
+  def shutdown(): Future[Unit]
 
 }
 
@@ -106,7 +109,7 @@ object AssociationHandle {
  * An SPI layer for abstracting over logical links (associations) created by [[akka.remote.transport.Transport]].
  * Handles are responsible for providing an API for sending and receiving from the underlying channel.
  *
- * To register an actor for processing incoming payload data, the actor must be registered by finishing the Promise
+ * To register an actor for processing incoming payload data, the actor must be registered by completing the Promise
  * returned by [[akka.remote.transport.AssociationHandle.readHandlerPromise]]. Incoming data is not processed until
  * this registration takes place.
  */
@@ -129,7 +132,7 @@ trait AssociationHandle {
   def remoteEndpointAddress: Address
 
   /**
-   * The Promise returned by this call must be finished with an [[akka.actor.ActorRef]] to register an actor
+   * The Promise returned by this call must be completed with an [[akka.actor.ActorRef]] to register an actor
    * responsible for handling incoming data.
    *
    * @return
@@ -156,8 +159,11 @@ trait AssociationHandle {
    * Closes the underlying transport link, if needed. Some transport may not need an explicit teardown (UDP) and
    * some transports may not support it (hardware connections). Remote endpoint of the channel or connection ''may''
    * be notified, but this is not guaranteed.
+   *
+   * @return
+   *   A Future that completes when the disassociation is finished and the corresponding resources released
    */
-  def disassociate(): Unit
+  def disassociate(): Future[Unit]
 
 }
 
