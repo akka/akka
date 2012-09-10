@@ -40,19 +40,7 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
 
   override def lookup = Cluster
 
-  override def createExtension(system: ExtendedActorSystem): Cluster = {
-    val clusterSettings = new ClusterSettings(system.settings.config, system.name)
-
-    val failureDetector = {
-      import clusterSettings.{ FailureDetectorImplementationClass ⇒ fqcn }
-      system.dynamicAccess.createInstanceFor[FailureDetector](
-        fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> clusterSettings)).recover({
-          case e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
-        }).get
-    }
-
-    new Cluster(system, failureDetector)
-  }
+  override def createExtension(system: ExtendedActorSystem): Cluster = new Cluster(system)
 }
 
 /**
@@ -69,7 +57,7 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
  *  if (Cluster(system).isLeader) { ... }
  * }}}
  */
-class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetector) extends Extension with ClusterEnvironment {
+class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   import ClusterEvent._
 
@@ -87,6 +75,14 @@ class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetec
   private val log = Logging(system, "Cluster")
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
+
+  val failureDetector = {
+    import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
+    system.dynamicAccess.createInstanceFor[FailureDetector](
+      fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({
+        case e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
+      }).get
+  }
 
   // ========================================================
   // ===================== WORK DAEMONS =====================
@@ -142,7 +138,7 @@ class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetec
 
   // create supervisor for daemons under path "/system/cluster"
   private val clusterDaemons: ActorRef = {
-    system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new ClusterDaemon(this)).
+    system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new ClusterDaemon(settings)).
       withDispatcher(UseDispatcher), name = "cluster")
   }
 
@@ -217,10 +213,12 @@ class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetec
   // ========================================================
 
   /**
-   * Make it possible to override/configure seedNodes from tests without
-   * specifying in config. Addresses are unknown before startup time.
+   * Make it possible to join the specified seed nodes without defining them
+   * in config. Especially useful from tests when Addresses are unknown
+   * before startup time.
    */
-  private[cluster] def seedNodes: IndexedSeq[Address] = SeedNodes
+  private[cluster] def joinSeedNodes(seedNodes: IndexedSeq[Address]): Unit =
+    clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes)
 
   /**
    * INTERNAL API.

@@ -23,12 +23,12 @@ object TransitionMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class TransitionMultiJvmNode1 extends TransitionSpec with FailureDetectorPuppetStrategy
-class TransitionMultiJvmNode2 extends TransitionSpec with FailureDetectorPuppetStrategy
-class TransitionMultiJvmNode3 extends TransitionSpec with FailureDetectorPuppetStrategy
+class TransitionMultiJvmNode1 extends TransitionSpec
+class TransitionMultiJvmNode2 extends TransitionSpec
+class TransitionMultiJvmNode3 extends TransitionSpec
 
 abstract class TransitionSpec
   extends MultiNodeSpec(TransitionMultiJvmSpec)

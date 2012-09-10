@@ -17,15 +17,15 @@ object JoinTwoClustersMultiJvmSpec extends MultiNodeConfig {
   val c1 = role("c1")
   val c2 = role("c2")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class JoinTwoClustersMultiJvmNode1 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
-class JoinTwoClustersMultiJvmNode2 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
-class JoinTwoClustersMultiJvmNode3 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
-class JoinTwoClustersMultiJvmNode4 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
-class JoinTwoClustersMultiJvmNode5 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
-class JoinTwoClustersMultiJvmNode6 extends JoinTwoClustersSpec with FailureDetectorPuppetStrategy
+class JoinTwoClustersMultiJvmNode1 extends JoinTwoClustersSpec
+class JoinTwoClustersMultiJvmNode2 extends JoinTwoClustersSpec
+class JoinTwoClustersMultiJvmNode3 extends JoinTwoClustersSpec
+class JoinTwoClustersMultiJvmNode4 extends JoinTwoClustersSpec
+class JoinTwoClustersMultiJvmNode5 extends JoinTwoClustersSpec
+class JoinTwoClustersMultiJvmNode6 extends JoinTwoClustersSpec
 
 abstract class JoinTwoClustersSpec
   extends MultiNodeSpec(JoinTwoClustersMultiJvmSpec)

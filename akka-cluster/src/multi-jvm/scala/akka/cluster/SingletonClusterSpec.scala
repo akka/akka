@@ -9,7 +9,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.util.duration._
 
-object SingletonClusterMultiJvmSpec extends MultiNodeConfig {
+case class SingletonClusterMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
@@ -21,21 +21,23 @@ object SingletonClusterMultiJvmSpec extends MultiNodeConfig {
         failure-detector.threshold = 4
       }
     """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+    withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 
 }
 
-class SingletonClusterWithFailureDetectorPuppetMultiJvmNode1 extends SingletonClusterSpec with FailureDetectorPuppetStrategy
-class SingletonClusterWithFailureDetectorPuppetMultiJvmNode2 extends SingletonClusterSpec with FailureDetectorPuppetStrategy
+class SingletonClusterWithFailureDetectorPuppetMultiJvmNode1 extends SingletonClusterSpec(failureDetectorPuppet = true)
+class SingletonClusterWithFailureDetectorPuppetMultiJvmNode2 extends SingletonClusterSpec(failureDetectorPuppet = true)
 
-class SingletonClusterWithAccrualFailureDetectorMultiJvmNode1 extends SingletonClusterSpec with AccrualFailureDetectorStrategy
-class SingletonClusterWithAccrualFailureDetectorMultiJvmNode2 extends SingletonClusterSpec with AccrualFailureDetectorStrategy
+class SingletonClusterWithAccrualFailureDetectorMultiJvmNode1 extends SingletonClusterSpec(failureDetectorPuppet = false)
+class SingletonClusterWithAccrualFailureDetectorMultiJvmNode2 extends SingletonClusterSpec(failureDetectorPuppet = false)
 
-abstract class SingletonClusterSpec
-  extends MultiNodeSpec(SingletonClusterMultiJvmSpec)
+abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeConfig)
+  extends MultiNodeSpec(multiNodeConfig)
   with MultiNodeClusterSpec {
 
-  import SingletonClusterMultiJvmSpec._
+  def this(failureDetectorPuppet: Boolean) = this(SingletonClusterMultiNodeConfig(failureDetectorPuppet))
+
+  import multiNodeConfig._
 
   "A cluster of 2 nodes" must {
 

@@ -23,12 +23,12 @@ object LeaderLeavingMultiJvmSpec extends MultiNodeConfig {
       .withFallback(ConfigFactory.parseString("""
           # turn off unreachable reaper
           akka.cluster.unreachable-nodes-reaper-interval = 300 s""")
-        .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet)))
 }
 
-class LeaderLeavingMultiJvmNode1 extends LeaderLeavingSpec with FailureDetectorPuppetStrategy
-class LeaderLeavingMultiJvmNode2 extends LeaderLeavingSpec with FailureDetectorPuppetStrategy
-class LeaderLeavingMultiJvmNode3 extends LeaderLeavingSpec with FailureDetectorPuppetStrategy
+class LeaderLeavingMultiJvmNode1 extends LeaderLeavingSpec
+class LeaderLeavingMultiJvmNode2 extends LeaderLeavingSpec
+class LeaderLeavingMultiJvmNode3 extends LeaderLeavingSpec
 
 abstract class LeaderLeavingSpec
   extends MultiNodeSpec(LeaderLeavingMultiJvmSpec)
