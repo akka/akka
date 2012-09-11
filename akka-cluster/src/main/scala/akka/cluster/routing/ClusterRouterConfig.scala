@@ -76,26 +76,26 @@ object ClusterRouterSettings {
   /**
    * Settings for create and deploy of the routees
    */
-  def apply(totalInstances: Int, maxInstancesPerNode: Int, routeesOnOwnNode: Boolean): ClusterRouterSettings =
-    new ClusterRouterSettings(totalInstances, maxInstancesPerNode, routeesOnOwnNode)
+  def apply(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean): ClusterRouterSettings =
+    new ClusterRouterSettings(totalInstances, maxInstancesPerNode, allowLocalRoutees)
 
   /**
    * Settings for remote deployment of the routees, allowed to use routees on own node
    */
   def apply(totalInstances: Int, maxInstancesPerNode: Int): ClusterRouterSettings =
-    apply(totalInstances, maxInstancesPerNode, routeesOnOwnNode = true)
+    apply(totalInstances, maxInstancesPerNode, allowLocalRoutees = true)
 
   /**
    * Settings for lookup of the routees
    */
-  def apply(totalInstances: Int, routeesPath: String, routeesOnOwnNode: Boolean): ClusterRouterSettings =
-    new ClusterRouterSettings(totalInstances, routeesPath, routeesOnOwnNode)
+  def apply(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean): ClusterRouterSettings =
+    new ClusterRouterSettings(totalInstances, routeesPath, allowLocalRoutees)
 
   /**
    * Settings for lookup of the routees, allowed to use routees on own node
    */
   def apply(totalInstances: Int, routeesPath: String): ClusterRouterSettings =
-    apply(totalInstances, routeesPath, routeesOnOwnNode = true)
+    apply(totalInstances, routeesPath, allowLocalRoutees = true)
 }
 
 /**
@@ -108,21 +108,21 @@ case class ClusterRouterSettings private[akka] (
   totalInstances: Int,
   maxInstancesPerNode: Int,
   routeesPath: String,
-  routeesOnOwnNode: Boolean) {
+  allowLocalRoutees: Boolean) {
 
   /**
    * Settings for create and deploy of the routees
    * JAVA API
    */
-  def this(totalInstances: Int, maxInstancesPerNode: Int, routeesOnOwnNode: Boolean) =
-    this(totalInstances, maxInstancesPerNode, routeesPath = "", routeesOnOwnNode)
+  def this(totalInstances: Int, maxInstancesPerNode: Int, allowLocalRoutees: Boolean) =
+    this(totalInstances, maxInstancesPerNode, routeesPath = "", allowLocalRoutees)
 
   /**
    * Settings for lookup of the routees
    * JAVA API
    */
-  def this(totalInstances: Int, routeesPath: String, routeesOnOwnNode: Boolean) =
-    this(totalInstances, maxInstancesPerNode = 1, routeesPath, routeesOnOwnNode)
+  def this(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean) =
+    this(totalInstances, maxInstancesPerNode = 1, routeesPath, allowLocalRoutees)
 
   if (totalInstances <= 0) throw new IllegalArgumentException("totalInstances of cluster router must be > 0")
   if (maxInstancesPerNode <= 0) throw new IllegalArgumentException("maxInstancesPerNode of cluster router must be > 0")
@@ -213,7 +213,7 @@ private[akka] class ClusterRouteeProvider(
   private[routing] def availbleNodes: SortedSet[Address] = {
     import Member.addressOrdering
     val currentNodes = nodes
-    if (currentNodes.isEmpty && settings.routeesOnOwnNode)
+    if (currentNodes.isEmpty && settings.allowLocalRoutees)
       //use my own node, cluster information not updated yet
       SortedSet(cluster.selfAddress)
     else
@@ -229,7 +229,7 @@ private[akka] class ClusterRouteeProvider(
   }
 
   private[routing] def isAvailble(m: Member): Boolean = {
-    m.status == MemberStatus.Up && (settings.routeesOnOwnNode || m.address != cluster.selfAddress)
+    m.status == MemberStatus.Up && (settings.allowLocalRoutees || m.address != cluster.selfAddress)
   }
 
 }
