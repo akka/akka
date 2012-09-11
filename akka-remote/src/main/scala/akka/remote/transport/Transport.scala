@@ -58,6 +58,13 @@ trait Transport {
   import akka.remote.transport.Transport._
 
   /**
+   * Defines the maximum size of payload this transport is able to deliver. All transports MUST support at least
+   * 32kBytes (32000 octets) of payload, but some MAY support larger sizes.
+   * @return
+   */
+  def maximumPayloadBytes: Int
+
+  /**
    * Asynchronously attempts to setup the transport layer to listen and accept incoming associations. The result of the
    * attempt is wrapped by a Future returned by this method. The pair contained in the future contains a Promise for an
    * ActorRef. By completing this Promise with an ActorRef that ActorRef becomes responsible for handling incoming
@@ -95,14 +102,26 @@ trait Transport {
 }
 
 object AssociationHandle {
+
   /**
-   * Message sent to an actor registered to an association (via the Promise returned by
+   * Trait for events that the registered actor for an [[akka.remote.transport.AssociationHandle]] might receive.
+   */
+  sealed trait AssociationEvent
+
+  /**
+   * Message sent to the actor registered to an association (via the Promise returned by
    * [[akka.remote.transport.AssociationHandle.readHandlerPromise]]) when an inbound payload arrives.
    *
    * @param payload
    *   The raw bytes that were sent by the remote endpoint.
    */
-  case class Receive(payload: ByteString)
+  case class InboundPayload(payload: ByteString) extends AssociationEvent
+
+  /**
+   * Message sent to te actor registered to an association
+   */
+  case object Disassociated extends AssociationEvent
+
 }
 
 /**
@@ -121,7 +140,7 @@ trait AssociationHandle {
    * @return
    *   Address of the local endpoint.
    */
-  def localEndpointAddress: Address
+  def localAddress: Address
 
   /**
    * Address of the remote endpoint.
@@ -129,7 +148,7 @@ trait AssociationHandle {
    *  @return
    *   Address of the remote endpoint.
    */
-  def remoteEndpointAddress: Address
+  def remoteAddress: Address
 
   /**
    * The Promise returned by this call must be completed with an [[akka.actor.ActorRef]] to register an actor
