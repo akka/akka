@@ -786,7 +786,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       expectMsg("pong")
     }
 
-    "survive being stressed" in {
+    "survive being stressed" ignore {
       system.eventStream.publish(Mute(
         EventFilter[Failure](),
         EventFilter[ActorInitializationException](),

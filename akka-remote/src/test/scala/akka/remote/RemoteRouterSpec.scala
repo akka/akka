@@ -201,9 +201,7 @@ akka.actor.deployment {
 
     "set supplied supervisorStrategy" in {
       val escalator = OneForOneStrategy() {
-        case e ⇒
-          println("## " + e)
-          testActor ! e; SupervisorStrategy.Escalate
+        case e ⇒ testActor ! e; SupervisorStrategy.Escalate
       }
       val router = system.actorOf(Props.empty.withRouter(new RemoteRouterConfig(
         RoundRobinRouter(1, supervisorStrategy = escalator),
