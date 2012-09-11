@@ -21,7 +21,7 @@ Routers In Action
 
 This is an example of how to create a router that is defined in configuration:
 
-.. includecode:: ../scala/code/docs/routing/RouterViaConfigExample.scala#config
+.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-round-robin
 
 .. includecode:: code/docs/jrouting/RouterViaConfigExample.java#configurableRouting
 
@@ -177,6 +177,10 @@ is exactly what you would expect from a round-robin router to happen.
 (The name of an actor is automatically created in the format ``$letter`` unless you specify it -
 hence the names printed above.)
 
+This is an example of how to define a round-robin router in configuration:
+
+.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-round-robin
+
 RandomRouter
 ************
 As the name implies this router type selects one of its routees randomly and forwards
@@ -204,6 +208,10 @@ When run you should see a similar output to this:
 The result from running the random router should be different, or at least random, every time you run it.
 Try to run it a couple of times to verify its behavior if you don't trust us.
 
+This is an example of how to define a random router in configuration:
+
+.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-random
+
 SmallestMailboxRouter
 *********************
 A Router that tries to send to the non-suspended routee with fewest messages in mailbox.
@@ -218,6 +226,10 @@ The selection is done in this order:
 Code example:
 
 .. includecode:: code/docs/jrouting/ParentActor.java#smallestMailboxRouter
+
+This is an example of how to define a smallest-mailbox router in configuration:
+
+.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-smallest-mailbox
 
 BroadcastRouter
 ***************
@@ -238,6 +250,10 @@ When run you should see a similar output to this:
 
 As you can see here above each of the routees, five in total, received the broadcast message.
 
+This is an example of how to define a broadcast router in configuration:
+
+.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-broadcast
+
 ScatterGatherFirstCompletedRouter
 *********************************
 The ScatterGatherFirstCompletedRouter will send the message on to all its routees as a future.
@@ -254,6 +270,36 @@ When run you should see this:
 
 From the output above you can't really see that all the routees performed the calculation, but they did!
 The result you see is from the first routee that returned its calculation to the router.
+
+This is an example of how to define a scatter-gather router in configuration:
+
+.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-scatter-gather
+
+ConsistentHashingRouter
+***********************
+
+The ConsistentHashingRouter uses `consistent hashing <http://en.wikipedia.org/wiki/Consistent_hashing>`_
+to select a connection based on the sent message. This 
+`article <http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html>`_ gives good 
+insight into how consistent hashing is implemented.
+
+The messages sent to a ConsistentHashingRouter must implement 
+``akka.routing.ConsistentHashable`` or be wrapped in a ``akka.routing.ConsistentHashableEnvelope``
+to define what  data to use for the consistent hash key. If returning a
+byte array or String it will be used as is, otherwise the configured 
+:ref:`serializer <serialization-scala>` will be applied to the returned data
+to create a byte array that will be hashed.
+
+Code example:
+
+FIXME Java example of consistent routing
+
+In the above example you see that the ``Get`` message implements ``ConsistentHashable`` itself,
+while the ``Entry`` message is wrapped in a ``ConsistentHashableEnvelope``.
+
+This is an example of how to define a consistent-hashing router in configuration:
+
+.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-consistent-hashing
 
 Broadcast Messages
 ^^^^^^^^^^^^^^^^^^
@@ -276,7 +322,7 @@ of routees dynamically.
 
 This is an example of how to create a resizable router that is defined in configuration:
 
-.. includecode:: ../scala/code/docs/routing/RouterViaConfigExample.scala#config-resize
+.. includecode:: ../scala/code/docs/routing/RouterViaConfigDocSpec.scala#config-resize
 
 .. includecode:: code/docs/jrouting/RouterViaConfigExample.java#configurableRoutingWithResizer
 
