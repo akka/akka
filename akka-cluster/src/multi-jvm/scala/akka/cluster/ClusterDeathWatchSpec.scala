@@ -21,13 +21,13 @@ object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class ClusterDeathWatchMultiJvmNode1 extends ClusterDeathWatchSpec with FailureDetectorPuppetStrategy
-class ClusterDeathWatchMultiJvmNode2 extends ClusterDeathWatchSpec with FailureDetectorPuppetStrategy
-class ClusterDeathWatchMultiJvmNode3 extends ClusterDeathWatchSpec with FailureDetectorPuppetStrategy
-class ClusterDeathWatchMultiJvmNode4 extends ClusterDeathWatchSpec with FailureDetectorPuppetStrategy
+class ClusterDeathWatchMultiJvmNode1 extends ClusterDeathWatchSpec
+class ClusterDeathWatchMultiJvmNode2 extends ClusterDeathWatchSpec
+class ClusterDeathWatchMultiJvmNode3 extends ClusterDeathWatchSpec
+class ClusterDeathWatchMultiJvmNode4 extends ClusterDeathWatchSpec
 
 abstract class ClusterDeathWatchSpec
   extends MultiNodeSpec(ClusterDeathWatchMultiJvmSpec)
