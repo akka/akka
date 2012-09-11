@@ -24,6 +24,7 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   // Note that this test uses default configuration,
   // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
+    akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
       auto-join = off
     }

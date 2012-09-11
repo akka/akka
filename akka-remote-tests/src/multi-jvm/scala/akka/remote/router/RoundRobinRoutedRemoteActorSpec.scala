@@ -32,9 +32,8 @@ object RoundRobinRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class TestResizer extends Resizer {
     def isTimeForResize(messageCounter: Long): Boolean = messageCounter <= 10
-    def resize(props: Props, routeeProvider: RouteeProvider): Unit = {
-      val newRoutees = routeeProvider.createRoutees(props, nrOfInstances = 1, Nil)
-      routeeProvider.registerRoutees(newRoutees)
+    def resize(routeeProvider: RouteeProvider): Unit = {
+      routeeProvider.createRoutees(nrOfInstances = 1)
     }
   }
 
