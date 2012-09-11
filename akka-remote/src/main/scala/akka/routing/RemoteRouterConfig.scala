@@ -6,7 +6,6 @@ package akka.routing
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorContext
 import akka.actor.ActorRef
-import akka.actor.ActorSystemImpl
 import akka.actor.Deploy
 import akka.actor.InternalActorRef
 import akka.actor.Props
@@ -18,6 +17,7 @@ import akka.actor.Address
 import scala.collection.JavaConverters._
 import java.util.concurrent.atomic.AtomicInteger
 import java.lang.IllegalStateException
+import akka.actor.ActorCell
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -72,12 +72,14 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _re
         format context.self.path.toString)
 
       case (n, Nil, ys) ⇒
-        val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
         IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
           val name = "c" + childNameCounter.incrementAndGet
           val deploy = Deploy("", ConfigFactory.empty(), props.routerConfig, RemoteScope(nodeAddressIter.next))
-          impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
-            systemService = false, Some(deploy), lookupDeploy = false, async = false)
+
+          // attachChild means that the provider will treat this call as if possibly done out of the wrong
+          // context and use RepointableActorRef instead of LocalActorRef. Seems like a slightly sub-optimal
+          // choice in a corner case (and hence not worth fixing).
+          context.asInstanceOf[ActorCell].attachChild(props.withDeploy(deploy), name, systemService = false)
         })
 
       case (_, xs, _) ⇒ throw new ConfigurationException("Remote target.nodes can not be combined with routees for [%s]"
