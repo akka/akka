@@ -13,7 +13,7 @@ import scala.concurrent.util.duration._
 import akka.actor.Address
 import akka.remote.testconductor.Direction
 
-object SplitBrainMultiJvmSpec extends MultiNodeConfig {
+case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -26,26 +26,28 @@ object SplitBrainMultiJvmSpec extends MultiNodeConfig {
           auto-down = on
           failure-detector.threshold = 4
         }""")).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+    withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 }
 
-class SplitBrainWithFailureDetectorPuppetMultiJvmNode1 extends SplitBrainSpec with FailureDetectorPuppetStrategy
-class SplitBrainWithFailureDetectorPuppetMultiJvmNode2 extends SplitBrainSpec with FailureDetectorPuppetStrategy
-class SplitBrainWithFailureDetectorPuppetMultiJvmNode3 extends SplitBrainSpec with FailureDetectorPuppetStrategy
-class SplitBrainWithFailureDetectorPuppetMultiJvmNode4 extends SplitBrainSpec with FailureDetectorPuppetStrategy
-class SplitBrainWithFailureDetectorPuppetMultiJvmNode5 extends SplitBrainSpec with FailureDetectorPuppetStrategy
+class SplitBrainWithFailureDetectorPuppetMultiJvmNode1 extends SplitBrainSpec(failureDetectorPuppet = true)
+class SplitBrainWithFailureDetectorPuppetMultiJvmNode2 extends SplitBrainSpec(failureDetectorPuppet = true)
+class SplitBrainWithFailureDetectorPuppetMultiJvmNode3 extends SplitBrainSpec(failureDetectorPuppet = true)
+class SplitBrainWithFailureDetectorPuppetMultiJvmNode4 extends SplitBrainSpec(failureDetectorPuppet = true)
+class SplitBrainWithFailureDetectorPuppetMultiJvmNode5 extends SplitBrainSpec(failureDetectorPuppet = true)
 
-class SplitBrainWithAccrualFailureDetectorMultiJvmNode1 extends SplitBrainSpec with AccrualFailureDetectorStrategy
-class SplitBrainWithAccrualFailureDetectorMultiJvmNode2 extends SplitBrainSpec with AccrualFailureDetectorStrategy
-class SplitBrainWithAccrualFailureDetectorMultiJvmNode3 extends SplitBrainSpec with AccrualFailureDetectorStrategy
-class SplitBrainWithAccrualFailureDetectorMultiJvmNode4 extends SplitBrainSpec with AccrualFailureDetectorStrategy
-class SplitBrainWithAccrualFailureDetectorMultiJvmNode5 extends SplitBrainSpec with AccrualFailureDetectorStrategy
+class SplitBrainWithAccrualFailureDetectorMultiJvmNode1 extends SplitBrainSpec(failureDetectorPuppet = false)
+class SplitBrainWithAccrualFailureDetectorMultiJvmNode2 extends SplitBrainSpec(failureDetectorPuppet = false)
+class SplitBrainWithAccrualFailureDetectorMultiJvmNode3 extends SplitBrainSpec(failureDetectorPuppet = false)
+class SplitBrainWithAccrualFailureDetectorMultiJvmNode4 extends SplitBrainSpec(failureDetectorPuppet = false)
+class SplitBrainWithAccrualFailureDetectorMultiJvmNode5 extends SplitBrainSpec(failureDetectorPuppet = false)
 
-abstract class SplitBrainSpec
-  extends MultiNodeSpec(SplitBrainMultiJvmSpec)
-  with MultiNodeClusterSpec with FailureDetectorStrategy {
+abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
+  extends MultiNodeSpec(multiNodeConfig)
+  with MultiNodeClusterSpec {
 
-  import SplitBrainMultiJvmSpec._
+  def this(failureDetectorPuppet: Boolean) = this(SplitBrainMultiNodeConfig(failureDetectorPuppet))
+
+  import multiNodeConfig._
 
   val side1 = IndexedSeq(first, second)
   val side2 = IndexedSeq(third, fourth, fifth)

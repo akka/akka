@@ -6,7 +6,6 @@ package akka.routing
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorContext
 import akka.actor.ActorRef
-import akka.actor.ActorSystemImpl
 import akka.actor.Deploy
 import akka.actor.InternalActorRef
 import akka.actor.Props
@@ -18,6 +17,7 @@ import akka.actor.Address
 import scala.collection.JavaConverters._
 import java.util.concurrent.atomic.AtomicInteger
 import java.lang.IllegalStateException
+import akka.actor.ActorCell
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -75,12 +75,14 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _ro
       format context.self.path.toString)
 
   override def createRoutees(nrOfInstances: Int): Unit = {
-    val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
     val refs = IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
       val name = "c" + childNameCounter.incrementAndGet
       val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(nodeAddressIter.next))
-      impl.provider.actorOf(impl, routeeProps, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
-        systemService = false, Some(deploy), lookupDeploy = false, async = false)
+
+      // attachChild means that the provider will treat this call as if possibly done out of the wrong
+      // context and use RepointableActorRef instead of LocalActorRef. Seems like a slightly sub-optimal
+      // choice in a corner case (and hence not worth fixing).
+      context.asInstanceOf[ActorCell].attachChild(routeeProps.withDeploy(deploy), name, systemService = false)
     })
     registerRoutees(refs)
   }

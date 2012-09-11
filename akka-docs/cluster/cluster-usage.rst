@@ -18,7 +18,7 @@ The Akka cluster is a separate jar file. Make sure that you have the following d
 
 .. parsed-literal::
 
-  "com.typesafe.akka" % "akka-cluster_|scalaVersion|" % "2.1-SNAPSHOT"
+  "com.typesafe.akka" %% "akka-cluster" % "2.1-SNAPSHOT"
 
 If you are using the latest nightly build you should pick a timestamped Akka version from `<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-cluster/>`_.
 

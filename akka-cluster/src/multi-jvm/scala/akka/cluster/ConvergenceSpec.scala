@@ -12,7 +12,7 @@ import akka.testkit._
 import scala.concurrent.util.duration._
 import akka.actor.Address
 
-object ConvergenceMultiJvmSpec extends MultiNodeConfig {
+case class ConvergenceMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -20,24 +20,26 @@ object ConvergenceMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("akka.cluster.failure-detector.threshold = 4")).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+    withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 }
 
-class ConvergenceWithFailureDetectorPuppetMultiJvmNode1 extends ConvergenceSpec with FailureDetectorPuppetStrategy
-class ConvergenceWithFailureDetectorPuppetMultiJvmNode2 extends ConvergenceSpec with FailureDetectorPuppetStrategy
-class ConvergenceWithFailureDetectorPuppetMultiJvmNode3 extends ConvergenceSpec with FailureDetectorPuppetStrategy
-class ConvergenceWithFailureDetectorPuppetMultiJvmNode4 extends ConvergenceSpec with FailureDetectorPuppetStrategy
+class ConvergenceWithFailureDetectorPuppetMultiJvmNode1 extends ConvergenceSpec(failureDetectorPuppet = true)
+class ConvergenceWithFailureDetectorPuppetMultiJvmNode2 extends ConvergenceSpec(failureDetectorPuppet = true)
+class ConvergenceWithFailureDetectorPuppetMultiJvmNode3 extends ConvergenceSpec(failureDetectorPuppet = true)
+class ConvergenceWithFailureDetectorPuppetMultiJvmNode4 extends ConvergenceSpec(failureDetectorPuppet = true)
 
-class ConvergenceWithAccrualFailureDetectorMultiJvmNode1 extends ConvergenceSpec with AccrualFailureDetectorStrategy
-class ConvergenceWithAccrualFailureDetectorMultiJvmNode2 extends ConvergenceSpec with AccrualFailureDetectorStrategy
-class ConvergenceWithAccrualFailureDetectorMultiJvmNode3 extends ConvergenceSpec with AccrualFailureDetectorStrategy
-class ConvergenceWithAccrualFailureDetectorMultiJvmNode4 extends ConvergenceSpec with AccrualFailureDetectorStrategy
+class ConvergenceWithAccrualFailureDetectorMultiJvmNode1 extends ConvergenceSpec(failureDetectorPuppet = false)
+class ConvergenceWithAccrualFailureDetectorMultiJvmNode2 extends ConvergenceSpec(failureDetectorPuppet = false)
+class ConvergenceWithAccrualFailureDetectorMultiJvmNode3 extends ConvergenceSpec(failureDetectorPuppet = false)
+class ConvergenceWithAccrualFailureDetectorMultiJvmNode4 extends ConvergenceSpec(failureDetectorPuppet = false)
 
-abstract class ConvergenceSpec
-  extends MultiNodeSpec(ConvergenceMultiJvmSpec)
-  with MultiNodeClusterSpec with FailureDetectorStrategy {
+abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
+  extends MultiNodeSpec(multiNodeConfig)
+  with MultiNodeClusterSpec {
 
-  import ConvergenceMultiJvmSpec._
+  def this(failureDetectorPuppet: Boolean) = this(ConvergenceMultiNodeConfig(failureDetectorPuppet))
+
+  import multiNodeConfig._
 
   "A cluster of 3 members" must {
 

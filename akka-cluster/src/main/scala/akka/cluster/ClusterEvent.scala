@@ -169,7 +169,7 @@ object ClusterEvent {
  * Responsible for domain event subscriptions and publishing of
  * domain events to event bus.
  */
-private[cluster] final class ClusterDomainEventPublisher(environment: ClusterEnvironment) extends Actor with ActorLogging {
+private[cluster] final class ClusterDomainEventPublisher extends Actor with ActorLogging {
   import InternalClusterAction._
 
   var latestGossip: Gossip = Gossip()

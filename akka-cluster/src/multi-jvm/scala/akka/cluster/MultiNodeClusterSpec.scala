@@ -20,6 +20,14 @@ import akka.actor.ActorPath
 import akka.actor.RootActorPath
 
 object MultiNodeClusterSpec {
+
+  def clusterConfigWithFailureDetectorPuppet: Config =
+    ConfigFactory.parseString("akka.cluster.failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet").
+      withFallback(clusterConfig)
+
+  def clusterConfig(failureDetectorPuppet: Boolean): Config =
+    if (failureDetectorPuppet) clusterConfigWithFailureDetectorPuppet else clusterConfig
+
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
@@ -32,6 +40,7 @@ object MultiNodeClusterSpec {
       periodic-tasks-initial-delay      = 300 ms
       publish-stats-interval            = 0 s # always, when it happens
     }
+    akka.remote.log-remote-lifecycle-events = off
     akka.test {
       single-expect-default = 5 s
     }
@@ -81,39 +90,12 @@ trait MultiNodeClusterSpec extends Suite { self: MultiNodeSpec ⇒
       throw t
   }
 
-  /**
-   * Make it possible to override/configure seedNodes from tests without
-   * specifying in config. Addresses are unknown before startup time.
-   */
-  protected def seedNodes: IndexedSeq[RoleName] = IndexedSeq.empty
-
-  /**
-   * The cluster node instance. Needs to be lazily created.
-   */
-  private lazy val clusterNode = this match {
-    case x: FailureDetectorStrategy ⇒ createTestCluster(x.failureDetector)
-    case _ if seedNodes.nonEmpty ⇒
-      createTestCluster(new AccrualFailureDetector(system, new ClusterSettings(system.settings.config, system.name)))
-    case _ ⇒ Cluster(system)
-
-  }
-
-  private def createTestCluster(failureDetector: FailureDetector): Cluster = {
-    new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector) {
-      override def seedNodes: IndexedSeq[Address] = {
-        val testSeedNodes = MultiNodeClusterSpec.this.seedNodes
-        if (testSeedNodes.isEmpty) super.seedNodes
-        else testSeedNodes map address
-      }
-    }
-  }
-
   def clusterView: ClusterReadView = cluster.readView
 
   /**
    * Get the cluster node to use.
    */
-  def cluster: Cluster = clusterNode
+  def cluster: Cluster = Cluster(system)
 
   /**
    * Use this method for the initial startup of the cluster node.
@@ -223,6 +205,26 @@ trait MultiNodeClusterSpec extends Suite { self: MultiNodeSpec ⇒
   }
 
   def roleName(addr: Address): Option[RoleName] = roles.find(address(_) == addr)
+
+  /**
+   * Marks a node as available in the failure detector if
+   * [[akka.cluster.FailureDetectorPuppet]] is used as
+   * failure detector.
+   */
+  def markNodeAsAvailable(address: Address): Unit = cluster.failureDetector match {
+    case puppet: FailureDetectorPuppet ⇒ puppet.markNodeAsAvailable(address)
+    case _                             ⇒
+  }
+
+  /**
+   * Marks a node as unavailable in the failure detector if
+   * [[akka.cluster.FailureDetectorPuppet]] is used as
+   * failure detector.
+   */
+  def markNodeAsUnavailable(address: Address): Unit = cluster.failureDetector match {
+    case puppet: FailureDetectorPuppet ⇒ puppet.markNodeAsUnavailable(address)
+    case _                             ⇒
+  }
 
 }
 

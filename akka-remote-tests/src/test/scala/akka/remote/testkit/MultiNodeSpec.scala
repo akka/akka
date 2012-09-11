@@ -54,6 +54,7 @@ abstract class MultiNodeConfig {
           receive = on
           fsm = on
         }
+        akka.remote.log-remote-lifecycle-events = on
         """)
     else
       ConfigFactory.parseString("akka.loglevel = INFO")

@@ -52,7 +52,7 @@ object Sphinx {
         val env = "PYTHONPATH" -> target.absolutePath
         s.log.debug("Command: " + command.mkString(" ") + "\nEnv:" + env)
         val exitCode = Process(command, cwd, env) ! logger
-        if (exitCode != 0) sys.error("Failed to install custom Sphinx pygments styles.")
+        if (exitCode != 0) sys.error("Failed to install custom Sphinx pygments styles: exit code " + exitCode)
         (pygments * ("*.egg-info" | "build" | "temp")).get.foreach(IO.delete)
         s.log.info("Sphinx pygments styles installed at: " + target)
       }
