@@ -115,7 +115,8 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
     }
 
     // send Terminated to self for all matching subjects
-    // FIXME existenceConfirmed?
+    // existenceConfirmed = false because we could have been watching a
+    // non-local ActorRef that had never resolved before the other node went down
     for (a ← watching; if a.path.address == address) {
       self ! Terminated(a)(existenceConfirmed = false)
     }
