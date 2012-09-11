@@ -75,6 +75,10 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _re
         IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
           val name = "c" + childNameCounter.incrementAndGet
           val deploy = Deploy("", ConfigFactory.empty(), props.routerConfig, RemoteScope(nodeAddressIter.next))
+
+          // attachChild means that the provider will treat this call as if possibly done out of the wrong
+          // context and use RepointableActorRef instead of LocalActorRef. Seems like a slightly sub-optimal
+          // choice in a corner case (and hence not worth fixing).
           context.asInstanceOf[ActorCell].attachChild(props.withDeploy(deploy), name, systemService = false)
         })
 
