@@ -96,6 +96,12 @@ object TestActorRefSpec {
     }
   }
 
+  /**
+   * Forwarding `Terminated` to non-watching testActor is not possible,
+   * and therefore the `Terminated` message is wrapped.
+   */
+  case class WrappedTerminated(t: Terminated)
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -169,11 +175,14 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         val a = TestActorRef(Props[WorkerActor])
         val forwarder = system.actorOf(Props(new Actor {
           context.watch(a)
-          def receive = { case x ⇒ testActor forward x }
+          def receive = {
+            case t: Terminated ⇒ testActor forward WrappedTerminated(t)
+            case x             ⇒ testActor forward x
+          }
         }))
         a.!(PoisonPill)(testActor)
         expectMsgPF(5 seconds) {
-          case Terminated(`a`) ⇒ true
+          case WrappedTerminated(Terminated(`a`)) ⇒ true
         }
         a.isTerminated must be(true)
         assertThread

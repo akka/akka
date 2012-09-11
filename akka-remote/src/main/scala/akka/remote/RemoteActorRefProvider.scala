@@ -235,6 +235,7 @@ private[akka] class RemoteActorRef private[akka] (
     catch {
       case e @ (_: InterruptedException | NonFatal(_)) ⇒
         remote.system.eventStream.publish(Error(e, path.toString, classOf[RemoteActorRef], "swallowing exception during message send"))
+        provider.deadLetters ! message
     }
 
   override def !(message: Any)(implicit sender: ActorRef = null): Unit =
@@ -242,6 +243,7 @@ private[akka] class RemoteActorRef private[akka] (
     catch {
       case e @ (_: InterruptedException | NonFatal(_)) ⇒
         remote.system.eventStream.publish(Error(e, path.toString, classOf[RemoteActorRef], "swallowing exception during message send"))
+        provider.deadLetters ! message
     }
 
   def suspend(): Unit = sendSystemMessage(Suspend())
