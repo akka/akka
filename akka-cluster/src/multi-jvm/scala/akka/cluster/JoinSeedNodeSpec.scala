@@ -9,6 +9,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.util.duration._
+import akka.actor.Address
 
 object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
@@ -18,15 +19,15 @@ object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val ordinary2 = role("ordinary2")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.auto-join = on")).
+    withFallback(ConfigFactory.parseString("akka.cluster.auto-join = off")).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class JoinSeedNodeMultiJvmNode1 extends JoinSeedNodeSpec with FailureDetectorPuppetStrategy
-class JoinSeedNodeMultiJvmNode2 extends JoinSeedNodeSpec with FailureDetectorPuppetStrategy
-class JoinSeedNodeMultiJvmNode3 extends JoinSeedNodeSpec with FailureDetectorPuppetStrategy
-class JoinSeedNodeMultiJvmNode4 extends JoinSeedNodeSpec with FailureDetectorPuppetStrategy
-class JoinSeedNodeMultiJvmNode5 extends JoinSeedNodeSpec with FailureDetectorPuppetStrategy
+class JoinSeedNodeMultiJvmNode1 extends JoinSeedNodeSpec
+class JoinSeedNodeMultiJvmNode2 extends JoinSeedNodeSpec
+class JoinSeedNodeMultiJvmNode3 extends JoinSeedNodeSpec
+class JoinSeedNodeMultiJvmNode4 extends JoinSeedNodeSpec
+class JoinSeedNodeMultiJvmNode5 extends JoinSeedNodeSpec
 
 abstract class JoinSeedNodeSpec
   extends MultiNodeSpec(JoinSeedNodeMultiJvmSpec)
@@ -34,9 +35,9 @@ abstract class JoinSeedNodeSpec
 
   import JoinSeedNodeMultiJvmSpec._
 
-  override def seedNodes = IndexedSeq(seed1, seed2, seed3)
+  def seedNodes: IndexedSeq[Address] = IndexedSeq(seed1, seed2, seed3)
 
-  "A cluster with configured seed nodes" must {
+  "A cluster with seed nodes" must {
     "be able to start the seed nodes concurrently" taggedAs LongRunningTest in {
 
       runOn(seed1) {
@@ -45,12 +46,16 @@ abstract class JoinSeedNodeSpec
       }
 
       runOn(seed1, seed2, seed3) {
+        cluster.joinSeedNodes(seedNodes)
         awaitUpConvergence(3)
       }
       enterBarrier("after-1")
     }
 
-    "join the seed nodes at startup" taggedAs LongRunningTest in {
+    "join the seed nodes" taggedAs LongRunningTest in {
+      runOn(ordinary1, ordinary2) {
+        cluster.joinSeedNodes(seedNodes)
+      }
       awaitUpConvergence(roles.size)
       enterBarrier("after-2")
     }
