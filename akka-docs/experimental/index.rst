@@ -5,9 +5,10 @@ Experimental Modules
 ####################
 
 The following modules of Akka are marked as experimental, which means
-that they are in early access mode. The purpose of releasing them
-early, as experimental, is to make them easily available and improve
-based on feedback, or even discover that the module wasn't useful.
+that they are in early access mode, which also means that they are not
+covered by commercial support. The purpose of releasing them early, as 
+experimental, is to make them easily available and improve based on 
+feedback, or even discover that the module wasn't useful.
 
 An experimental module doesn't have to obey the rule of staying binary
 compatible between minor releases. Breaking API changes may be introduced
