@@ -5,9 +5,7 @@
  Cluster Usage
 ###############
 
-.. note:: This document describes how to use the features implemented so far of the 
-  new clustering coming in Akka Coltrane and is not available in the latest stable release.
-  The API might change before it is released.
+.. note:: This module is :ref:`experimental <experimental>`. This document describes how to use the features implemented so far. More features are coming in Akka Coltrane.
 
 For introduction to the Akka Cluster concepts please see :ref:`cluster`.
 

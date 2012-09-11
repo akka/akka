@@ -9,8 +9,8 @@ Contents
    common/index
    java/index
    scala/index
-   cluster/index
    modules/index
+   experimental/index
    dev/index
    project/index
    additional/index
