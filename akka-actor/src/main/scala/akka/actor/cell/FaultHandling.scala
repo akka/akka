@@ -6,12 +6,16 @@ package akka.actor.cell
 
 import scala.annotation.tailrec
 import akka.actor.{ PreRestartException, PostRestartException, InternalActorRef, Failed, ActorRef, ActorInterruptedException, ActorCell, Actor }
-import akka.dispatch.{ Envelope, ChildTerminated }
+import akka.dispatch._
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
-import akka.dispatch.SystemMessage
 import akka.event.Logging
-import akka.dispatch.NullMessage
+import scala.Some
+import akka.dispatch.ChildTerminated
+import akka.actor.PreRestartException
+import akka.actor.Failed
+import akka.actor.PostRestartException
+import akka.event.Logging.Debug
 
 private[akka] trait FaultHandling { this: ActorCell ⇒
 
@@ -48,27 +52,33 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
    * Do re-create the actor in response to a failure.
    */
   protected def faultRecreate(cause: Throwable): Unit =
-    if (isNormal) {
-      val failedActor = actor
-      if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
-      if (failedActor ne null) {
-        val optionalMessage = if (currentMessage ne null) Some(currentMessage.message) else None
-        try {
-          // if the actor fails in preRestart, we can do nothing but log it: it’s best-effort
-          if (failedActor.context ne null) failedActor.preRestart(cause, optionalMessage)
-        } catch {
-          case NonFatal(e) ⇒
-            val ex = new PreRestartException(self, e, cause, optionalMessage)
-            publish(Error(ex, self.path.toString, clazz(failedActor), e.getMessage))
-        } finally {
-          clearActorFields(failedActor)
-        }
-      }
-      assert(mailbox.isSuspended, "mailbox must be suspended during restart, status=" + mailbox.status)
-      if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause, failedActor)
+    if (actor == null) {
+      system.eventStream.publish(Error(self.path.toString, clazz(actor),
+        "changing Recreate into Create after " + cause))
+      faultCreate()
     } else {
-      // need to keep that suspend counter balanced
-      faultResume(causedByFailure = null)
+      if (isNormal) {
+        val failedActor = actor
+        if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(failedActor), "restarting"))
+        if (failedActor ne null) {
+          val optionalMessage = if (currentMessage ne null) Some(currentMessage.message) else None
+          try {
+            // if the actor fails in preRestart, we can do nothing but log it: it’s best-effort
+            if (failedActor.context ne null) failedActor.preRestart(cause, optionalMessage)
+          } catch {
+            case NonFatal(e) ⇒
+              val ex = new PreRestartException(self, e, cause, optionalMessage)
+              publish(Error(ex, self.path.toString, clazz(failedActor), e.getMessage))
+          } finally {
+            clearActorFields(failedActor)
+          }
+        }
+        assert(mailbox.isSuspended, "mailbox must be suspended during restart, status=" + mailbox.status)
+        if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause, failedActor)
+      } else {
+        // need to keep that suspend counter balanced
+        faultResume(causedByFailure = null)
+      }
     }
 
   /**
@@ -91,9 +101,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     if (actor == null) {
       system.eventStream.publish(Error(self.path.toString, clazz(actor),
         "changing Resume into Create after " + causedByFailure))
-      try resumeNonRecursive()
-      finally clearFailed()
-      create(uid)
+      faultCreate()
     } else if (actor.context == null && causedByFailure != null) {
       system.eventStream.publish(Error(self.path.toString, clazz(actor),
         "changing Resume into Restart after " + causedByFailure))
@@ -105,6 +113,31 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
       try resumeNonRecursive()
       finally if (causedByFailure != null) clearFailed()
       resumeChildren(causedByFailure, perp)
+    }
+  }
+
+  /**
+   * Do create the actor in response to a failure.
+   */
+  protected def faultCreate(): Unit = {
+    assert(mailbox.isSuspended, "mailbox must be suspended during failed creation, status=" + mailbox.status)
+    assert(perpetrator == self)
+
+    setReceiveTimeout(None)
+    cancelReceiveTimeout
+
+    // stop all children, which will turn childrenRefs into TerminatingChildrenContainer (if there are children)
+    children foreach stop
+
+    if (!setChildrenTerminationReason(ChildrenContainer.Creation())) finishCreate()
+  }
+
+  private def finishCreate(): Unit = {
+    try {
+      create(uid)
+    } finally {
+      try resumeNonRecursive()
+      finally clearFailed()
     }
   }
 
@@ -227,9 +260,11 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
      * otherwise tell the supervisor etc. (in that second case, the match
      * below will hit the empty default case, too)
      */
-    try actor.supervisorStrategy.handleChildTerminated(this, child, children)
-    catch {
-      case NonFatal(e) ⇒ handleInvokeFailure(Nil, e, "handleChildTerminated failed")
+    if (actor != null) {
+      try actor.supervisorStrategy.handleChildTerminated(this, child, children)
+      catch {
+        case NonFatal(e) ⇒ handleInvokeFailure(Nil, e, "handleChildTerminated failed")
+      }
     }
     /*
      * if the removal changed the state of the (terminating) children container,
@@ -237,6 +272,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
      */
     status match {
       case Some(ChildrenContainer.Recreation(cause, todo)) ⇒ finishRecreate(cause, actor); SystemMessage.reverse(todo)
+      case Some(ChildrenContainer.Creation(todo)) ⇒ finishCreate(); SystemMessage.reverse(todo)
       case Some(ChildrenContainer.Termination) ⇒ finishTerminate(); null
       case _ ⇒ null
     }

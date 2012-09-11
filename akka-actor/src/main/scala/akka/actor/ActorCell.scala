@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import cell.ChildrenContainer.{ Creation, Recreation }
 import java.io.{ ObjectOutputStream, NotSerializableException }
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeSet
@@ -330,19 +331,22 @@ private[akka] class ActorCell(
         case Watch(watchee, watcher)   ⇒ addWatcher(watchee, watcher)
         case Unwatch(watchee, watcher) ⇒ remWatcher(watchee, watcher)
         case Recreate(cause) ⇒
-          recreationOrNull match {
-            case null ⇒ faultRecreate(cause)
-            case r    ⇒ message.next = r.todo; r.todo = message
+          waitingForChildrenOrNull match {
+            case null          ⇒ faultRecreate(cause)
+            case r: Recreation ⇒ message.next = r.todo; r.todo = message
+            case c: Creation   ⇒ message.next = c.todo; c.todo = message
           }
         case Suspend() ⇒
-          recreationOrNull match {
-            case null ⇒ faultSuspend()
-            case r    ⇒ message.next = r.todo; r.todo = message
+          waitingForChildrenOrNull match {
+            case null          ⇒ faultSuspend()
+            case r: Recreation ⇒ message.next = r.todo; r.todo = message
+            case c: Creation   ⇒ message.next = c.todo; c.todo = message
           }
         case Resume(inRespToFailure) ⇒
-          recreationOrNull match {
-            case null ⇒ faultResume(inRespToFailure)
-            case r    ⇒ message.next = r.todo; r.todo = message
+          waitingForChildrenOrNull match {
+            case null          ⇒ faultResume(inRespToFailure)
+            case r: Recreation ⇒ message.next = r.todo; r.todo = message
+            case c: Creation   ⇒ message.next = c.todo; c.todo = message
           }
         case Terminate()            ⇒ terminate()
         case Supervise(child, uid)  ⇒ supervise(child, uid)
@@ -446,14 +450,20 @@ private[akka] class ActorCell(
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
       case NonFatal(i: InstantiationException) ⇒
-        actor = null // ensure that we know that we failed during creation
+        if (actor != null) {
+          clearActorFields(actor)
+          actor = null // ensure that we know that we failed during creation
+        }
         throw ActorInitializationException(self,
           """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new UntypedActorFactory ... )
                or is missing an appropriate, reachable no-args constructor.
             """, i.getCause)
       case NonFatal(e) ⇒
-        actor = null // ensure that we know that we failed during creation
+        if (actor != null) {
+          clearActorFields(actor)
+          actor = null // ensure that we know that we failed during creation
+        }
         throw ActorInitializationException(self, "exception during creation", e)
     }
 

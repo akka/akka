@@ -120,8 +120,9 @@ private[akka] trait Children { this: ActorCell ⇒
 
   protected def isTerminating = childrenRefs.isTerminating
 
-  protected def recreationOrNull = childrenRefs match {
+  protected def waitingForChildrenOrNull = childrenRefs match {
     case TerminatingChildrenContainer(_, _, r: Recreation) ⇒ r
+    case TerminatingChildrenContainer(_, _, c: Creation) ⇒ c
     case _ ⇒ null
   }
 

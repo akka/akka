@@ -789,7 +789,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       expectMsg("pong")
     }
 
-    "handle failure in creation where supervision startegy returns Resume" in {
+    "handle failure in creation when supervision startegy returns Resume and Restart" in {
       val createAttempt = new AtomicInteger(0)
       val preStartCalled = new AtomicInteger(0)
       val postRestartCalled = new AtomicInteger(0)
@@ -798,12 +798,21 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
         EventFilter[Failure](),
         EventFilter[ActorInitializationException](),
         EventFilter[IllegalArgumentException]("OH NO!"),
+        EventFilter.error(start = "changing Recreate into Create"),
         EventFilter.error(start = "changing Resume into Create")) {
           val failResumer = system.actorOf(Props(new Actor {
-            override def supervisorStrategy = OneForOneStrategy() { case e: ActorInitializationException ⇒ SupervisorStrategy.Resume }
+            override def supervisorStrategy = OneForOneStrategy() {
+              case e: ActorInitializationException ⇒
+                if (createAttempt.get % 2 == 0) SupervisorStrategy.Resume else SupervisorStrategy.Restart
+            }
 
             val child = context.actorOf(Props(new Actor {
-              if (createAttempt.incrementAndGet() < 3) {
+              val ca = createAttempt.incrementAndGet()
+
+              if (ca <= 6 && ca % 3 == 0)
+                context.actorOf(Props(new Actor { override def receive = { case _ ⇒ } }), "workingChild")
+
+              if (ca < 6) {
                 throw new IllegalArgumentException("OH NO!")
               }
               override def preStart() = {
@@ -817,7 +826,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
               }
             }), "failChild")
 
-            def receive = {
+            override def receive = {
               case m ⇒ child.forward(m)
             }
           }), "failResumer")
@@ -825,7 +834,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
           failResumer ! "blahonga"
           expectMsg("blahonga")
         }
-      createAttempt.get must equal(3)
+      createAttempt.get must equal(6)
       preStartCalled.get must equal(1)
       postRestartCalled.get must equal(0)
     }
@@ -837,6 +846,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
         EventFilter[NoSuchElementException]("head of empty list"),
         EventFilter.error(start = "changing Resume into Restart"),
         EventFilter.error(start = "changing Resume into Create"),
+        EventFilter.error(start = "changing Recreate into Create"),
         EventFilter.warning(start = "received dead ")))
 
       val fsm = system.actorOf(Props(new StressTest(testActor, size = 500, breadth = 6)), "stressTest")
