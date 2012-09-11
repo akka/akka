@@ -5,11 +5,11 @@ package akka.cluster
 
 import language.postfixOps
 import scala.collection.immutable.SortedSet
-
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address }
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
 import akka.event.EventStream
+import akka.actor.AddressTerminated
 
 /**
  * Domain events published to the event bus.
@@ -200,7 +200,14 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   def publishChanges(oldGossip: Gossip, newGossip: Gossip): Unit = {
     // keep the latestGossip to be sent to new subscribers
     latestGossip = newGossip
-    diff(oldGossip, newGossip) foreach { eventStream publish }
+    diff(oldGossip, newGossip) foreach { event ⇒
+      eventStream publish event
+      // notify DeathWatch about unreachable node
+      event match {
+        case MemberUnreachable(m) ⇒ eventStream publish AddressTerminated(m.address)
+        case _                    ⇒
+      }
+    }
   }
 
   def publishInternalStats(currentStats: CurrentInternalStats): Unit = {
