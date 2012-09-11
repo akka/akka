@@ -115,8 +115,8 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
     val s = if (sender eq null) system.deadLetters else sender
 
     val msg = message match {
-      case Broadcast(m) ⇒ m
-      case m            ⇒ m
+      case wrapped: RouterEnvelope ⇒ wrapped.message
+      case m                       ⇒ m
     }
 
     applyRoute(s, message) match {
@@ -400,7 +400,15 @@ private object Router {
  * Router implementations may choose to handle this message differently.
  */
 @SerialVersionUID(1L)
-case class Broadcast(message: Any)
+case class Broadcast(message: Any) extends RouterEnvelope
+
+/**
+ * Only the contained message will be forwarded to the
+ * destination, i.e. the envelope will be stripped off.
+ */
+trait RouterEnvelope {
+  def message: Any
+}
 
 /**
  * Sending this message to a router will make it send back its currently used routees.
