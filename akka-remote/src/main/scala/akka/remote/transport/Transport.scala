@@ -18,13 +18,6 @@ object Transport {
   case object Invalid extends Status
 
   /**
-   * The association setup has failed immediately and a setup retry will fail with high probability in a short time
-   * window. Examples for this are link errors that are detected by the Transport (no cable attached, no carrier
-   * detected, etc...), problems with Addresses (DNS lookup problems).
-   */
-  case object ImmediateFail extends Status
-
-  /**
    * The association setup has failed, but no information can be provided about the probability of the success of a
    * setup retry.
    */
