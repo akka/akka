@@ -60,7 +60,7 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
           cluster {
             enabled = on
             max-nr-of-instances-per-node = 1
-            routees-on-own-node = off
+            allow-local-routees = off
           }
         }
         /router4 {
@@ -202,7 +202,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
       enterBarrier("after-5")
     }
 
-    "deploy routees to only remote nodes when routees-on-own-node = off" taggedAs LongRunningTest in {
+    "deploy routees to only remote nodes when allow-local-routees = off" taggedAs LongRunningTest in {
 
       runOn(first) {
         val iterationCount = 10

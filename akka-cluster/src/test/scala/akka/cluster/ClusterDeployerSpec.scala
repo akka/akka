@@ -19,13 +19,13 @@ object ClusterDeployerSpec {
           nr-of-instances = 20
           cluster.enabled = on
           cluster.max-nr-of-instances-per-node = 3
-          cluster.routees-on-own-node = off
+          cluster.allow-local-routees = off
         }
         /user/service2 {
           router = round-robin
           nr-of-instances = 20
           cluster.enabled = on
-          cluster.routees-on-own-node = off
+          cluster.allow-local-routees = off
           cluster.routees-path = "/user/myservice"
         }
       }

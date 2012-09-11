@@ -61,13 +61,15 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   import ClusterEvent._
 
-  if (!system.provider.isInstanceOf[ClusterActorRefProvider])
-    throw new ConfigurationException("ActorSystem[" + system + "] needs to have a 'ClusterActorRefProvider' enabled in the configuration")
-
   val settings = new ClusterSettings(system.settings.config, system.name)
   import settings._
 
-  val selfAddress = system.provider.asInstanceOf[ClusterActorRefProvider].transport.address
+  val selfAddress = system.provider match {
+    case c: ClusterActorRefProvider ⇒ c.transport.address
+    case other ⇒ throw new ConfigurationException(
+      "ActorSystem [%s] needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses [%s]".
+        format(system, other.getClass.getName))
+  }
 
   private val _isRunning = new AtomicBoolean(true)
   private val log = Logging(system, "Cluster")

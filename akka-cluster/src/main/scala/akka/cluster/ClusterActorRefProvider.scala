@@ -43,7 +43,7 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
           val clusterRouterSettings = ClusterRouterSettings(
             totalInstances = deploy.config.getInt("nr-of-instances"),
             maxInstancesPerNode = deploy.config.getInt("cluster.max-nr-of-instances-per-node"),
-            routeesOnOwnNode = deploy.config.getBoolean("cluster.routees-on-own-node"),
+            routeesOnOwnNode = deploy.config.getBoolean("cluster.allow-local-routees"),
             routeesPath = deploy.config.getString("cluster.routees-path"))
 
           Some(deploy.copy(

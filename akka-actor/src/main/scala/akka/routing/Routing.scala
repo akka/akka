@@ -64,9 +64,9 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
     _routeeProvider = routerConfig.createRouteeProvider(this, routeeProps)
     val r = routerConfig.createRoute(routeeProvider)
     // initial resize, before message send
-    routerConfig.resizer foreach { r ⇒
-      if (r.isTimeForResize(resizeCounter.getAndIncrement()))
-        r.resize(routeeProvider)
+    routerConfig.resizer foreach { resizer ⇒
+      if (resizer.isTimeForResize(resizeCounter.getAndIncrement()))
+        resizer.resize(routeeProvider)
     }
     r
   }
@@ -106,8 +106,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
    * `Resizer.resize`
    */
   private[akka] def removeRoutees(abandonedRoutees: Iterable[ActorRef]): Unit = {
-    _routees = _routees diff abandonedRoutees.toSeq
-    abandonedRoutees foreach unwatch
+    _routees = abandonedRoutees.foldLeft(_routees) { (xs, x) ⇒ unwatch(x); xs.filterNot(_ == x) }
   }
 
   override def tell(message: Any, sender: ActorRef): Unit = {
@@ -157,11 +156,28 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
  */
 trait RouterConfig {
 
+  /**
+   * Implement the routing logic by returning a partial function of
+   * partial function from (sender, message) to a set of destinations.
+   * This `Route` will be applied for each incoming message.
+   *
+   * When `createRoute` is called the routees should also be registered,
+   * typically by using `createRoutees` or `registerRouteesFor` of the
+   * supplied `RouteeProvider`.
+   */
   def createRoute(routeeProvider: RouteeProvider): Route
 
+  /**
+   * The `RouteeProvider` responsible for creating or
+   * looking up routees. It's used in `createRoute` to register routees,
+   * and also from [[akka.routing.Resizer]].
+   */
   def createRouteeProvider(context: ActorContext, routeeProps: Props): RouteeProvider =
     new RouteeProvider(context, routeeProps, resizer)
 
+  /**
+   * The router "head" actor.
+   */
   def createActor(): Router = new Router {
     override def supervisorStrategy: SupervisorStrategy = RouterConfig.this.supervisorStrategy
   }
@@ -243,10 +259,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
   /**
    * Looks up routes with specified paths and registers them.
    */
-  def registerRouteesFor(paths: Iterable[String]): Unit = {
-    val routees = paths.map(context.actorFor(_))(scala.collection.breakOut)
-    registerRoutees(routees)
-  }
+  def registerRouteesFor(paths: Iterable[String]): Unit = registerRoutees(paths.map(context.actorFor(_)))
 
   /**
    * Looks up routes with specified paths and registers them.
@@ -260,10 +273,8 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
   def createRoutees(nrOfInstances: Int): Unit = {
     if (nrOfInstances <= 0) throw new IllegalArgumentException(
       "Must specify nrOfInstances or routees for [%s]" format context.self.path.toString)
-    else {
-      val routees = (1 to nrOfInstances).map(_ ⇒ context.actorOf(routeeProps))(scala.collection.breakOut)
-      registerRoutees(routees)
-    }
+    else
+      registerRoutees(IndexedSeq.fill(nrOfInstances)(context.actorOf(routeeProps)))
   }
 
   /**
@@ -277,7 +288,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
       throw new IllegalArgumentException("Expected positive nrOfInstances, got [%s]".format(nrOfInstances))
     } else if (nrOfInstances > 0) {
       val currentRoutees = routees
-      val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length - nrOfInstances)
+      val abandon = currentRoutees.drop(currentRoutees.length - nrOfInstances)
       unregisterRoutees(abandon)
       delayedStop(context.system.scheduler, abandon, stopDelay)
     }
@@ -293,8 +304,10 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
         abandon foreach (_ ! PoisonPill)
       } else {
         import context.dispatcher
+        // Iterable could potentially be mutable
+        val localAbandon = abandon.toIndexedSeq
         scheduler.scheduleOnce(stopDelay) {
-          abandon foreach (_ ! PoisonPill)
+          localAbandon foreach (_ ! PoisonPill)
         }
       }
     }

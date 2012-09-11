@@ -25,7 +25,8 @@ import akka.actor.ActorCell
  * which makes it possible to mix this with the built-in routers such as
  * [[akka.routing.RoundRobinRouter]] or custom routers.
  */
-case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) extends RouterConfig {
+@SerialVersionUID(1L)
+final case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) extends RouterConfig {
 
   def this(local: RouterConfig, nodes: java.lang.Iterable[Address]) = this(local, nodes.asScala)
   def this(local: RouterConfig, nodes: Array[Address]) = this(local, nodes: Iterable[Address])
@@ -59,7 +60,7 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) ext
  *
  * Routee paths may not be combined with remote target nodes.
  */
-class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _routeeProps: Props, _resizer: Option[Resizer])
+final class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _routeeProps: Props, _resizer: Option[Resizer])
   extends RouteeProvider(_context, _routeeProps, _resizer) {
 
   if (nodes.isEmpty) throw new ConfigurationException("Must specify list of remote target.nodes for [%s]"
@@ -75,7 +76,7 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _ro
       format context.self.path.toString)
 
   override def createRoutees(nrOfInstances: Int): Unit = {
-    val refs = IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
+    val refs = IndexedSeq.fill(nrOfInstances) {
       val name = "c" + childNameCounter.incrementAndGet
       val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(nodeAddressIter.next))
 
@@ -83,7 +84,7 @@ class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _ro
       // context and use RepointableActorRef instead of LocalActorRef. Seems like a slightly sub-optimal
       // choice in a corner case (and hence not worth fixing).
       context.asInstanceOf[ActorCell].attachChild(routeeProps.withDeploy(deploy), name, systemService = false)
-    })
+    }
     registerRoutees(refs)
   }
 }
