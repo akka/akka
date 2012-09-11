@@ -12,7 +12,7 @@ import scala.concurrent.util.Duration
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AccrualFailureDetectorSpec extends AkkaSpec("""
-  actor.provider = "akka.remote.RemoteActorRefProvider"
+  actor.provider = "akka.cluster.ClusterActorRefProvider"
   akka.loglevel = "INFO"
 """) {
 

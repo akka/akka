@@ -54,7 +54,7 @@ object RoutingSpec {
 
   class MyRouter(config: Config) extends RouterConfig {
     val foo = config.getString("foo")
-    def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
+    def createRoute(routeeProvider: RouteeProvider): Route = {
       val routees = IndexedSeq(routeeProvider.context.actorOf(Props[Echo]))
       routeeProvider.registerRoutees(routees)
 
@@ -144,8 +144,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       val latch = TestLatch(1)
       val resizer = new Resizer {
         def isTimeForResize(messageCounter: Long): Boolean = messageCounter == 0
-        def resize(props: Props, routeeProvider: RouteeProvider): Unit = {
-          routeeProvider.registerRoutees(routeeProvider.createRoutees(props, nrOfInstances = 3, Nil))
+        def resize(routeeProvider: RouteeProvider): Unit = {
+          routeeProvider.createRoutees(nrOfInstances = 3)
           latch.countDown()
         }
       }
@@ -627,7 +627,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
       //#crRoute
-      def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
+      def createRoute(routeeProvider: RouteeProvider): Route = {
         val democratActor = routeeProvider.context.actorOf(Props(new DemocratActor()), "d")
         val republicanActor = routeeProvider.context.actorOf(Props(new RepublicanActor()), "r")
         val routees = Vector[ActorRef](democratActor, republicanActor)
