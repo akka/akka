@@ -50,7 +50,7 @@ private[akka] object ChildrenContainer {
   case object Termination extends SuspendReason
 
   trait WaitingForChildren {
-    var todo: SystemMessage = null
+    private var todo: SystemMessage = null
     def enqueue(message: SystemMessage) = { message.next = todo; todo = message }
     def dequeueAll(): SystemMessage = { val ret = SystemMessage.reverse(todo); todo = null; ret }
   }
