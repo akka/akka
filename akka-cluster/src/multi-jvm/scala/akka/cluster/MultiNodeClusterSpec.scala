@@ -29,6 +29,7 @@ object MultiNodeClusterSpec {
     if (failureDetectorPuppet) clusterConfigWithFailureDetectorPuppet else clusterConfig
 
   def clusterConfig: Config = ConfigFactory.parseString("""
+    akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
       auto-join                         = on
       auto-down                         = off
@@ -226,3 +227,4 @@ trait MultiNodeClusterSpec extends Suite { self: MultiNodeSpec ⇒
   }
 
 }
+

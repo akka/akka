@@ -287,3 +287,75 @@ stashed messages are put into the dead letters when the actor stops, make sure y
 super.postStop if you override it.
 
 
+Forward of Terminated message
+=============================
+
+Forward of ``Terminated`` message is no longer supported. Instead, if you forward
+``Terminated`` you should send the information in you own message.
+
+v2.0::
+
+  context.watch(subject)
+
+  def receive = {
+    case t @ Terminated => someone forward t
+  }
+
+v2.1::
+
+  case class MyTerminated(subject: ActorRef)
+
+  context.watch(subject)
+
+  def receive = {
+    case Terminated(s) => someone forward MyTerminated(s)
+  }
+
+
+Custom Router or Resizer
+========================
+
+The API of ``RouterConfig``, ``RouteeProvider`` and ``Resizer`` has been 
+cleaned up. If you use these to build your own router functionality the 
+compiler will tell you you to do some adjustments. 
+
+v2.0::
+
+  class MyRouter(target: ActorRef) extends RouterConfig {
+    override def createRoute(p: Props, prov: RouteeProvider): Route = {
+      prov.createAndRegisterRoutees(p, 1, Nil)
+
+v2.1::
+
+  class MyRouter(target: ActorRef) extends RouterConfig {
+    override def createRoute(provider: RouteeProvider): Route = {
+      provider.createRoutees(1)
+
+v2.0::
+
+  def resize(props: Props, routeeProvider: RouteeProvider): Unit = {
+    val currentRoutees = routeeProvider.routees
+    val requestedCapacity = capacity(currentRoutees)
+
+    if (requestedCapacity > 0) {
+      val newRoutees = routeeProvider.createRoutees(props, requestedCapacity, Nil)
+      routeeProvider.registerRoutees(newRoutees)
+    } else if (requestedCapacity < 0) {
+      val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length + requestedCapacity)
+      routeeProvider.unregisterRoutees(abandon)
+      delayedStop(routeeProvider.context.system.scheduler, abandon)(
+        routeeProvider.context.dispatcher)
+    }
+
+
+v2.1::
+
+  def resize(routeeProvider: RouteeProvider): Unit = {
+    val currentRoutees = routeeProvider.routees
+    val requestedCapacity = capacity(currentRoutees)
+
+    if (requestedCapacity > 0) routeeProvider.createRoutees(requestedCapacity)
+    else if (requestedCapacity < 0) routeeProvider.removeRoutees(
+      -requestedCapacity, stopDelay)
+
+

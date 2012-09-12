@@ -45,8 +45,15 @@ private[akka] object ChildrenContainer {
   sealed trait SuspendReason
   case object UserRequest extends SuspendReason
   // careful with those system messages, all handling to be taking place in ActorCell.scala!
-  case class Recreation(cause: Throwable, var todo: SystemMessage = null) extends SuspendReason
+  case class Recreation(cause: Throwable) extends SuspendReason with WaitingForChildren
+  case class Creation() extends SuspendReason with WaitingForChildren
   case object Termination extends SuspendReason
+
+  trait WaitingForChildren {
+    private var todo: SystemMessage = null
+    def enqueue(message: SystemMessage) = { message.next = todo; todo = message }
+    def dequeueAll(): SystemMessage = { val ret = SystemMessage.reverse(todo); todo = null; ret }
+  }
 
   trait EmptyChildrenContainer extends ChildrenContainer {
     val emptyStats = TreeMap.empty[String, ChildStats]

@@ -8,6 +8,7 @@ import akka.routing._
 import com.typesafe.config._
 import akka.ConfigurationException
 
+@SerialVersionUID(1L)
 case class RemoteScope(node: Address) extends Scope {
   def withFallback(other: Scope): Scope = this
 }

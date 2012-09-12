@@ -44,6 +44,7 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
       publish-stats-interval = 0 s # always, when it happens
     }
     akka.loglevel = INFO
+    akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.actor.default-dispatcher.fork-join-executor {
       # when using nodes-per-datacenter=10 we need some extra
       # threads to keep up with netty connect blocking
