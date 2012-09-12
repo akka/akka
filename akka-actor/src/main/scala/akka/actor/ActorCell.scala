@@ -126,6 +126,8 @@ trait ActorContext extends ActorRefFactory {
 
   /**
    * Registers this actor as a Monitor for the provided ActorRef.
+   * This actor will receive a Terminated(watched) message when watched
+   * is terminated.
    * @return the provided ActorRef
    */
   def watch(subject: ActorRef): ActorRef
@@ -317,9 +319,9 @@ private[akka] class ActorCell(
   @tailrec final def systemInvoke(message: SystemMessage): Unit = {
     /*
      * When recreate/suspend/resume are received while restarting (i.e. between
-     * preRestart and postRestart, waiting for children to terminate), these 
+     * preRestart and postRestart, waiting for children to terminate), these
      * must not be executed immediately, but instead queued and released after
-     * finishRecreate returns. This can only ever be triggered by 
+     * finishRecreate returns. This can only ever be triggered by
      * ChildTerminated, and ChildTerminated is not one of the queued message
      * types (hence the overwrite further down). Mailbox sets message.next=null
      * before systemInvoke, so this will only be non-null during such a replay.
@@ -376,13 +378,14 @@ private[akka] class ActorCell(
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case Failed(cause, uid)       ⇒ handleFailure(sender, cause, uid)
-      case t: Terminated            ⇒ watchedActorTerminated(t.actor); receiveMessage(t)
-      case Kill                     ⇒ throw new ActorKilledException("Kill")
-      case PoisonPill               ⇒ self.stop()
-      case SelectParent(m)          ⇒ parent.tell(m, msg.sender)
-      case SelectChildName(name, m) ⇒ getChildByName(name) match { case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender); case _ ⇒ }
-      case SelectChildPattern(p, m) ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
+      case Failed(cause, uid)         ⇒ handleFailure(sender, cause, uid)
+      case t: Terminated              ⇒ watchedActorTerminated(t)
+      case AddressTerminated(address) ⇒ addressTerminated(address)
+      case Kill                       ⇒ throw new ActorKilledException("Kill")
+      case PoisonPill                 ⇒ self.stop()
+      case SelectParent(m)            ⇒ parent.tell(m, msg.sender)
+      case SelectChildName(name, m)   ⇒ getChildByName(name) match { case Some(c: ChildRestartStats) ⇒ c.child.tell(m, msg.sender); case _ ⇒ }
+      case SelectChildPattern(p, m)   ⇒ for (c ← children if p.matcher(c.path.name).matches) c.tell(m, msg.sender)
     }
   }
 

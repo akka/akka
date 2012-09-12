@@ -15,12 +15,12 @@ class CustomRouteSpec extends AkkaSpec {
   import akka.dispatch.Dispatchers
 
   class MyRouter(target: ActorRef) extends RouterConfig {
-    override def createRoute(p: Props, prov: RouteeProvider): Route = {
-      prov.createAndRegisterRoutees(p, 1, Nil)
+    override def createRoute(provider: RouteeProvider): Route = {
+      provider.createRoutees(1)
 
       {
         case (sender, message: String) ⇒ Seq(Destination(sender, target))
-        case (sender, message)         ⇒ toAll(sender, prov.routees)
+        case (sender, message)         ⇒ toAll(sender, provider.routees)
       }
     }
     override def supervisorStrategy = SupervisorStrategy.defaultStrategy
