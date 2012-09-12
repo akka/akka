@@ -342,7 +342,8 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
 
 /**
  * Use this to hook MultiNodeSpec into your test framework lifecycle, either by having your test extend MultiNodeSpec
- * and override these methods or by creating a trait and then mixing that trait with your test together with MultiNodeSpec.
+ * and call these methods or by creating a trait that calls them and then mixing that trait with your test together
+ * with MultiNodeSpec.
  *
  * Example trait for MultiNodeSpec with ScalaTest
  *
