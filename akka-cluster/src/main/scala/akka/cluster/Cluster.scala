@@ -190,6 +190,24 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     clusterCore ! InternalClusterAction.Unsubscribe(subscriber)
 
   /**
+   * Publish current (full) state of the cluster to subscribers,
+   * that are subscribing to [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
+   * or [[akka.cluster.ClusterEvent.CurrentClusterState]].
+   * If you want this to happen periodically you need to schedule a call to
+   * this method yourself.
+   */
+  def publishCurrentClusterState(): Unit =
+    clusterCore ! InternalClusterAction.PublishCurrentClusterState(None)
+
+  /**
+   * Publish current (full) state of the cluster to the specified
+   * receiver. If you want this to happen periodically you need to schedule
+   * a call to this method yourself.
+   */
+  def sendCurrentClusterState(receiver: ActorRef): Unit =
+    clusterCore ! InternalClusterAction.PublishCurrentClusterState(Some(receiver))
+
+  /**
    * Try to join this cluster node with the node specified by 'address'.
    * A 'Join(thisNodeAddress)' command is sent to the node to join.
    */
