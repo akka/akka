@@ -106,12 +106,14 @@ private[cluster] object InternalClusterAction {
   sealed trait SubscriptionMessage
   case class Subscribe(subscriber: ActorRef, to: Class[_]) extends SubscriptionMessage
   case class Unsubscribe(subscriber: ActorRef) extends SubscriptionMessage
+  /**
+   * @param receiver if `receiver` is defined the event will only be sent to that
+   *   actor, otherwise it will be sent to all subscribers via the `eventStream`.
+   */
+  case class PublishCurrentClusterState(receiver: Option[ActorRef]) extends SubscriptionMessage
 
   case class PublishChanges(oldGossip: Gossip, newGossip: Gossip)
   case object PublishDone
-
-  case class Ping(timestamp: Long = System.currentTimeMillis) extends ClusterMessage
-  case class Pong(ping: Ping, timestamp: Long = System.currentTimeMillis) extends ClusterMessage
 
 }
 
@@ -255,7 +257,6 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
     case Remove(address)                  ⇒ removing(address)
     case SendGossipTo(address)            ⇒ gossipTo(address)
     case msg: SubscriptionMessage         ⇒ publisher forward msg
-    case p: Ping                          ⇒ ping(p)
 
   }
 
@@ -831,7 +832,6 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
 
   def publishInternalStats(): Unit = publisher ! CurrentInternalStats(stats)
 
-  def ping(p: Ping): Unit = sender ! Pong(p)
 }
 
 /**

@@ -6,10 +6,8 @@ package akka.cluster
 
 import language.postfixOps
 import language.reflectiveCalls
-
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
-
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.actor.ExtendedActorSystem
@@ -17,6 +15,7 @@ import akka.actor.Address
 import akka.cluster.InternalClusterAction._
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName
+import akka.actor.ActorRef
 
 object ClusterSpec {
   val config = """
@@ -45,16 +44,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   val cluster = Cluster(system)
   def clusterView = cluster.readView
 
-  def leaderActions(): Unit = {
+  def leaderActions(): Unit =
     cluster.clusterCore ! LeaderActionsTick
-    awaitPing()
-  }
-
-  def awaitPing(): Unit = {
-    val ping = Ping()
-    cluster.clusterCore ! ping
-    expectMsgPF() { case pong @ Pong(`ping`, _) ⇒ pong }
-  }
 
   "A Cluster" must {
 
@@ -79,7 +70,25 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       clusterView.status must be(MemberStatus.Joining)
       clusterView.convergence must be(true)
       leaderActions()
-      clusterView.status must be(MemberStatus.Up)
+      awaitCond(clusterView.status == MemberStatus.Up)
+    }
+
+    "publish CurrentClusterState to subscribers when requested" in {
+      try {
+        cluster.subscribe(testActor, classOf[ClusterEvent.ClusterDomainEvent])
+        // first, is in response to the subscription
+        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+
+        cluster.publishCurrentClusterState()
+        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+      } finally {
+        cluster.unsubscribe(testActor)
+      }
+    }
+
+    "send CurrentClusterState to one receiver when requested" in {
+      cluster.sendCurrentClusterState(testActor)
+      expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
     }
 
   }
