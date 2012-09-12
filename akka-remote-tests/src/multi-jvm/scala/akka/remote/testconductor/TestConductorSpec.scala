@@ -16,8 +16,7 @@ import akka.testkit.ImplicitSender
 import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress
 import java.net.InetAddress
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.MultiNodeConfig
+import akka.remote.testkit.{STMultiNodeSpec, MultiNodeSpec, MultiNodeConfig}
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false))
@@ -29,7 +28,7 @@ object TestConductorMultiJvmSpec extends MultiNodeConfig {
 class TestConductorMultiJvmNode1 extends TestConductorSpec
 class TestConductorMultiJvmNode2 extends TestConductorSpec
 
-class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ImplicitSender {
+class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with STMultiNodeSpec with ImplicitSender {
 
   import TestConductorMultiJvmSpec._
 

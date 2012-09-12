@@ -16,7 +16,7 @@ import java.util.concurrent.TimeoutException
 import akka.dispatch.Dispatchers
 import akka.pattern.ask
 
-private[akka] object AkkaSpec {
+object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
       akka {
         event-handlers = ["akka.testkit.TestEventListener"]
@@ -51,7 +51,7 @@ private[akka] object AkkaSpec {
 
 }
 
-private[akka] abstract class AkkaSpec(_system: ActorSystem)
+abstract class AkkaSpec(_system: ActorSystem)
   extends TestKit(_system) with WordSpec with MustMatchers with BeforeAndAfterAll {
 
   def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
@@ -70,7 +70,6 @@ private[akka] abstract class AkkaSpec(_system: ActorSystem)
   }
 
   final override def afterAll {
-    beforeShutdown()
     system.shutdown()
     try system.awaitTermination(5 seconds) catch {
       case _: TimeoutException ⇒
@@ -81,8 +80,6 @@ private[akka] abstract class AkkaSpec(_system: ActorSystem)
   }
 
   protected def atStartup() {}
-
-  protected def beforeShutdown() {}
 
   protected def atTermination() {}
 

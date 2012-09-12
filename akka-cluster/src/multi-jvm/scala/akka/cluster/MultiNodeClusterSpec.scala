@@ -9,7 +9,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.{STMultiNodeSpec, MultiNodeSpec}
 import akka.testkit._
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
@@ -47,7 +47,7 @@ object MultiNodeClusterSpec {
     """)
 }
 
-trait MultiNodeClusterSpec extends Suite { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
