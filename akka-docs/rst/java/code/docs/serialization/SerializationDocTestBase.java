@@ -140,7 +140,7 @@ public class SerializationDocTestBase {
     public Address getAddress() {
       final ActorRefProvider provider = system.provider();
       if (provider instanceof RemoteActorRefProvider) {
-        return ((RemoteActorRefProvider) provider).transport().address();
+        return ((RemoteActorRefProvider) provider).transport().addresses().head();
       } else {
         throw new UnsupportedOperationException("need RemoteActorRefProvider");
       }

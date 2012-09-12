@@ -28,14 +28,14 @@ akka {
       import settings._
 
       EnableSSL must be(false)
-      SSLKeyStore must be(Some("keystore"))
-      SSLKeyStorePassword must be(Some("changeme"))
-      SSLTrustStore must be(Some("truststore"))
-      SSLTrustStorePassword must be(Some("changeme"))
-      SSLProtocol must be(Some("TLSv1"))
-      SSLEnabledAlgorithms must be(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
-      SSLRandomSource must be(None)
-      SSLRandomNumberGenerator must be(None)
+      SslSettings.SSLKeyStore must be(Some("keystore"))
+      SslSettings.SSLKeyStorePassword must be(Some("changeme"))
+      SslSettings.SSLTrustStore must be(Some("truststore"))
+      SslSettings.SSLTrustStorePassword must be(Some("changeme"))
+      SslSettings.SSLProtocol must be(Some("TLSv1"))
+      SslSettings.SSLEnabledAlgorithms must be(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
+      SslSettings.SSLRandomSource must be(None)
+      SslSettings.SSLRandomNumberGenerator must be(None)
     }
   }
 }

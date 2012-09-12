@@ -60,17 +60,21 @@ object Configuration {
       val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty")
       val settings = new NettySettings(fullConfig, "placeholder")
 
-      val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, NoLogging)
+      val rng = NettySSLSupport.initializeCustomSecureRandom(settings.SslSettings.SSLRandomNumberGenerator,
+        settings.SslSettings.SSLRandomSource, NoLogging)
 
       rng.nextInt() // Has to work
-      settings.SSLRandomNumberGenerator foreach { sRng ⇒ rng.getAlgorithm == sRng || (throw new NoSuchAlgorithmException(sRng)) }
+      settings.SslSettings.SSLRandomNumberGenerator foreach {
+        sRng ⇒ rng.getAlgorithm == sRng || (throw new NoSuchAlgorithmException(sRng))
+      }
 
-      val engine = NettySSLSupport.initializeClientSSL(settings, NoLogging).getEngine
+      val engine = NettySSLSupport.initializeClientSSL(settings.SslSettings, NoLogging).getEngine
       val gotAllSupported = enabled.toSet -- engine.getSupportedCipherSuites.toSet
       val gotAllEnabled = enabled.toSet -- engine.getEnabledCipherSuites.toSet
       gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
       gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
-      engine.getSupportedProtocols.contains(settings.SSLProtocol.get) || (throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol.get))
+      engine.getSupportedProtocols.contains(settings.SslSettings.SSLProtocol.get) ||
+        (throw new IllegalArgumentException("Protocol not supported: " + settings.SslSettings.SSLProtocol.get))
 
       CipherConfig(true, config, cipher, localPort, remotePort)
     } catch {
@@ -131,7 +135,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
   ("-") must {
     if (cipherConfig.runTest) {
       val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) ⇒ sender ! ((("pong", x), sender)) } }), "echo")
-      val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address
+      val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.addresses.head
 
       "support tell" in {
         val here = system.actorFor(otherAddress.toString + "/user/echo")
