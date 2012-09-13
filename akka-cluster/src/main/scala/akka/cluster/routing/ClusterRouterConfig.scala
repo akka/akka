@@ -186,11 +186,12 @@ private[akka] class ClusterRouteeProvider(
 
   private def selectDeploymentTarget: Option[Address] = {
     val currentRoutees = routees
-    if (currentRoutees.size >= settings.totalInstances) {
+    val currentNodes = availbleNodes
+    if (currentRoutees.size >= settings.totalInstances || currentNodes.isEmpty) {
       None
     } else {
       val numberOfRouteesPerNode: Map[Address, Int] =
-        Map.empty[Address, Int] ++ availbleNodes.toSeq.map(_ -> 0) ++
+        Map.empty[Address, Int] ++ currentNodes.toSeq.map(_ -> 0) ++
           currentRoutees.groupBy(fullAddress).map {
             case (address, refs) ⇒ address -> refs.size
           }
