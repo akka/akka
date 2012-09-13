@@ -171,9 +171,9 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
     // update consistentHash when routees has changed
     // changes to routees are rare and when no changes this is a quick operation
     def updateConsistentHash(): ConsistentHash[ActorRef] = {
-      val currentRoutees = routeeProvider.routees
       val oldConsistentHashTuple = consistentHashRef.get
       val (oldConsistentHashRoutees, oldConsistentHash) = oldConsistentHashTuple
+      val currentRoutees = routeeProvider.routees
       if (currentRoutees ne oldConsistentHashRoutees) {
         // when other instance, same content, no need to re-hash, but try to set routees
         val consistentHash =
