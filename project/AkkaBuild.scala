@@ -326,11 +326,19 @@ object AkkaBuild extends Build {
   )
 
   lazy val clusterSample = Project(
-    id = "akka-sample-cluster",
+    id = "akka-sample-cluster-experimental",
     base = file("akka-samples/akka-sample-cluster"),
-    dependencies = Seq(cluster),
-    settings = defaultSettings
-  )
+    dependencies = Seq(cluster, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      // disable parallel tests
+      parallelExecution in Test := false,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      },
+      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
+      jvmOptions in MultiJvm := defaultMultiJvmOptions
+    )
+  ) configs (MultiJvm)
 
   lazy val docs = Project(
     id = "akka-docs",

@@ -18,7 +18,8 @@ The Akka cluster is a separate jar file. Make sure that you have the following d
 
   "com.typesafe.akka" %% "akka-cluster" % "2.1-SNAPSHOT"
 
-If you are using the latest nightly build you should pick a timestamped Akka version from `<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-cluster/>`_.
+If you are using the latest nightly build you should pick a timestamped Akka version from `<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/>`_. Don't use ``SNAPSHOT``. Note that the Scala version |scalaVersion| 
+is part of the artifactId.
 
 A Simple Cluster Example
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -35,7 +36,9 @@ Try it out:
    :language: none
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-scala`
-settings and the ``akka.cluster.seed-nodes`` to your ``application.conf`` file.
+settings, but with ``ClusterActorRefProvider``.
+The ``akka.cluster.seed-nodes`` and cluster extension should normally also be added to your 
+``application.conf`` file.
 
 The seed nodes are configured contact points for initial, automatic, join of the cluster.
 
@@ -44,20 +47,20 @@ ip-addresses or host names of the machines in ``application.conf`` instead of ``
 
 2. Add the following main program to your project, place it in ``src/main/scala``:
 
-.. literalinclude:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/ClusterApp.scala   
+.. literalinclude:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/simple/SimpleClusterApp.scala   
    :language: scala
 
 
 3. Start the first seed node. Open a sbt session in one terminal window and run::
 
-  run-main sample.cluster.ClusterApp 2551
+  run-main sample.cluster.simple.SimpleClusterApp 2551
 
 2551 corresponds to the port of the first seed-nodes element in the configuration.
 In the log output you see that the cluster node has been started and changed status to 'Up'.
 
 4. Start the second seed node. Open a sbt session in another terminal window and run::
 
-  run-main sample.cluster.ClusterApp 2552
+  run-main sample.cluster.simple.SimpleClusterApp 2552
 
 
 2552 corresponds to the port of the second seed-nodes element in the configuration.
@@ -68,7 +71,7 @@ Switch over to the first terminal window and see in the log output that the memb
 
 5. Start another node. Open a sbt session in yet another terminal window and run::
 
-  run-main sample.cluster.ClusterApp
+  run-main sample.cluster.simple.SimpleClusterApp
 
 Now you don't need to specify the port number, and it will use a random available port.
 It joins one of the configured seed nodes. Look at the log output in the different terminal
@@ -82,7 +85,7 @@ output in the other terminals.
 
 Look at the source code of the program again. What it does is to create an actor
 and register it as subscriber of certain cluster events. It gets notified with 
-an snapshot event, 'CurrentClusterState' that holds full state information of
+an snapshot event, ``CurrentClusterState`` that holds full state information of
 the cluster. After that it receives events for changes that happen in the cluster.
 
 Automatic vs. Manual Joining
@@ -137,6 +140,206 @@ Be aware of that using auto-down implies that two separate clusters will
 automatically be formed in case of network partition. That might be 
 desired by some applications but not by others. 
 
+Subscribe to Cluster Events
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can subscribe to change notifications of the cluster membership by using
+``Cluster(system).subscribe``. A snapshot of the full state,
+``akka.cluster.ClusterEvent.CurrentClusterState``, is sent to the subscriber
+as the first event, followed by events for incremental updates.
+
+There are several types of change events, consult the API documentation
+of classes that extends ``akka.cluster.ClusterEvent.ClusterDomainEvent`` 
+for details about the events.
+
+Worker Dial-in Example
+----------------------
+
+Let's take a look at an example that illustrates how workers, here named *backend*,
+can detect and register to new master nodes, here named *frontend*.
+
+The example application provides a service to transform text. When some text
+is sent to one of the frontend services, it will be delegated to one of the
+backend workers, which performs the transformation job, and sends the result back to
+the original client. New backend nodes, as well as new frontend nodes, can be
+added or removed to the cluster dynamically.
+
+In this example the following imports are used:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/transformation/TransformationSample.scala#imports
+
+Messages:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/transformation/TransformationSample.scala#messages
+
+The backend worker that performs the transformation job:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/transformation/TransformationSample.scala#backend
+
+Note that the ``TransformationBackend`` actor subscribes to cluster events to detect new,
+potential, frontend nodes, and send them a registration message so that they know
+that they can use the backend worker.
+
+The frontend that receives user jobs and delegates to one of the registered backend workers:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/transformation/TransformationSample.scala#frontend
+
+Note that the ``TransformationFrontend`` actor watch the registered backend
+to be able to remove it from its list of availble backend workers.
+Death watch uses the cluster failure detector for nodes in the cluster, i.e. it detects 
+network failures and JVM crashes, in addition to graceful termination of watched
+actor.
+
+This example is included in ``akka-samples/akka-sample-cluster``
+and you can try by starting nodes in different terminal windows. For example, starting 2 
+frontend nodes and 3 backend nodes::
+
+  sbt
+
+  project akka-sample-cluster-experimental
+
+  run-main sample.cluster.transformation.TransformationFrontend 2551
+
+  run-main sample.cluster.transformation.TransformationBackend 2552
+
+  run-main sample.cluster.transformation.TransformationBackend
+
+  run-main sample.cluster.transformation.TransformationBackend
+
+  run-main sample.cluster.transformation.TransformationFrontend
+
+
+.. note:: The above example should probably be designed as two separate, frontend/backend, clusters, when there is a `cluster client for decoupling clusters <https://www.assembla.com/spaces/akka/tickets/1165>`_.
+
+Cluster Aware Routers
+^^^^^^^^^^^^^^^^^^^^^
+
+All :ref:`routers <routing-scala>` can be made aware of member nodes in the cluster, i.e.
+deploying new routees or looking up routees on nodes in the cluster.
+When a node becomes unavailble or leaves the cluster the routees of that node are 
+automatically unregistered from the router. When new nodes join the cluster additional
+routees are added to the router, according to the configuration.
+
+When using a router with routees looked up on the cluster member nodes, i.e. the routees
+are already running, the configuration for a router looks like this:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
+
+It's the relative actor path defined in ``routees-path`` that identify what actor to lookup.
+
+``nr-of-instances`` defines total number of routees in the cluster, but there will not be
+more than one per node. Setting ``nr-of-instances`` to a high value will result in new routees 
+added to the router when nodes join the cluster. 
+
+The same type of router could also have been defined in code:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#router-lookup-in-code
+
+When using a router with routees created and deployed on the cluster member nodes
+the configuration for a router looks like this:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
+
+
+``nr-of-instances`` defines total number of routees in the cluster, but the number of routees 
+per node, ``max-nr-of-instances-per-node``, will not be exceeded. Setting ``nr-of-instances`` 
+to a high value will result in creating and deploying additional routees when new nodes join 
+the cluster.
+
+The same type of router could also have been defined in code:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#router-deploy-in-code
+
+See :ref:`cluster_configuration` section for further descriptions of the settings.
+
+
+Router Example
+--------------
+
+Let's take a look at how to use cluster aware routers.
+
+The example application provides a service to calculate statistics for a text.
+When some text is sent to the service it splits it into words, and delegates the task
+to count number of characters in each word to a separate worker, a routee of a router.
+The character count for each word is sent back to an aggregator that calculates 
+the average number of characters per word when all results have been collected.
+
+In this example we use the following imports:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#imports
+
+Messages:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#messages
+
+The worker that counts number of characters in each word:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#worker
+
+The service that receives text from users and splits it up into words, delegates to workers and aggregates:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#service
+
+
+Note, nothing cluster specific so far, just plain actors.
+
+We can use these actors with two different types of router setup. Either with lookup of routees,
+or with create and deploy of routees. Remember, routees are the workers in this case.
+
+We start with the router setup with lookup of routees. All nodes start ``StatsService`` and
+``StatsWorker`` actors and the router is configured with ``routees-path``:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#start-router-lookup
+
+This means that user requests can be sent to ``StatsService`` on any node and it will use 
+``StatsWorker`` on all nodes. There can only be one worker per node, but that worker could easily 
+fan out to local children if more parallelism is needed.
+
+This example is included in ``akka-samples/akka-sample-cluster``
+and you can try by starting nodes in different terminal windows. For example, starting 3 
+service nodes and 1 client::
+
+  run-main sample.cluster.stats.StatsSample 2551
+
+  run-main sample.cluster.stats.StatsSample 2552
+
+  run-main sample.cluster.stats.StatsSampleClient
+
+  run-main sample.cluster.stats.StatsSample
+
+The above setup is nice for this example, but we will also take a look at how to use 
+a single master node that creates and deploys workers. To keep track of a single
+master we need one additional actor:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#facade
+
+The ``StatsFacade`` receives text from users and delegates to the current ``StatsService``, the single
+master. It listens to cluster events to create or lookup the ``StatsService`` depending on if
+it is on the same same node or on another node. We run the master on the same node as the leader of
+the cluster members, which is nothing more than the address currently sorted first in the member ring, 
+i.e. it can change when new nodes join or when current leader leaves.
+
+All nodes start ``StatsFacade`` and the router is now configured like this:
+
+.. includecode:: ../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#start-router-deploy
+
+
+This example is included in ``akka-samples/akka-sample-cluster``
+and you can try by starting nodes in different terminal windows. For example, starting 3 
+service nodes and 1 client::
+
+  run-main sample.cluster.stats.StatsSampleOneMaster 2551
+
+  run-main sample.cluster.stats.StatsSampleOneMaster 2552
+
+  run-main sample.cluster.stats.StatsSampleOneMasterClient
+
+  run-main sample.cluster.stats.StatsSampleOneMaster
+
+.. note:: The above example, especially the last part, will be simplified when the cluster handles automatic actor partitioning.
+
+.. _cluster_configuration:
+
 Configuration
 ^^^^^^^^^^^^^
 
@@ -146,6 +349,9 @@ reference file for more information:
 
 .. literalinclude:: ../../akka-cluster/src/main/resources/reference.conf
    :language: none
+
+Cluster Scheduler
+-----------------
 
 It is recommended that you change the ``tick-duration`` to 33 ms or less
 of the default scheduler when using cluster, if you don't need to have it 
