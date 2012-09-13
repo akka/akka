@@ -131,8 +131,9 @@ object AkkaBuild extends Build {
   lazy val remoteTests = Project(
     id = "akka-remote-tests-experimental",
     base = file("akka-remote-tests"),
-    dependencies = Seq(remote, actorTests % "test->test", testkit % "test->test"),
+    dependencies = Seq(remote, actorTests % "test->test", testkit),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      libraryDependencies ++= Dependencies.remoteTests,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -147,7 +148,7 @@ object AkkaBuild extends Build {
   lazy val cluster = Project(
     id = "akka-cluster-experimental",
     base = file("akka-cluster"),
-    dependencies = Seq(remote, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
+    dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
@@ -548,11 +549,13 @@ object Dependencies {
 
   val actor = Seq(config)
 
-  val testkit = Seq(Test.scalatest, Test.junit)
+  val testkit = Seq(Test.junit, Test.scalatest)
 
   val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf)
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
+
+  val remoteTests = Seq(Test.junit, Test.scalatest)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 

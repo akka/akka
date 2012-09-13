@@ -4,18 +4,23 @@
 package akka.remote.testkit
 
 import language.implicitConversions
+import language.postfixOps
 
 import java.net.InetSocketAddress
 import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
-import akka.actor.{ RootActorPath, ActorPath, ActorSystem, ExtendedActorSystem }
+import akka.actor._
 import akka.util.Timeout
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
 import akka.remote.RemoteActorRefProvider
-import akka.testkit.AkkaSpec
+import akka.testkit.TestKit
 import scala.concurrent.{ Await, Awaitable }
 import scala.util.control.NonFatal
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
+import java.util.concurrent.TimeoutException
+import akka.remote.testconductor.RoleName
+import akka.actor.RootActorPath
+import akka.event.{ Logging, LoggingAdapter }
 
 /**
  * Configure the role names and participants of the test, including configuration settings.
@@ -82,7 +87,7 @@ abstract class MultiNodeConfig {
   }
 
   private[testkit] def config: Config = {
-    val configs = (_nodeConf get myself).toList ::: _commonConf.toList ::: MultiNodeSpec.nodeConfig :: AkkaSpec.testConf :: Nil
+    val configs = (_nodeConf get myself).toList ::: _commonConf.toList ::: MultiNodeSpec.nodeConfig :: MultiNodeSpec.baseConfig :: Nil
     configs reduce (_ withFallback _)
   }
 
@@ -119,12 +124,43 @@ object MultiNodeSpec {
 
   require(selfIndex >= 0 && selfIndex < nodeNames.size, "selfIndex out of bounds: " + selfIndex)
 
-  val nodeConfig = AkkaSpec.mapToConfig(Map(
+  private[testkit] val nodeConfig = mapToConfig(Map(
     "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
     "akka.remote.transport" -> "akka.remote.testconductor.TestConductorTransport",
     "akka.remote.netty.hostname" -> nodeNames(selfIndex),
     "akka.remote.netty.port" -> 0))
 
+  private[testkit] val baseConfig: Config = ConfigFactory.parseString("""
+      akka {
+        event-handlers = ["akka.testkit.TestEventListener"]
+        loglevel = "WARNING"
+        stdout-loglevel = "WARNING"
+        actor {
+          default-dispatcher {
+            executor = "fork-join-executor"
+            fork-join-executor {
+              parallelism-min = 8
+              parallelism-factor = 2.0
+              parallelism-max = 8
+            }
+          }
+        }
+      }
+      """)
+
+  private def mapToConfig(map: Map[String, Any]): Config = {
+    import scala.collection.JavaConverters._
+    ConfigFactory.parseMap(map.asJava)
+  }
+
+  private def getCallerName(clazz: Class[_]): String = {
+    val s = Thread.currentThread.getStackTrace map (_.getClassName) drop 1 dropWhile (_ matches ".*MultiNodeSpec.?$")
+    val reduced = s.lastIndexWhere(_ == clazz.getName) match {
+      case -1 ⇒ s
+      case z  ⇒ s drop (z + 1)
+    }
+    reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
+  }
 }
 
 /**
@@ -136,17 +172,52 @@ object MultiNodeSpec {
  * val is fine.
  */
 abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
-  extends AkkaSpec(_system) {
+  extends TestKit(_system) with MultiNodeSpecCallbacks {
 
   import MultiNodeSpec._
 
   def this(config: MultiNodeConfig) =
-    this(config.myself, ActorSystem(AkkaSpec.getCallerName(classOf[MultiNodeSpec]), ConfigFactory.load(config.config)),
+    this(config.myself, ActorSystem(MultiNodeSpec.getCallerName(classOf[MultiNodeSpec]), ConfigFactory.load(config.config)),
       config.roles, config.deployments)
 
+  val log: LoggingAdapter = Logging(system, this.getClass)
+
+  final override def multiNodeSpecBeforeAll {
+    atStartup()
+  }
+
+  final override def multiNodeSpecAfterAll {
+    // wait for all nodes to remove themselves before we shut the conductor down
+    if (selfIndex == 0) {
+      testConductor.removeNode(myself)
+      within(testConductor.Settings.BarrierTimeout.duration) {
+        awaitCond {
+          testConductor.getNodes.await.filterNot(_ == myself).isEmpty
+        }
+      }
+    }
+    system.shutdown()
+    try system.awaitTermination(5 seconds) catch {
+      case _: TimeoutException ⇒
+        system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
+        println(system.asInstanceOf[ActorSystemImpl].printTree)
+    }
+    atTermination()
+  }
+
   /*
-   * Test Class Interface
+  * Test Class Interface
+  */
+
+  /**
+   * Override this method to do something when the whole test is starting up.
    */
+  protected def atStartup(): Unit = {}
+
+  /**
+   * Override this method to do something when the whole test is terminating.
+   */
+  protected def atTermination(): Unit = {}
 
   /**
    * All registered roles
@@ -267,16 +338,30 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   log.info("Role [{}] started with address [{}]", myself.name,
     system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address)
 
-  // wait for all nodes to remove themselves before we shut the conductor down
-  final override def beforeShutdown() = {
-    if (selfIndex == 0) {
-      testConductor.removeNode(myself)
-      within(testConductor.Settings.BarrierTimeout.duration) {
-        awaitCond {
-          testConductor.getNodes.await.filterNot(_ == myself).isEmpty
-        }
-      }
-    }
-  }
+}
 
+/**
+ * Use this to hook MultiNodeSpec into your test framework lifecycle, either by having your test extend MultiNodeSpec
+ * and call these methods or by creating a trait that calls them and then mixing that trait with your test together
+ * with MultiNodeSpec.
+ *
+ * Example trait for MultiNodeSpec with ScalaTest
+ *
+ * {{{
+ * trait STMultiNodeSpec extends MultiNodeSpecCallbacks with WordSpec with MustMatchers with BeforeAndAfterAll {
+ *   override def beforeAll() = multiNodeSpecBeforeAll()
+ *   override def afterAll() = multiNodeSpecAfterAll()
+ * }
+ * }}}
+ */
+trait MultiNodeSpecCallbacks {
+  /**
+   * Call this before the start of the test run. NOT before every test case.
+   */
+  def multiNodeSpecBeforeAll(): Unit
+
+  /**
+   * Call this after the all test cases have run. NOT after every test case.
+   */
+  def multiNodeSpecAfterAll(): Unit
 }

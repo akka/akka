@@ -9,8 +9,7 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
+import testkit.{STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec}
 import akka.testkit._
 
 object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
@@ -35,7 +34,7 @@ class NewRemoteActorMultiJvmNode1 extends NewRemoteActorSpec
 class NewRemoteActorMultiJvmNode2 extends NewRemoteActorSpec
 
 class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
-  with ImplicitSender with DefaultTimeout {
+  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
   import NewRemoteActorMultiJvmSpec._
 
   def initialParticipants = 2
