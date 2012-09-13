@@ -1,16 +1,17 @@
 package akka.remote.transport
 
 import akka.actor.{ ActorRef, Address }
-import scala.concurrent.{ Promise, Future }
-import akka.remote.transport.Transport._
+import akka.remote.transport.AssociationHandle.Disassociated
+import akka.remote.transport.AssociationHandle.InboundPayload
 import akka.remote.transport.TestTransport.AssociationRegistry
-import akka.remote.transport.AssociationHandle.{ Disassociated, InboundPayload }
+import akka.remote.transport.Transport._
 import akka.util.ByteString
-
 import java.util.concurrent.{ CopyOnWriteArrayList, ConcurrentHashMap }
+import scala.Some
+import scala.concurrent.util.duration._
+import scala.concurrent.{ Await, Future, Promise }
 
 // Default EC is used, but this is just a test utility -- please forgive...
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object TestTransport {
@@ -336,7 +337,9 @@ class TestTransport(
 
   /**
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the write() method on handles. All
-   * handle calls pass through this call.
+   * handle calls pass through this call. Please note, that write operations return a Boolean synchronously, so
+   * altering the behavior via pushDelayed will turn write to a blocking operation -- use of pushDelayed therefore
+   * is not recommended.
    */
   val writeBehavior = new SwitchableLoggedBehavior[(TestAssociationHandle, ByteString), Boolean](
     defaultBehavior = {
@@ -360,8 +363,8 @@ class TestTransport(
         registry.logActivity(DisassociateAttempt(handle.localAddress, handle.remoteAddress))
     })
 
-  private[akka] def write(handle: TestAssociationHandle, payload: ByteString): Future[Boolean] =
-    writeBehavior((handle, payload))
+  private[akka] def write(handle: TestAssociationHandle, payload: ByteString): Boolean =
+    Await.result(writeBehavior((handle, payload)), 3 seconds)
 
   private[akka] def disassociate(handle: TestAssociationHandle): Future[Unit] = disassociateBehavior(handle)
 
@@ -375,7 +378,7 @@ case class TestAssociationHandle(
 
   override val readHandlerPromise: Promise[ActorRef] = Promise()
 
-  override def write(payload: ByteString): Future[Boolean] = transport.write(this, payload)
+  override def write(payload: ByteString): Boolean = transport.write(this, payload)
 
   override def disassociate(): Future[Unit] = transport.disassociate(this)
 

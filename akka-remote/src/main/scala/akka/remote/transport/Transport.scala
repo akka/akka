@@ -155,17 +155,18 @@ trait AssociationHandle {
   /**
    * Asynchronously sends the specified payload to the remote endpoint.
    *
-   * Writes guarantee ordering of messages, but not their reception. The call to write returns with a Future containing
-   * a Boolean indicating that the channel is ready for more writes or not. A return value of false indicates that the
+   * Writes guarantee ordering of messages, but not their reception. The call to write returns with
+   * a Boolean indicating that the channel was ready for writes or not. A return value of false indicates that the
    * channel is not yet ready for delivery (e.g.: the write buffer is full) and the sender needs to wait
-   * until the channel becomes ready again.
+   * until the channel becomes ready again. Returning false also means that the current write was dropped (this must be
+   * guaranteed to ensure duplication-free delivery).
    *
    * @param payload
    *   The payload to be delivered to the remote endpoint.
    * @return
    *   Boolean indicating the availability of the association for subsequent writes.
    */
-  def write(payload: ByteString): Future[Boolean]
+  def write(payload: ByteString): Boolean
 
   /**
    * Closes the underlying transport link, if needed. Some transport may not need an explicit teardown (UDP) and
