@@ -22,8 +22,8 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
 
       val result = Await.result(transportA.listen, timeout.duration)
 
-      result._1 == addressA must be(true)
-      result._2 eq null must be(false)
+      result._1 must be(addressA)
+      result._2 must not be null
 
       registry.logSnapshot.exists {
         case ListenAttempt(address) ⇒ address == addressA
@@ -45,10 +45,9 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       transportA.associate(addressB)
       expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
         case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒
-        case _ ⇒ fail()
       }
 
-      registry.logSnapshot.contains(AssociateAttempt(addressA, addressB))
+      registry.logSnapshot.contains(AssociateAttempt(addressA, addressB)) must be(true)
     }
 
     "fail to associate with nonexisting address" in {
@@ -56,7 +55,7 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       var transportA = new TestTransport(addressA, registry)
 
       Await.result(transportA.listen, timeout.duration)._2.success(self)
-      Await.result(transportA.associate(nonExistingAddress), timeout.duration) == Fail must be(true)
+      Await.result(transportA.associate(nonExistingAddress), timeout.duration) must be(Fail)
     }
 
     "emulate sending PDUs and logs write" in {
@@ -70,11 +69,8 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       awaitCond(registry.transportsReady(transportA, transportB))
 
       val associate: Future[Status] = transportA.associate(addressB)
-      @volatile var handleB: AssociationHandle = null
-
-      expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
-        case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handleB = handle
-        case _ ⇒ fail()
+      val handleB = expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
+        case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handle
       }
 
       val Ready(handleA) = Await.result(associate, timeout.duration)
@@ -90,7 +86,6 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       handleA.write(akkaPDU)
       expectMsgPF(timeout.duration, "Expect InboundPayload from A") {
         case InboundPayload(payload) if payload == akkaPDU ⇒
-        case _ ⇒ fail()
       }
 
       registry.logSnapshot.exists {
@@ -111,11 +106,8 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       awaitCond(registry.transportsReady(transportA, transportB))
 
       val associate: Future[Status] = transportA.associate(addressB)
-      @volatile var handleB: AssociationHandle = null
-
-      expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
-        case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handleB = handle
-        case _ ⇒ fail()
+      val handleB: AssociationHandle = expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
+        case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handle
       }
 
       val Ready(handleA) = Await.result(associate, timeout.duration)
@@ -130,7 +122,6 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
 
       expectMsgPF(timeout.duration) {
         case Disassociated ⇒
-        case _             ⇒ fail()
       }
 
       awaitCond(!registry.existsAssociation(addressA, addressB))

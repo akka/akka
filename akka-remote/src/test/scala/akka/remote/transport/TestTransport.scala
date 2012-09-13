@@ -296,8 +296,8 @@ class TestTransport(
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the listen() method.
    */
   val listenBehavior = new SwitchableLoggedBehavior[Unit, (Address, Promise[ActorRef])](
-    (unit) ⇒ defaultListen,
-    (unit) ⇒ registry.logActivity(ListenAttempt(localAddress)))
+    (_) ⇒ defaultListen,
+    (_) ⇒ registry.logActivity(ListenAttempt(localAddress)))
 
   /**
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the associate() method.
@@ -310,8 +310,8 @@ class TestTransport(
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the shutdown() method.
    */
   val shutdownBehavior = new SwitchableLoggedBehavior[Unit, Unit](
-    (unit) ⇒ defaultShutdown,
-    (unit) ⇒ registry.logActivity(ShutdownAttempt(localAddress)))
+    (_) ⇒ defaultShutdown,
+    (_) ⇒ registry.logActivity(ShutdownAttempt(localAddress)))
 
   override def listen: Future[(Address, Promise[ActorRef])] = listenBehavior()
   override def associate(remoteAddress: Address): Future[Status] = associateBehavior(remoteAddress)
