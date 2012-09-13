@@ -164,23 +164,25 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
       if (virtualNodesFactor == 0) routeeProvider.context.system.settings.DefaultVirtualNodesFactor
       else virtualNodesFactor
 
-    var consistentHashRoutees = new AtomicReference[IndexedSeq[ActorRef]]
-    @volatile var consistentHash: ConsistentHash[ActorRef] = null
+    // tuple of routees and the ConsistentHash, updated together in updateConsistentHash
+    val consistentHashRef = new AtomicReference[(IndexedSeq[ActorRef], ConsistentHash[ActorRef])]((null, null))
     updateConsistentHash()
 
     // update consistentHash when routees has changed
     // changes to routees are rare and when no changes this is a quick operation
     def updateConsistentHash(): ConsistentHash[ActorRef] = {
       val currentRoutees = routeeProvider.routees
-      if (currentRoutees ne consistentHashRoutees.get) {
-        val oldConsistentHashRoutees = consistentHashRoutees.get
-        val rehash = currentRoutees != oldConsistentHashRoutees
-        // when other instance, same content, no need to re-hash, but try to set currentRoutees
+      val oldConsistentHashTuple = consistentHashRef.get
+      val (oldConsistentHashRoutees, oldConsistentHash) = oldConsistentHashTuple
+      if (currentRoutees ne oldConsistentHashRoutees) {
+        // when other instance, same content, no need to re-hash, but try to set routees
+        val consistentHash =
+          if (currentRoutees == oldConsistentHashRoutees) oldConsistentHash
+          else ConsistentHash(currentRoutees, vnodes) // re-hash
         // ignore, don't update, in case of CAS failure
-        if (consistentHashRoutees.compareAndSet(oldConsistentHashRoutees, currentRoutees) && rehash)
-          consistentHash = ConsistentHash(currentRoutees, vnodes)
-      }
-      consistentHash
+        consistentHashRef.compareAndSet(oldConsistentHashTuple, (currentRoutees, consistentHash))
+        consistentHash
+      } else oldConsistentHash
     }
 
     def target(hashData: Any): ActorRef = try {
