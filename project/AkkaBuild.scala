@@ -6,8 +6,8 @@ package akka
 
 import sbt._
 import sbt.Keys._
-import com.typesafe.sbtmultijvm.MultiJvmPlugin
-import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName }
+import com.typesafe.sbt.SbtMultiJvm
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName }
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
@@ -466,7 +466,7 @@ object AkkaBuild extends Build {
     .setPreference(AlignSingleLineCaseStatements, true)
   }
 
-  lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
+  lazy val multiJvmSettings = SbtMultiJvm.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
