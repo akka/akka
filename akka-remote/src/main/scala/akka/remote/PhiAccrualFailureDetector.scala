@@ -69,7 +69,6 @@ class PhiAccrualFailureDetector(
    * by this immutable case class and managed by an AtomicReference.
    */
   private case class State(
-    version: Long = 0L,
     history: HeartbeatHistory = firstHeartbeat,
     timestamp: Option[Long] = None)
 
@@ -85,8 +84,8 @@ class PhiAccrualFailureDetector(
 
     val newHistory = oldState.timestamp match {
       case None ⇒
-        // this is heartbeat from a new connection
-        // add starter records for this new connection
+        // this is heartbeat from a new resource
+        // add starter records for this new resource
         firstHeartbeat
       case Some(latestTimestamp) ⇒
         // this is a known connection
@@ -94,13 +93,10 @@ class PhiAccrualFailureDetector(
         oldState.history :+ interval
     }
 
-    val newState = oldState.copy(
-      version = oldState.version + 1,
-      history = newHistory,
-      timestamp = Some(timestamp)) // record new timestamp
+    val newState = oldState.copy(history = newHistory, timestamp = Some(timestamp)) // record new timestamp
 
     // if we won the race then update else try again
-    if (!state.compareAndSet(oldState, newState)) heartbeat // recur
+    if (!state.compareAndSet(oldState, newState)) heartbeat() // recur
   }
 
   /**
@@ -122,12 +118,6 @@ class PhiAccrualFailureDetector(
       val stdDeviation = ensureValidStdDeviation(history.stdDeviation)
 
       val φ = phi(timeDiff, mean + acceptableHeartbeatPauseMillis, stdDeviation)
-
-      // FIXME change to debug log level, when failure detector is stable
-      // TODO: move logging somewhere else
-      //      if (φ > 1.0 && timeDiff < (acceptableHeartbeatPauseMillis + 5000))
-      //        log.info("Phi value [{}] for connection [{}], after [{} ms], based on  [{}]",
-      //          φ, connection, timeDiff, "N(" + mean + ", " + stdDeviation + ")")
 
       φ
     }
