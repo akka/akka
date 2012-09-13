@@ -5,13 +5,13 @@ package akka.routing
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.util.control.NonFatal
-
 import akka.actor.ActorRef
 import akka.actor.SupervisorStrategy
 import akka.actor.Props
 import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.serialization.SerializationExtension
+import java.util.concurrent.atomic.AtomicReference
 
 object ConsistentHashingRouter {
   /**
@@ -46,19 +46,13 @@ object ConsistentHashingRouter {
 
   /**
    * If messages can't implement [[akka.routing.ConsistentHashable]]
-   * themselves they can we wrapped by something implementing
-   * this interface instead. The router will only send the
-   * wrapped message to the destination, i.e. the envelope will
-   * be stripped off.
+   * themselves they can we wrapped by this envelope instead. The
+   * router will only send the wrapped message to the destination,
+   * i.e. the envelope will be stripped off.
    */
-  trait ConsistentHashableEnvelope extends ConsistentHashable with RouterEnvelope {
-    def message: Any
-  }
-
-  /**
-   * Default number of replicas (virtual nodes) used in [[akka.routing.ConsistantHash]]
-   */
-  val DefaultReplicas: Int = 10
+  @SerialVersionUID(1L)
+  case class ConsistentHashableEnvelope(message: Any, consistentHashKey: Any)
+    extends ConsistentHashable with RouterEnvelope
 
 }
 /**
@@ -88,14 +82,14 @@ object ConsistentHashingRouter {
  *
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
- * @param replicas number of replicas (virtual nodes) used in [[akka.routing.ConsistantHash]]
+ * @param virtualNodesFactor number of virtual nodes per node, used in [[akka.routing.ConsistantHash]]
  */
 @SerialVersionUID(1L)
 case class ConsistentHashingRouter(
   nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
   val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy,
-  val replicas: Int = ConsistentHashingRouter.DefaultReplicas)
+  val virtualNodesFactor: Int = 0)
   extends RouterConfig with ConsistentHashingLike {
 
   /**
@@ -130,9 +124,9 @@ case class ConsistentHashingRouter(
   def withSupervisorStrategy(strategy: SupervisorStrategy): ConsistentHashingRouter = copy(supervisorStrategy = strategy)
 
   /**
-   * Java API for setting the number of replicas (virtual nodes) used in [[akka.routing.ConsistantHash]]
+   * Java API for setting the number of virtual nodes per node, used in [[akka.routing.ConsistantHash]]
    */
-  def withReplicas(replicas: Int): ConsistentHashingRouter = copy(replicas = replicas)
+  def withVirtualNodesFactor(vnodes: Int): ConsistentHashingRouter = copy(virtualNodesFactor = vnodes)
 
   /**
    * Uses the resizer of the given RouterConfig if this RouterConfig
@@ -145,6 +139,10 @@ case class ConsistentHashingRouter(
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait ConsistentHashingLike { this: RouterConfig ⇒
 
   import ConsistentHashingRouter._
@@ -153,7 +151,7 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def replicas: Int
+  def virtualNodesFactor: Int
 
   override def createRoute(routeeProvider: RouteeProvider): Route = {
     if (resizer.isEmpty) {
@@ -162,20 +160,25 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
     }
 
     val log = Logging(routeeProvider.context.system, routeeProvider.context.self)
+    val vnodes =
+      if (virtualNodesFactor == 0) routeeProvider.context.system.settings.DefaultVirtualNodesFactor
+      else virtualNodesFactor
 
-    // consistentHashRoutees and consistentHash are updated together, synchronized on the consistentHashLock
-    val consistentHashLock = new Object
-    var consistentHashRoutees: IndexedSeq[ActorRef] = null
-    var consistentHash: ConsistentHash[ActorRef] = null
-    upateConsistentHash()
+    var consistentHashRoutees = new AtomicReference[IndexedSeq[ActorRef]]
+    @volatile var consistentHash: ConsistentHash[ActorRef] = null
+    updateConsistentHash()
 
     // update consistentHash when routees has changed
     // changes to routees are rare and when no changes this is a quick operation
-    def upateConsistentHash(): ConsistentHash[ActorRef] = consistentHashLock.synchronized {
+    def updateConsistentHash(): ConsistentHash[ActorRef] = {
       val currentRoutees = routeeProvider.routees
-      if ((currentRoutees ne consistentHashRoutees) && currentRoutees != consistentHashRoutees) {
-        consistentHashRoutees = currentRoutees
-        consistentHash = ConsistentHash(currentRoutees, replicas)
+      if (currentRoutees ne consistentHashRoutees.get) {
+        val oldConsistentHashRoutees = consistentHashRoutees.get
+        val rehash = currentRoutees != oldConsistentHashRoutees
+        // when other instance, same content, no need to re-hash, but try to set currentRoutees
+        // ignore, don't update, in case of CAS failure
+        if (consistentHashRoutees.compareAndSet(oldConsistentHashRoutees, currentRoutees) && rehash)
+          consistentHash = ConsistentHash(currentRoutees, vnodes)
       }
       consistentHash
     }
@@ -186,13 +189,13 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
         case str: String        ⇒ str.getBytes("UTF-8")
         case x: AnyRef          ⇒ SerializationExtension(routeeProvider.context.system).serialize(x).get
       }
-      val currentConsistenHash = upateConsistentHash()
+      val currentConsistenHash = updateConsistentHash()
       if (currentConsistenHash.isEmpty) routeeProvider.context.system.deadLetters
       else currentConsistenHash.nodeFor(hash)
     } catch {
       case NonFatal(e) ⇒
         // serialization failed
-        log.warning("Couldn't route message with consistentHashKey [%s] due to [%s]".format(hashData, e.getMessage))
+        log.warning("Couldn't route message with consistentHashKey [{}] due to [{}]", hashData, e.getMessage)
         routeeProvider.context.system.deadLetters
     }
 

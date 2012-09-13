@@ -143,18 +143,20 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
     val nrOfInstances = deployment.getInt("nr-of-instances")
 
-    val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
-
     val resizer: Option[Resizer] = if (config.hasPath("resizer")) Some(DefaultResizer(deployment.getConfig("resizer"))) else None
 
     val router: RouterConfig = deployment.getString("router") match {
-      case "from-code"          ⇒ NoRouter
-      case "round-robin"        ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
-      case "random"             ⇒ RandomRouter(nrOfInstances, routees, resizer)
-      case "smallest-mailbox"   ⇒ SmallestMailboxRouter(nrOfInstances, routees, resizer)
-      case "scatter-gather"     ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
-      case "broadcast"          ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
-      case "consistent-hashing" ⇒ ConsistentHashingRouter(nrOfInstances, routees, resizer)
+      case "from-code"        ⇒ NoRouter
+      case "round-robin"      ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
+      case "random"           ⇒ RandomRouter(nrOfInstances, routees, resizer)
+      case "smallest-mailbox" ⇒ SmallestMailboxRouter(nrOfInstances, routees, resizer)
+      case "broadcast"        ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
+      case "scatter-gather" ⇒
+        val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
+        ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
+      case "consistent-hashing" ⇒
+        val vnodes = deployment.getInt("virtual-nodes-factor")
+        ConsistentHashingRouter(nrOfInstances, routees, resizer, virtualNodesFactor = vnodes)
       case fqn ⇒
         val args = Seq(classOf[Config] -> deployment)
         dynamicAccess.createInstanceFor[RouterConfig](fqn, args).recover({

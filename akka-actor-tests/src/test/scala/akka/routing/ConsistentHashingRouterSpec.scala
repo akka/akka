@@ -22,6 +22,7 @@ object ConsistentHashingRouterSpec {
       /router1 {
         router = consistent-hashing
         nr-of-instances = 3
+        virtual-nodes-factor = 17
       }
     }
     """
@@ -55,18 +56,12 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
     "select destination based on consistentHashKey of the message" in {
       router1 ! Msg("a", "A")
       val destinationA = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
-      router1 ! new ConsistentHashableEnvelope {
-        override def consistentHashKey = "a"
-        override def message = "AA"
-      }
+      router1 ! ConsistentHashableEnvelope(message = "AA", consistentHashKey = "a")
       expectMsg(destinationA)
 
       router1 ! Msg(17, "B")
       val destinationB = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
-      router1 ! new ConsistentHashableEnvelope {
-        override def consistentHashKey = 17
-        override def message = "BB"
-      }
+      router1 ! ConsistentHashableEnvelope(message = "BB", consistentHashKey = 17)
       expectMsg(destinationB)
 
       router1 ! Msg(MsgKey("c"), "C")

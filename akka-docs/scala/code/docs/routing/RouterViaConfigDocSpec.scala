@@ -77,6 +77,7 @@ object RouterWithConfigDocSpec {
       /myrouter7 {
         router = consistent-hashing
         nr-of-instances = 5
+        virtual-nodes-factor = 10
       }
     }
     //#config-consistent-hashing

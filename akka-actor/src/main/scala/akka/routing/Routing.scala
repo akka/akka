@@ -596,6 +596,10 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait RoundRobinLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
@@ -729,6 +733,10 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait RandomLike { this: RouterConfig ⇒
   def nrOfInstances: Int
 
@@ -869,6 +877,10 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait SmallestMailboxLike { this: RouterConfig ⇒
   def nrOfInstances: Int
 
@@ -1084,6 +1096,10 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait BroadcastLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
@@ -1213,6 +1229,10 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int

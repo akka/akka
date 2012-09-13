@@ -20,23 +20,22 @@ import scala.collection.immutable.TreeMap
  * hash, i.e. make sure it is different for different nodes.
  *
  */
-class ConsistentHash[T] private (replicas: Int, ring: TreeMap[Int, T]) {
+class ConsistentHash[T] private (nodeRing: TreeMap[Int, T], virtualNodesFactor: Int) {
 
   import ConsistentHash._
 
-  if (replicas < 1) throw new IllegalArgumentException("replicas must be >= 1")
+  if (virtualNodesFactor < 1) throw new IllegalArgumentException("virtualNodesFactor must be >= 1")
 
   /**
-   * Adds a node to the ring.
+   * Adds a node to the node ring.
    * Note that the instance is immutable and this
    * operation returns a new instance.
    */
-  def :+(node: T): ConsistentHash[T] = {
-    new ConsistentHash(replicas, ring ++ ((1 to replicas) map { r ⇒ (nodeHashFor(node, r) -> node) }))
-  }
+  def :+(node: T): ConsistentHash[T] =
+    new ConsistentHash(nodeRing ++ ((1 to virtualNodesFactor) map { r ⇒ (nodeHashFor(node, r) -> node) }), virtualNodesFactor)
 
   /**
-   * Adds a node to the ring.
+   * Adds a node to the node ring.
    * Note that the instance is immutable and this
    * operation returns a new instance.
    * JAVA API
@@ -44,16 +43,15 @@ class ConsistentHash[T] private (replicas: Int, ring: TreeMap[Int, T]) {
   def add(node: T): ConsistentHash[T] = this :+ node
 
   /**
-   * Removes a node from the ring.
+   * Removes a node from the node ring.
    * Note that the instance is immutable and this
    * operation returns a new instance.
    */
-  def :-(node: T): ConsistentHash[T] = {
-    new ConsistentHash(replicas, ring -- ((1 to replicas) map { r ⇒ nodeHashFor(node, r) }))
-  }
+  def :-(node: T): ConsistentHash[T] =
+    new ConsistentHash(nodeRing -- ((1 to virtualNodesFactor) map { r ⇒ nodeHashFor(node, r) }), virtualNodesFactor)
 
   /**
-   * Removes a node from the ring.
+   * Removes a node from the node ring.
    * Note that the instance is immutable and this
    * operation returns a new instance.
    * JAVA API
@@ -62,49 +60,42 @@ class ConsistentHash[T] private (replicas: Int, ring: TreeMap[Int, T]) {
 
   /**
    * Get the node responsible for the data key.
-   * Can only be used if nodes exists in the ring,
+   * Can only be used if nodes exists in the node ring,
    * otherwise throws `IllegalStateException`
    */
   def nodeFor(key: Array[Byte]): T = {
-    if (isEmpty) throw new IllegalStateException("Can't get node for [%s] from an empty ring" format key)
+    if (isEmpty) throw new IllegalStateException("Can't get node for [%s] from an empty node ring" format key)
     val hash = hashFor(key)
-    def nextClockwise: T = {
-      val (ringKey, node) = ring.rangeImpl(Some(hash), None).headOption.getOrElse(ring.head)
-      node
-    }
-    ring.getOrElse(hash, nextClockwise)
+    // find the next node clockwise in the nodeRing, pick first if end of tree
+    nodeRing.rangeImpl(Some(hash), None).headOption.getOrElse(nodeRing.head)._2
   }
 
   /**
-   * Is the ring empty, i.e. no nodes added or all removed.
+   * Is the node ring empty, i.e. no nodes added or all removed.
    */
-  def isEmpty: Boolean = ring.isEmpty
+  def isEmpty: Boolean = nodeRing.isEmpty
 
 }
 
 object ConsistentHash {
-  def apply[T](nodes: Iterable[T], replicas: Int) = {
-    new ConsistentHash(replicas, TreeMap.empty[Int, T] ++
-      (for (node ← nodes; replica ← 1 to replicas) yield (nodeHashFor(node, replica) -> node)))
+  def apply[T](nodes: Iterable[T], virtualNodesFactor: Int) = {
+    new ConsistentHash(TreeMap.empty[Int, T] ++
+      (for (node ← nodes; vnode ← 1 to virtualNodesFactor) yield (nodeHashFor(node, vnode) -> node)),
+      virtualNodesFactor)
   }
 
   /**
    * Factory method to create a ConsistentHash
    * JAVA API
    */
-  def create[T](nodes: java.lang.Iterable[T], replicas: Int) = {
+  def create[T](nodes: java.lang.Iterable[T], virtualNodesFactor: Int) = {
     import scala.collection.JavaConverters._
-    apply(nodes.asScala, replicas)
+    apply(nodes.asScala, virtualNodesFactor)
   }
 
-  private def nodeHashFor(node: Any, replica: Int): Int = {
-    hashFor((node + ":" + replica).getBytes("UTF-8"))
-  }
+  private def nodeHashFor(node: Any, vnode: Int): Int =
+    hashFor((node + ":" + vnode).getBytes("UTF-8"))
 
-  private def hashFor(bytes: Array[Byte]): Int = {
-    val hash = MurmurHash.arrayHash(bytes)
-    if (hash == Int.MinValue) hash + 1
-    math.abs(hash)
-  }
+  private def hashFor(bytes: Array[Byte]): Int = MurmurHash.arrayHash(bytes)
 }
 
