@@ -7,12 +7,8 @@ package akka.routing
 import scala.collection.immutable.TreeMap
 import java.util.Arrays
 
-// =============================================================================================
-// Adapted from HashRing.scala in Debasish Ghosh's Redis Client, licensed under Apache 2 license
-// =============================================================================================
-
 /**
- * Consistent Hashing node ring abstraction.
+ * Consistent Hashing node ring implementation.
  *
  * A good explanation of Consistent Hashing:
  * http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html
