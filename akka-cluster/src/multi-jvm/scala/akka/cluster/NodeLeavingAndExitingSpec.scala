@@ -23,12 +23,12 @@ object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
       .withFallback(ConfigFactory.parseString("""
           # turn off unreachable reaper
           akka.cluster.unreachable-nodes-reaper-interval = 300 s""")
-        .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet)))
 }
 
-class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec with FailureDetectorPuppetStrategy
-class NodeLeavingAndExitingMultiJvmNode2 extends NodeLeavingAndExitingSpec with FailureDetectorPuppetStrategy
-class NodeLeavingAndExitingMultiJvmNode3 extends NodeLeavingAndExitingSpec with FailureDetectorPuppetStrategy
+class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec
+class NodeLeavingAndExitingMultiJvmNode2 extends NodeLeavingAndExitingSpec
+class NodeLeavingAndExitingMultiJvmNode3 extends NodeLeavingAndExitingSpec
 
 abstract class NodeLeavingAndExitingSpec
   extends MultiNodeSpec(NodeLeavingAndExitingMultiJvmSpec)

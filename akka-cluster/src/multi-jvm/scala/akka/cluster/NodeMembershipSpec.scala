@@ -13,12 +13,12 @@ object NodeMembershipMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec with FailureDetectorPuppetStrategy
-class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec with FailureDetectorPuppetStrategy
-class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec with FailureDetectorPuppetStrategy
+class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec
+class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec
+class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec
 
 abstract class NodeMembershipSpec
   extends MultiNodeSpec(NodeMembershipMultiJvmSpec)

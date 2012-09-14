@@ -23,12 +23,12 @@ object TransitionMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("akka.cluster.periodic-tasks-initial-delay = 300 s # turn off all periodic tasks")).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+    withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class TransitionMultiJvmNode1 extends TransitionSpec with FailureDetectorPuppetStrategy
-class TransitionMultiJvmNode2 extends TransitionSpec with FailureDetectorPuppetStrategy
-class TransitionMultiJvmNode3 extends TransitionSpec with FailureDetectorPuppetStrategy
+class TransitionMultiJvmNode1 extends TransitionSpec
+class TransitionMultiJvmNode2 extends TransitionSpec
+class TransitionMultiJvmNode3 extends TransitionSpec
 
 abstract class TransitionSpec
   extends MultiNodeSpec(TransitionMultiJvmSpec)
@@ -67,21 +67,11 @@ abstract class TransitionSpec
     memberStatus(address) == status
   }
 
-  def leaderActions(): Unit = {
+  def leaderActions(): Unit =
     cluster.clusterCore ! LeaderActionsTick
-    awaitPing()
-  }
 
-  def reapUnreachable(): Unit = {
+  def reapUnreachable(): Unit =
     cluster.clusterCore ! ReapUnreachableTick
-    awaitPing()
-  }
-
-  def awaitPing(): Unit = {
-    val ping = Ping()
-    cluster.clusterCore ! ping
-    expectMsgPF() { case pong @ Pong(`ping`, _) ⇒ pong }
-  }
 
   // DSL sugar for `role1 gossipTo role2`
   implicit def roleExtras(role: RoleName): RoleWrapper = new RoleWrapper(role)

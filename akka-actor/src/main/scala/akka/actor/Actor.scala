@@ -60,10 +60,25 @@ case object Kill extends Kill {
 }
 
 /**
- * When Death Watch is used, the watcher will receive a Terminated(watched) message when watched is terminated.
+ * When Death Watch is used, the watcher will receive a Terminated(watched)
+ * message when watched is terminated.
+ * Terminated message can't be forwarded to another actor, since that actor
+ * might not be watching the subject. Instead, if you need to forward Terminated
+ * to another actor you should send the information in your own message.
  */
 @SerialVersionUID(1L)
 case class Terminated private[akka] (@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean) extends AutoReceivedMessage
+
+/**
+ * INTERNAL API
+ *
+ * Used for remote death watch. Failure detector publish this to the
+ * `eventStream` when a remote node is detected to be unreachable.
+ * The watcher ([[akka.actor.DeathWatch]]) subscribes to the `eventStream`
+ * and translates this event to [[akka.actor.Terminated]], which is sent itself.
+ */
+@SerialVersionUID(1L)
+private[akka] case class AddressTerminated(address: Address) extends AutoReceivedMessage
 
 abstract class ReceiveTimeout extends PossiblyHarmful
 

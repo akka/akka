@@ -10,8 +10,7 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import scala.concurrent.Await
 import akka.pattern.ask
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.{STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec}
 import akka.routing.Broadcast
 import akka.routing.ScatterGatherFirstCompletedRouter
 import akka.routing.RoutedActorRef
@@ -48,7 +47,7 @@ class ScatterGatherRoutedRemoteActorMultiJvmNode3 extends ScatterGatherRoutedRem
 class ScatterGatherRoutedRemoteActorMultiJvmNode4 extends ScatterGatherRoutedRemoteActorSpec
 
 class ScatterGatherRoutedRemoteActorSpec extends MultiNodeSpec(ScatterGatherRoutedRemoteActorMultiJvmSpec)
-  with ImplicitSender with DefaultTimeout {
+  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
   import ScatterGatherRoutedRemoteActorMultiJvmSpec._
 
   def initialParticipants = 4

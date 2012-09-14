@@ -54,7 +54,7 @@ object RoutingSpec {
 
   class MyRouter(config: Config) extends RouterConfig {
     val foo = config.getString("foo")
-    def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
+    def createRoute(routeeProvider: RouteeProvider): Route = {
       val routees = IndexedSeq(routeeProvider.context.actorOf(Props[Echo]))
       routeeProvider.registerRoutees(routees)
 
@@ -102,8 +102,6 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
 
     "be able to send their routees" in {
-      val doneLatch = new TestLatch(1)
-
       class TheActor extends Actor {
         val routee1 = context.actorOf(Props[TestActor], "routee1")
         val routee2 = context.actorOf(Props[TestActor], "routee2")
@@ -114,19 +112,18 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
             within = 5 seconds)))
 
         def receive = {
-          case RouterRoutees(iterable) ⇒
-            iterable.exists(_.path.name == "routee1") must be(true)
-            iterable.exists(_.path.name == "routee2") must be(true)
-            iterable.exists(_.path.name == "routee3") must be(true)
-            doneLatch.countDown()
-          case "doIt" ⇒
-            router ! CurrentRoutees
+          case "doIt"                 ⇒ router ! CurrentRoutees
+          case routees: RouterRoutees ⇒ testActor forward routees
         }
       }
 
       val theActor = system.actorOf(Props(new TheActor), "theActor")
       theActor ! "doIt"
-      Await.ready(doneLatch, remaining)
+      val routees = expectMsgPF() {
+        case RouterRoutees(routees) ⇒ routees.toSet
+      }
+
+      routees.map(_.path.name) must be(Set("routee1", "routee2", "routee3"))
     }
 
     "use configured nr-of-instances when FromConfig" in {
@@ -147,8 +144,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       val latch = TestLatch(1)
       val resizer = new Resizer {
         def isTimeForResize(messageCounter: Long): Boolean = messageCounter == 0
-        def resize(props: Props, routeeProvider: RouteeProvider): Unit = {
-          routeeProvider.registerRoutees(routeeProvider.createRoutees(props, nrOfInstances = 3, Nil))
+        def resize(routeeProvider: RouteeProvider): Unit = {
+          routeeProvider.createRoutees(nrOfInstances = 3)
           latch.countDown()
         }
       }
@@ -226,14 +223,9 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
 
     "send message to connection" in {
-      val doneLatch = new TestLatch(1)
-
-      val counter = new AtomicInteger(0)
-
       class Actor1 extends Actor {
         def receive = {
-          case "end" ⇒ doneLatch.countDown()
-          case _     ⇒ counter.incrementAndGet
+          case msg ⇒ testActor forward msg
         }
       }
 
@@ -241,9 +233,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routedActor ! "hello"
       routedActor ! "end"
 
-      Await.ready(doneLatch, remaining)
-
-      counter.get must be(1)
+      expectMsg("hello")
+      expectMsg("end")
     }
   }
 
@@ -636,7 +627,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
       //#crRoute
-      def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
+      def createRoute(routeeProvider: RouteeProvider): Route = {
         val democratActor = routeeProvider.context.actorOf(Props(new DemocratActor()), "d")
         val republicanActor = routeeProvider.context.actorOf(Props(new RepublicanActor()), "r")
         val routees = Vector[ActorRef](democratActor, republicanActor)

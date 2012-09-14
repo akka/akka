@@ -6,7 +6,6 @@ package akka.routing
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorContext
 import akka.actor.ActorRef
-import akka.actor.ActorSystemImpl
 import akka.actor.Deploy
 import akka.actor.InternalActorRef
 import akka.actor.Props
@@ -18,6 +17,7 @@ import akka.actor.Address
 import scala.collection.JavaConverters._
 import java.util.concurrent.atomic.AtomicInteger
 import java.lang.IllegalStateException
+import akka.actor.ActorCell
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -25,15 +25,17 @@ import java.lang.IllegalStateException
  * which makes it possible to mix this with the built-in routers such as
  * [[akka.routing.RoundRobinRouter]] or custom routers.
  */
-case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) extends RouterConfig {
+@SerialVersionUID(1L)
+final case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) extends RouterConfig {
 
   def this(local: RouterConfig, nodes: java.lang.Iterable[Address]) = this(local, nodes.asScala)
   def this(local: RouterConfig, nodes: Array[Address]) = this(local, nodes: Iterable[Address])
 
-  override def createRouteeProvider(context: ActorContext) = new RemoteRouteeProvider(nodes, context, resizer)
+  override def createRouteeProvider(context: ActorContext, routeeProps: Props) =
+    new RemoteRouteeProvider(nodes, context, routeeProps, resizer)
 
-  override def createRoute(routeeProps: Props, routeeProvider: RouteeProvider): Route = {
-    local.createRoute(routeeProps, routeeProvider)
+  override def createRoute(routeeProvider: RouteeProvider): Route = {
+    local.createRoute(routeeProvider)
   }
 
   override def createActor(): Router = local.createActor()
@@ -58,30 +60,32 @@ case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) ext
  *
  * Routee paths may not be combined with remote target nodes.
  */
-class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _resizer: Option[Resizer])
-  extends RouteeProvider(_context, _resizer) {
+final class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _routeeProps: Props, _resizer: Option[Resizer])
+  extends RouteeProvider(_context, _routeeProps, _resizer) {
+
+  if (nodes.isEmpty) throw new ConfigurationException("Must specify list of remote target.nodes for [%s]"
+    format context.self.path.toString)
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
   private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
   // need this counter as instance variable since Resizer may call createRoutees several times
   private val childNameCounter = new AtomicInteger
 
-  override def createRoutees(props: Props, nrOfInstances: Int, routees: Iterable[String]): IndexedSeq[ActorRef] =
-    (nrOfInstances, routees, nodes) match {
-      case (_, _, Nil) ⇒ throw new ConfigurationException("Must specify list of remote target.nodes for [%s]"
-        format context.self.path.toString)
+  override def registerRouteesFor(paths: Iterable[String]): Unit =
+    throw new ConfigurationException("Remote target.nodes can not be combined with routees for [%s]"
+      format context.self.path.toString)
 
-      case (n, Nil, ys) ⇒
-        val impl = context.system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-        IndexedSeq.empty[ActorRef] ++ (for (i ← 1 to nrOfInstances) yield {
-          val name = "c" + childNameCounter.incrementAndGet
-          val deploy = Deploy("", ConfigFactory.empty(), props.routerConfig, RemoteScope(nodeAddressIter.next))
-          impl.provider.actorOf(impl, props, context.self.asInstanceOf[InternalActorRef], context.self.path / name,
-            systemService = false, Some(deploy), lookupDeploy = false, async = false)
-        })
+  override def createRoutees(nrOfInstances: Int): Unit = {
+    val refs = IndexedSeq.fill(nrOfInstances) {
+      val name = "c" + childNameCounter.incrementAndGet
+      val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(nodeAddressIter.next))
 
-      case (_, xs, _) ⇒ throw new ConfigurationException("Remote target.nodes can not be combined with routees for [%s]"
-        format context.self.path.toString)
+      // attachChild means that the provider will treat this call as if possibly done out of the wrong
+      // context and use RepointableActorRef instead of LocalActorRef. Seems like a slightly sub-optimal
+      // choice in a corner case (and hence not worth fixing).
+      context.asInstanceOf[ActorCell].attachChild(routeeProps.withDeploy(deploy), name, systemService = false)
     }
+    registerRoutees(refs)
+  }
 }
 

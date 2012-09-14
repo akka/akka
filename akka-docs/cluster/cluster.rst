@@ -5,7 +5,7 @@
  Cluster Specification
 ######################
 
-.. note:: *This document describes the new clustering coming in Akka Coltrane and is not available in the latest stable release)*
+.. note:: This module is :ref:`experimental <experimental>`. This document describes the design concepts of the new clustering coming in Akka Coltrane. Not everything described here is implemented yet.
 
 Intro
 =====

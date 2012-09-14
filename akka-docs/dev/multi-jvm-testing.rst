@@ -18,9 +18,7 @@ http://github.com/typesafehub/sbt-multi-jvm
 
 You can add it as a plugin by adding the following to your project/plugins.sbt::
 
-   resolvers += Classpaths.typesafeResolver
-
-   addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.2.0-M4")
+   addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.2.0")
 
 You can then add multi-JVM testing to ``project/Build.scala`` by including the ``MultiJvm``
 settings and config. For example, here is an example of how the akka-remote-tests project adds
@@ -30,8 +28,8 @@ multi-JVM testing (Simplified for clarity):
 
    import sbt._
    import Keys._
-   import com.typesafe.sbtmultijvm.MultiJvmPlugin
-   import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions }
+   import com.typesafe.sbt.SbtMultiJvm
+   import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions }
 
    object AkkaBuild extends Build {
 
@@ -49,7 +47,7 @@ multi-JVM testing (Simplified for clarity):
       )
     ) configs (MultiJvm)
 
-    lazy val buildSettings = Defaults.defaultSettings ++ Seq(
+    lazy val buildSettings = Defaults.defaultSettings ++ SbtMultiJvm.settings ++ Seq(
       organization := "com.typesafe.akka",
       version      := "2.1-SNAPSHOT",
       scalaVersion := "|scalaVersion|",
@@ -78,14 +76,14 @@ the sbt prompt):
 
 .. code-block:: none
 
-   akka-remote/multi-jvm:test
+   akka-remote-tests/multi-jvm:test
 
-Or one can change to the ``akka-remote`` project first, and then run the
+Or one can change to the ``akka-remote-tests`` project first, and then run the
 tests:
 
 .. code-block:: none
 
-   project akka-remote
+   project akka-remote-tests
    multi-jvm:test
 
 To run individual tests use ``test-only``:
