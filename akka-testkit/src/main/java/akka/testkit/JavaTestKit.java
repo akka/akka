@@ -11,6 +11,7 @@ import akka.event.Logging.LogEvent;
 import akka.japi.JavaPartialFunction;
 import akka.japi.Util;
 import scala.concurrent.util.Duration;
+import scala.concurrent.util.FiniteDuration;
 
 /**
  * Java API for the TestProbe. Proper JavaDocs to come once JavaDoccing is implemented.
@@ -30,8 +31,10 @@ public class JavaTestKit {
     return p.system();
   }
   
-  static public Duration duration(String s) {
-    return Duration.parse(s);
+  static public FiniteDuration duration(String s) {
+    final Duration ret = Duration.apply(s);
+    if (ret instanceof FiniteDuration) return (FiniteDuration) ret;
+    else throw new IllegalArgumentException("duration() is only for finite durations, use Duration.Inf() and friends");
   }
   
   public Duration dilated(Duration d) {
@@ -58,11 +61,11 @@ public class JavaTestKit {
     p.lastMessage().sender().tell(msg, p.ref());
   }
 
-  public Duration getRemainingTime() {
+  public FiniteDuration getRemainingTime() {
     return p.remaining();
   }
 
-  public Duration getRemainingTimeOr(Duration def) {
+  public FiniteDuration getRemainingTimeOr(FiniteDuration def) {
     return p.remainingOr(def);
   }
 
@@ -97,7 +100,7 @@ public class JavaTestKit {
   public abstract class Within {
     protected abstract void run();
 
-    public Within(Duration max) {
+    public Within(FiniteDuration max) {
       p.within(max, new AbstractFunction0<Object>() {
         public Object apply() {
           run();
@@ -106,7 +109,7 @@ public class JavaTestKit {
       });
     }
 
-    public Within(Duration min, Duration max) {
+    public Within(FiniteDuration min, FiniteDuration max) {
       p.within(min, max, new AbstractFunction0<Object>() {
         public Object apply() {
           run();
@@ -168,7 +171,7 @@ public class JavaTestKit {
     return p.expectMsg(msg);
   }
 
-  public <T> T expectMsgEquals(Duration max, T msg) {
+  public <T> T expectMsgEquals(FiniteDuration max, T msg) {
     return p.expectMsg(max, msg);
   }
 
@@ -176,7 +179,7 @@ public class JavaTestKit {
     return p.expectMsgClass(clazz);
   }
 
-  public <T> T expectMsgClass(Duration max, Class<T> clazz) {
+  public <T> T expectMsgClass(FiniteDuration max, Class<T> clazz) {
     return p.expectMsgClass(max, clazz);
   }
 
@@ -184,7 +187,7 @@ public class JavaTestKit {
     return p.expectMsgAnyOf(Util.arrayToSeq(msgs));
   }
 
-  public Object expectMsgAnyOf(Duration max, Object... msgs) {
+  public Object expectMsgAnyOf(FiniteDuration max, Object... msgs) {
     return p.expectMsgAnyOf(max, Util.arrayToSeq(msgs));
   }
 
@@ -193,7 +196,7 @@ public class JavaTestKit {
         Util.classTag(Object.class));
   }
 
-  public Object[] expectMsgAllOf(Duration max, Object... msgs) {
+  public Object[] expectMsgAllOf(FiniteDuration max, Object... msgs) {
     return (Object[]) p.expectMsgAllOf(max, Util.arrayToSeq(msgs)).toArray(
         Util.classTag(Object.class));
   }
@@ -204,7 +207,7 @@ public class JavaTestKit {
     return (T) result;
   }
 
-  public Object expectMsgAnyClassOf(Duration max, Class<?>... classes) {
+  public Object expectMsgAnyClassOf(FiniteDuration max, Class<?>... classes) {
     return p.expectMsgAnyClassOf(max, Util.arrayToSeq(classes));
   }
 
@@ -212,7 +215,7 @@ public class JavaTestKit {
     p.expectNoMsg();
   }
 
-  public void expectNoMsg(Duration max) {
+  public void expectNoMsg(FiniteDuration max) {
     p.expectNoMsg(max);
   }
 

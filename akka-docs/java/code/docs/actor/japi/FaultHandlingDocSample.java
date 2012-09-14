@@ -109,7 +109,7 @@ public class FaultHandlingDocSample {
    */
   public static class Worker extends UntypedActor {
     final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-    final Timeout askTimeout = new Timeout(Duration.parse("5 seconds"));
+    final Timeout askTimeout = new Timeout(Duration.create(5, "seconds"));
 
     // The sender of the initial Start message will continuously be notified about progress
     ActorRef progressListener;

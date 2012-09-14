@@ -106,7 +106,7 @@ public class FutureDocTestBase {
     ActorRef actor = system.actorOf(new Props(MyActor.class));
     String msg = "hello";
     //#ask-blocking
-    Timeout timeout = new Timeout(Duration.parse("5 seconds"));
+    Timeout timeout = new Timeout(Duration.create(5, "seconds"));
     Future<Object> future = Patterns.ask(actor, msg, timeout);
     String result = (String) Await.result(future, timeout.duration());
     //#ask-blocking

@@ -169,7 +169,7 @@ trait Inbox { this: ActorDSL.type ⇒
      * this method within an actor!</b>
      */
     def receive(timeout: FiniteDuration = defaultTimeout): Any = {
-      implicit val t = Timeout(timeout + extraTime)
+      implicit val t = Timeout((timeout + extraTime).asInstanceOf[FiniteDuration])
       Await.result(receiver ? Get(Deadline.now + timeout), Duration.Inf)
     }
 
@@ -186,7 +186,7 @@ trait Inbox { this: ActorDSL.type ⇒
      * this method within an actor!</b>
      */
     def select[T](timeout: FiniteDuration = defaultTimeout)(predicate: PartialFunction[Any, T]): T = {
-      implicit val t = Timeout(timeout + extraTime)
+      implicit val t = Timeout((timeout + extraTime).asInstanceOf[FiniteDuration])
       predicate(Await.result(receiver ? Select(Deadline.now + timeout, predicate), Duration.Inf))
     }
 

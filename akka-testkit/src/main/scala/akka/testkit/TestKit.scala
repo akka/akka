@@ -7,7 +7,7 @@ import language.postfixOps
 
 import akka.actor._
 import akka.actor.Actor._
-import scala.concurrent.util.Duration
+import scala.concurrent.util.{ Duration, FiniteDuration }
 import scala.concurrent.util.duration._
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
 import atomic.AtomicInteger
@@ -173,20 +173,30 @@ trait TestKitBase {
   /**
    * Obtain current time (`System.nanoTime`) as Duration.
    */
-  def now: Duration = System.nanoTime.nanos
+  def now: FiniteDuration = System.nanoTime.nanos
 
   /**
    * Obtain time remaining for execution of the innermost enclosing `within`
    * block or missing that it returns the properly dilated default for this
    * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: Duration = remainingOr(testKitSettings.SingleExpectDefaultTimeout.dilated)
+  def remaining: FiniteDuration = remainingOr(testKitSettings.SingleExpectDefaultTimeout.dilated)
 
   /**
    * Obtain time remaining for execution of the innermost enclosing `within`
    * block or missing that it returns the given duration.
    */
-  def remainingOr(duration: Duration): Duration = if (end == Duration.Undefined) duration else end - now
+  def remainingOr(duration: FiniteDuration): FiniteDuration = end match {
+    case x if x eq Duration.Undefined ⇒ duration
+    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("`end` cannot be infinite")
+    case f: FiniteDuration            ⇒ (end - now).asInstanceOf[FiniteDuration] // RK FIXME after next Scala milestone
+  }
+
+  private def remainingOrDilated(max: Duration): FiniteDuration = max match {
+    case x if x eq Duration.Undefined ⇒ remaining
+    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("max duration cannot be infinite")
+    case f: FiniteDuration            ⇒ f.dilated
+  }
 
   /**
    * Query queue status.
@@ -204,7 +214,7 @@ trait TestKitBase {
    * which uses the configuration entry "akka.test.timefactor".
    */
   def awaitCond(p: ⇒ Boolean, max: Duration = Duration.Undefined, interval: Duration = 100.millis) {
-    val _max = if (max eq Duration.Undefined) remaining else max.dilated
+    val _max = remainingOrDilated(max)
     val stop = now + _max
 
     @tailrec
@@ -235,7 +245,7 @@ trait TestKitBase {
    *       }
    * </pre>
    */
-  def within[T](min: Duration, max: Duration)(f: ⇒ T): T = {
+  def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T = {
     val _max = max.dilated
     val start = now
     val rem = if (end == Duration.Undefined) Duration.Inf else end - start
@@ -261,7 +271,7 @@ trait TestKitBase {
   /**
    * Same as calling `within(0 seconds, max)(f)`.
    */
-  def within[T](max: Duration)(f: ⇒ T): T = within(0 seconds, max)(f)
+  def within[T](max: FiniteDuration)(f: ⇒ T): T = within(0 seconds, max)(f)
 
   /**
    * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.
@@ -275,7 +285,7 @@ trait TestKitBase {
    *
    * @return the received object
    */
-  def expectMsg[T](max: Duration, obj: T): T = expectMsg_internal(max.dilated, obj)
+  def expectMsg[T](max: FiniteDuration, obj: T): T = expectMsg_internal(max.dilated, obj)
 
   private def expectMsg_internal[T](max: Duration, obj: T): T = {
     val o = receiveOne(max)
@@ -295,7 +305,7 @@ trait TestKitBase {
    * @return the received object as transformed by the partial function
    */
   def expectMsgPF[T](max: Duration = Duration.Undefined, hint: String = "")(f: PartialFunction[Any, T]): T = {
-    val _max = if (max eq Duration.Undefined) remaining else max.dilated
+    val _max = remainingOrDilated(max)
     val o = receiveOne(_max)
     assert(o ne null, "timeout (" + _max + ") during expectMsg: " + hint)
     assert(f.isDefinedAt(o), "expected: " + hint + " but got unexpected message " + o)
@@ -311,7 +321,7 @@ trait TestKitBase {
    *         partial function returned true
    */
   def fishForMessage(max: Duration = Duration.Undefined, hint: String = "")(f: PartialFunction[Any, Boolean]): Any = {
-    val _max = if (max eq Duration.Undefined) remaining else max.dilated
+    val _max = remainingOrDilated(max)
     val end = now + _max
     @tailrec
     def recv: Any = {
@@ -335,7 +345,7 @@ trait TestKitBase {
    *
    * @return the received object
    */
-  def expectMsgType[T](max: Duration)(implicit t: ClassTag[T]): T = expectMsgClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
+  def expectMsgType[T](max: FiniteDuration)(implicit t: ClassTag[T]): T = expectMsgClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
    * Same as `expectMsgClass(remaining, c)`, but correctly treating the timeFactor.
@@ -349,9 +359,9 @@ trait TestKitBase {
    *
    * @return the received object
    */
-  def expectMsgClass[C](max: Duration, c: Class[C]): C = expectMsgClass_internal(max.dilated, c)
+  def expectMsgClass[C](max: FiniteDuration, c: Class[C]): C = expectMsgClass_internal(max.dilated, c)
 
-  private def expectMsgClass_internal[C](max: Duration, c: Class[C]): C = {
+  private def expectMsgClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
     val o = receiveOne(max)
     assert(o ne null, "timeout (" + max + ") during expectMsgClass waiting for " + c)
     assert(BoxedType(c) isInstance o, "expected " + c + ", found " + o.getClass)
@@ -370,9 +380,9 @@ trait TestKitBase {
    *
    * @return the received object
    */
-  def expectMsgAnyOf[T](max: Duration, obj: T*): T = expectMsgAnyOf_internal(max.dilated, obj: _*)
+  def expectMsgAnyOf[T](max: FiniteDuration, obj: T*): T = expectMsgAnyOf_internal(max.dilated, obj: _*)
 
-  private def expectMsgAnyOf_internal[T](max: Duration, obj: T*): T = {
+  private def expectMsgAnyOf_internal[T](max: FiniteDuration, obj: T*): T = {
     val o = receiveOne(max)
     assert(o ne null, "timeout (" + max + ") during expectMsgAnyOf waiting for " + obj.mkString("(", ", ", ")"))
     assert(obj exists (_ == o), "found unexpected " + o)
@@ -391,9 +401,9 @@ trait TestKitBase {
    *
    * @return the received object
    */
-  def expectMsgAnyClassOf[C](max: Duration, obj: Class[_ <: C]*): C = expectMsgAnyClassOf_internal(max.dilated, obj: _*)
+  def expectMsgAnyClassOf[C](max: FiniteDuration, obj: Class[_ <: C]*): C = expectMsgAnyClassOf_internal(max.dilated, obj: _*)
 
-  private def expectMsgAnyClassOf_internal[C](max: Duration, obj: Class[_ <: C]*): C = {
+  private def expectMsgAnyClassOf_internal[C](max: FiniteDuration, obj: Class[_ <: C]*): C = {
     val o = receiveOne(max)
     assert(o ne null, "timeout (" + max + ") during expectMsgAnyClassOf waiting for " + obj.mkString("(", ", ", ")"))
     assert(obj exists (c ⇒ BoxedType(c) isInstance o), "found unexpected " + o)
@@ -418,9 +428,9 @@ trait TestKitBase {
    *   expectMsgAllOf(1 second, Result1(), Result2())
    * </pre>
    */
-  def expectMsgAllOf[T](max: Duration, obj: T*): Seq[T] = expectMsgAllOf_internal(max.dilated, obj: _*)
+  def expectMsgAllOf[T](max: FiniteDuration, obj: T*): Seq[T] = expectMsgAllOf_internal(max.dilated, obj: _*)
 
-  private def expectMsgAllOf_internal[T](max: Duration, obj: T*): Seq[T] = {
+  private def expectMsgAllOf_internal[T](max: FiniteDuration, obj: T*): Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
     obj foreach (x ⇒ assert(recv exists (x == _), "not found " + x))
     recv foreach (x ⇒ assert(obj exists (x == _), "found unexpected " + x))
@@ -440,9 +450,9 @@ trait TestKitBase {
    * Wait time is bounded by the given duration, with an AssertionFailure
    * being thrown in case of timeout.
    */
-  def expectMsgAllClassOf[T](max: Duration, obj: Class[_ <: T]*): Seq[T] = internalExpectMsgAllClassOf(max.dilated, obj: _*)
+  def expectMsgAllClassOf[T](max: FiniteDuration, obj: Class[_ <: T]*): Seq[T] = internalExpectMsgAllClassOf(max.dilated, obj: _*)
 
-  private def internalExpectMsgAllClassOf[T](max: Duration, obj: Class[_ <: T]*): Seq[T] = {
+  private def internalExpectMsgAllClassOf[T](max: FiniteDuration, obj: Class[_ <: T]*): Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
     obj foreach (x ⇒ assert(recv exists (_.getClass eq BoxedType(x)), "not found " + x))
     recv foreach (x ⇒ assert(obj exists (c ⇒ BoxedType(c) eq x.getClass), "found non-matching object " + x))
@@ -465,9 +475,9 @@ trait TestKitBase {
    * Beware that one object may satisfy all given class constraints, which
    * may be counter-intuitive.
    */
-  def expectMsgAllConformingOf[T](max: Duration, obj: Class[_ <: T]*): Seq[T] = internalExpectMsgAllConformingOf(max.dilated, obj: _*)
+  def expectMsgAllConformingOf[T](max: FiniteDuration, obj: Class[_ <: T]*): Seq[T] = internalExpectMsgAllConformingOf(max.dilated, obj: _*)
 
-  private def internalExpectMsgAllConformingOf[T](max: Duration, obj: Class[_ <: T]*): Seq[T] = {
+  private def internalExpectMsgAllConformingOf[T](max: FiniteDuration, obj: Class[_ <: T]*): Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
     obj foreach (x ⇒ assert(recv exists (BoxedType(x) isInstance _), "not found " + x))
     recv foreach (x ⇒ assert(obj exists (c ⇒ BoxedType(c) isInstance x), "found non-matching object " + x))
@@ -482,9 +492,9 @@ trait TestKitBase {
   /**
    * Assert that no message is received for the specified time.
    */
-  def expectNoMsg(max: Duration) { expectNoMsg_internal(max.dilated) }
+  def expectNoMsg(max: FiniteDuration) { expectNoMsg_internal(max.dilated) }
 
-  private def expectNoMsg_internal(max: Duration) {
+  private def expectNoMsg_internal(max: FiniteDuration) {
     val o = receiveOne(max)
     assert(o eq null, "received unexpected message " + o)
     lastWasNoMsg = true
@@ -509,7 +519,7 @@ trait TestKitBase {
    * </pre>
    */
   def receiveWhile[T](max: Duration = Duration.Undefined, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[AnyRef, T]): Seq[T] = {
-    val stop = now + (if (max eq Duration.Undefined) remaining else max.dilated)
+    val stop = now + remainingOrDilated(max)
     var msg: Message = NullMessage
 
     @tailrec
@@ -546,7 +556,7 @@ trait TestKitBase {
   /**
    * Receive N messages in a row before the given deadline.
    */
-  def receiveN(n: Int, max: Duration): Seq[AnyRef] = receiveN_internal(n, max.dilated)
+  def receiveN(n: Int, max: FiniteDuration): Seq[AnyRef] = receiveN_internal(n, max.dilated)
 
   private def receiveN_internal(n: Int, max: Duration): Seq[AnyRef] = {
     val stop = max + now
