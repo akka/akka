@@ -15,6 +15,7 @@ is really easy to create your own. The routers shipped with Akka are:
 * ``akka.routing.SmallestMailboxRouter``
 * ``akka.routing.BroadcastRouter``
 * ``akka.routing.ScatterGatherFirstCompletedRouter``
+* ``akka.routing.ConsistentHashingRouter``
 
 Routers In Action
 ^^^^^^^^^^^^^^^^^
@@ -283,12 +284,22 @@ to select a connection based on the sent message. This
 `article <http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html>`_ gives good 
 insight into how consistent hashing is implemented.
 
-The messages sent to a ConsistentHashingRouter must implement 
-``akka.routing.ConsistentHashable`` or be wrapped in a ``akka.routing.ConsistentHashableEnvelope``
-to define what  data to use for the consistent hash key. If returning a
-byte array or String it will be used as is, otherwise the configured 
-:ref:`serializer <serialization-scala>` will be applied to the returned data
-to create a byte array that will be hashed.
+There is 3 ways to define what data to use for the consistent hash key.
+
+* You can define ``withConsistentHashMapping`` of the router to map incoming
+  messages to their consistent hash key. This makes the makes the decision
+  transparent for the sender.
+
+* The messages may implement ``akka.routing.ConsistentHashable``.
+  The key is part of the message and it's convenient to define it together
+  with the message definition.
+ 
+* The messages can be be wrapped in a ``akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope``
+  to define what data to use for the consistent hash key. The sender knows
+  the key to use.
+ 
+These ways to define the consistent hash key can be use together and at
+the same time for one router. The ``withConsistentHashMapping`` is tried first.
 
 Code example:
 

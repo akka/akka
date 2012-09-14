@@ -19,8 +19,11 @@ object ConsistentHashingRouterDocSpec {
     def receive = {
       case Entry(key, value) ⇒ cache += (key -> value)
       case Get(key)          ⇒ sender ! cache.get(key)
+      case Evict(key)        => cache -= key
     }
   }
+
+  case class Evict(key: String)
 
   case class Get(key: String) extends ConsistentHashable {
     override def consistentHashKey: Any = key

@@ -24,6 +24,10 @@ object ConsistentHashingRouterSpec {
         nr-of-instances = 3
         virtual-nodes-factor = 17
       }
+      /router2 {
+        router = consistent-hashing
+        nr-of-instances = 5
+      }
     }
     """
 
@@ -38,6 +42,8 @@ object ConsistentHashingRouterSpec {
   }
 
   case class MsgKey(name: String)
+
+  case class Msg2(key: Any, data: String)
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -66,7 +72,30 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
 
       router1 ! Msg(MsgKey("c"), "C")
       val destinationC = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
-      router1 ! Msg(MsgKey("c"), "CC")
+      router1 ! ConsistentHashableEnvelope(message = "CC", consistentHashKey = MsgKey("c"))
+      expectMsg(destinationC)
+    }
+
+    "select destination with defined consistentHashRoute" in {
+      def consistentHashRoute: ConsistentHashingRouter.ConsistentHashRoute = {
+        case Msg2(key, data) ⇒ key
+      }
+      val router2 = system.actorOf(Props[Echo].withRouter(ConsistentHashingRouter(
+        consistentHashRoute = consistentHashRoute)), "router2")
+
+      router2 ! Msg2("a", "A")
+      val destinationA = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
+      router2 ! ConsistentHashableEnvelope(message = "AA", consistentHashKey = "a")
+      expectMsg(destinationA)
+
+      router2 ! Msg2(17, "B")
+      val destinationB = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
+      router2 ! ConsistentHashableEnvelope(message = "BB", consistentHashKey = 17)
+      expectMsg(destinationB)
+
+      router2 ! Msg2(MsgKey("c"), "C")
+      val destinationC = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
+      router2 ! ConsistentHashableEnvelope(message = "CC", consistentHashKey = MsgKey("c"))
       expectMsg(destinationC)
     }
   }
