@@ -12,8 +12,7 @@ import akka.actor.PoisonPill
 import akka.actor.Address
 import scala.concurrent.Await
 import akka.pattern.ask
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.{STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec}
 import akka.routing.Broadcast
 import akka.routing.RoundRobinRouter
 import akka.routing.RoutedActorRef
@@ -32,9 +31,8 @@ object RoundRobinRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class TestResizer extends Resizer {
     def isTimeForResize(messageCounter: Long): Boolean = messageCounter <= 10
-    def resize(props: Props, routeeProvider: RouteeProvider): Unit = {
-      val newRoutees = routeeProvider.createRoutees(props, nrOfInstances = 1, Nil)
-      routeeProvider.registerRoutees(newRoutees)
+    def resize(routeeProvider: RouteeProvider): Unit = {
+      routeeProvider.createRoutees(nrOfInstances = 1)
     }
   }
 
@@ -61,7 +59,7 @@ class RoundRobinRoutedRemoteActorMultiJvmNode3 extends RoundRobinRoutedRemoteAct
 class RoundRobinRoutedRemoteActorMultiJvmNode4 extends RoundRobinRoutedRemoteActorSpec
 
 class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemoteActorMultiJvmSpec)
-  with ImplicitSender with DefaultTimeout {
+ with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
 
   def initialParticipants = 4

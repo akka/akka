@@ -34,16 +34,19 @@ object ClusterMetricsMultiJvmSpec extends MultiNodeConfig {
     akka.actor.debug.unhandled = off
     akka.actor.debug.lifecycle = off
     akka.actor.debug.autoreceive = off
-    akka.actor.debug.fsm = off"""))
+    akka.actor.debug.fsm = off""")
+    .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class ClusterMetricsMultiJvmNode1 extends ClusterMetricsSpec with AccrualFailureDetectorStrategy
-class ClusterMetricsMultiJvmNode2 extends ClusterMetricsSpec with AccrualFailureDetectorStrategy
-class ClusterMetricsMultiJvmNode3 extends ClusterMetricsSpec with AccrualFailureDetectorStrategy
-class ClusterMetricsMultiJvmNode4 extends ClusterMetricsSpec with AccrualFailureDetectorStrategy
-class ClusterMetricsMultiJvmNode5 extends ClusterMetricsSpec with AccrualFailureDetectorStrategy
+class ClusterMetricsMultiJvmNode1 extends ClusterMetricsSpec
+class ClusterMetricsMultiJvmNode2 extends ClusterMetricsSpec
+class ClusterMetricsMultiJvmNode3 extends ClusterMetricsSpec
+class ClusterMetricsMultiJvmNode4 extends ClusterMetricsSpec
+class ClusterMetricsMultiJvmNode5 extends ClusterMetricsSpec
 
 abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSpec) with MultiNodeClusterSpec {
+  import ClusterMetricsMultiJvmSpec._
+
   "Cluster metrics" must {
     "periodically collect metrics on each node, publish ClusterMetricsChanged to the event stream, and gossip metrics around the node ring" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)
@@ -51,6 +54,17 @@ abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSp
       awaitCond(clusterView.members.filter(_.status == MemberStatus.Up).size == roles.size)
       awaitCond(clusterView.metrics.size == roles.size, 120 seconds)
       enterBarrier("after")
+    }
+    "reflect the correct number of node metrics in cluster view" taggedAs LongRunningTest in {
+      runOn(second) {
+        cluster.leave(first)
+      }
+      enterBarrier("first-left")
+      runOn(second, third, fourth, fifth) {
+        awaitCond(clusterView.members.forall(_.address != address(first)), 30.seconds.dilated)
+        awaitCond(clusterView.metrics.size == (roles.size - 1), 120 seconds)
+      }
+      enterBarrier("finished")
     }
   }
 }

@@ -6,8 +6,8 @@ package akka
 
 import sbt._
 import sbt.Keys._
-import com.typesafe.sbtmultijvm.MultiJvmPlugin
-import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName }
+import com.typesafe.sbt.SbtMultiJvm
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName }
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
@@ -77,8 +77,6 @@ object AkkaBuild extends Build {
     base = file("akka-actor"),
     settings = defaultSettings ++ OSGi.actor ++ Seq(
       autoCompilerPlugins := true,
-      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
-      artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle")),
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
@@ -129,10 +127,11 @@ object AkkaBuild extends Build {
   )
 
   lazy val remoteTests = Project(
-    id = "akka-remote-tests",
+    id = "akka-remote-tests-experimental",
     base = file("akka-remote-tests"),
-    dependencies = Seq(remote, actorTests % "test->test", testkit % "test->test"),
+    dependencies = Seq(remote, actorTests % "test->test", testkit),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      libraryDependencies ++= Dependencies.remoteTests,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -145,9 +144,9 @@ object AkkaBuild extends Build {
   ) configs (MultiJvm)
 
   lazy val cluster = Project(
-    id = "akka-cluster",
+    id = "akka-cluster-experimental",
     base = file("akka-cluster"),
-    dependencies = Seq(remote, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
+    dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
@@ -275,6 +274,13 @@ object AkkaBuild extends Build {
     base = file("akka-sbt-plugin"),
     settings = defaultSettings ++ Seq(
       sbtPlugin := true,
+      publishMavenStyle := false, // SBT Plugins should be published as Ivy
+      publishTo <<= (version) { version: String =>
+        val scalasbt = "http://scalasbt.artifactoryonline.com/scalasbt/"
+        val (name, u) = if (version.contains("-SNAPSHOT")) ("sbt-plugin-snapshots", scalasbt+"sbt-plugin-snapshots")
+        else ("sbt-plugin-releases", scalasbt+"sbt-plugin-releases")
+        Some(Resolver.url(name, url(u))(Resolver.ivyStylePatterns))
+      },
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
       scalaVersion := "2.9.1",
       scalaBinaryVersion <<= scalaVersion
@@ -465,7 +471,7 @@ object AkkaBuild extends Build {
     .setPreference(AlignSingleLineCaseStatements, true)
   }
 
-  lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
+  lazy val multiJvmSettings = SbtMultiJvm.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
@@ -548,11 +554,13 @@ object Dependencies {
 
   val actor = Seq(config)
 
-  val testkit = Seq(Test.scalatest, Test.junit)
+  val testkit = Seq(Test.junit, Test.scalatest)
 
   val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf)
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
+
+  val remoteTests = Seq(Test.junit, Test.scalatest)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 

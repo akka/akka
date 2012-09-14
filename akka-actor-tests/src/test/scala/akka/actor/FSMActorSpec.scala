@@ -183,6 +183,10 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
     "run onTermination upon ActorRef.stop()" in {
       val started = TestLatch(1)
+      /*
+       * This lazy val trick is beyond evil: KIDS, DON'T TRY THIS AT HOME!
+       * It is necessary here because of the path-dependent type fsm.StopEvent.
+       */
       lazy val fsm = new Actor with FSM[Int, Null] {
         override def preStart = { started.countDown }
         startWith(1, null)

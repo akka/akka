@@ -44,6 +44,7 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
       publish-stats-interval = 0 s # always, when it happens
     }
     akka.loglevel = INFO
+    akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.actor.default-dispatcher.fork-join-executor {
       # when using nodes-per-datacenter=10 we need some extra
       # threads to keep up with netty connect blocking
@@ -70,11 +71,11 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     """))
 }
 
-class LargeClusterMultiJvmNode1 extends LargeClusterSpec with AccrualFailureDetectorStrategy
-class LargeClusterMultiJvmNode2 extends LargeClusterSpec with AccrualFailureDetectorStrategy
-class LargeClusterMultiJvmNode3 extends LargeClusterSpec with AccrualFailureDetectorStrategy
-class LargeClusterMultiJvmNode4 extends LargeClusterSpec with AccrualFailureDetectorStrategy
-class LargeClusterMultiJvmNode5 extends LargeClusterSpec with AccrualFailureDetectorStrategy
+class LargeClusterMultiJvmNode1 extends LargeClusterSpec
+class LargeClusterMultiJvmNode2 extends LargeClusterSpec
+class LargeClusterMultiJvmNode3 extends LargeClusterSpec
+class LargeClusterMultiJvmNode4 extends LargeClusterSpec
+class LargeClusterMultiJvmNode5 extends LargeClusterSpec
 
 abstract class LargeClusterSpec
   extends MultiNodeSpec(LargeClusterMultiJvmSpec)

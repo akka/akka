@@ -24,6 +24,7 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   // Note that this test uses default configuration,
   // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
+    akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
       auto-join = off
     }
@@ -31,11 +32,11 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
     """))
 }
 
-class SunnyWeatherMultiJvmNode1 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
-class SunnyWeatherMultiJvmNode2 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
-class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
-class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
-class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec with AccrualFailureDetectorStrategy
+class SunnyWeatherMultiJvmNode1 extends SunnyWeatherSpec
+class SunnyWeatherMultiJvmNode2 extends SunnyWeatherSpec
+class SunnyWeatherMultiJvmNode3 extends SunnyWeatherSpec
+class SunnyWeatherMultiJvmNode4 extends SunnyWeatherSpec
+class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec
 
 abstract class SunnyWeatherSpec
   extends MultiNodeSpec(SunnyWeatherMultiJvmSpec)

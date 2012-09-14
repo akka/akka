@@ -65,16 +65,14 @@ private[cluster] trait ClusterMetricsCollector {
  *
  * @author Helena Edelson
  */
-private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvironment) extends Actor with ClusterMetricsCollector with ActorLogging {
+private[cluster] class ClusterNodeMetricsCollector(val cluster: Cluster) extends Actor with ClusterMetricsCollector with ActorLogging {
 
   import InternalClusterAction._
   import ClusterEvent._
   import Member.addressOrdering
-  import context.dispatcher
-  val settings = environment.settings
+  import cluster.{ selfAddress, scheduler, settings }
   import settings._
-
-  val selfAddress = environment.selfAddress
+  import context.dispatcher
 
   /**
    * The node ring gossipped that contains only members that are Up.
@@ -91,19 +89,19 @@ private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvir
   /**
    * Start periodic gossip to random nodes in cluster
    */
-  val gossipTask = FixedRateTask(environment.scheduler, PeriodicTasksInitialDelay.max(MetricsGossipInterval), MetricsGossipInterval) {
+  val gossipTask = FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(MetricsGossipInterval), MetricsGossipInterval) {
     self ! GossipTick
   }
 
   /**
    * Start periodic metrics collection
    */
-  val metricsTask = FixedRateTask(environment.scheduler, PeriodicTasksInitialDelay.max(MetricsInterval), MetricsInterval) {
+  val metricsTask = FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(MetricsInterval), MetricsInterval) {
     self ! MetricsTick
   }
 
   override def preStart(): Unit = {
-    environment.subscribe(self, classOf[MemberEvent])
+    cluster.subscribe(self, classOf[MemberEvent])
     log.info("Metrics collection has started successfully on node [{}]", selfAddress)
   }
 
@@ -117,7 +115,7 @@ private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvir
   }
 
   override def postStop: Unit = {
-    environment unsubscribe self
+    cluster unsubscribe self
     gossipTask.cancel()
     metricsTask.cancel()
     collector.close()

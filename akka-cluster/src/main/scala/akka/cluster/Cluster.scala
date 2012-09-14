@@ -40,19 +40,7 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
 
   override def lookup = Cluster
 
-  override def createExtension(system: ExtendedActorSystem): Cluster = {
-    val clusterSettings = new ClusterSettings(system.settings.config, system.name)
-
-    val failureDetector = {
-      import clusterSettings.{ FailureDetectorImplementationClass ⇒ fqcn }
-      system.dynamicAccess.createInstanceFor[FailureDetector](
-        fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> clusterSettings)).recover({
-          case e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
-        }).get
-    }
-
-    new Cluster(system, failureDetector)
-  }
+  override def createExtension(system: ExtendedActorSystem): Cluster = new Cluster(system)
 }
 
 /**
@@ -69,24 +57,32 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
  *  if (Cluster(system).isLeader) { ... }
  * }}}
  */
-class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetector) extends Extension with ClusterEnvironment {
+class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   import ClusterEvent._
-
-  if (!system.provider.isInstanceOf[RemoteActorRefProvider])
-    throw new ConfigurationException("ActorSystem[" + system + "] needs to have a 'RemoteActorRefProvider' enabled in the configuration")
-
-  private val remote: RemoteActorRefProvider = system.provider.asInstanceOf[RemoteActorRefProvider]
 
   val settings = new ClusterSettings(system.settings.config, system.name)
   import settings._
 
-  val selfAddress = remote.transport.address
+  val selfAddress = system.provider match {
+    case c: ClusterActorRefProvider ⇒ c.transport.address
+    case other ⇒ throw new ConfigurationException(
+      "ActorSystem [%s] needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses [%s]".
+        format(system, other.getClass.getName))
+  }
 
   private val _isRunning = new AtomicBoolean(true)
   private val log = Logging(system, "Cluster")
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
+
+  val failureDetector = {
+    import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
+    system.dynamicAccess.createInstanceFor[FailureDetector](
+      fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({
+        case e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
+      }).get
+  }
 
   // ========================================================
   // ===================== WORK DAEMONS =====================
@@ -142,7 +138,7 @@ class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetec
 
   // create supervisor for daemons under path "/system/cluster"
   private val clusterDaemons: ActorRef = {
-    system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new ClusterDaemon(this)).
+    system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new ClusterDaemon(settings)).
       withDispatcher(UseDispatcher), name = "cluster")
   }
 
@@ -196,6 +192,24 @@ class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetec
     clusterCore ! InternalClusterAction.Unsubscribe(subscriber)
 
   /**
+   * Publish current (full) state of the cluster to subscribers,
+   * that are subscribing to [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
+   * or [[akka.cluster.ClusterEvent.CurrentClusterState]].
+   * If you want this to happen periodically you need to schedule a call to
+   * this method yourself.
+   */
+  def publishCurrentClusterState(): Unit =
+    clusterCore ! InternalClusterAction.PublishCurrentClusterState(None)
+
+  /**
+   * Publish current (full) state of the cluster to the specified
+   * receiver. If you want this to happen periodically you need to schedule
+   * a call to this method yourself.
+   */
+  def sendCurrentClusterState(receiver: ActorRef): Unit =
+    clusterCore ! InternalClusterAction.PublishCurrentClusterState(Some(receiver))
+
+  /**
    * Try to join this cluster node with the node specified by 'address'.
    * A 'Join(thisNodeAddress)' command is sent to the node to join.
    */
@@ -219,10 +233,12 @@ class Cluster(val system: ExtendedActorSystem, val failureDetector: FailureDetec
   // ========================================================
 
   /**
-   * Make it possible to override/configure seedNodes from tests without
-   * specifying in config. Addresses are unknown before startup time.
+   * Make it possible to join the specified seed nodes without defining them
+   * in config. Especially useful from tests when Addresses are unknown
+   * before startup time.
    */
-  private[cluster] def seedNodes: IndexedSeq[Address] = SeedNodes
+  private[cluster] def joinSeedNodes(seedNodes: IndexedSeq[Address]): Unit =
+    clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes)
 
   /**
    * INTERNAL API.

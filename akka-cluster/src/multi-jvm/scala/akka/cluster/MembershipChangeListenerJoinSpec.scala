@@ -17,11 +17,11 @@ object MembershipChangeListenerJoinMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class MembershipChangeListenerJoinMultiJvmNode1 extends MembershipChangeListenerJoinSpec with FailureDetectorPuppetStrategy
-class MembershipChangeListenerJoinMultiJvmNode2 extends MembershipChangeListenerJoinSpec with FailureDetectorPuppetStrategy
+class MembershipChangeListenerJoinMultiJvmNode1 extends MembershipChangeListenerJoinSpec
+class MembershipChangeListenerJoinMultiJvmNode2 extends MembershipChangeListenerJoinSpec
 
 abstract class MembershipChangeListenerJoinSpec
   extends MultiNodeSpec(MembershipChangeListenerJoinMultiJvmSpec)

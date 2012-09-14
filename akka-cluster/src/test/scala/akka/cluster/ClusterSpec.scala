@@ -6,18 +6,16 @@ package akka.cluster
 
 import language.postfixOps
 import language.reflectiveCalls
-
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
-
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.actor.ExtendedActorSystem
 import akka.actor.Address
 import akka.cluster.InternalClusterAction._
-import akka.remote.RemoteActorRefProvider
 import java.lang.management.ManagementFactory
 import javax.management.ObjectName
+import akka.actor.ActorRef
 
 object ClusterSpec {
   val config = """
@@ -26,8 +24,10 @@ object ClusterSpec {
       auto-down                    = off
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
       publish-stats-interval = 0 s # always, when it happens
+      failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet
     }
-    akka.actor.provider = "akka.remote.RemoteActorRefProvider"
+    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
+    akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.port = 0
     # akka.loglevel = DEBUG
     """
@@ -39,23 +39,13 @@ object ClusterSpec {
 class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   import ClusterSpec._
 
-  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address
+  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[ClusterActorRefProvider].transport.address
 
-  val failureDetector = new FailureDetectorPuppet(system)
-
-  val cluster = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector)
+  val cluster = Cluster(system)
   def clusterView = cluster.readView
 
-  def leaderActions(): Unit = {
+  def leaderActions(): Unit =
     cluster.clusterCore ! LeaderActionsTick
-    awaitPing()
-  }
-
-  def awaitPing(): Unit = {
-    val ping = Ping()
-    cluster.clusterCore ! ping
-    expectMsgPF() { case pong @ Pong(`ping`, _) ⇒ pong }
-  }
 
   "A Cluster" must {
 
@@ -80,7 +70,25 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       clusterView.status must be(MemberStatus.Joining)
       clusterView.convergence must be(true)
       leaderActions()
-      clusterView.status must be(MemberStatus.Up)
+      awaitCond(clusterView.status == MemberStatus.Up)
+    }
+
+    "publish CurrentClusterState to subscribers when requested" in {
+      try {
+        cluster.subscribe(testActor, classOf[ClusterEvent.ClusterDomainEvent])
+        // first, is in response to the subscription
+        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+
+        cluster.publishCurrentClusterState()
+        expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
+      } finally {
+        cluster.unsubscribe(testActor)
+      }
+    }
+
+    "send CurrentClusterState to one receiver when requested" in {
+      cluster.sendCurrentClusterState(testActor)
+      expectMsgClass(classOf[ClusterEvent.ClusterDomainEvent])
     }
 
   }

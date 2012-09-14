@@ -5,9 +5,7 @@
  Cluster Usage
 ###############
 
-.. note:: This document describes how to use the features implemented so far of the 
-  new clustering coming in Akka Coltrane and is not available in the latest stable release.
-  The API might change before it is released.
+.. note:: This module is :ref:`experimental <experimental>`. This document describes how to use the features implemented so far. More features are coming in Akka Coltrane. Track progress of the Coltrane milestone in `Assembla <http://www.assembla.com/spaces/akka/tickets>`_ and the `Roadmap <https://docs.google.com/document/d/18W9-fKs55wiFNjXL9q50PYOnR7-nnsImzJqHOPPbM4E/edit?hl=en_US>`_.
 
 For introduction to the Akka Cluster concepts please see :ref:`cluster`.
 
@@ -18,7 +16,7 @@ The Akka cluster is a separate jar file. Make sure that you have the following d
 
 .. parsed-literal::
 
-  "com.typesafe.akka" % "akka-cluster_|scalaVersion|" % "2.1-SNAPSHOT"
+  "com.typesafe.akka" %% "akka-cluster" % "2.1-SNAPSHOT"
 
 If you are using the latest nightly build you should pick a timestamped Akka version from `<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-cluster/>`_.
 
