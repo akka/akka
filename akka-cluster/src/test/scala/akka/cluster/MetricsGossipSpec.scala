@@ -6,86 +6,87 @@ package akka.cluster
 
 import akka.testkit.{ ImplicitSender, AkkaSpec }
 import akka.actor.Address
-import akka.cluster.MemberStatus.{ Down, Joining, Up }
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 import System.{ currentTimeMillis ⇒ newTimestamp }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with ImplicitSender with AbstractMetricsCollectorSpec {
-
-  val node1 = Member(Address("akka", "sys", "a", 2554), Down)
-  val node2 = Member(Address("akka", "sys", "a", 2555), Joining)
-  val node3 = Member(Address("akka", "sys", "a", 2556), Joining)
+class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with ImplicitSender with AbstractClusterMetricsSpec {
 
   val collector = createMetricsCollector
+  var localGossip = MetricsGossip(window)
+  var remoteGossip = MetricsGossip(window)
+
+  val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+  val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+  val m3 = NodeMetrics(Address("akka", "sys", "a", 2556), newTimestamp, collector.sample.metrics)
+  val m2Updated = m2 copy (metrics = collector.sample.metrics, timestamp = newTimestamp)
 
   "A MetricsGossip" must {
-    "successfully add and initialize new NodeMetrics and merge existing, by most recent Metric timestamps, from a remote gossip" in {
+    // retain the order of tests for brevity
 
-      val m1 = NodeMetrics(node1.address, newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(node2.address, newTimestamp, collector.sample.metrics)
-      val m3 = NodeMetrics(node3.address, newTimestamp, collector.sample.metrics)
+    "add and initialize new NodeMetrics" in {
+      localGossip = localGossip :+ m1
+      localGossip.nodes.size must be(1)
+      assert(m1.metrics.filter(_.isDefined).toSeq)
 
-      var gossip1 = MetricsGossip(window)
-      var gossip2 = MetricsGossip(window)
+      localGossip = localGossip :+ m2
+      localGossip.nodes.size must be(2)
+      localGossip.nodeKeys.size must be(2)
+      assert(m1.metrics.filter(_.isDefined).toSeq ++ m2.metrics.filter(_.isDefined).toSeq)
+    }
 
-      gossip1 = gossip1 :+ m1
-      gossip1 = gossip1 :+ m2
-      gossip2 = gossip2 :+ m3
-      val updatedM2 = m2.copy(metrics = collector.sample.metrics, timestamp = newTimestamp)
-      gossip2 = gossip2 :+ updatedM2
-      gossip2.nodes.size must be(2)
+    "merge peer metrics for a node by most recent Metric timestamps" in {
+      remoteGossip = remoteGossip :+ m3
+      remoteGossip = remoteGossip :+ m2
+      val beforeMergeMetrics = collectNodeMetrics(remoteGossip)
+      remoteGossip.nodes.size must be(2)
+      remoteGossip = remoteGossip :+ m2Updated // merge peers
+      remoteGossip.nodes.size must be(2)
+      val afterMergeMetrics = collectNodeMetrics(remoteGossip)
+      afterMergeMetrics.size must be(beforeMergeMetrics.size)
+      val peer = remoteGossip.nodes find (_.address == m2Updated.address)
+      peer.get.timestamp must be > m2.timestamp
+    }
 
+    "merge a existing metric set for a node and update node ring" in {
       // must contain nodes 1,3, and the most recent version of m2
-      val mergedGossip = gossip1 merge gossip2
+      val mergedGossip = localGossip merge remoteGossip
       mergedGossip.nodes.size must be(3)
-
-      mergedGossip.nodes.exists(_.address == m1.address) must be(true)
-      mergedGossip.nodes.exists(_.address == m2.address) must be(true)
-      mergedGossip.nodes.exists(_.address == m3.address) must be(true)
-      val merged = mergedGossip.nodes.filter(_.address == m2.address).head
-      merged.timestamp must be(updatedM2.timestamp)
+      mergedGossip.nodes exists (_.address == m1.address) must be(true)
+      mergedGossip.nodes exists (_.address == m2.address) must be(true)
+      mergedGossip.nodes exists (_.address == m3.address) must be(true)
+      mergedGossip.nodes.find(_.address == m2.address).get.timestamp must be(m2Updated.timestamp)
+      mergedGossip.nodes foreach (n ⇒ n.metrics foreach (m ⇒ if (m.trendable) m.average.isDefined must be(true)))
     }
 
-    "successfully merge a existing metric set for a node and update node ring" in {
-      val m1 = NodeMetrics(node1.address, newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(node2.address, newTimestamp, collector.sample.metrics)
-      var gossip = MetricsGossip(window)
-      gossip = gossip :+ m1
-      gossip = gossip :+ m2
-      gossip.nodes.size must be(2)
-
-      gossip = gossip :+ m1.copy(metrics = collector.sample.metrics, timestamp = newTimestamp)
-      gossip.nodes.size must be(2)
-
-      val nodeMap = gossip.nodes.map(n ⇒ n.address -> n).toMap
-      val m1Updated = nodeMap.get(m1.address).get
-      val sla = m1Updated.metrics.filter(_.name == "heap-memory-committed").head
-      sla.average.isDefined must be(true)
-    }
-
-    "get the current NodeMetric if it exists in the local nodes" in {
-      val m1 = NodeMetrics(node1.address, newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(node2.address, newTimestamp, collector.sample.metrics)
-      var gossip = MetricsGossip(window)
-      gossip = gossip :+ m1
-      gossip = gossip :+ m2
-      gossip.previous(m1.address).nonEmpty must be(true)
+    "get the current NodeMetrics if it exists in the local nodes" in {
+      localGossip.metricsFor(m1).nonEmpty must be(true)
     }
 
     "get the address keys for nodes for a given collection" in {
-      val m1 = NodeMetrics(node1.address, newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(node2.address, newTimestamp, collector.sample.metrics)
-      val m3 = NodeMetrics(node3.address, newTimestamp, collector.sample.metrics)
-      var local = MetricsGossip(window)
-      local = local :+ m1
-      local = local :+ m2
-      var remote = MetricsGossip(window)
-      remote = remote :+ m3
+      remoteGossip.nodeKeys.contains(m3.address) must be(true)
+      localGossip.nodeKeys.contains(m1.address) must be(true)
+    }
 
-      remote.nodeKeys.contains(m3.address) must be(true)
-      local.nodeKeys.contains(m2.address) must be(true)
+    "remove a node if it has become unreachable, down, etc." in {
+      localGossip = localGossip - m1.address
+      localGossip.nodes.size must be(1)
+    }
+
+    def assert(master: Seq[Metric]): Unit = {
+      var latest = collectNodeMetrics(localGossip)
+      latest.size must be(master.size)
+      latest.toSet filter (_.trendable) foreach { m ⇒
+        m.value.isDefined must be(true)
+        m.average.isDefined must be(true)
+      }
+    }
+
+    def collectNodeMetrics(gossip: MetricsGossip): Seq[Metric] = {
+      var latest: Seq[Metric] = Seq.empty
+      gossip.nodes.foreach(n ⇒ latest ++= n.metrics)
+      latest
     }
   }
 }

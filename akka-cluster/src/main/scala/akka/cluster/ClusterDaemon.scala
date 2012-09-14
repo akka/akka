@@ -160,8 +160,8 @@ private[cluster] final class ClusterDaemon(environment: ClusterEnvironment) exte
 
   context.actorOf(Props(new ClusterHeartbeatDaemon(environment)).withDispatcher(configuredDispatcher), name = "heartbeat")
 
-  if (environment.settings.MetricsEnabled) Some(context.actorOf(Props(
-    new ClusterNodeMetricsCollector(environment)).withDispatcher(configuredDispatcher), name = "metrics"))
+  if (environment.settings.MetricsEnabled)
+    context.actorOf(Props(new ClusterNodeMetricsCollector(environment)).withDispatcher(configuredDispatcher), name = "metrics")
 
   def receive = {
     case InternalClusterAction.GetClusterCoreRef ⇒ sender ! core
@@ -226,7 +226,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
       self ! LeaderActionsTick
     }
 
-  // start periodic publish of current state
+  // start periodic publish of current stats
   private val publishStatsTask: Option[Cancellable] =
     if (PublishStatsInterval == Duration.Zero) None
     else Some(FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval), PublishStatsInterval) {

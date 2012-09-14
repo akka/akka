@@ -15,7 +15,10 @@ import scala.math.ScalaNumber
 import scala.collection.immutable.{ SortedSet, Map }
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.{ Try, Success, Failure }
+import java.lang.management.{ OperatingSystemMXBean, MemoryMXBean, ManagementFactory }
+import java.lang.reflect.Method
 import System.{ currentTimeMillis ⇒ newTimestamp }
+import runtime.{ RichLong, RichDouble, RichInt }
 
 /**
  * This strategy is primarily for load-balancing of nodes. It controls metrics sampling
@@ -36,7 +39,7 @@ import System.{ currentTimeMillis ⇒ newTimestamp }
  *
  * @see [[akka.cluster.DataStream]]
  */
-trait ClusterMetricsCollector {
+private[cluster] trait ClusterMetricsCollector {
 
   /**
    * The latest metric values with their statistical data.
@@ -70,7 +73,6 @@ private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvir
   import context.dispatcher
   val settings = environment.settings
   import settings._
-  import settings.{ MetricsRateOfDecay ⇒ decay }
 
   val selfAddress = environment.selfAddress
 
@@ -79,7 +81,7 @@ private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvir
    */
   var nodes: SortedSet[Address] = SortedSet.empty
 
-  var latestGossip: MetricsGossip = MetricsGossip(decay)
+  var latestGossip: MetricsGossip = MetricsGossip(MetricsRateOfDecay)
 
   /**
    * The detector that samples data on the node
@@ -89,18 +91,16 @@ private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvir
   /**
    * Start periodic gossip to random nodes in cluster
    */
-  val gossipTask =
-    FixedRateTask(environment.scheduler, PeriodicTasksInitialDelay.max(MetricsGossipInterval), MetricsGossipInterval) {
-      self ! GossipTick
-    }
+  val gossipTask = FixedRateTask(environment.scheduler, PeriodicTasksInitialDelay.max(MetricsGossipInterval), MetricsGossipInterval) {
+    self ! GossipTick
+  }
 
   /**
    * Start periodic metrics collection
    */
-  val metricsTask =
-    FixedRateTask(environment.scheduler, PeriodicTasksInitialDelay.max(MetricsInterval), MetricsInterval) {
-      self ! MetricsTick
-    }
+  val metricsTask = FixedRateTask(environment.scheduler, PeriodicTasksInitialDelay.max(MetricsInterval), MetricsInterval) {
+    self ! MetricsTick
+  }
 
   override def preStart(): Unit = {
     environment.subscribe(self, classOf[MemberEvent])
@@ -117,7 +117,7 @@ private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvir
   }
 
   override def postStop: Unit = {
-    environment.unsubscribe(self)
+    environment unsubscribe self
     gossipTask.cancel()
     metricsTask.cancel()
     collector.close()
@@ -126,20 +126,15 @@ private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvir
   /**
    * Adds a member to the node ring.
    */
-  def receiveMember(member: Member): Unit = {
-    nodes += member.address
-    latestGossip copy (nodes = refreshedNodes)
-  }
+  def receiveMember(member: Member): Unit = nodes += member.address
 
   /**
    * Removes a member from the member node ring.
    */
   def removeMember(event: MemberEvent): Unit = {
     nodes -= event.member.address
-    latestGossip copy (nodes = refreshedNodes)
+    latestGossip = latestGossip - event.member.address
   }
-
-  def refreshedNodes: Set[NodeMetrics] = latestGossip.nodes collect { case node if nodes contains node.address ⇒ node }
 
   /**
    * Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus.Up]].
@@ -155,8 +150,7 @@ private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvir
    * @see [[akka.cluster.ClusterMetricsCollector.collect( )]]
    */
   def collect(): Unit = {
-    val data = collector.sample
-    latestGossip = latestGossip :+ data
+    latestGossip :+= collector.sample
     publish()
   }
 
@@ -168,16 +162,17 @@ private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvir
     val remoteGossip = envelope.gossip
 
     if (remoteGossip != latestGossip) {
+      // the only time a remote is added to the local node ring
       latestGossip = latestGossip merge remoteGossip
       publish()
       gossipTo(envelope.from)
     }
   }
 
-  def gossip(): Unit = {
-    val peer = selectRandomNode(nodes.toIndexedSeq filterNot (_ == selfAddress))
-    peer foreach gossipTo
-  }
+  /**
+   * Gossip to peer nodes.
+   */
+  def gossip(): Unit = selectRandomNode((nodes - selfAddress).toIndexedSeq) foreach gossipTo
 
   def gossipTo(address: Address): Unit =
     context.system.actorFor(self.path.toStringWithAddress(address)) ! MetricsGossipEnvelope(selfAddress, latestGossip)
@@ -203,14 +198,19 @@ private[cluster] class ClusterNodeMetricsCollector(val environment: ClusterEnvir
  *
  * @author Helena Edelson
  */
-private[cluster] case class MetricsGossip(decay: Int, nodes: Set[NodeMetrics] = Set.empty) {
+private[cluster] case class MetricsGossip(rateOfDecay: Int, nodes: Set[NodeMetrics] = Set.empty) {
 
   /**
-   * Adds new or merges existing data from a remote gossip based on name and timestamp.
+   * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus.Up]]
+   */
+  def -(node: Address): MetricsGossip = copy(nodes = nodes filterNot (_.address == node))
+
+  /**
+   * Adds new remote [[akka.cluster.NodeMetrics]] and merges existing from a remote gossip.
    */
   def merge(remoteGossip: MetricsGossip): MetricsGossip = {
     val remoteNodes = remoteGossip.nodes.map(n ⇒ n.address -> n).toMap
-    val toMerge = nodeKeys.intersect(remoteNodes.keySet)
+    val toMerge = nodeKeys intersect remoteNodes.keySet
     val onlyInRemote = remoteNodes.keySet -- nodeKeys
     val onlyInLocal = nodeKeys -- remoteNodes.keySet
 
@@ -219,52 +219,35 @@ private[cluster] case class MetricsGossip(decay: Int, nodes: Set[NodeMetrics] = 
       case n if onlyInLocal contains n.address ⇒ n
     }
 
-    val unseen = remoteGossip.nodes.collect { case n if onlyInRemote.contains(n.address) ⇒ n }
+    val unseen = remoteGossip.nodes.collect { case n if onlyInRemote contains n.address ⇒ n }
 
     copy(nodes = seen ++ unseen)
   }
 
   /**
-   * Adds and initializes new metrics for a node or merges existing.
+   * Adds new local [[akka.cluster.NodeMetrics]] and initializes the data, or merges an existing.
    */
   def :+(data: NodeMetrics): MetricsGossip = {
-    val available = data.metrics filter (_.isDefined)
+    val previous = this metricsFor data
+    val names = previous map (_.name)
 
-    val previous = this previous data.address
-    val inGossip = metricKeys(previous)
-    val (peers: Set[Metric], noPeers: Set[Metric]) = available partition (a ⇒ inGossip contains a.name)
+    val (toMerge: Set[Metric], uninitialized: Set[Metric]) = data.metrics partition (a ⇒ names contains a.name)
+    val initialized = uninitialized.map(_.initialize(rateOfDecay))
+    val merged = toMerge flatMap (metric ⇒ previous.collect { case peer if metric same peer ⇒ metric :+ peer })
 
-    val updated: Set[NodeMetrics] = if (peers.nonEmpty) {
-      val mergedMetrics = peers flatMap (m1 ⇒ previous.collect { case m2 if m1 same m2 ⇒ m1 :+ m2 })
-      nodes collect {
-        case a if a.address == data.address ⇒ a copy (metrics = mergedMetrics)
-        case a if a.address != data.address ⇒ a
-      }
-    } else {
-      val (initialize, ready) = noPeers partition (_.trendable)
-      val initialized = initialize collect { case a ⇒ a copy (average = Some(DataStream(decay, a.value get, newTimestamp, newTimestamp))) }
-      val merged = ready ++ initialized
-      nodes + data.copy(metrics = merged)
-    }
-
-    copy(nodes = updated)
+    val refreshed = nodes filterNot (_.address == data.address)
+    copy(nodes = refreshed + data.copy(metrics = initialized ++ merged))
   }
 
   /**
    * Returns a set of [[akka.actor.Address]] for a given node set.
    */
-  def nodeKeys: Set[Address] = nodes.map(n ⇒ n.address).toSet
+  def nodeKeys: Set[Address] = nodes.map(_.address).toSet
 
   /**
-   * Returns names for a given metric set.
+   * Returns metrics for a node if exists.
    */
-  def metricKeys(toKeys: Set[Metric]): Set[String] = toKeys.map(_.name)
-
-  /**
-   * Returns the metrics for node.
-   */
-  def previous(address: Address): Set[Metric] =
-    nodes.collect { case a if a.address == address ⇒ a }.flatMap(node ⇒ node.metrics)
+  def metricsFor(node: NodeMetrics): Set[Metric] = nodes flatMap (n ⇒ if (n same node) n.metrics else Set.empty[Metric])
 
 }
 
@@ -298,7 +281,8 @@ private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: Metrics
  * @author Helena Edelson
  */
 private[cluster] case class DataStream(decay: Int, ewma: ScalaNumber, startTime: Long, timestamp: Long)
-  extends ClusterMessage with MetricNumericConversions {
+  extends ClusterMessage with MetricNumericConverter {
+
   /**
    * The rate at which the weights of past observations
    * decay as they become more distant.
@@ -326,15 +310,40 @@ private[cluster] case class DataStream(decay: Int, ewma: ScalaNumber, startTime:
 
 /**
  * INTERNAL API
+ *
+ * @param name the metric name
+ *
+ * @param value the metric value, which may or may not be defined
+ *
+ * @param average the data stream of the metric value, for trending over time
+ *
  * @author Helena Edelson
  */
 private[cluster] case class Metric(name: String, value: Option[ScalaNumber], average: Option[DataStream] = None)
-  extends ClusterMessage with MetricNumericConversions {
-
-  private val noStream = Set("systemLoadAverage", "totalCores", "processors")
+  extends ClusterMessage with MetricNumericConverter {
 
   /**
-   * @see [[akka.cluster.MetricNumericConversions.defined()]]
+   * Returns the metric with a new data stream for data trending if new and required,
+   * otherwise returns the unchanged metric.
+   */
+  def initialize(rateOfDecay: Int): Metric = if (initializable)
+    copy(average = Some(DataStream(rateOfDecay, value.get, newTimestamp, newTimestamp))) else this
+
+  /**
+   * If defined ( [[akka.cluster.MetricNumericConverter.defined()]] ), updates
+   * the new data point, if defined, updates the data stream. Returns the most
+   * recently sampled metric.
+   */
+  def :+(that: Metric): Metric = that.value match {
+    case Some(v) if this same that ⇒ that.average match {
+      case Some(e) ⇒ copy(value = Some(v), average = Some(e :+ v))
+      case None    ⇒ copy(value = Some(v))
+    }
+    case None ⇒ this
+  }
+
+  /**
+   * @see [[akka.cluster.MetricNumericConverter.defined()]]
    */
   def isDefined: Boolean = value match {
     case Some(a) ⇒ defined(a)
@@ -342,27 +351,29 @@ private[cluster] case class Metric(name: String, value: Option[ScalaNumber], ave
   }
 
   /**
-   * If defined ( [[akka.cluster.MetricNumericConversions.defined()]] ), updates
-   * the metric's new data point, if defined, updates the data stream.
-   * Returns the most recently sampled metric.
-   */
-  def :+(that: Metric): Metric = that.value match {
-    case Some(data) if (this same that) ⇒ that.average match {
-      case Some(e) ⇒ copy(value = Some(data), average = Some(e :+ data))
-      case None    ⇒ copy(value = Some(data))
-    }
-    case None ⇒ this
-  }
-
-  /**
-   * Returns true if that is tracking the same metric as this
+   * Returns true if <code>that</code> is tracking the same metric as this.
    */
   def same(that: Metric): Boolean = name == that.name
 
   /**
-   * Values we are trending
+   * Returns true if the metric requires initialization.
    */
-  def trendable: Boolean = !(noStream contains name)
+  def initializable: Boolean = trendable && isDefined && average.isEmpty
+
+  /**
+   * Returns true if the metric is a value applicable for trending.
+   */
+  def trendable: Boolean = !(Metric.noStream contains name) && isDefined
+
+}
+
+private[cluster] object Metric {
+
+  /**
+   * The metrics that are already averages or finite are not trended over time.
+   */
+  private val noStream = Set("system-load-average", "total-cores", "processors")
+
 }
 
 /**
@@ -377,7 +388,9 @@ private[cluster] case class Metric(name: String, value: Option[ScalaNumber], ave
  *
  * @param address [[akka.actor.Address]] of the node the metrics are gathered at
  *
- * @param metrics the array of sampled metrics
+ * @param timestamp the time of sampling
+ *
+ * @param metrics the array of sampled [[akka.actor.Metric]]
  *
  * @author Helena Edelson
  */
@@ -386,12 +399,15 @@ private[cluster] case class NodeMetrics(address: Address, timestamp: Long, metri
   /**
    * Returns the most recent data.
    */
-  def merge(that: NodeMetrics): NodeMetrics = if ((this same that) && (that.timestamp > timestamp)) {
-    copy(metrics = that.metrics, timestamp = that.timestamp)
-  } else this
+  def merge(that: NodeMetrics): NodeMetrics = if (this updatable that) copy(metrics = that.metrics, timestamp = that.timestamp) else this
 
   /**
-   * Returns true if that is for the same address as this
+   * Returns true if <code>that</code> address is the same as this and its metric set is more recent.
+   */
+  def updatable(that: NodeMetrics): Boolean = (this same that) && (that.timestamp > timestamp)
+
+  /**
+   * Returns true if <code>that</code> address is the same as this
    */
   def same(that: NodeMetrics): Boolean = address == that.address
 
@@ -405,40 +421,34 @@ private[cluster] case class NodeMetrics(address: Address, timestamp: Long, metri
  *
  * @author Helena Edelson
  */
-private[cluster] trait MetricNumericConversions {
+private[cluster] trait MetricNumericConverter {
 
   /**
-   * Evaluates validity of <code>v</code> based on whether it is available (SIGAR on classpath)
+   * Evaluates validity of <code>value</code> based on whether it is available (SIGAR on classpath)
    * or defined for the OS (JMX). If undefined we set the value option to None and do not modify
    * the latest sampled metric to avoid skewing the statistical trend.
    */
   def define(name: String, value: Option[ScalaNumber]): Metric = value match {
-    case Some(n) if defined(n) ⇒ Metric(name, value)
-    case None                  ⇒ Metric(name, None)
+    case Some(n) ⇒ if (defined(n)) Metric(name, value) else Metric(name, None)
+    case None    ⇒ Metric(name, None)
   }
 
   /**
-   * A defined value is neither a -1 (JMX undefined for the OS), a None (SIGAR not on classpath, or NaN (SIGAR).
+   * A defined value is neither a -1 or NaN/Infinite:
+   * <ul><li>JMX system load average and max heap can be 'undefined' for certain OS, in which case a -1 is returned</li>
+   * <li>SIGAR combined CPU can occasionally return a NaN or Infinite (known bug)</li></ul>
    */
-  def defined(value: ScalaNumber): Boolean = !undefined(value) && !isNaN(value)
-
-  /**
-   * JMX system load average and max heap can be undefined for certain OS, in which case a -1 is returned.
-   */
-  def undefined(value: ScalaNumber): Boolean = value == -1
-
-  /**
-   * SIGAR's combined CPU can return a NaN under certain circumstances.
-   */
-  def isNaN(value: ScalaNumber): Boolean = convert(value) fold (a ⇒ false, b ⇒ b.isNaN)
+  def defined(value: ScalaNumber): Boolean = convert(value) fold (a ⇒ value != -1, b ⇒ !(b.isNaN || b.isInfinite))
 
   /**
    * May involve rounding or truncation.
-   * FIXME switch to Scala.latest Reflection
    */
   def convert(from: ScalaNumber): Either[Long, Double] = from match {
-    case n if n.isInstanceOf[BigInt]     ⇒ Left(n.longValue())
-    case n if n.isInstanceOf[BigDecimal] ⇒ Right(n.doubleValue())
+    case n: BigInt     ⇒ Left(n.longValue())
+    case n: BigDecimal ⇒ Right(n.doubleValue())
+    case n: RichInt    ⇒ Left(n.abs)
+    case n: RichLong   ⇒ Left(n.self)
+    case n: RichDouble ⇒ Right(n.self)
   }
 
 }
@@ -447,21 +457,17 @@ private[cluster] trait MetricNumericConversions {
  * Loads JVM metrics through JMX monitoring beans. If Hyperic SIGAR is on the classpath, this
  * loads wider and more accurate range of metrics in combination with SIGAR's native OS library.
  *
- * FIXME! switch to Scala reflection
+ * FIXME switch to Scala reflection
  *
  * INTERNAL API
  *
- * @param address The [[akka.actor.Address]] of the node being sampled
- *
  * @param sigar the optional org.hyperic.Sigar instance
+ *
+ * @param address The [[akka.actor.Address]] of the node being sampled
  *
  * @author Helena Edelson
  */
-private[cluster] class MetricsCollector private (private val sigar: Option[AnyRef], address: Address) extends MetricNumericConversions {
-
-  import management.{ OperatingSystemMXBean, MemoryMXBean, ManagementFactory }
-  import java.lang.reflect.Method
-  import scala.util.control.NonFatal
+private[cluster] class MetricsCollector private (private val sigar: Option[AnyRef], address: Address) extends MetricNumericConverter {
 
   private val memoryMBean: MemoryMXBean = ManagementFactory.getMemoryMXBean
 
@@ -495,7 +501,7 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
   def systemLoadAverage: Metric = {
     val n = wrap(LoadAverage fold (x ⇒ jSystemLoadAverage,
       y ⇒ y.invoke(sigar.get).asInstanceOf[Array[Double]].toSeq.head), jSystemLoadAverage)
-    define("systemLoadAverage", Some(BigDecimal(n)))
+    define("system-load-average", Some(BigDecimal(n)))
   }
 
   def jSystemLoadAverage: Double = osMBean.getSystemLoadAverage
@@ -527,15 +533,18 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
    * (SIGAR) Returns the combined CPU sum of User + Sys + Nice + Wait, in percentage. This metric can describe
    * the amount of time the CPU spent executing code during n-interval and how much more it could
    * theoretically. Note that 99% CPU utilization can be optimal or indicative of failure.
+   *
+   * In the data stream, this will sometimes return with a valid metric value, and sometimes as a NaN or Infinite.
+   * Documented bug https://bugzilla.redhat.com/show_bug.cgi?id=749121 and several others.
    */
-  def cpuCombined: Metric = define("cpuCombined", wrap(
+  def cpuCombined: Metric = define("cpu-combined", wrap(
     Cpu fold (e ⇒ None, identity ⇒ CombinedCpu fold (a ⇒ None,
       b ⇒ wrap(Some(BigDecimal(b.invoke(identity.invoke(sigar.get)).asInstanceOf[Double])), None))), None))
 
   /**
    * (SIGAR) Returns the total number of cores.
    */
-  def totalCores: Metric = define("totalCores", wrap(
+  def totalCores: Metric = define("total-cores", wrap(
     Some(BigInt(cpus.get.map(cpu ⇒ cpu.getClass.getMethod("getTotalCores").invoke(cpu).asInstanceOf[Int]).head)), None))
 
   def cpus: Option[Array[AnyRef]] = wrap(
@@ -553,7 +562,7 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
       }
       case None ⇒ None
     }, None)
-    define("networkMaxRx", m)
+    define("network-max-rx", m)
   }
 
   def networkMaxTx: Metric = {
@@ -565,7 +574,7 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
       }
       case None ⇒ None
     }, None)
-    define("networkMaxTx", m)
+    define("network-max-tx", m)
   }
 
   /**
@@ -599,16 +608,16 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
 
   private def createMethodFrom(method: Method, name: String): Either[Throwable, Method] =
     Try(method.getReturnType.getMethod(name)) match {
-      case Success(r) ⇒ Right(r)
-      case Failure(e) ⇒ Left(e)
+      case Success(s) ⇒ Right(s)
+      case Failure(f) ⇒ Left(f)
     }
 
   /**
    * Wraps reflective calls to consolidate exception handling and dampen.
    */
-  def wrap[T](call: ⇒ T, fallback: ⇒ T): T = Try(call) match {
-    case Success(r) ⇒ r
-    case _          ⇒ fallback
+  def wrap[T](call: ⇒ T, transform: ⇒ T): T = Try(call) match {
+    case Success(s) ⇒ s
+    case _          ⇒ transform
   }
 
   /**
@@ -626,7 +635,8 @@ private[cluster] object MetricsCollector {
   def apply(address: Address, log: LoggingAdapter, dynamicAccess: DynamicAccess): MetricsCollector =
     dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Seq.empty) match {
       case Success(identity) ⇒ new MetricsCollector(Some(identity), address)
-      case _ ⇒
+      case Failure(e) ⇒
+        log.debug(e.toString)
         log.info("Hyperic SIGAR was not found on the classpath or not installed properly. " +
           "Metrics will be retreived from MBeans, and may be incorrect on some platforms. " +
           "To increase metric accuracy add the 'sigar.jar' to the classpath and the appropriate" +

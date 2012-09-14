@@ -10,8 +10,6 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.util.duration._
 import scala.language.postfixOps
-import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.CountDownLatch
 
 object ClusterMetricsMultiJvmSpec extends MultiNodeConfig {
 
@@ -46,34 +44,12 @@ class ClusterMetricsMultiJvmNode4 extends ClusterMetricsSpec with AccrualFailure
 class ClusterMetricsMultiJvmNode5 extends ClusterMetricsSpec with AccrualFailureDetectorStrategy
 
 abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSpec) with MultiNodeClusterSpec {
-
-  import ClusterMetricsMultiJvmSpec._
-  import ClusterEvent._
-  import system.dispatcher
-
-  val duration = 60 seconds // for long running tests
-
   "Cluster metrics" must {
-    "periodically collect metrics on each node and publish ClusterMetricsChanged event to the event stream for router consumption" taggedAs LongRunningTest in {
+    "periodically collect metrics on each node, publish ClusterMetricsChanged to the event stream, and gossip metrics around the node ring" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)
       enterBarrier("cluster-started")
-      val received = new AtomicReference[Set[NodeMetrics]](Set.empty)
-      val latch = new CountDownLatch(roles.size)
-      val cancellable = system.scheduler.schedule(3 seconds, 1000 millis) {
-        awaitCond(clusterView.metrics.size == clusterView.members.filter(_.status == MemberStatus.Up).size)
-        received.set(clusterView.metrics)
-        latch.countDown()
-      }
-      awaitCond(latch.getCount == 0, duration)
-      cancellable.cancel()
-      received.get.size must be (clusterView.members.filter(_.status == MemberStatus.Up).size)
-      enterBarrier("after")
-    }
-
-    "periodically gossip metrics around the node ring with peers that are 'MemberStatus.Up'" taggedAs LongRunningTest in {
-      awaitClusterUp(roles: _*)
-      enterBarrier("cluster-started")
-      awaitCond(clusterView.metrics.size == clusterView.members.filter(_.status == MemberStatus.Up).size)
+      awaitCond(clusterView.members.filter(_.status == MemberStatus.Up).size == roles.size)
+      awaitCond(clusterView.metrics.size == roles.size, 120 seconds)
       enterBarrier("after")
     }
   }
