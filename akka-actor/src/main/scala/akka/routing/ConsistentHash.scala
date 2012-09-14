@@ -5,6 +5,7 @@
 package akka.routing
 
 import scala.collection.immutable.TreeMap
+import java.util.Arrays
 
 // =============================================================================================
 // Adapted from HashRing.scala in Debasish Ghosh's Redis Client, licensed under Apache 2 license
@@ -20,11 +21,18 @@ import scala.collection.immutable.TreeMap
  * hash, i.e. make sure it is different for different nodes.
  *
  */
-class ConsistentHash[T] private (nodeRing: TreeMap[Int, T], virtualNodesFactor: Int) {
+class ConsistentHash[T] private (nodes: Map[Int, T], virtualNodesFactor: Int) {
 
   import ConsistentHash._
 
   if (virtualNodesFactor < 1) throw new IllegalArgumentException("virtualNodesFactor must be >= 1")
+
+  // sorted hash values of the nodes
+  private val nodeRing: Array[Int] = {
+    val nodeRing = nodes.keys.toArray
+    Arrays.sort(nodeRing)
+    nodeRing
+  }
 
   /**
    * Adds a node to the node ring.
@@ -32,7 +40,7 @@ class ConsistentHash[T] private (nodeRing: TreeMap[Int, T], virtualNodesFactor: 
    * operation returns a new instance.
    */
   def :+(node: T): ConsistentHash[T] =
-    new ConsistentHash(nodeRing ++ ((1 to virtualNodesFactor) map { r ⇒ (nodeHashFor(node, r) -> node) }), virtualNodesFactor)
+    new ConsistentHash(nodes ++ ((1 to virtualNodesFactor) map { r ⇒ (nodeHashFor(node, r) -> node) }), virtualNodesFactor)
 
   /**
    * Adds a node to the node ring.
@@ -48,7 +56,7 @@ class ConsistentHash[T] private (nodeRing: TreeMap[Int, T], virtualNodesFactor: 
    * operation returns a new instance.
    */
   def :-(node: T): ConsistentHash[T] =
-    new ConsistentHash(nodeRing -- ((1 to virtualNodesFactor) map { r ⇒ nodeHashFor(node, r) }), virtualNodesFactor)
+    new ConsistentHash(nodes -- ((1 to virtualNodesFactor) map { r ⇒ nodeHashFor(node, r) }), virtualNodesFactor)
 
   /**
    * Removes a node from the node ring.
@@ -65,15 +73,25 @@ class ConsistentHash[T] private (nodeRing: TreeMap[Int, T], virtualNodesFactor: 
    */
   def nodeFor(key: Array[Byte]): T = {
     if (isEmpty) throw new IllegalStateException("Can't get node for [%s] from an empty node ring" format key)
-    val hash = hashFor(key)
-    // find the next node clockwise in the nodeRing, pick first if end of tree
-    nodeRing.rangeImpl(Some(hash), None).headOption.getOrElse(nodeRing.head)._2
+
+    // converts the result of Arrays.binarySearch into a index in the nodeRing array
+    // see documentation of Arrays.binarySearch for what it returns
+    def idx(i: Int): Int = {
+      if (i >= 0) i // exact match
+      else {
+        val j = math.abs(i + 1)
+        if (j >= nodeRing.length) 0 // after last, use first
+        else j // next node clockwise
+      }
+    }
+    val nodeRingIndex = idx(Arrays.binarySearch(nodeRing, hashFor(key)))
+    nodes(nodeRing(nodeRingIndex))
   }
 
   /**
    * Is the node ring empty, i.e. no nodes added or all removed.
    */
-  def isEmpty: Boolean = nodeRing.isEmpty
+  def isEmpty: Boolean = nodes.isEmpty
 
 }
 
