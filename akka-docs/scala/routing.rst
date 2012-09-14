@@ -313,7 +313,8 @@ Code example:
 .. includecode:: code/docs/routing/ConsistentHashingRouterDocSpec.scala#consistent-hashing-router
 
 In the above example you see that the ``Get`` message implements ``ConsistentHashable`` itself,
-while the ``Entry`` message is wrapped in a ``ConsistentHashableEnvelope``.
+while the ``Entry`` message is wrapped in a ``ConsistentHashableEnvelope``. The ``Evict``
+message is handled by the ``consistentHashRoute`` partial function.
 
 This is an example of how to define a consistent-hashing router in configuration:
 
