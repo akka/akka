@@ -28,8 +28,6 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
 
   import NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec._
 
-  val reaperWaitingTime = 30.seconds.dilated
-
   "A node that is LEAVING a non-singleton cluster" must {
 
     "eventually set to REMOVED by the reaper, and removed from membership ring and seen table" taggedAs LongRunningTest in {

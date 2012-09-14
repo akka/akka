@@ -89,6 +89,16 @@ object ClusterEvent {
   }
 
   /**
+   * Marker interface for cluster metric related events.
+   */
+  sealed trait MetricsEvent extends ClusterDomainEvent
+
+  /**
+   * Current snapshot of cluster member metrics. Published to subscribers.
+   */
+  case class ClusterMetricsChanged(nodes: Set[NodeMetrics]) extends MetricsEvent
+
+  /**
    * Cluster convergence state changed.
    */
   case class ConvergenceChanged(convergence: Boolean) extends ClusterDomainEvent

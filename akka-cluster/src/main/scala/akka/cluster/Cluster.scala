@@ -145,7 +145,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * INTERNAL API
    */
-  private[cluster] val clusterCore: ActorRef = {
+  private[cluster] lazy val clusterCore: ActorRef = {
+    // this val must be lazy for correct initialization order,
+    // ClusterDaemon children may use for example subscribe before we get the GetClusterCoreRef reply
     implicit val timeout = system.settings.CreationTimeout
     Await.result((clusterDaemons ? InternalClusterAction.GetClusterCoreRef).mapTo[ActorRef], timeout.duration)
   }

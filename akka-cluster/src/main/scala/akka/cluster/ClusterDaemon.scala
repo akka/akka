@@ -7,7 +7,7 @@ import scala.collection.immutable.SortedSet
 import scala.concurrent.util.{ Deadline, Duration }
 import scala.concurrent.util.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, ReceiveTimeout, RootActorPath, PoisonPill, Scheduler }
+import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, ReceiveTimeout, RootActorPath, Scheduler }
 import akka.actor.Status.Failure
 import akka.event.EventStream
 import akka.pattern.ask
@@ -92,6 +92,8 @@ private[cluster] object InternalClusterAction {
   case object HeartbeatTick extends Tick
 
   case object ReapUnreachableTick extends Tick
+
+  case object MetricsTick extends Tick
 
   case object LeaderActionsTick extends Tick
 
@@ -186,6 +188,8 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
     withDispatcher(UseDispatcher), name = "coreSender")
   val publisher = context.actorOf(Props[ClusterDomainEventPublisher].
     withDispatcher(UseDispatcher), name = "publisher")
+  if (MetricsEnabled) context.actorOf(Props(new ClusterNodeMetricsCollector(cluster))
+    .withDispatcher(UseDispatcher), name = "metrics")
 
   import context.dispatcher
 
@@ -213,8 +217,8 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
       self ! LeaderActionsTick
     }
 
-  // start periodic publish of current state
-  private val publishStateTask: Option[Cancellable] =
+  // start periodic publish of current stats
+  private val publishStatsTask: Option[Cancellable] =
     if (PublishStatsInterval == Duration.Zero) None
     else Some(FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval), PublishStatsInterval) {
       self ! PublishStatsTick
@@ -229,7 +233,7 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
     heartbeatTask.cancel()
     failureDetectorReaperTask.cancel()
     leaderActionsTask.cancel()
-    publishStateTask foreach { _.cancel() }
+    publishStatsTask foreach { _.cancel() }
   }
 
   def uninitialized: Actor.Receive = {

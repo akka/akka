@@ -44,6 +44,10 @@ class ClusterConfigSpec extends AkkaSpec {
         maxFailures = 3,
         callTimeout = 2 seconds,
         resetTimeout = 30 seconds))
+      MetricsEnabled must be(true)
+      MetricsInterval must be(3 seconds)
+      MetricsGossipInterval must be(3 seconds)
+      MetricsRateOfDecay must be(10)
     }
   }
 }
