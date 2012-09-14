@@ -26,8 +26,6 @@ object ClusterMetricsMultiJvmSpec extends MultiNodeConfig {
     akka.cluster.metrics.gossip-interval = 3 s
     akka.cluster.metrics.rate-of-decay = 10
     akka.loglevel = INFO
-    # Turning off the noise
-    akka.remote.log-remote-lifecycle-events = off
     akka.remote.log-sent-messages = off
     akka.remote.log-received-messages = off
     akka.actor.debug.receive = off
@@ -46,23 +44,24 @@ class ClusterMetricsMultiJvmNode5 extends ClusterMetricsSpec
 
 abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSpec) with MultiNodeClusterSpec {
   import ClusterMetricsMultiJvmSpec._
+  private val within = 60 seconds
 
   "Cluster metrics" must {
     "periodically collect metrics on each node, publish ClusterMetricsChanged to the event stream, and gossip metrics around the node ring" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)
       enterBarrier("cluster-started")
       awaitCond(clusterView.members.filter(_.status == MemberStatus.Up).size == roles.size)
-      awaitCond(clusterView.metrics.size == roles.size, 120 seconds)
+      awaitCond(clusterView.metrics.size == roles.size, within)
       enterBarrier("after")
     }
     "reflect the correct number of node metrics in cluster view" taggedAs LongRunningTest in {
+      val originalMembers = clusterView.members.size
       runOn(second) {
         cluster.leave(first)
       }
       enterBarrier("first-left")
       runOn(second, third, fourth, fifth) {
-        awaitCond(clusterView.members.forall(_.address != address(first)), 30.seconds.dilated)
-        awaitCond(clusterView.metrics.size == (roles.size - 1), 120 seconds)
+        awaitCond(clusterView.metrics.size == (originalMembers - 1), within)
       }
       enterBarrier("finished")
     }
