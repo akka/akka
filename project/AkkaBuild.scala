@@ -532,18 +532,17 @@ object AkkaBuild extends Build {
 
     val zeroMQ = exports(Seq("akka.zeromq.*"))
 
-    def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
+    def exports(packages: Seq[String] = Seq()) = Seq.empty
+
+    def exportsReal(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
       OsgiKeys.importPackage := defaultImports,
-      OsgiKeys.exportPackage := packages,
-      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
-      artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle"))
+      OsgiKeys.exportPackage := packages
     )
 
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
     def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
-
   }
 }
 
