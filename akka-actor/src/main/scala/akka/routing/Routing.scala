@@ -5,7 +5,6 @@ package akka.routing
 
 import language.implicitConversions
 import language.postfixOps
-
 import akka.actor._
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
@@ -19,6 +18,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.dispatch.Dispatchers
 import scala.annotation.tailrec
 import concurrent.ExecutionContext
+import scala.concurrent.util.FiniteDuration
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -1098,13 +1098,13 @@ object ScatterGatherFirstCompletedRouter {
   /**
    * Creates a new ScatterGatherFirstCompletedRouter, routing to the specified routees, timing out after the specified Duration
    */
-  def apply(routees: Iterable[ActorRef], within: Duration): ScatterGatherFirstCompletedRouter =
+  def apply(routees: Iterable[ActorRef], within: FiniteDuration): ScatterGatherFirstCompletedRouter =
     new ScatterGatherFirstCompletedRouter(routees = routees map (_.path.toString), within = within)
 
   /**
    * Java API to create router with the supplied 'routees' actors.
    */
-  def create(routees: java.lang.Iterable[ActorRef], within: Duration): ScatterGatherFirstCompletedRouter = {
+  def create(routees: java.lang.Iterable[ActorRef], within: FiniteDuration): ScatterGatherFirstCompletedRouter = {
     import scala.collection.JavaConverters._
     apply(routees.asScala, within)
   }
@@ -1153,7 +1153,7 @@ object ScatterGatherFirstCompletedRouter {
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 @SerialVersionUID(1L)
-case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
+case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: FiniteDuration,
                                              override val resizer: Option[Resizer] = None,
                                              val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                                              val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
@@ -1166,7 +1166,7 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int, w: Duration) = this(nrOfInstances = nr, within = w)
+  def this(nr: Int, w: FiniteDuration) = this(nrOfInstances = nr, within = w)
 
   /**
    * Constructor that sets the routees to be used.
@@ -1174,14 +1174,14 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String], w: Duration) =
+  def this(routeePaths: java.lang.Iterable[String], w: FiniteDuration) =
     this(routees = iterableAsScalaIterable(routeePaths), within = w)
 
   /**
    * Constructor that sets the resizer to be used.
    * Java API
    */
-  def this(resizer: Resizer, w: Duration) = this(resizer = Some(resizer), within = w)
+  def this(resizer: Resizer, w: FiniteDuration) = this(resizer = Some(resizer), within = w)
 
   /**
    * Java API for setting routerDispatcher
@@ -1211,7 +1211,7 @@ trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
   def routees: Iterable[String]
 
-  def within: Duration
+  def within: FiniteDuration
 
   def createRoute(routeeProvider: RouteeProvider): Route = {
     if (resizer.isEmpty) {

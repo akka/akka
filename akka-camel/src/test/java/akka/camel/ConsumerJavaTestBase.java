@@ -4,20 +4,22 @@
 
 package akka.camel;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.testkit.JavaTestKit;
+import static org.junit.Assert.assertEquals;
+
+import java.util.concurrent.TimeUnit;
+
+import org.junit.AfterClass;
+import org.junit.Test;
+
 import scala.concurrent.Await;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.util.Duration;
-import org.junit.AfterClass;
-import org.junit.Test;
-import java.util.concurrent.TimeUnit;
+import scala.concurrent.util.FiniteDuration;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
 import akka.testkit.AkkaSpec;
-import akka.testkit.JavaTestKit.EventFilter;
-
-import static org.junit.Assert.assertEquals;
+import akka.testkit.JavaTestKit;
 
 
 /**
@@ -37,7 +39,7 @@ public class ConsumerJavaTestBase {
         new JavaTestKit(system) {{
             String result = new EventFilter<String>(Exception.class) {
                 protected String run() {
-                    Duration timeout = Duration.create(1, TimeUnit.SECONDS);
+                    FiniteDuration timeout = Duration.create(1, TimeUnit.SECONDS);
                     Camel camel = CamelExtension.get(system);
                     ExecutionContext executionContext = system.dispatcher();
                     try {

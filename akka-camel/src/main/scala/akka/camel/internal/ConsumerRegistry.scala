@@ -7,9 +7,7 @@ package akka.camel.internal
 import akka.camel._
 import component.CamelPath
 import java.io.InputStream
-
 import org.apache.camel.builder.RouteBuilder
-
 import akka.actor._
 import collection.mutable
 import org.apache.camel.model.RouteDefinition
@@ -17,6 +15,7 @@ import org.apache.camel.CamelContext
 import scala.concurrent.util.Duration
 import concurrent.Await
 import akka.util.Timeout
+import scala.concurrent.util.FiniteDuration
 
 /**
  * For internal use only.
@@ -38,7 +37,7 @@ private[camel] trait ConsumerRegistry { this: Activation ⇒
    * @param activationTimeout the timeout for activation
    * @return the actorRef to the consumer
    */
-  private[camel] def registerConsumer(endpointUri: String, consumer: Consumer, activationTimeout: Duration) = {
+  private[camel] def registerConsumer(endpointUri: String, consumer: Consumer, activationTimeout: FiniteDuration) = {
     idempotentRegistry ! RegisterConsumer(endpointUri, consumer.self, consumer)
     Await.result(activationFutureFor(consumer.self)(activationTimeout, consumer.context.dispatcher), activationTimeout)
   }
