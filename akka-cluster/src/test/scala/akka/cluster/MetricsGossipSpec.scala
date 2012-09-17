@@ -31,28 +31,28 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       localGossip :+= m1
       localGossip.nodes.size must be(1)
       localGossip.nodeKeys.size must be(localGossip.nodes.size)
-      val gossipMetrics = collectNodeMetrics(localGossip.nodes)
       assertMasterMetricsAgainstGossipMetrics(Set(m1), localGossip)
-      assertExpectedSampleSize(collector.isSigar, window, gossipMetrics.toSet)
-      assertInitialized(localGossip.rateOfDecay, gossipMetrics.toSet)
+      assertExpectedSampleSize(collector.isSigar, localGossip)
+      assertInitialized(localGossip.rateOfDecay, collectNodeMetrics(localGossip.nodes).toSet)
 
       localGossip :+= m2
       localGossip.nodes.size must be(2)
       localGossip.nodeKeys.size must be(localGossip.nodes.size)
       assertMasterMetricsAgainstGossipMetrics(Set(m1, m2), localGossip)
-      val newGossipMetrics = collectNodeMetrics(localGossip.nodes)
-      assertExpectedSampleSize(collector.isSigar, window, newGossipMetrics.toSet)
-      assertInitialized(localGossip.rateOfDecay, newGossipMetrics.toSet)
+      assertExpectedSampleSize(collector.isSigar, localGossip)
+      assertInitialized(localGossip.rateOfDecay, collectNodeMetrics(localGossip.nodes).toSet)
     }
 
     "merge peer metrics" in {
       remoteGossip :+= m3
       remoteGossip :+= m2
-      val beforeMergeNodes = remoteGossip.nodes
       remoteGossip.nodes.size must be(2)
+      val beforeMergeNodes = remoteGossip.nodes
+
       remoteGossip :+= m2Updated // merge peers
       remoteGossip.nodes.size must be(2)
       assertMasterMetricsAgainstGossipMetrics(beforeMergeNodes, remoteGossip)
+      assertExpectedSampleSize(collector.isSigar, remoteGossip)
       val peer = remoteGossip.nodes find (_.address == m2Updated.address)
       peer.get.timestamp must be > m2.timestamp
     }
@@ -63,12 +63,11 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       // must contain nodes 1,3, and the most recent version of m2
       val mergedGossip = localGossip merge remoteGossip
       mergedGossip.nodes.size must be(3)
-      mergedGossip.nodes exists (_.address == m1.address) must be(true)
-      mergedGossip.nodes exists (_.address == m2.address) must be(true)
-      mergedGossip.nodes exists (_.address == m3.address) must be(true)
+      assertExpectedNodeAddresses(mergedGossip, Set(m1, m2, m3))
+      assertExpectedSampleSize(collector.isSigar, mergedGossip)
+      assertCreatedUninitialized(mergedGossip)
+      assertInitialized(mergedGossip)
       mergedGossip.nodes.find(_.address == m2.address).get.timestamp must be(m2Updated.timestamp)
-      mergedGossip.nodes foreach (n ⇒ assertCreatedUninitialized(n.metrics.filterNot(_.trendable)))
-      mergedGossip.nodes foreach (n ⇒ assertInitialized(mergedGossip.rateOfDecay, n.metrics.filter(_.trendable)))
     }
 
     "get the current NodeMetrics if it exists in the local nodes" in {
@@ -82,8 +81,9 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
 
     "remove a node if it is no longer Up" in {
       localGossip.nodes.size must be(2)
-      localGossip -= m1.address
+      localGossip = localGossip remove m1.address
       localGossip.nodes.size must be(1)
+      localGossip.nodes.exists(_.address == m1.address) must be(false)
     }
   }
 }

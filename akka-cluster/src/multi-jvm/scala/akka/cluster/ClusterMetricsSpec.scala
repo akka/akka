@@ -4,8 +4,8 @@
 
 package akka.cluster
 
+import scala.language.postfixOps
 import scala.concurrent.util.duration._
-
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -43,16 +43,16 @@ class ClusterMetricsMultiJvmNode5 extends ClusterMetricsSpec
 
 abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSpec) with MultiNodeClusterSpec {
   import ClusterMetricsMultiJvmSpec._
-  private val within = 60.seconds
 
   "Cluster metrics" must {
-    "periodically collect metrics on each node, publish ClusterMetricsChanged to the event stream, and gossip metrics around the node ring" taggedAs LongRunningTest in {
+    "periodically collect metrics on each node, publish ClusterMetricsChanged to the event stream, " +
+      "and gossip metrics around the node ring" taggedAs LongRunningTest in within(20 seconds) {
       awaitClusterUp(roles: _*)
       enterBarrier("cluster-started")
       runOn(roles: _*) {
         awaitCond(clusterView.members.filter(_.status == MemberStatus.Up).size == roles.size)
-        awaitCond(clusterView.clusterMetrics.size == roles.size, within)
-        awaitCond(clusterView.clusterMetrics.flatMap(_.metrics).filter(_.trendable).forall(_.average.isDefined) == true)
+        awaitCond(clusterView.clusterMetrics.size == roles.size)
+        awaitCond(clusterView.clusterMetrics.flatMap(_.metrics).filter(_.trendable).forall(_.average.isDefined))
       }
       enterBarrier("after")
     }
@@ -62,8 +62,7 @@ abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSp
       }
       enterBarrier("first-left")
       runOn(second, third, fourth, fifth) {
-        awaitCond(clusterView.clusterMetrics.size == clusterView.members.size, within)
-        awaitCond(clusterView.clusterMetrics.size == (roles.size - 1), within)
+        awaitCond(clusterView.clusterMetrics.size == (roles.size - 1))
       }
       enterBarrier("finished")
     }

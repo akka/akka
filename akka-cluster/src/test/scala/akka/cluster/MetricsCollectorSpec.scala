@@ -68,26 +68,20 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
     }
 
     "collect accurate metrics for a node" in {
-      val sample = collector.sample.metrics
+      val sample = collector.sample
       assertExpectedSampleSize(collector.isSigar, window, sample)
-
-      val metrics = sample.filter(_.isDefined).map(m ⇒ (m.name, m.value.get)).toSeq
-
-      val sigar = metrics collect {
+      val metrics = sample.metrics.map(m ⇒ (m.name, m.value.get)).toSeq
+      val used = metrics collectFirst { case (a, b) if a == "heap-memory-used" ⇒ b }
+      val committed = metrics collectFirst { case (a, b) if a == "heap-memory-committed" ⇒ b }
+      metrics collect {
         case (a, b) if a == "cpu-combined" ⇒
           b.doubleValue must be <= (1.0)
           b.doubleValue must be >= (0.0)
           b
-        case (a, b) if a == "total-cores"    ⇒ b.intValue must be > (0); b
-        case (a, b) if a == "network-max-rx" ⇒ b.longValue must be > (0L); b
-        case (a, b) if a == "network-max-tx" ⇒ b.longValue must be > (0L); b
-      }
-      if (collector.isSigar) sigar.size must be(4)
-
-      val used = metrics collectFirst { case (a, b) if a == "heap-memory-used" ⇒ b }
-      val committed = metrics collectFirst { case (a, b) if a == "heap-memory-committed" ⇒ b }
-      val mixed = metrics collect {
-        case (a, b) if a == "system-load-average"   ⇒ b.doubleValue must be >= (0.0); b // sigar or jmx
+        case (a, b) if a == "total-cores"           ⇒ b.intValue must be > (0); b
+        case (a, b) if a == "network-max-rx"        ⇒ b.longValue must be > (0L); b
+        case (a, b) if a == "network-max-tx"        ⇒ b.longValue must be > (0L); b
+        case (a, b) if a == "system-load-average"   ⇒ b.doubleValue must be >= (0.0); b
         case (a, b) if a == "processors"            ⇒ b.intValue must be >= (0); b
         case (a, b) if a == "heap-memory-used"      ⇒ b.longValue must be >= (0L); b
         case (a, b) if a == "heap-memory-committed" ⇒ b.longValue must be > (0L); b
@@ -97,22 +91,13 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
           used.get.longValue + committed.get.longValue must be <= (b.longValue)
           b
       }
-      mixed.size must be >= (4) //max memory may be undefined depending on the OS
-    }
-
-    "collect network statistics" in {
-      if (collector.isSigar) {
-        collector.networkStats.nonEmpty must be(true)
-        collector.networkMaxRx.value.get.longValue must be > (0L)
-        collector.networkMaxTx.value.get.longValue must be > (0L)
-      }
     }
 
     "collect [" + samples + "] node metrics samples in an acceptable duration" taggedAs LongRunningTest in {
       val latch = TestLatch(samples)
       val task = FixedRateTask(system.scheduler, 0 seconds, interval) {
-        val sample = collector.sample.metrics
-        assertCreatedUninitialized(sample)
+        val sample = collector.sample
+        assertCreatedUninitialized(sample.metrics)
         assertExpectedSampleSize(collector.isSigar, window, sample)
         latch.countDown()
       }
@@ -130,6 +115,18 @@ trait MetricSpec extends WordSpec with MustMatchers {
     gossipMetrics.size must be(masterMetrics.size)
   }
 
+  def assertExpectedNodeAddresses(gossip: MetricsGossip, nodes: Set[NodeMetrics]): Unit =
+    gossip.nodes.map(_.address) must be(nodes.map(_.address))
+
+  def assertExpectedSampleSize(isSigar: Boolean, gossip: MetricsGossip): Unit =
+    gossip.nodes.foreach(n ⇒ assertExpectedSampleSize(isSigar, gossip.rateOfDecay, n))
+
+  def assertCreatedUninitialized(gossip: MetricsGossip): Unit =
+    gossip.nodes.foreach(n ⇒ assertCreatedUninitialized(n.metrics.filterNot(_.trendable)))
+
+  def assertInitialized(gossip: MetricsGossip): Unit =
+    gossip.nodes.foreach(n ⇒ assertInitialized(gossip.rateOfDecay, n.metrics))
+
   def assertCreatedUninitialized(metrics: Set[Metric]): Unit = {
     metrics.size must be > (0)
     metrics foreach { m ⇒
@@ -139,11 +136,9 @@ trait MetricSpec extends WordSpec with MustMatchers {
     }
   }
 
-  def assertInitialized(decay: Int, metrics: Set[Metric]): Unit = if (decay > 0) {
-    metrics foreach { m ⇒
-      m.initializable must be(false)
-      if (m.trendable) (m.value.isDefined && m.average.isDefined) must be(true)
-    }
+  def assertInitialized(decay: Int, metrics: Set[Metric]): Unit = if (decay > 0) metrics.filter(_.trendable) foreach { m ⇒
+    m.initializable must be(false)
+    (m.value.isDefined && m.average.isDefined) must be(true)
   }
 
   def assertMerged(latest: Metric, peer: Metric, merged: Metric): Unit = if (latest same peer) {
@@ -168,9 +163,9 @@ trait MetricSpec extends WordSpec with MustMatchers {
     }
   }
 
-  def assertExpectedSampleSize(isSigar: Boolean, decay: Int, sample: Set[Metric]): Unit = if (decay > 0) {
-    if (isSigar) sample.size must be >= (8)
-    else sample.size must be >= (4)
+  def assertExpectedSampleSize(isSigar: Boolean, decay: Int, node: NodeMetrics): Unit = if (decay > 0) {
+    if (isSigar) (node.metrics.size >= 7 && node.metrics.size <= 9) must be(true)
+    else (node.metrics.size >= 4 && node.metrics.size <= 5) must be(true)
   }
 
   def collectNodeMetrics(nodes: Set[NodeMetrics]): Seq[Metric] = {

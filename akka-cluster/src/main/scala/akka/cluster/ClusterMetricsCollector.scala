@@ -133,7 +133,7 @@ private[cluster] class ClusterNodeMetricsCollector extends Actor with ClusterMet
    */
   def removeMember(event: MemberEvent): Unit = {
     nodes -= event.member.address
-    latestGossip -= event.member.address
+    latestGossip = latestGossip remove event.member.address
   }
 
   /**
@@ -162,7 +162,6 @@ private[cluster] class ClusterNodeMetricsCollector extends Actor with ClusterMet
     val remoteGossip = envelope.gossip
 
     if (remoteGossip != latestGossip) {
-      // the only time a remote is added to the local node ring
       latestGossip = latestGossip merge remoteGossip
       publish()
       gossipTo(envelope.from)
@@ -183,9 +182,7 @@ private[cluster] class ClusterNodeMetricsCollector extends Actor with ClusterMet
   /**
    * Publishes to the event stream.
    */
-  def publish(): Unit = eventStream publish ClusterMetricsChanged(latestGossip.nodes)
-
-  def eventStream: EventStream = context.system.eventStream
+  def publish(): Unit = context.system.eventStream publish ClusterMetricsChanged(latestGossip.nodes)
 
 }
 
@@ -203,7 +200,7 @@ private[cluster] case class MetricsGossip(rateOfDecay: Int, nodes: Set[NodeMetri
   /**
    * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus.Up]]
    */
-  def -(node: Address): MetricsGossip = copy(nodes = nodes filterNot (_.address == node))
+  def remove(node: Address): MetricsGossip = copy(nodes = nodes filterNot (_.address == node))
 
   /**
    * Adds new remote [[akka.cluster.NodeMetrics]] and merges existing from a remote gossip.
@@ -242,7 +239,7 @@ private[cluster] case class MetricsGossip(rateOfDecay: Int, nodes: Set[NodeMetri
   /**
    * Returns a set of [[akka.actor.Address]] for a given node set.
    */
-  def nodeKeys: Set[Address] = nodes.map(_.address).toSet
+  def nodeKeys: Set[Address] = nodes map (_.address)
 
   /**
    * Returns metrics for a node if exists.
@@ -475,9 +472,7 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
 
   private val LoadAverage: Option[Method] = createMethodFrom(sigar, "getLoadAverage")
 
-  private val CpuInfoList: Option[Method] = createMethodFrom(sigar, "getCpuInfoList")
-
-  private val CpuList: Option[Method] = CpuInfoList.map(m ⇒ m)
+  private val CpuList: Option[Method] = createMethodFrom(sigar, "getCpuInfoList").map(m ⇒ m)
 
   private val NetInterfaces: Option[Method] = createMethodFrom(sigar, "getNetInterfaceList")
 
@@ -580,8 +575,7 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
    * Returns the max bytes for the given <code>method</code> in metric for <code>metric</code> from the network interface stats.
    */
   private def networkMaxFor(method: String, metric: String): Metric = define(metric, wrap(Some(BigInt(networkStats.collect {
-    case (_, a) ⇒ createMethodFrom(Some(a), method).get.invoke(a).asInstanceOf[Long]
-  }.toSet.filter(_ != 0).foldLeft(0L)((a, b) ⇒ a max b))), None))
+    case (_, a) ⇒ createMethodFrom(Some(a), method).get.invoke(a).asInstanceOf[Long]}.toSet.filter(_ != 0).toSet.max)), None))
 
   private def createMethodFrom(ref: Option[AnyRef], method: String, types: Array[(Class[_])] = Array.empty[(Class[_])]): Option[Method] =
     Try(ref.get.getClass.getMethod(method, types: _*)).toOption

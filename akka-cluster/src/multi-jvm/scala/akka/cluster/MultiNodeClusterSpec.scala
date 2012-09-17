@@ -53,8 +53,6 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 
-  val reaperWaitingTime = 30.seconds.dilated
-
   /**
    * Lookup the Address for the role.
    *

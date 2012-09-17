@@ -11,7 +11,7 @@ import akka.testkit.LongRunningTest
 object ClusterMetricsDisabledMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
-  commonConfig(ConfigFactory.parseString("""akka.cluster.metrics.enabled = off""")
+  commonConfig(ConfigFactory.parseString("akka.cluster.metrics.enabled = off")
     .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
@@ -25,7 +25,7 @@ abstract class ClusterMetricsDisabledSpec extends MultiNodeSpec(ClusterMetricsDi
       enterBarrier("cluster-started")
       runOn(roles: _*) {
         awaitCond(clusterView.members.filter(_.status == MemberStatus.Up).size == roles.size)
-        awaitCond(clusterView.clusterMetrics.size == 0)
+        awaitCond(clusterView.clusterMetrics.isEmpty)
       }
       enterBarrier("after")
     }
