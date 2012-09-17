@@ -46,7 +46,7 @@ class ConsistentHashingRouterDocSpec extends AkkaSpec with ImplicitSender {
     import akka.routing.ConsistentHashingRouter.ConsistentHashRoute
     import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 
-    def consistentHashRoute: ConsistentHashingRouter.ConsistentHashRoute = {
+    def consistentHashRoute: ConsistentHashRoute = {
       case Evict(key) ⇒ key
     }
 

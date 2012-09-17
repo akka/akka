@@ -61,17 +61,17 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
 
     "select destination based on consistentHashKey of the message" in {
       router1 ! Msg("a", "A")
-      val destinationA = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
+      val destinationA = expectMsgType[ActorRef]
       router1 ! ConsistentHashableEnvelope(message = "AA", consistentHashKey = "a")
       expectMsg(destinationA)
 
       router1 ! Msg(17, "B")
-      val destinationB = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
+      val destinationB = expectMsgType[ActorRef]
       router1 ! ConsistentHashableEnvelope(message = "BB", consistentHashKey = 17)
       expectMsg(destinationB)
 
       router1 ! Msg(MsgKey("c"), "C")
-      val destinationC = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
+      val destinationC = expectMsgType[ActorRef]
       router1 ! ConsistentHashableEnvelope(message = "CC", consistentHashKey = MsgKey("c"))
       expectMsg(destinationC)
     }
@@ -84,17 +84,17 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
         consistentHashRoute = consistentHashRoute)), "router2")
 
       router2 ! Msg2("a", "A")
-      val destinationA = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
+      val destinationA = expectMsgType[ActorRef]
       router2 ! ConsistentHashableEnvelope(message = "AA", consistentHashKey = "a")
       expectMsg(destinationA)
 
       router2 ! Msg2(17, "B")
-      val destinationB = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
+      val destinationB = expectMsgType[ActorRef]
       router2 ! ConsistentHashableEnvelope(message = "BB", consistentHashKey = 17)
       expectMsg(destinationB)
 
       router2 ! Msg2(MsgKey("c"), "C")
-      val destinationC = expectMsgPF(remaining) { case ref: ActorRef ⇒ ref }
+      val destinationC = expectMsgType[ActorRef]
       router2 ! ConsistentHashableEnvelope(message = "CC", consistentHashKey = MsgKey("c"))
       expectMsg(destinationC)
     }
