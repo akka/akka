@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package akka.actor.mailbox.filequeue.tools
+package akka.actor.mailbox.filebased.filequeue.tools
 
 import language.reflectiveCalls
 
 import java.io.{ FileNotFoundException, IOException }
 import scala.collection.mutable
-import akka.actor.mailbox.filequeue._
+import akka.actor.mailbox.filebased.filequeue._
 import akka.event.LoggingAdapter
 import akka.actor.ActorSystem
 

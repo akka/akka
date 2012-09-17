@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package akka.actor.mailbox.filequeue.tools
+package akka.actor.mailbox.filebased.filequeue.tools
 
 object Util {
   val KILOBYTE = 1024L

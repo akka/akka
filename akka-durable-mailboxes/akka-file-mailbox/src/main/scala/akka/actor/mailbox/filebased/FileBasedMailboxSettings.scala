@@ -1,8 +1,9 @@
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.actor.mailbox
+package akka.actor.mailbox.filebased
 
+import akka.actor.mailbox._
 import com.typesafe.config.Config
 import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS

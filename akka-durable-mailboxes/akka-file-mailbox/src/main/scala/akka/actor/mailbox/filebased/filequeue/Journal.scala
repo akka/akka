@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package akka.actor.mailbox.filequeue
+package akka.actor.mailbox.filebased.filequeue
 
 import java.io._
 import java.nio.{ ByteBuffer, ByteOrder }

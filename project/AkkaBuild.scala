@@ -514,7 +514,7 @@ object AkkaBuild extends Build {
 
     val cluster = exports(Seq("akka.cluster.*"))
 
-    val fileMailbox = exports(Seq("akka.actor.mailbox.*"))
+    val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
     val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
 

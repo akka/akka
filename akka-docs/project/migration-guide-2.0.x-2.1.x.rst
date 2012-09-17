@@ -7,7 +7,7 @@
 The 2.1 release contains several structural changes that require some
 simple, mechanical source-level changes in client code. Several things have
 been moved to Scala standard library, such as ``Future``, and some package
-names have been changed in Remoting.
+names have been changed in Remoting and Durable Mailboxes.
 
 When migrating from 1.3.x to 2.1.x you should first follow the instructions for
 migrating `1.3.x to 2.0.x <http://doc.akka.io/docs/akka/2.0.3/project/migration-guide-1.3.x-2.0.x.html>`_.
@@ -362,7 +362,7 @@ v2.1::
 Package Name Changes in Remoting
 ================================
 
-The package name of all classes in the ``akka-remote.jar`` artifact now starts with akka.remote.
+The package name of all classes in the ``akka-remote.jar`` artifact now starts with ``akka.remote``.
 This has been done to enable OSGi bundles that don't have conflicting package names.
 
 Change the following import statements. Please note that the serializers are often referenced from configuration.
@@ -374,3 +374,20 @@ Search                                           Replace with
 ``akka.serialization.ProtobufSerializer``        ``akka.remote.serialization.ProtobufSerializer``
 ``akka.serialization.DaemonMsgCreateSerializer`` ``akka.remote.serialization.DaemonMsgCreateSerializer``
 ================================================ =======================================================
+
+Package Name Changes in Durable Mailboxes
+=========================================
+
+The package name of all classes in the ``akka-file-mailbox.jar`` artifact now starts with ``akka.actor.mailbox.filebased``.
+This has been done to enable OSGi bundles that don't have conflicting package names.
+
+Change the following import statements. Please note that the ``FileBasedMailboxType`` is often referenced from configuration.
+
+================================================ =========================================================
+Search                                           Replace with
+================================================ =========================================================
+``akka.actor.mailbox.FileBasedMailboxType``      ``akka.actor.mailbox.filebased.FileBasedMailboxType``
+``akka.actor.mailbox.FileBasedMailboxSettings``  ``akka.actor.mailbox.filebased.FileBasedMailboxSettings``
+``akka.actor.mailbox.FileBasedMessageQueue``     ``akka.actor.mailbox.filebased.FileBasedMessageQueue``
+``akka.actor.mailbox.filequeue.*``               ``akka.actor.mailbox.filebased.filequeue.*``
+================================================ =========================================================

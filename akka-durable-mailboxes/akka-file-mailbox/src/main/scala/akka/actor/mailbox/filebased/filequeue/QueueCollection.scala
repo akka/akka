@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package akka.actor.mailbox.filequeue
+package akka.actor.mailbox.filebased.filequeue
 
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import scala.collection.mutable
 import akka.event.LoggingAdapter
-import akka.actor.mailbox.FileBasedMailboxSettings
+import akka.actor.mailbox.filebased.FileBasedMailboxSettings
 
 class InaccessibleQueuePath extends Exception("Inaccessible queue path: Must be a directory and writable")
 

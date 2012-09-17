@@ -2,8 +2,9 @@
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.actor.mailbox
+package akka.actor.mailbox.filebased
 
+import akka.actor.mailbox._
 import akka.actor.{ ActorContext, ActorRef, ActorSystem, ExtendedActorSystem }
 import akka.event.Logging
 import com.typesafe.config.Config

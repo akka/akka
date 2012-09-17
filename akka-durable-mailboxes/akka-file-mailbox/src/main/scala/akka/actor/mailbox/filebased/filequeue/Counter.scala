@@ -15,8 +15,18 @@
  * limitations under the License.
  */
 
-package akka.actor.mailbox.filequeue
+package akka.actor.mailbox.filebased.filequeue
 
-import java.io.IOException
+import java.util.concurrent.atomic.AtomicLong
 
-case class BrokenItemException(lastValidPosition: Long, cause: Throwable) extends IOException(cause)
+class Counter {
+  private val value = new AtomicLong(0)
+
+  def apply() = value.get
+  def set(n: Long) = value.set(n)
+  def incr() = value.addAndGet(1)
+  def incr(n: Long) = value.addAndGet(n)
+  def decr() = value.addAndGet(-1)
+  def decr(n: Long) = value.addAndGet(-n)
+  override def toString = value.get.toString
+}

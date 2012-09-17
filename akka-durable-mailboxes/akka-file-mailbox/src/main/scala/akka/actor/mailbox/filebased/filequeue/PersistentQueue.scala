@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package akka.actor.mailbox.filequeue
+package akka.actor.mailbox.filebased.filequeue
 
 import java.io._
 import scala.collection.mutable
 import akka.event.LoggingAdapter
 import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
-import akka.actor.mailbox.FileBasedMailboxSettings
+import akka.actor.mailbox.filebased.FileBasedMailboxSettings
 
 // a config value that's backed by a global setting but may be locally overridden
 class OverlaySetting[T](base: ⇒ T) {

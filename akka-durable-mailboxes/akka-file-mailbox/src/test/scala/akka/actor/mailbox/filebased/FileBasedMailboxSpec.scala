@@ -1,14 +1,15 @@
-package akka.actor.mailbox
+package akka.actor.mailbox.filebased
 
 import language.postfixOps
 
+import akka.actor.mailbox._
 import org.apache.commons.io.FileUtils
 import akka.dispatch.Mailbox
 
 object FileBasedMailboxSpec {
   val config = """
     File-dispatcher {
-      mailbox-type = akka.actor.mailbox.FileBasedMailboxType
+      mailbox-type = akka.actor.mailbox.filebased.FileBasedMailboxType
       throughput = 1
       file-based.directory-path = "file-based"
       file-based.circuit-breaker.max-failures = 5
