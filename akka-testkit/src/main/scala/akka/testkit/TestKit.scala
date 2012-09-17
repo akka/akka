@@ -49,6 +49,9 @@ object TestActor {
   }
 
   val FALSE = (x: Any) ⇒ false
+  
+  // make creator serializable, for VerifySerializabilitySpec
+  def props(queue: BlockingDeque[Message]): Props = Props(new TestActor(queue))
 }
 
 class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
@@ -112,9 +115,9 @@ trait TestKitBase {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  lazy val testActor: ActorRef = {
+  val testActor: ActorRef = {
     val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
-    val ref = impl.systemActorOf(Props(new TestActor(queue))
+    val ref = impl.systemActorOf(TestActor.props(queue)
       .withDispatcher(CallingThreadDispatcher.Id),
       "testActor" + TestKit.testActorId.incrementAndGet)
     awaitCond(ref match {
