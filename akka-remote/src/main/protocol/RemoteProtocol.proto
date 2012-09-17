@@ -78,6 +78,7 @@ message AddressProtocol {
   required string system = 1;
   required string hostname = 2;
   required uint32 port = 3;
+  optional string protocol = 4;
 }
 
 /**
