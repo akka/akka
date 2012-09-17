@@ -116,6 +116,16 @@ As you can see from the example above the following pattern is used to find an `
   object, which in most cases is not serializable. It is best to make a static
   inner class which implements :class:`UntypedActorFactory`.
 
+.. warning::
+
+  *Caveat:* Remote deployment ties both systems together in a tight fashion,
+  where it may become impossible to shut down one system after the other has
+  become unreachable. This is due to a missing feature—which will be part of
+  the clustering support—that hooks up network failure detection with
+  DeathWatch. If you want to avoid this strong coupling, do not remote-deploy
+  but send ``Props`` to a remotely looked-up actor and have that create a
+  child, returning the resulting actor reference.
+
 Programmatic Remote Deployment
 ------------------------------
 

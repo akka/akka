@@ -141,17 +141,17 @@ re-processed.
 
 The precise sequence of events during a restart is the following:
 
-* suspend the actor
-* call the old instance’s :meth:`supervisionStrategy.handleSupervisorFailing`
-  method (defaults to suspending all children)
-* call the old instance’s :meth:`preRestart` hook (defaults to sending
-  termination requests to all children and calling :meth:`postStop`)
-* wait for all children stopped during :meth:`preRestart` to actually terminate
-* call the old instance’s :meth:`supervisionStrategy.handleSupervisorRestarted`
-  method (defaults to sending restart request to all remaining children)
-* create new actor instance by invoking the originally provided factory again
-* invoke :meth:`postRestart` on the new instance
-* resume the actor
+#. suspend the actor (which means that it will not process normal messages until
+   resumed), and recursively suspend all children
+#. call the old instance’s :meth:`preRestart` hook (defaults to sending
+   termination requests to all children and calling :meth:`postStop`)
+#. wait for all children which were requested to terminate (using
+   ``context.stop()``) during :meth:`preRestart` to actually terminate
+#. create new actor instance by invoking the originally provided factory again
+#. invoke :meth:`postRestart` on the new instance
+#. send restart request to all children (they will follow the same process
+   recursively, from step 2)
+#. resume the actor
 
 What Lifecycle Monitoring Means
 -------------------------------

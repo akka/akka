@@ -502,7 +502,7 @@ private[akka] class ActorCell(
       if (success) true
       else {
         val parent: Class[_] = clazz.getSuperclass
-        if (parent eq null) throw new IllegalActorStateException(toString + " is not an Actor since it have not mixed in the 'Actor' trait")
+        if (parent eq null) throw new IllegalActorStateException(actorInstance.getClass + " is not an Actor since it have not mixed in the 'Actor' trait")
         lookupAndSetField(parent, actor, name, value)
       }
     }
