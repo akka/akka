@@ -83,6 +83,9 @@ object ConsistentHashingRouter {
    * Note that it's not the hash that is to be returned, but the data to be
    * hashed.
    *
+   * May return `null` to indicate that the message is not handled by
+   * this mapping.
+   *
    * If returning an `Array[Byte]` or String it will be used as is,
    * otherwise the configured [[akka.akka.serialization.Serializer]]
    * will be applied to the returned data.
@@ -99,9 +102,9 @@ object ConsistentHashingRouter {
  *
  * 1. You can define `consistentHashRoute` / `withConsistentHashMapping`
  * of the router to map incoming messages to their consistent hash key.
- * This makes the makes the decision transparent for the sender.
+ * This makes the decision transparent for the sender.
  *
- * 2. The messages may implement [[akka.routing.ConsistentHashable]].
+ * 2. The messages may implement [[akka.routing.ConsistentHashingRouter.ConsistentHashable]].
  * The key is part of the message and it's convenient to define it together
  * with the message definition.
  *
@@ -183,11 +186,12 @@ case class ConsistentHashingRouter(
   def withVirtualNodesFactor(vnodes: Int): ConsistentHashingRouter = copy(virtualNodesFactor = vnodes)
 
   /**
-   * Java API for setting the mapping from message to the data to use for the consistent hash key
+   * Java API for setting the mapping from message to the data to use for the consistent hash key.
    */
   def withConsistentHashMapping(mapping: ConsistentHashingRouter.ConsistentHashMapping) = {
     copy(consistentHashRoute = {
-      case message ⇒ mapping.consistentHashKey(message)
+      case message if (mapping.consistentHashKey(message).asInstanceOf[AnyRef] ne null) ⇒
+        mapping.consistentHashKey(message)
     })
   }
 
@@ -199,7 +203,7 @@ case class ConsistentHashingRouter(
    * that can't be defined in configuration.
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case fromConfig: FromConfig ⇒ this
+    case _: FromConfig ⇒ this
     case otherRouter: ConsistentHashingRouter ⇒
       val useResizer =
         if (this.resizer.isEmpty && otherRouter.resizer.isDefined) otherRouter.resizer

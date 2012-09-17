@@ -292,10 +292,10 @@ insight into how consistent hashing is implemented.
 There is 3 ways to define what data to use for the consistent hash key.
 
 * You can define ``consistentHashRoute`` of the router to map incoming
-  messages to their consistent hash key. This makes the makes the decision
+  messages to their consistent hash key. This makes the decision
   transparent for the sender.
 
-* The messages may implement ``akka.routing.ConsistentHashable``.
+* The messages may implement ``akka.routing.ConsistentHashingRouter.ConsistentHashable``.
   The key is part of the message and it's convenient to define it together
   with the message definition.
  

@@ -11,7 +11,6 @@ object ConsistentHashingRouterDocSpec {
   //#cache-actor
   import akka.actor.Actor
   import akka.routing.ConsistentHashingRouter.ConsistentHashable
-  import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 
   class Cache extends Actor {
     var cache = Map.empty[String, String]
