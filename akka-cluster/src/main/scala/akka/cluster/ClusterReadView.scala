@@ -30,6 +30,12 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   @volatile
   private var _latestStats = ClusterStats()
 
+  /**
+   * Current cluster metrics, updated periodically via event bus.
+   */
+  @volatile
+  private var _clusterMetrics: Set[NodeMetrics] = Set.empty
+
   val selfAddress = cluster.selfAddress
 
   // create actor that subscribes to the cluster eventBus to update current read view state
@@ -56,6 +62,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
         case ConvergenceChanged(convergence)    ⇒ state = state.copy(convergence = convergence)
         case s: CurrentClusterState             ⇒ state = s
         case CurrentInternalStats(stats)        ⇒ _latestStats = stats
+        case ClusterMetricsChanged(nodes)       ⇒ _clusterMetrics = nodes
         case _                                  ⇒ // ignore, not interesting
       }
     }).withDispatcher(cluster.settings.UseDispatcher), name = "clusterEventBusListener")
@@ -117,6 +124,11 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
     val myself = self
     !unreachableMembers.contains(myself) && !myself.status.isUnavailable
   }
+
+  /**
+   * Current cluster metrics.
+   */
+  def clusterMetrics: Set[NodeMetrics] = _clusterMetrics
 
   /**
    * INTERNAL API
