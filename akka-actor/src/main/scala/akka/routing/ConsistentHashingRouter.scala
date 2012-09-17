@@ -264,14 +264,13 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
     }
 
     def target(hashData: Any): ActorRef = try {
-      val hash = hashData match {
-        case bytes: Array[Byte] ⇒ bytes
-        case str: String        ⇒ str.getBytes("UTF-8")
-        case x: AnyRef          ⇒ SerializationExtension(routeeProvider.context.system).serialize(x).get
-      }
       val currentConsistenHash = updateConsistentHash()
       if (currentConsistenHash.isEmpty) routeeProvider.context.system.deadLetters
-      else currentConsistenHash.nodeFor(hash)
+      else hashData match {
+        case bytes: Array[Byte] ⇒ currentConsistenHash.nodeFor(bytes)
+        case str: String        ⇒ currentConsistenHash.nodeFor(str)
+        case x: AnyRef          ⇒ currentConsistenHash.nodeFor(SerializationExtension(routeeProvider.context.system).serialize(x).get)
+      }
     } catch {
       case NonFatal(e) ⇒
         // serialization failed
