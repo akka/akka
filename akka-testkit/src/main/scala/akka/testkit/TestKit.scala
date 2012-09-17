@@ -49,7 +49,7 @@ object TestActor {
   }
 
   val FALSE = (x: Any) ⇒ false
-  
+
   // make creator serializable, for VerifySerializabilitySpec
   def props(queue: BlockingDeque[Message]): Props = Props(new TestActor(queue))
 }
