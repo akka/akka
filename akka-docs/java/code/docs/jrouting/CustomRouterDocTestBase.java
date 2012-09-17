@@ -72,7 +72,7 @@ public class CustomRouterDocTestBase {
     routedActor.tell(RepublicanVote);
     routedActor.tell(DemocratVote);
     routedActor.tell(RepublicanVote);
-    Timeout timeout = new Timeout(Duration.parse("1 seconds"));
+    Timeout timeout = new Timeout(Duration.create(1, "seconds"));
     Future<Object> democratsResult = ask(routedActor, DemocratCountResult, timeout);
     Future<Object> republicansResult = ask(routedActor, RepublicanCountResult, timeout);
 
