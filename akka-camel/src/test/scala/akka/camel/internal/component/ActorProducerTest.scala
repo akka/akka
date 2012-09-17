@@ -5,7 +5,6 @@
 package akka.camel.internal.component
 
 import language.postfixOps
-
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
@@ -27,6 +26,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem.Settings
 import akka.event.LoggingAdapter
 import akka.testkit.{ TimingTest, TestKit, TestProbe }
+import scala.concurrent.util.FiniteDuration
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
 
@@ -303,7 +303,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
   def msg(s: String) = CamelMessage(s, Map.empty)
 
-  def given(actor: ActorRef = probe.ref, outCapable: Boolean = true, autoAck: Boolean = true, replyTimeout: Duration = Int.MaxValue seconds) = {
+  def given(actor: ActorRef = probe.ref, outCapable: Boolean = true, autoAck: Boolean = true, replyTimeout: FiniteDuration = Int.MaxValue seconds) = {
     prepareMocks(actor, outCapable = outCapable)
     new ActorProducer(configure(isAutoAck = autoAck, _replyTimeout = replyTimeout), camel)
   }
@@ -325,16 +325,16 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
       callbackReceived.countDown()
     }
 
-    private[this] def valueWithin(implicit timeout: Duration) =
+    private[this] def valueWithin(implicit timeout: FiniteDuration) =
       if (!callbackReceived.await(timeout.toNanos, TimeUnit.NANOSECONDS)) fail("Callback not received!")
       else callbackValue.get
 
-    def expectDoneSyncWithin(implicit timeout: Duration): Unit = if (!valueWithin(timeout)) fail("Expected to be done Synchronously")
-    def expectDoneAsyncWithin(implicit timeout: Duration): Unit = if (valueWithin(timeout)) fail("Expected to be done Asynchronously")
+    def expectDoneSyncWithin(implicit timeout: FiniteDuration): Unit = if (!valueWithin(timeout)) fail("Expected to be done Synchronously")
+    def expectDoneAsyncWithin(implicit timeout: FiniteDuration): Unit = if (valueWithin(timeout)) fail("Expected to be done Asynchronously")
 
   }
 
-  def configure(endpointUri: String = "test-uri", isAutoAck: Boolean = true, _replyTimeout: Duration = Int.MaxValue seconds) = {
+  def configure(endpointUri: String = "test-uri", isAutoAck: Boolean = true, _replyTimeout: FiniteDuration = Int.MaxValue seconds) = {
     val endpoint = new ActorEndpoint(endpointUri, actorComponent, actorEndpointPath, camel)
     endpoint.autoAck = isAutoAck
     endpoint.replyTimeout = _replyTimeout

@@ -27,7 +27,7 @@ public class DangerousJavaActor extends UntypedActor {
     public DangerousJavaActor() {
         this.breaker = new CircuitBreaker(
                 getContext().dispatcher(), getContext().system().scheduler(),
-                5, Duration.parse("10s"), Duration.parse("1m"))
+                5, Duration.create(10, "s"), Duration.create(1, "m"))
                 .onOpen(new Callable<Object>() {
                     public Object call() throws Exception {
                         notifyMeOnOpen();
