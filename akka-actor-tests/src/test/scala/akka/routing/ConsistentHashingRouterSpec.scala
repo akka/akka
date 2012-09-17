@@ -51,7 +51,7 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
   import akka.routing.ConsistentHashingRouterSpec._
   implicit val ec = system.dispatcher
 
-  val router1 = system.actorOf(Props[Echo].withRouter(ConsistentHashingRouter()), "router1")
+  val router1 = system.actorOf(Props[Echo].withRouter(FromConfig()), "router1")
 
   "consistent hashing router" must {
     "create routees from configuration" in {

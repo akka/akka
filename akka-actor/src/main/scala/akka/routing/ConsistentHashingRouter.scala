@@ -199,6 +199,7 @@ case class ConsistentHashingRouter(
    * that can't be defined in configuration.
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
+    case fromConfig: FromConfig ⇒ this
     case otherRouter: ConsistentHashingRouter ⇒
       val useResizer =
         if (this.resizer.isEmpty && otherRouter.resizer.isDefined) otherRouter.resizer
