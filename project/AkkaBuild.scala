@@ -522,7 +522,7 @@ object AkkaBuild extends Build {
 
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
-    val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
+    val remote = exports(Seq("akka.remote.*"))
 
     val slf4j = exports(Seq("akka.event.slf4j.*"))
 
@@ -532,9 +532,7 @@ object AkkaBuild extends Build {
 
     val zeroMQ = exports(Seq("akka.zeromq.*"))
 
-    def exports(packages: Seq[String] = Seq()) = Seq.empty
-
-    def exportsReal(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
+    def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
       OsgiKeys.importPackage := defaultImports,
       OsgiKeys.exportPackage := packages
     )

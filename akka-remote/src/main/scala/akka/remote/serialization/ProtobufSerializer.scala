@@ -2,8 +2,9 @@
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.serialization
+package akka.remote.serialization
 
+import akka.serialization.{ Serializer, Serialization }
 import com.google.protobuf.Message
 import akka.actor.DynamicAccess
 import akka.remote.RemoteProtocol.ActorRefProtocol

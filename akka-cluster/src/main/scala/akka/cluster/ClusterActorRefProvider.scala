@@ -15,7 +15,7 @@ import akka.cluster.routing.ClusterRouterConfig
 import akka.event.EventStream
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteDeployer
-import akka.routing.RemoteRouterConfig
+import akka.remote.routing.RemoteRouterConfig
 import akka.cluster.routing.ClusterRouterSettings
 
 class ClusterActorRefProvider(

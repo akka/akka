@@ -1,19 +1,24 @@
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.security.provider
+package akka.remote.security.provider
 
-import org.uncommons.maths.random.{ AESCounterRNG }
+import org.uncommons.maths.random.{ AESCounterRNG, SecureRandomSeedGenerator }
 import SeedSize.Seed128
 
 /**
  * Internal API
  * This class is a wrapper around the 128-bit AESCounterRNG algorithm provided by http://maths.uncommons.org/
- * It uses the default seed generator which uses one of the following 3 random seed sources:
- * Depending on availability: random.org, /dev/random, and SecureRandom (provided by Java)
  * The only method used by netty ssl is engineNextBytes(bytes)
+ * This RNG is good to use to prevent startup delay when you don't have Internet access to random.org
  */
-class AES128CounterInetRNG extends java.security.SecureRandomSpi {
+class AES128CounterSecureRNG extends java.security.SecureRandomSpi {
+  /**Singleton instance. */
+  private final val Instance: SecureRandomSeedGenerator = new SecureRandomSeedGenerator
+
+  /**
+   * Make sure the seed generator is provided by a SecureRandom singleton and not default 'Random'
+   */
   private val rng = new AESCounterRNG(engineGenerateSeed(Seed128))
 
   /**
@@ -36,6 +41,6 @@ class AES128CounterInetRNG extends java.security.SecureRandomSpi {
    * @param numBytes the number of seed bytes to generate.
    * @return the seed bytes.
    */
-  override protected def engineGenerateSeed(numBytes: Int): Array[Byte] = InternetSeedGenerator.getInstance.generateSeed(numBytes)
+  override protected def engineGenerateSeed(numBytes: Int): Array[Byte] = Instance.generateSeed(numBytes)
 }
 

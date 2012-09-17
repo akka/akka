@@ -6,7 +6,7 @@ package docs.routing
 import akka.routing.RoundRobinRouter
 import akka.actor.{ ActorRef, Props, Actor, ActorSystem }
 import akka.routing.DefaultResizer
-import akka.routing.RemoteRouterConfig
+import akka.remote.routing.RemoteRouterConfig
 
 case class Message1(nbr: Int)
 

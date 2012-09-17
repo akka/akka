@@ -2,8 +2,9 @@
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.serialization
+package akka.remote.serialization
 
+import akka.serialization.{ Serializer, SerializationExtension }
 import java.io.Serializable
 import com.google.protobuf.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }

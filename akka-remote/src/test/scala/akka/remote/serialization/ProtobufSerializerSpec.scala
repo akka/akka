@@ -2,11 +2,12 @@
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.serialization
+package akka.remote.serialization
 
+import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import akka.remote.RemoteProtocol.MessageProtocol
-import akka.actor.ProtobufProtocol.MyMessage
+import akka.remote.ProtobufProtocol.MyMessage
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ProtobufSerializerSpec extends AkkaSpec {

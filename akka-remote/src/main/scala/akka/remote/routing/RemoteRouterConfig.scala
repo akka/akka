@@ -1,8 +1,9 @@
 /**
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.routing
+package akka.remote.routing
 
+import akka.routing.{ Route, Router, RouterConfig, RouteeProvider, Resizer }
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorContext
 import akka.actor.ActorRef

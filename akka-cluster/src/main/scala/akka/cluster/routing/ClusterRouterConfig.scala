@@ -28,7 +28,7 @@ import akka.routing.Route
 import akka.routing.RouteeProvider
 import akka.routing.Router
 import akka.routing.RouterConfig
-import akka.routing.RemoteRouterConfig
+import akka.remote.routing.RemoteRouterConfig
 import akka.actor.RootActorPath
 import akka.actor.ActorCell
 import akka.actor.RelativeActorPath
