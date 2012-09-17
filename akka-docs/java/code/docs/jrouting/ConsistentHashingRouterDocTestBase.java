@@ -21,7 +21,7 @@ import java.io.Serializable;
 import akka.actor.Props;
 import akka.actor.ActorRef;
 import akka.routing.ConsistentHashingRouter;
-import akka.routing.ConsistentHashingRouter.ConsistentHashMapping;
+import akka.routing.ConsistentHashingRouter.ConsistentHashMapper;
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope;
 //#imports2
 
@@ -40,7 +40,7 @@ public class ConsistentHashingRouterDocTestBase {
   }
 
   //#cache-actor
-  
+
   public static class Cache extends UntypedActor {
     Map<String, String> cache = new HashMap<String, String>();
 
@@ -62,14 +62,14 @@ public class ConsistentHashingRouterDocTestBase {
     }
   }
 
-  public static class Evict implements Serializable {
+  public static final class Evict implements Serializable {
     public final String key;
     public Evict(String key) {
       this.key = key;
     }
   }
 
-  public static class Get implements Serializable, ConsistentHashable {
+  public static final class Get implements Serializable, ConsistentHashable {
     public final String key;
     public Get(String key) {
       this.key = key;
@@ -79,7 +79,7 @@ public class ConsistentHashingRouterDocTestBase {
     } 
   }
 
-  public static class Entry implements Serializable {
+  public static final class Entry implements Serializable {
     public final String key;
     public final String value;
     public Entry(String key, String value) {
@@ -99,9 +99,9 @@ public class ConsistentHashingRouterDocTestBase {
 
       //#consistent-hashing-router      
       
-      final ConsistentHashMapping consistentHashMapping = new ConsistentHashMapping() {
+      final ConsistentHashMapper hashMapper = new ConsistentHashMapper() {
         @Override
-        public Object consistentHashKey(Object message) {
+        public Object hashKey(Object message) {
           if (message instanceof Evict) {
             return ((Evict) message).key;
           } else {
@@ -111,7 +111,7 @@ public class ConsistentHashingRouterDocTestBase {
       };
 
       ActorRef cache = system.actorOf(new Props(Cache.class).withRouter(
-        new ConsistentHashingRouter(10).withConsistentHashMapping(consistentHashMapping)), 
+        new ConsistentHashingRouter(10).withHashMapper(hashMapper)), 
         "cache");
 
       cache.tell(new ConsistentHashableEnvelope(

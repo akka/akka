@@ -291,7 +291,7 @@ insight into how consistent hashing is implemented.
 
 There is 3 ways to define what data to use for the consistent hash key.
 
-* You can define ``consistentHashRoute`` of the router to map incoming
+* You can define ``hashMapping`` of the router to map incoming
   messages to their consistent hash key. This makes the decision
   transparent for the sender.
 
@@ -304,7 +304,7 @@ There is 3 ways to define what data to use for the consistent hash key.
   the key to use.
  
 These ways to define the consistent hash key can be use together and at
-the same time for one router. The ``consistentHashRoute`` is tried first.
+the same time for one router. The ``hashMapping`` is tried first.
 
 Code example:
 
@@ -314,7 +314,7 @@ Code example:
 
 In the above example you see that the ``Get`` message implements ``ConsistentHashable`` itself,
 while the ``Entry`` message is wrapped in a ``ConsistentHashableEnvelope``. The ``Evict``
-message is handled by the ``consistentHashRoute`` partial function.
+message is handled by the ``hashMapping`` partial function.
 
 This is an example of how to define a consistent-hashing router in configuration:
 

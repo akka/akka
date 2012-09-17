@@ -42,20 +42,20 @@ class ConsistentHashingRouterDocSpec extends AkkaSpec with ImplicitSender {
     //#consistent-hashing-router
     import akka.actor.Props
     import akka.routing.ConsistentHashingRouter
-    import akka.routing.ConsistentHashingRouter.ConsistentHashRoute
+    import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
     import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 
-    def consistentHashRoute: ConsistentHashRoute = {
+    def hashMapping: ConsistentHashMapping = {
       case Evict(key) ⇒ key
     }
 
     val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10,
-      consistentHashRoute = consistentHashRoute)), name = "cache")
+      hashMapping = hashMapping)), name = "cache")
 
     cache ! ConsistentHashableEnvelope(
-      message = Entry("hello", "HELLO"), consistentHashKey = "hello")
+      message = Entry("hello", "HELLO"), hashKey = "hello")
     cache ! ConsistentHashableEnvelope(
-      message = Entry("hi", "HI"), consistentHashKey = "hi")
+      message = Entry("hi", "HI"), hashKey = "hi")
 
     cache ! Get("hello")
     expectMsg(Some("HELLO"))

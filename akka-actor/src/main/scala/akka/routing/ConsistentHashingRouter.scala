@@ -29,7 +29,7 @@ object ConsistentHashingRouter {
   }
 
   /**
-   * If you don't define the consistentHashRoute when
+   * If you don't define the `hashMapping` when
    * constructing the [[akka.routing.ConsistentHashingRouter]]
    * the messages need to implement this interface to define what
    * data to use for the consistent hash key. Note that it's not
@@ -49,7 +49,7 @@ object ConsistentHashingRouter {
   }
 
   /**
-   * If you don't define the consistentHashRoute when
+   * If you don't define the `hashMapping` when
    * constructing the [[akka.routing.ConsistentHashingRouter]]
    * and messages can't implement [[akka.routing.ConsistentHashingRouter.ConsistentHashable]]
    * themselves they can we wrapped by this envelope instead. The
@@ -57,8 +57,10 @@ object ConsistentHashingRouter {
    * i.e. the envelope will be stripped off.
    */
   @SerialVersionUID(1L)
-  case class ConsistentHashableEnvelope(message: Any, consistentHashKey: Any)
-    extends ConsistentHashable with RouterEnvelope
+  final case class ConsistentHashableEnvelope(message: Any, hashKey: Any)
+    extends ConsistentHashable with RouterEnvelope {
+    override def consistentHashKey: Any = hashKey
+  }
 
   /**
    * Partial function from message to the data to
@@ -69,12 +71,12 @@ object ConsistentHashingRouter {
    * otherwise the configured [[akka.akka.serialization.Serializer]]
    * will be applied to the returned data.
    */
-  type ConsistentHashRoute = PartialFunction[Any, Any]
+  type ConsistentHashMapping = PartialFunction[Any, Any]
 
   @SerialVersionUID(1L)
-  object emptyConsistentHashRoute extends ConsistentHashRoute {
+  object emptyConsistentHashMapping extends ConsistentHashMapping {
     def isDefinedAt(x: Any) = false
-    def apply(x: Any) = throw new UnsupportedOperationException("Empty ConsistentHashRoute apply()")
+    def apply(x: Any) = throw new UnsupportedOperationException("Empty ConsistentHashMapping apply()")
   }
 
   /**
@@ -90,8 +92,8 @@ object ConsistentHashingRouter {
    * otherwise the configured [[akka.akka.serialization.Serializer]]
    * will be applied to the returned data.
    */
-  trait ConsistentHashMapping {
-    def consistentHashKey(message: Any): Any
+  trait ConsistentHashMapper {
+    def hashKey(message: Any): Any
   }
 }
 /**
@@ -100,7 +102,7 @@ object ConsistentHashingRouter {
  *
  * There is 3 ways to define what data to use for the consistent hash key.
  *
- * 1. You can define `consistentHashRoute` / `withConsistentHashMapping`
+ * 1. You can define `hashMapping` / `withHashMapper`
  * of the router to map incoming messages to their consistent hash key.
  * This makes the decision transparent for the sender.
  *
@@ -113,7 +115,7 @@ object ConsistentHashingRouter {
  * the key to use.
  *
  * These ways to define the consistent hash key can be use together and at
- * the same time for one router. The `consistentHashRoute` is tried first.
+ * the same time for one router. The `hashMapping` is tried first.
  *
  * Please note that providing both 'nrOfInstances' and 'routees' does not make logical
  * sense as this means that the router should both create new actors and use the 'routees'
@@ -137,7 +139,7 @@ object ConsistentHashingRouter {
  * @param routees string representation of the actor paths of the routees that will be looked up
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  * @param virtualNodesFactor number of virtual nodes per node, used in [[akka.routing.ConsistantHash]]
- * @param consistentHashRoute partial function from message to the data to
+ * @param hashMapping partial function from message to the data to
  *   use for the consistent hash key
  */
 @SerialVersionUID(1L)
@@ -146,7 +148,7 @@ case class ConsistentHashingRouter(
   val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy,
   val virtualNodesFactor: Int = 0,
-  val consistentHashRoute: ConsistentHashingRouter.ConsistentHashRoute = ConsistentHashingRouter.emptyConsistentHashRoute)
+  val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping)
   extends RouterConfig with ConsistentHashingLike {
 
   /**
@@ -188,10 +190,10 @@ case class ConsistentHashingRouter(
   /**
    * Java API for setting the mapping from message to the data to use for the consistent hash key.
    */
-  def withConsistentHashMapping(mapping: ConsistentHashingRouter.ConsistentHashMapping) = {
-    copy(consistentHashRoute = {
-      case message if (mapping.consistentHashKey(message).asInstanceOf[AnyRef] ne null) ⇒
-        mapping.consistentHashKey(message)
+  def withHashMapper(mapping: ConsistentHashingRouter.ConsistentHashMapper) = {
+    copy(hashMapping = {
+      case message if (mapping.hashKey(message).asInstanceOf[AnyRef] ne null) ⇒
+        mapping.hashKey(message)
     })
   }
 
@@ -199,7 +201,7 @@ case class ConsistentHashingRouter(
    * Uses the resizer of the given RouterConfig if this RouterConfig
    * doesn't have one, i.e. the resizer defined in code is used if
    * resizer was not defined in config.
-   * Uses the the consistentHashRoute defined in code, since
+   * Uses the the `hashMapping` defined in code, since
    * that can't be defined in configuration.
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
@@ -208,7 +210,7 @@ case class ConsistentHashingRouter(
       val useResizer =
         if (this.resizer.isEmpty && otherRouter.resizer.isDefined) otherRouter.resizer
         else this.resizer
-      copy(resizer = useResizer, consistentHashRoute = otherRouter.consistentHashRoute)
+      copy(resizer = useResizer, hashMapping = otherRouter.hashMapping)
     case _ ⇒ throw new IllegalArgumentException("Expected ConsistentHashingRouter, got [%s]".format(other))
   }
 }
@@ -227,7 +229,7 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
 
   def virtualNodesFactor: Int
 
-  def consistentHashRoute: ConsistentHashRoute
+  def hashMapping: ConsistentHashMapping
 
   override def createRoute(routeeProvider: RouteeProvider): Route = {
     if (resizer.isEmpty) {
@@ -273,7 +275,7 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
     } catch {
       case NonFatal(e) ⇒
         // serialization failed
-        log.warning("Couldn't route message with consistentHashKey [{}] due to [{}]", hashData, e.getMessage)
+        log.warning("Couldn't route message with consistent hash key [{}] due to [{}]", hashData, e.getMessage)
         routeeProvider.context.system.deadLetters
     }
 
@@ -281,11 +283,11 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
       case (sender, message) ⇒
         message match {
           case Broadcast(msg) ⇒ toAll(sender, routeeProvider.routees)
-          case _ if consistentHashRoute.isDefinedAt(message) ⇒
-            List(Destination(sender, target(consistentHashRoute(message))))
+          case _ if hashMapping.isDefinedAt(message) ⇒
+            List(Destination(sender, target(hashMapping(message))))
           case hashable: ConsistentHashable ⇒ List(Destination(sender, target(hashable.consistentHashKey)))
           case other ⇒
-            log.warning("Message [{}] must be handled by consistentHashRoute, or implement [{}] or be wrapped in [{}]",
+            log.warning("Message [{}] must be handled by hashMapping, or implement [{}] or be wrapped in [{}]",
               message.getClass.getName, classOf[ConsistentHashable].getName,
               classOf[ConsistentHashableEnvelope].getName)
             List(Destination(sender, routeeProvider.context.system.deadLetters))

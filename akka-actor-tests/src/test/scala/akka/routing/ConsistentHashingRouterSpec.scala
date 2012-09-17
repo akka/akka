@@ -12,6 +12,7 @@ import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
+import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.testkit.AkkaSpec
 import akka.testkit._
 
@@ -62,40 +63,40 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
     "select destination based on consistentHashKey of the message" in {
       router1 ! Msg("a", "A")
       val destinationA = expectMsgType[ActorRef]
-      router1 ! ConsistentHashableEnvelope(message = "AA", consistentHashKey = "a")
+      router1 ! ConsistentHashableEnvelope(message = "AA", hashKey = "a")
       expectMsg(destinationA)
 
       router1 ! Msg(17, "B")
       val destinationB = expectMsgType[ActorRef]
-      router1 ! ConsistentHashableEnvelope(message = "BB", consistentHashKey = 17)
+      router1 ! ConsistentHashableEnvelope(message = "BB", hashKey = 17)
       expectMsg(destinationB)
 
       router1 ! Msg(MsgKey("c"), "C")
       val destinationC = expectMsgType[ActorRef]
-      router1 ! ConsistentHashableEnvelope(message = "CC", consistentHashKey = MsgKey("c"))
+      router1 ! ConsistentHashableEnvelope(message = "CC", hashKey = MsgKey("c"))
       expectMsg(destinationC)
     }
 
     "select destination with defined consistentHashRoute" in {
-      def consistentHashRoute: ConsistentHashingRouter.ConsistentHashRoute = {
+      def hashMapping: ConsistentHashMapping = {
         case Msg2(key, data) ⇒ key
       }
       val router2 = system.actorOf(Props[Echo].withRouter(ConsistentHashingRouter(
-        consistentHashRoute = consistentHashRoute)), "router2")
+        hashMapping = hashMapping)), "router2")
 
       router2 ! Msg2("a", "A")
       val destinationA = expectMsgType[ActorRef]
-      router2 ! ConsistentHashableEnvelope(message = "AA", consistentHashKey = "a")
+      router2 ! ConsistentHashableEnvelope(message = "AA", hashKey = "a")
       expectMsg(destinationA)
 
       router2 ! Msg2(17, "B")
       val destinationB = expectMsgType[ActorRef]
-      router2 ! ConsistentHashableEnvelope(message = "BB", consistentHashKey = 17)
+      router2 ! ConsistentHashableEnvelope(message = "BB", hashKey = 17)
       expectMsg(destinationB)
 
       router2 ! Msg2(MsgKey("c"), "C")
       val destinationC = expectMsgType[ActorRef]
-      router2 ! ConsistentHashableEnvelope(message = "CC", consistentHashKey = MsgKey("c"))
+      router2 ! ConsistentHashableEnvelope(message = "CC", hashKey = MsgKey("c"))
       expectMsg(destinationC)
     }
   }
