@@ -471,7 +471,7 @@ object AkkaBuild extends Build {
     .setPreference(AlignSingleLineCaseStatements, true)
   }
 
-  lazy val multiJvmSettings = SbtMultiJvm.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
+  lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
@@ -514,7 +514,7 @@ object AkkaBuild extends Build {
 
     val cluster = exports(Seq("akka.cluster.*"))
 
-    val fileMailbox = exports(Seq("akka.actor.mailbox.*"))
+    val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
     val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
 
@@ -522,7 +522,7 @@ object AkkaBuild extends Build {
 
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
-    val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
+    val remote = exports(Seq("akka.remote.*"))
 
     val slf4j = exports(Seq("akka.event.slf4j.*"))
 
@@ -534,16 +534,13 @@ object AkkaBuild extends Build {
 
     def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
       OsgiKeys.importPackage := defaultImports,
-      OsgiKeys.exportPackage := packages,
-      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
-      artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle"))
+      OsgiKeys.exportPackage := packages
     )
 
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
     def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
-
   }
 }
 

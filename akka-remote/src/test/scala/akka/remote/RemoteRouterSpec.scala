@@ -6,6 +6,7 @@ package akka.remote
 import akka.testkit._
 import akka.routing._
 import akka.actor._
+import akka.remote.routing._
 import com.typesafe.config._
 
 object RemoteRouterSpec {
