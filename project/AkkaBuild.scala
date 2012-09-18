@@ -275,12 +275,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       sbtPlugin := true,
       publishMavenStyle := false, // SBT Plugins should be published as Ivy
-      publishTo <<= (version) { version: String =>
-        val scalasbt = "http://scalasbt.artifactoryonline.com/scalasbt/"
-        val (name, u) = if (version.contains("-SNAPSHOT")) ("sbt-plugin-snapshots", scalasbt+"sbt-plugin-snapshots")
-        else ("sbt-plugin-releases", scalasbt+"sbt-plugin-releases")
-        Some(Resolver.url(name, url(u))(Resolver.ivyStylePatterns))
-      },
+      publishTo <<= Publish.akkaPluginPublishTo,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
       scalaVersion := "2.9.1",
       scalaBinaryVersion <<= scalaVersion
