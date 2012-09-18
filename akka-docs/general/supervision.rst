@@ -156,6 +156,10 @@ The precise sequence of events during a restart is the following:
 What Lifecycle Monitoring Means
 -------------------------------
 
+.. note::
+
+    Lifecycle Monitoring in Akka is usually referred to as ``DeathWatch``
+
 In contrast to the special relationship between parent and child described
 above, each actor may monitor any other actor. Since actors emerge from
 creation fully alive and restarts are not visible outside of the affected
@@ -166,8 +170,10 @@ reacts to failure.
 
 Lifecycle monitoring is implemented using a :class:`Terminated` message to be
 received by the monitoring actor, where the default behavior is to throw a
-special :class:`DeathPactException` if not otherwise handled. One important
-property is that the message will be delivered irrespective of the order in
+special :class:`DeathPactException` if not otherwise handled. In order to
+start listening for :class:`Terminated` messages is to use ``ActorContext.watch(targetActorRef)``
+and then ``ActorContext.unwatch(targetActorRef)`` to stop listening for that.
+One important property is that the message will be delivered irrespective of the order in
 which the monitoring request and target’s termination occur, i.e. you still get
 the message even if at the time of registration the target is already dead.
 
