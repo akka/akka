@@ -20,8 +20,10 @@ object Transport {
   /**
    * The association setup has failed, but no information can be provided about the probability of the success of a
    * setup retry.
+   *
+   * @param cause Cause of the failure
    */
-  case object Fail extends Status
+  case class Fail(cause: Throwable) extends Status
 
   /**
    * No detectable errors happened during Setup. Generally a status of Ready does not guarantee that the Setup was

@@ -110,13 +110,9 @@ object TestTransport {
   sealed trait Activity
 
   case class ListenAttempt(boundAddress: Address) extends Activity
-
   case class AssociateAttempt(localAddress: Address, remoteAddress: Address) extends Activity
-
   case class ShutdownAttempt(boundAddress: Address) extends Activity
-
   case class WriteAttempt(sender: Address, recipient: Address, payload: ByteString) extends Activity
-
   case class DisassociateAttempt(requester: Address, remote: Address) extends Activity
 
   /**
@@ -280,7 +276,8 @@ class TestTransport(
 
         Promise.successful(Ready(localHandle)).future
 
-      case None ⇒ Promise.successful(Fail).future
+      case None ⇒
+        Promise.successful(Fail(new IllegalArgumentException(s"No registered transport: $remoteAddress"))).future
     }
   }
 

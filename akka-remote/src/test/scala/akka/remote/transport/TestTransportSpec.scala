@@ -55,7 +55,10 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       var transportA = new TestTransport(addressA, registry)
 
       Await.result(transportA.listen, timeout.duration)._2.success(self)
-      Await.result(transportA.associate(nonExistingAddress), timeout.duration) must be(Fail)
+      Await.result(transportA.associate(nonExistingAddress), timeout.duration) match {
+        case Fail(_) =>
+        case _ => fail()
+      }
     }
 
     "emulate sending PDUs and logs write" in {
