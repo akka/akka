@@ -51,28 +51,7 @@ What do they do?
 	* Callbacks can be provided for every state entry via `onOpen`, `onClose`, and `onHalfOpen`
 	* These are executed in the :class:`ExecutionContext` provided. 
 
-.. graphviz::
-
-	digraph circuit_breaker {
-		rankdir = "LR";
-		size = "6,5";
-		graph [ bgcolor = "transparent" ]
-		node [ fontname = "Helvetica",
-					 fontsize = 14,
-					 shape = circle, 
-					 color = white, 
-					 style = filled ];
-	  edge [ fontname = "Helvetica", fontsize = 12 ]
-		Closed [ fillcolor = green2 ];
-		"Half-Open" [fillcolor = yellow2 ];
-		Open [ fillcolor = red2 ];
-		Closed -> Closed [ label = "Success" ];
-		"Half-Open" -> Open [ label = "Trip Breaker" ];
-		"Half-Open" -> Closed [ label = "Reset Breaker" ];
-		Closed -> Open [ label = "Trip Breaker" ];
-		Open -> Open [ label = "Calls failing fast" ];
-		Open -> "Half-Open" [ label = "Attempt Reset" ];
-	}
+.. image:: ../images/circuit-breaker-states.png
 
 ========
 Examples

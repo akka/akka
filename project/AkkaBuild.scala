@@ -36,7 +36,7 @@ object AkkaBuild extends Build {
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id),
-      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id),
+      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id, samples.id),
       initialCommands in ThisBuild :=
         """|import language.postfixOps
            |import akka.actor._
@@ -69,7 +69,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -275,12 +275,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ Seq(
       sbtPlugin := true,
       publishMavenStyle := false, // SBT Plugins should be published as Ivy
-      publishTo <<= (version) { version: String =>
-        val scalasbt = "http://scalasbt.artifactoryonline.com/scalasbt/"
-        val (name, u) = if (version.contains("-SNAPSHOT")) ("sbt-plugin-snapshots", scalasbt+"sbt-plugin-snapshots")
-        else ("sbt-plugin-releases", scalasbt+"sbt-plugin-releases")
-        Some(Resolver.url(name, url(u))(Resolver.ivyStylePatterns))
-      },
+      publishTo <<= Publish.akkaPluginPublishTo,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
       scalaVersion := "2.9.1",
       scalaBinaryVersion <<= scalaVersion
@@ -299,7 +294,8 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-camel"),
     dependencies = Seq(actor, camel),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.camelSample
+      libraryDependencies ++= Dependencies.camelSample,
+      publishArtifact in Compile := false
     )
   )
 
@@ -307,35 +303,35 @@ object AkkaBuild extends Build {
     id = "akka-sample-fsm",
     base = file("akka-samples/akka-sample-fsm"),
     dependencies = Seq(actor),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val helloSample = Project(
     id = "akka-sample-hello",
     base = file("akka-samples/akka-sample-hello"),
     dependencies = Seq(actor),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val helloKernelSample = Project(
     id = "akka-sample-hello-kernel",
     base = file("akka-samples/akka-sample-hello-kernel"),
     dependencies = Seq(kernel),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val remoteSample = Project(
     id = "akka-sample-remote",
     base = file("akka-samples/akka-sample-remote"),
     dependencies = Seq(actor, remote, kernel),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val clusterSample = Project(
     id = "akka-sample-cluster",
     base = file("akka-samples/akka-sample-cluster"),
     dependencies = Seq(cluster),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val docs = Project(
@@ -514,7 +510,7 @@ object AkkaBuild extends Build {
 
     val cluster = exports(Seq("akka.cluster.*"))
 
-    val fileMailbox = exports(Seq("akka.actor.mailbox.*"))
+    val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
     val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
 
@@ -522,7 +518,7 @@ object AkkaBuild extends Build {
 
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
-    val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
+    val remote = exports(Seq("akka.remote.*"))
 
     val slf4j = exports(Seq("akka.event.slf4j.*"))
 
@@ -534,16 +530,13 @@ object AkkaBuild extends Build {
 
     def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
       OsgiKeys.importPackage := defaultImports,
-      OsgiKeys.exportPackage := packages,
-      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
-      artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle"))
+      OsgiKeys.exportPackage := packages
     )
 
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
     def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
-
   }
 }
 

@@ -210,7 +210,7 @@ Querying the Logical Actor Hierarchy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Since the actor system forms a file-system like hierarchy, matching on paths is
-possible in the same was as supported by Unix shells: you may replace (parts
+possible in the same way as supported by Unix shells: you may replace (parts
 of) path element names with wildcards (`«*»` and `«?»`) to formulate a
 selection which may match zero or more actual actors. Because the result is not
 a single actor reference, it has a different type :class:`ActorSelection` and

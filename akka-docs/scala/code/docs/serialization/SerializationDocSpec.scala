@@ -104,7 +104,7 @@ package docs.serialization {
         actor {
           serializers {
             java = "akka.serialization.JavaSerializer"
-            proto = "akka.serialization.ProtobufSerializer"
+            proto = "akka.remote.serialization.ProtobufSerializer"
             myown = "docs.serialization.MyOwnSerializer"
           }
         }
@@ -122,7 +122,7 @@ package docs.serialization {
         actor {
           serializers {
             java = "akka.serialization.JavaSerializer"
-            proto = "akka.serialization.ProtobufSerializer"
+            proto = "akka.remote.serialization.ProtobufSerializer"
             myown = "docs.serialization.MyOwnSerializer"
           }
 

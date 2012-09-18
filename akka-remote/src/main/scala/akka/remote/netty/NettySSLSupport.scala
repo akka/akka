@@ -9,7 +9,7 @@ import javax.net.ssl.{ KeyManagerFactory, TrustManager, TrustManagerFactory, SSL
 import akka.remote.RemoteTransportException
 import akka.event.LoggingAdapter
 import java.io.{ IOException, FileNotFoundException, FileInputStream }
-import akka.security.provider.AkkaProvider
+import akka.remote.security.provider.AkkaProvider
 import java.security._
 
 /**
