@@ -89,11 +89,9 @@ class StatsFacade extends Actor with ActorLogging {
     case job: StatsJob ⇒
       currentMaster foreach { _ forward job }
     case state: CurrentClusterState ⇒
-      if (state.convergence)
-        state.leader foreach updateCurrentMaster
-    case LeaderChanged(Some(leaderAddress), true) ⇒
+      state.leader foreach updateCurrentMaster
+    case LeaderChanged(Some(leaderAddress)) ⇒
       updateCurrentMaster(leaderAddress)
-    case other: LeaderChanged ⇒ // ignore, not convergence
   }
 
   def updateCurrentMaster(leaderAddress: Address): Unit = {
