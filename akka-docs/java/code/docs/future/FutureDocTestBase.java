@@ -518,7 +518,7 @@ public class FutureDocTestBase {
     //#after
     final ExecutionContext ec = system.dispatcher();
     Future<String> failExc = Futures.failed(new IllegalStateException("OHNOES1"));
-    Future<String> delayed = Patterns.after(Duration.parse("500 millis"),
+    Future<String> delayed = Patterns.after(Duration.create(500, "millis"),
       system.scheduler(), ec,  failExc);
     Future<String> future = future(new Callable<String>() {
       public String call() throws InterruptedException {

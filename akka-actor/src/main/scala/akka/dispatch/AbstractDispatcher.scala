@@ -16,6 +16,7 @@ import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
 import scala.concurrent.util.Duration
 import scala.concurrent.{ ExecutionContext, Await, Awaitable }
 import scala.util.control.NonFatal
+import scala.concurrent.util.FiniteDuration
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
@@ -316,7 +317,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    *
    * INTERNAL API
    */
-  protected[akka] def shutdownTimeout: Duration
+  protected[akka] def shutdownTimeout: FiniteDuration
 
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference

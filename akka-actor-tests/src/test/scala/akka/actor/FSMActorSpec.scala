@@ -5,7 +5,6 @@
 package akka.actor
 
 import language.postfixOps
-
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.testkit._
 import TestEvent.Mute
@@ -15,6 +14,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import akka.util.Timeout
 import scala.concurrent.util.Duration
+import scala.concurrent.util.FiniteDuration
 
 object FSMActorSpec {
   val timeout = Timeout(2 seconds)
@@ -33,7 +33,7 @@ object FSMActorSpec {
   case object Locked extends LockState
   case object Open extends LockState
 
-  class Lock(code: String, timeout: Duration, latches: Latches) extends Actor with FSM[LockState, CodeState] {
+  class Lock(code: String, timeout: FiniteDuration, latches: Latches) extends Actor with FSM[LockState, CodeState] {
 
     import latches._
 

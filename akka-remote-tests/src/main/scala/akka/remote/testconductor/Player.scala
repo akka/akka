@@ -278,7 +278,7 @@ private[akka] class PlayerHandler(
     event.getCause match {
       case c: ConnectException if reconnects > 0 ⇒
         reconnects -= 1
-        scheduler.scheduleOnce(nextAttempt.timeLeft)(reconnect())
+        scheduler.scheduleOnce(nextAttempt.timeLeft.asInstanceOf[FiniteDuration])(reconnect())
       case e ⇒ fsm ! ConnectionFailure(e.getMessage)
     }
   }
