@@ -159,12 +159,35 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
         camel.template.asyncSendBody("direct:manual-ack", "some message").get(defaultTimeout.toSeconds, TimeUnit.SECONDS)
       }.getCause.getCause.getMessage must include("Failed to get Ack")
     }
+    "respond to onRouteDefinition" in {
+      val ref = start(new ErrorRespondingConsumer("direct:error-responding-consumer-1"), "error-responding-consumer")
+      filterEvents(EventFilter[TestException](occurrences = 1)) {
+        val response = camel.sendTo("direct:error-responding-consumer-1", "some body")
+        response must be("some body has an error")
+      }
+      stop(ref)
+    }
   }
 }
 
 class ErrorThrowingConsumer(override val endpointUri: String) extends Consumer {
   def receive = {
     case msg: CamelMessage ⇒ throw new TestException("error: %s" format msg.body)
+  }
+}
+
+class ErrorRespondingConsumer(override val endpointUri: String) extends Consumer {
+  def receive = {
+    case msg: CamelMessage ⇒ throw new TestException("Error!")
+  }
+  override def onRouteDefinition(rd: RouteDefinition) = {
+    // Catch TestException and handle it by returning a modified version of the in message
+    rd.onException(classOf[TestException]).handled(true).transform(Builder.body.append(" has an error")).end
+  }
+
+  final override def preRestart(reason: Throwable, message: Option[Any]) {
+    super.preRestart(reason, message)
+    sender ! Failure(reason)
   }
 }
 
