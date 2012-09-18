@@ -4,7 +4,6 @@
 package akka.routing
 
 import language.postfixOps
-
 import akka.actor.Actor
 import akka.testkit._
 import akka.actor.Props
@@ -15,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.pattern.ask
 import scala.concurrent.util.Duration
 import java.util.concurrent.TimeoutException
+import scala.concurrent.util.FiniteDuration
 
 object ResizerSpec {
 
@@ -174,8 +174,8 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
       val router = system.actorOf(Props(new Actor {
         def receive = {
-          case d: Duration ⇒ Thread.sleep(d.dilated.toMillis); sender ! "done"
-          case "echo"      ⇒ sender ! "reply"
+          case d: FiniteDuration ⇒ Thread.sleep(d.dilated.toMillis); sender ! "done"
+          case "echo"            ⇒ sender ! "reply"
         }
       }).withRouter(RoundRobinRouter(resizer = Some(resizer))))
 
@@ -190,7 +190,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
       routees(router) must be(3)
 
-      def loop(loops: Int, d: Duration) = {
+      def loop(loops: Int, d: FiniteDuration) = {
         for (m ← 0 until loops) router ! d
         for (m ← 0 until loops) expectMsg(d * 3, "done")
       }

@@ -10,6 +10,7 @@ import akka.dispatch.{ Unwatch, Watch }
 import scala.concurrent.Future
 import scala.concurrent.util.Duration
 import scala.util.Success
+import scala.concurrent.util.FiniteDuration
 
 trait GracefulStopSupport {
   /**
@@ -36,7 +37,7 @@ trait GracefulStopSupport {
    * If the target actor isn't terminated within the timeout the [[scala.concurrent.Future]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
-  def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
+  def gracefulStop(target: ActorRef, timeout: FiniteDuration)(implicit system: ActorSystem): Future[Boolean] = {
     if (target.isTerminated) Future successful true
     else system match {
       case e: ExtendedActorSystem ⇒

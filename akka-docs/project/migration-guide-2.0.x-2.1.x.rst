@@ -240,7 +240,7 @@ If the target actor of ``akka.pattern.gracefulStop`` isn't terminated within the
 timeout the ``Future`` is completed with failure ``akka.pattern.AskTimeoutException``.
 In 2.0 it was ``akka.actor.ActorTimeoutException``.
 
-getInstance for singeltons - Java
+getInstance for Singletons - Java
 ====================================
 
 v2.0::
@@ -358,6 +358,33 @@ v2.1::
     if (requestedCapacity > 0) routeeProvider.createRoutees(requestedCapacity)
     else if (requestedCapacity < 0) routeeProvider.removeRoutees(
       -requestedCapacity, stopDelay)
+
+Duration and Timeout
+====================
+
+The Duration class in the scala library is an improved version of the previous
+:class:`akka.util.Duration`. Among others it keeps the static type of
+:class:`FiniteDuration` more consistently, which has been used to tighten APIs.
+The advantage is that instead of runtime exceptions you’ll get compiler errors
+telling you if you try to pass a possibly non-finite duration where it does not
+belong.
+
+The main source incompatibility is that you may have to change the declared
+type of fields from ``Duration`` to ``FiniteDuration`` (factory methods already
+return the more precise type wherever possible).
+
+Another change is that ``Duration.parse`` was not accepted by the scala-library
+maintainers, use ``Duration.create`` instead.
+
+v2.0::
+
+  final Duration d = Duration.parse("1 second");
+  final Timeout t = new Timeout(d);
+
+v2.1::
+
+  final FiniteDuration d = Duration.create("1 second");
+  final Timeout t = new Timeout(d); // always required finite duration, now also in type   
 
 Package Name Changes in Remoting
 ================================

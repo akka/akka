@@ -5,15 +5,11 @@
 package akka.camel.internal.component
 
 import language.postfixOps
-
 import java.util.{ Map ⇒ JMap }
-
 import org.apache.camel._
 import org.apache.camel.impl.{ DefaultProducer, DefaultEndpoint, DefaultComponent }
-
 import akka.actor._
 import akka.pattern._
-
 import scala.reflect.BeanProperty
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
@@ -25,6 +21,7 @@ import akka.camel.internal.CamelExchangeAdapter
 import akka.camel.{ ActorNotRegisteredException, Camel, Ack, FailureResult, CamelMessage }
 import support.TypeConverterSupport
 import scala.util.{ Failure, Success, Try }
+import scala.concurrent.util.FiniteDuration
 
 /**
  * For internal use only.
@@ -98,7 +95,7 @@ private[camel] trait ActorEndpointConfig {
   def path: ActorEndpointPath
   def camel: Camel
 
-  @BeanProperty var replyTimeout: Duration = camel.settings.replyTimeout
+  @BeanProperty var replyTimeout: FiniteDuration = camel.settings.replyTimeout
 
   @BeanProperty var autoAck: Boolean = camel.settings.autoAck
 }
