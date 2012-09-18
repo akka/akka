@@ -49,7 +49,7 @@ recommended way in this case is to add a level of supervision.
 Akka implements a specific form called “parental supervision”. Actors can only
 be created by other actors—where the top-level actor is provided by the
 library—and each created actor is supervised by its parent. This restriction
-makes the formation of actor supervision hierarchies explicit and encourages
+makes the formation of actor supervision hierarchies implicit and encourages
 sound design decisions. It should be noted that this also guarantees that
 actors cannot be orphaned or attached to supervisors from the outside, which
 might otherwise catch them unawares. In addition, this yields a natural and
