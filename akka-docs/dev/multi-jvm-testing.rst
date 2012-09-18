@@ -18,7 +18,7 @@ http://github.com/typesafehub/sbt-multi-jvm
 
 You can add it as a plugin by adding the following to your project/plugins.sbt::
 
-   addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.2.0")
+   addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.0")
 
 You can then add multi-JVM testing to ``project/Build.scala`` by including the ``MultiJvm``
 settings and config. For example, here is an example of how the akka-remote-tests project adds
@@ -47,7 +47,7 @@ multi-JVM testing (Simplified for clarity):
       )
     ) configs (MultiJvm)
 
-    lazy val buildSettings = Defaults.defaultSettings ++ SbtMultiJvm.settings ++ Seq(
+    lazy val buildSettings = Defaults.defaultSettings ++ SbtMultiJvm.multiJvmSettings ++ Seq(
       organization := "com.typesafe.akka",
       version      := "2.1-SNAPSHOT",
       scalaVersion := "|scalaVersion|",
