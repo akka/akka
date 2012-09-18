@@ -208,8 +208,8 @@ class StatsSampleClient(servicePath: String) extends Actor {
     case "tick" if nodes.nonEmpty ⇒
       // just pick any one
       val address = nodes.toIndexedSeq(ThreadLocalRandom.current.nextInt(nodes.size))
-      context.actorFor(RootActorPath(address) / servicePathElements) !
-        StatsJob("this is the text that will be analyzed")
+      val service = context.actorFor(RootActorPath(address) / servicePathElements)
+      service ! StatsJob("this is the text that will be analyzed")
     case result: StatsResult ⇒
       println(result)
     case failed: JobFailed ⇒
