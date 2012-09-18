@@ -20,11 +20,11 @@ class DataStreamSpec extends AkkaSpec(MetricsEnabledSpec.config) with AbstractCl
   "DataStream" must {
 
     "calculate the ewma for multiple, variable, data streams" taggedAs LongRunningTest in {
-      val firstDataSet = collector.sample.metrics map (_.initialize(DefaultRateOfDecay))
+      val firstDataSet = collector.sample.metrics.map(_.initialize(DefaultRateOfDecay)).filter(_.trendable).filter(_.isDefined)
       var streamingDataSet = firstDataSet
 
       val cancellable = system.scheduler.schedule(0 seconds, 100 millis) {
-        streamingDataSet = collector.sample.metrics.filter(_.trendable).flatMap(latest ⇒ streamingDataSet.collect {
+        streamingDataSet = collector.sample.metrics.filter(_.trendable).filter(_.isDefined).flatMap(latest ⇒ streamingDataSet.collect {
           case streaming if (latest same streaming) && (latest.value.get != streaming.value.get) ⇒ {
 
             val updatedDataStream = streaming.average.get :+ latest.value.get
@@ -41,7 +41,7 @@ class DataStreamSpec extends AkkaSpec(MetricsEnabledSpec.config) with AbstractCl
       awaitCond(firstDataSet.size == streamingDataSet.size, longDuration)
       cancellable.cancel()
 
-      val finalDataSet = streamingDataSet.filter(_.trendable).map(m ⇒ m.name -> m).toMap
+      val finalDataSet = streamingDataSet.filter(_.trendable).filter(_.isDefined).map(m ⇒ m.name -> m).toMap
       firstDataSet.filter(_.trendable) map {
         first ⇒
           val newMetric = finalDataSet.get(first.name).get

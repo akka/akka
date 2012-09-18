@@ -14,7 +14,7 @@ import scala.util.{ Try, Success, Failure }
 import scala.runtime.{ RichLong, RichDouble, RichInt }
 
 import akka.actor._
-import akka.event.{ EventStream, LoggingAdapter }
+import akka.event.LoggingAdapter
 import akka.cluster.MemberStatus.Up
 
 import java.lang.management.{ OperatingSystemMXBean, MemoryMXBean, ManagementFactory }
@@ -355,12 +355,12 @@ private[cluster] case class Metric(name: String, value: Option[ScalaNumber], ave
   /**
    * Returns true if the metric requires initialization.
    */
-  def initializable: Boolean = trendable && average.isEmpty
+  def initializable: Boolean = trendable && isDefined && average.isEmpty
 
   /**
    * Returns true if the metric is a value applicable for trending.
    */
-  def trendable: Boolean = !(Metric.noStream contains name) && isDefined
+  def trendable: Boolean = !(Metric.noStream contains name)
 
 }
 
@@ -575,7 +575,8 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
    * Returns the max bytes for the given <code>method</code> in metric for <code>metric</code> from the network interface stats.
    */
   private def networkMaxFor(method: String, metric: String): Metric = define(metric, wrap(Some(BigInt(networkStats.collect {
-    case (_, a) ⇒ createMethodFrom(Some(a), method).get.invoke(a).asInstanceOf[Long]}.toSet.filter(_ != 0).toSet.max)), None))
+    case (_, a) ⇒ createMethodFrom(Some(a), method).get.invoke(a).asInstanceOf[Long]
+  }.toSet.filter(_ != 0).toSet.max)), None))
 
   private def createMethodFrom(ref: Option[AnyRef], method: String, types: Array[(Class[_])] = Array.empty[(Class[_])]): Option[Method] =
     Try(ref.get.getClass.getMethod(method, types: _*)).toOption

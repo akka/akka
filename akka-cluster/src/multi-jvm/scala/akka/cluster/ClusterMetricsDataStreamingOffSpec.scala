@@ -20,9 +20,9 @@ object ClusterMetricsDataStreamingOffMultiJvmSpec extends MultiNodeConfig {
 class ClusterMetricsDataStreamingMultiJvmNode1 extends ClusterMetricsDataStreamingOffSpec
 class ClusterMetricsDataStreamingMultiJvmNode2 extends ClusterMetricsDataStreamingOffSpec
 
-abstract class ClusterMetricsDataStreamingOffSpec extends MultiNodeSpec(ClusterMetricsDataStreamingOffMultiJvmSpec) with MultiNodeClusterSpec {
+abstract class ClusterMetricsDataStreamingOffSpec extends MultiNodeSpec(ClusterMetricsDataStreamingOffMultiJvmSpec) with MultiNodeClusterSpec with MetricSpec {
   "Cluster metrics" must {
-    "not collect stream metric data" taggedAs LongRunningTest in within(20 seconds) {
+    "not collect stream metric data" taggedAs LongRunningTest in within(30 seconds) {
       awaitClusterUp(roles: _*)
       enterBarrier("cluster-started")
       runOn(roles: _*) {

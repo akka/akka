@@ -36,24 +36,34 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       for (i ← 0 to samples) {
         val metrics = collector.sample.metrics
         assertCreatedUninitialized(metrics)
-        val initialized = metrics map (_.initialize(window))
-        assertInitialized(window, initialized)
+        assertInitialized(window, metrics map (_.initialize(window)))
       }
     }
 
     "merge 2 metrics that are tracking the same metric" in {
       for (i ← 0 to samples) {
-        val sample1 = collector.sample.metrics map (_.initialize(window))
-        val sample2 = collector.sample.metrics map (_.initialize(window))
-        val merged = sample2 flatMap (latest ⇒ sample1 collect {
+        val sample1 = collector.sample.metrics
+        val sample2 = collector.sample.metrics
+
+        var merged = sample2 flatMap (latest ⇒ sample1 collect {
           case peer if latest same peer ⇒ {
             val m = peer :+ latest
             assertMerged(latest, peer, m)
             m
           }
         })
-        merged.size must be(sample1.size)
-        merged.size must be(sample2.size)
+
+        val sample3 = collector.sample.metrics map (_.initialize(window))
+        val sample4 = collector.sample.metrics map (_.initialize(window))
+        merged = sample4 flatMap (latest ⇒ sample3 collect {
+          case peer if latest same peer ⇒ {
+            val m = peer :+ latest
+            assertMerged(latest, peer, m)
+            m
+          }
+        })
+        merged.size must be(sample3.size)
+        merged.size must be(sample4.size)
       }
     }
   }
@@ -70,7 +80,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
     "collect accurate metrics for a node" in {
       val sample = collector.sample
       assertExpectedSampleSize(collector.isSigar, window, sample)
-      val metrics = sample.metrics.map(m ⇒ (m.name, m.value.get)).toSeq
+      val metrics = sample.metrics.filter(_.isDefined).map(m ⇒ (m.name, m.value.get)).toSeq
       val used = metrics collectFirst { case (a, b) if a == "heap-memory-used" ⇒ b }
       val committed = metrics collectFirst { case (a, b) if a == "heap-memory-committed" ⇒ b }
       metrics collect {
@@ -138,7 +148,7 @@ trait MetricSpec extends WordSpec with MustMatchers {
 
   def assertInitialized(decay: Int, metrics: Set[Metric]): Unit = if (decay > 0) metrics.filter(_.trendable) foreach { m ⇒
     m.initializable must be(false)
-    (m.value.isDefined && m.average.isDefined) must be(true)
+    if (m.isDefined) m.average.isDefined must be(true)
   }
 
   def assertMerged(latest: Metric, peer: Metric, merged: Metric): Unit = if (latest same peer) {
@@ -146,7 +156,10 @@ trait MetricSpec extends WordSpec with MustMatchers {
       if (peer.isDefined) {
         merged.isDefined must be(true)
         merged.value.get must be(latest.value.get)
-        if (latest.trendable) merged.average.isDefined must be(true)
+        if (latest.trendable) {
+          if (latest.initializable) merged.average.isEmpty must be(true)
+          else merged.average.isDefined must be(true)
+        }
       } else {
         merged.isDefined must be(true)
         merged.value.get must be(latest.value.get)
@@ -157,15 +170,29 @@ trait MetricSpec extends WordSpec with MustMatchers {
       if (peer.isDefined) {
         merged.isDefined must be(true)
         merged.value.get must be(peer.value.get)
-        if (peer.average.isDefined) merged.average.get must be(peer.average.get)
-        else merged.average.isEmpty must be(true)
+        if (peer.trendable) {
+          if (peer.initializable) merged.average.isEmpty must be(true)
+          else merged.average.isDefined must be(true)
+        }
+      } else {
+        merged.isDefined must be(false)
+        merged.average.isEmpty must be(true)
       }
     }
   }
 
-  def assertExpectedSampleSize(isSigar: Boolean, decay: Int, node: NodeMetrics): Unit = if (decay > 0) {
-    if (isSigar) (node.metrics.size >= 7 && node.metrics.size <= 9) must be(true)
-    else (node.metrics.size >= 4 && node.metrics.size <= 5) must be(true)
+  def assertExpectedSampleSize(isSigar: Boolean, decay: Int, node: NodeMetrics): Unit = {
+    node.metrics.size must be(9)
+    val metrics = node.metrics.filter(_.isDefined)
+    if (isSigar) { // combined cpu + jmx max heap
+      metrics.size must be >= (7)
+      metrics.size must be <= (9)
+    } else { // jmx max heap
+      metrics.size must be >= (4)
+      metrics.size must be <= (5)
+    }
+
+    if (decay > 0) metrics.filter(_.trendable).filterNot(_.initializable).foreach(_.average.isDefined must be(true))
   }
 
   def collectNodeMetrics(nodes: Set[NodeMetrics]): Seq[Metric] = {
