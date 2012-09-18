@@ -30,13 +30,13 @@ trait Scheduler {
    * Schedules a message to be sent repeatedly with an initial delay and
    * frequency. E.g. if you would like a message to be sent immediately and
    * thereafter every 500ms you would set delay=Duration.Zero and
-   * frequency=Duration(500, TimeUnit.MILLISECONDS)
+   * interval=Duration(500, TimeUnit.MILLISECONDS)
    *
    * Java & Scala API
    */
   def schedule(
     initialDelay: FiniteDuration,
-    frequency: FiniteDuration,
+    interval: FiniteDuration,
     receiver: ActorRef,
     message: Any)(implicit executor: ExecutionContext): Cancellable
 
@@ -44,23 +44,23 @@ trait Scheduler {
    * Schedules a function to be run repeatedly with an initial delay and a
    * frequency. E.g. if you would like the function to be run after 2 seconds
    * and thereafter every 100ms you would set delay = Duration(2, TimeUnit.SECONDS)
-   * and frequency = Duration(100, TimeUnit.MILLISECONDS)
+   * and interval = Duration(100, TimeUnit.MILLISECONDS)
    *
    * Scala API
    */
   def schedule(
-    initialDelay: FiniteDuration, frequency: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
+    initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a function to be run repeatedly with an initial delay and
    * a frequency. E.g. if you would like the function to be run after 2
    * seconds and thereafter every 100ms you would set delay = Duration(2,
-   * TimeUnit.SECONDS) and frequency = Duration(100, TimeUnit.MILLISECONDS)
+   * TimeUnit.SECONDS) and interval = Duration(100, TimeUnit.MILLISECONDS)
    *
    * Java API
    */
   def schedule(
-    initialDelay: FiniteDuration, frequency: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
+    initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a Runnable to be run once with a delay, i.e. a time period that

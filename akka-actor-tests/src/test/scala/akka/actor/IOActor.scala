@@ -245,9 +245,9 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
    * @return a future containing the result or the last exception before a limit was hit.
    */
   def retry[T](count: Option[Int] = None,
-    timeout: Option[FiniteDuration] = None,
-    delay: Option[FiniteDuration] = Some(100 millis),
-    filter: Option[Throwable ⇒ Boolean] = None)(future: ⇒ Future[T])(implicit executor: ExecutionContext): Future[T] = {
+               timeout: Option[FiniteDuration] = None,
+               delay: Option[FiniteDuration] = Some(100 millis),
+               filter: Option[Throwable ⇒ Boolean] = None)(future: ⇒ Future[T])(implicit executor: ExecutionContext): Future[T] = {
 
     val promise = Promise[T]()
 

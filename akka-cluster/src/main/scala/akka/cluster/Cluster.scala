@@ -109,16 +109,16 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       new Scheduler with Closeable {
         override def close(): Unit = () // we are using system.scheduler, which we are not responsible for closing
 
-        override def schedule(initialDelay: FiniteDuration, frequency: FiniteDuration,
+        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
                               receiver: ActorRef, message: Any)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.schedule(initialDelay, frequency, receiver, message)
+          systemScheduler.schedule(initialDelay, interval, receiver, message)
 
-        override def schedule(initialDelay: FiniteDuration, frequency: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.schedule(initialDelay, frequency)(f)
+        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
+          systemScheduler.schedule(initialDelay, interval)(f)
 
-        override def schedule(initialDelay: FiniteDuration, frequency: FiniteDuration,
+        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
                               runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.schedule(initialDelay, frequency, runnable)
+          systemScheduler.schedule(initialDelay, interval, runnable)
 
         override def scheduleOnce(delay: FiniteDuration,
                                   runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
