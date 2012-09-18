@@ -575,8 +575,7 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
    * Returns the max bytes for the given <code>method</code> in metric for <code>metric</code> from the network interface stats.
    */
   private def networkMaxFor(method: String, metric: String): Metric = define(metric, wrap(Some(BigInt(networkStats.collect {
-    case (_, a) ⇒ createMethodFrom(Some(a), method).get.invoke(a).asInstanceOf[Long]
-  }.toSet.filter(_ != 0).toSet.max)), None))
+    case (_, a) ⇒ createMethodFrom(Some(a), method).get.invoke(a).asInstanceOf[Long]}.toSet.filter(_ != 0).toSet.max)), None))
 
   private def createMethodFrom(ref: Option[AnyRef], method: String, types: Array[(Class[_])] = Array.empty[(Class[_])]): Option[Method] =
     Try(ref.get.getClass.getMethod(method, types: _*)).toOption
