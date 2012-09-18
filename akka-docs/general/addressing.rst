@@ -162,7 +162,7 @@ updates for the 2.1 release.*
 Creating Actors
 ^^^^^^^^^^^^^^^
 
-An actor system is typically started by creating actors above the guardian
+An actor system is typically started by creating actors beneath the guardian
 actor using the :meth:`ActorSystem.actorOf` method and then using
 :meth:`ActorContext.actorOf` from within the created actors to spawn the actor
 tree. These methods return a reference to the newly created actor. Each actor
