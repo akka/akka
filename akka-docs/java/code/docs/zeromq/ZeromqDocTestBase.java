@@ -187,7 +187,7 @@ public class ZeromqDocTestBase {
     @Override
     public void preStart() {
       getContext().system().scheduler()
-          .schedule(Duration.parse("1 second"), Duration.parse("1 second"), getSelf(), TICK, getContext().dispatcher());
+          .schedule(Duration.create(1, "second"), Duration.create(1, "second"), getSelf(), TICK, getContext().dispatcher());
     }
 
     @Override

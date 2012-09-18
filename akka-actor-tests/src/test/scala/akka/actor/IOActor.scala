@@ -5,7 +5,6 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.util.ByteString
 import scala.concurrent.{ ExecutionContext, Await, Future, Promise }
 import scala.concurrent.util.{ Duration, Deadline }
@@ -17,6 +16,7 @@ import akka.pattern.ask
 import java.net.{ Socket, InetSocketAddress, InetAddress, SocketAddress }
 import scala.util.Failure
 import annotation.tailrec
+import scala.concurrent.util.FiniteDuration
 
 object IOActorSpec {
 
@@ -244,7 +244,10 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
    * @param filter determines which exceptions should be retried
    * @return a future containing the result or the last exception before a limit was hit.
    */
-  def retry[T](count: Option[Int] = None, timeout: Option[Duration] = None, delay: Option[Duration] = Some(100 millis), filter: Option[Throwable ⇒ Boolean] = None)(future: ⇒ Future[T])(implicit executor: ExecutionContext): Future[T] = {
+  def retry[T](count: Option[Int] = None,
+    timeout: Option[FiniteDuration] = None,
+    delay: Option[FiniteDuration] = Some(100 millis),
+    filter: Option[Throwable ⇒ Boolean] = None)(future: ⇒ Future[T])(implicit executor: ExecutionContext): Future[T] = {
 
     val promise = Promise[T]()
 

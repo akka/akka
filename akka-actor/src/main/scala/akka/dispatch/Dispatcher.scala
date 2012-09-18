@@ -12,6 +12,7 @@ import java.util.concurrent.{ ExecutorService, RejectedExecutionException }
 import scala.concurrent.forkjoin.ForkJoinPool
 import scala.concurrent.util.Duration
 import scala.concurrent.Awaitable
+import scala.concurrent.util.FiniteDuration
 
 /**
  * The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a
@@ -32,7 +33,7 @@ class Dispatcher(
   val throughputDeadlineTime: Duration,
   val mailboxType: MailboxType,
   executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  val shutdownTimeout: Duration)
+  val shutdownTimeout: FiniteDuration)
   extends MessageDispatcher(_prerequisites) {
 
   private class LazyExecutorServiceDelegate(factory: ExecutorServiceFactory) extends ExecutorServiceDelegate {

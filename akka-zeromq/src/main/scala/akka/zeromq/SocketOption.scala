@@ -9,6 +9,7 @@ import akka.actor.ActorRef
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 import org.zeromq.ZMQ.{ Poller, Socket }
+import scala.concurrent.util.FiniteDuration
 
 /**
  * Marker trait representing request messages for zeromq
@@ -152,7 +153,7 @@ case class PollDispatcher(name: String) extends SocketMeta
  * An option containing the duration a poll cycle should wait for a message before it loops
  * @param duration
  */
-case class PollTimeoutDuration(duration: Duration = 100 millis) extends SocketMeta
+case class PollTimeoutDuration(duration: FiniteDuration = 100 millis) extends SocketMeta
 
 /**
  * Start listening with this server socket on the specified address

@@ -111,13 +111,13 @@ object Patterns {
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided Callable
    * after the specified duration.
    */
-  def after[T](duration: Duration, scheduler: Scheduler, context: ExecutionContext, value: Callable[Future[T]]): Future[T] =
+  def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: Callable[Future[T]]): Future[T] =
     scalaAfter(duration, scheduler)(value.call())(context)
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
-  def after[T](duration: Duration, scheduler: Scheduler, context: ExecutionContext, value: Future[T]): Future[T] =
+  def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: Future[T]): Future[T] =
     scalaAfter(duration, scheduler)(value)(context)
 }

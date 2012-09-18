@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import akka.util.internal._
 import concurrent.ExecutionContext
+import scala.concurrent.util.FiniteDuration
 
 //#scheduler
 /**
@@ -34,8 +35,8 @@ trait Scheduler {
    * Java & Scala API
    */
   def schedule(
-    initialDelay: Duration,
-    frequency: Duration,
+    initialDelay: FiniteDuration,
+    frequency: FiniteDuration,
     receiver: ActorRef,
     message: Any)(implicit executor: ExecutionContext): Cancellable
 
@@ -48,7 +49,7 @@ trait Scheduler {
    * Scala API
    */
   def schedule(
-    initialDelay: Duration, frequency: Duration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
+    initialDelay: FiniteDuration, frequency: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a function to be run repeatedly with an initial delay and
@@ -59,7 +60,7 @@ trait Scheduler {
    * Java API
    */
   def schedule(
-    initialDelay: Duration, frequency: Duration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
+    initialDelay: FiniteDuration, frequency: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a Runnable to be run once with a delay, i.e. a time period that
@@ -67,7 +68,7 @@ trait Scheduler {
    *
    * Java & Scala API
    */
-  def scheduleOnce(delay: Duration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
+  def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a message to be sent once with a delay, i.e. a time period that has
@@ -75,7 +76,7 @@ trait Scheduler {
    *
    * Java & Scala API
    */
-  def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any)(implicit executor: ExecutionContext): Cancellable
+  def scheduleOnce(delay: FiniteDuration, receiver: ActorRef, message: Any)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a function to be run once with a delay, i.e. a time period that has
@@ -83,7 +84,7 @@ trait Scheduler {
    *
    * Scala API
    */
-  def scheduleOnce(delay: Duration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
+  def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
 }
 //#scheduler
 
@@ -120,8 +121,8 @@ trait Cancellable {
  * returned from stop().
  */
 class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) extends Scheduler with Closeable {
-  override def schedule(initialDelay: Duration,
-                        delay: Duration,
+  override def schedule(initialDelay: FiniteDuration,
+                        delay: FiniteDuration,
                         receiver: ActorRef,
                         message: Any)(implicit executor: ExecutionContext): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
@@ -142,12 +143,12 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
         initialDelay))
   }
 
-  override def schedule(initialDelay: Duration,
-                        delay: Duration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
+  override def schedule(initialDelay: FiniteDuration,
+                        delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
     schedule(initialDelay, delay, new Runnable { override def run = f })
 
-  override def schedule(initialDelay: Duration,
-                        delay: Duration,
+  override def schedule(initialDelay: FiniteDuration,
+                        delay: FiniteDuration,
                         runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
@@ -163,20 +164,20 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
         initialDelay))
   }
 
-  override def scheduleOnce(delay: Duration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
+  override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
     new DefaultCancellable(
       hashedWheelTimer.newTimeout(
         new TimerTask() { def run(timeout: HWTimeout): Unit = executor.execute(runnable) },
         delay))
 
-  override def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any)(implicit executor: ExecutionContext): Cancellable =
+  override def scheduleOnce(delay: FiniteDuration, receiver: ActorRef, message: Any)(implicit executor: ExecutionContext): Cancellable =
     scheduleOnce(delay, new Runnable { override def run = receiver ! message })
 
-  override def scheduleOnce(delay: Duration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
+  override def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
     scheduleOnce(delay, new Runnable { override def run = f })
 
   private trait ContinuousScheduling { this: TimerTask ⇒
-    def scheduleNext(timeout: HWTimeout, delay: Duration, delegator: ContinuousCancellable) {
+    def scheduleNext(timeout: HWTimeout, delay: FiniteDuration, delegator: ContinuousCancellable) {
       try delegator.swap(timeout.getTimer.newTimeout(this, delay)) catch { case _: IllegalStateException ⇒ } // stop recurring if timer is stopped
     }
   }
