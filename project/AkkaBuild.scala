@@ -471,7 +471,7 @@ object AkkaBuild extends Build {
     .setPreference(AlignSingleLineCaseStatements, true)
   }
 
-  lazy val multiJvmSettings = SbtMultiJvm.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
+  lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
