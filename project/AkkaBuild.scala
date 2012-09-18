@@ -36,7 +36,7 @@ object AkkaBuild extends Build {
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id),
-      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id),
+      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id, samples.id),
       initialCommands in ThisBuild :=
         """|import language.postfixOps
            |import akka.actor._
@@ -69,7 +69,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -299,7 +299,8 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-camel"),
     dependencies = Seq(actor, camel),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.camelSample
+      libraryDependencies ++= Dependencies.camelSample,
+      publishArtifact in Compile := false
     )
   )
 
@@ -307,35 +308,35 @@ object AkkaBuild extends Build {
     id = "akka-sample-fsm",
     base = file("akka-samples/akka-sample-fsm"),
     dependencies = Seq(actor),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val helloSample = Project(
     id = "akka-sample-hello",
     base = file("akka-samples/akka-sample-hello"),
     dependencies = Seq(actor),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val helloKernelSample = Project(
     id = "akka-sample-hello-kernel",
     base = file("akka-samples/akka-sample-hello-kernel"),
     dependencies = Seq(kernel),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val remoteSample = Project(
     id = "akka-sample-remote",
     base = file("akka-samples/akka-sample-remote"),
     dependencies = Seq(actor, remote, kernel),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val clusterSample = Project(
     id = "akka-sample-cluster",
     base = file("akka-samples/akka-sample-cluster"),
     dependencies = Seq(cluster),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val docs = Project(
