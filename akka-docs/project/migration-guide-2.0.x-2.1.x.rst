@@ -6,7 +6,8 @@
 
 The 2.1 release contains several structural changes that require some
 simple, mechanical source-level changes in client code. Several things have
-been moved to Scala standard library, such as ``Future``.
+been moved to Scala standard library, such as ``Future``, and some package
+names have been changed in Remoting and Durable Mailboxes.
 
 When migrating from 1.3.x to 2.1.x you should first follow the instructions for
 migrating `1.3.x to 2.0.x <http://doc.akka.io/docs/akka/2.0.3/project/migration-guide-1.3.x-2.0.x.html>`_.
@@ -239,7 +240,7 @@ If the target actor of ``akka.pattern.gracefulStop`` isn't terminated within the
 timeout the ``Future`` is completed with failure ``akka.pattern.AskTimeoutException``.
 In 2.0 it was ``akka.actor.ActorTimeoutException``.
 
-getInstance for singeltons - Java
+getInstance for Singletons - Java
 ====================================
 
 v2.0::
@@ -358,4 +359,62 @@ v2.1::
     else if (requestedCapacity < 0) routeeProvider.removeRoutees(
       -requestedCapacity, stopDelay)
 
+Duration and Timeout
+====================
 
+The Duration class in the scala library is an improved version of the previous
+:class:`akka.util.Duration`. Among others it keeps the static type of
+:class:`FiniteDuration` more consistently, which has been used to tighten APIs.
+The advantage is that instead of runtime exceptions you’ll get compiler errors
+telling you if you try to pass a possibly non-finite duration where it does not
+belong.
+
+The main source incompatibility is that you may have to change the declared
+type of fields from ``Duration`` to ``FiniteDuration`` (factory methods already
+return the more precise type wherever possible).
+
+Another change is that ``Duration.parse`` was not accepted by the scala-library
+maintainers, use ``Duration.create`` instead.
+
+v2.0::
+
+  final Duration d = Duration.parse("1 second");
+  final Timeout t = new Timeout(d);
+
+v2.1::
+
+  final FiniteDuration d = Duration.create("1 second");
+  final Timeout t = new Timeout(d); // always required finite duration, now also in type   
+
+Package Name Changes in Remoting
+================================
+
+The package name of all classes in the ``akka-remote.jar`` artifact now starts with ``akka.remote``.
+This has been done to enable OSGi bundles that don't have conflicting package names.
+
+Change the following import statements. Please note that the serializers are often referenced from configuration.
+
+================================================ =======================================================
+Search                                           Replace with
+================================================ =======================================================
+``akka.routing.RemoteRouterConfig``              ``akka.remote.routing.RemoteRouterConfig``
+``akka.serialization.ProtobufSerializer``        ``akka.remote.serialization.ProtobufSerializer``
+``akka.serialization.DaemonMsgCreateSerializer`` ``akka.remote.serialization.DaemonMsgCreateSerializer``
+================================================ =======================================================
+
+Package Name Changes in Durable Mailboxes
+=========================================
+
+The package name of all classes in the ``akka-file-mailbox.jar`` artifact now starts with ``akka.actor.mailbox.filebased``.
+This has been done to enable OSGi bundles that don't have conflicting package names.
+
+Change the following import statements. Please note that the ``FileBasedMailboxType`` is often referenced from configuration.
+
+================================================ =========================================================
+Search                                           Replace with
+================================================ =========================================================
+``akka.actor.mailbox.FileBasedMailboxType``      ``akka.actor.mailbox.filebased.FileBasedMailboxType``
+``akka.actor.mailbox.FileBasedMailboxSettings``  ``akka.actor.mailbox.filebased.FileBasedMailboxSettings``
+``akka.actor.mailbox.FileBasedMessageQueue``     ``akka.actor.mailbox.filebased.FileBasedMessageQueue``
+``akka.actor.mailbox.filequeue.*``               ``akka.actor.mailbox.filebased.filequeue.*``
+================================================ =========================================================

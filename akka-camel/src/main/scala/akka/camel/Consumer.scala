@@ -5,12 +5,12 @@
 package akka.camel
 
 import language.postfixOps
-
 import internal.component.DurationTypeConverter
 import org.apache.camel.model.{ RouteDefinition, ProcessorDefinition }
 import akka.actor._
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
+import scala.concurrent.util.FiniteDuration
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
@@ -41,7 +41,7 @@ trait ConsumerConfig { this: CamelSupport ⇒
   /**
    * How long the actor should wait for activation before it fails.
    */
-  def activationTimeout: Duration = camel.settings.activationTimeout
+  def activationTimeout: FiniteDuration = camel.settings.activationTimeout
 
   /**
    * When endpoint is out-capable (can produce responses) replyTimeout is the maximum time

@@ -78,8 +78,7 @@ trait AskSupport {
       actorRef.tell(message)
       Future.failed[Any](new AskTimeoutException("Recipient[%s] had already been terminated." format actorRef))
     case ref: InternalActorRef ⇒
-      if (!timeout.duration.isFinite) Future.failed[Any](new IllegalArgumentException("Timeouts to `ask` must be finite. Question not sent to [%s]" format actorRef))
-      else if (timeout.duration.length <= 0) Future.failed[Any](new IllegalArgumentException("Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format actorRef))
+      if (timeout.duration.length <= 0) Future.failed[Any](new IllegalArgumentException("Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format actorRef))
       else {
         val provider = ref.provider
         val a = PromiseActorRef(provider, timeout)

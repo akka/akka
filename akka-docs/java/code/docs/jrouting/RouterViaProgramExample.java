@@ -5,7 +5,7 @@ package docs.jrouting;
 
 import akka.routing.RoundRobinRouter;
 import akka.routing.DefaultResizer;
-import akka.routing.RemoteRouterConfig;
+import akka.remote.routing.RemoteRouterConfig;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;

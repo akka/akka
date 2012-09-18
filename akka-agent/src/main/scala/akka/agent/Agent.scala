@@ -10,7 +10,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.stm._
 import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
-import scala.concurrent.util.Duration
+import scala.concurrent.util.{ FiniteDuration, Duration }
 
 /**
  * Used internally to send functions.
@@ -240,7 +240,7 @@ class Agent[T](initialValue: T, refFactory: ActorRefFactory, system: ActorSystem
    * Dispatch a function to update the internal state, and return a Future where that new state can be obtained
    * within the given timeout
    */
-  def alter(f: JFunc[T, T], timeout: Duration): Future[T] = alter(x ⇒ f(x))(timeout)
+  def alter(f: JFunc[T, T], timeout: FiniteDuration): Future[T] = alter(x ⇒ f(x))(timeout)
 
   /**
    * Java API:
@@ -259,7 +259,7 @@ class Agent[T](initialValue: T, refFactory: ActorRefFactory, system: ActorSystem
    * or blocking operations. Dispatches using either `alterOff` or `alter` will
    * still be executed in order.
    */
-  def alterOff(f: JFunc[T, T], timeout: Duration, ec: ExecutionContext): Unit = alterOff(x ⇒ f(x))(Timeout(timeout), ec)
+  def alterOff(f: JFunc[T, T], timeout: FiniteDuration, ec: ExecutionContext): Unit = alterOff(x ⇒ f(x))(Timeout(timeout), ec)
 
   /**
    * Java API:
