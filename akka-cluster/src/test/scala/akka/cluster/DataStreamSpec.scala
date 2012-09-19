@@ -20,20 +20,18 @@ class DataStreamSpec extends AkkaSpec(MetricsEnabledSpec.config) with AbstractCl
   "DataStream" must {
 
     "calculate the ewma for multiple, variable, data streams" taggedAs LongRunningTest in {
-      val firstDataSet = collector.sample.metrics.map(_.initialize(DefaultRateOfDecay)).filter(_.trendable).filter(_.isDefined)
+      val firstDataSet = collector.sample.metrics.collect { case m if m.trendable && m.isDefined ⇒ m.initialize(DefaultRateOfDecay) }
       var streamingDataSet = firstDataSet
 
       val cancellable = system.scheduler.schedule(0 seconds, 100 millis) {
-        streamingDataSet = collector.sample.metrics.filter(_.trendable).filter(_.isDefined).flatMap(latest ⇒ streamingDataSet.collect {
-          case streaming if (latest same streaming) && (latest.value.get != streaming.value.get) ⇒ {
-
+        streamingDataSet = collector.sample.metrics.flatMap(latest ⇒ streamingDataSet.collect {
+          case streaming if (latest.trendable && latest.isDefined) && (latest same streaming)
+            && (latest.value.get != streaming.value.get) ⇒ {
             val updatedDataStream = streaming.average.get :+ latest.value.get
-
             updatedDataStream.timestamp must be > (streaming.average.get.timestamp)
             updatedDataStream.duration.length must be > (streaming.average.get.duration.length)
             updatedDataStream.ewma must not be (streaming.average.get.ewma)
             updatedDataStream.ewma must not be (latest.value.get)
-
             streaming.copy(value = latest.value, average = Some(updatedDataStream))
           }
         })
@@ -41,8 +39,8 @@ class DataStreamSpec extends AkkaSpec(MetricsEnabledSpec.config) with AbstractCl
       awaitCond(firstDataSet.size == streamingDataSet.size, longDuration)
       cancellable.cancel()
 
-      val finalDataSet = streamingDataSet.filter(_.trendable).filter(_.isDefined).map(m ⇒ m.name -> m).toMap
-      firstDataSet.filter(_.trendable) map {
+      val finalDataSet = streamingDataSet.map(m ⇒ m.name -> m).toMap
+      firstDataSet map {
         first ⇒
           val newMetric = finalDataSet.get(first.name).get
           val e1 = first.average.get

@@ -44,7 +44,6 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       for (i ← 0 to samples) {
         val sample1 = collector.sample.metrics
         val sample2 = collector.sample.metrics
-
         var merged = sample2 flatMap (latest ⇒ sample1 collect {
           case peer if latest same peer ⇒ {
             val m = peer :+ latest
@@ -80,7 +79,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
     "collect accurate metrics for a node" in {
       val sample = collector.sample
       assertExpectedSampleSize(collector.isSigar, window, sample)
-      val metrics = sample.metrics.filter(_.isDefined).map(m ⇒ (m.name, m.value.get)).toSeq
+      val metrics = sample.metrics.collect { case m if m.isDefined ⇒ (m.name, m.value.get) } //.toSeq
       val used = metrics collectFirst { case (a, b) if a == "heap-memory-used" ⇒ b }
       val committed = metrics collectFirst { case (a, b) if a == "heap-memory-committed" ⇒ b }
       metrics collect {
@@ -101,6 +100,27 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
           used.get.longValue + committed.get.longValue must be <= (b.longValue)
           b
       }
+    }
+
+    "collect SIGAR metrics if it is on the classpath" in {
+      if (collector.isSigar) {
+        // combined cpu may or may not be defined on a given sampling
+        // systemLoadAverage is SIGAR present
+        collector.systemLoadAverage.isDefined must be(true)
+        collector.networkStats.nonEmpty must be(true)
+        collector.networkMaxRx.isDefined must be(true)
+        collector.networkMaxTx.isDefined must be(true)
+        collector.totalCores.isDefined must be(true)
+      }
+    }
+
+    "collect JMX metrics" in {
+      // heap max may be undefined depending on the OS
+      // systemLoadAverage is JMX is SIGAR not present
+      collector.systemLoadAverage.isDefined must be(true)
+      collector.used.isDefined must be(true)
+      collector.committed.isDefined must be(true)
+      collector.processors.isDefined must be(true)
     }
 
     "collect [" + samples + "] node metrics samples in an acceptable duration" taggedAs LongRunningTest in {
