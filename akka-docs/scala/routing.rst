@@ -15,15 +15,16 @@ is really easy to create your own. The routers shipped with Akka are:
 * ``akka.routing.SmallestMailboxRouter``
 * ``akka.routing.BroadcastRouter``
 * ``akka.routing.ScatterGatherFirstCompletedRouter``
+* ``akka.routing.ConsistentHashingRouter``
 
 Routers In Action
 ^^^^^^^^^^^^^^^^^
 
 This is an example of how to create a router that is defined in configuration:
 
-.. includecode:: code/docs/routing/RouterViaConfigExample.scala#config
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-round-robin
 
-.. includecode:: code/docs/routing/RouterViaConfigExample.scala#configurableRouting
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#configurableRouting
 
 This is an example of how to programmatically create a router and set the number of routees it should create:
 
@@ -125,7 +126,7 @@ not have an effect on the number of actors in the pool.
 
 Setting the strategy is easily done:
 
-.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala
+.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#supervision
    :include: supervision
    :exclude: custom-strategy
 
@@ -179,6 +180,10 @@ is exactly what you would expect from a round-robin router to happen.
 (The name of an actor is automatically created in the format ``$letter`` unless you specify it -
 hence the names printed above.)
 
+This is an example of how to define a round-robin router in configuration:
+
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-round-robin
+
 RandomRouter
 ************
 As the name implies this router type selects one of its routees randomly and forwards
@@ -206,6 +211,10 @@ When run you should see a similar output to this:
 The result from running the random router should be different, or at least random, every time you run it.
 Try to run it a couple of times to verify its behavior if you don't trust us.
 
+This is an example of how to define a random router in configuration:
+
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-random
+
 SmallestMailboxRouter
 *********************
 A Router that tries to send to the non-suspended routee with fewest messages in mailbox.
@@ -220,6 +229,11 @@ The selection is done in this order:
 Code example:
 
 .. includecode:: code/docs/routing/RouterTypeExample.scala#smallestMailboxRouter
+
+
+This is an example of how to define a smallest-mailbox router in configuration:
+
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-smallest-mailbox
 
 BroadcastRouter
 ***************
@@ -240,6 +254,11 @@ When run you should see a similar output to this:
 
 As you can see here above each of the routees, five in total, received the broadcast message.
 
+This is an example of how to define a broadcast router in configuration:
+
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-broadcast
+
+
 ScatterGatherFirstCompletedRouter
 *********************************
 The ScatterGatherFirstCompletedRouter will send the message on to all its routees as a future.
@@ -256,6 +275,51 @@ When run you should see this:
 
 From the output above you can't really see that all the routees performed the calculation, but they did!
 The result you see is from the first routee that returned its calculation to the router.
+
+This is an example of how to define a scatter-gather router in configuration:
+
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-scatter-gather
+
+
+ConsistentHashingRouter
+***********************
+
+The ConsistentHashingRouter uses `consistent hashing <http://en.wikipedia.org/wiki/Consistent_hashing>`_
+to select a connection based on the sent message. This 
+`article <http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html>`_ gives good 
+insight into how consistent hashing is implemented.
+
+There is 3 ways to define what data to use for the consistent hash key.
+
+* You can define ``hashMapping`` of the router to map incoming
+  messages to their consistent hash key. This makes the decision
+  transparent for the sender.
+
+* The messages may implement ``akka.routing.ConsistentHashingRouter.ConsistentHashable``.
+  The key is part of the message and it's convenient to define it together
+  with the message definition.
+ 
+* The messages can be be wrapped in a ``akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope``
+  to define what data to use for the consistent hash key. The sender knows
+  the key to use.
+ 
+These ways to define the consistent hash key can be use together and at
+the same time for one router. The ``hashMapping`` is tried first.
+
+Code example:
+
+.. includecode:: code/docs/routing/ConsistentHashingRouterDocSpec.scala#cache-actor
+
+.. includecode:: code/docs/routing/ConsistentHashingRouterDocSpec.scala#consistent-hashing-router
+
+In the above example you see that the ``Get`` message implements ``ConsistentHashable`` itself,
+while the ``Entry`` message is wrapped in a ``ConsistentHashableEnvelope``. The ``Evict``
+message is handled by the ``hashMapping`` partial function.
+
+This is an example of how to define a consistent-hashing router in configuration:
+
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-consistent-hashing
+
 
 Broadcast Messages
 ^^^^^^^^^^^^^^^^^^
@@ -278,9 +342,9 @@ of routees dynamically.
 
 This is an example of how to create a resizable router that is defined in configuration:
 
-.. includecode:: code/docs/routing/RouterViaConfigExample.scala#config-resize
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#config-resize
 
-.. includecode:: code/docs/routing/RouterViaConfigExample.scala#configurableRoutingWithResizer
+.. includecode:: code/docs/routing/RouterViaConfigDocSpec.scala#configurableRoutingWithResizer
 
 Several more configuration options are available and described in ``akka.actor.deployment.default.resizer``
 section of the reference :ref:`configuration`.

@@ -106,7 +106,7 @@ public class FutureDocTestBase {
     ActorRef actor = system.actorOf(new Props(MyActor.class));
     String msg = "hello";
     //#ask-blocking
-    Timeout timeout = new Timeout(Duration.parse("5 seconds"));
+    Timeout timeout = new Timeout(Duration.create(5, "seconds"));
     Future<Object> future = Patterns.ask(actor, msg, timeout);
     String result = (String) Await.result(future, timeout.duration());
     //#ask-blocking
@@ -518,7 +518,7 @@ public class FutureDocTestBase {
     //#after
     final ExecutionContext ec = system.dispatcher();
     Future<String> failExc = Futures.failed(new IllegalStateException("OHNOES1"));
-    Future<String> delayed = Patterns.after(Duration.parse("500 millis"),
+    Future<String> delayed = Patterns.after(Duration.create(500, "millis"),
       system.scheduler(), ec,  failExc);
     Future<String> future = future(new Callable<String>() {
       public String call() throws InterruptedException {

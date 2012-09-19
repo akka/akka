@@ -4,7 +4,6 @@
 package akka.actor
 
 import language.postfixOps
-
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.Timeout
 import scala.concurrent.{ Await, Future, Promise }
@@ -21,6 +20,7 @@ import akka.serialization.JavaSerializer
 import akka.actor.TypedActor._
 import java.lang.IllegalStateException
 import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
+import scala.concurrent.util.FiniteDuration
 
 object TypedActorSpec {
 
@@ -203,10 +203,10 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
   def newFooBar: Foo = newFooBar(Duration(2, "s"))
 
-  def newFooBar(d: Duration): Foo =
+  def newFooBar(d: FiniteDuration): Foo =
     TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
 
-  def newFooBar(dispatcher: String, d: Duration): Foo =
+  def newFooBar(dispatcher: String, d: FiniteDuration): Foo =
     TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)).withDispatcher(dispatcher))
 
   def newStacked(): Stacked =

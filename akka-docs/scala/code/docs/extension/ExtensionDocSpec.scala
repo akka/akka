@@ -45,7 +45,7 @@ object ExtensionDocSpec {
   val config = """
     //#config
     akka {
-      extensions = ["docs.extension.CountExtension$"]
+      extensions = ["docs.extension.CountExtension"]
     }
     //#config
     """

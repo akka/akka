@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.Queue
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
-import akka.actor.cell.ChildrenContainer
+import akka.actor.dungeon.ChildrenContainer
 import akka.dispatch.{ Envelope, Supervise, SystemMessage, Terminate }
 import akka.event.Logging.Warning
 import akka.util.Unsafe

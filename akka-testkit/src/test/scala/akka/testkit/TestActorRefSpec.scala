@@ -4,7 +4,6 @@
 package akka.testkit
 
 import language.{ postfixOps, reflectiveCalls }
-
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
@@ -14,6 +13,7 @@ import scala.concurrent.util.duration._
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.dispatch.Dispatcher
+import scala.concurrent.util.Duration
 
 /**
  * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.
@@ -244,7 +244,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
     "set receiveTimeout to None" in {
       val a = TestActorRef[WorkerActor]
-      a.underlyingActor.context.receiveTimeout must be(None)
+      a.underlyingActor.context.receiveTimeout must be theSameInstanceAs Duration.Undefined
     }
 
     "set CallingThreadDispatcher" in {

@@ -10,6 +10,7 @@ import akka.actor.{ ActorSystem, Props, ActorRef }
 import akka.pattern._
 import scala.concurrent.util.Duration
 import concurrent.{ ExecutionContext, Future }
+import scala.concurrent.util.FiniteDuration
 
 /**
  * Activation trait that can be used to wait on activation or de-activation of Camel endpoints.
@@ -27,7 +28,7 @@ trait Activation {
    * @param endpoint the endpoint to be activated
    * @param timeout the timeout for the Future
    */
-  def activationFutureFor(endpoint: ActorRef)(implicit timeout: Duration, executor: ExecutionContext): Future[ActorRef] =
+  def activationFutureFor(endpoint: ActorRef)(implicit timeout: FiniteDuration, executor: ExecutionContext): Future[ActorRef] =
     (activationTracker.ask(AwaitActivation(endpoint))(Timeout(timeout))).map[ActorRef]({
       case EndpointActivated(`endpoint`)               ⇒ endpoint
       case EndpointFailedToActivate(`endpoint`, cause) ⇒ throw cause
@@ -40,7 +41,7 @@ trait Activation {
    * @param endpoint the endpoint to be deactivated
    * @param timeout the timeout of the Future
    */
-  def deactivationFutureFor(endpoint: ActorRef)(implicit timeout: Duration, executor: ExecutionContext): Future[ActorRef] =
+  def deactivationFutureFor(endpoint: ActorRef)(implicit timeout: FiniteDuration, executor: ExecutionContext): Future[ActorRef] =
     (activationTracker.ask(AwaitDeActivation(endpoint))(Timeout(timeout))).map[ActorRef]({
       case EndpointDeActivated(`endpoint`)               ⇒ endpoint
       case EndpointFailedToDeActivate(`endpoint`, cause) ⇒ throw cause

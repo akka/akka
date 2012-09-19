@@ -8,8 +8,8 @@ import akka.event.Logging
 import akka.camel.{ CamelSettings, Camel }
 import scala.util.control.NonFatal
 import scala.concurrent.util.Duration
-
 import org.apache.camel.{ ProducerTemplate, CamelContext }
+import scala.concurrent.util.FiniteDuration
 
 /**
  * For internal use only.
@@ -32,7 +32,7 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
     ctx.setName(system.name)
     ctx.setStreamCaching(true)
     ctx.addComponent("akka", new ActorComponent(this, system))
-    ctx.getTypeConverterRegistry.addTypeConverter(classOf[Duration], classOf[String], DurationTypeConverter)
+    ctx.getTypeConverterRegistry.addTypeConverter(classOf[FiniteDuration], classOf[String], DurationTypeConverter)
     ctx
   }
 

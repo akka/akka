@@ -11,6 +11,7 @@ import akka.util.Helpers
 import java.util.{ Comparator, Iterator }
 import java.util.concurrent.{ Executor, LinkedBlockingQueue, ConcurrentLinkedQueue, ConcurrentSkipListSet }
 import akka.actor.ActorSystemImpl
+import scala.concurrent.util.FiniteDuration
 
 /**
  * An executor based event driven dispatcher which will try to redistribute work from busy actors to idle actors. It is assumed
@@ -33,7 +34,7 @@ class BalancingDispatcher(
   throughputDeadlineTime: Duration,
   mailboxType: MailboxType,
   _executorServiceFactoryProvider: ExecutorServiceFactoryProvider,
-  _shutdownTimeout: Duration,
+  _shutdownTimeout: FiniteDuration,
   attemptTeamWork: Boolean)
   extends Dispatcher(_prerequisites, _id, throughput, throughputDeadlineTime, mailboxType, _executorServiceFactoryProvider, _shutdownTimeout) {
 

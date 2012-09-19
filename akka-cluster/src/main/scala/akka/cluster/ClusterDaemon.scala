@@ -16,6 +16,7 @@ import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import language.existentials
 import language.postfixOps
+import scala.concurrent.util.FiniteDuration
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -195,32 +196,32 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
 
   // start periodic gossip to random nodes in cluster
   val gossipTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(GossipInterval), GossipInterval) {
+    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(GossipInterval).asInstanceOf[FiniteDuration], GossipInterval) {
       self ! GossipTick
     }
 
   // start periodic heartbeat to all nodes in cluster
   val heartbeatTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(HeartbeatInterval), HeartbeatInterval) {
+    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(HeartbeatInterval).asInstanceOf[FiniteDuration], HeartbeatInterval) {
       self ! HeartbeatTick
     }
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
   val failureDetectorReaperTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval), UnreachableNodesReaperInterval) {
+    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval).asInstanceOf[FiniteDuration], UnreachableNodesReaperInterval) {
       self ! ReapUnreachableTick
     }
 
   // start periodic leader action management (only applies for the current leader)
   private val leaderActionsTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(LeaderActionsInterval), LeaderActionsInterval) {
+    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(LeaderActionsInterval).asInstanceOf[FiniteDuration], LeaderActionsInterval) {
       self ! LeaderActionsTick
     }
 
   // start periodic publish of current stats
   private val publishStatsTask: Option[Cancellable] =
     if (PublishStatsInterval == Duration.Zero) None
-    else Some(FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval), PublishStatsInterval) {
+    else Some(FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval).asInstanceOf[FiniteDuration], PublishStatsInterval) {
       self ! PublishStatsTick
     })
 
