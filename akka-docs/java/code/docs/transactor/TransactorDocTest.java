@@ -12,7 +12,6 @@ import akka.actor.*;
 import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
 import akka.transactor.Coordinated;
-import scala.concurrent.util.Duration;
 import akka.util.Timeout;
 import static java.util.concurrent.TimeUnit.SECONDS;
 //#imports
@@ -29,7 +28,7 @@ public class TransactorDocTest {
 
         Timeout timeout = new Timeout(5, SECONDS);
 
-        counter1.tell(new Coordinated(new Increment(counter2), timeout));
+        counter1.tell(new Coordinated(new Increment(counter2), timeout), null);
 
         Integer count = (Integer) Await.result(ask(counter1, "GetCount", timeout), timeout.duration());
         //#coordinated-example
@@ -50,11 +49,11 @@ public class TransactorDocTest {
         ActorRef actor = system.actorOf(new Props(Coordinator.class));
 
         //#send-coordinated
-        actor.tell(new Coordinated(new Message(), timeout));
+        actor.tell(new Coordinated(new Message(), timeout), null);
         //#send-coordinated
 
         //#include-coordinated
-        actor.tell(coordinated.coordinate(new Message()));
+        actor.tell(coordinated.coordinate(new Message()), null);
         //#include-coordinated
 
         coordinated.await();
@@ -69,7 +68,7 @@ public class TransactorDocTest {
 
         Timeout timeout = new Timeout(5, SECONDS);
         Coordinated coordinated = new Coordinated(timeout);
-        counter.tell(coordinated.coordinate(new Increment()));
+        counter.tell(coordinated.coordinate(new Increment()), null);
         coordinated.await();
 
         Integer count = (Integer) Await.result(ask(counter, "GetCount", timeout), timeout.duration());
@@ -86,7 +85,7 @@ public class TransactorDocTest {
 
         Timeout timeout = new Timeout(5, SECONDS);
         Coordinated coordinated = new Coordinated(timeout);
-        friendlyCounter.tell(coordinated.coordinate(new Increment(friend)));
+        friendlyCounter.tell(coordinated.coordinate(new Increment(friend)), null);
         coordinated.await();
 
         Integer count1 = (Integer) Await.result(ask(friendlyCounter, "GetCount", timeout), timeout.duration());

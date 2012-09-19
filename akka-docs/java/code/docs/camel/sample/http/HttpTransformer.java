@@ -16,9 +16,9 @@ public class HttpTransformer extends UntypedActor{
           return text.replaceAll("Akka ", "AKKA ");
         }
       });
-      getSender().tell(replacedMessage);
+      getSender().tell(replacedMessage, getSelf());
     } else if (message instanceof Status.Failure) {
-      getSender().tell(message);
+      getSender().tell(message, getSelf());
     } else
       unhandled(message);
   }

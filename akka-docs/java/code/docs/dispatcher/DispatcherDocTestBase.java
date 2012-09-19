@@ -37,12 +37,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import scala.Option;
-import static org.junit.Assert.*;
 
 import com.typesafe.config.ConfigFactory;
 
 import docs.actor.MyUntypedActor;
-import docs.actor.UntypedActorDocTestBase.MyActor;
 import akka.testkit.AkkaSpec;
 
 public class DispatcherDocTestBase {
@@ -89,14 +87,14 @@ public class DispatcherDocTestBase {
               LoggingAdapter log =
                       Logging.getLogger(getContext().system(), this);
               {
-                getSelf().tell("lowpriority");
-                getSelf().tell("lowpriority");
-                getSelf().tell("highpriority");
-                getSelf().tell("pigdog");
-                getSelf().tell("pigdog2");
-                getSelf().tell("pigdog3");
-                getSelf().tell("highpriority");
-                getSelf().tell(PoisonPill.getInstance());
+                getSelf().tell("lowpriority", getSelf());
+                getSelf().tell("lowpriority", getSelf());
+                getSelf().tell("highpriority", getSelf());
+                getSelf().tell("pigdog", getSelf());
+                getSelf().tell("pigdog2", getSelf());
+                getSelf().tell("pigdog3", getSelf());
+                getSelf().tell("highpriority", getSelf());
+                getSelf().tell(PoisonPill.getInstance(), getSelf());
               }
 
               public void onReceive(Object message) {

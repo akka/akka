@@ -537,7 +537,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         case _id: Int if (_id == id)        ⇒
         case x ⇒ {
           Thread sleep 100 * id
-          sender.tell(id)
+          sender ! id
         }
       }
 

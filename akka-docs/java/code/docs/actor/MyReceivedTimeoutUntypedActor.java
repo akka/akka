@@ -16,7 +16,7 @@ public class MyReceivedTimeoutUntypedActor extends UntypedActor {
 
   public void onReceive(Object message) {
     if (message.equals("Hello")) {
-      getSender().tell("Hello world");
+      getSender().tell("Hello world", getSelf());
     } else if (message == ReceiveTimeout.getInstance()) {
       throw new RuntimeException("received timeout");
     } else {

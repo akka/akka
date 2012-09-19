@@ -16,6 +16,6 @@ public class FirstUntypedActor extends UntypedActor {
 
   public void onReceive(Object message) {
     myActor.forward(message, getContext());
-    myActor.tell(PoisonPill.getInstance());
+    myActor.tell(PoisonPill.getInstance(), null);
   }
 }

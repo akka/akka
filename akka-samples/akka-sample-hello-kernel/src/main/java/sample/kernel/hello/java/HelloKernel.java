@@ -13,28 +13,31 @@ public class HelloKernel implements Bootable {
   final ActorSystem system = ActorSystem.create("hellokernel");
 
   static class HelloActor extends UntypedActor {
-    final ActorRef worldActor = 
-      getContext().actorOf(new Props(WorldActor.class));
+    final ActorRef worldActor = getContext().actorOf(
+        new Props(WorldActor.class));
 
-  public void onReceive(Object message) {
-    if (message == "start")
-      worldActor.tell("Hello");
-    else if (message instanceof String)
-      System.out.println("Received message '%s'".format((String)message));
-    else unhandled(message);
+    public void onReceive(Object message) {
+      if (message == "start")
+        worldActor.tell("Hello", getSelf());
+      else if (message instanceof String)
+        System.out.println(String.format("Received message '%s'", message));
+      else
+        unhandled(message);
+    }
   }
-}
 
-static class WorldActor extends UntypedActor {
-  public void onReceive(Object message) {
-    if (message instanceof String)
-      getSender().tell(((String)message).toUpperCase() + " world!");
-    else unhandled(message);
+  static class WorldActor extends UntypedActor {
+    public void onReceive(Object message) {
+      if (message instanceof String)
+        getSender().tell(((String) message).toUpperCase() + " world!",
+            getSelf());
+      else
+        unhandled(message);
+    }
   }
-}
 
   public void startup() {
-    system.actorOf(new Props(HelloActor.class)).tell("start");
+    system.actorOf(new Props(HelloActor.class)).tell("start", null);
   }
 
   public void shutdown() {

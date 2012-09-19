@@ -23,7 +23,7 @@ public class Consumer4 extends UntypedConsumerActor {
     if (message instanceof CamelMessage) {
       CamelMessage camelMessage = (CamelMessage) message;
       String body = camelMessage.getBodyAs(String.class, getCamelContext());
-      getSender().tell(String.format("Hello %s",body));
+      getSender().tell(String.format("Hello %s",body), getSelf());
     } else
       unhandled(message);
   }

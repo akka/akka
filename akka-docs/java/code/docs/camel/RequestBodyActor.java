@@ -9,7 +9,7 @@ public class RequestBodyActor extends UntypedActor {
   public void onReceive(Object message) {
     Camel camel = CamelExtension.get(getContext().system());
     ProducerTemplate template = camel.template();
-    getSender().tell(template.requestBody("direct:news", message));
+    getSender().tell(template.requestBody("direct:news", message), getSelf());
   }
 }
 //#RequestProducerTemplate

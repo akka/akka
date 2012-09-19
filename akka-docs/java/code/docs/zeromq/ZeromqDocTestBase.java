@@ -46,7 +46,6 @@ import com.typesafe.config.ConfigFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.lang.management.OperatingSystemMXBean;
-import java.util.concurrent.TimeUnit;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 
@@ -57,8 +56,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Assume;
-
-import akka.zeromq.SocketType;
 
 public class ZeromqDocTestBase {
 
@@ -95,12 +92,12 @@ public class ZeromqDocTestBase {
     //#sub-topic-socket
 
     //#unsub-topic-socket
-    subTopicSocket.tell(new Unsubscribe("foo.bar"));
+    subTopicSocket.tell(new Unsubscribe("foo.bar"), null);
     //#unsub-topic-socket
 
     byte[] payload = new byte[0];
     //#pub-topic
-    pubSocket.tell(new ZMQMessage(new Frame("foo.bar"), new Frame(payload)));
+    pubSocket.tell(new ZMQMessage(new Frame("foo.bar"), new Frame(payload)), null);
     //#pub-topic
 
     //#high-watermark
@@ -205,12 +202,12 @@ public class ZeromqDocTestBase {
         byte[] heapPayload = ser.serializerFor(Heap.class).toBinary(
             new Heap(timestamp, currentHeap.getUsed(), currentHeap.getMax()));
         // the first frame is the topic, second is the message
-        pubSocket.tell(new ZMQMessage(new Frame("health.heap"), new Frame(heapPayload)));
+        pubSocket.tell(new ZMQMessage(new Frame("health.heap"), new Frame(heapPayload)), getSelf());
 
         // use akka SerializationExtension to convert to bytes
         byte[] loadPayload = ser.serializerFor(Load.class).toBinary(new Load(timestamp, os.getSystemLoadAverage()));
         // the first frame is the topic, second is the message
-        pubSocket.tell(new ZMQMessage(new Frame("health.load"), new Frame(loadPayload)));
+        pubSocket.tell(new ZMQMessage(new Frame("health.load"), new Frame(loadPayload)), getSelf());
       } else {
         unhandled(message);
       }

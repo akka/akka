@@ -22,5 +22,6 @@ class Java {
     final Deadline deadline = Duration.create(10, "seconds").fromNow();
     final Duration rest = deadline.timeLeft();
     //#deadline
+    rest.toString();
   }
 }

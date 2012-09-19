@@ -57,7 +57,7 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
       parent.sendSystemMessage(akka.dispatch.Supervise(self, uid))
-      parent.tell(NullMessage) // read ScalaDoc of NullMessage to see why
+      parent ! NullMessage // read ScalaDoc of NullMessage to see why
     }
 
     // This call is expected to start off the actor by scheduling its mailbox.

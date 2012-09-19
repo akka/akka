@@ -64,7 +64,7 @@ public class DangerousJavaActor extends UntypedActor {
                                     public Future<String> call() throws Exception {
                                         return f;
                                     }
-                                }));
+                                }), getSelf());
             }
             if ("block for me".equals(m)) {
                 getSender().tell(breaker
@@ -74,7 +74,7 @@ public class DangerousJavaActor extends UntypedActor {
                                     public String call() throws Exception {
                                         return dangerousCall();
                                     }
-                                }));
+                                }), getSelf());
             }
         }
     }
