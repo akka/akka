@@ -287,7 +287,6 @@ Both Actors and UntypedActors using ``Stash`` now overrides postStop to make sur
 stashed messages are put into the dead letters when the actor stops, make sure you call
 super.postStop if you override it.
 
-
 Forward of Terminated message
 =============================
 
@@ -441,4 +440,21 @@ v2.1::
   final Duration timeout = getContext().receiveTimeout();
   final isSet = timeout.isFinite();
   getContext().setReceiveTimeout(Duration.Undefined());
+
+ConsistentHash
+==============
+
+``akka.routing.ConsistentHash`` has been changed to an immutable data structure.
+
+v2.0::
+
+  val consistentHash = new ConsistentHash(Seq(a1, a2, a3), replicas = 10)
+  consistentHash += a4
+  val a = consistentHash.nodeFor(data)
+
+v2.1::
+
+  var consistentHash = ConsistentHash(Seq(a1, a2, a3), replicas = 10)
+  consistentHash = consistentHash :+ a4
+  val a = consistentHash.nodeFor(data)
 
