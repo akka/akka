@@ -79,7 +79,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
     "collect accurate metrics for a node" in {
       val sample = collector.sample
       assertExpectedSampleSize(collector.isSigar, window, sample)
-      val metrics = sample.metrics.collect { case m if m.isDefined ⇒ (m.name, m.value.get) } //.toSeq
+      val metrics = sample.metrics.collect { case m if m.isDefined ⇒ (m.name, m.value.get) }
       val used = metrics collectFirst { case (a, b) if a == "heap-memory-used" ⇒ b }
       val committed = metrics collectFirst { case (a, b) if a == "heap-memory-committed" ⇒ b }
       metrics collect {
