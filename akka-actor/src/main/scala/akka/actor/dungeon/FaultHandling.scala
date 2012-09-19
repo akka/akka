@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.actor.cell
+package akka.actor.dungeon
 
 import scala.annotation.tailrec
 import akka.actor.{ PreRestartException, PostRestartException, InternalActorRef, Failed, ActorRef, ActorInterruptedException, ActorCell, Actor }
@@ -16,6 +16,7 @@ import akka.actor.PreRestartException
 import akka.actor.Failed
 import akka.actor.PostRestartException
 import akka.event.Logging.Debug
+import scala.concurrent.util.Duration
 
 private[akka] trait FaultHandling { this: ActorCell ⇒
 
@@ -121,7 +122,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     assert(mailbox.isSuspended, "mailbox must be suspended during failed creation, status=" + mailbox.status)
     assert(perpetrator == self)
 
-    setReceiveTimeout(None)
+    setReceiveTimeout(Duration.Undefined)
     cancelReceiveTimeout
 
     // stop all children, which will turn childrenRefs into TerminatingChildrenContainer (if there are children)
@@ -137,7 +138,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
   }
 
   protected def terminate() {
-    setReceiveTimeout(None)
+    setReceiveTimeout(Duration.Undefined)
     cancelReceiveTimeout
 
     // stop all children, which will turn childrenRefs into TerminatingChildrenContainer (if there are children)

@@ -283,7 +283,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * The reason for the delay is to give concurrent messages a chance to be
    * placed in mailbox before sending PoisonPill.
    */
-  def removeRoutees(nrOfInstances: Int, stopDelay: Duration): Unit = {
+  def removeRoutees(nrOfInstances: Int, stopDelay: FiniteDuration): Unit = {
     if (nrOfInstances <= 0) {
       throw new IllegalArgumentException("Expected positive nrOfInstances, got [%s]".format(nrOfInstances))
     } else if (nrOfInstances > 0) {
@@ -298,7 +298,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * Give concurrent messages a chance to be placed in mailbox before
    * sending PoisonPill.
    */
-  protected def delayedStop(scheduler: Scheduler, abandon: Iterable[ActorRef], stopDelay: Duration): Unit = {
+  protected def delayedStop(scheduler: Scheduler, abandon: Iterable[ActorRef], stopDelay: FiniteDuration): Unit = {
     if (abandon.nonEmpty) {
       if (stopDelay <= Duration.Zero) {
         abandon foreach (_ ! PoisonPill)
@@ -1332,7 +1332,7 @@ case class DefaultResizer(
  * messages a chance to be placed in mailbox before sending PoisonPill.
  * Use 0 seconds to skip delay.
  */
-  stopDelay: Duration = 1.second,
+  stopDelay: FiniteDuration = 1.second,
   /**
  * Number of messages between resize operation.
  * Use 1 to resize before each message.

@@ -7,6 +7,7 @@ package akka.testkit
 import akka.actor._
 import scala.concurrent.util.Duration
 import akka.dispatch.DispatcherPrerequisites
+import scala.concurrent.util.FiniteDuration
 
 /**
  * This is a specialised form of the TestActorRef with support for querying and
@@ -59,14 +60,14 @@ class TestFSMRef[S, D, T <: Actor](
    * corresponding transition initiated from within the FSM, including timeout
    * and stop handling.
    */
-  def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: Duration = null, stopReason: Option[FSM.Reason] = None) {
+  def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: FiniteDuration = null, stopReason: Option[FSM.Reason] = None) {
     fsm.applyState(FSM.State(stateName, stateData, Option(timeout), stopReason))
   }
 
   /**
    * Proxy for FSM.setTimer.
    */
-  def setTimer(name: String, msg: Any, timeout: Duration, repeat: Boolean) {
+  def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean) {
     fsm.setTimer(name, msg, timeout, repeat)
   }
 

@@ -4,11 +4,11 @@
 package sample.fsm.dining.fsm
 
 import language.postfixOps
-
 import akka.actor._
 import akka.actor.FSM._
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
+import scala.concurrent.util.FiniteDuration
 
 /*
 * Some messages for the chopstick
@@ -159,7 +159,7 @@ class FSMHakker(name: String, left: ActorRef, right: ActorRef) extends Actor wit
   // Initialize the hakker
   initialize
 
-  private def startThinking(duration: Duration): State = {
+  private def startThinking(duration: FiniteDuration): State = {
     goto(Thinking) using TakenChopsticks(None, None) forMax duration
   }
 }
