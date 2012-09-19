@@ -418,3 +418,27 @@ Search                                           Replace with
 ``akka.actor.mailbox.FileBasedMessageQueue``     ``akka.actor.mailbox.filebased.FileBasedMessageQueue``
 ``akka.actor.mailbox.filequeue.*``               ``akka.actor.mailbox.filebased.filequeue.*``
 ================================================ =========================================================
+   
+Actor Receive Timeout
+=====================
+
+The API for setting and querying the receive timeout has been made more
+consisten in always taking and returning a ``Duration``, the wrapping in
+``Option`` has been removed.
+
+(Samples for Java, Scala sources are affected in exactly the same way.)
+
+v2.0::
+
+  getContext().setReceiveTimeout(Duration.create(10, SECONDS));
+  final Option<Duration> timeout = getContext().receiveTimeout();
+  final isSet = timeout.isDefined();
+  resetReceiveTimeout();
+
+v2.1::
+
+  getContext().setReceiveTimeout(Duration.create(10, SECONDS));
+  final Duration timeout = getContext().receiveTimeout();
+  final isSet = timeout.isFinite();
+  getContext().setReceiveTimeout(Duration.Undefined());
+

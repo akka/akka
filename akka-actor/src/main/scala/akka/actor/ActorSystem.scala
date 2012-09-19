@@ -17,7 +17,7 @@ import akka.util._
 import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.cell.ChildrenContainer
+import akka.actor.dungeon.ChildrenContainer
 import scala.concurrent.util.FiniteDuration
 import util.{ Failure, Success }
 

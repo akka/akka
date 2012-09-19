@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.actor.cell
+package akka.actor.dungeon
 
 import scala.annotation.tailrec
 import akka.actor.{ ActorRef, ActorCell }
