@@ -87,7 +87,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
   override def getObjectFor[T: ClassTag](fqcn: String): Try[T] = {
     val classTry =
       if (fqcn.endsWith("$")) getClassFor(fqcn)
-      else getClassFor(fqcn + "$") recoverWith { case NonFatal(_) ⇒ getClassFor(fqcn) }
+      else getClassFor(fqcn + "$") recoverWith { case _ ⇒ getClassFor(fqcn) }
     classTry flatMap { c ⇒
       Try {
         val module = c.getDeclaredField("MODULE$")
