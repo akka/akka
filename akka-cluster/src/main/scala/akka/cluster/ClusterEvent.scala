@@ -174,6 +174,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
 
   var latestGossip: Gossip = Gossip()
   var stashedLeaderChanged: Option[LeaderChanged] = None
+  var publishedLeaderChanged: Option[LeaderChanged] = None
 
   def receive = {
     case PublishChanges(oldGossip, newGossip) ⇒ publishChanges(oldGossip, newGossip)
@@ -203,16 +204,26 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     latestGossip = newGossip
     diff(oldGossip, newGossip) foreach { event ⇒
       event match {
-        case LeaderChanged(_) if oldGossip.convergence && newGossip.convergence ⇒
+        case x @ LeaderChanged(_) if Some(x) == publishedLeaderChanged ⇒
+        // skip, this leader has already been published
+
+        case x @ LeaderChanged(_) if oldGossip.convergence && newGossip.convergence ⇒
           stashedLeaderChanged = None
-          eventStream publish event
+          publishedLeaderChanged = Some(x)
+          eventStream publish x
+
         case x: LeaderChanged ⇒
           // publish later, when convergence
           stashedLeaderChanged = Some(x)
+
         case ConvergenceChanged(true) ⇒
-          stashedLeaderChanged foreach { eventStream publish _ }
-          stashedLeaderChanged = None
+          stashedLeaderChanged foreach {
+            publishedLeaderChanged = stashedLeaderChanged
+            stashedLeaderChanged = None
+            eventStream publish _
+          }
           eventStream publish event
+
         case MemberUnreachable(m) ⇒
           eventStream publish event
           // notify DeathWatch about unreachable node
