@@ -6,7 +6,7 @@ package akka.cluster
 
 import scala.language.postfixOps
 import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.util.FiniteDuration
 import scala.concurrent.Await
 import scala.util.{ Try, Failure }
 
@@ -229,7 +229,7 @@ trait AbstractClusterMetricsSpec extends DefaultTimeout {
 
   val window = 49
 
-  val interval: Duration = 100 millis
+  val interval: FiniteDuration = 100 millis
 
   val longDuration = 120 seconds // for long running tests
 

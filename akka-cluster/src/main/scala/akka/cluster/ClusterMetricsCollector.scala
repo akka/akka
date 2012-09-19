@@ -5,7 +5,7 @@
 package akka.cluster
 
 import scala.language.postfixOps
-import scala.concurrent.util.Duration
+import scala.concurrent.util.{ Duration, FiniteDuration }
 import scala.concurrent.util.duration._
 import scala.math.ScalaNumber
 import scala.collection.immutable.{ SortedSet, Map }
@@ -91,14 +91,14 @@ private[cluster] class ClusterNodeMetricsCollector extends Actor with ClusterMet
   /**
    * Start periodic gossip to random nodes in cluster
    */
-  val gossipTask = FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(MetricsGossipInterval), MetricsGossipInterval) {
+  val gossipTask = FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(MetricsGossipInterval).asInstanceOf[FiniteDuration], MetricsGossipInterval) {
     self ! GossipTick
   }
 
   /**
    * Start periodic metrics collection
    */
-  val metricsTask = FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(MetricsInterval), MetricsInterval) {
+  val metricsTask = FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(MetricsInterval).asInstanceOf[FiniteDuration], MetricsInterval) {
     self ! MetricsTick
   }
 
