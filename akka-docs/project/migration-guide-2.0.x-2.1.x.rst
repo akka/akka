@@ -392,6 +392,8 @@ The API for setting and querying the receive timeout has been made more
 consisten in always taking and returning a ``Duration``, the wrapping in
 ``Option`` has been removed.
 
+(Samples for Java, Scala sources are affected in exactly the same way.)
+
 v2.0::
 
   getContext().setReceiveTimeout(Duration.create(10, SECONDS));
