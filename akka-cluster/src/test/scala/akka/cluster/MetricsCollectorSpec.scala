@@ -142,7 +142,7 @@ trait MetricSpec extends WordSpec with MustMatchers {
   def assertMasterMetricsAgainstGossipMetrics(master: Set[NodeMetrics], gossip: MetricsGossip): Unit = {
     val masterMetrics = collectNodeMetrics(master)
     val gossipMetrics = collectNodeMetrics(gossip.nodes)
-    gossipMetrics.size must be(masterMetrics.size)
+    gossipMetrics.size must be(masterMetrics.size plusOrMinus 1) // combined cpu
   }
 
   def assertExpectedNodeAddresses(gossip: MetricsGossip, nodes: Set[NodeMetrics]): Unit =
