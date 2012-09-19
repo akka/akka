@@ -113,7 +113,7 @@ You can disable automatic joining with configuration:
 
   akka.cluster.auto-join = off
 
-Then you need to join manually, using JMX or the provided script. 
+Then you need to join manually, using :ref:`cluster_jmx` or :ref:`cluster_command_line`. 
 You can join to any node in the cluster. It doesn't have to be configured as
 seed node. If you are not using auto-join there is no need to configure 
 seed nodes at all.
@@ -128,7 +128,8 @@ When a member is considered by the failure detector to be unreachable the
 leader is not allowed to perform its duties, such as changing status of
 new joining members to 'Up'. The status of the unreachable member must be
 changed to 'Down'. This can be performed automatically or manually. By 
-default it must be done manually, using using JMX or the provided script.
+default it must be done manually, using using :ref:`cluster_jmx` or 
+:ref:`cluster_command_line`.
 
 It can also be performed programatically with ``Cluster(system).down``.
 
@@ -337,6 +338,65 @@ service nodes and 1 client::
   run-main sample.cluster.stats.StatsSampleOneMaster
 
 .. note:: The above example, especially the last part, will be simplified when the cluster handles automatic actor partitioning.
+
+.. _cluster_jmx:
+
+JMX
+^^^
+
+Information and management of the cluster is available as JMX MBeans with the root name ``akka.Cluster``.
+The JMX information can be displayed with an ordinary JMX console such as JConsole or JVisualVM.
+
+From JMX you can:
+
+* see what members that are part of the cluster
+* see status of this node
+* join this node to another node in cluster
+* mark any node in the cluster as down
+* tell any node in the cluster to leave
+
+Member nodes are identified with their address, in format `akka://actor-system-name@hostname:port`.
+
+.. _cluster_command_line:
+
+Command Line Management
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The cluster can be managed with the script `bin/akka-cluster` provided in the 
+Akka distribution.
+
+Run it without parameters to see instructions about how to use the script::
+
+  Usage: bin/akka-cluster <node-hostname:jmx-port> <command> ...
+
+  Supported commands are:
+             join <node-url> - Sends request a JOIN node with the specified URL
+            leave <node-url> - Sends a request for node with URL to LEAVE the cluster
+             down <node-url> - Sends a request for marking node with URL as DOWN
+               member-status - Asks the member node for its current status
+              cluster-status - Asks the cluster for its current status (member ring, 
+                               unavailable nodes, meta data etc.)
+                      leader - Asks the cluster who the current leader is
+                is-singleton - Checks if the cluster is a singleton cluster (single 
+                               node cluster)
+                is-available - Checks if the member node is available
+                  is-running - Checks if the member node is running
+             has-convergence - Checks if there is a cluster convergence
+  Where the <node-url> should be on the format of 'akka://actor-system-name@hostname:port'
+
+  Examples: bin/akka-cluster localhost:9999 is-available
+            bin/akka-cluster localhost:9999 join akka://MySystem@darkstar:2552
+            bin/akka-cluster localhost:9999 cluster-status
+
+
+To be able to use the script you must enable remote monitoring and management when starting the JVMs of the cluster nodes, 
+as described in `Monitoring and Management Using JMX Technology <http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html>`_
+
+Example of system properties to enable remote monitoring and management::
+
+  java -Dcom.sun.management.jmxremote.port=9999 \
+  -Dcom.sun.management.jmxremote.authenticate=false \
+  -Dcom.sun.management.jmxremote.ssl=false
 
 .. _cluster_configuration:
 
