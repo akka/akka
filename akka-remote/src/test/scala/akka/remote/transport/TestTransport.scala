@@ -313,7 +313,7 @@ class TestTransport(
 
   override def listen: Future[(Address, Promise[ActorRef])] = listenBehavior()
   override def associate(remoteAddress: Address): Future[Status] = associateBehavior(remoteAddress)
-  override def shutdown(): Future[Unit] = shutdownBehavior()
+  override def shutdown(): Unit = shutdownBehavior()
 
   private def defaultWrite(params: (TestAssociationHandle, ByteString)): Future[Boolean] = {
     registry.getRemoteReadHandlerFor(params._1) match {
@@ -363,7 +363,7 @@ class TestTransport(
   private[akka] def write(handle: TestAssociationHandle, payload: ByteString): Boolean =
     Await.result(writeBehavior((handle, payload)), 3 seconds)
 
-  private[akka] def disassociate(handle: TestAssociationHandle): Future[Unit] = disassociateBehavior(handle)
+  private[akka] def disassociate(handle: TestAssociationHandle): Unit = disassociateBehavior(handle)
 
 }
 
@@ -377,7 +377,7 @@ case class TestAssociationHandle(
 
   override def write(payload: ByteString): Boolean = transport.write(this, payload)
 
-  override def disassociate(): Future[Unit] = transport.disassociate(this)
+  override def disassociate(): Unit = transport.disassociate(this)
 
   /**
    * Key used in [[akka.remote.transport.TestTransport.AssociationRegistry]] to identify associations. Contains an

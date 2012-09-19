@@ -88,11 +88,8 @@ trait Transport {
 
   /**
    * Shuts down the transport layer and releases all the corresponding resources.
-   *
-   * @return
-   *   A Future that completes after shutdown is completed
    */
-  def shutdown(): Future[Unit]
+  def shutdown(): Unit
 
 }
 
@@ -175,10 +172,8 @@ trait AssociationHandle {
    * some transports may not support it (hardware connections). Remote endpoint of the channel or connection ''may''
    * be notified, but this is not guaranteed.
    *
-   * @return
-   *   A Future that completes when the disassociation is finished and the corresponding resources released
    */
-  def disassociate(): Future[Unit]
+  def disassociate(): Unit
 
 }
 
