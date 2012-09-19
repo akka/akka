@@ -349,11 +349,17 @@ object AkkaBuild extends Build {
 
   // Settings
 
-  override lazy val settings = super.settings ++ buildSettings ++ Seq(
-      resolvers += "Scala Community 2.10.0-SNAPSHOT" at "https://scala-webapps.epfl.ch/jenkins/job/community-nightly/ws/target/repositories/8e83577d99af1d718fe369c4a4ee92737b9cf669",
-      resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
-      resolvers += "Sonatype Releases Repo" at "https://oss.sonatype.org/content/repositories/releases/",
-      shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
+  override lazy val settings =
+    super.settings ++
+    buildSettings ++
+    Seq(
+      shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
+      resolvers <<= (resolvers, scalaVersion) apply {
+        case (res, "2.10.0-SNAPSHOT") =>
+          res :+ ("Scala Community 2.10.0-SNAPSHOT" at "https://scala-webapps.epfl.ch/jenkins/job/community-nightly/ws/target/repositories/8e83577d99af1d718fe369c4a4ee92737b9cf669")
+        case (res, _) =>
+          res
+      }
     )
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
@@ -418,8 +424,6 @@ object AkkaBuild extends Build {
   }
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ Seq(
-    resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
     javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
