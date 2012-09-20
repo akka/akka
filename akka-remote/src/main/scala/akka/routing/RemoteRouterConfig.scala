@@ -78,7 +78,8 @@ final class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContex
   override def createRoutees(nrOfInstances: Int): Unit = {
     val refs = IndexedSeq.fill(nrOfInstances) {
       val name = "c" + childNameCounter.incrementAndGet
-      val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(nodeAddressIter.next))
+      val deploy = Deploy(config = ConfigFactory.empty(), routerConfig = routeeProps.routerConfig,
+        scope = RemoteScope(nodeAddressIter.next))
 
       // attachChild means that the provider will treat this call as if possibly done out of the wrong
       // context and use RepointableActorRef instead of LocalActorRef. Seems like a slightly sub-optimal

@@ -178,7 +178,8 @@ private[akka] class ClusterRouteeProvider(
             context.actorFor(RootActorPath(target) / settings.routeesPathElements)
           } else {
             val name = "c" + childNameCounter.incrementAndGet
-            val deploy = Deploy("", ConfigFactory.empty(), routeeProps.routerConfig, RemoteScope(target))
+            val deploy = Deploy(config = ConfigFactory.empty(), routerConfig = routeeProps.routerConfig,
+              scope = RemoteScope(target))
             context.asInstanceOf[ActorCell].attachChild(routeeProps.withDeploy(deploy), name, systemService = false)
           }
         // must register each one, since registered routees are used in selectDeploymentTarget
