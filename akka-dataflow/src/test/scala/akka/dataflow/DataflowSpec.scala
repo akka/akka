@@ -271,7 +271,9 @@ class DataflowSpec extends AkkaSpec with DefaultTimeout {
       assert(checkType(rString, classTag[String]))
       assert(checkType(rInt, classTag[Int]))
       assert(!checkType(rInt, classTag[String]))
-      //assert(!checkType(rInt, classTag[Nothing])) This test does not work with classTags, but works with Manifests
+      assert(intercept[java.lang.Exception] {
+        assert(!checkType(rInt, classTag[Nothing]))
+      }.getMessage == "Nothing is a bottom type, therefore its erasure does not return a value") // When this fails, remove the intercept
       assert(!checkType(rInt, classTag[Any]))
 
       Await.result(rString, timeout.duration)
