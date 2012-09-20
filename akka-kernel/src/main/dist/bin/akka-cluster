@@ -27,7 +27,7 @@ HOST=$1            # cluster node:port to talk to through JMX
 function ensureNodeIsRunningAndAvailable {
     REPLY=$($JMX_CLIENT $HOST akka:type=Cluster Available 2>&1 >/dev/null) # redirects STDERR to STDOUT before capturing it
     if [[ "$REPLY" != *true ]]; then
-        echo "Akka cluster node is not available on $HOST"
+        echo "Akka cluster node is not available on $HOST, due to $REPLY"
         exit 1
     fi
 }
@@ -37,7 +37,7 @@ case "$2" in
 
     join)
         if [ $# -ne 3 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> join <actor-system-url-to-join>"
+            echo "Usage: $SELF <node-hostname:jmx-port> join <node-url-to-join>"
             exit 1
         fi
 
@@ -51,7 +51,7 @@ case "$2" in
 
     leave)
         if [ $# -ne 3 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> leave <actor-system-url-to-join>"
+            echo "Usage: $SELF <node-hostname:jmx-port> leave <node-url-to-join>"
             exit 1
         fi
 
@@ -65,7 +65,7 @@ case "$2" in
 
     down)
         if [ $# -ne 3 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> down <actor-system-url-to-join>"
+            echo "Usage: $SELF <node-hostname:jmx-port> down <node-url-to-join>"
             exit 1
         fi
 
@@ -164,7 +164,7 @@ case "$2" in
         ensureNodeIsRunningAndAvailable
         shift
 
-        echo "Checking if member node on $HOST is AVAILABLE"
+        echo "Checking if member node on $HOST is RUNNING"
         $JMX_CLIENT $HOST akka:type=Cluster Running
         ;;
 
@@ -172,17 +172,17 @@ case "$2" in
         printf "Usage: bin/$SELF <node-hostname:jmx-port> <command> ...\n"
         printf "\n"
         printf "Supported commands are:\n"
-        printf "%26s - %s\n" "join <actor-system-url>"   "Sends request a JOIN node with the specified URL"
-        printf "%26s - %s\n" "leave <actor-system-url>"  "Sends a request for node with URL to LEAVE the cluster"
-        printf "%26s - %s\n" "down <actor-system-url>"   "Sends a request for marking node with URL as DOWN"
-        printf "%26s - %s\n" member-status               "Asks the member node for its current status"
-        printf "%26s - %s\n" cluster-status              "Asks the cluster for its current status (member ring, unavailable nodes, meta data etc.)"
-        printf "%26s - %s\n" leader                      "Asks the cluster who the current leader is"
-        printf "%26s - %s\n" is-singleton                "Checks if the cluster is a singleton cluster (single node cluster)"
-        printf "%26s - %s\n" is-available                "Checks if the member node is available"
-        printf "%26s - %s\n" is-running                  "Checks if the member node is running"
-        printf "%26s - %s\n" has-convergence             "Checks if there is a cluster convergence"
-        printf "Where the <actor-system-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
+        printf "%26s - %s\n" "join <node-url>"   "Sends request a JOIN node with the specified URL"
+        printf "%26s - %s\n" "leave <node-url>"  "Sends a request for node with URL to LEAVE the cluster"
+        printf "%26s - %s\n" "down <node-url>"   "Sends a request for marking node with URL as DOWN"
+        printf "%26s - %s\n" member-status       "Asks the member node for its current status"
+        printf "%26s - %s\n" cluster-status      "Asks the cluster for its current status (member ring, unavailable nodes, meta data etc.)"
+        printf "%26s - %s\n" leader              "Asks the cluster who the current leader is"
+        printf "%26s - %s\n" is-singleton        "Checks if the cluster is a singleton cluster (single node cluster)"
+        printf "%26s - %s\n" is-available        "Checks if the member node is available"
+        printf "%26s - %s\n" is-running          "Checks if the member node is running"
+        printf "%26s - %s\n" has-convergence     "Checks if there is a cluster convergence"
+        printf "Where the <node-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
         printf "\n"
         printf "Examples: bin/$SELF localhost:9999 is-available\n"
         printf "          bin/$SELF localhost:9999 join akka://MySystem@darkstar:2552\n"
