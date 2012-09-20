@@ -2,7 +2,7 @@
 .. _multi-jvm-testing:
 
 ###################
- Multi-JVM Testing
+ Multi JVM Testing
 ###################
 
 Support for running applications (objects with main methods) and
@@ -12,13 +12,13 @@ ScalaTest tests in multiple JVMs.
 Setup
 =====
 
-The multi-JVM testing is an sbt plugin that you can find here:
+The multi JVM testing is an sbt plugin that you can find here:
 
 http://github.com/typesafehub/sbt-multi-jvm
 
-You can add it as a plugin by adding the following to your project/plugins.sbt::
+You can add it as a plugin by adding the following to your project/plugins.sbt:
 
-   addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.0")
+.. includecode:: ../../project/plugins.sbt#sbt-multi-jvm
 
 You can then add multi-JVM testing to ``project/Build.scala`` by including the ``MultiJvm``
 settings and config. For example, here is an example of how the akka-remote-tests project adds
@@ -223,3 +223,10 @@ classpath. Here is a similar example to the one above but using ScalaTest::
 
 To run just these tests you would call ``multi-jvm:test-only sample.Spec`` at
 the sbt prompt.
+
+Multi Node Additions
+====================
+
+There has also been some additions made to the ``SbtMultiJvm`` plugin to accomodate the
+:ref:`experimental <experimental>` module :ref:`multi node testing <multi_node_testing>`,
+described in that section.
