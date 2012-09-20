@@ -36,6 +36,7 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val PublishStatsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.publish-stats-interval"), MILLISECONDS)
   final val AutoJoin: Boolean = getBoolean("akka.cluster.auto-join")
   final val AutoDown: Boolean = getBoolean("akka.cluster.auto-down")
+  final val JmxEnabled: Boolean = getBoolean("akka.cluster.jmx.enabled")
   final val JoinTimeout: FiniteDuration = Duration(getMilliseconds("akka.cluster.join-timeout"), MILLISECONDS)
   final val UseDispatcher: String = getString("akka.cluster.use-dispatcher") match {
     case "" ⇒ Dispatchers.DefaultDispatcherId

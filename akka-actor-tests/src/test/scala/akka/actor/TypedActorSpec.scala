@@ -193,6 +193,9 @@ object TypedActorSpec {
         })
     }
   }
+
+  trait F { def f(pow: Boolean): Int }
+  class FI extends F { def f(pow: Boolean): Int = if (pow) throw new IllegalStateException("expected") else 1 }
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -348,6 +351,21 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
         t.read() must be(1) //Make sure state is not reset after failure
 
         mustStop(t)
+      }
+    }
+
+    "be restarted on failure" in {
+      filterEvents(EventFilter[IllegalStateException]("expected")) {
+        val t = newFooBar(Duration(2, "s"))
+        intercept[IllegalStateException] { t.failingOptionPigdog() }.getMessage must be === "expected"
+        t.optionPigdog() must be === Some("Pigdog")
+        mustStop(t)
+
+        val ta: F = TypedActor(system).typedActorOf(TypedProps[FI]())
+        intercept[IllegalStateException] { ta.f(true) }.getMessage must be === "expected"
+        ta.f(false) must be === 1
+
+        mustStop(ta)
       }
     }
 
