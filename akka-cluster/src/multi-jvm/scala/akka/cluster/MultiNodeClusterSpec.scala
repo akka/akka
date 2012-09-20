@@ -33,6 +33,7 @@ object MultiNodeClusterSpec {
     akka.cluster {
       auto-join                         = on
       auto-down                         = off
+      jmx.enabled                       = off
       gossip-interval                   = 200 ms
       heartbeat-interval                = 400 ms
       leader-actions-interval           = 200 ms
