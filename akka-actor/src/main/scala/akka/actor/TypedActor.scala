@@ -235,14 +235,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    * INTERNAL USE ONLY
    */
   private[akka] class TypedActor[R <: AnyRef, T <: R](val proxyVar: AtomVar[R], createInstance: ⇒ T) extends Actor {
-    val me = try {
-      TypedActor.selfReference set proxyVar.get
-      TypedActor.currentContext set context
-      createInstance
-    } finally {
-      TypedActor.selfReference set null
-      TypedActor.currentContext set null
-    }
+    val me = withContext[T](createInstance)
 
     override def supervisorStrategy(): SupervisorStrategy = me match {
       case l: Supervisor ⇒ l.supervisorStrategy
@@ -275,7 +268,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     override def preRestart(reason: Throwable, message: Option[Any]): Unit = withContext {
       me match {
         case l: PreRestart ⇒ l.preRestart(reason, message)
-        case _             ⇒ super.preRestart(reason, message)
+        case _             ⇒ context.children foreach context.stop //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
       }
     }
 
