@@ -8,6 +8,7 @@ import akka.actor._
 import com.typesafe.config._
 import scala.concurrent.Future
 import scala.concurrent.Await
+import scala.reflect.classTag
 import akka.pattern.ask
 
 object RemoteCommunicationSpec {
@@ -133,7 +134,7 @@ akka {
 
     "not fail ask across node boundaries" in {
       import system.dispatcher
-      val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo manifest[(String, ActorRef)]
+      val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo classTag[(String, ActorRef)]
       Await.result(Future.sequence(f), remaining).map(_._1).toSet must be(Set("pong"))
     }
 
