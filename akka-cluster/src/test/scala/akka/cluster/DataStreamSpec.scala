@@ -6,7 +6,6 @@ package akka.cluster
 
 import language.postfixOps
 import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
 
 import akka.testkit.{ LongRunningTest, AkkaSpec }
 
@@ -42,7 +41,7 @@ class DataStreamSpec extends AkkaSpec(MetricsEnabledSpec.config) with AbstractCl
       val finalDataSet = streamingDataSet.map(m ⇒ m.name -> m).toMap
       firstDataSet map {
         first ⇒
-          val newMetric = finalDataSet.get(first.name).get
+          val newMetric = finalDataSet(first.name)
           val e1 = first.average.get
           val e2 = newMetric.average.get
 

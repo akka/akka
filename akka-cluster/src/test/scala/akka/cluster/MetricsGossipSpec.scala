@@ -5,7 +5,6 @@
 package akka.cluster
 
 import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
 
 import akka.testkit.{ ImplicitSender, AkkaSpec }
 import akka.actor.Address
