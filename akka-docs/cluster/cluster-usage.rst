@@ -36,7 +36,7 @@ Try it out:
    :language: none
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-scala`
-settings, but with ``ClusterActorRefProvider``.
+settings, but with ``akka.cluster.ClusterActorRefProvider``.
 The ``akka.cluster.seed-nodes`` and cluster extension should normally also be added to your 
 ``application.conf`` file.
 
