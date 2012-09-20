@@ -103,7 +103,7 @@ object MultiNodeSpec {
    * Number of nodes node taking part in this test.
    *
    * {{{
-   * -D"multinode.max-nodes=4"
+   * -Dmultinode.max-nodes=4
    * }}}
    */
   val maxNodes: Int = Option(Integer.getInteger("multinode.max-nodes")) getOrElse
@@ -116,7 +116,7 @@ object MultiNodeSpec {
    * of the host this node is running on.
    *
    * {{{
-   * -D"multinode.host=host.example.com"
+   * -Dmultinode.host=host.example.com
    * }}}
    */
   val selfName: String = Option(System.getProperty("multinode.host")) getOrElse
@@ -128,7 +128,7 @@ object MultiNodeSpec {
    * Port number of this node. Defaults to 0 which means a random port.
    *
    * {{{
-   * -D"multinode.port=0"
+   * -Dmultinode.port=0
    * }}}
    */
   val selfPort: Int = Integer.getInteger("multinode.port", 0)
@@ -140,7 +140,7 @@ object MultiNodeSpec {
    * of the host that the server node is running on.
    *
    * {{{
-   * -D"multinode.server-host=server.example.com"
+   * -Dmultinode.server-host=server.example.com
    * }}}
    */
   val serverName: String = Option(System.getProperty("multinode.server-host")) getOrElse
@@ -152,7 +152,7 @@ object MultiNodeSpec {
    * Port number of the node that's running the server system. Defaults to 4711.
    *
    * {{{
-   * -D"multinode.server-port=4711"
+   * -Dmultinode.server-port=4711
    * }}}
    */
   val serverPort: Int = Integer.getInteger("multinode.server-port", 4711)
@@ -165,7 +165,7 @@ object MultiNodeSpec {
    * failures and shutdown other nodes etc.
    *
    * {{{
-   * -D"multinode.index=0"
+   * -Dmultinode.index=0
    * }}}
    */
   val selfIndex = Option(Integer.getInteger("multinode.index")) getOrElse
