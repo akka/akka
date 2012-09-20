@@ -356,7 +356,7 @@ object AkkaBuild extends Build {
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
       resolvers <<= (resolvers, scalaVersion) apply {
         case (res, "2.10.0-SNAPSHOT") =>
-          res :+ ("Scala Community 2.10.0-SNAPSHOT" at "https://scala-webapps.epfl.ch/jenkins/job/community-nightly/ws/target/repositories/8e83577d99af1d718fe369c4a4ee92737b9cf669")
+          res :+ ("Scala Community 2.10.0-SNAPSHOT" at "https://scala-webapps.epfl.ch/jenkins/job/community-nightly/ws/target/repositories/fc24ea43b17664f020e43379e800c34be09700bd")
         case (res, _) =>
           res
       }
