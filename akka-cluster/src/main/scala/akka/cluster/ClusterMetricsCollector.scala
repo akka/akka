@@ -5,12 +5,12 @@
 package akka.cluster
 
 import scala.language.postfixOps
-import scala.concurrent.util.{ Duration, FiniteDuration }
 import scala.concurrent.util.duration._
-import scala.math.ScalaNumber
+import scala.concurrent.util.FiniteDuration
 import scala.collection.immutable.{ SortedSet, Map }
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.{ Try, Success, Failure }
+import scala.math.ScalaNumber
 import scala.runtime.{ RichLong, RichDouble, RichInt }
 
 import akka.actor._
@@ -301,7 +301,7 @@ private[cluster] case class DataStream(decay: Int, ewma: ScalaNumber, startTime:
   /**
    * The duration of observation for this data stream
    */
-  def duration: Duration = (timestamp - startTime) millis
+  def duration: FiniteDuration = (timestamp - startTime) millis
 
 }
 
