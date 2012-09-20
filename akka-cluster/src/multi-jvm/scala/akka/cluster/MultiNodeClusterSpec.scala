@@ -8,7 +8,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{STMultiNodeSpec, MultiNodeSpec}
+import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec }
 import akka.testkit._
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
@@ -31,15 +31,15 @@ object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
-      auto-join                         = on
-      auto-down                         = off
-      jmx.enabled                       = off
-      gossip-interval                   = 200 ms
-      heartbeat-interval                = 400 ms
-      leader-actions-interval           = 200 ms
-      unreachable-nodes-reaper-interval = 200 ms
-      periodic-tasks-initial-delay      = 300 ms
-      publish-stats-interval            = 0 s # always, when it happens
+      auto-join                           = on
+      auto-down                           = off
+      jmx.enabled                         = off
+      gossip-interval                     = 200 ms
+      leader-actions-interval             = 200 ms
+      unreachable-nodes-reaper-interval   = 200 ms
+      periodic-tasks-initial-delay        = 300 ms
+      publish-stats-interval              = 0 s # always, when it happens
+      failure-detector.heartbeat-interval = 400 ms
     }
     akka.remote.log-remote-lifecycle-events = off
     akka.test {
