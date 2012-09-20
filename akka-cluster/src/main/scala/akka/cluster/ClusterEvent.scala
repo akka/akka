@@ -94,9 +94,9 @@ object ClusterEvent {
   case class ConvergenceChanged(convergence: Boolean) extends ClusterDomainEvent
 
   /**
-   * Leader of the cluster members changed, and/or convergence status.
+   * Leader of the cluster members changed. Only published after convergence.
    */
-  case class LeaderChanged(leader: Option[Address], convergence: Boolean) extends ClusterDomainEvent
+  case class LeaderChanged(leader: Option[Address]) extends ClusterDomainEvent
 
   /**
    * INTERNAL API
@@ -150,7 +150,7 @@ object ClusterEvent {
     val convergenceEvents = if (convergenceChanged) Seq(ConvergenceChanged(newConvergence)) else Seq.empty
 
     val leaderEvents =
-      if (convergenceChanged || newGossip.leader != oldGossip.leader) Seq(LeaderChanged(newGossip.leader, newConvergence))
+      if (newGossip.leader != oldGossip.leader) Seq(LeaderChanged(newGossip.leader))
       else Seq.empty
 
     val newSeenBy = newGossip.seenBy
@@ -159,7 +159,7 @@ object ClusterEvent {
       else Seq.empty
 
     memberEvents.toIndexedSeq ++ unreachableEvents ++ downedEvents ++ unreachableDownedEvents ++ removedEvents ++
-      convergenceEvents ++ leaderEvents ++ seenEvents
+      leaderEvents ++ convergenceEvents ++ seenEvents
   }
 
 }
@@ -173,6 +173,14 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   import InternalClusterAction._
 
   var latestGossip: Gossip = Gossip()
+
+  // Keep track of LeaderChanged event. Should not be published until
+  // convergence, and it should only be published when leader actually
+  // changed to another node. 3 states:
+  // - None: No LeaderChanged detected yet, nothing published yet
+  // - Some(Left): Stashed LeaderChanged to be published later, when convergence
+  // - Some(Right): Latest published LeaderChanged
+  var leaderChangedState: Option[Either[LeaderChanged, LeaderChanged]] = None
 
   def receive = {
     case PublishChanges(oldGossip, newGossip) ⇒ publishChanges(oldGossip, newGossip)
@@ -210,11 +218,38 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     // keep the latestGossip to be sent to new subscribers
     latestGossip = newGossip
     diff(oldGossip, newGossip) foreach { event ⇒
-      eventStream publish event
-      // notify DeathWatch about unreachable node
       event match {
-        case MemberUnreachable(m) ⇒ eventStream publish AddressTerminated(m.address)
-        case _                    ⇒
+        case x @ LeaderChanged(_) if leaderChangedState == Some(Right(x)) ⇒
+        // skip, this leader has already been published
+
+        case x @ LeaderChanged(_) if oldGossip.convergence && newGossip.convergence ⇒
+          // leader changed and immediate convergence
+          leaderChangedState = Some(Right(x))
+          eventStream publish x
+
+        case x: LeaderChanged ⇒
+          // publish later, when convergence
+          leaderChangedState = Some(Left(x))
+
+        case ConvergenceChanged(true) ⇒
+          // now it's convergence, publish eventual stashed LeaderChanged event
+          leaderChangedState match {
+            case Some(Left(x)) ⇒
+              leaderChangedState = Some(Right(x))
+              eventStream publish x
+
+            case _ ⇒ // nothing stashed
+          }
+          eventStream publish event
+
+        case MemberUnreachable(m) ⇒
+          eventStream publish event
+          // notify DeathWatch about unreachable node
+          eventStream publish AddressTerminated(m.address)
+
+        case _ ⇒
+          // all other events
+          eventStream publish event
       }
     }
   }

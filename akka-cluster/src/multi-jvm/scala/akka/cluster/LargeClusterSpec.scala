@@ -53,6 +53,7 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
       parallelism-max = 13
     }
     akka.scheduler.tick-duration = 33 ms
+    akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.execution-pool-size = 4
     #akka.remote.netty.reconnection-time-window = 1s
     akka.remote.netty.backoff-timeout = 500ms

@@ -1,10 +1,10 @@
-package sample.cluster
+package sample.cluster.simple
 
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 
-object ClusterApp {
+object SimpleClusterApp {
 
   def main(args: Array[String]): Unit = {
 

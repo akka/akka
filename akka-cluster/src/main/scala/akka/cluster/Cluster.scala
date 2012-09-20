@@ -158,8 +158,11 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   system.registerOnTermination(shutdown())
 
-  private val clusterJmx = new ClusterJmx(this, log)
-  clusterJmx.createMBean()
+  private val clusterJmx: Option[ClusterJmx] = {
+    val jmx = new ClusterJmx(this, log)
+    jmx.createMBean()
+    Some(jmx)
+  }
 
   log.info("Cluster Node [{}] - has started up successfully", selfAddress)
 
@@ -253,7 +256,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
       scheduler.close()
 
-      clusterJmx.unregisterMBean()
+      clusterJmx foreach { _.unregisterMBean() }
 
       log.info("Cluster Node [{}] - Cluster node successfully shut down", selfAddress)
     }
