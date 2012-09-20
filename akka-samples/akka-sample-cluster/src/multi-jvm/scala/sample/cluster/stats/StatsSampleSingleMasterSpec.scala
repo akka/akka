@@ -35,8 +35,7 @@ object StatsSampleSingleMasterSpec extends MultiNodeConfig {
     #//#router-deploy-config
     akka.actor.deployment {
       /statsFacade/statsService/workerRouter {
-          # FIXME use consistent hashing instead
-          router = round-robin
+          router = consistent-hashing
           nr-of-instances = 100
           cluster {
             enabled = on

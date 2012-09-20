@@ -21,6 +21,7 @@ import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.MemberStatus
 import akka.routing.FromConfig
+import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 //#imports
 
 //#messages
@@ -39,7 +40,10 @@ class StatsService extends Actor {
       val words = text.split(" ")
       val replyTo = sender // important to not close over sender
       val aggregator = context.actorOf(Props(new StatsAggregator(words.size, replyTo)))
-      words foreach { word ⇒ workerRouter.tell(word, aggregator) }
+      words foreach { word ⇒
+        workerRouter.tell(
+          ConsistentHashableEnvelope(word, word), aggregator)
+      }
   }
 }
 
@@ -64,9 +68,18 @@ class StatsAggregator(expectedResults: Int, replyTo: ActorRef) extends Actor {
 
 //#worker
 class StatsWorker extends Actor {
-  // FIXME add a cache here to illustrate consistent hashing
+  var cache = Map.empty[String, Int]
   def receive = {
-    case word: String ⇒ sender ! word.length
+    case word: String ⇒
+      val length = cache.get(word) match {
+        case Some(x) ⇒ x
+        case None ⇒
+          val x = word.length
+          cache += (word -> x)
+          x
+      }
+
+      sender ! length
   }
 }
 //#worker
@@ -124,8 +137,7 @@ object StatsSample {
     val system = ActorSystem("ClusterSystem", ConfigFactory.parseString("""
       akka.actor.deployment {
         /statsService/workerRouter {
-            # FIXME use consistent hashing instead
-            router = round-robin
+            router = consistent-hashing
             nr-of-instances = 100
             cluster {
               enabled = on
@@ -153,8 +165,7 @@ object StatsSampleOneMaster {
     val system = ActorSystem("ClusterSystem", ConfigFactory.parseString("""
       akka.actor.deployment {
         /statsFacade/statsService/workerRouter {
-            # FIXME use consistent hashing instead
-            router = round-robin
+            router = consistent-hashing
             nr-of-instances = 100
             cluster {
               enabled = on
@@ -225,10 +236,10 @@ abstract class StatsService2 extends Actor {
   //#router-lookup-in-code
   import akka.cluster.routing.ClusterRouterConfig
   import akka.cluster.routing.ClusterRouterSettings
-  import akka.routing.RoundRobinRouter
+  import akka.routing.ConsistentHashingRouter
 
   val workerRouter = context.actorOf(Props[StatsWorker].withRouter(
-    ClusterRouterConfig(RoundRobinRouter(), ClusterRouterSettings(
+    ClusterRouterConfig(ConsistentHashingRouter(), ClusterRouterSettings(
       totalInstances = 100, routeesPath = "/user/statsWorker",
       allowLocalRoutees = true))),
     name = "workerRouter2")
@@ -240,11 +251,10 @@ abstract class StatsService3 extends Actor {
   //#router-deploy-in-code
   import akka.cluster.routing.ClusterRouterConfig
   import akka.cluster.routing.ClusterRouterSettings
-  // FIXME use ConsistentHashingRouter instead
-  import akka.routing.RoundRobinRouter
+  import akka.routing.ConsistentHashingRouter
 
   val workerRouter = context.actorOf(Props[StatsWorker].withRouter(
-    ClusterRouterConfig(RoundRobinRouter(), ClusterRouterSettings(
+    ClusterRouterConfig(ConsistentHashingRouter(), ClusterRouterSettings(
       totalInstances = 100, maxInstancesPerNode = 3,
       allowLocalRoutees = false))),
     name = "workerRouter3")
