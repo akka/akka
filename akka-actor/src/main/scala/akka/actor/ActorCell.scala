@@ -4,13 +4,13 @@
 
 package akka.actor
 
-import cell.ChildrenContainer.{ WaitingForChildren }
 import java.io.{ ObjectOutputStream, NotSerializableException }
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeSet
 import scala.concurrent.util.Duration
 import scala.util.control.NonFatal
-import akka.actor.cell.ChildrenContainer
+import akka.actor.dungeon.ChildrenContainer
+import akka.actor.dungeon.ChildrenContainer.WaitingForChildren
 import akka.dispatch.{ Watch, Unwatch, Terminate, SystemMessage, Suspend, Supervise, Resume, Recreate, NoMessage, MessageDispatcher, Envelope, Create, ChildTerminated }
 import akka.event.Logging.{ LogEvent, Debug, Error }
 import akka.japi.Procedure
@@ -55,22 +55,24 @@ trait ActorContext extends ActorRefFactory {
   def props: Props
 
   /**
-   * Gets the current receive timeout
+   * Gets the current receive timeout.
    * When specified, the receive method should be able to handle a 'ReceiveTimeout' message.
    */
-  def receiveTimeout: Option[Duration]
+  def receiveTimeout: Duration
 
   /**
-   * Defines the default timeout for an initial receive invocation.
+   * Defines the inactivity timeout after which the sending of a `ReceiveTimeout` message is triggered.
    * When specified, the receive function should be able to handle a 'ReceiveTimeout' message.
    * 1 millisecond is the minimum supported timeout.
+   *
+   * Please note that the receive timeout might fire and enqueue the `ReceiveTimeout` message right after
+   * another message was enqueued; hence it is '''not guaranteed''' that upon reception of the receive
+   * timeout there must have been an idle period beforehand as configured via this method.
+   *
+   * Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
+   * periods). Pass in `Duration.Undefined` to switch off this feature.
    */
   def setReceiveTimeout(timeout: Duration): Unit
-
-  /**
-   * Clears the receive timeout, i.e. deactivates this feature.
-   */
-  def resetReceiveTimeout(): Unit
 
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
@@ -290,11 +292,11 @@ private[akka] class ActorCell(
   val props: Props,
   val parent: InternalActorRef)
   extends UntypedActorContext with Cell
-  with cell.ReceiveTimeout
-  with cell.Children
-  with cell.Dispatch
-  with cell.DeathWatch
-  with cell.FaultHandling {
+  with dungeon.ReceiveTimeout
+  with dungeon.Children
+  with dungeon.Dispatch
+  with dungeon.DeathWatch
+  with dungeon.FaultHandling {
 
   import ActorCell._
 

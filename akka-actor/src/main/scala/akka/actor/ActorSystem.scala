@@ -17,7 +17,7 @@ import akka.util._
 import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.cell.ChildrenContainer
+import akka.actor.dungeon.ChildrenContainer
 import scala.concurrent.util.FiniteDuration
 import util.{ Failure, Success }
 
@@ -165,6 +165,8 @@ object ActorSystem {
     final val SchedulerTicksPerWheel: Int = getInt("akka.scheduler.ticks-per-wheel")
     final val Daemonicity: Boolean = getBoolean("akka.daemonic")
     final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")
+
+    final val DefaultVirtualNodesFactor: Int = getInt("akka.actor.deployment.default.virtual-nodes-factor")
 
     if (ConfigVersion != Version)
       throw new akka.ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")

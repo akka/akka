@@ -9,7 +9,6 @@ import com.typesafe.config.Config
 import akka.actor.{ Extension, ExtendedActorSystem, Address, DynamicAccess }
 import akka.event.Logging
 import java.util.concurrent.ConcurrentHashMap
-import scala.util.control.NonFatal
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
 import util.{ Try, DynamicVariable }
@@ -100,8 +99,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         // bindings are ordered from most specific to least specific
         def unique(possibilities: Seq[(Class[_], Serializer)]): Boolean =
           possibilities.size == 1 ||
-            (possibilities map (_._1) forall (_ isAssignableFrom possibilities(0)._1)) ||
-            (possibilities map (_._2) forall (_ == possibilities(0)._2))
+            (possibilities forall (_._1 isAssignableFrom possibilities(0)._1)) ||
+            (possibilities forall (_._2 == possibilities(0)._2))
 
         val ser = bindings filter { _._1 isAssignableFrom clazz } match {
           case Seq() ⇒

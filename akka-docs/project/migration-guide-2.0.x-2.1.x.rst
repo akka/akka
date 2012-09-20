@@ -287,7 +287,6 @@ Both Actors and UntypedActors using ``Stash`` now overrides postStop to make sur
 stashed messages are put into the dead letters when the actor stops, make sure you call
 super.postStop if you override it.
 
-
 Forward of Terminated message
 =============================
 
@@ -418,3 +417,44 @@ Search                                           Replace with
 ``akka.actor.mailbox.FileBasedMessageQueue``     ``akka.actor.mailbox.filebased.FileBasedMessageQueue``
 ``akka.actor.mailbox.filequeue.*``               ``akka.actor.mailbox.filebased.filequeue.*``
 ================================================ =========================================================
+   
+Actor Receive Timeout
+=====================
+
+The API for setting and querying the receive timeout has been made more
+consisten in always taking and returning a ``Duration``, the wrapping in
+``Option`` has been removed.
+
+(Samples for Java, Scala sources are affected in exactly the same way.)
+
+v2.0::
+
+  getContext().setReceiveTimeout(Duration.create(10, SECONDS));
+  final Option<Duration> timeout = getContext().receiveTimeout();
+  final isSet = timeout.isDefined();
+  resetReceiveTimeout();
+
+v2.1::
+
+  getContext().setReceiveTimeout(Duration.create(10, SECONDS));
+  final Duration timeout = getContext().receiveTimeout();
+  final isSet = timeout.isFinite();
+  getContext().setReceiveTimeout(Duration.Undefined());
+
+ConsistentHash
+==============
+
+``akka.routing.ConsistentHash`` has been changed to an immutable data structure.
+
+v2.0::
+
+  val consistentHash = new ConsistentHash(Seq(a1, a2, a3), replicas = 10)
+  consistentHash += a4
+  val a = consistentHash.nodeFor(data)
+
+v2.1::
+
+  var consistentHash = ConsistentHash(Seq(a1, a2, a3), replicas = 10)
+  consistentHash = consistentHash :+ a4
+  val a = consistentHash.nodeFor(data)
+

@@ -2,7 +2,7 @@
  *  Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.actor.cell
+package akka.actor.dungeon
 
 import akka.actor.{ Terminated, InternalActorRef, ActorRef, ActorCell, Actor, Address, AddressTerminated }
 import akka.dispatch.{ Watch, Unwatch }

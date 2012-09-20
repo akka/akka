@@ -115,8 +115,8 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
     val s = if (sender eq null) system.deadLetters else sender
 
     val msg = message match {
-      case Broadcast(m) ⇒ m
-      case m            ⇒ m
+      case wrapped: RouterEnvelope ⇒ wrapped.message
+      case m                       ⇒ m
     }
 
     applyRoute(s, message) match {
@@ -283,7 +283,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * The reason for the delay is to give concurrent messages a chance to be
    * placed in mailbox before sending PoisonPill.
    */
-  def removeRoutees(nrOfInstances: Int, stopDelay: Duration): Unit = {
+  def removeRoutees(nrOfInstances: Int, stopDelay: FiniteDuration): Unit = {
     if (nrOfInstances <= 0) {
       throw new IllegalArgumentException("Expected positive nrOfInstances, got [%s]".format(nrOfInstances))
     } else if (nrOfInstances > 0) {
@@ -298,7 +298,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * Give concurrent messages a chance to be placed in mailbox before
    * sending PoisonPill.
    */
-  protected def delayedStop(scheduler: Scheduler, abandon: Iterable[ActorRef], stopDelay: Duration): Unit = {
+  protected def delayedStop(scheduler: Scheduler, abandon: Iterable[ActorRef], stopDelay: FiniteDuration): Unit = {
     if (abandon.nonEmpty) {
       if (stopDelay <= Duration.Zero) {
         abandon foreach (_ ! PoisonPill)
@@ -400,7 +400,15 @@ private object Router {
  * Router implementations may choose to handle this message differently.
  */
 @SerialVersionUID(1L)
-case class Broadcast(message: Any)
+case class Broadcast(message: Any) extends RouterEnvelope
+
+/**
+ * Only the contained message will be forwarded to the
+ * destination, i.e. the envelope will be stripped off.
+ */
+trait RouterEnvelope {
+  def message: Any
+}
 
 /**
  * Sending this message to a router will make it send back its currently used routees.
@@ -588,6 +596,10 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait RoundRobinLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
@@ -721,6 +733,10 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait RandomLike { this: RouterConfig ⇒
   def nrOfInstances: Int
 
@@ -861,6 +877,10 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait SmallestMailboxLike { this: RouterConfig ⇒
   def nrOfInstances: Int
 
@@ -1076,6 +1096,10 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait BroadcastLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
@@ -1205,6 +1229,10 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
@@ -1332,7 +1360,7 @@ case class DefaultResizer(
  * messages a chance to be placed in mailbox before sending PoisonPill.
  * Use 0 seconds to skip delay.
  */
-  stopDelay: Duration = 1.second,
+  stopDelay: FiniteDuration = 1.second,
   /**
  * Number of messages between resize operation.
  * Use 1 to resize before each message.

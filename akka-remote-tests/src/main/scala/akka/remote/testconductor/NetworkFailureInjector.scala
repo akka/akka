@@ -4,20 +4,17 @@
 package akka.remote.testconductor
 
 import language.postfixOps
-
 import java.net.InetSocketAddress
-
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
-
 import org.jboss.netty.buffer.ChannelBuffer
 import org.jboss.netty.channel.{ SimpleChannelHandler, MessageEvent, Channels, ChannelStateEvent, ChannelHandlerContext, ChannelFutureListener, ChannelFuture }
-
 import akka.actor.{ Props, LoggingFSM, Address, ActorSystem, ActorRef, ActorLogging, Actor, FSM }
 import akka.event.Logging
 import akka.remote.netty.ChannelAddress
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
+import scala.concurrent.util.FiniteDuration
 
 /**
  * INTERNAL API.
@@ -331,20 +328,20 @@ private[akka] class ThrottleActor(channelContext: ChannelHandlerContext)
    * lead to the correct rate on average, with increased latency of the order of
    * HWT granularity.
    */
-  private def schedule(d: Data): (Data, Seq[Send], Option[Duration]) = {
+  private def schedule(d: Data): (Data, Seq[Send], Option[FiniteDuration]) = {
     val now = System.nanoTime
-    @tailrec def rec(d: Data, toSend: Seq[Send]): (Data, Seq[Send], Option[Duration]) = {
+    @tailrec def rec(d: Data, toSend: Seq[Send]): (Data, Seq[Send], Option[FiniteDuration]) = {
       if (d.queue.isEmpty) (d, toSend, None)
       else {
         val timeForPacket = d.lastSent + (1000 * size(d.queue.head.msg) / d.rateMBit).toLong
         if (timeForPacket <= now) rec(Data(timeForPacket, d.rateMBit, d.queue.tail), toSend :+ d.queue.head)
         else {
           val splitThreshold = d.lastSent + packetSplitThreshold.toNanos
-          if (now < splitThreshold) (d, toSend, Some((timeForPacket - now).nanos min (splitThreshold - now).nanos))
+          if (now < splitThreshold) (d, toSend, Some(((timeForPacket - now).nanos min (splitThreshold - now).nanos).asInstanceOf[FiniteDuration]))
           else {
             val microsToSend = (now - d.lastSent) / 1000
             val (s1, s2) = split(d.queue.head, (microsToSend * d.rateMBit / 8).toInt)
-            (d.copy(queue = s2 +: d.queue.tail), toSend :+ s1, Some((timeForPacket - now).nanos min packetSplitThreshold))
+            (d.copy(queue = s2 +: d.queue.tail), toSend :+ s1, Some(((timeForPacket - now).nanos min packetSplitThreshold).asInstanceOf[FiniteDuration]))
           }
         }
       }

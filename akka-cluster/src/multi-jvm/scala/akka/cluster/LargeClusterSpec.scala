@@ -19,6 +19,7 @@ import akka.remote.testconductor.RoleName
 import akka.actor.Props
 import akka.actor.Actor
 import akka.cluster.MemberStatus._
+import scala.concurrent.util.FiniteDuration
 
 object LargeClusterMultiJvmSpec extends MultiNodeConfig {
   // each jvm simulates a datacenter with many nodes
@@ -52,6 +53,7 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
       parallelism-max = 13
     }
     akka.scheduler.tick-duration = 33 ms
+    akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.execution-pool-size = 4
     #akka.remote.netty.reconnection-time-window = 1s
     akka.remote.netty.backoff-timeout = 500ms
@@ -122,8 +124,9 @@ abstract class LargeClusterSpec
     systems foreach { Cluster(_) }
   }
 
-  def expectedMaxDuration(totalNodes: Int): Duration =
-    5.seconds + (2.seconds * totalNodes)
+  def expectedMaxDuration(totalNodes: Int): FiniteDuration =
+    // this cast will always succeed, but the compiler does not know about it ...
+    (5.seconds + (2.seconds * totalNodes)).asInstanceOf[FiniteDuration]
 
   def joinAll(from: RoleName, to: RoleName, totalNodes: Int, runOnRoles: RoleName*): Unit = {
     val joiningClusters = systems.map(Cluster(_)).toSet
@@ -271,7 +274,7 @@ abstract class LargeClusterSpec
       val unreachableNodes = nodesPerDatacenter
       val liveNodes = nodesPerDatacenter * 4
 
-      within(30.seconds + (3.seconds * liveNodes)) {
+      within((30.seconds + (3.seconds * liveNodes)).asInstanceOf[FiniteDuration]) {
         val startGossipCounts = Map.empty[Cluster, Long] ++
           systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).readView.latestStats.receivedGossipCount))
         def gossipCount(c: Cluster): Long = {

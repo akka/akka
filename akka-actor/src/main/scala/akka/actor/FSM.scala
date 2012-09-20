@@ -4,11 +4,11 @@
 package akka.actor
 
 import language.implicitConversions
-
 import akka.util._
 import scala.concurrent.util.Duration
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
+import scala.concurrent.util.FiniteDuration
 
 object FSM {
 
@@ -92,7 +92,7 @@ object FSM {
     private val scheduler = context.system.scheduler
     private implicit val executionContext = context.dispatcher
 
-    def schedule(actor: ActorRef, timeout: Duration): Unit =
+    def schedule(actor: ActorRef, timeout: FiniteDuration): Unit =
       ref = Some(
         if (repeat) scheduler.schedule(timeout, timeout, actor, this)
         else scheduler.scheduleOnce(timeout, actor, this))
@@ -121,15 +121,18 @@ object FSM {
    * name, the state data, possibly custom timeout, stop reason and replies
    * accumulated while processing the last message.
    */
-  case class State[S, D](stateName: S, stateData: D, timeout: Option[Duration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
+  case class State[S, D](stateName: S, stateData: D, timeout: Option[FiniteDuration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
 
     /**
      * Modify state transition descriptor to include a state timeout for the
      * next state. This timeout overrides any default timeout set for the next
      * state.
+     *
+     * Use Duration.Inf to deactivate an existing timeout.
      */
-    def forMax(timeout: Duration): State[S, D] = {
-      copy(timeout = Some(timeout))
+    def forMax(timeout: Duration): State[S, D] = timeout match {
+      case f: FiniteDuration ⇒ copy(timeout = Some(f))
+      case _                 ⇒ copy(timeout = None)
     }
 
     /**
@@ -245,7 +248,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
 
   type State = FSM.State[S, D]
   type StateFunction = scala.PartialFunction[Event, State]
-  type Timeout = Option[Duration]
+  type Timeout = Option[FiniteDuration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
   /*
@@ -279,7 +282,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * @param stateTimeout default state timeout for this state
    * @param stateFunction partial function describing response to input
    */
-  final def when(stateName: S, stateTimeout: Duration = null)(stateFunction: StateFunction): Unit =
+  final def when(stateName: S, stateTimeout: FiniteDuration = null)(stateFunction: StateFunction): Unit =
     register(stateName, stateFunction, Option(stateTimeout))
 
   /**
@@ -339,7 +342,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * @param repeat send once if false, scheduleAtFixedRate if true
    * @return current state descriptor
    */
-  final def setTimer(name: String, msg: Any, timeout: Duration, repeat: Boolean): State = {
+  final def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean): State = {
     if (debugEvent)
       log.debug("setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     if (timers contains name) {

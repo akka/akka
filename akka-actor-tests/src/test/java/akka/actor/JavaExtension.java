@@ -64,6 +64,7 @@ public class JavaExtension {
 
   @Test
   public void mustBeAccessible() {
+    assertTrue(system.hasExtension((TestExtensionId.TestExtensionProvider)));
     assertSame(system.extension(TestExtensionId.TestExtensionProvider).system, system);
     assertSame(TestExtensionId.TestExtensionProvider.apply(system).system, system);
   }

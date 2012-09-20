@@ -69,10 +69,9 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
       val g1 = Gossip(members = SortedSet(a1, b1, e1)).seen(a1.address).seen(b1.address).seen(e1.address)
       val g2 = Gossip(members = SortedSet(a1, b1, e1)).seen(a1.address).seen(b1.address)
 
-      // LeaderChanged is also published when convergence changed
-      diff(g1, g2) must be(Seq(ConvergenceChanged(false), LeaderChanged(Some(a1.address), convergence = false),
+      diff(g1, g2) must be(Seq(ConvergenceChanged(false),
         SeenChanged(convergence = false, seenBy = Set(a1.address, b1.address))))
-      diff(g2, g1) must be(Seq(ConvergenceChanged(true), LeaderChanged(Some(a1.address), convergence = true),
+      diff(g2, g1) must be(Seq(ConvergenceChanged(true),
         SeenChanged(convergence = true, seenBy = Set(a1.address, b1.address, e1.address))))
     }
 
@@ -81,8 +80,8 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
       val g2 = Gossip(members = SortedSet(b1, e1), overview = GossipOverview(unreachable = Set(a1)))
       val g3 = g2.copy(overview = GossipOverview()).seen(b1.address).seen(e1.address)
 
-      diff(g1, g2) must be(Seq(MemberUnreachable(a1), LeaderChanged(Some(b1.address), convergence = false)))
-      diff(g2, g3) must be(Seq(ConvergenceChanged(true), LeaderChanged(Some(b1.address), convergence = true),
+      diff(g1, g2) must be(Seq(MemberUnreachable(a1), LeaderChanged(Some(b1.address))))
+      diff(g2, g3) must be(Seq(ConvergenceChanged(true),
         SeenChanged(convergence = true, seenBy = Set(b1.address, e1.address))))
     }
   }

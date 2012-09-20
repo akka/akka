@@ -4,7 +4,6 @@
 package akka.cluster
 
 import language.implicitConversions
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.{ Address, ExtendedActorSystem }
@@ -18,6 +17,7 @@ import org.scalatest.exceptions.TestFailedException
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
+import scala.concurrent.util.FiniteDuration
 
 object MultiNodeClusterSpec {
 
@@ -33,6 +33,7 @@ object MultiNodeClusterSpec {
     akka.cluster {
       auto-join                         = on
       auto-down                         = off
+      jmx.enabled                       = off
       gossip-interval                   = 200 ms
       heartbeat-interval                = 400 ms
       leader-actions-interval           = 200 ms
@@ -174,7 +175,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   def awaitUpConvergence(
     numberOfMembers: Int,
     canNotBePartOfMemberRing: Seq[Address] = Seq.empty[Address],
-    timeout: Duration = 20.seconds): Unit = {
+    timeout: FiniteDuration = 20.seconds): Unit = {
     within(timeout) {
       awaitCond(clusterView.members.size == numberOfMembers)
       awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
