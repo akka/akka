@@ -29,6 +29,7 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
       auto-join = off
     }
     akka.loglevel = INFO
+    akka.remote.log-remote-lifecycle-events = off
     """))
 }
 
