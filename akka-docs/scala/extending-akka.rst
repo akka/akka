@@ -58,8 +58,6 @@ in the ``akka.extensions`` section of the config you provide to your ``ActorSyst
 .. includecode:: code/docs/extension/ExtensionDocSpec.scala
    :include: config
 
-Note that in this case ``CountExtension`` is an object and therefore the class name ends with ``$``.
-
 Applicability
 =============
 

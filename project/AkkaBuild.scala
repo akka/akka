@@ -6,8 +6,8 @@ package akka
 
 import sbt._
 import sbt.Keys._
-import com.typesafe.sbtmultijvm.MultiJvmPlugin
-import com.typesafe.sbtmultijvm.MultiJvmPlugin.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName }
+import com.typesafe.sbt.SbtMultiJvm
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions, jvmOptions, scalatestOptions, multiNodeExecuteTests, multiNodeJavaName }
 import com.typesafe.sbtscalariform.ScalariformPlugin
 import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
@@ -36,7 +36,7 @@ object AkkaBuild extends Build {
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Unidoc.unidocExclude := Seq(samples.id),
-      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id),
+      Dist.distExclude := Seq(actorTests.id, akkaSbtPlugin.id, docs.id, samples.id),
       initialCommands in ThisBuild :=
         """|import language.postfixOps
            |import akka.actor._
@@ -69,7 +69,7 @@ object AkkaBuild extends Build {
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, samples, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs)
   )
 
   lazy val actor = Project(
@@ -77,8 +77,6 @@ object AkkaBuild extends Build {
     base = file("akka-actor"),
     settings = defaultSettings ++ OSGi.actor ++ Seq(
       autoCompilerPlugins := true,
-      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
-      artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle")),
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
@@ -131,8 +129,9 @@ object AkkaBuild extends Build {
   lazy val remoteTests = Project(
     id = "akka-remote-tests-experimental",
     base = file("akka-remote-tests"),
-    dependencies = Seq(remote, actorTests % "test->test", testkit % "test->test"),
+    dependencies = Seq(remote, actorTests % "test->test", testkit),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      libraryDependencies ++= Dependencies.remoteTests,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -147,7 +146,7 @@ object AkkaBuild extends Build {
   lazy val cluster = Project(
     id = "akka-cluster-experimental",
     base = file("akka-cluster"),
-    dependencies = Seq(remote, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
+    dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
     settings = defaultSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
@@ -275,6 +274,8 @@ object AkkaBuild extends Build {
     base = file("akka-sbt-plugin"),
     settings = defaultSettings ++ Seq(
       sbtPlugin := true,
+      publishMavenStyle := false, // SBT Plugins should be published as Ivy
+      publishTo <<= Publish.akkaPluginPublishTo,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
       scalaVersion := "2.9.1",
       scalaBinaryVersion <<= scalaVersion
@@ -293,7 +294,8 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-camel"),
     dependencies = Seq(actor, camel),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.camelSample
+      libraryDependencies ++= Dependencies.camelSample,
+      publishArtifact in Compile := false
     )
   )
 
@@ -301,28 +303,28 @@ object AkkaBuild extends Build {
     id = "akka-sample-fsm",
     base = file("akka-samples/akka-sample-fsm"),
     dependencies = Seq(actor),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val helloSample = Project(
     id = "akka-sample-hello",
     base = file("akka-samples/akka-sample-hello"),
     dependencies = Seq(actor),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val helloKernelSample = Project(
     id = "akka-sample-hello-kernel",
     base = file("akka-samples/akka-sample-hello-kernel"),
     dependencies = Seq(kernel),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val remoteSample = Project(
     id = "akka-sample-remote",
     base = file("akka-samples/akka-sample-remote"),
     dependencies = Seq(actor, remote, kernel),
-    settings = defaultSettings
+    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
   )
 
   lazy val clusterSample = Project(
@@ -336,7 +338,8 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      jvmOptions in MultiJvm := defaultMultiJvmOptions
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
+      publishArtifact in Compile := false
     )
   ) configs (MultiJvm)
 
@@ -355,11 +358,17 @@ object AkkaBuild extends Build {
 
   // Settings
 
-  override lazy val settings = super.settings ++ buildSettings ++ Seq(
-      resolvers += "Scala Community 2.10.0-SNAPSHOT" at "https://scala-webapps.epfl.ch/jenkins/job/community-nightly/ws/target/repositories/8e83577d99af1d718fe369c4a4ee92737b9cf669",
-      resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
-      resolvers += "Sonatype Releases Repo" at "https://oss.sonatype.org/content/repositories/releases/",
-      shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
+  override lazy val settings =
+    super.settings ++
+    buildSettings ++
+    Seq(
+      shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
+      resolvers <<= (resolvers, scalaVersion) apply {
+        case (res, "2.10.0-SNAPSHOT") =>
+          res :+ ("Scala Community 2.10.0-SNAPSHOT" at "https://scala-webapps.epfl.ch/jenkins/job/community-nightly/ws/target/repositories/8e83577d99af1d718fe369c4a4ee92737b9cf669")
+        case (res, _) =>
+          res
+      }
     )
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
@@ -424,8 +433,6 @@ object AkkaBuild extends Build {
   }
 
   lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ Seq(
-    resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
     javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
@@ -473,7 +480,7 @@ object AkkaBuild extends Build {
     .setPreference(AlignSingleLineCaseStatements, true)
   }
 
-  lazy val multiJvmSettings = MultiJvmPlugin.settings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
+  lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
@@ -516,7 +523,7 @@ object AkkaBuild extends Build {
 
     val cluster = exports(Seq("akka.cluster.*"))
 
-    val fileMailbox = exports(Seq("akka.actor.mailbox.*"))
+    val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
     val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
 
@@ -524,7 +531,7 @@ object AkkaBuild extends Build {
 
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
-    val remote = exports(Seq("akka.remote.*", "akka.routing.*", "akka.serialization.*"))
+    val remote = exports(Seq("akka.remote.*"))
 
     val slf4j = exports(Seq("akka.event.slf4j.*"))
 
@@ -536,16 +543,13 @@ object AkkaBuild extends Build {
 
     def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
       OsgiKeys.importPackage := defaultImports,
-      OsgiKeys.exportPackage := packages,
-      packagedArtifact in (Compile, packageBin) <<= (artifact in (Compile, packageBin), OsgiKeys.bundle).identityMap,
-      artifact in (Compile, packageBin) ~= (_.copy(`type` = "bundle"))
+      OsgiKeys.exportPackage := packages
     )
 
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
     def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,0.5)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
-
   }
 }
 
@@ -556,11 +560,13 @@ object Dependencies {
 
   val actor = Seq(config)
 
-  val testkit = Seq(Test.scalatest, Test.junit)
+  val testkit = Seq(Test.junit, Test.scalatest)
 
   val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf)
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
+
+  val remoteTests = Seq(Test.junit, Test.scalatest)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 

@@ -45,8 +45,8 @@ To prevent visibility and reordering problems on actors, Akka guarantees the fol
 
 .. note::
 
-    In layman's terms this means that changes to internal fields of the actor is visible when the next message
-    is processed by that actor. So fields in your actor does not need to be volatile or equivalent.
+    In layman's terms this means that changes to internal fields of the actor are visible when the next message
+    is processed by that actor. So fields in your actor need not be volatile or equivalent.
 
 
 Both rules only apply for the same actor instance and are not valid if different actors are used.

@@ -25,6 +25,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import scala.concurrent.util.Duration;
+import scala.concurrent.util.FiniteDuration;
 import akka.event.LoggingAdapter;
 import akka.util.Unsafe;
 
@@ -241,7 +242,7 @@ public class HashedWheelTimer implements Timer {
         return new HashedWheelTimeout(this, task, time);
     }
 
-    public Timeout newTimeout(TimerTask task, Duration delay) {
+    public Timeout newTimeout(TimerTask task, FiniteDuration delay) {
         final long currentTime = System.nanoTime();
 
         if (task == null) {

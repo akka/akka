@@ -67,21 +67,11 @@ abstract class TransitionSpec
     memberStatus(address) == status
   }
 
-  def leaderActions(): Unit = {
+  def leaderActions(): Unit =
     cluster.clusterCore ! LeaderActionsTick
-    awaitPing()
-  }
 
-  def reapUnreachable(): Unit = {
+  def reapUnreachable(): Unit =
     cluster.clusterCore ! ReapUnreachableTick
-    awaitPing()
-  }
-
-  def awaitPing(): Unit = {
-    val ping = Ping()
-    cluster.clusterCore ! ping
-    expectMsgPF() { case pong @ Pong(`ping`, _) ⇒ pong }
-  }
 
   // DSL sugar for `role1 gossipTo role2`
   implicit def roleExtras(role: RoleName): RoleWrapper = new RoleWrapper(role)

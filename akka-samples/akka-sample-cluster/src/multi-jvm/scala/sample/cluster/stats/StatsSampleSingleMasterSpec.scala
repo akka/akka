@@ -16,6 +16,7 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberUp
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit.ImplicitSender
 
 object StatsSampleSingleMasterSpec extends MultiNodeConfig {
@@ -55,7 +56,7 @@ class StatsSampleSingleMasterMultiJvmNode2 extends StatsSampleSingleMasterSpec
 class StatsSampleSingleMasterMultiJvmNode3 extends StatsSampleSingleMasterSpec
 
 abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSingleMasterSpec)
-  with ImplicitSender {
+  with STMultiNodeSpec with ImplicitSender {
 
   import StatsSampleSpec._
 

@@ -6,6 +6,7 @@ package akka.pattern
 import akka.actor.Scheduler
 import scala.concurrent.ExecutionContext
 import java.util.concurrent.Callable
+import scala.concurrent.util.FiniteDuration
 
 object Patterns {
   import akka.actor.{ ActorRef, ActorSystem }
@@ -103,20 +104,20 @@ object Patterns {
    * If the target actor isn't terminated within the timeout the [[scala.concurrent.Future]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
-  def gracefulStop(target: ActorRef, timeout: Duration, system: ActorSystem): Future[java.lang.Boolean] =
+  def gracefulStop(target: ActorRef, timeout: FiniteDuration, system: ActorSystem): Future[java.lang.Boolean] =
     scalaGracefulStop(target, timeout)(system).asInstanceOf[Future[java.lang.Boolean]]
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided Callable
    * after the specified duration.
    */
-  def after[T](duration: Duration, scheduler: Scheduler, context: ExecutionContext, value: Callable[Future[T]]): Future[T] =
+  def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: Callable[Future[T]]): Future[T] =
     scalaAfter(duration, scheduler)(value.call())(context)
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
-  def after[T](duration: Duration, scheduler: Scheduler, context: ExecutionContext, value: Future[T]): Future[T] =
+  def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: Future[T]): Future[T] =
     scalaAfter(duration, scheduler)(value)(context)
 }

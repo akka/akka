@@ -74,6 +74,15 @@ object Publish {
     }
   }
 
+  def akkaPluginPublishTo: Initialize[Option[Resolver]] = {
+    (version) { version: String =>
+      akkaPublishRepository orElse {
+        val name = if (version.contains("-SNAPSHOT")) "sbt-plugin-snapshots" else "sbt-plugin-releases"
+        Some(Resolver.url(name, url("http://scalasbt.artifactoryonline.com/scalasbt/" + name))(Resolver.ivyStylePatterns))
+      }
+    }
+  }
+
   def sonatypeRepo(version: String): Option[Resolver] = {
     Option(sys.props("publish.maven.central")) filter (_.toLowerCase == "true") map { _ =>
       val nexus = "https://oss.sonatype.org/"
@@ -83,15 +92,11 @@ object Publish {
   }
 
 
-  def akkaPublishRepository: Option[Resolver] = {
-      val property = Option(System.getProperty("akka.publish.repository"))
-      property map { "Akka Publish Repository" at _ }
-  }
+  def akkaPublishRepository: Option[Resolver] =
+      Option(System.getProperty("akka.publish.repository", null)) map { "Akka Publish Repository" at _ }
 
-  def akkaCredentials: Seq[Credentials] = {
-    val property = Option(System.getProperty("akka.publish.credentials"))
-    property map (f => Credentials(new File(f))) toSeq
-  }
+  def akkaCredentials: Seq[Credentials] =
+    Option(System.getProperty("akka.publish.credentials", null)) map (f => Credentials(new File(f))) toSeq
 
   // timestamped versions
 

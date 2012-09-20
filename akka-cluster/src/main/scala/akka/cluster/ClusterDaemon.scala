@@ -16,6 +16,7 @@ import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import language.existentials
 import language.postfixOps
+import scala.concurrent.util.FiniteDuration
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -106,12 +107,14 @@ private[cluster] object InternalClusterAction {
   sealed trait SubscriptionMessage
   case class Subscribe(subscriber: ActorRef, to: Class[_]) extends SubscriptionMessage
   case class Unsubscribe(subscriber: ActorRef) extends SubscriptionMessage
+  /**
+   * @param receiver if `receiver` is defined the event will only be sent to that
+   *   actor, otherwise it will be sent to all subscribers via the `eventStream`.
+   */
+  case class PublishCurrentClusterState(receiver: Option[ActorRef]) extends SubscriptionMessage
 
   case class PublishChanges(oldGossip: Gossip, newGossip: Gossip)
   case object PublishDone
-
-  case class Ping(timestamp: Long = System.currentTimeMillis) extends ClusterMessage
-  case class Pong(ping: Ping, timestamp: Long = System.currentTimeMillis) extends ClusterMessage
 
 }
 
@@ -189,32 +192,32 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
 
   // start periodic gossip to random nodes in cluster
   val gossipTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(GossipInterval), GossipInterval) {
+    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(GossipInterval).asInstanceOf[FiniteDuration], GossipInterval) {
       self ! GossipTick
     }
 
   // start periodic heartbeat to all nodes in cluster
   val heartbeatTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(HeartbeatInterval), HeartbeatInterval) {
+    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(HeartbeatInterval).asInstanceOf[FiniteDuration], HeartbeatInterval) {
       self ! HeartbeatTick
     }
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
   val failureDetectorReaperTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval), UnreachableNodesReaperInterval) {
+    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval).asInstanceOf[FiniteDuration], UnreachableNodesReaperInterval) {
       self ! ReapUnreachableTick
     }
 
   // start periodic leader action management (only applies for the current leader)
   private val leaderActionsTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(LeaderActionsInterval), LeaderActionsInterval) {
+    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(LeaderActionsInterval).asInstanceOf[FiniteDuration], LeaderActionsInterval) {
       self ! LeaderActionsTick
     }
 
   // start periodic publish of current state
   private val publishStateTask: Option[Cancellable] =
     if (PublishStatsInterval == Duration.Zero) None
-    else Some(FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval), PublishStatsInterval) {
+    else Some(FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval).asInstanceOf[FiniteDuration], PublishStatsInterval) {
       self ! PublishStatsTick
     })
 
@@ -255,7 +258,6 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
     case Remove(address)                  ⇒ removing(address)
     case SendGossipTo(address)            ⇒ gossipTo(address)
     case msg: SubscriptionMessage         ⇒ publisher forward msg
-    case p: Ping                          ⇒ ping(p)
 
   }
 
@@ -831,7 +833,6 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
 
   def publishInternalStats(): Unit = publisher ! CurrentInternalStats(stats)
 
-  def ping(p: Ping): Unit = sender ! Pong(p)
 }
 
 /**

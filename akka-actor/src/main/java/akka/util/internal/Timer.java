@@ -15,9 +15,9 @@
  */
 package akka.util.internal;
 
-import scala.concurrent.util.Duration;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+
+import scala.concurrent.util.FiniteDuration;
 
 /**
  * Schedules {@link TimerTask}s for one-time future execution in a background
@@ -42,7 +42,7 @@ public interface Timer {
      * @throws IllegalStateException if this timer has been
      *                               {@linkplain #stop() stopped} already
      */
-    Timeout newTimeout(TimerTask task, Duration delay);
+    Timeout newTimeout(TimerTask task, FiniteDuration delay);
 
     /**
      * Releases all resources acquired by this {@link Timer} and cancels all

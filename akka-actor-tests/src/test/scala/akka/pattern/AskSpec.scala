@@ -68,16 +68,6 @@ class AskSpec extends AkkaSpec {
       }.getMessage must be === expectedMsg
     }
 
-    "return broken promises on infinite timeout" in {
-      implicit val timeout = Timeout.never
-      val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender ! x } }))
-      val f = echo ? "foo"
-      val expectedMsg = "Timeouts to `ask` must be finite. Question not sent to [%s]" format echo
-      intercept[IllegalArgumentException] {
-        Await.result(f, remaining)
-      }.getMessage must be === expectedMsg
-    }
-
   }
 
 }

@@ -5,7 +5,6 @@
 package akka.cluster
 
 import language.implicitConversions
-
 import akka.actor._
 import akka.actor.Status._
 import akka.ConfigurationException
@@ -20,13 +19,12 @@ import scala.concurrent.util.{ Duration, Deadline }
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedSet
-
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-
 import akka.util.internal.HashedWheelTimer
 import concurrent.{ ExecutionContext, Await }
+import scala.concurrent.util.FiniteDuration
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -111,26 +109,26 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       new Scheduler with Closeable {
         override def close(): Unit = () // we are using system.scheduler, which we are not responsible for closing
 
-        override def schedule(initialDelay: Duration, frequency: Duration,
+        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
                               receiver: ActorRef, message: Any)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.schedule(initialDelay, frequency, receiver, message)
+          systemScheduler.schedule(initialDelay, interval, receiver, message)
 
-        override def schedule(initialDelay: Duration, frequency: Duration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.schedule(initialDelay, frequency)(f)
+        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
+          systemScheduler.schedule(initialDelay, interval)(f)
 
-        override def schedule(initialDelay: Duration, frequency: Duration,
+        override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
                               runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
-          systemScheduler.schedule(initialDelay, frequency, runnable)
+          systemScheduler.schedule(initialDelay, interval, runnable)
 
-        override def scheduleOnce(delay: Duration,
+        override def scheduleOnce(delay: FiniteDuration,
                                   runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay, runnable)
 
-        override def scheduleOnce(delay: Duration, receiver: ActorRef,
+        override def scheduleOnce(delay: FiniteDuration, receiver: ActorRef,
                                   message: Any)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay, receiver, message)
 
-        override def scheduleOnce(delay: Duration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
+        override def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
           systemScheduler.scheduleOnce(delay)(f)
       }
     }
@@ -191,6 +189,24 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    */
   def unsubscribe(subscriber: ActorRef): Unit =
     clusterCore ! InternalClusterAction.Unsubscribe(subscriber)
+
+  /**
+   * Publish current (full) state of the cluster to subscribers,
+   * that are subscribing to [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
+   * or [[akka.cluster.ClusterEvent.CurrentClusterState]].
+   * If you want this to happen periodically you need to schedule a call to
+   * this method yourself.
+   */
+  def publishCurrentClusterState(): Unit =
+    clusterCore ! InternalClusterAction.PublishCurrentClusterState(None)
+
+  /**
+   * Publish current (full) state of the cluster to the specified
+   * receiver. If you want this to happen periodically you need to schedule
+   * a call to this method yourself.
+   */
+  def sendCurrentClusterState(receiver: ActorRef): Unit =
+    clusterCore ! InternalClusterAction.PublishCurrentClusterState(Some(receiver))
 
   /**
    * Try to join this cluster node with the node specified by 'address'.

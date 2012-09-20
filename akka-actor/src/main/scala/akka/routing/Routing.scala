@@ -5,7 +5,6 @@ package akka.routing
 
 import language.implicitConversions
 import language.postfixOps
-
 import akka.actor._
 import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
@@ -19,6 +18,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.dispatch.Dispatchers
 import scala.annotation.tailrec
 import concurrent.ExecutionContext
+import scala.concurrent.util.FiniteDuration
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
@@ -115,8 +115,8 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
     val s = if (sender eq null) system.deadLetters else sender
 
     val msg = message match {
-      case Broadcast(m) ⇒ m
-      case m            ⇒ m
+      case wrapped: RouterEnvelope ⇒ wrapped.message
+      case m                       ⇒ m
     }
 
     applyRoute(s, message) match {
@@ -283,7 +283,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * The reason for the delay is to give concurrent messages a chance to be
    * placed in mailbox before sending PoisonPill.
    */
-  def removeRoutees(nrOfInstances: Int, stopDelay: Duration): Unit = {
+  def removeRoutees(nrOfInstances: Int, stopDelay: FiniteDuration): Unit = {
     if (nrOfInstances <= 0) {
       throw new IllegalArgumentException("Expected positive nrOfInstances, got [%s]".format(nrOfInstances))
     } else if (nrOfInstances > 0) {
@@ -298,7 +298,7 @@ class RouteeProvider(val context: ActorContext, val routeeProps: Props, val resi
    * Give concurrent messages a chance to be placed in mailbox before
    * sending PoisonPill.
    */
-  protected def delayedStop(scheduler: Scheduler, abandon: Iterable[ActorRef], stopDelay: Duration): Unit = {
+  protected def delayedStop(scheduler: Scheduler, abandon: Iterable[ActorRef], stopDelay: FiniteDuration): Unit = {
     if (abandon.nonEmpty) {
       if (stopDelay <= Duration.Zero) {
         abandon foreach (_ ! PoisonPill)
@@ -400,7 +400,15 @@ private object Router {
  * Router implementations may choose to handle this message differently.
  */
 @SerialVersionUID(1L)
-case class Broadcast(message: Any)
+case class Broadcast(message: Any) extends RouterEnvelope
+
+/**
+ * Only the contained message will be forwarded to the
+ * destination, i.e. the envelope will be stripped off.
+ */
+trait RouterEnvelope {
+  def message: Any
+}
 
 /**
  * Sending this message to a router will make it send back its currently used routees.
@@ -588,6 +596,10 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait RoundRobinLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
@@ -721,6 +733,10 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait RandomLike { this: RouterConfig ⇒
   def nrOfInstances: Int
 
@@ -861,6 +877,10 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait SmallestMailboxLike { this: RouterConfig ⇒
   def nrOfInstances: Int
 
@@ -1076,6 +1096,10 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait BroadcastLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
@@ -1098,13 +1122,13 @@ object ScatterGatherFirstCompletedRouter {
   /**
    * Creates a new ScatterGatherFirstCompletedRouter, routing to the specified routees, timing out after the specified Duration
    */
-  def apply(routees: Iterable[ActorRef], within: Duration): ScatterGatherFirstCompletedRouter =
+  def apply(routees: Iterable[ActorRef], within: FiniteDuration): ScatterGatherFirstCompletedRouter =
     new ScatterGatherFirstCompletedRouter(routees = routees map (_.path.toString), within = within)
 
   /**
    * Java API to create router with the supplied 'routees' actors.
    */
-  def create(routees: java.lang.Iterable[ActorRef], within: Duration): ScatterGatherFirstCompletedRouter = {
+  def create(routees: java.lang.Iterable[ActorRef], within: FiniteDuration): ScatterGatherFirstCompletedRouter = {
     import scala.collection.JavaConverters._
     apply(routees.asScala, within)
   }
@@ -1153,7 +1177,7 @@ object ScatterGatherFirstCompletedRouter {
  *   using `actorFor` in [[akka.actor.ActorRefProvider]]
  */
 @SerialVersionUID(1L)
-case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: Duration,
+case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil, within: FiniteDuration,
                                              override val resizer: Option[Resizer] = None,
                                              val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
                                              val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy)
@@ -1166,7 +1190,7 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * Constructor that sets nrOfInstances to be created.
    * Java API
    */
-  def this(nr: Int, w: Duration) = this(nrOfInstances = nr, within = w)
+  def this(nr: Int, w: FiniteDuration) = this(nrOfInstances = nr, within = w)
 
   /**
    * Constructor that sets the routees to be used.
@@ -1174,14 +1198,14 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String], w: Duration) =
+  def this(routeePaths: java.lang.Iterable[String], w: FiniteDuration) =
     this(routees = iterableAsScalaIterable(routeePaths), within = w)
 
   /**
    * Constructor that sets the resizer to be used.
    * Java API
    */
-  def this(resizer: Resizer, w: Duration) = this(resizer = Some(resizer), within = w)
+  def this(resizer: Resizer, w: FiniteDuration) = this(resizer = Some(resizer), within = w)
 
   /**
    * Java API for setting routerDispatcher
@@ -1205,13 +1229,17 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
   }
 }
 
+/**
+ * The core pieces of the routing logic is located in this
+ * trait to be able to extend.
+ */
 trait ScatterGatherFirstCompletedLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
 
   def routees: Iterable[String]
 
-  def within: Duration
+  def within: FiniteDuration
 
   def createRoute(routeeProvider: RouteeProvider): Route = {
     if (resizer.isEmpty) {
@@ -1332,7 +1360,7 @@ case class DefaultResizer(
  * messages a chance to be placed in mailbox before sending PoisonPill.
  * Use 0 seconds to skip delay.
  */
-  stopDelay: Duration = 1.second,
+  stopDelay: FiniteDuration = 1.second,
   /**
  * Number of messages between resize operation.
  * Use 1 to resize before each message.

@@ -4,12 +4,11 @@
 package akka.cluster
 
 import language.implicitConversions
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.{STMultiNodeSpec, MultiNodeSpec}
 import akka.testkit._
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
@@ -18,6 +17,7 @@ import org.scalatest.exceptions.TestFailedException
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
+import scala.concurrent.util.FiniteDuration
 
 object MultiNodeClusterSpec {
 
@@ -48,7 +48,7 @@ object MultiNodeClusterSpec {
     """)
 }
 
-trait MultiNodeClusterSpec extends Suite { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
@@ -175,7 +175,7 @@ trait MultiNodeClusterSpec extends Suite { self: MultiNodeSpec ⇒
   def awaitUpConvergence(
     numberOfMembers: Int,
     canNotBePartOfMemberRing: Seq[Address] = Seq.empty[Address],
-    timeout: Duration = 20.seconds): Unit = {
+    timeout: FiniteDuration = 20.seconds): Unit = {
     within(timeout) {
       awaitCond(clusterView.members.size == numberOfMembers)
       awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))

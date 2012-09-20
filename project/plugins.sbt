@@ -1,11 +1,11 @@
 
 resolvers += Classpaths.typesafeResolver
 
-addSbtPlugin("com.typesafe.sbtmultijvm" % "sbt-multi-jvm" % "0.2.0-M5" cross CrossVersion.full)
+addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.0")
 
 addSbtPlugin("com.typesafe.sbtscalariform" % "sbtscalariform" % "0.4.0")
 
-addSbtPlugin("com.typesafe.sbtosgi" % "sbtosgi" % "0.2.0")
+addSbtPlugin("com.typesafe.sbtosgi" % "sbtosgi" % "0.3.0")
 
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.3")
 

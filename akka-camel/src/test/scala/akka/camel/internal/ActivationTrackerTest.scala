@@ -1,7 +1,6 @@
 package akka.camel.internal
 
 import language.postfixOps
-
 import org.scalatest.matchers.MustMatchers
 import scala.concurrent.util.duration._
 import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
@@ -9,6 +8,7 @@ import akka.actor.{ Props, ActorSystem }
 import scala.concurrent.util.Duration
 import akka.camel._
 import akka.testkit.{ TimingTest, TestProbe, TestKit }
+import scala.concurrent.util.FiniteDuration
 
 class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
 
@@ -115,11 +115,11 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
     val probe = TestProbe()
     def awaitActivation() = at.tell(AwaitActivation(actor.ref), probe.ref)
     def awaitDeActivation() = at.tell(AwaitDeActivation(actor.ref), probe.ref)
-    def verifyActivated(timeout: Duration = 50 millis) = within(timeout) { probe.expectMsg(EndpointActivated(actor.ref)) }
-    def verifyDeActivated(timeout: Duration = 50 millis) = within(timeout) { probe.expectMsg(EndpointDeActivated(actor.ref)) }
+    def verifyActivated(timeout: FiniteDuration = 50 millis) = within(timeout) { probe.expectMsg(EndpointActivated(actor.ref)) }
+    def verifyDeActivated(timeout: FiniteDuration = 50 millis) = within(timeout) { probe.expectMsg(EndpointDeActivated(actor.ref)) }
 
-    def verifyFailedToActivate(timeout: Duration = 50 millis) = within(timeout) { probe.expectMsg(EndpointFailedToActivate(actor.ref, cause)) }
-    def verifyFailedToDeActivate(timeout: Duration = 50 millis) = within(timeout) { probe.expectMsg(EndpointFailedToDeActivate(actor.ref, cause)) }
+    def verifyFailedToActivate(timeout: FiniteDuration = 50 millis) = within(timeout) { probe.expectMsg(EndpointFailedToActivate(actor.ref, cause)) }
+    def verifyFailedToDeActivate(timeout: FiniteDuration = 50 millis) = within(timeout) { probe.expectMsg(EndpointFailedToDeActivate(actor.ref, cause)) }
 
   }
 

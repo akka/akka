@@ -70,7 +70,7 @@ object ActorSystemSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExtension$"]""") with ImplicitSender {
+class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExtension"]""") with ImplicitSender {
 
   "An ActorSystem" must {
 
@@ -95,9 +95,10 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
     }
 
     "support extensions" in {
+      // TestExtension is configured and should be loaded at startup
+      system.hasExtension(TestExtension) must be(true)
       TestExtension(system).system must be === system
       system.extension(TestExtension).system must be === system
-      system.hasExtension(TestExtension) must be(true)
     }
 
     "run termination callbacks in order" in {

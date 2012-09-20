@@ -9,6 +9,7 @@ import akka.actor.Props
 import akka.cluster.Cluster
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit.ImplicitSender
 
 object TransformationSampleSpec extends MultiNodeConfig {
@@ -37,7 +38,7 @@ class TransformationSampleMultiJvmNode4 extends TransformationSampleSpec
 class TransformationSampleMultiJvmNode5 extends TransformationSampleSpec
 
 abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSampleSpec)
-  with ImplicitSender {
+  with STMultiNodeSpec with ImplicitSender {
 
   import TransformationSampleSpec._
 

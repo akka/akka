@@ -98,7 +98,7 @@ public class TestKitDocTest {
     //#test-within
     new JavaTestKit(system) {{
       getRef().tell(42);
-      new Within(Duration.Zero(), Duration.parse("1 second")) {
+      new Within(Duration.Zero(), Duration.create(1, "second")) {
         // do not put code outside this method, will run afterwards
         public void run() {
           assertEquals((Integer) 42, expectMsgClass(Integer.class));

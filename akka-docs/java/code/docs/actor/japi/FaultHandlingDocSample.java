@@ -109,7 +109,7 @@ public class FaultHandlingDocSample {
    */
   public static class Worker extends UntypedActor {
     final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
-    final Timeout askTimeout = new Timeout(Duration.parse("5 seconds"));
+    final Timeout askTimeout = new Timeout(Duration.create(5, "seconds"));
 
     // The sender of the initial Start message will continuously be notified about progress
     ActorRef progressListener;
@@ -139,7 +139,7 @@ public class FaultHandlingDocSample {
       if (msg.equals(Start) && progressListener == null) {
         progressListener = getSender();
         getContext().system().scheduler().schedule(
-            Duration.Zero(), Duration.parse("1 second"), getSelf(), Do, getContext().dispatcher()
+            Duration.Zero(), Duration.create(1, "second"), getSelf(), Do, getContext().dispatcher()
         );
       } else if (msg.equals(Do)) {
         counterService.tell(new Increment(1), getSelf());
@@ -299,7 +299,7 @@ public class FaultHandlingDocSample {
         counter.tell(new UseStorage(null), getSelf());
         // Try to re-establish storage after while
         getContext().system().scheduler().scheduleOnce(
-                Duration.parse("10 seconds"), getSelf(), Reconnect, getContext().dispatcher()
+                Duration.create(10, "seconds"), getSelf(), Reconnect, getContext().dispatcher()
         );
       } else if (msg.equals(Reconnect)) {
         // Re-establish storage after the scheduled delay

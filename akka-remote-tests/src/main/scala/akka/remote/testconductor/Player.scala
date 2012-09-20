@@ -4,7 +4,6 @@
 package akka.remote.testconductor
 
 import language.postfixOps
-
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, PoisonPill, Status, Address, Scheduler }
 import RemoteConnection.getAddrString
 import scala.concurrent.util.{ Duration, Deadline }
@@ -20,6 +19,7 @@ import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
 import scala.reflect.classTag
 import concurrent.{ ExecutionContext, Await, Future }
+import scala.concurrent.util.FiniteDuration
 
 /**
  * The Player is the client component of the
@@ -81,13 +81,13 @@ trait Player { this: TestConductorExt ⇒
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
     val stop = Deadline.now + timeout.duration
     name foreach { b ⇒
-      val barrierTimeout = stop.timeLeft
+      val barrierTimeout = stop.timeLeft.asInstanceOf[FiniteDuration]
       if (barrierTimeout < Duration.Zero) {
         client ! ToServer(FailBarrier(b))
         throw new TimeoutException("Server timed out while waiting for barrier " + b);
       }
       try {
-        implicit val timeout = Timeout(barrierTimeout + Settings.QueryTimeout.duration)
+        implicit val timeout = Timeout((barrierTimeout + Settings.QueryTimeout.duration).asInstanceOf[FiniteDuration])
         Await.result(client ? ToServer(EnterBarrier(b, Option(barrierTimeout))), Duration.Inf)
       } catch {
         case e: AskTimeoutException ⇒
@@ -278,7 +278,7 @@ private[akka] class PlayerHandler(
     event.getCause match {
       case c: ConnectException if reconnects > 0 ⇒
         reconnects -= 1
-        scheduler.scheduleOnce(nextAttempt.timeLeft)(reconnect())
+        scheduler.scheduleOnce(nextAttempt.timeLeft.asInstanceOf[FiniteDuration])(reconnect())
       case e ⇒ fsm ! ConnectionFailure(e.getMessage)
     }
   }

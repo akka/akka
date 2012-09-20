@@ -9,14 +9,15 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 import akka.actor.{ Scheduler, Cancellable }
 import scala.concurrent.util.Duration
 import concurrent.ExecutionContext
+import scala.concurrent.util.FiniteDuration
 
 /**
  * INTERNAL API
  */
 private[akka] object FixedRateTask {
   def apply(scheduler: Scheduler,
-            initalDelay: Duration,
-            delay: Duration)(f: ⇒ Unit)(implicit executor: ExecutionContext): FixedRateTask =
+            initalDelay: FiniteDuration,
+            delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): FixedRateTask =
     new FixedRateTask(scheduler, initalDelay, delay, new Runnable { def run(): Unit = f })
 }
 
@@ -28,8 +29,8 @@ private[akka] object FixedRateTask {
  * initialDelay.
  */
 private[akka] class FixedRateTask(scheduler: Scheduler,
-                                  initalDelay: Duration,
-                                  delay: Duration,
+                                  initalDelay: FiniteDuration,
+                                  delay: FiniteDuration,
                                   task: Runnable)(implicit executor: ExecutionContext)
   extends Runnable with Cancellable {
 

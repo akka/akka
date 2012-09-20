@@ -8,7 +8,7 @@ import sys, os
 # -- General configuration -----------------------------------------------------
 
 sys.path.append(os.path.abspath('_sphinx/exts'))
-extensions = ['sphinx.ext.todo', 'includecode', 'sphinx.ext.graphviz']
+extensions = ['sphinx.ext.todo', 'includecode']
 
 templates_path = ['_templates']
 source_suffix = '.rst'
