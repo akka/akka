@@ -11,20 +11,22 @@ import com.typesafe.config.ConfigFactory;
 
 //#setup
 public class JCalculatorApplication implements Bootable {
-    private ActorSystem system;
+  private ActorSystem system;
 
-    public JCalculatorApplication() {
-        system = ActorSystem.create("CalculatorApplication", ConfigFactory.load().getConfig("calculator"));
-        ActorRef actor = system.actorOf(new Props(JSimpleCalculatorActor.class), "simpleCalculator");
-    }
+  public JCalculatorApplication() {
+    system = ActorSystem.create("CalculatorApplication", ConfigFactory.load()
+        .getConfig("calculator"));
+    ActorRef actor = system.actorOf(new Props(JSimpleCalculatorActor.class),
+        "simpleCalculator");
+  }
 
-    @Override
-    public void startup() {
-    }
+  @Override
+  public void startup() {
+  }
 
-    @Override
-    public void shutdown() {
-        system.shutdown();
-    }
+  @Override
+  public void shutdown() {
+    system.shutdown();
+  }
 }
-//#setup
+// #setup

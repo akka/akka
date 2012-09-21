@@ -6,9 +6,6 @@ package akka.dispatch;
 
 import akka.util.Unsafe;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-
 abstract class AbstractMessageDispatcher {
     final static long shutdownScheduleOffset;
     final static long inhabitantsOffset;

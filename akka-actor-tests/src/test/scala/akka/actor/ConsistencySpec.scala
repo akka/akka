@@ -32,7 +32,7 @@ object ConsistencySpec {
       case step: Long ⇒
 
         if (lastStep != (step - 1))
-          sender.tell("Test failed: Last step %s, this step %s".format(lastStep, step))
+          sender ! "Test failed: Last step %s, this step %s".format(lastStep, step)
 
         var shouldBeFortyTwo = left.value + right.value
         if (shouldBeFortyTwo != 42)

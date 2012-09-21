@@ -7,22 +7,28 @@ import akka.actor.UntypedActor;
 
 //#actor
 public class JAdvancedCalculatorActor extends UntypedActor {
-    @Override
-    public void onReceive(Object message) throws Exception {
-      
-        if (message instanceof Op.Multiply) {
-            Op.Multiply multiply = (Op.Multiply) message;
-            System.out.println("Calculating " + multiply.getN1() + " * " + multiply.getN2());
-            getSender().tell(new Op.MultiplicationResult(multiply.getN1(), multiply.getN2(), multiply.getN1() * multiply.getN2()));
-            
-        } else if (message instanceof Op.Divide) {
-            Op.Divide divide = (Op.Divide) message;
-            System.out.println("Calculating " + divide.getN1() + " / " + divide.getN2());
-            getSender().tell(new Op.DivisionResult(divide.getN1(), divide.getN2(), divide.getN1() / divide.getN2()));
+  @Override
+  public void onReceive(Object message) throws Exception {
 
-        } else {
-            unhandled(message);
-        }
+    if (message instanceof Op.Multiply) {
+      Op.Multiply multiply = (Op.Multiply) message;
+      System.out.println("Calculating " + multiply.getN1() + " * "
+          + multiply.getN2());
+      getSender().tell(
+          new Op.MultiplicationResult(multiply.getN1(), multiply.getN2(),
+              multiply.getN1() * multiply.getN2()), getSelf());
+
+    } else if (message instanceof Op.Divide) {
+      Op.Divide divide = (Op.Divide) message;
+      System.out.println("Calculating " + divide.getN1() + " / "
+          + divide.getN2());
+      getSender().tell(
+          new Op.DivisionResult(divide.getN1(), divide.getN2(), divide.getN1()
+              / divide.getN2()), getSelf());
+
+    } else {
+      unhandled(message);
     }
+  }
 }
-//#actor
+// #actor

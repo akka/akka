@@ -75,7 +75,7 @@ public class UntypedCoordinatedIncrementTest {
   public void incrementAllCountersWithSuccessfulTransaction() throws Exception {
     CountDownLatch incrementLatch = new CountDownLatch(numCounters);
     Increment message = new Increment(counters.subList(1, counters.size()), incrementLatch);
-    counters.get(0).tell(new Coordinated(message, timeout));
+    counters.get(0).tell(new Coordinated(message, timeout), null);
     try {
       incrementLatch.await(timeoutSeconds, TimeUnit.SECONDS);
     } catch (InterruptedException exception) {
@@ -97,7 +97,7 @@ public class UntypedCoordinatedIncrementTest {
     List<ActorRef> actors = new ArrayList<ActorRef>(counters);
     actors.add(failer);
     Increment message = new Increment(actors.subList(1, actors.size()), incrementLatch);
-    actors.get(0).tell(new Coordinated(message, timeout));
+    actors.get(0).tell(new Coordinated(message, timeout), null);
     try {
       incrementLatch.await(timeoutSeconds, TimeUnit.SECONDS);
     } catch (InterruptedException exception) {
