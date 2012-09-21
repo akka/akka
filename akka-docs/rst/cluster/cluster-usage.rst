@@ -398,12 +398,12 @@ service nodes and 1 client::
 How to Test
 ^^^^^^^^^^^
 
-:ref:`multi_node_testing` is useful for testing cluster applications.
+:ref:`multi-node-testing` is useful for testing cluster applications.
 
-Set up your project according to the instructions in :ref:`multi_node_testing` and :ref:`multi_jvm_testing`, i.e.
+Set up your project according to the instructions in :ref:`multi-node-testing` and :ref:`multi_jvm_testing`, i.e.
 add the ``sbt-multi-jvm`` plugin and the dependency to ``akka-remote-tests-experimental``.
 
-First, as described in :ref:`multi_node_testing`, we need some scaffolding to configure the ``MultiNodeSpec``.
+First, as described in :ref:`multi-node-testing`, we need some scaffolding to configure the ``MultiNodeSpec``.
 Define the participating roles and their :ref:`cluster_configuration` in an object extending ``MultiNodeConfig``:
 
 .. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala
@@ -423,8 +423,7 @@ Then the abstract ``MultiNodeSpec``, which takes the ``MultiNodeConfig`` as cons
 
 .. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#abstract-test
 
-Most of this can of course be extracted to a separate trait to avoid repeating this in all your tests. This example
-is using `Scalatest <http://www.scalatest.org/>`_, but similar can be done with other testing frameworks.
+Most of this can of course be extracted to a separate trait to avoid repeating this in all your tests.
 
 Typically you begin your test by starting up the cluster and let the members join, and create some actors.
 That can be done like this:
