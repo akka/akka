@@ -387,6 +387,7 @@ object AkkaBuild extends Build {
   lazy val defaultMultiJvmOptions: Seq[String] = {
     import scala.collection.JavaConverters._
     val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
+      case key: String if key.startsWith("multinode.") => "-D" + key + "=" + System.getProperty(key)
       case key: String if key.startsWith("akka.") => "-D" + key + "=" + System.getProperty(key)
     }
     akkaProperties ::: (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
