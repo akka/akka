@@ -171,11 +171,11 @@ The multi node testing kit is a separate jar file. Make sure that you have the f
 
 .. parsed-literal::
 
-  "com.typesafe.akka" %% "akka-remote-tests-experimental" % "2.1-SNAPSHOT" cross CrossVersion.full
+  "com.typesafe.akka" %% "akka-remote-tests-experimental" % "@version@" @crossString@
 
 If you are using the latest nightly build you should pick a timestamped Akka version from
-`<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/>`_. Don't use ``SNAPSHOT``. Note that the
-Scala version |scalaVersion| is part of the artifactId.
+`<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-remote-tests-experimental_@binVersion@/>`_.
+We recommend against using ``SNAPSHOT`` in order to obtain stable builds.
 
 A Multi Node Testing Example
 ============================
@@ -183,18 +183,18 @@ A Multi Node Testing Example
 First we need some scaffolding to hook up the ``MultiNodeSpec`` with your favorite test framework. Lets define a trait
 ``STMultiNodeSpec`` that uses ScalaTest to start and stop ``MultiNodeSpec``.
 
-.. includecode:: ../../akka-samples/akka-sample-multi-node/src/test/scala/sample/multinode/STMultiNodeSpec.scala#example
+.. includecode:: ../../../akka-samples/akka-sample-multi-node/src/test/scala/sample/multinode/STMultiNodeSpec.scala#example
 
 Then we need to define a configuration. Lets use two nodes ``"node1`` and ``"node2"`` and call it
 ``MultiNodeSampleConfig``.
 
-.. includecode:: ../../akka-samples/akka-sample-multi-node/src/multi-jvm/scala/sample/multinode/MultiNodeSample.scala
+.. includecode:: ../../../akka-samples/akka-sample-multi-node/src/multi-jvm/scala/sample/multinode/MultiNodeSample.scala
   :include: package,config
 
 And then finally to the node test code. That starts the two nodes, and demonstrates a barrier, and a remote actor
 message send/receive.
 
-.. includecode:: ../../akka-samples/akka-sample-multi-node/src/multi-jvm/scala/sample/multinode/MultiNodeSample.scala
+.. includecode:: ../../../akka-samples/akka-sample-multi-node/src/multi-jvm/scala/sample/multinode/MultiNodeSample.scala
   :include: package,spec
 
 Things to Keep in Mind
