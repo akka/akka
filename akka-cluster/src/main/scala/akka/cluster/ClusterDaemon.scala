@@ -879,7 +879,7 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: IndexedSeq[Address])
     case JoinSeedNode ⇒
       // send InitJoin to all seed nodes (except myself)
       seedNodes.collect {
-        case a if a != selfAddress ⇒ context.system.actorFor(context.parent.path.toStringWithAddress(a))
+        case a if a != selfAddress ⇒ context.actorFor(context.parent.path.toStringWithAddress(a))
       } foreach { _ ! InitJoin }
     case InitJoinAck(address) ⇒
       // first InitJoinAck reply
@@ -908,7 +908,7 @@ private[cluster] final class ClusterCoreSender extends Actor with ActorLogging {
    * Looks up and returns the remote cluster command connection for the specific address.
    */
   private def clusterCoreConnectionFor(address: Address): ActorRef =
-    context.system.actorFor(RootActorPath(address) / "system" / "cluster" / "core")
+    context.actorFor(RootActorPath(address) / "system" / "cluster" / "core")
 
   def receive = {
     case SendClusterMessage(to, msg) ⇒
