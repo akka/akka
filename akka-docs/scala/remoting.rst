@@ -135,6 +135,10 @@ actor systems has to have a JAR containing the class.
   but send ``Props`` to a remotely looked-up actor and have that create a
   child, returning the resulting actor reference.
 
+.. warning::
+
+  *Caveat:* Akka Remoting does not trigger Death Watch for lost connections.
+
 Programmatic Remote Deployment
 ------------------------------
 
