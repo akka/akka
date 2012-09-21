@@ -9,9 +9,8 @@ import akka.japi.{ Function ⇒ JFunc, Procedure ⇒ JProc }
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.stm._
-import concurrent.{ ExecutionContext, Future, Promise, Await }
-import concurrent.util.Duration
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
+import scala.concurrent.util.{ FiniteDuration, Duration }
 
 /**
  * Used internally to send functions.

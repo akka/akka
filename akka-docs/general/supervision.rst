@@ -49,7 +49,7 @@ recommended way in this case is to add a level of supervision.
 Akka implements a specific form called “parental supervision”. Actors can only
 be created by other actors—where the top-level actor is provided by the
 library—and each created actor is supervised by its parent. This restriction
-makes the formation of actor supervision hierarchies explicit and encourages
+makes the formation of actor supervision hierarchies implicit and encourages
 sound design decisions. It should be noted that this also guarantees that
 actors cannot be orphaned or attached to supervisors from the outside, which
 might otherwise catch them unawares. In addition, this yields a natural and
@@ -141,20 +141,24 @@ re-processed.
 
 The precise sequence of events during a restart is the following:
 
-* suspend the actor
-* call the old instance’s :meth:`supervisionStrategy.handleSupervisorFailing`
-  method (defaults to suspending all children)
-* call the old instance’s :meth:`preRestart` hook (defaults to sending
-  termination requests to all children and calling :meth:`postStop`)
-* wait for all children stopped during :meth:`preRestart` to actually terminate
-* call the old instance’s :meth:`supervisionStrategy.handleSupervisorRestarted`
-  method (defaults to sending restart request to all remaining children)
-* create new actor instance by invoking the originally provided factory again
-* invoke :meth:`postRestart` on the new instance
-* resume the actor
+#. suspend the actor (which means that it will not process normal messages until
+   resumed), and recursively suspend all children
+#. call the old instance’s :meth:`preRestart` hook (defaults to sending
+   termination requests to all children and calling :meth:`postStop`)
+#. wait for all children which were requested to terminate (using
+   ``context.stop()``) during :meth:`preRestart` to actually terminate
+#. create new actor instance by invoking the originally provided factory again
+#. invoke :meth:`postRestart` on the new instance (which by default also calls :meth:`preStart`)
+#. send restart request to all children (they will follow the same process
+   recursively, from step 2)
+#. resume the actor
 
 What Lifecycle Monitoring Means
 -------------------------------
+
+.. note::
+
+    Lifecycle Monitoring in Akka is usually referred to as ``DeathWatch``
 
 In contrast to the special relationship between parent and child described
 above, each actor may monitor any other actor. Since actors emerge from
@@ -166,8 +170,10 @@ reacts to failure.
 
 Lifecycle monitoring is implemented using a :class:`Terminated` message to be
 received by the monitoring actor, where the default behavior is to throw a
-special :class:`DeathPactException` if not otherwise handled. One important
-property is that the message will be delivered irrespective of the order in
+special :class:`DeathPactException` if not otherwise handled. In order to
+start listening for :class:`Terminated` messages is to use ``ActorContext.watch(targetActorRef)``
+and then ``ActorContext.unwatch(targetActorRef)`` to stop listening for that.
+One important property is that the message will be delivered irrespective of the order in
 which the monitoring request and target’s termination occur, i.e. you still get
 the message even if at the time of registration the target is already dead.
 
