@@ -219,19 +219,30 @@ The nodes in the cluster monitor each other by sending heartbeats to detect if a
 unreachable from the rest of the cluster. The heartbeat arrival times is interpreted
 by an implementation of 
 `The Phi Accrual Failure Detector <http://ddg.jaist.ac.jp/pub/HDY+04.pdf>`_. 
-It calculates a *phi* value representing the likelihood that the node is down. 
+
+The suspicion level of failure is given by a value called *phi*.
+The basic idea of the phi failure detector is to express the value of *phi* on a scale that
+is dynamically adjusted to reflect current network conditions. 
+
+The value of *phi* is calculated as::
+
+  phi = -log10(1 - F(timeSinceLastHeartbeat)
+
+where F is the cumulative distribution function of a normal distribution with mean
+and standard deviation estimated from historical heartbeat inter-arrival times.
 
 In the :ref:`cluster_configuration` you can adjust the ``akka.cluster.failure-detector.threshold`` 
-to define when a *phi* value is to be considered as a failure. 
-A low ``threshold`` is prone to generate many wrong suspicions but ensures
+to define when a *phi* value is considered to be a failure. 
+
+A low ``threshold`` is prone to generate many false positives but ensures
 a quick detection in the event of a real crash. Conversely, a high ``threshold``
 generates fewer mistakes but needs more time to detect actual crashes. The
 default ``threshold`` is 8 and is appropriate for most situations. However in
 cloud environments, such as Amazon EC2, the value could be increased to 12 in
 order to account for network issues that sometimes occur on such platforms.
 
-The following chart illustrates how *phi* increase with increasing time since previous
-heartbeat. 
+The following chart illustrates how *phi* increase with increasing time since the 
+previous heartbeat. 
 
 .. image:: images/phi1.png
 
@@ -239,7 +250,7 @@ Phi is calculated from the mean and standard deviation of historical
 inter arrival times. The previous chart is an example for standard deviation
 of 200 ms. If the heartbeats arrive with less deviation the curve becomes steeper, 
 i.e. it's possible to determine failure more quickly. The curve looks like this for
-standard deviation of 100 ms.
+a standard deviation of 100 ms.
 
 .. image:: images/phi2.png
 
