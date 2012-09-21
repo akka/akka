@@ -21,13 +21,11 @@ import akka.actor.UntypedActor;
 
 public class RemoteDeploymentDocTestBase {
 
-  //#sample-actor
-  public static class Echo extends UntypedActor {
+  public static class SampleActor extends UntypedActor {
     public void onReceive(Object message) {
       getSender().tell(getSelf(), getSelf());
     }
   }
-  //#sample-actor
   
   static ActorSystem system;
   
@@ -48,7 +46,7 @@ public class RemoteDeploymentDocTestBase {
     addr = AddressFromURIString.parse("akka://sys@host:1234"); // the same
     //#make-address
     //#deploy
-    ActorRef ref = system.actorOf(new Props(Echo.class).withDeploy(new Deploy(new RemoteScope(addr))));
+    ActorRef ref = system.actorOf(new Props(SampleActor.class).withDeploy(new Deploy(new RemoteScope(addr))));
     //#deploy
     assert ref.path().address().equals(addr);
   }
@@ -57,7 +55,7 @@ public class RemoteDeploymentDocTestBase {
   public void demonstrateSampleActor() {
     //#sample-actor
 
-    ActorRef actor = system.actorOf(new Props(Echo.class), "sampleActor");
+    ActorRef actor = system.actorOf(new Props(SampleActor.class), "sampleActor");
     actor.tell("Pretty slick", null);
     //#sample-actor
   }

@@ -111,7 +111,7 @@ Once you have configured the properties above you would do the following in code
 
 .. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#sample-actor
 
-The actor class ``Echo`` has to be available to the runtimes using it, i.e. the classloader of the
+The actor class ``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
 
 .. note::
