@@ -24,11 +24,13 @@ Scala's Delimited Continuations plugin is required to use the Dataflow API. To e
 .. code-block:: scala
 
   autoCompilerPlugins := true,
-  libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % <scalaVersion>) },
+  libraryDependencies <+= scalaVersion {
+    v => compilerPlugin("org.scala-lang.plugins" % "continuations" % <scalaVersion>)
+  },
   scalacOptions += "-P:continuations:enable",
 
 
-You will also need to include a dependency on ``akka-dataflow`
+You will also need to include a dependency on ``akka-dataflow``:
 
 .. code-block:: scala
 
@@ -54,7 +56,7 @@ The flow
 
 The ``flow`` method acts as the delimiter of dataflow expressions (this also neatly aligns with the concept of delimited continuations),
 and flow-expressions compose. At this point you might wonder what the ``flow``-construct brings to the table that for-comprehensions don't,
-and that is the use of the CPS plugin that makes the look _look like_ it is synchronous, but in reality is asynchronous and non-blocking.
+and that is the use of the CPS plugin that makes the *look like* it is synchronous, but in reality is asynchronous and non-blocking.
 The result of a call to ``flow`` is a Future with the resulting value of the flow.
 
 To be able to use the ``flow`` method, you need to import:
@@ -62,7 +64,8 @@ To be able to use the ``flow`` method, you need to import:
 .. includecode:: code/docs/dataflow/DataflowDocSpec.scala
    :include: import-akka-dataflow
 
-The ``flow`` method will, just like Futures and Promises, require an implicit ``ExecutionContext`` in scope. for the examples here we will use:
+The ``flow`` method will, just like Futures and Promises, require an implicit ``ExecutionContext`` in scope.
+For the examples here we will use:
 
 .. includecode:: code/docs/dataflow/DataflowDocSpec.scala
    :include: import-global-implicit
@@ -91,7 +94,7 @@ Working with variables
 Inside the flow method you can use Promises as Dataflow variables:
 
 .. includecode:: code/docs/dataflow/DataflowDocSpec.scala
-   :include: #dataflow-variable-a
+   :include: dataflow-variable-a
 
 Flow compared to for
 --------------------
@@ -99,7 +102,7 @@ Flow compared to for
 Should I use Dataflow or for-comprehensions?
 
 .. includecode:: code/docs/dataflow/DataflowDocSpec.scala
-   :include: #for-vs-flow
+   :include: for-vs-flow
 
 Conclusions:
 
