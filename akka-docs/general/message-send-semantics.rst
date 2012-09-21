@@ -104,8 +104,8 @@ Dead Letters Which are (Usually) not Worrisome
 ----------------------------------------------
 
 Every time an actor does not terminate by its own decision, there is a chance
-that some messages are lost which it sends to itself. There is one which may
-happen in complex shutdown scenarios quite easily which is usually benign:
+that some messages which it sends to itself are lost. There is one which
+happens quite easily in complex shutdown scenarios that is usually benign:
 seeing a :class:`akka.dispatch.Terminate` message dropped means that two
 termination requests were given, but of course only one can succeed. In the
 same vein, you might see :class:`akka.actor.Terminated` messages from children

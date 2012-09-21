@@ -126,6 +126,10 @@ As you can see from the example above the following pattern is used to find an `
   but send ``Props`` to a remotely looked-up actor and have that create a
   child, returning the resulting actor reference.
 
+.. warning::
+
+  *Caveat:* Akka Remoting does not trigger Death Watch for lost connections.
+
 Programmatic Remote Deployment
 ------------------------------
 

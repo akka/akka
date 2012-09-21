@@ -148,7 +148,7 @@ The precise sequence of events during a restart is the following:
 #. wait for all children which were requested to terminate (using
    ``context.stop()``) during :meth:`preRestart` to actually terminate
 #. create new actor instance by invoking the originally provided factory again
-#. invoke :meth:`postRestart` on the new instance
+#. invoke :meth:`postRestart` on the new instance (which by default also calls :meth:`preStart`)
 #. send restart request to all children (they will follow the same process
    recursively, from step 2)
 #. resume the actor
