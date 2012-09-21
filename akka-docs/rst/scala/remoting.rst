@@ -103,18 +103,15 @@ If you want to use the creation functionality in Akka remoting you have to furth
   }
 
 The configuration above instructs Akka to react when an actor with path ``/sampleActor`` is created, i.e.
-using ``system.actorOf(Props(...)`, sampleActor)``. This specific actor will not be directly instantiated,
+using ``system.actorOf(Props(...), "sampleActor")``. This specific actor will not be directly instantiated,
 but instead the remote daemon of the remote system will be asked to create the actor,
 which in this sample corresponds to ``sampleActorSystem@127.0.0.1:2553``.
 
-Once you have configured the properties above you would do the following in code::
+Once you have configured the properties above you would do the following in code:
 
-  class SampleActor extends Actor { def receive = { case _ => println("Got something") } }
+.. includecode:: code/docs/remoting/RemoteDeploymentDocSpec.scala#sample-actor
 
-  val actor = context.actorOf(Props[SampleActor], "sampleActor")
-  actor ! "Pretty slick"
-
-``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
+The actor class ``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
 
 .. note::
