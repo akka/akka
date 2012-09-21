@@ -35,15 +35,13 @@ class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) wit
     }
 
     "define an undefined value with a None " in {
-      println(Metric("x", Some(-1L))) //.value.isDefined must be(false)
-      println(Metric("x", Some(java.lang.Double.NaN))) //.value.isDefined must be(false)
+      Metric("x", Some(-1)).value.isDefined must be(false)
+      Metric("x", Some(java.lang.Double.NaN)).value.isDefined must be(false)
       Metric("x", None).isDefined must be(false)
     }
 
     "recognize whether a metric value is defined" in {
       defined(0) must be(true)
-      defined(1L) must be(true)
-      defined(-1L) must be(true)
       defined(0.0) must be(true)
     }
 
