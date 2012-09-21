@@ -82,31 +82,30 @@ Once you obtained a reference to the actor you can interact with it they same wa
 Creating Actors Remotely
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The configuration below instructs the system to deploy the actor "retrieval” on the specific host "app@10.0.0.1".
-The "app" in this case refers to the name of the ``ActorSystem`` (only showing deployment section)::
+If you want to use the creation functionality in Akka remoting you have to further amend the
+``application.conf`` file in the following way (only showing deployment section)::
 
   akka {
     actor {
       deployment {
-        /serviceA/retrieval {
-          remote = "akka://app@10.0.0.1:2552"
+        /sampleActor {
+          remote = "akka://sampleActorSystem@127.0.0.1:2553"
         }
       }
     }
   }
 
-Logical path lookup is supported on the node you are on, i.e. to use the
-actor created above you would do the following:
+The configuration above instructs Akka to react when an actor with path ``/sampleActor`` is created, i.e.
+using ``system.actorOf(new Props(...), "sampleActor")``. This specific actor will not be directly instantiated,
+but instead the remote daemon of the remote system will be asked to create the actor,
+which in this sample corresponds to ``sampleActorSystem@127.0.0.1:2553``.
 
-.. includecode:: code/docs/remoting/RemoteActorExample.java#localNodeActor
+Once you have configured the properties above you would do the following in code:
 
-This will obtain an ``ActorRef`` on a remote node:
+.. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#sample-actor
 
-.. includecode:: code/docs/remoting/RemoteActorExample.java#remoteNodeActor
-
-As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
-
-    akka://<actorsystemname>@<hostname>:<port>/<actor path>
+The actor class ``SampleActor`` has to be available to the runtimes using it, i.e. the classloader of the
+actor systems has to have a JAR containing the class.
 
 .. note::
 
