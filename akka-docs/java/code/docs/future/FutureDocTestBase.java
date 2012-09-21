@@ -534,13 +534,13 @@ public class FutureDocTestBase {
   public static class MyActor extends UntypedActor {
     public void onReceive(Object message) {
       if (message instanceof String) {
-        getSender().tell(((String) message).toUpperCase());
+        getSender().tell(((String) message).toUpperCase(), getSelf());
       } else if (message instanceof Integer) {
         int i = ((Integer) message).intValue();
         if (i < 0) {
-          getSender().tell(new Failure(new ArithmeticException("Negative values not supported")));
+          getSender().tell(new Failure(new ArithmeticException("Negative values not supported")), getSelf());
         } else {
-          getSender().tell(i);
+          getSender().tell(i, getSelf());
         }
       } else {
         unhandled(message);

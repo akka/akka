@@ -97,7 +97,7 @@ public class TestKitDocTest {
   public void demonstrateWithin() {
     //#test-within
     new JavaTestKit(system) {{
-      getRef().tell(42);
+      getRef().tell(42, null);
       new Within(Duration.Zero(), Duration.create(1, "second")) {
         // do not put code outside this method, will run afterwards
         public void run() {
@@ -112,7 +112,7 @@ public class TestKitDocTest {
   public void demonstrateExpectMsg() {
     //#test-expectmsg
     new JavaTestKit(system) {{
-      getRef().tell(42);
+      getRef().tell(42, null);
       final String out = new ExpectMsg<String>("match hint") {
           // do not put code outside this method, will run afterwards
           protected String match(Object in) {
@@ -132,9 +132,9 @@ public class TestKitDocTest {
   public void demonstrateReceiveWhile() {
     //#test-receivewhile
     new JavaTestKit(system) {{
-      getRef().tell(42);
-      getRef().tell(43);
-      getRef().tell("hello");
+      getRef().tell(42, null);
+      getRef().tell(43, null);
+      getRef().tell("hello", null);
       final String[] out = 
         new ReceiveWhile<String>(String.class, duration("1 second")) {
           // do not put code outside this method, will run afterwards
@@ -172,7 +172,7 @@ public class TestKitDocTest {
   public void demonstrateAwaitCond() {
     //#test-awaitCond
     new JavaTestKit(system) {{
-      getRef().tell(42);
+      getRef().tell(42, null);
       new AwaitCond(
             duration("1 second"),  // maximum wait time
             duration("100 millis") // interval at which to check the condition
@@ -191,12 +191,12 @@ public class TestKitDocTest {
   @SuppressWarnings("unchecked") // due to generic varargs
   public void demonstrateExpect() {
     new JavaTestKit(system) {{
-      getRef().tell("hello");
-      getRef().tell("hello");
-      getRef().tell("hello");
-      getRef().tell("world");
-      getRef().tell(42);
-      getRef().tell(42);
+      getRef().tell("hello", null);
+      getRef().tell("hello", null);
+      getRef().tell("hello", null);
+      getRef().tell("world", null);
+      getRef().tell(42, null);
+      getRef().tell(42, null);
       //#test-expect
       final String hello = expectMsgEquals("hello");
       final Object   any = expectMsgAnyOf("hello", "world");
@@ -223,12 +223,12 @@ public class TestKitDocTest {
           return msg instanceof String;
         }
       };
-      getRef().tell("hello");
-      getRef().tell(42);
+      getRef().tell("hello", null);
+      getRef().tell(42, null);
       expectMsgEquals(42);
       // remove message filter
       ignoreNoMsg();
-      getRef().tell("hello");
+      getRef().tell("hello", null);
       expectMsgEquals("hello");
     }};
     //#test-ignoreMsg
@@ -294,7 +294,7 @@ public class TestKitDocTest {
       }
 
       final MyProbe probe = new MyProbe();
-      probe.getRef().tell("hello");
+      probe.getRef().tell("hello", null);
       probe.assertHello();
     }};
     //#test-special-probe
@@ -354,7 +354,7 @@ public class TestKitDocTest {
       // install auto-pilot
       probe.setAutoPilot(new TestActor.AutoPilot() {
         public AutoPilot run(ActorRef sender, Object msg) {
-          sender.tell(msg);
+          sender.tell(msg, null);
           return noAutoPilot();
         }
       });
@@ -386,7 +386,7 @@ public class TestKitDocTest {
       
       final int result = new EventFilter<Integer>(ActorKilledException.class) {
         protected Integer run() {
-          victim.tell(Kill.getInstance());
+          victim.tell(Kill.getInstance(), null);
           return 42;
         }
       }.from("akka://demoSystem/user/victim").occurrences(1).exec();

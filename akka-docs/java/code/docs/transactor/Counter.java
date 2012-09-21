@@ -20,7 +20,7 @@ public class Counter extends UntypedTransactor {
 
     @Override public boolean normally(Object message) {
         if ("GetCount".equals(message)) {
-            getSender().tell(count.get());
+            getSender().tell(count.get(), getSelf());
             return true;
         } else return false;
     }

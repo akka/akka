@@ -92,13 +92,14 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * actor.tell(message);
    * </pre>
    */
+  @deprecated("use the two-arg variant (typically getSelf() as second arg)", "2.1")
   final def tell(msg: Any): Unit = this.!(msg)(null: ActorRef)
 
   /**
    * Java API. <p/>
    * Sends the specified message to the sender, i.e. fire-and-forget
-   * semantics, including the sender reference if possible (not supported on
-   * all senders).<p/>
+   * semantics, including the sender reference if possible (pass `null` if
+   * there is nobody to reply to).<p/>
    * <pre>
    * actor.tell(message, context);
    * </pre>

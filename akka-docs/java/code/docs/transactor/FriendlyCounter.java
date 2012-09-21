@@ -5,7 +5,6 @@
 package docs.transactor;
 
 //#class
-import akka.actor.*;
 import akka.transactor.*;
 import java.util.Set;
 import scala.concurrent.stm.Ref;
@@ -31,7 +30,7 @@ public class FriendlyCounter extends UntypedTransactor {
 
     @Override public boolean normally(Object message) {
         if ("GetCount".equals(message)) {
-            getSender().tell(count.get());
+            getSender().tell(count.get(), getSelf());
             return true;
         } else return false;
     }

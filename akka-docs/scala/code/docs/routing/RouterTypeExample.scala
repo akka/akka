@@ -29,7 +29,7 @@ class PrintlnActor extends Actor {
 //#fibonacciActor
 class FibonacciActor extends Actor {
   def receive = {
-    case FibonacciNumber(nbr) ⇒ sender tell fibonacci(nbr)
+    case FibonacciNumber(nbr) ⇒ sender ! fibonacci(nbr)
   }
 
   private def fibonacci(n: Int): Int = {

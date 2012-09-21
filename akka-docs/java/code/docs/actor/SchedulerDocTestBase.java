@@ -24,7 +24,6 @@ import akka.testkit.AkkaSpec;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class SchedulerDocTestBase {
 
@@ -54,7 +53,7 @@ public class SchedulerDocTestBase {
     system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS), new Runnable() {
       @Override
       public void run() {
-        testActor.tell(System.currentTimeMillis());
+        testActor.tell(System.currentTimeMillis(), null);
       }
     }, system.dispatcher());
     //#schedule-one-off-thunk

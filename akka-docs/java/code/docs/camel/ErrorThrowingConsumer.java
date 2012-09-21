@@ -36,7 +36,7 @@ public class ErrorThrowingConsumer extends UntypedConsumerActor{
 
   @Override
   public void preRestart(Throwable reason, Option<Object> message) {
-    getSender().tell(new Status.Failure(reason));
+    getSender().tell(new Status.Failure(reason), getSelf());
   }
 }
 //#ErrorThrowingConsumer

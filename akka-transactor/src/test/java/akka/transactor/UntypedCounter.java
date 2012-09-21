@@ -4,15 +4,12 @@
 
 package akka.transactor;
 
-import akka.actor.ActorRef;
-import akka.transactor.UntypedTransactor;
-import akka.transactor.SendTo;
-import scala.concurrent.stm.Ref;
-import scala.concurrent.stm.japi.STM;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+
+import scala.concurrent.stm.Ref;
+import scala.concurrent.stm.japi.STM;
+import akka.actor.ActorRef;
 
 public class UntypedCounter extends UntypedTransactor {
     private String name;
@@ -52,7 +49,7 @@ public class UntypedCounter extends UntypedTransactor {
 
     @Override public boolean normally(Object message) {
         if ("GetCount".equals(message)) {
-            getSender().tell(count.get());
+            getSender().tell(count.get(), getSelf());
             return true;
         } else return false;
     }

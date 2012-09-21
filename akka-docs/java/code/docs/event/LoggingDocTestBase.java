@@ -21,7 +21,6 @@ import akka.event.Logging.Debug;
 import org.junit.Test;
 
 import scala.Option;
-import static org.junit.Assert.*;
 
 import akka.actor.UntypedActorFactory;
 //#imports-deadletter
@@ -42,7 +41,7 @@ public class LoggingDocTestBase {
         return new MyActor();
       }
     }));
-    myActor.tell("test");
+    myActor.tell("test", null);
     system.shutdown();
   }
 
@@ -96,7 +95,7 @@ public class LoggingDocTestBase {
   class MyEventListener extends UntypedActor {
     public void onReceive(Object message) {
       if (message instanceof InitializeLogger) {
-        getSender().tell(Logging.loggerInitialized());
+        getSender().tell(Logging.loggerInitialized(), getSelf());
       } else if (message instanceof Error) {
         // ...
       } else if (message instanceof Warning) {

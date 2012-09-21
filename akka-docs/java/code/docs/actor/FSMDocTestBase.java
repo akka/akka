@@ -147,7 +147,7 @@ public class FSMDocTestBase {
     @Override
     public void transition(State old, State next) {
       if (old == State.ACTIVE) {
-        getTarget().tell(new Batch(drainQueue()));
+        getTarget().tell(new Batch(drainQueue()), getSelf());
       }
     }
 
@@ -175,11 +175,11 @@ public class FSMDocTestBase {
   public void mustBunch() {
     final ActorRef buncher = system.actorOf(new Props(MyFSM.class));
     final TestProbe probe = new TestProbe(system);
-    buncher.tell(new SetTarget(probe.ref()));
-    buncher.tell(new Queue(1));
-    buncher.tell(new Queue(2));
-    buncher.tell(flush);
-    buncher.tell(new Queue(3));
+    buncher.tell(new SetTarget(probe.ref()), null);
+    buncher.tell(new Queue(1), null);
+    buncher.tell(new Queue(2), null);
+    buncher.tell(flush, null);
+    buncher.tell(new Queue(3), null);
     final Batch b = probe.expectMsgClass(Batch.class);
     assert b.objects.size() == 2;
     assert b.objects.contains(1);

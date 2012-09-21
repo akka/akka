@@ -64,7 +64,7 @@ public class FaultHandlingTestBase {
 
     public void onReceive(Object o) {
       if (o instanceof Props) {
-        getSender().tell(getContext().actorOf((Props) o));
+        getSender().tell(getContext().actorOf((Props) o), getSelf());
       } else {
         unhandled(o);
       }
@@ -102,7 +102,7 @@ public class FaultHandlingTestBase {
 
     public void onReceive(Object o) {
       if (o instanceof Props) {
-        getSender().tell(getContext().actorOf((Props) o));
+        getSender().tell(getContext().actorOf((Props) o), getSelf());
       } else {
         unhandled(o);
       }
@@ -126,7 +126,7 @@ public class FaultHandlingTestBase {
       } else if (o instanceof Integer) {
         state = (Integer) o;
       } else if (o.equals("get")) {
-        getSender().tell(state);
+        getSender().tell(state, getSelf());
       } else {
         unhandled(o);
       }
@@ -167,21 +167,21 @@ public class FaultHandlingTestBase {
     //#create
 
     //#resume
-    child.tell(42);
+    child.tell(42, null);
     assert Await.result(ask(child, "get", 5000), timeout).equals(42);
-    child.tell(new ArithmeticException());
+    child.tell(new ArithmeticException(), null);
     assert Await.result(ask(child, "get", 5000), timeout).equals(42);
     //#resume
 
     //#restart
-    child.tell(new NullPointerException());
+    child.tell(new NullPointerException(), null);
     assert Await.result(ask(child, "get", 5000), timeout).equals(0);
     //#restart
 
     //#stop
     final TestProbe probe = new TestProbe(system);
     probe.watch(child);
-    child.tell(new IllegalArgumentException());
+    child.tell(new IllegalArgumentException(), null);
     probe.expectMsgClass(Terminated.class);
     //#stop
 
@@ -189,7 +189,7 @@ public class FaultHandlingTestBase {
     child = (ActorRef) Await.result(ask(supervisor, new Props(Child.class), 5000), timeout);
     probe.watch(child);
     assert Await.result(ask(child, "get", 5000), timeout).equals(0);
-    child.tell(new Exception());
+    child.tell(new Exception(), null);
     probe.expectMsgClass(Terminated.class);
     //#escalate-kill
 
@@ -197,9 +197,9 @@ public class FaultHandlingTestBase {
     superprops = new Props(Supervisor2.class);
     supervisor = system.actorOf(superprops);
     child = (ActorRef) Await.result(ask(supervisor, new Props(Child.class), 5000), timeout);
-    child.tell(23);
+    child.tell(23, null);
     assert Await.result(ask(child, "get", 5000), timeout).equals(23);
-    child.tell(new Exception());
+    child.tell(new Exception(), null);
     assert Await.result(ask(child, "get", 5000), timeout).equals(0);
     //#escalate-restart
     //#testkit

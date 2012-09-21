@@ -195,7 +195,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
         lock.unlock()
       }
     } else {
-      system.deadLetters.tell(DeadLetter(message, sender, self))
+      system.deadLetters ! DeadLetter(message, sender, self)
     }
   }
   def sendSystemMessage(msg: SystemMessage): Unit = {
@@ -209,7 +209,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
     } else {
       // FIXME: once we have guaranteed delivery of system messages, hook this in!
       system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to lock timeout"))
-      system.deadLetters.tell(DeadLetter(msg, self, self))
+      system.deadLetters ! DeadLetter(msg, self, self)
     }
   }
   def isLocal = true

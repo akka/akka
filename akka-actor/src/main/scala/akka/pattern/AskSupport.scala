@@ -75,7 +75,7 @@ trait AskSupport {
    */
   def ask(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] = actorRef match {
     case ref: InternalActorRef if ref.isTerminated ⇒
-      actorRef.tell(message)
+      actorRef ! message
       Future.failed[Any](new AskTimeoutException("Recipient[%s] had already been terminated." format actorRef))
     case ref: InternalActorRef ⇒
       if (timeout.duration.length <= 0) Future.failed[Any](new IllegalArgumentException("Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format actorRef))

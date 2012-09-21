@@ -12,7 +12,7 @@ public class FibonacciActor extends UntypedActor {
   public void onReceive(Object msg) {
     if (msg instanceof FibonacciNumber) {
       FibonacciNumber fibonacciNumber = (FibonacciNumber) msg;
-      getSender().tell(fibonacci(fibonacciNumber.getNbr()));
+      getSender().tell(fibonacci(fibonacciNumber.getNbr()), getSelf());
     } else {
       unhandled(msg);
     }

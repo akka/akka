@@ -208,7 +208,7 @@ public class CustomRouteTestBase {
     @Override
     public void onReceive(Object message) {
       this.getProducerTemplate().sendBody(to, "test");
-      getSender().tell(Ack.getInstance());
+      getSender().tell(Ack.getInstance(), getSelf());
     }
   }
 }
