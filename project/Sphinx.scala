@@ -67,7 +67,12 @@ object Sphinx {
           def dst(f: File) = temp.toPath.resolve(docs.toPath.relativize(f.toPath)).toFile
           def filter(f: File) = filterExt contains f.getName.reverse.takeWhile('.' !=).reverse
           val Replacer = """@(\w+)@""".r
+          /*
+           * First Step: bring filtered source tree in sync with orig source tree
+           */
+          // delete files which were removed
           in.removed foreach (f => IO delete dst(f))
+          // transform the other files by applying the replacement map for @<key>@ tokens
           (in.modified ++ (in.checked -- out.checked)).toSeq.sorted foreach { f =>
             if (f.isFile)
               if (filter(f)) {
@@ -84,10 +89,14 @@ object Sphinx {
                   }
                 }
               } else {
+                // do not transform PNGs et al
                 s.log.debug("Changed documentation source (copying): " + f)
                 IO.copyFile(f, dst(f))
               }
           }
+          /*
+           * Second Step: invoke sphinx-build
+           */
           val tagList = if (tags.isEmpty) "" else tags.mkString(" (", ", ", ")")
           val desc = "%s%s" format (builder, tagList)
           s.log.info("Building Sphinx %s documentation..." format desc)
@@ -101,7 +110,7 @@ object Sphinx {
           s.log.info("Sphinx %s documentation created: %s" format (desc, target))
           temp.descendentsExcept("*", "").get.toSet
         }
-        val toplevel = docs * ("*" - ".*" - "_sphinx" - "_build" - "disabled" - "target")
+        val toplevel = docs * ("*" - "disabled")
         val inputs = toplevel.descendentsExcept("*", "").get.toSet
         cached(inputs)
         target

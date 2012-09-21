@@ -469,6 +469,8 @@ object AkkaBuild extends Build {
     testOptions in Test += Tests.Argument("-oDF")
   )
 
+  // customization of sphinx @<key>@ replacements, add to all sphinx-using projects
+  // add additional replacements here
   lazy val sphinxReplacements = Seq(
     sphinxVars <<= (scalaVersion, version) { (s, v) =>
       val BinVer = """(\d+\.\d+)\.\d+""".r
@@ -489,7 +491,7 @@ object AkkaBuild extends Build {
           })
       )
     },
-    sphinxExts += "py"
+    sphinxExts += "py" // needed for transforming conf.py
   )
 
   lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(

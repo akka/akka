@@ -20,7 +20,7 @@ The Akka cluster is a separate jar file. Make sure that you have the following d
 
 If you are using the latest nightly build you should pick a timestamped Akka
 version from
-`<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-cluster_@binVersion@/>`_.
+`<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-cluster-experimental_@binVersion@/>`_.
 We recommend against using ``SNAPSHOT`` in order to obtain stable builds.
 
 A Simple Cluster Example
