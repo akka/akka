@@ -6,14 +6,10 @@ package docs.dataflow
 import language.postfixOps
 
 import scala.concurrent.util.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.{ Await, Future, Promise }
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import util.{ Try, Failure, Success }
-
-object DataflowDocSpec {
-
-}
+import scala.util.{ Try, Failure, Success }
 
 class DataflowDocSpec extends WordSpec with MustMatchers {
 
@@ -23,7 +19,7 @@ class DataflowDocSpec extends WordSpec with MustMatchers {
 
   //#import-global-implicit
   import scala.concurrent.ExecutionContext.Implicits.global
-  //#global-implicit  
+  //#import-global-implicit
 
   import DataflowDocSpec._
   "demonstrate flow using hello world" in {
