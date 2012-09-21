@@ -2,7 +2,6 @@ package sample.cluster.stats
 
 import language.postfixOps
 import scala.concurrent.util.duration._
-import com.typesafe.config.ConfigFactory
 
 import akka.actor.Props
 import akka.actor.RootActorPath
@@ -11,12 +10,12 @@ import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberUp
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
-import akka.testkit.ImplicitSender
 
-object StatsSampleSpec extends MultiNodeConfig {
+//#MultiNodeConfig
+import akka.remote.testkit.MultiNodeConfig
+import com.typesafe.config.ConfigFactory
+
+object StatsSampleSpecConfig extends MultiNodeConfig {
   // register the named roles (nodes) of the test
   val first = role("first")
   val second = role("second")
@@ -44,49 +43,95 @@ object StatsSampleSpec extends MultiNodeConfig {
     """))
 
 }
+//#MultiNodeConfig
 
+//#concrete-tests
 // need one concrete test class per node
-class StatsSampleMultiJvmNode1 extends StatsSampleSpec
-class StatsSampleMultiJvmNode2 extends StatsSampleSpec
-class StatsSampleMultiJvmNode3 extends StatsSampleSpec
+class StatsSampleSpecMultiJvmNode1 extends StatsSampleSpec
+class StatsSampleSpecMultiJvmNode2 extends StatsSampleSpec
+class StatsSampleSpecMultiJvmNode3 extends StatsSampleSpec
+//#concrete-tests
 
-abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpec)
-  with STMultiNodeSpec with ImplicitSender {
+//#abstract-test
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
+import akka.remote.testkit.MultiNodeSpec
+import akka.testkit.ImplicitSender
 
-  import StatsSampleSpec._
+abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
+  with WordSpec with MustMatchers with BeforeAndAfterAll
+  with ImplicitSender {
+
+  import StatsSampleSpecConfig._
 
   override def initialParticipants = roles.size
 
+  override def beforeAll() = multiNodeSpecBeforeAll()
+
+  override def afterAll() = multiNodeSpecAfterAll()
+
+//#abstract-test  
+
   "The stats sample" must {
+
+    //#startup-cluster
     "illustrate how to startup cluster" in within(10 seconds) {
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
-      Cluster(system) join node(first).address
+      //#addresses 
+      val firstAddress = node(first).address
+      val secondAddress = node(second).address
+      val thirdAddress = node(third).address
+      //#addresses
+
+      //#join
+      Cluster(system) join firstAddress
+      //#join
+
       system.actorOf(Props[StatsWorker], "statsWorker")
       system.actorOf(Props[StatsService], "statsService")
 
       expectMsgAllOf(
-        MemberUp(Member(node(first).address, MemberStatus.Up)),
-        MemberUp(Member(node(second).address, MemberStatus.Up)),
-        MemberUp(Member(node(third).address, MemberStatus.Up)))
+        MemberUp(Member(firstAddress, MemberStatus.Up)),
+        MemberUp(Member(secondAddress, MemberStatus.Up)),
+        MemberUp(Member(thirdAddress, MemberStatus.Up)))
 
       Cluster(system).unsubscribe(testActor)
 
       testConductor.enter("all-up")
     }
+    //#startup-cluster
 
-    "show usage of the statsService" in within(5 seconds) {
 
-      val service = system.actorFor(RootActorPath(node(third).address) / "user" / "statsService")
+    //#test-statsService
+    "show usage of the statsService from one node" in within(5 seconds) {
+      runOn(second) {
+        val service = system.actorFor(node(third) / "user" / "statsService")
+        service ! StatsJob("this is the text that will be analyzed")
+        val meanWordLength = expectMsgPF() {
+          case StatsResult(meanWordLength) ⇒ meanWordLength
+        }
+        meanWordLength must be(3.875 plusOrMinus 0.001)
+      }
+
+      testConductor.enter("done-2")
+    }
+    //#test-statsService
+    
+    "show usage of the statsService from all nodes" in within(5 seconds) {
+      val service = system.actorFor(node(third) / "user" / "statsService")
       service ! StatsJob("this is the text that will be analyzed")
       val meanWordLength = expectMsgPF() {
         case StatsResult(meanWordLength) ⇒ meanWordLength
       }
       meanWordLength must be(3.875 plusOrMinus 0.001)
 
-      testConductor.enter("done")
+      testConductor.enter("done-2")
     }
+
+
   }
 
 }
