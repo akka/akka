@@ -24,12 +24,12 @@ public class TestKitSampleTest {
     public void onReceive(Object msg) {
     
       if (msg.equals("hello")) {
-        getSender().tell("world");
+        getSender().tell("world", getSelf());
         if (target != null) target.forward(msg, getContext());
       
       } else if (msg instanceof ActorRef) {
         target = (ActorRef) msg;
-        getSender().tell("done");
+        getSender().tell("done", getSelf());
       }
     }
   }

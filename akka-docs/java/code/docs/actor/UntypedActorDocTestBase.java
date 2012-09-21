@@ -54,20 +54,14 @@ import java.util.ArrayList;
 import akka.actor.UntypedActorWithStash;
 //#import-stash
 
-import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
-import akka.dispatch.MessageDispatcher;
 
 import org.junit.Test;
 import scala.Option;
 import java.lang.Object;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 import akka.pattern.Patterns;
-
-import static org.junit.Assert.*;
 
 public class UntypedActorDocTestBase {
 
@@ -95,7 +89,7 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class), "myactor");
     //#system-actorOf
-    myActor.tell("test");
+    myActor.tell("test", null);
     system.shutdown();
   }
 
@@ -105,7 +99,7 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class), "myactor");
     //#context-actorOf
-    myActor.tell("test");
+    myActor.tell("test", null);
     system.shutdown();
   }
 
@@ -120,7 +114,7 @@ public class UntypedActorDocTestBase {
       }
     }), "myactor");
     //#creating-constructor
-    myActor.tell("test");
+    myActor.tell("test", null);
     system.shutdown();
   }
 
@@ -130,7 +124,7 @@ public class UntypedActorDocTestBase {
     //#creating-props
     ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"), "myactor");
     //#creating-props
-    myActor.tell("test");
+    myActor.tell("test", null);
     system.shutdown();
   }
 
@@ -154,7 +148,7 @@ public class UntypedActorDocTestBase {
   public void receiveTimeout() {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(MyReceivedTimeoutUntypedActor.class));
-    myActor.tell("Hello");
+    myActor.tell("Hello", null);
     system.shutdown();
   }
 
@@ -163,7 +157,7 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class));
     //#poison-pill
-    myActor.tell(PoisonPill.getInstance());
+    myActor.tell(PoisonPill.getInstance(), null);
     //#poison-pill
     system.shutdown();
   }
@@ -173,7 +167,7 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef victim = system.actorOf(new Props(MyUntypedActor.class));
     //#kill
-    victim.tell(Kill.getInstance());
+    victim.tell(Kill.getInstance(), null);
     //#kill
     system.shutdown();
   }
@@ -186,9 +180,9 @@ public class UntypedActorDocTestBase {
         return new HotSwapActor();
       }
     }));
-    myActor.tell("foo");
-    myActor.tell("bar");
-    myActor.tell("bar");
+    myActor.tell("foo", null);
+    myActor.tell("bar", null);
+    myActor.tell("bar", null);
     system.shutdown();
   }
 
@@ -265,7 +259,7 @@ public class UntypedActorDocTestBase {
       try {
         operation();
       } catch (Exception e) {
-        getSender().tell(new akka.actor.Status.Failure(e));
+        getSender().tell(new akka.actor.Status.Failure(e), getSelf());
         throw e;
       }
     }
@@ -298,9 +292,9 @@ public class UntypedActorDocTestBase {
       //#reply-exception
       try {
         String result = operation();
-        getSender().tell(result);
+        getSender().tell(result, getSelf());
       } catch (Exception e) {
-        getSender().tell(new akka.actor.Status.Failure(e));
+        getSender().tell(new akka.actor.Status.Failure(e), getSelf());
         throw e;
       }
       //#reply-exception
@@ -318,7 +312,7 @@ public class UntypedActorDocTestBase {
       @Override
       public void apply(Object message) {
         if (message.equals("bar")) {
-          getSender().tell("I am already angry?");
+          getSender().tell("I am already angry?", getSelf());
         } else if (message.equals("foo")) {
           getContext().become(happy);
         }
@@ -329,7 +323,7 @@ public class UntypedActorDocTestBase {
       @Override
       public void apply(Object message) {
         if (message.equals("bar")) {
-          getSender().tell("I am already happy :-)");
+          getSender().tell("I am already happy :-)", getSelf());
         } else if (message.equals("foo")) {
           getContext().become(angry);
         }
@@ -390,7 +384,7 @@ public class UntypedActorDocTestBase {
       } else if (message instanceof Terminated) {
         final Terminated t = (Terminated) message;
         if (t.getActor() == child) {
-          lastSender.tell("finished");
+          lastSender.tell("finished", getSelf());
         }
       } else {
         unhandled(message);

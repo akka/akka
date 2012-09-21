@@ -14,8 +14,6 @@ package docs.camel;
 
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
-
 public class ActivationTestBase {
 
   @Test

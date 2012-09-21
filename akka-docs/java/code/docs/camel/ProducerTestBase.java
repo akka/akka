@@ -1,20 +1,14 @@
 package docs.camel;
 
-import akka.actor.*;
-import akka.camel.Camel;
-import akka.camel.CamelExtension;
-import akka.camel.CamelMessage;
-import akka.pattern.Patterns;
-import scala.concurrent.Future;
-import scala.concurrent.util.Duration;
-import scala.concurrent.util.FiniteDuration;
-import org.apache.camel.CamelContext;
-import org.apache.camel.ProducerTemplate;
-import org.junit.Test;
-
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+
+import scala.concurrent.Future;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.camel.CamelMessage;
+import akka.pattern.Patterns;
 
 public class ProducerTestBase {
   public void tellJmsProducer() {
@@ -22,7 +16,7 @@ public class ProducerTestBase {
     ActorSystem system = ActorSystem.create("some-system");
     Props props = new Props(Orders.class);
     ActorRef producer = system.actorOf(props, "jmsproducer");
-    producer.tell("<order amount=\"100\" currency=\"PLN\" itemId=\"12345\"/>");
+    producer.tell("<order amount=\"100\" currency=\"PLN\" itemId=\"12345\"/>", null);
     //#TellProducer
     system.shutdown();
   }
@@ -45,7 +39,7 @@ public class ProducerTestBase {
     ActorRef producer = system.actorOf(props,"jmsproducer");
     Map<String,Object> headers = new HashMap<String, Object>();
     headers.put(CamelMessage.MessageExchangeId(),"123");
-    producer.tell(new CamelMessage("<order amount=\"100\" currency=\"PLN\" itemId=\"12345\"/>",headers));
+    producer.tell(new CamelMessage("<order amount=\"100\" currency=\"PLN\" itemId=\"12345\"/>",headers), null);
     //#Correlate
     system.stop(producer);
     system.shutdown();

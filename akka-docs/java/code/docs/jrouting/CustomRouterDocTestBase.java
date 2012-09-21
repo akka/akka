@@ -3,28 +3,37 @@
  */
 package docs.jrouting;
 
-import java.util.List;
+import static akka.pattern.Patterns.ask;
+import static docs.jrouting.CustomRouterDocTestBase.Message.DemocratCountResult;
+import static docs.jrouting.CustomRouterDocTestBase.Message.DemocratVote;
+import static docs.jrouting.CustomRouterDocTestBase.Message.RepublicanCountResult;
+import static docs.jrouting.CustomRouterDocTestBase.Message.RepublicanVote;
+import static org.junit.Assert.assertEquals;
+
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
 
-import akka.actor.*;
-import akka.routing.*;
-import scala.concurrent.util.Duration;
-import akka.util.Timeout;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
+import scala.concurrent.util.Duration;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.OneForOneStrategy;
+import akka.actor.Props;
+import akka.actor.SupervisorStrategy;
+import akka.actor.UntypedActor;
 import akka.dispatch.Dispatchers;
+import akka.routing.CustomRoute;
+import akka.routing.CustomRouterConfig;
+import akka.routing.Destination;
+import akka.routing.RoundRobinRouter;
+import akka.routing.RouteeProvider;
 import akka.testkit.AkkaSpec;
-import com.typesafe.config.ConfigFactory;
-import static akka.pattern.Patterns.ask;
-
-import static docs.jrouting.CustomRouterDocTestBase.DemocratActor;
-import static docs.jrouting.CustomRouterDocTestBase.RepublicanActor;
-import static docs.jrouting.CustomRouterDocTestBase.Message.*;
+import akka.util.Timeout;
 
 public class CustomRouterDocTestBase {
 
@@ -67,11 +76,11 @@ public class CustomRouterDocTestBase {
   @Test
   public void countVotesAsIntendedNotAsInFlorida() throws Exception {
     ActorRef routedActor = system.actorOf(new Props().withRouter(new VoteCountRouter()));
-    routedActor.tell(DemocratVote);
-    routedActor.tell(DemocratVote);
-    routedActor.tell(RepublicanVote);
-    routedActor.tell(DemocratVote);
-    routedActor.tell(RepublicanVote);
+    routedActor.tell(DemocratVote, null);
+    routedActor.tell(DemocratVote, null);
+    routedActor.tell(RepublicanVote, null);
+    routedActor.tell(DemocratVote, null);
+    routedActor.tell(RepublicanVote, null);
     Timeout timeout = new Timeout(Duration.create(1, "seconds"));
     Future<Object> democratsResult = ask(routedActor, DemocratCountResult, timeout);
     Future<Object> republicansResult = ask(routedActor, RepublicanCountResult, timeout);

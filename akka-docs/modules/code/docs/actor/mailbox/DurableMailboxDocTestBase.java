@@ -18,8 +18,6 @@ import com.typesafe.config.ConfigFactory;
 import akka.actor.ActorSystem;
 import akka.actor.UntypedActor;
 
-import static org.junit.Assert.*;
-
 public class DurableMailboxDocTestBase {
 
   ActorSystem system;
@@ -41,7 +39,7 @@ public class DurableMailboxDocTestBase {
     ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class).
         withDispatcher("my-dispatcher"), "myactor");
     //#dispatcher-config-use
-    myActor.tell("test");
+    myActor.tell("test", null);
   }
 
   public static class MyUntypedActor extends UntypedActor {

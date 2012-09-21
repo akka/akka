@@ -9,7 +9,6 @@ import static org.junit.Assert.*;
 import akka.actor.*;
 import akka.remote.RemoteActorRefProvider;
 import akka.serialization.*;
-import com.typesafe.config.*;
 
 //#imports
 

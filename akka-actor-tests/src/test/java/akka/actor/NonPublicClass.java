@@ -12,6 +12,6 @@ public class NonPublicClass {
 
 class MyNonPublicActorClass extends UntypedActor {
     @Override public void onReceive(Object msg) {
-        getSender().tell(msg);
+        getSender().tell(msg, getSelf());
     }
 }

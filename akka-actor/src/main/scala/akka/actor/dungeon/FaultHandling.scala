@@ -194,7 +194,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     try if (a ne null) a.postStop()
     finally try dispatcher.detach(this)
     finally try parent.sendSystemMessage(ChildTerminated(self))
-    finally try parent.tell(NullMessage) // read ScalaDoc of NullMessage to see why
+    finally try parent ! NullMessage // read ScalaDoc of NullMessage to see why
     finally try tellWatchersWeDied(a)
     finally try unwatchWatchedActors(a)
     finally {

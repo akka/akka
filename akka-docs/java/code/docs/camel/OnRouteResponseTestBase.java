@@ -1,7 +1,6 @@
 package docs.camel;
 
 import akka.actor.*;
-import org.junit.Test;
 
 public class OnRouteResponseTestBase {
 
@@ -18,7 +17,7 @@ public class OnRouteResponseTestBase {
     ActorRef forwardResponse = system.actorOf(new Props(factory));
     // the Forwarder sends out a request to the web page and forwards the response to
     // the ResponseReceiver
-    forwardResponse.tell("some request");
+    forwardResponse.tell("some request", null);
     //#RouteResponse
     system.stop(receiver);
     system.stop(forwardResponse);
