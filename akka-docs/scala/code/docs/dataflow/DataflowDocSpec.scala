@@ -21,7 +21,6 @@ class DataflowDocSpec extends WordSpec with MustMatchers {
   import scala.concurrent.ExecutionContext.Implicits.global
   //#import-global-implicit
 
-  import DataflowDocSpec._
   "demonstrate flow using hello world" in {
     def println[T](any: Try[T]): Unit = any.get must be === "Hello world!"
     //#simplest-hello-world
