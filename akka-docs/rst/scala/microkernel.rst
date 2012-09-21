@@ -36,7 +36,7 @@ On a Windows machine you can also use the bin/akka.bat script.
 The code for the Hello Kernel example (see the ``HelloKernel`` class for an example
 of creating a Bootable):
 
-.. includecode:: ../../akka-samples/akka-sample-hello-kernel/src/main/scala/sample/kernel/hello/HelloKernel.scala
+.. includecode:: ../../../akka-samples/akka-sample-hello-kernel/src/main/scala/sample/kernel/hello/HelloKernel.scala
 
 
 Distribution of microkernel application
@@ -48,12 +48,12 @@ start scripts.
 
 To use the sbt plugin you define it in your ``project/plugins.sbt``:
 
-.. includecode:: ../../akka-sbt-plugin/sample/project/plugins.sbt
+.. includecode:: ../../../akka-sbt-plugin/sample/project/plugins.sbt
 
 Then you add it to the settings of your ``project/Build.scala``. It is also important that you add the ``akka-kernel`` dependency.
 This is an example of a complete sbt build file:
 
-.. includecode:: ../../akka-sbt-plugin/sample/project/Build.scala
+.. includecode:: ../../../akka-sbt-plugin/sample/project/Build.scala
 
 Run the plugin with sbt::
 

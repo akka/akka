@@ -15,11 +15,7 @@ migrating `1.3.x to 2.0.x <http://doc.akka.io/docs/akka/2.0.3/project/migration-
 Scala Version
 =============
 
-Change your project build and dependencies to Scala version:
-
-.. parsed-literal::
-
-  |scalaVersion|
+Change your project build and dependencies to Scala version ``@scalaVersion@``.
 
 Config Dependency
 =================

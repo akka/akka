@@ -57,7 +57,7 @@ http://repo.typesafe.com/typesafe/snapshots/ as both ``SNAPSHOT`` and
 timestamped versions.
 
 For timestamped versions, pick a timestamp from
-http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-actor/.
+http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-actor_@binVersion@/.
 All Akka modules that belong to the same build have the same timestamp.
 
 Make sure that you add the repository to the sbt resolvers or maven repositories::
@@ -66,6 +66,6 @@ Make sure that you add the repository to the sbt resolvers or maven repositories
 
 Define the library dependencies with the timestamp as version. For example::
 
-    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0-20111215-000549"
+    libraryDependencies += "com.typesafe.akka" % "akka-actor_@binVersion@" % "2.1-20120913-000917"
 
-    libraryDependencies += "com.typesafe.akka" % "akka-remote" % "2.0-20111215-000549"
+    libraryDependencies += "com.typesafe.akka" % "akka-remote_@binVersion@" % "2.1-20120913-000917"

@@ -25,7 +25,7 @@ Scala's Delimited Continuations plugin is required to use the Dataflow API. To e
 
   autoCompilerPlugins := true,
   libraryDependencies <+= scalaVersion {
-    v => compilerPlugin("org.scala-lang.plugins" % "continuations" % <scalaVersion>)
+    v => compilerPlugin("org.scala-lang.plugins" % "continuations" % @scalaVersion@)
   },
   scalacOptions += "-P:continuations:enable",
 
@@ -34,7 +34,7 @@ You will also need to include a dependency on ``akka-dataflow``:
 
 .. code-block:: scala
 
-  "com.typesafe.akka" %% "akka-dataflow" % "2.1-SNAPSHOT" cross CrossVersion.full
+  "com.typesafe.akka" %% "akka-dataflow" % "@version@" @crossString@
 
 Dataflow variables
 ------------------
@@ -108,3 +108,4 @@ Conclusions:
 
  - Dataflow has a smaller code footprint and arguably is easier to reason about.
  - For-comprehensions are more general than Dataflow, and can operate on a wide array of types.
+

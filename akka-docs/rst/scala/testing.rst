@@ -473,7 +473,7 @@ keep a test running and verify traces later you can also install an
 This code can be used to forward messages, e.g. in a chain ``A --> Probe -->
 B``, as long as a certain protocol is obeyed.
 
-.. includecode:: ../../akka-testkit/src/test/scala/akka/testkit/TestProbeSpec.scala#autopilot
+.. includecode:: ../../../akka-testkit/src/test/scala/akka/testkit/TestProbeSpec.scala#autopilot
 
 The :meth:`run` method must return the auto-pilot for the next message, which
 may be :class:`KeepRunning` to retain the current one or :class:`NoAutoPilot`
@@ -722,11 +722,11 @@ Testing Custom Router Logic
 
 Given the following custom (dummy) router:
 
-.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/CustomRouteSpec.scala#custom-router
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/routing/CustomRouteSpec.scala#custom-router
 
 This might be tested by dispatching messages and asserting their reception at
 the right destinations, but that can be inconvenient. Therefore exists the
 :obj:`ExtractRoute` extractor, which can be used like so:
 
-.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/CustomRouteSpec.scala#test-route
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/routing/CustomRouteSpec.scala#test-route
 

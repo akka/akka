@@ -126,7 +126,7 @@ not have an effect on the number of actors in the pool.
 
 Setting the strategy is easily done:
 
-.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#supervision
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#supervision
    :include: supervision
    :exclude: custom-strategy
 
@@ -378,12 +378,12 @@ democrat related messages to the Democrat actor and all republican related messa
 
 We begin with defining the class:
 
-.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#crRouter
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#crRouter
    :exclude: crRoute
 
 The next step is to implement the ``createRoute`` method in the class just defined:
 
-.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#crRoute
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#crRoute
 
 As you can see above we start off by creating the routees and put them in a collection.
 
@@ -392,12 +392,12 @@ It registers the routees internally and failing to call this method will
 cause a ``ActorInitializationException`` to be thrown when the router is used.
 Therefore always make sure to do the following in your custom router:
 
-.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#crRegisterRoutees
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#crRegisterRoutees
 
 The routing logic is where your magic sauce is applied. In our example it inspects the message types
 and forwards to the correct routee based on this:
 
-.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#crRoutingLogic
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#crRoutingLogic
 
 As you can see above what's returned in the partial function is a ``List`` of ``Destination(sender, routee)``.
 The sender is what "parent" the routee should see - changing this could be useful if you for example want
@@ -407,7 +407,7 @@ For more information about how to alter the original sender we refer to the sour
 
 All in all the custom router looks like this:
 
-.. includecode:: ../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#CustomRouter
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#CustomRouter
 
 If you are interested in how to use the VoteCountRouter you can have a look at the test class
 `RoutingSpec <https://github.com/akka/akka/blob/master/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala>`_

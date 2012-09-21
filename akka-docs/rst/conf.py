@@ -7,7 +7,7 @@ import sys, os
 
 # -- General configuration -----------------------------------------------------
 
-sys.path.append(os.path.abspath('_sphinx/exts'))
+sys.path.append(os.path.abspath('../_sphinx/exts'))
 extensions = ['sphinx.ext.todo', 'includecode']
 
 templates_path = ['_templates']
@@ -17,29 +17,25 @@ exclude_patterns = ['_build', 'pending', 'disabled']
 
 project = u'Akka'
 copyright = u'2011, Typesafe Inc'
-version = '2.1-SNAPSHOT'
-release = '2.1-SNAPSHOT'
+version = '@version@'
+release = '@version@'
 
 pygments_style = 'simple'
 highlight_language = 'scala'
 add_function_parentheses = False
 show_authors = True
 
-f = open('epilog_rst', 'U')
-rst_epilog = "\n" + f.read()
-f.close()
-
 # -- Options for HTML output ---------------------------------------------------
 
 html_theme = 'akka'
-html_theme_path = ['_sphinx/themes']
-html_favicon = '_sphinx/static/favicon.ico'
+html_theme_path = ['../_sphinx/themes']
+html_favicon = '../_sphinx/static/favicon.ico'
 
 html_title = 'Akka Documentation'
-html_logo = '_sphinx/static/logo.png'
+html_logo = '../_sphinx/static/logo.png'
 #html_favicon = None
 
-html_static_path = ['_sphinx/static']
+html_static_path = ['../_sphinx/static']
 
 html_last_updated_fmt = '%b %d, %Y'
 #html_sidebars = {}
@@ -63,7 +59,7 @@ epub_language = "en"
 epub_publisher = epub_author
 epub_identifier = "http://doc.akka.io/docs/akka/snapshot/"
 epub_scheme = "URL"
-epub_cover = ("_sphinx/static/akka.png", "")
+epub_cover = ("../_sphinx/static/akka.png", "")
 
 # -- Options for LaTeX output --------------------------------------------------
 

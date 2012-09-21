@@ -21,7 +21,7 @@ Contributed by: Kaspar Fischer
 
 "A message throttler that ensures that messages are not sent out at too high a rate."
 
-The pattern is described `here <http://letitcrash.com/post/28901663062/throttling-messages-in-akka-2>`_.
+The pattern is described in `Throttling Messages in Akka 2 <http://letitcrash.com/post/28901663062/throttling-messages-in-akka-2>`_.
 
 Balancing Workload Across Nodes
 ===============================
@@ -32,7 +32,7 @@ Contributed by: Derek Wyatt
 stipulation that the Actors doing the work have distinct Mailboxes on remote 
 nodes. In this post we’ll explore the implementation of such a concept."
 
-The pattern is described `here <http://letitcrash.com/post/29044669086/balancing-workload-across-nodes-with-akka-2>`_.
+The pattern is described `Balancing Workload across Nodes with Akka 2 <http://letitcrash.com/post/29044669086/balancing-workload-across-nodes-with-akka-2>`_.
 
 Ordered Termination
 ===================
@@ -46,7 +46,7 @@ If an Actor has children that have order dependencies, then you might need to en
 a particular shutdown order of those children so that their postStop() methods get 
 called in the right order."
 
-The pattern is described `here <http://letitcrash.com/post/29773618510/an-akka-2-terminator>`_.
+The pattern is described `An Akka 2 Terminator <http://letitcrash.com/post/29773618510/an-akka-2-terminator>`_.
 
 Akka AMQP Proxies
 =================
@@ -57,7 +57,7 @@ Contributed by: Fabrice Drouin
 You still write “local” code, have very little to configure, and end up with a distributed, elastic,
 fault-tolerant grid where computing nodes can be written in nearly every programming language."
 
-The pattern is described `here <http://letitcrash.com/post/29988753572/akka-amqp-proxies>`_.
+The pattern is described `Akka AMQP Proxies <http://letitcrash.com/post/29988753572/akka-amqp-proxies>`_.
 
 Shutdown Patterns in Akka 2
 ===========================
@@ -72,7 +72,7 @@ She’s just plain mean.
 In this post, we’ll discuss why this is the case and provide you with a simple option for shutting down “at the right time”,
 as well as a not-so-simple-option for doing the exact same thing."
 
-The pattern is described `here <http://letitcrash.com/post/30165507578/shutdown-patterns-in-akka-2>`_.
+The pattern is described `Shutdown Patterns in Akka 2 <http://letitcrash.com/post/30165507578/shutdown-patterns-in-akka-2>`_.
 
 Distributed (in-memory) graph processing with Akka
 ==================================================
@@ -83,7 +83,7 @@ Contributed by: Adelbert Chang
 and have become even more interesting in the context of online social networks such as Facebook and Twitter,
 whose underlying network structures are nicely represented by graphs."
 
-The pattern is described `here <http://letitcrash.com/post/30257014291/distributed-in-memory-graph-processing-with-akka>`_.
+The pattern is described `Distributed In-Memory Graph Processing with Akka <http://letitcrash.com/post/30257014291/distributed-in-memory-graph-processing-with-akka>`_.
 
 Case Study: An Auto-Updating Cache Using Actors
 ===============================================
@@ -96,7 +96,7 @@ The data in the backend system is constantly being updated so the caches need to
 Requests to the backend system need to be throttled.
 The caching system we built used Akka actors and Scala’s support for functions as first class objects."
 
-The pattern is described `here <http://letitcrash.com/post/30509298968/case-study-an-auto-updating-cache-using-actors>`_.
+The pattern is described `Case Study: An Auto-Updating Cache using Actors <http://letitcrash.com/post/30509298968/case-study-an-auto-updating-cache-using-actors>`_.
 
 Discovering message flows in actor systems with the Spider Pattern
 ==================================================================
@@ -109,7 +109,7 @@ on several machines to find out what’s going on. I’m sure you have browsed t
 
 This is where the Spider pattern comes in."
 
-The pattern is described `here <http://letitcrash.com/post/30585282971/discovering-message-flows-in-actor-systems-with-the>`_.
+The pattern is described `Discovering Message Flows in Actor System with the Spider Pattern <http://letitcrash.com/post/30585282971/discovering-message-flows-in-actor-systems-with-the>`_.
 
 Template Pattern
 ================
