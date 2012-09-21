@@ -1,4 +1,4 @@
-.. _multi_node_testing:
+.. _multi-node-testing:
 
 ###################
  Multi Node Testing
@@ -6,25 +6,13 @@
 
 .. note:: This module is :ref:`experimental <experimental>`. This document describes how to use the features
  implemented so far. More features are coming in Akka Coltrane. Track progress of the Coltrane milestone in
- `Assembla <http://www.assembla.com/spaces/akka/tickets>`_.
-
-Preparing Your Project for Multi Node Testing
-=============================================
-
-The multi node testing is a separate jar file. Make sure that you have the following dependency in your project:
-
-.. parsed-literal::
-
-  "com.typesafe.akka" %% "akka-remote-tests-experimental" % "2.1-SNAPSHOT"
-
-If you are using the latest nightly build you should pick a timestamped Akka version from
-`<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/>`_. Don't use ``SNAPSHOT``. Note that the
-Scala version |scalaVersion| is part of the artifactId.
+ `Assembla <http://www.assembla.com/spaces/akka/milestones/418132-coltrane>`_.
 
 Multi Node Testing Concepts
 ===========================
 
-Multi node testing in Akka consist of three main parts.
+When we talk about multi node testing in Akka we mean the process of running coordinated tests on multiple actor
+systems in different JVMs. The multi node testing kit consist of three main parts.
 
 * `The Test Conductor`_. that coordinates and controls the nodes under test.
 * `The Multi Node Spec`_. that is a convenience wrapper for starting the ``TestConductor`` and letting all
@@ -57,8 +45,8 @@ The Multi Node Spec consists of two parts. The ``MultiNodeConfig`` that is respo
 configuration and enumerating and naming the nodes under test. The ``MultiNodeSpec`` that contains all the
 convenience functions for making the test nodes interact with each other.
 
-The setup of the ``MultiNodeSpec`` is configured through properties that you set on all JVMs that's going to run a
-node under test.
+The setup of the ``MultiNodeSpec`` is configured through java system properties that you set on all JVMs that's going to run a
+node under test. These can easily be set on the JVM command line with ``-Dproperty=value``.
 
 These are the available properties:
   * ``multinode.max-nodes``
@@ -89,9 +77,11 @@ These are the available properties:
 The SbtMultiJvm Plugin
 ======================
 
-The :ref:`SbtMultiJvm Plugin <multi_jvm_testing>` has been updated to be able to run multi node tests, by
-automatically generating the relevant ``multinode.*`` properties. This means that you can easily run multinode tests
-on a single machine by just running them as normal multi jvm tests.
+The :ref:`SbtMultiJvm Plugin <multi-jvm-testing>` has been updated to be able to run multi node tests, by
+automatically generating the relevant ``multinode.*`` properties. This means that you can easily run multi node tests
+on a single machine without any special configuration by just running them as normal multi-jvm tests. These tests can
+then be run distributed over multiple machines without any changes simply by using the multi-node additions to the
+plugin.
 
 Multi Node Specific Additions
 +++++++++++++++++++++++++++++
@@ -104,7 +94,7 @@ machines. The necessary test classes and dependencies are packaged for distribut
 .. note::
 
    To be able to distribute and kick off the tests on multiple machines, it is assumed that both host and target
-   systems are POSIX like systems with `ssh` and `rsync` available.
+   systems are POSIX like systems with ``ssh`` and ``rsync`` available.
 
 These are the available sbt multi-node settings:
   * ``multiNodeHosts``
@@ -143,29 +133,54 @@ Here are some examples of how you define hosts:
 
     The current user on host ``host3`` using java 6.
 
-Running the Test in Multi Node Mode
-+++++++++++++++++++++++++++++++++++
+Running the Multi Node Tests
+++++++++++++++++++++++++++++
 
-To run all the multi node test in multi-node mode (i.e. distributing the jar files and rkicking off the tests
+To run all the multi node test in multi-node mode (i.e. distributing the jar files and kicking off the tests
 remotely) from inside sbt, use the ``multi-node-test`` task:
 
 .. code-block:: none
 
   multi-node-test
 
+To run all of them in multi-jvm mode (i.e. all JVMs on the local machine) do:
+
+.. code-block:: none
+
+  multi-jvm:test
+
 To run individual tests use the ``multi-node-test-only`` task:
 
 .. code-block:: none
 
-  multi-node-test-only akka.remote.RandomRoutedRemoteActor
+  multi-node-test-only your.MultiNodeTest
+
+To run individual tests in the multi-jvm mode do:
+
+.. code-block:: none
+
+  multi-jvm:test-only your.MultiNodeTest
 
 More than one test name can be listed to run multiple specific tests. Tab completion in sbt makes it easy to
 complete the test names.
 
+Preparing Your Project for Multi Node Testing
+=============================================
+
+The multi node testing kit is a separate jar file. Make sure that you have the following dependency in your project:
+
+.. parsed-literal::
+
+  "com.typesafe.akka" %% "akka-remote-tests-experimental" % "2.1-SNAPSHOT" cross CrossVersion.full
+
+If you are using the latest nightly build you should pick a timestamped Akka version from
+`<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/>`_. Don't use ``SNAPSHOT``. Note that the
+Scala version |scalaVersion| is part of the artifactId.
+
 A Multi Node Testing Example
 ============================
 
-First we need some scaffolding to hook up the `MultiNodeSpec` with your favorite test framework. Lets define a trait
+First we need some scaffolding to hook up the ``MultiNodeSpec`` with your favorite test framework. Lets define a trait
 ``STMultiNodeSpec`` that uses ScalaTest to start and stop ``MultiNodeSpec``.
 
 .. includecode:: ../../akka-samples/akka-sample-multi-node/src/test/scala/sample/multinode/STMultiNodeSpec.scala#example
@@ -176,8 +191,24 @@ Then we need to define a configuration. Lets use two nodes ``"node1`` and ``"nod
 .. includecode:: ../../akka-samples/akka-sample-multi-node/src/multi-jvm/scala/sample/multinode/MultiNodeSample.scala
   :include: package,config
 
-And then finally to the node test code. That starts the two nodes, and demostrates a barrier, and a remote actor
+And then finally to the node test code. That starts the two nodes, and demonstrates a barrier, and a remote actor
 message send/receive.
 
 .. includecode:: ../../akka-samples/akka-sample-multi-node/src/multi-jvm/scala/sample/multinode/MultiNodeSample.scala
   :include: package,spec
+
+Things to Keep in Mind
+======================
+
+There are a couple of things to keep in mind when writing multi node tests or else your tests might behave in
+surprising ways.
+
+  * Don't issue a shutdown of the first node. The first node is the controller and if it shuts down your test will break.
+
+  * Throttling, shutdown and other failure injections can only be done from the first node, which again is the controller.
+
+  * Don't ask for the address of a node using ``node(address)`` after the node has been shut down. Grab the address before
+    shutting down the node.
+
+  * Don't use MultiNodeSpec methods like address lookup, barrier entry et.c. from other threads than the main test
+    thread. This also means that you shouldn't use them from inside an actor, a future, or a scheduled task.

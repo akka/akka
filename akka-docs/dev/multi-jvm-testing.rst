@@ -5,16 +5,13 @@
  Multi JVM Testing
 ###################
 
-Support for running applications (objects with main methods) and
-ScalaTest tests in multiple JVMs.
-
+Supports running applications (objects with main methods) and ScalaTest tests in multiple JVMs at the same time.
+Useful for integration testing where multiple systems communicate with each other.
 
 Setup
 =====
 
-The multi JVM testing is an sbt plugin that you can find here:
-
-http://github.com/typesafehub/sbt-multi-jvm
+The multi-JVM testing is an sbt plugin that you can find at `<http://github.com/typesafehub/sbt-multi-jvm>`_.
 
 You can add it as a plugin by adding the following to your project/plugins.sbt:
 
@@ -228,5 +225,5 @@ Multi Node Additions
 ====================
 
 There has also been some additions made to the ``SbtMultiJvm`` plugin to accomodate the
-:ref:`experimental <experimental>` module :ref:`multi node testing <multi_node_testing>`,
+:ref:`experimental <experimental>` module :ref:`multi node testing <multi-node-testing>`,
 described in that section.

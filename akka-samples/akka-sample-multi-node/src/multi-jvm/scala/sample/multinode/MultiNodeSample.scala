@@ -27,7 +27,7 @@ class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
 
   import MultiNodeSampleConfig._
 
-  def initialParticipants = 2
+  def initialParticipants = roles.size
 
   "A MultiNodeSample" must {
 
@@ -38,7 +38,7 @@ class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig)
     "send to and receive from a remote node" in {
       runOn(node1) {
         enterBarrier("deployed")
-        val ponger = system.actorFor(node(node2).toString + "user/ponger")
+        val ponger = system.actorFor(node(node2) / "user" / "ponger")
         ponger ! "ping"
         expectMsg("pong")
       }
