@@ -15,7 +15,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import java.lang.Boolean.getBoolean
 import sbt.Tests
-import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags }
+import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags, sphinxVars, sphinxExts }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -31,7 +31,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Sphinx.settings ++ Publish.versionSettings ++
-      Dist.settings ++ mimaSettings ++ Seq(
+      Dist.settings ++ mimaSettings ++ sphinxReplacements ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
@@ -63,8 +63,9 @@ object AkkaBuild extends Build {
        * line (without it, the pygments task would run twice in parallel for
        * the same directory, wreaking the expected amount of havoc).
        */
-      sphinxDocs <<= baseDirectory / "akka-docs",
+      sphinxDocs <<= baseDirectory / "akka-docs/rst",
       sphinxTags in sphinxHtml += "online",
+      sphinxHtml <<= (sphinxHtml, sphinxHtml in LocalProject(docs.id)) map ((orig, dummy) => orig), // make akka-docs run first
       sphinxPygments <<= sphinxPygments in LocalProject(docs.id) map identity,
       sphinxLatex <<= sphinxLatex in LocalProject(docs.id) map identity,
       sphinxPdf <<= sphinxPdf in LocalProject(docs.id) map identity
@@ -347,8 +348,8 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
-      remote, cluster, slf4j, agent, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
-    settings = defaultSettings ++ Sphinx.settings ++ Seq(
+      remote, cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
+    settings = defaultSettings ++ Sphinx.settings ++ sphinxReplacements ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
@@ -387,6 +388,7 @@ object AkkaBuild extends Build {
   lazy val defaultMultiJvmOptions: Seq[String] = {
     import scala.collection.JavaConverters._
     val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
+      case key: String if key.startsWith("multinode.") => "-D" + key + "=" + System.getProperty(key)
       case key: String if key.startsWith("akka.") => "-D" + key + "=" + System.getProperty(key)
     }
     akkaProperties ::: (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
@@ -465,6 +467,31 @@ object AkkaBuild extends Build {
 
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF")
+  )
+
+  // customization of sphinx @<key>@ replacements, add to all sphinx-using projects
+  // add additional replacements here
+  lazy val sphinxReplacements = Seq(
+    sphinxVars <<= (scalaVersion, version) { (s, v) =>
+      val BinVer = """(\d+\.\d+)\.\d+""".r
+      Map(
+        "version" -> v,
+        "scalaVersion" -> s,
+        "crossString" -> (s match {
+            case BinVer(_) => ""
+            case _         => "cross CrossVersion.full"
+          }),
+        "jarName" -> (s match {
+            case BinVer(bv) => "akka-actor_" + bv + "-" + v + ".jar"
+            case _          => "akka-actor_" + s + "-" + v + ".jar"
+          }),
+        "binVersion" -> (s match {
+            case BinVer(bv) => bv
+            case _          => s
+          })
+      )
+    },
+    sphinxExts += "py" // needed for transforming conf.py
   )
 
   lazy val formatSettings = ScalariformPlugin.scalariformSettings ++ Seq(

@@ -86,7 +86,7 @@ object ActorModelSpec {
       case Wait(time)                   ⇒ ack; Thread.sleep(time); busy.switchOff()
       case WaitAck(time, l)             ⇒ ack; Thread.sleep(time); l.countDown(); busy.switchOff()
       case Reply(msg)                   ⇒ ack; sender ! msg; busy.switchOff()
-      case TryReply(msg)                ⇒ ack; sender.tell(msg); busy.switchOff()
+      case TryReply(msg)                ⇒ ack; sender.tell(msg, null); busy.switchOff()
       case Forward(to, msg)             ⇒ ack; to.forward(msg); busy.switchOff()
       case CountDown(latch)             ⇒ ack; latch.countDown(); busy.switchOff()
       case Increment(count)             ⇒ ack; count.incrementAndGet(); busy.switchOff()

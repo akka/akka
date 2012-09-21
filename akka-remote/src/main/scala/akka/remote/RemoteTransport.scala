@@ -24,6 +24,7 @@ sealed trait RemoteLifeCycleEvent extends Serializable {
  */
 trait RemoteClientLifeCycleEvent extends RemoteLifeCycleEvent {
   def remoteAddress: Address
+  final def getRemoteAddress: Address = remoteAddress
 }
 
 /**
@@ -31,8 +32,8 @@ trait RemoteClientLifeCycleEvent extends RemoteLifeCycleEvent {
  */
 case class RemoteClientError(
   @BeanProperty cause: Throwable,
-  @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
+  @transient remote: RemoteTransport,
+  remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.ErrorLevel
   override def toString: String = "RemoteClientError@" + remoteAddress + ": Error[" + Logging.stackTraceFor(cause) + "]"
 }
@@ -42,7 +43,7 @@ case class RemoteClientError(
  */
 case class RemoteClientDisconnected(
   @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
+  remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
   override def toString: String = "RemoteClientDisconnected@" + remoteAddress
 }
@@ -52,7 +53,7 @@ case class RemoteClientDisconnected(
  */
 case class RemoteClientConnected(
   @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
+  remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
   override def toString: String = "RemoteClientConnected@" + remoteAddress
 }
@@ -62,7 +63,7 @@ case class RemoteClientConnected(
  */
 case class RemoteClientStarted(
   @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
+  remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.InfoLevel
   override def toString: String = "RemoteClientStarted@" + remoteAddress
 }
@@ -72,7 +73,7 @@ case class RemoteClientStarted(
  */
 case class RemoteClientShutdown(
   @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
+  remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.InfoLevel
   override def toString: String = "RemoteClientShutdown@" + remoteAddress
 }

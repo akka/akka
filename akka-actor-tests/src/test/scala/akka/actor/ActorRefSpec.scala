@@ -371,8 +371,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       val timeout = Timeout(20000)
       val ref = system.actorOf(Props(new Actor {
         def receive = {
-          case 5 ⇒ sender.tell("five")
-          case 0 ⇒ sender.tell("null")
+          case 5 ⇒ sender ! "five"
+          case 0 ⇒ sender ! "null"
         }
       }))
 

@@ -3,14 +3,9 @@
  */
 package akka.routing;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.routing.RoundRobinRouter;
 import akka.testkit.ExtractRoute;
 
 public class CustomRouteTest {

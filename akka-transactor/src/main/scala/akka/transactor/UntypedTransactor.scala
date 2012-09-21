@@ -23,7 +23,7 @@ abstract class UntypedTransactor extends UntypedActor {
       case coordinated @ Coordinated(message) ⇒ {
         val others = coordinate(message)
         for (sendTo ← others) {
-          sendTo.actor.tell(coordinated(sendTo.message.getOrElse(message)))
+          sendTo.actor ! coordinated(sendTo.message.getOrElse(message))
         }
         before(message)
         coordinated.atomic { txn ⇒ atomically(message) }
