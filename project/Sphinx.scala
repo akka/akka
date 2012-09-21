@@ -64,7 +64,7 @@ object Sphinx {
         val temp = docs.getParentFile / (docs.getName + "_" + builder)
         val cache = cacheDir / "sphinx" / builder
         val cached = FileFunction.cached(cache)(FilesInfo.hash, FilesInfo.exists) { (in, out) =>
-          def dst(f: File) = temp.toPath.resolve(docs.toPath.relativize(f.toPath)).toFile
+          def dst(f: File) = new File(temp.toURI.resolve(docs.toURI.relativize(f.toURI)))
           def filter(f: File) = filterExt contains f.getName.reverse.takeWhile('.' !=).reverse
           val Replacer = """@(\w+)@""".r
           /*
