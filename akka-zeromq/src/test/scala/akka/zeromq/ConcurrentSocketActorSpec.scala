@@ -18,8 +18,8 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
   def checkZeroMQInstallation =
     try {
       zmq.version match {
-        case ZeroMQVersion(2, 1, _) ⇒ Unit
-        case version                ⇒ invalidZeroMQVersion(version)
+        case ZeroMQVersion(x, y, _) if x >= 3 || (x >= 2 && y >= 2) ⇒ Unit
+        case version ⇒ invalidZeroMQVersion(version)
       }
     } catch {
       case e: LinkageError ⇒ zeroMQNotInstalled
