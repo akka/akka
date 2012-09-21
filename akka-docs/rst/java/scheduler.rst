@@ -1,9 +1,9 @@
 
-.. _scheduler-scala:
+.. _scheduler-java:
 
-###################
- Scheduler (Scala)
-###################
+##################
+ Scheduler (Java)
+##################
 
 Sometimes the need for making things happen in the future arises, and where do you go look then?
 Look no further than ``ActorSystem``! There you find the :meth:`scheduler` method that returns an instance
@@ -25,26 +25,26 @@ scheduled operation.
 Some examples
 -------------
 
-.. includecode:: code/docs/actor/SchedulerDocSpec.scala
+.. includecode:: code/docs/actor/SchedulerDocTestBase.java
    :include: imports1,schedule-one-off-message
 
-.. includecode:: code/docs/actor/SchedulerDocSpec.scala
+.. includecode:: code/docs/actor/SchedulerDocTestBase.java
    :include: schedule-one-off-thunk
 
-.. includecode:: code/docs/actor/SchedulerDocSpec.scala
-   :include: schedule-recurring
+.. includecode:: code/docs/actor/SchedulerDocTestBase.java
+   :include: imports1,imports2,schedule-recurring
 
 From ``akka.actor.ActorSystem``
 -------------------------------
 
-.. includecode:: ../../akka-actor/src/main/scala/akka/actor/ActorSystem.scala
+.. includecode:: ../../../akka-actor/src/main/scala/akka/actor/ActorSystem.scala
    :include: scheduler
 
 
 The Scheduler interface
 -----------------------
 
-.. includecode:: ../../akka-actor/src/main/scala/akka/actor/Scheduler.scala
+.. includecode:: ../../../akka-actor/src/main/scala/akka/actor/Scheduler.scala
    :include: scheduler
 
 The Cancellable interface
@@ -55,6 +55,6 @@ This allows you to ``cancel`` something that has been scheduled for execution.
 .. warning::
   This does not abort the execution of the task, if it had already been started.
 
-.. includecode:: ../../akka-actor/src/main/scala/akka/actor/Scheduler.scala
+.. includecode:: ../../../akka-actor/src/main/scala/akka/actor/Scheduler.scala
    :include: cancellable
 

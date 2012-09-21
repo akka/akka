@@ -6,39 +6,35 @@ package akka
 
 import sbt._
 import sbt.Keys._
-import java.io.File
+import java.io.{ File, PrintWriter }
 
 object Sphinx {
   val sphinxDocs = SettingKey[File]("sphinx-docs")
   val sphinxTarget = SettingKey[File]("sphinx-target")
-  val sphinxScalaVersion = TaskKey[String]("sphinx-scala-version")
   val sphinxPygmentsDir = SettingKey[File]("sphinx-pygments-dir")
   val sphinxTags = SettingKey[Seq[String]]("sphinx-tags")
   val sphinxPygments = TaskKey[File]("sphinx-pygments", "Sphinx: install pygments styles")
   val sphinxHtml = TaskKey[File]("sphinx-html", "Sphinx: HTML documentation.")
   val sphinxLatex = TaskKey[File]("sphinx-latex", "Sphinx: Latex documentation.")
   val sphinxPdf = TaskKey[File]("sphinx-pdf", "Sphinx: PDF documentation.")
+  val sphinxVars = SettingKey[Map[String, String]]("sphinx-vars", "mappings key->value to be replaced within docs")
+  val sphinxExts = SettingKey[Set[String]]("sphinx-exts", "file extensions which will be filtered for replacements")
   val sphinx = TaskKey[File]("sphinx", "Build all Sphinx documentation (HTML and PDF combined).")
 
   lazy val settings = Seq(
-    sphinxDocs <<= baseDirectory,
+    sphinxDocs <<= baseDirectory / "rst",
     sphinxTarget <<= crossTarget / "sphinx",
-    sphinxScalaVersion <<= scalaVersionTask,
-    sphinxPygmentsDir <<= sphinxDocs { _ / "_sphinx" / "pygments" },
+    sphinxPygmentsDir <<= sphinxDocs { _ / ".." / "_sphinx" / "pygments" },
     sphinxTags in sphinxHtml := Seq.empty,
     sphinxTags in sphinxLatex := Seq.empty,
     sphinxPygments <<= pygmentsTask,
     sphinxHtml <<= buildTask("html", sphinxTags in sphinxHtml),
     sphinxLatex <<= buildTask("latex", sphinxTags in sphinxLatex),
     sphinxPdf <<= pdfTask,
+    sphinxVars := Map("" -> "@"), // this default makes the @@ -> @ subst work
+    sphinxExts := Set("rst"),
     sphinx <<= sphinxTask
   )
-
-  def scalaVersionTask = (scalaVersion, streams) map { (v, s) =>
-    s.log.info("writing version file")
-    IO.write(file("akka-docs/epilog_rst"), ".. |scalaVersion| replace:: " + v + "\n")
-    v
-  }
 
   def pygmentsTask = (sphinxDocs, sphinxPygmentsDir, sphinxTarget, streams) map {
     (cwd, pygments, baseTarget, s) => {
@@ -58,32 +54,52 @@ object Sphinx {
       }
       target
     }
-  } dependsOn sphinxScalaVersion
+  }
 
   def buildTask(builder: String, tagsKey: SettingKey[Seq[String]]) = {
-    (cacheDirectory, sphinxDocs, sphinxTarget, sphinxPygments, tagsKey, streams) map {
-      (cacheDir, docs, baseTarget, pygments, tags, s) => {
+    (cacheDirectory, sphinxDocs, sphinxTarget, sphinxPygments, tagsKey, streams, sphinxVars, sphinxExts) map {
+      (cacheDir, docs, baseTarget, pygments, tags, s, replacements, filterExt) => {
         val target = baseTarget / builder
         val doctrees = baseTarget / "doctrees" / builder
+        val temp = docs.getParentFile / (docs.getName + "_" + builder)
         val cache = cacheDir / "sphinx" / builder
         val cached = FileFunction.cached(cache)(FilesInfo.hash, FilesInfo.exists) { (in, out) =>
-          val changes = in.modified
-          if (!changes.isEmpty) {
-            IO.delete(target)
-            val tagList = if (tags.isEmpty) "" else tags.mkString(" (", ", ", ")")
-            val desc = "%s%s" format (builder, tagList)
-            s.log.info("Building Sphinx %s documentation..." format desc)
-            changes.foreach(file => s.log.debug("Changed documentation source: " + file))
-            val logger = newLogger(s)
-            val tagOptions = tags flatMap (Seq("-t", _))
-            val command = Seq("sphinx-build", "-aEN", "-b", builder, "-d", doctrees.absolutePath) ++ tagOptions ++ Seq(docs.absolutePath, target.absolutePath)
-            val env = "PYTHONPATH" -> pygments.absolutePath
-            s.log.debug("Command: " + command.mkString(" "))
-            val exitCode = Process(command, docs, env) ! logger
-            if (exitCode != 0) sys.error("Failed to build Sphinx %s documentation." format desc)
-            s.log.info("Sphinx %s documentation created: %s" format (desc, target))
-            target.descendentsExcept("*", "").get.toSet
-          } else Set.empty
+          def dst(f: File) = temp.toPath.resolve(docs.toPath.relativize(f.toPath)).toFile
+          def filter(f: File) = filterExt contains f.getName.reverse.takeWhile('.' !=).reverse
+          val Replacer = """@(\w+)@""".r
+          in.removed foreach (f => IO delete dst(f))
+          (in.modified ++ (in.checked -- out.checked)).toSeq.sorted foreach { f =>
+            if (f.isFile)
+              if (filter(f)) {
+                s.log.debug("Changed documentation source: " + f)
+                IO.reader(f) { reader =>
+                  IO.writer(dst(f), "", IO.defaultCharset, append = false) { writer =>
+                    val wr = new PrintWriter(writer)
+                    IO.foreachLine(reader) { line =>
+                      wr.println(Replacer.replaceAllIn(line, m => replacements.getOrElse(m.group(1), {
+                          s.log.warn("unknown replacement " + m.group(1) + " in " + replacements)
+                          m.group(0)
+                        })))
+                    }
+                  }
+                }
+              } else {
+                s.log.debug("Changed documentation source (copying): " + f)
+                IO.copyFile(f, dst(f))
+              }
+          }
+          val tagList = if (tags.isEmpty) "" else tags.mkString(" (", ", ", ")")
+          val desc = "%s%s" format (builder, tagList)
+          s.log.info("Building Sphinx %s documentation..." format desc)
+          val logger = newLogger(s)
+          val tagOptions = tags flatMap (Seq("-t", _))
+          val command = Seq("sphinx-build", "-aEN", "-b", builder, "-d", doctrees.absolutePath) ++ tagOptions ++ Seq(temp.absolutePath, target.absolutePath)
+          val env = "PYTHONPATH" -> pygments.absolutePath
+          s.log.debug("Command: " + command.mkString(" "))
+          val exitCode = Process(command, docs, env) ! logger
+          if (exitCode != 0) sys.error("Failed to build Sphinx %s documentation." format desc)
+          s.log.info("Sphinx %s documentation created: %s" format (desc, target))
+          temp.descendentsExcept("*", "").get.toSet
         }
         val toplevel = docs * ("*" - ".*" - "_sphinx" - "_build" - "disabled" - "target")
         val inputs = toplevel.descendentsExcept("*", "").get.toSet
@@ -110,8 +126,13 @@ object Sphinx {
 
   def newLogger(streams: TaskStreams) = {
     new ProcessLogger {
-      def info(o: => String): Unit = streams.log.debug(o)
-      def error(e: => String): Unit = streams.log.debug(e)
+      def info(message: => String): Unit = {
+        val m = message
+        if (m contains "ERROR") streams.log.error(message)
+        else if (m contains "WARNING") streams.log.warn(message)
+        else streams.log.debug(message)
+      }
+      def error(e: => String): Unit = streams.log.warn(e)
       def buffer[T](f: => T): T = f
     }
   }

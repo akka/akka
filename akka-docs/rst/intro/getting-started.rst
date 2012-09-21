@@ -29,18 +29,21 @@ Akka Maven repository.
 Modules
 -------
 
-Akka is very modular and has many JARs for containing different features.
+Akka is very modular and consists of several JARs containing different features.
 
-- ``akka-actor-2.1-SNAPSHOT.jar`` -- Classic Actors, Typed Actors, IO Actor etc.
-- ``akka-remote-2.1-SNAPSHOT.jar`` -- Remote Actors
-- ``akka-testkit-2.1-SNAPSHOT.jar`` -- Toolkit for testing Actor systems
-- ``akka-kernel-2.1-SNAPSHOT.jar`` -- Akka microkernel for running a bare-bones mini application server
-- ``akka-transactor-2.1-SNAPSHOT.jar`` -- Transactors - transactional actors, integrated with Scala STM
-- ``akka-agent-2.1-SNAPSHOT.jar`` -- Agents, integrated with Scala STM
-- ``akka-camel-2.1-SNAPSHOT.jar`` -- Apache Camel integration
-- ``akka-zeromq-2.1-SNAPSHOT.jar`` -- ZeroMQ integration
-- ``akka-slf4j-2.1-SNAPSHOT.jar`` -- SLF4J Event Handler Listener
-- ``akka-<storage-system>-mailbox-2.1-SNAPSHOT.jar`` -- Akka durable mailboxes
+- ``akka-actor`` -- Classic Actors, Typed Actors, IO Actor etc.
+- ``akka-remote`` -- Remote Actors
+- ``akka-testkit`` -- Toolkit for testing Actor systems
+- ``akka-kernel`` -- Akka microkernel for running a bare-bones mini application server
+- ``akka-transactor`` -- Transactors - transactional actors, integrated with Scala STM
+- ``akka-agent`` -- Agents, integrated with Scala STM
+- ``akka-camel`` -- Apache Camel integration
+- ``akka-zeromq`` -- ZeroMQ integration
+- ``akka-slf4j`` -- SLF4J Event Handler Listener
+- ``akka-filebased-mailbox`` -- Akka durable mailbox (find more among community projects)
+
+The filename of the actual JAR is for example ``@jarName@`` (and analog for
+the other modules).
 
 How to see the JARs dependencies of each Akka module is described in the
 :ref:`dependencies` section.
@@ -84,26 +87,16 @@ The simplest way to get started with Akka and Maven is to check out the
 `Akka/Maven template <http://typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
 project.
 
-Summary of the essential parts for using Akka with Maven:
-
-1) Add this repository to your ``pom.xml``:
-
-.. code-block:: xml
-
-  <repository>
-    <id>typesafe</id>
-    <name>Typesafe Repository</name>
-    <url>http://repo.typesafe.com/typesafe/releases/</url>
-  </repository>
-
-2) Add the Akka dependencies. For example, here is the dependency for Akka Actor 2.1-SNAPSHOT:
+Since Akka is published to Maven Central (for versions since 2.1-M2), is it
+enough to add the Akka dependencies to the POM. For example, here is the
+dependency for akka-actor:
 
 .. code-block:: xml
 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-actor</artifactId>
-    <version>2.1-SNAPSHOT</version>
+    <artifactId>akka-actor_@binVersion@</artifactId>
+    <version>@version@</version>
   </dependency>
 
 **Note**: for snapshot versions both ``SNAPSHOT`` and timestamped versions are published.
@@ -128,11 +121,12 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     version := "1.0"
 
-    scalaVersion := "|scalaVersion|"
+    scalaVersion := "@scalaVersion@"
 
     resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-    libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.1-SNAPSHOT"
+    libraryDependencies +=
+      "com.typesafe.akka" %% "akka-actor" % "@version@" @crossString@
 
 
 Using Akka with Eclipse
@@ -167,3 +161,4 @@ If you have questions you can get help on the `Akka Mailing List <http://groups.
 You can also ask for `commercial support <http://typesafe.com>`_.
 
 Thanks for being a part of the Akka community.
+

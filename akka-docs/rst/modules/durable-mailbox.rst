@@ -68,7 +68,7 @@ Corresponding example in Java:
 You can also configure and tune the file-based durable mailbox. This is done in
 the ``akka.actor.mailbox.file-based`` section in the :ref:`configuration`.
 
-.. literalinclude:: ../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
+.. literalinclude:: ../../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
    :language: none
 
 How to implement a durable mailbox

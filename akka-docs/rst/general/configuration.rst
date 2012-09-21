@@ -142,7 +142,7 @@ before or after using them to construct an actor system:
 
 .. parsed-literal::
 
-  Welcome to Scala version |scalaVersion| (Java HotSpot(TM) 64-Bit Server VM, Java 1.6.0_27).
+  Welcome to Scala version @scalaVersion@ (Java HotSpot(TM) 64-Bit Server VM, Java 1.6.0_27).
   Type in expressions to have them evaluated.
   Type :help for more information.
 
@@ -337,41 +337,41 @@ Each Akka module has a reference configuration file with the default values.
 akka-actor
 ~~~~~~~~~~
 
-.. literalinclude:: ../../akka-actor/src/main/resources/reference.conf
+.. literalinclude:: ../../../akka-actor/src/main/resources/reference.conf
    :language: none
 
 akka-remote
 ~~~~~~~~~~~
 
-.. literalinclude:: ../../akka-remote/src/main/resources/reference.conf
+.. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
    :language: none
 
 akka-testkit
 ~~~~~~~~~~~~
 
-.. literalinclude:: ../../akka-testkit/src/main/resources/reference.conf
+.. literalinclude:: ../../../akka-testkit/src/main/resources/reference.conf
    :language: none
 
 akka-transactor
 ~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../akka-transactor/src/main/resources/reference.conf
+.. literalinclude:: ../../../akka-transactor/src/main/resources/reference.conf
    :language: none
 
 akka-agent
 ~~~~~~~~~~
 
-.. literalinclude:: ../../akka-agent/src/main/resources/reference.conf
+.. literalinclude:: ../../../akka-agent/src/main/resources/reference.conf
    :language: none
 
 akka-zeromq
 ~~~~~~~~~~~
 
-.. literalinclude:: ../../akka-zeromq/src/main/resources/reference.conf
+.. literalinclude:: ../../../akka-zeromq/src/main/resources/reference.conf
    :language: none
 
 akka-file-mailbox
 ~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
+.. literalinclude:: ../../../akka-durable-mailboxes/akka-file-mailbox/src/main/resources/reference.conf
    :language: none
