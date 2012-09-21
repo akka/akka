@@ -23,6 +23,7 @@ class ClusterSettings(val config: Config, val systemName: String) {
     Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
   final val FailureDetectorAcceptableHeartbeatPause: FiniteDuration =
     Duration(getMilliseconds("akka.cluster.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
+  final val HeartbeatInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-interval"), MILLISECONDS)
 
   final val SeedNodes: IndexedSeq[Address] = getStringList("akka.cluster.seed-nodes").asScala.map {
     case AddressFromURIString(addr) ⇒ addr
@@ -30,7 +31,6 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val SeedNodeTimeout: FiniteDuration = Duration(getMilliseconds("akka.cluster.seed-node-timeout"), MILLISECONDS)
   final val PeriodicTasksInitialDelay: FiniteDuration = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
   final val GossipInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.gossip-interval"), MILLISECONDS)
-  final val HeartbeatInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.heartbeat-interval"), MILLISECONDS)
   final val LeaderActionsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.leader-actions-interval"), MILLISECONDS)
   final val UnreachableNodesReaperInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.unreachable-nodes-reaper-interval"), MILLISECONDS)
   final val PublishStatsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.publish-stats-interval"), MILLISECONDS)
