@@ -4,7 +4,7 @@
 package akka.remote
 
 import com.typesafe.config.Config
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 class RemoteSettings(val config: Config, val systemName: String) {

@@ -9,7 +9,7 @@ import akka.testkit._
 import akka.actor.{ Actor, Props }
 import akka.actor.Status
 import akka.util.Timeout
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.lang.IllegalStateException
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Success }
@@ -62,7 +62,7 @@ class FutureDocSpec extends AkkaSpec {
     import scala.concurrent.Await
     import akka.pattern.ask
     import akka.util.Timeout
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
 
     implicit val timeout = Timeout(5 seconds)
     val future = actor ? msg // enabled by the “ask” import
@@ -88,7 +88,7 @@ class FutureDocSpec extends AkkaSpec {
     //#future-eval
     import scala.concurrent.Await
     import scala.concurrent.Future
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
 
     val future = Future {
       "Hello" + "World"

@@ -10,7 +10,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import akka.actor._
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit._
 import akka.testkit.TestEvent.Mute
 import scala.concurrent.stm._

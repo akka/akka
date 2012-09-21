@@ -7,8 +7,7 @@ import language.postfixOps
 
 import akka.actor._
 import akka.actor.Actor._
-import scala.concurrent.util.{ Duration, FiniteDuration }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
 import atomic.AtomicInteger
 import scala.annotation.tailrec
@@ -192,7 +191,7 @@ trait TestKitBase {
   def remainingOr(duration: FiniteDuration): FiniteDuration = end match {
     case x if x eq Duration.Undefined ⇒ duration
     case x if !x.isFinite             ⇒ throw new IllegalArgumentException("`end` cannot be infinite")
-    case f: FiniteDuration            ⇒ (end - now).asInstanceOf[FiniteDuration] // RK FIXME after next Scala milestone
+    case f: FiniteDuration            ⇒ f - now
   }
 
   private def remainingOrDilated(max: Duration): FiniteDuration = max match {

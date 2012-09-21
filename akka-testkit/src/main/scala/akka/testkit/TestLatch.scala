@@ -4,11 +4,11 @@
 
 package akka.testkit
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import akka.actor.ActorSystem
 import scala.concurrent.{ Await, CanAwait, Awaitable }
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * A count down latch wrapper for use in testing.

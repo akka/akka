@@ -11,7 +11,7 @@ import org.scalatest.matchers.MustMatchers
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.DeadLetter
 import akka.pattern.ask
 

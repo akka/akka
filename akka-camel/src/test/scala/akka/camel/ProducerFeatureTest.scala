@@ -15,8 +15,7 @@ import akka.actor.SupervisorStrategy.Stop
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
 import akka.actor._
 import akka.pattern._
-import scala.concurrent.util.{ Deadline, FiniteDuration }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.util.Timeout
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._

@@ -12,7 +12,7 @@ import akka.actor.ActorDSL._
 //#import
 import akka.event.Logging.Warning
 import scala.concurrent.{ Await, Future }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.util.concurrent.TimeoutException
 
 class ActorDSLSpec extends AkkaSpec {

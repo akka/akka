@@ -18,7 +18,7 @@ import akka.event.Logging
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 import akka.actor.Terminated
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.PoisonPill
 
 @RunWith(classOf[JUnitRunner])

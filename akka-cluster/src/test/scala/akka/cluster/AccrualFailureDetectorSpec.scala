@@ -8,8 +8,7 @@ import akka.actor.Address
 import akka.testkit._
 import akka.testkit.TestEvent._
 import scala.collection.immutable.TreeMap
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AccrualFailureDetectorSpec extends AkkaSpec("""

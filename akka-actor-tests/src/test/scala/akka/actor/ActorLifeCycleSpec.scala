@@ -11,7 +11,7 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.actor.Actor._
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.util.concurrent.atomic._
 import scala.concurrent.Await
 import akka.pattern.ask

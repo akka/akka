@@ -14,7 +14,7 @@ import scala.collection.JavaConverters._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.Props
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object DispatchersSpec {
   val config = """

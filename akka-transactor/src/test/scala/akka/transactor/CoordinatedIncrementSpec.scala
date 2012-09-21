@@ -8,7 +8,7 @@ import org.scalatest.BeforeAndAfterAll
 
 import akka.actor._
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._

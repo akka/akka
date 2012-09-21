@@ -7,8 +7,7 @@ package akka.actor
 import language.postfixOps
 import akka.util.ByteString
 import scala.concurrent.{ ExecutionContext, Await, Future, Promise }
-import scala.concurrent.util.{ Duration, Deadline }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.util.continuations._
 import akka.testkit._
 import akka.dispatch.MessageDispatcher
@@ -16,7 +15,6 @@ import akka.pattern.ask
 import java.net.{ Socket, InetSocketAddress, InetAddress, SocketAddress }
 import scala.util.Failure
 import annotation.tailrec
-import scala.concurrent.util.FiniteDuration
 
 object IOActorSpec {
 

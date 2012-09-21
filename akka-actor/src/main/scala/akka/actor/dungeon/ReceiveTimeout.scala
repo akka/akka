@@ -8,8 +8,8 @@ import ReceiveTimeout.emptyReceiveTimeoutData
 import akka.actor.ActorCell
 import akka.actor.ActorCell.emptyCancellable
 import akka.actor.Cancellable
-import scala.concurrent.util.Duration
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 private[akka] object ReceiveTimeout {
   final val emptyReceiveTimeoutData: (Duration, Cancellable) = (Duration.Undefined, ActorCell.emptyCancellable)

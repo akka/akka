@@ -7,7 +7,7 @@ package akka.actor
 import java.io.{ ObjectOutputStream, NotSerializableException }
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeSet
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import akka.actor.dungeon.ChildrenContainer
 import akka.actor.dungeon.ChildrenContainer.WaitingForChildren

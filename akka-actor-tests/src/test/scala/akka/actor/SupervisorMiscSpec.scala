@@ -12,7 +12,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.pattern.ask
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 object SupervisorMiscSpec {

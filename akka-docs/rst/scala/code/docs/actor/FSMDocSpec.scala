@@ -15,7 +15,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
     //#fsm-code-elided
     //#simple-imports
     import akka.actor.{ Actor, ActorRef, FSM }
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
     //#simple-imports
     //#simple-events
     // received events

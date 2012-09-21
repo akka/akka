@@ -10,8 +10,7 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.apache.camel.{ CamelContext, ProducerTemplate, AsyncCallback }
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.concurrent.util.duration._
-import concurrent.util.{ FiniteDuration, Duration }
+import scala.concurrent.duration._
 import java.lang.String
 import akka.camel._
 import internal.{ DefaultCamel, CamelExchangeAdapter }

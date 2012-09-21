@@ -5,8 +5,7 @@
 package akka.cluster
 
 import scala.language.postfixOps
-import scala.concurrent.util.duration._
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration._
 import scala.collection.immutable.{ SortedSet, Map }
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.{ Try, Success, Failure }
@@ -418,6 +417,7 @@ private[cluster] trait MetricNumericConverter {
   def convert(from: ScalaNumber): Either[Long, Double] = from match {
     case n: BigInt     ⇒ Left(n.longValue())
     case n: BigDecimal ⇒ Right(n.doubleValue())
+    // FIXME: these are rejected as unreachable by the new pattern matcher
     case n: RichInt    ⇒ Left(n.abs)
     case n: RichLong   ⇒ Left(n.self)
     case n: RichDouble ⇒ Right(n.self)

@@ -7,8 +7,7 @@ import language.postfixOps
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 import java.util.concurrent.TimeUnit._
 

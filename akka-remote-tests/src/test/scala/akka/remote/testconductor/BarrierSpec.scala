@@ -7,8 +7,7 @@ import language.postfixOps
 
 import akka.actor.{ Props, AddressFromURIString, ActorRef, Actor, OneForOneStrategy, SupervisorStrategy }
 import akka.testkit.{ AkkaSpec, ImplicitSender, EventFilter, TestProbe, TimingTest }
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.event.Logging
 import akka.util.Timeout
 import org.scalatest.BeforeAndAfterEach

@@ -6,7 +6,7 @@ package docs.agent
 import language.postfixOps
 
 import akka.agent.Agent
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.testkit._
 
@@ -99,7 +99,7 @@ class AgentDocSpec extends AkkaSpec {
     val agent = Agent(0)
 
     //#read-await
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
     import akka.util.Timeout
 
     implicit val timeout = Timeout(5 seconds)
@@ -126,7 +126,7 @@ class AgentDocSpec extends AkkaSpec {
   "transfer example" in {
     //#transfer-example
     import akka.agent.Agent
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
     import akka.util.Timeout
     import scala.concurrent.stm._
 

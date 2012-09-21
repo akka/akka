@@ -5,10 +5,10 @@ package akka.actor
 
 import language.implicitConversions
 import akka.util._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 object FSM {
 

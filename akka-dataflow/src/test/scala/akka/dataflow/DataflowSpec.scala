@@ -11,7 +11,7 @@ import akka.actor.Status._
 import akka.pattern.ask
 import akka.testkit.{ EventFilter, filterEvents, filterException }
 import scala.concurrent.{ Await, Promise, Future }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit.{ DefaultTimeout, TestLatch, AkkaSpec }
 import java.util.concurrent.TimeoutException
 

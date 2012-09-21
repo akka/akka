@@ -9,9 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import scala.collection.mutable.LinkedList
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.Await
-import scala.concurrent.util.Duration
 import akka.ConfigurationException
 import com.typesafe.config.ConfigFactory
 import akka.pattern.{ ask, pipe }

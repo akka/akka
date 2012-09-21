@@ -38,9 +38,9 @@ Search                               Replace with
 ``akka.dispatch.Future``             ``scala.concurrent.Future``
 ``akka.dispatch.Promise``            ``scala.concurrent.Promise``
 ``akka.dispatch.ExecutionContext``   ``scala.concurrent.ExecutionContext``
-``akka.util.Duration``               ``scala.concurrent.util.Duration``
-``akka.util.duration``               ``scala.concurrent.util.duration``
-``akka.util.Deadline``               ``scala.concurrent.util.Deadline``
+``akka.util.Duration``               ``scala.concurrent.duration.Duration``
+``akka.util.duration``               ``scala.concurrent.duration``
+``akka.util.Deadline``               ``scala.concurrent.duration.Deadline``
 ``akka.util.NonFatal``               ``scala.util.control.NonFatal``
 ``akka.japi.Util.manifest``          ``akka.japi.Util.classTag``
 ==================================== ====================================

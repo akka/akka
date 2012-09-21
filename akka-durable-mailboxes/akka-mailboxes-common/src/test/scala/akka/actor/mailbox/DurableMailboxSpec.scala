@@ -19,7 +19,7 @@ import DurableMailboxSpecActorFactory.{ MailboxTestActor, AccumulatorActor }
 import akka.actor.{ RepointableRef, Props, ActorSystem, ActorRefWithCell, ActorRef, ActorCell, Actor }
 import akka.dispatch.Mailbox
 import akka.testkit.TestKit
-import scala.concurrent.util.duration.intToDurationInt
+import scala.concurrent.duration._
 
 object DurableMailboxSpecActorFactory {
 

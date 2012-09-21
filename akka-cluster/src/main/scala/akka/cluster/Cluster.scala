@@ -14,8 +14,7 @@ import akka.pattern._
 import akka.remote._
 import akka.routing._
 import akka.util._
-import scala.concurrent.util.duration._
-import scala.concurrent.util.{ Duration, Deadline }
+import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedSet
@@ -24,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import akka.util.internal.HashedWheelTimer
 import concurrent.{ ExecutionContext, Await }
-import scala.concurrent.util.FiniteDuration
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.

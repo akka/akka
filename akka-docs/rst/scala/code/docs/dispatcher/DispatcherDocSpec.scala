@@ -10,7 +10,7 @@ import org.scalatest.matchers.MustMatchers
 import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.{ Props, Actor, PoisonPill, ActorSystem }
 
 object DispatcherDocSpec {

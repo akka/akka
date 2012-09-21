@@ -8,8 +8,7 @@ import language.postfixOps
 import akka.actor.{ ReceiveTimeout, ActorLogging, ActorRef, Address, Actor, RootActorPath, Props }
 import java.security.MessageDigest
 import akka.pattern.{ CircuitBreaker, CircuitBreakerOpenException }
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Deadline
+import scala.concurrent.duration._
 
 /**
  * Sent at regular intervals for failure detection.

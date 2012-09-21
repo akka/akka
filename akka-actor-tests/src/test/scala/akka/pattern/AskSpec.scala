@@ -6,7 +6,7 @@ package akka.pattern
 import language.postfixOps
 
 import akka.testkit.AkkaSpec
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import akka.testkit.DefaultTimeout
 import akka.util.Timeout

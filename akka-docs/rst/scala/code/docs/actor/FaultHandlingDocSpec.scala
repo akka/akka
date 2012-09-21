@@ -22,7 +22,7 @@ object FaultHandlingDocSpec {
     //#strategy
     import akka.actor.OneForOneStrategy
     import akka.actor.SupervisorStrategy._
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
@@ -44,7 +44,7 @@ object FaultHandlingDocSpec {
     //#strategy2
     import akka.actor.OneForOneStrategy
     import akka.actor.SupervisorStrategy._
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {

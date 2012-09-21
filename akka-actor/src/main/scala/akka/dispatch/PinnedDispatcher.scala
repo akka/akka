@@ -5,8 +5,8 @@
 package akka.dispatch
 
 import akka.actor.ActorCell
-import scala.concurrent.util.Duration
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.

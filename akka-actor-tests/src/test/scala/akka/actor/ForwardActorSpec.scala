@@ -7,9 +7,8 @@ package akka.actor
 import language.postfixOps
 
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.Actor._
-import scala.concurrent.util.Duration
 import scala.concurrent.Await
 import akka.pattern.{ ask, pipe }
 

@@ -11,14 +11,12 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec }
 import akka.testkit._
 import akka.testkit.TestEvent._
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import org.scalatest.Suite
 import org.scalatest.exceptions.TestFailedException
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
-import scala.concurrent.util.FiniteDuration
 import akka.event.Logging.ErrorLevel
 import akka.actor.ActorSystem
 

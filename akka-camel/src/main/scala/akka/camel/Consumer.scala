@@ -7,8 +7,7 @@ package akka.camel
 import akka.camel.internal.CamelSupervisor.Register
 import org.apache.camel.model.{ RouteDefinition, ProcessorDefinition }
 import akka.actor._
-import scala.concurrent.util.FiniteDuration
-import akka.dispatch.Mapper
+import scala.concurrent.duration._
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.

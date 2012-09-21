@@ -48,7 +48,7 @@ object AkkaBuild extends Build {
            |import ActorDSL._
            |import scala.concurrent._
            |import com.typesafe.config.ConfigFactory
-           |import scala.concurrent.util.duration._
+           |import scala.concurrent.duration._
            |import akka.util.Timeout
            |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG")
            |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=akka.remote.RemoteActorRefProvider").withFallback(config)
@@ -404,7 +404,7 @@ object AkkaBuild extends Build {
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
       resolvers <<= (resolvers, scalaVersion) apply {
         case (res, "2.10.0-SNAPSHOT") =>
-          res :+ ("Scala Community 2.10.0-SNAPSHOT" at "https://scala-webapps.epfl.ch/jenkins/job/community-nightly/ws/target/repositories/fc24ea43b17664f020e43379e800c34be09700bd")
+          res :+ ("Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/")
         case (res, _) =>
           res
       }

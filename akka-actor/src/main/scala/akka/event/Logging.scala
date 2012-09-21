@@ -9,7 +9,7 @@ import akka.actor._
 import akka.{ ConfigurationException, AkkaException }
 import akka.actor.ActorSystem.Settings
 import akka.util.{ Timeout, ReentrantGuard }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException

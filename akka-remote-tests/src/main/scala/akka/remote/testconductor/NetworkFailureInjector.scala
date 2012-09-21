@@ -12,9 +12,7 @@ import org.jboss.netty.channel.{ SimpleChannelHandler, MessageEvent, Channels, C
 import akka.actor.{ Props, LoggingFSM, Address, ActorSystem, ActorRef, ActorLogging, Actor, FSM }
 import akka.event.Logging
 import akka.remote.netty.ChannelAddress
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API.
@@ -337,7 +335,7 @@ private[akka] class ThrottleActor(channelContext: ChannelHandlerContext)
         if (timeForPacket <= now) rec(Data(timeForPacket, d.rateMBit, d.queue.tail), toSend :+ d.queue.head)
         else {
           val splitThreshold = d.lastSent + packetSplitThreshold.toNanos
-          if (now < splitThreshold) (d, toSend, Some(((timeForPacket - now).nanos min (splitThreshold - now).nanos).asInstanceOf[FiniteDuration]))
+          if (now < splitThreshold) (d, toSend, Some((timeForPacket - now).nanos min (splitThreshold - now).nanos))
           else {
             val microsToSend = (now - d.lastSent) / 1000
             val (s1, s2) = split(d.queue.head, (microsToSend * d.rateMBit / 8).toInt)

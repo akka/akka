@@ -4,14 +4,14 @@
 package akka.cluster
 
 import com.typesafe.config.Config
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.ConfigurationException
 import scala.collection.JavaConverters._
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.dispatch.Dispatchers
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 class ClusterSettings(val config: Config, val systemName: String) {
   import config._

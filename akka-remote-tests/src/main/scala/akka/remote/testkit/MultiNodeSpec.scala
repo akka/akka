@@ -15,8 +15,7 @@ import akka.remote.RemoteActorRefProvider
 import akka.testkit._
 import scala.concurrent.{ Await, Awaitable }
 import scala.util.control.NonFatal
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.util.concurrent.TimeoutException
 import akka.remote.testconductor.RoleName
 import akka.remote.testconductor.TestConductorTransport

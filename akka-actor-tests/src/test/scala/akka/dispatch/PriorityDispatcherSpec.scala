@@ -10,7 +10,7 @@ import akka.actor.{ Props, InternalActorRef, ActorSystem, Actor }
 import akka.pattern.ask
 import akka.testkit.{ DefaultTimeout, AkkaSpec }
 import scala.concurrent.Await
-import scala.concurrent.util.duration.intToDurationInt
+import scala.concurrent.duration._
 
 object PriorityDispatcherSpec {
   val config = """

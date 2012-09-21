@@ -79,7 +79,7 @@ object Introduction {
   {
     //#CamelActivation
     import akka.camel.{ CamelMessage, Consumer }
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
 
     class MyEndpoint extends Consumer {
       def endpointUri = "mina:tcp://localhost:6200?textline=true"

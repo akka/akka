@@ -7,7 +7,7 @@ import language.postfixOps
 
 //#imports
 import scala.concurrent.{ Promise, Future, Await }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.{ ActorContext, TypedActor, TypedProps }
 
 //#imports

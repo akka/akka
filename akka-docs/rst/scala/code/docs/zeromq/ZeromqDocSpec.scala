@@ -6,7 +6,7 @@ package docs.zeromq
 import language.postfixOps
 
 import akka.actor.{ Actor, Props }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit._
 import akka.zeromq.{ ZeroMQVersion, ZeroMQExtension }
 import java.text.SimpleDateFormat

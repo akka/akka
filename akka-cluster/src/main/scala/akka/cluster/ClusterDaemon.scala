@@ -4,8 +4,7 @@
 package akka.cluster
 
 import scala.collection.immutable.SortedSet
-import scala.concurrent.util.{ Deadline, Duration }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, ReceiveTimeout, RootActorPath, Scheduler }
 import akka.actor.Status.Failure
@@ -16,7 +15,6 @@ import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import language.existentials
 import language.postfixOps
-import scala.concurrent.util.FiniteDuration
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -196,25 +194,25 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   import context.dispatcher
 
   // start periodic gossip to random nodes in cluster
-  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay.max(GossipInterval).asInstanceOf[FiniteDuration],
+  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay.max(GossipInterval),
     GossipInterval, self, GossipTick)
 
   // start periodic heartbeat to all nodes in cluster
-  val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay.max(HeartbeatInterval).asInstanceOf[FiniteDuration],
+  val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay.max(HeartbeatInterval),
     HeartbeatInterval, self, HeartbeatTick)
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  val failureDetectorReaperTask = scheduler.schedule(PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval).asInstanceOf[FiniteDuration],
+  val failureDetectorReaperTask = scheduler.schedule(PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval),
     UnreachableNodesReaperInterval, self, ReapUnreachableTick)
 
   // start periodic leader action management (only applies for the current leader)
-  val leaderActionsTask = scheduler.schedule(PeriodicTasksInitialDelay.max(LeaderActionsInterval).asInstanceOf[FiniteDuration],
+  val leaderActionsTask = scheduler.schedule(PeriodicTasksInitialDelay.max(LeaderActionsInterval),
     LeaderActionsInterval, self, LeaderActionsTick)
 
   // start periodic publish of current stats
   val publishStatsTask: Option[Cancellable] =
     if (PublishStatsInterval == Duration.Zero) None
-    else Some(scheduler.schedule(PeriodicTasksInitialDelay.max(PublishStatsInterval).asInstanceOf[FiniteDuration],
+    else Some(scheduler.schedule(PeriodicTasksInitialDelay.max(PublishStatsInterval),
       PublishStatsInterval, self, PublishStatsTick))
 
   override def preStart(): Unit = {
