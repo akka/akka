@@ -100,35 +100,84 @@ abstract class MultiNodeConfig {
 object MultiNodeSpec {
 
   /**
-   * Names (or IP addresses; must be resolvable using InetAddress.getByName)
-   * of all nodes taking part in this test, including symbolic name and host
-   * definition:
+   * Number of nodes node taking part in this test.
    *
    * {{{
-   * -D"multinode.hosts=host1@workerA.example.com,host2@workerB.example.com"
+   * -Dmultinode.max-nodes=4
    * }}}
    */
-  val nodeNames: Seq[String] = Vector.empty ++ (
-    Option(System.getProperty("multinode.hosts")) getOrElse
-    (throw new IllegalStateException("need system property multinode.hosts to be set")) split ",")
+  val maxNodes: Int = Option(Integer.getInteger("multinode.max-nodes")) getOrElse
+    (throw new IllegalStateException("need system property multinode.max-nodes to be set"))
 
-  require(nodeNames != List(""), "multinode.hosts must not be empty")
+  require(maxNodes > 0, "multinode.max-nodes must be greater than 0")
 
   /**
-   * Index of this node in the nodeNames / nodeAddresses lists. The TestConductor
+   * Name (or IP address; must be resolvable using InetAddress.getByName)
+   * of the host this node is running on.
+   *
+   * {{{
+   * -Dmultinode.host=host.example.com
+   * }}}
+   */
+  val selfName: String = Option(System.getProperty("multinode.host")) getOrElse
+    (throw new IllegalStateException("need system property multinode.host to be set"))
+
+  require(selfName != "", "multinode.host must not be empty")
+
+  /**
+   * Port number of this node. Defaults to 0 which means a random port.
+   *
+   * {{{
+   * -Dmultinode.port=0
+   * }}}
+   */
+  val selfPort: Int = Integer.getInteger("multinode.port", 0)
+
+  require(selfPort >= 0 && selfPort < 65535, "multinode.port is out of bounds: " + selfPort)
+
+  /**
+   * Name (or IP address; must be resolvable using InetAddress.getByName)
+   * of the host that the server node is running on.
+   *
+   * {{{
+   * -Dmultinode.server-host=server.example.com
+   * }}}
+   */
+  val serverName: String = Option(System.getProperty("multinode.server-host")) getOrElse
+    (throw new IllegalStateException("need system property multinode.server-host to be set"))
+
+  require(serverName != "", "multinode.server-host must not be empty")
+
+  /**
+   * Port number of the node that's running the server system. Defaults to 4711.
+   *
+   * {{{
+   * -Dmultinode.server-port=4711
+   * }}}
+   */
+  val serverPort: Int = Integer.getInteger("multinode.server-port", 4711)
+
+  require(serverPort > 0 && serverPort < 65535, "multinode.server-port is out of bounds: " + serverPort)
+
+  /**
+   * Index of this node in the roles sequence. The TestConductor
    * is started in “controller” mode on selfIndex 0, i.e. there you can inject
    * failures and shutdown other nodes etc.
+   *
+   * {{{
+   * -Dmultinode.index=0
+   * }}}
    */
   val selfIndex = Option(Integer.getInteger("multinode.index")) getOrElse
     (throw new IllegalStateException("need system property multinode.index to be set"))
 
-  require(selfIndex >= 0 && selfIndex < nodeNames.size, "selfIndex out of bounds: " + selfIndex)
+  require(selfIndex >= 0 && selfIndex < maxNodes, "multinode.index is out of bounds: " + selfIndex)
 
   private[testkit] val nodeConfig = mapToConfig(Map(
     "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
     "akka.remote.transport" -> "akka.remote.testconductor.TestConductorTransport",
-    "akka.remote.netty.hostname" -> nodeNames(selfIndex),
-    "akka.remote.netty.port" -> 0))
+    "akka.remote.netty.hostname" -> selfName,
+    "akka.remote.netty.port" -> selfPort))
 
   private[testkit] val baseConfig: Config = ConfigFactory.parseString("""
       akka {
@@ -235,7 +284,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    */
   def initialParticipants: Int
   require(initialParticipants > 0, "initialParticipants must be a 'def' or early initializer, and it must be greater zero")
-  require(initialParticipants <= nodeNames.size, "not enough nodes to run this test")
+  require(initialParticipants <= maxNodes, "not enough nodes to run this test")
 
   /**
    * Access to the barriers, failure injection, etc. The extension will have
@@ -289,7 +338,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * Implementation (i.e. wait for start etc.)
    */
 
-  private val controllerAddr = new InetSocketAddress(nodeNames(0), 4711)
+  private val controllerAddr = new InetSocketAddress(serverName, serverPort)
   if (selfIndex == 0) {
     Await.result(testConductor.startController(initialParticipants, myself, controllerAddr),
       testConductor.Settings.BarrierTimeout.duration)

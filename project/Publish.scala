@@ -75,11 +75,10 @@ object Publish {
   }
 
   def akkaPluginPublishTo: Initialize[Option[Resolver]] = {
-    (version) { version: String =>
-      akkaPublishRepository orElse {
-        val name = if (version.contains("-SNAPSHOT")) "sbt-plugin-snapshots" else "sbt-plugin-releases"
-        Some(Resolver.url(name, url("http://scalasbt.artifactoryonline.com/scalasbt/" + name))(Resolver.ivyStylePatterns))
-      }
+    (defaultPublishTo, version) { (default, version) =>
+      akkaPublishRepository orElse
+      pluginRepo(version) orElse
+      Some(Resolver.file("Default Local Repository", default))
     }
   }
 
@@ -91,6 +90,11 @@ object Publish {
     }
   }
 
+  def pluginRepo(version: String): Option[Resolver] =
+    Option(sys.props("publish.maven.central")) collect { case mc if mc.toLowerCase == "true" =>
+      val name = if (version endsWith "-SNAPSHOT") "sbt-plugin-snapshots" else "sbt-plugin-releases"
+      Resolver.url(name, url("http://scalasbt.artifactoryonline.com/scalasbt/" + name))(Resolver.ivyStylePatterns)
+    }
 
   def akkaPublishRepository: Option[Resolver] =
       Option(System.getProperty("akka.publish.repository", null)) map { "Akka Publish Repository" at _ }
