@@ -131,8 +131,9 @@ When an Actor Terminates
 Once an actor terminates, i.e. fails in a way which is not handled by a
 restart, stops itself or is stopped by its supervisor, it will free up its
 resources, draining all remaining messages from its mailbox into the system’s
-“dead letter mailbox”. The mailbox is then replaced within the actor reference
-with a system mailbox, redirecting all new messages “into the drain”. This
+“dead letter mailbox” which will forward them to the EventStream as DeadLetters.
+The mailbox is then replaced within the actor reference with a system mailbox,
+redirecting all new messages to the EventStream as DeadLetters. This
 is done on a best effort basis, though, so do not rely on it in order to
 construct “guaranteed delivery”.
 

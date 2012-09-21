@@ -35,8 +35,8 @@ The tools offered are described in detail in the following sections.
 
    Be sure to add the module :mod:`akka-testkit` to your dependencies.
 
-Unit Testing with :class:`TestActorRef`
-=======================================
+Synchronous Unit Testing with :class:`TestActorRef`
+===================================================
 
 Testing the business logic inside :class:`Actor` classes can be divided into
 two parts: first, each atomic operation must work in isolation, then sequences
@@ -151,8 +151,8 @@ Feel free to experiment with the possibilities, and if you find useful
 patterns, don't hesitate to let the Akka forums know about them! Who knows,
 common operations might even be worked into nice DSLs.
 
-Integration Testing with :class:`TestKit`
-=========================================
+Asynchronous Integration Testing with :class:`TestKit`
+======================================================
 
 When you are reasonably sure that your actor's business logic is correct, the
 next step is verifying that it works correctly within its intended environment
@@ -547,6 +547,15 @@ queued invocations from all threads into its own queue and process them.
 
 Limitations
 -----------
+
+.. warning::
+
+   In case the CallingThreadDispatcher is used for top-level actors, but
+   without going through TestActorRef, then there is a time window during which
+   the actor is awaiting construction by the user guardian actor. Sending
+   messages to the actor during this time period will result in them being
+   enqueued and then executed on the guardian’s thread instead of the caller’s
+   thread. To avoid this, use TestActorRef.
 
 If an actor's behavior blocks on a something which would normally be affected
 by the calling actor after having sent the message, this will obviously
