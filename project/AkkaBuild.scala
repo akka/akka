@@ -361,7 +361,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
       remote, cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
     settings = defaultSettings ++ Sphinx.settings ++ sphinxReplacements ++ Seq(
-      unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
+      unmanagedSourceDirectories in Test <<= baseDirectory { _ / "rst" ** "code" get },
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
