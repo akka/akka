@@ -21,7 +21,7 @@ to tell if the module has a maintainer that can take the responsibility
 of the module over time.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    ../cluster/index
    ../dev/multi-node-testing

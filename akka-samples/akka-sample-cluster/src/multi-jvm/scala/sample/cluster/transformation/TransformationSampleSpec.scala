@@ -5,14 +5,17 @@ import scala.concurrent.util.duration._
 
 import com.typesafe.config.ConfigFactory
 
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
+
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit.ImplicitSender
 
-object TransformationSampleSpec extends MultiNodeConfig {
+object TransformationSampleSpecConfig extends MultiNodeConfig {
   // register the named roles (nodes) of the test
   val frontend1 = role("frontend1")
   val frontend2 = role("frontend2")
@@ -31,18 +34,22 @@ object TransformationSampleSpec extends MultiNodeConfig {
 }
 
 // need one concrete test class per node
-class TransformationSampleMultiJvmNode1 extends TransformationSampleSpec
-class TransformationSampleMultiJvmNode2 extends TransformationSampleSpec
-class TransformationSampleMultiJvmNode3 extends TransformationSampleSpec
-class TransformationSampleMultiJvmNode4 extends TransformationSampleSpec
-class TransformationSampleMultiJvmNode5 extends TransformationSampleSpec
+class TransformationSampleSpecMultiJvmNode1 extends TransformationSampleSpec
+class TransformationSampleSpecMultiJvmNode2 extends TransformationSampleSpec
+class TransformationSampleSpecMultiJvmNode3 extends TransformationSampleSpec
+class TransformationSampleSpecMultiJvmNode4 extends TransformationSampleSpec
+class TransformationSampleSpecMultiJvmNode5 extends TransformationSampleSpec
 
-abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSampleSpec)
-  with STMultiNodeSpec with ImplicitSender {
+abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSampleSpecConfig)
+  with WordSpec with MustMatchers with BeforeAndAfterAll with ImplicitSender {
 
-  import TransformationSampleSpec._
+  import TransformationSampleSpecConfig._
 
   override def initialParticipants = roles.size
+
+  override def beforeAll() = multiNodeSpecBeforeAll()
+
+  override def afterAll() = multiNodeSpecAfterAll()
 
   "The transformation sample" must {
     "illustrate how to start first frontend" in {

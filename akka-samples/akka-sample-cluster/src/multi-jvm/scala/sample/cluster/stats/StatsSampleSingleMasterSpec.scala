@@ -5,8 +5,10 @@ import scala.concurrent.util.duration._
 
 import com.typesafe.config.ConfigFactory
 
-import StatsSampleSpec.first
-import StatsSampleSpec.third
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.WordSpec
+import org.scalatest.matchers.MustMatchers
+
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.cluster.Cluster
@@ -16,10 +18,9 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberUp
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit.ImplicitSender
 
-object StatsSampleSingleMasterSpec extends MultiNodeConfig {
+object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
   // register the named roles (nodes) of the test
   val first = role("first")
   val second = role("second")
@@ -50,16 +51,20 @@ object StatsSampleSingleMasterSpec extends MultiNodeConfig {
 }
 
 // need one concrete test class per node
-class StatsSampleSingleMasterMultiJvmNode1 extends StatsSampleSingleMasterSpec
-class StatsSampleSingleMasterMultiJvmNode2 extends StatsSampleSingleMasterSpec
-class StatsSampleSingleMasterMultiJvmNode3 extends StatsSampleSingleMasterSpec
+class StatsSampleSingleMasterSpecMultiJvmNode1 extends StatsSampleSingleMasterSpec
+class StatsSampleSingleMasterSpecMultiJvmNode2 extends StatsSampleSingleMasterSpec
+class StatsSampleSingleMasterSpecMultiJvmNode3 extends StatsSampleSingleMasterSpec
 
-abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSingleMasterSpec)
-  with STMultiNodeSpec with ImplicitSender {
+abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSingleMasterSpecConfig)
+  with WordSpec with MustMatchers with BeforeAndAfterAll with ImplicitSender {
 
-  import StatsSampleSpec._
+  import StatsSampleSingleMasterSpecConfig._
 
   override def initialParticipants = roles.size
+
+  override def beforeAll() = multiNodeSpecBeforeAll()
+
+  override def afterAll() = multiNodeSpecAfterAll()
 
   "The stats sample with single master" must {
     "illustrate how to startup cluster" in within(10 seconds) {
