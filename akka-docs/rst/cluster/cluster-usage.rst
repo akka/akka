@@ -400,20 +400,20 @@ How to Test
 
 :ref:`multi-node-testing` is useful for testing cluster applications.
 
-Set up your project according to the instructions in :ref:`multi-node-testing` and :ref:`multi_jvm_testing`, i.e.
+Set up your project according to the instructions in :ref:`multi-node-testing` and :ref:`multi-jvm-testing`, i.e.
 add the ``sbt-multi-jvm`` plugin and the dependency to ``akka-remote-tests-experimental``.
 
 First, as described in :ref:`multi-node-testing`, we need some scaffolding to configure the ``MultiNodeSpec``.
 Define the participating roles and their :ref:`cluster_configuration` in an object extending ``MultiNodeConfig``:
 
-.. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala
    :include: MultiNodeConfig
    :exclude: router-lookup-config
 
 Define one concrete test class for each role/node. These will be instantiated on the different nodes (JVMs). They can be
 implemented differently, but often they are the same and extend an abstract test class, as illustrated here.
 
-.. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#concrete-tests
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#concrete-tests
 
 Note the naming convention of these classes. The name of the classes must end with ``MultiJvmNode1``, ``MultiJvmNode2`` 
 and so on. It's possible to define another suffix to be used by the ``sbt-multi-jvm``, but the default should be 
@@ -421,18 +421,18 @@ fine in most cases.
 
 Then the abstract ``MultiNodeSpec``, which takes the ``MultiNodeConfig`` as constructor parameter.
 
-.. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#abstract-test
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#abstract-test
 
 Most of this can of course be extracted to a separate trait to avoid repeating this in all your tests.
 
 Typically you begin your test by starting up the cluster and let the members join, and create some actors.
 That can be done like this:
 
-.. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#startup-cluster
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#startup-cluster
 
 From the test you interact with the cluster using the ``Cluster`` extension, e.g. ``join``.
 
-.. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#join
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#join
 
 Notice how the `testActor` from :ref:`testkit <akka-testkit>` is added as :ref:`subscriber <cluster_subscriber>`
 to cluster changes and then waiting for certain events, such as in this case all members becoming 'Up'.
@@ -440,7 +440,7 @@ to cluster changes and then waiting for certain events, such as in this case all
 The above code was running for all roles (JVMs). ``runOn`` is a convenient utility to declare that a certain block
 of code should only run for a specific role.
 
-.. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#test-statsService
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#test-statsService
 
 Once again we take advantage of the facilities in :ref:`testkit <akka-testkit>` to verify expected behavior. 
 Here using ``testActor`` as sender (via ``ImplicitSender``) and verifing the reply with ``expectMsgPF``.
@@ -448,7 +448,7 @@ Here using ``testActor`` as sender (via ``ImplicitSender``) and verifing the rep
 In the above code you can see ``node(third)``, which is useful facility to get the root actor reference of
 the actor system for a specific role. This can also be used to grab the ``akka.actor.Address`` of that node.
 
-.. includecode:: ../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#addresses
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#addresses
 
 
 .. _cluster_jmx:
