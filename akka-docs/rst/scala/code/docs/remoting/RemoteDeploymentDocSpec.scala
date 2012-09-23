@@ -12,10 +12,8 @@ import akka.remote.RemoteScope
 
 object RemoteDeploymentDocSpec {
 
-  class Echo extends Actor {
-    def receive = {
-      case x ⇒ sender ! self
-    }
+  class SampleActor extends Actor {
+    def receive = { case _ ⇒ sender ! self }
   }
 
 }
@@ -34,7 +32,7 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
 
   "demonstrate programmatic deployment" in {
     //#deploy
-    val ref = system.actorOf(Props[Echo].withDeploy(Deploy(scope = RemoteScope(address))))
+    val ref = system.actorOf(Props[SampleActor].withDeploy(Deploy(scope = RemoteScope(address))))
     //#deploy
     ref.path.address must be(address)
     ref ! "test"
@@ -47,6 +45,14 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
     val two = Address("akka", "sys", "host", 1234) // this gives the same
     //#make-address
     one must be === two
+  }
+
+  "demonstrate sampleActor" in {
+    //#sample-actor
+
+    val actor = system.actorOf(Props[SampleActor], "sampleActor")
+    actor ! "Pretty slick"
+    //#sample-actor
   }
 
 }

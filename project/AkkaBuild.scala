@@ -287,60 +287,71 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings,
-    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample)
+    aggregate = Seq(camelSample, fsmSample, helloSample, helloKernelSample, remoteSample, clusterSample, multiNodeSample)
   )
 
   lazy val camelSample = Project(
     id = "akka-sample-camel",
     base = file("akka-samples/akka-sample-camel"),
     dependencies = Seq(actor, camel),
-    settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.camelSample,
-      publishArtifact in Compile := false
-    )
+    settings = sampleSettings ++ Seq(libraryDependencies ++= Dependencies.camelSample)
   )
 
   lazy val fsmSample = Project(
     id = "akka-sample-fsm",
     base = file("akka-samples/akka-sample-fsm"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
+    settings = sampleSettings
   )
 
   lazy val helloSample = Project(
     id = "akka-sample-hello",
     base = file("akka-samples/akka-sample-hello"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
+    settings = sampleSettings
   )
 
   lazy val helloKernelSample = Project(
     id = "akka-sample-hello-kernel",
     base = file("akka-samples/akka-sample-hello-kernel"),
     dependencies = Seq(kernel),
-    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
+    settings = sampleSettings
   )
 
   lazy val remoteSample = Project(
     id = "akka-sample-remote",
     base = file("akka-samples/akka-sample-remote"),
     dependencies = Seq(actor, remote, kernel),
-    settings = defaultSettings ++ Seq( publishArtifact in Compile := false )
+    settings = sampleSettings
   )
 
   lazy val clusterSample = Project(
     id = "akka-sample-cluster-experimental",
     base = file("akka-samples/akka-sample-cluster"),
-    dependencies = Seq(cluster, remoteTests % "compile;test->test;multi-jvm->multi-jvm", testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+    dependencies = Seq(cluster, remoteTests % "test", testkit % "test"),
+    settings = sampleSettings ++ multiJvmSettings ++ Seq(
+      libraryDependencies ++= Dependencies.clusterSample,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      publishArtifact in Compile := false
+      jvmOptions in MultiJvm := defaultMultiJvmOptions
+    )
+  ) configs (MultiJvm)
+
+  lazy val multiNodeSample = Project(
+    id = "akka-sample-multi-node-experimental",
+    base = file("akka-samples/akka-sample-multi-node"),
+    dependencies = Seq(remoteTests % "test", testkit % "test"),
+    settings = sampleSettings ++ multiJvmSettings ++ Seq(
+      libraryDependencies ++= Dependencies.multiNodeSample,
+      // disable parallel tests
+      parallelExecution in Test := false,
+      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
+        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+      },
+      jvmOptions in MultiJvm := defaultMultiJvmOptions
     )
   ) configs (MultiJvm)
 
@@ -350,7 +361,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
       remote, cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
     settings = defaultSettings ++ Sphinx.settings ++ sphinxReplacements ++ Seq(
-      unmanagedSourceDirectories in Test <<= baseDirectory { _ ** "code" get },
+      unmanagedSourceDirectories in Test <<= baseDirectory { _ / "rst" ** "code" get },
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
@@ -375,6 +386,10 @@ object AkkaBuild extends Build {
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
   lazy val parentSettings = baseSettings ++ Seq(
+    publishArtifact in Compile := false
+  )
+
+  lazy val sampleSettings = defaultSettings ++ Seq(
     publishArtifact in Compile := false
   )
 
@@ -620,6 +635,10 @@ object Dependencies {
   val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
 
   val zeroMQ = Seq(protobuf, zeroMQClient, Test.scalatest, Test.junit)
+
+  val clusterSample = Seq(Test.scalatest)
+
+  val multiNodeSample = Seq(Test.scalatest)
 }
 
 object Dependency {
