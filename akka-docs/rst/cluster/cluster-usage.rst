@@ -26,7 +26,7 @@ We recommend against using ``SNAPSHOT`` in order to obtain stable builds.
 A Simple Cluster Example
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The following small program together with its configuration starts an ``ActorSystem`` 
+The following small program together with its configuration starts an ``ActorSystem``
 with the Cluster extension enabled. It joins the cluster and logs some membership events.
 
 Try it out:
@@ -39,7 +39,7 @@ Try it out:
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-scala`
 settings, but with ``akka.cluster.ClusterActorRefProvider``.
-The ``akka.cluster.seed-nodes`` and cluster extension should normally also be added to your 
+The ``akka.cluster.seed-nodes`` and cluster extension should normally also be added to your
 ``application.conf`` file.
 
 The seed nodes are configured contact points for initial, automatic, join of the cluster.
@@ -49,7 +49,7 @@ ip-addresses or host names of the machines in ``application.conf`` instead of ``
 
 2. Add the following main program to your project, place it in ``src/main/scala``:
 
-.. literalinclude:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/simple/SimpleClusterApp.scala   
+.. literalinclude:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/simple/SimpleClusterApp.scala
    :language: scala
 
 
@@ -86,7 +86,7 @@ The other nodes will detect the failure after a while, which you can see in the 
 output in the other terminals.
 
 Look at the source code of the program again. What it does is to create an actor
-and register it as subscriber of certain cluster events. It gets notified with 
+and register it as subscriber of certain cluster events. It gets notified with
 an snapshot event, ``CurrentClusterState`` that holds full state information of
 the cluster. After that it receives events for changes that happen in the cluster.
 
@@ -95,32 +95,32 @@ Automatic vs. Manual Joining
 
 You may decide if joining to the cluster should be done automatically or manually.
 By default it is automatic and you need to define the seed nodes in configuration
-so that a new node has an initial contact point. When a new node is started it 
-sends a message to all seed nodes and then sends join command to the one that 
+so that a new node has an initial contact point. When a new node is started it
+sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
 it retries this procedure until successful or shutdown.
 
-There is one thing to be aware of regarding the seed node configured as the 
+There is one thing to be aware of regarding the seed node configured as the
 first element in the ``seed-nodes`` configuration list.
 The seed nodes can be started in any order and it is not necessary to have all
-seed nodes running, but the first seed node must be started when initially 
-starting a cluster, otherwise the other seed-nodes will not become initialized 
-and no other node can join the cluster. Once more than two seed nodes have been 
-started it is no problem to shut down the first seed node. If it goes down it 
-must be manually joined to the cluster again. 
-Automatic joining of the first seed node is not possible, it would only join 
+seed nodes running, but the first seed node must be started when initially
+starting a cluster, otherwise the other seed-nodes will not become initialized
+and no other node can join the cluster. Once more than two seed nodes have been
+started it is no problem to shut down the first seed node. If it goes down it
+must be manually joined to the cluster again.
+Automatic joining of the first seed node is not possible, it would only join
 itself. It is only the first seed node that has this restriction.
 
-You can disable automatic joining with configuration:
+You can disable automatic joining with configuration::
 
-  akka.cluster.auto-join = off
+      akka.cluster.auto-join = off
 
-Then you need to join manually, using :ref:`cluster_jmx` or :ref:`cluster_command_line`. 
+Then you need to join manually, using :ref:`cluster_jmx` or :ref:`cluster_command_line`.
 You can join to any node in the cluster. It doesn't have to be configured as
-seed node. If you are not using auto-join there is no need to configure 
+seed node. If you are not using auto-join there is no need to configure
 seed nodes at all.
 
-Joining can also be performed programatically with ``Cluster(system).join``.
+Joining can also be performed programatically with ``Cluster(system).join(address)``.
 
 
 Automatic vs. Manual Downing
@@ -129,19 +129,19 @@ Automatic vs. Manual Downing
 When a member is considered by the failure detector to be unreachable the
 leader is not allowed to perform its duties, such as changing status of
 new joining members to 'Up'. The status of the unreachable member must be
-changed to 'Down'. This can be performed automatically or manually. By 
-default it must be done manually, using using :ref:`cluster_jmx` or 
+changed to 'Down'. This can be performed automatically or manually. By
+default it must be done manually, using using :ref:`cluster_jmx` or
 :ref:`cluster_command_line`.
 
-It can also be performed programatically with ``Cluster(system).down``.
+It can also be performed programatically with ``Cluster(system).down(address)``.
 
-You can enable automatic downing with configuration:
+You can enable automatic downing with configuration::
 
-  akka.cluster.auto-down = on
+      akka.cluster.auto-down = on
 
-Be aware of that using auto-down implies that two separate clusters will 
-automatically be formed in case of network partition. That might be 
-desired by some applications but not by others. 
+Be aware of that using auto-down implies that two separate clusters will
+automatically be formed in case of network partition. That might be
+desired by some applications but not by others.
 
 .. _cluster_subscriber:
 
@@ -149,12 +149,12 @@ Subscribe to Cluster Events
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can subscribe to change notifications of the cluster membership by using
-``Cluster(system).subscribe``. A snapshot of the full state,
+``Cluster(system).subscribe(subscriber, to)``. A snapshot of the full state,
 ``akka.cluster.ClusterEvent.CurrentClusterState``, is sent to the subscriber
 as the first event, followed by events for incremental updates.
 
 There are several types of change events, consult the API documentation
-of classes that extends ``akka.cluster.ClusterEvent.ClusterDomainEvent`` 
+of classes that extends ``akka.cluster.ClusterEvent.ClusterDomainEvent``
 for details about the events.
 
 Worker Dial-in Example
@@ -191,12 +191,12 @@ The frontend that receives user jobs and delegates to one of the registered back
 
 Note that the ``TransformationFrontend`` actor watch the registered backend
 to be able to remove it from its list of availble backend workers.
-Death watch uses the cluster failure detector for nodes in the cluster, i.e. it detects 
+Death watch uses the cluster failure detector for nodes in the cluster, i.e. it detects
 network failures and JVM crashes, in addition to graceful termination of watched
 actor.
 
 This example is included in ``akka-samples/akka-sample-cluster``
-and you can try by starting nodes in different terminal windows. For example, starting 2 
+and you can try by starting nodes in different terminal windows. For example, starting 2
 frontend nodes and 3 backend nodes::
 
   sbt
@@ -221,12 +221,12 @@ Failure Detector
 
 The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
 unreachable from the rest of the cluster. The heartbeat arrival times is interpreted
-by an implementation of 
-`The Phi Accrual Failure Detector <http://ddg.jaist.ac.jp/pub/HDY+04.pdf>`_. 
+by an implementation of
+`The Phi Accrual Failure Detector <http://ddg.jaist.ac.jp/pub/HDY+04.pdf>`_.
 
 The suspicion level of failure is given by a value called *phi*.
 The basic idea of the phi failure detector is to express the value of *phi* on a scale that
-is dynamically adjusted to reflect current network conditions. 
+is dynamically adjusted to reflect current network conditions.
 
 The value of *phi* is calculated as::
 
@@ -235,8 +235,8 @@ The value of *phi* is calculated as::
 where F is the cumulative distribution function of a normal distribution with mean
 and standard deviation estimated from historical heartbeat inter-arrival times.
 
-In the :ref:`cluster_configuration` you can adjust the ``akka.cluster.failure-detector.threshold`` 
-to define when a *phi* value is considered to be a failure. 
+In the :ref:`cluster_configuration` you can adjust the ``akka.cluster.failure-detector.threshold``
+to define when a *phi* value is considered to be a failure.
 
 A low ``threshold`` is prone to generate many false positives but ensures
 a quick detection in the event of a real crash. Conversely, a high ``threshold``
@@ -245,22 +245,22 @@ default ``threshold`` is 8 and is appropriate for most situations. However in
 cloud environments, such as Amazon EC2, the value could be increased to 12 in
 order to account for network issues that sometimes occur on such platforms.
 
-The following chart illustrates how *phi* increase with increasing time since the 
-previous heartbeat. 
+The following chart illustrates how *phi* increase with increasing time since the
+previous heartbeat.
 
 .. image:: images/phi1.png
 
 Phi is calculated from the mean and standard deviation of historical
 inter arrival times. The previous chart is an example for standard deviation
-of 200 ms. If the heartbeats arrive with less deviation the curve becomes steeper, 
+of 200 ms. If the heartbeats arrive with less deviation the curve becomes steeper,
 i.e. it's possible to determine failure more quickly. The curve looks like this for
 a standard deviation of 100 ms.
 
 .. image:: images/phi2.png
 
 To be able to survive sudden abnormalities, such as garbage collection pauses and
-transient network failures the failure detector is configured with a margin, 
-``akka.cluster.failure-detector.acceptable-heartbeat-pause``. You may want to 
+transient network failures the failure detector is configured with a margin,
+``akka.cluster.failure-detector.acceptable-heartbeat-pause``. You may want to
 adjust the :ref:`cluster_configuration` of this depending on you environment.
 This is how the curve looks like for ``acceptable-heartbeat-pause`` configured to
 3 seconds.
@@ -272,7 +272,7 @@ Cluster Aware Routers
 
 All :ref:`routers <routing-scala>` can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.
-When a node becomes unavailble or leaves the cluster the routees of that node are 
+When a node becomes unavailble or leaves the cluster the routees of that node are
 automatically unregistered from the router. When new nodes join the cluster additional
 routees are added to the router, according to the configuration.
 
@@ -284,8 +284,8 @@ are already running, the configuration for a router looks like this:
 It's the relative actor path defined in ``routees-path`` that identify what actor to lookup.
 
 ``nr-of-instances`` defines total number of routees in the cluster, but there will not be
-more than one per node. Setting ``nr-of-instances`` to a high value will result in new routees 
-added to the router when nodes join the cluster. 
+more than one per node. Setting ``nr-of-instances`` to a high value will result in new routees
+added to the router when nodes join the cluster.
 
 The same type of router could also have been defined in code:
 
@@ -297,9 +297,9 @@ the configuration for a router looks like this:
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSingleMasterSpec.scala#router-deploy-config
 
 
-``nr-of-instances`` defines total number of routees in the cluster, but the number of routees 
-per node, ``max-nr-of-instances-per-node``, will not be exceeded. Setting ``nr-of-instances`` 
-to a high value will result in creating and deploying additional routees when new nodes join 
+``nr-of-instances`` defines total number of routees in the cluster, but the number of routees
+per node, ``max-nr-of-instances-per-node``, will not be exceeded. Setting ``nr-of-instances``
+to a high value will result in creating and deploying additional routees when new nodes join
 the cluster.
 
 The same type of router could also have been defined in code:
@@ -317,7 +317,7 @@ Let's take a look at how to use cluster aware routers.
 The example application provides a service to calculate statistics for a text.
 When some text is sent to the service it splits it into words, and delegates the task
 to count number of characters in each word to a separate worker, a routee of a router.
-The character count for each word is sent back to an aggregator that calculates 
+The character count for each word is sent back to an aggregator that calculates
 the average number of characters per word when all results have been collected.
 
 In this example we use the following imports:
@@ -347,12 +347,12 @@ We start with the router setup with lookup of routees. All nodes start ``StatsSe
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#start-router-lookup
 
-This means that user requests can be sent to ``StatsService`` on any node and it will use 
-``StatsWorker`` on all nodes. There can only be one worker per node, but that worker could easily 
+This means that user requests can be sent to ``StatsService`` on any node and it will use
+``StatsWorker`` on all nodes. There can only be one worker per node, but that worker could easily
 fan out to local children if more parallelism is needed.
 
 This example is included in ``akka-samples/akka-sample-cluster``
-and you can try by starting nodes in different terminal windows. For example, starting 3 
+and you can try by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::
 
   run-main sample.cluster.stats.StatsSample 2551
@@ -363,7 +363,7 @@ service nodes and 1 client::
 
   run-main sample.cluster.stats.StatsSample
 
-The above setup is nice for this example, but we will also take a look at how to use 
+The above setup is nice for this example, but we will also take a look at how to use
 a single master node that creates and deploys workers. To keep track of a single
 master we need one additional actor:
 
@@ -372,7 +372,7 @@ master we need one additional actor:
 The ``StatsFacade`` receives text from users and delegates to the current ``StatsService``, the single
 master. It listens to cluster events to create or lookup the ``StatsService`` depending on if
 it is on the same same node or on another node. We run the master on the same node as the leader of
-the cluster members, which is nothing more than the address currently sorted first in the member ring, 
+the cluster members, which is nothing more than the address currently sorted first in the member ring,
 i.e. it can change when new nodes join or when current leader leaves.
 
 All nodes start ``StatsFacade`` and the router is now configured like this:
@@ -381,7 +381,7 @@ All nodes start ``StatsFacade`` and the router is now configured like this:
 
 
 This example is included in ``akka-samples/akka-sample-cluster``
-and you can try by starting nodes in different terminal windows. For example, starting 3 
+and you can try by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::
 
   run-main sample.cluster.stats.StatsSampleOneMaster 2551
@@ -415,8 +415,8 @@ implemented differently, but often they are the same and extend an abstract test
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#concrete-tests
 
-Note the naming convention of these classes. The name of the classes must end with ``MultiJvmNode1``, ``MultiJvmNode2`` 
-and so on. It's possible to define another suffix to be used by the ``sbt-multi-jvm``, but the default should be 
+Note the naming convention of these classes. The name of the classes must end with ``MultiJvmNode1``, ``MultiJvmNode2``
+and so on. It's possible to define another suffix to be used by the ``sbt-multi-jvm``, but the default should be
 fine in most cases.
 
 Then the abstract ``MultiNodeSpec``, which takes the ``MultiNodeConfig`` as constructor parameter.
@@ -442,7 +442,7 @@ of code should only run for a specific role.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#test-statsService
 
-Once again we take advantage of the facilities in :ref:`testkit <akka-testkit>` to verify expected behavior. 
+Once again we take advantage of the facilities in :ref:`testkit <akka-testkit>` to verify expected behavior.
 Here using ``testActor`` as sender (via ``ImplicitSender``) and verifing the reply with ``expectMsgPF``.
 
 In the above code you can see ``node(third)``, which is useful facility to get the root actor reference of
@@ -474,7 +474,7 @@ Member nodes are identified with their address, in format `akka://actor-system-n
 Command Line Management
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The cluster can be managed with the script `bin/akka-cluster` provided in the 
+The cluster can be managed with the script `bin/akka-cluster` provided in the
 Akka distribution.
 
 Run it without parameters to see instructions about how to use the script::
@@ -486,10 +486,10 @@ Run it without parameters to see instructions about how to use the script::
             leave <node-url> - Sends a request for node with URL to LEAVE the cluster
              down <node-url> - Sends a request for marking node with URL as DOWN
                member-status - Asks the member node for its current status
-              cluster-status - Asks the cluster for its current status (member ring, 
+              cluster-status - Asks the cluster for its current status (member ring,
                                unavailable nodes, meta data etc.)
                       leader - Asks the cluster who the current leader is
-                is-singleton - Checks if the cluster is a singleton cluster (single 
+                is-singleton - Checks if the cluster is a singleton cluster (single
                                node cluster)
                 is-available - Checks if the member node is available
                   is-running - Checks if the member node is running
@@ -501,7 +501,7 @@ Run it without parameters to see instructions about how to use the script::
             bin/akka-cluster localhost:9999 cluster-status
 
 
-To be able to use the script you must enable remote monitoring and management when starting the JVMs of the cluster nodes, 
+To be able to use the script you must enable remote monitoring and management when starting the JVMs of the cluster nodes,
 as described in `Monitoring and Management Using JMX Technology <http://docs.oracle.com/javase/6/docs/technotes/guides/management/agent.html>`_
 
 Example of system properties to enable remote monitoring and management::
@@ -526,7 +526,7 @@ Cluster Scheduler
 -----------------
 
 It is recommended that you change the ``tick-duration`` to 33 ms or less
-of the default scheduler when using cluster, if you don't need to have it 
+of the default scheduler when using cluster, if you don't need to have it
 configured to a longer duration for other reasons. If you don't do this
 a dedicated scheduler will be used for periodic tasks of the cluster, which
 introduce the extra overhead of another thread.
