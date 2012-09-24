@@ -93,7 +93,6 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
         case ("heap-memory-max", b) ⇒
           used.get.longValue must be <= (b.longValue)
           committed.get.longValue must be <= (b.longValue)
-          b
       }
     }
 
