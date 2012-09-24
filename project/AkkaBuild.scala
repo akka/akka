@@ -87,14 +87,16 @@ object AkkaBuild extends Build {
     )
   )
 
+  def cpsPlugin = Seq(
+    libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
+    scalacOptions += "-P:continuations:enable"
+  )
+
   lazy val dataflow = Project(
     id = "akka-dataflow",
     base = file("akka-dataflow"),
     dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ OSGi.dataflow ++ Seq(
-      libraryDependencies <+= scalaVersion { v => compilerPlugin("org.scala-lang.plugins" % "continuations" % v) },
-      scalacOptions += "-P:continuations:enable"
-    )
+    settings = defaultSettings ++ OSGi.dataflow ++ cpsPlugin
   )
 
   lazy val testkit = Project(
@@ -361,7 +363,8 @@ object AkkaBuild extends Build {
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
       remote, cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
-    settings = defaultSettings ++ Sphinx.settings ++ sphinxReplacements ++ Seq(
+
+    settings = defaultSettings ++ Sphinx.settings ++ sphinxReplacements ++ cpsPlugin ++ Seq(
       unmanagedSourceDirectories in Test <<= baseDirectory { _ / "rst" ** "code" get },
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,

@@ -80,10 +80,17 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       val sample = collector.sample
       assertExpectedSampleSize(collector.isSigar, window, sample)
       val metrics = sample.metrics.collect { case m if m.isDefined ⇒ (m.name, m.value.get) }
-      val used = metrics collectFirst { case (a, b) if a == "heap-memory-used" ⇒ b }
-      val committed = metrics collectFirst { case (a, b) if a == "heap-memory-committed" ⇒ b }
-      metrics collect {
-        case (a, b) if a == "cpu-combined" ⇒
+      val used = metrics collectFirst { case ("heap-memory-used", b) ⇒ b }
+      val committed = metrics collectFirst { case ("heap-memory-committed", b) ⇒ b }
+      metrics foreach {
+        case ("total-cores", b)           ⇒ b.intValue must be > (0)
+        case ("network-max-rx", b)        ⇒ b.longValue must be > (0L)
+        case ("network-max-tx", b)        ⇒ b.longValue must be > (0L)
+        case ("system-load-average", b)   ⇒ b.doubleValue must be >= (0.0)
+        case ("processors", b)            ⇒ b.intValue must be >= (0)
+        case ("heap-memory-used", b)      ⇒ b.longValue must be >= (0L)
+        case ("heap-memory-committed", b) ⇒ b.longValue must be > (0L)
+        case ("cpu-combined", b) ⇒
           b.doubleValue must be <= (1.0)
           b.doubleValue must be >= (0.0)
           b
