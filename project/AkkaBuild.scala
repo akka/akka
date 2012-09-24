@@ -13,9 +13,11 @@ import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
 import sbt.Tests
 import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags, sphinxVars, sphinxExts }
+import LsKeys.{ lsync, docsUrl => lsDocsUrl, tags => lsTags }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -448,7 +450,7 @@ object AkkaBuild extends Build {
     (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
   }
 
-  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ Seq(
+  lazy val defaultSettings = baseSettings ++ formatSettings ++ mimaSettings ++ lsSettings ++ Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
     javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
@@ -456,6 +458,17 @@ object AkkaBuild extends Build {
     crossVersion := CrossVersion.full,
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
+
+    description in lsync := "Akka is the platform for the next generation of event-driven, scalable and fault-tolerant architectures on the JVM.",
+    homepage in lsync := Some(url("http://akka.io")),
+    lsTags in lsync := Seq("actors", "stm", "concurrency", "distributed", "fault-tolerance", "scala", "java", "futures", "dataflow", "remoting"),
+    lsDocsUrl in lsync := Some(url("http://akka.io/docs")),
+    licenses in lsync := Seq(("Apache 2", url("http://www.apache.org/licenses/LICENSE-2.0.html"))),
+    externalResolvers in lsync := Seq("Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases"),
+
+    /**
+     * Test settings
+     */
 
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
     logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
