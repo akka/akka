@@ -7,7 +7,7 @@ import scala.collection.immutable.SortedSet
 import scala.concurrent.util.{ Deadline, Duration }
 import scala.concurrent.util.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, ReceiveTimeout, RootActorPath, PoisonPill, Scheduler }
+import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, ReceiveTimeout, RootActorPath, Scheduler }
 import akka.actor.Status.Failure
 import akka.event.EventStream
 import akka.pattern.ask
@@ -94,6 +94,8 @@ private[cluster] object InternalClusterAction {
 
   case object ReapUnreachableTick extends Tick
 
+  case object MetricsTick extends Tick
+
   case object LeaderActionsTick extends Tick
 
   case object PublishStatsTick extends Tick
@@ -152,6 +154,8 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
     withDispatcher(context.props.dispatcher), name = "core")
   val heartbeat = context.actorOf(Props[ClusterHeartbeatDaemon].
     withDispatcher(context.props.dispatcher), name = "heartbeat")
+  if (settings.MetricsEnabled) context.actorOf(Props[ClusterMetricsCollector].
+    withDispatcher(context.props.dispatcher), name = "metrics")
 
   def receive = {
     case InternalClusterAction.GetClusterCoreRef ⇒ sender ! core
@@ -214,8 +218,8 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
       self ! LeaderActionsTick
     }
 
-  // start periodic publish of current state
-  private val publishStateTask: Option[Cancellable] =
+  // start periodic publish of current stats
+  private val publishStatsTask: Option[Cancellable] =
     if (PublishStatsInterval == Duration.Zero) None
     else Some(FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval).asInstanceOf[FiniteDuration], PublishStatsInterval) {
       self ! PublishStatsTick
@@ -230,7 +234,7 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
     heartbeatTask.cancel()
     failureDetectorReaperTask.cancel()
     leaderActionsTask.cancel()
-    publishStateTask foreach { _.cancel() }
+    publishStatsTask foreach { _.cancel() }
   }
 
   def uninitialized: Actor.Receive = {
@@ -875,7 +879,7 @@ private[cluster] final class JoinSeedNodeProcess(seedNodes: IndexedSeq[Address])
     case JoinSeedNode ⇒
       // send InitJoin to all seed nodes (except myself)
       seedNodes.collect {
-        case a if a != selfAddress ⇒ context.system.actorFor(context.parent.path.toStringWithAddress(a))
+        case a if a != selfAddress ⇒ context.actorFor(context.parent.path.toStringWithAddress(a))
       } foreach { _ ! InitJoin }
     case InitJoinAck(address) ⇒
       // first InitJoinAck reply
@@ -904,7 +908,7 @@ private[cluster] final class ClusterCoreSender extends Actor with ActorLogging {
    * Looks up and returns the remote cluster command connection for the specific address.
    */
   private def clusterCoreConnectionFor(address: Address): ActorRef =
-    context.system.actorFor(RootActorPath(address) / "system" / "cluster" / "core")
+    context.actorFor(RootActorPath(address) / "system" / "cluster" / "core")
 
   def receive = {
     case SendClusterMessage(to, msg) ⇒
