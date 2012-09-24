@@ -25,7 +25,7 @@ Scala's Delimited Continuations plugin is required to use the Dataflow API. To e
 
   autoCompilerPlugins := true,
   libraryDependencies <+= scalaVersion {
-    v => compilerPlugin("org.scala-lang.plugins" % "continuations" % @scalaVersion@)
+    v => compilerPlugin("org.scala-lang.plugins" % "continuations" % "@scalaVersion@")
   },
   scalacOptions += "-P:continuations:enable",
 
