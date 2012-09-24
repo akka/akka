@@ -89,6 +89,11 @@ object ClusterEvent {
   }
 
   /**
+   * Current snapshot of cluster member metrics. Published to subscribers.
+   */
+  case class ClusterMetricsChanged(nodes: Set[NodeMetrics]) extends ClusterDomainEvent
+
+  /**
    * Cluster convergence state changed.
    */
   case class ConvergenceChanged(convergence: Boolean) extends ClusterDomainEvent
