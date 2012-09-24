@@ -8,12 +8,12 @@ import scala.language.postfixOps
 import scala.concurrent.util.duration._
 import scala.concurrent.util.FiniteDuration
 import scala.concurrent.Await
-import scala.util.{ Try, Failure }
 
 import akka.actor._
 import akka.testkit._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import util.{Success, Try, Failure}
 
 object MetricsEnabledSpec {
   val config = """
@@ -70,10 +70,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
   "MetricsCollector" must {
 
     "not raise errors when attempting reflective code in apply" in {
-      Try(createMetricsCollector must not be null) match {
-        case Failure(e) ⇒ fail("No error should have been raised creating 'createMetricsCollector'.")
-        case _          ⇒ //
-      }
+      Try(createMetricsCollector).get must not be null
     }
 
     "collect accurate metrics for a node" in {
