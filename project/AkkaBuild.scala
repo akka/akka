@@ -206,7 +206,6 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ OSGi.mailboxesCommon ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes,
       previousArtifact := akkaPreviousArtifact("akka-mailboxes-common"),
-        // DurableMailboxSpec published in akka-mailboxes-common-test
       publishArtifact in Test := true
     )
   )

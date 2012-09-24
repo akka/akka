@@ -54,12 +54,7 @@ published to the ``ActorSystem``'s ``EventStream``.
 The result of the :meth:`receive` method is a partial function object, which is
 stored within the actor as its “initial behavior”, see `Become/Unbecome`_ for
 further information on changing the behavior of an actor after its
-construction. 
-
-.. note::
-   The initial behavior of an Actor is extracted prior to constructor is run,
-   so if you want to base your initial behavior on member state, you should
-   use ``become`` in the constructor.
+construction.
 
 Creating Actors with default constructor
 ----------------------------------------
