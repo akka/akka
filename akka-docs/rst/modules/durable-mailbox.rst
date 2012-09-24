@@ -94,7 +94,7 @@ added in concrete subclass like this:
 .. includecode:: code/docs/actor/mailbox/DurableMailboxDocSpec.scala
    :include: custom-mailbox-test
 
-You find DurableMailboxDocSpec in ``akka-mailboxes-common-2.1-SNAPSHOT-test.jar``.
+To use ``DurableMailboxDocSpec``:
 Add this dependency::
 
   "com.typesafe.akka" %% "akka-mailboxes-common" % "@version@" classifier "test" @crossString@
