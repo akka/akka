@@ -16,7 +16,7 @@ import akka.testkit.ImplicitSender
 import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress
 import java.net.InetAddress
-import akka.remote.testkit.{STMultiNodeSpec, MultiNodeSpec, MultiNodeConfig}
+import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec, MultiNodeConfig }
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false))
@@ -104,6 +104,8 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
       runOn(master) {
         testConductor.throttle(slave, master, Direction.Receive, -1).await
       }
+
+      enterBarrier("after")
     }
 
   }
