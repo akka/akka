@@ -93,15 +93,18 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
         case ("cpu-combined", b) ⇒
           b.doubleValue must be <= (1.0)
           b.doubleValue must be >= (0.0)
-        case ("heap-memory-max", b) ⇒
-          val usedMem = used.get.longValue
-          usedMem must be <= (b.longValue)
-
-          val committedMem = committed.get.longValue
-          committedMem must be <= (b.longValue)
-
-          (usedMem + committedMem) must be <= (b.longValue)
-        case (other, value) ⇒ fail("Unexpected metrics type: %s with value %s".format(other, value))
+          b
+        case (a, b) if a == "total-cores"           ⇒ b.intValue must be > (0); b
+        case (a, b) if a == "network-max-rx"        ⇒ b.longValue must be > (0L); b
+        case (a, b) if a == "network-max-tx"        ⇒ b.longValue must be > (0L); b
+        case (a, b) if a == "system-load-average"   ⇒ b.doubleValue must be >= (0.0); b
+        case (a, b) if a == "processors"            ⇒ b.intValue must be >= (0); b
+        case (a, b) if a == "heap-memory-used"      ⇒ b.longValue must be >= (0L); b
+        case (a, b) if a == "heap-memory-committed" ⇒ b.longValue must be > (0L); b
+        case (a, b) if a == "heap-memory-max" ⇒
+          used.get.longValue must be <= (b.longValue)
+          committed.get.longValue must be <= (b.longValue)
+          b
       }
     }
 
