@@ -62,7 +62,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
    * Looks up and returns the remote cluster heartbeat connection for the specific address.
    */
   def clusterHeartbeatConnectionFor(address: Address): ActorRef =
-    context.system.actorFor(RootActorPath(address) / "system" / "cluster" / "heartbeat")
+    context.actorFor(RootActorPath(address) / "system" / "cluster" / "heartbeat")
 
   val digester = MessageDigest.getInstance("MD5")
 
