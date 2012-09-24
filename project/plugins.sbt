@@ -1,12 +1,6 @@
 
 resolvers += Classpaths.typesafeResolver
 
-//ls-sbt resolvers
-resolvers ++= Seq(
-  Classpaths.sbtPluginReleases,
-  Opts.resolver.sonatypeReleases
-)
-
 // these comment markers are for including code into the docs
 //#sbt-multi-jvm
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.3")
