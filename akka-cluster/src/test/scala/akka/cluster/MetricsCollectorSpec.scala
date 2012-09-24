@@ -95,9 +95,8 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
         case (a, b) if a == "heap-memory-used"      ⇒ b.longValue must be >= (0L); b
         case (a, b) if a == "heap-memory-committed" ⇒ b.longValue must be > (0L); b
         case (a, b) if a == "heap-memory-max" ⇒
-          used.get.longValue must be < (b.longValue)
-          committed.get.longValue must be < (b.longValue)
-          used.get.longValue + committed.get.longValue must be <= (b.longValue)
+          used.get.longValue must be <= (b.longValue)
+          committed.get.longValue must be <= (b.longValue)
           b
       }
     }
