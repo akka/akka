@@ -1,10 +1,11 @@
 package akka.pattern.throttle
 
-import Throttler._
-import akka.actor.{ ActorRef, Actor, LoggingFSM }
 import scala.concurrent.util.Duration
 import scala.util.control.NonFatal
 import scala.collection.immutable.{ Queue ⇒ Q }
+import akka.actor.{ ActorRef, Actor, FSM }
+import Throttler._
+import TimerBasedThrottler._
 
 object TimerBasedThrottler {
   private[throttle] case object Tick
@@ -25,8 +26,6 @@ object TimerBasedThrottler {
                                            queue: Q[Message])
 }
 
-import TimerBasedThrottler._
-
 /**
  * A [[akka.pattern.throttle.Throttler]] that uses a timer to control the message delivery rate.
  *
@@ -46,12 +45,12 @@ import TimerBasedThrottler._
  *   // Set the target
  *   throttler ! SetTarget(Some(printer))
  *   // These three messages will be sent to the printer immediately
- *   throttler ! Queue("1")
- *   throttler ! Queue("2")
- *   throttler ! Queue("3")
+ *   throttler ! "1"
+ *   throttler ! "2"
+ *   throttler ! "3"
  *   // These two will wait at least until 1 second has passed
- *   throttler ! Queue("4")
- *   throttler ! Queue("5")
+ *   throttler ! "4"
+ *   throttler ! "5"
  * }}}
  *
  * ==Implementation notes==
@@ -83,17 +82,16 @@ import TimerBasedThrottler._
  *
  * @see [[akka.pattern.throttle.Throttler]]
  */
-class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with LoggingFSM[State, Data] {
+class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with FSM[State, Data] {
 
-  startWith(Idle, Data(None, rate.numberOfCalls, Q[Message]()))
+  startWith(Idle, Data(None, rate.numberOfCalls, Q()))
 
   // Idle: no messages, or target not set
   when(Idle) {
     // Set the rate
-    case Event(SetRate(rate), d) ⇒ {
+    case Event(SetRate(rate), d) ⇒
       this.rate = rate
       stay using d.copy(callsLeftInThisPeriod = rate.numberOfCalls)
-    }
 
     // Set the target
     case Event(SetTarget(t @ Some(_)), d) if !d.queue.isEmpty ⇒
@@ -102,11 +100,11 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with Logg
       stay using d.copy(target = t)
 
     // Queuing
-    case Event(Queue(msg), d @ Data(None, _, queue)) ⇒
+    case Event(msg, d @ Data(None, _, queue)) ⇒
       stay using d.copy(queue = queue.enqueue(Message(msg, context.sender)))
-    case Event(Queue(msg), d @ Data(Some(_), _, Seq())) ⇒
+    case Event(msg, d @ Data(Some(_), _, Seq())) ⇒
       goto(Active) using deliverMessages(d.copy(queue = Q(Message(msg, context.sender))))
-    // Note: The case Event(Queue(msg), t @ Data(Some(_), _, _, Seq(_*))) should never happen here.
+    // Note: The case Event(msg, t @ Data(Some(_), _, _, Seq(_*))) should never happen here.
   }
 
   when(Active) {
@@ -126,14 +124,6 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with Logg
     case Event(SetTarget(t @ Some(_)), d) ⇒
       stay using d.copy(target = t)
 
-    // Queue a message (when we cannot send messages in the current period anymore)
-    case Event(Queue(msg), d @ Data(_, 0, queue)) ⇒
-      stay using d.copy(queue = queue.enqueue(Message(msg, context.sender)))
-
-    // Queue a message (when we can send some more messages in the current period)
-    case Event(Queue(msg), d @ Data(_, _, queue)) ⇒
-      stay using deliverMessages(d.copy(queue = queue.enqueue(Message(msg, context.sender))))
-
     // Period ends and we have no more messages
     case Event(Tick, d @ Data(_, _, Seq())) ⇒
       goto(Idle)
@@ -141,6 +131,14 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with Logg
     // Period ends and we get more occasions to send messages
     case Event(Tick, d @ Data(_, _, _)) ⇒
       stay using deliverMessages(d.copy(callsLeftInThisPeriod = rate.numberOfCalls))
+
+    // Queue a message (when we cannot send messages in the current period anymore)
+    case Event(msg, d @ Data(_, 0, queue)) ⇒
+      stay using d.copy(queue = queue.enqueue(Message(msg, context.sender)))
+
+    // Queue a message (when we can send some more messages in the current period)
+    case Event(msg, d @ Data(_, _, queue)) ⇒
+      stay using deliverMessages(d.copy(queue = queue.enqueue(Message(msg, context.sender))))
   }
 
   onTransition {
@@ -161,17 +159,7 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with Logg
     val queue = data.queue
     val nrOfMsgToSend = scala.math.min(queue.length, data.callsLeftInThisPeriod)
 
-    queue.take(nrOfMsgToSend).foreach((x: Message) ⇒ {
-      /*
-       *  In case message deliver fails, we throw our own exception so that the supervisor
-       *  can deal with it appropriately.
-       */
-      try {
-        data.target.get.tell(x.message, x.sender)
-      } catch {
-        case NonFatal(ex) ⇒ throw new FailedToSendException("tell() failed.", ex)
-      }
-    })
+    queue.take(nrOfMsgToSend).foreach(x ⇒ data.target.get.tell(x.message, x.sender))
 
     data.copy(queue = queue.drop(nrOfMsgToSend), callsLeftInThisPeriod = data.callsLeftInThisPeriod - nrOfMsgToSend)
   }

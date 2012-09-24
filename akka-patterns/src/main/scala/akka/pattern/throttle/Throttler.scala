@@ -8,22 +8,41 @@ import akka.AkkaException
 /**
  * Marker trait for throttlers.
  *
+ * == Throttling ==
  * A [[akka.pattern.throttle.Throttler]] understands actor messages of type
- * [[akka.pattern.throttle.Throttler.SetTarget]], [[akka.pattern.throttle.Throttler.SetRate]], and
- * [[akka.pattern.throttle.Throttler.Queue]].
+ * [[akka.pattern.throttle.Throttler.SetTarget]], [[akka.pattern.throttle.Throttler.SetRate]], in
+ * addition to any other messages, which the throttler will consider as messages to be sent to
+ * the target.
  *
  * A <em>throttler</em> is an actor that is defined through a <em>target actor</em> and a <em>rate</em>
  * (of type [[akka.pattern.throttle.Throttler.Rate]]). You set or change the target and rate at any time through the `SetTarget(target)`
- * and `SetRate(rate)` messages, respectively. When you send the throttler a message `Queue(msg)`, it will
+ * and `SetRate(rate)` messages, respectively. When you send the throttler any other message `msg`, it will
  * put the message `msg` into an internal queue and eventually send all queued messages to the target, at
  * a speed that respects the given rate. If no target is currently defined then the messages will be queued
  * and will be delivered as soon as a target gets set.
  *
- * Notice that the throttler `forward`s messages, i.e., the target will see the original sender of the message
- * (and not the throttler) as the message's sender.
+ * == Transparency ==
+ * Notice that the throttler `forward`s messages, i.e., the target will see the original message sender (and not the throttler) as the sender of the message.
+ *
+ * == Persistence ==
+ * Throttlers usually use an internal queue to keep the messages that need to be sent to the target.
+ * You therefore cannot rely on the throttler's inbox size in order to learn how much messages are
+ * outstanding.
  *
  * It is left to the implementation whether the internal queue is persisted over application restarts or
  * actor failure.
+ *
+ * == Processing messages ==
+ * The target should process messages as fast as possible. If the target requires substantial time to
+ * process messages, it should distribute its work to other actors (using for example something like
+ * a [[akka.dispatch.BalancingDispatcher]]), otherwise the resulting system will always work <em>below</em>
+ * the threshold rate.
+ *
+ * <em>Example:</em> Suppose the throttler has a rate of 3msg/s and the target requires 1s to process a message.
+ * This system will only process messages at a rate of 1msg/s: the target will receive messages at at most 3msg/s
+ * but as it handles them synchronously and each of them takes 1s, its inbox will grow and grow and it will lag more and more behind. In such
+ * a situation, the target should <em>distribute</em> its messages to a set of worker actors so that individual messages
+ * can be handled in parallel.
  *
  * @see [[akka.pattern.throttle.TimerBasedThrottler]]
  */
@@ -35,13 +54,6 @@ trait Throttler { self: Actor ⇒ }
  * @see [[akka.pattern.throttle.Throttler.Rate]]
  */
 object Throttler {
-  /**
-   * Exception thrown by a [[akka.pattern.throttle.Throttler]] in case message delivery to the target
-   * fails for a message `msg` queued to the throttler via `Queue(msg)`. In this way, the throttler's
-   * supervisor can take appropriate action.
-   */
-  class FailedToSendException(message: String, cause: Throwable) extends AkkaException(message, cause)
-
   /**
    * A rate used for throttling.
    *
@@ -80,10 +92,9 @@ object Throttler {
    * not the throttler) as the sender. (In Akka terms, the throttler `forward`s the message.)
    *
    * @param target if `target` is `None`, the throttler will stop delivering messages and the messages already received
-   *  but not yet delivered, as well as any messages received in future `Queue(msg)` messages will be queued
+   *  but not yet delivered, as well as any messages received in the future, will be queued
    *  and eventually be delivered when a new target is set. If `target` is defined, the currently queued messages
-   *  as well as any messages received in the the future through `Queue(msg)` messages will be delivered
-   *  to the new target at a rate not exceeding the current throttler's rate.
+   *  as well as any messages received in the the future will be delivered to the new target at a rate not exceeding the current throttler's rate.
    */
   case class SetTarget(target: Option[ActorRef])
 
@@ -95,22 +106,6 @@ object Throttler {
    * @param rate the rate at which messages will be delivered to the target of the throttler
    */
   case class SetRate(rate: Rate)
-
-  /**
-   * Queue a message to a [[akka.pattern.throttle.Throttler]].
-   *
-   * The message `msg` will eventually be sent to the throttler's target. This may happen immediately
-   * or after a delay that may be necessary in order to not deliver messages at a rate higher than the
-   * throttler's current rate.
-   *
-   * Should the throttler not be able to send the message, it will throw a
-   * [[akka.pattern.throttle.Throttler.FailedToSendException]] so that the throttler's supervisor
-   * can take appropriate action.
-   *
-   * @param msg the message to eventually be sent to the throttler's target; the target will see the original
-   *    sender (and not the throttler) as the messages sender
-   */
-  case class Queue(msg: Any)
 
   /**
    * @see [[akka.pattern.throttle.Throttler.Rate]]
