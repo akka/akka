@@ -44,14 +44,14 @@ increase maintainability and spread knowledge about how things are solved.
 Core review values:
 
 * Rule: [The Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule)
-  Why: Small improvements add up over time, keeping the codebase in shape.
+  - Why: Small improvements add up over time, keeping the codebase in shape.
 * Rule: [Don't Repeat Yourself](http://programmer.97things.oreilly.com/wiki/index.php/Don't_Repeat_Yourself)
-  Why: Repetitions are not maintainable, keeping things DRY makes it easier to fix bugs and refactor,
+  - Why: Repetitions are not maintainable, keeping things DRY makes it easier to fix bugs and refactor,
   since you only need to apply the correction in one place, or perform the refactoring at one place.
 * Rule: Feature tests > Integration tests > Unit tests
-  Why: Without proving that a feature works, the code is only liability,
-       Without proving that a feature works with other features, the code is of limited value,
-       Without proving the individual parts of a feature works, the code is harder to debug.
+  - Why: Without proving that a feature works, the code is only liability.
+         Without proving that a feature works with other features, the code is of limited value.
+         Without proving the individual parts of a feature works, the code is harder to debug.
 
 ##Source style##
 
