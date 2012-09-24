@@ -56,3 +56,11 @@ Core review values:
 ##Source style##
 
 Akka uses [Scalariform](https://github.com/mdr/scalariform) to enforce some of the code style rules.
+
+##Contributing Modules##
+
+For external contributions of entire modules, the normal way is to establish it as a stand-alone module first,
+ to show that there is a need for the module. The next step would be to add it to Akka as an "experimental module",
+ then when the module is hardened, well documented and tested it becomes an officially supported Akka module.
+
+[List of experimental Akka modules](http://doc.akka.io/docs/akka/current/experimental/index.html)
