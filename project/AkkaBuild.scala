@@ -17,6 +17,7 @@ import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
 import sbt.Tests
 import Sphinx.{ sphinxDocs, sphinxHtml, sphinxLatex, sphinxPdf, sphinxPygments, sphinxTags, sphinxVars, sphinxExts }
+import LsKeys.{ lsync, docsUrl => lsDocsUrl, tags => lsTags }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -459,12 +460,12 @@ object AkkaBuild extends Build {
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
-    (description in LsKeys.lsync) := "Akka is the platform for the next generation of event-driven, scalable and fault-tolerant architectures on the JVM.",
-    (homepage in LsKeys.lsync) := Some(url("http://akka.io")),
-    (LsKeys.tags in LsKeys.lsync) := Seq("actors", "stm", "concurrency", "distributed", "fault-tolerance", "scala", "java", "futures", "dataflow", "remoting"),
-    (LsKeys.docsUrl in LsKeys.lsync) := Some(url("http://akka.io/docs")),
-    (licenses in LsKeys.lsync) := Seq(("Apache 2", url("http://www.apache.org/licenses/LICENSE-2.0.html"))),
-    (externalResolvers in LsKeys.lsync) := Seq("Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases"),
+    description in lsync := "Akka is the platform for the next generation of event-driven, scalable and fault-tolerant architectures on the JVM.",
+    homepage in lsync := Some(url("http://akka.io")),
+    lsTags in lsync := Seq("actors", "stm", "concurrency", "distributed", "fault-tolerance", "scala", "java", "futures", "dataflow", "remoting"),
+    lsDocsUrl in lsync := Some(url("http://akka.io/docs")),
+    licenses in lsync := Seq(("Apache 2", url("http://www.apache.org/licenses/LICENSE-2.0.html"))),
+    externalResolvers in lsync := Seq("Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases"),
 
     /**
      * Test settings
