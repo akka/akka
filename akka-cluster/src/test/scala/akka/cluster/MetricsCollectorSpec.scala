@@ -13,7 +13,7 @@ import akka.actor._
 import akka.testkit._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import util.{Success, Try, Failure}
+import util.{ Success, Try, Failure }
 
 object MetricsEnabledSpec {
   val config = """
@@ -90,15 +90,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
         case ("cpu-combined", b) ⇒
           b.doubleValue must be <= (1.0)
           b.doubleValue must be >= (0.0)
-          b
-        case (a, b) if a == "total-cores"           ⇒ b.intValue must be > (0); b
-        case (a, b) if a == "network-max-rx"        ⇒ b.longValue must be > (0L); b
-        case (a, b) if a == "network-max-tx"        ⇒ b.longValue must be > (0L); b
-        case (a, b) if a == "system-load-average"   ⇒ b.doubleValue must be >= (0.0); b
-        case (a, b) if a == "processors"            ⇒ b.intValue must be >= (0); b
-        case (a, b) if a == "heap-memory-used"      ⇒ b.longValue must be >= (0L); b
-        case (a, b) if a == "heap-memory-committed" ⇒ b.longValue must be > (0L); b
-        case (a, b) if a == "heap-memory-max" ⇒
+        case ("heap-memory-max", b) ⇒
           used.get.longValue must be <= (b.longValue)
           committed.get.longValue must be <= (b.longValue)
           b
