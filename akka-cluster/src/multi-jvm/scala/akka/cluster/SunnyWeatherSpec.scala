@@ -59,7 +59,7 @@ abstract class SunnyWeatherSpec
       awaitClusterUp(roles: _*)
       log.info("5 joined")
 
-      val unexpected = new AtomicReference[SortedSet[Member]]
+      val unexpected = new AtomicReference[SortedSet[Member]](SortedSet.empty)
       cluster.subscribe(system.actorOf(Props(new Actor {
         def receive = {
           case event: MemberEvent ⇒
@@ -71,7 +71,7 @@ abstract class SunnyWeatherSpec
 
       for (n ← 1 to 30) {
         enterBarrier("period-" + n)
-        unexpected.get must be(null)
+        unexpected.get must be(SortedSet.empty)
         awaitUpConvergence(roles.size)
         assertLeaderIn(roles)
         if (n % 5 == 0) log.info("Passed period [{}]", n)
