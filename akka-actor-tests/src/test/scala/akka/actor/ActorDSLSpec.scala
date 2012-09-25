@@ -7,7 +7,9 @@ package akka.actor
 import language.postfixOps
 
 import akka.testkit.{ AkkaSpec, EventFilter }
+//#import
 import akka.actor.ActorDSL._
+//#import
 import akka.event.Logging.Warning
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.util.duration._
@@ -88,11 +90,13 @@ class ActorDSLSpec extends AkkaSpec {
   "A lightweight creator" must {
 
     "support creating regular actors" in {
+      //#simple-actor
       val a = actor(new Act {
         become {
           case "hello" ⇒ sender ! "hi"
         }
       })
+      //#simple-actor
 
       implicit val i = inbox()
       a ! "hello"
@@ -100,10 +104,12 @@ class ActorDSLSpec extends AkkaSpec {
     }
 
     "support setup/teardown" in {
+      //#simple-start-stop
       val a = actor(new Act {
         whenStarting { testActor ! "started" }
         whenStopping { testActor ! "stopped" }
       })
+      //#simple-start-stop
 
       system stop a
       expectMsg("started")
@@ -111,6 +117,7 @@ class ActorDSLSpec extends AkkaSpec {
     }
 
     "support restart" in {
+      //#failing-actor
       val a = actor(new Act {
         become {
           case "die" ⇒ throw new Exception
@@ -118,6 +125,7 @@ class ActorDSLSpec extends AkkaSpec {
         whenFailing { (cause, msg) ⇒ testActor ! (cause, msg) }
         whenRestarted { cause ⇒ testActor ! cause }
       })
+      //#failing-actor
 
       EventFilter[Exception](occurrences = 1) intercept {
         a ! "die"
@@ -129,10 +137,12 @@ class ActorDSLSpec extends AkkaSpec {
     "support superviseWith" in {
       val a = actor(new Act {
         val system = null // shadow the implicit system
+        //#supervise-with
         superviseWith(OneForOneStrategy() {
           case e: Exception if e.getMessage == "hello" ⇒ SupervisorStrategy.Stop
           case _: Exception                            ⇒ SupervisorStrategy.Resume
         })
+        //#supervise-with
         val child = actor("child")(new Act {
           whenFailing { (_, _) ⇒ }
           become {
@@ -157,6 +167,8 @@ class ActorDSLSpec extends AkkaSpec {
 
     "supported nested declaration" in {
       val system = this.system
+      //#nested-actor
+      // here we pass in the ActorRefFactory explicitly as an example
       val a = actor(system, "fred")(new Act {
         val b = actor("barney")(new Act {
           whenStarting { context.parent ! ("hello from " + self) }
@@ -165,11 +177,13 @@ class ActorDSLSpec extends AkkaSpec {
           case x ⇒ testActor ! x
         }
       })
+      //#nested-actor
       expectMsg("hello from Actor[akka://ActorDSLSpec/user/fred/barney]")
       lastSender must be(a)
     }
 
     "support Stash" in {
+      //#act-with-stash
       val a = actor(new ActWithStash {
         become {
           case 1 ⇒ stash()
@@ -179,6 +193,7 @@ class ActorDSLSpec extends AkkaSpec {
             }
         }
       })
+      //#act-with-stash
 
       a ! 1
       a ! 2
