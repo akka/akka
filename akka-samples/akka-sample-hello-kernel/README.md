@@ -1,5 +1,5 @@
-HELLO
-=====
+Hello World Sample
+==================
 
 This sample is meant to be used by studying the code; it does not perform any
 astounding functions when running it. If you want to run it, check out the akka
