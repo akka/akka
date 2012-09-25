@@ -55,6 +55,36 @@ trait Creators { this: ActorDSL.type ⇒
     private[this] var strategy: SupervisorStrategy = null
 
     /**
+     * @see [[akka.actor.OneForOneStrategy]]
+     */
+    def OneForOneStrategy = akka.actor.OneForOneStrategy
+
+    /**
+     * @see [[akka.actor.AllForOneStrategy]]
+     */
+    def AllForOneStrategy = akka.actor.AllForOneStrategy
+
+    /**
+     * @see [[akka.actor.SupervisorStrategy]]
+     */
+    def Stop = SupervisorStrategy.Stop
+
+    /**
+     * @see [[akka.actor.SupervisorStrategy]]
+     */
+    def Restart = SupervisorStrategy.Restart
+
+    /**
+     * @see [[akka.actor.SupervisorStrategy]]
+     */
+    def Resume = SupervisorStrategy.Resume
+
+    /**
+     * @see [[akka.actor.SupervisorStrategy]]
+     */
+    def Escalate = SupervisorStrategy.Escalate
+
+    /**
      * Add the given behavior on top of the behavior stack for this actor. This
      * stack is cleared upon restart. Use `unbecome()` to pop an element off
      * this stack.
