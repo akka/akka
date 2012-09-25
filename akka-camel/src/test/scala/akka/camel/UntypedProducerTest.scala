@@ -33,7 +33,7 @@ class UntypedProducerTest extends WordSpec with MustMatchers with BeforeAndAfter
   "An UntypedProducer producing a message to a sync Camel route" must {
 
     "produce a message and receive a normal response" in {
-      val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
+      val producer = system.actorOf(Props[SampleUntypedReplyingProducer], name = "sample-untyped-replying-producer")
 
       val message = CamelMessage("test", Map(CamelMessage.MessageExchangeId -> "123"))
       val future = producer.ask(message)(timeout)
@@ -47,7 +47,7 @@ class UntypedProducerTest extends WordSpec with MustMatchers with BeforeAndAfter
     }
 
     "produce a message and receive a failure response" in {
-      val producer = system.actorOf(Props[SampleUntypedReplyingProducer])
+      val producer = system.actorOf(Props[SampleUntypedReplyingProducer], name = "sample-untyped-replying-producer-failure")
 
       val message = CamelMessage("fail", Map(CamelMessage.MessageExchangeId -> "123"))
       filterEvents(EventFilter[AkkaCamelException](occurrences = 1)) {
@@ -66,7 +66,7 @@ class UntypedProducerTest extends WordSpec with MustMatchers with BeforeAndAfter
   "An UntypedProducer producing a message to a sync Camel route and then forwarding the response" must {
 
     "produce a message and send a normal response to direct:forward-test-1" in {
-      val producer = system.actorOf(Props[SampleUntypedForwardingProducer])
+      val producer = system.actorOf(Props[SampleUntypedForwardingProducer], name = "sample-untyped-forwarding-producer")
 
       mockEndpoint.expectedBodiesReceived("received test")
       producer.tell(CamelMessage("test", Map[String, Any]()), producer)

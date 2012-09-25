@@ -7,6 +7,7 @@ package akka.camel.javaapi
 import akka.actor.UntypedActor
 import akka.camel._
 import org.apache.camel.{ CamelContext, ProducerTemplate }
+import org.apache.camel.impl.DefaultCamelContext
 
 /**
  * Subclass this abstract class to create an untyped producer actor. This class is meant to be used from Java.
@@ -64,7 +65,7 @@ abstract class UntypedProducerActor extends UntypedActor with ProducerSupport {
   /**
    * Returns the <code>CamelContext</code>.
    */
-  def getCamelContext(): CamelContext = camel.context
+  def getCamelContext(): DefaultCamelContext = camel.context
 
   /**
    * Returns the <code>ProducerTemplate</code>.

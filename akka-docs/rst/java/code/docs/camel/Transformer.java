@@ -2,6 +2,7 @@ package docs.camel;
 //#TransformOutgoingMessage
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedProducerActor;
+import akka.dispatch.Mapper;
 import akka.japi.Function;
 
 public class Transformer extends UntypedProducerActor{
@@ -16,7 +17,8 @@ public class Transformer extends UntypedProducerActor{
   }
 
   private CamelMessage upperCase(CamelMessage msg) {
-    return msg.mapBody(new Function<String,String>() {
+    return msg.mapBody(new Mapper<String,String>() {
+      @Override
       public String apply(String body) {
         return body.toUpperCase();
       }

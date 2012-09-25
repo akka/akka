@@ -30,14 +30,14 @@ private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
   /**
    * Sets Exchange.getIn from the given CamelMessage object.
    */
-  def setRequest(msg: CamelMessage): Unit = msg.copyContentTo(request)
+  def setRequest(msg: CamelMessage): Unit = CamelMessage.copyContent(msg, request)
 
   /**
    * Depending on the exchange pattern, sets Exchange.getIn or Exchange.getOut from the given
    * CamelMessage object. If the exchange is out-capable then the Exchange.getOut is set, otherwise
    * Exchange.getIn.
    */
-  def setResponse(msg: CamelMessage): Unit = msg.copyContentTo(response)
+  def setResponse(msg: CamelMessage): Unit = CamelMessage.copyContent(msg, response)
 
   /**
    * Sets Exchange.getException from the given FailureResult message. Headers of the FailureResult message
