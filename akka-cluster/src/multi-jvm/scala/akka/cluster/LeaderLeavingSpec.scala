@@ -56,9 +56,6 @@ abstract class LeaderLeavingSpec
           cluster.leave(oldLeaderAddress)
           enterBarrier("leader-left")
 
-          // verify that a NEW LEADER have taken over
-          awaitCond(!clusterView.isLeader)
-
           // verify that the LEADER is shut down
           awaitCond(!cluster.isRunning)
 
