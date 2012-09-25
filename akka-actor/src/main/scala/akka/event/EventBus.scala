@@ -139,7 +139,7 @@ trait SubchannelClassification { this: EventBus ⇒
     val diff = subscriptions.addValue(to, subscriber)
     if (diff.isEmpty) false
     else {
-      cache = cache ++ diff
+      cache ++= diff
       true
     }
   }
@@ -148,15 +148,18 @@ trait SubchannelClassification { this: EventBus ⇒
     val diff = subscriptions.removeValue(from, subscriber)
     if (diff.isEmpty) false
     else {
-      cache = cache ++ diff
+      removeFromCache(diff)
       true
     }
   }
 
   def unsubscribe(subscriber: Subscriber): Unit = subscriptions.synchronized {
     val diff = subscriptions.removeValue(subscriber)
-    if (diff.nonEmpty) cache = cache ++ diff
+    if (diff.nonEmpty) removeFromCache(diff)
   }
+
+  private def removeFromCache(changes: Seq[(Classifier, Set[Subscriber])]): Unit =
+    cache ++= changes map { case (c, s) ⇒ (c, cache.getOrElse(c, Set[Subscriber]()) -- s) }
 
   def publish(event: Event): Unit = {
     val c = classify(event)
@@ -166,7 +169,7 @@ trait SubchannelClassification { this: EventBus ⇒
         if (cache contains c) cache(c)
         else {
           val diff = subscriptions.addKey(c)
-          cache = cache ++ diff
+          cache ++= diff
           cache(c)
         }
       }

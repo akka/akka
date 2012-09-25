@@ -72,7 +72,7 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
           b.setCookie(settings.SecureCookie.get)
         b.build
       }
-      openChannels.write(netty.createControlEnvelope(shutdownSignal)).awaitUninterruptibly
+      openChannels.write(netty.createControlEnvelope(shutdownSignal))
       openChannels.disconnect
       openChannels.close.awaitUninterruptibly
       bootstrap.releaseExternalResources()

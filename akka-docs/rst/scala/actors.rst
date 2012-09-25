@@ -153,6 +153,64 @@ When spawning actors for specific sub-tasks from within an actor, it may be conv
   there is not yet a way to detect these illegal accesses at compile time.
   See also: :ref:`jmm-shared-state`
 
+The Actor DSL
+-------------
+
+Simple actors—for example one-off workers or even when trying things out in the
+REPL—can be created more concisely using the :class:`Act` trait. The supporting
+infrastructure is bundled in the following import:
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#import
+
+This import is assumed for all code samples throughout this section. To define
+a simple actor, the following is sufficient:
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#simple-actor
+
+Here, :meth:`actor` takes the role of either ``system.actorOf`` or
+``context.actorOf``, depending on which context it is called in: it takes an
+implicit :class:`ActorRefFactory`, which within an actor is available in the
+form of the ``implicit val context: ActorContext``. Outside of an actor, you’ll
+have to either declare an implicit :class:`ActorSystem`, or you can give the
+factory explicitly (see further below).
+
+Life-cycle hooks are also exposed as DSL elements (see `Start Hook`_ and `Stop
+Hook`_ below), where later invocations of the methods shown below will replace
+the contents of the respective hooks:
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#simple-start-stop
+
+The above is enough if the logical life-cycle of the actor matches the restart
+cycles (i.e. ``whenStopping`` is executed before a restart and ``whenStarting``
+afterwards). If that is not desired, use the following two hooks (see `Restart
+Hooks`_ below):
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#failing-actor
+
+It is also possible to create nested actors, i.e. grand-children, like this:
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#nested-actor
+
+.. note::
+
+  In some cases it will be necessary to explicitly pass the
+  :class:`ActorRefFactory` to the :meth:`actor()` method (you will notice when
+  the compiler tells you about ambiguous implicits).
+
+The grand-child will be supervised by the child; the supervisor strategy for
+this relationship can also be configured using a DSL element (supervision
+directives are part of the :class:`Act` trait):
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#supervise-with
+
+Last but not least there is a little bit of convenience magic built-in, which
+detects if the runtime class of the statically given actor subtype extends the
+:class:`Stash` trait (this is a complicated way of saying that ``new Act with
+Stash`` would not work because its runtime erased type is just an anonymous
+subtype of ``Act``). If you want to use this magic, simply extend
+:class:`ActWithStash`:
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#act-with-stash
 
 Actor API
 =========
@@ -246,8 +304,9 @@ Restart Hooks
 -------------
 
 All actors are supervised, i.e. linked to another actor with a fault
-handling strategy. Actors will be restarted in case an exception is thrown while
-processing a message. This restart involves the hooks mentioned above:
+handling strategy. Actors may be restarted in case an exception is thrown while
+processing a message (see :ref:`supervision`). This restart involves the hooks
+mentioned above:
 
 1. The old actor is informed by calling :meth:`preRestart` with the exception
    which caused the restart and the message which triggered that exception; the
