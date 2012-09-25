@@ -301,6 +301,23 @@ trait ActorRefFactory {
 private[akka] case class StopChild(child: ActorRef)
 
 /**
+ * INTERNAL API
+ */
+private[akka] object Guardian {
+  /**
+   * For the purpose of orderly shutdown it's possible
+   * to register interest in the termination of systemGuardian
+   * and receive a notification [[akka.actor.Guardian.TerminationHook]]
+   * before systemGuardian is stopped. The registered hook is supposed
+   * to reply with [[akka.actor.Guardian.TerminationHookDone]] and the
+   * systemGuardian will not stop until all registered hooks have replied.
+   */
+  case object RegisterTerminationHook
+  case object TerminationHook
+  case object TerminationHookDone
+}
+
+/**
  * Local ActorRef provider.
  */
 class LocalActorRefProvider(
@@ -374,11 +391,21 @@ class LocalActorRefProvider(
   }
 
   private class Guardian(override val supervisorStrategy: SupervisorStrategy, isSystem: Boolean) extends Actor {
+    import Guardian._
+
+    var terminationHooks = Set.empty[ActorRef]
 
     def receive = {
-      case Terminated(_)    ⇒ if (isSystem) eventStream.stopDefaultLoggers(); context.stop(self)
-      case StopChild(child) ⇒ context.stop(child)
-      case m                ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case Terminated(_)           ⇒ terminationHooks foreach { _ ! TerminationHook }; stopWhenAllTerminationHooksDone()
+      case StopChild(child)        ⇒ context.stop(child)
+      case RegisterTerminationHook ⇒ terminationHooks += sender
+      case TerminationHookDone     ⇒ terminationHooks -= sender; stopWhenAllTerminationHooksDone()
+      case m                       ⇒ deadLetters ! DeadLetter(m, sender, self)
+    }
+
+    def stopWhenAllTerminationHooksDone(): Unit = if (terminationHooks.isEmpty) {
+      if (isSystem) eventStream.stopDefaultLoggers()
+      context.stop(self)
     }
 
     // guardian MUST NOT lose its children during restart

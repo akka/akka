@@ -24,6 +24,12 @@ private[akka] case class DaemonMsgCreate(props: Props, deploy: Deploy, path: Str
 private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath, _parent: InternalActorRef, _log: LoggingAdapter)
   extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
+  import akka.actor.Guardian._
+
+  system.provider.systemGuardian.tell(RegisterTerminationHook, this)
+
+  @volatile private var terminating = false
+
   /**
    * Find the longest matching path which we know about and return that ref
    * (or ask that ref to continue searching if elements are left).
@@ -50,7 +56,7 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
   }
 
   override def !(msg: Any)(implicit sender: ActorRef = null): Unit = msg match {
-    case message: DaemonMsg ⇒
+    case message: DaemonMsg if !terminating ⇒
       log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address)
       message match {
         case DaemonMsgCreate(props, deploy, path, supervisor) ⇒
@@ -63,18 +69,30 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
               val actor = system.provider.actorOf(system, props, supervisor.asInstanceOf[InternalActorRef],
                 path, systemService = false, Some(deploy), lookupDeploy = true, async = false)
               addChild(subpath.mkString("/"), actor)
-              this.sendSystemMessage(Watch(actor, this))
+              actor.sendSystemMessage(Watch(actor, this))
             case _ ⇒
               log.error("remote path does not match path from message [{}]", message)
           }
       }
 
+    case message: DaemonMsg if terminating ⇒
+      log.debug("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, path.address)
+
     case Terminated(child: ActorRefWithCell) if child.asInstanceOf[ActorRefScope].isLocal ⇒
       removeChild(child.path.elements.drop(1).mkString("/"))
+      terminationHookDoneWhenNoChildren()
 
     case t: Terminated ⇒
 
-    case unknown       ⇒ log.warning("Unknown message {} received by {}", unknown, this)
+    case TerminationHook ⇒
+      terminating = true
+      terminationHookDoneWhenNoChildren()
+      allChildren foreach system.stop
+
+    case unknown ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }
+
+  def terminationHookDoneWhenNoChildren(): Unit = if (terminating && !hasChildren)
+    system.provider.systemGuardian.tell(TerminationHookDone, this)
 
 }
