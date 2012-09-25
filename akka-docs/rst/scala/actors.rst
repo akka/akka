@@ -162,7 +162,7 @@ infrastructure is bundled in the following import:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#import
 
-This import is assumed for all code samples throughout this section. To defined
+This import is assumed for all code samples throughout this section. To define
 a simple actor, the following is sufficient:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#simple-actor
@@ -174,14 +174,16 @@ form of the ``implicit val context: ActorContext``. Outside of an actor, you�
 have to either declare an implicit :class:`ActorSystem`, or you can give the
 factory explicitly (see further below).
 
-Life-cycle hooks are also exposed as DSL elements, where later invocations of
-the methods shown below will replace the contents of the respective hooks:
+Life-cycle hooks are also exposed as DSL elements (see `Start Hook`_ and `Stop
+Hook`_ below), where later invocations of the methods shown below will replace
+the contents of the respective hooks:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#simple-start-stop
 
 The above is enough if the logical life-cycle of the actor matches the restart
 cycles (i.e. ``whenStopping`` is executed before a restart and ``whenStarting``
-afterwards). If that is not desired, use the following two hooks:
+afterwards). If that is not desired, use the following two hooks (see `Restart
+Hooks`_ below):
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#failing-actor
 
@@ -196,7 +198,8 @@ It is also possible to create nested actors, i.e. grand-children, like this:
   the compiler tells you about ambiguous implicits).
 
 The grand-child will be supervised by the child; the supervisor strategy for
-this relationship can also be configured using a DSL element:
+this relationship can also be configured using a DSL element (supervision
+directives are part of the :class:`Act` trait):
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#supervise-with
 
@@ -301,8 +304,9 @@ Restart Hooks
 -------------
 
 All actors are supervised, i.e. linked to another actor with a fault
-handling strategy. Actors will be restarted in case an exception is thrown while
-processing a message. This restart involves the hooks mentioned above:
+handling strategy. Actors may be restarted in case an exception is thrown while
+processing a message (see :ref:`supervision`). This restart involves the hooks
+mentioned above:
 
 1. The old actor is informed by calling :meth:`preRestart` with the exception
    which caused the restart and the message which triggered that exception; the

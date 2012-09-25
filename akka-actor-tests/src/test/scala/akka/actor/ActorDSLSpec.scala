@@ -139,8 +139,8 @@ class ActorDSLSpec extends AkkaSpec {
         val system = null // shadow the implicit system
         //#supervise-with
         superviseWith(OneForOneStrategy() {
-          case e: Exception if e.getMessage == "hello" ⇒ SupervisorStrategy.Stop
-          case _: Exception                            ⇒ SupervisorStrategy.Resume
+          case e: Exception if e.getMessage == "hello" ⇒ Stop
+          case _: Exception                            ⇒ Resume
         })
         //#supervise-with
         val child = actor("child")(new Act {

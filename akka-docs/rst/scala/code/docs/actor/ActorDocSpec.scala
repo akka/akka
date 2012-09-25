@@ -406,4 +406,12 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     lastSender must be === system.actorFor("/user")
   }
 
+  "using ActorDSL outside of akka.actor package" in {
+    import akka.actor.ActorDSL._
+    actor(new Act {
+      superviseWith(OneForOneStrategy() { case _ ⇒ Stop; Restart; Resume; Escalate })
+      superviseWith(AllForOneStrategy() { case _ ⇒ Stop; Restart; Resume; Escalate })
+    })
+  }
+
 }

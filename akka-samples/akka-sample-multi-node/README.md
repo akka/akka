@@ -8,7 +8,7 @@ with SBT](http://doc.akka.io/docs/akka/current/intro/getting-started.html).
 When you start SBT within the checked-out akka source directory, you can run
 this sample by typing
 
-    akka-sample-multi-node-experimental/test
+    akka-sample-multi-node-experimental/multi-jvm:test-only sample.multinode.MultiNodeSampleSpec
 
 (You might have to pass a system property containing `akka.test.tags.include=long-running`.)
 
