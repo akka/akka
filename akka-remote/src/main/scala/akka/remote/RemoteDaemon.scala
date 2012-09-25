@@ -92,7 +92,7 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
       allChildren foreach system.stop
 
     case AddressTerminated(address) ⇒
-      allChildren filter { _.asInstanceOf[InternalActorRef].getParent.path.address == address } foreach system.stop
+      allChildren foreach { case a: InternalActorRef if a.getParent.path.address == address ⇒ system.stop(a) }
 
     case unknown ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }
