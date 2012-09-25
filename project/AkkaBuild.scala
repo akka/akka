@@ -144,7 +144,18 @@ object AkkaBuild extends Build {
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      previousArtifact := akkaPreviousArtifact("akka-remote")
+      previousArtifact := akkaPreviousArtifact("akka-remote"),
+      description := """|This module of Akka is marked as
+                        |experimental, which means that it is in early
+                        |access mode, which also means that it is not covered
+                        |by commercial support. An experimental module doesn't
+                        |have to obey the rule of staying binary compatible
+                        |between minor releases. Breaking API changes may be
+                        |introduced in minor releases without notice as we
+                        |refine and simplify based on your feedback. An
+                        |experimental module may be dropped in major releases
+                        |without prior deprecation.
+                        |""".stripMargin
     )
   ) configs (MultiJvm)
 
@@ -161,7 +172,18 @@ object AkkaBuild extends Build {
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
       jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      previousArtifact := akkaPreviousArtifact("akka-remote")
+      previousArtifact := akkaPreviousArtifact("akka-remote"),
+      description := """|This module of Akka is marked as
+                        |experimental, which means that it is in early
+                        |access mode, which also means that it is not covered
+                        |by commercial support. An experimental module doesn't
+                        |have to obey the rule of staying binary compatible
+                        |between minor releases. Breaking API changes may be
+                        |introduced in minor releases without notice as we
+                        |refine and simplify based on your feedback. An
+                        |experimental module may be dropped in major releases
+                        |without prior deprecation.
+                        |""".stripMargin
     )
   ) configs (MultiJvm)
 
@@ -339,7 +361,18 @@ object AkkaBuild extends Build {
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
-      jvmOptions in MultiJvm := defaultMultiJvmOptions
+      jvmOptions in MultiJvm := defaultMultiJvmOptions,
+      description := """|This module of Akka is marked as
+                        |experimental, which means that it is in early
+                        |access mode, which also means that it is not covered
+                        |by commercial support. An experimental module doesn't
+                        |have to obey the rule of staying binary compatible
+                        |between minor releases. Breaking API changes may be
+                        |introduced in minor releases without notice as we
+                        |refine and simplify based on your feedback. An
+                        |experimental module may be dropped in major releases
+                        |without prior deprecation.
+                        |""".stripMargin
     )
   ) configs (MultiJvm)
 
@@ -369,6 +402,24 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v")
+    )
+  )
+
+  lazy val contrib = Project(
+    id = "akka-contrib",
+    base = file("akka-contrib"),
+    dependencies = Seq(actor),
+    settings = defaultSettings ++ Seq(
+      description := """|
+                        |This subproject provides a home to modules contributed by external
+                        |developers which may or may not move into the officially supported code
+                        |base over time. A module in this subproject doesn't have to obey the rule
+                        |of staying binary compatible between minor releases. Breaking API changes
+                        |may be introduced in minor releases without notice as we refine and
+                        |simplify based on your feedback. A module may be dropped in any release
+                        |without prior deprecation. The Typesafe subscription does not cover
+                        |support for these modules.
+                        |""".stripMargin
     )
   )
 
