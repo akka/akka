@@ -15,7 +15,7 @@ import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
-import java.util.concurrent.{ TimeoutException, CountDownLatch }
+import java.util.concurrent.{ TimeUnit, TimeoutException, CountDownLatch }
 import akka.util.Timeout
 import akka.camel.internal.CamelExchangeAdapter
 import akka.camel.{ ActorNotRegisteredException, Camel, Ack, FailureResult, CamelMessage }
@@ -111,7 +111,7 @@ private[camel] trait ActorEndpointConfig {
 private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) extends DefaultProducer(endpoint) with AsyncProcessor {
   /**
    * Processes the exchange.
-   * Calls the asynchronous version of the method and waits for the result (blocking).
+   * Calls the synchronous version of the method and waits for the result (blocking).
    * @param exchange the exchange to process
    */
   def process(exchange: Exchange): Unit = processExchangeAdapter(new CamelExchangeAdapter(exchange))
@@ -131,13 +131,11 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
   /**
    * For internal use only. Processes the [[akka.camel.internal.CamelExchangeAdapter]]
    * @param exchange the [[akka.camel.internal.CamelExchangeAdapter]]
-   *
-   * WARNING UNBOUNDED BLOCKING AWAITS
    */
   private[camel] def processExchangeAdapter(exchange: CamelExchangeAdapter): Unit = {
     val isDone = new CountDownLatch(1)
     processExchangeAdapter(exchange, new AsyncCallback { def done(doneSync: Boolean) { isDone.countDown() } })
-    isDone.await() // this should never wait forever as the process(exchange, callback) method guarantees that.
+    isDone.await(camel.settings.replyTimeout.toMillis, TimeUnit.MILLISECONDS)
   }
 
   /**

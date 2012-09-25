@@ -11,7 +11,7 @@ public class Consumer4 extends UntypedConsumerActor {
   private final static FiniteDuration timeout = Duration.create(500, TimeUnit.MILLISECONDS);
 
   @Override
-  public Duration replyTimeout() {
+  public FiniteDuration replyTimeout() {
     return timeout;
   }
 

@@ -2,6 +2,7 @@ package docs.camel;
 //#CustomRoute
 import akka.actor.UntypedActor;
 import akka.camel.CamelMessage;
+import akka.dispatch.Mapper;
 import akka.japi.Function;
 
 public class Responder extends UntypedActor{
@@ -15,7 +16,8 @@ public class Responder extends UntypedActor{
   }
 
   private CamelMessage createResponse(CamelMessage msg) {
-    return msg.mapBody(new Function<String,String>() {
+    return msg.mapBody(new Mapper<String,String>() {
+      @Override
       public String apply(String body) {
         return String.format("received %s", body);
       }
