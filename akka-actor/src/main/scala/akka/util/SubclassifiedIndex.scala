@@ -21,9 +21,9 @@ object SubclassifiedIndex {
 
   class Nonroot[K, V](val key: K, _values: Set[V])(implicit sc: Subclassification[K]) extends SubclassifiedIndex[K, V](_values) {
 
-    override def addValue(key: K, value: V): Changes = {
+    override def innerAddValue(key: K, value: V): Changes = {
       // break the recursion on super when key is found and transition to recursive add-to-set
-      if (sc.isEqual(key, this.key)) addValue(value) else super.addValue(key, value)
+      if (sc.isEqual(key, this.key)) addValue(value) else super.innerAddValue(key, value)
     }
 
     private def addValue(value: V): Changes = {
@@ -34,23 +34,24 @@ object SubclassifiedIndex {
       } else kids
     }
 
-    override def removeValue(key: K, value: V): Changes = {
+    override def innerRemoveValue(key: K, value: V): Changes = {
       // break the recursion on super when key is found and transition to recursive remove-from-set
-      if (sc.isEqual(key, this.key)) removeValue(value) else super.removeValue(key, value)
+      if (sc.isEqual(key, this.key)) removeValue(value) else super.innerRemoveValue(key, value)
     }
 
     override def removeValue(value: V): Changes = {
       val kids = subkeys flatMap (_ removeValue value)
       if (values contains value) {
         values -= value
-        kids :+ ((key, values))
+        kids :+ ((key, Set(value)))
       } else kids
     }
 
     override def toString = subkeys.mkString("Nonroot(" + key + ", " + values + ",\n", ",\n", ")")
-
   }
 
+  private[SubclassifiedIndex] def emptyMergeMap[K, V] = internalEmptyMergeMap.asInstanceOf[Map[K, Set[V]]]
+  private[this] val internalEmptyMergeMap = Map[AnyRef, Set[AnyRef]]().withDefault(_ ⇒ Set[AnyRef]())
 }
 
 /**
@@ -79,44 +80,58 @@ class SubclassifiedIndex[K, V] private (private var values: Set[V])(implicit sc:
    * Add key to this index which inherits its value set from the most specific
    * super-class which is known.
    */
-  def addKey(key: K): Changes =
-    subkeys collectFirst {
-      case n if sc.isEqual(n.key, key)    ⇒ Nil
-      case n if sc.isSubclass(key, n.key) ⇒ n.addKey(key)
-    } getOrElse {
-      integrate(new Nonroot(key, values))
-      List((key, values))
+  def addKey(key: K): Changes = mergeChangesByKey(innerAddKey(key))
+
+  protected def innerAddKey(key: K): Changes = {
+    var found = false
+    val ch = subkeys flatMap { n ⇒
+      if (sc.isEqual(key, n.key)) {
+        found = true
+        Nil
+      } else if (sc.isSubclass(key, n.key)) {
+        found = true
+        n.innerAddKey(key)
+      } else Nil
     }
+    if (!found) {
+      integrate(new Nonroot(key, values))
+      Seq((key, values))
+    } else ch
+  }
 
   /**
    * Add value to all keys which are subclasses of the given key. If the key
    * is not known yet, it is inserted as if using addKey.
    */
-  def addValue(key: K, value: V): Changes = {
+  def addValue(key: K, value: V): Changes = mergeChangesByKey(innerAddValue(key, value))
+
+  protected def innerAddValue(key: K, value: V): Changes = {
     var found = false
     val ch = subkeys flatMap { n ⇒
       if (sc.isSubclass(key, n.key)) {
         found = true
-        n.addValue(key, value)
+        n.innerAddValue(key, value)
       } else Nil
     }
     if (!found) {
       val v = values + value
       val n = new Nonroot(key, v)
       integrate(n)
-      n.addValue(key, value) :+ ((key, v))
+      n.innerAddValue(key, value) :+ (key -> v)
     } else ch
   }
 
   /**
    * Remove value from all keys which are subclasses of the given key.
+   * @return The keys and values that have been removed.
    */
-  def removeValue(key: K, value: V): Changes = {
+  def removeValue(key: K, value: V): Changes = mergeChangesByKey(innerRemoveValue(key, value))
+  protected def innerRemoveValue(key: K, value: V): Changes = {
     var found = false
     val ch = subkeys flatMap { n ⇒
       if (sc.isSubclass(key, n.key)) {
         found = true
-        n.removeValue(key, value)
+        n.innerRemoveValue(key, value)
       } else Nil
     }
     if (!found) {
@@ -129,7 +144,7 @@ class SubclassifiedIndex[K, V] private (private var values: Set[V])(implicit sc:
   /**
    * Remove value from all keys in the index.
    */
-  def removeValue(value: V): Changes = subkeys flatMap (_ removeValue value)
+  def removeValue(value: V): Changes = mergeChangesByKey(subkeys flatMap (_ removeValue value))
 
   override def toString = subkeys.mkString("SubclassifiedIndex(" + values + ",\n", ",\n", ")")
 
@@ -148,4 +163,8 @@ class SubclassifiedIndex[K, V] private (private var values: Set[V])(implicit sc:
     }
   }
 
+  private def mergeChangesByKey(changes: Changes): Changes =
+    (emptyMergeMap[K, V] /: changes) {
+      case (m, (k, s)) ⇒ m.updated(k, m(k) ++ s)
+    }.toSeq
 }
