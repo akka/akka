@@ -61,7 +61,6 @@
   <div class="main">
     <div class="container">
       <div class="page-title">{{ title }}</div>
-      <div id="cse" style="width: 100%;">Loading</div>
       <div class="pdf-link"><a href="{{ pathto('Akka.pdf', 1) }}"><img src="{{ pathto('_static/pdf-icon.png', 1) }}" style="height: 40px;" /></a></div>
     </div>
     <div class="main-container">
@@ -85,10 +84,15 @@
               <li>
                 Version {{ version|e }}
               </li>
-            </ul>         
+            </ul>
           </div>
         </div>
         <div class="row">
+          {%- if include_analytics %}
+          <div class="span9">
+            <div id="cse">Loading</div>
+          </div>
+          {%- endif -%}
           <div class="span9">
             {% block body %}{% endblock %}
           </div>
@@ -154,22 +158,24 @@
     customSearchControl.draw('cse');
     }, true);
 </script>
-
+{%- if include_analytics %}
 <style type="text/css">
     .gsc-control-cse {
     font-family: Arial, sans-serif;
-    border-color: #FFFFFF;
-    background-color: #FFFFFF;
+    border-color: rgb(242, 242, 235);
+    background-color: rgb(242, 242, 235);
     }
     .gsc-control-cse .gsc-table-result {
-    font-family: Arial, sans-serif;
+      font-family: Arial, sans-serif;
+      display: block;
     }
     input.gsc-input {
     border-color: #BBBBBB;
     }
     input.gsc-search-button {
-    border-color: #000000;
-    background-color: #333333;
+    border-color: rgb(34, 57, 64);
+    background-color: rgb(68, 114, 129);
+    color: #FFFFFF;
     }
     .gsc-tabHeader.gsc-tabhInactive {
     border-color: #777777;
@@ -184,16 +190,18 @@
     }
     .gsc-webResult.gsc-result,
     .gsc-results .gsc-imageResult {
-    border-color: #FFFFFF;
-    background-color: #FFFFFF;
+      border-color: #666666;
+      background-color: #FFFFFF;
+      padding: 0.5em 0.5em;
     }
     .gsc-webResult.gsc-result:hover,
     .gsc-imageResult:hover {
-    border-color: #000000;
-    background-color: #FFFFFF;
+      border-color: #AAAAAA;
+      background-color: #FFFFFF;
+      padding: 0.5em 0.5em;
     }
     .gsc-webResult.gsc-result.gsc-promotion:hover {
-    border-color: #000000;
+    border-color: #AAAAAA;
     background-color: #FFFFFF;
     }
     .gs-webResult.gs-result a.gs-title:link,
@@ -303,6 +311,7 @@
     color: #00CC00;
     }
 </style>
+{%- endif %}
 <script type="text/javascript">
   $('#toc').toc();
 </script>
