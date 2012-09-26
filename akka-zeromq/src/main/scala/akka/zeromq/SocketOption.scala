@@ -34,6 +34,12 @@ sealed trait SocketConnectOption extends SocketOption {
 }
 
 /**
+ * A base trait for timeout values for a ZeroMQ socket
+ */
+sealed trait SocketTimeoutValue extends SocketOption {
+
+}
+/**
  * A base trait for pubsub options for the ZeroMQ socket
  */
 sealed trait PubSubOption extends SocketOption {
@@ -51,6 +57,13 @@ sealed trait SocketOptionQuery extends Request
  * @param endpoint URI (ex. tcp://127.0.0.1:5432)
  */
 case class Connect(endpoint: String) extends SocketConnectOption
+
+/**
+ * Start listening with this server socket on the specified address
+ *
+ * @param endpoint
+ */
+case class Bind(endpoint: String) extends SocketConnectOption
 
 /**
  * Companion object for a ZeroMQ I/O thread pool
@@ -141,25 +154,6 @@ object SocketType {
  * @param listener
  */
 case class Listener(listener: ActorRef) extends SocketMeta
-
-/**
- * An option containing the configuration key for the poller loop dispatcher
- * @param name
- */
-case class PollDispatcher(name: String) extends SocketMeta
-
-/**
- * An option containing the duration a poll cycle should wait for a message before it loops
- * @param duration
- */
-case class PollTimeoutDuration(duration: Duration = 100 millis) extends SocketMeta
-
-/**
- * Start listening with this server socket on the specified address
- *
- * @param endpoint
- */
-case class Bind(endpoint: String) extends SocketConnectOption
 
 /**
  * The [[akka.zeromq.Subscribe]] option establishes a new message filter on a [[akka.zeromq.SocketType.Pub]] socket.
@@ -525,3 +519,15 @@ object ReceiveBufferSize extends SocketOptionQuery
  * Gets the file descriptor associated with the ZeroMQ socket
  */
 object FileDescriptor extends SocketOptionQuery
+
+/**
+ * The timeout value for the recv method in blocking mode
+ * @param duration
+ */
+case class ReceiveTimeout(duration: Duration = 100 millis) extends SocketOption
+
+/**
+ * The timeout value for the send method in blocking mode
+ * @param duration
+ */
+case class SendTimeout(duration: Duration = 100 millis) extends SocketOption

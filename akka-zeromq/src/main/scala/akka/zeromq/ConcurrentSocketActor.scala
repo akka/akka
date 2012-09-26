@@ -100,6 +100,8 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     case MulticastHops(value)        ⇒ socket.setMulticastHops(value)
     case SendBufferSize(value)       ⇒ socket.setSendBufferSize(value)
     case ReceiveBufferSize(value)    ⇒ socket.setReceiveBufferSize(value)
+    case ReceiveTimeout(duration)    ⇒ socket.setReceiveTimeOut(duration.toMillis.toInt)
+    case SendTimeout(duration)       ⇒ socket.setSendTimeOut(duration.toMillis.toInt)
     case d: Deserializer             ⇒ deserializer = d
   }
 
@@ -127,6 +129,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   override def preStart {
     watchListener()
     setupSocket()
+    setupTimeout()
     setupConnection()
 
     pollingMode match {
@@ -139,6 +142,11 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   private def setupConnection(): Unit = {
     params filter (_.isInstanceOf[SocketConnectOption]) foreach { self ! _ }
     params filter (_.isInstanceOf[PubSubOption]) foreach { self ! _ }
+  }
+
+  private def setupTimeout(): Unit = {
+    self ! ReceiveTimeout(recvTimeoutValue)
+    self ! SendTimeout(sendTimeoutValue)
   }
 
   private def deserializerFromParams: Deserializer =
@@ -157,7 +165,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     if (socket != null) {
       socket.close
     }
-  } finally notifyListener(Closed)
+  } finally { notifyListener(Closed) }
 
   @tailrec private def flushMessage(i: Seq[Frame]): Boolean =
     if (i.isEmpty) {
@@ -181,23 +189,29 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   @tailrec private def flush(): Unit =
     if (pendingSends.nonEmpty && flushMessage(pendingSends.remove(0))) flush() // Flush while things are going well
 
+  private val recvTimeoutValue = {
+    val ext = ZeroMQExtension(context.system)
+    val fromConfig = params collectFirst { case ReceiveTimeout(duration) ⇒ duration }
+    fromConfig getOrElse ext.DefaultRecvTimeout
+  }
+
+  private val sendTimeoutValue = {
+    val ext = ZeroMQExtension(context.system)
+    val fromConfig = params collectFirst { case SendTimeout(duration) ⇒ duration }
+    fromConfig getOrElse ext.DefaultSendTimeout
+  }
   /**
    * Compiles the methods that will deal with polling.
    * Depending on the sign of the timeout, we either schedule a poll or send the message immediately.
    */
   private val doPollTimeoutIfNeeded = {
-    val ext = ZeroMQExtension(context.system)
-    val fromConfig = params collectFirst { case PollTimeoutDuration(duration) ⇒ duration }
-    val duration = (fromConfig getOrElse ext.DefaultPollTimeout)
+    val duration = recvTimeoutValue
 
-    if (duration > Duration.Zero) {
-      socket.setReceiveTimeOut(duration.toMillis)
-
+    if (duration.toMillis > 0) {
       (msg: PollMsg) ⇒ self ! msg
     } else {
       val d = -duration
       import context.dispatcher
-
       (msg: PollMsg) ⇒ context.system.scheduler.scheduleOnce(d, self, msg)
     }
   }

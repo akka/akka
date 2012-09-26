@@ -43,7 +43,8 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
  */
 class ZeroMQExtension(system: ActorSystem) extends Extension {
 
-  val DefaultPollTimeout: FiniteDuration = Duration(system.settings.config.getMilliseconds("akka.zeromq.poll-timeout"), TimeUnit.MILLISECONDS)
+  val DefaultRecvTimeout: FiniteDuration = Duration(system.settings.config.getMilliseconds("akka.zeromq.recv-timeout"), TimeUnit.MILLISECONDS)
+  val DefaultSendTimeout: FiniteDuration = Duration(system.settings.config.getMilliseconds("akka.zeromq.send-timeout"), TimeUnit.MILLISECONDS)
   val NewSocketTimeout: Timeout = Timeout(Duration(system.settings.config.getMilliseconds("akka.zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
 
   val pollTimeUnit = if (version.major >= 3) TimeUnit.MILLISECONDS else TimeUnit.MICROSECONDS
