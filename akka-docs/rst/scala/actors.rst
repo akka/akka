@@ -207,8 +207,9 @@ Last but not least there is a little bit of convenience magic built-in, which
 detects if the runtime class of the statically given actor subtype extends the
 :class:`Stash` trait (this is a complicated way of saying that ``new Act with
 Stash`` would not work because its runtime erased type is just an anonymous
-subtype of ``Act``). If you want to use this magic, simply extend
-:class:`ActWithStash`:
+subtype of ``Act``). The purpose is to automatically use a dispatcher with the
+appropriate deque-based mailbox, ``akka.actor.default-stash-dispatcher``. 
+If you want to use this magic, simply extend :class:`ActWithStash`:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#act-with-stash
 
