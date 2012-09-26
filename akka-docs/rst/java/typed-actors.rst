@@ -53,16 +53,21 @@ Creating Typed Actors
 
 To create a Typed Actor you need to have one or more interfaces, and one implementation.
 
+The following imports are assumed:
+
+.. includecode:: code/docs/actor/TypedActorDocTestBase.java
+   :include: imports
+
 Our example interface:
 
 .. includecode:: code/docs/actor/TypedActorDocTestBase.java
-   :include: imports,typed-actor-iface
+   :include: typed-actor-iface
    :exclude: typed-actor-iface-methods
 
 Our example implementation of that interface:
 
 .. includecode:: code/docs/actor/TypedActorDocTestBase.java
-   :include: imports,typed-actor-impl
+   :include: typed-actor-impl
    :exclude: typed-actor-impl-methods
 
 The most trivial way of creating a Typed Actor instance
@@ -81,12 +86,12 @@ Since you supply a ``Props``, you can specify which dispatcher to use, what the 
 Now, our ``Squarer`` doesn't have any methods, so we'd better add those.
 
 .. includecode:: code/docs/actor/TypedActorDocTestBase.java
-   :include: imports,typed-actor-iface
+   :include: typed-actor-iface
 
 Alright, now we've got some methods we can call, but we need to implement those in ``SquarerImpl``.
 
 .. includecode:: code/docs/actor/TypedActorDocTestBase.java
-   :include: imports,typed-actor-impl
+   :include: typed-actor-impl
 
 Excellent, now we have an interface and an implementation of that interface,
 and we know how to create a Typed Actor from that, so let's look at calling these methods.

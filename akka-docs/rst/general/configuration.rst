@@ -224,7 +224,8 @@ differentiate actor systems within the hierarchy of the configuration::
 
   val config = ConfigFactory.load()
   val app1 = ActorSystem("MyApp1", config.getConfig("myapp1").withFallback(config))
-  val app2 = ActorSystem("MyApp2", config.getConfig("myapp2").withOnlyPath("akka").withFallback(config))
+  val app2 = ActorSystem("MyApp2",
+    config.getConfig("myapp2").withOnlyPath("akka").withFallback(config))
 
 These two samples demonstrate different variations of the “lift-a-subtree”
 trick: in the first case, the configuration accessible from within the actor

@@ -17,7 +17,8 @@ public class RouterViaConfigExample {
     public void onReceive(Object msg) {
       if (msg instanceof Message) {
         Message message = (Message) msg;
-        System.out.println(String.format("Received %s in router %s", message.getNbr(), getSelf().path().name()));
+        System.out.println(String.format("Received %s in router %s",
+          message.getNbr(), getSelf().path().name()));
       } else {
         unhandled(msg);
       }
@@ -42,14 +43,16 @@ public class RouterViaConfigExample {
         + "    router = round-robin\n" + "    nr-of-instances = 5\n" + "  }\n" + "}\n");
     ActorSystem system = ActorSystem.create("Example", config);
     //#configurableRouting
-    ActorRef router = system.actorOf(new Props(ExampleActor.class).withRouter(new FromConfig()), "router");
+    ActorRef router = system.actorOf(
+      new Props(ExampleActor.class).withRouter(new FromConfig()), "router");
     //#configurableRouting
     for (int i = 1; i <= 10; i++) {
       router.tell(new ExampleActor.Message(i), null);
     }
 
     //#configurableRoutingWithResizer
-    ActorRef router2 = system.actorOf(new Props(ExampleActor.class).withRouter(new FromConfig()), "router2");
+    ActorRef router2 = system.actorOf(
+      new Props(ExampleActor.class).withRouter(new FromConfig()), "router2");
     //#configurableRoutingWithResizer
     for (int i = 1; i <= 10; i++) {
       router2.tell(new ExampleActor.Message(i), null);

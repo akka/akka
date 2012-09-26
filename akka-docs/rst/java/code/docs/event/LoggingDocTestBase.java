@@ -76,8 +76,8 @@ public class LoggingDocTestBase {
 
     @Override
     public void preRestart(Throwable reason, Option<Object> message) {
-      log.error(reason, "Restarting due to [{}] when processing [{}]", reason.getMessage(),
-          message.isDefined() ? message.get() : "");
+      log.error(reason, "Restarting due to [{}] when processing [{}]",
+        reason.getMessage(), message.isDefined() ? message.get() : "");
     }
 
     public void onReceive(Object message) {
@@ -109,8 +109,9 @@ public class LoggingDocTestBase {
   }
   //#my-event-listener
 
+  static
   //#deadletter-actor
-  public static class DeadLetterActor extends UntypedActor {
+  public class DeadLetterActor extends UntypedActor {
     public void onReceive(Object message) {
       if (message instanceof DeadLetter) {
         System.out.println(message);

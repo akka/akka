@@ -98,9 +98,9 @@ Each actor path has an address component, describing the protocol and location
 by which the corresponding actor is reachable, followed by the names of the
 actors in the hierarchy from the root up. Examples are::
 
-  "akka://my-system/user/service-a/worker1"               // purely local
-  "akka://my-system@serv.example.com:5678/user/service-b" // local or remote
-  "cluster://my-cluster/service-c"                       // clustered (Future Extension)
+  "akka://my-sys/user/service-a/worker1"               // purely local
+  "akka://my-sys@host.example.com:5678/user/service-b" // local or remote
+  "cluster://my-cluster/service-c"                     // clustered (Future Extension)
 
 Here, ``akka`` is the default remote protocol for the 2.0 release, and others
 are pluggable. The interpretation of the host & port part (i.e.

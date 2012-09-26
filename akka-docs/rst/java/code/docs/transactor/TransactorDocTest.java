@@ -30,7 +30,8 @@ public class TransactorDocTest {
 
         counter1.tell(new Coordinated(new Increment(counter2), timeout), null);
 
-        Integer count = (Integer) Await.result(ask(counter1, "GetCount", timeout), timeout.duration());
+        Integer count = (Integer) Await.result(
+          ask(counter1, "GetCount", timeout), timeout.duration());
         //#coordinated-example
 
         assertEquals(count, new Integer(1));

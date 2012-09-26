@@ -23,8 +23,9 @@ public class TypedActorDocTestBase {
     Object someReference = null;
     ActorSystem system = null;
 
+    static
     //#typed-actor-iface
-    public static interface Squarer {
+    public interface Squarer {
       //#typed-actor-iface-methods
       void squareDontCare(int i); //fire-forget
 
@@ -37,8 +38,9 @@ public class TypedActorDocTestBase {
     }
     //#typed-actor-iface
 
+    static
     //#typed-actor-impl
-    static class SquarerImpl implements Squarer {
+    class SquarerImpl implements Squarer {
       private String name;
 
       public SquarerImpl() {
@@ -107,14 +109,16 @@ public class TypedActorDocTestBase {
     try {
     //#typed-actor-create1
     Squarer mySquarer =
-      TypedActor.get(system).typedActorOf(new TypedProps<SquarerImpl>(Squarer.class, SquarerImpl.class));
+      TypedActor.get(system).typedActorOf(
+        new TypedProps<SquarerImpl>(Squarer.class, SquarerImpl.class));
     //#typed-actor-create1
     //#typed-actor-create2
     Squarer otherSquarer =
-      TypedActor.get(system).typedActorOf(new TypedProps<SquarerImpl>(Squarer.class,
-        new Creator<SquarerImpl>() {
-          public SquarerImpl create() { return new SquarerImpl("foo"); }
-        }),
+      TypedActor.get(system).typedActorOf(
+        new TypedProps<SquarerImpl>(Squarer.class,
+          new Creator<SquarerImpl>() {
+            public SquarerImpl create() { return new SquarerImpl("foo"); }
+          }),
         "name");
     //#typed-actor-create2
 
@@ -136,7 +140,8 @@ public class TypedActorDocTestBase {
     //#typed-actor-call-strict
     //#typed-actor-calls
 
-    assertEquals(100, Await.result(fSquare, Duration.create(3, TimeUnit.SECONDS)).intValue());
+    assertEquals(100, Await.result(fSquare,
+      Duration.create(3, TimeUnit.SECONDS)).intValue());
 
     assertEquals(100, oSquare.get().intValue());
 
@@ -150,26 +155,26 @@ public class TypedActorDocTestBase {
     TypedActor.get(system).poisonPill(otherSquarer);
     //#typed-actor-poisonpill
     } catch(Exception e) {
-//Ignore
+      //Ignore
     }
   }
 
-    @Test public void createHierarchies() {
-        try {
-            //#typed-actor-hierarchy
-            Squarer childSquarer =
-                    TypedActor.get(TypedActor.context()).
-                               typedActorOf(
-                                       new TypedProps<SquarerImpl>(Squarer.class, SquarerImpl.class)
-                               );
-            //Use "childSquarer" as a Squarer
-            //#typed-actor-hierarchy
-        } catch (Exception e) {
-            //dun care
-        }
+  @Test public void createHierarchies() {
+    try {
+    //#typed-actor-hierarchy
+    Squarer childSquarer =
+      TypedActor.get(TypedActor.context()).
+        typedActorOf(
+          new TypedProps<SquarerImpl>(Squarer.class, SquarerImpl.class)
+        );
+    //Use "childSquarer" as a Squarer
+    //#typed-actor-hierarchy
+    } catch (Exception e) {
+      //dun care
     }
+  }
 
- @Test public void proxyAnyActorRef() {
+  @Test public void proxyAnyActorRef() {
     try {
     //#typed-actor-remote
     Squarer typedActor =

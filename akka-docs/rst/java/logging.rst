@@ -12,7 +12,10 @@ Create a ``LoggingAdapter`` and use the ``error``, ``warning``, ``info``, or ``d
 as illustrated in this example:
 
 .. includecode:: code/docs/event/LoggingDocTestBase.java
-   :include: imports,my-actor
+   :include: imports
+
+.. includecode:: code/docs/event/LoggingDocTestBase.java
+   :include: my-actor
 
 The first parameter to ``Logging.getLogger`` could also be any
 :class:`LoggingBus`, specifically ``system.eventStream()``; in the demonstrated
@@ -74,7 +77,7 @@ by Actors:
     akka {
       actor {
         debug {
-          # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill and the like)
+          # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill et.c.)
           autoreceive = on
         }
       }
@@ -129,7 +132,8 @@ If you want to see all messages that are sent through remoting at DEBUG log leve
 
     akka {
       remote {
-        # If this is "on", Akka will log all outbound messages at DEBUG level, if off then they are not logged
+        # If this is "on", Akka will log all outbound messages at DEBUG level,
+        # if off then they are not logged
         log-sent-messages = on
       }
     }
@@ -141,7 +145,8 @@ If you want to see all messages that are received through remoting at DEBUG log 
 
     akka {
       remote {
-        # If this is "on", Akka will log all inbound messages at DEBUG level, if off then they are not logged
+        # If this is "on", Akka will log all inbound messages at DEBUG level,
+        # if off then they are not logged
         log-received-messages = on
       }
     }
@@ -171,8 +176,10 @@ event handler available in the 'akka-slf4j' module.
 Example of creating a listener:
 
 .. includecode:: code/docs/event/LoggingDocTestBase.java
-   :include: imports,imports-listener,my-event-listener
+   :include: imports,imports-listener
 
+.. includecode:: code/docs/event/LoggingDocTestBase.java
+   :include: my-event-listener
 
 .. _slf4j-java:
 
@@ -218,7 +225,7 @@ the first case and ``LoggerFactory.getLogger(String s)`` in the second).
 
 .. code-block:: scala
 
-  final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.nice.string");
+  final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.string");
 
 Logging Thread and Akka Source in MDC
 -------------------------------------

@@ -20,7 +20,8 @@ public class RouterViaProgramExample {
     public void onReceive(Object msg) {
       if (msg instanceof Message) {
         Message message = (Message) msg;
-        System.out.println(String.format("Received %s in router %s", message.getNbr(), getSelf().path().name()));
+        System.out.println(String.format("Received %s in router %s",
+          message.getNbr(), getSelf().path().name()));
       } else {
         unhandled(msg);
       }
@@ -44,7 +45,8 @@ public class RouterViaProgramExample {
     ActorSystem system = ActorSystem.create("RPE");
     //#programmaticRoutingNrOfInstances
     int nrOfInstances = 5;
-    ActorRef router1 = system.actorOf(new Props(ExampleActor.class).withRouter(new RoundRobinRouter(nrOfInstances)));
+    ActorRef router1 = system.actorOf(
+      new Props(ExampleActor.class).withRouter(new RoundRobinRouter(nrOfInstances)));
     //#programmaticRoutingNrOfInstances
     for (int i = 1; i <= 6; i++) {
       router1.tell(new ExampleActor.Message(i), null);
@@ -54,8 +56,10 @@ public class RouterViaProgramExample {
     ActorRef actor1 = system.actorOf(new Props(ExampleActor.class));
     ActorRef actor2 = system.actorOf(new Props(ExampleActor.class));
     ActorRef actor3 = system.actorOf(new Props(ExampleActor.class));
-    Iterable<ActorRef> routees = Arrays.asList(new ActorRef[] { actor1, actor2, actor3 });
-    ActorRef router2 = system.actorOf(new Props().withRouter(RoundRobinRouter.create(routees)));
+    Iterable<ActorRef> routees = Arrays.asList(
+      new ActorRef[] { actor1, actor2, actor3 });
+    ActorRef router2 = system.actorOf(
+      new Props().withRouter(RoundRobinRouter.create(routees)));
     //#programmaticRoutingRoutees
     for (int i = 1; i <= 6; i++) {
       router2.tell(new ExampleActor.Message(i), null);
@@ -65,7 +69,8 @@ public class RouterViaProgramExample {
     int lowerBound = 2;
     int upperBound = 15;
     DefaultResizer resizer = new DefaultResizer(lowerBound, upperBound);
-    ActorRef router3 = system.actorOf(new Props(ExampleActor.class).withRouter(new RoundRobinRouter(nrOfInstances)));
+    ActorRef router3 = system.actorOf(
+      new Props(ExampleActor.class).withRouter(new RoundRobinRouter(nrOfInstances)));
     //#programmaticRoutingWithResizer
     for (int i = 1; i <= 6; i++) {
       router3.tell(new ExampleActor.Message(i), null);

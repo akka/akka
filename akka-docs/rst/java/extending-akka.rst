@@ -26,12 +26,18 @@ So let's create a sample extension that just lets us count the number of times s
 First, we define what our ``Extension`` should do:
 
 .. includecode:: code/docs/extension/ExtensionDocTestBase.java
-   :include: imports,extension
+   :include: imports
+
+.. includecode:: code/docs/extension/ExtensionDocTestBase.java
+   :include: extension
 
 Then we need to create an ``ExtensionId`` for our extension so we can grab ahold of it.
 
 .. includecode:: code/docs/extension/ExtensionDocTestBase.java
-   :include: imports,extensionid
+   :include: imports
+
+.. includecode:: code/docs/extension/ExtensionDocTestBase.java
+   :include: extensionid
 
 Wicked! Now all we need to do is to actually use it:
 
@@ -78,8 +84,10 @@ Sample configuration:
 The ``Extension``:
 
 .. includecode:: code/docs/extension/SettingsExtensionDocTestBase.java
-   :include: imports,extension,extensionid
+   :include: imports
 
+.. includecode:: code/docs/extension/SettingsExtensionDocTestBase.java
+   :include: extension,extensionid
 
 Use it:
 

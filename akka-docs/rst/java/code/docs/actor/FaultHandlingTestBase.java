@@ -35,11 +35,13 @@ import org.junit.AfterClass;
 //#testkit
 public class FaultHandlingTestBase {
   //#testkit
+  static
   //#supervisor
-  static public class Supervisor extends UntypedActor {
+  public class Supervisor extends UntypedActor {
 
     //#strategy
-    private static SupervisorStrategy strategy = new OneForOneStrategy(10, Duration.parse("1 minute"),
+    private static SupervisorStrategy strategy =
+      new OneForOneStrategy(10, Duration.parse("1 minute"),
         new Function<Throwable, Directive>() {
           @Override
           public Directive apply(Throwable t) {
@@ -73,11 +75,13 @@ public class FaultHandlingTestBase {
 
   //#supervisor
 
+  static
   //#supervisor2
-  static public class Supervisor2 extends UntypedActor {
+  public class Supervisor2 extends UntypedActor {
 
     //#strategy2
-    private static SupervisorStrategy strategy = new OneForOneStrategy(10, Duration.parse("1 minute"),
+    private static SupervisorStrategy strategy = new OneForOneStrategy(10,
+      Duration.parse("1 minute"),
         new Function<Throwable, Directive>() {
           @Override
           public Directive apply(Throwable t) {
@@ -116,8 +120,9 @@ public class FaultHandlingTestBase {
 
   //#supervisor2
 
+  static
   //#child
-  static public class Child extends UntypedActor {
+  public class Child extends UntypedActor {
     int state = 0;
 
     public void onReceive(Object o) throws Exception {
@@ -163,7 +168,8 @@ public class FaultHandlingTestBase {
     //#create
     Props superprops = new Props(Supervisor.class);
     ActorRef supervisor = system.actorOf(superprops, "supervisor");
-    ActorRef child = (ActorRef) Await.result(ask(supervisor, new Props(Child.class), 5000), timeout);
+    ActorRef child = (ActorRef) Await.result(ask(supervisor,
+      new Props(Child.class), 5000), timeout);
     //#create
 
     //#resume
@@ -186,7 +192,8 @@ public class FaultHandlingTestBase {
     //#stop
 
     //#escalate-kill
-    child = (ActorRef) Await.result(ask(supervisor, new Props(Child.class), 5000), timeout);
+    child = (ActorRef) Await.result(ask(supervisor,
+      new Props(Child.class), 5000), timeout);
     probe.watch(child);
     assert Await.result(ask(child, "get", 5000), timeout).equals(0);
     child.tell(new Exception(), null);
@@ -196,7 +203,8 @@ public class FaultHandlingTestBase {
     //#escalate-restart
     superprops = new Props(Supervisor2.class);
     supervisor = system.actorOf(superprops);
-    child = (ActorRef) Await.result(ask(supervisor, new Props(Child.class), 5000), timeout);
+    child = (ActorRef) Await.result(ask(supervisor,
+      new Props(Child.class), 5000), timeout);
     child.tell(23, null);
     assert Await.result(ask(child, "get", 5000), timeout).equals(23);
     child.tell(new Exception(), null);
@@ -207,7 +215,8 @@ public class FaultHandlingTestBase {
 
   //#testkit
   public <A> Seq<A> seq(A... args) {
-    return JavaConverters.collectionAsScalaIterableConverter(java.util.Arrays.asList(args)).asScala().toSeq();
+    return JavaConverters.collectionAsScalaIterableConverter(
+      java.util.Arrays.asList(args)).asScala().toSeq();
   }
   //#testkit
 }

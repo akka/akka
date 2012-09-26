@@ -7,14 +7,12 @@ package docs.actor;
 import akka.actor.Props;
 import scala.concurrent.util.Duration;
 import java.util.concurrent.TimeUnit;
-
 //#imports1
 
 //#imports2
 import akka.actor.UntypedActor;
 import akka.actor.UntypedActorFactory;
 import akka.actor.Cancellable;
-
 //#imports2
 
 import akka.actor.ActorRef;
@@ -44,17 +42,17 @@ public class SchedulerDocTestBase {
   @Test
   public void scheduleOneOffTask() {
     //#schedule-one-off-message
-    //Schedules to send the "foo"-message to the testActor after 50ms
-    system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS), testActor, "foo", system.dispatcher());
+    system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
+      testActor, "foo", system.dispatcher());
     //#schedule-one-off-message
 
     //#schedule-one-off-thunk
-    //Schedules a Runnable to be executed (send the current time) to the testActor after 50ms
-    system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS), new Runnable() {
-      @Override
-      public void run() {
-        testActor.tell(System.currentTimeMillis(), null);
-      }
+    system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
+      new Runnable() {
+        @Override
+        public void run() {
+          testActor.tell(System.currentTimeMillis(), null);
+        }
     }, system.dispatcher());
     //#schedule-one-off-thunk
   }
@@ -62,24 +60,26 @@ public class SchedulerDocTestBase {
   @Test
   public void scheduleRecurringTask() {
     //#schedule-recurring
-    ActorRef tickActor = system.actorOf(new Props().withCreator(new UntypedActorFactory() {
-      public UntypedActor create() {
-        return new UntypedActor() {
-          public void onReceive(Object message) {
-            if (message.equals("Tick")) {
-              // Do someting
-            } else {
-              unhandled(message);
+    ActorRef tickActor = system.actorOf(new Props().withCreator(
+      new UntypedActorFactory() {
+        public UntypedActor create() {
+          return new UntypedActor() {
+            public void onReceive(Object message) {
+              if (message.equals("Tick")) {
+                // Do someting
+              } else {
+                unhandled(message);
+              }
             }
-          }
-        };
-      }
-    }));
+          };
+        }
+      }));
 
     //This will schedule to send the Tick-message
     //to the tickActor after 0ms repeating every 50ms
-    Cancellable cancellable = system.scheduler().schedule(Duration.Zero(), Duration.create(50, TimeUnit.MILLISECONDS),
-        tickActor, "Tick", system.dispatcher());
+    Cancellable cancellable = system.scheduler().schedule(Duration.Zero(),
+    Duration.create(50, TimeUnit.MILLISECONDS), tickActor, "Tick",
+    system.dispatcher());
 
     //This cancels further Ticks to be sent
     cancellable.cancel();

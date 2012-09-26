@@ -57,15 +57,18 @@ public class CustomRouterDocTestBase {
   public void demonstrateDispatchers() {
     //#dispatchers
     final ActorRef router = system.actorOf(new Props(MyActor.class)
-      .withRouter(new RoundRobinRouter(5).withDispatcher("head")) // “head” router runs on "head" dispatcher
-      .withDispatcher("workers")); // MyActor “workers” run on "workers" dispatcher
+      // “head” router runs on "head" dispatcher
+      .withRouter(new RoundRobinRouter(5).withDispatcher("head"))
+      // MyActor “workers” run on "workers" dispatcher
+      .withDispatcher("workers"));
     //#dispatchers
   }
   
   @Test
   public void demonstrateSupervisor() {
     //#supervision
-    final SupervisorStrategy strategy = new OneForOneStrategy(5, Duration.parse("1 minute"),
+    final SupervisorStrategy strategy =
+      new OneForOneStrategy(5, Duration.parse("1 minute"),
         new Class<?>[] { Exception.class });
     final ActorRef router = system.actorOf(new Props(MyActor.class)
         .withRouter(new RoundRobinRouter(5).withSupervisorStrategy(strategy)));
@@ -75,15 +78,18 @@ public class CustomRouterDocTestBase {
   //#crTest
   @Test
   public void countVotesAsIntendedNotAsInFlorida() throws Exception {
-    ActorRef routedActor = system.actorOf(new Props().withRouter(new VoteCountRouter()));
+    ActorRef routedActor = system.actorOf(
+      new Props().withRouter(new VoteCountRouter()));
     routedActor.tell(DemocratVote, null);
     routedActor.tell(DemocratVote, null);
     routedActor.tell(RepublicanVote, null);
     routedActor.tell(DemocratVote, null);
     routedActor.tell(RepublicanVote, null);
     Timeout timeout = new Timeout(Duration.create(1, "seconds"));
-    Future<Object> democratsResult = ask(routedActor, DemocratCountResult, timeout);
-    Future<Object> republicansResult = ask(routedActor, RepublicanCountResult, timeout);
+    Future<Object> democratsResult =
+      ask(routedActor, DemocratCountResult, timeout);
+    Future<Object> republicansResult =
+      ask(routedActor, RepublicanCountResult, timeout);
 
     assertEquals(3, Await.result(democratsResult, timeout.duration()));
     assertEquals(2, Await.result(republicansResult, timeout.duration()));
@@ -99,8 +105,11 @@ public class CustomRouterDocTestBase {
 
   //#crMessages
 
+  //#CustomRouter
+  static
+  //#CustomRouter
   //#crActors
-  public static class DemocratActor extends UntypedActor {
+  public class DemocratActor extends UntypedActor {
     int counter = 0;
 
     public void onReceive(Object msg) {
@@ -117,7 +126,12 @@ public class CustomRouterDocTestBase {
     }
   }
 
-  public static class RepublicanActor extends UntypedActor {
+  //#crActors
+  //#CustomRouter
+  static
+  //#CustomRouter
+  //#crActors
+  public class RepublicanActor extends UntypedActor {
     int counter = 0;
 
     public void onReceive(Object msg) {
@@ -135,9 +149,11 @@ public class CustomRouterDocTestBase {
   }
 
   //#crActors
-
+  //#CustomRouter
+  static
+  //#CustomRouter
   //#crRouter
-  public static class VoteCountRouter extends CustomRouterConfig {
+  public class VoteCountRouter extends CustomRouterConfig {
     
     @Override public String routerDispatcher() {
       return Dispatchers.DefaultDispatcherId();
@@ -150,9 +166,12 @@ public class CustomRouterDocTestBase {
     //#crRoute
     @Override
     public CustomRoute createCustomRoute(RouteeProvider routeeProvider) {
-      final ActorRef democratActor = routeeProvider.context().actorOf(new Props(DemocratActor.class), "d");
-      final ActorRef republicanActor = routeeProvider.context().actorOf(new Props(RepublicanActor.class), "r");
-      List<ActorRef> routees = Arrays.asList(new ActorRef[] { democratActor, republicanActor });
+      final ActorRef democratActor =
+        routeeProvider.context().actorOf(new Props(DemocratActor.class), "d");
+      final ActorRef republicanActor =
+        routeeProvider.context().actorOf(new Props(RepublicanActor.class), "r");
+      List<ActorRef> routees =
+        Arrays.asList(new ActorRef[] { democratActor, republicanActor });
 
       //#crRegisterRoutees
       routeeProvider.registerRoutees(routees);
@@ -165,10 +184,12 @@ public class CustomRouterDocTestBase {
           switch ((Message) msg) {
           case DemocratVote:
           case DemocratCountResult:
-            return Arrays.asList(new Destination[] { new Destination(sender, democratActor) });
+            return Arrays.asList(
+              new Destination[] { new Destination(sender, democratActor) });
           case RepublicanVote:
           case RepublicanCountResult:
-            return Arrays.asList(new Destination[] { new Destination(sender, republicanActor) });
+            return Arrays.asList(
+              new Destination[] { new Destination(sender, republicanActor) });
           default:
             throw new IllegalArgumentException("Unknown message: " + msg);
           }
@@ -182,5 +203,4 @@ public class CustomRouterDocTestBase {
 
   //#crRouter
   //#CustomRouter
-
 }

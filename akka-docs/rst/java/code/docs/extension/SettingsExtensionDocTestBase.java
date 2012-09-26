@@ -20,15 +20,17 @@ import org.junit.Test;
 
 public class SettingsExtensionDocTestBase {
 
+  static
   //#extension
-  public static class SettingsImpl implements Extension {
+  public class SettingsImpl implements Extension {
 
     public final String DB_URI;
     public final Duration CIRCUIT_BREAKER_TIMEOUT;
 
     public SettingsImpl(Config config) {
       DB_URI = config.getString("myapp.db.uri");
-      CIRCUIT_BREAKER_TIMEOUT = Duration.create(config.getMilliseconds("myapp.circuit-breaker.timeout"),
+      CIRCUIT_BREAKER_TIMEOUT =
+        Duration.create(config.getMilliseconds("myapp.circuit-breaker.timeout"),
           TimeUnit.MILLISECONDS);
     }
 
@@ -36,8 +38,10 @@ public class SettingsExtensionDocTestBase {
 
   //#extension
 
+  static
   //#extensionid
-  public static class Settings extends AbstractExtensionId<SettingsImpl> implements ExtensionIdProvider {
+  public class Settings extends AbstractExtensionId<SettingsImpl>
+    implements ExtensionIdProvider {
     public final static Settings SettingsProvider = new Settings();
 
     public Settings lookup() {
@@ -51,13 +55,16 @@ public class SettingsExtensionDocTestBase {
 
   //#extensionid
 
+  static
   //#extension-usage-actor
-  public static class MyActor extends UntypedActor {
-    // typically you would use static import of CountExtension.CountExtensionProvider field
-    final SettingsImpl settings = Settings.SettingsProvider.get(getContext().system());
-    Connection connection = connect(settings.DB_URI, settings.CIRCUIT_BREAKER_TIMEOUT);
+  public class MyActor extends UntypedActor {
+    // typically you would use static import of the Settings.SettingsProvider field
+    final SettingsImpl settings =
+      Settings.SettingsProvider.get(getContext().system());
+    Connection connection =
+      connect(settings.DB_URI, settings.CIRCUIT_BREAKER_TIMEOUT);
 
-    //#extension-usage-actor
+  //#extension-usage-actor
 
     public Connection connect(String dbUri, Duration circuitBreakerTimeout) {
       return new Connection();
@@ -65,8 +72,9 @@ public class SettingsExtensionDocTestBase {
 
     public void onReceive(Object msg) {
     }
-
+  //#extension-usage-actor
   }
+  //#extension-usage-actor
 
   public static class Connection {
   }
@@ -76,7 +84,7 @@ public class SettingsExtensionDocTestBase {
     final ActorSystem system = null;
     try {
       //#extension-usage
-      // typically you would use static import of CountExtension.CountExtensionProvider field
+      // typically you would use static import of the Settings.SettingsProvider field
       String dbUri = Settings.SettingsProvider.get(system).DB_URI;
       //#extension-usage
     } catch (Exception e) {

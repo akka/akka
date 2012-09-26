@@ -3,32 +3,28 @@
  */
 package docs.zeromq;
 
-//#pub-socket
+//#import-pub-socket
 import akka.zeromq.Bind;
 import akka.zeromq.ZeroMQExtension;
-
-//#pub-socket
-//#sub-socket
+//#import-pub-socket
+//#import-sub-socket
 import akka.zeromq.Connect;
 import akka.zeromq.Listener;
 import akka.zeromq.Subscribe;
-
-//#sub-socket
-//#unsub-topic-socket
+//#import-sub-socket
+//#import-unsub-topic-socket
 import akka.zeromq.Unsubscribe;
-
-//#unsub-topic-socket
-//#pub-topic
+//#import-unsub-topic-socket
+//#import-pub-topic
 import akka.zeromq.Frame;
 import akka.zeromq.ZMQMessage;
-
-//#pub-topic
+//#import-pub-topic
 
 import akka.zeromq.HighWatermark;
 import akka.zeromq.SocketOption;
 import akka.zeromq.ZeroMQVersion;
 
-//#health
+//#import-health
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.actor.Props;
@@ -39,7 +35,7 @@ import akka.serialization.SerializationExtension;
 import akka.serialization.Serialization;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-//#health
+//#import-health
 
 import com.typesafe.config.ConfigFactory;
 
@@ -77,18 +73,21 @@ public class ZeromqDocTestBase {
     Assume.assumeTrue(checkZeroMQInstallation());
 
     //#pub-socket
-    ActorRef pubSocket = ZeroMQExtension.get(system).newPubSocket(new Bind("tcp://127.0.0.1:1233"));
+    ActorRef pubSocket = ZeroMQExtension.get(system).newPubSocket(
+      new Bind("tcp://127.0.0.1:1233"));
     //#pub-socket
 
     //#sub-socket
     ActorRef listener = system.actorOf(new Props(ListenerActor.class));
-    ActorRef subSocket = ZeroMQExtension.get(system).newSubSocket(new Connect("tcp://127.0.0.1:1233"),
-        new Listener(listener), Subscribe.all());
+    ActorRef subSocket = ZeroMQExtension.get(system).newSubSocket(
+      new Connect("tcp://127.0.0.1:1233"),
+      new Listener(listener), Subscribe.all());
     //#sub-socket
 
     //#sub-topic-socket
-    ActorRef subTopicSocket = ZeroMQExtension.get(system).newSubSocket(new Connect("tcp://127.0.0.1:1233"),
-        new Listener(listener), new Subscribe("foo.bar"));
+    ActorRef subTopicSocket = ZeroMQExtension.get(system).newSubSocket(
+      new Connect("tcp://127.0.0.1:1233"),
+      new Listener(listener), new Subscribe("foo.bar"));
     //#sub-topic-socket
 
     //#unsub-topic-socket
@@ -102,7 +101,8 @@ public class ZeromqDocTestBase {
 
     //#high-watermark
     ActorRef highWatermarkSocket = ZeroMQExtension.get(system).newRouterSocket(
-        new SocketOption[] { new Listener(listener), new Bind("tcp://127.0.0.1:1233"), new HighWatermark(50000) });
+        new SocketOption[] { new Listener(listener),
+          new Bind("tcp://127.0.0.1:1233"), new HighWatermark(50000) });
     //#high-watermark
   }
 
@@ -139,20 +139,23 @@ public class ZeromqDocTestBase {
     }
   }
 
+  static
   //#listener-actor
-  public static class ListenerActor extends UntypedActor {
+  public class ListenerActor extends UntypedActor {
     public void onReceive(Object message) throws Exception {
       //...
     }
   }
-
   //#listener-actor
 
+  static
   //#health
+  public final Object TICK = "TICK";
 
-  public static final Object TICK = "TICK";
-
-  public static class Heap implements Serializable {
+  //#health
+  static
+  //#health
+  public class Heap implements Serializable {
     public final long timestamp;
     public final long used;
     public final long max;
@@ -164,7 +167,10 @@ public class ZeromqDocTestBase {
     }
   }
 
-  public static class Load implements Serializable {
+  //#health
+  static
+  //#health
+  public class Load implements Serializable {
     public final long timestamp;
     public final double loadAverage;
 
@@ -174,9 +180,13 @@ public class ZeromqDocTestBase {
     }
   }
 
-  public static class HealthProbe extends UntypedActor {
+  //#health
+  static
+  //#health
+  public class HealthProbe extends UntypedActor {
 
-    ActorRef pubSocket = ZeroMQExtension.get(getContext().system()).newPubSocket(new Bind("tcp://127.0.0.1:1237"));
+    ActorRef pubSocket = ZeroMQExtension.get(getContext().system()).newPubSocket(
+      new Bind("tcp://127.0.0.1:1237"));
     MemoryMXBean memory = ManagementFactory.getMemoryMXBean();
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
     Serialization ser = SerializationExtension.get(getContext().system());
@@ -184,7 +194,8 @@ public class ZeromqDocTestBase {
     @Override
     public void preStart() {
       getContext().system().scheduler()
-          .schedule(Duration.create(1, "second"), Duration.create(1, "second"), getSelf(), TICK, getContext().dispatcher());
+          .schedule(Duration.create(1, "second"), Duration.create(1, "second"),
+            getSelf(), TICK, getContext().dispatcher());
     }
 
     @Override
@@ -202,25 +213,29 @@ public class ZeromqDocTestBase {
         byte[] heapPayload = ser.serializerFor(Heap.class).toBinary(
             new Heap(timestamp, currentHeap.getUsed(), currentHeap.getMax()));
         // the first frame is the topic, second is the message
-        pubSocket.tell(new ZMQMessage(new Frame("health.heap"), new Frame(heapPayload)), getSelf());
+        pubSocket.tell(new ZMQMessage(new Frame("health.heap"),
+          new Frame(heapPayload)), getSelf());
 
         // use akka SerializationExtension to convert to bytes
-        byte[] loadPayload = ser.serializerFor(Load.class).toBinary(new Load(timestamp, os.getSystemLoadAverage()));
+        byte[] loadPayload = ser.serializerFor(Load.class).toBinary(
+          new Load(timestamp, os.getSystemLoadAverage()));
         // the first frame is the topic, second is the message
-        pubSocket.tell(new ZMQMessage(new Frame("health.load"), new Frame(loadPayload)), getSelf());
+        pubSocket.tell(new ZMQMessage(new Frame("health.load"),
+          new Frame(loadPayload)), getSelf());
       } else {
         unhandled(message);
       }
     }
 
   }
-
   //#health
 
+  static
   //#logger
-  public static class Logger extends UntypedActor {
+  public class Logger extends UntypedActor {
 
-    ActorRef subSocket = ZeroMQExtension.get(getContext().system()).newSubSocket(new Connect("tcp://127.0.0.1:1237"),
+    ActorRef subSocket = ZeroMQExtension.get(getContext().system()).newSubSocket(
+      new Connect("tcp://127.0.0.1:1237"),
         new Listener(getSelf()), new Subscribe("health"));
     Serialization ser = SerializationExtension.get(getContext().system());
     SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS");
@@ -233,10 +248,12 @@ public class ZeromqDocTestBase {
         // the first frame is the topic, second is the message
         if (m.firstFrameAsString().equals("health.heap")) {
           Heap heap = (Heap) ser.serializerFor(Heap.class).fromBinary(m.payload(1));
-          log.info("Used heap {} bytes, at {}", heap.used, timestampFormat.format(new Date(heap.timestamp)));
+          log.info("Used heap {} bytes, at {}", heap.used,
+            timestampFormat.format(new Date(heap.timestamp)));
         } else if (m.firstFrameAsString().equals("health.load")) {
           Load load = (Load) ser.serializerFor(Load.class).fromBinary(m.payload(1));
-          log.info("Load average {}, at {}", load.loadAverage, timestampFormat.format(new Date(load.timestamp)));
+          log.info("Load average {}, at {}", load.loadAverage,
+            timestampFormat.format(new Date(load.timestamp)));
         }
       } else {
         unhandled(message);
@@ -247,11 +264,13 @@ public class ZeromqDocTestBase {
 
   //#logger
 
+  static
   //#alerter
-  public static class HeapAlerter extends UntypedActor {
+  public class HeapAlerter extends UntypedActor {
 
-    ActorRef subSocket = ZeroMQExtension.get(getContext().system()).newSubSocket(new Connect("tcp://127.0.0.1:1237"),
-        new Listener(getSelf()), new Subscribe("health.heap"));
+    ActorRef subSocket = ZeroMQExtension.get(getContext().system()).newSubSocket(
+      new Connect("tcp://127.0.0.1:1237"),
+      new Listener(getSelf()), new Subscribe("health.heap"));
     Serialization ser = SerializationExtension.get(getContext().system());
     LoggingAdapter log = Logging.getLogger(getContext().system(), this);
     int count = 0;
@@ -269,7 +288,8 @@ public class ZeromqDocTestBase {
             count = 0;
           }
           if (count > 10) {
-            log.warning("Need more memory, using {} %", (100.0 * heap.used / heap.max));
+            log.warning("Need more memory, using {} %",
+              (100.0 * heap.used / heap.max));
           }
         }
       } else {

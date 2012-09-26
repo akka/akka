@@ -22,8 +22,9 @@ import akka.testkit.AkkaSpec;
 
 public class FSMDocTestBase {
 
+  static
   //#data
-  public static final class SetTarget {
+  public final class SetTarget {
     final ActorRef ref;
 
     public SetTarget(ActorRef ref) {
@@ -31,7 +32,10 @@ public class FSMDocTestBase {
     }
   }
 
-  public static final class Queue {
+  //#data
+  static
+  //#data
+  public final class Queue {
     final Object o;
 
     public Queue(Object o) {
@@ -39,9 +43,15 @@ public class FSMDocTestBase {
     }
   }
 
-  public static final Object flush = new Object();
+  //#data
+  static
+  //#data
+  public final Object flush = new Object();
 
-  public static final class Batch {
+  //#data
+  static
+  //#data
+  public final class Batch {
     final List<Object> objects;
 
     public Batch(List<Object> objects) {
@@ -51,8 +61,9 @@ public class FSMDocTestBase {
 
   //#data
 
+  static
   //#base
-  static abstract class MyFSMBase extends UntypedActor {
+  public abstract class MyFSMBase extends UntypedActor {
 
     /*
      * This is the mutable state of this state machine.
@@ -118,10 +129,12 @@ public class FSMDocTestBase {
 
   //#base
 
+  static
   //#actor
-  static public class MyFSM extends MyFSMBase {
+  public class MyFSM extends MyFSMBase {
 
-    private final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+    private final LoggingAdapter log =
+      Logging.getLogger(getContext().system(), this);
 
     @Override
     public void onReceive(Object o) {
