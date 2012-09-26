@@ -49,8 +49,7 @@ multiverse.log
 .eprj
 .*.swp
 akka-docs/_build/
-akka-docs/rst_html
-akka-docs/rst_latex
+akka-docs/rst_preprocessed/
 *.pyc
 akka-docs/exts/
 _akka_cluster/
