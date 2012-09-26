@@ -380,8 +380,13 @@ private[akka] class ActorCell(
       publish(Debug(self.path.toString, clazz(actor), "received AutoReceiveMessage " + msg))
 
     msg.message match {
-      case Failed(cause, uid)         ⇒ handleFailure(sender, cause, uid)
-      case t: Terminated              ⇒ watchedActorTerminated(t)
+      case Failed(cause, uid) ⇒ handleFailure(sender, cause, uid)
+      case t: Terminated ⇒
+        // when a parent is watching a child and it terminates due to AddressTerminated,
+        // it should be removed to support immediate creation of child with same name
+        if (t.addressTerminated)
+          childrenRefs.getByRef(t.actor) foreach { crs ⇒ removeChildAndGetStateChange(crs.child) }
+        watchedActorTerminated(t)
       case AddressTerminated(address) ⇒ addressTerminated(address)
       case Kill                       ⇒ throw new ActorKilledException("Kill")
       case PoisonPill                 ⇒ self.stop()

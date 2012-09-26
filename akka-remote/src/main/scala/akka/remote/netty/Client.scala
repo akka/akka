@@ -213,11 +213,12 @@ private[akka] class ActiveRemoteClient private[akka] (
       reconnectionTimeWindowStart = System.currentTimeMillis
       true
     } else {
-      val timeLeft = (settings.ReconnectionTimeWindow.toMillis - (System.currentTimeMillis - reconnectionTimeWindowStart)) > 0
-      if (timeLeft)
+      val timeLeft = (settings.ReconnectionTimeWindow.toMillis - (System.currentTimeMillis - reconnectionTimeWindowStart))
+      val hasTimeLeft = timeLeft > 0
+      if (hasTimeLeft)
         log.info("Will try to reconnect to remote server for another [{}] milliseconds", timeLeft)
 
-      timeLeft
+      hasTimeLeft
     }
   }
 

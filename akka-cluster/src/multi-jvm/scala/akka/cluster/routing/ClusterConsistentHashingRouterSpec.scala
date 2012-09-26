@@ -104,9 +104,24 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
         expectMsg(destinationA)
       }
       enterBarrier("after-2")
+
+      runOn(first) {
+        testConductor.shutdown(second, 0)
+        enterBarrier("second-shutdown")
+
+        println("## sleeping in master")
+        Thread.sleep(15000)
+        println("## done sleeping in master")
+      }
+
+      runOn(second, third) {
+        enterBarrier("second-shutdown")
+        Thread.sleep(15000)
+      }
+
     }
 
-    "deploy routees to new member nodes in the cluster" taggedAs LongRunningTest in {
+    "deploy routees to new member nodes in the cluster" taggedAs LongRunningTest ignore {
 
       awaitClusterUp(first, second, third)
 
@@ -121,7 +136,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
       enterBarrier("after-3")
     }
 
-    "deploy programatically defined routees to the member nodes in the cluster" taggedAs LongRunningTest in {
+    "deploy programatically defined routees to the member nodes in the cluster" taggedAs LongRunningTest ignore {
       runOn(first) {
         val router2 = system.actorOf(Props[Echo].withRouter(ClusterRouterConfig(local = ConsistentHashingRouter(),
           settings = ClusterRouterSettings(totalInstances = 10, maxInstancesPerNode = 2))), "router2")
@@ -135,7 +150,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
       enterBarrier("after-4")
     }
 
-    "handle combination of configured router and programatically defined hashMapping" taggedAs LongRunningTest in {
+    "handle combination of configured router and programatically defined hashMapping" taggedAs LongRunningTest ignore {
       runOn(first) {
         def hashMapping: ConsistentHashMapping = {
           case s: String ⇒ s
@@ -149,7 +164,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
       enterBarrier("after-5")
     }
 
-    "handle combination of configured router and programatically defined hashMapping and ClusterRouterConfig" taggedAs LongRunningTest in {
+    "handle combination of configured router and programatically defined hashMapping and ClusterRouterConfig" taggedAs LongRunningTest ignore {
       runOn(first) {
         def hashMapping: ConsistentHashMapping = {
           case s: String ⇒ s

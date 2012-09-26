@@ -67,7 +67,9 @@ case object Kill extends Kill {
  * to another actor you should send the information in your own message.
  */
 @SerialVersionUID(1L)
-case class Terminated private[akka] (@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean) extends AutoReceivedMessage
+case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
+  @BeanProperty val existenceConfirmed: Boolean,
+  @BeanProperty val addressTerminated: Boolean = false) extends AutoReceivedMessage
 
 /**
  * INTERNAL API
