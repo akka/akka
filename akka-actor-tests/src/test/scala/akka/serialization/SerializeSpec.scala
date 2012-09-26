@@ -180,6 +180,10 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
       }
     }
 
+    "use ByteArraySerializer for byte arrays" in {
+      ser.serializerFor(classOf[Array[Byte]]).getClass must be(classOf[ByteArraySerializer])
+    }
+
   }
 }
 
