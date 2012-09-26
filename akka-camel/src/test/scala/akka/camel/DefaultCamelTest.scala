@@ -8,7 +8,6 @@ import akka.camel.TestSupport.SharedCamelSystem
 import internal.DefaultCamel
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.mock.MockitoSugar
-import akka.actor.ActorSystem
 import org.apache.camel.{ CamelContext, ProducerTemplate }
 import org.scalatest.WordSpec
 import akka.event.LoggingAdapter
@@ -16,12 +15,14 @@ import akka.actor.ActorSystem.Settings
 import com.typesafe.config.ConfigFactory
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.spi.Registry
+import akka.actor.{ ExtendedActorSystem, ActorSystem }
 
 class DefaultCamelTest extends WordSpec with SharedCamelSystem with MustMatchers with MockitoSugar {
 
   import org.mockito.Mockito.{ when, verify }
-  val sys = mock[ActorSystem]
+  val sys = mock[ExtendedActorSystem]
   val config = ConfigFactory.defaultReference()
+  when(sys.dynamicAccess) thenReturn system.asInstanceOf[ExtendedActorSystem].dynamicAccess
   when(sys.settings) thenReturn (new Settings(this.getClass.getClassLoader, config, "mocksystem"))
   when(sys.name) thenReturn ("mocksystem")
 

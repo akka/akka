@@ -8,10 +8,12 @@ import internal._
 import akka.actor._
 import org.apache.camel.ProducerTemplate
 import org.apache.camel.impl.DefaultCamelContext
+import org.apache.camel.model.RouteDefinition
 import com.typesafe.config.Config
 import scala.concurrent.util.Duration
-import java.util.concurrent.TimeUnit._
 import scala.concurrent.util.FiniteDuration
+import java.util.concurrent.TimeUnit._
+import akka.ConfigurationException
 
 /**
  * Camel trait encapsulates the underlying camel machinery.
@@ -55,7 +57,7 @@ trait Camel extends Extension with Activation {
  * Settings for the Camel Extension
  * @param config the config
  */
-class CamelSettings private[camel] (config: Config) {
+class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess) {
   /**
    * Configured setting for how long the actor should wait for activation before it fails.
    */
@@ -85,8 +87,23 @@ class CamelSettings private[camel] (config: Config) {
    */
   final val streamingCache: Boolean = config.getBoolean("akka.camel.streamingCache")
 
-}
+  final val conversions: (String, RouteDefinition) ⇒ RouteDefinition = {
+    import scala.collection.JavaConverters.asScalaSetConverter
+    val specifiedConversions = {
+      val section = config.getConfig("akka.camel.conversions")
+      section.entrySet.asScala.map(e ⇒ (e.getKey, section.getString(e.getKey)))
+    }
+    val conversions = (Map[String, Class[_ <: AnyRef]]() /: specifiedConversions) {
+      case (m, (key, fqcn)) ⇒
+        m.updated(key, dynamicAccess.getClassFor[AnyRef](fqcn).recover {
+          case e ⇒ throw new ConfigurationException("Could not find/load Camel Converter class [" + fqcn + "]", e)
+        }.get)
+    }
 
+    (s: String, r: RouteDefinition) ⇒ conversions.get(s).fold(r)(r.convertBodyTo)
+  }
+
+}
 /**
  * This class can be used to get hold of an instance of the Camel class bound to the actor system.
  * <p>For example:

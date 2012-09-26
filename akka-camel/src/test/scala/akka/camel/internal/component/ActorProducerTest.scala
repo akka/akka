@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.util.duration._
 import concurrent.util.{ FiniteDuration, Duration }
 import java.lang.String
-import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import akka.camel._
 import internal.{ DefaultCamel, CamelExchangeAdapter }
 import org.scalatest.{ Suite, WordSpec, BeforeAndAfterAll, BeforeAndAfterEach }
@@ -29,6 +28,7 @@ import akka.testkit.{ TimingTest, TestKit, TestProbe }
 import org.apache.camel.impl.DefaultCamelContext
 import concurrent.{ Await, Promise, Future }
 import akka.util.Timeout
+import akka.actor._
 
 class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with ActorProducerFixture {
   implicit val timeout = Timeout(10 seconds)
@@ -313,9 +313,10 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
 
     probe = TestProbe()
 
-    val sys = mock[ActorSystem]
+    val sys = mock[ExtendedActorSystem]
     val config = ConfigFactory.defaultReference()
     when(sys.dispatcher) thenReturn system.dispatcher
+    when(sys.dynamicAccess) thenReturn system.asInstanceOf[ExtendedActorSystem].dynamicAccess
     when(sys.settings) thenReturn (new Settings(this.getClass.getClassLoader, config, "mocksystem"))
     when(sys.name) thenReturn ("mocksystem")
 
@@ -336,7 +337,7 @@ trait ActorProducerFixture extends MockitoSugar with BeforeAndAfterAll with Befo
               }
             }
           }
-        """))
+        """).withFallback(config), sys.dynamicAccess)
     }
     camel = camelWithMocks
 
