@@ -181,7 +181,20 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
     }
 
     "use ByteArraySerializer for byte arrays" in {
-      ser.serializerFor(classOf[Array[Byte]]).getClass must be(classOf[ByteArraySerializer])
+      val byteSerializer = ser.serializerFor(classOf[Array[Byte]])
+      byteSerializer.getClass must be(classOf[ByteArraySerializer])
+
+      val ba = "foo".getBytes("UTF-8")
+
+      (byteSerializer.toBinary(ba) eq ba) must be === true
+      (byteSerializer.fromBinary(ba) eq ba) must be === true
+
+      intercept[IllegalArgumentException] {
+        byteSerializer.toBinary("pigdog")
+      }.getMessage must be === "ByteArraySerializer only serializes byte arrays, not [pigdog]"
+
+      byteSerializer.toBinary(null) must be === null
+
     }
 
   }
