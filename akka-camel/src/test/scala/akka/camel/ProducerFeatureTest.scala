@@ -15,11 +15,11 @@ import akka.actor.SupervisorStrategy.Stop
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
 import akka.actor._
 import akka.pattern._
+import scala.concurrent.util.{ Deadline, FiniteDuration }
 import scala.concurrent.util.duration._
 import akka.util.Timeout
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
-import scala.util.Success
 
 /**
  * Tests the features of the Camel Producer.
@@ -43,11 +43,8 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       val message = CamelMessage("test", Map(CamelMessage.MessageExchangeId -> "123"))
       val future = producer.ask(message)(timeoutDuration)
       val expected = CamelMessage("received TEST", Map(CamelMessage.MessageExchangeId -> "123"))
-      Await.result(future, timeoutDuration) match {
-        case result: CamelMessage ⇒ assert(result === expected)
-        case unexpected           ⇒ fail("Actor responded with unexpected message:" + unexpected)
-      }
-      system.stop(producer)
+      Await.result(future, timeoutDuration) must be === expected
+      stopGracefully(producer)
     }
 
     "produce a message and receive failure response" in {
@@ -78,7 +75,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       }
       Await.ready(latch, timeoutDuration)
       deadActor must be(Some(producer))
-      system.stop(producer)
+      stopGracefully(producer)
     }
 
     "produce a message oneway" in {
@@ -86,7 +83,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       mockEndpoint.expectedBodiesReceived("TEST")
       producer ! CamelMessage("test", Map())
       mockEndpoint.assertIsSatisfied()
-      system.stop(producer)
+      stopGracefully(producer)
     }
 
     "produces message twoway without sender reference" in {
@@ -96,7 +93,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       mockEndpoint.expectedBodiesReceived("test")
       producer ! CamelMessage("test", Map())
       mockEndpoint.assertIsSatisfied()
-      system.stop(producer)
+      stopGracefully(producer)
     }
   }
 
@@ -114,7 +111,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
           result must be(expected)
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
-      system.stop(producer)
+      stopGracefully(producer)
     }
 
     "produce message to direct:producer-test-3 and receive failure response" in {
@@ -126,7 +123,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
         e.getMessage must be("failure")
         e.headers must be(Map(CamelMessage.MessageExchangeId -> "123"))
       }
-      system.stop(producer)
+      stopGracefully(producer)
     }
 
     "produce message, forward normal response of direct:producer-test-2 to a replying target actor and receive response" in {
@@ -142,8 +139,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
           result must be(expected)
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
-      system.stop(target)
-      system.stop(producer)
+      stopGracefully(target, producer)
     }
 
     "produce message, forward failure response of direct:producer-test-2 to a replying target actor and receive response" in {
@@ -156,8 +152,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
         e.getMessage must be("failure")
         e.headers must be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
       }
-      system.stop(target)
-      system.stop(producer)
+      stopGracefully(target, producer)
     }
 
     "produce message, forward normal response to a producing target actor and produce response to direct:forward-test-1" in {
@@ -166,8 +161,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
       mockEndpoint.expectedBodiesReceived("received test")
       producer.tell(CamelMessage("test", Map()), producer)
       mockEndpoint.assertIsSatisfied()
-      system.stop(target)
-      system.stop(producer)
+      stopGracefully(target, producer)
     }
 
     "produce message, forward failure response to a producing target actor and produce response to direct:forward-test-1" in {
@@ -179,8 +173,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
         producer.tell(CamelMessage("fail", Map()), producer)
         mockEndpoint.assertIsSatisfied()
       }
-      system.stop(target)
-      system.stop(producer)
+      stopGracefully(target, producer)
     }
 
     "produce message, forward normal response from direct:producer-test-3 to a replying target actor and receive response" in {
@@ -195,8 +188,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
           message must be(expected)
         case unexpected ⇒ fail("Actor responded with unexpected message:" + unexpected)
       }
-      system.stop(target)
-      system.stop(producer)
+      stopGracefully(target, producer)
     }
 
     "produce message, forward failure response from direct:producer-test-3 to a replying target actor and receive response" in {
@@ -209,8 +201,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
         e.getMessage must be("failure")
         e.headers must be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
       }
-      system.stop(target)
-      system.stop(producer)
+      stopGracefully(target, producer)
     }
 
     "produce message, forward normal response from direct:producer-test-3 to a producing target actor and produce response to direct:forward-test-1" in {
@@ -232,14 +223,20 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
         producer.tell(CamelMessage("fail", Map()), producer)
         mockEndpoint.assertIsSatisfied()
       }
+      stopGracefully(target, producer)
     }
   }
 
   private def mockEndpoint = camel.context.getEndpoint("mock:mock", classOf[MockEndpoint])
+
+  def stopGracefully(actors: ActorRef*)(implicit timeout: Timeout) {
+    val deadline = timeout.duration.fromNow
+    for (a ← actors)
+      Await.result(gracefulStop(a, deadline.timeLeft.asInstanceOf[FiniteDuration]), deadline.timeLeft) must be === true
+  }
 }
 
 object ProducerFeatureTest {
-
   class TestProducer(uri: String, upper: Boolean = false) extends Actor with Producer {
     def endpointUri = uri
 
