@@ -64,13 +64,8 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * using the `getCamelContext` method, and is available on the [[akka.camel.CamelExtension]].
    *
    */
-  def headerAs[T](name: String)(implicit t: ClassTag[T], camelContext: CamelContext): Try[T] = {
-    def tryHeader = headers.get(name).map(camelContext.getTypeConverter.mandatoryConvertTo[T](t.runtimeClass.asInstanceOf[Class[T]], _)) match {
-      case Some(header) ⇒ header
-      case None         ⇒ throw new NoSuchElementException(name)
-    }
-    Try(tryHeader)
-  }
+  def headerAs[T](name: String)(implicit t: ClassTag[T], camelContext: CamelContext): Try[T] =
+    Try(headers.get(name).map(camelContext.getTypeConverter.mandatoryConvertTo[T](t.runtimeClass.asInstanceOf[Class[T]], _)).getOrElse(throw new NoSuchElementException(name)))
 
   /**
    * Returns the header by given <code>name</code> parameter. The header is  converted to type <code>T</code> as defined by the <code>clazz</code> parameter.
@@ -81,10 +76,8 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * <p>
    * Java API
    */
-  def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext): T = headerAs[T](name)(ClassTag(clazz), camelContext) match {
-    case Success(header) ⇒ header
-    case Failure(t)      ⇒ throw t
-  }
+  def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext): T =
+    headerAs[T](name)(ClassTag(clazz), camelContext).get
 
   /**
    * Returns a new CamelMessage with a transformed body using a <code>transformer</code> function.
