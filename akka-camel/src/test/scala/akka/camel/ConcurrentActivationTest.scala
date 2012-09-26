@@ -10,7 +10,7 @@ import scala.concurrent.util.duration._
 import language.postfixOps
 import akka.testkit._
 import akka.util.Timeout
-import org.apache.camel.model.{ProcessorDefinition, RouteDefinition}
+import org.apache.camel.model.{ ProcessorDefinition, RouteDefinition }
 import org.apache.camel.builder.Builder
 
 /**
@@ -24,7 +24,7 @@ class ConcurrentActivationTest extends WordSpec with MustMatchers with NonShared
       val timeoutDuration = timeout.duration
       implicit val ec = system.dispatcher
       val number = 10
-      filterEvents(EventFilter.warning(pattern = "received dead letter from .*producerRegistrar.*", occurrences = number*number)) {
+      filterEvents(EventFilter.warning(pattern = "received dead letter from .*producerRegistrar.*")) {
         // A ConsumerBroadcast creates 'number' amount of ConsumerRegistrars, which will register 'number' amount of endpoints,
         // in total number*number endpoints, activating and deactivating every endpoint.
         // a promise to the list of registrars, which have a list of actorRefs each. A tuple of a list of activated refs and a list of deactivated refs
@@ -48,18 +48,18 @@ class ConcurrentActivationTest extends WordSpec with MustMatchers with NonShared
           case (futureActivations, futureDeactivations) ⇒
             futureActivations zip futureDeactivations map {
               case (activations, deactivations) ⇒
-                promiseAllRefs.success( (activations.flatten, deactivations.flatten))
+                promiseAllRefs.success((activations.flatten, deactivations.flatten))
             }
         }
         val (activations, deactivations) = Await.result(allRefsFuture, timeoutDuration)
         // must be the size of the activated activated producers and consumers
-        activations.size must be (2 * number * number)
+        activations.size must be(2 * number * number)
         // must be the size of the activated activated producers and consumers
-        deactivations.size must be ( 2* number * number )
-        def partitionNames(refs:Seq[ActorRef]) = refs.map(_.path.name).partition(_.startsWith("concurrent-test-echo-consumer"))
-        def assertContainsSameElements(lists:(Seq[_], Seq[_])) {
-          val (a,b) = lists
-          a.intersect(b).size must be (a.size)
+        deactivations.size must be(2 * number * number)
+        def partitionNames(refs: Seq[ActorRef]) = refs.map(_.path.name).partition(_.startsWith("concurrent-test-echo-consumer"))
+        def assertContainsSameElements(lists: (Seq[_], Seq[_])) {
+          val (a, b) = lists
+          a.intersect(b).size must be(a.size)
         }
         val (activatedConsumerNames, activatedProducerNames) = partitionNames(activations)
         val (deactivatedConsumerNames, deactivatedProducerNames) = partitionNames(deactivations)
@@ -86,7 +86,7 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
 
         allActivationFutures = allActivationFutures :+ activationListFuture
         allDeactivationFutures = allDeactivationFutures :+ deactivationListFuture
-        context.actorOf(Props(new Registrar(i, number, activationListPromise, deactivationListPromise)), s"registrar-$i")
+        context.actorOf(Props(new Registrar(i, number, activationListPromise, deactivationListPromise)), "registrar-" + i)
       }
       promise.success((Future.sequence(allActivationFutures)), Future.sequence(allDeactivationFutures))
 
@@ -115,8 +115,9 @@ class Registrar(val start: Int, val number: Int, activationsPromise: Promise[Lis
   def receive = {
     case reg: RegisterConsumersAndProducers ⇒
       val i = index
-      add(new EchoConsumer(s"${reg.endpointUri}$start-$i"), s"concurrent-test-echo-consumer$start-$i")
-      add(new TestProducer(s"${reg.endpointUri}$start-$i"), s"concurrent-test-producer-$start-$i")
+      val endpoint = reg.endpointUri + start + "-" + i
+      add(new EchoConsumer(endpoint), "concurrent-test-echo-consumer-" + start + "-" + i)
+      add(new TestProducer(endpoint), "concurrent-test-producer-" + start + "-" + i)
       index = index + 1
       if (activations.size == number * 2) {
         Future.sequence(activations.toList) map activationsPromise.success
@@ -131,7 +132,7 @@ class Registrar(val start: Int, val number: Int, activationsPromise: Promise[Lis
       }
   }
 
-  def add(actor: =>Actor, name:String) {
+  def add(actor: ⇒ Actor, name: String) {
     val ref = context.actorOf(Props(actor), name)
     actorRefs = actorRefs + ref
     activations = activations + camel.activationFutureFor(ref)
@@ -151,7 +152,7 @@ class EchoConsumer(endpoint: String) extends Actor with Consumer {
    * By default it returns an identity function, override this method to
    * return a custom route definition handler.
    */
-  override def onRouteDefinition = (rd: RouteDefinition) => rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
+  override def onRouteDefinition = (rd: RouteDefinition) ⇒ rd.onException(classOf[Exception]).handled(true).transform(Builder.exceptionMessage).end
 }
 
 class TestProducer(uri: String) extends Actor with Producer {
