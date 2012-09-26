@@ -10,7 +10,7 @@ import scala.concurrent.util.duration._
 import language.postfixOps
 import akka.testkit._
 import akka.util.Timeout
-import org.apache.camel.model.{ ProcessorDefinition, RouteDefinition }
+import org.apache.camel.model.RouteDefinition
 import org.apache.camel.builder.Builder
 
 /**
@@ -24,7 +24,9 @@ class ConcurrentActivationTest extends WordSpec with MustMatchers with NonShared
       val timeoutDuration = timeout.duration
       implicit val ec = system.dispatcher
       val number = 10
-      filterEvents(EventFilter.warning(pattern = "received dead letter from .*producerRegistrar.*")) {
+      val eventFilter = EventFilter.warning(pattern = "received dead letter from .*producerRegistrar.*")
+      system.eventStream.publish(TestEvent.Mute(eventFilter))
+      try {
         // A ConsumerBroadcast creates 'number' amount of ConsumerRegistrars, which will register 'number' amount of endpoints,
         // in total number*number endpoints, activating and deactivating every endpoint.
         // a promise to the list of registrars, which have a list of actorRefs each. A tuple of a list of activated refs and a list of deactivated refs
@@ -65,11 +67,13 @@ class ConcurrentActivationTest extends WordSpec with MustMatchers with NonShared
         val (deactivatedConsumerNames, deactivatedProducerNames) = partitionNames(deactivations)
         assertContainsSameElements(activatedConsumerNames, deactivatedConsumerNames)
         assertContainsSameElements(activatedProducerNames, deactivatedProducerNames)
+      } finally {
+        system.eventStream.publish(TestEvent.UnMute(eventFilter))
       }
     }
   }
-
 }
+
 class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[List[List[ActorRef]]])]) extends Actor {
   private var broadcaster: Option[ActorRef] = None
   private implicit val ec = context.dispatcher
