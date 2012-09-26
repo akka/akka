@@ -87,6 +87,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
       val replier = zmq.newSocket(SocketType.Rep, context, Listener(replierProbe.ref), Connect(endpoint))
 
       try {
+        requesterProbe.expectMsg(Binding)
         replierProbe.expectMsg(Connecting)
         val request = ZMQMessage(Frame("Request"))
         val reply = ZMQMessage(Frame("Reply"))
