@@ -364,7 +364,8 @@ object AkkaBuild extends Build {
   // Settings
 
   override lazy val settings = super.settings ++ buildSettings ++ Seq(
-      resolvers += "Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/",
+      resolvers += "Sonatype OSS Releases" at "https://oss.sonatype.org/content/repositories/releases",
+      resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
       resolvers += "Twitter Public Repo" at "http://maven.twttr.com" // This will be going away with com.mongodb.async's next release
     )
 
