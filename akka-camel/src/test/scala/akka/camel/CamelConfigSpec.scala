@@ -11,30 +11,38 @@ import java.util.concurrent.TimeUnit._
 
 class CamelConfigSpec extends WordSpec with MustMatchers {
 
+  val (settings, config) = {
+    val system = ActorSystem("CamelConfigSpec")
+    val result = (CamelExtension(system).settings, system.settings.config)
+    system.shutdown()
+    result
+  }
   "CamelConfigSpec" must {
-    "have correct config" in {
-      val system = ActorSystem("CamelConfigSpec")
-      try {
-        val settings = CamelExtension(system).settings
+    "have correct activationTimeout config" in {
+      settings.activationTimeout must be === Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
+    }
 
-        val config = system.settings.config
+    "have correct autoAck config" in {
+      settings.autoAck must be === config.getBoolean("akka.camel.consumer.auto-ack")
+    }
 
-        settings.activationTimeout must be === Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
+    "have correct replyTimeout config" in {
+      settings.replyTimeout must be === Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
+    }
 
-        settings.autoAck must be === config.getBoolean("akka.camel.consumer.auto-ack")
+    "have correct streamingCache config" in {
+      settings.streamingCache must be === config.getBoolean("akka.camel.streamingCache")
+    }
 
-        settings.replyTimeout must be === Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
+    "have correct jmxStatistics config" in {
+      settings.jmxStatistics must be === config.getBoolean("akka.camel.jmx")
+    }
 
-        settings.streamingCache must be === config.getBoolean("akka.camel.streamingCache")
+    "have correct body conversions config" in {
+      val conversions = config.getConfig("akka.camel.conversions")
 
-        settings.jmxStatistics must be === config.getBoolean("akka.camel.jmx")
-
-        val conversions = config.getConfig("akka.camel.conversions")
-
-        conversions.getString("file") must be === "java.io.InputStream"
-        conversions.entrySet.size must be === 1
-
-      } finally system.shutdown()
+      conversions.getString("file") must be === "java.io.InputStream"
+      conversions.entrySet.size must be === 1
     }
   }
 }
