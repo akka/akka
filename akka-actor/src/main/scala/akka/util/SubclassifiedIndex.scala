@@ -54,8 +54,6 @@ private[akka] object SubclassifiedIndex {
     override def toString = subkeys.mkString("Nonroot(" + key + ", " + values + ",\n", ",\n", ")")
   }
 
-  private[SubclassifiedIndex] def emptyFindSet[V] = internalEmptyFindSet.asInstanceOf[Set[V]]
-  private[this] val internalEmptyFindSet = Set.empty[AnyRef]
   private[SubclassifiedIndex] def emptyMergeMap[K, V] = internalEmptyMergeMap.asInstanceOf[Map[K, Set[V]]]
   private[this] val internalEmptyMergeMap = Map[AnyRef, Set[AnyRef]]().withDefault(_ ⇒ Set[AnyRef]())
 }
@@ -168,7 +166,7 @@ private[akka] class SubclassifiedIndex[K, V] private (private var values: Set[V]
    */
   protected final def findValues(key: K): Set[V] = root.innerFindValues(key)
   protected def innerFindValues(key: K): Set[V] =
-    (emptyFindSet[V] /: subkeys) { (s, n) ⇒
+    (Set.empty[V] /: subkeys) { (s, n) ⇒
       if (sc.isSubclass(key, n.key))
         s ++ n.innerFindValues(key)
       else
@@ -180,7 +178,7 @@ private[akka] class SubclassifiedIndex[K, V] private (private var values: Set[V]
    */
   protected final def findSubKeysExcept(key: K, except: Vector[Nonroot[K, V]]): Set[K] = root.innerFindSubKeys(key, except)
   protected def innerFindSubKeys(key: K, except: Vector[Nonroot[K, V]]): Set[K] =
-    (emptyFindSet[K] /: subkeys) { (s, n) ⇒
+    (Set.empty[K] /: subkeys) { (s, n) ⇒
       if (sc.isEqual(key, n.key)) s
       else n.innerFindSubKeys(key, except) ++ {
         if (sc.isSubclass(n.key, key) && !except.exists(e ⇒ sc.isEqual(key, e.key)))
@@ -198,12 +196,8 @@ private[akka] class SubclassifiedIndex[K, V] private (private var values: Set[V]
    */
   private def integrate(n: Nonroot[K, V]): Changes = {
     val (subsub, sub) = subkeys partition (k ⇒ sc.isSubclass(k.key, n.key))
-    if (sub.size == subkeys.size) {
-      subkeys :+= n
-    } else {
-      n.subkeys = subsub
-      subkeys = sub :+ n
-    }
+    subkeys = sub :+ n
+    n.subkeys = if (subsub.nonEmpty) subsub else n.subkeys
     n.subkeys ++= findSubKeysExcept(n.key, n.subkeys).map(k ⇒ new Nonroot(root, k, values))
     n.subkeys.map(n ⇒ (n.key, n.values.toSet))
   }
