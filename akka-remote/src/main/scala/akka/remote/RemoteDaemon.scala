@@ -90,11 +90,11 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
     case TerminationHook ⇒
       terminating.switchOn {
         terminationHookDoneWhenNoChildren()
-        allChildren foreach system.stop
+        foreachChild { system.stop(_) }
       }
 
     case AddressTerminated(address) ⇒
-      allChildren foreach { case a: InternalActorRef if a.getParent.path.address == address ⇒ system.stop(a) }
+      foreachChild { case a: InternalActorRef if a.getParent.path.address == address ⇒ system.stop(a) }
 
     case unknown ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }

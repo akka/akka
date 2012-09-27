@@ -10,7 +10,7 @@ import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.{ Serialization, JavaSerializer }
 import akka.event.EventStream
 import scala.annotation.tailrec
-import java.util.concurrent.{ ConcurrentHashMap }
+import java.util.concurrent.ConcurrentHashMap
 import akka.event.LoggingAdapter
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.collection.JavaConverters
@@ -520,8 +520,8 @@ private[akka] class VirtualPathContainer(
 
   def hasChildren: Boolean = !children.isEmpty
 
-  def allChildren: Iterable[ActorRef] = {
-    import scala.collection.JavaConverters._
-    children.values.asScala
+  def foreachChild(f: ActorRef ⇒ Unit) = {
+    val iter = children.values.iterator
+    while (iter.hasNext) f(iter.next)
   }
 }
