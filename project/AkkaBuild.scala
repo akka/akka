@@ -641,7 +641,7 @@ object Dependencies {
 
   val camel = Seq(camelCore, Test.scalatest, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
 
-  val camelSample = Seq(CamelSample.camelJetty)
+  val camelSample = Seq(camelJetty)
 
   val osgi = Seq(osgiCore,Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
@@ -655,12 +655,10 @@ object Dependencies {
 
   val multiNodeSample = Seq(Test.scalatest)
 }
-object V {
-  val Camel  = "2.10.0"
-}
+
 object Dependency {
   // Compile
-  val camelCore     = "org.apache.camel"            % "camel-core"                   % V.Camel exclude("org.slf4j", "slf4j-api") // ApacheV2
+  val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.0" exclude("org.slf4j", "slf4j-api") // ApacheV2
   val config        = "com.typesafe"                % "config"                       % "0.5.2"       // ApacheV2
   val netty         = "io.netty"                    % "netty"                        % "3.5.4.Final" // ApacheV2
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
@@ -671,6 +669,10 @@ object Dependency {
   val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a"      // ApacheV2
   val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
   val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
+
+
+  // Camel Sample
+  val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % camelCore.revision // ApacheV2
 
   // Test
 
@@ -688,10 +690,4 @@ object Dependency {
     val log4j       = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
     val junitIntf   = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
   }
-
-  // Camel Sample
-  object CamelSample {
-    val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % V.Camel // ApacheV2
-  }
-
 }
