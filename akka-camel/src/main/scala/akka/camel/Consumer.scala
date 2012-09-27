@@ -42,21 +42,21 @@ trait Consumer extends Actor with CamelSupport {
   /**
    * How long the actor should wait for activation before it fails.
    */
-  def activationTimeout: FiniteDuration = camel.settings.activationTimeout
+  def activationTimeout: FiniteDuration = camel.settings.ActivationTimeout
 
   /**
    * When endpoint is out-capable (can produce responses) replyTimeout is the maximum time
    * the endpoint can take to send the response before the message exchange fails. It defaults to 1 minute.
    * This setting is used for out-capable, in-only, manually acknowledged communication.
    */
-  def replyTimeout: FiniteDuration = camel.settings.replyTimeout
+  def replyTimeout: FiniteDuration = camel.settings.ReplyTimeout
 
   /**
    * Determines whether one-way communications between an endpoint and this consumer actor
    * should be auto-acknowledged or application-acknowledged.
    * This flag has only effect when exchange is in-only.
    */
-  def autoAck: Boolean = camel.settings.autoAck
+  def autoAck: Boolean = camel.settings.AutoAck
 
   /**
    * Returns the route definition handler for creating a custom route to this consumer.
