@@ -69,14 +69,13 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
               // TODO RK canonicalize path so as not to duplicate it always #1446
               val subpath = elems.drop(1)
               val path = this.path / subpath
-              terminating.fold(
-                log.debug("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, path.address)) {
-
-                  val actor = system.provider.actorOf(system, props, supervisor.asInstanceOf[InternalActorRef],
-                    path, systemService = false, Some(deploy), lookupDeploy = true, async = false)
-                  addChild(subpath.mkString("/"), actor)
-                  actor.sendSystemMessage(Watch(actor, this))
-                }
+              val isTerminating = !terminating.whileOff {
+                val actor = system.provider.actorOf(system, props, supervisor.asInstanceOf[InternalActorRef],
+                  path, systemService = false, Some(deploy), lookupDeploy = true, async = false)
+                addChild(subpath.mkString("/"), actor)
+                actor.sendSystemMessage(Watch(actor, this))
+              }
+              if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, path.address)
             case _ ⇒
               log.error("remote path does not match path from message [{}]", message)
           }
