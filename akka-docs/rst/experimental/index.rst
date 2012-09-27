@@ -27,7 +27,7 @@ to tell if the module has a maintainer that can take the responsibility
 of the module over time. These modules live in the ``akka-contrib`` subproject:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
-   ../b/../../../akka-contrib/docs/index.rst
+   ../contrib/index
 

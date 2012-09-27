@@ -354,6 +354,18 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ SphinxSupport.settings ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
+      // copy akka-contrib/docs into our rst_preprocess/contrib (and apply substitutions)
+      preprocess in Sphinx <<= (preprocess in Sphinx,
+                                sourceDirectory in contrib in Sphinx,
+                                target in preprocess in Sphinx,
+                                cacheDirectory,
+                                preprocessExts in Sphinx,
+                                preprocessVars in Sphinx,
+                                streams) map { (orig, src, target, cacheDir, exts, vars, s) =>
+        val contribSrc = Map("contribSrc" -> "../../../akka-contrib")
+        simplePreprocess(src, target / "contrib", cacheDir / "sphinx" / "preprocessed-contrib", exts, vars ++ contribSrc, s.log)
+        orig
+      },
       enableOutput in generatePdf in Sphinx := true,
       unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
@@ -366,9 +378,16 @@ object AkkaBuild extends Build {
     id = "akka-contrib",
     base = file("akka-contrib"),
     dependencies = Seq(remote, remoteTests % "compile;test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ SphinxSupport.settings ++ sphinxPreprocessing ++ Seq(
       libraryDependencies ++= Dependencies.contrib,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
+      preprocessVars in Sphinx <<= (preprocessVars in Sphinx) { (old) =>
+        old ++ Map(
+          "contribSrc" -> ".."
+        )
+      },
+      sourceDirectory in Sphinx <<= baseDirectory / "docs",
+      sphinxPackages in Sphinx <+= baseDirectory { _ / ".." / "akka-docs" / "_sphinx" / "pygments" },
       description := """|
                         |This subproject provides a home to modules contributed by external
                         |developers which may or may not move into the officially supported code

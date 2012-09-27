@@ -50,6 +50,7 @@ multiverse.log
 .*.swp
 akka-docs/_build/
 akka-docs/rst_preprocessed/
+akka-contrib/rst_preprocessed/
 *.pyc
 akka-docs/exts/
 _akka_cluster/

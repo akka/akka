@@ -60,7 +60,7 @@ communication channel. The benefit is that the network in-between is taken out
 of that equation.
 
 When the target actor terminates, the proxy will terminate as well (on the
-terms of :ref:`deathwatch-java` / :ref:`deathwath-scala`).
+terms of :ref:`deathwatch-java` / :ref:`deathwatch-scala`).
 
 How to use it
 -------------
@@ -69,12 +69,12 @@ Since this implementation does not offer much in the way of configuration,
 simply instantiate a proxy wrapping some target reference. From Java it looks
 like this:
 
-.. includecode:: ../src/test/java/akka/contrib/pattern/ReliableProxyTest.java#imports
-.. includecode:: ../src/test/java/akka/contrib/pattern/ReliableProxyTest.java#demo-proxy
+.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ReliableProxyTest.java#import
+.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ReliableProxyTest.java#demo-proxy
 
 And from Scala like this:
 
-.. includecode:: ../src/multi-jvm/scala/akka/contrib/pattern/ReliableProxySpec.scala#demo
+.. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ReliableProxySpec.scala#demo
 
 Since the :class:`ReliableProxy` actor is an :ref:`fsm-scala`, it also offers
 the capability to subscribe to state transitions. If you need to know when all
@@ -83,10 +83,10 @@ been forwarded to the target), you can subscribe to the FSM notifications and
 observe a transition from state :class:`ReliableProxy.Active` to state
 :class:`ReliableProxy.Idle`.
 
-.. includecode:: ../src/test/java/akka/contrib/pattern/ReliableProxyTest.java#demo-transition
+.. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ReliableProxyTest.java#demo-transition
 
 From Scala it would look like so:
 
-.. includecode:: ../src/test/scala/akka/contrib/pattern/ReliableProxyDocSpec.scala#demo-transition
+.. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReliableProxyDocSpec.scala#demo-transition
 
 
