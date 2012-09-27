@@ -396,11 +396,27 @@ class LocalActorRefProvider(
     var terminationHooks = Set.empty[ActorRef]
 
     def receive = {
-      case Terminated(_)           ⇒ terminationHooks foreach { _ ! TerminationHook }; stopWhenAllTerminationHooksDone()
-      case StopChild(child)        ⇒ context.stop(child)
-      case RegisterTerminationHook ⇒ terminationHooks += sender
-      case TerminationHookDone     ⇒ terminationHooks -= sender; stopWhenAllTerminationHooksDone()
-      case m                       ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case Terminated(a) if terminationHooks.contains(a) ⇒ terminationHooks -= a
+      case Terminated(_) ⇒
+        context.become(terminating)
+        terminationHooks foreach { _ ! TerminationHook }
+        stopWhenAllTerminationHooksDone()
+      case StopChild(child) ⇒ context.stop(child)
+      case RegisterTerminationHook if sender != context.system.deadLetters ⇒
+        terminationHooks += sender
+        context watch sender
+      case m ⇒ deadLetters ! DeadLetter(m, sender, self)
+    }
+
+    def terminating: Receive = {
+      case Terminated(a) if terminationHooks.contains(a) ⇒ stopWhenAllTerminationHooksDone(a)
+      case TerminationHookDone ⇒ stopWhenAllTerminationHooksDone(sender)
+      case m ⇒ deadLetters ! DeadLetter(m, sender, self)
+    }
+
+    def stopWhenAllTerminationHooksDone(remove: ActorRef): Unit = {
+      terminationHooks -= sender
+      stopWhenAllTerminationHooksDone()
     }
 
     def stopWhenAllTerminationHooksDone(): Unit = if (terminationHooks.isEmpty) {
