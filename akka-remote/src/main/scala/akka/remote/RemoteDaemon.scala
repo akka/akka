@@ -82,15 +82,17 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
       }
 
     case Terminated(child: ActorRefWithCell) if child.asInstanceOf[ActorRefScope].isLocal ⇒
-      removeChild(child.path.elements.drop(1).mkString("/"))
-      terminationHookDoneWhenNoChildren()
+      terminating.locked {
+        removeChild(child.path.elements.drop(1).mkString("/"))
+        terminationHookDoneWhenNoChildren()
+      }
 
     case t: Terminated ⇒
 
     case TerminationHook ⇒
       terminating.switchOn {
         terminationHookDoneWhenNoChildren()
-        foreachChild { system.stop(_) }
+        foreachChild { system.stop }
       }
 
     case AddressTerminated(address) ⇒
@@ -99,7 +101,8 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
     case unknown ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }
 
-  def terminationHookDoneWhenNoChildren(): Unit = if (terminating.isOn && !hasChildren)
-    system.provider.systemGuardian.tell(TerminationHookDone, this)
+  def terminationHookDoneWhenNoChildren(): Unit = terminating.whileOn {
+    if (!hasChildren) system.provider.systemGuardian.tell(TerminationHookDone, this)
+  }
 
 }
