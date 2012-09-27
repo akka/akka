@@ -396,8 +396,14 @@ class LocalActorRefProvider(
     var terminationHooks = Set.empty[ActorRef]
 
     def receive = {
-      case Terminated(a) if terminationHooks.contains(a) ⇒ terminationHooks -= a
+      case Terminated(a) if terminationHooks.contains(a) ⇒
+        // a registered, and watched termination hook terminated before
+        // termination process of guardian has started
+        terminationHooks -= a
       case Terminated(_) ⇒
+        // time for the guardian to stop, but first notify all the
+        // termination hooks, they will reply with TerminationHookDone
+        // and when all are done the guardian is stopped
         context.become(terminating)
         terminationHooks foreach { _ ! TerminationHook }
         stopWhenAllTerminationHooksDone()
@@ -415,7 +421,7 @@ class LocalActorRefProvider(
     }
 
     def stopWhenAllTerminationHooksDone(remove: ActorRef): Unit = {
-      terminationHooks -= sender
+      terminationHooks -= remove
       stopWhenAllTerminationHooksDone()
     }
 
