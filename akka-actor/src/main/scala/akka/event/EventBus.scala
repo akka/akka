@@ -139,7 +139,7 @@ trait SubchannelClassification { this: EventBus ⇒
     val diff = subscriptions.addValue(to, subscriber)
     if (diff.isEmpty) false
     else {
-      cache ++= diff
+      addToCache(diff)
       true
     }
   }
@@ -148,7 +148,7 @@ trait SubchannelClassification { this: EventBus ⇒
     val diff = subscriptions.removeValue(from, subscriber)
     if (diff.isEmpty) false
     else {
-      removeFromCache(diff)
+      cache ++= diff
       true
     }
   }
@@ -158,9 +158,6 @@ trait SubchannelClassification { this: EventBus ⇒
     if (diff.nonEmpty) removeFromCache(diff)
   }
 
-  private def removeFromCache(changes: Seq[(Classifier, Set[Subscriber])]): Unit =
-    cache ++= changes map { case (c, s) ⇒ (c, cache.getOrElse(c, Set[Subscriber]()) -- s) }
-
   def publish(event: Event): Unit = {
     val c = classify(event)
     val recv =
@@ -168,13 +165,27 @@ trait SubchannelClassification { this: EventBus ⇒
       else subscriptions.synchronized {
         if (cache contains c) cache(c)
         else {
-          val diff = subscriptions.addKey(c)
-          cache ++= diff
+          addToCache(subscriptions.addKey(c))
           cache(c)
         }
       }
     recv foreach (publish(event, _))
   }
+
+  // we can only let keys that already exist in the cache get updated
+  private def removeFromCache(changes: Seq[(Classifier, Set[Subscriber])]): Unit =
+    cache ++= (List.empty[(Classifier, Set[Subscriber])] /: changes) {
+      case (cl, (c, cs)) ⇒
+        cache.get(c) match {
+          case None     ⇒ cl
+          case Some(ss) ⇒ (c, ss -- cs) :: cl
+        }
+    }
+
+  private def addToCache(changes: Seq[(Classifier, Set[Subscriber])]): Unit =
+    cache = (cache /: changes) {
+      case (m, (c, cs)) ⇒ m.updated(c, m.getOrElse(c, Set.empty[Subscriber]) ++ cs)
+    }
 }
 
 /**
