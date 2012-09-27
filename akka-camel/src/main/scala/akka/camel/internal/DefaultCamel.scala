@@ -35,9 +35,9 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
 
   lazy val context: DefaultCamelContext = {
     val ctx = new DefaultCamelContext
-    if (!settings.jmxStatistics) ctx.disableJMX()
+    if (!settings.JmxStatistics) ctx.disableJMX()
     ctx.setName(system.name)
-    ctx.setStreamCaching(settings.streamingCache)
+    ctx.setStreamCaching(settings.StreamingCache)
     ctx.addComponent("akka", new ActorComponent(this, system))
     ctx.getTypeConverterRegistry.addTypeConverter(classOf[FiniteDuration], classOf[String], DurationTypeConverter)
     ctx

@@ -19,23 +19,23 @@ class CamelConfigSpec extends WordSpec with MustMatchers {
   }
   "CamelConfigSpec" must {
     "have correct activationTimeout config" in {
-      settings.activationTimeout must be === Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
+      settings.ActivationTimeout must be === Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
     }
 
     "have correct autoAck config" in {
-      settings.autoAck must be === config.getBoolean("akka.camel.consumer.auto-ack")
+      settings.AutoAck must be === config.getBoolean("akka.camel.consumer.auto-ack")
     }
 
     "have correct replyTimeout config" in {
-      settings.replyTimeout must be === Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
+      settings.ReplyTimeout must be === Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
     }
 
     "have correct streamingCache config" in {
-      settings.streamingCache must be === config.getBoolean("akka.camel.streamingCache")
+      settings.StreamingCache must be === config.getBoolean("akka.camel.streamingCache")
     }
 
     "have correct jmxStatistics config" in {
-      settings.jmxStatistics must be === config.getBoolean("akka.camel.jmx")
+      settings.JmxStatistics must be === config.getBoolean("akka.camel.jmx")
     }
 
     "have correct body conversions config" in {

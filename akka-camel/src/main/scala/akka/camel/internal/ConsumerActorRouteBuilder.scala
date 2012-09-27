@@ -24,7 +24,7 @@ private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: Ac
 
   def configure(): Unit =
     applyUserRouteCustomization(
-      settings.conversions.apply(
+      settings.Conversions.apply(
         endpointUri take endpointUri.indexOf(":"), // e.g. "http" from "http://whatever/..."
         from(endpointUri).routeId(consumer.path.toString))).to(targetActorUri)
 

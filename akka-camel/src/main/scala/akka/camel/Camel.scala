@@ -61,33 +61,33 @@ class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess
   /**
    * Configured setting for how long the actor should wait for activation before it fails.
    */
-  final val activationTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
+  final val ActivationTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
 
   /**
    * Configured setting, when endpoint is out-capable (can produce responses) replyTimeout is the maximum time
    * the endpoint can take to send the response before the message exchange fails.
    * This setting is used for out-capable, in-only, manually acknowledged communication.
    */
-  final val replyTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
+  final val ReplyTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
 
   /**
    * Configured setting which determines whether one-way communications between an endpoint and this consumer actor
    * should be auto-acknowledged or application-acknowledged.
    * This flag has only effect when exchange is in-only.
    */
-  final val autoAck: Boolean = config.getBoolean("akka.camel.consumer.auto-ack")
+  final val AutoAck: Boolean = config.getBoolean("akka.camel.consumer.auto-ack")
 
   /**
    *
    */
-  final val jmxStatistics: Boolean = config.getBoolean("akka.camel.jmx")
+  final val JmxStatistics: Boolean = config.getBoolean("akka.camel.jmx")
 
   /**
    * enables or disables streamingCache on the Camel Context
    */
-  final val streamingCache: Boolean = config.getBoolean("akka.camel.streamingCache")
+  final val StreamingCache: Boolean = config.getBoolean("akka.camel.streamingCache")
 
-  final val conversions: (String, RouteDefinition) ⇒ RouteDefinition = {
+  final val Conversions: (String, RouteDefinition) ⇒ RouteDefinition = {
     import scala.collection.JavaConverters.asScalaSetConverter
     val specifiedConversions = {
       val section = config.getConfig("akka.camel.conversions")

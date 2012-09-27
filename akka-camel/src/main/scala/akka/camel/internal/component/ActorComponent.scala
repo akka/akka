@@ -95,9 +95,9 @@ private[camel] trait ActorEndpointConfig {
   def path: ActorEndpointPath
   def camel: Camel
 
-  @BeanProperty var replyTimeout: FiniteDuration = camel.settings.replyTimeout
+  @BeanProperty var replyTimeout: FiniteDuration = camel.settings.ReplyTimeout
 
-  @BeanProperty var autoAck: Boolean = camel.settings.autoAck
+  @BeanProperty var autoAck: Boolean = camel.settings.AutoAck
 }
 
 /**
@@ -135,7 +135,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
   private[camel] def processExchangeAdapter(exchange: CamelExchangeAdapter): Unit = {
     val isDone = new CountDownLatch(1)
     processExchangeAdapter(exchange, new AsyncCallback { def done(doneSync: Boolean) { isDone.countDown() } })
-    isDone.await(camel.settings.replyTimeout.toMillis, TimeUnit.MILLISECONDS)
+    isDone.await(camel.settings.ReplyTimeout.toMillis, TimeUnit.MILLISECONDS)
   }
 
   /**

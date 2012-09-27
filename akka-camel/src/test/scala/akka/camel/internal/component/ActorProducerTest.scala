@@ -92,7 +92,7 @@ class ActorProducerTest extends TestKit(ActorSystem("test")) with WordSpec with 
             verify(exchange, never()).setResponse(any[CamelMessage])
             info("no response forwarded to exchange")
             intercept[TimeoutException] {
-              Await.ready(future, camel.settings.replyTimeout - (1 seconds))
+              Await.ready(future, camel.settings.ReplyTimeout - (1 seconds))
             }
           }
         }
