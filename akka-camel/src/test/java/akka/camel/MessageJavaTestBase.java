@@ -5,6 +5,7 @@
 package akka.camel;
 
 import akka.actor.ActorSystem;
+import akka.dispatch.Mapper;
 import akka.japi.Function;
 import org.apache.camel.NoTypeConversionAvailableException;
 import org.junit.AfterClass;
@@ -46,12 +47,6 @@ public class MessageJavaTestBase {
     @Test(expected=NoTypeConversionAvailableException.class)
     public void shouldThrowExceptionWhenConvertingDoubleBodyToInputStream() {
         message(1.4).getBodyAs(InputStream.class,camel.context());
-    }
-
-
-    @Test public void shouldReturnDoubleHeader() {
-        CamelMessage message = message("test" , createMap("test", 1.4));
-        assertEquals(1.4, message.getHeader("test"));
     }
 
     @Test public void shouldConvertDoubleHeaderToString() {
@@ -105,24 +100,6 @@ public class MessageJavaTestBase {
             message("test1" , createMap("A", "1")).withHeaders(createMap("C", "3")));
     }
 
-    @Test public void shouldAddHeaderAndPreserveBodyAndHeaders() {
-        assertEquals(
-            message("test1" , createMap("A", "1", "B", "2")),
-            message("test1" , createMap("A", "1")).addHeader("B", "2"));
-    }
-
-    @Test public void shouldAddHeadersAndPreserveBodyAndHeaders() {
-        assertEquals(
-            message("test1" , createMap("A", "1", "B", "2")),
-            message("test1" , createMap("A", "1")).addHeaders(createMap("B", "2")));
-    }
-
-    @Test public void shouldRemoveHeadersAndPreserveBodyAndRemainingHeaders() {
-        assertEquals(
-            message("test1" , createMap("A", "1")),
-            message("test1" , createMap("A", "1", "B", "2")).withoutHeader("B"));
-    }
-
     private static Set<String> createSet(String... entries) {
         HashSet<String> set = new HashSet<String>();
         set.addAll(Arrays.asList(entries));
@@ -137,7 +114,8 @@ public class MessageJavaTestBase {
         return map;
     }
 
-    private static class TestTransformer implements Function<String, String> {
+    private static class TestTransformer extends Mapper<String, String> {
+        @Override
         public String apply(String param) {
             return param + "b";
         }

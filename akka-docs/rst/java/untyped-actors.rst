@@ -200,8 +200,9 @@ Restart Hooks
 -------------
 
 All actors are supervised, i.e. linked to another actor with a fault
-handling strategy. Actors will be restarted in case an exception is thrown while
-processing a message. This restart involves the hooks mentioned above:
+handling strategy. Actors may be restarted in case an exception is thrown while
+processing a message (see :ref:`supervision`). This restart involves the hooks
+mentioned above:
 
 1. The old actor is informed by calling :meth:`preRestart` with the exception
    which caused the restart and the message which triggered that exception; the

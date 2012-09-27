@@ -10,7 +10,8 @@ import org.scalatest.matchers.MustMatchers
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 import org.scalatest.WordSpec
-import org.apache.camel.{ TypeConversionException, NoTypeConversionAvailableException }
+import org.apache.camel.TypeConversionException
+import language.postfixOps
 
 class DurationConverterSpec extends WordSpec with MustMatchers {
   import DurationTypeConverter._

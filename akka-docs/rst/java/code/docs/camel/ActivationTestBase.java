@@ -6,6 +6,7 @@ package docs.camel;
     import akka.camel.Camel;
     import akka.camel.CamelExtension;
     import akka.camel.javaapi.UntypedConsumerActor;
+    import akka.util.Timeout;
     import scala.concurrent.Future;
     import scala.concurrent.util.Duration;
     import scala.concurrent.util.FiniteDuration;
@@ -26,14 +27,14 @@ public class ActivationTestBase {
     ActorRef producer = system.actorOf(props,"myproducer");
     Camel camel = CamelExtension.get(system);
     // get a future reference to the activation of the endpoint of the Consumer Actor
-    FiniteDuration duration = Duration.create(10, SECONDS);
-    Future<ActorRef> activationFuture = camel.activationFutureFor(producer, duration, system.dispatcher());
+    Timeout timeout = new Timeout(Duration.create(10, SECONDS));
+    Future<ActorRef> activationFuture = camel.activationFutureFor(producer, timeout, system.dispatcher());
     //#CamelActivation
     //#CamelDeactivation
     // ..
     system.stop(producer);
     // get a future reference to the deactivation of the endpoint of the Consumer Actor
-    Future<ActorRef> deactivationFuture = camel.deactivationFutureFor(producer, duration, system.dispatcher());
+    Future<ActorRef> deactivationFuture = camel.deactivationFutureFor(producer, timeout, system.dispatcher());
     //#CamelDeactivation
     system.shutdown();
   }

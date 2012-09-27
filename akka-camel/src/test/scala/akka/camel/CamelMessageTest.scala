@@ -16,23 +16,10 @@ class CamelMessageTest extends MustMatchers with WordSpec with SharedCamelSystem
 
     "overwrite body and add header" in {
       val msg = sampleMessage
-      CamelMessage("blah", Map("key" -> "baz")).copyContentTo(msg)
+      CamelMessage.copyContent(CamelMessage("blah", Map("key" -> "baz")), msg)
       assert(msg.getBody === "blah")
       assert(msg.getHeader("foo") === "bar")
       assert(msg.getHeader("key") === "baz")
-    }
-
-    "create message with body and header" in {
-      val m = CamelMessage.from(sampleMessage)
-      assert(m.body === "test")
-      assert(m.headers("foo") === "bar")
-    }
-
-    "create message with body and header and custom header" in {
-      val m = CamelMessage.from(sampleMessage, Map("key" -> "baz"))
-      assert(m.body === "test")
-      assert(m.headers("foo") === "bar")
-      assert(m.headers("key") === "baz")
     }
   }
 
