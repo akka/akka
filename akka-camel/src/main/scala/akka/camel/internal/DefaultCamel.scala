@@ -1,6 +1,5 @@
 package akka.camel.internal
 
-import akka.actor.{ ActorRef, Props, ActorSystem }
 import akka.camel.internal.component.{ DurationTypeConverter, ActorComponent }
 import org.apache.camel.impl.DefaultCamelContext
 import scala.Predef._
@@ -16,6 +15,7 @@ import akka.util.Timeout
 import akka.pattern.ask
 import java.io.InputStream
 import org.apache.camel.model.RouteDefinition
+import akka.actor.{ ExtendedActorSystem, ActorRef, Props, ActorSystem }
 
 /**
  * For internal use only.
@@ -26,7 +26,7 @@ import org.apache.camel.model.RouteDefinition
  * In the typical scenario, when camel is used with akka extension, it is natural that camel reuses the actor system it extends.
  * Also by not creating extra internal actor system we are conserving resources.
  */
-private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
+private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel {
   val supervisor = system.actorOf(Props[CamelSupervisor], "camel-supervisor")
   /**
    * For internal use only.
@@ -35,15 +35,15 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
 
   lazy val context: DefaultCamelContext = {
     val ctx = new DefaultCamelContext
-    if (!settings.jmxStatistics) ctx.disableJMX()
+    if (!settings.JmxStatistics) ctx.disableJMX()
     ctx.setName(system.name)
-    ctx.setStreamCaching(settings.streamingCache)
+    ctx.setStreamCaching(settings.StreamingCache)
     ctx.addComponent("akka", new ActorComponent(this, system))
     ctx.getTypeConverterRegistry.addTypeConverter(classOf[FiniteDuration], classOf[String], DurationTypeConverter)
     ctx
   }
 
-  val settings = new CamelSettings(system.settings.config)
+  val settings = new CamelSettings(system.settings.config, system.dynamicAccess)
 
   lazy val template: ProducerTemplate = context.createProducerTemplate()
 
@@ -100,18 +100,3 @@ private[camel] class DefaultCamel(val system: ActorSystem) extends Camel {
       case EndpointFailedToDeActivate(`endpoint`, cause) ⇒ throw cause
     })
 }
-
-/**
- * For internal use only.
- */
-private[camel] object Conversions {
-  //FIXME Add this to the configuration, and move this functionality to the Camel Extension.
-  private val bodyConversions = Map(
-    "file" -> classOf[InputStream])
-
-  def apply(scheme: String, routeDefinition: RouteDefinition): RouteDefinition = bodyConversions.get(scheme) match {
-    case Some(clazz) ⇒ routeDefinition.convertBodyTo(clazz)
-    case None        ⇒ routeDefinition
-  }
-}
-

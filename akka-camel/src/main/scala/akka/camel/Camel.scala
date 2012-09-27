@@ -8,10 +8,12 @@ import internal._
 import akka.actor._
 import org.apache.camel.ProducerTemplate
 import org.apache.camel.impl.DefaultCamelContext
+import org.apache.camel.model.RouteDefinition
 import com.typesafe.config.Config
 import scala.concurrent.util.Duration
-import java.util.concurrent.TimeUnit._
 import scala.concurrent.util.FiniteDuration
+import java.util.concurrent.TimeUnit._
+import akka.ConfigurationException
 
 /**
  * Camel trait encapsulates the underlying camel machinery.
@@ -55,38 +57,53 @@ trait Camel extends Extension with Activation {
  * Settings for the Camel Extension
  * @param config the config
  */
-class CamelSettings private[camel] (config: Config) {
+class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess) {
   /**
    * Configured setting for how long the actor should wait for activation before it fails.
    */
-  final val activationTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
+  final val ActivationTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.activation-timeout"), MILLISECONDS)
 
   /**
    * Configured setting, when endpoint is out-capable (can produce responses) replyTimeout is the maximum time
    * the endpoint can take to send the response before the message exchange fails.
    * This setting is used for out-capable, in-only, manually acknowledged communication.
    */
-  final val replyTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
+  final val ReplyTimeout: FiniteDuration = Duration(config.getMilliseconds("akka.camel.consumer.reply-timeout"), MILLISECONDS)
 
   /**
    * Configured setting which determines whether one-way communications between an endpoint and this consumer actor
    * should be auto-acknowledged or application-acknowledged.
    * This flag has only effect when exchange is in-only.
    */
-  final val autoAck: Boolean = config.getBoolean("akka.camel.consumer.auto-ack")
+  final val AutoAck: Boolean = config.getBoolean("akka.camel.consumer.auto-ack")
 
   /**
    *
    */
-  final val jmxStatistics: Boolean = config.getBoolean("akka.camel.jmx")
+  final val JmxStatistics: Boolean = config.getBoolean("akka.camel.jmx")
 
   /**
    * enables or disables streamingCache on the Camel Context
    */
-  final val streamingCache: Boolean = config.getBoolean("akka.camel.streamingCache")
+  final val StreamingCache: Boolean = config.getBoolean("akka.camel.streamingCache")
+
+  final val Conversions: (String, RouteDefinition) ⇒ RouteDefinition = {
+    import scala.collection.JavaConverters.asScalaSetConverter
+    val specifiedConversions = {
+      val section = config.getConfig("akka.camel.conversions")
+      section.entrySet.asScala.map(e ⇒ (e.getKey, section.getString(e.getKey)))
+    }
+    val conversions = (Map[String, Class[_ <: AnyRef]]() /: specifiedConversions) {
+      case (m, (key, fqcn)) ⇒
+        m.updated(key, dynamicAccess.getClassFor[AnyRef](fqcn).recover {
+          case e ⇒ throw new ConfigurationException("Could not find/load Camel Converter class [" + fqcn + "]", e)
+        }.get)
+    }
+
+    (s: String, r: RouteDefinition) ⇒ conversions.get(s).fold(r)(r.convertBodyTo)
+  }
 
 }
-
 /**
  * This class can be used to get hold of an instance of the Camel class bound to the actor system.
  * <p>For example:
