@@ -5,7 +5,7 @@
 package akka.remote
 
 import scala.annotation.tailrec
-import akka.actor.{ VirtualPathContainer, Terminated, Deploy, Props, Nobody, LocalActorRef, InternalActorRef, Address, ActorSystemImpl, ActorRef, ActorPathExtractor, ActorPath, Actor }
+import akka.actor.{ VirtualPathContainer, Terminated, Deploy, Props, Nobody, LocalActorRef, InternalActorRef, Address, ActorSystemImpl, ActorRef, ActorPathExtractor, ActorPath, Actor, AddressTerminated }
 import akka.event.LoggingAdapter
 import akka.dispatch.Watch
 import akka.actor.ActorRefWithCell
@@ -27,9 +27,11 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
 
   import akka.actor.Guardian._
 
+  private val terminating = new Switch(false)
+
   system.provider.systemGuardian.tell(RegisterTerminationHook, this)
 
-  private val terminating = new Switch(false)
+  system.eventStream.subscribe(this, classOf[AddressTerminated])
 
   /**
    * Find the longest matching path which we know about and return that ref
@@ -91,6 +93,9 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
         terminationHookDoneWhenNoChildren()
         allChildren foreach system.stop
       }
+
+    case AddressTerminated(address) ⇒
+      allChildren foreach { case a: InternalActorRef if a.getParent.path.address == address ⇒ system.stop(a) }
 
     case unknown ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }
