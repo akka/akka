@@ -133,3 +133,18 @@ class NullSerializer extends Serializer {
   def toBinary(o: AnyRef) = nullAsBytes
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
 }
+
+/**
+ * This is a special Serializer that Serializes and deserializes byte arrays only,
+ * (just returns the byte array unchanged/uncopied)
+ */
+class ByteArraySerializer extends Serializer {
+  def includeManifest: Boolean = false
+  def identifier = 4
+  def toBinary(o: AnyRef) = o match {
+    case null           ⇒ null
+    case o: Array[Byte] ⇒ o
+    case other          ⇒ throw new IllegalArgumentException("ByteArraySerializer only serializes byte arrays, not [" + other + "]")
+  }
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = bytes
+}
