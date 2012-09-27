@@ -16,12 +16,18 @@ in minor releases without notice as we refine and simplify based on your
 feedback. An experimental module may be dropped in major releases without 
 prior deprecation.
 
-Another reason for marking a module as experimental is that it's too early
-to tell if the module has a maintainer that can take the responsibility
-of the module over time.
-
 .. toctree::
    :maxdepth: 1
 
    ../cluster/index
    ../dev/multi-node-testing
+
+Another reason for marking a module as experimental is that it's too early
+to tell if the module has a maintainer that can take the responsibility
+of the module over time. These modules live in the ``akka-contrib`` subproject:
+
+.. toctree::
+   :maxdepth: 2
+
+   ../b/../../../akka-contrib/docs/index.rst
+

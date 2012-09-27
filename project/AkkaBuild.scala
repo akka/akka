@@ -135,7 +135,7 @@ object AkkaBuild extends Build {
     id = "akka-remote-tests-experimental",
     base = file("akka-remote-tests"),
     dependencies = Seq(remote, actorTests % "test->test", testkit),
-    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.remoteTests,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -143,19 +143,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      previousArtifact := akkaPreviousArtifact("akka-remote"),
-      description := """|This module of Akka is marked as
-                        |experimental, which means that it is in early
-                        |access mode, which also means that it is not covered
-                        |by commercial support. An experimental module doesn't
-                        |have to obey the rule of staying binary compatible
-                        |between minor releases. Breaking API changes may be
-                        |introduced in minor releases without notice as we
-                        |refine and simplify based on your feedback. An
-                        |experimental module may be dropped in major releases
-                        |without prior deprecation.
-                        |""".stripMargin
+      previousArtifact := akkaPreviousArtifact("akka-remote")
     )
   ) configs (MultiJvm)
 
@@ -163,7 +151,7 @@ object AkkaBuild extends Build {
     id = "akka-cluster-experimental",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ OSGi.cluster ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.cluster,
       // disable parallel tests
       parallelExecution in Test := false,
@@ -171,19 +159,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      previousArtifact := akkaPreviousArtifact("akka-remote"),
-      description := """|This module of Akka is marked as
-                        |experimental, which means that it is in early
-                        |access mode, which also means that it is not covered
-                        |by commercial support. An experimental module doesn't
-                        |have to obey the rule of staying binary compatible
-                        |between minor releases. Breaking API changes may be
-                        |introduced in minor releases without notice as we
-                        |refine and simplify based on your feedback. An
-                        |experimental module may be dropped in major releases
-                        |without prior deprecation.
-                        |""".stripMargin
+      previousArtifact := akkaPreviousArtifact("akka-remote")
     )
   ) configs (MultiJvm)
 
@@ -354,25 +330,13 @@ object AkkaBuild extends Build {
     id = "akka-sample-cluster-experimental",
     base = file("akka-samples/akka-sample-cluster"),
     dependencies = Seq(cluster, remoteTests % "test", testkit % "test"),
-    settings = sampleSettings ++ multiJvmSettings ++ Seq(
+    settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.clusterSample,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
-      },
-      jvmOptions in MultiJvm := defaultMultiJvmOptions,
-      description := """|This module of Akka is marked as
-                        |experimental, which means that it is in early
-                        |access mode, which also means that it is not covered
-                        |by commercial support. An experimental module doesn't
-                        |have to obey the rule of staying binary compatible
-                        |between minor releases. Breaking API changes may be
-                        |introduced in minor releases without notice as we
-                        |refine and simplify based on your feedback. An
-                        |experimental module may be dropped in major releases
-                        |without prior deprecation.
-                        |""".stripMargin
+      }
     )
   ) configs (MultiJvm)
 
@@ -380,14 +344,13 @@ object AkkaBuild extends Build {
     id = "akka-sample-multi-node-experimental",
     base = file("akka-samples/akka-sample-multi-node"),
     dependencies = Seq(remoteTests % "test", testkit % "test"),
-    settings = sampleSettings ++ multiJvmSettings ++ Seq(
+    settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.multiNodeSample,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
-      },
-      jvmOptions in MultiJvm := defaultMultiJvmOptions
+      }
     )
   ) configs (MultiJvm)
 
@@ -408,8 +371,10 @@ object AkkaBuild extends Build {
   lazy val contrib = Project(
     id = "akka-contrib",
     base = file("akka-contrib"),
-    dependencies = Seq(actor),
-    settings = defaultSettings ++ Seq(
+    dependencies = Seq(remote, remoteTests % "compile;test->test"),
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
+      libraryDependencies ++= Dependencies.contrib,
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
       description := """|
                         |This subproject provides a home to modules contributed by external
                         |developers which may or may not move into the officially supported code
@@ -421,7 +386,7 @@ object AkkaBuild extends Build {
                         |support for these modules.
                         |""".stripMargin
     )
-  )
+  ) configs (MultiJvm)
 
   // Settings
 
@@ -446,6 +411,20 @@ object AkkaBuild extends Build {
 
   lazy val sampleSettings = defaultSettings ++ Seq(
     publishArtifact in Compile := false
+  )
+
+  lazy val experimentalSettings = Seq(
+    description := """|This module of Akka is marked as
+                      |experimental, which means that it is in early
+                      |access mode, which also means that it is not covered
+                      |by commercial support. An experimental module doesn't
+                      |have to obey the rule of staying binary compatible
+                      |between minor releases. Breaking API changes may be
+                      |introduced in minor releases without notice as we
+                      |refine and simplify based on your feedback. An
+                      |experimental module may be dropped in major releases
+                      |without prior deprecation.
+                      |""".stripMargin
   )
 
   val excludeTestNames = SettingKey[Seq[String]]("exclude-test-names")
@@ -589,6 +568,7 @@ object AkkaBuild extends Build {
   }
 
   lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ inConfig(MultiJvm)(ScalariformPlugin.scalariformSettings) ++ Seq(
+    jvmOptions in MultiJvm := defaultMultiJvmOptions,
     compileInputs in MultiJvm <<= (compileInputs in MultiJvm) dependsOn (ScalariformKeys.format in MultiJvm),
     compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
     ScalariformKeys.preferences in MultiJvm := formattingPreferences) ++
@@ -705,6 +685,8 @@ object Dependencies {
   val zeroMQ = Seq(protobuf, zeroMQClient, Test.scalatest, Test.junit)
 
   val clusterSample = Seq(Test.scalatest)
+
+  val contrib = Seq(Test.junitIntf)
 
   val multiNodeSample = Seq(Test.scalatest)
 }

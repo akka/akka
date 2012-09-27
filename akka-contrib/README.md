@@ -14,7 +14,11 @@ A module in this subproject doesn't have to obey the rule of staying binary comp
 
 ## Suggested Format of Contributions
 
-Each contribution should be a self-contained unit, consisting of one source file without dependencies to other modules in this subproject (it may depend on anything else in the Akka distribution, though). This ensures that contributions may be moved into the standard distribution individually.
+Each contribution should be a self-contained unit, consisting of one source file or one exclusively used package, without dependencies to other modules in this subproject; it may depend on everything else in the Akka distribution, though. This ensures that contributions may be moved into the standard distribution individually. The module shall be within a subpackage of `akka.contrib`.
+
+Each module must be accompanied by a test suite which verifies that the provided features work, possibly complemented by integration and unit tests. The tests should follow the [Developer Guidelines](http://doc.akka.io/docs/akka/current/dev/developer-guidelines.html#testing) and go into the `src/test/scala` or `src/test/java` directories (with package name matching the module which is being tested). As an example, if the module were called `akka.contrib.pattern.ReliableProxy`, then the test suite should be called `akka.contrib.pattern.ReliableProxySpec`.
+
+Each module must also have proper documentation in [reStructured Text format](http://sphinx.pocoo.org/rest.html). The documentation should be a single `<module>.rst` file in the `akka-contrib/docs` directory, including a link from `index.rst`.
 
 ## Suggested Way of Using these Contributions
 
