@@ -152,10 +152,11 @@
 <script type="text/javascript">
     google.load('search', '1', {language : 'en', style : google.loader.themes.MINIMALIST});
     google.setOnLoadCallback(function() {
-    var customSearchOptions = {};  var customSearchControl = new google.search.CustomSearchControl(
-    '003065520604945464838:izzukx8-qba', customSearchOptions);
-    customSearchControl.setResultSetSize(google.search.Search.FILTERED_CSE_RESULTSET);
-    customSearchControl.draw('cse');
+        var customSearchOptions = {};  var customSearchControl = new google.search.CustomSearchControl(
+        '003065520604945464838:izzukx8-qba', customSearchOptions);
+        customSearchControl.setResultSetSize(google.search.Search.FILTERED_CSE_RESULTSET);
+        customSearchControl.draw('cse');
+        customSearchControl.setSearchStartingCallback(this, function(c, s, q) { s.setQueryAddition("{{ version|e }}"); });
     }, true);
 </script>
 {%- if include_analytics %}
