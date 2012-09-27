@@ -3,14 +3,17 @@
  */
 package akka.remote
 
+import language.postfixOps
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
-import testkit.{STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec}
+import testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
+import akka.actor.Terminated
+import scala.concurrent.util.duration._
+import com.typesafe.config.ConfigFactory
 
 object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
@@ -20,12 +23,16 @@ object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
     }
   }
 
-  commonConfig(debugConfig(on = false))
+  commonConfig(debugConfig(on = false).withFallback(
+    ConfigFactory.parseString("akka.remote.log-remote-lifecycle-events = off")))
 
   val master = role("master")
   val slave = role("slave")
 
-  deployOn(master, """/service-hello.remote = "@slave@" """)
+  deployOn(master, """
+    /service-hello.remote = "@slave@"
+    /service-hello3.remote = "@slave@"
+    """)
 
   deployOnAll("""/service-hello2.remote = "@slave@" """)
 }
@@ -37,7 +44,10 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
   with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
   import NewRemoteActorMultiJvmSpec._
 
-  def initialParticipants = 2
+  def initialParticipants = roles.size
+
+  // ensure that system shutdown is successful
+  override def verifySystemShutdown = true
 
   "A new remote actor" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
@@ -45,14 +55,11 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello")
         actor.isInstanceOf[RemoteActorRef] must be(true)
+        actor.path.address must be(node(slave).address)
 
         val slaveAddress = testConductor.getAddressFor(slave).await
         actor ! "identify"
         expectMsgType[ActorRef].path.address must equal(slaveAddress)
-
-        // shut down the actor before we let the other node(s) shut down so we don't try to send
-        // "Terminate" to a shut down node
-        system.stop(actor)
       }
 
       enterBarrier("done")
@@ -63,17 +70,37 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello2")
         actor.isInstanceOf[RemoteActorRef] must be(true)
+        actor.path.address must be(node(slave).address)
 
         val slaveAddress = testConductor.getAddressFor(slave).await
         actor ! "identify"
         expectMsgType[ActorRef].path.address must equal(slaveAddress)
-
-        // shut down the actor before we let the other node(s) shut down so we don't try to send
-        // "Terminate" to a shut down node
-        system.stop(actor)
       }
 
       enterBarrier("done")
+    }
+
+    "be able to shutdown system when using remote deployed actor" taggedAs LongRunningTest in within(10 seconds) {
+      runOn(master) {
+        val actor = system.actorOf(Props[SomeActor], "service-hello3")
+        actor.isInstanceOf[RemoteActorRef] must be(true)
+        actor.path.address must be(node(slave).address)
+        watch(actor)
+
+        enterBarrier("deployed")
+
+        // master system is supposed to be shutdown after slave
+        // this should be triggered by slave system shutdown
+        expectMsgPF(remaining) { case Terminated(`actor`) ⇒ true }
+      }
+
+      runOn(slave) {
+        enterBarrier("deployed")
+      }
+
+      // Important that this is the last test.
+      // It must not be any barriers here.
+      // verifySystemShutdown = true will ensure that system shutdown is successful
     }
   }
 }
