@@ -14,7 +14,7 @@ import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.sbt.site.SphinxSupport
-import com.typesafe.sbt.site.SphinxSupport.{ enable, generatePdf, sphinxInputs, sphinxPackages, Sphinx }
+import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, sphinxInputs, sphinxPackages, Sphinx }
 import com.typesafe.sbt.preprocess.Preprocess.{ preprocess, preprocessExts, preprocessVars, simplePreprocess }
 import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
@@ -354,7 +354,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ SphinxSupport.settings ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
-      enable in generatePdf in Sphinx := true,
+      enableOutput in generatePdf in Sphinx := true,
       unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
