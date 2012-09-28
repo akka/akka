@@ -20,6 +20,7 @@ import akka.actor.{ DeadLetter, Address, ActorRef }
 import akka.util.Switch
 import scala.util.control.NonFatal
 import org.jboss.netty.handler.ssl.SslHandler
+import scala.concurrent.util.Deadline
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
@@ -106,7 +107,7 @@ private[akka] class ActiveRemoteClient private[akka] (
   private[remote] var openChannels: DefaultChannelGroup = _
 
   @volatile
-  private var reconnectionTimeWindowStart = 0L
+  private var reconnectionDeadline: Option[Deadline] = None
 
   def notifyListeners(msg: RemoteLifeCycleEvent): Unit = netty.notifyListeners(msg)
 
@@ -208,21 +209,18 @@ private[akka] class ActiveRemoteClient private[akka] (
     log.debug("[{}] has been shut down", name)
   }
 
-  private[akka] def isWithinReconnectionTimeWindow: Boolean = {
-    if (reconnectionTimeWindowStart == 0L) {
-      reconnectionTimeWindowStart = System.currentTimeMillis
+  private[akka] def isWithinReconnectionTimeWindow: Boolean = reconnectionDeadline match {
+    case None ⇒
+      reconnectionDeadline = Some(Deadline.now + settings.ReconnectionTimeWindow)
       true
-    } else {
-      val timeLeft = (settings.ReconnectionTimeWindow.toMillis - (System.currentTimeMillis - reconnectionTimeWindowStart))
-      val hasTimeLeft = timeLeft > 0
+    case Some(deadline) ⇒
+      val hasTimeLeft = deadline.hasTimeLeft
       if (hasTimeLeft)
-        log.info("Will try to reconnect to remote server for another [{}] milliseconds", timeLeft)
-
+        log.info("Will try to reconnect to remote server for another [{}] milliseconds", deadline.timeLeft.toMillis)
       hasTimeLeft
-    }
   }
 
-  private[akka] def resetReconnectionTimeWindow = reconnectionTimeWindowStart = 0L
+  private[akka] def resetReconnectionTimeWindow = reconnectionDeadline = None
 }
 
 @ChannelHandler.Sharable
