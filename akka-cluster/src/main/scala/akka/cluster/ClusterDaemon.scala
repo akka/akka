@@ -108,7 +108,7 @@ private[cluster] object InternalClusterAction {
 
   sealed trait SubscriptionMessage
   case class Subscribe(subscriber: ActorRef, to: Class[_]) extends SubscriptionMessage
-  case class Unsubscribe(subscriber: ActorRef) extends SubscriptionMessage
+  case class Unsubscribe(subscriber: ActorRef, to: Option[Class[_]]) extends SubscriptionMessage
   /**
    * @param receiver if `receiver` is defined the event will only be sent to that
    *   actor, otherwise it will be sent to all subscribers via the `eventStream`.
