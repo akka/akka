@@ -18,6 +18,7 @@ Peter Vlugter        Committer
 Martin Krasser       Committer                   krasserm AT googlemail DOT com
 Raymond Roestenburg  Committer
 Piotr Gabryanczyk    Committer
+Helena Edelson       Committer                   helena AT helenaedelson DOT com
 Debasish Ghosh       Alumni                      dghosh AT acm DOT org
 Ross McDonald        Alumni                      rossajmcd AT gmail DOT com
 Eckhart Hertzler     Alumni
