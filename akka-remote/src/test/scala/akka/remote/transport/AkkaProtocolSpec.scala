@@ -1,19 +1,18 @@
 package akka.remote.transport
 
-import akka.actor.{ ExtendedActorSystem, Address, Props, ActorRef }
+import akka.actor.{ ExtendedActorSystem, Address, Props }
 import akka.remote.transport.AkkaPduCodec.{Disassociate, Associate, Heartbeat}
-import akka.remote.transport.AkkaProtocolSpec.{ TestMessageDispatcher, TestFailureDetector }
+import akka.remote.transport.AkkaProtocolSpec.TestFailureDetector
 import akka.remote.transport.AssociationHandle.{ Disassociated, InboundPayload }
-import akka.remote.transport.EndpointWriter.{ Retire, Ready }
 import akka.remote.transport.TestTransport._
 import akka.remote.transport.Transport._
 import akka.remote.{ RemoteProtocol, RemoteActorRefProvider, FailureDetector }
 import akka.testkit.{ ImplicitSender, AkkaSpec }
+import akka.util.ByteString
 import com.google.protobuf.{ ByteString ⇒ PByteString }
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.{Await, Promise}
 import scala.concurrent.util.duration._
-import akka.util.ByteString
+import scala.concurrent.{Await, Promise}
 
 object AkkaProtocolSpec {
 
@@ -23,12 +22,6 @@ object AkkaProtocolSpec {
     @volatile var called: Boolean = false
 
     def heartbeat(): Unit = called = true
-  }
-
-  class TestMessageDispatcher extends MessageDispatcher {
-    @volatile var called: Boolean = false
-
-    def dispatch(recipient: ActorRef, serializedMessage: Any, senderOption: Option[ActorRef]): Unit = called = true
   }
 
 }
@@ -83,10 +76,9 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
     // silently drop writes -- we do not have another endpoint under test, nobody to forward to
     transport.writeBehavior.pushConstant(true)
-    (new TestFailureDetector, new TestMessageDispatcher, registry, transport, handle)
+    (new TestFailureDetector, registry, transport, handle)
   }
 
-  //TODO: refactor this mess
   def lastActivityIsHeartbeat(registry: AssociationRegistry) = if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
     case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
       codec.decodePdu(payload, provider) match {
@@ -114,12 +106,11 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     case _ ⇒ false
   }
 
-  //TODO: two groups, inbound and outbound
   //TODO: test origin handling
-  "InboundStateActor" must {
+  "ProtocolStateActor" must {
 
     "register itself as reader on injecteted handles" in {
-      val (failureDetector, msgDispatcher, _, _, handle) = collaborators
+      val (failureDetector, _, _, handle) = collaborators
 
       system.actorOf(Props(new ProtocolStateActor(
         handle,
@@ -132,10 +123,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       awaitCond(handle.readHandlerPromise.isCompleted)
     }
 
-    //TODO: test the same for outbound
-
-    "in passive (inbound) mode accept payload after Associate PDU received" in {
-      val (failureDetector, msgDispatcher, registry, _, handle) = collaborators
+    "in inbound mode accept payload after Associate PDU received" in {
+      val (failureDetector, registry, _, handle) = collaborators
 
       val reader = system.actorOf(Props(new ProtocolStateActor(
         handle,
@@ -166,8 +155,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       }
     }
 
-    "in passive mode disassociate when an unexpected message arrives instead of Associate" in {
-      val (failureDetector, msgDispatcher, registry, _, handle) = collaborators
+    "in inbound mode disassociate when an unexpected message arrives instead of Associate" in {
+      val (failureDetector, registry, _, handle) = collaborators
 
       val reader = system.actorOf(Props(new ProtocolStateActor(
         handle,
@@ -188,8 +177,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       })
     }
 
-    "an OutboundStateActor without WaitActivity send an associate immediately an signal readiness" in {
-      val (failureDetector, _, registry, transport, handle) = collaborators
+    "serve the handle as soon as possible if WaitActivity is turned off" in {
+      val (failureDetector, registry, transport, handle) = collaborators
       transport.associateBehavior.pushConstant(Transport.Ready(handle))
 
       val statusPromise: Promise[Status] = Promise()
@@ -204,7 +193,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       )))
 
       Await.result(statusPromise.future, 3 seconds) match {
-        case Transport.Ready(handle) if handle.remoteAddress == remoteAddress && handle.localAddress == localAddress =>
+        case Transport.Ready(h) if h.remoteAddress == remoteAddress && h.localAddress == localAddress =>
         case _ => fail()
       }
 
@@ -213,8 +202,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
     }
 
-    "in active mode with WaitActivity delay readiness until activity detected" in {
-      val (failureDetector, msgDispatcher, registry, transport, handle) = collaborators
+    "in outbound mode with WaitActivity delay readiness until activity detected" in {
+      val (failureDetector, registry, transport, handle) = collaborators
       transport.associateBehavior.pushConstant(Transport.Ready(handle))
 
       val statusPromise: Promise[Status] = Promise()
@@ -240,16 +229,14 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       reader ! testPayload
 
       Await.result(statusPromise.future, 3 seconds) match {
-        case Transport.Ready(handle) if handle.remoteAddress == remoteAddress && handle.localAddress == localAddress =>
+        case Transport.Ready(h) if h.remoteAddress == remoteAddress && h.localAddress == localAddress =>
         case _ => fail()
       }
-
-      // TODO: test for the incoming payload as well
 
     }
 
     "ignore incoming associations with wrong cookie" in {
-      val (failureDetector, msgDispatcher, registry, _, handle) = collaborators
+      val (failureDetector, registry, _, handle) = collaborators
 
       val reader = system.actorOf(Props(new ProtocolStateActor(
         handle,
@@ -267,7 +254,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     }
 
     "accept incoming associations with correct cookie" in {
-      val (failureDetector, msgDispatcher, registry, _, handle) = collaborators
+      val (failureDetector, registry, _, handle) = collaborators
 
       val reader = system.actorOf(Props(new ProtocolStateActor(
         handle,
@@ -291,8 +278,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       awaitCond(lastActivityIsHeartbeat(registry))
     }
 
-    "send cookie in Associate if configured to do so" in {
-      val (failureDetector, msgDispatcher, registry, transport, handle) = collaborators
+    "send cookie in Associate PDU if configured to do so" in {
+      val (failureDetector, registry, transport, handle) = collaborators
       transport.associateBehavior.pushConstant(Transport.Ready(handle))
 
       val statusPromise: Promise[Status] = Promise()
@@ -311,7 +298,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       )))
 
       Await.result(statusPromise.future, 3 seconds) match {
-        case Transport.Ready(handle) if handle.remoteAddress == remoteAddress && handle.localAddress == localAddress =>
+        case Transport.Ready(h) if h.remoteAddress == remoteAddress && h.localAddress == localAddress =>
         case _ => fail()
       }
 
@@ -319,7 +306,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     }
 
     "handle explicit disassociate messages" in {
-      val (failureDetector, msgDispatcher, registry, transport, handle) = collaborators
+      val (failureDetector, registry, transport, handle) = collaborators
       transport.associateBehavior.pushConstant(Transport.Ready(handle))
 
       val statusPromise: Promise[Status] = Promise()
@@ -348,7 +335,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     }
 
     "handle transport level disassociations" in {
-      val (failureDetector, msgDispatcher, registry, transport, handle) = collaborators
+      val (failureDetector, registry, transport, handle) = collaborators
       transport.associateBehavior.pushConstant(Transport.Ready(handle))
 
       val statusPromise: Promise[Status] = Promise()
@@ -381,8 +368,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       expectMsg(Disassociated)
     }
 
-    "send Retire when failure detector signals failure" in {
-      val (failureDetector, msgDispatcher, registry, transport, handle) = collaborators
+    "disassociate when failure detector signals failure" in {
+      val (failureDetector, registry, transport, handle) = collaborators
       transport.associateBehavior.pushConstant(Transport.Ready(handle))
 
       val statusPromise: Promise[Status] = Promise()
@@ -413,8 +400,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       expectMsg(Disassociated)
     }
 
-    "handle correctly when the handler is registered after the association is already closed" in {
-      val (failureDetector, msgDispatcher, registry, transport, handle) = collaborators
+    "handle correctly when the handler is registered only after the association is already closed" in {
+      val (failureDetector, _, transport, handle) = collaborators
       transport.associateBehavior.pushConstant(Transport.Ready(handle))
 
       val statusPromise: Promise[Status] = Promise()
@@ -440,6 +427,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       expectMsg(Disassociated)
 
     }
+
+    // TODO: test maximum frame violation handling
 
   }
 

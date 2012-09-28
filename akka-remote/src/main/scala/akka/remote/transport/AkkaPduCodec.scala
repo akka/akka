@@ -1,7 +1,7 @@
 package akka.remote.transport
 
 import akka.AkkaException
-import akka.actor.{InternalActorRef, Address, ActorRef}
+import akka.actor.{AddressFromURIString, InternalActorRef, Address, ActorRef}
 import akka.remote.RemoteProtocol._
 import akka.remote.transport.AkkaPduCodec._
 import akka.remote.{RemoteActorRefProvider, RemoteProtocol}
@@ -16,7 +16,10 @@ object AkkaPduCodec {
   case class Associate(cookie: Option[String], origin: Address) extends AkkaPdu
   case object Disassociate extends AkkaPdu
   case object Heartbeat extends AkkaPdu
-  case class Message(recipient: InternalActorRef, serializedMessage: MessageProtocol, sender: Option[ActorRef]) extends AkkaPdu
+  case class Message(recipient: InternalActorRef,
+                     recipientAddress: Address,
+                     serializedMessage: MessageProtocol,
+                     sender: Option[ActorRef]) extends AkkaPdu
 }
 
 trait AkkaPduCodec {
@@ -83,6 +86,7 @@ object AkkaPduProtobufCodec extends AkkaPduCodec {
   private def decodeMessage(msgPdu: RemoteMessageProtocol, provider: RemoteActorRefProvider): Message = {
     Message(
       recipient = provider.actorFor(provider.rootGuardian, msgPdu.getRecipient.getPath),
+      recipientAddress = AddressFromURIString(msgPdu.getRecipient.getPath),
       serializedMessage = msgPdu.getMessage,
       sender = if (msgPdu.hasSender) Some(provider.actorFor(provider.rootGuardian, msgPdu.getSender.getPath)) else None
     )
