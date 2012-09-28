@@ -54,7 +54,7 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
   }
 
   override def afterEach(): Unit = {
-    publisher ! Unsubscribe(testActor)
+    publisher ! Unsubscribe(testActor, None)
     system.stop(publisher)
   }
 
@@ -114,6 +114,12 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       publisher ! PublishChanges(g4, g5)
       expectMsg(ConvergenceChanged(true))
       expectMsgType[SeenChanged]
+    }
+
+    "support unsubscribe" in {
+      publisher ! Unsubscribe(testActor, Some(classOf[ClusterDomainEvent]))
+      publisher ! PublishChanges(g1, g2)
+      expectNoMsg
     }
 
   }
