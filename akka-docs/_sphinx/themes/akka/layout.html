@@ -156,9 +156,9 @@
         '003065520604945464838:izzukx8-qba', customSearchOptions);
         customSearchControl.setResultSetSize(google.search.Search.FILTERED_CSE_RESULTSET);
         customSearchControl.draw('cse');
-        var path = window.location.pathname.split('/');
+        var path = window.location.pathname.split('/').slice(0,3);
         if(window.location.hostname && path.length >= 3) {
-          var site = "site:" + window.location.hostname + path.slice(0,3).join('/').toString();
+          var site = "site:" + window.location.hostname + '/' + path.join('/').toString();
           customSearchControl.setSearchStartingCallback(this, function(c, s, q) { s.setQueryAddition(site); });
         }
     }, true);
