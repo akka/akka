@@ -185,10 +185,17 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     clusterCore ! InternalClusterAction.Subscribe(subscriber, to)
 
   /**
-   * Unsubscribe to cluster domain events.
+   * Unsubscribe to all cluster domain events.
    */
   def unsubscribe(subscriber: ActorRef): Unit =
-    clusterCore ! InternalClusterAction.Unsubscribe(subscriber)
+    clusterCore ! InternalClusterAction.Unsubscribe(subscriber, None)
+
+  /**
+   * Unsubscribe to a specific type of cluster domain events,
+   * matching previous `subscribe` registration.
+   */
+  def unsubscribe(subscriber: ActorRef, to: Class[_]): Unit =
+    clusterCore ! InternalClusterAction.Unsubscribe(subscriber, Some(to))
 
   /**
    * Publish current (full) state of the cluster to subscribers,

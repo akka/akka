@@ -192,7 +192,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     case currentStats: CurrentInternalStats   ⇒ publishInternalStats(currentStats)
     case PublishCurrentClusterState(receiver) ⇒ publishCurrentClusterState(receiver)
     case Subscribe(subscriber, to)            ⇒ subscribe(subscriber, to)
-    case Unsubscribe(subscriber)              ⇒ unsubscribe(subscriber)
+    case Unsubscribe(subscriber, to)          ⇒ unsubscribe(subscriber, to)
     case PublishDone                          ⇒ sender ! PublishDone
   }
 
@@ -216,8 +216,10 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     eventStream.subscribe(subscriber, to)
   }
 
-  def unsubscribe(subscriber: ActorRef): Unit =
-    eventStream.unsubscribe(subscriber)
+  def unsubscribe(subscriber: ActorRef, to: Option[Class[_]]): Unit = to match {
+    case None    ⇒ eventStream.unsubscribe(subscriber)
+    case Some(c) ⇒ eventStream.unsubscribe(subscriber, c)
+  }
 
   def publishChanges(oldGossip: Gossip, newGossip: Gossip): Unit = {
     // keep the latestGossip to be sent to new subscribers
