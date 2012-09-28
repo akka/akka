@@ -148,22 +148,22 @@
     </p>          
   </div>
 </div>
+{%- if include_analytics %}
 <script src="http://www.google.com/jsapi" type="text/javascript"></script>
 <script type="text/javascript">
     google.load('search', '1', {language : 'en', style : google.loader.themes.MINIMALIST});
     google.setOnLoadCallback(function() {
-        var customSearchOptions = {};  var customSearchControl = new google.search.CustomSearchControl(
-        '003065520604945464838:izzukx8-qba', customSearchOptions);
-        customSearchControl.setResultSetSize(google.search.Search.FILTERED_CSE_RESULTSET);
-        customSearchControl.draw('cse');
-        var path = window.location.pathname.split('/').slice(0,4);
-        if(window.location.hostname && path.length >= 4) {
-          var site = "site:" + window.location.hostname + path.join('/').toString();
-          customSearchControl.setSearchStartingCallback(this, function(c, s, q) { s.setQueryAddition(site); });
-        }
+    var customSearchOptions = {};  var customSearchControl = new google.search.CustomSearchControl(
+    '003065520604945464838:izzukx8-qba', customSearchOptions);
+    customSearchControl.setResultSetSize(google.search.Search.FILTERED_CSE_RESULTSET);
+    customSearchControl.draw('cse');
+    var path = window.location.pathname.split('/').slice(0,4);
+    if(window.location.hostname && path.length >= 4) {
+    var site = "site:" + window.location.hostname + path.join('/').toString();
+    customSearchControl.setSearchStartingCallback(this, function(c, s, q) { s.setQueryAddition(site); });
+    }
     }, true);
 </script>
-{%- if include_analytics %}
 <style type="text/css">
     .gsc-control-cse {
     font-family: Arial, sans-serif;
