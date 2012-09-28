@@ -13,6 +13,7 @@ import com.typesafe.sbtscalariform.ScalariformPlugin.ScalariformKeys
 import com.typesafe.sbtosgi.OsgiPlugin.{ OsgiKeys, osgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, sphinxInputs, sphinxPackages, Sphinx }
 import com.typesafe.sbt.preprocess.Preprocess.{ preprocess, preprocessExts, preprocessVars, simplePreprocess }
@@ -351,7 +352,7 @@ object AkkaBuild extends Build {
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test", mailboxesCommon % "compile;test->test",
       remote, cluster, slf4j, agent, dataflow, transactor, fileMailbox, zeroMQ, camel, osgi, osgiAries),
-    settings = defaultSettings ++ SphinxSupport.settings ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
+    settings = defaultSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
       // copy akka-contrib/docs into our rst_preprocess/contrib (and apply substitutions)
