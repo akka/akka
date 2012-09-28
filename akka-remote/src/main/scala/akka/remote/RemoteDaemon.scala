@@ -25,7 +25,7 @@ private[akka] case class DaemonMsgCreate(props: Props, deploy: Deploy, path: Str
 private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath, _parent: InternalActorRef, _log: LoggingAdapter)
   extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
-  import akka.actor.Guardian._
+  import akka.actor.SystemGuardian._
 
   private val terminating = new Switch(false)
 

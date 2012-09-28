@@ -303,7 +303,7 @@ private[akka] case class StopChild(child: ActorRef)
 /**
  * INTERNAL API
  */
-private[akka] object Guardian {
+private[akka] object SystemGuardian {
   /**
    * For the purpose of orderly shutdown it's possible
    * to register interest in the termination of systemGuardian
@@ -390,8 +390,26 @@ class LocalActorRefProvider(
     }
   }
 
-  private class Guardian(override val supervisorStrategy: SupervisorStrategy, isSystem: Boolean) extends Actor {
-    import Guardian._
+  /*
+   * Root and user guardian
+   */
+  private class Guardian(override val supervisorStrategy: SupervisorStrategy) extends Actor {
+
+    def receive = {
+      case Terminated(_)    ⇒ context.stop(self)
+      case StopChild(child) ⇒ context.stop(child)
+      case m                ⇒ deadLetters ! DeadLetter(m, sender, self)
+    }
+
+    // guardian MUST NOT lose its children during restart
+    override def preRestart(cause: Throwable, msg: Option[Any]) {}
+  }
+
+  /**
+   * System guardian
+   */
+  private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy) extends Actor {
+    import SystemGuardian._
 
     var terminationHooks = Set.empty[ActorRef]
 
@@ -400,13 +418,14 @@ class LocalActorRefProvider(
         // a registered, and watched termination hook terminated before
         // termination process of guardian has started
         terminationHooks -= a
-      case Terminated(_) ⇒
+      case Terminated(`guardian`) ⇒
         // time for the guardian to stop, but first notify all the
         // termination hooks, they will reply with TerminationHookDone
         // and when all are done the guardian is stopped
         context.become(terminating)
         terminationHooks foreach { _ ! TerminationHook }
         stopWhenAllTerminationHooksDone()
+      case Terminated(_)    ⇒
       case StopChild(child) ⇒ context.stop(child)
       case RegisterTerminationHook if sender != context.system.deadLetters ⇒
         terminationHooks += sender
@@ -426,7 +445,7 @@ class LocalActorRefProvider(
     }
 
     def stopWhenAllTerminationHooksDone(): Unit = if (terminationHooks.isEmpty) {
-      if (isSystem) eventStream.stopDefaultLoggers()
+      eventStream.stopDefaultLoggers()
       context.stop(self)
     }
 
@@ -484,7 +503,7 @@ class LocalActorRefProvider(
   protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
 
   lazy val rootGuardian: LocalActorRef =
-    new LocalActorRef(system, Props(new Guardian(rootGuardianStrategy, isSystem = false)), theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
+    new LocalActorRef(system, Props(new Guardian(rootGuardianStrategy)), theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
         case "temp"        ⇒ tempContainer
@@ -496,7 +515,7 @@ class LocalActorRefProvider(
   lazy val guardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("user")
-    val ref = new LocalActorRef(system, Props(new Guardian(guardianStrategy, isSystem = false)), rootGuardian, rootPath / "user")
+    val ref = new LocalActorRef(system, Props(new Guardian(guardianStrategy)), rootGuardian, rootPath / "user")
     cell.initChild(ref)
     ref
   }
@@ -504,7 +523,7 @@ class LocalActorRefProvider(
   lazy val systemGuardian: LocalActorRef = {
     val cell = rootGuardian.underlying
     cell.reserveChild("system")
-    val ref = new LocalActorRef(system, Props(new Guardian(systemGuardianStrategy, isSystem = true)), rootGuardian, rootPath / "system")
+    val ref = new LocalActorRef(system, Props(new SystemGuardian(systemGuardianStrategy)), rootGuardian, rootPath / "system")
     cell.initChild(ref)
     ref
   }
