@@ -271,7 +271,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
     }
   }
 
-  def shutdownClientConnection(remoteAddress: Address): Boolean = {
+  def shutdownClientConnection(remoteAddress: Address): Unit = {
     clientsLock.writeLock().lock()
     try {
       remoteClients.remove(remoteAddress) match {
@@ -283,7 +283,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
     }
   }
 
-  def restartClientConnection(remoteAddress: Address): Boolean = {
+  def restartClientConnection(remoteAddress: Address): Unit = {
     clientsLock.readLock().lock()
     try {
       remoteClients.get(remoteAddress) match {
