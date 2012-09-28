@@ -76,6 +76,8 @@ private[akka] class RemoteDeploymentWatcher extends Actor {
       // send extra ChildTerminated to the supervisor so that it will remove the child
       if (t.addressTerminated) supervisors(a).sendSystemMessage(ChildTerminated(a))
       supervisors -= a
+
+    case _: Terminated ⇒
   }
 }
 

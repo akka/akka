@@ -65,11 +65,18 @@ case object Kill extends Kill {
  * Terminated message can't be forwarded to another actor, since that actor
  * might not be watching the subject. Instead, if you need to forward Terminated
  * to another actor you should send the information in your own message.
+ *
+ * @param actor the watched actor that terminated
+ * @param existenceConfirmed is false when the Terminated message was not sent
+ *   directly from the watched actor, but derived from another source, such as
+ *   when watching a non-local ActorRef, which might not have been resolved
+ * @param addressTerminated the Terminated message was derived from
+ *   that the remote node hosting the watched actor was detected as unreachable
  */
 @SerialVersionUID(1L)
 case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
-  @BeanProperty val addressTerminated: Boolean = false) extends AutoReceivedMessage
+  @BeanProperty val addressTerminated: Boolean) extends AutoReceivedMessage
 
 /**
  * INTERNAL API

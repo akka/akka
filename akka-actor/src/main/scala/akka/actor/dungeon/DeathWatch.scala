@@ -49,7 +49,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
 
   protected def tellWatchersWeDied(actor: Actor): Unit = {
     if (!watchedBy.isEmpty) {
-      val terminated = Terminated(self)(existenceConfirmed = true)
+      val terminated = Terminated(self)(existenceConfirmed = true, addressTerminated = false)
       try {
         watchedBy foreach {
           watcher ⇒
