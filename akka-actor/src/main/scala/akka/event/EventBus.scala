@@ -137,29 +137,21 @@ trait SubchannelClassification { this: EventBus ⇒
 
   def subscribe(subscriber: Subscriber, to: Classifier): Boolean = subscriptions.synchronized {
     val diff = subscriptions.addValue(to, subscriber)
-    if (diff.isEmpty) false
-    else {
-      cache ++= diff
-      true
-    }
+    addToCache(diff)
+    diff.nonEmpty
   }
 
   def unsubscribe(subscriber: Subscriber, from: Classifier): Boolean = subscriptions.synchronized {
     val diff = subscriptions.removeValue(from, subscriber)
-    if (diff.isEmpty) false
-    else {
-      removeFromCache(diff)
-      true
-    }
+    // removeValue(K, V) does not return the diff to remove from or add to the cache
+    // but instead the whole set of keys and values that should be updated in the cache
+    cache ++= diff
+    diff.nonEmpty
   }
 
   def unsubscribe(subscriber: Subscriber): Unit = subscriptions.synchronized {
-    val diff = subscriptions.removeValue(subscriber)
-    if (diff.nonEmpty) removeFromCache(diff)
+    removeFromCache(subscriptions.removeValue(subscriber))
   }
-
-  private def removeFromCache(changes: Seq[(Classifier, Set[Subscriber])]): Unit =
-    cache ++= changes map { case (c, s) ⇒ (c, cache.getOrElse(c, Set[Subscriber]()) -- s) }
 
   def publish(event: Event): Unit = {
     val c = classify(event)
@@ -168,13 +160,22 @@ trait SubchannelClassification { this: EventBus ⇒
       else subscriptions.synchronized {
         if (cache contains c) cache(c)
         else {
-          val diff = subscriptions.addKey(c)
-          cache ++= diff
+          addToCache(subscriptions.addKey(c))
           cache(c)
         }
       }
     recv foreach (publish(event, _))
   }
+
+  private def removeFromCache(changes: Seq[(Classifier, Set[Subscriber])]): Unit =
+    cache = (cache /: changes) {
+      case (m, (c, cs)) ⇒ m.updated(c, m.getOrElse(c, Set.empty[Subscriber]) -- cs)
+    }
+
+  private def addToCache(changes: Seq[(Classifier, Set[Subscriber])]): Unit =
+    cache = (cache /: changes) {
+      case (m, (c, cs)) ⇒ m.updated(c, m.getOrElse(c, Set.empty[Subscriber]) ++ cs)
+    }
 }
 
 /**
