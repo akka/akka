@@ -11,9 +11,9 @@ experimental, is to make them easily available and improve based on
 feedback, or even discover that the module wasn't useful.
 
 An experimental module doesn't have to obey the rule of staying binary
-compatible between minor releases. Breaking API changes may be introduced
+compatible between micro releases. Breaking API changes may be introduced
 in minor releases without notice as we refine and simplify based on your
-feedback. An experimental module may be dropped in major releases without 
+feedback. An experimental module may be dropped in minor releases without 
 prior deprecation.
 
 .. toctree::

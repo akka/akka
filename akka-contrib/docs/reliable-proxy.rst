@@ -90,3 +90,32 @@ From Scala it would look like so:
 .. includecode:: @contribSrc@/src/test/scala/akka/contrib/pattern/ReliableProxyDocSpec.scala#demo-transition
 
 
+The Actor Contract
+------------------
+
+Message it Processes
+^^^^^^^^^^^^^^^^^^^^
+
+* :class:`FSM.SubscribeTransitionCallBack` and :class:`FSM.UnsubscribeTransitionCallBack`, see :ref:`fsm-scala`
+* internal messages declared within :obj:`ReliableProxy`, *not for external use*
+* any other message is transferred through the reliable tunnel and forwarded to the designated target actor
+
+Messages it Sends
+^^^^^^^^^^^^^^^^^
+
+* :class:`FSM.CurrentState` and :class:`FSM.Transition`, see :ref:`fsm-scala`
+ 
+Exceptions it Escalates
+^^^^^^^^^^^^^^^^^^^^^^^
+
+* no specific exception types
+* any exception encountered by either the local or remote end-point are escalated (only fatal VM errors)
+
+Arguments it Takes
+^^^^^^^^^^^^^^^^^^
+
+* *target* is the :class:`ActorRef` to which the tunnel shall reliably deliver
+  messages, ``B`` in the above illustration.
+* *retryAfter* is the timeout for receiving ACK messages from the remote
+  end-point; once it fires, all outstanding message sends will be retried.
+

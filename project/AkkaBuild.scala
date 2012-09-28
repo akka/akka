@@ -64,7 +64,7 @@ object AkkaBuild extends Build {
       generatePdf in Sphinx <<= generatePdf in Sphinx in LocalProject(docs.id) map identity
 
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib)
   )
 
   lazy val actor = Project(
@@ -356,14 +356,14 @@ object AkkaBuild extends Build {
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
       // copy akka-contrib/docs into our rst_preprocess/contrib (and apply substitutions)
       preprocess in Sphinx <<= (preprocess in Sphinx,
-                                sourceDirectory in contrib in Sphinx,
+                                baseDirectory in contrib,
                                 target in preprocess in Sphinx,
                                 cacheDirectory,
                                 preprocessExts in Sphinx,
                                 preprocessVars in Sphinx,
                                 streams) map { (orig, src, target, cacheDir, exts, vars, s) =>
         val contribSrc = Map("contribSrc" -> "../../../akka-contrib")
-        simplePreprocess(src, target / "contrib", cacheDir / "sphinx" / "preprocessed-contrib", exts, vars ++ contribSrc, s.log)
+        simplePreprocess(src / "docs", target / "contrib", cacheDir / "sphinx" / "preprocessed-contrib", exts, vars ++ contribSrc, s.log)
         orig
       },
       enableOutput in generatePdf in Sphinx := true,
@@ -378,16 +378,9 @@ object AkkaBuild extends Build {
     id = "akka-contrib",
     base = file("akka-contrib"),
     dependencies = Seq(remote, remoteTests % "compile;test->test"),
-    settings = defaultSettings ++ multiJvmSettings ++ SphinxSupport.settings ++ sphinxPreprocessing ++ Seq(
+    settings = defaultSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.contrib,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
-      preprocessVars in Sphinx <<= (preprocessVars in Sphinx) { (old) =>
-        old ++ Map(
-          "contribSrc" -> ".."
-        )
-      },
-      sourceDirectory in Sphinx <<= baseDirectory / "docs",
-      sphinxPackages in Sphinx <+= baseDirectory { _ / ".." / "akka-docs" / "_sphinx" / "pygments" },
       description := """|
                         |This subproject provides a home to modules contributed by external
                         |developers which may or may not move into the officially supported code

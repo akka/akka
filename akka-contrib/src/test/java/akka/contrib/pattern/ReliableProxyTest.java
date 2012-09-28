@@ -50,8 +50,6 @@ public class ReliableProxyTest {
           //#demo-proxy
           final ActorRef proxy = getContext().actorOf(
               new Props(new UntypedActorFactory() {
-                private static final long serialVersionUID = 1L;
-
                 public Actor create() {
                   final FiniteDuration retry = Duration.create(100, "millis");
                   return new ReliableProxy(target, retry);
@@ -83,8 +81,6 @@ public class ReliableProxyTest {
           //#demo-transition
           final ActorRef proxy = getContext().actorOf(
               new Props(new UntypedActorFactory() {
-                private static final long serialVersionUID = 1L;
-
                 public Actor create() {
                   final FiniteDuration retry = Duration.create(100, "millis");
                   return new ReliableProxy(target, retry);

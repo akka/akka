@@ -59,8 +59,10 @@ Akka uses [Scalariform](https://github.com/mdr/scalariform) to enforce some of t
 
 ##Contributing Modules##
 
-For external contributions of entire modules, the normal way is to establish it as a stand-alone module first,
- to show that there is a need for the module. The next step would be to add it to Akka as an "experimental module" (in the akka-contrib subproject),
- then when the module is hardened, well documented and tested it becomes an officially supported Akka module.
+For external contributions of entire features, the normal way is to establish it
+as a stand-alone feature first, to show that there is a need for the feature. The
+next step would be to add it to Akka as an "experimental feature" (in the
+akka-contrib subproject), then when the feature is hardened, well documented and
+tested it becomes an officially supported Akka feature.
 
-[List of experimental Akka modules](http://doc.akka.io/docs/akka/current/experimental/index.html)
+[List of experimental Akka features](http://doc.akka.io/docs/akka/current/experimental/index.html)
