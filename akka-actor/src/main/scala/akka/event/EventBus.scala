@@ -143,7 +143,9 @@ trait SubchannelClassification { this: EventBus ⇒
 
   def unsubscribe(subscriber: Subscriber, from: Classifier): Boolean = subscriptions.synchronized {
     val diff = subscriptions.removeValue(from, subscriber)
-    cache ++= diff // FIXME What is the reason this isn't calling removeFromCache?
+    // removeValue(K, V) does not return the diff to remove from or add to the cache
+    // but instead the whole set of keys and values that should be updated in the cache
+    cache ++= diff
     diff.nonEmpty
   }
 
@@ -165,7 +167,6 @@ trait SubchannelClassification { this: EventBus ⇒
     recv foreach (publish(event, _))
   }
 
-  // we can only let keys that already exist in the cache get updated
   private def removeFromCache(changes: Seq[(Classifier, Set[Subscriber])]): Unit =
     cache = (cache /: changes) {
       case (m, (c, cs)) ⇒ m.updated(c, m.getOrElse(c, Set.empty[Subscriber]) -- cs)

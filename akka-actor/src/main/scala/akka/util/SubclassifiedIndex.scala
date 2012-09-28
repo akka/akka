@@ -132,11 +132,14 @@ private[akka] class SubclassifiedIndex[K, V] private (private var values: Set[V]
   /**
    * Remove value from all keys which are subclasses of the given key.
    *
-   * @return the complete changes that should be inserted in the cache
+   * @return the complete changes that should be updated in the cache
    */
   def removeValue(key: K, value: V): Changes =
+    // the reason for not using the values in the returned diff is that we need to
+    // go through the whole tree to find all values for the "changed" keys in other
+    // parts of the tree as well, since new nodes might have been created
     mergeChangesByKey(innerRemoveValue(key, value)) map {
-      case (k, v) ⇒ (k, findValues(k))
+      case (k, _) ⇒ (k, findValues(k))
     }
 
   // this will return the keys and values to be removed from the cache
