@@ -103,7 +103,7 @@ object AkkaPduProtobufCodec extends AkkaPduCodec {
   }
 
   private def decodeAddress(encodedAddress: AddressProtocol): Address =
-    Address("akka", encodedAddress.getSystem, encodedAddress.getHostname, encodedAddress.getPort)
+    Address(encodedAddress.getProtocol, encodedAddress.getSystem, encodedAddress.getHostname, encodedAddress.getPort)
 
   //TODO: Set a maximum length for secure cookies
   private def constructControlMessagePdu(

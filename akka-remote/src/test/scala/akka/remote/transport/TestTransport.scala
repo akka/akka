@@ -248,6 +248,9 @@ class TestTransport(
 
   import akka.remote.transport.TestTransport._
 
+  @volatile var schemeIdentifier: String = "test"
+  override def isResponsibleFor(address: Address): Boolean = true //TODO: this should be pluggable for testing
+
   private val actorPromise = Promise[ActorRef]()
 
   private def defaultListen: Future[(Address, Promise[ActorRef])] = {

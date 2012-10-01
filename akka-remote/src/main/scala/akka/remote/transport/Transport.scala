@@ -43,6 +43,7 @@ object Transport {
    *   The handle for the inbound association.
    */
   case class InboundAssociation(association: AssociationHandle)
+
 }
 
 /**
@@ -51,6 +52,26 @@ object Transport {
  */
 trait Transport {
   import akka.remote.transport.Transport._
+
+  /**
+   * Returns a string that will be used as the scheme part of the URLs corresponding to this transport
+   * @return the scheme string
+   */
+  def schemeIdentifier: String
+
+  /**
+   * A function that decides whether the specific transport instance is responsible for delivering
+   * to a given address. The function must be thread-safe and non-blocking.
+   *
+   * The purpose of this function is to resolve cases when the scheme part of an URL is not enough to resolve
+   * the correct transport i.e. multiple instances of the same transport implementation are loaded. These cases arise when
+   *  - the same transport but with different configuration is used for different remote systems
+   *  - a transport is able to serve one address only (point-to-point protocols, e.g. PPP, Serial port) and multiple
+   *  instances are needed to be loaded for different endpoints.
+   *
+   * @return whether the transport instance is entitled to serve the given address.
+   */
+  def isResponsibleFor(address: Address): Boolean
 
   /**
    * Defines the maximum size of payload this transport is able to deliver. All transports MUST support at least
