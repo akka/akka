@@ -4,45 +4,25 @@ import akka.actor.SupervisorStrategy._
 import akka.actor._
 import akka.event.{Logging, LoggingAdapter}
 import akka.pattern.gracefulStop
-import akka.remote.transport.HeadActor.{Send, Listen}
+import akka.remote.transport.HeadActor.Listen
+import akka.remote.transport.HeadActor.Send
 import akka.remote.transport.Transport.InboundAssociation
 import akka.remote.{RemoteActorRef, RemoteTransportException, RemoteTransport, RemoteActorRefProvider}
 import akka.util.Timeout
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit._
-import scala.collection.immutable.{Seq, Iterable, HashMap}
+import scala.annotation.switch
+import scala.collection.immutable.{Seq, HashMap}
 import scala.concurrent.util.duration._
 import scala.concurrent.util.{Duration, FiniteDuration}
 import scala.concurrent.{Promise, Await, Future}
 import scala.util.control.NonFatal
-import scala.annotation.switch
 
 // TODO: doc defaults in reference.conf
 class RemotingConfig(config: Config) {
 
   import config._
-
-  val FailureDetectorThreshold: Double = getDouble("akka.remoting.failure-detector.threshold")
-
-  val FailureDetectorMaxSampleSize: Int = getInt("akka.remoting.failure-detector.max-sample-size")
-
-  val FailureDetectorStdDeviation: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.failure-detector.min-std-deviation"), MILLISECONDS)
-
-  val AcceptableHeartBeatPause: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
-
-  val HeartBeatInterval: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.heartbeat-interval"), MILLISECONDS)
-
-  val WaitActivityEnabled: Boolean = getBoolean("akka.remoting.wait-activity-enabled")
-
-  val BackoffPeriod: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.backoff-interval"), MILLISECONDS)
-
-  val RequireCookie: Boolean = getBoolean("akka.remoting.require-cookie")
-
-  val SecureCookie: String = getString("akka.remoting.secure-cookie")
+  import scala.collection.JavaConverters._
 
   val ShutdownTimeout: FiniteDuration = Duration(getMilliseconds("akka.remoting.shutdown-timeout"), MILLISECONDS)
 
@@ -52,6 +32,13 @@ class RemotingConfig(config: Config) {
 
   val UsePassiveConnections: Boolean = getBoolean("akka.remoting.use-passive-connections")
 
+  val BackoffPeriod: FiniteDuration =
+    Duration(getMilliseconds("akka.remoting.backoff-interval"), MILLISECONDS)
+
+  val Transports: Seq[(String, Config)] =
+    config.getConfigList("akka.remoting.transports").asScala.map {
+      conf => (conf.getString("transport-class"), conf.getConfig(""))
+    }.toList
 }
 
 object Remoting {
@@ -229,7 +216,8 @@ private[transport] class HeadActor(private val settings: RemotingConfig) extends
   // will be not part of this map!
   private val endpoints = new EndpointRegistry
   private var transports: List[Transport] = List()
-  private var transportMapping: Map[String, Set[(Transport, Address)]] = Map()
+  // Mapping between transports and the local addresses they listen to
+  private var transportMapping: Map[Address, Transport] = Map()
 
   private val retryLatchEnabled = settings.RetryLatchClosedFor > 0L
   val pruneInterval: Long = if (retryLatchEnabled) settings.RetryLatchClosedFor * 2L else 0L
@@ -271,7 +259,7 @@ private[transport] class HeadActor(private val settings: RemotingConfig) extends
           endpoint ! s
 
         case Some(Latched(timeOfFailure)) ⇒ if (retryLatchOpen(timeOfFailure)) {
-          val endpoint = createEndpoint(recipientAddress, None)
+          val endpoint = createEndpoint(recipientAddress, recipientRef.localAddressToUse, None)
           endpoints.markPass(endpoint)
           endpoint ! s
         } else {
@@ -279,7 +267,7 @@ private[transport] class HeadActor(private val settings: RemotingConfig) extends
         }
 
         case None ⇒
-          val endpoint = createEndpoint(recipientAddress, None)
+          val endpoint = createEndpoint(recipientAddress, recipientRef.localAddressToUse, None)
           endpoints.registerEndpoint(recipientAddress, endpoint)
           endpoint ! s
 
@@ -287,7 +275,7 @@ private[transport] class HeadActor(private val settings: RemotingConfig) extends
 
 
     case InboundAssociation(handle) ⇒
-      val endpoint = createEndpoint(handle.remoteAddress, Some(handle))
+      val endpoint = createEndpoint(handle.remoteAddress, handle.localAddress, Some(handle))
       if (settings.UsePassiveConnections) {
         endpoints.registerEndpoint(handle.localAddress, endpoint)
       }
@@ -299,7 +287,19 @@ private[transport] class HeadActor(private val settings: RemotingConfig) extends
       endpoints.prune(settings.RetryLatchClosedFor)
   }
 
-  private def loadTransports(): Unit = ???
+  private def loadTransports(): Unit = {
+    // TODO: wrap in AkkaProtocolTransport
+    transports = (for ((fqn, config) <- settings.Transports) yield {
+      val args = Seq(classOf[Config] -> config)
+      context.system.asInstanceOf[ActorSystemImpl].dynamicAccess.createInstanceFor[Transport](fqn, args).recover({
+        case exception ⇒ throw new IllegalArgumentException(
+          ("Cannot instantiate transport [%s] " +
+            "make sure it extends [akka.remote.transport.Transport] and has constructor with " +
+            "[com.typesafe.config.Config] parameter")
+            .format(fqn), exception)
+      }).get
+    }).toList
+  }
 
   private def initializeTransports(addressesPromise: Promise[Set[(Transport, Address)]]): Unit = {
     val listens: Future[Seq[(Transport, (Address, Promise[ActorRef]))]] = Future.sequence(
@@ -308,14 +308,19 @@ private[transport] class HeadActor(private val settings: RemotingConfig) extends
 
     listens.onSuccess {
       case results =>
-        val transportsAndAddreses = (for ((transport, (address, promise)) <- results) yield {
+        val transportsAndAddresses = (for ((transport, (address, promise)) <- results) yield {
           promise.success(self)
           transport -> address
         }).toSet
-        addressesPromise.success(transportsAndAddreses)
+        addressesPromise.success(transportsAndAddresses)
 
-        transportMapping = transportsAndAddreses.groupBy { case (transport, _) => transport.schemeIdentifier }.mapValues {
-          _.toSet
+        transportMapping = HashMap() ++ results.groupBy { case (_, (transportAddress, _)) => transportAddress }.map {
+          case (a, t) =>
+            if (t.size > 1) {
+              throw new RemoteTransportException(s"There are more than one transports listening on local address $a", null)
+            }
+
+            a -> t.head._1
         }
     }
 
@@ -324,20 +329,20 @@ private[transport] class HeadActor(private val settings: RemotingConfig) extends
     }
   }
 
-  private def createEndpoint(remoteAddress: Address, handleOption: Option[AssociationHandle]): ActorRef = {
-    if (!transports.contains(remoteAddress.protocol)) {
-      throw new RemoteTransportException(s"There is no transport registered for protocol ${remoteAddress.protocol}", null)
-    } else {
-      context.actorOf(Props(
-        new EndpointWriter(
-          !handleOption.isDefined,
-          handleOption,
-          remoteAddress,
-          Remoting.transportAndAddressFor(transportMapping, remoteAddress)._1,
-          settings,
-          AkkaPduProtobufCodec)
-      ))
-    }
+  private def createEndpoint(localAddress: Address,
+                             remoteAddress: Address,
+                             handleOption: Option[AssociationHandle]): ActorRef = {
+    assert(transportMapping.contains(localAddress))
+
+    context.actorOf(Props(
+      new EndpointWriter(
+        !handleOption.isDefined,
+        handleOption,
+        remoteAddress,
+        transportMapping(localAddress),
+        settings,
+        AkkaPduProtobufCodec)
+    ))
   }
 
   // TODO: de-correlate retries
