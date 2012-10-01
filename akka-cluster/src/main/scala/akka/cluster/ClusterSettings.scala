@@ -24,6 +24,9 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val FailureDetectorAcceptableHeartbeatPause: FiniteDuration =
     Duration(getMilliseconds("akka.cluster.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
   final val HeartbeatInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-interval"), MILLISECONDS)
+  final val HeartbeatConsistentHashingVirtualNodesFactor = 10 // no need for configuration
+  final val NumberOfEndHeartbeats: Int = (FailureDetectorAcceptableHeartbeatPause / HeartbeatInterval + 1).toInt
+  final val MonitoredByNrOfMembers = getInt("akka.cluster.failure-detector.monitored-by-nr-of-members")
 
   final val SeedNodes: IndexedSeq[Address] = getStringList("akka.cluster.seed-nodes").asScala.map {
     case AddressFromURIString(addr) ⇒ addr

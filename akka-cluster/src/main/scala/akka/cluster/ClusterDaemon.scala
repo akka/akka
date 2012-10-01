@@ -287,8 +287,8 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       // wipe the failure detector since we are starting fresh and shouldn't care about the past
       failureDetector.reset()
 
-      heartbeatSender ! JoinInProgress(address, Deadline.now + JoinTimeout)
       publish(localGossip)
+      heartbeatSender ! JoinInProgress(address, Deadline.now + JoinTimeout)
 
       context.become(initialized)
       if (address == selfAddress)

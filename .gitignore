@@ -67,3 +67,4 @@ redis/
 beanstalk/
 .scalastyle
 bin/
+.worksheet
