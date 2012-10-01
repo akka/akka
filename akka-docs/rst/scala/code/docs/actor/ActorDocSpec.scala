@@ -235,7 +235,8 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "creating actor with Props" in {
     //#creating-props
     import akka.actor.Props
-    val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), name = "myactor2")
+    val myActor = system.actorOf(Props[MyActor].withDispatcher("my-dispatcher"),
+      name = "myactor2")
     //#creating-props
 
     system.stop(myActor)
@@ -354,7 +355,8 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       Await.result(stopped, 6 seconds)
       // the actor has been stopped
     } catch {
-      case e: akka.pattern.AskTimeoutException ⇒ // the actor wasn't stopped within 5 seconds
+      // the actor wasn't stopped within 5 seconds
+      case e: akka.pattern.AskTimeoutException ⇒
     }
     //#gracefulStop
   }

@@ -22,8 +22,10 @@ class RouterDocSpec extends AkkaSpec {
 
   //#dispatchers
   val router: ActorRef = system.actorOf(Props[MyActor]
-    .withRouter(RoundRobinRouter(5, routerDispatcher = "router")) // “head” will run on "router" dispatcher
-    .withDispatcher("workers")) // MyActor workers will run on "workers" dispatcher
+    // “head” will run on "router" dispatcher
+    .withRouter(RoundRobinRouter(5, routerDispatcher = "router"))
+    // MyActor workers will run on "workers" dispatcher
+    .withDispatcher("workers"))
   //#dispatchers
 
 }

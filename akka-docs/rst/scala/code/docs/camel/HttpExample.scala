@@ -21,7 +21,8 @@ object HttpExample {
       def endpointUri = "jetty://http://akka.io/?bridgeEndpoint=true"
 
       override def transformOutgoingMessage(msg: Any) = msg match {
-        case msg: CamelMessage ⇒ msg.copy(headers = msg.headers ++ msg.headers(Set(Exchange.HTTP_PATH)))
+        case msg: CamelMessage ⇒ msg.copy(headers = msg.headers ++
+          msg.headers(Set(Exchange.HTTP_PATH)))
       }
 
       override def routeResponse(msg: Any) { transformer forward msg }
@@ -29,13 +30,17 @@ object HttpExample {
 
     class HttpTransformer extends Actor {
       def receive = {
-        case msg: CamelMessage ⇒ sender ! (msg.mapBody { body: Array[Byte] ⇒ new String(body).replaceAll("Akka ", "AKKA ") })
-        case msg: Failure      ⇒ sender ! msg
+        case msg: CamelMessage ⇒
+          sender ! (msg.mapBody { body: Array[Byte] ⇒
+            new String(body).replaceAll("Akka ", "AKKA ")
+          })
+        case msg: Failure ⇒ sender ! msg
       }
     }
 
     // Create the actors. this can be done in a Boot class so you can
-    // run the example in the MicroKernel. just add the below three lines to your boot class.
+    // run the example in the MicroKernel. just add the three lines below to
+    // your boot class.
     val system = ActorSystem("some-system")
     val httpTransformer = system.actorOf(Props[HttpTransformer])
     val httpProducer = system.actorOf(Props(new HttpProducer(httpTransformer)))

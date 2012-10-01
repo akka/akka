@@ -45,7 +45,8 @@ object Producers {
     }
     val system = ActorSystem("some-system")
     val receiver = system.actorOf(Props[ResponseReceiver])
-    val forwardResponse = system.actorOf(Props(new Forwarder("http://localhost:8080/news/akka", receiver)))
+    val forwardResponse = system.actorOf(Props(
+      new Forwarder("http://localhost:8080/news/akka", receiver)))
     // the Forwarder sends out a request to the web page and forwards the response to
     // the ResponseReceiver
     forwardResponse ! "some request"

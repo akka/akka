@@ -46,7 +46,8 @@ public class RemoteDeploymentDocTestBase {
     addr = AddressFromURIString.parse("akka://sys@host:1234"); // the same
     //#make-address
     //#deploy
-    ActorRef ref = system.actorOf(new Props(SampleActor.class).withDeploy(new Deploy(new RemoteScope(addr))));
+    ActorRef ref = system.actorOf(new Props(SampleActor.class).withDeploy(
+      new Deploy(new RemoteScope(addr))));
     //#deploy
     assert ref.path().address().equals(addr);
   }

@@ -40,7 +40,8 @@ class CustomRouteSpec extends AkkaSpec {
       val target = system.actorOf(Props.empty)
       val router = system.actorOf(Props.empty.withRouter(new MyRouter(target)))
       val route = ExtractRoute(router)
-      val r = Await.result(router.ask(CurrentRoutees)(1 second).mapTo[RouterRoutees], 1 second)
+      val r = Await.result(router.ask(CurrentRoutees)(1 second).
+        mapTo[RouterRoutees], 1 second)
       r.routees.size must be(1)
       route(testActor -> "hallo") must be(Seq(Destination(testActor, target)))
       route(testActor -> 12) must be(Seq(Destination(testActor, r.routees.head)))

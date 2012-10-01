@@ -32,7 +32,8 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
 
   "demonstrate programmatic deployment" in {
     //#deploy
-    val ref = system.actorOf(Props[SampleActor].withDeploy(Deploy(scope = RemoteScope(address))))
+    val ref = system.actorOf(Props[SampleActor].
+      withDeploy(Deploy(scope = RemoteScope(address))))
     //#deploy
     ref.path.address must be(address)
     ref ! "test"

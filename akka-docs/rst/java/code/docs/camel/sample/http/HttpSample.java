@@ -6,7 +6,8 @@ public class HttpSample {
   public static void main(String[] args) {
     //#HttpExample
     // Create the actors. this can be done in a Boot class so you can
-    // run the example in the MicroKernel. just add the below three lines to your boot class.
+    // run the example in the MicroKernel. just add the three lines to below
+    // your boot class.
     ActorSystem system = ActorSystem.create("some-system");
     final ActorRef httpTransformer = system.actorOf(new Props(HttpTransformer.class));
 

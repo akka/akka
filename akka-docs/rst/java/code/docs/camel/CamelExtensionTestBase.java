@@ -23,7 +23,8 @@ public class CamelExtensionTestBase {
     ActorSystem system = ActorSystem.create("some-system");
     Camel camel = CamelExtension.get(system);
     CamelContext camelContext = camel.context();
-    // camelContext.addComponent("activemq", ActiveMQComponent.activeMQComponent("vm://localhost?broker.persistent=false"))
+    // camelContext.addComponent("activemq", ActiveMQComponent.activeMQComponent(
+    //   "vm://localhost?broker.persistent=false"));
     //#CamelExtensionAddComponent
     system.shutdown();
   }

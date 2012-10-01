@@ -151,7 +151,8 @@ object DispatcherDocSpec {
     def this(settings: ActorSystem.Settings, config: Config) = this()
 
     // The create method is called to create the MessageQueue
-    final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+    final override def create(owner: Option[ActorRef],
+                              system: Option[ActorSystem]): MessageQueue =
       new QueueBasedMessageQueue with UnboundedMessageQueueSemantics {
         final val queue = new ConcurrentLinkedQueue[Envelope]()
       }

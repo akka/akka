@@ -57,9 +57,9 @@ public class CustomRouterDocTestBase {
   public void demonstrateDispatchers() {
     //#dispatchers
     final ActorRef router = system.actorOf(new Props(MyActor.class)
-      // “head” router runs on "head" dispatcher
+      // “head” router will run on "head" dispatcher
       .withRouter(new RoundRobinRouter(5).withDispatcher("head"))
-      // MyActor “workers” run on "workers" dispatcher
+      // MyActor “workers” will run on "workers" dispatcher
       .withDispatcher("workers"));
     //#dispatchers
   }
@@ -104,7 +104,6 @@ public class CustomRouterDocTestBase {
   }
 
   //#crMessages
-
   //#CustomRouter
   static
   //#CustomRouter
