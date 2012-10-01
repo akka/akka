@@ -19,18 +19,18 @@ Martin Krasser       Committer                   krasserm AT googlemail DOT com
 Raymond Roestenburg  Committer
 Piotr Gabryanczyk    Committer
 Helena Edelson       Committer                   helena AT helenaedelson DOT com
-Debasish Ghosh       Alumni                      dghosh AT acm DOT org
-Ross McDonald        Alumni                      rossajmcd AT gmail DOT com
-Eckhart Hertzler     Alumni
-Mikael Högqvist      Alumni
-Tim Perrett          Alumni
-Jeanfrancois Arcand  Alumni                      jfarcand AT apache DOT org
-Jan Van Besien       Alumni
-Michael Kober        Alumni
-Peter Veentjer       Alumni
-Irmo Manie           Alumni
-Heiko Seeberger      Alumni
-Hiram Chirino        Alumni
-Scott Clasen         Alumni
+Debasish Ghosh       Alumnus                     dghosh AT acm DOT org
+Ross McDonald        Alumnus                     rossajmcd AT gmail DOT com
+Eckhart Hertzler     Alumnus
+Mikael Högqvist      Alumnus
+Tim Perrett          Alumnus
+Jeanfrancois Arcand  Alumnus                     jfarcand AT apache DOT org
+Jan Van Besien       Alumnus
+Michael Kober        Alumnus
+Peter Veentjer       Alumnus
+Irmo Manie           Alumnus
+Heiko Seeberger      Alumnus
+Hiram Chirino        Alumnus
+Scott Clasen         Alumnus
 
 ===================  ==========================  ====================================
