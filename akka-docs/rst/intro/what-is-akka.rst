@@ -38,24 +38,23 @@ See :ref:`actors-scala` and :ref:`untyped-actors-java`
 Fault Tolerance
 ---------------
 
-Fault tolerance through supervisor hierarchies with "let-it-crash"
-semantics. Excellent for writing highly fault-tolerant systems that never stop,
-systems that self-heal. Supervisor hierarchies can span over multiple JVMs to
-provide truly fault-tolerant systems.
+  - Supervisor hierarchies with "let-it-crash" semantics.
+  - Supervisor hierarchies can span over multiple JVMs to provide truly fault-tolerant systems.
+  - Excellent for writing highly fault-tolerant systems that self-heal and never stop.
 
 See :ref:`fault-tolerance-scala` and :ref:`fault-tolerance-java`
 
 Location Transparency
 ---------------------
 Everything in Akka is designed to work in a distributed environment: all
-interactions of actors use purely message passing and everything is asynchronous.
+interactions of actors use pure message passing and everything is asynchronous.
 
 For an overview of the remoting see :ref:`remoting`
 
 Transactors
 -----------
 
-Transactors combine actors and STM (Software Transactional Memory) into transactional actors.
+Transactors combine actors and Software Transactional Memory (STM) into transactional actors.
 It allows you to compose atomic message flows with automatic retry and rollback.
 
 See :ref:`transactors-scala` and :ref:`transactors-java`
@@ -86,10 +85,10 @@ consisted of two things:
 - Cluster support for Akka
 - Monitoring & Management (formerly called Atmos)
 
-Cloudy Akka have been discontinued and the Cluster support is now being moved into the 
-Open Source version of Akka (the upcoming Akka 2.1), while the Monitoring & Management 
-(Atmos) is now rebranded into Typesafe Console and is part of the commercial subscription 
-for the Typesafe Stack (see below for details).
+Cloudy Akka has been discontinued and the Cluster support is now being moved into the
+Open Source version of Akka (the upcoming Akka 2.1), while Monitoring & Management
+(Atmos) has been re-branded as the Typesafe Console, which is now part of the commercial
+subscription for the Typesafe Stack (see below for details).
 
 Typesafe Stack
 ==============
