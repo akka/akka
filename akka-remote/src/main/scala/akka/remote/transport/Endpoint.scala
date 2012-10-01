@@ -1,7 +1,6 @@
 package akka.remote.transport
 
 import akka.AkkaException
-import akka.actor.AddressFromURIString
 import akka.actor._
 import akka.dispatch.SystemMessage
 import akka.event.LoggingAdapter
@@ -10,43 +9,11 @@ import akka.remote.RemoteProtocol.MessageProtocol
 import akka.remote._
 import akka.remote.transport.AkkaPduCodec._
 import akka.remote.transport.AssociationHandle._
+import akka.remote.transport.EndpointWriter.BackoffOver
 import akka.remote.transport.EndpointWriter.Send
-import akka.remote.transport.EndpointWriter.{BackoffOver, Retire}
 import akka.serialization.Serialization
 import akka.util.ByteString
-import com.typesafe.config.Config
-import java.util.concurrent.TimeUnit._
-import scala.concurrent.util.{Duration, FiniteDuration}
 import scala.util.control.NonFatal
-
-// TODO: doc defaults in reference.conf
-class RemotingConfig(config: Config) {
-
-  import config._
-
-  val FailureDetectorThreshold: Double = getDouble("akka.remoting.failure-detector.threshold")
-
-  val FailureDetectorMaxSampleSize: Int = getInt("akka.remoting.failure-detector.max-sample-size")
-
-  val FailureDetectorStdDeviation: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.failure-detector.min-std-deviation"), MILLISECONDS)
-
-  val AcceptableHeartBeatPause: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
-
-  val HeartBeatInterval: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.heartbeat-interval"), MILLISECONDS)
-
-  val WaitActivityEnabled: Boolean = getBoolean("akka.remoting.wait-activity-enabled")
-
-  val BackoffPeriod: FiniteDuration =
-    Duration(getMilliseconds("akka.remoting.backoff-interval"), MILLISECONDS)
-
-  val RequireCookie: Boolean = getBoolean("akka.remoting.require-cookie")
-
-  val SecureCookie: String = getString("akka.remoting.secure-cookie")
-
-}
 
 // better name
 trait MessageDispatcher {
@@ -91,16 +58,16 @@ class DefaultMessageDispatcher( private val system: ExtendedActorSystem,
         }
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", msgLog)
-        if (recipientAddress == provider.transport.address) {
+        if (provider.transport.addresses(recipientAddress)) {
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(payload)(sender)
         } else {
-          log.error("dropping message {} for non-local recipient {} arriving at {} inbound address is {}",
-            payload, r, recipientAddress, provider.transport.address)
+          log.error("dropping message {} for non-local recipient {} arriving at {} inbound addresses are {}",
+            payload, r, recipientAddress, provider.transport.addresses)
         }
 
-      case r ⇒ log.error("dropping message {} for unknown recipient {} arriving at {} inbound address is {}",
-        payload, r, recipientAddress, provider.transport.address)
+      case r ⇒ log.error("dropping message {} for unknown recipient {} arriving at {} inbound addresses are {}",
+        payload, r, recipientAddress, provider.transport.addresses)
     }
   }
 
@@ -108,11 +75,10 @@ class DefaultMessageDispatcher( private val system: ExtendedActorSystem,
 
 object EndpointWriter {
 
-  case object Retire
-
   case class Send(msg: Any, recipient: ActorRef, senderOption: Option[ActorRef])
 
   case object BackoffOver
+
 }
 
 class EndpointException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
@@ -163,7 +129,7 @@ class EndpointWriter(
 
     case BackoffOver => onBufferingOver()
 
-    case Retire => context.stop(self)
+    case Terminated(_) => context.stop(self)
 
   }
 
@@ -173,6 +139,8 @@ class EndpointWriter(
     reader = context.actorOf(Props(
         new EndpointReader(handle, self, config, codec, msgDispatch)
       ), "reader")
+
+    context.watch(reader)
   }
 
   def onBufferingOver(): Unit = {
@@ -218,7 +186,7 @@ class EndpointReader(
   handle.readHandlerPromise.success(self)
 
   override def receive: Receive = {
-    case Disassociated => writer ! Retire
+    case Disassociated => context.stop(self)
 
     case InboundPayload(p) => decodePdu(p) match {
 
