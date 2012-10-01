@@ -10,9 +10,10 @@ import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.{ Serialization, JavaSerializer }
 import akka.event.EventStream
 import scala.annotation.tailrec
-import java.util.concurrent.{ ConcurrentHashMap }
+import java.util.concurrent.ConcurrentHashMap
 import akka.event.LoggingAdapter
 import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.collection.JavaConverters
 
 /**
  * Immutable and serializable handle to an actor, which may or may not reside
@@ -515,5 +516,12 @@ private[akka] class VirtualPathContainer(
           else some.getChild(name)
       }
     }
+  }
+
+  def hasChildren: Boolean = !children.isEmpty
+
+  def foreachChild(f: ActorRef ⇒ Unit) = {
+    val iter = children.values.iterator
+    while (iter.hasNext) f(iter.next)
   }
 }
