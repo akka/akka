@@ -175,7 +175,14 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
   /**
    * Address to be used in RootActorPath of refs generated for this transport.
    */
-  def address: Address
+  def addresses: Set[Address]
+
+  /**
+   * Resolves the correct local address to be used for contacting the given remote address
+   * @param remote the remote address
+   * @return the local address to be used for the given remote address
+   */
+  def localAddressForRemote(remote: Address): Address
 
   /**
    * Start up the transport, i.e. enable incoming connections.
@@ -208,7 +215,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
   /**
    * Returns this RemoteTransports Address' textual representation
    */
-  override def toString: String = address.toString
+  override def toString: String = addresses.toString
 
   /**
    * A Logger that can be used to log issues that may occur
@@ -241,7 +248,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
   def toRemoteActorRefProtocol(actor: ActorRef): ActorRefProtocol =
-    ActorRefProtocol.newBuilder.setPath(actor.path.toStringWithAddress(address)).build
+    ActorRefProtocol.newBuilder.setPath(actor.path.toStringWithAddress(addresses.head)).build
 
   /**
    * Returns a new RemoteMessageProtocol containing the serialized representation of the given parameters.
@@ -250,7 +257,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
     val messageBuilder = RemoteMessageProtocol.newBuilder.setRecipient(toRemoteActorRefProtocol(recipient))
     if (senderOption.isDefined) messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
 
-    Serialization.currentTransportAddress.withValue(address) {
+    Serialization.currentTransportAddress.withValue(addresses.head) {
       messageBuilder.setMessage(MessageSerializer.serialize(system, message.asInstanceOf[AnyRef]))
     }
 
@@ -285,12 +292,12 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", remoteMessage)
         remoteMessage.originalReceiver match {
-          case AddressFromURIString(address) if address == provider.transport.address ⇒
+          case AddressFromURIString(address) if provider.transport.addresses(address) ⇒
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
-          case r ⇒ log.error("dropping message {} for non-local recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
+          case r ⇒ log.error("dropping message {} for non-local recipient {} arriving at {} inbound addresses are {}", remoteMessage.payload, r, addresses, provider.transport.addresses)
         }
-      case r ⇒ log.error("dropping message {} for unknown recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
+      case r ⇒ log.error("dropping message {} for unknown recipient {} arriving at {} inbound addresses are {}", remoteMessage.payload, r, addresses, provider.transport.addresses)
     }
   }
 }

@@ -77,7 +77,7 @@ class RemoteActorRefProvider(
       }).get
     }
 
-    _log = Logging(eventStream, "RemoteActorRefProvider(" + transport.address + ")")
+    _log = Logging(eventStream, "RemoteActorRefProvider(" + transport.addresses + ")")
 
     // this enables reception of remote requests
     _transport.start()
@@ -154,10 +154,11 @@ class RemoteActorRefProvider(
 
       Iterator(props.deploy) ++ deployment.iterator reduce ((a, b) ⇒ b withFallback a) match {
         case d @ Deploy(_, _, _, RemoteScope(addr)) ⇒
-          if (addr == rootPath.address || addr == transport.address) {
+          if (addr == rootPath.address || transport.addresses(addr)) {
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else {
-            val rpath = RootActorPath(addr) / "remote" / transport.address.hostPort / path.elements
+            // TODO: use getExternalAddressFor
+            val rpath = RootActorPath(addr) / "remote" / transport.localAddressForRemote(addr).hostPort / path.elements
             useActorOnNode(rpath, props, d, supervisor)
             new RemoteActorRef(this, transport, rpath, supervisor)
           }
@@ -168,12 +169,12 @@ class RemoteActorRefProvider(
   }
 
   def actorFor(path: ActorPath): InternalActorRef =
-    if (path.address == rootPath.address || path.address == transport.address) actorFor(rootGuardian, path.elements)
+    if (path.address == rootPath.address || transport.addresses(path.address)) actorFor(rootGuardian, path.elements)
     else new RemoteActorRef(this, transport, path, Nobody)
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
-      if (address == rootPath.address || address == transport.address) actorFor(rootGuardian, elems)
+      if (address == rootPath.address || transport.addresses(address)) actorFor(rootGuardian, elems)
       else new RemoteActorRef(this, transport, new RootActorPath(address) / elems, Nobody)
     case _ ⇒ local.actorFor(ref, path)
   }
@@ -190,12 +191,13 @@ class RemoteActorRefProvider(
     actorFor(RootActorPath(path.address) / "remote") ! DaemonMsgCreate(props, deploy, path.toString, supervisor)
   }
 
+  //TODO: use this in actorOf
   def getExternalAddressFor(addr: Address): Option[Address] = {
-    val ta = transport.address
     val ra = rootPath.address
     addr match {
-      case `ta` | `ra`                          ⇒ Some(rootPath.address)
-      case Address("akka", _, Some(_), Some(_)) ⇒ Some(transport.address)
+      case `ra`                          ⇒ Some(rootPath.address)
+      case _ if transport.addresses(addr) => Some(rootPath.address)
+      case Address(_, _, Some(_), Some(_)) ⇒ Some(transport.localAddressForRemote(addr))
       case _                                    ⇒ None
     }
   }
