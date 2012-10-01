@@ -160,7 +160,7 @@ class RemoteActorRefProvider(
             val localAddress = transport.localAddressForRemote(addr)
             val rpath = RootActorPath(addr) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements
             useActorOnNode(rpath, props, d, supervisor)
-            new RemoteActorRef(this, transport, rpath, supervisor)
+            new RemoteActorRef(this, transport, localAddress, rpath, supervisor)
           }
 
         case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
@@ -170,12 +170,12 @@ class RemoteActorRefProvider(
 
   def actorFor(path: ActorPath): InternalActorRef =
     if (path.address == rootPath.address || transport.addresses(path.address)) actorFor(rootGuardian, path.elements)
-    else new RemoteActorRef(this, transport, path, Nobody)
+    else new RemoteActorRef(this, transport, transport.localAddressForRemote(path.address), path, Nobody)
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
       if (address == rootPath.address || transport.addresses(address)) actorFor(rootGuardian, elems)
-      else new RemoteActorRef(this, transport, new RootActorPath(address) / elems, Nobody)
+      else new RemoteActorRef(this, transport, transport.localAddressForRemote(address), new RootActorPath(address) / elems, Nobody)
     case _ ⇒ local.actorFor(ref, path)
   }
 
@@ -214,6 +214,7 @@ private[akka] trait RemoteRef extends ActorRefScope {
 private[akka] class RemoteActorRef private[akka] (
   val provider: RemoteActorRefProvider,
   remote: RemoteTransport,
+  val localAddressToUse: Address,
   val path: ActorPath,
   val getParent: InternalActorRef)
   extends InternalActorRef with RemoteRef {
@@ -223,7 +224,7 @@ private[akka] class RemoteActorRef private[akka] (
     s.headOption match {
       case None       ⇒ this
       case Some("..") ⇒ getParent getChild name
-      case _          ⇒ new RemoteActorRef(provider, remote, path / s, Nobody)
+      case _          ⇒ new RemoteActorRef(provider, remote, localAddressToUse, path / s, Nobody)
     }
   }
 
