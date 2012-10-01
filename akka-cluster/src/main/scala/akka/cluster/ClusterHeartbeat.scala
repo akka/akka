@@ -6,12 +6,12 @@ package akka.cluster
 import language.postfixOps
 import scala.collection.immutable.SortedSet
 import akka.actor.{ ReceiveTimeout, ActorLogging, ActorRef, Address, Actor, RootActorPath, Props }
-import java.security.MessageDigest
 import akka.pattern.{ CircuitBreaker, CircuitBreakerOpenException }
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Deadline
 import scala.concurrent.util.FiniteDuration
 import akka.cluster.ClusterEvent._
+import java.net.URLEncoder
 
 /**
  * Sent at regular intervals for failure detection.
@@ -99,16 +99,10 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   def clusterHeartbeatConnectionFor(address: Address): ActorRef =
     context.actorFor(RootActorPath(address) / "system" / "cluster" / "heartbeatReceiver")
 
-  val digester = MessageDigest.getInstance("MD5")
-
   /**
-   * Child name is MD5 hash of the address.
-   * FIXME Change to URLEncode when ticket #2123 has been fixed
+   * Child name URL encoded target address.
    */
-  def encodeChildName(name: String): String = {
-    digester update name.getBytes("UTF-8")
-    digester.digest.map { h ⇒ "%02x".format(0xFF & h) }.mkString
-  }
+  def encodeChildName(name: String): String = URLEncoder.encode(name, "UTF-8")
 
   def receive = {
     case state: CurrentClusterState ⇒ init(state)
