@@ -1,5 +1,6 @@
 package akka.remote.transport
 
+import akka.AkkaException
 import akka.actor._
 import akka.pattern.pipe
 import akka.remote.transport.AkkaPduCodec._
@@ -10,11 +11,37 @@ import akka.remote.transport.ProtocolStateActor._
 import akka.remote.transport.Transport._
 import akka.remote.{ PhiAccrualFailureDetector, FailureDetector, RemoteActorRefProvider }
 import akka.util.ByteString
+import com.typesafe.config.Config
+import java.util.concurrent.TimeUnit._
+import scala.concurrent.util.{Duration, FiniteDuration}
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
-import akka.AkkaException
 
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
+
+class AkkaProtocolConfig(config: Config) {
+
+  import config._
+
+  val FailureDetectorThreshold: Double = getDouble("akka.remoting.failure-detector.threshold")
+
+  val FailureDetectorMaxSampleSize: Int = getInt("akka.remoting.failure-detector.max-sample-size")
+
+  val FailureDetectorStdDeviation: FiniteDuration =
+    Duration(getMilliseconds("akka.remoting.failure-detector.min-std-deviation"), MILLISECONDS)
+
+  val AcceptableHeartBeatPause: FiniteDuration =
+    Duration(getMilliseconds("akka.remoting.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
+
+  val HeartBeatInterval: FiniteDuration =
+    Duration(getMilliseconds("akka.remoting.heartbeat-interval"), MILLISECONDS)
+
+  val WaitActivityEnabled: Boolean = getBoolean("akka.remoting.wait-activity-enabled")
+
+  val RequireCookie: Boolean = getBoolean("akka.remoting.require-cookie")
+
+  val SecureCookie: String = getString("akka.remoting.secure-cookie")
+}
 
 object AkkaProtocolTransport {
   val AkkaScheme: String = "akka"
@@ -27,11 +54,11 @@ object AkkaProtocolTransport {
   case object DisassociateUnderlying extends TransportOperation
 
   // TODO: test for correct scheme handling
-  def augmentScheme(originalScheme: String): String = s"$originalScheme+$AkkaScheme"
+  def augmentScheme(originalScheme: String): String = s"$originalScheme.$AkkaScheme"
 
   def augmentScheme(address: Address): Address = address.copy(protocol = augmentScheme(address.protocol))
 
-  def removeScheme(scheme: String): String = if (scheme.endsWith("+akka")) {
+  def removeScheme(scheme: String): String = if (scheme.endsWith(s".$AkkaScheme")) {
     // Remove +akka suffix
     scheme.take(scheme.length - AkkaScheme.length - 1)
   } else {
@@ -44,7 +71,7 @@ object AkkaProtocolTransport {
 class AkkaProtocolTransport(
   private val wrappedTransport: Transport,
   private val system: ActorSystemImpl,
-  private val conf: RemotingConfig,
+  private val conf: AkkaProtocolConfig,
   private val codec: AkkaPduCodec) extends Transport {
 
   override val schemeIdentifier: String = augmentScheme(wrappedTransport.schemeIdentifier)
@@ -82,7 +109,7 @@ class AkkaProtocolTransport(
 }
 
 private[transport] class AkkaProtocolManager(private val wrappedTransport: Transport,
-                                             private val conf: RemotingConfig) extends Actor {
+                                             private val conf: AkkaProtocolConfig) extends Actor {
 
   import context.dispatcher
 
@@ -185,7 +212,7 @@ private[transport] object ProtocolStateActor {
 }
 
 private[transport] class ProtocolStateActor(initialData: InitialProtocolStateData,
-                                            private val config: RemotingConfig,
+                                            private val config: AkkaProtocolConfig,
                                             private val codec: AkkaPduCodec,
                                             private val failureDetector: FailureDetector)
   extends Actor with FSM[AssociationState, ProtocolStateData] {
@@ -197,7 +224,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
   def this(remoteAddress: Address,
            statusPromise: Promise[Status],
            transport: Transport,
-           config: RemotingConfig,
+           config: AkkaProtocolConfig,
            codec: AkkaPduCodec,
            failureDetector: FailureDetector) = {
     this(OutboundUnassociated(remoteAddress, statusPromise, transport), config, codec, failureDetector)
@@ -206,7 +233,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
   // Inbound case
   def this(wrappedHandle: AssociationHandle,
            associationHandler: ActorRef,
-           config: RemotingConfig,
+           config: AkkaProtocolConfig,
            codec: AkkaPduCodec,
            failureDetector: FailureDetector) = {
     this(InboundUnassociated(associationHandler, wrappedHandle), config, codec, failureDetector)

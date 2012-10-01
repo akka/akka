@@ -62,10 +62,10 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     """.stripMargin)
 
   val localAddress = Address("test", "testsystem", "testhost", 1234)
-  val localAkkaAddress = Address("test+akka", "testsystem", "testhost", 1234)
+  val localAkkaAddress = Address("test.akka", "testsystem", "testhost", 1234)
 
   val remoteAddress = Address("test", "testsystem2", "testhost2", 1234)
-  val remoteAkkaAddress = Address("test+akka", "testsystem2", "testhost2", 1234)
+  val remoteAkkaAddress = Address("test.akka", "testsystem2", "testhost2", 1234)
 
   val codec = AkkaPduProtobufCodec
 
@@ -126,7 +126,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       system.actorOf(Props(new ProtocolStateActor(
         handle,
         self,
-        new RemotingConfig(conf),
+        new AkkaProtocolConfig(conf),
         codec,
         failureDetector)))
 
@@ -139,7 +139,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         handle,
         self,
-        new RemotingConfig(conf),
+        new AkkaProtocolConfig(conf),
         codec,
         failureDetector)))
 
@@ -171,7 +171,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         handle,
         self,
-        new RemotingConfig(conf),
+        new AkkaProtocolConfig(conf),
         codec,
         failureDetector)))
 
@@ -197,7 +197,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new RemotingConfig(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
+        new AkkaProtocolConfig(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -224,7 +224,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new RemotingConfig(conf),
+        new AkkaProtocolConfig(conf),
         codec,
         failureDetector)))
 
@@ -255,7 +255,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         handle,
         self,
-        new RemotingConfig(ConfigFactory.parseString("akka.remoting.require-cookie = on").withFallback(conf)),
+        new AkkaProtocolConfig(ConfigFactory.parseString("akka.remoting.require-cookie = on").withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -273,7 +273,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         handle,
         self,
-        new RemotingConfig(ConfigFactory.parseString("akka.remoting.require-cookie = on").withFallback(conf)),
+        new AkkaProtocolConfig(ConfigFactory.parseString("akka.remoting.require-cookie = on").withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -302,7 +302,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new RemotingConfig(ConfigFactory.parseString(
+        new AkkaProtocolConfig(ConfigFactory.parseString(
           """
             | akka.remoting.require-cookie = on
             | akka.remoting.wait-activity-enabled = off
@@ -331,7 +331,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new RemotingConfig(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
+        new AkkaProtocolConfig(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -363,7 +363,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new RemotingConfig(conf),
+        new AkkaProtocolConfig(conf),
         codec,
         failureDetector)))
 
@@ -400,7 +400,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new RemotingConfig(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
+        new AkkaProtocolConfig(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -435,7 +435,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         remoteAddress,
         statusPromise,
         transport,
-        new RemotingConfig(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
+        new AkkaProtocolConfig(ConfigFactory.parseString("akka.remoting.wait-activity-enabled = off").withFallback(conf)),
         codec,
         failureDetector)))
 
