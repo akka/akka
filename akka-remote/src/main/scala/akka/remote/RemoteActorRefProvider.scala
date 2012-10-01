@@ -108,15 +108,15 @@ class RemoteActorRefProvider(
        * address below “remote”, including the current system’s identification
        * as “sys@host:port” (typically; it will use whatever the remote
        * transport uses). This means that on a path up an actor tree each node
-       * change introduces one layer or “remote/sys@host:port/” within the URI.
+       * change introduces one layer or “remote/scheme/sys@host:port/” within the URI.
        *
        * Example:
        *
-       * akka://sys@home:1234/remote/sys@remote:6667/remote/sys@other:3333/user/a/b/c
+       * akka://sys@home:1234/remote/akka/sys@remote:6667/remote/akka/sys@other:3333/user/a/b/c
        *
-       * means that the logical parent originates from “sys@other:3333” with
-       * one child (may be “a” or “b”) being deployed on “sys@remote:6667” and
-       * finally either “b” or “c” being created on “sys@home:1234”, where
+       * means that the logical parent originates from “akka://sys@other:3333” with
+       * one child (may be “a” or “b”) being deployed on “akka://sys@remote:6667” and
+       * finally either “b” or “c” being created on “akka://sys@home:1234”, where
        * this whole thing actually resides. Thus, the logical path is
        * “/user/a/b/c” and the physical path contains all remote placement
        * information.
@@ -129,7 +129,7 @@ class RemoteActorRefProvider(
       def lookupRemotes(p: Iterable[String]): Option[Deploy] = {
         p.headOption match {
           case None           ⇒ None
-          case Some("remote") ⇒ lookupRemotes(p.drop(2))
+          case Some("remote") ⇒ lookupRemotes(p.drop(3))
           case Some("user")   ⇒ deployer.lookup(p.drop(1))
           case Some(_)        ⇒ None
         }
@@ -157,8 +157,8 @@ class RemoteActorRefProvider(
           if (addr == rootPath.address || transport.addresses(addr)) {
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else {
-            // TODO: use getExternalAddressFor
-            val rpath = RootActorPath(addr) / "remote" / transport.localAddressForRemote(addr).hostPort / path.elements
+            val localAddress = transport.localAddressForRemote(addr)
+            val rpath = RootActorPath(addr) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements
             useActorOnNode(rpath, props, d, supervisor)
             new RemoteActorRef(this, transport, rpath, supervisor)
           }
