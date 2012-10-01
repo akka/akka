@@ -41,6 +41,8 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
 
   import multiNodeConfig._
 
+  muteMarkingAsUnreachable()
+
   def allBut(role: RoleName, roles: Seq[RoleName] = roles): Seq[RoleName] = {
     roles.filterNot(_ == role)
   }

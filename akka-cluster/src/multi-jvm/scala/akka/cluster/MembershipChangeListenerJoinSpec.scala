@@ -34,6 +34,7 @@ abstract class MembershipChangeListenerJoinSpec
     "be notified when new node is JOINING" taggedAs LongRunningTest in {
 
       runOn(first) {
+        cluster.join(first)
         val joinLatch = TestLatch()
         val expectedAddresses = Set(first, second) map address
         cluster.subscribe(system.actorOf(Props(new Actor {

@@ -29,6 +29,8 @@ abstract class ClusterAccrualFailureDetectorSpec
 
   import ClusterAccrualFailureDetectorMultiJvmSpec._
 
+  muteMarkingAsUnreachable()
+
   "A heartbeat driven Failure Detector" must {
 
     "receive heartbeats so that all member nodes in the cluster are marked 'available'" taggedAs LongRunningTest in {

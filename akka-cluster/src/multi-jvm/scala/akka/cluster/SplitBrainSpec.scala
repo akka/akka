@@ -49,6 +49,8 @@ abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
 
   import multiNodeConfig._
 
+  muteMarkingAsUnreachable()
+
   val side1 = IndexedSeq(first, second)
   val side2 = IndexedSeq(third, fourth, fifth)
 
