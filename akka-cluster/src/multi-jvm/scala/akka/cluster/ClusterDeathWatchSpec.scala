@@ -40,7 +40,7 @@ abstract class ClusterDeathWatchSpec
     super.atStartup()
     if (!log.isDebugEnabled) {
       muteMarkingAsUnreachable()
-      system.eventStream.publish(Mute(EventFilter[java.net.UnknownHostException]("unknownhost")))
+      system.eventStream.publish(Mute(EventFilter[java.net.UnknownHostException]()))
     }
   }
 
