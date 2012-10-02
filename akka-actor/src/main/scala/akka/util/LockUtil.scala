@@ -134,7 +134,7 @@ class Switch(startAsOn: Boolean = false) {
    * Be careful of longrunning or blocking within the provided action as it can lead to deadlocks or bad performance
    */
   def whileOff(action: ⇒ Unit): Boolean = synchronized {
-    if (switch.get) {
+    if (!switch.get) {
       action
       true
     } else false
