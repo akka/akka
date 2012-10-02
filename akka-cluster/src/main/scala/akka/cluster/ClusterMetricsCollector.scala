@@ -36,7 +36,7 @@ import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
  *
  * @author Helena Edelson
  */
-private[cluster] class ClusterMetricsCollector extends Actor with ActorLogging {
+private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Actor with ActorLogging {
 
   import InternalClusterAction._
   import ClusterEvent._
@@ -107,6 +107,7 @@ private[cluster] class ClusterMetricsCollector extends Actor with ActorLogging {
   def removeMember(event: MemberEvent): Unit = {
     nodes -= event.member.address
     latestGossip = latestGossip remove event.member.address
+    publish()
   }
 
   /**
@@ -155,7 +156,7 @@ private[cluster] class ClusterMetricsCollector extends Actor with ActorLogging {
   /**
    * Publishes to the event stream.
    */
-  def publish(): Unit = context.system.eventStream publish ClusterMetricsChanged(latestGossip.nodes)
+  def publish(): Unit = publisher ! PublishEvent(ClusterMetricsChanged(latestGossip.nodes))
 
 }
 
