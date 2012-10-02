@@ -10,9 +10,10 @@ import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.{ Serialization, JavaSerializer }
 import akka.event.EventStream
 import scala.annotation.tailrec
-import java.util.concurrent.{ ConcurrentHashMap }
+import java.util.concurrent.ConcurrentHashMap
 import akka.event.LoggingAdapter
 import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.collection.JavaConverters
 
 /**
  * Immutable and serializable handle to an actor, which may or may not reside
@@ -442,7 +443,7 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
   protected def specialHandle(msg: Any): Boolean = msg match {
     case w: Watch ⇒
       if (w.watchee == this && w.watcher != this)
-        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false, addressTerminated = false)
       true
     case _: Unwatch ⇒ true // Just ignore
     case _          ⇒ false
@@ -467,7 +468,7 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
   override protected def specialHandle(msg: Any): Boolean = msg match {
     case w: Watch ⇒
       if (w.watchee != this && w.watcher != this)
-        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false, addressTerminated = false)
       true
     case w: Unwatch  ⇒ true // Just ignore
     case NullMessage ⇒ true
@@ -515,5 +516,12 @@ private[akka] class VirtualPathContainer(
           else some.getChild(name)
       }
     }
+  }
+
+  def hasChildren: Boolean = !children.isEmpty
+
+  def foreachChild(f: ActorRef ⇒ Unit) = {
+    val iter = children.values.iterator
+    while (iter.hasNext) f(iter.next)
   }
 }
