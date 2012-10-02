@@ -225,10 +225,7 @@ private[akka] class RemoteActorRef private[akka] (
     }
   }
 
-  @volatile
-  private var running: Boolean = true
-
-  def isTerminated: Boolean = !running
+  def isTerminated: Boolean = false
 
   def sendSystemMessage(message: SystemMessage): Unit =
     try remote.send(message, None, this)
