@@ -55,8 +55,8 @@ The flow
 --------
 
 The ``flow`` method acts as the delimiter of dataflow expressions (this also neatly aligns with the concept of delimited continuations),
-and flow-expressions compose. At this point you might wonder what the ``flow``-construct brings to the table that for-comprehensions don't,
-and that is the use of the CPS plugin that makes the *look like* it is synchronous, but in reality is asynchronous and non-blocking.
+and flow-expressions composer. At this point you might wonder what the ``flow``-construct brings to the table that for-comprehensions doesn't,
+and that is the use of the CPS plugin that makes the code *look like* it is synchronous, but in reality it is asynchronous and non-blocking.
 The result of a call to ``flow`` is a Future with the resulting value of the flow.
 
 To be able to use the ``flow`` method, you need to import:
