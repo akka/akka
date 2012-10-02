@@ -41,6 +41,8 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
 
   import multiNodeConfig._
 
+  muteMarkingAsUnreachable()
+
   "The Leader in a 4 node cluster" must {
 
     "be able to DOWN a 'last' node that is UNREACHABLE" taggedAs LongRunningTest in {

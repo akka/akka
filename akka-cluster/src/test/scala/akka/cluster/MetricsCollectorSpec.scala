@@ -22,7 +22,7 @@ object MetricsEnabledSpec {
     akka.cluster.metrics.gossip-interval = 1 s
     akka.cluster.metrics.rate-of-decay = 10
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
-    akka.loglevel = INFO"""
+    """
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

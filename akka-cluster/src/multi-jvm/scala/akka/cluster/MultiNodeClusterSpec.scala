@@ -10,6 +10,7 @@ import akka.actor.{ Address, ExtendedActorSystem }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec }
 import akka.testkit._
+import akka.testkit.TestEvent._
 import scala.concurrent.util.duration._
 import scala.concurrent.util.Duration
 import org.scalatest.Suite
@@ -18,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
 import scala.concurrent.util.FiniteDuration
+import akka.event.Logging.ErrorLevel
+import akka.actor.ActorSystem
 
 object MultiNodeClusterSpec {
 
@@ -31,7 +34,7 @@ object MultiNodeClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString("""
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
-      auto-join                           = on
+      auto-join                           = off
       auto-down                           = off
       jmx.enabled                         = off
       gossip-interval                     = 200 ms
@@ -41,7 +44,9 @@ object MultiNodeClusterSpec {
       publish-stats-interval              = 0 s # always, when it happens
       failure-detector.heartbeat-interval = 400 ms
     }
+    akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
+    akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.test {
       single-expect-default = 5 s
     }
@@ -53,6 +58,47 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   override def initialParticipants = roles.size
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
+
+  override def atStartup(): Unit = {
+    muteLog()
+  }
+
+  def muteLog(sys: ActorSystem = system): Unit = {
+    if (!sys.log.isDebugEnabled) {
+      Seq(".*Metrics collection has started successfully.*",
+        ".*Hyperic SIGAR was not found on the classpath.*",
+        ".*Cluster Node.* - registered cluster JMX MBean.*",
+        ".*Cluster Node.* - is starting up.*",
+        ".*Shutting down cluster Node.*",
+        ".*Cluster node successfully shut down.*",
+        ".*Using a dedicated scheduler for cluster.*",
+        ".*Phi value.* for connection.*") foreach { s ⇒
+          sys.eventStream.publish(Mute(EventFilter.info(pattern = s)))
+        }
+
+      Seq(".*received dead letter from.*ClientDisconnected",
+        ".*received dead letter from.*deadLetters.*PoisonPill",
+        ".*installing context org.jboss.netty.channel.DefaultChannelPipeline.*") foreach { s ⇒
+          sys.eventStream.publish(Mute(EventFilter.warning(pattern = s)))
+        }
+    }
+  }
+
+  def muteMarkingAsUnreachable(sys: ActorSystem = system): Unit = if (!sys.log.isDebugEnabled) {
+    sys.eventStream.publish(Mute(EventFilter.error(pattern = ".*Marking.* as UNREACHABLE.*")))
+  }
+
+  def muteDeadLetters(sys: ActorSystem = system): Unit = if (!sys.log.isDebugEnabled) {
+    sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
+  }
+
+  override def afterAll(): Unit = {
+    if (!log.isDebugEnabled) {
+      muteDeadLetters()
+      system.eventStream.setLogLevel(ErrorLevel)
+    }
+    super.afterAll()
+  }
 
   /**
    * Lookup the Address for the role.

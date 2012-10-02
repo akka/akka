@@ -8,6 +8,7 @@ import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
+import akka.testkit.TestEvent._
 import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.Address
@@ -43,6 +44,14 @@ abstract class ClusterDeathWatchSpec
   with MultiNodeClusterSpec {
 
   import ClusterDeathWatchMultiJvmSpec._
+
+  override def atStartup(): Unit = {
+    super.atStartup()
+    if (!log.isDebugEnabled) {
+      muteMarkingAsUnreachable()
+      system.eventStream.publish(Mute(EventFilter[java.net.UnknownHostException]()))
+    }
+  }
 
   "An actor watching a remote actor in the cluster" must {
     "receive Terminated when watched node becomes unreachable" taggedAs LongRunningTest in {

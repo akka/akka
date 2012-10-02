@@ -41,6 +41,8 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
 
   import multiNodeConfig._
 
+  muteMarkingAsUnreachable()
+
   "A cluster of 3 members" must {
 
     "reach initial convergence" taggedAs LongRunningTest in {

@@ -56,6 +56,7 @@ abstract class NodeLeavingAndExitingSpec
                 exitingLatch.countDown()
             case MemberLeft(m) if m.address == secondAddess   ⇒ leavingLatch.countDown()
             case MemberExited(m) if m.address == secondAddess ⇒ exitingLatch.countDown()
+            case MemberRemoved(m)                             ⇒ // not tested here
 
           }
         })), classOf[MemberEvent])
