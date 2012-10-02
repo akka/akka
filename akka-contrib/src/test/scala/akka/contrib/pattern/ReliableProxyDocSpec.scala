@@ -28,7 +28,8 @@ class ReliableProxyDocSpec extends AkkaSpec with ImplicitSender {
         def receive = {
           case "go"                               ⇒ proxy ! 42; client = sender
           case FSM.CurrentState(`proxy`, initial) ⇒
-          case FSM.Transition(`proxy`, from, to)  ⇒ if (to == ReliableProxy.Idle) client ! "done"
+          case FSM.Transition(`proxy`, from, to) ⇒ if (to == ReliableProxy.Idle)
+            client ! "done"
         }
         //#demo-transition
       }))
