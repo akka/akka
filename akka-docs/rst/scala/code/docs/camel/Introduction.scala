@@ -72,7 +72,8 @@ object Introduction {
     val system = ActorSystem("some-system")
     val camel = CamelExtension(system)
     val camelContext = camel.context
-    // camelContext.addComponent("activemq", ActiveMQComponent.activeMQComponent("vm://localhost?broker.persistent=false"))
+    // camelContext.addComponent("activemq", ActiveMQComponent.activeMQComponent(
+    //   "vm://localhost?broker.persistent=false"))
     //#CamelExtensionAddComponent
   }
   {
@@ -92,12 +93,14 @@ object Introduction {
     val camel = CamelExtension(system)
     val actorRef = system.actorOf(Props[MyEndpoint])
     // get a future reference to the activation of the endpoint of the Consumer Actor
-    val activationFuture = camel.activationFutureFor(actorRef)(timeout = 10 seconds, executor = system.dispatcher)
+    val activationFuture = camel.activationFutureFor(actorRef)(timeout = 10 seconds,
+      executor = system.dispatcher)
     //#CamelActivation
     //#CamelDeactivation
     system.stop(actorRef)
     // get a future reference to the deactivation of the endpoint of the Consumer Actor
-    val deactivationFuture = camel.deactivationFutureFor(actorRef)(timeout = 10 seconds, executor = system.dispatcher)
+    val deactivationFuture = camel.deactivationFutureFor(actorRef)(timeout = 10 seconds,
+      executor = system.dispatcher)
     //#CamelDeactivation
   }
 

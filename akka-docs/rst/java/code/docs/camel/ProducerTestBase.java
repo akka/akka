@@ -39,7 +39,8 @@ public class ProducerTestBase {
     ActorRef producer = system.actorOf(props,"jmsproducer");
     Map<String,Object> headers = new HashMap<String, Object>();
     headers.put(CamelMessage.MessageExchangeId(),"123");
-    producer.tell(new CamelMessage("<order amount=\"100\" currency=\"PLN\" itemId=\"12345\"/>",headers), null);
+    producer.tell(new CamelMessage("<order amount=\"100\" currency=\"PLN\" " +
+      "itemId=\"12345\"/>",headers), null);
     //#Correlate
     system.stop(producer);
     system.shutdown();

@@ -419,7 +419,13 @@ implementation called :class:`TestProbe`. The functionality is best explained
 using a small example:
 
 .. includecode:: code/docs/testkit/TestkitDocSpec.scala
-   :include: imports-test-probe,my-double-echo,test-probe
+   :include: imports-test-probe
+
+.. includecode:: code/docs/testkit/TestkitDocSpec.scala
+   :include: my-double-echo
+
+.. includecode:: code/docs/testkit/TestkitDocSpec.scala
+   :include: test-probe
 
 Here a the system under test is simulated by :class:`MyDoubleEcho`, which is
 supposed to mirror its input to two outputs. Attaching two test probes enables
@@ -458,7 +464,10 @@ concerning volume and timing of the message flow while still keeping the
 network functioning:
 
 .. includecode:: code/docs/testkit/TestkitDocSpec.scala
-   :include: test-probe-forward-actors,test-probe-forward
+   :include: test-probe-forward-actors
+
+.. includecode:: code/docs/testkit/TestkitDocSpec.scala
+   :include: test-probe-forward
 
 The ``dest`` actor will receive the same message invocation as if no test probe
 had intervened.

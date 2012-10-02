@@ -33,18 +33,21 @@ multi-JVM testing (Simplified for clarity):
     lazy val remoteTests = Project(
       id = "akka-remote-tests",
       base = file("akka-remote-tests"),
-      dependencies = Seq(remote, actorTests % "test->test", testkit % "test->test"),
+      dependencies = Seq(remote, actorTests % "test->test",
+        testkit % "test->test"),
       settings = defaultSettings ++ Seq(
         // disable parallel tests
         parallelExecution in Test := false,
         extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-          (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
+          (name: String) => (src ** (name + ".conf")).get.
+            headOption.map("-Dakka.config=" + _.absolutePath).toSeq
         },
         test in Test <<= (test in Test) dependsOn (test in MultiJvm)
       )
     ) configs (MultiJvm)
 
-    lazy val buildSettings = Defaults.defaultSettings ++ SbtMultiJvm.multiJvmSettings ++ Seq(
+    lazy val buildSettings = Defaults.defaultSettings ++
+      SbtMultiJvm.multiJvmSettings ++ Seq(
       organization := "com.typesafe.akka",
       version      := "@version@",
       scalaVersion := "@scalaVersion@",

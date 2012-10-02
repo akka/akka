@@ -20,7 +20,8 @@ public class CoordinatedCounter extends UntypedActor {
             if (message instanceof Increment) {
                 Increment increment = (Increment) message;
                 if (increment.hasFriend()) {
-                    increment.getFriend().tell(coordinated.coordinate(new Increment()), getSelf());
+                    increment.getFriend().tell(
+                      coordinated.coordinate(new Increment()), getSelf());
                 }
                 coordinated.atomic(new Runnable() {
                     public void run() {

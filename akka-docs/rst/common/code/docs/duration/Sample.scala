@@ -12,7 +12,7 @@ object Scala {
   val threemillis = 3.millis
   val diff = fivesec - threemillis
   assert(diff < fivesec)
-  val fourmillis = threemillis * 4 / 3 // though you cannot write it the other way around
+  val fourmillis = threemillis * 4 / 3 // you cannot write it the other way around
   val n = threemillis / (1 millisecond)
   //#dsl
 

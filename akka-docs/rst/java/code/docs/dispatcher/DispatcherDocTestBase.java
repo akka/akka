@@ -50,7 +50,8 @@ public class DispatcherDocTestBase {
   @Before
   public void setUp() {
     system = ActorSystem.create("MySystem",
-        ConfigFactory.parseString(DispatcherDocSpec.config()).withFallback(AkkaSpec.testConf()));
+        ConfigFactory.parseString(
+          DispatcherDocSpec.config()).withFallback(AkkaSpec.testConf()));
   }
 
   @After
@@ -79,7 +80,7 @@ public class DispatcherDocTestBase {
   public void priorityDispatcher() throws Exception {
     //#prio-dispatcher
 
-      // We create a new Actor that just prints out what it processes
+    // We create a new Actor that just prints out what it processes
     ActorRef myActor = system.actorOf(
         new Props().withCreator(new UntypedActorFactory() {
           public UntypedActor create() {
@@ -123,9 +124,11 @@ public class DispatcherDocTestBase {
     }
   }
 
+  static
   //#prio-mailbox
-  public static class MyPrioMailbox extends UnboundedPriorityMailbox {
-    public MyPrioMailbox(ActorSystem.Settings settings, Config config) { // needed for reflective instantiation
+  public class MyPrioMailbox extends UnboundedPriorityMailbox {
+    // needed for reflective instantiation
+    public MyPrioMailbox(ActorSystem.Settings settings, Config config) {
       // Create a new PriorityGenerator, lower prio means more important
       super(new PriorityGenerator() {
         @Override
@@ -143,9 +146,10 @@ public class DispatcherDocTestBase {
     }
   }
   //#prio-mailbox
-  
+
+  static
   //#mailbox-implementation-example
-  class MyUnboundedMailbox implements MailboxType {
+  public class MyUnboundedMailbox implements MailboxType {
 
     // This constructor signature must exist, it will be called by Akka
     public MyUnboundedMailbox(ActorSystem.Settings settings, Config config) {
@@ -158,7 +162,9 @@ public class DispatcherDocTestBase {
         private final Queue<Envelope> queue = new ConcurrentLinkedQueue<Envelope>();
         
         // these must be implemented; queue used as example
-        public void enqueue(ActorRef receiver, Envelope handle) { queue.offer(handle); }
+        public void enqueue(ActorRef receiver, Envelope handle) {
+          queue.offer(handle);
+        }
         public Envelope dequeue() { return queue.poll(); }
         public int numberOfMessages() { return queue.size(); }
         public boolean hasMessages() { return !queue.isEmpty(); }

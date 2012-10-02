@@ -9,7 +9,8 @@ public class CustomRouteBuilder extends RouteBuilder{
   public void configure() throws Exception {
     from("direct:welcome").process(new Processor(){
       public void process(Exchange exchange) throws Exception {
-        exchange.getOut().setBody(String.format("Welcome %s",exchange.getIn().getBody()));
+        exchange.getOut().setBody(String.format("Welcome %s",
+          exchange.getIn().getBody()));
       }
     });
   }

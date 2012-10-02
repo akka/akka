@@ -76,7 +76,10 @@ If you want to programmatically serialize/deserialize using Akka Serialization,
 here's some examples:
 
 .. includecode:: code/docs/serialization/SerializationDocTestBase.java
-   :include: imports,programmatic
+   :include: imports
+
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+   :include: programmatic
 
 For more information, have a look at the ``ScalaDoc`` for ``akka.serialization._``
 
@@ -94,7 +97,10 @@ First you need to create a class definition of your ``Serializer``,
 which is done by extending ``akka.serialization.JSerializer``, like this:
 
 .. includecode:: code/docs/serialization/SerializationDocTestBase.java
-   :include: imports,my-own-serializer
+   :include: imports
+
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+   :include: my-own-serializer
    :exclude: ...
 
 Then you only need to fill in the blanks, bind it to a name in your :ref:`configuration` and then
@@ -107,7 +113,10 @@ All ActorRefs are serializable using JavaSerializer, but in case you are writing
 you might want to know how to serialize and deserialize them properly, here's the magic incantation:
 
 .. includecode:: code/docs/serialization/SerializationDocTestBase.java
-   :include: imports,actorref-serializer
+   :include: imports
+
+.. includecode:: code/docs/serialization/SerializationDocTestBase.java
+   :include: actorref-serializer
 
 .. note::
   

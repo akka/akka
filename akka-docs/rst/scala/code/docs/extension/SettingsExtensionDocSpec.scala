@@ -20,7 +20,9 @@ import akka.testkit.AkkaSpec
 //#extension
 class SettingsImpl(config: Config) extends Extension {
   val DbUri: String = config.getString("myapp.db.uri")
-  val CircuitBreakerTimeout: Duration = Duration(config.getMilliseconds("myapp.circuit-breaker.timeout"), TimeUnit.MILLISECONDS)
+  val CircuitBreakerTimeout: Duration =
+    Duration(config.getMilliseconds("myapp.circuit-breaker.timeout"),
+      TimeUnit.MILLISECONDS)
 }
 //#extension
 
@@ -29,7 +31,8 @@ object Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider {
 
   override def lookup = Settings
 
-  override def createExtension(system: ExtendedActorSystem) = new SettingsImpl(system.settings.config)
+  override def createExtension(system: ExtendedActorSystem) =
+    new SettingsImpl(system.settings.config)
 }
 //#extensionid
 

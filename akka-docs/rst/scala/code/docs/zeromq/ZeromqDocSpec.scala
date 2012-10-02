@@ -49,7 +49,8 @@ object ZeromqDocSpec {
         val timestamp = System.currentTimeMillis
 
         // use akka SerializationExtension to convert to bytes
-        val heapPayload = ser.serialize(Heap(timestamp, currentHeap.getUsed, currentHeap.getMax)).get
+        val heapPayload = ser.serialize(Heap(timestamp, currentHeap.getUsed,
+          currentHeap.getMax)).get
         // the first frame is the topic, second is the message
         pubSocket ! ZMQMessage(Seq(Frame("health.heap"), Frame(heapPayload)))
 
@@ -64,19 +65,24 @@ object ZeromqDocSpec {
   //#logger
   class Logger extends Actor with ActorLogging {
 
-    ZeroMQExtension(context.system).newSocket(SocketType.Sub, Listener(self), Connect("tcp://127.0.0.1:1235"), Subscribe("health"))
+    ZeroMQExtension(context.system).newSocket(SocketType.Sub, Listener(self),
+      Connect("tcp://127.0.0.1:1235"), Subscribe("health"))
     val ser = SerializationExtension(context.system)
     val timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS")
 
     def receive = {
       // the first frame is the topic, second is the message
       case m: ZMQMessage if m.firstFrameAsString == "health.heap" ⇒
-        val Heap(timestamp, used, max) = ser.deserialize(m.payload(1), classOf[Heap]).get
-        log.info("Used heap {} bytes, at {}", used, timestampFormat.format(new Date(timestamp)))
+        val Heap(timestamp, used, max) = ser.deserialize(m.payload(1),
+          classOf[Heap]).get
+        log.info("Used heap {} bytes, at {}", used,
+          timestampFormat.format(new Date(timestamp)))
 
       case m: ZMQMessage if m.firstFrameAsString == "health.load" ⇒
-        val Load(timestamp, loadAverage) = ser.deserialize(m.payload(1), classOf[Load]).get
-        log.info("Load average {}, at {}", loadAverage, timestampFormat.format(new Date(timestamp)))
+        val Load(timestamp, loadAverage) = ser.deserialize(m.payload(1),
+          classOf[Load]).get
+        log.info("Load average {}, at {}", loadAverage,
+          timestampFormat.format(new Date(timestamp)))
     }
   }
   //#logger
@@ -84,17 +90,20 @@ object ZeromqDocSpec {
   //#alerter
   class HeapAlerter extends Actor with ActorLogging {
 
-    ZeroMQExtension(context.system).newSocket(SocketType.Sub, Listener(self), Connect("tcp://127.0.0.1:1235"), Subscribe("health.heap"))
+    ZeroMQExtension(context.system).newSocket(SocketType.Sub,
+      Listener(self), Connect("tcp://127.0.0.1:1235"), Subscribe("health.heap"))
     val ser = SerializationExtension(context.system)
     var count = 0
 
     def receive = {
       // the first frame is the topic, second is the message
       case m: ZMQMessage if m.firstFrameAsString == "health.heap" ⇒
-        val Heap(timestamp, used, max) = ser.deserialize(m.payload(1), classOf[Heap]).get
+        val Heap(timestamp, used, max) = ser.deserialize(m.payload(1),
+          classOf[Heap]).get
         if ((used.toDouble / max) > 0.9) count += 1
         else count = 0
-        if (count > 10) log.warning("Need more memory, using {} %", (100.0 * used / max))
+        if (count > 10) log.warning("Need more memory, using {} %",
+          (100.0 * used / max))
     }
   }
   //#alerter
@@ -109,7 +118,8 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
 
     //#pub-socket
     import akka.zeromq.ZeroMQExtension
-    val pubSocket = ZeroMQExtension(system).newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:21231"))
+    val pubSocket = ZeroMQExtension(system).newSocket(SocketType.Pub,
+      Bind("tcp://127.0.0.1:21231"))
     //#pub-socket
 
     //#sub-socket
@@ -121,11 +131,13 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
         case _             ⇒ //...
       }
     }))
-    val subSocket = ZeroMQExtension(system).newSocket(SocketType.Sub, Listener(listener), Connect("tcp://127.0.0.1:21231"), SubscribeAll)
+    val subSocket = ZeroMQExtension(system).newSocket(SocketType.Sub,
+      Listener(listener), Connect("tcp://127.0.0.1:21231"), SubscribeAll)
     //#sub-socket
 
     //#sub-topic-socket
-    val subTopicSocket = ZeroMQExtension(system).newSocket(SocketType.Sub, Listener(listener), Connect("tcp://127.0.0.1:21231"), Subscribe("foo.bar"))
+    val subTopicSocket = ZeroMQExtension(system).newSocket(SocketType.Sub,
+      Listener(listener), Connect("tcp://127.0.0.1:21231"), Subscribe("foo.bar"))
     //#sub-topic-socket
 
     //#unsub-topic-socket

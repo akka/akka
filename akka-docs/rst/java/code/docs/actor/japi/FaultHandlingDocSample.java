@@ -39,7 +39,8 @@ public class FaultHandlingDocSample {
    * Runs the sample
    */
   public static void main(String[] args) {
-    Config config = ConfigFactory.parseString("akka.loglevel = DEBUG \n" + "akka.actor.debug.lifecycle = on");
+    Config config = ConfigFactory.parseString("akka.loglevel = DEBUG \n" +
+      "akka.actor.debug.lifecycle = on");
 
     ActorSystem system = ActorSystem.create("FaultToleranceSample", config);
     ActorRef worker = system.actorOf(new Props(Worker.class), "worker");
@@ -59,7 +60,8 @@ public class FaultHandlingDocSample {
 
     @Override
     public void preStart() {
-      // If we don't get any progress within 15 seconds then the service is unavailable
+      // If we don't get any progress within 15 seconds then the service
+      // is unavailable
       getContext().setReceiveTimeout(Duration.parse("15 seconds"));
     }
 
@@ -111,23 +113,25 @@ public class FaultHandlingDocSample {
     final LoggingAdapter log = Logging.getLogger(getContext().system(), this);
     final Timeout askTimeout = new Timeout(Duration.create(5, "seconds"));
 
-    // The sender of the initial Start message will continuously be notified about progress
+    // The sender of the initial Start message will continuously be notified
+    // about progress
     ActorRef progressListener;
-    final ActorRef counterService = getContext().actorOf(new Props(CounterService.class), "counter");
+    final ActorRef counterService = getContext().actorOf(
+      new Props(CounterService.class), "counter");
     final int totalCount = 51;
 
     // Stop the CounterService child if it throws ServiceUnavailable
-    private static SupervisorStrategy strategy = new OneForOneStrategy(-1, Duration.Inf(),
-        new Function<Throwable, Directive>() {
-          @Override
-          public Directive apply(Throwable t) {
-            if (t instanceof ServiceUnavailable) {
-              return stop();
-            } else {
-              return escalate();
-            }
-          }
-        });
+    private static SupervisorStrategy strategy = new OneForOneStrategy(-1,
+      Duration.Inf(), new Function<Throwable, Directive>() {
+      @Override
+      public Directive apply(Throwable t) {
+        if (t instanceof ServiceUnavailable) {
+          return stop();
+        } else {
+          return escalate();
+        }
+      }
+    });
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
@@ -139,7 +143,8 @@ public class FaultHandlingDocSample {
       if (msg.equals(Start) && progressListener == null) {
         progressListener = getSender();
         getContext().system().scheduler().schedule(
-            Duration.Zero(), Duration.create(1, "second"), getSelf(), Do, getContext().dispatcher()
+            Duration.Zero(), Duration.create(1, "second"), getSelf(), Do,
+          getContext().dispatcher()
         );
       } else if (msg.equals(Do)) {
         counterService.tell(new Increment(1), getSelf());
@@ -231,17 +236,17 @@ public class FaultHandlingDocSample {
 
     // Restart the storage child when StorageException is thrown.
     // After 3 restarts within 5 seconds it will be stopped.
-    private static SupervisorStrategy strategy = new OneForOneStrategy(3, Duration.parse("5 seconds"),
-        new Function<Throwable, Directive>() {
-          @Override
-          public Directive apply(Throwable t) {
-            if (t instanceof StorageException) {
-              return restart();
-            } else {
-              return escalate();
-            }
-          }
-        });
+    private static SupervisorStrategy strategy = new OneForOneStrategy(3,
+      Duration.parse("5 seconds"), new Function<Throwable, Directive>() {
+      @Override
+      public Directive apply(Throwable t) {
+        if (t instanceof StorageException) {
+          return restart();
+        } else {
+          return escalate();
+        }
+      }
+    });
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
@@ -261,7 +266,8 @@ public class FaultHandlingDocSample {
      * when it has been terminated.
      */
     void initStorage() {
-      storage = getContext().watch(getContext().actorOf(new Props(Storage.class), "storage"));
+      storage = getContext().watch(getContext().actorOf(
+        new Props(Storage.class), "storage"));
       // Tell the counter, if any, to use the new storage
       if (counter != null)
         counter.tell(new UseStorage(storage), getSelf());
@@ -272,14 +278,16 @@ public class FaultHandlingDocSample {
     @Override
     public void onReceive(Object msg) {
       log.debug("received message {}", msg);
-      if (msg instanceof Entry && ((Entry) msg).key.equals(key) && counter == null) {
+      if (msg instanceof Entry && ((Entry) msg).key.equals(key) &&
+        counter == null) {
         // Reply from Storage of the initial value, now we can create the Counter
         final long value = ((Entry) msg).value;
-        counter = getContext().actorOf(new Props().withCreator(new UntypedActorFactory() {
-          public Actor create() {
-            return new Counter(key, value);
-          }
-        }));
+        counter = getContext().actorOf(new Props().withCreator(
+          new UntypedActorFactory() {
+            public Actor create() {
+              return new Counter(key, value);
+            }
+          }));
         // Tell the counter to use current storage
         counter.tell(new UseStorage(storage), getSelf());
         // and send the buffered backlog to the counter
@@ -299,7 +307,8 @@ public class FaultHandlingDocSample {
         counter.tell(new UseStorage(null), getSelf());
         // Try to re-establish storage after while
         getContext().system().scheduler().scheduleOnce(
-                Duration.create(10, "seconds"), getSelf(), Reconnect, getContext().dispatcher()
+                Duration.create(10, "seconds"), getSelf(), Reconnect,
+          getContext().dispatcher()
         );
       } else if (msg.equals(Reconnect)) {
         // Re-establish storage after the scheduled delay
@@ -310,12 +319,13 @@ public class FaultHandlingDocSample {
     }
 
     void forwardOrPlaceInBacklog(Object msg) {
-      // We need the initial value from storage before we can start delegate to the counter.
-      // Before that we place the messages in a backlog, to be sent to the counter when
-      // it is initialized.
+      // We need the initial value from storage before we can start delegate to
+      // the counter. Before that we place the messages in a backlog, to be sent
+      // to the counter when it is initialized.
       if (counter == null) {
         if (backlog.size() >= MAX_BACKLOG)
-          throw new ServiceUnavailable("CounterService not available, lack of initial value");
+          throw new ServiceUnavailable("CounterService not available," +
+            " lack of initial value");
         backlog.add(new SenderMsgPair(getSender(), msg));
       } else {
         counter.forward(msg, getContext());
@@ -449,7 +459,8 @@ public class FaultHandlingDocSample {
       } else if (msg instanceof Get) {
         Get get = (Get) msg;
         Long value = db.load(get.key);
-        getSender().tell(new Entry(get.key, value == null ? Long.valueOf(0L) : value), getSelf());
+        getSender().tell(new Entry(get.key, value == null ?
+          Long.valueOf(0L) : value), getSelf());
       } else {
         unhandled(msg);
       }

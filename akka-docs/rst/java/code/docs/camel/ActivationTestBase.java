@@ -28,13 +28,15 @@ public class ActivationTestBase {
     Camel camel = CamelExtension.get(system);
     // get a future reference to the activation of the endpoint of the Consumer Actor
     Timeout timeout = new Timeout(Duration.create(10, SECONDS));
-    Future<ActorRef> activationFuture = camel.activationFutureFor(producer, timeout, system.dispatcher());
+    Future<ActorRef> activationFuture = camel.activationFutureFor(producer,
+      timeout, system.dispatcher());
     //#CamelActivation
     //#CamelDeactivation
     // ..
     system.stop(producer);
     // get a future reference to the deactivation of the endpoint of the Consumer Actor
-    Future<ActorRef> deactivationFuture = camel.deactivationFutureFor(producer, timeout, system.dispatcher());
+    Future<ActorRef> deactivationFuture = camel.deactivationFutureFor(producer,
+      timeout, system.dispatcher());
     //#CamelDeactivation
     system.shutdown();
   }

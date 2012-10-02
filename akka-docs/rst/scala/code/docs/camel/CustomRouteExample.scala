@@ -19,8 +19,10 @@ object CustomRouteExample {
 
     class Transformer(producer: ActorRef) extends Actor {
       def receive = {
-        // example: transform message body "foo" to "- foo -" and forward result to producer
-        case msg: CamelMessage ⇒ producer.forward(msg.mapBody((body: String) ⇒ "- %s -" format body))
+        // example: transform message body "foo" to "- foo -" and forward result
+        // to producer
+        case msg: CamelMessage ⇒
+          producer.forward(msg.mapBody((body: String) ⇒ "- %s -" format body))
       }
     }
 
@@ -38,7 +40,8 @@ object CustomRouteExample {
         })
       }
     }
-    // the below lines can be added to a Boot class, so that you can run the example from a MicroKernel
+    // the below lines can be added to a Boot class, so that you can run the
+    // example from a MicroKernel
     val system = ActorSystem("some-system")
     val producer = system.actorOf(Props[Producer1])
     val mediator = system.actorOf(Props(new Transformer(producer)))

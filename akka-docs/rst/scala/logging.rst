@@ -93,7 +93,7 @@ by Actors:
     akka {
       actor {
         debug {
-          # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill and the like)
+          # enable DEBUG logging of all AutoReceiveMessages (Kill, PoisonPill et.c.)
           autoreceive = on
         }
       }
@@ -148,7 +148,8 @@ If you want to see all messages that are sent through remoting at DEBUG log leve
 
     akka {
       remote {
-        # If this is "on", Akka will log all outbound messages at DEBUG level, if off then they are not logged
+        # If this is "on", Akka will log all outbound messages at DEBUG level,
+        # if off then they are not logged
         log-sent-messages = on
       }
     }
@@ -160,7 +161,8 @@ If you want to see all messages that are received through remoting at DEBUG log 
 
     akka {
       remote {
-        # If this is "on", Akka will log all inbound messages at DEBUG level, if off then they are not logged
+        # If this is "on", Akka will log all inbound messages at DEBUG level,
+        # if off then they are not logged
         log-received-messages = on
       }
     }

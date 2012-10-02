@@ -8,7 +8,8 @@ import akka.actor.UntypedActor;
 //#printlnActor
 public class PrintlnActor extends UntypedActor {
   public void onReceive(Object msg) {
-    System.out.println(String.format("Received message '%s' in actor %s", msg, getSelf().path().name()));
+    System.out.println(String.format("Received message '%s' in actor %s",
+      msg, getSelf().path().name()));
   }
 }
 

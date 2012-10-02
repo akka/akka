@@ -122,7 +122,8 @@ public class UntypedActorDocTestBase {
   public void propsActorOf() {
     ActorSystem system = ActorSystem.create("MySystem");
     //#creating-props
-    ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"), "myactor");
+    ActorRef myActor = system.actorOf(
+      new Props(MyUntypedActor.class).withDispatcher("my-dispatcher"), "myactor");
     //#creating-props
     myActor.tell("test", null);
     system.shutdown();
@@ -201,7 +202,8 @@ public class UntypedActorDocTestBase {
     ActorRef actorRef = system.actorOf(new Props(MyUntypedActor.class));
     //#gracefulStop
     try {
-      Future<Boolean> stopped = gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), system);
+      Future<Boolean> stopped =
+        gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), system);
       Await.result(stopped, Duration.create(6, TimeUnit.SECONDS));
       // the actor has been stopped
     } catch (AskTimeoutException e) {
@@ -234,16 +236,18 @@ public class UntypedActorDocTestBase {
     futures.add(ask(actorA, "request", 1000)); // using 1000ms timeout
     futures.add(ask(actorB, "another request", t)); // using timeout from above
 
-    final Future<Iterable<Object>> aggregate = Futures.sequence(futures, system.dispatcher());
-    
-    final Future<Result> transformed = aggregate.map(new Mapper<Iterable<Object>, Result>() {
-      public Result apply(Iterable<Object> coll) {
-        final Iterator<Object> it = coll.iterator();
-        final String s = (String) it.next();
-        final int x = (Integer) it.next();
-        return new Result(x, s);
-      }
-    }, system.dispatcher());
+    final Future<Iterable<Object>> aggregate =
+      Futures.sequence(futures, system.dispatcher());
+
+    final Future<Result> transformed = aggregate.map(
+      new Mapper<Iterable<Object>, Result>() {
+        public Result apply(Iterable<Object> coll) {
+          final Iterator<Object> it = coll.iterator();
+          final String s = (String) it.next();
+          final int x = (Integer) it.next();
+          return new Result(x, s);
+        }
+      }, system.dispatcher());
 
     pipe(transformed, system.dispatcher()).to(actorC);
     //#ask-pipe
@@ -305,8 +309,9 @@ public class UntypedActorDocTestBase {
     }
   }
 
+  static
   //#hot-swap-actor
-  public static class HotSwapActor extends UntypedActor {
+  public class HotSwapActor extends UntypedActor {
 
     Procedure<Object> angry = new Procedure<Object>() {
       @Override
@@ -343,8 +348,9 @@ public class UntypedActorDocTestBase {
 
   //#hot-swap-actor
 
+  static
   //#stash
-  public static class ActorWithProtocol extends UntypedActorWithStash {
+  public class ActorWithProtocol extends UntypedActorWithStash {
     private Boolean isOpen = false;
     public void onReceive(Object msg) {
       if (isOpen) {
@@ -368,11 +374,12 @@ public class UntypedActorDocTestBase {
   }
   //#stash
 
+  static
   //#watch
-  public static class WatchActor extends UntypedActor {
+  public class WatchActor extends UntypedActor {
     final ActorRef child = this.getContext().actorOf(Props.empty(), "child");
     {
-      this.getContext().watch(child); // <-- this is the only call needed for registration
+      this.getContext().watch(child); // <-- the only call needed for registration
     }
     ActorRef lastSender = getContext().system().deadLetters();
 

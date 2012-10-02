@@ -61,7 +61,10 @@ Creating Actors with default constructor
 ----------------------------------------
 
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
-   :include: imports,system-actorOf
+   :include: imports
+
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
+   :include: system-actorOf
 
 The call to :meth:`actorOf` returns an instance of ``ActorRef``. This is a handle to
 the ``UntypedActor`` instance which you can use to interact with the ``UntypedActor``. The
@@ -248,8 +251,8 @@ actors may look up other actors by specifying absolute or relative
 paths—logical or physical—and receive back an :class:`ActorRef` with the
 result::
 
-  getContext().actorFor("/user/serviceA/aggregator") // will look up this absolute path
-  getContext().actorFor("../joe")                    // will look up sibling beneath same supervisor
+  getContext().actorFor("/user/serviceA/actor") // will look up this absolute path
+  getContext().actorFor("../joe") // will look up sibling beneath same supervisor
 
 The supplied path is parsed as a :class:`java.net.URI`, which basically means
 that it is split on ``/`` into path elements. If the path starts with ``/``, it
@@ -499,7 +502,10 @@ in the mailbox.
 Use it like this:
 
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
-   :include: import-actors,poison-pill
+   :include: import-actors
+
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
+   :include: poison-pill
 
 Graceful Stop
 -------------
@@ -508,7 +514,10 @@ Graceful Stop
 termination of several actors:
 
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
-   :include: import-gracefulStop,gracefulStop
+   :include: import-gracefulStop
+
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
+   :include: gracefulStop
 
 When ``gracefulStop()`` returns successfully, the actor’s ``postStop()`` hook
 will have been executed: there exists a happens-before edge between the end of
@@ -542,7 +551,10 @@ The hotswapped code is kept in a Stack which can be pushed and popped.
 To hotswap the Actor using ``getContext().become``:
 
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
-   :include: import-procedure,hot-swap-actor
+   :include: import-procedure
+
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
+   :include: hot-swap-actor
 
 The ``become`` method is useful for many different things, such as to implement
 a Finite State Machine (FSM).
@@ -622,7 +634,10 @@ through regular supervisor semantics.
 Use it like this:
 
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
-   :include: import-actors,kill
+   :include: import-actors
+
+.. includecode:: code/docs/actor/UntypedActorDocTestBase.java
+   :include: kill
 
 Actors and exceptions
 =====================

@@ -58,10 +58,14 @@ import scala.concurrent.util.duration._
 class MyMailboxType(systemSettings: ActorSystem.Settings, config: Config)
   extends MailboxType {
 
-  override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = (owner zip system) headOption match {
-    case Some((o, s: ExtendedActorSystem)) ⇒ new MyMessageQueue(o, s)
-    case _                                 ⇒ throw new IllegalArgumentException("requires an owner (i.e. does not work with BalancingDispatcher)")
-  }
+  override def create(owner: Option[ActorRef],
+                      system: Option[ActorSystem]): MessageQueue =
+    (owner zip system) headOption match {
+      case Some((o, s: ExtendedActorSystem)) ⇒ new MyMessageQueue(o, s)
+      case _ ⇒
+        throw new IllegalArgumentException("requires an owner " +
+          "(i.e. does not work with BalancingDispatcher)")
+    }
 }
 
 class MyMessageQueue(_owner: ActorRef, _system: ExtendedActorSystem)
@@ -72,10 +76,11 @@ class MyMessageQueue(_owner: ActorRef, _system: ExtendedActorSystem)
   // three parameters below
   val breaker = CircuitBreaker(system.scheduler, 5, 30.seconds, 1.minute)
 
-  def enqueue(receiver: ActorRef, envelope: Envelope): Unit = breaker.withSyncCircuitBreaker {
-    val data: Array[Byte] = serialize(envelope)
-    storage.push(data)
-  }
+  def enqueue(receiver: ActorRef, envelope: Envelope): Unit =
+    breaker.withSyncCircuitBreaker {
+      val data: Array[Byte] = serialize(envelope)
+      storage.push(data)
+    }
 
   def dequeue(): Envelope = breaker.withSyncCircuitBreaker {
     val data: Option[Array[Byte]] = storage.pull()

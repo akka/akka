@@ -55,7 +55,8 @@ trait Foo {
 
 trait Bar {
   import TypedActor.dispatcher //So we have an implicit dispatcher for our Promise
-  def doBar(str: String): Future[String] = Promise.successful(str.toUpperCase).future
+  def doBar(str: String): Future[String] =
+    Promise.successful(str.toUpperCase).future
 }
 
 class FooBar extends Foo with Bar
@@ -106,7 +107,8 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#typed-actor-create1
     //#typed-actor-create2
     val otherSquarer: Squarer =
-      TypedActor(system).typedActorOf(TypedProps(classOf[Squarer], new SquarerImpl("foo")), "name")
+      TypedActor(system).typedActorOf(TypedProps(classOf[Squarer],
+        new SquarerImpl("foo")), "name")
     //#typed-actor-create2
 
     //#typed-actor-calls
@@ -157,7 +159,8 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     try {
       //#typed-actor-hierarchy
       //Inside your Typed Actor
-      val childSquarer: Squarer = TypedActor(TypedActor.context).typedActorOf(TypedProps[SquarerImpl]())
+      val childSquarer: Squarer =
+        TypedActor(TypedActor.context).typedActorOf(TypedProps[SquarerImpl]())
       //Use "childSquarer" as a Squarer
       //#typed-actor-hierarchy
     } catch {
@@ -167,7 +170,8 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
   "supercharge" in {
     //#typed-actor-supercharge-usage
-    val awesomeFooBar: Foo with Bar = TypedActor(system).typedActorOf(TypedProps[FooBar]())
+    val awesomeFooBar: Foo with Bar =
+      TypedActor(system).typedActorOf(TypedProps[FooBar]())
 
     awesomeFooBar.doFoo(10)
     val f = awesomeFooBar.doBar("yes")

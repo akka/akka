@@ -39,7 +39,8 @@ class StatsService extends Actor {
     case StatsJob(text) if text != "" ⇒
       val words = text.split(" ")
       val replyTo = sender // important to not close over sender
-      val aggregator = context.actorOf(Props(new StatsAggregator(words.size, replyTo)))
+      val aggregator = context.actorOf(Props(
+          new StatsAggregator(words.size, replyTo)))
       words foreach { word ⇒
         workerRouter.tell(
           ConsistentHashableEnvelope(word, word), aggregator)
@@ -111,7 +112,8 @@ class StatsFacade extends Actor with ActorLogging {
     if (leaderAddress == cluster.selfAddress) {
       if (!currentMasterCreatedByMe) {
         log.info("Creating new statsService master at [{}]", leaderAddress)
-        currentMaster = Some(context.actorOf(Props[StatsService], name = "statsService"))
+        currentMaster = Some(context.actorOf(Props[StatsService],
+          name = "statsService"))
         currentMasterCreatedByMe = true
       }
     } else {

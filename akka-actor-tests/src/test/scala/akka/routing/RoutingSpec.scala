@@ -626,8 +626,10 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
       //#crRoute
       def createRoute(routeeProvider: RouteeProvider): Route = {
-        val democratActor = routeeProvider.context.actorOf(Props(new DemocratActor()), "d")
-        val republicanActor = routeeProvider.context.actorOf(Props(new RepublicanActor()), "r")
+        val democratActor =
+          routeeProvider.context.actorOf(Props(new DemocratActor()), "d")
+        val republicanActor =
+          routeeProvider.context.actorOf(Props(new RepublicanActor()), "r")
         val routees = Vector[ActorRef](democratActor, republicanActor)
 
         //#crRegisterRoutees
