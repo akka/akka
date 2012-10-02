@@ -12,7 +12,7 @@ import akka.actor._
 import akka.util.Timeout
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
 import akka.remote.RemoteActorRefProvider
-import akka.testkit.TestKit
+import akka.testkit._
 import scala.concurrent.{ Await, Awaitable }
 import scala.util.control.NonFatal
 import scala.concurrent.util.Duration
@@ -246,13 +246,22 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
       }
     }
     system.shutdown()
-    try system.awaitTermination(5 seconds) catch {
+    val shutdownTimeout = 5.seconds.dilated
+    try system.awaitTermination(shutdownTimeout) catch {
       case _: TimeoutException ⇒
-        system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
-        println(system.asInstanceOf[ActorSystemImpl].printTree)
+        val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, shutdownTimeout,
+          system.asInstanceOf[ActorSystemImpl].printTree)
+        if (verifySystemShutdown) throw new RuntimeException(msg)
+        else system.log.warning(msg)
     }
     atTermination()
   }
+
+  /**
+   * Override this and return `true` to assert that the
+   * shutdown of the `ActorSystem` was done properly.
+   */
+  def verifySystemShutdown: Boolean = false
 
   /*
   * Test Class Interface

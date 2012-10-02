@@ -15,6 +15,9 @@ import akka.actor.Address
 import akka.actor.RootActorPath
 import akka.actor.Terminated
 import akka.actor.Address
+import akka.remote.RemoteActorRef
+import java.util.concurrent.TimeoutException
+import akka.actor.ActorSystemImpl
 
 object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -23,6 +26,12 @@ object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
+
+  deployOn(fourth, """/hello.remote = "@first@" """)
+
+  class Hello extends Actor {
+    def receive = Actor.emptyBehavior
+  }
 }
 
 class ClusterDeathWatchMultiJvmNode1 extends ClusterDeathWatchSpec
@@ -121,6 +130,42 @@ abstract class ClusterDeathWatchSpec
       }
 
       enterBarrier("after-3")
+    }
+
+    "be able to shutdown system when using remote deployed actor on node that crash" taggedAs LongRunningTest in {
+      runOn(fourth) {
+        val hello = system.actorOf(Props[Hello], "hello")
+        hello.isInstanceOf[RemoteActorRef] must be(true)
+        hello.path.address must be(address(first))
+        watch(hello)
+        enterBarrier("hello-deployed")
+
+        markNodeAsUnavailable(first)
+        val t = expectMsgType[Terminated]
+        t.actor must be(hello)
+
+        enterBarrier("first-unavailable")
+
+        system.shutdown()
+        val timeout = remaining
+        try system.awaitTermination(timeout) catch {
+          case _: TimeoutException ⇒
+            fail("Failed to stop [%s] within [%s] \n%s".format(system.name, timeout,
+              system.asInstanceOf[ActorSystemImpl].printTree))
+        }
+      }
+
+      runOn(first, second, third) {
+        enterBarrier("hello-deployed")
+        enterBarrier("first-unavailable")
+        runOn(first) {
+          // fourth system will be shutdown, remove to not participate in barriers any more
+          testConductor.removeNode(fourth)
+        }
+
+        enterBarrier("after-4")
+      }
+
     }
 
   }
