@@ -10,11 +10,12 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import scala.concurrent.Await
 import akka.pattern.ask
-import akka.remote.testkit.{STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec}
+import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
 import akka.routing.Broadcast
 import akka.routing.ScatterGatherFirstCompletedRouter
 import akka.routing.RoutedActorRef
 import akka.testkit._
+import akka.testkit.TestEvent._
 import scala.concurrent.util.duration._
 import akka.actor.PoisonPill
 import akka.actor.Address
@@ -50,10 +51,12 @@ class ScatterGatherRoutedRemoteActorSpec extends MultiNodeSpec(ScatterGatherRout
   with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
   import ScatterGatherRoutedRemoteActorMultiJvmSpec._
 
-  def initialParticipants = 4
+  def initialParticipants = roles.size
 
   "A new remote actor configured with a ScatterGatherFirstCompleted router" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
+
+      system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
 
       runOn(first, second, third) {
         enterBarrier("start", "broadcast-end", "end", "done")
@@ -89,6 +92,8 @@ class ScatterGatherRoutedRemoteActorSpec extends MultiNodeSpec(ScatterGatherRout
         system.stop(actor)
         enterBarrier("done")
       }
+
+      enterBarrier("done")
     }
   }
 }

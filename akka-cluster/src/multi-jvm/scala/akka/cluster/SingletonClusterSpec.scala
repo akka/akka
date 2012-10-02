@@ -39,10 +39,11 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
 
   import multiNodeConfig._
 
+  muteMarkingAsUnreachable()
+
   "A cluster of 2 nodes" must {
 
     "become singleton cluster when started with 'auto-join=on' and 'seed-nodes=[]'" taggedAs LongRunningTest in {
-      startClusterNode()
       awaitUpConvergence(1)
       clusterView.isSingletonCluster must be(true)
 

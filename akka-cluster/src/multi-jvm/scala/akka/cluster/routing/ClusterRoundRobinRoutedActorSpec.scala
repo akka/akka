@@ -246,6 +246,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
     }
 
     "deploy programatically defined routees to other node when a node becomes down" taggedAs LongRunningTest in {
+      muteMarkingAsUnreachable()
 
       runOn(first) {
         def currentRoutees = Await.result(router2 ? CurrentRoutees, 5 seconds).asInstanceOf[RouterRoutees].routees

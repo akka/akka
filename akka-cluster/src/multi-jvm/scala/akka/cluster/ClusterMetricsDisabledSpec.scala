@@ -4,9 +4,10 @@
 
 package akka.cluster
 
-import akka.remote.testkit.{MultiNodeSpec, MultiNodeConfig}
+import akka.remote.testkit.{ MultiNodeSpec, MultiNodeConfig }
 import com.typesafe.config.ConfigFactory
 import akka.testkit.LongRunningTest
+import akka.cluster.ClusterEvent._
 
 object ClusterMetricsDisabledMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -22,11 +23,11 @@ abstract class ClusterMetricsDisabledSpec extends MultiNodeSpec(ClusterMetricsDi
   "Cluster metrics" must {
     "not collect metrics, not publish ClusterMetricsChanged, and not gossip metrics" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)
-      enterBarrier("cluster-started")
-      runOn(roles: _*) {
-        awaitCond(clusterView.members.filter(_.status == MemberStatus.Up).size == roles.size)
-        awaitCond(clusterView.clusterMetrics.isEmpty)
-      }
+      clusterView.clusterMetrics.size must be(0)
+      cluster.subscribe(testActor, classOf[ClusterMetricsChanged])
+      expectMsgType[CurrentClusterState]
+      expectNoMsg
+      clusterView.clusterMetrics.size must be(0)
       enterBarrier("after")
     }
   }

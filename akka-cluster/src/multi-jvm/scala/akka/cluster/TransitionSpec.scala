@@ -37,6 +37,8 @@ abstract class TransitionSpec
 
   import TransitionMultiJvmSpec._
 
+  muteMarkingAsUnreachable()
+
   // sorted in the order used by the cluster
   def leader(roles: RoleName*) = roles.sorted.head
   def nonLeader(roles: RoleName*) = roles.toSeq.sorted.tail

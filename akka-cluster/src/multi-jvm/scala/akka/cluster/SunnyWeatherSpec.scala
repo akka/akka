@@ -28,6 +28,7 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
     akka.cluster {
       auto-join = off
     }
+    akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
     """))
@@ -52,12 +53,12 @@ abstract class SunnyWeatherSpec
       // start some
       awaitClusterUp(first, second, third)
       runOn(first, second, third) {
-        log.info("3 joined")
+        log.debug("3 joined")
       }
 
       // add a few more
       awaitClusterUp(roles: _*)
-      log.info("5 joined")
+      log.debug("5 joined")
 
       val unexpected = new AtomicReference[SortedSet[Member]](SortedSet.empty)
       cluster.subscribe(system.actorOf(Props(new Actor {
@@ -74,7 +75,7 @@ abstract class SunnyWeatherSpec
         unexpected.get must be(SortedSet.empty)
         awaitUpConvergence(roles.size)
         assertLeaderIn(roles)
-        if (n % 5 == 0) log.info("Passed period [{}]", n)
+        if (n % 5 == 0) log.debug("Passed period [{}]", n)
         Thread.sleep(1000)
       }
 

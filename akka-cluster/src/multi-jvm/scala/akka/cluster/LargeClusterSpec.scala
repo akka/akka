@@ -7,6 +7,7 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
+import akka.testkit.TestEvent._
 import scala.concurrent.util.duration._
 import akka.actor.ActorSystem
 import scala.concurrent.util.Deadline
@@ -44,6 +45,7 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
       failure-detector.acceptable-heartbeat-pause = 10s
       publish-stats-interval = 0 s # always, when it happens
     }
+    akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
     akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.actor.default-dispatcher.fork-join-executor {
@@ -86,6 +88,12 @@ abstract class LargeClusterSpec
   import LargeClusterMultiJvmSpec._
   import ClusterEvent._
 
+  override def muteLog(sys: ActorSystem = system): Unit = {
+    super.muteLog(sys)
+    muteMarkingAsUnreachable(sys)
+    muteDeadLetters(sys)
+  }
+
   var systems: IndexedSeq[ActorSystem] = IndexedSeq(system)
   val nodesPerDatacenter = system.settings.config.getInt(
     "akka.test.large-cluster-spec.nodes-per-datacenter")
@@ -117,8 +125,11 @@ abstract class LargeClusterSpec
 
   def startupSystems(): Unit = {
     // one system is already started by the multi-node test
-    for (n ← 2 to nodesPerDatacenter)
-      systems :+= ActorSystem(myself.name + "-" + n, system.settings.config)
+    for (n ← 2 to nodesPerDatacenter) {
+      val sys = ActorSystem(myself.name + "-" + n, system.settings.config)
+      muteLog(sys)
+      systems :+= sys
+    }
 
     // Initialize the Cluster extensions, i.e. startup the clusters
     systems foreach { Cluster(_) }
