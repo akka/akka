@@ -217,6 +217,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       }
       val t = probe.expectMsg(Terminated(a)(existenceConfirmed = true, addressTerminated = false))
       t.existenceConfirmed must be(true)
+      t.addressTerminated must be(false)
     }
 
     "shut down when /user escalates" in {
