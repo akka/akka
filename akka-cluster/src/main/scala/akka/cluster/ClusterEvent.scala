@@ -193,6 +193,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     case PublishCurrentClusterState(receiver) ⇒ publishCurrentClusterState(receiver)
     case Subscribe(subscriber, to)            ⇒ subscribe(subscriber, to)
     case Unsubscribe(subscriber, to)          ⇒ unsubscribe(subscriber, to)
+    case PublishEvent(event)                  ⇒ publish(event)
     case PublishDone                          ⇒ sender ! PublishDone
   }
 
@@ -207,7 +208,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       leader = latestGossip.leader)
     receiver match {
       case Some(ref) ⇒ ref ! state
-      case None      ⇒ eventStream publish state
+      case None      ⇒ publish(state)
     }
   }
 
@@ -232,7 +233,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
         case x @ LeaderChanged(_) if oldGossip.convergence && newGossip.convergence ⇒
           // leader changed and immediate convergence
           leaderChangedState = Some(Right(x))
-          eventStream publish x
+          publish(x)
 
         case x: LeaderChanged ⇒
           // publish later, when convergence
@@ -243,25 +244,25 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
           leaderChangedState match {
             case Some(Left(x)) ⇒
               leaderChangedState = Some(Right(x))
-              eventStream publish x
+              publish(x)
 
             case _ ⇒ // nothing stashed
           }
-          eventStream publish event
+          publish(event)
 
         case MemberUnreachable(m) ⇒
-          eventStream publish event
+          publish(event)
           // notify DeathWatch about unreachable node
-          eventStream publish AddressTerminated(m.address)
+          publish(AddressTerminated(m.address))
 
         case _ ⇒
           // all other events
-          eventStream publish event
+          publish(event)
       }
     }
   }
 
-  def publishInternalStats(currentStats: CurrentInternalStats): Unit = {
-    eventStream publish currentStats
-  }
+  def publishInternalStats(currentStats: CurrentInternalStats): Unit = publish(currentStats)
+
+  def publish(event: AnyRef): Unit = eventStream publish event
 }

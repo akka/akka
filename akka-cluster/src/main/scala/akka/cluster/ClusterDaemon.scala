@@ -116,6 +116,7 @@ private[cluster] object InternalClusterAction {
   case class PublishCurrentClusterState(receiver: Option[ActorRef]) extends SubscriptionMessage
 
   case class PublishChanges(oldGossip: Gossip, newGossip: Gossip)
+  case class PublishEvent(event: ClusterDomainEvent)
   case object PublishDone
 
 }
@@ -150,11 +151,13 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
   // cause deadlock. The Cluster extension is currently being created and is waiting
   // for response from GetClusterCoreRef in its constructor.
 
-  val core = context.actorOf(Props[ClusterCoreDaemon].
+  val publisher = context.actorOf(Props[ClusterDomainEventPublisher].
+    withDispatcher(context.props.dispatcher), name = "publisher")
+  val core = context.actorOf(Props(new ClusterCoreDaemon(publisher)).
     withDispatcher(context.props.dispatcher), name = "core")
-  val heartbeat = context.actorOf(Props[ClusterHeartbeatDaemon].
+  context.actorOf(Props[ClusterHeartbeatDaemon].
     withDispatcher(context.props.dispatcher), name = "heartbeat")
-  if (settings.MetricsEnabled) context.actorOf(Props[ClusterMetricsCollector].
+  if (settings.MetricsEnabled) context.actorOf(Props(new ClusterMetricsCollector(publisher)).
     withDispatcher(context.props.dispatcher), name = "metrics")
 
   def receive = {
@@ -166,7 +169,7 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
 /**
  * INTERNAL API.
  */
-private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
+private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging {
   import ClusterLeaderAction._
   import InternalClusterAction._
   import ClusterHeartbeatSender._
@@ -189,8 +192,6 @@ private[cluster] final class ClusterCoreDaemon extends Actor with ActorLogging {
     withDispatcher(UseDispatcher), name = "heartbeatSender")
   val coreSender = context.actorOf(Props[ClusterCoreSender].
     withDispatcher(UseDispatcher), name = "coreSender")
-  val publisher = context.actorOf(Props[ClusterDomainEventPublisher].
-    withDispatcher(UseDispatcher), name = "publisher")
 
   import context.dispatcher
 
