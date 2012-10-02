@@ -12,12 +12,15 @@ import scala.Option;
 public class ErrorThrowingConsumer extends UntypedConsumerActor{
   private String uri;
 
-  private static Mapper<RouteDefinition, ProcessorDefinition<?>> mapper = new Mapper<RouteDefinition, ProcessorDefinition<?>>() {
-    public ProcessorDefinition<?> apply(RouteDefinition rd) {
-        // Catch any exception and handle it by returning the exception message as response
-        return rd.onException(Exception.class).handled(true).transform(Builder.exceptionMessage()).end();
-    }
-  };
+  private static Mapper<RouteDefinition, ProcessorDefinition<?>> mapper =
+    new Mapper<RouteDefinition, ProcessorDefinition<?>>() {
+      public ProcessorDefinition<?> apply(RouteDefinition rd) {
+        // Catch any exception and handle it by returning the exception message
+        // as response
+        return rd.onException(Exception.class).handled(true).
+          transform(Builder.exceptionMessage()).end();
+      }
+    };
 
   public ErrorThrowingConsumer(String uri){
     this.uri = uri;
@@ -37,7 +40,8 @@ public class ErrorThrowingConsumer extends UntypedConsumerActor{
   }
 
   @Override
-  public Mapper<RouteDefinition, ProcessorDefinition<?>> getRouteDefinitionHandler() {
+  public Mapper<RouteDefinition,
+    ProcessorDefinition<?>> getRouteDefinitionHandler() {
     return mapper;
   }
 

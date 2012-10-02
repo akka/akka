@@ -32,7 +32,7 @@ Please follow these guidelines when creating public commits and writing commit m
 
 Example::
 
-    Completed replication over BookKeeper based transaction log with configurable actor snapshotting every X message. Fixes #XXX
+    Completed replication over BookKeeper based transaction log. Fixes #XXX
 
       * Details 1
       * Details 2

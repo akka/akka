@@ -151,7 +151,8 @@ class FutureDocSpec extends AkkaSpec {
     result must be(4)
 
     val failedFilter = future1.filter(_ % 2 == 1).recover {
-      case m: NoSuchElementException ⇒ 0 //When filter fails, it will have a java.util.NoSuchElementException
+      // When filter fails, it will have a java.util.NoSuchElementException
+      case m: NoSuchElementException ⇒ 0
     }
     val result2 = Await.result(failedFilter, 1 second)
     result2 must be(0) //Can only be 0 when there was a MatchError
@@ -258,7 +259,8 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of fold" in {
     //#fold
-    val futures = for (i ← 1 to 1000) yield Future(i * 2) // Create a sequence of Futures
+    // Create a sequence of Futures
+    val futures = for (i ← 1 to 1000) yield Future(i * 2)
     val futureSum = Future.fold(futures)(0)(_ + _)
     Await.result(futureSum, 1 second) must be(1001000)
     //#fold
@@ -266,7 +268,8 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of reduce" in {
     //#reduce
-    val futures = for (i ← 1 to 1000) yield Future(i * 2) // Create a sequence of Futures
+    // Create a sequence of Futures
+    val futures = for (i ← 1 to 1000) yield Future(i * 2)
     val futureSum = Future.reduce(futures)(_ + _)
     Await.result(futureSum, 1 second) must be(1001000)
     //#reduce
@@ -290,8 +293,9 @@ class FutureDocSpec extends AkkaSpec {
     val msg1 = -1
     //#try-recover
     val future = akka.pattern.ask(actor, msg1) recoverWith {
-      case e: ArithmeticException        ⇒ Future.successful(0)
-      case foo: IllegalArgumentException ⇒ Future.failed[Int](new IllegalStateException("All br0ken!"))
+      case e: ArithmeticException ⇒ Future.successful(0)
+      case foo: IllegalArgumentException ⇒
+        Future.failed[Int](new IllegalStateException("All br0ken!"))
     }
     //#try-recover
     Await.result(future, 1 second) must be(0)

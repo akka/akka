@@ -66,8 +66,8 @@ class ParentActor extends Actor {
     //#randomRouter
     case "smr" ⇒
       //#smallestMailboxRouter
-      val smallestMailboxRouter =
-        context.actorOf(Props[PrintlnActor].withRouter(SmallestMailboxRouter(5)), "router")
+      val smallestMailboxRouter = context.actorOf(Props[PrintlnActor].
+        withRouter(SmallestMailboxRouter(5)), "router")
       1 to 10 foreach {
         i ⇒ smallestMailboxRouter ! i
       }

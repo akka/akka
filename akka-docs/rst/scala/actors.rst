@@ -353,7 +353,7 @@ paths—logical or physical—and receive back an :class:`ActorRef` with the
 result::
 
   context.actorFor("/user/serviceA/aggregator") // will look up this absolute path
-  context.actorFor("../joe")                    // will look up sibling beneath same supervisor
+  context.actorFor("../joe") // will look up sibling beneath same supervisor
 
 The supplied path is parsed as a :class:`java.net.URI`, which basically means
 that it is split on ``/`` into path elements. If the path starts with ``/``, it

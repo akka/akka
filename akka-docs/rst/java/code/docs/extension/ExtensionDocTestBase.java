@@ -13,8 +13,9 @@ import org.junit.Test;
 
 public class ExtensionDocTestBase {
 
+  static
   //#extension
-  public static class CountExtensionImpl implements Extension {
+  public class CountExtensionImpl implements Extension {
     //Since this Extension is a shared instance
     // per ActorSystem we need to be threadsafe
     private final AtomicLong counter = new AtomicLong(0);
@@ -27,8 +28,10 @@ public class ExtensionDocTestBase {
 
   //#extension
 
+  static
   //#extensionid
-  public static class CountExtension extends AbstractExtensionId<CountExtensionImpl> implements ExtensionIdProvider {
+  public class CountExtension extends AbstractExtensionId<CountExtensionImpl>
+    implements ExtensionIdProvider {
     //This will be the identifier of our CountExtension
     public final static CountExtension CountExtensionProvider = new CountExtension();
 
@@ -49,10 +52,12 @@ public class ExtensionDocTestBase {
 
   //#extensionid
 
+  static
   //#extension-usage-actor
-  public static class MyActor extends UntypedActor {
+  public class MyActor extends UntypedActor {
     public void onReceive(Object msg) {
-      // typically you would use static import of CountExtension.CountExtensionProvider field
+      // typically you would use static import of the
+      // CountExtension.CountExtensionProvider field
       CountExtension.CountExtensionProvider.get(getContext().system()).increment();
     }
   }
@@ -64,7 +69,8 @@ public class ExtensionDocTestBase {
     final ActorSystem system = null;
     try {
       //#extension-usage
-      // typically you would use static import of CountExtension.CountExtensionProvider field
+      // typically you would use static import of the
+      // CountExtension.CountExtensionProvider field
       CountExtension.CountExtensionProvider.get(system).increment();
       //#extension-usage
     } catch (Exception e) {

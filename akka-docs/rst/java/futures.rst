@@ -20,7 +20,10 @@ it will use its default dispatcher as the ``ExecutionContext``, or you can use t
 by the ``ExecutionContexts`` class to wrap ``Executors`` and ``ExecutorServices``, or even create your own.
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
-   :include: imports1,imports7,diy-execution-context
+   :include: imports1,imports7
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: diy-execution-context
 
 Use with Actors
 ---------------
@@ -32,7 +35,10 @@ Using the ``ActorRef``\'s ``ask`` method to send a message will return a ``Futur
 To wait for and retrieve the actual result the simplest method is:
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
-   :include: imports1,ask-blocking
+   :include: imports1
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: ask-blocking
 
 This will cause the current thread to block and wait for the ``UntypedActor`` to 'complete' the ``Future`` with it's reply.
 Blocking is discouraged though as it can cause performance problem.
@@ -49,7 +55,10 @@ the extra utility of an ``UntypedActor``. If you find yourself creating a pool o
 of performing a calculation in parallel, there is an easier (and faster) way:
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
-   :include: imports2,future-eval
+   :include: imports2
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: future-eval
 
 In the above code the block passed to ``future`` will be executed by the default ``Dispatcher``,
 with the return value of the block used to complete the ``Future`` (in this case, the result would be the string: "HelloWorld").
@@ -80,7 +89,10 @@ some operation on the result of the ``Future``, and returning a new result.
 The return value of the ``map`` method is another ``Future`` that will contain the new result:
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
-   :include: imports2,map
+   :include: imports2
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: map
 
 In this example we are joining two strings together within a ``Future``. Instead of waiting for f1 to complete,
 we apply our function that calculates the length of the string using the ``map`` method.
@@ -131,7 +143,10 @@ It is very often desirable to be able to combine different Futures with each oth
 below are some examples on how that can be done in a non-blocking fashion.
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
-   :include: imports3,sequence
+   :include: imports3
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: sequence
 
 To better explain what happened in the example, ``Future.sequence`` is taking the ``Iterable<Future<Integer>>``
 and turning it into a ``Future<Iterable<Integer>>``. We can then use ``map`` to work with the ``Iterable<Integer>`` directly,
@@ -141,7 +156,10 @@ The ``traverse`` method is similar to ``sequence``, but it takes a sequence of `
 and returns a ``Future<Iterable<B>>``, enabling parallel ``map`` over the sequence, if you use ``Futures.future`` to create the ``Future``.
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
-   :include: imports4,traverse
+   :include: imports4
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: traverse
 
 It's as simple as that!
 
@@ -152,7 +170,10 @@ and then applies the function to all elements in the sequence of futures, non-bl
 the execution will be started when the last of the Futures is completed.
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
-   :include: imports5,fold
+   :include: imports5
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: fold
 
 That's all it takes!
 
@@ -162,7 +183,10 @@ In some cases you don't have a start-value and you're able to use the value of t
 in the sequence as the start-value, you can use ``reduce``, it works like this:
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
-   :include: imports6,reduce
+   :include: imports6
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: reduce
 
 Same as with ``fold``, the execution will be started when the last of the Futures is completed, you can also parallelize
 it by chunking your futures into sub-sequences and reduce them, and then reduce the reduced results again.
@@ -242,4 +266,7 @@ After
 ``akka.pattern.Patterns.after`` makes it easy to complete a ``Future`` with a value or exception after a timeout.
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
-   :include: imports8,after
+   :include: imports8
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: after

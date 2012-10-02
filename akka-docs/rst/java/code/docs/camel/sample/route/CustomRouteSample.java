@@ -7,7 +7,8 @@ public class CustomRouteSample {
   public static void main(String[] args) {
     try {
       //#CustomRouteExample
-      // the below lines can be added to a Boot class, so that you can run the example from a MicroKernel
+      // the below lines can be added to a Boot class, so that you can run the
+      // example from a MicroKernel
       ActorSystem system = ActorSystem.create("some-system");
       final ActorRef producer = system.actorOf(new Props(Producer1.class));
       final ActorRef mediator = system.actorOf(new Props(new UntypedActorFactory() {

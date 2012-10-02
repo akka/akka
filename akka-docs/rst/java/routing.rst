@@ -304,10 +304,16 @@ the same time for one router. The ``withHashMapper`` is tried first.
 Code example:
 
 .. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTestBase.java
-   :include: imports1,cache-actor
+   :include: imports1
 
 .. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTestBase.java
-   :include: imports2,consistent-hashing-router
+   :include: cache-actor
+
+.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTestBase.java
+   :include: imports2
+
+.. includecode:: code/docs/jrouting/ConsistentHashingRouterDocTestBase.java
+   :include: consistent-hashing-router
 
 In the above example you see that the ``Get`` message implements ``ConsistentHashable`` itself,
 while the ``Entry`` message is wrapped in a ``ConsistentHashableEnvelope``. The ``Evict``

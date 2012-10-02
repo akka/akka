@@ -9,7 +9,6 @@ import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.Await;
 import akka.util.Timeout;
-
 //#imports1
 
 //#imports2
@@ -18,39 +17,32 @@ import akka.japi.Function;
 import java.util.concurrent.Callable;
 import static akka.dispatch.Futures.future;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 //#imports2
 
 //#imports3
 import static akka.dispatch.Futures.sequence;
-
 //#imports3
 
 //#imports4
 import static akka.dispatch.Futures.traverse;
-
 //#imports4
 
 //#imports5
 import akka.japi.Function2;
 import static akka.dispatch.Futures.fold;
-
 //#imports5
 
 //#imports6
 import static akka.dispatch.Futures.reduce;
-
 //#imports6
 
 //#imports7
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.ExecutionContext$;
-
 //#imports7
 
 //#imports8
 import static akka.pattern.Patterns.after;
-
 //#imports8
 
 import java.util.ArrayList;
@@ -96,7 +88,7 @@ public class FutureDocTestBase {
       //Use ec with your Futures
       Future<String> f1 = Futures.successful("foo");
 
-      // Then you shut the ExecutorService down somewhere at the end of your program/application.
+      // Then you shut down the ExecutorService at the end of your application.
       yourExecutorServiceGoesHere.shutdown();
       //#diy-execution-context
   }
@@ -236,14 +228,15 @@ public class FutureDocTestBase {
     Future<Iterable<Integer>> futureListOfInts = sequence(listOfFutureInts, ec);
 
     // Find the sum of the odd numbers
-    Future<Long> futureSum = futureListOfInts.map(new Mapper<Iterable<Integer>, Long>() {
-      public Long apply(Iterable<Integer> ints) {
-        long sum = 0;
-        for (Integer i : ints)
-          sum += i;
-        return sum;
-      }
-    }, ec);
+    Future<Long> futureSum = futureListOfInts.map(
+      new Mapper<Iterable<Integer>, Long>() {
+        public Long apply(Iterable<Integer> ints) {
+          long sum = 0;
+          for (Integer i : ints)
+            sum += i;
+          return sum;
+        }
+      }, ec);
 
     long result = Await.result(futureSum, Duration.create(1, SECONDS));
     //#sequence
@@ -257,15 +250,16 @@ public class FutureDocTestBase {
     //Just a sequence of Strings
     Iterable<String> listStrings = Arrays.asList("a", "b", "c");
 
-    Future<Iterable<String>> futureResult = traverse(listStrings, new Function<String, Future<String>>() {
-      public Future<String> apply(final String r) {
-        return future(new Callable<String>() {
-          public String call() {
-            return r.toUpperCase();
-          }
-        }, ec);
-      }
-    }, ec);
+    Future<Iterable<String>> futureResult = traverse(listStrings,
+      new Function<String, Future<String>>() {
+        public Future<String> apply(final String r) {
+          return future(new Callable<String>() {
+            public String call() {
+              return r.toUpperCase();
+            }
+          }, ec);
+        }
+      }, ec);
 
     //Returns the sequence of strings as upper case
     Iterable<String> result = Await.result(futureResult, Duration.create(1, SECONDS));
@@ -286,11 +280,12 @@ public class FutureDocTestBase {
     Iterable<Future<String>> futures = source;
 
     //Start value is the empty string
-    Future<String> resultFuture = fold("", futures, new Function2<String, String, String>() {
-      public String apply(String r, String t) {
-        return r + t; //Just concatenate
-      }
-    }, ec);
+    Future<String> resultFuture = fold("", futures,
+      new Function2<String, String, String>() {
+        public String apply(String r, String t) {
+          return r + t; //Just concatenate
+        }
+      }, ec);
     String result = Await.result(resultFuture, Duration.create(1, SECONDS));
     //#fold
 
@@ -308,11 +303,12 @@ public class FutureDocTestBase {
     //A sequence of Futures, in this case Strings
     Iterable<Future<String>> futures = source;
 
-    Future<Object> resultFuture = reduce(futures, new Function2<Object, String, Object>() {
-      public Object apply(Object r, String t) {
-        return r + t; //Just concatenate
-      }
-    }, ec);
+    Future<Object> resultFuture = reduce(futures,
+      new Function2<Object, String, Object>() {
+        public Object apply(Object r, String t) {
+          return r + t; //Just concatenate
+        }
+      }, ec);
 
     Object result = Await.result(resultFuture, Duration.create(1, SECONDS));
     //#reduce
@@ -327,11 +323,13 @@ public class FutureDocTestBase {
     Future<String> future = Futures.successful("Yay!");
     //#successful
     //#failed
-    Future<String> otherFuture = Futures.failed(new IllegalArgumentException("Bang!"));
+    Future<String> otherFuture = Futures.failed(
+      new IllegalArgumentException("Bang!"));
     //#failed
     Object result = Await.result(future, Duration.create(1, SECONDS));
     assertEquals("Yay!", result);
-    Throwable result2 = Await.result(otherFuture.failed(), Duration.create(1, SECONDS));
+    Throwable result2 = Await.result(otherFuture.failed(),
+      Duration.create(1, SECONDS));
     assertEquals("Bang!", result2.getMessage());
   }
 
@@ -340,17 +338,19 @@ public class FutureDocTestBase {
     //#filter
     final ExecutionContext ec = system.dispatcher();
     Future<Integer> future1 = Futures.successful(4);
-    Future<Integer> successfulFilter = future1.filter(Filter.filterOf(new Function<Integer, Boolean>() {
-      public Boolean apply(Integer i) {
-        return i % 2 == 0;
-      }
-    }), ec);
+    Future<Integer> successfulFilter = future1.filter(Filter.filterOf(
+      new Function<Integer, Boolean>() {
+        public Boolean apply(Integer i) {
+          return i % 2 == 0;
+        }
+      }), ec);
 
-    Future<Integer> failedFilter = future1.filter(Filter.filterOf(new Function<Integer, Boolean>() {
-      public Boolean apply(Integer i) {
-        return i % 2 != 0;
-      }
-    }), ec);
+    Future<Integer> failedFilter = future1.filter(Filter.filterOf(
+      new Function<Integer, Boolean>() {
+        public Boolean apply(Integer i) {
+          return i % 2 != 0;
+        }
+      }), ec);
     //When filter fails, the returned Future will be failed with a scala.MatchError
     //#filter
   }
@@ -367,12 +367,13 @@ public class FutureDocTestBase {
   public void useAndThen() {
     //#and-then
     final ExecutionContext ec = system.dispatcher();
-    Future<String> future1 = Futures.successful("value").andThen(new OnComplete<String>() {
+    Future<String> future1 = Futures.successful("value").andThen(
+      new OnComplete<String>() {
         public void onComplete(Throwable failure, String result) {
-            if (failure != null)
-                sendToIssueTracker(failure);
+          if (failure != null)
+            sendToIssueTracker(failure);
         }
-    }, ec).andThen(new OnComplete<String>() {
+      }, ec).andThen(new OnComplete<String>() {
       public void onComplete(Throwable failure, String result) {
         if (result != null)
           sendToTheInternetz(result);
@@ -489,11 +490,12 @@ public class FutureDocTestBase {
       final ExecutionContext ec = system.dispatcher();
       Future<String> future1 = Futures.successful("foo");
       Future<String> future2 = Futures.successful("bar");
-      Future<String> future3 = future1.zip(future2).map(new Mapper<scala.Tuple2<String, String>, String>() {
-        public String apply(scala.Tuple2<String, String> zipped) {
-          return zipped._1() + " " + zipped._2();
-        }
-      }, ec);
+      Future<String> future3 = future1.zip(future2).map(
+        new Mapper<scala.Tuple2<String, String>, String>() {
+          public String apply(scala.Tuple2<String, String> zipped) {
+            return zipped._1() + " " + zipped._2();
+          }
+        }, ec);
 
       String result = Await.result(future3, Duration.create(1, SECONDS));
       assertEquals("foo bar", result);
@@ -505,7 +507,8 @@ public class FutureDocTestBase {
       Future<String> future1 = Futures.failed(new IllegalStateException("OHNOES1"));
       Future<String> future2 = Futures.failed(new IllegalStateException("OHNOES2"));
       Future<String> future3 = Futures.successful("bar");
-      Future<String> future4 = future1.fallbackTo(future2).fallbackTo(future3); // Will have "bar" in this case
+      // Will have "bar" in this case
+      Future<String> future4 = future1.fallbackTo(future2).fallbackTo(future3);
       String result = Await.result(future4, Duration.create(1, SECONDS));
       assertEquals("bar", result);
       //#fallback-to

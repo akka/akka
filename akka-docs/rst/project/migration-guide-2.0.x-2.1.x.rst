@@ -66,11 +66,12 @@ Java:
 ::
   
   // Use this Actors' Dispatcher as ExecutionContext
-  getContext().system().scheduler().scheduleOnce(Duration.parse("10 seconds", getSelf(), 
-    new Reconnect(), getContext().getDispatcher());
+  getContext().system().scheduler().scheduleOnce(Duration.parse("10 seconds",
+    getSelf(), new Reconnect(), getContext().getDispatcher());
 
   // Use ActorSystem's default Dispatcher as ExecutionContext
-  system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS), new Runnable() {
+  system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
+    new Runnable() {
       @Override
       public void run() {
         testActor.tell(System.currentTimeMillis());
@@ -98,7 +99,8 @@ v2.0::
 v2.1::
 
   val failedFilter = future1.filter(_ % 2 == 1).recover {
-    case m: NoSuchElementException => //When filter fails, it will have a java.util.NoSuchElementException
+    // When filter fails, it will have a java.util.NoSuchElementException
+    case m: NoSuchElementException => 
   }
 
 
@@ -112,10 +114,10 @@ v2.0::
       ExecutionContextExecutorService ec =
         ExecutionContexts.fromExecutorService(yourExecutorServiceGoesHere);
 
-      //Use ec with your Futures
+      // Use ec with your Futures
       Future<String> f1 = Futures.successful("foo", ec);
 
-      // Then you shut the ec down somewhere at the end of your program/application.
+      // Then you shut the ec down somewhere at the end of your application.
       ec.shutdown();
 
 v2.1::
@@ -127,7 +129,7 @@ v2.1::
       //No need to pass the ExecutionContext here
       Future<String> f1 = Futures.successful("foo");
 
-      // Then you shut the ExecutorService down somewhere at the end of your program/application.
+      // Then you shut the ExecutorService down somewhere at the end of your application.
       yourExecutorServiceGoesHere.shutdown();
 
 v2.0::
@@ -166,7 +168,8 @@ v2.0::
 v2.1::
 
     final ExecutionContext ec = system.dispatcher();
-    Future<String> future1 = Futures.successful("value").andThen(new OnComplete<String>() {
+    Future<String> future1 = Futures.successful("value").andThen(
+      new OnComplete<String>() {
         public void onComplete(Throwable failure, String result) {
             if (failure != null)
                 sendToIssueTracker(failure);
@@ -210,7 +213,8 @@ v2.0 Java::
 
 v2.1 Java::
 
-  ActorRef router2 = system.actorOf(new Props().withRouter(RoundRobinRouter.create(routees)));
+  ActorRef router2 = system.actorOf(new Props().withRouter(
+    RoundRobinRouter.create(routees)));
 
 Props: Function-based creation
 ==============================
@@ -337,7 +341,8 @@ v2.0::
       val newRoutees = routeeProvider.createRoutees(props, requestedCapacity, Nil)
       routeeProvider.registerRoutees(newRoutees)
     } else if (requestedCapacity < 0) {
-      val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length + requestedCapacity)
+      val (keep, abandon) = currentRoutees.splitAt(currentRoutees.length +
+        requestedCapacity)
       routeeProvider.unregisterRoutees(abandon)
       delayedStop(routeeProvider.context.system.scheduler, abandon)(
         routeeProvider.context.dispatcher)
@@ -379,7 +384,7 @@ v2.0::
 v2.1::
 
   final FiniteDuration d = Duration.create("1 second");
-  final Timeout t = new Timeout(d); // always required finite duration, now also in type   
+  final Timeout t = new Timeout(d); // always required finite duration, now enforced
 
 Package Name Changes in Remoting
 ================================

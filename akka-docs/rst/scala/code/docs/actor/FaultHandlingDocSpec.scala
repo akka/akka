@@ -24,12 +24,13 @@ object FaultHandlingDocSpec {
     import akka.actor.SupervisorStrategy._
     import scala.concurrent.util.duration._
 
-    override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: ArithmeticException      ⇒ Resume
-      case _: NullPointerException     ⇒ Restart
-      case _: IllegalArgumentException ⇒ Stop
-      case _: Exception                ⇒ Escalate
-    }
+    override val supervisorStrategy =
+      OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+        case _: ArithmeticException      ⇒ Resume
+        case _: NullPointerException     ⇒ Restart
+        case _: IllegalArgumentException ⇒ Stop
+        case _: Exception                ⇒ Escalate
+      }
     //#strategy
 
     def receive = {
@@ -45,12 +46,13 @@ object FaultHandlingDocSpec {
     import akka.actor.SupervisorStrategy._
     import scala.concurrent.util.duration._
 
-    override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: ArithmeticException      ⇒ Resume
-      case _: NullPointerException     ⇒ Restart
-      case _: IllegalArgumentException ⇒ Stop
-      case _: Exception                ⇒ Escalate
-    }
+    override val supervisorStrategy =
+      OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+        case _: ArithmeticException      ⇒ Resume
+        case _: NullPointerException     ⇒ Restart
+        case _: IllegalArgumentException ⇒ Stop
+        case _: Exception                ⇒ Escalate
+      }
     //#strategy2
 
     def receive = {

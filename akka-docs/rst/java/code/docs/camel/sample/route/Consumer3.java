@@ -19,7 +19,8 @@ public class Consumer3 extends UntypedConsumerActor{
   public void onReceive(Object message) {
     if (message instanceof CamelMessage) {
       CamelMessage camelMessage = (CamelMessage) message;
-      transformer.forward(camelMessage.getBodyAs(String.class, getCamelContext()),getContext());
+      transformer.forward(camelMessage.getBodyAs(String.class, getCamelContext()),
+        getContext());
     } else
       unhandled(message);
   }

@@ -65,11 +65,11 @@ Looking up Remote Actors
 
 ``actorFor(path)`` will obtain an ``ActorRef`` to an Actor on a remote node::
 
-  ActorRef actor = context.actorFor("akka://app@10.0.0.1:2552/user/serviceA/retrieval");
+  ActorRef actor = context.actorFor("akka://app@10.0.0.1:2552/user/serviceA/worker");
 
 As you can see from the example above the following pattern is used to find an ``ActorRef`` on a remote node::
 
-    akka://<actorsystemname>@<hostname>:<port>/<actor path>
+  akka://<actorsystemname>@<hostname>:<port>/<actor path>
 
 Once you obtained a reference to the actor you can interact with it they same way you would with a local actor, e.g.::
 

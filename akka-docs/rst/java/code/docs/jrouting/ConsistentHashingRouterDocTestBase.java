@@ -39,9 +39,9 @@ public class ConsistentHashingRouterDocTestBase {
     system.shutdown();
   }
 
+  static
   //#cache-actor
-
-  public static class Cache extends UntypedActor {
+  public class Cache extends UntypedActor {
     Map<String, String> cache = new HashMap<String, String>();
 
     public void onReceive(Object msg) {
@@ -62,14 +62,20 @@ public class ConsistentHashingRouterDocTestBase {
     }
   }
 
-  public static final class Evict implements Serializable {
+  //#cache-actor
+  static
+  //#cache-actor
+  public final class Evict implements Serializable {
     public final String key;
     public Evict(String key) {
       this.key = key;
     }
   }
 
-  public static final class Get implements Serializable, ConsistentHashable {
+  //#cache-actor
+  static
+  //#cache-actor
+  public final class Get implements Serializable, ConsistentHashable {
     public final String key;
     public Get(String key) {
       this.key = key;
@@ -79,7 +85,10 @@ public class ConsistentHashingRouterDocTestBase {
     } 
   }
 
-  public static final class Entry implements Serializable {
+  //#cache-actor
+  static
+  //#cache-actor
+  public final class Entry implements Serializable {
     public final String key;
     public final String value;
     public Entry(String key, String value) {
@@ -88,7 +97,10 @@ public class ConsistentHashingRouterDocTestBase {
     }
   }
 
-  public static final String NOT_FOUND = "NOT_FOUND";
+  //#cache-actor
+  static
+  //#cache-actor
+  public final String NOT_FOUND = "NOT_FOUND";
   //#cache-actor  
 
 

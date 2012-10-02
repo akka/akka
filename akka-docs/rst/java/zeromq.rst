@@ -19,11 +19,15 @@ Connection
 ZeroMQ supports multiple connectivity patterns, each aimed to meet a different set of requirements. Currently, this module supports publisher-subscriber connections and connections based on dealers and routers. For connecting or accepting connections, a socket must be created.
 Sockets are always created using the ``akka.zeromq.ZeroMQExtension``, for example:
 
+.. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#import-pub-socket
+
 .. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#pub-socket
 
 Above examples will create a ZeroMQ Publisher socket that is Bound to the port 21231 on localhost.
 
 Similarly you can create a subscription socket, with a listener, that subscribes to all messages from the publisher using:
+
+.. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#import-sub-socket
 
 .. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#sub-socket
 
@@ -50,9 +54,13 @@ It is a prefix match so it is subscribed to all topics starting with ``foo.bar``
 
 To unsubscribe from a topic you do the following:
 
+.. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#import-unsub-topic-socket
+
 .. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#unsub-topic-socket
 
 To publish messages to a topic you must use two Frames with the topic in the first frame.
+
+.. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#import-pub-topic
 
 .. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#pub-topic
 
@@ -63,6 +71,8 @@ The following example illustrates one publisher with two subscribers.
 
 The publisher monitors current heap usage and system load and periodically publishes ``Heap`` events on the ``"health.heap"`` topic
 and ``Load`` events on the ``"health.load"`` topic.
+
+.. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#import-health
 
 .. includecode:: code/docs/zeromq/ZeromqDocTestBase.java#health
 

@@ -87,7 +87,8 @@ class Worker extends Actor with ActorLogging {
     case _: CounterService.ServiceUnavailable ⇒ Stop
   }
 
-  // The sender of the initial Start message will continuously be notified about progress
+  // The sender of the initial Start message will continuously be notified
+  // about progress
   var progressListener: Option[ActorRef] = None
   val counterService = context.actorOf(Props[CounterService], name = "counter")
   val totalCount = 51
@@ -133,9 +134,10 @@ class CounterService extends Actor {
 
   // Restart the storage child when StorageException is thrown.
   // After 3 restarts within 5 seconds it will be stopped.
-  override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 3, withinTimeRange = 5 seconds) {
-    case _: Storage.StorageException ⇒ Restart
-  }
+  override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 3,
+    withinTimeRange = 5 seconds) {
+      case _: Storage.StorageException ⇒ Restart
+    }
 
   val key = self.path.name
   var storage: Option[ActorRef] = None
@@ -194,14 +196,15 @@ class CounterService extends Actor {
   }
 
   def forwardOrPlaceInBacklog(msg: Any) {
-    // We need the initial value from storage before we can start delegate to the counter.
-    // Before that we place the messages in a backlog, to be sent to the counter when
-    // it is initialized.
+    // We need the initial value from storage before we can start delegate to
+    // the counter. Before that we place the messages in a backlog, to be sent
+    // to the counter when it is initialized.
     counter match {
       case Some(c) ⇒ c forward msg
       case None ⇒
         if (backlog.size >= MaxBacklog)
-          throw new ServiceUnavailable("CounterService not available, lack of initial value")
+          throw new ServiceUnavailable(
+            "CounterService not available, lack of initial value")
         backlog = backlog :+ (sender, msg)
     }
   }
@@ -281,7 +284,8 @@ object DummyDB {
 
   @throws(classOf[StorageException])
   def save(key: String, value: Long): Unit = synchronized {
-    if (11 <= value && value <= 14) throw new StorageException("Simulated store failure " + value)
+    if (11 <= value && value <= 14)
+      throw new StorageException("Simulated store failure " + value)
     db += (key -> value)
   }
 
