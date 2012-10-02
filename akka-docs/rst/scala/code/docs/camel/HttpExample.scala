@@ -39,8 +39,8 @@ object HttpExample {
     }
 
     // Create the actors. this can be done in a Boot class so you can
-    // run the example in the MicroKernel. just add the three lines below to
-    // your boot class.
+    // run the example in the MicroKernel. Just add the three lines below
+    // to your boot class.
     val system = ActorSystem("some-system")
     val httpTransformer = system.actorOf(Props[HttpTransformer])
     val httpProducer = system.actorOf(Props(new HttpProducer(httpTransformer)))
