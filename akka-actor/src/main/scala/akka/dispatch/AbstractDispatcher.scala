@@ -472,15 +472,8 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
         })(queueFactory ⇒ _.setQueueFactory(queueFactory)))
   }
 
-  def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
-    val tf = threadFactory match {
-      case m: MonitorableThreadFactory ⇒
-        // add the dispatcher id to the thread names
-        m.copy(m.name + "-" + id)
-      case other ⇒ other
-    }
-    threadPoolConfig.createExecutorServiceFactory(id, tf)
-  }
+  def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    threadPoolConfig.createExecutorServiceFactory(id, threadFactory)
 }
 
 object ForkJoinExecutorConfigurator {
