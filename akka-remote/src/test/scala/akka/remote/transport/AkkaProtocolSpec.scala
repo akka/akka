@@ -29,7 +29,6 @@ object AkkaProtocolSpec {
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.RemoteActorRefProvider" """) with ImplicitSender {
 
-  //TODO: merge with constructor parameter
   val conf = ConfigFactory.parseString(
     """
       |  akka.remoting {
@@ -85,7 +84,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     val transport: TestTransport = new TestTransport(localAddress, registry)
     val handle: TestAssociationHandle = new TestAssociationHandle(localAddress, remoteAddress, transport, true)
 
-    // silently drop writes -- we do not have another endpoint under test, nobody to forward to
+    // silently drop writes -- we do not have another endpoint under test, so nobody to forward to
     transport.writeBehavior.pushConstant(true)
     (new TestFailureDetector, registry, transport, handle)
   }
@@ -117,7 +116,6 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
     case _ ⇒ false
   }
 
-  //TODO: test origin handling
   "ProtocolStateActor" must {
 
     "register itself as reader on injecteted handles" in {
@@ -455,8 +453,6 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       expectMsg(Disassociated)
 
     }
-
-    // TODO: test maximum frame violation handling
 
   }
 
