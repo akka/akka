@@ -42,7 +42,12 @@ multi-JVM testing (Simplified for clarity):
           (name: String) => (src ** (name + ".conf")).get.
             headOption.map("-Dakka.config=" + _.absolutePath).toSeq
         },
-        test in Test <<= (test in Test) dependsOn (test in MultiJvm)
+        executeTests in Test <<= ((executeTests in Test),
+                                  (executeTests in MultiJvm)) map {
+          case ((_, testResults), (_, multiJvmResults)) =>
+            val results = testResults ++ multiJvmResults
+            (Tests.overall(results.values), results)
+        }
       )
     ) configs (MultiJvm)
 
