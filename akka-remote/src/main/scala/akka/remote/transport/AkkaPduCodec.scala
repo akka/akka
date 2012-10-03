@@ -11,6 +11,10 @@ import com.google.protobuf.InvalidProtocolBufferException
 class PduCodecException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
 
 object AkkaPduCodec {
+
+  /**
+   * Trait that represents decoded Akka PDUs
+   */
   sealed trait AkkaPdu
 
   case class Associate(cookie: Option[String], origin: Address) extends AkkaPdu
@@ -22,6 +26,9 @@ object AkkaPduCodec {
                      sender: Option[ActorRef]) extends AkkaPdu
 }
 
+/**
+ * A Codec that is able to convert Akka PDUs from and to [[akka.util.ByteString]]s.
+ */
 trait AkkaPduCodec {
 
   def constructMessagePdu(
@@ -57,7 +64,6 @@ object AkkaPduProtobufCodec extends AkkaPduCodec {
     akkaRemoteProtocolToByteString(AkkaRemoteProtocol.newBuilder().setMessage(messageBuilder.build).build)
   }
 
-  // TODO: names should be following the terminology in design doc
   override def constructAssociate(cookie: Option[String], origin: Address): ByteString =
     constructControlMessagePdu(RemoteProtocol.CommandType.CONNECT, cookie, Some(origin))
 
@@ -105,7 +111,6 @@ object AkkaPduProtobufCodec extends AkkaPduCodec {
   private def decodeAddress(encodedAddress: AddressProtocol): Address =
     Address(encodedAddress.getProtocol, encodedAddress.getSystem, encodedAddress.getHostname, encodedAddress.getPort)
 
-  //TODO: Set a maximum length for secure cookies
   private def constructControlMessagePdu(
     code: RemoteProtocol.CommandType,
     cookie: Option[String],

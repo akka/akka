@@ -7,13 +7,13 @@ import akka.util.ByteString
 object Transport {
 
   /**
-   * Represents fine grained status of an association setup attempt.
+   * Represents fine grained status of an association attempt.
    */
   sealed trait Status
 
   /**
-   * The association setup request is invalid, and it is impossible to recover (malformed IP address, hostname, etc.).
-   * Invalid association requests are impossible to recover.
+   * Indicates that the association setup request is invalid, and it is impossible to recover (malformed IP address,
+   * hostname, etc.). Invalid association requests are impossible to recover.
    */
   case object Invalid extends Status
 
@@ -26,9 +26,9 @@ object Transport {
   case class Fail(cause: Throwable) extends Status
 
   /**
-   * No detectable errors happened during Setup. Generally a status of Ready does not guarantee that the Setup was
-   * successful. For example in the case of UDP, the transport MAY return Ready immediately after an association setup
-   * was requested.
+   * No detectable errors happened during association. Generally a status of Ready does not guarantee that the
+   * association was successful. For example in the case of UDP, the transport MAY return Ready immediately after an
+   * association setup was requested.
    *
    * @param association
    *   The handle for the created association.
@@ -37,7 +37,7 @@ object Transport {
 
   /**
    * Message sent to an actor registered to a transport (via the Promise returned by
-   * [[akka.remote.transport.Transport.listen]]) when an inbound association is present.
+   * [[akka.remote.transport.Transport.listen]]) when an inbound association request arrives.
    *
    * @param association
    *   The handle for the inbound association.
@@ -49,6 +49,9 @@ object Transport {
 /**
  * An SPI layer for implementing asynchronous transport mechanisms. The transport is responsible for initializing the
  * underlying transport mechanism and setting up logical links between transport entities.
+ *
+ * Transport implementations that are loaded dynamically by the remoting must have a constructor that accepts a
+ * [[com.typesafe.config.Config]] and an [[akka.actor.ExtendedActorSystem]] as parameters.
  */
 trait Transport {
   import akka.remote.transport.Transport._
@@ -65,11 +68,11 @@ trait Transport {
    *
    * The purpose of this function is to resolve cases when the scheme part of an URL is not enough to resolve
    * the correct transport i.e. multiple instances of the same transport implementation are loaded. These cases arise when
-   *  - the same transport but with different configuration is used for different remote systems
-   *  - a transport is able to serve one address only (point-to-point protocols, e.g. PPP, Serial port) and multiple
+   *  - the same transport, but with different configurations is used for different remote systems
+   *  - a transport is able to serve one address only (hardware protocols, e.g. Serial port) and multiple
    *  instances are needed to be loaded for different endpoints.
    *
-   * @return whether the transport instance is entitled to serve the given address.
+   * @return whether the transport instance is responsible to serve communications to the given address.
    */
   def isResponsibleFor(address: Address): Boolean
 
@@ -83,7 +86,7 @@ trait Transport {
   /**
    * Asynchronously attempts to setup the transport layer to listen and accept incoming associations. The result of the
    * attempt is wrapped by a Future returned by this method. The pair contained in the future contains a Promise for an
-   * ActorRef. By completing this Promise with an ActorRef that ActorRef becomes responsible for handling incoming
+   * ActorRef. By completing this Promise with an ActorRef, that ActorRef becomes responsible for handling incoming
    * associations. Until the Promise is not completed, no associations are processed.
    *
    * @return
@@ -97,7 +100,7 @@ trait Transport {
    * real transport-layer connection (TCP), more lightweight connections provided over datagram protocols (UDP with
    * additional services), substreams of multiplexed connections (SCTP) or physical links (serial port).
    *
-   * This call returns a fine-grained status indication of the attempt in the future. See
+   * This call returns a fine-grained status indication of the attempt wrapped in a Future. See
    * [[akka.remote.transport.Transport.Status]] for details.
    *
    * @param remoteAddress
@@ -108,7 +111,8 @@ trait Transport {
   def associate(remoteAddress: Address): Future[Status]
 
   /**
-   * Shuts down the transport layer and releases all the corresponding resources.
+   * Shuts down the transport layer and releases all the corresponding resources. Shutdown is asynchronous, may be
+   * called multiple times and does not return a success indication.
    */
   def shutdown(): Unit
 
@@ -165,20 +169,21 @@ trait AssociationHandle {
 
   /**
    * The Promise returned by this call must be completed with an [[akka.actor.ActorRef]] to register an actor
-   * responsible for handling incoming data.
+   * responsible for handling incoming payload.
    *
    * @return
-   *   Promis of the ActorRef of the actor responsible for handling incoming data.
+   *   Promise of the ActorRef of the actor responsible for handling incoming data.
    */
   def readHandlerPromise: Promise[ActorRef]
 
   /**
-   * Asynchronously sends the specified payload to the remote endpoint.
+   * Asynchronously sends the specified payload to the remote endpoint. This method must be thread-safe as it might
+   * be called from different threads. This method must not block.
    *
    * Writes guarantee ordering of messages, but not their reception. The call to write returns with
-   * a Boolean indicating that the channel was ready for writes or not. A return value of false indicates that the
+   * a Boolean indicating if the channel was ready for writes or not. A return value of false indicates that the
    * channel is not yet ready for delivery (e.g.: the write buffer is full) and the sender needs to wait
-   * until the channel becomes ready again. Returning false also means that the current write was dropped (this must be
+   * until the channel becomes ready again. Returning false also means that the current write was dropped (this is
    * guaranteed to ensure duplication-free delivery).
    *
    * @param payload

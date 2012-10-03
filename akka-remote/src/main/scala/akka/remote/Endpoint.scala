@@ -1,22 +1,21 @@
-package akka.remote.transport
+package akka.remote
 
 import akka.AkkaException
 import akka.actor._
 import akka.dispatch.SystemMessage
-import akka.event.LoggingAdapter
+import akka.event.{Logging, LoggingAdapter}
 import akka.pattern.pipe
+import akka.remote.EndpointWriter.BackoffOver
+import akka.remote.HeadActor.Send
 import akka.remote.RemoteProtocol.MessageProtocol
-import akka.remote._
 import akka.remote.transport.AkkaPduCodec._
 import akka.remote.transport.AssociationHandle._
-import akka.remote.transport.EndpointWriter.BackoffOver
-import akka.remote.transport.EndpointWriter.Send
+import akka.remote.transport.{AkkaPduCodec, Transport, AssociationHandle}
 import akka.serialization.Serialization
 import akka.util.ByteString
 import scala.util.control.NonFatal
 
-// better name
-trait MessageDispatcher {
+trait InboundMessageDispatcher {
   def dispatch(recipient: InternalActorRef,
                recipientAddress: Address,
                serializedMessage: MessageProtocol,
@@ -25,13 +24,15 @@ trait MessageDispatcher {
 
 class DefaultMessageDispatcher( private val system: ExtendedActorSystem,
                                 private val provider: RemoteActorRefProvider,
-                                private val log: LoggingAdapter) extends MessageDispatcher {
+                                private val log: LoggingAdapter) extends InboundMessageDispatcher {
+
   private val remoteDaemon = provider.remoteDaemon
 
   override def dispatch(recipient: InternalActorRef,
                         recipientAddress: Address,
                         serializedMessage: MessageProtocol,
                         senderOption: Option[ActorRef]): Unit = {
+
     val payload: AnyRef = MessageSerializer.deserialize(system, serializedMessage)
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
     val originalReceiver = recipient.path
@@ -39,6 +40,7 @@ class DefaultMessageDispatcher( private val system: ExtendedActorSystem,
     lazy val msgLog = "RemoteMessage: " + payload + " to " + recipient + "<+{" + originalReceiver + "} from " + sender
 
     recipient match {
+
       case `remoteDaemon` ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received daemon message {}", msgLog)
         payload match {
@@ -48,6 +50,7 @@ class DefaultMessageDispatcher( private val system: ExtendedActorSystem,
             }
           case x ⇒ log.warning("remoteDaemon received illegal message {} from {}", x, sender)
         }
+
       case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received local message {}", msgLog)
         payload match {
@@ -56,6 +59,7 @@ class DefaultMessageDispatcher( private val system: ExtendedActorSystem,
           case msg: SystemMessage                       ⇒ l.sendSystemMessage(msg)
           case msg                                      ⇒ l.!(msg)(sender)
         }
+
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", msgLog)
         if (provider.transport.addresses(recipientAddress)) {
@@ -68,14 +72,13 @@ class DefaultMessageDispatcher( private val system: ExtendedActorSystem,
 
       case r ⇒ log.error("dropping message {} for unknown recipient {} arriving at {} inbound addresses are {}",
         payload, r, recipientAddress, provider.transport.addresses)
+
     }
   }
 
 }
 
 object EndpointWriter {
-
-  case class Send(msg: Any, recipient: ActorRef, senderOption: Option[ActorRef])
 
   case object BackoffOver
 
@@ -84,8 +87,7 @@ object EndpointWriter {
 class EndpointException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
 class InvalidAssociation(remoteAddress: Address) extends EndpointException(s"Invalid address: $remoteAddress", null)
 
-//TODO: add configurable dispatcher
-class EndpointWriter(
+private[remote] class EndpointWriter(
                       val active: Boolean,
                       handleOption: Option[AssociationHandle],
                       val remoteAddress: Address,
@@ -97,8 +99,10 @@ class EndpointWriter(
   var reader: ActorRef = null
   var handle: AssociationHandle = null
   var buffering = true
+  val log = Logging(context.system, this)
+
   val msgDispatch =
-    new DefaultMessageDispatcher(extendedSystem, extendedSystem.provider.asInstanceOf[RemoteActorRefProvider], null)
+    new DefaultMessageDispatcher(extendedSystem, extendedSystem.provider.asInstanceOf[RemoteActorRefProvider], log)
 
   import context.dispatcher
 
@@ -113,7 +117,7 @@ class EndpointWriter(
   }
 
   def receive: Receive = {
-    case Send(msg, recipient, senderOption) => if (!buffering) {
+    case Send(msg, senderOption, recipient) => if (!buffering) {
       sendMessage(msg, recipient, senderOption)
     } else {
       stash()
@@ -125,6 +129,7 @@ class EndpointWriter(
 
     case Transport.Ready(inboundHandle) =>
       handle = inboundHandle
+      startReadEndpoint()
       onBufferingOver()
 
     case BackoffOver => onBufferingOver()
@@ -133,33 +138,34 @@ class EndpointWriter(
 
   }
 
-  def startReadEndpoint(): Unit = {
+  private def startReadEndpoint(): Unit = {
     onBufferingOver()
 
     reader = context.actorOf(Props(
-        new EndpointReader(handle, self, config, codec, msgDispatch)
+        new EndpointReader(handle, config, codec, msgDispatch)
       ), "reader")
 
     context.watch(reader)
   }
 
-  def onBufferingOver(): Unit = {
+  private def onBufferingOver(): Unit = {
     buffering = false; unstashAll()
   }
 
-  def backoff(): Unit = {
+  private def backoff(): Unit = {
     buffering = true
     context.system.scheduler.scheduleOnce(config.BackoffPeriod, self, BackoffOver)
   }
 
-  def serializeMessage(msg: Any): MessageProtocol = {
+  private def serializeMessage(msg: Any): MessageProtocol = {
     Serialization.currentTransportAddress.withValue(handle.localAddress) {
       (MessageSerializer.serialize(extendedSystem, msg.asInstanceOf[AnyRef]))
     }
   }
 
-  def sendMessage(msg: Any, recipient: ActorRef, senderOption: Option[ActorRef]): Unit = {
+  private def sendMessage(msg: Any, recipient: ActorRef, senderOption: Option[ActorRef]): Unit = {
     val pdu = codec.constructMessagePdu(handle.localAddress, recipient, serializeMessage(msg), senderOption)
+
     try {
       if (!handle.write(pdu)) {
         stash()
@@ -173,13 +179,11 @@ class EndpointWriter(
 
 }
 
-//TODO: logging
-class EndpointReader(
+private[remote] class EndpointReader(
                       val handle: AssociationHandle,
-                      val writer: ActorRef,
                       val config: RemotingConfig,
                       val codec: AkkaPduCodec,
-                      val msgDispatch: MessageDispatcher) extends Actor{
+                      val msgDispatch: InboundMessageDispatcher) extends Actor{
 
   val provider = context.system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
 
@@ -197,7 +201,7 @@ class EndpointReader(
     }
   }
 
-  def decodePdu(pdu: ByteString): AkkaPdu = try {
+  private def decodePdu(pdu: ByteString): AkkaPdu = try {
     codec.decodePdu(pdu, provider)
   } catch {
     case NonFatal(e) ⇒ throw new EndpointException("Error while decoding incoming Akka PDU", e)

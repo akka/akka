@@ -73,7 +73,7 @@ class RemoteActorRefProvider(
         classOf[RemoteActorRefProvider] -> this)
 
       system.dynamicAccess.createInstanceFor[RemoteTransport](fqn, args).recover({
-        case problem ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
+        case problem ⇒ println(problem); throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
       }).get
     }
 
@@ -191,7 +191,6 @@ class RemoteActorRefProvider(
     actorFor(RootActorPath(path.address) / "remote") ! DaemonMsgCreate(props, deploy, path.toString, supervisor)
   }
 
-  //TODO: use this in actorOf
   def getExternalAddressFor(addr: Address): Option[Address] = {
     val ra = rootPath.address
     addr match {
