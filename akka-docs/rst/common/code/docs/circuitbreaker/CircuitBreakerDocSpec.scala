@@ -7,7 +7,9 @@ package docs.circuitbreaker
 //#imports1
 import scala.concurrent.util.duration._ // small d is important here
 import akka.pattern.CircuitBreaker
+import akka.pattern.pipe
 import akka.actor.Actor
+import akka.actor.ActorLogging
 import scala.concurrent.Future
 import akka.event.Logging
 
@@ -16,13 +18,14 @@ import akka.event.Logging
 class CircuitBreakerDocSpec {}
 
 //#circuit-breaker-initialization
-class DangerousActor extends Actor {
+class DangerousActor extends Actor with ActorLogging {
+  import context.dispatcher
 
-  val log = Logging(context.system, this)
-  implicit val executionContext = context.dispatcher
   val breaker =
-    new CircuitBreaker(context.system.scheduler, 5, 10.seconds, 1.minute)
-      .onOpen(notifyMeOnOpen)
+    new CircuitBreaker(context.system.scheduler,
+      maxFailures = 5,
+      callTimeout = 10.seconds,
+      resetTimeout = 1.minute).onOpen(notifyMeOnOpen)
 
   def notifyMeOnOpen =
     log.warning("My CircuitBreaker is now open, and will not close for one minute")
@@ -33,7 +36,7 @@ class DangerousActor extends Actor {
 
   def receive = {
     case "is my middle name" ⇒
-      sender ! breaker.withCircuitBreaker(Future(dangerousCall))
+      breaker.withCircuitBreaker(Future(dangerousCall)) pipeTo sender
     case "block for me" ⇒
       sender ! breaker.withSyncCircuitBreaker(dangerousCall)
   }
