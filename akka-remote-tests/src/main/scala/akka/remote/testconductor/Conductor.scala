@@ -443,9 +443,9 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case Disconnect(node, target, abort) ⇒
           val t = nodes(target)
           nodes(node).fsm forward ToClient(DisconnectMsg(t.addr, abort))
-        case Terminate(node, exitValueOrKill) ⇒
+        case Terminate(node, exitValue) ⇒
           barrier ! BarrierCoordinator.RemoveClient(node)
-          nodes(node).fsm forward ToClient(TerminateMsg(exitValueOrKill))
+          nodes(node).fsm forward ToClient(TerminateMsg(exitValue))
         case Remove(node) ⇒
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
