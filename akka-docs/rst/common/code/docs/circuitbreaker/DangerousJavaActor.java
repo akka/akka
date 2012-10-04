@@ -12,6 +12,7 @@ import scala.concurrent.util.Duration;
 import akka.pattern.CircuitBreaker;
 import akka.event.Logging;
 
+import static akka.pattern.Patterns.pipe;
 import static akka.dispatch.Futures.future;
 
 import java.util.concurrent.Callable;
@@ -58,13 +59,12 @@ public class DangerousJavaActor extends UntypedActor {
             }
           }, getContext().dispatcher());
 
-        getSender().tell(breaker
-          .callWithCircuitBreaker(
-            new Callable<Future<String>>() {
-              public Future<String> call() throws Exception {
-                return f;
-              }
-            }), getSelf());
+        pipe(breaker.callWithCircuitBreaker(
+          new Callable<Future<String>>() {
+            public Future<String> call() throws Exception {
+              return f;
+            }
+          }), getContext().dispatcher()).to(getSender());
       }
       if ("block for me".equals(m)) {
         getSender().tell(breaker
