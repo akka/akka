@@ -39,8 +39,9 @@ class StatsService extends Actor {
     case StatsJob(text) if text != "" ⇒
       val words = text.split(" ")
       val replyTo = sender // important to not close over sender
+      // create actor that collects replies from workers
       val aggregator = context.actorOf(Props(
-          new StatsAggregator(words.size, replyTo)))
+        new StatsAggregator(words.size, replyTo)))
       words foreach { word ⇒
         workerRouter.tell(
           ConsistentHashableEnvelope(word, word), aggregator)
@@ -121,7 +122,7 @@ class StatsFacade extends Actor with ActorLogging {
         currentMaster foreach { context.stop(_) }
       log.info("Using statsService master at [{}]", leaderAddress)
       currentMaster = Some(context.actorFor(
-        context.self.path.toStringWithAddress(leaderAddress) + "/statsService"))
+        self.path.toStringWithAddress(leaderAddress) + "/statsService"))
       currentMasterCreatedByMe = false
     }
   }
