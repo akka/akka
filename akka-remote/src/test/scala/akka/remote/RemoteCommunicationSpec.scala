@@ -10,6 +10,7 @@ import scala.concurrent.Future
 import scala.concurrent.Await
 import scala.reflect.classTag
 import akka.pattern.ask
+import akka.event.Logging
 
 object RemoteCommunicationSpec {
   class Echo extends Actor {
@@ -76,9 +77,12 @@ akka {
     }
 
     "send error message for wrong address" in {
-      EventFilter.error(start = "dropping", occurrences = 1).intercept {
+      val old = other.eventStream.logLevel
+      other.eventStream.setLogLevel(Logging.DebugLevel)
+      EventFilter.debug(start = "dropping", occurrences = 1).intercept {
         system.actorFor("akka://remotesys@localhost:12346/user/echo") ! "ping"
       }(other)
+      other.eventStream.setLogLevel(old)
     }
 
     "support ask" in {

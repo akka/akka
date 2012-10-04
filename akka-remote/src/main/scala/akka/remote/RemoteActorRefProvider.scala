@@ -61,7 +61,7 @@ class RemoteActorRefProvider(
   def init(system: ActorSystemImpl): Unit = {
     local.init(system)
 
-    _remoteDaemon = new RemoteSystemDaemon(system, rootPath / "remote", rootGuardian, log)
+    _remoteDaemon = new RemoteSystemDaemon(system, rootPath / "remote", rootGuardian, log, untrustedMode = remoteSettings.UntrustedMode)
     local.registerExtraNames(Map(("remote", remoteDaemon)))
 
     _serialization = SerializationExtension(system)

@@ -67,7 +67,7 @@ case object Kill extends Kill {
  * to another actor you should send the information in your own message.
  */
 @SerialVersionUID(1L)
-case class Terminated private[akka] (@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean) extends AutoReceivedMessage
+case class Terminated private[akka] (@BeanProperty actor: ActorRef)(@BeanProperty val existenceConfirmed: Boolean) extends AutoReceivedMessage with PossiblyHarmful
 
 /**
  * INTERNAL API
@@ -78,7 +78,7 @@ case class Terminated private[akka] (@BeanProperty actor: ActorRef)(@BeanPropert
  * and translates this event to [[akka.actor.Terminated]], which is sent itself.
  */
 @SerialVersionUID(1L)
-private[akka] case class AddressTerminated(address: Address) extends AutoReceivedMessage
+private[akka] case class AddressTerminated(address: Address) extends AutoReceivedMessage with PossiblyHarmful
 
 abstract class ReceiveTimeout extends PossiblyHarmful
 
@@ -99,7 +99,7 @@ case object ReceiveTimeout extends ReceiveTimeout {
  * nested path descriptions whenever using ! on them, the idea being that the
  * message is delivered by active routing of the various actors involved.
  */
-sealed trait SelectionPath extends AutoReceivedMessage
+sealed trait SelectionPath extends AutoReceivedMessage with PossiblyHarmful
 
 /**
  * Internal use only
