@@ -21,7 +21,7 @@ public final class RemoteProtocol {
     
     
     public final int getNumber() { return value; }
-    
+
     public static CommandType valueOf(int value) {
       switch (value) {
         case 1: return CONNECT;
@@ -3636,6 +3636,10 @@ public final class RemoteProtocol {
     // required uint32 port = 3;
     boolean hasPort();
     int getPort();
+    
+    // optional string protocol = 4;
+    boolean hasProtocol();
+    String getProtocol();
   }
   public static final class AddressProtocol extends
       com.google.protobuf.GeneratedMessage
@@ -3740,10 +3744,43 @@ public final class RemoteProtocol {
       return port_;
     }
     
+    // optional string protocol = 4;
+    public static final int PROTOCOL_FIELD_NUMBER = 4;
+    private java.lang.Object protocol_;
+    public boolean hasProtocol() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    public String getProtocol() {
+      java.lang.Object ref = protocol_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          protocol_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getProtocolBytes() {
+      java.lang.Object ref = protocol_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        protocol_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
     private void initFields() {
       system_ = "";
       hostname_ = "";
       port_ = 0;
+      protocol_ = "";
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -3778,6 +3815,9 @@ public final class RemoteProtocol {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeUInt32(3, port_);
       }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBytes(4, getProtocolBytes());
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -3798,6 +3838,10 @@ public final class RemoteProtocol {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeUInt32Size(3, port_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(4, getProtocolBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -3929,6 +3973,8 @@ public final class RemoteProtocol {
         bitField0_ = (bitField0_ & ~0x00000002);
         port_ = 0;
         bitField0_ = (bitField0_ & ~0x00000004);
+        protocol_ = "";
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       
@@ -3979,6 +4025,10 @@ public final class RemoteProtocol {
           to_bitField0_ |= 0x00000004;
         }
         result.port_ = port_;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.protocol_ = protocol_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -4003,6 +4053,9 @@ public final class RemoteProtocol {
         }
         if (other.hasPort()) {
           setPort(other.getPort());
+        }
+        if (other.hasProtocol()) {
+          setProtocol(other.getProtocol());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -4060,6 +4113,11 @@ public final class RemoteProtocol {
             case 24: {
               bitField0_ |= 0x00000004;
               port_ = input.readUInt32();
+              break;
+            }
+            case 34: {
+              bitField0_ |= 0x00000008;
+              protocol_ = input.readBytes();
               break;
             }
           }
@@ -4159,6 +4217,42 @@ public final class RemoteProtocol {
         port_ = 0;
         onChanged();
         return this;
+      }
+      
+      // optional string protocol = 4;
+      private java.lang.Object protocol_ = "";
+      public boolean hasProtocol() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      public String getProtocol() {
+        java.lang.Object ref = protocol_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          protocol_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setProtocol(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        protocol_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearProtocol() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        protocol_ = getDefaultInstance().getProtocol();
+        onChanged();
+        return this;
+      }
+      void setProtocol(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000008;
+        protocol_ = value;
+        onChanged();
       }
       
       // @@protoc_insertion_point(builder_scope:AddressProtocol)
@@ -6424,20 +6518,20 @@ public final class RemoteProtocol {
       "path\030\001 \002(\t\"Q\n\017MessageProtocol\022\017\n\007message" +
       "\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageM" +
       "anifest\030\003 \001(\014\"3\n\025MetadataEntryProtocol\022\013" +
-      "\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\014\"A\n\017AddressPro" +
+      "\n\003key\030\001 \002(\t\022\r\n\005value\030\002 \002(\014\"S\n\017AddressPro" +
       "tocol\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022" +
-      "\014\n\004port\030\003 \002(\r\"\216\001\n\027DaemonMsgCreateProtoco" +
-      "l\022\035\n\005props\030\001 \002(\0132\016.PropsProtocol\022\037\n\006depl" +
-      "oy\030\002 \002(\0132\017.DeployProtocol\022\014\n\004path\030\003 \002(\t\022" +
-      "%\n\nsupervisor\030\004 \002(\0132\021.ActorRefProtocol\"\205",
-      "\001\n\rPropsProtocol\022\022\n\ndispatcher\030\001 \002(\t\022\037\n\006" +
-      "deploy\030\002 \002(\0132\017.DeployProtocol\022\030\n\020fromCla" +
-      "ssCreator\030\003 \001(\t\022\017\n\007creator\030\004 \001(\014\022\024\n\014rout" +
-      "erConfig\030\005 \001(\014\"S\n\016DeployProtocol\022\014\n\004path" +
-      "\030\001 \002(\t\022\016\n\006config\030\002 \001(\014\022\024\n\014routerConfig\030\003" +
-      " \001(\014\022\r\n\005scope\030\004 \001(\014*7\n\013CommandType\022\013\n\007CO" +
-      "NNECT\020\001\022\014\n\010SHUTDOWN\020\002\022\r\n\tHEARTBEAT\020\003B\017\n\013" +
-      "akka.remoteH\001"
+      "\014\n\004port\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"\216\001\n\027Daem" +
+      "onMsgCreateProtocol\022\035\n\005props\030\001 \002(\0132\016.Pro" +
+      "psProtocol\022\037\n\006deploy\030\002 \002(\0132\017.DeployProto" +
+      "col\022\014\n\004path\030\003 \002(\t\022%\n\nsupervisor\030\004 \002(\0132\021.",
+      "ActorRefProtocol\"\205\001\n\rPropsProtocol\022\022\n\ndi" +
+      "spatcher\030\001 \002(\t\022\037\n\006deploy\030\002 \002(\0132\017.DeployP" +
+      "rotocol\022\030\n\020fromClassCreator\030\003 \001(\t\022\017\n\007cre" +
+      "ator\030\004 \001(\014\022\024\n\014routerConfig\030\005 \001(\014\"S\n\016Depl" +
+      "oyProtocol\022\014\n\004path\030\001 \002(\t\022\016\n\006config\030\002 \001(\014" +
+      "\022\024\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 \001(\014*7\n" +
+      "\013CommandType\022\013\n\007CONNECT\020\001\022\014\n\010SHUTDOWN\020\002\022" +
+      "\r\n\tHEARTBEAT\020\003B\017\n\013akka.remoteH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -6497,7 +6591,7 @@ public final class RemoteProtocol {
           internal_static_AddressProtocol_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_AddressProtocol_descriptor,
-              new java.lang.String[] { "System", "Hostname", "Port", },
+              new java.lang.String[] { "System", "Hostname", "Port", "Protocol", },
               akka.remote.RemoteProtocol.AddressProtocol.class,
               akka.remote.RemoteProtocol.AddressProtocol.Builder.class);
           internal_static_DaemonMsgCreateProtocol_descriptor =

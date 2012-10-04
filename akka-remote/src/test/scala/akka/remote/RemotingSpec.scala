@@ -3,15 +3,15 @@
  */
 package akka.remote
 
-import akka.testkit._
 import akka.actor._
-import com.typesafe.config._
-import scala.concurrent.Future
-import scala.concurrent.Await
-import scala.reflect.classTag
 import akka.pattern.ask
+import akka.testkit._
+import com.typesafe.config._
+import scala.concurrent.Await
+import scala.concurrent.Future
+import akka.remote.transport.AssociationRegistry
 
-object RemoteCommunicationSpec {
+object RemotingSpec {
   class Echo extends Actor {
     var target: ActorRef = context.system.deadLetters
 
@@ -33,26 +33,73 @@ object RemoteCommunicationSpec {
   }
 }
 
+//TODO: remove debug stuff
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RemoteCommunicationSpec extends AkkaSpec("""
+class RemotingSpec extends AkkaSpec("""
 akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
-  remote.netty {
-    hostname = localhost
-    port = 12345
-  }
+  remote.transport = "akka.remote.Remoting"
+
+  remoting.transports = [
+    {
+      transport-class = "akka.remote.transport.TestTransport"
+      settings {
+        registry-key = aX33k0jWKg
+        local-address = "test://RemotingSpec@localhost:12345"
+        maximum-payload-bytes = 32000 bytes
+        scheme-identifier = test
+      }
+    },
+    {
+      transport-class = "akka.remote.transport.TestTransport"
+      settings {
+        registry-key = AK1VFRUAHz
+        local-address = "test2://RemotingSpec@localhost:12345"
+        maximum-payload-bytes = 32000 bytes
+        scheme-identifier = test2
+      }
+    }
+  ]
+
   actor.deployment {
-    /blub.remote = "akka://remote-sys@localhost:12346"
-    /looker/child.remote = "akka://remote-sys@localhost:12346"
-    /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
+    /blub.remote = "test.akka://remote-sys@localhost:12346"
+    /gonk.remote = "test2.akka://remote-sys@localhost:12346"
+    /looker/child.remote = "test.akka://remote-sys@localhost:12346"
+    /looker/child/grandchild.remote = "test.akka://RemotingSpec@localhost:12345"
   }
 }
-""") with ImplicitSender with DefaultTimeout {
+                                    """) with ImplicitSender with DefaultTimeout {
 
-  import RemoteCommunicationSpec._
+  import RemotingSpec._
 
-  val conf = ConfigFactory.parseString("akka.remote.netty.port=12346").withFallback(system.settings.config)
+  val conf = ConfigFactory.parseString(
+    """
+       akka.remote.netty.port=12346
+       akka.remoting.transports = [
+         {
+           transport-class = "akka.remote.transport.TestTransport"
+           settings {
+             registry-key = aX33k0jWKg
+             local-address = "test://remote-sys@localhost:12346"
+             maximum-payload-bytes = 32000 bytes
+             scheme-identifier = test
+           }
+         },
+         {
+           transport-class = "akka.remote.transport.TestTransport"
+           settings {
+             registry-key = AK1VFRUAHz
+             local-address = "test2://remote-sys@localhost:12346"
+             maximum-payload-bytes = 32000 bytes
+             scheme-identifier = test2
+           }
+         }
+      ]
+    """).withFallback(system.settings.config)
   val other = ActorSystem("remote-sys", conf)
+
+  // TODO: need a way to delay tests until all transports are registered
+  Thread.sleep(500)
 
   val remote = other.actorOf(Props(new Actor {
     def receive = {
@@ -60,10 +107,11 @@ akka {
     }
   }), "echo")
 
-  val here = system.actorFor("akka://remote-sys@localhost:12346/user/echo")
+  val here = system.actorFor("test.akka://remote-sys@localhost:12346/user/echo")
 
   override def atTermination() {
     other.shutdown()
+    AssociationRegistry.clear()
   }
 
   "Remoting" must {
@@ -75,11 +123,12 @@ akka {
       }
     }
 
-    "send error message for wrong address" in {
-      EventFilter.error(start = "dropping", occurrences = 1).intercept {
-        system.actorFor("akka://remotesys@localhost:12346/user/echo") ! "ping"
-      }(other)
-    }
+    // TODO: there is no lifecycle events and error reporting. Uncomment test when done.
+    //    "send error message for wrong address" in {
+    //      EventFilter.error(start = "dropping", occurrences = 1).intercept {
+    //        system.actorFor("test.akka://remote-sys@localhost:12346/user/echo") ! "ping"
+    //      }(other)
+    //    }
 
     "support ask" in {
       Await.result(here ? "ping", timeout.duration) match {
@@ -90,13 +139,13 @@ akka {
 
     "send dead letters on remote if actor does not exist" in {
       EventFilter.warning(pattern = "dead.*buh", occurrences = 1).intercept {
-        system.actorFor("akka://remote-sys@localhost:12346/does/not/exist") ! "buh"
+        system.actorFor("test.akka://remote-sys@localhost:12346/does/not/exist") ! "buh"
       }(other)
     }
 
     "create and supervise children on remote node" in {
       val r = system.actorOf(Props[Echo], "blub")
-      r.path.toString must be === "akka://remote-sys@localhost:12346/remote/akka/RemoteCommunicationSpec@localhost:12345/user/blub"
+      r.path.toString must be === "test.akka://remote-sys@localhost:12346/remote/test.akka/RemotingSpec@localhost:12345/user/blub"
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
@@ -134,8 +183,23 @@ akka {
 
     "not fail ask across node boundaries" in {
       import system.dispatcher
-      val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo classTag[(String, ActorRef)]
+      val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo manifest[(String, ActorRef)]
       Await.result(Future.sequence(f), remaining).map(_._1).toSet must be(Set("pong"))
+    }
+
+    "be able to use multiple transports and use the appropriate one" in {
+      val r = system.actorOf(Props[Echo], "gonk")
+      r.path.toString must be === "test2.akka://remote-sys@localhost:12346/remote/test2.akka/RemotingSpec@localhost:12345/user/gonk"
+      r ! 42
+      expectMsg(42)
+      EventFilter[Exception]("crash", occurrences = 1).intercept {
+        r ! new Exception("crash")
+      }(other)
+      expectMsg("preRestart")
+      r ! 42
+      expectMsg(42)
+      system.stop(r)
+      expectMsg("postStop")
     }
 
   }

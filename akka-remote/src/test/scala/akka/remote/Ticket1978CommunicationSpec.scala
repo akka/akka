@@ -132,7 +132,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
   ("-") must {
     if (cipherConfig.runTest) {
       val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) ⇒ sender ! ((("pong", x), sender)) } }), "echo")
-      val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.address
+      val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.addresses.head
 
       "support tell" in {
         val here = system.actorFor(otherAddress.toString + "/user/echo")
