@@ -192,17 +192,6 @@ trait Conductor { this: TestConductorExt ⇒
   }
 
   /**
-   * Tell the SBT plugin to forcibly terminate the given remote node using Process.destroy.
-   *
-   * @param node is the symbolic name of the node which is to be affected
-   */
-  // TODO: uncomment (and implement in Controller) if really needed
-  //  def kill(node: RoleName): Future[Done] = {
-  //    import Settings.QueryTimeout
-  //    controller ? Terminate(node, -1) mapTo classTag[Done]
-  //  }
-
-  /**
    * Obtain the list of remote host names currently registered.
    */
   def getNodes: Future[Iterable[RoleName]] = {
@@ -455,12 +444,8 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
           val t = nodes(target)
           nodes(node).fsm forward ToClient(DisconnectMsg(t.addr, abort))
         case Terminate(node, exitValueOrKill) ⇒
-          if (exitValueOrKill < 0) {
-            // TODO: kill via SBT
-          } else {
-            barrier ! BarrierCoordinator.RemoveClient(node)
-            nodes(node).fsm forward ToClient(TerminateMsg(exitValueOrKill))
-          }
+          barrier ! BarrierCoordinator.RemoveClient(node)
+          nodes(node).fsm forward ToClient(TerminateMsg(exitValueOrKill))
         case Remove(node) ⇒
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
