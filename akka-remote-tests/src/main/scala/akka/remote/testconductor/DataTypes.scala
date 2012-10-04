@@ -42,7 +42,7 @@ private[akka] case class ThrottleMsg(target: Address, direction: Direction, rate
 private[akka] case class Disconnect(node: RoleName, target: RoleName, abort: Boolean) extends CommandOp
 private[akka] case class DisconnectMsg(target: Address, abort: Boolean) extends ConfirmedClientOp with NetworkOp
 
-private[akka] case class Terminate(node: RoleName, exitValueOrKill: Int) extends CommandOp
+private[akka] case class Terminate(node: RoleName, exitValue: Int) extends CommandOp
 private[akka] case class TerminateMsg(exitValue: Int) extends ConfirmedClientOp with NetworkOp
 
 private[akka] case class GetAddress(node: RoleName) extends ServerOp with NetworkOp

@@ -36,14 +36,16 @@ This is a schematic overview of the test conductor.
 .. image:: ../images/akka-remote-testconductor.png
 
 The test conductor server is responsible for coordinating barriers and sending commands to the test conductor
-clients that act upon them, e.g. throttling network traffic to/from another client.
+clients that act upon them, e.g. throttling network traffic to/from another client. More information on the
+possible operations is availible in the ``akka.remote.testconductor.Conductor`` API documentation.
 
 The Multi Node Spec
 ===================
 
 The Multi Node Spec consists of two parts. The ``MultiNodeConfig`` that is responsible for common
-configuration and enumerating and naming the nodes under test. The ``MultiNodeSpec`` that contains all the
-convenience functions for making the test nodes interact with each other.
+configuration and enumerating and naming the nodes under test. The ``MultiNodeSpec`` that contains a number
+of convenience functions for making the test nodes interact with each other. More information on the possible
+operations is available in the ``akka.remote.testkit.MultiNodeSpec`` API documentation.
 
 The setup of the ``MultiNodeSpec`` is configured through java system properties that you set on all JVMs that's going to run a
 node under test. These can easily be set on the JVM command line with ``-Dproperty=value``.
