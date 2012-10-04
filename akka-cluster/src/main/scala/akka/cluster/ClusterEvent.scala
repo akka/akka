@@ -32,7 +32,38 @@ object ClusterEvent {
     unreachable: Set[Member] = Set.empty,
     convergence: Boolean = false,
     seenBy: Set[Address] = Set.empty,
-    leader: Option[Address] = None) extends ClusterDomainEvent
+    leader: Option[Address] = None) extends ClusterDomainEvent {
+
+    /**
+     * Java API
+     */
+    def getMembers: java.lang.Iterable[Member] = {
+      import scala.collection.JavaConverters._
+      members.asJava
+    }
+
+    /**
+     * Java API
+     */
+    def getUnreachable: java.util.Set[Member] = {
+      import scala.collection.JavaConverters._
+      unreachable.asJava
+    }
+
+    /**
+     * Java API
+     */
+    def getSeenBy: java.util.Set[Address] = {
+      import scala.collection.JavaConverters._
+      seenBy.asJava
+    }
+
+    /**
+     * Java API
+     * @return address of current leader, or null if none
+     */
+    def getLeader: Address = leader orNull
+  }
 
   /**
    * Marker interface for member related events.
@@ -89,11 +120,6 @@ object ClusterEvent {
   }
 
   /**
-   * Current snapshot of cluster member metrics. Published to subscribers.
-   */
-  case class ClusterMetricsChanged(nodes: Set[NodeMetrics]) extends ClusterDomainEvent
-
-  /**
    * Cluster convergence state changed.
    */
   case class ConvergenceChanged(convergence: Boolean) extends ClusterDomainEvent
@@ -101,7 +127,20 @@ object ClusterEvent {
   /**
    * Leader of the cluster members changed. Only published after convergence.
    */
-  case class LeaderChanged(leader: Option[Address]) extends ClusterDomainEvent
+  case class LeaderChanged(leader: Option[Address]) extends ClusterDomainEvent {
+    /**
+     * Java API
+     * @return address of current leader, or null if none
+     */
+    def getLeader: Address = leader orNull
+  }
+
+  /**
+   * INTERNAL API
+   *
+   * Current snapshot of cluster member metrics. Published to subscribers.
+   */
+  case class ClusterMetricsChanged(nodes: Set[NodeMetrics]) extends ClusterDomainEvent
 
   /**
    * INTERNAL API

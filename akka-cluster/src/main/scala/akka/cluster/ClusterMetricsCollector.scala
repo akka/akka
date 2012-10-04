@@ -22,6 +22,8 @@ import java.lang.reflect.Method
 import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
 
 /**
+ * INTERNAL API.
+ *
  * This strategy is primarily for load-balancing of nodes. It controls metrics sampling
  * at a regular frequency, prepares highly variable data for further analysis by other entities,
  * and publishes the latest cluster metrics data around the node ring to assist in determining
@@ -31,8 +33,6 @@ import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
  *
  * Calculation of statistical data for each monitored process is delegated to the
  * [[akka.cluster.DataStream]] for exponential smoothing, with additional decay factor.
- *
- * INTERNAL API.
  *
  * @author Helena Edelson
  */
@@ -118,8 +118,6 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Samples the latest metrics for the node, updates metrics statistics in
    * [[akka.cluster.MetricsGossip]], and publishes the change to the event bus.
-   *
-   * INTERNAL API
    *
    * @see [[akka.cluster.ClusterMetricsCollector.collect( )]]
    */
@@ -220,8 +218,8 @@ private[cluster] case class MetricsGossip(rateOfDecay: Int, nodes: Set[NodeMetri
 }
 
 /**
- * Envelope adding a sender address to the gossip.
  * INTERNAL API
+ * Envelope adding a sender address to the gossip.
  */
 private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: MetricsGossip) extends ClusterMessage
 
@@ -277,6 +275,8 @@ private[cluster] case class DataStream(decay: Int, ewma: ScalaNumber, startTime:
 }
 
 /**
+ * INTERNAL API
+ *
  * Companion object of DataStream class.
  *
  * @author Helena Edelson
@@ -348,6 +348,8 @@ private[cluster] case class Metric(name: String, value: Option[ScalaNumber], ave
 }
 
 /**
+ * INTERNAL API
+ *
  * Companion object of Metric class.
  *
  * @author Helena Edelson
@@ -372,6 +374,8 @@ private[cluster] object Metric extends MetricNumericConverter {
 }
 
 /**
+ * INTERNAL API
+ *
  * The snapshot of current sampled health metrics for any monitored process.
  * Collected and gossipped at regular intervals for dynamic cluster management strategies.
  *
@@ -409,10 +413,10 @@ private[cluster] case class NodeMetrics(address: Address, timestamp: Long, metri
 }
 
 /**
+ * INTERNAL API
+ *
  * Encapsulates evaluation of validity of metric values, conversion of an actual metric value to
  * a [[akka.cluster.Metric]] for consumption by subscribed cluster entities.
- *
- * INTERNAL API
  *
  * @author Helena Edelson
  */
@@ -439,12 +443,12 @@ private[cluster] trait MetricNumericConverter {
 }
 
 /**
+ * INTERNAL API
+ *
  * Loads JVM metrics through JMX monitoring beans. If Hyperic SIGAR is on the classpath, this
  * loads wider and more accurate range of metrics in combination with SIGAR's native OS library.
  *
  * FIXME switch to Scala reflection
- *
- * INTERNAL API
  *
  * @param sigar the optional org.hyperic.Sigar instance
  *
@@ -562,6 +566,8 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
 }
 
 /**
+ * INTERNAL API
+ *
  * Companion object of MetricsCollector class.
  *
  * @author Helena Edelson
