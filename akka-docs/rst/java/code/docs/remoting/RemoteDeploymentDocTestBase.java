@@ -7,6 +7,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.typesafe.config.ConfigFactory;
+
 //#import
 import akka.actor.ActorRef;
 import akka.actor.Address;
@@ -59,6 +61,14 @@ public class RemoteDeploymentDocTestBase {
     ActorRef actor = system.actorOf(new Props(SampleActor.class), "sampleActor");
     actor.tell("Pretty slick", null);
     //#sample-actor
+  }
+  
+  @Test
+  public void demonstrateProgrammaticConfig() {
+    //#programmatic
+    ConfigFactory.parseString("akka.remote.netty.hostname=\"1.2.3.4\"")
+        .withFallback(ConfigFactory.load());
+    //#programmatic
   }
 
   
