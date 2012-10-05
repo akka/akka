@@ -58,7 +58,7 @@ akka.loglevel = DEBUG
     }
 
     "discard harmful messages to testActor" in {
-      target2 ! Terminated(target1)(existenceConfirmed = true)
+      target2 ! Terminated(target1)(existenceConfirmed = true, addressTerminated = false)
       expectMsgType[Logging.Debug]
       target2 ! PoisonPill
       expectMsgType[Logging.Debug]
