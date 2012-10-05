@@ -268,7 +268,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
 
     remoteMessage.recipient match {
       case `remoteDaemon` ⇒
-        if (useUntrustedMode) log.debug("dropping daemon message {} in untrusted mode", remoteMessage.payload.getClass)
+        if (useUntrustedMode) log.debug("dropping daemon message in untrusted mode")
         else {
           if (provider.remoteSettings.LogReceive) log.debug("received daemon message {}", remoteMessage)
           remoteMessage.payload match {
@@ -292,9 +292,13 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
           case AddressFromURIString(address) if address == provider.transport.address ⇒
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
-          case r ⇒ log.debug("dropping message {} for non-local recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
+          case r ⇒
+            log.debug("dropping message {} for non-local recipient {} arriving at {} inbound address is {}",
+              remoteMessage.payloadClass, r, address, provider.transport.address)
         }
-      case r ⇒ log.debug("dropping message {} for unknown recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
+      case r ⇒
+        log.debug("dropping message {} for unknown recipient {} arriving at {} inbound address is {}",
+          remoteMessage.payloadClass, r, address, provider.transport.address)
     }
   }
 }
@@ -333,8 +337,10 @@ class RemoteMessage(input: RemoteMessageProtocol, system: ExtendedActorSystem) {
    */
   lazy val payload: AnyRef = MessageSerializer.deserialize(system, input.getMessage)
 
+  def payloadClass: Class[_] = if (payload eq null) null else payload.getClass
+
   /**
    * Returns a String representation of this RemoteMessage, intended for debugging purposes.
    */
-  override def toString: String = "RemoteMessage: " + payload.getClass + " to " + recipient + "<+{" + originalReceiver + "} from " + sender
+  override def toString: String = "RemoteMessage: " + payloadClass + " to " + recipient + "<+{" + originalReceiver + "} from " + sender
 }
