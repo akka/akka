@@ -146,11 +146,13 @@ The precise sequence of events during a restart is the following:
 #. call the old instance’s :meth:`preRestart` hook (defaults to sending
    termination requests to all children and calling :meth:`postStop`)
 #. wait for all children which were requested to terminate (using
-   ``context.stop()``) during :meth:`preRestart` to actually terminate
+   ``context.stop()``) during :meth:`preRestart` to actually terminate;
+   this—like all actor operations—is non-blocking, the termination notice from
+   the last killed child will effect the progression to the next step
 #. create new actor instance by invoking the originally provided factory again
 #. invoke :meth:`postRestart` on the new instance (which by default also calls :meth:`preStart`)
-#. send restart request to all children (they will follow the same process
-   recursively, from step 2)
+#. send restart request to all children which were not killed in step 3;
+   restarted children will follow the same process recursively, from step 2
 #. resume the actor
 
 What Lifecycle Monitoring Means
