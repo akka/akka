@@ -23,6 +23,8 @@ object TestConductorMultiJvmSpec extends MultiNodeConfig {
 
   val master = role("master")
   val slave = role("slave")
+
+  testTransport(on = true)
 }
 
 class TestConductorMultiJvmNode1 extends TestConductorSpec

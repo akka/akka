@@ -24,6 +24,7 @@ import akka.util.{ Timeout }
 import scala.concurrent.util.{ Deadline, Duration }
 import scala.reflect.classTag
 import scala.concurrent.util.FiniteDuration
+import akka.ConfigurationException
 
 sealed trait Direction {
   def includes(other: Direction): Boolean
@@ -102,6 +103,9 @@ trait Conductor { this: TestConductorExt ⇒
   }
 
   /**
+   * To use this feature you must activate the TestConductorTranport by
+   * specifying `testTransport(on = true)` in your MultiNodeConfig.
+   *
    * Make the remoting pipeline on the node throttle data sent to or received
    * from the given remote peer. Throttling works by delaying packet submission
    * within the netty pipeline until the packet would have been completely sent
@@ -121,10 +125,14 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Double): Future[Done] = {
     import Settings.QueryTimeout
+    requireTestConductorTranport()
     controller ? Throttle(node, target, direction, rateMBit.toFloat) mapTo classTag[Done]
   }
 
   /**
+   * To use this feature you must activate the TestConductorTranport by
+   * specifying `testTransport(on = true)` in your MultiNodeConfig.
+   *
    * Switch the Netty pipeline of the remote support into blackhole mode for
    * sending and/or receiving: it will just drop all messages right before
    * submitting them to the Socket or right after receiving them from the
@@ -136,10 +144,19 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def blackhole(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
     import Settings.QueryTimeout
+    requireTestConductorTranport()
     controller ? Throttle(node, target, direction, 0f) mapTo classTag[Done]
   }
 
+  private def requireTestConductorTranport(): Unit =
+    if (!transport.isInstanceOf[TestConductorTransport])
+      throw new ConfigurationException("To use this feature you must activate the TestConductorTranport by " +
+        "specifying `testTransport(on = true)` in your MultiNodeConfig.")
+
   /**
+   * To use this feature you must activate the TestConductorTranport by
+   * specifying `testTransport(on = true)` in your MultiNodeConfig.
+   *
    * Switch the Netty pipeline of the remote support into pass through mode for
    * sending and/or receiving.
    *
@@ -149,6 +166,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def passThrough(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
     import Settings.QueryTimeout
+    requireTestConductorTranport()
     controller ? Throttle(node, target, direction, -1f) mapTo classTag[Done]
   }
 
