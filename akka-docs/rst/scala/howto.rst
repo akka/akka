@@ -111,6 +111,34 @@ This is where the Spider pattern comes in."
 
 The pattern is described `Discovering Message Flows in Actor System with the Spider Pattern <http://letitcrash.com/post/30585282971/discovering-message-flows-in-actor-systems-with-the>`_.
 
+Scheduling Periodic Messages
+============================
+
+This pattern describes how to schedule periodic messages to yourself in two different
+ways.
+
+The first way is to set up periodic message scheduling in the constructor of the actor,
+and cancel that scheduled sending in ``postStop`` or else we might have multiple registered
+message sends to the same actor.
+
+.. note::
+
+   With this approach the scheduler will be restarted with the actor on restarts.
+
+.. includecode:: code/docs/pattern/SchedulerPatternSpec.scala#schedule-constructor
+
+The second variant sets up an initial one shot message send in the ``preStart`` method
+of the actor, and the then the actor when it receives this message sets up a new one shot
+message send. You also have to override ``postRestart`` so we don't call ``preStart``
+and schedule the initial message send again.
+
+.. note::
+
+   With this approach we won't fill up the mailbox with tick messages if the actor is
+   under pressure, but only schedule a new tick message when we have seen the previous one.
+
+.. includecode:: code/docs/pattern/SchedulerPatternSpec.scala#schedule-receive
+
 Template Pattern
 ================
 
@@ -127,4 +155,3 @@ This is an especially nice pattern, since it does even come with some empty exam
    Spread the word: this is the easiest way to get famous!
 
 Please keep this pattern at the end of this file.
-
