@@ -106,30 +106,30 @@ object MemberStatus {
   /**
    * JAVA API
    */
-  def joining: Object = Joining
+  def joining: MemberStatus = Joining
 
   /**
    * JAVA API
    */
-  def up: Object = Up
+  def up: MemberStatus = Up
 
   /**
    * JAVA API
    */
-  def leaving: Object = Leaving
+  def leaving: MemberStatus = Leaving
 
   /**
    * JAVA API
    */
-  def exiting: Object = Exiting
+  def exiting: MemberStatus = Exiting
 
   /**
    * JAVA API
    */
-  def down: Object = Down
+  def down: MemberStatus = Down
 
   /**
    * JAVA API
    */
-  def removed: Object = Removed
+  def removed: MemberStatus = Removed
 }

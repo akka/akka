@@ -36,6 +36,7 @@ object ClusterEvent {
 
     /**
      * Java API
+     * Read only
      */
     def getMembers: java.lang.Iterable[Member] = {
       import scala.collection.JavaConverters._
@@ -44,6 +45,7 @@ object ClusterEvent {
 
     /**
      * Java API
+     * Read only
      */
     def getUnreachable: java.util.Set[Member] = {
       import scala.collection.JavaConverters._
@@ -52,6 +54,7 @@ object ClusterEvent {
 
     /**
      * Java API
+     * Read only
      */
     def getSeenBy: java.util.Set[Address] = {
       import scala.collection.JavaConverters._

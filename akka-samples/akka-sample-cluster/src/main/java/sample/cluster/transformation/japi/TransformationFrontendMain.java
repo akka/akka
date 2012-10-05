@@ -33,6 +33,9 @@ public class TransformationFrontendMain {
               System.out.println(result);
             }
           }, ec);
+
+      // wait a while until next request,
+      // to avoid flooding the console with output
       Thread.sleep(2000);
     }
     system.shutdown();

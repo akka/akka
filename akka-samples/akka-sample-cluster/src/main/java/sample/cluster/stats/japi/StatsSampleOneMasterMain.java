@@ -14,19 +14,19 @@ public class StatsSampleOneMasterMain {
       System.setProperty("akka.remote.netty.port", args[0]);
 
     //#start-router-deploy
-    ActorSystem system = ActorSystem.create("ClusterSystem", ConfigFactory
-        .parseString(
-            "akka.actor.deployment {                       \n"
-                + "  /statsFacade/statsService/workerRouter {    \n"
-                + "    router = consistent-hashing               \n"
-                + "    nr-of-instances = 100                     \n"
-                + "    cluster {                                 \n"
-                + "      enabled = on                            \n"
-                + "      max-nr-of-instances-per-node = 3        \n"
-                + "      allow-local-routees = off               \n"
-                + "    }                                         \n"
-                + "  }                                           \n"
-                + "}                                             \n")
+    ActorSystem system = ActorSystem.create("ClusterSystem",
+      ConfigFactory.parseString(
+        "akka.actor.deployment {                       \n" +
+        "  /statsFacade/statsService/workerRouter {    \n" +
+        "    router = consistent-hashing               \n" +
+        "    nr-of-instances = 100                     \n" +
+        "    cluster {                                 \n" +
+        "      enabled = on                            \n" +
+        "      max-nr-of-instances-per-node = 3        \n" +
+        "      allow-local-routees = off               \n" +
+        "    }                                         \n" +
+        "  }                                           \n" +
+        "}                                             \n")
         .withFallback(ConfigFactory.load()));
 
     system.actorOf(new Props(StatsFacade.class), "statsFacade");

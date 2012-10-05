@@ -232,7 +232,7 @@ is dynamically adjusted to reflect current network conditions.
 
 The value of *phi* is calculated as::
 
-  phi = -log10(1 - F(timeSinceLastHeartbeat)
+  phi = -log10(1 - F(timeSinceLastHeartbeat))
 
 where F is the cumulative distribution function of a normal distribution with mean
 and standard deviation estimated from historical heartbeat inter-arrival times.

@@ -1,6 +1,7 @@
 package sample.cluster.simple.japi;
 
 import akka.actor.UntypedActor;
+import akka.cluster.ClusterEvent.ClusterDomainEvent;
 import akka.cluster.ClusterEvent.CurrentClusterState;
 import akka.cluster.ClusterEvent.MemberJoined;
 import akka.cluster.ClusterEvent.MemberUnreachable;
@@ -29,8 +30,12 @@ public class SimpleClusterListener extends UntypedActor {
       MemberUnreachable mUnreachable = (MemberUnreachable) message;
       log.info("Member detected as unreachable: {}", mUnreachable.member());
 
-    } else {
+    } else if (message instanceof ClusterDomainEvent) {
       // ignore
+
+    } else {
+      unhandled(message);
     }
+
   }
 }
