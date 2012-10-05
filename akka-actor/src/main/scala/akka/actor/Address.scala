@@ -75,7 +75,7 @@ object RelativeActorPath extends PathUtils {
     try {
       val uri = new URI(addr)
       if (uri.isAbsolute) None
-      else Some(split(uri.getPath))
+      else Some(split(uri.getRawPath))
     } catch {
       case _: URISyntaxException ⇒ None
     }
@@ -122,10 +122,10 @@ object ActorPathExtractor extends PathUtils {
   def unapply(addr: String): Option[(Address, Iterable[String])] =
     try {
       val uri = new URI(addr)
-      if (uri.getPath == null) None
+      if (uri.getRawPath == null) None
       else AddressFromURIString.unapply(uri) match {
         case None       ⇒ None
-        case Some(addr) ⇒ Some((addr, split(uri.getPath).drop(1)))
+        case Some(addr) ⇒ Some((addr, split(uri.getRawPath).drop(1)))
       }
     } catch {
       case _: URISyntaxException ⇒ None
