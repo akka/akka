@@ -135,6 +135,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
                         receiver: ActorRef,
                         message: Any)(implicit executor: ExecutionContext): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
+    var expectedAtNanoTime = System.nanoTime + initialDelay.toNanos
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
         new TimerTask with ContinuousScheduling {
@@ -144,7 +145,12 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
                 receiver ! message
                 // Check if the receiver is still alive and kicking before reschedule the task
                 if (receiver.isTerminated) log.debug("Could not reschedule message to be sent because receiving actor {} has been terminated.", receiver)
-                else scheduleNext(timeout, delay, continuousCancellable)
+                else {
+                  val driftNanos = System.nanoTime - expectedAtNanoTime
+                  val adaptiveDelay = Duration.fromNanos((delay.toNanos - driftNanos) max 1)
+                  expectedAtNanoTime += delay.toNanos
+                  scheduleNext(timeout, adaptiveDelay, continuousCancellable)
+                }
               }
             }
           }
@@ -160,13 +166,17 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
                         delay: FiniteDuration,
                         runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
+    var expectedAtNanoTime = System.nanoTime + initialDelay.toNanos
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
         new TimerTask with ContinuousScheduling {
           override def run(timeout: HWTimeout): Unit = executor.execute(new Runnable {
             override def run = {
               runnable.run()
-              scheduleNext(timeout, delay, continuousCancellable)
+              val driftNanos = System.nanoTime - expectedAtNanoTime
+              val adaptiveDelay = Duration.fromNanos((delay.toNanos - driftNanos) max 1)
+              expectedAtNanoTime += delay.toNanos
+              scheduleNext(timeout, adaptiveDelay, continuousCancellable)
             }
           })
         },
