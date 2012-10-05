@@ -22,6 +22,8 @@ import akka.testkit.TestProbe
 object ReliableProxySpec extends MultiNodeConfig {
   val local = role("local")
   val remote = role("remote")
+
+  testTransport(on = true)
 }
 
 class ReliableProxyMultiJvmNode1 extends ReliableProxySpec
