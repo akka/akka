@@ -22,7 +22,12 @@ private[akka] case class DaemonMsgCreate(props: Props, deploy: Deploy, path: Str
  *
  * INTERNAL USE ONLY!
  */
-private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath, _parent: InternalActorRef, _log: LoggingAdapter)
+private[akka] class RemoteSystemDaemon(
+  system: ActorSystemImpl,
+  _path: ActorPath,
+  _parent: InternalActorRef,
+  _log: LoggingAdapter,
+  val untrustedMode: Boolean)
   extends VirtualPathContainer(system.provider, _path, _parent, _log) {
 
   import akka.actor.SystemGuardian._
@@ -62,6 +67,7 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
     case message: DaemonMsg ⇒
       log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address)
       message match {
+        case DaemonMsgCreate(_, _, path, _) if untrustedMode ⇒ log.debug("does not accept deployments (untrusted) for {}", path)
         case DaemonMsgCreate(props, deploy, path, supervisor) ⇒
           path match {
             case ActorPathExtractor(address, elems) if elems.nonEmpty && elems.head == "remote" ⇒
@@ -77,7 +83,7 @@ private[akka] class RemoteSystemDaemon(system: ActorSystemImpl, _path: ActorPath
               }
               if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, path.address)
             case _ ⇒
-              log.error("remote path does not match path from message [{}]", message)
+              log.debug("remote path does not match path from message [{}]", message)
           }
       }
 

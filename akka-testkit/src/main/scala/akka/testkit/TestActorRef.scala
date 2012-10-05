@@ -112,7 +112,7 @@ class TestActorRef[T <: Actor](
 
 object TestActorRef {
 
-  private case object InternalGetActor extends AutoReceivedMessage
+  private case object InternalGetActor extends AutoReceivedMessage with PossiblyHarmful
 
   private val number = new AtomicLong
   private[testkit] def randomName: String = {

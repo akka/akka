@@ -350,22 +350,43 @@ Akka provides a couple of ways to enhance security between remote nodes (client/
 Untrusted Mode
 --------------
 
-You can enable untrusted mode for preventing system messages to be send by clients, e.g. messages like.
-This will prevent the client to send these messages to the server:
-
-* ``Create``
-* ``Recreate``
-* ``Suspend``
-* ``Resume``
-* ``Terminate``
-* ``Supervise``
-* ``ChildTerminated``
-* ``Link``
-* ``Unlink``
-
-Here is how to turn it on in the config::
+As soon as an actor system can connect to another remotely, it may in principle
+send any possible message to any actor contained within that remote system. One
+example may be sending a :class:`PoisonPill` to the system guardian, shutting
+that system down. This is not always desired, and it can be disabled with the
+following setting::
 
     akka.remote.untrusted-mode = on
+
+This disallows sending of system messages (actor life-cycle commands,
+DeathWatch, etc.) and any message extending :class:`PossiblyHarmful` to the
+system on which this flag is set. Should a client send them nonetheless they
+are dropped and logged (at DEBUG level in order to reduce the possibilities for
+a denial of service attack). :class:`PossiblyHarmful` covers the predefined
+messages like :class:`PoisonPill` and :class:`Kill`, but it can also be added
+as a marker trait to user-defined messages.
+
+In summary, the following operations are ignored by a system configured in
+untrusted mode when incoming via the remoting layer:
+
+* remote deployment (which also means no remote supervision)
+* remote DeathWatch
+* ``system.stop()``, :class:`PoisonPill`, :class:`Kill`
+* sending any message which extends from the :class:`PossiblyHarmful` marker
+  interface, which includes :class:`Terminated`
+
+.. note::
+
+  Enabling the untrusted mode does not remove the capability of the client to
+  freely choose the target of its message sends, which means that messages not
+  prohibited by the above rules can be sent to any actor in the remote system.
+  It is good practice for a client-facing system to only contain a well-defined
+  set of entry point actors, which then forward requests (possibly after
+  performing validation) to another actor system containing the actual worker
+  actors. If messaging between these two server-side systems is done using
+  local :class:`ActorRef` (they can be exchanged safely between actor systems
+  within the same JVM), you can restrict the messages on this interface by
+  marking them :class:`PossiblyHarmful` so that a client cannot forge them.
 
 Secure Cookie Handshake
 -----------------------
