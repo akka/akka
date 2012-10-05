@@ -375,7 +375,7 @@ class LocalActorRefProvider(
     override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.map(Failure(_)).getOrElse(Success(()))) }
     override def isTerminated: Boolean = stopped.isOn
 
-    override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
+    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
       case Failed(ex, _) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
       case NullMessage                     ⇒ // do nothing
       case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
