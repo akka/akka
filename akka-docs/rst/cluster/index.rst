@@ -5,4 +5,5 @@ Cluster
    :maxdepth: 2
 
    cluster
-   cluster-usage
+   cluster-usage-java
+   cluster-usage-scala

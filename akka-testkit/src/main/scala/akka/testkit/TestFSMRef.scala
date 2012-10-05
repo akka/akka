@@ -31,7 +31,6 @@ import scala.concurrent.util.FiniteDuration
  * assert (fsm.underlyingActor.getLog == IndexedSeq(FSMLogEntry(1, null, "hallo")))
  * </code></pre>
  *
- * @author Roland Kuhn
  * @since 1.2
  */
 class TestFSMRef[S, D, T <: Actor](

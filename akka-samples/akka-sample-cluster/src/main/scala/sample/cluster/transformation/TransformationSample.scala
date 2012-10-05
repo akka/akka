@@ -42,6 +42,8 @@ object TransformationFrontend {
       (frontend ? TransformationJob("hello-" + n)) onSuccess {
         case result ⇒ println(result)
       }
+      // wait a while until next request, 
+      // to avoid flooding the console with output
       Thread.sleep(2000)
     }
     system.shutdown()
