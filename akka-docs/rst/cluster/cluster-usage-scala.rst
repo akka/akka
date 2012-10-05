@@ -1,9 +1,9 @@
 
-.. _cluster_usage:
+.. _cluster_usage_scala:
 
-###############
- Cluster Usage
-###############
+#######################
+ Cluster Usage (Scala)
+#######################
 
 .. note:: This module is :ref:`experimental <experimental>`. This document describes how to use the features implemented so far. More features are coming in Akka Coltrane. Track progress of the Coltrane milestone in `Assembla <http://www.assembla.com/spaces/akka/tickets>`_ and the `Roadmap <https://docs.google.com/document/d/18W9-fKs55wiFNjXL9q50PYOnR7-nnsImzJqHOPPbM4E/edit?hl=en_US>`_.
 
@@ -12,11 +12,9 @@ For introduction to the Akka Cluster concepts please see :ref:`cluster`.
 Preparing Your Project for Clustering
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project:
+The Akka cluster is a separate jar file. Make sure that you have the following dependency in your project::
 
-.. parsed-literal::
-
-  "com.typesafe.akka" %% "akka-cluster" % "@version@" @crossString@
+  "com.typesafe.akka" %% "akka-cluster-experimental" % "@version@" @crossString@
 
 If you are using the latest nightly build you should pick a timestamped Akka
 version from
@@ -115,7 +113,7 @@ You can disable automatic joining with configuration::
 
       akka.cluster.auto-join = off
 
-Then you need to join manually, using :ref:`cluster_jmx` or :ref:`cluster_command_line`.
+Then you need to join manually, using :ref:`cluster_jmx_scala` or :ref:`cluster_command_line_scala`.
 You can join to any node in the cluster. It doesn't have to be configured as
 seed node. If you are not using auto-join there is no need to configure
 seed nodes at all.
@@ -130,8 +128,8 @@ When a member is considered by the failure detector to be unreachable the
 leader is not allowed to perform its duties, such as changing status of
 new joining members to 'Up'. The status of the unreachable member must be
 changed to 'Down'. This can be performed automatically or manually. By
-default it must be done manually, using using :ref:`cluster_jmx` or
-:ref:`cluster_command_line`.
+default it must be done manually, using using :ref:`cluster_jmx_scala` or
+:ref:`cluster_command_line_scala`.
 
 It can also be performed programatically with ``Cluster(system).down(address)``.
 
@@ -143,7 +141,7 @@ Be aware of that using auto-down implies that two separate clusters will
 automatically be formed in case of network partition. That might be
 desired by some applications but not by others.
 
-.. _cluster_subscriber:
+.. _cluster_subscriber_scala:
 
 Subscribe to Cluster Events
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -230,12 +228,12 @@ is dynamically adjusted to reflect current network conditions.
 
 The value of *phi* is calculated as::
 
-  phi = -log10(1 - F(timeSinceLastHeartbeat)
+  phi = -log10(1 - F(timeSinceLastHeartbeat))
 
 where F is the cumulative distribution function of a normal distribution with mean
 and standard deviation estimated from historical heartbeat inter-arrival times.
 
-In the :ref:`cluster_configuration` you can adjust the ``akka.cluster.failure-detector.threshold``
+In the :ref:`cluster_configuration_scala` you can adjust the ``akka.cluster.failure-detector.threshold``
 to define when a *phi* value is considered to be a failure.
 
 A low ``threshold`` is prone to generate many false positives but ensures
@@ -261,7 +259,7 @@ a standard deviation of 100 ms.
 To be able to survive sudden abnormalities, such as garbage collection pauses and
 transient network failures the failure detector is configured with a margin,
 ``akka.cluster.failure-detector.acceptable-heartbeat-pause``. You may want to
-adjust the :ref:`cluster_configuration` of this depending on you environment.
+adjust the :ref:`cluster_configuration_scala` of this depending on you environment.
 This is how the curve looks like for ``acceptable-heartbeat-pause`` configured to
 3 seconds.
 
@@ -306,7 +304,7 @@ The same type of router could also have been defined in code:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/stats/StatsSample.scala#router-deploy-in-code
 
-See :ref:`cluster_configuration` section for further descriptions of the settings.
+See :ref:`cluster_configuration_scala` section for further descriptions of the settings.
 
 
 Router Example
@@ -354,6 +352,10 @@ fan out to local children if more parallelism is needed.
 This example is included in ``akka-samples/akka-sample-cluster``
 and you can try by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::
+
+  sbt
+
+  project akka-sample-cluster-experimental
 
   run-main sample.cluster.stats.StatsSample 2551
 
@@ -404,7 +406,7 @@ Set up your project according to the instructions in :ref:`multi-node-testing` a
 add the ``sbt-multi-jvm`` plugin and the dependency to ``akka-remote-tests-experimental``.
 
 First, as described in :ref:`multi-node-testing`, we need some scaffolding to configure the ``MultiNodeSpec``.
-Define the participating roles and their :ref:`cluster_configuration` in an object extending ``MultiNodeConfig``:
+Define the participating roles and their :ref:`cluster_configuration_scala` in an object extending ``MultiNodeConfig``:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala
    :include: MultiNodeConfig
@@ -434,7 +436,7 @@ From the test you interact with the cluster using the ``Cluster`` extension, e.g
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#join
 
-Notice how the `testActor` from :ref:`testkit <akka-testkit>` is added as :ref:`subscriber <cluster_subscriber>`
+Notice how the `testActor` from :ref:`testkit <akka-testkit>` is added as :ref:`subscriber <cluster_subscriber_scala>`
 to cluster changes and then waiting for certain events, such as in this case all members becoming 'Up'.
 
 The above code was running for all roles (JVMs). ``runOn`` is a convenient utility to declare that a certain block
@@ -451,7 +453,7 @@ the actor system for a specific role. This can also be used to grab the ``akka.a
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#addresses
 
 
-.. _cluster_jmx:
+.. _cluster_jmx_scala:
 
 JMX
 ^^^
@@ -469,7 +471,7 @@ From JMX you can:
 
 Member nodes are identified with their address, in format `akka://actor-system-name@hostname:port`.
 
-.. _cluster_command_line:
+.. _cluster_command_line_scala:
 
 Command Line Management
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -510,7 +512,7 @@ Example of system properties to enable remote monitoring and management::
   -Dcom.sun.management.jmxremote.authenticate=false \
   -Dcom.sun.management.jmxremote.ssl=false
 
-.. _cluster_configuration:
+.. _cluster_configuration_scala:
 
 Configuration
 ^^^^^^^^^^^^^

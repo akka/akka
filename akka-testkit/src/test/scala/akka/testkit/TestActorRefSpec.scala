@@ -17,10 +17,7 @@ import scala.concurrent.util.Duration
 
 /**
  * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.
- *
- * @author Roland Kuhn
  */
-
 object TestActorRefSpec {
 
   var counter = 4

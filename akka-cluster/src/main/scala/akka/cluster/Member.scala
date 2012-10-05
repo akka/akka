@@ -87,7 +87,7 @@ object Member {
  *
  * Can be one of: Joining, Up, Leaving, Exiting and Down.
  */
-sealed trait MemberStatus extends ClusterMessage {
+abstract class MemberStatus extends ClusterMessage {
 
   /**
    * Using the same notion for 'unavailable' as 'non-convergence': DOWN
@@ -102,4 +102,34 @@ object MemberStatus {
   case object Exiting extends MemberStatus
   case object Down extends MemberStatus
   case object Removed extends MemberStatus
+
+  /**
+   * JAVA API
+   */
+  def joining: MemberStatus = Joining
+
+  /**
+   * JAVA API
+   */
+  def up: MemberStatus = Up
+
+  /**
+   * JAVA API
+   */
+  def leaving: MemberStatus = Leaving
+
+  /**
+   * JAVA API
+   */
+  def exiting: MemberStatus = Exiting
+
+  /**
+   * JAVA API
+   */
+  def down: MemberStatus = Down
+
+  /**
+   * JAVA API
+   */
+  def removed: MemberStatus = Removed
 }

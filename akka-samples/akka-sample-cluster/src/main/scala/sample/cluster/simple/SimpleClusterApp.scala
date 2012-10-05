@@ -24,7 +24,7 @@ object SimpleClusterApp {
           log.info("Member is Up: {}", member)
         case MemberUnreachable(member) ⇒
           log.info("Member detected as unreachable: {}", member)
-        case _ ⇒ // ignore
+        case _: ClusterDomainEvent ⇒ // ignore
 
       }
     }), name = "clusterListener")
