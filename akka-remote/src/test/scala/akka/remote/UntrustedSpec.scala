@@ -75,7 +75,7 @@ akka.loglevel = DEBUG
           case x ⇒ testActor forward x
         }
       }))
-      within(1 second) {
+      within(1.second) {
         expectMsgType[Logging.Debug]
         expectNoMsg
       }
