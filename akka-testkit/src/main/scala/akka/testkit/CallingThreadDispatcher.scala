@@ -118,7 +118,6 @@ object CallingThreadDispatcher {
  * is then executed. It is possible to suspend an actor from within its call
  * stack.
  *
- * @author Roland Kuhn
  * @since 1.1
  */
 class CallingThreadDispatcher(

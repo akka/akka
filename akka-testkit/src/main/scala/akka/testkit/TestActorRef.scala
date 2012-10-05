@@ -16,7 +16,6 @@ import akka.pattern.ask
  * overrides the dispatcher to CallingThreadDispatcher and sets the receiveTimeout to None. Otherwise,
  * it acts just like a normal ActorRef. You may retrieve a reference to the underlying actor to test internal logic.
  *
- * @author Roland Kuhn
  * @since 1.1
  */
 class TestActorRef[T <: Actor](

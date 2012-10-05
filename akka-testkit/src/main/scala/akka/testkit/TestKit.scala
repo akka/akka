@@ -637,7 +637,6 @@ trait TestKitBase {
  * are scaled using their Duration.dilated method, which uses the
  * TestKitExtension.Settings.TestTimeFactor settable via akka.conf entry "akka.test.timefactor".
  *
- * @author Roland Kuhn
  * @since 1.1
  */
 class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase

@@ -33,8 +33,6 @@ import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
  *
  * Calculation of statistical data for each monitored process is delegated to the
  * [[akka.cluster.DataStream]] for exponential smoothing, with additional decay factor.
- *
- * @author Helena Edelson
  */
 private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Actor with ActorLogging {
 
@@ -162,7 +160,6 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
  * INTERNAL API
  *
  * @param nodes metrics per node
- * @author Helena Edelson
  */
 private[cluster] case class MetricsGossip(rateOfDecay: Int, nodes: Set[NodeMetrics] = Set.empty) {
 
@@ -243,8 +240,6 @@ private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: Metrics
  * @param timestamp the most recent time of sampling
  *
  * @param startTime the time of initial sampling for this data stream
- *
- * @author Helena Edelson
  */
 private[cluster] case class DataStream(decay: Int, ewma: ScalaNumber, startTime: Long, timestamp: Long)
   extends ClusterMessage with MetricNumericConverter {
@@ -278,8 +273,6 @@ private[cluster] case class DataStream(decay: Int, ewma: ScalaNumber, startTime:
  * INTERNAL API
  *
  * Companion object of DataStream class.
- *
- * @author Helena Edelson
  */
 private[cluster] object DataStream {
 
@@ -297,8 +290,6 @@ private[cluster] object DataStream {
  *
  * @param average the data stream of the metric value, for trending over time. Metrics that are already
  *                averages (e.g. system load average) or finite (e.g. as total cores), are not trended.
- *
- * @author Helena Edelson
  */
 private[cluster] case class Metric(name: String, value: Option[ScalaNumber], average: Option[DataStream])
   extends ClusterMessage with MetricNumericConverter {
@@ -351,8 +342,6 @@ private[cluster] case class Metric(name: String, value: Option[ScalaNumber], ave
  * INTERNAL API
  *
  * Companion object of Metric class.
- *
- * @author Helena Edelson
  */
 private[cluster] object Metric extends MetricNumericConverter {
 
@@ -390,8 +379,6 @@ private[cluster] object Metric extends MetricNumericConverter {
  * @param timestamp the time of sampling
  *
  * @param metrics the array of sampled [[akka.actor.Metric]]
- *
- * @author Helena Edelson
  */
 private[cluster] case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] = Set.empty[Metric]) extends ClusterMessage {
 
@@ -417,8 +404,6 @@ private[cluster] case class NodeMetrics(address: Address, timestamp: Long, metri
  *
  * Encapsulates evaluation of validity of metric values, conversion of an actual metric value to
  * a [[akka.cluster.Metric]] for consumption by subscribed cluster entities.
- *
- * @author Helena Edelson
  */
 private[cluster] trait MetricNumericConverter {
 
@@ -453,8 +438,6 @@ private[cluster] trait MetricNumericConverter {
  * @param sigar the optional org.hyperic.Sigar instance
  *
  * @param address The [[akka.actor.Address]] of the node being sampled
- *
- * @author Helena Edelson
  */
 private[cluster] class MetricsCollector private (private val sigar: Option[AnyRef], address: Address) extends MetricNumericConverter {
 
@@ -567,10 +550,7 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
 
 /**
  * INTERNAL API
- *
  * Companion object of MetricsCollector class.
- *
- * @author Helena Edelson
  */
 private[cluster] object MetricsCollector {
   def apply(address: Address, log: LoggingAdapter, dynamicAccess: DynamicAccess): MetricsCollector =
