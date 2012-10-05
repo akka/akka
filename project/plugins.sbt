@@ -6,7 +6,7 @@ resolvers += Classpaths.typesafeResolver
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.3")
 //#sbt-multi-jvm
 
-addSbtPlugin("com.typesafe.sbtscalariform" % "sbtscalariform" % "0.4.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.0.0")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.0-M1")
 
