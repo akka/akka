@@ -135,10 +135,9 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
                         receiver: ActorRef,
                         message: Any)(implicit executor: ExecutionContext): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
-    val expectedAtNanoTime = new AtomicLong(System.nanoTime + initialDelay.toNanos)
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
-        new TimerTask with ContinuousScheduling {
+        new AtomicLong(System.nanoTime + initialDelay.toNanos) with TimerTask with ContinuousScheduling {
           def run(timeout: HWTimeout) {
             executor execute new Runnable {
               override def run = {
@@ -146,9 +145,8 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
                 // Check if the receiver is still alive and kicking before reschedule the task
                 if (receiver.isTerminated) log.debug("Could not reschedule message to be sent because receiving actor {} has been terminated.", receiver)
                 else {
-                  val driftNanos = System.nanoTime - expectedAtNanoTime.getAndAdd(delay.toNanos)
-                  val adaptiveDelay = Duration.fromNanos((delay.toNanos - driftNanos) max 1)
-                  scheduleNext(timeout, adaptiveDelay, continuousCancellable)
+                  val driftNanos = System.nanoTime - getAndAdd(delay.toNanos)
+                  scheduleNext(timeout, Duration.fromNanos((delay.toNanos - driftNanos) max 1), continuousCancellable)
                 }
               }
             }
@@ -165,16 +163,14 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
                         delay: FiniteDuration,
                         runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
-    val expectedAtNanoTime = new AtomicLong(System.nanoTime + initialDelay.toNanos)
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
-        new TimerTask with ContinuousScheduling {
+        new AtomicLong(System.nanoTime + initialDelay.toNanos) with TimerTask with ContinuousScheduling {
           override def run(timeout: HWTimeout): Unit = executor.execute(new Runnable {
             override def run = {
               runnable.run()
-              val driftNanos = System.nanoTime - expectedAtNanoTime.getAndAdd(delay.toNanos)
-              val adaptiveDelay = Duration.fromNanos((delay.toNanos - driftNanos) max 1)
-              scheduleNext(timeout, adaptiveDelay, continuousCancellable)
+              val driftNanos = System.nanoTime - getAndAdd(delay.toNanos)
+              scheduleNext(timeout, Duration.fromNanos((delay.toNanos - driftNanos) max 1), continuousCancellable)
             }
           })
         },
