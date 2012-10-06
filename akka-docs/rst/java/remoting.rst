@@ -60,6 +60,13 @@ reference file for more information:
 .. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
    :language: none
 
+.. note::
+
+   Setting properties like the listening IP and port number programmatically is
+   best done by using something like the following:
+
+   .. includecode:: code/docs/remoting/RemoteDeploymentDocTestBase.java#programmatic
+
 Looking up Remote Actors
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
