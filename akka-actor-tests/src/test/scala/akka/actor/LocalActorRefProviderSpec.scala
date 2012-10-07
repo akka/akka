@@ -39,6 +39,21 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       a must be === b
     }
 
+    "find child actor with URL encoded name using actorFor" in {
+      val childName = "akka%3A%2F%2FClusterSystem%40127.0.0.1%3A2552"
+      val a = system.actorOf(Props(new Actor {
+        val child = context.actorOf(Props.empty, name = childName)
+        assert(childName == child.path.name)
+        def receive = {
+          case "lookup" ⇒ sender ! context.actorFor(childName)
+        }
+      }))
+      a.tell("lookup", testActor)
+      val b = expectMsgType[ActorRef]
+      b.isTerminated must be(false)
+      b.path.name must be(childName)
+    }
+
   }
 
   "An ActorRefFactory" must {
