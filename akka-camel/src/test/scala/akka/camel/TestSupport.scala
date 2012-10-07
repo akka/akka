@@ -75,10 +75,10 @@ private[camel] object TestSupport {
 
   }
   def time[A](block: ⇒ A): FiniteDuration = {
-    val start = System.currentTimeMillis()
+    val start = System.nanoTime()
     block
-    val duration = System.currentTimeMillis() - start
-    duration millis
+    val duration = System.nanoTime() - start
+    duration nanos
   }
 
   def anInstanceOf[T](implicit tag: ClassTag[T]) = {
