@@ -21,6 +21,8 @@ case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: B
   val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+
+  testTransport(on = true)
 }
 
 class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = true)
