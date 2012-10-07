@@ -146,7 +146,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
                 if (receiver.isTerminated) log.debug("Could not reschedule message to be sent because receiving actor {} has been terminated.", receiver)
                 else {
                   val driftNanos = System.nanoTime - getAndAdd(delay.toNanos)
-                  scheduleNext(timeout, Duration.fromNanos((delay.toNanos - driftNanos) max 1), continuousCancellable)
+                  scheduleNext(timeout, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1)), continuousCancellable)
                 }
               }
             }
@@ -170,7 +170,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
             override def run = {
               runnable.run()
               val driftNanos = System.nanoTime - getAndAdd(delay.toNanos)
-              scheduleNext(timeout, Duration.fromNanos((delay.toNanos - driftNanos) max 1), continuousCancellable)
+              scheduleNext(timeout, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1)), continuousCancellable)
             }
           })
         },
