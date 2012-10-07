@@ -19,6 +19,7 @@ import scala.concurrent.util.Duration
 import scala.concurrent.util.duration._
 import java.util.concurrent.TimeoutException
 import akka.remote.testconductor.RoleName
+import akka.remote.testconductor.TestConductorTransport
 import akka.actor.RootActorPath
 import akka.event.{ Logging, LoggingAdapter }
 
@@ -32,6 +33,7 @@ abstract class MultiNodeConfig {
   private var _roles = Vector[RoleName]()
   private var _deployments = Map[RoleName, Seq[String]]()
   private var _allDeploy = Vector[String]()
+  private var _testTransport = false
 
   /**
    * Register a common base config for all test participants, if so desired.
@@ -81,13 +83,24 @@ abstract class MultiNodeConfig {
 
   def deployOnAll(deployment: String): Unit = _allDeploy :+= deployment
 
+  /**
+   * To be able to use `blackhole`, `passThrough`, and `throttle` you must
+   * activate the TestConductorTranport by specifying
+   * `testTransport(on = true)` in your MultiNodeConfig.
+   */
+  def testTransport(on: Boolean): Unit = _testTransport = on
+
   private[testkit] lazy val myself: RoleName = {
     require(_roles.size > MultiNodeSpec.selfIndex, "not enough roles declared for this test")
     _roles(MultiNodeSpec.selfIndex)
   }
 
   private[testkit] def config: Config = {
-    val configs = (_nodeConf get myself).toList ::: _commonConf.toList ::: MultiNodeSpec.nodeConfig :: MultiNodeSpec.baseConfig :: Nil
+    val transportConfig =
+      if (_testTransport) ConfigFactory.parseString("akka.remote.transport=" + classOf[TestConductorTransport].getName)
+      else ConfigFactory.empty
+
+    val configs = (_nodeConf get myself).toList ::: _commonConf.toList ::: transportConfig :: MultiNodeSpec.nodeConfig :: MultiNodeSpec.baseConfig :: Nil
     configs reduce (_ withFallback _)
   }
 
@@ -175,7 +188,6 @@ object MultiNodeSpec {
 
   private[testkit] val nodeConfig = mapToConfig(Map(
     "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
-    "akka.remote.transport" -> "akka.remote.testconductor.TestConductorTransport",
     "akka.remote.netty.hostname" -> selfName,
     "akka.remote.netty.port" -> selfPort))
 

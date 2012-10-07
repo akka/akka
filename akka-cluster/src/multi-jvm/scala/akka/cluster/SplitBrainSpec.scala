@@ -27,6 +27,8 @@ case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends Mul
           failure-detector.threshold = 4
         }""")).
     withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
+
+  testTransport(on = true)
 }
 
 class SplitBrainWithFailureDetectorPuppetMultiJvmNode1 extends SplitBrainSpec(failureDetectorPuppet = true)
