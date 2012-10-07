@@ -103,9 +103,6 @@ trait Conductor { this: TestConductorExt ⇒
   }
 
   /**
-   * To use this feature you must activate the TestConductorTranport by
-   * specifying `testTransport(on = true)` in your MultiNodeConfig.
-   *
    * Make the remoting pipeline on the node throttle data sent to or received
    * from the given remote peer. Throttling works by delaying packet submission
    * within the netty pipeline until the packet would have been completely sent
@@ -117,6 +114,10 @@ trait Conductor { this: TestConductorExt ⇒
    * on average), but that is countered by using the actual execution time for
    * determining how much to send, leading to the correct output rate, but with
    * increased latency.
+   *
+   * ====Note====
+   * To use this feature you must activate the `TestConductorTranport`
+   * by specifying `testTransport(on = true)` in your MultiNodeConfig.
    *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be throttled
@@ -130,13 +131,14 @@ trait Conductor { this: TestConductorExt ⇒
   }
 
   /**
-   * To use this feature you must activate the TestConductorTranport by
-   * specifying `testTransport(on = true)` in your MultiNodeConfig.
-   *
    * Switch the Netty pipeline of the remote support into blackhole mode for
    * sending and/or receiving: it will just drop all messages right before
    * submitting them to the Socket or right after receiving them from the
    * Socket.
+   *
+   * ====Note====
+   * To use this feature you must activate the `TestConductorTranport`
+   * by specifying `testTransport(on = true)` in your MultiNodeConfig.
    *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
@@ -154,11 +156,12 @@ trait Conductor { this: TestConductorExt ⇒
         "specifying `testTransport(on = true)` in your MultiNodeConfig.")
 
   /**
-   * To use this feature you must activate the TestConductorTranport by
-   * specifying `testTransport(on = true)` in your MultiNodeConfig.
-   *
    * Switch the Netty pipeline of the remote support into pass through mode for
    * sending and/or receiving.
+   *
+   * ====Note====
+   * To use this feature you must activate the `TestConductorTranport`
+   * by specifying `testTransport(on = true)` in your MultiNodeConfig.
    *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
