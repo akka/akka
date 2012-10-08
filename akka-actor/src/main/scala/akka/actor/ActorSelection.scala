@@ -70,5 +70,5 @@ object ActorSelection {
 trait ScalaActorSelection {
   this: ActorSelection ⇒
 
-  def !(msg: Any)(implicit sender: ActorRef = null) = tell(msg, sender)
+  def !(msg: Any)(implicit sender: ActorRef = Actor.noSender) = tell(msg, sender)
 }

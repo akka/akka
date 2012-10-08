@@ -63,7 +63,7 @@ private[akka] class RemoteSystemDaemon(
     }
   }
 
-  override def !(msg: Any)(implicit sender: ActorRef = null): Unit = msg match {
+  override def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = msg match {
     case message: DaemonMsg ⇒
       log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address)
       message match {

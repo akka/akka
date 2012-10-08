@@ -153,7 +153,7 @@ trait ScalaActorRef { ref: ActorRef ⇒
    * </pre>
    * <p/>
    */
-  def !(message: Any)(implicit sender: ActorRef = null): Unit
+  def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit
 
 }
 
@@ -341,7 +341,7 @@ private[akka] class LocalActorRef private[akka] (
 
   override def sendSystemMessage(message: SystemMessage): Unit = actorCell.sendSystemMessage(message)
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = actorCell.tell(message, sender)
 
   override def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
@@ -395,7 +395,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override def stop(): Unit = ()
   override def isTerminated = false
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = ()
 
   override def sendSystemMessage(message: SystemMessage): Unit = ()
   override def restart(cause: Throwable): Unit = ()
@@ -435,7 +435,7 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
 
   override def sendSystemMessage(message: SystemMessage): Unit = specialHandle(message)
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
     case d: DeadLetter ⇒ specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
     case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
   }

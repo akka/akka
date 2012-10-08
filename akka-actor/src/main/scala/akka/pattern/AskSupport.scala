@@ -247,7 +247,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
     case Registering ⇒ path // spin until registration is completed
   }
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = state match {
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = state match {
     case Stopped | _: StoppedWithPath ⇒ provider.deadLetters ! message
     case _ ⇒ if (!(result.tryComplete(
       message match {
