@@ -348,6 +348,13 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     nodes.find(_._1 == myself).map(i ⇒ yes(i._2)).getOrElse(no)
 
   /**
+   * Execute the `yes` block of code only on the given nodes (names according
+   * to the `roleMap`) else execute the `no` block of code.
+   */
+  def ifNodeOrElse[T, I](nodes: (RoleName, I)*)(yes: I ⇒ T)(default: ⇒ I): T =
+    nodes.find(_._1 == myself).map(i ⇒ yes(i._2)).getOrElse(yes(default))
+
+  /**
    * Enter the named barriers in the order given. Use the remaining duration from
    * the innermost enclosing `within` block or the default `BarrierTimeout`
    */
