@@ -214,5 +214,30 @@ class SchedulerSpec extends AkkaSpec with BeforeAndAfterEach with DefaultTimeout
       assert(elapsedTimeMs < 2000) // the precision is not ms exact
       cancellable.cancel()
     }
+
+    "adjust for scheduler inaccuracy" taggedAs TimingTest in {
+      val startTime = System.nanoTime
+      val n = 33
+      val latch = new TestLatch(n)
+      system.scheduler.schedule(150.millis, 150.millis) {
+        latch.countDown()
+      }
+      Await.ready(latch, 6.seconds)
+      val rate = n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis
+      rate must be(6.66 plusOrMinus (0.4))
+    }
+
+    "not be affected by long running task" taggedAs TimingTest in {
+      val startTime = System.nanoTime
+      val n = 22
+      val latch = new TestLatch(n)
+      system.scheduler.schedule(225.millis, 225.millis) {
+        Thread.sleep(80)
+        latch.countDown()
+      }
+      Await.ready(latch, 6.seconds)
+      val rate = n * 1000.0 / (System.nanoTime - startTime).nanos.toMillis
+      rate must be(4.4 plusOrMinus (0.3))
+    }
   }
 }
