@@ -8,26 +8,23 @@ import akka.actor.*;
 import akka.testkit.*;
 import akka.testkit.TestEvent.Mute;
 import akka.testkit.TestEvent.UnMute;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import scala.concurrent.util.Duration;
 import scala.concurrent.util.FiniteDuration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-public class SchedulerPatternTestBase {
+public class SchedulerPatternTest {
 
-  ActorSystem system;
+  static ActorSystem system;
 
-  @Before
-  public void setUp() {
+  @BeforeClass
+  public static void setUp() {
     system = ActorSystem.create("SchedulerPatternTest", AkkaSpec.testConf());
   }
 
-  @After
-  public void tearDown() {
+  @AfterClass
+  public static void tearDown() {
     system.shutdown();
   }
 
@@ -38,9 +35,10 @@ public class SchedulerPatternTestBase {
     private final Cancellable tick = getContext().system().scheduler().schedule(
       Duration.create(500, TimeUnit.MILLISECONDS),
       Duration.create(1000, TimeUnit.MILLISECONDS),
-      getSelf(), "tick", getContext().system().dispatcher());
+      getSelf(), "tick", getContext().dispatcher());
     //#schedule-constructor
-    ActorRef target;
+    // this variable and constructor is declared here to not show up in the docs
+    final ActorRef target;
     public ScheduleInConstructor(ActorRef target) {
       this.target = target;
     }
@@ -75,7 +73,8 @@ public class SchedulerPatternTestBase {
   //#schedule-receive
   public class ScheduleInReceive extends UntypedActor {
     //#schedule-receive
-    ActorRef target;
+    // this variable and constructor is declared here to not show up in the docs
+    final ActorRef target;
     public ScheduleInReceive(ActorRef target) {
       this.target = target;
     }
@@ -85,7 +84,7 @@ public class SchedulerPatternTestBase {
     public void preStart() {
       getContext().system().scheduler().scheduleOnce(
         Duration.create(500, TimeUnit.MILLISECONDS),
-        getSelf(), "tick", getContext().system().dispatcher());
+        getSelf(), "tick", getContext().dispatcher());
     }
 
     // override postRestart so we don't call preStart and schedule a new message
@@ -99,7 +98,7 @@ public class SchedulerPatternTestBase {
         // send another periodic tick after the specified delay
         getContext().system().scheduler().scheduleOnce(
           Duration.create(1000, TimeUnit.MILLISECONDS),
-          getSelf(), "tick", getContext().system().dispatcher());
+          getSelf(), "tick", getContext().dispatcher());
         // do something useful here
         //#schedule-receive
         target.tell(message, getSelf());
@@ -164,26 +163,29 @@ public class SchedulerPatternTestBase {
       Iterable<akka.testkit.EventFilter> filter =
         Arrays.asList(new akka.testkit.EventFilter[]{
           (akka.testkit.EventFilter) new ErrorFilter(ArithmeticException.class)});
-      system.eventStream().publish(new Mute(filter));
+      try {
+        system.eventStream().publish(new Mute(filter));
 
-      final ActorRef actor = system.actorOf(props);
-      new Within(startDuration) {
-        protected void run() {
-          probe.expectMsgEquals("tick");
-          probe.expectMsgEquals("tick");
-          probe.expectMsgEquals("tick");
-        }
-      };
-      actor.tell("restart", getRef());
-      new Within(afterRestartDuration) {
-        protected void run() {
-          probe.expectMsgEquals("tick");
-          probe.expectMsgEquals("tick");
-        }
-      };
-      system.stop(actor);
-
-      system.eventStream().publish(new UnMute(filter));
+        final ActorRef actor = system.actorOf(props);
+        new Within(startDuration) {
+          protected void run() {
+            probe.expectMsgEquals("tick");
+            probe.expectMsgEquals("tick");
+            probe.expectMsgEquals("tick");
+          }
+        };
+        actor.tell("restart", getRef());
+        new Within(afterRestartDuration) {
+          protected void run() {
+            probe.expectMsgEquals("tick");
+            probe.expectMsgEquals("tick");
+          }
+        };
+        system.stop(actor);
+      }
+      finally {
+        system.eventStream().publish(new UnMute(filter));
+      }
     }
   }
 }

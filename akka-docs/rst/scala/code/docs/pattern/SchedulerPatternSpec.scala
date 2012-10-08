@@ -15,10 +15,10 @@ import docs.pattern.SchedulerPatternSpec.ScheduleInConstructor
 object SchedulerPatternSpec {
   //#schedule-constructor
   class ScheduleInConstructor extends Actor {
-    import context._
-
-    val tick = system.scheduler.schedule(500 millis, 1000 millis, self, "tick")
+    val tick =
+      context.system.scheduler.schedule(500 millis, 1000 millis, self, "tick")
     //#schedule-constructor
+    // this var and constructor is declared here to not show up in the docs
     var target: ActorRef = null
     def this(target: ActorRef) = { this(); this.target = target }
     //#schedule-constructor
@@ -41,6 +41,7 @@ object SchedulerPatternSpec {
   class ScheduleInReceive extends Actor {
     import context._
     //#schedule-receive
+    // this var and constructor is declared here to not show up in the docs
     var target: ActorRef = null
     def this(target: ActorRef) = { this(); this.target = target }
     //#schedule-receive

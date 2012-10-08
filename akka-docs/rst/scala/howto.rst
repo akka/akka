@@ -123,7 +123,10 @@ message sends to the same actor.
 
 .. note::
 
-   With this approach the scheduler will be restarted with the actor on restarts.
+   With this approach the scheduled periodic message send will be restarted with the actor on restarts.
+   This also means that the time period that elapses between two tick messages during a restart may drift
+   off based on when you restart the scheduled message sends relative to the time that the last message was
+   sent, and how long the initial delay is. Worst case scenario is ``interval`` plus ``initialDelay``.
 
 .. includecode:: code/docs/pattern/SchedulerPatternSpec.scala#schedule-constructor
 
