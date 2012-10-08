@@ -351,7 +351,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * Execute the `yes` block of code only on the given nodes (names according
    * to the `roleMap`) else execute the `no` block of code.
    */
-  def ifNodeOrElse[T, I](nodes: (RoleName, I)*)(yes: I ⇒ T)(default: ⇒ I): T =
+  def ifNodeOrElse[T, I](nodes: (RoleName, I)*)(default: ⇒ I)(yes: I ⇒ T): T =
     nodes.find(_._1 == myself).map(i ⇒ yes(i._2)).getOrElse(yes(default))
 
   /**
