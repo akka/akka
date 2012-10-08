@@ -51,7 +51,7 @@ object AkkaBuild extends Build {
            |import scala.concurrent.util.duration._
            |import akka.util.Timeout
            |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG")
-           |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=RemoteActorRefProvider").withFallback(config)
+           |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=akka.remote.RemoteActorRefProvider").withFallback(config)
            |var system: ActorSystem = null
            |implicit def _system = system
            |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.shutdown()!") }
@@ -436,10 +436,7 @@ object AkkaBuild extends Build {
 
   val excludeTestNames = SettingKey[Seq[String]]("exclude-test-names")
   val excludeTestTags = SettingKey[Set[String]]("exclude-test-tags")
-  val includeTestTags = SettingKey[Set[String]]("include-test-tags")
   val onlyTestTags = SettingKey[Set[String]]("only-test-tags")
-
-  val defaultExcludedTags = Set("timing", "long-running")
 
   lazy val defaultMultiJvmOptions: Seq[String] = {
     import scala.collection.JavaConverters._
@@ -457,14 +454,7 @@ object AkkaBuild extends Build {
   // for excluding tests by tag use system property: -Dakka.test.tags.exclude=<tag name>
   // note that it will not be used if you specify -Dakka.test.tags.only
   lazy val useExcludeTestTags: Set[String] = {
-    if (useOnlyTestTags.isEmpty) defaultExcludedTags ++ systemPropertyAsSeq("akka.test.tags.exclude").toSet
-    else Set.empty
-  }
-
-  // for including tests by tag use system property: -Dakka.test.tags.include=<tag name>
-  // note that it will not be used if you specify -Dakka.test.tags.only
-  lazy val useIncludeTestTags: Set[String] = {
-    if (useOnlyTestTags.isEmpty) systemPropertyAsSeq("akka.test.tags.include").toSet
+    if (useOnlyTestTags.isEmpty) systemPropertyAsSeq("akka.test.tags.exclude").toSet
     else Set.empty
   }
 
@@ -472,8 +462,7 @@ object AkkaBuild extends Build {
   lazy val useOnlyTestTags: Set[String] = systemPropertyAsSeq("akka.test.tags.only").toSet
 
   def executeMultiJvmTests: Boolean = {
-    useOnlyTestTags.contains("long-running") ||
-    !(useExcludeTestTags -- useIncludeTestTags).contains("long-running")
+    useOnlyTestTags.contains("long-running") || !useExcludeTestTags.contains("long-running")
   }
 
   def systemPropertyAsSeq(name: String): Seq[String] = {
@@ -484,7 +473,7 @@ object AkkaBuild extends Build {
   val multiNodeEnabled = java.lang.Boolean.getBoolean("akka.test.multi-node")
 
   lazy val defaultMultiJvmScalatestOptions: Seq[String] = {
-    val excludeTags = (useExcludeTestTags -- useIncludeTestTags).toSeq
+    val excludeTags = useExcludeTestTags.toSeq
     Seq("-C", "org.scalatest.akka.QuietReporter") ++
     (if (excludeTags.isEmpty) Seq.empty else Seq("-l", if (multiNodeEnabled) excludeTags.mkString("\"", " ", "\"") else excludeTags.mkString(" "))) ++
     (if (useOnlyTestTags.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) useOnlyTestTags.mkString("\"", " ", "\"") else useOnlyTestTags.mkString(" ")))
@@ -515,15 +504,13 @@ object AkkaBuild extends Build {
 
     excludeTestNames := useExcludeTestNames,
     excludeTestTags := useExcludeTestTags,
-    includeTestTags := useIncludeTestTags,
     onlyTestTags := useOnlyTestTags,
 
     // add filters for tests excluded by name
     testOptions in Test <++= excludeTestNames map { _.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
 
-    // add arguments for tests excluded by tag - includes override excludes (opposite to scalatest)
-    testOptions in Test <++= (excludeTestTags, includeTestTags) map { (excludes, includes) =>
-      val tags = (excludes -- includes)
+    // add arguments for tests excluded by tag
+    testOptions in Test <++= excludeTestTags map { tags =>
       if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
     },
 
