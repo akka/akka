@@ -4,7 +4,7 @@ Greetings traveller!
 
 ##Infrastructure##
 
-* [Akka Contributor License Agreement](www.typesafe.com/contribute/cla)
+* [Akka Contributor License Agreement](http://www.typesafe.com/contribute/cla)
 * [Akka Issue Tracker](http://doc.akka.io/docs/akka/current/project/issue-tracking.html)
 * [Scalariform](https://github.com/mdr/scalariform)
 
