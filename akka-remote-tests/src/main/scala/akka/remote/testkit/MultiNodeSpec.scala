@@ -43,7 +43,11 @@ abstract class MultiNodeConfig {
   /**
    * Register a config override for a specific participant.
    */
-  def nodeConfig(role: RoleName, config: Config): Unit = _nodeConf += role -> config
+  def nodeConfig(role: RoleName*)(config: Config*): Unit =
+    for (
+      c ← Option(config.reduceLeft(_ withFallback _));
+      r ← role
+    ) _nodeConf += r -> c
 
   /**
    * Include for verbose debug logging
@@ -318,19 +322,20 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * Execute the given block of code only on the given nodes (names according
    * to the `roleMap`).
    */
-  def runOn(nodes: RoleName*)(thunk: ⇒ Unit): Unit = {
+  def runOn(nodes: RoleName*)(thunk: ⇒ Unit): Unit =
     if (nodes exists (_ == myself)) {
       thunk
     }
-  }
 
   /**
-   * Execute the `yes` block of code only on the given nodes (names according
-   * to the `roleMap`) else execute the `no` block of code.
+   * Execute the given block of code only on the given nodes (names according
+   * to the `roleMap`).
    */
-  def ifNode[T](nodes: RoleName*)(yes: ⇒ T)(no: ⇒ T): T = {
-    if (nodes exists (_ == myself)) yes else no
-  }
+  def runOn[I](nodes: (RoleName, I)*)(thunk: I ⇒ Unit): Unit =
+    nodes foreach {
+      case (`myself`, t) ⇒ thunk(t)
+      case _             ⇒
+    }
 
   /**
    * Enter the named barriers in the order given. Use the remaining duration from
@@ -349,6 +354,11 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * }}}
    */
   def node(role: RoleName): ActorPath = RootActorPath(testConductor.getAddressFor(role).await)
+
+  /**
+   * verify that the running node matches one of the given nodes
+   */
+  def isNode(nodes: RoleName*): Boolean = nodes exists (_ == myself)
 
   /**
    * Enrich `.await()` onto all Awaitables, using remaining duration from the innermost
