@@ -67,7 +67,7 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
 
         awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Seq(secondAddress), 30.seconds)
         clusterView.isSingletonCluster must be(true)
-        assertLeader(first)
+        awaitCond(clusterView.isLeader)
       }
 
       enterBarrier("after-3")
