@@ -196,35 +196,26 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
   import context.dispatcher
 
   // start periodic gossip to random nodes in cluster
-  val gossipTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(GossipInterval).asInstanceOf[FiniteDuration], GossipInterval) {
-      self ! GossipTick
-    }
+  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay.max(GossipInterval).asInstanceOf[FiniteDuration],
+    GossipInterval, self, GossipTick)
 
   // start periodic heartbeat to all nodes in cluster
-  val heartbeatTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(HeartbeatInterval).asInstanceOf[FiniteDuration], HeartbeatInterval) {
-      self ! HeartbeatTick
-    }
+  val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay.max(HeartbeatInterval).asInstanceOf[FiniteDuration],
+    HeartbeatInterval, self, HeartbeatTick)
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  val failureDetectorReaperTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval).asInstanceOf[FiniteDuration], UnreachableNodesReaperInterval) {
-      self ! ReapUnreachableTick
-    }
+  val failureDetectorReaperTask = scheduler.schedule(PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval).asInstanceOf[FiniteDuration],
+    UnreachableNodesReaperInterval, self, ReapUnreachableTick)
 
   // start periodic leader action management (only applies for the current leader)
-  private val leaderActionsTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(LeaderActionsInterval).asInstanceOf[FiniteDuration], LeaderActionsInterval) {
-      self ! LeaderActionsTick
-    }
+  val leaderActionsTask = scheduler.schedule(PeriodicTasksInitialDelay.max(LeaderActionsInterval).asInstanceOf[FiniteDuration],
+    LeaderActionsInterval, self, LeaderActionsTick)
 
   // start periodic publish of current stats
-  private val publishStatsTask: Option[Cancellable] =
+  val publishStatsTask: Option[Cancellable] =
     if (PublishStatsInterval == Duration.Zero) None
-    else Some(FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval).asInstanceOf[FiniteDuration], PublishStatsInterval) {
-      self ! PublishStatsTick
-    })
+    else Some(scheduler.schedule(PeriodicTasksInitialDelay.max(PublishStatsInterval).asInstanceOf[FiniteDuration],
+      PublishStatsInterval, self, PublishStatsTick))
 
   override def preStart(): Unit = {
     if (AutoJoin) self ! JoinSeedNodes(SeedNodes)
