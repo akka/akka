@@ -43,8 +43,9 @@ abstract class MultiNodeConfig {
   /**
    * Register a config override for a specific participant.
    */
-  def nodeConfig(role: RoleName, config: Config): Unit = _nodeConf += role -> config
-
+  def nodeConfig(role: RoleName*)(config: Config*): Unit = role.foreach { r ⇒
+    _nodeConf += r -> config.reduceLeft((s, a) ⇒ s.withFallback(a))
+  }
   /**
    * Include for verbose debug logging
    * @param on when `true` debug Config is returned, otherwise config with info logging
@@ -325,12 +326,33 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   }
 
   /**
+   * Execute the given block of code only on the given nodes (names according
+   * to the `roleMap`).
+   */
+  def runOn[I](nodes: (RoleName, I)*)(thunk: I ⇒ Unit): Unit =
+    nodes filter (_._1 == myself) foreach { case (_, t) ⇒ thunk(t) }
+
+  /**
    * Execute the `yes` block of code only on the given nodes (names according
    * to the `roleMap`) else execute the `no` block of code.
    */
   def ifNode[T](nodes: RoleName*)(yes: ⇒ T)(no: ⇒ T): T = {
     if (nodes exists (_ == myself)) yes else no
   }
+
+  /**
+   * Execute the `yes` block of code only on the given nodes (names according
+   * to the `roleMap`) else execute the `no` block of code.
+   */
+  def ifNode[T, I](nodes: (RoleName, I)*)(yes: I ⇒ T)(no: ⇒ T): T =
+    nodes.find(_._1 == myself).map(i ⇒ yes(i._2)).getOrElse(no)
+
+  /**
+   * Execute the `yes` block of code only on the given nodes (names according
+   * to the `roleMap`) else execute the `no` block of code.
+   */
+  def ifNodeOrElse[T, I](nodes: (RoleName, I)*)(default: ⇒ I)(yes: I ⇒ T): T =
+    nodes.find(_._1 == myself).map(i ⇒ yes(i._2)).getOrElse(yes(default))
 
   /**
    * Enter the named barriers in the order given. Use the remaining duration from
