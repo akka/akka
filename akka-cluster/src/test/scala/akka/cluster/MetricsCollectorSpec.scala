@@ -119,7 +119,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
 
     "collect [" + samples + "] node metrics samples in an acceptable duration" taggedAs LongRunningTest in {
       val latch = TestLatch(samples)
-      val task = FixedRateTask(system.scheduler, 0 seconds, interval) {
+      val task = system.scheduler.schedule(0 seconds, interval) {
         val sample = collector.sample
         assertCreatedUninitialized(sample.metrics)
         assertExpectedSampleSize(collector.isSigar, window, sample)
