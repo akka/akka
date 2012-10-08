@@ -112,7 +112,7 @@ private[akka] class RepointableActorRef(
       }
     } else this
 
-  def !(message: Any)(implicit sender: ActorRef = null) = underlying.tell(message, sender)
+  def !(message: Any)(implicit sender: ActorRef = Actor.noSender) = underlying.tell(message, sender)
 
   def sendSystemMessage(message: SystemMessage) = underlying.sendSystemMessage(message)
 

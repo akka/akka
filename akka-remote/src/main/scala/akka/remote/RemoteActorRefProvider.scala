@@ -235,7 +235,7 @@ private[akka] class RemoteActorRef private[akka] (
         provider.deadLetters ! message
     }
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit =
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
     try remote.send(message, Option(sender), this)
     catch {
       case e @ (_: InterruptedException | NonFatal(_)) ⇒

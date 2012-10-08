@@ -45,7 +45,7 @@ trait Listeners { self: Actor ⇒
    * @param msg
    * @param sender
    */
-  protected def gossip(msg: Any)(implicit sender: ActorRef = null): Unit = {
+  protected def gossip(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     val i = listeners.iterator
     while (i.hasNext) i.next ! msg
   }
