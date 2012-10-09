@@ -98,10 +98,8 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   var consistentHash = ConsistentHash(Seq.empty[Address], HeartbeatConsistentHashingVirtualNodesFactor)
 
   // start periodic heartbeat to other nodes in cluster
-  val heartbeatTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(HeartbeatInterval).asInstanceOf[FiniteDuration], HeartbeatInterval) {
-      self ! HeartbeatTick
-    }
+  val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay.max(HeartbeatInterval).asInstanceOf[FiniteDuration],
+    HeartbeatInterval, self, HeartbeatTick)
 
   override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])
 
