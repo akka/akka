@@ -103,9 +103,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
       self ! HeartbeatTick
     }
 
-  override def preStart(): Unit = {
-    cluster.subscribe(self, classOf[MemberEvent])
-  }
+  override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])
 
   override def postStop(): Unit = {
     heartbeatTask.cancel()
@@ -131,6 +129,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     all = state.members.collect { case m if m.address != selfAddress ⇒ m.address }
     joinInProgress --= all
     consistentHash = ConsistentHash(all, HeartbeatConsistentHashingVirtualNodesFactor)
+    update()
   }
 
   def addMember(m: Member): Unit = if (m.address != selfAddress) {
@@ -259,11 +258,11 @@ private[cluster] object ClusterHeartbeatSenderConnection {
  * Responsible for sending [[akka.cluster.ClusterHeartbeatReceiver.Heartbeat]]
  * and [[akka.cluster.ClusterHeartbeatReceiver.EndHeartbeat]] to one specific address.
  *
- * Netty blocks when sending to broken connections, and this actor uses
- * a configurable circuit breaker to reduce connect attempts to broken
+ * This actor exists only because Netty blocks when sending to broken connections,
+ * and this actor uses a configurable circuit breaker to reduce connect attempts to broken
  * connections.
  *
- * @see ClusterHeartbeatSender
+ * @see akka.cluster.ClusterHeartbeatSender
  */
 private[cluster] final class ClusterHeartbeatSenderConnection(toRef: ActorRef)
   extends Actor with ActorLogging {
@@ -283,7 +282,8 @@ private[cluster] final class ClusterHeartbeatSenderConnection(toRef: ActorRef)
     case SendHeartbeat(heartbeatMsg, _, deadline) ⇒
       if (!deadline.isOverdue) {
         log.debug("Cluster Node [{}] - Heartbeat to [{}]", heartbeatMsg.from, toRef)
-        // the CircuitBreaker will measure elapsed time and open if too many long calls
+        // Netty blocks when sending to broken connections, the CircuitBreaker will
+        // measure elapsed time and open if too many long calls
         try breaker.withSyncCircuitBreaker {
           toRef ! heartbeatMsg
         } catch { case e: CircuitBreakerOpenException ⇒ /* skip sending heartbeat to broken connection */ }
