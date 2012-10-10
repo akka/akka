@@ -194,6 +194,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   /*
    * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).
    */
+  def start(): ActorRef
   def resume(causedByFailure: Throwable): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
@@ -265,10 +266,14 @@ private[akka] class LocalActorRef private[akka] (
    * that is reached).
    */
   private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
-  actorCell.start(sendSupervise = true, ThreadLocalRandom.current.nextInt())
+  actorCell.init(ThreadLocalRandom.current.nextInt(), sendSupervise = true)
+  if (actorCellShouldStart)
+    actorCell.start()
 
   protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor)
+
+  protected def actorCellShouldStart(): Boolean = false
 
   protected def actorContext: ActorContext = actorCell
 
@@ -278,6 +283,11 @@ private[akka] class LocalActorRef private[akka] (
    * returns false, you cannot be sure if it's alive still (race condition)
    */
   override def isTerminated: Boolean = actorCell.isTerminated
+
+  override def start(): ActorRef = {
+    actorCell.start()
+    this
+  }
 
   /**
    * Suspends the actor so that it will not process messages until resumed. The
@@ -390,6 +400,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override def getParent: InternalActorRef = Nobody
   override def getChild(names: Iterator[String]): InternalActorRef = if (names.forall(_.isEmpty)) this else Nobody
 
+  override def start(): ActorRef = this
   override def suspend(): Unit = ()
   override def resume(causedByFailure: Throwable): Unit = ()
   override def stop(): Unit = ()

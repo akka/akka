@@ -54,6 +54,9 @@ class TestActorRef[T <: Actor](
       }
     }
 
+  // we need to start ourselves since the creation of an actor has been split into initialization and starting
+  override def actorCellShouldStart(): Boolean = true
+
   /**
    * Directly inject messages into actor receive behavior. Any exceptions
    * thrown will be available to you, while still being able to use

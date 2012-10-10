@@ -79,7 +79,9 @@ private[akka] class RepointableActorRef(
    */
   def newCell(old: Cell): Cell =
     new ActorCell(system, this, props, supervisor)
-      .start(sendSupervise = false, old.asInstanceOf[UnstartedCell].uid)
+      .init(old.asInstanceOf[UnstartedCell].uid, sendSupervise = false).start()
+
+  def start(): ActorRef = this
 
   def suspend(): Unit = underlying.suspend()
 
