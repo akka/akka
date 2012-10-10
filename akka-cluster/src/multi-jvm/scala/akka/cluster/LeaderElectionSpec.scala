@@ -16,7 +16,7 @@ case class LeaderElectionMultiNodeConfig(failureDetectorPuppet: Boolean) extends
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
+  commonConfig(debugConfig(on = true).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 }
 
 class LeaderElectionWithFailureDetectorPuppetMultiJvmNode1 extends LeaderElectionSpec(failureDetectorPuppet = true)
@@ -61,38 +61,38 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
       val leader = currentRoles.head
       val aUser = currentRoles.last
       val remainingRoles = currentRoles.tail
+      val n = "-" + (alreadyShutdown + 1)
 
       myself match {
 
         case `controller` ⇒
           val leaderAddress = address(leader)
-          enterBarrier("before-shutdown")
+          enterBarrier("before-shutdown" + n)
           testConductor.shutdown(leader, 0)
-          enterBarrier("after-shutdown", "after-down", "completed")
-          markNodeAsUnavailable(leaderAddress)
+          enterBarrier("after-shutdown" + n, "after-down" + n, "completed" + n)
 
         case `leader` ⇒
-          enterBarrier("before-shutdown", "after-shutdown")
+          enterBarrier("before-shutdown" + n, "after-shutdown" + n)
         // this node will be shutdown by the controller and doesn't participate in more barriers
 
         case `aUser` ⇒
           val leaderAddress = address(leader)
-          enterBarrier("before-shutdown", "after-shutdown")
+          enterBarrier("before-shutdown" + n, "after-shutdown" + n)
           // user marks the shutdown leader as DOWN
           cluster.down(leaderAddress)
-          enterBarrier("after-down", "completed")
+          enterBarrier("after-down" + n, "completed" + n)
           markNodeAsUnavailable(leaderAddress)
 
         case _ if remainingRoles.contains(myself) ⇒
           // remaining cluster nodes, not shutdown
-          enterBarrier("before-shutdown", "after-shutdown", "after-down")
+          enterBarrier("before-shutdown" + n, "after-shutdown" + n, "after-down" + n)
 
           awaitUpConvergence(currentRoles.size - 1)
           val nextExpectedLeader = remainingRoles.head
           clusterView.isLeader must be(myself == nextExpectedLeader)
           assertLeaderIn(remainingRoles)
 
-          enterBarrier("completed")
+          enterBarrier("completed" + n)
 
       }
     }
