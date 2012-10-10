@@ -196,7 +196,7 @@ private[akka] class ClusterRouteeProvider(
 
   private def selectDeploymentTarget: Option[Address] = {
     val currentRoutees = routees
-    val currentNodes = availbleNodes
+    val currentNodes = availableNodes
     if (currentNodes.isEmpty || currentRoutees.size >= settings.totalInstances) {
       None
     } else {
@@ -222,7 +222,7 @@ private[akka] class ClusterRouteeProvider(
     case a                         ⇒ a
   }
 
-  private[routing] def availbleNodes: SortedSet[Address] = {
+  private[routing] def availableNodes: SortedSet[Address] = {
     import Member.addressOrdering
     val currentNodes = nodes
     if (currentNodes.isEmpty && settings.allowLocalRoutees)
