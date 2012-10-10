@@ -40,11 +40,31 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
       val s = emptyState.addJoinInProgress(aa, Deadline.now - 30.seconds).removeOverdueJoinInProgress()
       s.joinInProgress must be(Map.empty)
       s.active must be(Set.empty)
+      s.ending must be(Map(aa -> 0))
     }
 
     "remove joinInProgress after reset" in {
-      val s = emptyState.addJoinInProgress(aa, Deadline.now - 30.seconds).reset(Set(aa, bb))
+      val s = emptyState.addJoinInProgress(aa, Deadline.now + 30.seconds).reset(Set(aa, bb))
       s.joinInProgress must be(Map.empty)
+    }
+
+    "remove joinInProgress after addMember" in {
+      val s = emptyState.addJoinInProgress(aa, Deadline.now + 30.seconds).addMember(aa)
+      s.joinInProgress must be(Map.empty)
+    }
+
+    "remove joinInProgress after removeMember" in {
+      val s = emptyState.addJoinInProgress(aa, Deadline.now + 30.seconds).reset(Set(aa, bb)).removeMember(aa)
+      s.joinInProgress must be(Map.empty)
+      s.ending must be(Map(aa -> 0))
+    }
+
+    "remove from ending after addJoinInProgress" in {
+      val s = emptyState.reset(Set(aa, bb)).removeMember(aa)
+      s.ending must be(Map(aa -> 0))
+      val s2 = s.addJoinInProgress(aa, Deadline.now + 30.seconds)
+      s2.joinInProgress.keySet must be(Set(aa))
+      s2.ending must be(Map.empty)
     }
 
     "include nodes from reset in active set" in {

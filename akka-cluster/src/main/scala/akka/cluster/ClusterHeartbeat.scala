@@ -128,9 +128,6 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   def removeMember(m: Member): Unit = if (m.address != selfAddress)
     state = state removeMember m.address
 
-  def removeJoinInProgress(address: Address): Unit = if (address != selfAddress)
-    state = state.removeJoinInProgress(address)
-
   def addJoinInProgress(address: Address, deadline: Deadline): Unit = if (address != selfAddress)
     state = state.addJoinInProgress(address, deadline)
 
@@ -208,8 +205,7 @@ private[cluster] object ClusterHeartbeatSenderState {
     // start ending process for nodes not selected any more
     // abort ending process for nodes that have been selected again
     val end = old.ending ++ (old.current -- curr).map(_ -> 0) -- curr
-    old.copy(consistentHash = consistentHash, all = all, current = curr, ending = end,
-      joinInProgress = old.joinInProgress -- all)
+    old.copy(consistentHash = consistentHash, all = all, current = curr, ending = end)
   }
 
 }
@@ -252,16 +248,17 @@ private[cluster] case class ClusterHeartbeatSenderState private (
   val active: Set[Address] = current ++ joinInProgress.keySet
 
   def reset(nodes: Set[Address]): ClusterHeartbeatSenderState =
-    ClusterHeartbeatSenderState(this, consistentHash = ConsistentHash(nodes, consistentHash.virtualNodesFactor),
+    ClusterHeartbeatSenderState(nodes.foldLeft(this) { _ removeJoinInProgress _ },
+      consistentHash = ConsistentHash(nodes, consistentHash.virtualNodesFactor),
       all = nodes)
 
   def addMember(a: Address): ClusterHeartbeatSenderState =
-    ClusterHeartbeatSenderState(this, all = all + a, consistentHash = consistentHash :+ a)
+    ClusterHeartbeatSenderState(removeJoinInProgress(a), all = all + a, consistentHash = consistentHash :+ a)
 
   def removeMember(a: Address): ClusterHeartbeatSenderState =
-    ClusterHeartbeatSenderState(this, all = all - a, consistentHash = consistentHash :- a)
+    ClusterHeartbeatSenderState(removeJoinInProgress(a), all = all - a, consistentHash = consistentHash :- a)
 
-  def removeJoinInProgress(address: Address): ClusterHeartbeatSenderState = {
+  private def removeJoinInProgress(address: Address): ClusterHeartbeatSenderState = {
     if (joinInProgress contains address)
       copy(joinInProgress = joinInProgress - address, ending = ending + (address -> 0))
     else this
@@ -269,7 +266,7 @@ private[cluster] case class ClusterHeartbeatSenderState private (
 
   def addJoinInProgress(address: Address, deadline: Deadline): ClusterHeartbeatSenderState = {
     if (all contains address) this
-    else copy(joinInProgress = joinInProgress + (address -> deadline))
+    else copy(joinInProgress = joinInProgress + (address -> deadline), ending = ending - address)
   }
 
   /**
