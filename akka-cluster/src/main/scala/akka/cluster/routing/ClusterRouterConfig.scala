@@ -196,7 +196,7 @@ private[akka] class ClusterRouteeProvider(
 
   private def selectDeploymentTarget: Option[Address] = {
     val currentRoutees = routees
-    val currentNodes = availbleNodes
+    val currentNodes = availableNodes
     if (currentNodes.isEmpty || currentRoutees.size >= settings.totalInstances) {
       None
     } else {
@@ -222,7 +222,7 @@ private[akka] class ClusterRouteeProvider(
     case a                         ⇒ a
   }
 
-  private[routing] def availbleNodes: SortedSet[Address] = {
+  private[routing] def availableNodes: SortedSet[Address] = {
     import Member.addressOrdering
     val currentNodes = nodes
     if (currentNodes.isEmpty && settings.allowLocalRoutees)
@@ -236,11 +236,11 @@ private[akka] class ClusterRouteeProvider(
   private[routing] var nodes: SortedSet[Address] = {
     import Member.addressOrdering
     cluster.readView.members.collect {
-      case m if isAvailble(m) ⇒ m.address
+      case m if isAvailable(m) ⇒ m.address
     }
   }
 
-  private[routing] def isAvailble(m: Member): Boolean = {
+  private[routing] def isAvailable(m: Member): Boolean = {
     m.status == MemberStatus.Up && (settings.allowLocalRoutees || m.address != cluster.selfAddress)
   }
 
@@ -271,10 +271,10 @@ private[akka] class ClusterRouterActor extends Router {
   override def routerReceive: Receive = {
     case s: CurrentClusterState ⇒
       import Member.addressOrdering
-      routeeProvider.nodes = s.members.collect { case m if routeeProvider.isAvailble(m) ⇒ m.address }
+      routeeProvider.nodes = s.members.collect { case m if routeeProvider.isAvailable(m) ⇒ m.address }
       routeeProvider.createRoutees()
 
-    case m: MemberEvent if routeeProvider.isAvailble(m.member) ⇒
+    case m: MemberEvent if routeeProvider.isAvailable(m.member) ⇒
       routeeProvider.nodes += m.member.address
       // createRoutees will create routees based on
       // totalInstances and maxInstancesPerNode
