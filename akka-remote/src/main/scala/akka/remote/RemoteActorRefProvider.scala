@@ -243,7 +243,7 @@ private[akka] class RemoteActorRef private[akka] (
         provider.deadLetters ! message
     }
 
-  def start(): ActorRef = this
+  def start(): Unit = ()
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 

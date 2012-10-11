@@ -193,6 +193,7 @@ private[akka] trait Children { this: ActorCell ⇒
       if (mailbox ne null) for (_ ← 1 to mailbox.suspendCount) actor.suspend()
       initChild(actor)
       actor.start()
+      actor
     }
   }
 

@@ -194,7 +194,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   /*
    * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).
    */
-  def start(): ActorRef
+  def start(): Unit
   def resume(causedByFailure: Throwable): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
@@ -260,10 +260,13 @@ private[akka] class LocalActorRef private[akka] (
 
   /*
    * Safe publication of this class’s fields is guaranteed by mailbox.setActor()
-   * which is called indirectly from actorCell.start() (if you’re wondering why
+   * which is called indirectly from actorCell.init() (if you’re wondering why
    * this is at all important, remember that under the JMM final fields are only
    * frozen at the _end_ of the constructor, but we are publishing “this” before
    * that is reached).
+   * This means that the result of newActorCell needs to be written to the val
+   * actorCell before we call init and start, since we can start using "this"
+   * object from another thread as soon as we run init.
    */
   private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
   actorCell.init(ThreadLocalRandom.current.nextInt(), sendSupervise = true)
@@ -284,10 +287,10 @@ private[akka] class LocalActorRef private[akka] (
    */
   override def isTerminated: Boolean = actorCell.isTerminated
 
-  override def start(): ActorRef = {
-    actorCell.start()
-    this
-  }
+  /**
+   * Starts the actor after initialization.
+   */
+  override def start(): Unit = actorCell.start()
 
   /**
    * Suspends the actor so that it will not process messages until resumed. The
@@ -400,7 +403,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override def getParent: InternalActorRef = Nobody
   override def getChild(names: Iterator[String]): InternalActorRef = if (names.forall(_.isEmpty)) this else Nobody
 
-  override def start(): ActorRef = this
+  override def start(): Unit = ()
   override def suspend(): Unit = ()
   override def resume(causedByFailure: Throwable): Unit = ()
   override def stop(): Unit = ()
