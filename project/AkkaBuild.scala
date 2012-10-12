@@ -701,7 +701,7 @@ object Dependency {
   val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
   val scalaStm      = "org.scala-tools"             % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
 
-  val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.6.6"       // MIT
+  val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
   val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding"         % "0.0.6" cross CrossVersion.full // ApacheV2
   val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a"      // ApacheV2
   val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
