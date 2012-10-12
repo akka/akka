@@ -12,7 +12,7 @@ import org.apache.camel.builder.Builder;
 import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.model.RouteDefinition;
 import scala.Option;
-import scala.concurrent.util.FiniteDuration;
+import scala.concurrent.duration.FiniteDuration;
 
 /**
  * @author Martin Krasser

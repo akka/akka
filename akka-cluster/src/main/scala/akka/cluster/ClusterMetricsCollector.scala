@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import scala.collection.immutable.{ SortedSet, Map }
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.{ Try, Success, Failure }
-import scala.math.ScalaNumber
+import scala.math.ScalaNumericConversions
 import scala.runtime.{ RichLong, RichDouble, RichInt }
 
 import akka.actor._
@@ -238,7 +238,7 @@ private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: Metrics
  *
  * @param startTime the time of initial sampling for this data stream
  */
-private[cluster] case class DataStream(decay: Int, ewma: ScalaNumber, startTime: Long, timestamp: Long)
+private[cluster] case class DataStream(decay: Int, ewma: ScalaNumericConversions, startTime: Long, timestamp: Long)
   extends ClusterMessage with MetricNumericConverter {
 
   /**
@@ -249,13 +249,13 @@ private[cluster] case class DataStream(decay: Int, ewma: ScalaNumber, startTime:
 
   /**
    * Calculates the exponentially weighted moving average for a given monitored data set.
-   * The datam can be too large to fit into an int or long, thus we use ScalaNumber,
+   * The datam can be too large to fit into an int or long, thus we use ScalaNumericConversions,
    * and defer to BigInt or BigDecimal.
    *
    * @param xn the new data point
    * @return an new [[akka.cluster.DataStream]] with the updated yn and timestamp
    */
-  def :+(xn: ScalaNumber): DataStream = convert(xn) fold (
+  def :+(xn: ScalaNumericConversions): DataStream = convert(xn) fold (
     nl ⇒ copy(ewma = BigInt(α * nl + 1 - α * ewma.longValue()), timestamp = newTimestamp),
     nd ⇒ copy(ewma = BigDecimal(α * nd + 1 - α * ewma.doubleValue()), timestamp = newTimestamp))
 
@@ -273,7 +273,7 @@ private[cluster] case class DataStream(decay: Int, ewma: ScalaNumber, startTime:
  */
 private[cluster] object DataStream {
 
-  def apply(decay: Int, data: ScalaNumber): Option[DataStream] = if (decay > 0)
+  def apply(decay: Int, data: ScalaNumericConversions): Option[DataStream] = if (decay > 0)
     Some(DataStream(decay, data, newTimestamp, newTimestamp)) else None
 
 }
@@ -288,7 +288,7 @@ private[cluster] object DataStream {
  * @param average the data stream of the metric value, for trending over time. Metrics that are already
  *                averages (e.g. system load average) or finite (e.g. as total cores), are not trended.
  */
-private[cluster] case class Metric(name: String, value: Option[ScalaNumber], average: Option[DataStream])
+private[cluster] case class Metric(name: String, value: Option[ScalaNumericConversions], average: Option[DataStream])
   extends ClusterMessage with MetricNumericConverter {
 
   /**
@@ -352,7 +352,7 @@ private[cluster] object Metric extends MetricNumericConverter {
    * or defined for the OS (JMX). If undefined we set the value option to None and do not modify
    * the latest sampled metric to avoid skewing the statistical trend.
    */
-  def apply(name: String, value: Option[ScalaNumber]): Metric = value match {
+  def apply(name: String, value: Option[ScalaNumericConversions]): Metric = value match {
     case Some(v) if defined(v) ⇒ Metric(name, value, None)
     case _                     ⇒ Metric(name, None, None)
   }
@@ -409,15 +409,15 @@ private[cluster] trait MetricNumericConverter {
    * <ul><li>JMX system load average and max heap can be 'undefined' for certain OS, in which case a -1 is returned</li>
    * <li>SIGAR combined CPU can occasionally return a NaN or Infinite (known bug)</li></ul>
    */
-  def defined(value: ScalaNumber): Boolean = convert(value) fold (a ⇒ value != -1, b ⇒ !(b.isNaN || b.isInfinite))
+  def defined(value: ScalaNumericConversions): Boolean =
+    convert(value) fold (a ⇒ value.underlying != -1, b ⇒ !(b.isNaN || b.isInfinite))
 
   /**
    * May involve rounding or truncation.
    */
-  def convert(from: ScalaNumber): Either[Long, Double] = from match {
+  def convert(from: ScalaNumericConversions): Either[Long, Double] = from match {
     case n: BigInt     ⇒ Left(n.longValue())
     case n: BigDecimal ⇒ Right(n.doubleValue())
-    // FIXME: these are rejected as unreachable by the new pattern matcher
     case n: RichInt    ⇒ Left(n.abs)
     case n: RichLong   ⇒ Left(n.self)
     case n: RichDouble ⇒ Right(n.self)

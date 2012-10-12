@@ -17,7 +17,6 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.Before;
 import org.junit.After;
 import org.junit.Test;
-import scala.concurrent.util.FiniteDuration;
 
 import java.util.concurrent.TimeUnit;
 
