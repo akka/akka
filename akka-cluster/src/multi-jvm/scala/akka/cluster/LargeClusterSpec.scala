@@ -39,7 +39,7 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
       gossip-interval = 500 ms
       auto-join = off
       auto-down = on
-      failure-detector.acceptable-heartbeat-pause = 10s
+      failure-detector.acceptable-heartbeat-pause = 5s
       publish-stats-interval = 0 s # always, when it happens
     }
     akka.event-handlers = ["akka.testkit.TestEventListener"]
@@ -54,7 +54,9 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     akka.scheduler.tick-duration = 33 ms
     akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.execution-pool-size = 4
-    #akka.remote.netty.reconnection-time-window = 1s
+    #akka.remote.netty.reconnection-time-window = 10s
+    akka.remote.netty.read-timeout = 5s
+    akka.remote.netty.write-timeout = 5s
     akka.remote.netty.backoff-timeout = 500ms
     akka.remote.netty.connection-timeout = 500ms
 

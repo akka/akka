@@ -14,7 +14,7 @@ import akka.actor.Terminated;
 import akka.actor.UntypedActor;
 import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;
 
@@ -41,7 +41,7 @@ public class FaultHandlingTestBase {
 
     //#strategy
     private static SupervisorStrategy strategy =
-      new OneForOneStrategy(10, Duration.parse("1 minute"),
+      new OneForOneStrategy(10, Duration.create("1 minute"),
         new Function<Throwable, Directive>() {
           @Override
           public Directive apply(Throwable t) {
@@ -81,7 +81,7 @@ public class FaultHandlingTestBase {
 
     //#strategy2
     private static SupervisorStrategy strategy = new OneForOneStrategy(10,
-      Duration.parse("1 minute"),
+      Duration.create("1 minute"),
         new Function<Throwable, Directive>() {
           @Override
           public Directive apply(Throwable t) {

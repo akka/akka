@@ -28,6 +28,8 @@ class ClusterConfigSpec extends AkkaSpec {
       PeriodicTasksInitialDelay must be(1 seconds)
       GossipInterval must be(1 second)
       HeartbeatInterval must be(1 second)
+      NumberOfEndHeartbeats must be(4)
+      MonitoredByNrOfMembers must be(5)
       LeaderActionsInterval must be(1 second)
       UnreachableNodesReaperInterval must be(1 second)
       PublishStatsInterval must be(10 second)

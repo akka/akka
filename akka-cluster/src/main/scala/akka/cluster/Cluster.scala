@@ -60,7 +60,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   val settings = new ClusterSettings(system.settings.config, system.name)
   import settings._
 
-  val selfAddress = system.provider match {
+  val selfAddress: Address = system.provider match {
     case c: ClusterActorRefProvider ⇒ c.transport.address
     case other ⇒ throw new ConfigurationException(
       "ActorSystem [%s] needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses [%s]".
@@ -72,7 +72,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
 
-  val failureDetector = {
+  val failureDetector: FailureDetector = {
     import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
     system.dynamicAccess.createInstanceFor[FailureDetector](
       fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({

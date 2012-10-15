@@ -34,8 +34,8 @@ object CircuitBreaker {
    *
    * @param scheduler Reference to Akka scheduler
    * @param maxFailures Maximum number of failures before opening the circuit
-   * @param callTimeout [[scala.concurrent.util.Duration]] of time after which to consider a call a failure
-   * @param resetTimeout [[scala.concurrent.util.Duration]] of time after which to attempt to close the circuit
+   * @param callTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to consider a call a failure
+   * @param resetTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to attempt to close the circuit
    */
   def apply(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration): CircuitBreaker =
     new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(syncExecutionContext)
@@ -48,8 +48,8 @@ object CircuitBreaker {
    *
    * @param scheduler Reference to Akka scheduler
    * @param maxFailures Maximum number of failures before opening the circuit
-   * @param callTimeout [[scala.concurrent.util.Duration]] of time after which to consider a call a failure
-   * @param resetTimeout [[scala.concurrent.util.Duration]] of time after which to attempt to close the circuit
+   * @param callTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to consider a call a failure
+   * @param resetTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to attempt to close the circuit
    */
   def create(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration): CircuitBreaker =
     apply(scheduler, maxFailures, callTimeout, resetTimeout)
@@ -71,8 +71,8 @@ object CircuitBreaker {
  *
  * @param scheduler Reference to Akka scheduler
  * @param maxFailures Maximum number of failures before opening the circuit
- * @param callTimeout [[scala.concurrent.util.Duration]] of time after which to consider a call a failure
- * @param resetTimeout [[scala.concurrent.util.Duration]] of time after which to attempt to close the circuit
+ * @param callTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to consider a call a failure
+ * @param resetTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to attempt to close the circuit
  * @param executor [[scala.concurrent.ExecutionContext]] used for execution of state transition listeners
  */
 class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)(implicit executor: ExecutionContext) extends AbstractCircuitBreaker {
@@ -457,7 +457,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
     /**
      * Calculate remaining timeout to inform the caller in case a backoff algorithm is useful
      *
-     * @return [[akka.util.Deadline]] to when the breaker will attempt a reset by transitioning to half-open
+     * @return [[scala.concurrent.duration.Deadline]] to when the breaker will attempt a reset by transitioning to half-open
      */
     private def remainingTimeout(): Deadline = get match {
       case 0L ⇒ Deadline.now

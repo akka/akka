@@ -16,14 +16,34 @@ import scala.concurrent.duration.FiniteDuration
 class ClusterSettings(val config: Config, val systemName: String) {
   import config._
 
-  final val FailureDetectorThreshold = getDouble("akka.cluster.failure-detector.threshold")
-  final val FailureDetectorMaxSampleSize = getInt("akka.cluster.failure-detector.max-sample-size")
-  final val FailureDetectorImplementationClass = getString("akka.cluster.failure-detector.implementation-class")
-  final val FailureDetectorMinStdDeviation: FiniteDuration =
-    Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
-  final val FailureDetectorAcceptableHeartbeatPause: FiniteDuration =
-    Duration(getMilliseconds("akka.cluster.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
-  final val HeartbeatInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-interval"), MILLISECONDS)
+  final val FailureDetectorThreshold: Double = {
+    val x = getDouble("akka.cluster.failure-detector.threshold")
+    require(x > 0.0, "failure-detector.threshold must be > 0")
+    x
+  }
+  final val FailureDetectorMaxSampleSize: Int = {
+    val n = getInt("akka.cluster.failure-detector.max-sample-size")
+    require(n > 0, "failure-detector.max-sample-size must be > 0"); n
+  }
+  final val FailureDetectorImplementationClass: String = getString("akka.cluster.failure-detector.implementation-class")
+  final val FailureDetectorMinStdDeviation: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
+    require(d > Duration.Zero, "failure-detector.min-std-deviation must be > 0"); d
+  }
+  final val FailureDetectorAcceptableHeartbeatPause: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
+    require(d >= Duration.Zero, "failure-detector.acceptable-heartbeat-pause must be >= 0"); d
+  }
+  final val HeartbeatInterval: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-interval"), MILLISECONDS)
+    require(d > Duration.Zero, "failure-detector.heartbeat-interval must be > 0"); d
+  }
+  final val HeartbeatConsistentHashingVirtualNodesFactor = 10 // no need for configuration
+  final val NumberOfEndHeartbeats: Int = (FailureDetectorAcceptableHeartbeatPause / HeartbeatInterval + 1).toInt
+  final val MonitoredByNrOfMembers: Int = {
+    val n = getInt("akka.cluster.failure-detector.monitored-by-nr-of-members")
+    require(n > 0, "failure-detector.monitored-by-nr-of-members must be > 0"); n
+  }
 
   final val SeedNodes: IndexedSeq[Address] = getStringList("akka.cluster.seed-nodes").asScala.map {
     case AddressFromURIString(addr) ⇒ addr

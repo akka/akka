@@ -181,7 +181,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 }
 
 /**
- * For internal use only. Converts Strings to [[scala.concurrent.util.Duration]]
+ * For internal use only. Converts Strings to [[scala.concurrent.duration.Duration]]
  */
 private[camel] object DurationTypeConverter extends TypeConverterSupport {
 

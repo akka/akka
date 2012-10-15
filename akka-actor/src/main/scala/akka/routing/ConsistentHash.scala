@@ -18,7 +18,7 @@ import java.util.Arrays
  * hash, i.e. make sure it is different for different nodes.
  *
  */
-class ConsistentHash[T: ClassTag] private (nodes: SortedMap[Int, T], virtualNodesFactor: Int) {
+class ConsistentHash[T: ClassTag] private (nodes: SortedMap[Int, T], val virtualNodesFactor: Int) {
 
   import ConsistentHash._
 

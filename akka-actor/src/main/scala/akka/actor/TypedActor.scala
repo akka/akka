@@ -607,8 +607,7 @@ class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory
   protected def actorFactory: ActorRefFactory = system
   protected def typedActor = this
 
-  val serialization = SerializationExtension(system)
-  val settings = system.settings
+  import system.settings
 
   /**
    * Default timeout for typed actor methods with non-void return type
@@ -635,23 +634,18 @@ class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory
   private[akka] def createActorRefProxy[R <: AnyRef, T <: R](props: TypedProps[T], proxyVar: AtomVar[R], actorRef: ⇒ ActorRef): R = {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
-    val classLoader: ClassLoader = if (props.loader.nonEmpty) props.loader.get else props.interfaces.headOption.map(_.getClassLoader).orNull //If we have no loader, we arbitrarily take the loader of the first interface
     val proxy = Proxy.newProxyInstance(
-      classLoader,
+      (props.loader orElse props.interfaces.collectFirst { case any ⇒ any.getClassLoader }).orNull, //If we have no loader, we arbitrarily take the loader of the first interface
       props.interfaces.toArray,
-      new TypedActorInvocationHandler(
-        this,
-        actorVar,
-        if (props.timeout.isDefined) props.timeout.get else DefaultReturnTimeout)).asInstanceOf[R]
+      new TypedActorInvocationHandler(this, actorVar, props.timeout getOrElse DefaultReturnTimeout)).asInstanceOf[R]
 
-    proxyVar match {
-      case null ⇒
-        actorVar.set(actorRef)
-        proxy
-      case _ ⇒
-        proxyVar.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-        actorVar.set(actorRef) //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
-        proxyVar.get
+    if (proxyVar eq null) {
+      actorVar set actorRef
+      proxy
+    } else {
+      proxyVar set proxy // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
+      actorVar set actorRef //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
+      proxyVar.get
     }
   }
 

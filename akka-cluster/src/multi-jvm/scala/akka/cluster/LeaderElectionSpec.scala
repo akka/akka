@@ -4,10 +4,12 @@
 
 package akka.cluster
 
+import language.postfixOps
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
+import scala.concurrent.duration._
 
 case class LeaderElectionMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val controller = role("controller")
@@ -69,7 +71,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
           val leaderAddress = address(leader)
           enterBarrier("before-shutdown" + n)
           testConductor.shutdown(leader, 0)
-          enterBarrier("after-shutdown" + n, "after-down" + n, "completed" + n)
+          enterBarrier("after-shutdown" + n, "after-unavailable" + n, "after-down" + n, "completed" + n)
 
         case `leader` ⇒
           enterBarrier("before-shutdown" + n, "after-shutdown" + n)
@@ -78,15 +80,25 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
         case `aUser` ⇒
           val leaderAddress = address(leader)
           enterBarrier("before-shutdown" + n, "after-shutdown" + n)
+
+          // detect failure
+          markNodeAsUnavailable(leaderAddress)
+          awaitCond(clusterView.unreachableMembers.exists(m ⇒ m.address == leaderAddress))
+          enterBarrier("after-unavailable" + n)
+
           // user marks the shutdown leader as DOWN
           cluster.down(leaderAddress)
           enterBarrier("after-down" + n, "completed" + n)
-          markNodeAsUnavailable(leaderAddress)
 
         case _ if remainingRoles.contains(myself) ⇒
           // remaining cluster nodes, not shutdown
-          enterBarrier("before-shutdown" + n, "after-shutdown" + n, "after-down" + n)
+          val leaderAddress = address(leader)
+          enterBarrier("before-shutdown" + n, "after-shutdown" + n)
 
+          awaitCond(clusterView.unreachableMembers.exists(m ⇒ m.address == leaderAddress))
+          enterBarrier("after-unavailable" + n)
+
+          enterBarrier("after-down" + n)
           awaitUpConvergence(currentRoles.size - 1)
           val nextExpectedLeader = remainingRoles.head
           clusterView.isLeader must be(myself == nextExpectedLeader)
@@ -97,12 +109,12 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
       }
     }
 
-    "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in {
+    "be able to 're-elect' a single leader after leader has left" taggedAs LongRunningTest in within(20 seconds) {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 0)
       enterBarrier("after-2")
     }
 
-    "be able to 're-elect' a single leader after leader has left (again)" taggedAs LongRunningTest in {
+    "be able to 're-elect' a single leader after leader has left (again)" taggedAs LongRunningTest in within(20 seconds) {
       shutdownLeaderAndVerifyNewLeader(alreadyShutdown = 1)
       enterBarrier("after-3")
     }

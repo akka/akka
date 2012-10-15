@@ -203,17 +203,17 @@ v2.0 Scala::
 
 v2.1 Scala::
 
-  val router2 = system.actorOf(Props[ExampleActor1].withRouter(
-    RoundRobinRouter(routees = routees)))    
+  val router2 = system.actorOf(Props.empty.withRouter(
+    RoundRobinRouter(routees = routees)))
 
 v2.0 Java::
 
-  ActorRef router2 = system.actorOf(new Props(ExampleActor.class).withRouter(
+  ActorRef router2 = system.actorOf(new Props().withRouter(
     RoundRobinRouter.create(routees)));
 
 v2.1 Java::
 
-  ActorRef router2 = system.actorOf(new Props().withRouter(
+  ActorRef router2 = system.actorOf(Props.empty().withRouter(
     RoundRobinRouter.create(routees)));
 
 Props: Function-based creation

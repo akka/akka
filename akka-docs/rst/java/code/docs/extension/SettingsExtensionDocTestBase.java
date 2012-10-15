@@ -9,7 +9,7 @@ import akka.actor.AbstractExtensionId;
 import akka.actor.ExtensionIdProvider;
 import akka.actor.ActorSystem;
 import akka.actor.ExtendedActorSystem;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import com.typesafe.config.Config;
 import java.util.concurrent.TimeUnit;
 
