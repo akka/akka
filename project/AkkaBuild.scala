@@ -440,9 +440,15 @@ object AkkaBuild extends Build {
 
   lazy val defaultMultiJvmOptions: Seq[String] = {
     import scala.collection.JavaConverters._
-    val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
-      case key: String if key.startsWith("multinode.") => "-D" + key + "=" + System.getProperty(key)
-      case key: String if key.startsWith("akka.") => "-D" + key + "=" + System.getProperty(key)
+    // multinode.D= and multinode.X= makes it possible to pass arbitrary 
+    // -D or -X arguments to the forked jvm, e.g.
+    // -Dmultinode.D=java.net.preferIPv4Stack=true -Dmultinode.X=ms256m,mx512m,X:MaxPermSize=256M
+    val multinodeJvmArgs = "multinode\\.(D|X)".r
+    val akkaProperties = System.getProperties.propertyNames.asScala.toList.flatMap {
+      case multinodeJvmArgs(a) => System.getProperty("multinode." + a).split(",") map { x => "-" + a + x }
+      case key: String if key.startsWith("multinode.") => Some("-D" + key + "=" + System.getProperty(key))
+      case key: String if key.startsWith("akka.") => Some("-D" + key + "=" + System.getProperty(key))
+      case _ => None
     }
     akkaProperties ::: (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
   }
