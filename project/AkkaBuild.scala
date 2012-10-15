@@ -29,6 +29,7 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
+    // FIXME: use 2.10.0 for final
     scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC1")
   )
 
@@ -401,13 +402,7 @@ object AkkaBuild extends Build {
     super.settings ++
     buildSettings ++
     Seq(
-      shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
-      resolvers <<= (resolvers, scalaVersion) apply {
-        case (res, "2.10.0-SNAPSHOT") =>
-          res :+ ("Sonatype Snapshot Repo" at "https://oss.sonatype.org/content/repositories/snapshots/")
-        case (res, _) =>
-          res
-      }
+      shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
     )
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
@@ -659,6 +654,7 @@ object Dependencies {
     val scalaStm      = "org.scala-tools"             % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
+    // FIXME: use 2.10.0-RC1 version once published
     val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding_2.10.0-M7"         % "0.0.6" // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a"      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2

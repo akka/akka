@@ -66,7 +66,7 @@ Java:
 ::
   
   // Use this Actors' Dispatcher as ExecutionContext
-  getContext().system().scheduler().scheduleOnce(Duration.parse("10 seconds",
+  getContext().system().scheduler().scheduleOnce(Duration.create("10 seconds",
     getSelf(), new Reconnect(), getContext().getDispatcher());
 
   // Use ActorSystem's default Dispatcher as ExecutionContext
