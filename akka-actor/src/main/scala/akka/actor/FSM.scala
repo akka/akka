@@ -427,6 +427,8 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   /**
    * Set handler which is called upon reception of unhandled messages. Calling
    * this method again will overwrite the previous contents.
+   *
+   * The current state may be queried using ``stateName``.
    */
   final def whenUnhandled(stateFunction: StateFunction): Unit =
     handleEvent = stateFunction orElse handleEventDefault
