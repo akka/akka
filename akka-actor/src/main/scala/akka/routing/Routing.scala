@@ -71,7 +71,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
     r
   }
 
-  start(sendSupervise = false, _uid)
+  init(_uid, sendSupervise = false).start()
 
   /*
    * end of construction
