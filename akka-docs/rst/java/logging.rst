@@ -194,8 +194,7 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
      <dependency>
        <groupId>ch.qos.logback</groupId>
        <artifactId>logback-classic</artifactId>
-       <version>1.0.4</version>
-       <scope>runtime</scope>
+       <version>1.0.7</version>
      </dependency>
 
 You need to enable the Slf4jEventHandler in the 'event-handlers' element in
