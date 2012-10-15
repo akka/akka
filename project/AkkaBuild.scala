@@ -171,6 +171,8 @@ object AkkaBuild extends Build {
     base = file("akka-agent"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ OSGi.agent ++ Seq(
+      // FIXME remove once scala-stm is on maven central
+      resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/releases",
       libraryDependencies ++= Dependencies.agent,
       previousArtifact := akkaPreviousArtifact("akka-agent")
     )
@@ -181,6 +183,8 @@ object AkkaBuild extends Build {
     base = file("akka-transactor"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ OSGi.transactor ++ Seq(
+      // FIXME remove once scala-stm is on maven central
+      resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/releases",
       libraryDependencies ++= Dependencies.transactor,
       previousArtifact := akkaPreviousArtifact("akka-transactor")
     )
