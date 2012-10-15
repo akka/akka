@@ -113,7 +113,7 @@ public class FutureDocTestBase {
         return "Hello" + "World";
       }
     }, system.dispatcher());
-    String result = (String) Await.result(f, Duration.create(1, SECONDS));
+    String result = (String) Await.result(f, Duration.create(5, SECONDS));
     //#future-eval
     assertEquals("HelloWorld", result);
   }
@@ -135,7 +135,7 @@ public class FutureDocTestBase {
       }
     }, ec);
 
-    int result = Await.result(f2, Duration.create(1, SECONDS));
+    int result = Await.result(f2, Duration.create(5, SECONDS));
     assertEquals(10, result);
     //#map
   }
@@ -159,7 +159,7 @@ public class FutureDocTestBase {
     }, ec);
 
     //#map2
-    int result = Await.result(f2, Duration.create(1, SECONDS));
+    int result = Await.result(f2, Duration.create(5, SECONDS));
     assertEquals(10, result);
   }
 
@@ -183,7 +183,7 @@ public class FutureDocTestBase {
     }, ec);
 
     //#map3
-    int result = Await.result(f2, Duration.create(1, SECONDS));
+    int result = Await.result(f2, Duration.create(5, SECONDS));
     assertEquals(10, result);
   }
 
@@ -209,7 +209,7 @@ public class FutureDocTestBase {
     }, ec);
 
     //#flat-map
-    int result = Await.result(f2, Duration.create(1, SECONDS));
+    int result = Await.result(f2, Duration.create(5, SECONDS));
     assertEquals(10, result);
   }
 
@@ -238,7 +238,7 @@ public class FutureDocTestBase {
         }
       }, ec);
 
-    long result = Await.result(futureSum, Duration.create(1, SECONDS));
+    long result = Await.result(futureSum, Duration.create(5, SECONDS));
     //#sequence
     assertEquals(3L, result);
   }
@@ -262,7 +262,7 @@ public class FutureDocTestBase {
       }, ec);
 
     //Returns the sequence of strings as upper case
-    Iterable<String> result = Await.result(futureResult, Duration.create(1, SECONDS));
+    Iterable<String> result = Await.result(futureResult, Duration.create(5, SECONDS));
     assertEquals(Arrays.asList("A", "B", "C"), result);
     //#traverse
   }
@@ -286,7 +286,7 @@ public class FutureDocTestBase {
           return r + t; //Just concatenate
         }
       }, ec);
-    String result = Await.result(resultFuture, Duration.create(1, SECONDS));
+    String result = Await.result(resultFuture, Duration.create(5, SECONDS));
     //#fold
 
     assertEquals("ab", result);
@@ -310,7 +310,7 @@ public class FutureDocTestBase {
         }
       }, ec);
 
-    Object result = Await.result(resultFuture, Duration.create(1, SECONDS));
+    Object result = Await.result(resultFuture, Duration.create(5, SECONDS));
     //#reduce
 
     assertEquals("ab", result);
@@ -326,10 +326,10 @@ public class FutureDocTestBase {
     Future<String> otherFuture = Futures.failed(
       new IllegalArgumentException("Bang!"));
     //#failed
-    Object result = Await.result(future, Duration.create(1, SECONDS));
+    Object result = Await.result(future, Duration.create(5, SECONDS));
     assertEquals("Yay!", result);
     Throwable result2 = Await.result(otherFuture.failed(),
-      Duration.create(1, SECONDS));
+      Duration.create(5, SECONDS));
     assertEquals("Bang!", result2.getMessage());
   }
 
@@ -399,7 +399,7 @@ public class FutureDocTestBase {
           throw problem;
       }
     }, ec);
-    int result = Await.result(future, Duration.create(1, SECONDS));
+    int result = Await.result(future, Duration.create(5, SECONDS));
     assertEquals(result, 0);
     //#recover
   }
@@ -425,7 +425,7 @@ public class FutureDocTestBase {
           throw problem;
       }
     }, ec);
-    int result = Await.result(future, Duration.create(1, SECONDS));
+    int result = Await.result(future, Duration.create(5, SECONDS));
     assertEquals(result, 0);
     //#try-recover
   }
@@ -497,7 +497,7 @@ public class FutureDocTestBase {
           }
         }, ec);
 
-      String result = Await.result(future3, Duration.create(1, SECONDS));
+      String result = Await.result(future3, Duration.create(5, SECONDS));
       assertEquals("foo bar", result);
       //#zip
     }
@@ -509,7 +509,7 @@ public class FutureDocTestBase {
       Future<String> future3 = Futures.successful("bar");
       // Will have "bar" in this case
       Future<String> future4 = future1.fallbackTo(future2).fallbackTo(future3);
-      String result = Await.result(future4, Duration.create(1, SECONDS));
+      String result = Await.result(future4, Duration.create(5, SECONDS));
       assertEquals("bar", result);
       //#fallback-to
     }
