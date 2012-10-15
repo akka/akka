@@ -189,6 +189,11 @@ external resource, which may also be one of its own children. If a third party
 terminates a child by way of the ``system.stop(child)`` method or sending a
 :class:`PoisonPill`, the supervisor might well be affected.
 
+..warning::
+
+  DeathWatch for Akka Remote does not (yet) get triggered by connection failures.
+  This feature may be added in a future release of Akka Remoting.
+
 One-For-One Strategy vs. All-For-One Strategy
 ---------------------------------------------
 
