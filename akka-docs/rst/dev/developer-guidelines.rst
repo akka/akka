@@ -3,7 +3,9 @@
 Developer Guidelines
 ====================
 
-First read:  `The Akka Contributor Guidelines <https://github.com/akka/akka/blob/master/CONTRIBUTING.md>`_ .
+..note::
+
+    First read:  `The Akka Contributor Guidelines <https://github.com/akka/akka/blob/master/CONTRIBUTING.md>`_ .
 
 Code Style
 ----------
