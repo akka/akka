@@ -4,6 +4,8 @@
 
 package docs.duration
 
+import language.postfixOps
+
 object Scala {
   //#dsl
   import scala.concurrent.duration._
