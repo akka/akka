@@ -192,6 +192,9 @@ do something else in this case you can specify that with
 .. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: unhandled-syntax
 
+Within this handler the state of the FSM may be queried using the
+:meth:`stateName` method.
+
 **IMPORTANT**: This handler is not stacked, meaning that each invocation of
 :func:`whenUnhandled` replaces the previously installed handler.
 

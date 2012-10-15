@@ -13,6 +13,15 @@ Default dispatcher
 Every ``ActorSystem`` will have a default dispatcher that will be used in case nothing else is configured for an ``Actor``.
 The default dispatcher can be configured, and is by default a ``Dispatcher`` with a "fork-join-executor", which gives excellent performance in most cases.
 
+.. _dispatcher-lookup-java:
+
+Looking up a Dispatcher
+-----------------------
+
+Dispatchers implement the :class:`ExecutionContext` interface and can thus be used to run :class:`Future` invocations etc.
+
+.. includecode:: code/docs/dispatcher/DispatcherDocTestBase.java#lookup
+
 Setting the dispatcher for an Actor
 -----------------------------------
 

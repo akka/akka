@@ -186,6 +186,13 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     //#defining-pinned-dispatcher
   }
 
+  "looking up a dispatcher" in {
+    //#lookup
+    // for use with Futures, Scheduler, etc.
+    implicit val executionContext = system.dispatchers.lookup("my-dispatcher")
+    //#lookup
+  }
+
   "defining priority dispatcher" in {
     //#prio-dispatcher
 
