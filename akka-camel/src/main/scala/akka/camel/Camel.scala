@@ -10,10 +10,10 @@ import org.apache.camel.ProducerTemplate
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.model.RouteDefinition
 import com.typesafe.config.Config
-import scala.concurrent.util.Duration
-import scala.concurrent.util.FiniteDuration
-import java.util.concurrent.TimeUnit._
 import akka.ConfigurationException
+import scala.concurrent.duration.Duration
+import java.util.concurrent.TimeUnit._
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Camel trait encapsulates the underlying camel machinery.

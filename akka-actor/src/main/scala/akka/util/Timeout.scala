@@ -8,7 +8,7 @@ import language.implicitConversions
 
 import java.util.concurrent.TimeUnit
 import java.lang.{ Double ⇒ JDouble }
-import scala.concurrent.util.{ Duration, FiniteDuration }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 @SerialVersionUID(1L)
 case class Timeout(duration: FiniteDuration) {

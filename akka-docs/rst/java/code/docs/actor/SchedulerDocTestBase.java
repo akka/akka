@@ -5,7 +5,7 @@ package docs.actor;
 
 //#imports1
 import akka.actor.Props;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import java.util.concurrent.TimeUnit;
 //#imports1
 

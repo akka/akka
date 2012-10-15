@@ -6,19 +6,19 @@ package docs.actor;
 //#receive-timeout
 import akka.actor.ReceiveTimeout;
 import akka.actor.UntypedActor;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 
 public class MyReceivedTimeoutUntypedActor extends UntypedActor {
 
   public MyReceivedTimeoutUntypedActor() {
     // To set an initial delay
-    getContext().setReceiveTimeout(Duration.parse("30 seconds"));
+    getContext().setReceiveTimeout(Duration.create("30 seconds"));
   }
 
   public void onReceive(Object message) {
     if (message.equals("Hello")) {
       // To set in a response to a message
-      getContext().setReceiveTimeout(Duration.parse("10 seconds"));
+      getContext().setReceiveTimeout(Duration.create("10 seconds"));
       getSender().tell("Hello world", getSelf());
     } else if (message == ReceiveTimeout.getInstance()) {
       // To turn it off

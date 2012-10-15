@@ -12,7 +12,7 @@ import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, De
 import akka.event.Logging
 import java.lang.{ Iterable ⇒ JIterable }
 import scala.collection.JavaConverters
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import akka.actor.NoSerializationVerificationNeeded
 

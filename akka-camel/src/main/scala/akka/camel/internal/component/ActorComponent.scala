@@ -11,8 +11,7 @@ import org.apache.camel.impl.{ DefaultProducer, DefaultEndpoint, DefaultComponen
 import akka.actor._
 import akka.pattern._
 import scala.reflect.BeanProperty
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
 import java.util.concurrent.{ TimeUnit, TimeoutException, CountDownLatch }
@@ -21,7 +20,6 @@ import akka.camel.internal.CamelExchangeAdapter
 import akka.camel.{ ActorNotRegisteredException, Camel, Ack, FailureResult, CamelMessage }
 import support.TypeConverterSupport
 import scala.util.{ Failure, Success, Try }
-import scala.concurrent.util.FiniteDuration
 
 /**
  * For internal use only.
@@ -183,7 +181,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 }
 
 /**
- * For internal use only. Converts Strings to [[scala.concurrent.util.Duration]]
+ * For internal use only. Converts Strings to [[scala.concurrent.duration.Duration]]
  */
 private[camel] object DurationTypeConverter extends TypeConverterSupport {
 

@@ -8,19 +8,16 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.testkit.TestEvent._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
-import scala.concurrent.util.Deadline
 import java.util.concurrent.TimeoutException
 import scala.collection.immutable.SortedSet
 import scala.concurrent.Await
-import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.remote.testconductor.RoleName
 import akka.actor.Props
 import akka.actor.Actor
 import akka.cluster.MemberStatus._
-import scala.concurrent.util.FiniteDuration
 
 object LargeClusterMultiJvmSpec extends MultiNodeConfig {
   // each jvm simulates a datacenter with many nodes
@@ -137,9 +134,7 @@ abstract class LargeClusterSpec
     systems foreach { Cluster(_) }
   }
 
-  def expectedMaxDuration(totalNodes: Int): FiniteDuration =
-    // this cast will always succeed, but the compiler does not know about it ...
-    (5.seconds + (2.seconds * totalNodes)).asInstanceOf[FiniteDuration]
+  def expectedMaxDuration(totalNodes: Int): FiniteDuration = 5.seconds + 2.seconds * totalNodes
 
   def joinAll(from: RoleName, to: RoleName, totalNodes: Int, runOnRoles: RoleName*): Unit = {
     val joiningClusters = systems.map(Cluster(_)).toSet
@@ -287,7 +282,7 @@ abstract class LargeClusterSpec
       val unreachableNodes = nodesPerDatacenter
       val liveNodes = nodesPerDatacenter * 4
 
-      within((30.seconds + (3.seconds * liveNodes)).asInstanceOf[FiniteDuration]) {
+      within(30.seconds + 3.seconds * liveNodes) {
         val startGossipCounts = Map.empty[Cluster, Long] ++
           systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).readView.latestStats.receivedGossipCount))
         def gossipCount(c: Cluster): Long = {

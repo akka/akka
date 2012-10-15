@@ -7,7 +7,8 @@ import akka.camel.javaapi.UntypedProducerActor;
 import akka.util.Timeout;
 import scala.concurrent.Await;
 import scala.concurrent.ExecutionContext;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Predicate;
@@ -16,7 +17,6 @@ import org.apache.camel.component.mock.MockEndpoint;
 import org.junit.Before;
 import org.junit.After;
 import org.junit.Test;
-import scala.concurrent.util.FiniteDuration;
 
 import java.util.concurrent.TimeUnit;
 

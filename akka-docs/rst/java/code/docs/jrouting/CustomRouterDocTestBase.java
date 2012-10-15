@@ -19,7 +19,7 @@ import org.junit.Test;
 
 import scala.concurrent.Await;
 import scala.concurrent.Future;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.OneForOneStrategy;
@@ -68,7 +68,7 @@ public class CustomRouterDocTestBase {
   public void demonstrateSupervisor() {
     //#supervision
     final SupervisorStrategy strategy =
-      new OneForOneStrategy(5, Duration.parse("1 minute"),
+      new OneForOneStrategy(5, Duration.create("1 minute"),
         new Class<?>[] { Exception.class });
     final ActorRef router = system.actorOf(new Props(MyActor.class)
         .withRouter(new RoundRobinRouter(5).withSupervisorStrategy(strategy)));

@@ -10,8 +10,7 @@ import akka.actor.Props
 import akka.actor.Actor
 import scala.concurrent.Await
 import scala.concurrent.Awaitable
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit.ImplicitSender
 import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress

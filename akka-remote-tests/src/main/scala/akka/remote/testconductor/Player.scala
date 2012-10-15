@@ -6,8 +6,7 @@ package akka.remote.testconductor
 import language.postfixOps
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, PoisonPill, Status, Address, Scheduler }
 import RemoteConnection.getAddrString
-import scala.concurrent.util.{ Duration, Deadline }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.util.Timeout
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent, WriteCompletionEvent, ExceptionEvent }
 import com.typesafe.config.ConfigFactory
@@ -19,7 +18,6 @@ import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
 import scala.reflect.classTag
 import concurrent.{ ExecutionContext, Await, Future }
-import scala.concurrent.util.FiniteDuration
 
 /**
  * The Player is the client component of the
@@ -81,13 +79,13 @@ trait Player { this: TestConductorExt ⇒
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
     val stop = Deadline.now + timeout.duration
     name foreach { b ⇒
-      val barrierTimeout = stop.timeLeft.asInstanceOf[FiniteDuration]
+      val barrierTimeout = stop.timeLeft
       if (barrierTimeout < Duration.Zero) {
         client ! ToServer(FailBarrier(b))
         throw new TimeoutException("Server timed out while waiting for barrier " + b);
       }
       try {
-        implicit val timeout = Timeout((barrierTimeout + Settings.QueryTimeout.duration).asInstanceOf[FiniteDuration])
+        implicit val timeout = Timeout(barrierTimeout + Settings.QueryTimeout.duration)
         Await.result(client ? ToServer(EnterBarrier(b, Option(barrierTimeout))), Duration.Inf)
       } catch {
         case e: AskTimeoutException ⇒
@@ -255,7 +253,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
 private[akka] class PlayerHandler(
   server: InetSocketAddress,
   private var reconnects: Int,
-  backoff: Duration,
+  backoff: FiniteDuration,
   fsm: ActorRef,
   log: LoggingAdapter,
   scheduler: Scheduler)(implicit executor: ExecutionContext)
@@ -278,7 +276,7 @@ private[akka] class PlayerHandler(
     event.getCause match {
       case c: ConnectException if reconnects > 0 ⇒
         reconnects -= 1
-        scheduler.scheduleOnce(nextAttempt.timeLeft.asInstanceOf[FiniteDuration])(reconnect())
+        scheduler.scheduleOnce(nextAttempt.timeLeft)(reconnect())
       case e ⇒ fsm ! ConnectionFailure(e.getMessage)
     }
   }

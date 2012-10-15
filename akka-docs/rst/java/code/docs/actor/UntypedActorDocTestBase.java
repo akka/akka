@@ -14,7 +14,7 @@ import scala.concurrent.Future;
 import akka.dispatch.Futures;
 import akka.dispatch.Mapper;
 import scala.concurrent.Await;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.util.Timeout;
 //#import-future
 
@@ -35,7 +35,7 @@ import akka.actor.Terminated;
 import static akka.pattern.Patterns.gracefulStop;
 import scala.concurrent.Future;
 import scala.concurrent.Await;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.pattern.AskTimeoutException;
 //#import-gracefulStop
 
@@ -44,7 +44,7 @@ import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
 import scala.concurrent.Future;
 import akka.dispatch.Futures;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.util.Timeout;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
@@ -192,7 +192,7 @@ public class UntypedActorDocTestBase {
     ActorSystem system = ActorSystem.create("MySystem");
     ActorRef myActor = system.actorOf(new Props(WatchActor.class));
     Future<Object> future = Patterns.ask(myActor, "kill", 1000);
-    assert Await.result(future, Duration.parse("1 second")).equals("finished");
+    assert Await.result(future, Duration.create("1 second")).equals("finished");
     system.shutdown();
   }
 

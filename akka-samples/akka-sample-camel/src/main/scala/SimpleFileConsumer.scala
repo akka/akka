@@ -19,6 +19,6 @@ class FileConsumer(uri: String) extends Consumer {
   def endpointUri = uri
   def receive = {
     case msg: CamelMessage ⇒
-      println("Received file %s with content:\n%s".format(msg.getHeader(Exchange.FILE_NAME), msg.bodyAs[String]))
+      println("Received file %s with content:\n%s".format(msg.headers(Exchange.FILE_NAME), msg.bodyAs[String]))
   }
 }

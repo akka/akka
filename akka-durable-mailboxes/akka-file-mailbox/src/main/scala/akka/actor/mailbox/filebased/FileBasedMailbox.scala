@@ -12,7 +12,7 @@ import akka.ConfigurationException
 import akka.dispatch._
 import scala.util.control.NonFatal
 import akka.pattern.{ CircuitBreakerOpenException, CircuitBreaker }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 
 class FileBasedMailboxType(systemSettings: ActorSystem.Settings, config: Config) extends MailboxType {
   private val settings = new FileBasedMailboxSettings(systemSettings, config)

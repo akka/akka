@@ -4,12 +4,12 @@
 package akka.remote.netty
 
 import com.typesafe.config.Config
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit._
 import java.net.InetAddress
 import akka.ConfigurationException
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 private[akka] class NettySettings(config: Config, val systemName: String) {
 

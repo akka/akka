@@ -6,7 +6,7 @@ package akka.camel
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.WordSpec
 import akka.actor.ActorSystem
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit._
 
 class CamelConfigSpec extends WordSpec with MustMatchers {

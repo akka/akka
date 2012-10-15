@@ -5,7 +5,7 @@ import akka.remote.RemoteActorRefProvider
 import akka.util.Timeout
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.ConcurrentHashMap
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 
 /**
  * Access to the [[akka.remote.testconductor.TestConductorExt]] extension:

@@ -5,9 +5,9 @@ package sample.fsm.buncher
 
 import akka.actor.ActorRefFactory
 import scala.reflect.ClassTag
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import akka.actor.{ FSM, Actor, ActorRef }
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 /*
 * generic typed object buncher.

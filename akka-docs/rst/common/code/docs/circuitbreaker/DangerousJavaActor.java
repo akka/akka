@@ -8,7 +8,7 @@ package docs.circuitbreaker;
 import akka.actor.UntypedActor;
 import scala.concurrent.Future;
 import akka.event.LoggingAdapter;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.pattern.CircuitBreaker;
 import akka.event.Logging;
 

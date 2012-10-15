@@ -35,7 +35,7 @@ class CustomRouteSpec extends AkkaSpec {
       import akka.pattern.ask
       import akka.testkit.ExtractRoute
       import scala.concurrent.Await
-      import scala.concurrent.util.duration._
+      import scala.concurrent.duration._
 
       val target = system.actorOf(Props.empty)
       val router = system.actorOf(Props.empty.withRouter(new MyRouter(target)))

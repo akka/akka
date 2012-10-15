@@ -8,13 +8,11 @@ import language.postfixOps
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.testkit._
 import TestEvent.Mute
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.event._
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import akka.util.Timeout
-import scala.concurrent.util.Duration
-import scala.concurrent.util.FiniteDuration
 
 object FSMActorSpec {
   val timeout = Timeout(2 seconds)

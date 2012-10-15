@@ -9,11 +9,11 @@ import akka.AkkaException
 import akka.actor.{ ActorCell, ActorRef, Cell, ActorSystem, InternalActorRef, DeadLetter }
 import akka.util.{ Unsafe, BoundedBlockingQueue }
 import akka.event.Logging.Error
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import com.typesafe.config.Config
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

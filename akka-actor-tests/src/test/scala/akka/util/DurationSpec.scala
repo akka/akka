@@ -7,8 +7,7 @@ import language.postfixOps
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 import java.util.concurrent.TimeUnit._
 
@@ -34,11 +33,12 @@ class DurationSpec extends WordSpec with MustMatchers {
       val one = 1.second
       val inf = Duration.Inf
       val minf = Duration.MinusInf
+      val undefined = Duration.Undefined
       (-inf) must be(minf)
-      intercept[IllegalArgumentException] { minf + inf }
-      intercept[IllegalArgumentException] { inf - inf }
-      intercept[IllegalArgumentException] { inf + minf }
-      intercept[IllegalArgumentException] { minf - minf }
+      (minf + inf) must be(undefined)
+      (inf - inf) must be(undefined)
+      (inf + minf) must be(undefined)
+      (minf - minf) must be(undefined)
       (inf + inf) must be(inf)
       (inf - minf) must be(inf)
       (minf - inf) must be(minf)

@@ -4,11 +4,10 @@
 package akka.cluster
 
 import language.postfixOps
+
 import scala.collection.immutable.SortedSet
 import scala.annotation.tailrec
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Deadline
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration._
 import java.net.URLEncoder
 import akka.actor.{ ActorLogging, ActorRef, Address, Actor, RootActorPath, PoisonPill, Props }
 import akka.pattern.{ CircuitBreaker, CircuitBreakerOpenException }
@@ -94,7 +93,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     selfAddress.toString, MonitoredByNrOfMembers)
 
   // start periodic heartbeat to other nodes in cluster
-  val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay.max(HeartbeatInterval).asInstanceOf[FiniteDuration],
+  val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay max HeartbeatInterval,
     HeartbeatInterval, self, HeartbeatTick)
 
   override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])
@@ -346,5 +345,4 @@ private[cluster] final class ClusterHeartbeatSenderConnection(toRef: ActorRef)
       log.debug("Cluster Node [{}] - EndHeartbeat to [{}]", endHeartbeatMsg.from, toRef)
       toRef ! endHeartbeatMsg
   }
-
 }

@@ -1,7 +1,7 @@
 package sample.cluster.stats
 
 import language.postfixOps
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 import akka.actor.Props
 import akka.actor.RootActorPath

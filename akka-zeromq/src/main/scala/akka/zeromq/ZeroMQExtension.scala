@@ -8,11 +8,11 @@ import org.zeromq.ZMQ.Poller
 import akka.actor._
 import akka.pattern.ask
 import scala.concurrent.Await
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
 import akka.util.Timeout
 import org.zeromq.ZMQException
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * A Model to represent a version of the zeromq library

@@ -5,7 +5,7 @@ package docs.dataflow
 
 import language.postfixOps
 
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers

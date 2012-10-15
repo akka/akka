@@ -10,7 +10,7 @@ import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import akka.routing._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object DeployerSpec {
   val deployerConf = ConfigFactory.parseString("""

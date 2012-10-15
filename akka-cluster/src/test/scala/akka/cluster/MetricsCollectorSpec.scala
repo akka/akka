@@ -5,8 +5,7 @@
 package akka.cluster
 
 import scala.language.postfixOps
-import scala.concurrent.util.duration._
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration._
 import scala.concurrent.Await
 
 import akka.actor._

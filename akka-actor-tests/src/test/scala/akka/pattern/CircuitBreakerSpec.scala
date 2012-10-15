@@ -6,7 +6,7 @@ package akka.pattern
 
 import language.postfixOps
 
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit._
 import org.scalatest.BeforeAndAfter
 import akka.actor.{ ActorSystem, Scheduler }

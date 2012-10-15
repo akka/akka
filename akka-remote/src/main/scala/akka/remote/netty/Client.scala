@@ -20,7 +20,7 @@ import akka.actor.{ DeadLetter, Address, ActorRef }
 import akka.util.Switch
 import scala.util.control.NonFatal
 import org.jboss.netty.handler.ssl.SslHandler
-import scala.concurrent.util.Deadline
+import scala.concurrent.duration._
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an

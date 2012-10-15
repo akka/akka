@@ -7,7 +7,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import scala.concurrent.{ Future, Await }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

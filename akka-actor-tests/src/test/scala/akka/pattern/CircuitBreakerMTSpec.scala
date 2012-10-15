@@ -4,7 +4,7 @@
 package akka.pattern
 
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Future, Await }
 
 class CircuitBreakerMTSpec extends AkkaSpec {

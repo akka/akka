@@ -17,8 +17,7 @@ import akka.remote.netty.{ NettySettings, NettySSLSupport }
 import javax.net.ssl.SSLException
 import akka.util.Timeout
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import akka.event.{ Logging, NoLogging, LoggingAdapter }
 
 object Configuration {

@@ -3,7 +3,7 @@
  */
 package akka.actor
 
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit._
 import akka.testkit.TestEvent._
 import scala.concurrent.Await

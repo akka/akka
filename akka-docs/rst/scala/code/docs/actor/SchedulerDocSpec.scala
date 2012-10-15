@@ -8,7 +8,7 @@ import language.postfixOps
 //#imports1
 import akka.actor.Actor
 import akka.actor.Props
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 //#imports1
 

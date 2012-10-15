@@ -9,8 +9,8 @@ import akka.testkit.*;
 import akka.testkit.TestEvent.Mute;
 import akka.testkit.TestEvent.UnMute;
 import org.junit.*;
-import scala.concurrent.util.Duration;
-import scala.concurrent.util.FiniteDuration;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 

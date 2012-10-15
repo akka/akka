@@ -5,9 +5,9 @@
 package akka.testkit
 
 import akka.actor._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import akka.dispatch.DispatcherPrerequisites
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * This is a specialised form of the TestActorRef with support for querying and

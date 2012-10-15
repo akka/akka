@@ -4,6 +4,8 @@
 
 package akka.camel;
 
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -11,12 +13,10 @@ import akka.testkit.JavaTestKit;
 import akka.util.Timeout;
 import scala.concurrent.Await;
 import scala.concurrent.ExecutionContext;
-import scala.concurrent.util.Duration;
 import org.junit.AfterClass;
 import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 import akka.testkit.AkkaSpec;
-import scala.concurrent.util.FiniteDuration;
 import static org.junit.Assert.*;
 /**
  * @author Martin Krasser

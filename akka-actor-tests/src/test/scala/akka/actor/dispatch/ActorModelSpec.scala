@@ -21,8 +21,7 @@ import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
 import akka.util.Switch
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.annotation.tailrec
 

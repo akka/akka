@@ -11,7 +11,7 @@ import com.typesafe.config.Config
 import akka.actor.{ RepointableRef, Props, DeadLetter, ActorSystem, ActorRefWithCell, ActorRef, ActorCell }
 import akka.testkit.AkkaSpec
 import scala.concurrent.{ Future, Promise, Await }
-import scala.concurrent.util.duration.intToDurationInt
+import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {

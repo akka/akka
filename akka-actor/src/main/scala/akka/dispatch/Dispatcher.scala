@@ -10,9 +10,9 @@ import akka.event.Logging
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ ExecutorService, RejectedExecutionException }
 import scala.concurrent.forkjoin.ForkJoinPool
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.concurrent.Awaitable
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * The event-based ``Dispatcher`` binds a set of Actors to a thread pool backed up by a

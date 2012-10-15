@@ -8,8 +8,8 @@ package docs.camel;
     import akka.camel.javaapi.UntypedConsumerActor;
     import akka.util.Timeout;
     import scala.concurrent.Future;
-    import scala.concurrent.util.Duration;
-    import scala.concurrent.util.FiniteDuration;
+    import scala.concurrent.duration.Duration;
+    import scala.concurrent.duration.FiniteDuration;
     import static java.util.concurrent.TimeUnit.SECONDS;
 //#CamelActivation
 

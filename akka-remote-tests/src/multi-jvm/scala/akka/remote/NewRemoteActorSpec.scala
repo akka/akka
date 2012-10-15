@@ -12,7 +12,7 @@ import akka.pattern.ask
 import testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
 import akka.actor.Terminated
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 
 object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {

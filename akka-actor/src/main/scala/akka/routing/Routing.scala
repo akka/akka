@@ -6,8 +6,7 @@ package akka.routing
 import language.implicitConversions
 import language.postfixOps
 import akka.actor._
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.ConfigurationException
 import akka.pattern.pipe
 import com.typesafe.config.Config
@@ -18,7 +17,6 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.dispatch.Dispatchers
 import scala.annotation.tailrec
 import concurrent.ExecutionContext
-import scala.concurrent.util.FiniteDuration
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
