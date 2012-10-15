@@ -5,10 +5,9 @@ package akka.actor.mailbox.filebased
 
 import akka.actor.mailbox._
 import com.typesafe.config.Config
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.ActorSystem
-import scala.concurrent.util.FiniteDuration
 
 class FileBasedMailboxSettings(val systemSettings: ActorSystem.Settings, val userConfig: Config)
   extends DurableMailboxSettings {

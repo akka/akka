@@ -9,7 +9,7 @@ import org.scalatest.WordSpec
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.util.Timeout
 import de.kalpatec.pojosr.framework.launch.BundleDescriptor
 import test.{ RuntimeNameActorSystemActivator, TestActivators, PingPongActorSystemActivator }

@@ -6,7 +6,7 @@ package akka.cluster
 
 import language.postfixOps
 import scala.collection.immutable.SortedSet
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterEach
 import akka.actor.Address
 import akka.actor.Props

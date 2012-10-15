@@ -6,10 +6,8 @@ package akka.zeromq
 import com.google.protobuf.Message
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor.ActorRef
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import org.zeromq.ZMQ.{ Poller, Socket }
-import scala.concurrent.util.FiniteDuration
 
 /**
  * Marker trait representing request messages for zeromq

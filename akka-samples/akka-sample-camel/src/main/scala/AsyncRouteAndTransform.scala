@@ -24,7 +24,7 @@ class HttpProducer(transformer: ActorRef) extends Actor with Producer {
   def endpointUri = "jetty://http://akka.io/?bridgeEndpoint=true"
 
   override def transformOutgoingMessage(msg: Any) = msg match {
-    case msg: CamelMessage ⇒ msg.withHeaders(msg.headers(Set(Exchange.HTTP_PATH)))
+    case msg: CamelMessage ⇒ msg.copy(headers = msg.headers(Set(Exchange.HTTP_PATH)))
   }
 
   override def routeResponse(msg: Any) {

@@ -21,7 +21,7 @@ import akka.actor.Props
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
 import akka.testkit.TestKit
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 /**
  * a Test to show some TestKit examples

@@ -4,7 +4,7 @@
 package akka.cluster.routing
 
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 

@@ -12,8 +12,7 @@ import akka.actor._
 import akka.testkit.{ EventFilter, filterEvents, filterException, AkkaSpec, DefaultTimeout, TestLatch }
 import scala.concurrent.{ Await, Awaitable, Future, Promise, ExecutionContext }
 import scala.util.control.NonFatal
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import org.scalatest.junit.JUnitSuite
 import scala.runtime.NonLocalReturnControl

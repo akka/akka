@@ -29,7 +29,8 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.1-SNAPSHOT",
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-M7")
+    // FIXME: use 2.10.0 for final
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC1")
   )
 
   lazy val akka = Project(
@@ -48,7 +49,7 @@ object AkkaBuild extends Build {
            |import ActorDSL._
            |import scala.concurrent._
            |import com.typesafe.config.ConfigFactory
-           |import scala.concurrent.util.duration._
+           |import scala.concurrent.duration._
            |import akka.util.Timeout
            |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG")
            |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=akka.remote.RemoteActorRefProvider").withFallback(config)
@@ -65,7 +66,7 @@ object AkkaBuild extends Build {
       generatePdf in Sphinx <<= generatePdf in Sphinx in LocalProject(docs.id) map identity
 
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples)
   )
 
   lazy val actor = Project(
@@ -401,13 +402,7 @@ object AkkaBuild extends Build {
     super.settings ++
     buildSettings ++
     Seq(
-      shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
-      resolvers <<= (resolvers, scalaVersion) apply {
-        case (res, "2.10.0-SNAPSHOT") =>
-          res :+ ("Scala Community 2.10.0-SNAPSHOT" at "https://scala-webapps.epfl.ch/jenkins/job/community-nightly/ws/target/repositories/fc24ea43b17664f020e43379e800c34be09700bd")
-        case (res, _) =>
-          res
-      }
+      shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
     )
 
   lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
@@ -666,7 +661,8 @@ object Dependencies {
     val scalaStm      = "org.scala-tools"             % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
-    val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding"         % "0.0.6" cross CrossVersion.full // ApacheV2
+    // FIXME: use 2.10.0-RC1 version once published
+    val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding_2.10.0-M7"         % "0.0.6" // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a"      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
@@ -683,7 +679,7 @@ object Dependencies {
       val junit       = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
       val logback     = "ch.qos.logback"              % "logback-classic"              % "1.0.7"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito     = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
-      val scalatest   = "org.scalatest"               % "scalatest"                    % "1.9-2.10.0-M7-B1" % "test" cross CrossVersion.full // ApacheV2
+      val scalatest   = "org.scalatest"               % "scalatest"                    % "1.8"              % "test" cross CrossVersion.full // ApacheV2
       val scalacheck  = "org.scalacheck"              % "scalacheck"                   % "1.10.0"           % "test" cross CrossVersion.full // New BSD
       val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
       val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
@@ -737,3 +733,4 @@ object Dependencies {
 
   val multiNodeSample = Seq(Test.scalatest)
 }
+

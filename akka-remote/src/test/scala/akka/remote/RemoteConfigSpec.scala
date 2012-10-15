@@ -7,8 +7,7 @@ import language.postfixOps
 
 import akka.testkit.AkkaSpec
 import akka.actor.ExtendedActorSystem
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import akka.remote.netty.NettyRemoteTransport
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

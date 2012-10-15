@@ -16,7 +16,7 @@ import akka.routing.ScatterGatherFirstCompletedRouter
 import akka.routing.RoutedActorRef
 import akka.testkit._
 import akka.testkit.TestEvent._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.PoisonPill
 import akka.actor.Address
 

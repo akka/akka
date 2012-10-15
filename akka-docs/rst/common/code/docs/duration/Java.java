@@ -5,15 +5,15 @@
 package docs.duration;
 
 //#import
-import scala.concurrent.util.Duration;
-import scala.concurrent.util.Deadline;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.Deadline;
 //#import
 
 class Java {
   public void demo() {
     //#dsl
     final Duration fivesec = Duration.create(5, "seconds");
-    final Duration threemillis = Duration.parse("3 millis");
+    final Duration threemillis = Duration.create("3 millis");
     final Duration diff = fivesec.minus(threemillis);
     assert diff.lt(fivesec);
     assert Duration.Zero().lt(Duration.Inf());

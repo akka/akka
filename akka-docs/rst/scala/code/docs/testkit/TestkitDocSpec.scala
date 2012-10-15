@@ -8,7 +8,7 @@ import scala.util.Success
 
 //#imports-test-probe
 import akka.testkit.TestProbe
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor._
 import scala.concurrent.Future
 
@@ -89,7 +89,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#test-fsm-ref
     import akka.testkit.TestFSMRef
     import akka.actor.FSM
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
 
     val fsm = TestFSMRef(new Actor with FSM[Int, String] {
       startWith(1, "")
@@ -122,7 +122,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
     //#test-behavior
     import akka.testkit.TestActorRef
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
     import scala.concurrent.Await
     import akka.pattern.ask
 
@@ -161,7 +161,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     type Worker = MyActor
     //#test-within
     import akka.actor.Props
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
 
     val worker = system.actorOf(Props[Worker])
     within(200 millis) {
@@ -175,7 +175,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   "demonstrate dilated duration" in {
     //#duration-dilation
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
     import akka.testkit._
     10.milliseconds.dilated
     //#duration-dilation
@@ -208,7 +208,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   "demonstrate probe reply" in {
     import akka.testkit.TestProbe
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
     import akka.pattern.ask
     //#test-probe-reply
     val probe = TestProbe()

@@ -9,7 +9,7 @@ import org.scalatest.{ WordSpec, BeforeAndAfterAll, Tag }
 import org.scalatest.matchers.MustMatchers
 import akka.actor.{ Actor, Props, ActorSystem, PoisonPill, DeadLetter, ActorSystemImpl }
 import akka.event.{ Logging, LoggingAdapter }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import com.typesafe.config.{ Config, ConfigFactory }
 import java.util.concurrent.TimeoutException

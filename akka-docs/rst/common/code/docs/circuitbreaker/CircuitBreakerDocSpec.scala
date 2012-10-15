@@ -5,7 +5,7 @@
 package docs.circuitbreaker
 
 //#imports1
-import scala.concurrent.util.duration._ // small d is important here
+import scala.concurrent.duration._
 import akka.pattern.CircuitBreaker
 import akka.pattern.pipe
 import akka.actor.Actor

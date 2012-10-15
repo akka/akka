@@ -7,8 +7,7 @@ import language.postfixOps
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.Timeout
 import scala.concurrent.{ Await, Future, Promise }
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
@@ -20,7 +19,6 @@ import akka.serialization.JavaSerializer
 import akka.actor.TypedActor._
 import java.lang.IllegalStateException
 import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
-import scala.concurrent.util.FiniteDuration
 
 object TypedActorSpec {
 

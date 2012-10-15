@@ -8,8 +8,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import scala.concurrent.util.Duration;
-import scala.concurrent.util.FiniteDuration;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;

@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConversions._
 import java.lang.{ Iterable ⇒ JIterable }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 /**
  * INTERNAL API
  */

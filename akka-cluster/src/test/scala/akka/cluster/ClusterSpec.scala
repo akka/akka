@@ -6,8 +6,7 @@ package akka.cluster
 
 import language.postfixOps
 import language.reflectiveCalls
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.actor.ExtendedActorSystem

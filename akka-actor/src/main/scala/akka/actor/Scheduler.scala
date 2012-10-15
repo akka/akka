@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import akka.util.internal.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout, Timer }
 import akka.event.LoggingAdapter
 import akka.dispatch.MessageDispatcher
@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.{ AtomicReference, AtomicLong }
 import scala.annotation.tailrec
 import akka.util.internal._
 import concurrent.ExecutionContext
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 //#scheduler
 /**

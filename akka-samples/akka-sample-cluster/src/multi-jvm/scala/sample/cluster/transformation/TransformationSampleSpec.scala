@@ -1,7 +1,7 @@
 package sample.cluster.transformation
 
 import language.postfixOps
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 

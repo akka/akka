@@ -13,10 +13,10 @@ import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Index }
 import scala.annotation.tailrec
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.concurrent.{ ExecutionContext, Await, Awaitable }
 import scala.util.control.NonFatal
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 

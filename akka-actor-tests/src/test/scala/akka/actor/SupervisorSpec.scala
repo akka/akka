@@ -7,7 +7,7 @@ package akka.actor
 import language.postfixOps
 
 import org.scalatest.BeforeAndAfterEach
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.{ Die, Ping }
 import akka.testkit.TestEvent._
 import akka.testkit._

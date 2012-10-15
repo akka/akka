@@ -15,8 +15,7 @@ import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestLatch
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

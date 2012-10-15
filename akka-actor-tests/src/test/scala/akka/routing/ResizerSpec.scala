@@ -9,13 +9,11 @@ import akka.testkit._
 import akka.testkit.TestEvent._
 import akka.actor.Props
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.ActorRef
 import java.util.concurrent.atomic.AtomicInteger
 import akka.pattern.ask
-import scala.concurrent.util.Duration
 import java.util.concurrent.TimeoutException
-import scala.concurrent.util.FiniteDuration
 import scala.util.Try
 
 object ResizerSpec {
@@ -162,7 +160,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
           // sending in too quickly will result in skipped resize due to many resizeInProgress conflicts
           Thread.sleep(20.millis.dilated.toMillis)
         }
-        within((((d * loops).asInstanceOf[FiniteDuration] / resizer.lowerBound) + 2.seconds.dilated).asInstanceOf[FiniteDuration]) {
+        within((d * loops / resizer.lowerBound) + 2.seconds.dilated) {
           for (m ← 0 until loops) expectMsg("done")
         }
       }

@@ -16,7 +16,7 @@ import akka.actor.PreRestartException
 import akka.actor.Failed
 import akka.actor.PostRestartException
 import akka.event.Logging.Debug
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 
 private[akka] trait FaultHandling { this: ActorCell ⇒
 

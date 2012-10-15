@@ -8,8 +8,7 @@ import language.postfixOps
 
 import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterConfigSpec extends AkkaSpec {

@@ -7,8 +7,7 @@ package docs.pattern
 import language.postfixOps
 
 import akka.actor.{ Props, ActorRef, Actor }
-import scala.concurrent.util.duration._
-import scala.concurrent.util.{ FiniteDuration, Duration }
+import scala.concurrent.duration._
 import akka.testkit.{ TimingTest, AkkaSpec, filterException }
 import docs.pattern.SchedulerPatternSpec.ScheduleInConstructor
 

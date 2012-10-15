@@ -12,7 +12,7 @@ import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Address
 import akka.remote.testconductor.{ RoleName, Direction }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")

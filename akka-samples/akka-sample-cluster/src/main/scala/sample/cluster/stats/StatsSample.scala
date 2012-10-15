@@ -3,7 +3,7 @@ package sample.cluster.stats
 //#imports
 import language.postfixOps
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorLogging

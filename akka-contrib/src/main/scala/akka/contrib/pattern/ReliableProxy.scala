@@ -6,7 +6,7 @@ package akka.contrib.pattern
 
 import akka.actor._
 import akka.remote.RemoteScope
-import scala.concurrent.util._
+import scala.concurrent.duration._
 
 object ReliableProxy {
 

@@ -6,7 +6,7 @@ import akka.camel.TestSupport.NonSharedCamelSystem
 import akka.actor.{ ActorRef, Props, Actor }
 import akka.routing.BroadcastRouter
 import concurrent.{ Promise, Await, Future }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import language.postfixOps
 import akka.testkit._
 import akka.util.Timeout

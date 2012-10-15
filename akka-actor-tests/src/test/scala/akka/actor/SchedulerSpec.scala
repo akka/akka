@@ -3,7 +3,7 @@ package akka.actor
 import language.postfixOps
 
 import org.scalatest.BeforeAndAfterEach
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.util.concurrent.{ CountDownLatch, ConcurrentLinkedQueue, TimeUnit }
 import akka.testkit._
 import scala.concurrent.Await

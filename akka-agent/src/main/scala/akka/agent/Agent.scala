@@ -10,7 +10,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.stm._
 import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
-import scala.concurrent.util.{ FiniteDuration, Duration }
+import scala.concurrent.duration.{ FiniteDuration, Duration }
 
 /**
  * Used internally to send functions.

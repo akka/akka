@@ -8,7 +8,7 @@ import language.postfixOps
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.Actor._
 import akka.testkit.{ TestKit, EventFilter, filterEvents, filterException, AkkaSpec, ImplicitSender, DefaultTimeout }
 import akka.dispatch.Dispatchers

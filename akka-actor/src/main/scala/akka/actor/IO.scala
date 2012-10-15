@@ -7,7 +7,7 @@ import language.higherKinds
 import language.postfixOps
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import akka.util.ByteString
 import java.net.{ SocketAddress, InetSocketAddress }

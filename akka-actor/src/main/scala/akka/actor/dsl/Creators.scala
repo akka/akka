@@ -6,10 +6,8 @@ package akka.actor.dsl
 
 import scala.concurrent.Await
 import akka.actor.ActorLogging
-import scala.concurrent.util.Deadline
 import scala.collection.immutable.TreeSet
-import scala.concurrent.util.{ Duration, FiniteDuration }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.Cancellable
 import akka.actor.{ Actor, Stash, SupervisorStrategy }
 import scala.collection.mutable.Queue

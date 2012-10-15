@@ -9,7 +9,7 @@ import akka.dispatch._
 import akka.pattern.ask
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.io.Closeable
 import scala.concurrent.{ Await, Awaitable, CanAwait, Future }
 import scala.util.control.NonFatal
@@ -18,7 +18,7 @@ import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.dungeon.ChildrenContainer
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 import util.{ Failure, Success }
 
 object ActorSystem {

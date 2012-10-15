@@ -8,7 +8,7 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.Props
 import akka.actor.Actor
 import akka.cluster.MemberStatus._

@@ -6,10 +6,8 @@ package akka.actor.dsl
 
 import scala.concurrent.Await
 import akka.actor.ActorLogging
-import scala.concurrent.util.Deadline
 import scala.collection.immutable.TreeSet
-import scala.concurrent.util.{ Duration, FiniteDuration }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.Cancellable
 import akka.actor.Actor
 import scala.collection.mutable.Queue
@@ -129,10 +127,10 @@ trait Inbox { this: ActorDSL.type ⇒
         val next = clientsByTimeout.head.deadline
         import context.dispatcher
         if (currentDeadline.isEmpty) {
-          currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft.asInstanceOf[FiniteDuration], self, Kick)))
+          currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
         } else if (currentDeadline.get._1 != next) {
           currentDeadline.get._2.cancel()
-          currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft.asInstanceOf[FiniteDuration], self, Kick)))
+          currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
         }
       }
     }
@@ -169,7 +167,7 @@ trait Inbox { this: ActorDSL.type ⇒
      * this method within an actor!</b>
      */
     def receive(timeout: FiniteDuration = defaultTimeout): Any = {
-      implicit val t = Timeout((timeout + extraTime).asInstanceOf[FiniteDuration])
+      implicit val t = Timeout(timeout + extraTime)
       Await.result(receiver ? Get(Deadline.now + timeout), Duration.Inf)
     }
 
@@ -186,7 +184,7 @@ trait Inbox { this: ActorDSL.type ⇒
      * this method within an actor!</b>
      */
     def select[T](timeout: FiniteDuration = defaultTimeout)(predicate: PartialFunction[Any, T]): T = {
-      implicit val t = Timeout((timeout + extraTime).asInstanceOf[FiniteDuration])
+      implicit val t = Timeout(timeout + extraTime)
       predicate(Await.result(receiver ? Select(Deadline.now + timeout, predicate), Duration.Inf))
     }
 

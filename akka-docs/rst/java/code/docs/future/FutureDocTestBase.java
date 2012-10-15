@@ -12,7 +12,7 @@ import akka.util.Timeout;
 //#imports1
 
 //#imports2
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.japi.Function;
 import java.util.concurrent.Callable;
 import static akka.dispatch.Futures.future;

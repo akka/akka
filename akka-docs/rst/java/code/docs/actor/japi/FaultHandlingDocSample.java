@@ -13,7 +13,7 @@ import java.util.Map;
 import akka.actor.*;
 import akka.dispatch.Mapper;
 import akka.japi.Function;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.util.Timeout;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
@@ -62,7 +62,7 @@ public class FaultHandlingDocSample {
     public void preStart() {
       // If we don't get any progress within 15 seconds then the service
       // is unavailable
-      getContext().setReceiveTimeout(Duration.parse("15 seconds"));
+      getContext().setReceiveTimeout(Duration.create("15 seconds"));
     }
 
     public void onReceive(Object msg) {
@@ -237,7 +237,7 @@ public class FaultHandlingDocSample {
     // Restart the storage child when StorageException is thrown.
     // After 3 restarts within 5 seconds it will be stopped.
     private static SupervisorStrategy strategy = new OneForOneStrategy(3,
-      Duration.parse("5 seconds"), new Function<Throwable, Directive>() {
+      Duration.create("5 seconds"), new Function<Throwable, Directive>() {
       @Override
       public Directive apply(Throwable t) {
         if (t instanceof StorageException) {

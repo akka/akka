@@ -8,8 +8,7 @@ import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import akka.actor.Address
 import akka.routing.ConsistentHash
-import scala.concurrent.util.Deadline
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {

@@ -10,8 +10,8 @@ import akka.event.Logging;
 import akka.event.Logging.LogEvent;
 import akka.japi.JavaPartialFunction;
 import akka.japi.Util;
-import scala.concurrent.util.Duration;
-import scala.concurrent.util.FiniteDuration;
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 
 /**
  * Java API for the TestProbe. Proper JavaDocs to come once JavaDoccing is implemented.

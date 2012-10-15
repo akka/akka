@@ -11,7 +11,7 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.testkit._
 import akka.util.Timeout
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import java.lang.IllegalStateException
 import scala.concurrent.Promise

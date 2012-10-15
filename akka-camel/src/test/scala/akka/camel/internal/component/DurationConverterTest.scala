@@ -7,8 +7,7 @@ package akka.camel.internal.component
 import language.postfixOps
 
 import org.scalatest.matchers.MustMatchers
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import org.scalatest.WordSpec
 import org.apache.camel.TypeConversionException
 

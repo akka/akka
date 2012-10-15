@@ -8,7 +8,7 @@ import akka.japi.{ Creator, Option ⇒ JOption }
 import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 import akka.util.Timeout
 import scala.util.control.NonFatal
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
 import akka.util.Reflect.instantiator
 import akka.dispatch._
@@ -19,7 +19,7 @@ import scala.reflect.ClassTag
 import akka.serialization.{ JavaSerializer, SerializationExtension }
 import java.io.ObjectStreamException
 import scala.util.{ Try, Success, Failure }
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.

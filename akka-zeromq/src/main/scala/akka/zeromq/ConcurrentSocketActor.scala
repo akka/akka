@@ -7,7 +7,7 @@ import org.zeromq.ZMQ.{ Socket, Poller }
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
 import scala.concurrent.{ Promise, Future }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import akka.event.Logging

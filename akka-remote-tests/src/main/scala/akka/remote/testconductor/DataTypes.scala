@@ -12,7 +12,7 @@ import akka.remote.testconductor.{ TestConductorProtocol ⇒ TCP }
 import com.google.protobuf.Message
 import akka.actor.Address
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import akka.remote.testconductor.TestConductorProtocol.BarrierOp
 
 case class RoleName(name: String)
@@ -32,7 +32,7 @@ private[akka] sealed trait ConfirmedClientOp extends ClientOp
  */
 private[akka] case class Hello(name: String, addr: Address) extends NetworkOp
 
-private[akka] case class EnterBarrier(name: String, timeout: Option[Duration]) extends ServerOp with NetworkOp
+private[akka] case class EnterBarrier(name: String, timeout: Option[FiniteDuration]) extends ServerOp with NetworkOp
 private[akka] case class FailBarrier(name: String) extends ServerOp with NetworkOp
 private[akka] case class BarrierResult(name: String, success: Boolean) extends UnconfirmedClientOp with NetworkOp
 

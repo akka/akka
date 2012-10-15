@@ -9,7 +9,7 @@ import RemoteConnection.getAddrString
 import TestConductorProtocol._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.concurrent.Await
 import akka.event.{ LoggingAdapter, Logging }
@@ -21,9 +21,7 @@ import akka.actor.{ OneForOneStrategy, SupervisorStrategy, Status, Address, Pois
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.util.{ Timeout }
-import scala.concurrent.util.{ Deadline, Duration }
 import scala.reflect.classTag
-import scala.concurrent.util.FiniteDuration
 import akka.ConfigurationException
 
 sealed trait Direction {
@@ -566,7 +564,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   }
 
   onTransition {
-    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft.asInstanceOf[FiniteDuration], false)
+    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
     case Waiting -> Idle ⇒ cancelTimer("Timeout")
   }
 
@@ -577,7 +575,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       val enterDeadline = getDeadline(timeout)
       // we only allow the deadlines to get shorter
       if (enterDeadline.timeLeft < deadline.timeLeft) {
-        setTimer("Timeout", StateTimeout, enterDeadline.timeLeft.asInstanceOf[FiniteDuration], false)
+        setTimer("Timeout", StateTimeout, enterDeadline.timeLeft, false)
         handleBarrier(d.copy(arrived = together, deadline = enterDeadline))
       } else
         handleBarrier(d.copy(arrived = together))
@@ -608,7 +606,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
     }
   }
 
-  def getDeadline(timeout: Option[Duration]): Deadline = {
+  def getDeadline(timeout: Option[FiniteDuration]): Deadline = {
     Deadline.now + timeout.getOrElse(TestConductor().Settings.BarrierTimeout.duration)
   }
 
