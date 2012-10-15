@@ -42,6 +42,9 @@ class TestActorRef[T <: Actor](
     _supervisor,
     _supervisor.path / name) {
 
+  // we need to start ourselves since the creation of an actor has been split into initialization and starting
+  underlying.start()
+
   import TestActorRef.InternalGetActor
 
   override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =

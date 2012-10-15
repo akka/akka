@@ -516,6 +516,7 @@ class LocalActorRefProvider(
     cell.reserveChild("user")
     val ref = new LocalActorRef(system, Props(new Guardian(guardianStrategy)), rootGuardian, rootPath / "user")
     cell.initChild(ref)
+    ref.start()
     ref
   }
 
@@ -524,6 +525,7 @@ class LocalActorRefProvider(
     cell.reserveChild("system")
     val ref = new LocalActorRef(system, Props(new SystemGuardian(systemGuardianStrategy)), rootGuardian, rootPath / "system")
     cell.initChild(ref)
+    ref.start()
     ref
   }
 

@@ -192,6 +192,7 @@ private[akka] trait Children { this: ActorCell ⇒
       // mailbox==null during RoutedActorCell constructor, where suspends are queued otherwise
       if (mailbox ne null) for (_ ← 1 to mailbox.suspendCount) actor.suspend()
       initChild(actor)
+      actor.start()
       actor
     }
   }
