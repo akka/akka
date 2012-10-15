@@ -18,10 +18,11 @@ public class MyReceivedTimeoutUntypedActor extends UntypedActor {
   public void onReceive(Object message) {
     if (message.equals("Hello")) {
       // To set in a response to a message
-      getContext().setReceiveTimeout(Duration.parse("30 seconds"));
+      getContext().setReceiveTimeout(Duration.parse("10 seconds"));
       getSender().tell("Hello world", getSelf());
     } else if (message == ReceiveTimeout.getInstance()) {
       // To turn it off
+      getContext().setReceiveTimeout(Duration.Undefined());
       throw new RuntimeException("received timeout");
     } else {
       unhandled(message);

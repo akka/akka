@@ -274,9 +274,9 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       // To set an initial delay
       context.setReceiveTimeout(30 milliseconds)
       def receive = {
-        case "Hello"        ⇒
+        case "Hello" ⇒
           // To set in a response to a message
-          context.setReceiveTimeout(30 milliseconds)
+          context.setReceiveTimeout(100 milliseconds)
         case ReceiveTimeout ⇒
           // To turn it off
           context.setReceiveTimeout(Duration.Undefined)
