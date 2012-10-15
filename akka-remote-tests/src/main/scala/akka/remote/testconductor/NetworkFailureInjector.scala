@@ -339,7 +339,7 @@ private[akka] class ThrottleActor(channelContext: ChannelHandlerContext)
           else {
             val microsToSend = (now - d.lastSent) / 1000
             val (s1, s2) = split(d.queue.head, (microsToSend * d.rateMBit / 8).toInt)
-            (d.copy(queue = s2 +: d.queue.tail), toSend :+ s1, Some(((timeForPacket - now).nanos min packetSplitThreshold).asInstanceOf[FiniteDuration]))
+            (d.copy(queue = s2 +: d.queue.tail), toSend :+ s1, Some((timeForPacket - now).nanos min packetSplitThreshold))
           }
         }
       }

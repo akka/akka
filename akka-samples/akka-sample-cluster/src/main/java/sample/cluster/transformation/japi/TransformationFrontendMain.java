@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit;
 
 import sample.cluster.transformation.japi.TransformationMessages.TransformationJob;
 import scala.concurrent.ExecutionContext;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;

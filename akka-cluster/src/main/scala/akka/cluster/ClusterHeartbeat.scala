@@ -93,7 +93,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     selfAddress.toString, MonitoredByNrOfMembers)
 
   // start periodic heartbeat to other nodes in cluster
-  val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay.max(HeartbeatInterval).asInstanceOf[FiniteDuration],
+  val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay max HeartbeatInterval,
     HeartbeatInterval, self, HeartbeatTick)
 
   override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])

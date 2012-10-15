@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 import sample.cluster.stats.japi.StatsMessages.JobFailed;
 import sample.cluster.stats.japi.StatsMessages.StatsResult;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ReceiveTimeout;
 import akka.actor.UntypedActor;

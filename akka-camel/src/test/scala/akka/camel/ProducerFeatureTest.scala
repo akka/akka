@@ -231,7 +231,7 @@ class ProducerFeatureTest extends WordSpec with BeforeAndAfterAll with BeforeAnd
   def stopGracefully(actors: ActorRef*)(implicit timeout: Timeout) {
     val deadline = timeout.duration.fromNow
     for (a ← actors)
-      Await.result(gracefulStop(a, deadline.timeLeft.asInstanceOf[FiniteDuration]), deadline.timeLeft) must be === true
+      Await.result(gracefulStop(a, deadline.timeLeft), deadline.timeLeft) must be === true
   }
 }
 

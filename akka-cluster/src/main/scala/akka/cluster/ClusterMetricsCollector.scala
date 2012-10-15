@@ -61,13 +61,13 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Start periodic gossip to random nodes in cluster
    */
-  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay.max(MetricsGossipInterval).asInstanceOf[FiniteDuration],
+  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay max MetricsGossipInterval,
     MetricsGossipInterval, self, GossipTick)
 
   /**
    * Start periodic metrics collection
    */
-  val metricsTask = scheduler.schedule(PeriodicTasksInitialDelay.max(MetricsInterval).asInstanceOf[FiniteDuration],
+  val metricsTask = scheduler.schedule(PeriodicTasksInitialDelay max MetricsInterval,
     MetricsInterval, self, MetricsTick)
 
   override def preStart(): Unit = {
