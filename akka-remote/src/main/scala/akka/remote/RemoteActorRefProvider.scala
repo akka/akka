@@ -158,8 +158,7 @@ class RemoteActorRefProvider(
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else {
             val rpath = RootActorPath(addr) / "remote" / transport.address.hostPort / path.elements
-            useActorOnNode(rpath, props, d, supervisor)
-            new RemoteActorRef(this, transport, rpath, supervisor)
+            new RemoteActorRef(this, transport, rpath, supervisor, Some(props), Some(d))
           }
 
         case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
@@ -169,12 +168,12 @@ class RemoteActorRefProvider(
 
   def actorFor(path: ActorPath): InternalActorRef =
     if (path.address == rootPath.address || path.address == transport.address) actorFor(rootGuardian, path.elements)
-    else new RemoteActorRef(this, transport, path, Nobody)
+    else new RemoteActorRef(this, transport, path, Nobody, props = None, deploy = None)
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
       if (address == rootPath.address || address == transport.address) actorFor(rootGuardian, elems)
-      else new RemoteActorRef(this, transport, new RootActorPath(address) / elems, Nobody)
+      else new RemoteActorRef(this, transport, new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
     case _ ⇒ local.actorFor(ref, path)
   }
 
@@ -213,7 +212,9 @@ private[akka] class RemoteActorRef private[akka] (
   val provider: RemoteActorRefProvider,
   remote: RemoteTransport,
   val path: ActorPath,
-  val getParent: InternalActorRef)
+  val getParent: InternalActorRef,
+  props: Option[Props],
+  deploy: Option[Deploy])
   extends InternalActorRef with RemoteRef {
 
   def getChild(name: Iterator[String]): InternalActorRef = {
@@ -221,7 +222,7 @@ private[akka] class RemoteActorRef private[akka] (
     s.headOption match {
       case None       ⇒ this
       case Some("..") ⇒ getParent getChild name
-      case _          ⇒ new RemoteActorRef(provider, remote, path / s, Nobody)
+      case _          ⇒ new RemoteActorRef(provider, remote, path / s, Nobody, props = None, deploy = None)
     }
   }
 
@@ -243,7 +244,7 @@ private[akka] class RemoteActorRef private[akka] (
         provider.deadLetters ! message
     }
 
-  def start(): Unit = ()
+  def start(): Unit = if (props.isDefined && deploy.isDefined) provider.useActorOnNode(path, props.get, deploy.get, getParent)
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 

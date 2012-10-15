@@ -270,13 +270,9 @@ private[akka] class LocalActorRef private[akka] (
    */
   private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
   actorCell.init(ThreadLocalRandom.current.nextInt(), sendSupervise = true)
-  if (actorCellShouldStart)
-    actorCell.start()
 
   protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor)
-
-  protected def actorCellShouldStart(): Boolean = false
 
   protected def actorContext: ActorContext = actorCell
 
