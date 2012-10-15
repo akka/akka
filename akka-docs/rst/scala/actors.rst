@@ -549,13 +549,20 @@ defaults to a 'dead-letter' actor ref.
     val result = process(request)
     sender ! result       // will have dead-letter actor as default
 
-Initial receive timeout
-=======================
+Receive timeout
+===============
 
-A timeout mechanism can be used to receive a message when no initial message is
-received within a certain time. To receive this timeout you have to set the
-``receiveTimeout`` property and declare a case handing the ReceiveTimeout
-object.
+The `ActorContext` :meth:`setReceiveTimeout` defines the inactivity timeout after which
+the sending of a `ReceiveTimeout` message is triggered.
+When specified, the receive function should be able to handle an `akka.actor.ReceiveTimeout` message.
+1 millisecond is the minimum supported timeout.
+
+Please note that the receive timeout might fire and enqueue the `ReceiveTimeout` message right after
+another message was enqueued; hence it is **not guaranteed** that upon reception of the receive
+timeout there must have been an idle period beforehand as configured via this method.
+
+Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
+periods). Pass in `Duration.Undefined` to switch off this feature.
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#receive-timeout
 
