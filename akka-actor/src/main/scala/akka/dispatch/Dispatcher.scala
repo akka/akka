@@ -93,7 +93,7 @@ class Dispatcher(
    */
   protected[akka] def shutdown: Unit = {
     val newDelegate = executorServiceDelegate.copy() // Doesn't matter which one we copy
-    val es = synchronized { // FIXME getAndSet using ARFU or Unsafe
+    val es = synchronized {
       val service = executorServiceDelegate
       executorServiceDelegate = newDelegate // just a quick getAndSet
       service

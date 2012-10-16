@@ -22,7 +22,11 @@ import com.typesafe.config.ConfigFactory;
 
 import static akka.japi.Util.classTag;
 
-import static akka.actor.SupervisorStrategy.*;
+import static akka.actor.SupervisorStrategy.resume;
+import static akka.actor.SupervisorStrategy.restart;
+import static akka.actor.SupervisorStrategy.stop;
+import static akka.actor.SupervisorStrategy.escalate;
+import akka.actor.SupervisorStrategy.Directive;
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
 

@@ -288,7 +288,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     if (debug) actors.remove(this, actor.self)
     addInhabitants(-1)
     val mailBox = actor.swapMailbox(deadLetterMailbox)
-    mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up
+    mailBox.becomeClosed()
     mailBox.cleanUp()
   }
 
