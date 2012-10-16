@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.util.{ Timeout }
 import scala.reflect.classTag
 import akka.ConfigurationException
+import akka.AkkaException
 
 sealed trait Direction {
   def includes(other: Direction): Boolean
@@ -207,7 +208,10 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def shutdown(node: RoleName, exitValue: Int): Future[Done] = {
     import Settings.QueryTimeout
-    controller ? Terminate(node, exitValue) mapTo classTag[Done]
+    import system.dispatcher
+    // the recover is needed to handle ClientDisconnectedException exception,
+    // which is normal during shutdown
+    controller ? Terminate(node, exitValue) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
   }
 
   /**
@@ -309,7 +313,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
 
   whenUnhandled {
     case Event(ClientDisconnected, Some(s)) ⇒
-      s ! Status.Failure(new RuntimeException("client disconnected in state " + stateName + ": " + channel))
+      s ! Status.Failure(new ClientDisconnectedException("client disconnected in state " + stateName + ": " + channel))
       stop()
     case Event(ClientDisconnected, None) ⇒ stop()
   }
@@ -367,6 +371,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
  */
 private[akka] object Controller {
   case class ClientDisconnected(name: RoleName)
+  class ClientDisconnectedException(msg: String) extends AkkaException(msg)
   case object GetNodes
   case object GetSockAddr
   case class CreateServerFSM(channel: Channel)

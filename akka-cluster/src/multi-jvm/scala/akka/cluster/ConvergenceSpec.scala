@@ -61,7 +61,7 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
 
       runOn(first) {
         // kill 'third' node
-        testConductor.shutdown(third, 0)
+        testConductor.shutdown(third, 0).await
         markNodeAsUnavailable(thirdAddress)
       }
 

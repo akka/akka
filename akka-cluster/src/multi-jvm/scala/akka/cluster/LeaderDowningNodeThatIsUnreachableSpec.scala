@@ -51,7 +51,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
       val fourthAddress = address(fourth)
       runOn(first) {
         // kill 'fourth' node
-        testConductor.shutdown(fourth, 0)
+        testConductor.shutdown(fourth, 0).await
         enterBarrier("down-fourth-node")
 
         // mark the node as unreachable in the failure detector
@@ -81,7 +81,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
       enterBarrier("before-down-second-node")
       runOn(first) {
         // kill 'second' node
-        testConductor.shutdown(second, 0)
+        testConductor.shutdown(second, 0).await
         enterBarrier("down-second-node")
 
         // mark the node as unreachable in the failure detector
