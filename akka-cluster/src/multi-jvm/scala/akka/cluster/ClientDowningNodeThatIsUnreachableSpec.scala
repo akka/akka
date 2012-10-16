@@ -44,7 +44,7 @@ abstract class ClientDowningNodeThatIsUnreachableSpec(multiNodeConfig: ClientDow
 
       runOn(first) {
         // kill 'third' node
-        testConductor.shutdown(third, 0)
+        testConductor.shutdown(third, 0).await
         markNodeAsUnavailable(thirdAddress)
 
         // mark 'third' node as DOWN
