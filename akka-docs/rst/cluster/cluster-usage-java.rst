@@ -216,7 +216,7 @@ network failures and JVM crashes, in addition to graceful termination of watched
 actor.
 
 This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
-`source <https://github.com/akka/akka/tree/master/akka-samples/akka-sample-cluster>`_ to your 
+`source <http://github.com/akka/akka/tree/v2.1.0-RC1/akka-samples/akka-sample-cluster>`_ to your 
 maven project, defined as in :ref:`cluster_simple_example_java`.
 Run it by starting nodes in different terminal windows. For example, starting 2
 frontend nodes and 3 backend nodes::
@@ -379,7 +379,7 @@ This means that user requests can be sent to ``StatsService`` on any node and it
 fan out to local children if more parallelism is needed.
 
 This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
-`source <https://github.com/akka/akka/tree/master/akka-samples/akka-sample-cluster>`_ to your 
+`source <http://github.com/akka/akka/tree/v2.1.0-RC1/akka-samples/akka-sample-cluster>`_ to your 
 maven project, defined as in :ref:`cluster_simple_example_java`.
 Run it by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::
@@ -416,7 +416,7 @@ All nodes start ``StatsFacade`` and the router is now configured like this:
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsSampleOneMasterMain.java#start-router-deploy
 
 This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
-`source <https://github.com/akka/akka/tree/master/akka-samples/akka-sample-cluster>`_ to your 
+`source <http://github.com/akka/akka/tree/v2.1.0-RC1/akka-samples/akka-sample-cluster>`_ to your 
 maven project, defined as in :ref:`cluster_simple_example_java`.
 Run it by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::

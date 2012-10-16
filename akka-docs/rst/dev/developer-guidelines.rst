@@ -5,7 +5,7 @@ Developer Guidelines
 
 .. note::
 
-    First read `The Akka Contributor Guidelines <https://github.com/akka/akka/blob/master/CONTRIBUTING.md>`_ .
+    First read `The Akka Contributor Guidelines <http://github.com/akka/akka/tree/v2.1.0-RC1/CONTRIBUTING.md>`_ .
 
 Code Style
 ----------
@@ -50,12 +50,12 @@ All code that is checked in **should** have tests. All testing is done with ``Sc
 * Name tests as **Test.scala** if they do not depend on any external stuff. That keeps surefire happy.
 * Name tests as **Spec.scala** if they have external dependencies.
 
-There is a testing standard that should be followed: `Ticket001Spec <https://github.com/akka/akka/blob/master/akka-actor-tests/src/test/scala/akka/ticket/Ticket001Spec.scala>`_
+There is a testing standard that should be followed: `Ticket001Spec <http://github.com/akka/akka/tree/v2.1.0-RC1/akka-actor-tests/src/test/scala/akka/ticket/Ticket001Spec.scala>`_
 
 Actor TestKit
 ^^^^^^^^^^^^^
 
-There is a useful test kit for testing actors: `akka.util.TestKit <https://github.com/akka/akka/tree/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala>`_. It enables assertions concerning replies received and their timing, there is more documentation in the :ref:`akka-testkit` module.
+There is a useful test kit for testing actors: `akka.util.TestKit <http://github.com/akka/akka/tree/v2.1.0-RC1/akka-testkit/src/main/scala/akka/testkit/TestKit.scala>`_. It enables assertions concerning replies received and their timing, there is more documentation in the :ref:`akka-testkit` module.
 
 Multi-JVM Testing
 ^^^^^^^^^^^^^^^^^

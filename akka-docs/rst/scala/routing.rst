@@ -403,14 +403,14 @@ As you can see above what's returned in the partial function is a ``List`` of ``
 The sender is what "parent" the routee should see - changing this could be useful if you for example want
 another actor than the original sender to intermediate the result of the routee (if there is a result).
 For more information about how to alter the original sender we refer to the source code of
-`ScatterGatherFirstCompletedRouter <https://github.com/akka/akka/blob/master/akka-actor/src/main/scala/akka/routing/Routing.scala#L375>`_
+`ScatterGatherFirstCompletedRouter <http://github.com/akka/akka/tree/v2.1.0-RC1/akka-actor/src/main/scala/akka/routing/Routing.scala#L375>`_
 
 All in all the custom router looks like this:
 
 .. includecode:: ../../../akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala#CustomRouter
 
 If you are interested in how to use the VoteCountRouter you can have a look at the test class
-`RoutingSpec <https://github.com/akka/akka/blob/master/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala>`_
+`RoutingSpec <http://github.com/akka/akka/tree/v2.1.0-RC1/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala>`_
 
 .. caution::
 

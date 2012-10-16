@@ -28,7 +28,7 @@ object AkkaBuild extends Build {
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
-    version      := "2.1-SNAPSHOT",
+    version      := "2.1.0-RC1",
     // FIXME: use 2.10.0 for final
     scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC1")
   )

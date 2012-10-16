@@ -458,5 +458,5 @@ Examples
 
 A bigger FSM example contrasted with Actor's :meth:`become`/:meth:`unbecome` can be found in the sources:
 
- * `Dining Hakkers using FSM <https://github.com/akka/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnFsm.scala#L1>`_
- * `Dining Hakkers using become <https://github.com/akka/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala#L1>`_
+ * `Dining Hakkers using FSM <http://github.com/akka/akka/tree/v2.1.0-RC1/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnFsm.scala#L1>`_
+ * `Dining Hakkers using become <http://github.com/akka/akka/tree/v2.1.0-RC1/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala#L1>`_
