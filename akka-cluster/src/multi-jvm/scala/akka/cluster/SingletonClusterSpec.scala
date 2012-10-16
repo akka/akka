@@ -61,7 +61,7 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
     "become singleton cluster when one node is shutdown" taggedAs LongRunningTest in {
       runOn(first) {
         val secondAddress = address(second)
-        testConductor.shutdown(second, 0)
+        testConductor.shutdown(second, 0).await
 
         markNodeAsUnavailable(secondAddress)
 

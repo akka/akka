@@ -316,7 +316,7 @@ abstract class LargeClusterSpec
         }
 
         runOn(firstDatacenter) {
-          testConductor.shutdown(secondDatacenter, 0)
+          testConductor.shutdown(secondDatacenter, 0).await
         }
 
         enterBarrier("second-datacenter-shutdown")

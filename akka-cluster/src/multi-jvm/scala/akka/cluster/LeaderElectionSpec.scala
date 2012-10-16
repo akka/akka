@@ -18,7 +18,7 @@ case class LeaderElectionMultiNodeConfig(failureDetectorPuppet: Boolean) extends
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = true).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 }
 
 class LeaderElectionWithFailureDetectorPuppetMultiJvmNode1 extends LeaderElectionSpec(failureDetectorPuppet = true)
@@ -70,7 +70,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
         case `controller` ⇒
           val leaderAddress = address(leader)
           enterBarrier("before-shutdown" + n)
-          testConductor.shutdown(leader, 0)
+          testConductor.shutdown(leader, 0).await
           enterBarrier("after-shutdown" + n, "after-unavailable" + n, "after-down" + n, "completed" + n)
 
         case `leader` ⇒
