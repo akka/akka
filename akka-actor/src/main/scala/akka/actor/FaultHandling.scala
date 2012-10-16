@@ -234,8 +234,8 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 
   private[akka] def maxNrOfRetriesOption(maxNrOfRetries: Int): Option[Int] =
     if (maxNrOfRetries < 0) None else Some(maxNrOfRetries)
-    
-  private[akka] val escalateDefault = (_: Any) => Escalate
+
+  private[akka] val escalateDefault = (_: Any) ⇒ Escalate
 }
 
 /**

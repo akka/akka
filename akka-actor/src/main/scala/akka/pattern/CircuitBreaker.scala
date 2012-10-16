@@ -155,22 +155,20 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
    *
    * @param callback Handler to be invoked on state change
-   * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
    * @return CircuitBreaker for fluent usage
    */
-  def onOpen[T](callback: ⇒ T): CircuitBreaker = {
-    Open.addListener(() ⇒ callback)
-    this
-  }
+  def onOpen(callback: ⇒ Unit): CircuitBreaker = onOpen(new Runnable { def run = callback })
 
   /**
    * Java API for onOpen
    *
    * @param callback Handler to be invoked on state change
-   * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
    * @return CircuitBreaker for fluent usage
    */
-  def onOpen[T](callback: Callable[T]): CircuitBreaker = onOpen(callback.call)
+  def onOpen(callback: Runnable): CircuitBreaker = {
+    Open addListener callback
+    this
+  }
 
   /**
    * Adds a callback to execute when circuit breaker transitions to half-open
@@ -178,22 +176,20 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
    *
    * @param callback Handler to be invoked on state change
-   * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
    * @return CircuitBreaker for fluent usage
    */
-  def onHalfOpen[T](callback: ⇒ T): CircuitBreaker = {
-    HalfOpen.addListener(() ⇒ callback)
-    this
-  }
+  def onHalfOpen(callback: ⇒ Unit): CircuitBreaker = onHalfOpen(new Runnable { def run = callback })
 
   /**
    * JavaAPI for onHalfOpen
    *
    * @param callback Handler to be invoked on state change
-   * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
    * @return CircuitBreaker for fluent usage
    */
-  def onHalfOpen[T](callback: Callable[T]): CircuitBreaker = onHalfOpen(callback.call)
+  def onHalfOpen(callback: Runnable): CircuitBreaker = {
+    HalfOpen addListener callback
+    this
+  }
 
   /**
    * Adds a callback to execute when circuit breaker state closes
@@ -201,22 +197,20 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
    *
    * @param callback Handler to be invoked on state change
-   * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
    * @return CircuitBreaker for fluent usage
    */
-  def onClose[T](callback: ⇒ T): CircuitBreaker = {
-    Closed.addListener(() ⇒ callback)
-    this
-  }
+  def onClose(callback: ⇒ Unit): CircuitBreaker = onClose(new Runnable { def run = callback })
 
   /**
    * JavaAPI for onClose
    *
    * @param callback Handler to be invoked on state change
-   * @tparam T Type supplied to assist with type inference, otherwise ignored by implementation
    * @return CircuitBreaker for fluent usage
    */
-  def onClose[T](callback: Callable[T]): CircuitBreaker = onClose(callback.call)
+  def onClose(callback: Runnable): CircuitBreaker = {
+    Closed addListener callback
+    this
+  }
 
   /**
    * Retrieves current failure count.
@@ -261,7 +255,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    * Internal state abstraction
    */
   private sealed trait State {
-    private val listeners = new CopyOnWriteArrayList[() ⇒ _]
+    private val listeners = new CopyOnWriteArrayList[Runnable]
 
     /**
      * Add a listener function which is invoked on state entry
@@ -269,7 +263,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * @param listener listener implementation
      * @tparam T return type of listener, not used - but supplied for type inference purposes
      */
-    def addListener[T](listener: () ⇒ T): Unit = listeners add listener
+    def addListener(listener: Runnable): Unit = listeners add listener
 
     /**
      * Test for whether listeners exist
@@ -288,7 +282,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
         val iterator = listeners.iterator
         while (iterator.hasNext) {
           val listener = iterator.next
-          executor.execute(new Runnable { def run = listener() })
+          executor.execute(listener)
         }
       }
     }
