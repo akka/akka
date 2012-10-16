@@ -25,6 +25,8 @@ version from
 `<http://repo.typesafe.com/typesafe/snapshots/com/typesafe/akka/akka-cluster-experimental_@binVersion@/>`_.
 We recommend against using ``SNAPSHOT`` in order to obtain stable builds.
 
+.. _cluster_simple_example_java:
+
 A Simple Cluster Example
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -54,17 +56,33 @@ ip-addresses or host names of the machines in ``application.conf`` instead of ``
 .. literalinclude:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/simple/japi/SimpleClusterApp.java
    :language: java
 
+3. Add `maven exec plugin <http://mojo.codehaus.org/exec-maven-plugin/introduction.html>`_ to your pom.xml::
 
-3. Start the first seed node. Open a sbt session in one terminal window and run::
+    <project>
+      <build>
+        <plugins>
+          <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>exec-maven-plugin</artifactId>
+              <version>1.2.1</version>
+          </plugin>
+        </plugins>
+      </build>
+    </project>
 
-     run-main sample.cluster.simple.japi.SimpleClusterApp 2551
+
+4. Start the first seed node. Open a terminal window and run (one line)::
+
+    mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp" \
+      -Dexec.args="2551"
 
 2551 corresponds to the port of the first seed-nodes element in the configuration.
 In the log output you see that the cluster node has been started and changed status to 'Up'.
 
-4. Start the second seed node. Open a sbt session in another terminal window and run::
+5. Start the second seed node. Open another terminal window and run::
 
-      run-main sample.cluster.simple.japi.SimpleClusterApp 2552
+    mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp" \
+      -Dexec.args="2552"
 
 
 2552 corresponds to the port of the second seed-nodes element in the configuration.
@@ -73,9 +91,9 @@ and becomes a member of the cluster. It's status changed to 'Up'.
 
 Switch over to the first terminal window and see in the log output that the member joined.
 
-5. Start another node. Open a sbt session in yet another terminal window and run::
+6. Start another node. Open a sbt session in yet another terminal window and run::
 
-      run-main sample.cluster.simple.japi.SimpleClusterApp
+    mvn exec:java -Dexec.mainClass="sample.cluster.simple.japi.SimpleClusterApp"
 
 Now you don't need to specify the port number, and it will use a random available port.
 It joins one of the configured seed nodes. Look at the log output in the different terminal
@@ -197,23 +215,28 @@ Death watch uses the cluster failure detector for nodes in the cluster, i.e. it 
 network failures and JVM crashes, in addition to graceful termination of watched
 actor.
 
-This example is included in ``akka-samples/akka-sample-cluster``
-and you can try by starting nodes in different terminal windows. For example, starting 2
+This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
+`source <https://github.com/akka/akka/tree/master/akka-samples/akka-sample-cluster>`_ to your 
+maven project, defined as in :ref:`cluster_simple_example_java`.
+Run it by starting nodes in different terminal windows. For example, starting 2
 frontend nodes and 3 backend nodes::
 
-  sbt
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.transformation.japi.TransformationFrontendMain" \
+    -Dexec.args="2551"
 
-  project akka-sample-cluster-experimental
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.transformation.japi.TransformationBackendMain" \
+    -Dexec.args="2552"
 
-  run-main sample.cluster.transformation.japi.TransformationFrontendMain 2551
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.transformation.japi.TransformationBackendMain"
 
-  run-main sample.cluster.transformation.japi.TransformationBackendMain 2552
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.transformation.japi.TransformationBackendMain"
 
-  run-main sample.cluster.transformation.japi.TransformationBackendMain
-
-  run-main sample.cluster.transformation.japi.TransformationBackendMain
-
-  run-main sample.cluster.transformation.japi.TransformationFrontendMain
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.transformation.japi.TransformationFrontendMain"
 
 
 .. note:: The above example should probably be designed as two separate, frontend/backend, clusters, when there is a `cluster client for decoupling clusters <https://www.assembla.com/spaces/akka/tickets/1165>`_.
@@ -355,21 +378,26 @@ This means that user requests can be sent to ``StatsService`` on any node and it
 ``StatsWorker`` on all nodes. There can only be one worker per node, but that worker could easily
 fan out to local children if more parallelism is needed.
 
-This example is included in ``akka-samples/akka-sample-cluster``
-and you can try by starting nodes in different terminal windows. For example, starting 3
+This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
+`source <https://github.com/akka/akka/tree/master/akka-samples/akka-sample-cluster>`_ to your 
+maven project, defined as in :ref:`cluster_simple_example_java`.
+Run it by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::
 
-  sbt
+  mvn exec:java \
+    -Dexec.mainClass="run-main sample.cluster.stats.japi.StatsSampleMain" \
+    -Dexec.args="2551"
 
-  project akka-sample-cluster-experimental
+  mvn exec:java \
+    -Dexec.mainClass="run-main sample.cluster.stats.japi.StatsSampleMain" \
+    -Dexec.args="2552"
 
-  run-main sample.cluster.stats.japi.StatsSampleMain 2551
+  mvn exec:java \
+    -Dexec.mainClass="run-main sample.cluster.stats.japi.StatsSampleMain"
 
-  run-main sample.cluster.stats.japi.StatsSampleMain 2552
+  mvn exec:java \
+    -Dexec.mainClass="run-main sample.cluster.stats.japi.StatsSampleMain"
 
-  run-main sample.cluster.stats.japi.StatsSampleClientMain
-
-  run-main sample.cluster.stats.japi.StatsSampleMain
 
 The above setup is nice for this example, but we will also take a look at how to use
 a single master node that creates and deploys workers. To keep track of a single
@@ -387,22 +415,26 @@ All nodes start ``StatsFacade`` and the router is now configured like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/java/sample/cluster/stats/japi/StatsSampleOneMasterMain.java#start-router-deploy
 
-
-This example is included in ``akka-samples/akka-sample-cluster``
-and you can try by starting nodes in different terminal windows. For example, starting 3
+This example is included in ``akka-samples/akka-sample-cluster`` and you can try it by copying the 
+`source <https://github.com/akka/akka/tree/master/akka-samples/akka-sample-cluster>`_ to your 
+maven project, defined as in :ref:`cluster_simple_example_java`.
+Run it by starting nodes in different terminal windows. For example, starting 3
 service nodes and 1 client::
 
-  sbt
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterMain" \
+    -Dexec.args="2551"
 
-  project akka-sample-cluster-experimental
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterMain" \
+    -Dexec.args="2552"
 
-  run-main sample.cluster.stats.japi.StatsSampleOneMasterMain 2551
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterClientMain"
 
-  run-main sample.cluster.stats.japi.StatsSampleOneMasterMain 2552
+  mvn exec:java \
+    -Dexec.mainClass="sample.cluster.stats.japi.StatsSampleOneMasterMain"
 
-  run-main sample.cluster.stats.japi.StatsSampleOneMasterClientMain
-
-  run-main sample.cluster.stats.japi.StatsSampleOneMasterMain
 
 .. note:: The above example, especially the last part, will be simplified when the cluster handles automatic actor partitioning.
 
