@@ -288,8 +288,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
         val iterator = listeners.iterator
         while (iterator.hasNext) {
           val listener = iterator.next
-          //FIXME per @viktorklang: it's a bit wasteful to create Futures for one-offs, just use EC.execute instead
-          Future(listener())(executor)
+          executor.execute(new Runnable { def run = listener() })
         }
       }
     }

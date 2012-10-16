@@ -281,7 +281,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
       val watchers = clearWatchers()
       if (!watchers.isEmpty) {
         val termination = Terminated(this)(existenceConfirmed = true, addressTerminated = false)
-        watchers foreach { w ⇒ try w.tell(termination, this) catch { case NonFatal(t) ⇒ /* FIXME LOG THIS */ } }
+        watchers foreach { _.tell(termination, this) }
       }
     }
     state match {

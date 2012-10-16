@@ -446,9 +446,9 @@ case class Destination(sender: ActorRef, recipient: ActorRef)
 @SerialVersionUID(1L)
 abstract class NoRouter extends RouterConfig
 case object NoRouter extends NoRouter {
-  def createRoute(routeeProvider: RouteeProvider): Route = null // FIXME, null, really??
-  def routerDispatcher: String = ""
-  def supervisorStrategy = null // FIXME null, really??
+  def createRoute(routeeProvider: RouteeProvider): Route = throw new UnsupportedOperationException("NoRouter does not createRoute")
+  def routerDispatcher: String = throw new UnsupportedOperationException("NoRouter has no dispatcher")
+  def supervisorStrategy = throw new UnsupportedOperationException("NoRouter has no strategy")
   override def withFallback(other: RouterConfig): RouterConfig = other
 
   /**
