@@ -225,6 +225,7 @@ object AkkaBuild extends Build {
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
     settings = defaultSettings ++ OSGi.zeroMQ ++ Seq(
+      resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/releases",
       libraryDependencies ++= Dependencies.zeroMQ,
       previousArtifact := akkaPreviousArtifact("akka-zeromq")
     )
@@ -665,8 +666,7 @@ object Dependencies {
     val scalaStm      = "org.scala-tools"             % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
-    // FIXME: use 2.10.0-RC1 version once published
-    val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding_2.10.0-M7"         % "0.0.6" // ApacheV2
+    val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding_2.10"    % "0.0.6-RC1"       // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a"      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
