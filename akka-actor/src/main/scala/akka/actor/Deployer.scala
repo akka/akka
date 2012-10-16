@@ -79,7 +79,11 @@ trait Scope {
 @SerialVersionUID(1L)
 abstract class LocalScope extends Scope
 
-//FIXME docs
+/**
+ * The Local Scope is the default one, which is assumed on all deployments
+ * which do not set a different scope. It is also the only scope handled by
+ * the LocalActorRefProvider.
+ */
 case object LocalScope extends LocalScope {
   /**
    * Java API: get the singleton instance

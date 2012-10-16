@@ -234,6 +234,8 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 
   private[akka] def maxNrOfRetriesOption(maxNrOfRetries: Int): Option[Int] =
     if (maxNrOfRetries < 0) None else Some(maxNrOfRetries)
+
+  private[akka] val escalateDefault = (_: Any) ⇒ Escalate
 }
 
 /**
@@ -280,7 +282,7 @@ abstract class SupervisorStrategy {
    * @param children is a lazy collection (a view)
    */
   def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
-    val directive = if (decider.isDefinedAt(cause)) decider(cause) else Escalate //FIXME applyOrElse in Scala 2.10
+    val directive = decider.applyOrElse(cause, escalateDefault)
     directive match {
       case Resume   ⇒ resumeChild(child, cause); true
       case Restart  ⇒ processFailure(context, true, child, cause, stats, children); true
