@@ -6,7 +6,7 @@ a:hover { color: #73a600; text-decoration: none; }
 .main { position: relative; height: auto; margin-top: -18px; overflow: auto; }
 .page-title { position: relative; top: 24px; font-family: 'Exo', sans-serif; font-size: 24px; font-weight: 400; color: rgba(255, 255, 255, 1); text-shadow:0 2px 0 #000000; width: 900px;}
 .main-container { background: #f2f2eb;  min-height: 600px; padding-top: 20px; margin-top: 28px; padding-bottom: 40px; }
-.container h1:first-of-type { visibility: hidden; margin-top: -36px; }
+.container h1:first-of-type { display: none; visibility: hidden; margin-top: -36px; }
 .pdf-link { float: right; height: 40px; margin-bottom: -15px; margin-top: -5px; }
 .breadcrumb { height: 18px; }
 .breadcrumb li { float: right; }
@@ -173,3 +173,4 @@ strong {color: #1d3c52; }
 
 .pre { padding: 1px 2px; color: #5d8700; background-color: #f3f7e9; border: 1px solid #dee1e2; font-family: Menlo, Monaco, "Courier New", monospace; font-size: 12px; -webkit-border-radius: 3px; -moz-border-radius: 3px; border-radius: 3px; }
 .footer h5 { text-transform: none; }
+
