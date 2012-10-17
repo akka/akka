@@ -413,7 +413,7 @@ object AkkaBuild extends Build {
   )
 
   lazy val sampleSettings = defaultSettings ++ Seq(
-    publishArtifact in Compile := false
+    publishArtifact in (Compile, packageBin) := false
   )
 
   lazy val experimentalSettings = Seq(
