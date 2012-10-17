@@ -6,4 +6,3 @@ Modules
 
    durable-mailbox
    http
-   camel
