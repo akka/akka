@@ -171,8 +171,6 @@ object AkkaBuild extends Build {
     base = file("akka-agent"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ OSGi.agent ++ Seq(
-      // FIXME remove once scala-stm is on maven central
-      resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/releases",
       libraryDependencies ++= Dependencies.agent,
       previousArtifact := akkaPreviousArtifact("akka-agent")
     )
@@ -183,8 +181,6 @@ object AkkaBuild extends Build {
     base = file("akka-transactor"),
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ OSGi.transactor ++ Seq(
-      // FIXME remove once scala-stm is on maven central
-      resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/releases",
       libraryDependencies ++= Dependencies.transactor,
       previousArtifact := akkaPreviousArtifact("akka-transactor")
     )
@@ -663,7 +659,7 @@ object Dependencies {
     val config        = "com.typesafe"                % "config"                       % "1.0.0"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.5.8.Final" // ApacheV2
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
-    val scalaStm      = "org.scala-tools"             % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
+    val scalaStm      = "org.scala-stm"               % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
     val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding_2.10"    % "0.0.6-RC1"       // ApacheV2
