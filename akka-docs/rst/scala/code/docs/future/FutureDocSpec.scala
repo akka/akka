@@ -394,4 +394,18 @@ class FutureDocSpec extends AkkaSpec {
     intercept[IllegalStateException] { Await.result(result, 2 second) }
   }
 
+  "demonstrate context.dispatcher" in {
+    //#context-dispatcher
+    class A extends Actor {
+      import context.dispatcher
+      val f = Future("hello")
+      def receive = {
+        //#receive-omitted
+        case _ ⇒
+        //#receive-omitted
+      }
+    }
+    //#context-dispatcher
+  }
+
 }

@@ -22,6 +22,19 @@ by the ``ExecutionContext`` companion object to wrap ``Executors`` and ``Executo
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: diy-execution-context
 
+Within Actors
+^^^^^^^^^^^^^
+
+Each actor is configured to be run on a :class:`MessageDispatcher`, and that
+dispatcher doubles as an :class:`ExecutionContext`. If the nature of the Future
+calls invoked by the actor matches or is compatible with the activities of that
+actor (e.g. all CPU bound and no latency requirements), then it may be easiest
+to reuse the dispatcher for running the Futures by importing
+``context.dispatcher``.
+
+.. includecode:: code/docs/future/FutureDocSpec.scala#context-dispatcher
+   :exclude: receive-omitted
+
 Use With Actors
 ---------------
 
