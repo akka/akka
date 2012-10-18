@@ -21,7 +21,7 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
       val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
-      var localGossip = MetricsGossip(window)
+      var localGossip = MetricsGossip(DefaultRateOfDecay)
       localGossip :+= m1
       localGossip.nodes.size must be(1)
       localGossip.nodeKeys.size must be(localGossip.nodes.size)
@@ -41,7 +41,7 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
       val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
-      var remoteGossip = MetricsGossip(window)
+      var remoteGossip = MetricsGossip(DefaultRateOfDecay)
       remoteGossip :+= m1
       remoteGossip :+= m2
       remoteGossip.nodes.size must be(2)
@@ -61,11 +61,11 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       val m3 = NodeMetrics(Address("akka", "sys", "a", 2556), newTimestamp, collector.sample.metrics)
       val m2Updated = m2 copy (metrics = collector.sample.metrics, timestamp = newTimestamp)
 
-      var localGossip = MetricsGossip(window)
+      var localGossip = MetricsGossip(DefaultRateOfDecay)
       localGossip :+= m1
       localGossip :+= m2
 
-      var remoteGossip = MetricsGossip(window)
+      var remoteGossip = MetricsGossip(DefaultRateOfDecay)
       remoteGossip :+= m3
       remoteGossip :+= m2Updated
 
@@ -84,7 +84,7 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
 
     "get the current NodeMetrics if it exists in the local nodes" in {
       val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      var localGossip = MetricsGossip(window)
+      var localGossip = MetricsGossip(DefaultRateOfDecay)
       localGossip :+= m1
       localGossip.metricsFor(m1).nonEmpty must be(true)
     }
@@ -93,7 +93,7 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
       val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
-      var localGossip = MetricsGossip(window)
+      var localGossip = MetricsGossip(DefaultRateOfDecay)
       localGossip :+= m1
       localGossip :+= m2
 

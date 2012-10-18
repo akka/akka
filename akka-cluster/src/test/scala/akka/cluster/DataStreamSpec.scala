@@ -6,15 +6,13 @@ package akka.cluster
 
 import language.postfixOps
 import scala.concurrent.duration._
-
 import akka.testkit.{ LongRunningTest, AkkaSpec }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class DataStreamSpec extends AkkaSpec(MetricsEnabledSpec.config) with AbstractClusterMetricsSpec with MetricNumericConverter {
+class DataStreamSpec extends AkkaSpec(MetricsEnabledSpec.config) with AbstractClusterMetricsSpec {
   import system.dispatcher
 
   val collector = createMetricsCollector
-  val DefaultRateOfDecay = 10
 
   "DataStream" must {
 
@@ -52,11 +50,6 @@ class DataStreamSpec extends AkkaSpec(MetricsEnabledSpec.config) with AbstractCl
           if (first.value.get.longValue > newMetric.value.get.longValue) e1.ewma.longValue must be > e2.ewma.longValue
           else if (first.value.get.longValue < newMetric.value.get.longValue) e1.ewma.longValue must be < e2.ewma.longValue
       }
-    }
-
-    "data streaming is disabled if the decay is set to 0" in {
-      val data = collector.sample.metrics map (_.initialize(0))
-      data foreach (_.average.isEmpty must be(true))
     }
   }
 }
