@@ -12,7 +12,7 @@ import akka.kernel.Bootable;
 public class HelloKernel implements Bootable {
   final ActorSystem system = ActorSystem.create("hellokernel");
 
-  static class HelloActor extends UntypedActor {
+  public static class HelloActor extends UntypedActor {
     final ActorRef worldActor = getContext().actorOf(
         new Props(WorldActor.class));
 
@@ -26,7 +26,7 @@ public class HelloKernel implements Bootable {
     }
   }
 
-  static class WorldActor extends UntypedActor {
+  public static class WorldActor extends UntypedActor {
     public void onReceive(Object message) {
       if (message instanceof String)
         getSender().tell(((String) message).toUpperCase() + " world!",
