@@ -1,6 +1,6 @@
-#Contributing to Akka#
+# Contributing to Akka
 
-##Infrastructure##
+## Infrastructure
 
 * [Akka Contributor License Agreement](http://www.typesafe.com/contribute/cla)
 * [Akka Issue Tracker](http://doc.akka.io/docs/akka/current/project/issue-tracking.html)
@@ -57,7 +57,7 @@ All documentation must abide by the following maxims:
 
 All documentation is preferred to be in Typesafe's standard documentation format [reStructuredText](http://doc.akka.io/docs/akka/snapshot/dev/documentation.html) compiled using Typesafe's customized [Sphinx](http://sphinx.pocoo.org/) based documentation generation system, which among other things allows all code in the documentation to be externalized into compiled files and imported into the documentation.
 
-For more info, or for a starting point for new projects, look at the [Typesafe Documentation Sample project](https://github.com/typesafehub/doc-example).
+For more info, or for a starting point for new projects, look at the [Typesafe Documentation Template project](https://github.com/typesafehub/doc-template).
 
 For larger projects that have invested a lot of time and resources into their current documentation and samples scheme (like for example Play), it is understandable that it will take some time to migrate to this new model. In these cases someone from the project needs to take the responsibility of manual QA and verifier for the documentation and samples.
 
@@ -81,17 +81,17 @@ Follow these guidelines when creating public commits and writing commit messages
 
 Example:
 
-    Added monadic API to Future. Fixes #2731
+    Adding monadic API to Future. Fixes #2731
 
       * Details 1
       * Details 2
       * Details 3
 
-##Source style##
+## Source style
 
 Akka uses [Scalariform](https://github.com/mdr/scalariform) to enforce some of the code style rules.
 
-##Contributing Modules##
+## Contributing Modules
 
 For external contributions of entire features, the normal way is to establish it
 as a stand-alone feature first, to show that there is a need for the feature. The
