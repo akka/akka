@@ -208,7 +208,8 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   def assertLeaderIn(nodesInCluster: Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
     nodesInCluster.length must not be (0)
     val expectedLeader = roleOfLeader(nodesInCluster)
-    clusterView.isLeader must be(ifNode(expectedLeader)(true)(false))
+    assert(clusterView.isLeader == ifNode(expectedLeader)(true)(false),
+      "expectedLeader [%s], got [%s]".format(expectedLeader, clusterView.members))
     clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
   }
 
