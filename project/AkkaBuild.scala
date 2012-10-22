@@ -533,6 +533,7 @@ object AkkaBuild extends Build {
     // customization of sphinx @<key>@ replacements, add to all sphinx-using projects
     // add additional replacements here
     preprocessVars <<= (scalaVersion, version) { (s, v) =>
+      val isSnapshot = v.endsWith("SNAPSHOT")
       val BinVer = """(\d+\.\d+)\.\d+""".r
       Map(
         "version" -> v,
@@ -548,7 +549,8 @@ object AkkaBuild extends Build {
         "binVersion" -> (s match {
             case BinVer(bv) => bv
             case _          => s
-          })
+          }),
+        "github" -> "http://github.com/akka/akka/tree/%s".format((if (isSnapshot) "master" else "v" + v))
       )
     },
     preprocess <<= (sourceDirectory, target in preprocess, cacheDirectory, preprocessExts, preprocessVars, streams) map {
