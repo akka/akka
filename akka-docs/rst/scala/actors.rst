@@ -671,7 +671,7 @@ The ``become`` method is useful for many different things, but a particular nice
 example of it is in example where it is used to implement a Finite State Machine
 (FSM): `Dining Hakkers`_.
 
-.. _Dining Hakkers: http://github.com/akka/akka/blob/master/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala
+.. _Dining Hakkers: @github@/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala
 
 Here is another little cute example of ``become`` and ``unbecome`` in action:
 
