@@ -203,12 +203,6 @@ try git checkout -b ${release_branch}
 # find and replace the version
 try ${script_dir}/find-replace ${current_version} ${version}
 
-#find and replace github links
-try ${script_dir}/find-replace http://github.com/akka/akka/tree/master http://github.com/akka/akka/tree/v${version}
-try ${script_dir}/find-replace https://github.com/akka/akka/tree/master http://github.com/akka/akka/tree/v${version}
-try ${script_dir}/find-replace http://github.com/akka/akka/blob/master http://github.com/akka/akka/tree/v${version}
-try ${script_dir}/find-replace https://github.com/akka/akka/blob/master http://github.com/akka/akka/tree/v${version}
-
 # start clean
 try sbt clean
 
