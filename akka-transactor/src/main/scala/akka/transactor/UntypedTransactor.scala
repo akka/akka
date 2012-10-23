@@ -5,13 +5,15 @@
 package akka.transactor
 
 import akka.actor.{ UntypedActor, ActorRef }
-import scala.collection.JavaConversions._
 import java.util.{ Set ⇒ JSet }
+import java.util.Collections.{ emptySet, singleton ⇒ singletonSet }
 
 /**
  * An UntypedActor version of transactor for using from Java.
  */
 abstract class UntypedTransactor extends UntypedActor {
+  import scala.collection.JavaConverters.asScalaSetConverter
+
   private val settings = TransactorExtension(context.system)
 
   /**
@@ -21,8 +23,7 @@ abstract class UntypedTransactor extends UntypedActor {
   final def onReceive(message: Any) {
     message match {
       case coordinated @ Coordinated(message) ⇒ {
-        val others = coordinate(message)
-        for (sendTo ← others) {
+        for (sendTo ← coordinate(message).asScala) {
           sendTo.actor ! coordinated(sendTo.message.getOrElse(message))
         }
         before(message)
@@ -49,19 +50,19 @@ abstract class UntypedTransactor extends UntypedActor {
   /**
    * Empty set of transactors to send to.
    */
-  def nobody: JSet[SendTo] = Set[SendTo]()
+  def nobody: JSet[SendTo] = emptySet()
 
   /**
    * For including one other actor in this coordinated transaction and sending
    * them the same message as received. Use as the result in `coordinated`.
    */
-  def include(actor: ActorRef): JSet[SendTo] = Set(SendTo(actor))
+  def include(actor: ActorRef): JSet[SendTo] = singletonSet(SendTo(actor))
 
   /**
    * For including one other actor in this coordinated transaction and specifying the
    * message to send. Use as the result in `coordinated`.
    */
-  def include(actor: ActorRef, message: Any): JSet[SendTo] = Set(SendTo(actor, Some(message)))
+  def include(actor: ActorRef, message: Any): JSet[SendTo] = singletonSet(SendTo(actor, Some(message)))
 
   /**
    * For including another actor in this coordinated transaction and sending
