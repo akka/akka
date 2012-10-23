@@ -2,18 +2,15 @@
 #
 # Release script for Akka.
 #
-# To run this script you need a user account on repo.akka.io and contributor access
-# to github.com/akka/akka.
+# To run this script you need access to repo.akka.io and github.com/akka/akka.
 #
-# If your username on repo.akka.io is different from your local username then you can
-# configure ssh to always associate a particular username with repo.akka.io by adding
-# the following to .ssh/config:
+# To always use the akkarepo user with repo.akka.io add the following to .ssh/config:
 #   Host repo.akka.io
-#   User <username on repo.akka.io>
+#   User akkarepo
 
 # defaults
-declare -r default_server="repo.akka.io"
-declare -r default_path="/akka/www"
+declare -r default_server="akkarepo@repo.akka.io"
+declare -r default_path="www"
 
 # settings
 declare -r release_dir="target/release"
