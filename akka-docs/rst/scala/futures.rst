@@ -150,6 +150,12 @@ First an example of using ``Await.result``:
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: composing-wrong
 
+.. warning::
+
+   ``Await.result`` and ``Await.ready`` are provided for exceptional situations where you **must** block,
+   a good rule of thumb is to only use them if you know why you **must** block. For all otehr cases, use
+   asynchronous composition as described below.
+
 Here we wait for the results from the first 2 ``Actor``\s before sending that result to the third ``Actor``.
 We called ``Await.result`` 3 times, which caused our little program to block 3 times before getting our final result.
 Now compare that to this example:
