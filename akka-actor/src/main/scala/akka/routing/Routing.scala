@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.ConfigurationException
 import akka.pattern.pipe
 import com.typesafe.config.Config
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -335,7 +335,7 @@ abstract class CustomRouterConfig extends RouterConfig {
     val customRoute = createCustomRoute(routeeProvider)
 
     {
-      case (sender, message) ⇒ customRoute.destinationsFor(sender, message)
+      case (sender, message) ⇒ customRoute.destinationsFor(sender, message).asScala
     }
   }
 
@@ -564,7 +564,7 @@ case class RoundRobinRouter(nrOfInstances: Int = 0, routees: Iterable[String] = 
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = routeePaths.asScala)
 
   /**
    * Constructor that sets the resizer to be used.
@@ -701,7 +701,7 @@ case class RandomRouter(nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = routeePaths.asScala)
 
   /**
    * Constructor that sets the resizer to be used.
@@ -845,7 +845,7 @@ case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: Iterable[Strin
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = routeePaths.asScala)
 
   /**
    * Constructor that sets the resizer to be used.
@@ -1064,7 +1064,7 @@ case class BroadcastRouter(nrOfInstances: Int = 0, routees: Iterable[String] = N
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = routeePaths.asScala)
 
   /**
    * Constructor that sets the resizer to be used.
@@ -1196,8 +1196,7 @@ case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: It
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String], w: FiniteDuration) =
-    this(routees = iterableAsScalaIterable(routeePaths), within = w)
+  def this(routeePaths: java.lang.Iterable[String], w: FiniteDuration) = this(routees = routeePaths.asScala, within = w)
 
   /**
    * Constructor that sets the resizer to be used.

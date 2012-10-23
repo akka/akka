@@ -676,8 +676,8 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null
 
   private def loadExtensions() {
-    import scala.collection.JavaConversions._
-    settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
+    import scala.collection.JavaConverters.collectionAsScalaIterableConverter
+    settings.config.getStringList("akka.extensions").asScala foreach { fqcn ⇒
       dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Seq()) } match {
         case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
         case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
