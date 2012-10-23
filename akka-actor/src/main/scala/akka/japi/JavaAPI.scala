@@ -9,6 +9,7 @@ import scala.Some
 import scala.reflect.ClassTag
 import scala.util.control.NoStackTrace
 import scala.runtime.AbstractPartialFunction
+import java.util.Collections.{ emptyList, singletonList }
 
 /**
  * A Function interface. Used to create first-class-functions is Java.
@@ -114,13 +115,11 @@ abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
  * Java API
  */
 sealed abstract class Option[A] extends java.lang.Iterable[A] {
-  import scala.collection.JavaConversions._
-
   def get: A
   def isEmpty: Boolean
   def isDefined: Boolean = !isEmpty
   def asScala: scala.Option[A]
-  def iterator: java.util.Iterator[A] = if (isEmpty) Iterator.empty else Iterator.single(get)
+  def iterator: java.util.Iterator[A] = if (isEmpty) emptyList[A].iterator else singletonList(get).iterator
 }
 
 object Option {

@@ -5,21 +5,18 @@
 package akka.camel
 
 import java.util.{ Map ⇒ JMap, Set ⇒ JSet }
-
-import scala.collection.JavaConversions._
-
 import org.apache.camel.{ CamelContext, Message ⇒ JCamelMessage }
 import akka.AkkaException
 import scala.reflect.ClassTag
+import scala.util.Try
+import scala.collection.JavaConversions._
 import akka.dispatch.Mapper
-import util.{ Success, Failure, Try }
 
 /**
  * An immutable representation of a Camel message.
  * @author Martin Krasser
  */
 case class CamelMessage(body: Any, headers: Map[String, Any]) {
-
   def this(body: Any, headers: JMap[String, Any]) = this(body, headers.toMap) //for Java
 
   override def toString: String = "CamelMessage(%s, %s)" format (body, headers)
@@ -76,8 +73,7 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * <p>
    * Java API
    */
-  def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext): T =
-    headerAs[T](name)(ClassTag(clazz), camelContext).get
+  def getHeaderAs[T](name: String, clazz: Class[T], camelContext: CamelContext): T = headerAs[T](name)(ClassTag(clazz), camelContext).get
 
   /**
    * Returns a new CamelMessage with a transformed body using a <code>transformer</code> function.

@@ -7,7 +7,6 @@ import language.implicitConversions
 
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.JavaConversions._
 import java.lang.{ Iterable ⇒ JIterable }
 import scala.concurrent.duration.Duration
 /**
@@ -195,7 +194,10 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
-  def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = makeDecider(trapExit.toSeq)
+  def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = {
+    import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+    makeDecider(trapExit.asScala.toSeq)
+  }
 
   /**
    * Decider builder for Iterables of cause-directive pairs, e.g. a map obtained

@@ -3,7 +3,7 @@
  */
 package akka.routing
 
-import scala.collection.JavaConversions.iterableAsScalaIterable
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.control.NonFatal
 import akka.actor.ActorRef
 import akka.actor.SupervisorStrategy
@@ -163,7 +163,7 @@ case class ConsistentHashingRouter(
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = this(routees = iterableAsScalaIterable(routeePaths))
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = routeePaths.asScala)
 
   /**
    * Constructor that sets the resizer to be used.
