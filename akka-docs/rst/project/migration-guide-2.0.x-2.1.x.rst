@@ -24,7 +24,7 @@ Config Dependency
 dependency of akka-actor and it is no longer embedded in ``akka-actor.jar``. 
 If your are using a build tool with dependency resolution, such as sbt or maven you 
 will not notice the difference, but if you have manually constructed classpaths 
-you need to add `config-0.5.0.jar <http://mirrors.ibiblio.org/maven2/com/typesafe/config/0.5.0/>`_.
+you need to add `config-1.0.0.jar <http://mirrors.ibiblio.org/maven2/com/typesafe/config/1.0.0/>`_.
 
 Pieces Moved to Scala Standard Library
 ======================================
@@ -66,7 +66,7 @@ Java:
 ::
   
   // Use this Actors' Dispatcher as ExecutionContext
-  getContext().system().scheduler().scheduleOnce(Duration.create("10 seconds",
+  getContext().system().scheduler().scheduleOnce(Duration.create(10, TimeUnit.SECONDS)",
     getSelf(), new Reconnect(), getContext().getDispatcher());
 
   // Use ActorSystem's default Dispatcher as ExecutionContext
@@ -383,7 +383,7 @@ v2.0::
 
 v2.1::
 
-  final FiniteDuration d = Duration.create("1 second");
+  final FiniteDuration d = Duration.create(1, TimeUnit.SECONDS);
   final Timeout t = new Timeout(d); // always required finite duration, now enforced
 
 Package Name Changes in Remoting
