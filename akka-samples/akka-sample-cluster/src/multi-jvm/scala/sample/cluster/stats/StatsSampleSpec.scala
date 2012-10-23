@@ -108,7 +108,7 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
     //#test-statsService
     "show usage of the statsService from one node" in within(5 seconds) {
       runOn(second) {
-        val service = system.actorFor(node(third) / "user" / "statsService")
+        val service = system.actorFor("/user/statsService")
         service ! StatsJob("this is the text that will be analyzed")
         val meanWordLength = expectMsgPF() {
           case StatsResult(meanWordLength) ⇒ meanWordLength
@@ -121,14 +121,14 @@ abstract class StatsSampleSpec extends MultiNodeSpec(StatsSampleSpecConfig)
     //#test-statsService
     
     "show usage of the statsService from all nodes" in within(5 seconds) {
-      val service = system.actorFor(node(third) / "user" / "statsService")
+      val service = system.actorFor("/user/statsService")
       service ! StatsJob("this is the text that will be analyzed")
       val meanWordLength = expectMsgPF() {
         case StatsResult(meanWordLength) ⇒ meanWordLength
       }
       meanWordLength must be(3.875 plusOrMinus 0.001)
 
-      testConductor.enter("done-2")
+      testConductor.enter("done-3")
     }
 
 

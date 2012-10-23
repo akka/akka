@@ -85,7 +85,7 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
     }
 
     "show usage of the statsFacade" in within(5 seconds) {
-      val facade = system.actorFor(RootActorPath(node(third).address) / "user" / "statsFacade")
+      val facade = system.actorFor("/user/statsFacade")
 
       // eventually the service should be ok,
       // worker nodes might not be up yet

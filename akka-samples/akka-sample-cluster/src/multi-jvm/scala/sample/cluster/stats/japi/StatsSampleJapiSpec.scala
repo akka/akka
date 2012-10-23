@@ -91,7 +91,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
 
     "show usage of the statsService from one node" in within(5 seconds) {
       runOn(second) {
-        val service = system.actorFor(node(third) / "user" / "statsService")
+        val service = system.actorFor("/user/statsService")
         service ! new StatsJob("this is the text that will be analyzed")
         val meanWordLength = expectMsgPF() {
           case r: StatsResult ⇒ r.getMeanWordLength
@@ -104,7 +104,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
     //#test-statsService
     
     "show usage of the statsService from all nodes" in within(5 seconds) {
-      val service = system.actorFor(node(third) / "user" / "statsService")
+      val service = system.actorFor("/user/statsService")
       service ! new StatsJob("this is the text that will be analyzed")
       val meanWordLength = expectMsgPF() {
         case r: StatsResult ⇒ r.getMeanWordLength
