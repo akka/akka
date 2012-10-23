@@ -39,6 +39,9 @@ object FutureDocSpec {
 class FutureDocSpec extends AkkaSpec {
   import FutureDocSpec._
   import system.dispatcher
+
+  val println: PartialFunction[Any, Unit] = { case _ ⇒ }
+
   "demonstrate usage custom ExecutionContext" in {
     val yourExecutorServiceGoesHere = java.util.concurrent.Executors.newSingleThreadExecutor()
     //#diy-execution-context
@@ -68,6 +71,12 @@ class FutureDocSpec extends AkkaSpec {
     val future = actor ? msg // enabled by the “ask” import
     val result = Await.result(future, timeout.duration).asInstanceOf[String]
     //#ask-blocking
+
+    //#pipe-to
+    import akka.pattern.pipe
+    future pipeTo actor
+    //#pipe-to
+
     result must be("HELLO")
   }
 
@@ -93,9 +102,9 @@ class FutureDocSpec extends AkkaSpec {
     val future = Future {
       "Hello" + "World"
     }
-    val result = Await.result(future, 1 second)
+    future foreach println
     //#future-eval
-    result must be("HelloWorld")
+    Await.result(future, 1 second) must be("HelloWorld")
   }
 
   "demonstrate usage of map" in {
@@ -106,10 +115,11 @@ class FutureDocSpec extends AkkaSpec {
     val f2 = f1 map { x ⇒
       x.length
     }
+    f2 foreach println
+    //#map
     val result = Await.result(f2, 1 second)
     result must be(10)
     f1.value must be(Some(Success("HelloWorld")))
-    //#map
   }
 
   "demonstrate wrong usage of nested map" in {
@@ -123,6 +133,7 @@ class FutureDocSpec extends AkkaSpec {
         x.length * y
       }
     }
+    f3 foreach println
     //#wrong-nested-map
     Await.ready(f3, 1 second)
   }
@@ -138,25 +149,30 @@ class FutureDocSpec extends AkkaSpec {
         x.length * y
       }
     }
+    f3 foreach println
+    //#flat-map
     val result = Await.result(f3, 1 second)
     result must be(30)
-    //#flat-map
   }
 
   "demonstrate usage of filter" in {
     //#filter
     val future1 = Future.successful(4)
     val future2 = future1.filter(_ % 2 == 0)
-    val result = Await.result(future2, 1 second)
-    result must be(4)
+
+    future2 foreach println
 
     val failedFilter = future1.filter(_ % 2 == 1).recover {
       // When filter fails, it will have a java.util.NoSuchElementException
       case m: NoSuchElementException ⇒ 0
     }
+
+    failedFilter foreach println
+    //#filter
+    val result = Await.result(future2, 1 second)
+    result must be(4)
     val result2 = Await.result(failedFilter, 1 second)
     result2 must be(0) //Can only be 0 when there was a MatchError
-    //#filter
   }
 
   "demonstrate usage of for comprehension" in {
@@ -171,9 +187,10 @@ class FutureDocSpec extends AkkaSpec {
     // Note that the execution of futures a, b, and c
     // are not done in parallel.
 
+    f foreach println
+    //#for-comprehension
     val result = Await.result(f, 1 second)
     result must be(24)
-    //#for-comprehension
   }
 
   "demonstrate wrong way of composing" in {
@@ -220,8 +237,9 @@ class FutureDocSpec extends AkkaSpec {
       c ← ask(actor3, (a + b)).mapTo[Int]
     } yield c
 
-    val result = Await.result(f3, 1 second).asInstanceOf[Int]
+    f3 foreach println
     //#composing
+    val result = Await.result(f3, 1 second).asInstanceOf[Int]
     result must be(3)
   }
 
@@ -236,25 +254,28 @@ class FutureDocSpec extends AkkaSpec {
     val futureList = Future.sequence(listOfFutures)
 
     // Find the sum of the odd numbers
-    val oddSum = Await.result(futureList.map(_.sum), 1 second).asInstanceOf[Int]
-    oddSum must be(10000)
+    val oddSum = futureList.map(_.sum)
+    oddSum foreach println
     //#sequence-ask
+    Await.result(oddSum, 1 second).asInstanceOf[Int] must be(10000)
   }
 
   "demonstrate usage of sequence" in {
     //#sequence
     val futureList = Future.sequence((1 to 100).toList.map(x ⇒ Future(x * 2 - 1)))
-    val oddSum = Await.result(futureList.map(_.sum), 1 second).asInstanceOf[Int]
-    oddSum must be(10000)
+    val oddSum = futureList.map(_.sum)
+    oddSum foreach println
     //#sequence
+    Await.result(oddSum, 1 second).asInstanceOf[Int] must be(10000)
   }
 
   "demonstrate usage of traverse" in {
     //#traverse
     val futureList = Future.traverse((1 to 100).toList)(x ⇒ Future(x * 2 - 1))
-    val oddSum = Await.result(futureList.map(_.sum), 1 second).asInstanceOf[Int]
-    oddSum must be(10000)
+    val oddSum = futureList.map(_.sum)
+    oddSum foreach println
     //#traverse
+    Await.result(oddSum, 1 second).asInstanceOf[Int] must be(10000)
   }
 
   "demonstrate usage of fold" in {
@@ -262,8 +283,9 @@ class FutureDocSpec extends AkkaSpec {
     // Create a sequence of Futures
     val futures = for (i ← 1 to 1000) yield Future(i * 2)
     val futureSum = Future.fold(futures)(0)(_ + _)
-    Await.result(futureSum, 1 second) must be(1001000)
+    futureSum foreach println
     //#fold
+    Await.result(futureSum, 1 second) must be(1001000)
   }
 
   "demonstrate usage of reduce" in {
@@ -271,8 +293,9 @@ class FutureDocSpec extends AkkaSpec {
     // Create a sequence of Futures
     val futures = for (i ← 1 to 1000) yield Future(i * 2)
     val futureSum = Future.reduce(futures)(_ + _)
-    Await.result(futureSum, 1 second) must be(1001000)
+    futureSum foreach println
     //#reduce
+    Await.result(futureSum, 1 second) must be(1001000)
   }
 
   "demonstrate usage of recover" in {
@@ -283,6 +306,7 @@ class FutureDocSpec extends AkkaSpec {
     val future = akka.pattern.ask(actor, msg1) recover {
       case e: ArithmeticException ⇒ 0
     }
+    future foreach println
     //#recover
     Await.result(future, 1 second) must be(0)
   }
@@ -297,6 +321,7 @@ class FutureDocSpec extends AkkaSpec {
       case foo: IllegalArgumentException ⇒
         Future.failed[Int](new IllegalStateException("All br0ken!"))
     }
+    future foreach println
     //#try-recover
     Await.result(future, 1 second) must be(0)
   }
@@ -306,6 +331,7 @@ class FutureDocSpec extends AkkaSpec {
     val future2 = Future { "bar" }
     //#zip
     val future3 = future1 zip future2 map { case (a, b) ⇒ a + " " + b }
+    future3 foreach println
     //#zip
     Await.result(future3, 1 second) must be("foo bar")
   }
@@ -321,6 +347,7 @@ class FutureDocSpec extends AkkaSpec {
     } andThen {
       case _ ⇒ watchSomeTV
     }
+    result foreach println
     //#and-then
     Await.result(result, 1 second) must be("foo bar")
   }
@@ -331,6 +358,7 @@ class FutureDocSpec extends AkkaSpec {
     val future3 = Future { "pigdog" }
     //#fallback-to
     val future4 = future1 fallbackTo future2 fallbackTo future3
+    future4 foreach println
     //#fallback-to
     Await.result(future4, 1 second) must be("foo")
   }

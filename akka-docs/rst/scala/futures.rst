@@ -41,7 +41,7 @@ Use With Actors
 There are generally two ways of getting a reply from an ``Actor``: the first is by a sent message (``actor ! msg``),
 which only works if the original sender was an ``Actor``) and the second is through a ``Future``.
 
-Using an ``Actor``\'s ``?`` method to send a message will return a ``Future``. To wait for and retrieve the actual result the simplest method is:
+Using an ``Actor``\'s ``?`` method to send a message will return a ``Future``:
 
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: ask-blocking
@@ -58,6 +58,11 @@ When using non-blocking it is better to use the ``mapTo`` method to safely try t
 
 The ``mapTo`` method will return a new ``Future`` that contains the result if the cast was successful,
 or a ``ClassCastException`` if not. Handling ``Exception``\s will be discussed further within this documentation.
+
+To send the result of a ``Future`` to an ``Actor``, you can use the ``pipe`` construct:
+
+.. includecode:: code/docs/future/FutureDocSpec.scala
+   :include: pipe-to
 
 Use Directly
 ------------
@@ -149,6 +154,12 @@ First an example of using ``Await.result``:
 
 .. includecode:: code/docs/future/FutureDocSpec.scala
    :include: composing-wrong
+
+.. warning::
+
+   ``Await.result`` and ``Await.ready`` are provided for exceptional situations where you **must** block,
+   a good rule of thumb is to only use them if you know why you **must** block. For all other cases, use
+   asynchronous composition as described below.
 
 Here we wait for the results from the first 2 ``Actor``\s before sending that result to the third ``Actor``.
 We called ``Await.result`` 3 times, which caused our little program to block 3 times before getting our final result.
