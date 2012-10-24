@@ -111,7 +111,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       }
       meanWordLength must be(3.875 plusOrMinus 0.001)
 
-      testConductor.enter("done-2")
+      testConductor.enter("done-3")
     }
 
 

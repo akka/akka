@@ -1,17 +1,23 @@
 package sample.cluster.stats.japi;
 
+import scala.concurrent.Future;
 import sample.cluster.stats.japi.StatsMessages.JobFailed;
 import sample.cluster.stats.japi.StatsMessages.StatsJob;
 import akka.actor.ActorRef;
 import akka.actor.Address;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
+import akka.dispatch.Recover;
 import akka.cluster.Cluster;
 import akka.cluster.ClusterEvent.CurrentClusterState;
 import akka.cluster.ClusterEvent.LeaderChanged;
 import akka.cluster.ClusterEvent.MemberEvent;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.util.Timeout;
+import static akka.pattern.Patterns.ask;
+import static akka.pattern.Patterns.pipe;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 //#facade
 public class StatsFacade extends UntypedActor {
@@ -43,7 +49,13 @@ public class StatsFacade extends UntypedActor {
 
     } else if (message instanceof StatsJob) {
       StatsJob job = (StatsJob) message;
-      currentMaster.forward(job, getContext());
+      Future<Object> f = ask(currentMaster, job, new Timeout(10, SECONDS)).
+        recover(new Recover<Object>() {
+          public Object recover(Throwable t) {
+            return new JobFailed("Service unavailable, try again later");
+          }
+        }, getContext().dispatcher());
+      pipe(f, getContext().dispatcher()).to(getSender());
 
     } else if (message instanceof CurrentClusterState) {
       CurrentClusterState state = (CurrentClusterState) message;
