@@ -21,7 +21,7 @@ Mailing List
 Downloads
 ^^^^^^^^^
 
-`<http://akka.io/downloads/>`_
+`<http://typesafe.com/stack/downloads/akka/>`_
 
 
 Source Code

@@ -51,7 +51,7 @@ How to see the JARs dependencies of each Akka module is described in the
 Using a release distribution
 ----------------------------
 
-Download the release you need from http://akka.io/downloads and unzip it.
+Download the release you need from http://typesafe.com/stack/downloads/akka and unzip it.
 
 Using a snapshot version
 ------------------------
