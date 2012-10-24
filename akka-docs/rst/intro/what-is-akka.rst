@@ -18,7 +18,7 @@ fault-tolerant applications.
 
 Akka is Open Source and available under the Apache 2 License.
 
-Download from http://akka.io/downloads/
+Download from http://typesafe.com/stack/downloads/akka/
 
 Please note that all code samples compile, so if you want direct access to the sources, have a look
 over at the `Akka Docs Project <@github@/akka-docs/rst>`_.
