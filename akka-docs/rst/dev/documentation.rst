@@ -17,13 +17,12 @@ built using `Sphinx`_.
 Sphinx
 ======
 
-More to come...
-
+For more details see `The Sphinx Documentation <http://sphinx.pocoo.org/contents.html>`_
 
 reStructuredText
 ================
 
-More to come...
+For more details see `The reST Quickref <http://docutils.sourceforge.net/docs/user/rst/quickref.html>`_
 
 Sections
 --------
