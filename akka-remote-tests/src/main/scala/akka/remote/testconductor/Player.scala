@@ -143,7 +143,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
   val settings = TestConductor().Settings
 
   val handler = new PlayerHandler(controllerAddr, settings.ClientReconnects, settings.ReconnectBackoff,
-    self, Logging(context.system, "PlayerHandler"), context.system.scheduler)(context.dispatcher)
+    settings.ClientSocketWorkerPoolSize, self, Logging(context.system, "PlayerHandler"),
+    context.system.scheduler)(context.dispatcher)
 
   startWith(Connecting, Data(None, None))
 
@@ -254,6 +255,7 @@ private[akka] class PlayerHandler(
   server: InetSocketAddress,
   private var reconnects: Int,
   backoff: FiniteDuration,
+  poolSize: Int,
   fsm: ActorRef,
   log: LoggingAdapter,
   scheduler: Scheduler)(implicit executor: ExecutionContext)
@@ -283,7 +285,7 @@ private[akka] class PlayerHandler(
 
   private def reconnect(): Unit = {
     nextAttempt = Deadline.now + backoff
-    RemoteConnection(Client, server, this)
+    RemoteConnection(Client, server, poolSize, this)
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {

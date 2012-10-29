@@ -10,6 +10,7 @@ import java.net.InetAddress
 import akka.ConfigurationException
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.concurrent.duration.FiniteDuration
+import akka.dispatch.ThreadPoolConfig
 
 private[akka] class NettySettings(config: Config, val systemName: String) {
 
@@ -139,4 +140,14 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
     }
     enableSSL
   }
+
+  private def computeWPS(config: Config): Int =
+    ThreadPoolConfig.scaledPoolSize(
+      config.getInt("pool-size-min"),
+      config.getDouble("pool-size-factor"),
+      config.getInt("pool-size-max"))
+
+  val ServerSocketWorkerPoolSize = computeWPS(config.getConfig("server-socket-worker-pool"))
+
+  val ClientSocketWorkerPoolSize = computeWPS(config.getConfig("client-socket-worker-pool"))
 }

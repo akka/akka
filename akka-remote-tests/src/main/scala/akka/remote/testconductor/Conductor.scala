@@ -391,7 +391,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   import BarrierCoordinator._
 
   val settings = TestConductor().Settings
-  val connection = RemoteConnection(Server, controllerPort,
+  val connection = RemoteConnection(Server, controllerPort, settings.ServerSocketWorkerPoolSize,
     new ConductorHandler(settings.QueryTimeout, self, Logging(context.system, "ConductorHandler")))
 
   /*
