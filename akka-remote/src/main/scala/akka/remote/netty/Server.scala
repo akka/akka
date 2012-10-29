@@ -31,7 +31,8 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
         val d = netty.system.dispatchers.lookup(id)
         new NioServerSocketChannelFactory(d, d)
       case None ⇒
-        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
+        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(),
+          settings.ServerSocketWorkerPoolSize)
     }
 
   // group of open channels, used for clean-up
