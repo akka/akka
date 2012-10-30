@@ -16,7 +16,7 @@ import scala.annotation.varargs
 import scala.reflect.ClassTag
 
 object TestActor {
-  type Ignore = Option[PartialFunction[AnyRef, Boolean]]
+  type Ignore = Option[PartialFunction[Any, Boolean]]
 
   abstract class AutoPilot {
     def run(sender: ActorRef, msg: Any): AutoPilot
@@ -138,7 +138,7 @@ trait TestKitBase {
    * Ignore all messages in the test actor for which the given partial
    * function returns true.
    */
-  def ignoreMsg(f: PartialFunction[AnyRef, Boolean]) { testActor ! TestActor.SetIgnore(Some(f)) }
+  def ignoreMsg(f: PartialFunction[Any, Boolean]) { testActor ! TestActor.SetIgnore(Some(f)) }
 
   /**
    * Stop ignoring messages in the test actor.
