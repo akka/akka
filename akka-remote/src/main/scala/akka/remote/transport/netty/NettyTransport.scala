@@ -249,7 +249,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
                                hostName: Option[String] = None): Option[Address] = {
     addr match {
       case sa: InetSocketAddress ⇒
-        Some(Address(schemeIdentifier, systemName.getOrElse(""), hostName.getOrElse(sa.getHostString), sa.getPort))
+        Some(Address(schemeIdentifier, systemName.getOrElse(""), hostName.getOrElse(sa.getHostName), sa.getPort))
 
       case _ ⇒ None
     }
