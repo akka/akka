@@ -3,7 +3,7 @@ package akka.performance.workbench
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
 
-import scala.collection.immutable.TreeMap
+import scala.collection.immutable
 
 /**
  * Generates URLs to Google Chart API http://code.google.com/apis/chart/
@@ -16,7 +16,7 @@ object GoogleChartBuilder {
   /**
    * Builds a bar chart for tps in the statistics.
    */
-  def tpsChartUrl(statsByTimestamp: TreeMap[Long, Seq[Stats]], title: String, legend: Stats ⇒ String): String = {
+  def tpsChartUrl(statsByTimestamp: immutable.TreeMap[Long, Seq[Stats]], title: String, legend: Stats ⇒ String): String = {
     if (statsByTimestamp.isEmpty) ""
     else {
       val loads = statsByTimestamp.values.head.map(_.load)
@@ -46,7 +46,7 @@ object GoogleChartBuilder {
       //sb.append("&")
 
       // legend
-      val legendStats = statsByTimestamp.values.map(_.head).toSeq
+      val legendStats = statsByTimestamp.values.toVector.map(_.head)
       appendLegend(legendStats, sb, legend)
       sb.append("&")
       // bar spacing
@@ -60,10 +60,7 @@ object GoogleChartBuilder {
       val loadStr = loads.mkString(",")
       sb.append("chd=t:")
       val maxValue = allStats.map(_.tps).max
-      val tpsSeries: Iterable[String] =
-        for (statsSeq ← statsByTimestamp.values) yield {
-          statsSeq.map(_.tps).mkString(",")
-        }
+      val tpsSeries: Iterable[String] = for (statsSeq ← statsByTimestamp.values) yield statsSeq.map(_.tps).mkString(",")
       sb.append(tpsSeries.mkString("|"))
 
       // y range
@@ -83,7 +80,7 @@ object GoogleChartBuilder {
   /**
    * Builds a bar chart for all percentiles and the mean in the statistics.
    */
-  def percentilesAndMeanChartUrl(statistics: Seq[Stats], title: String, legend: Stats ⇒ String): String = {
+  def percentilesAndMeanChartUrl(statistics: immutable.Seq[Stats], title: String, legend: Stats ⇒ String): String = {
     if (statistics.isEmpty) ""
     else {
       val current = statistics.last
@@ -146,13 +143,13 @@ object GoogleChartBuilder {
     }
   }
 
-  private def percentileLabels(percentiles: TreeMap[Int, Long], sb: StringBuilder) {
+  private def percentileLabels(percentiles: immutable.TreeMap[Int, Long], sb: StringBuilder) {
     sb.append("chxl=1:|")
     val s = percentiles.keys.toList.map(_ + "%").mkString("|")
     sb.append(s)
   }
 
-  private def appendLegend(statistics: Seq[Stats], sb: StringBuilder, legend: Stats ⇒ String) {
+  private def appendLegend(statistics: immutable.Seq[Stats], sb: StringBuilder, legend: Stats ⇒ String) {
     val legends = statistics.map(legend(_))
     sb.append("chdl=")
     val s = legends.map(urlEncode(_)).mkString("|")
@@ -166,7 +163,7 @@ object GoogleChartBuilder {
     sb.append(s)
   }
 
-  private def dataSeries(allPercentiles: Seq[TreeMap[Int, Long]], meanValues: Seq[Double], sb: StringBuilder) {
+  private def dataSeries(allPercentiles: immutable.Seq[immutable.TreeMap[Int, Long]], meanValues: immutable.Seq[Double], sb: StringBuilder) {
     val percentileSeries =
       for {
         percentiles ← allPercentiles
@@ -181,7 +178,7 @@ object GoogleChartBuilder {
     sb.append(series.mkString("|"))
   }
 
-  private def dataSeries(values: Seq[Double], sb: StringBuilder) {
+  private def dataSeries(values: immutable.Seq[Double], sb: StringBuilder) {
     val series = values.map(formatDouble(_))
     sb.append(series.mkString("|"))
   }
@@ -198,7 +195,7 @@ object GoogleChartBuilder {
     }
   }
 
-  def latencyAndThroughputChartUrl(statistics: Seq[Stats], title: String): String = {
+  def latencyAndThroughputChartUrl(statistics: immutable.Seq[Stats], title: String): String = {
     if (statistics.isEmpty) ""
     else {
       val sb = new StringBuilder

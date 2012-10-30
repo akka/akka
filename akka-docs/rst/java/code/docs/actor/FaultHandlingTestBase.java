@@ -30,7 +30,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import akka.japi.Function;
 import scala.Option;
 import scala.collection.JavaConverters;
-import scala.collection.Seq;
+import scala.collection.immutable.Seq;
 
 import org.junit.Test;
 import org.junit.BeforeClass;
@@ -220,7 +220,7 @@ public class FaultHandlingTestBase {
   //#testkit
   public <A> Seq<A> seq(A... args) {
     return JavaConverters.collectionAsScalaIterableConverter(
-      java.util.Arrays.asList(args)).asScala().toSeq();
+      java.util.Arrays.asList(args)).asScala().toList();
   }
   //#testkit
 }

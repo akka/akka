@@ -6,13 +6,14 @@ package akka.zeromq
 import org.zeromq.ZMQ.{ Socket, Poller }
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor._
+import scala.collection.immutable
+import scala.annotation.tailrec
 import scala.concurrent.{ Promise, Future }
 import scala.concurrent.duration.Duration
-import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import scala.util.control.NonFatal
 import akka.event.Logging
 import java.util.concurrent.TimeUnit
-import scala.util.control.NonFatal
 
 private[zeromq] object ConcurrentSocketActor {
   private sealed trait PollMsg
@@ -25,7 +26,7 @@ private[zeromq] object ConcurrentSocketActor {
 
   private val DefaultContext = Context()
 }
-private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends Actor {
+private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption]) extends Actor {
 
   import ConcurrentSocketActor._
   private val noBytes = Array[Byte]()
@@ -40,7 +41,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
   private val socket: Socket = zmqContext.socket(socketType)
   private val poller: Poller = zmqContext.poller
 
-  private val pendingSends = new ListBuffer[Seq[Frame]]
+  private val pendingSends = new ListBuffer[immutable.Seq[Frame]]
 
   def receive = {
     case m: PollMsg         ⇒ doPoll(m)
@@ -151,7 +152,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
     }
   } finally notifyListener(Closed)
 
-  @tailrec private def flushMessage(i: Seq[Frame]): Boolean =
+  @tailrec private def flushMessage(i: immutable.Seq[Frame]): Boolean =
     if (i.isEmpty)
       true
     else {
@@ -198,7 +199,7 @@ private[zeromq] class ConcurrentSocketActor(params: Seq[SocketOption]) extends A
       case frames ⇒ notifyListener(deserializer(frames)); doPoll(mode, togo - 1)
     }
 
-  @tailrec private def receiveMessage(mode: PollMsg, currentFrames: Vector[Frame] = Vector.empty): Seq[Frame] =
+  @tailrec private def receiveMessage(mode: PollMsg, currentFrames: Vector[Frame] = Vector.empty): immutable.Seq[Frame] =
     if (mode == PollCareful && (poller.poll(0) <= 0)) {
       if (currentFrames.isEmpty) currentFrames else throw new IllegalStateException("Received partial transmission!")
     } else {

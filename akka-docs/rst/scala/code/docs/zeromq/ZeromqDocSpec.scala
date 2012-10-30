@@ -5,13 +5,13 @@ package docs.zeromq
 
 import language.postfixOps
 
-import akka.actor.{ Actor, Props }
 import scala.concurrent.duration._
+import scala.collection.immutable
+import akka.actor.{ Actor, Props }
 import akka.testkit._
-import akka.zeromq.{ ZeroMQVersion, ZeroMQExtension }
+import akka.zeromq.{ ZeroMQVersion, ZeroMQExtension, SocketType, Bind }
 import java.text.SimpleDateFormat
 import java.util.Date
-import akka.zeromq.{ SocketType, Bind }
 
 object ZeromqDocSpec {
 
@@ -52,12 +52,12 @@ object ZeromqDocSpec {
         val heapPayload = ser.serialize(Heap(timestamp, currentHeap.getUsed,
           currentHeap.getMax)).get
         // the first frame is the topic, second is the message
-        pubSocket ! ZMQMessage(Seq(Frame("health.heap"), Frame(heapPayload)))
+        pubSocket ! ZMQMessage(immutable.Seq(Frame("health.heap"), Frame(heapPayload)))
 
         // use akka SerializationExtension to convert to bytes
         val loadPayload = ser.serialize(Load(timestamp, os.getSystemLoadAverage)).get
         // the first frame is the topic, second is the message
-        pubSocket ! ZMQMessage(Seq(Frame("health.load"), Frame(loadPayload)))
+        pubSocket ! ZMQMessage(immutable.Seq(Frame("health.load"), Frame(loadPayload)))
     }
   }
   //#health
@@ -146,7 +146,7 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
 
     val payload = Array.empty[Byte]
     //#pub-topic
-    pubSocket ! ZMQMessage(Seq(Frame("foo.bar"), Frame(payload)))
+    pubSocket ! ZMQMessage(Frame("foo.bar"), Frame(payload))
     //#pub-topic
 
     system.stop(subSocket)

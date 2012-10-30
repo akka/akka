@@ -121,7 +121,7 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
     else addr + name
 
   override def compareTo(other: ActorPath): Int = other match {
-    case r: RootActorPath  ⇒ toString compareTo r.toString
+    case r: RootActorPath  ⇒ toString compareTo r.toString // FIXME make this cheaper by comparing address and name in isolation
     case c: ChildActorPath ⇒ 1
   }
 }

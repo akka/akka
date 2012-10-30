@@ -6,14 +6,15 @@ package akka.testkit
 import language.existentials
 
 import scala.util.matching.Regex
+import scala.collection.JavaConverters
+import scala.collection.immutable
+import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
 import akka.actor.{ DeadLetter, ActorSystem, Terminated, UnhandledMessage }
 import akka.dispatch.{ SystemMessage, Terminate }
 import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug, LoggerInitialized }
 import akka.event.Logging
 import java.lang.{ Iterable ⇒ JIterable }
-import scala.collection.JavaConverters
-import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 import akka.actor.NoSerializationVerificationNeeded
 
 /**
@@ -38,22 +39,22 @@ sealed trait TestEvent
  */
 object TestEvent {
   object Mute {
-    def apply(filter: EventFilter, filters: EventFilter*): Mute = new Mute(filter +: filters.toSeq)
+    def apply(filter: EventFilter, filters: EventFilter*): Mute = new Mute(filter +: filters.to[immutable.Seq])
   }
-  case class Mute(filters: Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
+  case class Mute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
      * Java API
      */
-    def this(filters: JIterable[EventFilter]) = this(JavaConverters.iterableAsScalaIterableConverter(filters).asScala.toSeq)
+    def this(filters: JIterable[EventFilter]) = this(JavaConverters.iterableAsScalaIterableConverter(filters).asScala.to[immutable.Seq])
   }
   object UnMute {
-    def apply(filter: EventFilter, filters: EventFilter*): UnMute = new UnMute(filter +: filters.toSeq)
+    def apply(filter: EventFilter, filters: EventFilter*): UnMute = new UnMute(filter +: filters.to[immutable.Seq])
   }
-  case class UnMute(filters: Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
+  case class UnMute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
      * Java API
      */
-    def this(filters: JIterable[EventFilter]) = this(JavaConverters.iterableAsScalaIterableConverter(filters).asScala.toSeq)
+    def this(filters: JIterable[EventFilter]) = this(JavaConverters.iterableAsScalaIterableConverter(filters).asScala.to[immutable.Seq])
   }
 }
 

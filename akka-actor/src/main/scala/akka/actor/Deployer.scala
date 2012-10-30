@@ -160,7 +160,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
         val vnodes = deployment.getInt("virtual-nodes-factor")
         ConsistentHashingRouter(nrOfInstances, routees, resizer, virtualNodesFactor = vnodes)
       case fqn ⇒
-        val args = Seq(classOf[Config] -> deployment)
+        val args = List(classOf[Config] -> deployment)
         dynamicAccess.createInstanceFor[RouterConfig](fqn, args).recover({
           case exception ⇒ throw new IllegalArgumentException(
             ("Cannot instantiate router [%s], defined in [%s], " +

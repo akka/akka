@@ -9,12 +9,13 @@ import akka.actor._
 import akka.{ ConfigurationException, AkkaException }
 import akka.actor.ActorSystem.Settings
 import akka.util.{ Timeout, ReentrantGuard }
-import scala.concurrent.duration._
 import java.util.concurrent.atomic.AtomicInteger
-import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException
+import scala.annotation.implicitNotFound
+import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.concurrent.Await
-import annotation.implicitNotFound
+import scala.util.control.NoStackTrace
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -448,7 +449,7 @@ object Logging {
   }
 
   // these type ascriptions/casts are necessary to avoid CCEs during construction while retaining correct type
-  val AllLogLevels: Seq[LogLevel] = Seq(ErrorLevel, WarningLevel, InfoLevel, DebugLevel)
+  val AllLogLevels: immutable.Seq[LogLevel] = Vector(ErrorLevel, WarningLevel, InfoLevel, DebugLevel)
 
   /**
    * Obtain LoggingAdapter for the given actor system and source object. This

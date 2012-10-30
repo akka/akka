@@ -9,17 +9,17 @@ import akka.dispatch._
 import akka.pattern.ask
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
-import scala.concurrent.duration.Duration
-import java.io.Closeable
+import scala.collection.immutable
+import scala.concurrent.duration.{ FiniteDuration, Duration }
 import scala.concurrent.{ Await, Awaitable, CanAwait, Future }
+import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 import akka.util._
+import java.io.Closeable
 import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.dungeon.ChildrenContainer
-import scala.concurrent.duration.FiniteDuration
-import util.{ Failure, Success }
 
 object ActorSystem {
 
@@ -144,7 +144,7 @@ object ActorSystem {
 
     final val LogLevel: String = getString("akka.loglevel")
     final val StdoutLogLevel: String = getString("akka.stdout-loglevel")
-    final val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
+    final val EventHandlers: immutable.Seq[String] = getStringList("akka.event-handlers").asScala.to[Vector]
     final val EventHandlerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
 
@@ -273,10 +273,8 @@ abstract class ActorSystem extends ActorRefFactory {
   /**
    * ''Java API'': Recursively create a descendant’s path by appending all child names.
    */
-  def descendant(names: java.lang.Iterable[String]): ActorPath = {
-    import scala.collection.JavaConverters._
-    /(names.asScala)
-  }
+  def descendant(names: java.lang.Iterable[String]): ActorPath =
+    /(scala.collection.JavaConverters.iterableAsScalaIterableConverter(names).asScala)
 
   /**
    * Start-up time in milliseconds since the epoch.
@@ -536,7 +534,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   val scheduler: Scheduler = createScheduler()
 
   val provider: ActorRefProvider = {
-    val arguments = Seq(
+    val arguments = Vector(
       classOf[String] -> name,
       classOf[Settings] -> settings,
       classOf[EventStream] -> eventStream,
@@ -676,15 +674,15 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null
 
   private def loadExtensions() {
-    import scala.collection.JavaConverters.collectionAsScalaIterableConverter
-    settings.config.getStringList("akka.extensions").asScala foreach { fqcn ⇒
-      dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Seq()) } match {
-        case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
-        case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
-        case Success(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
-        case Failure(problem)                ⇒ log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
+    scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+      settings.config.getStringList("akka.extensions")).asScala foreach { fqcn ⇒
+        dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil) } match {
+          case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
+          case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
+          case Success(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
+          case Failure(problem)                ⇒ log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
+        }
       }
-    }
   }
 
   override def toString: String = lookupRoot.path.root.address.toString

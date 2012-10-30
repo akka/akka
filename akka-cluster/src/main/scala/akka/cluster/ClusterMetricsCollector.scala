@@ -557,7 +557,7 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
  */
 private[cluster] object MetricsCollector {
   def apply(address: Address, log: LoggingAdapter, dynamicAccess: DynamicAccess): MetricsCollector =
-    dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Seq.empty) match {
+    dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Nil) match {
       case Success(identity) ⇒ new MetricsCollector(Some(identity), address)
       case Failure(e) ⇒
         log.debug(e.toString)

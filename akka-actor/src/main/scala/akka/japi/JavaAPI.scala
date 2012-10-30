@@ -5,7 +5,8 @@
 package akka.japi
 
 import language.implicitConversions
-import scala.Some
+
+import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.control.NoStackTrace
 import scala.runtime.AbstractPartialFunction
@@ -176,7 +177,7 @@ object Option {
 object Util {
   def classTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
 
-  def arrayToSeq[T](arr: Array[T]): Seq[T] = arr.toSeq
+  def arrayToSeq[T](arr: Array[T]): immutable.Seq[T] = arr.to[immutable.Seq]
 
-  def arrayToSeq(classes: Array[Class[_]]): Seq[Class[_]] = classes.toSeq
+  def arrayToSeq(classes: Array[Class[_]]): immutable.Seq[Class[_]] = classes.to[immutable.Seq]
 }

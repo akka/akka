@@ -32,7 +32,7 @@ class SimpleNamespaceHandlerTest extends WordSpec with MustMatchers with PojoSRT
 
   import NamespaceHandlerTest._
 
-  val testBundles: Seq[BundleDescriptor] = buildTestBundles(Seq(
+  val testBundles = buildTestBundles(List(
     AKKA_OSGI_BLUEPRINT,
     bundle(TEST_BUNDLE_NAME).withBlueprintFile(getClass.getResource("simple.xml"))))
 
@@ -62,7 +62,7 @@ class ConfigNamespaceHandlerTest extends WordSpec with MustMatchers with PojoSRT
 
   import NamespaceHandlerTest._
 
-  val testBundles: Seq[BundleDescriptor] = buildTestBundles(Seq(
+  val testBundles = buildTestBundles(List(
     AKKA_OSGI_BLUEPRINT,
     bundle(TEST_BUNDLE_NAME).withBlueprintFile(getClass.getResource("config.xml"))))
 
@@ -94,7 +94,7 @@ class DependencyInjectionNamespaceHandlerTest extends WordSpec with MustMatchers
 
   import NamespaceHandlerTest._
 
-  val testBundles: Seq[BundleDescriptor] = buildTestBundles(Seq(
+  val testBundles = buildTestBundles(List(
     AKKA_OSGI_BLUEPRINT,
     bundle(TEST_BUNDLE_NAME).withBlueprintFile(getClass.getResource("injection.xml"))))
 

@@ -32,7 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import scala.collection.JavaConverters;
-import scala.collection.Seq;
+import scala.collection.immutable.Seq;
 
 public class UntypedCoordinatedIncrementTest {
   private static ActorSystem system;
@@ -110,6 +110,6 @@ public class UntypedCoordinatedIncrementTest {
   }
 
   public <A> Seq<A> seq(A... args) {
-    return JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(args)).asScala().toSeq();
+    return JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(args)).asScala().toList();
   }
 }

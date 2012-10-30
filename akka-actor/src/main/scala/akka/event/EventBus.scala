@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentSkipListSet
 import java.util.Comparator
 import akka.util.{ Subclassification, SubclassifiedIndex }
 import scala.collection.immutable.TreeSet
+import scala.collection.immutable
 
 /**
  * Represents the base type for EventBuses
@@ -167,12 +168,12 @@ trait SubchannelClassification { this: EventBus ⇒
     recv foreach (publish(event, _))
   }
 
-  private def removeFromCache(changes: Seq[(Classifier, Set[Subscriber])]): Unit =
+  private def removeFromCache(changes: immutable.Seq[(Classifier, Set[Subscriber])]): Unit =
     cache = (cache /: changes) {
       case (m, (c, cs)) ⇒ m.updated(c, m.getOrElse(c, Set.empty[Subscriber]) -- cs)
     }
 
-  private def addToCache(changes: Seq[(Classifier, Set[Subscriber])]): Unit =
+  private def addToCache(changes: immutable.Seq[(Classifier, Set[Subscriber])]): Unit =
     cache = (cache /: changes) {
       case (m, (c, cs)) ⇒ m.updated(c, m.getOrElse(c, Set.empty[Subscriber]) ++ cs)
     }
