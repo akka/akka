@@ -78,6 +78,13 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
       expectMsgAllClassOf(5 seconds, classOf[Int]) must be(Seq(42))
     }
 
+    "be able to ignore primitive types" in {
+      ignoreMsg { case 42 ⇒ true }
+      testActor ! 42
+      testActor ! "pigdog"
+      expectMsg("pigdog")
+    }
+
   }
 
 }
