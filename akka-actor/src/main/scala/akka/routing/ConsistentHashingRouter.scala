@@ -12,6 +12,8 @@ import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.serialization.SerializationExtension
 import java.util.concurrent.atomic.AtomicReference
+import akka.actor.Address
+import akka.actor.ExtendedActorSystem
 
 object ConsistentHashingRouter {
   /**
@@ -238,20 +240,22 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
     }
 
     val log = Logging(routeeProvider.context.system, routeeProvider.context.self)
+    val selfAddress = routeeProvider.context.system.asInstanceOf[ExtendedActorSystem].provider.rootPath.address
     val vnodes =
       if (virtualNodesFactor == 0) routeeProvider.context.system.settings.DefaultVirtualNodesFactor
       else virtualNodesFactor
 
     // tuple of routees and the ConsistentHash, updated together in updateConsistentHash
-    val consistentHashRef = new AtomicReference[(IndexedSeq[ActorRef], ConsistentHash[ActorRef])]((null, null))
+    val consistentHashRef = new AtomicReference[(IndexedSeq[ConsistentActorRef], ConsistentHash[ConsistentActorRef])]((null, null))
     updateConsistentHash()
 
     // update consistentHash when routees has changed
     // changes to routees are rare and when no changes this is a quick operation
-    def updateConsistentHash(): ConsistentHash[ActorRef] = {
+    def updateConsistentHash(): ConsistentHash[ConsistentActorRef] = {
       val oldConsistentHashTuple = consistentHashRef.get
       val (oldConsistentHashRoutees, oldConsistentHash) = oldConsistentHashTuple
-      val currentRoutees = routeeProvider.routees
+      val currentRoutees = routeeProvider.routees map { ConsistentActorRef(_, selfAddress) }
+
       if (currentRoutees ne oldConsistentHashRoutees) {
         // when other instance, same content, no need to re-hash, but try to set routees
         val consistentHash =
@@ -267,9 +271,9 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
       val currentConsistenHash = updateConsistentHash()
       if (currentConsistenHash.isEmpty) routeeProvider.context.system.deadLetters
       else hashData match {
-        case bytes: Array[Byte] ⇒ currentConsistenHash.nodeFor(bytes)
-        case str: String        ⇒ currentConsistenHash.nodeFor(str)
-        case x: AnyRef          ⇒ currentConsistenHash.nodeFor(SerializationExtension(routeeProvider.context.system).serialize(x).get)
+        case bytes: Array[Byte] ⇒ currentConsistenHash.nodeFor(bytes).actorRef
+        case str: String        ⇒ currentConsistenHash.nodeFor(str).actorRef
+        case x: AnyRef          ⇒ currentConsistenHash.nodeFor(SerializationExtension(routeeProvider.context.system).serialize(x).get).actorRef
       }
     } catch {
       case NonFatal(e) ⇒
@@ -292,6 +296,23 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
             List(Destination(sender, routeeProvider.context.system.deadLetters))
         }
 
+    }
+  }
+}
+
+/**
+ * INTERNAL API
+ * Important to use ActorRef with full address, with host and port, in the hash ring,
+ * so that same ring is produced on different nodes.
+ * The ConsistentHash uses toString of the ring nodes, and the ActorRef itself
+ * isn't a good representation, because LocalActorRef doesn't include the
+ * host and port.
+ */
+private[akka] case class ConsistentActorRef(actorRef: ActorRef, selfAddress: Address) {
+  override def toString: String = {
+    actorRef.path.address match {
+      case Address(_, _, None, None) ⇒ actorRef.path.toStringWithAddress(selfAddress)
+      case a                         ⇒ actorRef.path.toString
     }
   }
 }
