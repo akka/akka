@@ -102,7 +102,10 @@ private[akka] class RemoteSystemDaemon(
       }
 
     case AddressTerminated(address) ⇒
-      foreachChild { case a: InternalActorRef if a.getParent.path.address == address ⇒ system.stop(a) }
+      foreachChild {
+        case a: InternalActorRef if a.getParent.path.address == address ⇒ system.stop(a)
+        case _ ⇒ // skip, this child doesn't belong to the terminated address
+      }
 
     case unknown ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }
