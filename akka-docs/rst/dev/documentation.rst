@@ -74,16 +74,17 @@ First install `Sphinx`_. See below.
 Building
 --------
 
-::
+For the html version of the docs::
 
-  cd akka-docs
+    sbt sphinx:generate-html
 
-  make html
-  open _build/html/index.html
+    open <project-dir>/akka-docs/target/sphinx/html/index.html
 
-  make pdf
-  open _build/latex/Akka.pdf
+For the pdf version of the docs::
 
+    sbt sphinx:generate-pdf
+
+    open <project-dir>/akka-docs/target/sphinx/latex/Akka.pdf
 
 Installing Sphinx on OS X
 -------------------------
