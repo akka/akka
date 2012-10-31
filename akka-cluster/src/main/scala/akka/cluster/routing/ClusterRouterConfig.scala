@@ -202,7 +202,7 @@ private[akka] class ClusterRouteeProvider(
     } else {
       // find the node with least routees
       val numberOfRouteesPerNode: Map[Address, Int] =
-        currentRoutees.foldLeft(currentNodes.map(_ -> 0).toMap.withDefault(_ ⇒ 0)) { (acc, x) ⇒
+        currentRoutees.foldLeft(currentNodes.map(_ -> 0).toMap.withDefaultValue(0)) { (acc, x) ⇒
           val address = fullAddress(x)
           acc + (address -> (acc(address) + 1))
         }
