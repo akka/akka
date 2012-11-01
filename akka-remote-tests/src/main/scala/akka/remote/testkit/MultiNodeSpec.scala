@@ -42,7 +42,10 @@ abstract class MultiNodeConfig {
   /**
    * Register a config override for a specific participant.
    */
-  def nodeConfig(role: RoleName, config: Config): Unit = _nodeConf += role -> config
+  def nodeConfig(roles: RoleName*)(configs: Config*): Unit = {
+    val c = configs.reduceLeft(_ withFallback _)
+    _nodeConf ++= roles map { _ -> c }
+  }
 
   /**
    * Include for verbose debug logging
@@ -318,18 +321,15 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * to the `roleMap`).
    */
   def runOn(nodes: RoleName*)(thunk: ⇒ Unit): Unit = {
-    if (nodes exists (_ == myself)) {
+    if (isNode(nodes: _*)) {
       thunk
     }
   }
 
   /**
-   * Execute the `yes` block of code only on the given nodes (names according
-   * to the `roleMap`) else execute the `no` block of code.
+   * Verify that the running node matches one of the given nodes
    */
-  def ifNode[T](nodes: RoleName*)(yes: ⇒ T)(no: ⇒ T): T = {
-    if (nodes exists (_ == myself)) yes else no
-  }
+  def isNode(nodes: RoleName*): Boolean = nodes contains myself
 
   /**
    * Enter the named barriers in the order given. Use the remaining duration from
