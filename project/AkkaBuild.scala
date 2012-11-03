@@ -699,15 +699,30 @@ object Dependencies {
       val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j       = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf   = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
+      
 
-      val paxExamUnit = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.5.0"            % "test" // TODO License
-      val paxExamSpi  = "org.ops4j.pax.exam"          % "pax-exam-spi"                 % "2.5.0"            % "test"
-      val paxInject   = "org.ops4j.pax.exam"          % "pax-exam-inject"              % "2.5.0"            % "test" // TODO License
-      val paxExamRunner   = "org.ops4j.pax.exam"      % "pax-exam-container-paxrunner" % "2.5.0"            % "test" // TODO License
-      val paxLinkAssembly = "org.ops4j.pax.exam"      % "pax-exam-link-assembly"       % "2.5.0"            % "test" // TODO License
-      val paxExamForge    = "org.ops4j.pax.exam"      % "pax-exam-testforge"           % "2.5.0"            % "test" // TODO License
-      val paxRunner   = "org.ops4j.pax.runner"        % "pax-runner-no-jcl"            % "1.7.6"            % "test" // TODO License
+      val paxExamVersion = "3.0.0.M4"
+
       val javaxInject = "javax.inject"                % "javax.inject"                 % "1"                % "test" // TODO License
+      val paxExamUnit = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % paxExamVersion     % "test" // TODO License
+      val paxExamSpi  = "org.ops4j.pax.exam"          % "pax-exam-spi"                 % paxExamVersion     % "test"
+      val paxInject   = "org.ops4j.pax.exam"          % "pax-exam-inject"              % paxExamVersion     % "test" // TODO License
+      val paxLinkAssembly = "org.ops4j.pax.exam"      % "pax-exam-link-assembly"       % paxExamVersion     % "test" // TODO License
+      val paxExamForge    = "org.ops4j.pax.exam"      % "pax-exam-testforge"           % paxExamVersion     % "test" // TODO License
+      val paxExamMvn  = "org.ops4j.pax.exam"          % "pax-exam-link-mvn"            % paxExamVersion     % "test" // TODO License
+      val paxAether   = "org.ops4j.pax.url"           % "pax-url-aether"               % "1.5.0"            % "test" // TODO License
+
+      val paxExamRunner   = "org.ops4j.pax.exam"      % "pax-exam-container-native"    % paxExamVersion     % "test" // TODO License
+      //val paxExamRunner   = "org.ops4j.pax.exam"      % "pax-exam-container-forked"    % paxExamVersion     % "test" // TODO License
+      //val paxExamRunner   = "org.ops4j.pax.exam"      % "pax-exam-container-paxrunner" % paxExamVersion     % "test" // TODO License
+
+      val paxNoJcl    = "org.ops4j.pax.runner"        % "pax-runner-no-jcl"            % "1.7.6"            % "test" // TODO License
+      //val paxFelix    = "org.ops4j.pax.runner"        % "pax-runner-platform-felix"    % "1.7.6"            % "test" // TODO License
+      //val paxEquinox  = "org.ops4j.pax.runner"        % "pax-runner-platform-equinox"  % "1.7.6"            % "test" // TODO License
+      //val paxRunner   = "org.ops4j.pax.runner"        % "pax-runner"                   % "1.7.6"            % "test" // TODO License
+
+      val felix       = "org.apache.felix"            % "org.apache.felix.framework"   % "4.0.3"            % "test" // ApacheV2
+      val equinox     = "org.eclipse.tycho"           % "org.eclipse.osgi"             % "3.8.1.v20120830-144521"  % "test" // EPL
     }
   }
 
@@ -745,7 +760,7 @@ object Dependencies {
 
   val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
 
-  val osgiTests = Seq(osgiCore, Test.scalatest, Test.junit, Test.paxExamUnit , Test.paxInject, Test.paxExamRunner, Test.paxLinkAssembly, Test.paxExamForge, Test.paxRunner, Test.javaxInject, Test.paxExamSpi )
+  val osgiTests = Seq(osgiCore, slf4jApi, Test.scalatest, Test.junit, Test.paxExamUnit , Test.paxLinkAssembly, Test.paxExamSpi, Test.paxInject, Test.paxExamRunner, Test.paxNoJcl Test.paxExamForge, Test.paxExamMvn, Test.paxAether, Test.javaxInject, Test.felix )
 
   val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
 
