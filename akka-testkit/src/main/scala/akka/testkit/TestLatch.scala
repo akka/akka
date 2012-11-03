@@ -4,10 +4,11 @@
 
 package akka.testkit
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import akka.actor.ActorSystem
 import scala.concurrent.{ Await, CanAwait, Awaitable }
 import java.util.concurrent.{ TimeoutException, CountDownLatch, TimeUnit }
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * A count down latch wrapper for use in testing.
@@ -32,7 +33,11 @@ class TestLatch(count: Int = 1)(implicit system: ActorSystem) extends Awaitable[
 
   @throws(classOf[TimeoutException])
   def ready(atMost: Duration)(implicit permit: CanAwait) = {
-    val opened = latch.await(atMost.dilated.toNanos, TimeUnit.NANOSECONDS)
+    val waitTime = atMost match {
+      case f: FiniteDuration ⇒ f
+      case _                 ⇒ throw new IllegalArgumentException("TestLatch does not support waiting for " + atMost)
+    }
+    val opened = latch.await(waitTime.dilated.toNanos, TimeUnit.NANOSECONDS)
     if (!opened) throw new TimeoutException(
       "Timeout of %s with time factor of %s" format (atMost.toString, TestKitExtension(system).TestTimeFactor))
     this

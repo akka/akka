@@ -7,6 +7,7 @@ import annotation.tailrec
 
 import java.util.concurrent.{ ConcurrentSkipListSet, ConcurrentHashMap }
 import java.util.{ Comparator, Set ⇒ JSet }
+import scala.collection.JavaConverters.{ asScalaIteratorConverter, collectionAsScalaIterableConverter }
 import scala.collection.mutable
 
 /**
@@ -71,12 +72,11 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
    * @return Some(value) for the first matching value where the supplied function returns true for the given key,
    * if no matches it returns None
    */
-  def findValue(key: K)(f: (V) ⇒ Boolean): Option[V] = {
-    import scala.collection.JavaConversions._
-    val set = container get key
-    if (set ne null) set.iterator.find(f)
-    else None
-  }
+  def findValue(key: K)(f: (V) ⇒ Boolean): Option[V] =
+    container get key match {
+      case null ⇒ None
+      case set  ⇒ set.iterator.asScala.find(f)
+    }
 
   /**
    * Returns an Iterator of V containing the values for the supplied key, or an empty iterator if the key doesn't exist
@@ -84,27 +84,24 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
   def valueIterator(key: K): scala.Iterator[V] = {
     container.get(key) match {
       case null ⇒ Iterator.empty
-      case some ⇒ scala.collection.JavaConversions.asScalaIterator(some.iterator())
+      case some ⇒ some.iterator.asScala
     }
   }
 
   /**
    * Applies the supplied function to all keys and their values
    */
-  def foreach(fun: (K, V) ⇒ Unit): Unit = {
-    import scala.collection.JavaConversions._
-    container.entrySet foreach { e ⇒ e.getValue.foreach(fun(e.getKey, _)) }
-  }
+  def foreach(fun: (K, V) ⇒ Unit): Unit =
+    container.entrySet.iterator.asScala foreach { e ⇒ e.getValue.iterator.asScala.foreach(fun(e.getKey, _)) }
 
   /**
    * Returns the union of all value sets.
    */
   def values: Set[V] = {
-    import scala.collection.JavaConversions._
     val builder = mutable.Set.empty[V]
     for {
-      entry ← container.entrySet
-      v ← entry.getValue
+      values ← container.values.iterator.asScala
+      v ← values.iterator.asScala
     } builder += v
     builder.toSet
   }
@@ -112,7 +109,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
   /**
    * Returns the key set.
    */
-  def keys: Iterable[K] = scala.collection.JavaConversions.collectionAsScalaIterable(container.keySet)
+  def keys: Iterable[K] = container.keySet.asScala
 
   /**
    * Disassociates the value of type V from the key of type K

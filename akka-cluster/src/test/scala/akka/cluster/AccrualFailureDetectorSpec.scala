@@ -5,16 +5,23 @@
 package akka.cluster
 
 import akka.actor.Address
-import akka.testkit.{ LongRunningTest, AkkaSpec }
+import akka.testkit._
+import akka.testkit.TestEvent._
 import scala.collection.immutable.TreeMap
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class AccrualFailureDetectorSpec extends AkkaSpec("""
-  actor.provider = "akka.remote.RemoteActorRefProvider"
+  actor.provider = "akka.cluster.ClusterActorRefProvider"
   akka.loglevel = "INFO"
 """) {
+
+  override def atStartup(): Unit = {
+    super.atStartup()
+    if (!log.isDebugEnabled) {
+      system.eventStream.publish(Mute(EventFilter.info(pattern = ".*Phi value.*")))
+    }
+  }
 
   "An AccrualFailureDetector" must {
     val conn = Address("akka", "", "localhost", 2552)

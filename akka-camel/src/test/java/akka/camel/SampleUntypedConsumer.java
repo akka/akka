@@ -19,7 +19,7 @@ public class SampleUntypedConsumer extends UntypedConsumerActor {
         CamelMessage msg = (CamelMessage)message;
         String body = msg.getBodyAs(String.class, getCamelContext());
         String header = msg.getHeaderAs("test", String.class,getCamelContext());
-        sender().tell(String.format("%s %s", body, header));
+        sender().tell(String.format("%s %s", body, header), getSelf());
    }
 
 }

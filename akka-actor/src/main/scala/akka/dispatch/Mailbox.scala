@@ -9,10 +9,11 @@ import akka.AkkaException
 import akka.actor.{ ActorCell, ActorRef, Cell, ActorSystem, InternalActorRef, DeadLetter }
 import akka.util.{ Unsafe, BoundedBlockingQueue }
 import akka.event.Logging.Error
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import com.typesafe.config.Config
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -106,6 +107,9 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
 
   @inline
   final def shouldProcessMessage: Boolean = (status & shouldNotProcessMask) == 0
+
+  @inline
+  final def suspendCount: Int = status / suspendUnit
 
   @inline
   final def isSuspended: Boolean = (status & suspendMask) != 0
@@ -225,8 +229,11 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
         if (Mailbox.debug) println(actor.self + " processing message " + next)
         actor invoke next
         processAllSystemMessages()
-        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0))
+        if ((left > 1) && ((dispatcher.isThroughputDeadlineTimeDefined == false) || (System.nanoTime - deadlineNs) < 0)) {
           processMailbox(left - 1, deadlineNs)
+        } else if (Thread.interrupted()) {
+          throw new InterruptedException("Interrupted while processing actor messages")
+        }
       }
     }
 
@@ -238,7 +245,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * already dequeued message to deadLetters.
    */
   final def processAllSystemMessages() {
-    var failure: Throwable = null
+    var interruption: Throwable = null
     var nextMessage = systemDrain(null)
     while ((nextMessage ne null) && !isClosed) {
       val msg = nextMessage
@@ -248,9 +255,8 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       try {
         actor systemInvoke msg
       } catch {
-        case NonFatal(e) ⇒
-          if (failure eq null) failure = e
-          actor.system.eventStream.publish(Error(e, actor.self.path.toString, this.getClass, "exception during processing system message " + msg + ": " + e.getMessage))
+        // we know here that systemInvoke ensures that only InterruptedException and "fatal" exceptions get rethrown
+        case e: InterruptedException ⇒ interruption = e
       }
       // don’t ever execute normal message when system message present!
       if ((nextMessage eq null) && !isClosed) nextMessage = systemDrain(null)
@@ -266,12 +272,16 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       msg.next = null
       try dlm.systemEnqueue(actor.self, msg)
       catch {
+        case e: InterruptedException ⇒ interruption = e
         case NonFatal(e) ⇒ actor.system.eventStream.publish(
           Error(e, actor.self.path.toString, this.getClass, "error while enqueuing " + msg + " to deadLetters: " + e.getMessage))
       }
     }
-    // if something happened while processing, fail this actor (most probable: exception in supervisorStrategy)
-    if (failure ne null) actor.handleInvokeFailure(failure, failure.getMessage)
+    // if we got an interrupted exception while handling system messages, then rethrow it
+    if (interruption ne null) {
+      Thread.interrupted() // clear interrupted flag before throwing according to java convention
+      throw interruption
+    }
   }
 
   /**
@@ -505,7 +515,7 @@ case class UnboundedMailbox() extends MailboxType {
 /**
  * BoundedMailbox is the default bounded MailboxType used by Akka Actors.
  */
-case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
+case class BoundedMailbox( final val capacity: Int, final val pushTimeOut: FiniteDuration) extends MailboxType {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
     Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))
@@ -564,7 +574,7 @@ case class UnboundedDequeBasedMailbox() extends MailboxType {
 /**
  * BoundedDequeBasedMailbox is an bounded MailboxType, backed by a Deque.
  */
-case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTimeOut: Duration) extends MailboxType {
+case class BoundedDequeBasedMailbox( final val capacity: Int, final val pushTimeOut: FiniteDuration) extends MailboxType {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
     Duration(config.getNanoseconds("mailbox-push-timeout-time"), TimeUnit.NANOSECONDS))

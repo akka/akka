@@ -11,7 +11,7 @@ import org.scalatest.matchers.MustMatchers
 
 import akka.testkit._
 import akka.util.Timeout
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import java.lang.IllegalStateException
 import scala.concurrent.Promise
@@ -371,8 +371,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
       val timeout = Timeout(20000)
       val ref = system.actorOf(Props(new Actor {
         def receive = {
-          case 5 ⇒ sender.tell("five")
-          case 0 ⇒ sender.tell("null")
+          case 5 ⇒ sender ! "five"
+          case 0 ⇒ sender ! "null"
         }
       }))
 
@@ -408,6 +408,21 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         boss ! "sendKill"
         Await.ready(latch, 5 seconds)
       }
+    }
+
+    "be able to check for existence of children" in {
+      val parent = system.actorOf(Props(new Actor {
+
+        val child = context.actorOf(
+          Props(new Actor {
+            def receive = { case _ ⇒ }
+          }), "child")
+
+        def receive = { case name: String ⇒ sender ! context.child(name).isDefined }
+      }), "parent")
+
+      assert(Await.result((parent ? "child"), remaining) === true)
+      assert(Await.result((parent ? "whatnot"), remaining) === false)
     }
   }
 }

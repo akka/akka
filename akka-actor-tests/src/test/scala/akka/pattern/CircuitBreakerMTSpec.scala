@@ -4,16 +4,27 @@
 package akka.pattern
 
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Future, Await }
+import scala.annotation.tailrec
 
 class CircuitBreakerMTSpec extends AkkaSpec {
   implicit val ec = system.dispatcher
   "A circuit breaker being called by many threads" must {
-    val breaker = new CircuitBreaker(system.scheduler, 5, 100.millis.dilated, 500.millis.dilated)
+    val callTimeout = 1.second.dilated
+    val resetTimeout = 2.seconds.dilated
+    val breaker = new CircuitBreaker(system.scheduler, 5, callTimeout, resetTimeout)
 
-    def openBreaker(): Unit =
-      Await.ready(Future.sequence((1 to 5).map(_ ⇒ breaker.withCircuitBreaker(Future(throw new RuntimeException("FAIL"))).failed)), 1.second.dilated)
+    def openBreaker(): Unit = {
+      @tailrec def call(attemptsLeft: Int): Unit = {
+        attemptsLeft must be > (0)
+        if (Await.result(breaker.withCircuitBreaker(Future(throw new RuntimeException("FAIL"))) recover {
+          case _: CircuitBreakerOpenException ⇒ false
+          case _                              ⇒ true
+        }, remaining)) call(attemptsLeft - 1)
+      }
+      call(10)
+    }
 
     "allow many calls while in closed state with no errors" in {
 
@@ -47,7 +58,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
 
       openBreaker()
 
-      Await.ready(halfOpenLatch, 2.seconds.dilated)
+      Await.ready(halfOpenLatch, resetTimeout + 1.seconds.dilated)
 
       val futures = for (i ← 1 to 100) yield breaker.withCircuitBreaker(Future {
         Thread.sleep(10); "succeed"
@@ -66,7 +77,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
       breaker.onHalfOpen(halfOpenLatch.countDown())
       openBreaker()
       Await.ready(halfOpenLatch, 5.seconds.dilated)
-      Await.ready(breaker.withCircuitBreaker(Future("succeed")), 1.second.dilated)
+      Await.ready(breaker.withCircuitBreaker(Future("succeed")), resetTimeout)
 
       val futures = (1 to 100) map {
         i ⇒

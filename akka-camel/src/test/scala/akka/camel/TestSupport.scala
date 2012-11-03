@@ -7,22 +7,23 @@ package akka.camel
 import language.postfixOps
 import language.implicitConversions
 
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.util.concurrent.{ TimeoutException, ExecutionException, TimeUnit }
 import org.scalatest.{ BeforeAndAfterEach, BeforeAndAfterAll, Suite }
 import org.scalatest.matchers.{ BePropertyMatcher, BePropertyMatchResult }
-import scala.concurrent.util.{ FiniteDuration, Duration }
 import scala.reflect.ClassTag
 import akka.actor.{ ActorRef, Props, ActorSystem, Actor }
 import concurrent.Await
 import akka.util.Timeout
+import akka.testkit.AkkaSpec
 
 private[camel] object TestSupport {
+  def start(actor: ⇒ Actor, name: String)(implicit system: ActorSystem, timeout: Timeout): ActorRef =
+    Await.result(CamelExtension(system).activationFutureFor(system.actorOf(Props(actor), name))(timeout, system.dispatcher), timeout.duration)
 
-  def start(actor: ⇒ Actor)(implicit system: ActorSystem): ActorRef = {
-    val actorRef = system.actorOf(Props(actor))
-    Await.result(CamelExtension(system).activationFutureFor(actorRef)(10 seconds), 10 seconds)
-    actorRef
+  def stop(actorRef: ActorRef)(implicit system: ActorSystem, timeout: Timeout) {
+    system.stop(actorRef)
+    Await.result(CamelExtension(system).deactivationFutureFor(actorRef)(timeout, system.dispatcher), timeout.duration)
   }
 
   private[camel] implicit def camelToTestWrapper(camel: Camel) = new CamelTestWrapper(camel)
@@ -47,7 +48,7 @@ private[camel] object TestSupport {
   }
 
   trait SharedCamelSystem extends BeforeAndAfterAll { this: Suite ⇒
-    implicit lazy val system = ActorSystem("test")
+    implicit lazy val system = ActorSystem("test", AkkaSpec.testConf)
     implicit lazy val camel = CamelExtension(system)
 
     abstract override protected def afterAll() {
@@ -62,7 +63,7 @@ private[camel] object TestSupport {
 
     override protected def beforeEach() {
       super.beforeEach()
-      system = ActorSystem("test")
+      system = ActorSystem("test", AkkaSpec.testConf)
       camel = CamelExtension(system)
     }
 
@@ -73,10 +74,10 @@ private[camel] object TestSupport {
 
   }
   def time[A](block: ⇒ A): FiniteDuration = {
-    val start = System.currentTimeMillis()
+    val start = System.nanoTime()
     block
-    val duration = System.currentTimeMillis() - start
-    duration millis
+    val duration = System.nanoTime() - start
+    duration nanos
   }
 
   def anInstanceOf[T](implicit tag: ClassTag[T]) = {

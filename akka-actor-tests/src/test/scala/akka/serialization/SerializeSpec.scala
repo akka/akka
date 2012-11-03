@@ -11,7 +11,7 @@ import akka.actor._
 import java.io._
 import scala.concurrent.Await
 import akka.util.Timeout
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.reflect.BeanInfo
 import com.google.protobuf.Message
 import akka.pattern.ask
@@ -87,50 +87,23 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
     }
 
     "serialize Address" in {
-      val b = serialize(addr) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(bytes)    ⇒ bytes
-      }
-      deserialize(b.asInstanceOf[Array[Byte]], classOf[Address]) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(add)      ⇒ assert(add === addr)
-      }
+      assert(deserialize(serialize(addr).get, classOf[Address]).get === addr)
     }
 
     "serialize Person" in {
-
-      val b = serialize(person) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(bytes)    ⇒ bytes
-      }
-      deserialize(b.asInstanceOf[Array[Byte]], classOf[Person]) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(p)        ⇒ assert(p === person)
-      }
+      assert(deserialize(serialize(person).get, classOf[Person]).get === person)
     }
 
     "serialize record with default serializer" in {
-
       val r = Record(100, person)
-      val b = serialize(r) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(bytes)    ⇒ bytes
-      }
-      deserialize(b.asInstanceOf[Array[Byte]], classOf[Record]) match {
-        case Left(exception) ⇒ fail(exception)
-        case Right(p)        ⇒ assert(p === r)
-      }
+      assert(deserialize(serialize(r).get, classOf[Record]).get === r)
     }
 
     "not serialize ActorCell" in {
       val a = system.actorOf(Props(new Actor {
         def receive = {
           case o: ObjectOutputStream ⇒
-            try {
-              o.writeObject(this)
-            } catch {
-              case _: NotSerializableException ⇒ testActor ! "pass"
-            }
+            try o.writeObject(this) catch { case _: NotSerializableException ⇒ testActor ! "pass" }
         }
       }))
       a ! new ObjectOutputStream(new ByteArrayOutputStream())
@@ -207,6 +180,17 @@ class SerializeSpec extends AkkaSpec(SerializeSpec.config) {
       }
     }
 
+    "use ByteArraySerializer for byte arrays" in {
+      val byteSerializer = ser.serializerFor(classOf[Array[Byte]])
+      byteSerializer.getClass must be theSameInstanceAs classOf[ByteArraySerializer]
+
+      for (a ← Seq("foo".getBytes("UTF-8"), null: Array[Byte], Array[Byte]()))
+        byteSerializer.fromBinary(byteSerializer.toBinary(a)) must be theSameInstanceAs a
+
+      intercept[IllegalArgumentException] {
+        byteSerializer.toBinary("pigdog")
+      }.getMessage must be === "ByteArraySerializer only serializes byte arrays, not [pigdog]"
+    }
   }
 }
 
@@ -254,7 +238,7 @@ class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf)
     val b = system.actorOf(Props(new FooActor))
     system stop b
 
-    val c = system.actorOf(Props().withCreator(new UntypedActorFactory {
+    val c = system.actorOf(Props.empty.withCreator(new UntypedActorFactory {
       def create() = new FooUntypedActor
     }))
     system stop c
@@ -269,8 +253,8 @@ class VerifySerializabilitySpec extends AkkaSpec(VerifySerializabilitySpec.conf)
     val a = system.actorOf(Props[FooActor])
     Await.result(a ? "pigdog", timeout.duration) must be("pigdog")
 
-    intercept[NotSerializableException] {
-      Await.result(a ? new AnyRef, timeout.duration)
+    EventFilter[NotSerializableException](occurrences = 1) intercept {
+      a ! (new AnyRef)
     }
     system stop a
   }

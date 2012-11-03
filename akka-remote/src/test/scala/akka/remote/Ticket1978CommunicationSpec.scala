@@ -9,6 +9,7 @@ import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
 import scala.concurrent.Future
+import scala.reflect.classTag
 import akka.pattern.ask
 import java.io.File
 import java.security.{ NoSuchAlgorithmException, SecureRandom, PrivilegedAction, AccessController }
@@ -16,8 +17,7 @@ import akka.remote.netty.{ NettySettings, NettySSLSupport }
 import javax.net.ssl.SSLException
 import akka.util.Timeout
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import akka.event.{ Logging, NoLogging, LoggingAdapter }
 
 object Configuration {
@@ -144,7 +144,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
         import system.dispatcher
         val here = system.actorFor(otherAddress.toString + "/user/echo")
 
-        val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo manifest[((String, Int), ActorRef)]
+        val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo classTag[((String, Int), ActorRef)]
         Await.result(Future.sequence(f), timeout.duration).map(_._1._1).toSet must be(Set("pong"))
       }
 

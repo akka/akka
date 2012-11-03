@@ -5,7 +5,8 @@
 package akka.dispatch
 
 import akka.actor.ActorCell
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Dedicates a unique thread for each actor passed in as reference. Served through its messageQueue.
@@ -18,7 +19,7 @@ class PinnedDispatcher(
   _actor: ActorCell,
   _id: String,
   _mailboxType: MailboxType,
-  _shutdownTimeout: Duration,
+  _shutdownTimeout: FiniteDuration,
   _threadPoolConfig: ThreadPoolConfig = ThreadPoolConfig())
   extends Dispatcher(_prerequisites,
     _id,

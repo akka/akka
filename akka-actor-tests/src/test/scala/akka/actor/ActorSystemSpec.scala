@@ -4,17 +4,16 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit._
 import org.scalatest.junit.JUnitSuite
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.collection.JavaConverters
 import java.util.concurrent.{ TimeUnit, RejectedExecutionException, CountDownLatch, ConcurrentLinkedQueue }
-import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Future
+import akka.pattern.ask
 
 class JavaExtensionSpec extends JavaExtension with JUnitSuite
 
@@ -62,10 +61,16 @@ object ActorSystemSpec {
     }
   }
 
+  class Strategy extends SupervisorStrategyConfigurator {
+    def create() = OneForOneStrategy() {
+      case _ ⇒ SupervisorStrategy.Escalate
+    }
+  }
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExtension$"]""") with ImplicitSender {
+class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExtension"]""") with ImplicitSender {
 
   "An ActorSystem" must {
 
@@ -90,9 +95,10 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
     }
 
     "support extensions" in {
+      // TestExtension is configured and should be loaded at startup
+      system.hasExtension(TestExtension) must be(true)
       TestExtension(system).system must be === system
       system.extension(TestExtension).system must be === system
-      system.hasExtension(TestExtension) must be(true)
     }
 
     "run termination callbacks in order" in {
@@ -130,7 +136,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
         Thread.sleep(50.millis.dilated.toMillis)
         callbackWasRun = true
       }
-
+      import system.dispatcher
       system2.scheduler.scheduleOnce(200.millis.dilated) { system2.shutdown() }
 
       system2.awaitTermination(5 seconds)
@@ -164,6 +170,7 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
 
     "reliable deny creation of actors while shutting down" in {
       val system = ActorSystem()
+      import system.dispatcher
       system.scheduler.scheduleOnce(200 millis) { system.shutdown() }
       var failing = false
       var created = Vector.empty[ActorRef]
@@ -184,6 +191,48 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       }
 
       created filter (ref ⇒ !ref.isTerminated && !ref.asInstanceOf[ActorRefWithCell].underlying.isInstanceOf[UnstartedCell]) must be(Seq())
+    }
+
+    "shut down when /user fails" in {
+      implicit val system = ActorSystem("Stop", AkkaSpec.testConf)
+      EventFilter[ActorKilledException]() intercept {
+        system.actorFor("/user") ! Kill
+        awaitCond(system.isTerminated)
+      }
+    }
+
+    "allow configuration of guardian supervisor strategy" in {
+      implicit val system = ActorSystem("Stop",
+        ConfigFactory.parseString("akka.actor.guardian-supervisor-strategy=akka.actor.StoppingSupervisorStrategy")
+          .withFallback(AkkaSpec.testConf))
+      val a = system.actorOf(Props(new Actor {
+        def receive = {
+          case "die" ⇒ throw new Exception("hello")
+        }
+      }))
+      val probe = TestProbe()
+      probe.watch(a)
+      EventFilter[Exception]("hello", occurrences = 1) intercept {
+        a ! "die"
+      }
+      val t = probe.expectMsg(Terminated(a)(existenceConfirmed = true, addressTerminated = false))
+      t.existenceConfirmed must be(true)
+      t.addressTerminated must be(false)
+    }
+
+    "shut down when /user escalates" in {
+      implicit val system = ActorSystem("Stop",
+        ConfigFactory.parseString("akka.actor.guardian-supervisor-strategy=\"akka.actor.ActorSystemSpec$Strategy\"")
+          .withFallback(AkkaSpec.testConf))
+      val a = system.actorOf(Props(new Actor {
+        def receive = {
+          case "die" ⇒ throw new Exception("hello")
+        }
+      }))
+      EventFilter[Exception]("hello") intercept {
+        a ! "die"
+        awaitCond(system.isTerminated)
+      }
     }
 
   }

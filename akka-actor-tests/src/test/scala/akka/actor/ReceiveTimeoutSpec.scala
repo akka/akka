@@ -5,10 +5,8 @@
 package akka.actor
 
 import language.postfixOps
-
 import akka.testkit._
-import scala.concurrent.util.duration._
-
+import scala.concurrent.duration._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import java.util.concurrent.TimeoutException
@@ -65,7 +63,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
           case ReceiveTimeout ⇒
             count.incrementAndGet
             timeoutLatch.open
-            context.resetReceiveTimeout()
+            context.setReceiveTimeout(Duration.Undefined)
         }
       }))
 

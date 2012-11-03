@@ -10,7 +10,7 @@ import akka.actor.{ Props, InternalActorRef, ActorSystem, Actor }
 import akka.pattern.ask
 import akka.testkit.{ DefaultTimeout, AkkaSpec }
 import scala.concurrent.Await
-import scala.concurrent.util.duration.intToDurationInt
+import scala.concurrent.duration._
 
 object PriorityDispatcherSpec {
   val config = """
@@ -56,7 +56,7 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
 
       def receive = {
         case i: Int  ⇒ acc = i :: acc
-        case 'Result ⇒ sender.tell(acc)
+        case 'Result ⇒ sender ! acc
       }
     }).withDispatcher(dispatcherKey)).asInstanceOf[InternalActorRef]
 
@@ -65,7 +65,7 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
     val msgs = (1 to 100).toList
     for (m ← msgs) actor ! m
 
-    actor.resume(inResponseToFailure = false) //Signal the actor to start treating it's message backlog
+    actor.resume(causedByFailure = null) //Signal the actor to start treating it's message backlog
 
     Await.result(actor.?('Result).mapTo[List[Int]], timeout.duration) must be === msgs.reverse
   }

@@ -4,10 +4,11 @@
 
 package akka.camel
 
-import akka.actor.Actor
+import akka.actor.{ Props, NoSerializationVerificationNeeded, ActorRef, Actor }
+import internal.CamelSupervisor.{ CamelProducerObjects, Register }
 import internal.CamelExchangeAdapter
 import akka.actor.Status.Failure
-import org.apache.camel.{ Endpoint, Exchange, ExchangePattern, AsyncCallback }
+import org.apache.camel.{ Endpoint, ExchangePattern, AsyncCallback }
 import org.apache.camel.processor.SendProcessor
 
 /**
@@ -15,9 +16,16 @@ import org.apache.camel.processor.SendProcessor
  *
  * @author Martin Krasser
  */
-trait ProducerSupport extends CamelSupport { this: Actor ⇒
+trait ProducerSupport extends Actor with CamelSupport {
+  private[this] var messages = Map[ActorRef, Any]()
+  private[this] var producerChild: Option[ActorRef] = None
 
-  protected[this] lazy val (endpoint: Endpoint, processor: SendProcessor) = camel.registerProducer(self, endpointUri)
+  override def preStart() {
+    super.preStart()
+    register()
+  }
+
+  private[this] def register() { camel.supervisor ! Register(self, endpointUri) }
 
   /**
    * CamelMessage headers to copy by default from request message to response-message.
@@ -44,40 +52,6 @@ trait ProducerSupport extends CamelSupport { this: Actor ⇒
   def headersToCopy: Set[String] = headersToCopyDefault
 
   /**
-   * Initiates a message exchange of given <code>pattern</code> with the endpoint specified by
-   * <code>endpointUri</code>. The in-message of the initiated exchange is the canonical form
-   * of <code>msg</code>. After sending the in-message, the processing result (response) is passed
-   * as argument to <code>receiveAfterProduce</code>. If the response is received synchronously from
-   * the endpoint then <code>receiveAfterProduce</code> is called synchronously as well. If the
-   * response is received asynchronously, the <code>receiveAfterProduce</code> is called
-   * asynchronously. The original
-   * sender and senderFuture are preserved.
-   *
-   * @see CamelMessage#canonicalize(Any)
-   *
-   * @param msg message to produce
-   * @param pattern exchange pattern
-   */
-  protected def produce(msg: Any, pattern: ExchangePattern): Unit = {
-    // Need copies of sender reference here since the callback could be done
-    // later by another thread.
-    val producer = self
-    val originalSender = sender
-
-    val cmsg = CamelMessage.canonicalize(msg)
-    val xchg = new CamelExchangeAdapter(endpoint.createExchange(pattern))
-
-    xchg.setRequest(cmsg)
-
-    processor.process(xchg.exchange, new AsyncCallback {
-      // Ignoring doneSync, sending back async uniformly.
-      def done(doneSync: Boolean): Unit = producer.tell(
-        if (xchg.exchange.isFailed) xchg.toFailureResult(cmsg.headers(headersToCopy))
-        else MessageResult(xchg.toResponseMessage(cmsg.headers(headersToCopy))), originalSender)
-    })
-  }
-
-  /**
    * Produces <code>msg</code> to the endpoint specified by <code>endpointUri</code>. Before the message is
    * actually sent it is pre-processed by calling <code>receiveBeforeProduce</code>. If <code>oneway</code>
    * is <code>true</code>, an in-only message exchange is initiated, otherwise an in-out message exchange.
@@ -85,12 +59,28 @@ trait ProducerSupport extends CamelSupport { this: Actor ⇒
    * @see Producer#produce(Any, ExchangePattern)
    */
   protected def produce: Receive = {
+    case CamelProducerObjects(endpoint, processor) ⇒
+      if (producerChild.isEmpty) {
+        producerChild = Some(context.actorOf(Props(new ProducerChild(endpoint, processor))))
+        messages = {
+          for (
+            child ← producerChild;
+            (sender, msg) ← messages
+          ) child.tell(msg, sender)
+          Map()
+        }
+      }
     case res: MessageResult ⇒ routeResponse(res.message)
     case res: FailureResult ⇒
       val e = new AkkaCamelException(res.cause, res.headers)
       routeResponse(Failure(e))
       throw e
-    case msg ⇒ produce(transformOutgoingMessage(msg), if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
+
+    case msg ⇒
+      producerChild match {
+        case Some(child) ⇒ child forward msg
+        case None        ⇒ messages += (sender -> msg)
+      }
   }
 
   /**
@@ -117,8 +107,45 @@ trait ProducerSupport extends CamelSupport { this: Actor ⇒
 
   protected def routeResponse(msg: Any): Unit = if (!oneway) sender ! transformResponse(msg)
 
-}
+  private class ProducerChild(endpoint: Endpoint, processor: SendProcessor) extends Actor {
+    def receive = {
+      case msg @ (_: FailureResult | _: MessageResult) ⇒ context.parent forward msg
+      case msg                                         ⇒ produce(endpoint, processor, transformOutgoingMessage(msg), if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
+    }
+    /**
+     * Initiates a message exchange of given <code>pattern</code> with the endpoint specified by
+     * <code>endpointUri</code>. The in-message of the initiated exchange is the canonical form
+     * of <code>msg</code>. After sending the in-message, the processing result (response) is passed
+     * as argument to <code>receiveAfterProduce</code>. If the response is received synchronously from
+     * the endpoint then <code>receiveAfterProduce</code> is called synchronously as well. If the
+     * response is received asynchronously, the <code>receiveAfterProduce</code> is called
+     * asynchronously. The original
+     * sender and senderFuture are preserved.
+     *
+     * @see CamelMessage#canonicalize(Any)
+     * @param endpoint the endpoint
+     * @param processor the processor
+     * @param msg message to produce
+     * @param pattern exchange pattern
+     */
+    protected def produce(endpoint: Endpoint, processor: SendProcessor, msg: Any, pattern: ExchangePattern): Unit = {
+      // Need copies of sender reference here since the callback could be done
+      // later by another thread.
+      val producer = self
+      val originalSender = sender
+      val xchg = new CamelExchangeAdapter(endpoint.createExchange(pattern))
+      val cmsg = CamelMessage.canonicalize(msg)
+      xchg.setRequest(cmsg)
 
+      processor.process(xchg.exchange, new AsyncCallback {
+        // Ignoring doneSync, sending back async uniformly.
+        def done(doneSync: Boolean): Unit = producer.tell(
+          if (xchg.exchange.isFailed) xchg.toFailureResult(cmsg.headers(headersToCopy))
+          else MessageResult(xchg.toResponseMessage(cmsg.headers(headersToCopy))), originalSender)
+      })
+    }
+  }
+}
 /**
  * Mixed in by Actor implementations to produce messages to Camel endpoints.
  */
@@ -132,14 +159,16 @@ trait Producer extends ProducerSupport { this: Actor ⇒
 }
 
 /**
+ * For internal use only.
  * @author Martin Krasser
  */
-private case class MessageResult(message: CamelMessage)
+private case class MessageResult(message: CamelMessage) extends NoSerializationVerificationNeeded
 
 /**
+ * For internal use only.
  * @author Martin Krasser
  */
-private case class FailureResult(cause: Throwable, headers: Map[String, Any] = Map.empty)
+private case class FailureResult(cause: Throwable, headers: Map[String, Any] = Map.empty) extends NoSerializationVerificationNeeded
 
 /**
  * A one-way producer.

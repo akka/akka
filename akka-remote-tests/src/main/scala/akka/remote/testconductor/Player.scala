@@ -4,23 +4,20 @@
 package akka.remote.testconductor
 
 import language.postfixOps
-
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, PoisonPill, Status, Address, Scheduler }
 import RemoteConnection.getAddrString
-import scala.concurrent.util.{ Duration, Deadline }
-import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.util.Timeout
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent, WriteCompletionEvent, ExceptionEvent }
 import com.typesafe.config.ConfigFactory
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeoutException
 import akka.pattern.{ ask, pipe, AskTimeoutException }
-import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
 import scala.reflect.classTag
+import concurrent.{ ExecutionContext, Await, Future }
 
 /**
  * The Player is the client component of the
@@ -135,6 +132,9 @@ private[akka] object ClientFSM {
  * coordinator and react to the [[akka.remote.testconductor.Conductor]]’s
  * requests for failure injection.
  *
+ * Note that you can't perform requests concurrently, e.g. enter barrier
+ * from one thread and ask for node address from another thread.
+ *
  * INTERNAL API.
  */
 private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress) extends Actor with LoggingFSM[ClientFSM.State, ClientFSM.Data] {
@@ -143,7 +143,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
   val settings = TestConductor().Settings
 
   val handler = new PlayerHandler(controllerAddr, settings.ClientReconnects, settings.ReconnectBackoff,
-    self, Logging(context.system, "PlayerHandler"), context.system.scheduler)
+    settings.ClientSocketWorkerPoolSize, self, Logging(context.system, "PlayerHandler"),
+    context.system.scheduler)(context.dispatcher)
 
   startWith(Connecting, Data(None, None))
 
@@ -253,10 +254,11 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
 private[akka] class PlayerHandler(
   server: InetSocketAddress,
   private var reconnects: Int,
-  backoff: Duration,
+  backoff: FiniteDuration,
+  poolSize: Int,
   fsm: ActorRef,
   log: LoggingAdapter,
-  scheduler: Scheduler)
+  scheduler: Scheduler)(implicit executor: ExecutionContext)
   extends SimpleChannelUpstreamHandler {
 
   import ClientFSM._
@@ -283,7 +285,7 @@ private[akka] class PlayerHandler(
 
   private def reconnect(): Unit = {
     nextAttempt = Deadline.now + backoff
-    RemoteConnection(Client, server, this)
+    RemoteConnection(Client, server, poolSize, this)
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {

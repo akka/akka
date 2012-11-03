@@ -12,31 +12,38 @@ import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Address
 import akka.remote.testconductor.{ RoleName, Direction }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
-object UnreachableNodeRejoinsClusterMultiJvmSpec extends MultiNodeConfig {
+case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
 
   commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+
+  testTransport(on = true)
 }
 
-class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec with FailureDetectorPuppetStrategy
-class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode2 extends UnreachableNodeRejoinsClusterSpec with FailureDetectorPuppetStrategy
-class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec with FailureDetectorPuppetStrategy
-class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode4 extends UnreachableNodeRejoinsClusterSpec with FailureDetectorPuppetStrategy
+class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = true)
+class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode2 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = true)
+class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = true)
+class UnreachableNodeRejoinsClusterWithFailureDetectorPuppetMultiJvmNode4 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = true)
 
-class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
-class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode2 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
-class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
-class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode4 extends UnreachableNodeRejoinsClusterSpec with AccrualFailureDetectorStrategy
+class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode1 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = false)
+class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode2 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = false)
+class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode3 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = false)
+class UnreachableNodeRejoinsClusterWithAccrualFailureDetectorMultiJvmNode4 extends UnreachableNodeRejoinsClusterSpec(failureDetectorPuppet = false)
 
-abstract class UnreachableNodeRejoinsClusterSpec
-  extends MultiNodeSpec(UnreachableNodeRejoinsClusterMultiJvmSpec)
+abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNodeRejoinsClusterMultiNodeConfig)
+  extends MultiNodeSpec(multiNodeConfig)
   with MultiNodeClusterSpec {
-  import UnreachableNodeRejoinsClusterMultiJvmSpec._
+
+  def this(failureDetectorPuppet: Boolean) = this(UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet))
+
+  import multiNodeConfig._
+
+  muteMarkingAsUnreachable()
 
   def allBut(role: RoleName, roles: Seq[RoleName] = roles): Seq[RoleName] = {
     roles.filterNot(_ == role)
@@ -80,13 +87,13 @@ abstract class UnreachableNodeRejoinsClusterSpec
         within(30 seconds) {
           // victim becomes all alone
           awaitCond({
-            val gossip = cluster.latestGossip
-            gossip.overview.unreachable.size == (roles.size - 1) &&
-              gossip.members.size == 1 &&
-              gossip.members.forall(_.status == MemberStatus.Up)
+            val members = clusterView.members
+            clusterView.unreachableMembers.size == (roles.size - 1) &&
+              members.size == 1 &&
+              members.forall(_.status == MemberStatus.Up)
           })
-          cluster.latestGossip.overview.unreachable.map(_.address) must be((allButVictim map address).toSet)
-          cluster.convergence.isDefined must be(false)
+          clusterView.unreachableMembers.map(_.address) must be((allButVictim map address).toSet)
+          clusterView.convergence must be(false)
         }
       }
 
@@ -95,17 +102,17 @@ abstract class UnreachableNodeRejoinsClusterSpec
         within(30 seconds) {
           // victim becomes unreachable
           awaitCond({
-            val gossip = cluster.latestGossip
-            gossip.overview.unreachable.size == 1 &&
-              gossip.members.size == (roles.size - 1) &&
-              gossip.members.forall(_.status == MemberStatus.Up)
+            val members = clusterView.members
+            clusterView.unreachableMembers.size == 1 &&
+              members.size == (roles.size - 1) &&
+              members.forall(_.status == MemberStatus.Up)
           })
           awaitSeenSameState(allButVictim map address: _*)
           // still one unreachable
-          cluster.latestGossip.overview.unreachable.size must be(1)
-          cluster.latestGossip.overview.unreachable.head.address must be(node(victim).address)
+          clusterView.unreachableMembers.size must be(1)
+          clusterView.unreachableMembers.head.address must be(node(victim).address)
           // and therefore no convergence
-          cluster.convergence.isDefined must be(false)
+          clusterView.convergence must be(false)
         }
       }
 

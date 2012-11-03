@@ -38,17 +38,21 @@ class SimpleNamespaceHandlerTest extends WordSpec with MustMatchers with PojoSRT
 
   "simple.xml" must {
     "set up ActorSystem when bundle starts" in {
-      serviceForType[ActorSystem] must not be (null)
+      filterErrors() {
+        serviceForType[ActorSystem] must not be (null)
+      }
     }
 
     "stop the ActorSystem when bundle stops" in {
-      val system = serviceForType[ActorSystem]
-      system.isTerminated must be(false)
+      filterErrors() {
+        val system = serviceForType[ActorSystem]
+        system.isTerminated must be(false)
 
-      bundleForName(TEST_BUNDLE_NAME).stop()
+        bundleForName(TEST_BUNDLE_NAME).stop()
 
-      system.awaitTermination()
-      system.isTerminated must be(true)
+        system.awaitTermination()
+        system.isTerminated must be(true)
+      }
     }
   }
 
@@ -64,19 +68,23 @@ class ConfigNamespaceHandlerTest extends WordSpec with MustMatchers with PojoSRT
 
   "config.xml" must {
     "set up ActorSystem when bundle starts" in {
-      val system = serviceForType[ActorSystem]
-      system must not be (null)
-      system.settings.config.getString("some.config.key") must be("value")
+      filterErrors() {
+        val system = serviceForType[ActorSystem]
+        system must not be (null)
+        system.settings.config.getString("some.config.key") must be("value")
+      }
     }
 
     "stop the ActorSystem when bundle stops" in {
-      val system = serviceForType[ActorSystem]
-      system.isTerminated must be(false)
+      filterErrors() {
+        val system = serviceForType[ActorSystem]
+        system.isTerminated must be(false)
 
-      bundleForName(TEST_BUNDLE_NAME).stop()
+        bundleForName(TEST_BUNDLE_NAME).stop()
 
-      system.awaitTermination()
-      system.isTerminated must be(true)
+        system.awaitTermination()
+        system.isTerminated must be(true)
+      }
     }
   }
 
@@ -93,9 +101,11 @@ class DependencyInjectionNamespaceHandlerTest extends WordSpec with MustMatchers
   "injection.xml" must {
 
     "set up bean containing ActorSystem" in {
-      val bean = serviceForType[ActorSystemAwareBean]
-      bean must not be (null)
-      bean.system must not be (null)
+      filterErrors() {
+        val bean = serviceForType[ActorSystemAwareBean]
+        bean must not be (null)
+        bean.system must not be (null)
+      }
     }
   }
 

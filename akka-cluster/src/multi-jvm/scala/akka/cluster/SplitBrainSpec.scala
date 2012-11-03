@@ -9,11 +9,11 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.Address
 import akka.remote.testconductor.Direction
 
-object SplitBrainMultiJvmSpec extends MultiNodeConfig {
+case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -26,26 +26,32 @@ object SplitBrainMultiJvmSpec extends MultiNodeConfig {
           auto-down = on
           failure-detector.threshold = 4
         }""")).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+    withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
+
+  testTransport(on = true)
 }
 
-class SplitBrainWithFailureDetectorPuppetMultiJvmNode1 extends SplitBrainSpec with FailureDetectorPuppetStrategy
-class SplitBrainWithFailureDetectorPuppetMultiJvmNode2 extends SplitBrainSpec with FailureDetectorPuppetStrategy
-class SplitBrainWithFailureDetectorPuppetMultiJvmNode3 extends SplitBrainSpec with FailureDetectorPuppetStrategy
-class SplitBrainWithFailureDetectorPuppetMultiJvmNode4 extends SplitBrainSpec with FailureDetectorPuppetStrategy
-class SplitBrainWithFailureDetectorPuppetMultiJvmNode5 extends SplitBrainSpec with FailureDetectorPuppetStrategy
+class SplitBrainWithFailureDetectorPuppetMultiJvmNode1 extends SplitBrainSpec(failureDetectorPuppet = true)
+class SplitBrainWithFailureDetectorPuppetMultiJvmNode2 extends SplitBrainSpec(failureDetectorPuppet = true)
+class SplitBrainWithFailureDetectorPuppetMultiJvmNode3 extends SplitBrainSpec(failureDetectorPuppet = true)
+class SplitBrainWithFailureDetectorPuppetMultiJvmNode4 extends SplitBrainSpec(failureDetectorPuppet = true)
+class SplitBrainWithFailureDetectorPuppetMultiJvmNode5 extends SplitBrainSpec(failureDetectorPuppet = true)
 
-class SplitBrainWithAccrualFailureDetectorMultiJvmNode1 extends SplitBrainSpec with AccrualFailureDetectorStrategy
-class SplitBrainWithAccrualFailureDetectorMultiJvmNode2 extends SplitBrainSpec with AccrualFailureDetectorStrategy
-class SplitBrainWithAccrualFailureDetectorMultiJvmNode3 extends SplitBrainSpec with AccrualFailureDetectorStrategy
-class SplitBrainWithAccrualFailureDetectorMultiJvmNode4 extends SplitBrainSpec with AccrualFailureDetectorStrategy
-class SplitBrainWithAccrualFailureDetectorMultiJvmNode5 extends SplitBrainSpec with AccrualFailureDetectorStrategy
+class SplitBrainWithAccrualFailureDetectorMultiJvmNode1 extends SplitBrainSpec(failureDetectorPuppet = false)
+class SplitBrainWithAccrualFailureDetectorMultiJvmNode2 extends SplitBrainSpec(failureDetectorPuppet = false)
+class SplitBrainWithAccrualFailureDetectorMultiJvmNode3 extends SplitBrainSpec(failureDetectorPuppet = false)
+class SplitBrainWithAccrualFailureDetectorMultiJvmNode4 extends SplitBrainSpec(failureDetectorPuppet = false)
+class SplitBrainWithAccrualFailureDetectorMultiJvmNode5 extends SplitBrainSpec(failureDetectorPuppet = false)
 
-abstract class SplitBrainSpec
-  extends MultiNodeSpec(SplitBrainMultiJvmSpec)
+abstract class SplitBrainSpec(multiNodeConfig: SplitBrainMultiNodeConfig)
+  extends MultiNodeSpec(multiNodeConfig)
   with MultiNodeClusterSpec {
 
-  import SplitBrainMultiJvmSpec._
+  def this(failureDetectorPuppet: Boolean) = this(SplitBrainMultiNodeConfig(failureDetectorPuppet))
+
+  import multiNodeConfig._
+
+  muteMarkingAsUnreachable()
 
   val side1 = IndexedSeq(first, second)
   val side2 = IndexedSeq(third, fourth, fifth)
@@ -78,10 +84,10 @@ abstract class SplitBrainSpec
       }
 
       runOn(side1: _*) {
-        awaitCond(cluster.latestGossip.overview.unreachable.map(_.address) == (side2.toSet map address), 20 seconds)
+        awaitCond(clusterView.unreachableMembers.map(_.address) == (side2.toSet map address), 20 seconds)
       }
       runOn(side2: _*) {
-        awaitCond(cluster.latestGossip.overview.unreachable.map(_.address) == (side1.toSet map address), 20 seconds)
+        awaitCond(clusterView.unreachableMembers.map(_.address) == (side1.toSet map address), 20 seconds)
       }
 
       enterBarrier("after-2")
@@ -91,16 +97,16 @@ abstract class SplitBrainSpec
 
       runOn(side1: _*) {
         // auto-down = on
-        awaitCond(cluster.latestGossip.overview.unreachable.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
-        cluster.latestGossip.overview.unreachable.map(_.address) must be(side2.toSet map address)
+        awaitCond(clusterView.unreachableMembers.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
+        clusterView.unreachableMembers.map(_.address) must be(side2.toSet map address)
         awaitUpConvergence(side1.size, side2 map address)
         assertLeader(side1: _*)
       }
 
       runOn(side2: _*) {
         // auto-down = on
-        awaitCond(cluster.latestGossip.overview.unreachable.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
-        cluster.latestGossip.overview.unreachable.map(_.address) must be(side1.toSet map address)
+        awaitCond(clusterView.unreachableMembers.forall(m ⇒ m.status == MemberStatus.Down), 15 seconds)
+        clusterView.unreachableMembers.map(_.address) must be(side1.toSet map address)
         awaitUpConvergence(side2.size, side1 map address)
         assertLeader(side2: _*)
       }

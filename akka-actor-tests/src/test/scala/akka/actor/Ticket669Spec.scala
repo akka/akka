@@ -14,7 +14,7 @@ import akka.testkit.ImplicitSender
 import akka.testkit.DefaultTimeout
 import scala.concurrent.Await
 import akka.pattern.ask
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender with DefaultTimeout {
@@ -59,11 +59,11 @@ object Ticket669Spec {
     }
 
     override def preRestart(reason: scala.Throwable, msg: Option[Any]) {
-      sender.tell("failure1")
+      sender ! "failure1"
     }
 
     override def postStop() {
-      sender.tell("failure2")
+      sender ! "failure2"
     }
   }
 }

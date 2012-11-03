@@ -12,17 +12,16 @@ import akka.actor.PoisonPill
 import akka.actor.Address
 import scala.concurrent.Await
 import akka.pattern.ask
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.{STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec}
 import akka.routing.Broadcast
 import akka.routing.RandomRouter
 import akka.routing.RoutedActorRef
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object RandomRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
-  class SomeActor extends Actor with Serializable {
+  class SomeActor extends Actor {
     def receive = {
       case "hit" ⇒ sender ! self
     }
@@ -48,7 +47,7 @@ class RandomRoutedRemoteActorMultiJvmNode3 extends RandomRoutedRemoteActorSpec
 class RandomRoutedRemoteActorMultiJvmNode4 extends RandomRoutedRemoteActorSpec
 
 class RandomRoutedRemoteActorSpec extends MultiNodeSpec(RandomRoutedRemoteActorMultiJvmSpec)
-  with ImplicitSender with DefaultTimeout {
+  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
   import RandomRoutedRemoteActorMultiJvmSpec._
 
   def initialParticipants = 4

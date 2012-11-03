@@ -24,6 +24,7 @@ sealed trait RemoteLifeCycleEvent extends Serializable {
  */
 trait RemoteClientLifeCycleEvent extends RemoteLifeCycleEvent {
   def remoteAddress: Address
+  final def getRemoteAddress: Address = remoteAddress
 }
 
 /**
@@ -31,8 +32,8 @@ trait RemoteClientLifeCycleEvent extends RemoteLifeCycleEvent {
  */
 case class RemoteClientError(
   @BeanProperty cause: Throwable,
-  @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
+  @transient remote: RemoteTransport,
+  remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.ErrorLevel
   override def toString: String = "RemoteClientError@" + remoteAddress + ": Error[" + Logging.stackTraceFor(cause) + "]"
 }
@@ -42,7 +43,7 @@ case class RemoteClientError(
  */
 case class RemoteClientDisconnected(
   @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
+  remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
   override def toString: String = "RemoteClientDisconnected@" + remoteAddress
 }
@@ -52,7 +53,7 @@ case class RemoteClientDisconnected(
  */
 case class RemoteClientConnected(
   @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
+  remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
   override def toString: String = "RemoteClientConnected@" + remoteAddress
 }
@@ -62,7 +63,7 @@ case class RemoteClientConnected(
  */
 case class RemoteClientStarted(
   @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
+  remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.InfoLevel
   override def toString: String = "RemoteClientStarted@" + remoteAddress
 }
@@ -72,7 +73,7 @@ case class RemoteClientStarted(
  */
 case class RemoteClientShutdown(
   @transient @BeanProperty remote: RemoteTransport,
-  @BeanProperty remoteAddress: Address) extends RemoteClientLifeCycleEvent {
+  remoteAddress: Address) extends RemoteClientLifeCycleEvent {
   override def logLevel: Logging.LogLevel = Logging.InfoLevel
   override def toString: String = "RemoteClientShutdown@" + remoteAddress
 }
@@ -267,30 +268,37 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
 
     remoteMessage.recipient match {
       case `remoteDaemon` ⇒
-        if (provider.remoteSettings.LogReceive) log.debug("received daemon message {}", remoteMessage)
-        remoteMessage.payload match {
-          case m @ (_: DaemonMsg | _: Terminated) ⇒
-            try remoteDaemon ! m catch {
-              case e: Exception ⇒ log.error(e, "exception while processing remote command {} from {}", m, remoteMessage.sender)
-            }
-          case x ⇒ log.warning("remoteDaemon received illegal message {} from {}", x, remoteMessage.sender)
+        if (useUntrustedMode) log.debug("dropping daemon message in untrusted mode")
+        else {
+          if (provider.remoteSettings.LogReceive) log.debug("received daemon message {}", remoteMessage)
+          remoteMessage.payload match {
+            case m @ (_: DaemonMsg | _: Terminated) ⇒
+              try remoteDaemon ! m catch {
+                case e: Exception ⇒ log.error(e, "exception while processing remote command {} from {}", m, remoteMessage.sender)
+              }
+            case x ⇒ log.debug("remoteDaemon received illegal message {} from {}", x, remoteMessage.sender)
+          }
         }
       case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received local message {}", remoteMessage)
         remoteMessage.payload match {
-          case msg: PossiblyHarmful if useUntrustedMode ⇒ log.warning("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type {}", msg.getClass)
+          case msg: PossiblyHarmful if useUntrustedMode ⇒ log.debug("operating in UntrustedMode, dropping inbound PossiblyHarmful message of type {}", msg.getClass)
           case msg: SystemMessage                       ⇒ l.sendSystemMessage(msg)
           case msg                                      ⇒ l.!(msg)(remoteMessage.sender)
         }
-      case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal ⇒
+      case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !useUntrustedMode ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", remoteMessage)
         remoteMessage.originalReceiver match {
           case AddressFromURIString(address) if address == provider.transport.address ⇒
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
-          case r ⇒ log.error("dropping message {} for non-local recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
+          case r ⇒
+            log.debug("dropping message {} for non-local recipient {} arriving at {} inbound address is {}",
+              remoteMessage.payloadClass, r, address, provider.transport.address)
         }
-      case r ⇒ log.error("dropping message {} for unknown recipient {} arriving at {} inbound address is {}", remoteMessage.payload, r, address, provider.transport.address)
+      case r ⇒
+        log.debug("dropping message {} for unknown recipient {} arriving at {} inbound address is {}",
+          remoteMessage.payloadClass, r, address, provider.transport.address)
     }
   }
 }
@@ -329,8 +337,10 @@ class RemoteMessage(input: RemoteMessageProtocol, system: ExtendedActorSystem) {
    */
   lazy val payload: AnyRef = MessageSerializer.deserialize(system, input.getMessage)
 
+  def payloadClass: Class[_] = if (payload eq null) null else payload.getClass
+
   /**
    * Returns a String representation of this RemoteMessage, intended for debugging purposes.
    */
-  override def toString: String = "RemoteMessage: " + payload + " to " + recipient + "<+{" + originalReceiver + "} from " + sender
+  override def toString: String = "RemoteMessage: " + payloadClass + " to " + recipient + "<+{" + originalReceiver + "} from " + sender
 }

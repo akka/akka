@@ -10,6 +10,9 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.actor.Address
+import akka.actor.Props
+import akka.actor.Actor
+import akka.cluster.MemberStatus._
 
 object MembershipChangeListenerLeavingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -19,21 +22,21 @@ object MembershipChangeListenerLeavingMultiJvmSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
-        akka.cluster.leader-actions-interval           = 5 s
         akka.cluster.unreachable-nodes-reaper-interval = 300 s # turn "off"
       """))
-      .withFallback(MultiNodeClusterSpec.clusterConfig))
+      .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class MembershipChangeListenerLeavingMultiJvmNode1 extends MembershipChangeListenerLeavingSpec with FailureDetectorPuppetStrategy
-class MembershipChangeListenerLeavingMultiJvmNode2 extends MembershipChangeListenerLeavingSpec with FailureDetectorPuppetStrategy
-class MembershipChangeListenerLeavingMultiJvmNode3 extends MembershipChangeListenerLeavingSpec with FailureDetectorPuppetStrategy
+class MembershipChangeListenerLeavingMultiJvmNode1 extends MembershipChangeListenerLeavingSpec
+class MembershipChangeListenerLeavingMultiJvmNode2 extends MembershipChangeListenerLeavingSpec
+class MembershipChangeListenerLeavingMultiJvmNode3 extends MembershipChangeListenerLeavingSpec
 
 abstract class MembershipChangeListenerLeavingSpec
   extends MultiNodeSpec(MembershipChangeListenerLeavingMultiJvmSpec)
   with MultiNodeClusterSpec {
 
   import MembershipChangeListenerLeavingMultiJvmSpec._
+  import ClusterEvent._
 
   "A registered MembershipChangeListener" must {
     "be notified when new node is LEAVING" taggedAs LongRunningTest in {
@@ -51,14 +54,17 @@ abstract class MembershipChangeListenerLeavingSpec
 
       runOn(third) {
         val latch = TestLatch()
-        val expectedAddresses = Set(first, second, third) map address
-        cluster.registerListener(new MembershipChangeListener {
-          def notify(members: SortedSet[Member]) {
-            if (members.map(_.address) == expectedAddresses &&
-              members.exists(m ⇒ m.address == address(second) && m.status == MemberStatus.Leaving))
+        val secondAddress = address(second)
+        cluster.subscribe(system.actorOf(Props(new Actor {
+          def receive = {
+            case state: CurrentClusterState ⇒
+              if (state.members.exists(m ⇒ m.address == secondAddress && m.status == Leaving))
+                latch.countDown()
+            case MemberLeft(m) if m.address == secondAddress ⇒
               latch.countDown()
+            case _ ⇒ // ignore
           }
-        })
+        })), classOf[MemberEvent])
         enterBarrier("registered-listener")
         latch.await
       }

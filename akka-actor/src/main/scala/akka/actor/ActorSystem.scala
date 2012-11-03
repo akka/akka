@@ -9,7 +9,7 @@ import akka.dispatch._
 import akka.pattern.ask
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.io.Closeable
 import scala.concurrent.{ Await, Awaitable, CanAwait, Future }
 import scala.util.control.NonFatal
@@ -17,11 +17,13 @@ import akka.util._
 import akka.util.internal.{ HashedWheelTimer, ConcurrentIdentityHashMap }
 import java.util.concurrent.{ ThreadFactory, CountDownLatch, TimeoutException, RejectedExecutionException }
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.cell.ChildrenContainer
+import akka.actor.dungeon.ChildrenContainer
+import scala.concurrent.duration.FiniteDuration
+import util.{ Failure, Success }
 
 object ActorSystem {
 
-  val Version: String = "2.1-SNAPSHOT"
+  val Version: String = "2.2-SNAPSHOT"
 
   val EnvHome: Option[String] = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
@@ -131,36 +133,40 @@ object ActorSystem {
     import scala.collection.JavaConverters._
     import config._
 
-    final val ConfigVersion = getString("akka.version")
-    final val ProviderClass = getString("akka.actor.provider")
-    final val CreationTimeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
+    final val ConfigVersion: String = getString("akka.version")
+    final val ProviderClass: String = getString("akka.actor.provider")
+    final val SupervisorStrategyClass: String = getString("akka.actor.guardian-supervisor-strategy")
+    final val CreationTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.actor.creation-timeout"), MILLISECONDS))
+    final val UnstartedPushTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.actor.unstarted-push-timeout"), MILLISECONDS))
 
-    final val SerializeAllMessages = getBoolean("akka.actor.serialize-messages")
-    final val SerializeAllCreators = getBoolean("akka.actor.serialize-creators")
+    final val SerializeAllMessages: Boolean = getBoolean("akka.actor.serialize-messages")
+    final val SerializeAllCreators: Boolean = getBoolean("akka.actor.serialize-creators")
 
-    final val LogLevel = getString("akka.loglevel")
-    final val StdoutLogLevel = getString("akka.stdout-loglevel")
+    final val LogLevel: String = getString("akka.loglevel")
+    final val StdoutLogLevel: String = getString("akka.stdout-loglevel")
     final val EventHandlers: Seq[String] = getStringList("akka.event-handlers").asScala
-    final val EventHandlerStartTimeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
-    final val LogConfigOnStart = config.getBoolean("akka.log-config-on-start")
+    final val EventHandlerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
+    final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
 
-    final val AddLoggingReceive = getBoolean("akka.actor.debug.receive")
-    final val DebugAutoReceive = getBoolean("akka.actor.debug.autoreceive")
-    final val DebugLifecycle = getBoolean("akka.actor.debug.lifecycle")
-    final val FsmDebugEvent = getBoolean("akka.actor.debug.fsm")
-    final val DebugEventStream = getBoolean("akka.actor.debug.event-stream")
-    final val DebugUnhandledMessage = getBoolean("akka.actor.debug.unhandled")
-    final val DebugRouterMisconfiguration = getBoolean("akka.actor.debug.router-misconfiguration")
+    final val AddLoggingReceive: Boolean = getBoolean("akka.actor.debug.receive")
+    final val DebugAutoReceive: Boolean = getBoolean("akka.actor.debug.autoreceive")
+    final val DebugLifecycle: Boolean = getBoolean("akka.actor.debug.lifecycle")
+    final val FsmDebugEvent: Boolean = getBoolean("akka.actor.debug.fsm")
+    final val DebugEventStream: Boolean = getBoolean("akka.actor.debug.event-stream")
+    final val DebugUnhandledMessage: Boolean = getBoolean("akka.actor.debug.unhandled")
+    final val DebugRouterMisconfiguration: Boolean = getBoolean("akka.actor.debug.router-misconfiguration")
 
-    final val Home = config.getString("akka.home") match {
+    final val Home: Option[String] = config.getString("akka.home") match {
       case "" ⇒ None
       case x  ⇒ Some(x)
     }
 
-    final val SchedulerTickDuration = Duration(getMilliseconds("akka.scheduler.tick-duration"), MILLISECONDS)
-    final val SchedulerTicksPerWheel = getInt("akka.scheduler.ticks-per-wheel")
-    final val Daemonicity = getBoolean("akka.daemonic")
-    final val JvmExitOnFatalError = getBoolean("akka.jvm-exit-on-fatal-error")
+    final val SchedulerTickDuration: FiniteDuration = Duration(getMilliseconds("akka.scheduler.tick-duration"), MILLISECONDS)
+    final val SchedulerTicksPerWheel: Int = getInt("akka.scheduler.ticks-per-wheel")
+    final val Daemonicity: Boolean = getBoolean("akka.daemonic")
+    final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")
+
+    final val DefaultVirtualNodesFactor: Int = getInt("akka.actor.deployment.default.virtual-nodes-factor")
 
     if (ConfigVersion != Version)
       throw new akka.ConfigurationException("Akka JAR version [" + Version + "] does not match the provided config version [" + ConfigVersion + "]")
@@ -502,11 +508,11 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   protected def systemImpl: ActorSystemImpl = this
 
-  private[akka] def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name)
+  private[akka] def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name, systemService = true)
 
-  def actorOf(props: Props, name: String): ActorRef = guardian.underlying.attachChild(props, name)
+  def actorOf(props: Props, name: String): ActorRef = guardian.underlying.attachChild(props, name, systemService = false)
 
-  def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props)
+  def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props, systemService = false)
 
   def stop(actor: ActorRef): Unit = {
     val path = actor.path
@@ -537,10 +543,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
       classOf[Scheduler] -> scheduler,
       classOf[DynamicAccess] -> dynamicAccess)
 
-    dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments) match {
-      case Left(e)  ⇒ throw e
-      case Right(p) ⇒ p
-    }
+    dynamicAccess.createInstanceFor[ActorRefProvider](ProviderClass, arguments).get
   }
 
   def deadLetters: ActorRef = provider.deadLetters
@@ -610,22 +613,13 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
    * cannot schedule a task. Once scheduled, the task MUST be executed. If
    * executed upon close(), the task may execute before its timeout.
    */
-  protected def createScheduler(): Scheduler = {
-    val hwt = new HashedWheelTimer(log,
-      threadFactory.copy(threadFactory.name + "-scheduler"),
-      settings.SchedulerTickDuration,
-      settings.SchedulerTicksPerWheel)
-    // note that dispatcher is by-name parameter in DefaultScheduler constructor,
-    // because dispatcher is not initialized when the scheduler is created
-    def safeDispatcher = dispatcher match {
-      case null ⇒
-        val exc = new IllegalStateException("Scheduler is using dispatcher before it has been initialized")
-        log.error(exc, exc.getMessage)
-        throw exc
-      case dispatcher ⇒ dispatcher
-    }
-    new DefaultScheduler(hwt, log, safeDispatcher)
-  }
+  protected def createScheduler(): Scheduler =
+    new DefaultScheduler(
+      new HashedWheelTimer(log,
+        threadFactory.copy(threadFactory.name + "-scheduler"),
+        settings.SchedulerTickDuration,
+        settings.SchedulerTicksPerWheel),
+      log)
 
   /*
    * This is called after the last actor has signaled its termination, i.e.
@@ -682,15 +676,14 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null
 
   private def loadExtensions() {
-    import scala.collection.JavaConversions._
-    settings.config.getStringList("akka.extensions") foreach { fqcn ⇒
-      dynamicAccess.getObjectFor[AnyRef](fqcn).fold(_ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Seq()), Right(_)) match {
-        case Right(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup());
-        case Right(p: ExtensionId[_])      ⇒ registerExtension(p);
-        case Right(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
-        case Left(problem)                 ⇒ log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
+    import scala.collection.JavaConverters.collectionAsScalaIterableConverter
+    settings.config.getStringList("akka.extensions").asScala foreach { fqcn ⇒
+      dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Seq()) } match {
+        case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
+        case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
+        case Success(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
+        case Failure(problem)                ⇒ log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
       }
-
     }
   }
 

@@ -10,8 +10,10 @@ import java.lang.{ UnsupportedOperationException, IllegalStateException }
 import akka.serialization.{ Serialization, JavaSerializer }
 import akka.event.EventStream
 import scala.annotation.tailrec
-import java.util.concurrent.{ ConcurrentHashMap }
+import java.util.concurrent.ConcurrentHashMap
 import akka.event.LoggingAdapter
+import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.collection.JavaConverters
 
 /**
  * Immutable and serializable handle to an actor, which may or may not reside
@@ -91,13 +93,14 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * actor.tell(message);
    * </pre>
    */
+  @deprecated("use the two-arg variant (typically getSelf() as second arg)", "2.1")
   final def tell(msg: Any): Unit = this.!(msg)(null: ActorRef)
 
   /**
    * Java API. <p/>
    * Sends the specified message to the sender, i.e. fire-and-forget
-   * semantics, including the sender reference if possible (not supported on
-   * all senders).<p/>
+   * semantics, including the sender reference if possible (pass `null` if
+   * there is nobody to reply to).<p/>
    * <pre>
    * actor.tell(message, context);
    * </pre>
@@ -150,7 +153,7 @@ trait ScalaActorRef { ref: ActorRef ⇒
    * </pre>
    * <p/>
    */
-  def !(message: Any)(implicit sender: ActorRef = null): Unit
+  def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit
 
 }
 
@@ -191,7 +194,8 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   /*
    * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).
    */
-  def resume(inResponseToFailure: Boolean): Unit
+  def start(): Unit
+  def resume(causedByFailure: Throwable): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
   def stop(): Unit
@@ -256,13 +260,16 @@ private[akka] class LocalActorRef private[akka] (
 
   /*
    * Safe publication of this class’s fields is guaranteed by mailbox.setActor()
-   * which is called indirectly from actorCell.start() (if you’re wondering why
+   * which is called indirectly from actorCell.init() (if you’re wondering why
    * this is at all important, remember that under the JMM final fields are only
    * frozen at the _end_ of the constructor, but we are publishing “this” before
    * that is reached).
+   * This means that the result of newActorCell needs to be written to the val
+   * actorCell before we call init and start, since we can start using "this"
+   * object from another thread as soon as we run init.
    */
   private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
-  actorCell.start(sendSupervise = true)
+  actorCell.init(ThreadLocalRandom.current.nextInt(), sendSupervise = true)
 
   protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor)
@@ -277,6 +284,11 @@ private[akka] class LocalActorRef private[akka] (
   override def isTerminated: Boolean = actorCell.isTerminated
 
   /**
+   * Starts the actor after initialization.
+   */
+  override def start(): Unit = actorCell.start()
+
+  /**
    * Suspends the actor so that it will not process messages until resumed. The
    * suspend request is processed asynchronously to the caller of this method
    * as well as to normal message sends: the only ordering guarantee is that
@@ -288,7 +300,7 @@ private[akka] class LocalActorRef private[akka] (
   /**
    * Resumes a suspended actor.
    */
-  override def resume(inResponseToFailure: Boolean): Unit = actorCell.resume(inResponseToFailure)
+  override def resume(causedByFailure: Throwable): Unit = actorCell.resume(causedByFailure)
 
   /**
    * Shuts down the actor and its message queue
@@ -305,8 +317,8 @@ private[akka] class LocalActorRef private[akka] (
    */
   protected def getSingleChild(name: String): InternalActorRef =
     actorCell.getChildByName(name) match {
-      case Some(crs) ⇒ crs.child.asInstanceOf[InternalActorRef]
-      case None      ⇒ Nobody
+      case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef]
+      case _                            ⇒ Nobody
     }
 
   override def getChild(names: Iterator[String]): InternalActorRef = {
@@ -338,7 +350,7 @@ private[akka] class LocalActorRef private[akka] (
 
   override def sendSystemMessage(message: SystemMessage): Unit = actorCell.sendSystemMessage(message)
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = actorCell.tell(message, sender)
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = actorCell.tell(message, sender)
 
   override def restart(cause: Throwable): Unit = actorCell.restart(cause)
 
@@ -350,7 +362,7 @@ private[akka] class LocalActorRef private[akka] (
  * Memento pattern for serializing ActorRefs transparently
  * INTERNAL API
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 private[akka] case class SerializedActorRef private (path: String) {
   import akka.serialization.JavaSerializer.currentSystem
 
@@ -387,12 +399,13 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override def getParent: InternalActorRef = Nobody
   override def getChild(names: Iterator[String]): InternalActorRef = if (names.forall(_.isEmpty)) this else Nobody
 
+  override def start(): Unit = ()
   override def suspend(): Unit = ()
-  override def resume(inResponseToFailure: Boolean): Unit = ()
+  override def resume(causedByFailure: Throwable): Unit = ()
   override def stop(): Unit = ()
   override def isTerminated = false
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = ()
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = ()
 
   override def sendSystemMessage(message: SystemMessage): Unit = ()
   override def restart(cause: Throwable): Unit = ()
@@ -405,10 +418,11 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
  * When a message is sent to an Actor that is terminated before receiving the message, it will be sent as a DeadLetter
  * to the ActorSystem's EventStream
  */
+@SerialVersionUID(1L)
 case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
 
 private[akka] object DeadLetterActorRef {
-  //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+  @SerialVersionUID(1L)
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
     @throws(classOf[java.io.ObjectStreamException])
     private def readResolve(): AnyRef = JavaSerializer.currentSystem.value.deadLetters
@@ -431,7 +445,7 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
 
   override def sendSystemMessage(message: SystemMessage): Unit = specialHandle(message)
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit = message match {
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
     case d: DeadLetter ⇒ specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
     case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
   }
@@ -439,7 +453,7 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
   protected def specialHandle(msg: Any): Boolean = msg match {
     case w: Watch ⇒
       if (w.watchee == this && w.watcher != this)
-        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false, addressTerminated = false)
       true
     case _: Unwatch ⇒ true // Just ignore
     case _          ⇒ false
@@ -464,10 +478,11 @@ private[akka] class DeadLetterActorRef(_provider: ActorRefProvider,
   override protected def specialHandle(msg: Any): Boolean = msg match {
     case w: Watch ⇒
       if (w.watchee != this && w.watcher != this)
-        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false)
+        w.watcher ! Terminated(w.watchee)(existenceConfirmed = false, addressTerminated = false)
       true
-    case w: Unwatch ⇒ true // Just ignore
-    case _          ⇒ false
+    case w: Unwatch  ⇒ true // Just ignore
+    case NullMessage ⇒ true
+    case _           ⇒ false
   }
 
   @throws(classOf[java.io.ObjectStreamException])
@@ -511,5 +526,12 @@ private[akka] class VirtualPathContainer(
           else some.getChild(name)
       }
     }
+  }
+
+  def hasChildren: Boolean = !children.isEmpty
+
+  def foreachChild(f: ActorRef ⇒ Unit) = {
+    val iter = children.values.iterator
+    while (iter.hasNext) f(iter.next)
   }
 }

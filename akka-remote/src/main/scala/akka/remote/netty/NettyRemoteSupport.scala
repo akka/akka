@@ -45,7 +45,8 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
       val d = system.dispatchers.lookup(id)
       new NioClientSocketChannelFactory(d, d)
     case None ⇒
-      new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
+      new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(),
+        settings.ClientSocketWorkerPoolSize)
   }
 
   /**

@@ -3,8 +3,9 @@
  */
 package akka.actor
 
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit._
+import akka.testkit.TestEvent._
 import scala.concurrent.Await
 import akka.util.Timeout
 import akka.pattern.{ ask, AskTimeoutException }
@@ -14,6 +15,8 @@ class ActorTimeoutSpec extends AkkaSpec {
 
   val testTimeout = 200.millis.dilated
   val leeway = 500.millis.dilated
+
+  system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*unhandled message from.*hallo")))
 
   "An Actor-based Future" must {
 

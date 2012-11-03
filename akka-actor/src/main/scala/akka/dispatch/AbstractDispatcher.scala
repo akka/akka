@@ -13,9 +13,10 @@ import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Index }
 import scala.annotation.tailrec
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.concurrent.{ ExecutionContext, Await, Awaitable }
 import scala.util.control.NonFatal
+import scala.concurrent.duration.FiniteDuration
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
@@ -25,17 +26,26 @@ object Envelope {
     if (msg eq null) throw new InvalidMessageException("Message is null")
     if (system.settings.SerializeAllMessages && !msg.isInstanceOf[NoSerializationVerificationNeeded]) {
       val ser = SerializationExtension(system)
-      ser.serialize(msg) match { //Verify serializability
-        case Left(t) ⇒ throw t
-        case Right(bytes) ⇒ ser.deserialize(bytes, msg.getClass) match { //Verify deserializability
-          case Left(t) ⇒ throw t
-          case _       ⇒ //All good
-        }
-      }
+      ser.deserialize(ser.serialize(msg).get, msg.getClass).get
     }
     new Envelope(message, sender)
   }
 }
+
+/**
+ * This message is sent directly after the Supervise system message in order
+ * to form a barrier wrt. the first real message sent by the child, so that e.g.
+ * Failed() cannot overtake Supervise(). Processing this does nothing.
+ *
+ * Detailed explanation:
+ *
+ * The race happens because Supervise and Failed may be queued between the
+ * parent's check for system messages and dequeue(). Thus, if the parent
+ * processes the NullMessage first (by way of that tiny race window), it is
+ * guaranteed to then find the Supervise system message in its mailbox prior
+ * to turning its attention to the next real message.
+ */
+case object NullMessage extends AutoReceivedMessage
 
 /**
  * INTERNAL API
@@ -78,7 +88,7 @@ private[akka] sealed trait SystemMessage extends PossiblyHarmful {
 /**
  * INTERNAL API
  */
-private[akka] case class Create() extends SystemMessage // send to self from Dispatcher.register
+private[akka] case class Create(uid: Int) extends SystemMessage // send to self from Dispatcher.register
 /**
  * INTERNAL API
  */
@@ -90,7 +100,7 @@ private[akka] case class Suspend() extends SystemMessage // sent to self from Ac
 /**
  * INTERNAL API
  */
-private[akka] case class Resume(inResponseToFailure: Boolean) extends SystemMessage // sent to self from ActorCell.resume
+private[akka] case class Resume(causedByFailure: Throwable) extends SystemMessage // sent to self from ActorCell.resume
 /**
  * INTERNAL API
  */
@@ -98,7 +108,7 @@ private[akka] case class Terminate() extends SystemMessage // sent to self from 
 /**
  * INTERNAL API
  */
-private[akka] case class Supervise(child: ActorRef) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+private[akka] case class Supervise(child: ActorRef, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 /**
  * INTERNAL API
  */
@@ -116,7 +126,13 @@ private[akka] case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends S
  */
 private[akka] case object NoMessage extends SystemMessage // switched into the mailbox to signal termination
 
-final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Runnable {
+final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () ⇒ Unit) extends Batchable {
+  final override def isBatchable: Boolean = runnable match {
+    case b: Batchable                           ⇒ b.isBatchable
+    case _: scala.concurrent.OnCompleteRunnable ⇒ true
+    case _                                      ⇒ false
+  }
+
   def run(): Unit =
     try runnable.run() catch {
       case NonFatal(e) ⇒ eventStream.publish(Error(e, "TaskInvocation", this.getClass, e.getMessage))
@@ -163,7 +179,7 @@ private[akka] object MessageDispatcher {
   implicit def defaultDispatcher(implicit system: ActorSystem): MessageDispatcher = system.dispatcher
 }
 
-abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with Executor with ExecutionContext {
+abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContext {
 
   import MessageDispatcher._
   import AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
@@ -209,8 +225,8 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    */
   final def detach(actor: ActorCell): Unit = try unregister(actor) finally ifSensibleToDoSoThenScheduleShutdown()
 
-  final override def execute(runnable: Runnable): Unit = {
-    val invocation = TaskInvocation(eventStream, runnable, taskCleanup)
+  final override protected def unbatchedExecute(r: Runnable): Unit = {
+    val invocation = TaskInvocation(eventStream, r, taskCleanup)
     addInhabitants(+1)
     try {
       executeTask(invocation)
@@ -243,7 +259,10 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
 
   private def scheduleShutdownAction(): Unit = {
     // IllegalStateException is thrown if scheduler has been shutdown
-    try scheduler.scheduleOnce(shutdownTimeout, shutdownAction) catch {
+    try scheduler.scheduleOnce(shutdownTimeout, shutdownAction)(new ExecutionContext {
+      override def execute(runnable: Runnable): Unit = runnable.run()
+      override def reportFailure(t: Throwable): Unit = MessageDispatcher.this.reportFailure(t)
+    }) catch {
       case _: IllegalStateException ⇒ shutdown()
     }
   }
@@ -269,7 +288,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     if (debug) actors.remove(this, actor.self)
     addInhabitants(-1)
     val mailBox = actor.swapMailbox(deadLetterMailbox)
-    mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up
+    mailBox.becomeClosed()
     mailBox.cleanUp()
   }
 
@@ -298,7 +317,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
    *
    * INTERNAL API
    */
-  protected[akka] def shutdownTimeout: Duration
+  protected[akka] def shutdownTimeout: FiniteDuration
 
   /**
    * After the call to this method, the dispatcher mustn't begin any new message processing for the specified reference
@@ -402,14 +421,13 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
       case "bounded"   ⇒ new BoundedMailbox(prerequisites.settings, config)
       case fqcn ⇒
         val args = Seq(classOf[ActorSystem.Settings] -> prerequisites.settings, classOf[Config] -> config)
-        prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args) match {
-          case Right(instance) ⇒ instance
-          case Left(exception) ⇒
+        prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
+          case exception ⇒
             throw new IllegalArgumentException(
               ("Cannot instantiate MailboxType [%s], defined in [%s], " +
                 "make sure it has constructor with [akka.actor.ActorSystem.Settings, com.typesafe.config.Config] parameters")
                 .format(fqcn, config.getString("id")), exception)
-        }
+        }).get
     }
   }
 
@@ -421,13 +439,12 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
         val args = Seq(
           classOf[Config] -> config,
           classOf[DispatcherPrerequisites] -> prerequisites)
-        prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args) match {
-          case Right(instance) ⇒ instance
-          case Left(exception) ⇒ throw new IllegalArgumentException(
+        prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args).recover({
+          case exception ⇒ throw new IllegalArgumentException(
             ("""Cannot instantiate ExecutorServiceConfigurator ("executor = [%s]"), defined in [%s],
                 make sure it has an accessible constructor with a [%s,%s] signature""")
               .format(fqcn, config.getString("id"), classOf[Config], classOf[DispatcherPrerequisites]), exception)
-        }
+        }).get
     }
   }
 }
@@ -455,15 +472,8 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
         })(queueFactory ⇒ _.setQueueFactory(queueFactory)))
   }
 
-  def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
-    val tf = threadFactory match {
-      case m: MonitorableThreadFactory ⇒
-        // add the dispatcher id to the thread names
-        m.copy(m.name + "-" + id)
-      case other ⇒ other
-    }
-    threadPoolConfig.createExecutorServiceFactory(id, tf)
-  }
+  def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+    threadPoolConfig.createExecutorServiceFactory(id, threadFactory)
 }
 
 object ForkJoinExecutorConfigurator {

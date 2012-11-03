@@ -9,7 +9,7 @@ import akka.actor._
 import akka.{ ConfigurationException, AkkaException }
 import akka.actor.ActorSystem.Settings
 import akka.util.{ Timeout, ReentrantGuard }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.util.concurrent.atomic.AtomicInteger
 import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException
@@ -101,17 +101,13 @@ trait LoggingBus extends ActorEventBus {
           loggerName ← defaultLoggers
           if loggerName != StandardOutLogger.getClass.getName
         } yield {
-          try {
-            system.dynamicAccess.getClassFor[Actor](loggerName) match {
-              case Right(actorClass) ⇒ addLogger(system, actorClass, level, logName)
-              case Left(exception)   ⇒ throw exception
-            }
-          } catch {
-            case e: Exception ⇒
-              throw new ConfigurationException(
-                "Event Handler specified in config can't be loaded [" + loggerName +
-                  "] due to [" + e.toString + "]", e)
-          }
+          system.dynamicAccess.getClassFor[Actor](loggerName).map({
+            case actorClass ⇒ addLogger(system, actorClass, level, logName)
+          }).recover({
+            case e ⇒ throw new ConfigurationException(
+              "Event Handler specified in config can't be loaded [" + loggerName +
+                "] due to [" + e.toString + "]", e)
+          }).get
         }
       guard.withGuard {
         loggers = myloggers
@@ -120,10 +116,8 @@ trait LoggingBus extends ActorEventBus {
       try {
         if (system.settings.DebugUnhandledMessage)
           subscribe(system.systemActorOf(Props(new Actor {
-            println("started" + self)
             def receive = {
               case UnhandledMessage(msg, sender, rcp) ⇒
-                println("got it")
                 publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
             }
           }), "UnhandledMessageForwarder"), classOf[UnhandledMessage])
@@ -714,7 +708,7 @@ object Logging {
     val path: ActorPath = new RootActorPath(Address("akka", "all-systems"), "/StandardOutLogger")
     def provider: ActorRefProvider = throw new UnsupportedOperationException("StandardOutLogger does not provide")
     override val toString = "StandardOutLogger"
-    override def !(message: Any)(implicit sender: ActorRef = null): Unit = print(message)
+    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = print(message)
   }
 
   val StandardOutLogger = new StandardOutLogger

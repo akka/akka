@@ -3,7 +3,7 @@ package akka
 import language.implicitConversions
 
 import akka.actor.ActorSystem
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import scala.reflect.ClassTag
 
@@ -35,20 +35,21 @@ package object testkit {
    * Scala API. Scale timeouts (durations) during tests with the configured
    * 'akka.test.timefactor'.
    * Implicit conversion to add dilated function to Duration.
-   * import scala.concurrent.util.duration._
+   * import scala.concurrent.duration._
    * import akka.testkit._
    * 10.milliseconds.dilated
    *
    * Corresponding Java API is available in TestKit.dilated
    */
-  implicit def duration2TestDuration(duration: Duration) = new TestDuration(duration)
+  implicit def duration2TestDuration(duration: FiniteDuration) = new TestDuration(duration)
 
   /**
    * Wrapper for implicit conversion to add dilated function to Duration.
    */
-  class TestDuration(duration: Duration) {
-    def dilated(implicit system: ActorSystem): Duration = {
-      duration * TestKitExtension(system).TestTimeFactor
+  class TestDuration(duration: FiniteDuration) {
+    def dilated(implicit system: ActorSystem): FiniteDuration = {
+      // this cast will succeed unless TestTimeFactor is non-finite (which would be a misconfiguration)
+      (duration * TestKitExtension(system).TestTimeFactor).asInstanceOf[FiniteDuration]
     }
   }
 }

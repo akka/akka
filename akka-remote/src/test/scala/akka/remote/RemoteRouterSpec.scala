@@ -6,6 +6,7 @@ package akka.remote
 import akka.testkit._
 import akka.routing._
 import akka.actor._
+import akka.remote.routing._
 import com.typesafe.config._
 
 object RemoteRouterSpec {
@@ -67,10 +68,10 @@ akka.actor.deployment {
     nr-of-instances = 4
   }
 }""").withFallback(system.settings.config)
-  val other = ActorSystem("remote-sys", conf)
+  val otherSystem = ActorSystem("remote-sys", conf)
 
   override def atTermination() {
-    other.shutdown()
+    otherSystem.shutdown()
   }
 
   "A Remote Router" must {
@@ -197,6 +198,23 @@ akka.actor.deployment {
       parents.head must be(router.path)
       children foreach (_.address.toString must be === "akka://remote-sys@localhost:12347")
       system.stop(router)
+    }
+
+    "set supplied supervisorStrategy" in {
+      val escalator = OneForOneStrategy() {
+        case e ⇒ testActor ! e; SupervisorStrategy.Escalate
+      }
+      val router = system.actorOf(Props.empty.withRouter(new RemoteRouterConfig(
+        RoundRobinRouter(1, supervisorStrategy = escalator),
+        Seq(Address("akka", "remote-sys", "localhost", 12347)))), "blub3")
+
+      router ! CurrentRoutees
+      EventFilter[ActorKilledException](occurrences = 1) intercept {
+        EventFilter[ActorKilledException](occurrences = 1).intercept {
+          expectMsgType[RouterRoutees].routees.head ! Kill
+        }(otherSystem)
+      }
+      expectMsgType[ActorKilledException]
     }
 
   }

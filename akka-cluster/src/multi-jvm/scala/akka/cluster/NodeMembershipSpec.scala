@@ -13,12 +13,12 @@ object NodeMembershipMultiJvmSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec with FailureDetectorPuppetStrategy
-class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec with FailureDetectorPuppetStrategy
-class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec with FailureDetectorPuppetStrategy
+class NodeMembershipMultiJvmNode1 extends NodeMembershipSpec
+class NodeMembershipMultiJvmNode2 extends NodeMembershipSpec
+class NodeMembershipMultiJvmNode3 extends NodeMembershipSpec
 
 abstract class NodeMembershipSpec
   extends MultiNodeSpec(NodeMembershipMultiJvmSpec)
@@ -38,12 +38,12 @@ abstract class NodeMembershipSpec
 
       runOn(first, second) {
         cluster.join(first)
-        awaitCond(cluster.latestGossip.members.size == 2)
-        assertMembers(cluster.latestGossip.members, first, second)
+        awaitCond(clusterView.members.size == 2)
+        assertMembers(clusterView.members, first, second)
         awaitCond {
-          cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
+          clusterView.members.forall(_.status == MemberStatus.Up)
         }
-        awaitCond(cluster.convergence.isDefined)
+        awaitCond(clusterView.convergence)
       }
 
       enterBarrier("after-1")
@@ -55,12 +55,12 @@ abstract class NodeMembershipSpec
         cluster.join(first)
       }
 
-      awaitCond(cluster.latestGossip.members.size == 3)
-      assertMembers(cluster.latestGossip.members, first, second, third)
+      awaitCond(clusterView.members.size == 3)
+      assertMembers(clusterView.members, first, second, third)
       awaitCond {
-        cluster.latestGossip.members.forall(_.status == MemberStatus.Up)
+        clusterView.members.forall(_.status == MemberStatus.Up)
       }
-      awaitCond(cluster.convergence.isDefined)
+      awaitCond(clusterView.convergence)
 
       enterBarrier("after-2")
     }

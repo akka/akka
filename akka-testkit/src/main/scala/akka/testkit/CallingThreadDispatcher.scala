@@ -12,9 +12,9 @@ import scala.annotation.tailrec
 import com.typesafe.config.Config
 import akka.actor.{ ActorInitializationException, ExtensionIdProvider, ExtensionId, Extension, ExtendedActorSystem, ActorRef, ActorCell }
 import akka.dispatch.{ MessageQueue, MailboxType, TaskInvocation, SystemMessage, Suspend, Resume, MessageDispatcherConfigurator, MessageDispatcher, Mailbox, Envelope, DispatcherPrerequisites, DefaultSystemMessageQueue }
-import scala.concurrent.util.duration.intToDurationInt
+import scala.concurrent.duration._
 import akka.util.Switch
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.concurrent.Awaitable
 import akka.actor.ActorContext
 import scala.util.control.NonFatal
@@ -118,7 +118,6 @@ object CallingThreadDispatcher {
  * is then executed. It is possible to suspend an actor from within its call
  * stack.
  *
- * @author Roland Kuhn
  * @since 1.1
  */
 class CallingThreadDispatcher(
@@ -148,7 +147,7 @@ class CallingThreadDispatcher(
         val queue = mbox.queue
         queue.enter
         runQueue(mbox, queue)
-      case x ⇒ throw new ActorInitializationException("expected CallingThreadMailbox, got " + x.getClass)
+      case x ⇒ throw ActorInitializationException("expected CallingThreadMailbox, got " + x.getClass)
     }
   }
 
@@ -171,7 +170,7 @@ class CallingThreadDispatcher(
         if (switched && !wasActive) {
           runQueue(mbox, queue)
         }
-      case m ⇒ m.systemEnqueue(actor.self, Resume(false))
+      case m ⇒ m.systemEnqueue(actor.self, Resume(causedByFailure = null))
     }
   }
 
@@ -237,11 +236,15 @@ class CallingThreadDispatcher(
         try {
           if (Mailbox.debug) println(mbox.actor.self + " processing message " + handle)
           mbox.actor.invoke(handle)
+          if (Thread.interrupted()) { // clear interrupted flag before we continue
+            intex = new InterruptedException("Interrupted during message processing")
+            log.error(intex, "Interrupted during message processing")
+          }
           true
         } catch {
           case ie: InterruptedException ⇒
             log.error(ie, "Interrupted during message processing")
-            Thread.currentThread().interrupt()
+            Thread.interrupted() // clear interrupted flag before continuing
             intex = ie
             true
           case NonFatal(e) ⇒
@@ -262,7 +265,7 @@ class CallingThreadDispatcher(
       runQueue(mbox, queue, intex)
     } else {
       if (intex ne null) {
-        Thread.interrupted // clear flag
+        Thread.interrupted() // clear interrupted flag before throwing according to java convention
         throw intex
       }
     }

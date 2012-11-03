@@ -6,7 +6,7 @@ package akka.dispatch
 
 import java.util.Collection
 import scala.concurrent.{ Awaitable, BlockContext, CanAwait }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.concurrent.forkjoin._
 import java.util.concurrent.{
   ArrayBlockingQueue,
@@ -88,8 +88,15 @@ case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.def
       service
     }
   }
-  final def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
-    new ThreadPoolExecutorServiceFactory(threadFactory)
+  final def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
+    val tf = threadFactory match {
+      case m: MonitorableThreadFactory ⇒
+        // add the dispatcher id to the thread names
+        m.copy(m.name + "-" + id)
+      case other ⇒ other
+    }
+    new ThreadPoolExecutorServiceFactory(tf)
+  }
 }
 
 object ThreadPoolConfigBuilder {

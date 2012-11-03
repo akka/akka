@@ -69,7 +69,7 @@ trait Stash {
   private val mailbox: DequeBasedMessageQueue = {
     context.asInstanceOf[ActorCell].mailbox.messageQueue match {
       case queue: DequeBasedMessageQueue ⇒ queue
-      case other ⇒ throw new ActorInitializationException(self, "DequeBasedMailbox required, got: " + other.getClass() + """
+      case other ⇒ throw ActorInitializationException(self, "DequeBasedMailbox required, got: " + other.getClass() + """
 An (unbounded) deque-based mailbox can be configured as follows:
   my-custom-dispatcher {
     mailbox-type = "akka.dispatch.UnboundedDequeBasedMailbox"
@@ -101,13 +101,11 @@ An (unbounded) deque-based mailbox can be configured as follows:
    *  `MessageQueueAppendFailedException` is thrown.
    *
    *  The stash is guaranteed to be empty after calling `unstashAll()`.
-   *
-   *  @throws MessageQueueAppendFailedException in case of a capacity violation when
-   *          prepending the stash to a bounded mailbox
    */
   def unstashAll(): Unit = {
     try {
-      for (msg ← theStash.reverseIterator) mailbox.enqueueFirst(self, msg)
+      val i = theStash.reverseIterator
+      while (i.hasNext) mailbox.enqueueFirst(self, i.next())
     } finally {
       theStash = Vector.empty[Envelope]
     }
@@ -115,14 +113,21 @@ An (unbounded) deque-based mailbox can be configured as follows:
 
   /**
    *  Overridden callback. Prepends all messages in the stash to the mailbox,
-   *  clears the stash, stops all children and invokes the postStop() callback of the superclass.
+   *  clears the stash, stops all children and invokes the postStop() callback.
    */
-  override def preRestart(reason: Throwable, message: Option[Any]) {
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     try unstashAll() finally {
       context.children foreach context.stop
       postStop()
     }
   }
+
+  /**
+   *  Overridden callback. Prepends all messages in the stash to the mailbox and clears the stash.
+   *  Must be called when overriding this method, otherwise stashed messages won't be propagated to DeadLetters
+   *  when actor stops.
+   */
+  override def postStop(): Unit = unstashAll()
 
 }
 

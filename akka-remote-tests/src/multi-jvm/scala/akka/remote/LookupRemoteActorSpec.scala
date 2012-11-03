@@ -7,13 +7,12 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
+import testkit.{STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec}
 import akka.testkit._
 
 object LookupRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
-  class SomeActor extends Actor with Serializable {
+  class SomeActor extends Actor {
     def receive = {
       case "identify" ⇒ sender ! self
     }
@@ -30,7 +29,7 @@ class LookupRemoteActorMultiJvmNode1 extends LookupRemoteActorSpec
 class LookupRemoteActorMultiJvmNode2 extends LookupRemoteActorSpec
 
 class LookupRemoteActorSpec extends MultiNodeSpec(LookupRemoteActorMultiJvmSpec)
-  with ImplicitSender with DefaultTimeout {
+  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
   import LookupRemoteActorMultiJvmSpec._
 
   def initialParticipants = 2

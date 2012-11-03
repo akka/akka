@@ -20,16 +20,10 @@ private[akka] object MessageSerializer {
    * Uses Akka Serialization for the specified ActorSystem to transform the given MessageProtocol to a message
    */
   def deserialize(system: ExtendedActorSystem, messageProtocol: MessageProtocol): AnyRef = {
-    val clazz =
-      if (messageProtocol.hasMessageManifest) {
-        system.dynamicAccess.getClassFor[AnyRef](messageProtocol.getMessageManifest.toStringUtf8)
-          .fold(throw _, Some(_))
-      } else None
-    SerializationExtension(system)
-      .deserialize(messageProtocol.getMessage.toByteArray, messageProtocol.getSerializerId, clazz) match {
-        case Left(e)  ⇒ throw e
-        case Right(r) ⇒ r
-      }
+    SerializationExtension(system).deserialize(
+      messageProtocol.getMessage.toByteArray,
+      messageProtocol.getSerializerId,
+      if (messageProtocol.hasMessageManifest) Some(system.dynamicAccess.getClassFor[AnyRef](messageProtocol.getMessageManifest.toStringUtf8).get) else None).get
   }
 
   /**

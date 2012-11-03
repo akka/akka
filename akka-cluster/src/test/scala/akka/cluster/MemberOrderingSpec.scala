@@ -19,7 +19,7 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
 
   "An Ordering[Member]" must {
 
-    "order non-exiting members by host:port" in {
+    "order members by host:port" in {
       val members = SortedSet.empty[Member] +
         Member(AddressFromURIString("akka://sys@darkstar:1112"), Up) +
         Member(AddressFromURIString("akka://sys@darkstar:1113"), Joining) +
@@ -30,34 +30,6 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
       seq(0) must equal(Member(AddressFromURIString("akka://sys@darkstar:1111"), Up))
       seq(1) must equal(Member(AddressFromURIString("akka://sys@darkstar:1112"), Up))
       seq(2) must equal(Member(AddressFromURIString("akka://sys@darkstar:1113"), Joining))
-    }
-
-    "order exiting members by last" in {
-      val members = SortedSet.empty[Member] +
-        Member(AddressFromURIString("akka://sys@darkstar:1112"), Exiting) +
-        Member(AddressFromURIString("akka://sys@darkstar:1113"), Up) +
-        Member(AddressFromURIString("akka://sys@darkstar:1111"), Joining)
-
-      val seq = members.toSeq
-      seq.size must equal(3)
-      seq(0) must equal(Member(AddressFromURIString("akka://sys@darkstar:1111"), Joining))
-      seq(1) must equal(Member(AddressFromURIString("akka://sys@darkstar:1113"), Up))
-      seq(2) must equal(Member(AddressFromURIString("akka://sys@darkstar:1112"), Exiting))
-    }
-
-    "order multiple exiting members by last but internally by host:port" in {
-      val members = SortedSet.empty[Member] +
-        Member(AddressFromURIString("akka://sys@darkstar:1112"), Exiting) +
-        Member(AddressFromURIString("akka://sys@darkstar:1113"), Leaving) +
-        Member(AddressFromURIString("akka://sys@darkstar:1111"), Up) +
-        Member(AddressFromURIString("akka://sys@darkstar:1110"), Exiting)
-
-      val seq = members.toSeq
-      seq.size must equal(4)
-      seq(0) must equal(Member(AddressFromURIString("akka://sys@darkstar:1111"), Up))
-      seq(1) must equal(Member(AddressFromURIString("akka://sys@darkstar:1113"), Leaving))
-      seq(2) must equal(Member(AddressFromURIString("akka://sys@darkstar:1110"), Exiting))
-      seq(3) must equal(Member(AddressFromURIString("akka://sys@darkstar:1112"), Exiting))
     }
 
     "be sorted by address correctly" in {
@@ -85,6 +57,29 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
 
       m3 must not be (m2)
       m3 must not be (m1)
+    }
+
+    "have consistent ordering and equals" in {
+      val address1 = Address("akka", "sys1", "host1", 9001)
+      val address2 = Address("akka", "sys1", "host1", 9002)
+
+      val x = Member(address1, Exiting)
+      val y = Member(address1, Removed)
+      val z = Member(address2, Up)
+      Member.ordering.compare(x, y) must be(0)
+      Member.ordering.compare(x, z) must be(Member.ordering.compare(y, z))
+    }
+
+    "work with SortedSet" in {
+      val address1 = Address("akka", "sys1", "host1", 9001)
+      val address2 = Address("akka", "sys1", "host1", 9002)
+      val address3 = Address("akka", "sys1", "host1", 9003)
+
+      (SortedSet(Member(address1, MemberStatus.Joining)) - Member(address1, MemberStatus.Up)) must be(SortedSet.empty[Member])
+      (SortedSet(Member(address1, MemberStatus.Exiting)) - Member(address1, MemberStatus.Removed)) must be(SortedSet.empty[Member])
+      (SortedSet(Member(address1, MemberStatus.Up)) - Member(address1, MemberStatus.Exiting)) must be(SortedSet.empty[Member])
+      (SortedSet(Member(address2, Up), Member(address3, Joining), Member(address1, MemberStatus.Exiting)) - Member(address1, MemberStatus.Removed)) must be(
+        SortedSet(Member(address2, Up), Member(address3, Joining)))
     }
   }
 

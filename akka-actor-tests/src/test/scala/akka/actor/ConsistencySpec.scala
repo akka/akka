@@ -4,7 +4,7 @@ import language.postfixOps
 
 import akka.testkit.AkkaSpec
 import akka.dispatch.UnboundedMailbox
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object ConsistencySpec {
   val config = """
@@ -32,7 +32,7 @@ object ConsistencySpec {
       case step: Long ⇒
 
         if (lastStep != (step - 1))
-          sender.tell("Test failed: Last step %s, this step %s".format(lastStep, step))
+          sender ! "Test failed: Last step %s, this step %s".format(lastStep, step)
 
         var shouldBeFortyTwo = left.value + right.value
         if (shouldBeFortyTwo != 42)

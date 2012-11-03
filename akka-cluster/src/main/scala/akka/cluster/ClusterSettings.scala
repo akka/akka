@@ -4,50 +4,76 @@
 package akka.cluster
 
 import com.typesafe.config.Config
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.ConfigurationException
 import scala.collection.JavaConverters._
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.dispatch.Dispatchers
+import scala.concurrent.duration.FiniteDuration
 
 class ClusterSettings(val config: Config, val systemName: String) {
   import config._
 
-  final val FailureDetectorThreshold = getDouble("akka.cluster.failure-detector.threshold")
-  final val FailureDetectorMaxSampleSize = getInt("akka.cluster.failure-detector.max-sample-size")
-  final val FailureDetectorImplementationClass = getString("akka.cluster.failure-detector.implementation-class")
-  final val FailureDetectorMinStdDeviation: Duration =
-    Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
-  final val FailureDetectorAcceptableHeartbeatPause: Duration =
-    Duration(getMilliseconds("akka.cluster.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
+  final val FailureDetectorThreshold: Double = {
+    val x = getDouble("akka.cluster.failure-detector.threshold")
+    require(x > 0.0, "failure-detector.threshold must be > 0")
+    x
+  }
+  final val FailureDetectorMaxSampleSize: Int = {
+    val n = getInt("akka.cluster.failure-detector.max-sample-size")
+    require(n > 0, "failure-detector.max-sample-size must be > 0"); n
+  }
+  final val FailureDetectorImplementationClass: String = getString("akka.cluster.failure-detector.implementation-class")
+  final val FailureDetectorMinStdDeviation: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.failure-detector.min-std-deviation"), MILLISECONDS)
+    require(d > Duration.Zero, "failure-detector.min-std-deviation must be > 0"); d
+  }
+  final val FailureDetectorAcceptableHeartbeatPause: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.failure-detector.acceptable-heartbeat-pause"), MILLISECONDS)
+    require(d >= Duration.Zero, "failure-detector.acceptable-heartbeat-pause must be >= 0"); d
+  }
+  final val HeartbeatInterval: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.failure-detector.heartbeat-interval"), MILLISECONDS)
+    require(d > Duration.Zero, "failure-detector.heartbeat-interval must be > 0"); d
+  }
+  final val HeartbeatConsistentHashingVirtualNodesFactor = 10 // no need for configuration
+  final val NumberOfEndHeartbeats: Int = (FailureDetectorAcceptableHeartbeatPause / HeartbeatInterval + 1).toInt
+  final val MonitoredByNrOfMembers: Int = {
+    val n = getInt("akka.cluster.failure-detector.monitored-by-nr-of-members")
+    require(n > 0, "failure-detector.monitored-by-nr-of-members must be > 0"); n
+  }
 
   final val SeedNodes: IndexedSeq[Address] = getStringList("akka.cluster.seed-nodes").asScala.map {
     case AddressFromURIString(addr) ⇒ addr
   }.toIndexedSeq
-  final val SeedNodeTimeout: Duration = Duration(getMilliseconds("akka.cluster.seed-node-timeout"), MILLISECONDS)
-  final val PeriodicTasksInitialDelay: Duration = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
-  final val GossipInterval: Duration = Duration(getMilliseconds("akka.cluster.gossip-interval"), MILLISECONDS)
-  final val HeartbeatInterval: Duration = Duration(getMilliseconds("akka.cluster.heartbeat-interval"), MILLISECONDS)
-  final val LeaderActionsInterval: Duration = Duration(getMilliseconds("akka.cluster.leader-actions-interval"), MILLISECONDS)
-  final val UnreachableNodesReaperInterval: Duration = Duration(getMilliseconds("akka.cluster.unreachable-nodes-reaper-interval"), MILLISECONDS)
-  final val PublishStateInterval: Duration = Duration(getMilliseconds("akka.cluster.publish-state-interval"), MILLISECONDS)
+  final val SeedNodeTimeout: FiniteDuration = Duration(getMilliseconds("akka.cluster.seed-node-timeout"), MILLISECONDS)
+  final val PeriodicTasksInitialDelay: FiniteDuration = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
+  final val GossipInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.gossip-interval"), MILLISECONDS)
+  final val LeaderActionsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.leader-actions-interval"), MILLISECONDS)
+  final val UnreachableNodesReaperInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.unreachable-nodes-reaper-interval"), MILLISECONDS)
+  final val PublishStatsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.publish-stats-interval"), MILLISECONDS)
   final val AutoJoin: Boolean = getBoolean("akka.cluster.auto-join")
   final val AutoDown: Boolean = getBoolean("akka.cluster.auto-down")
-  final val JoinTimeout: Duration = Duration(getMilliseconds("akka.cluster.join-timeout"), MILLISECONDS)
+  final val JmxEnabled: Boolean = getBoolean("akka.cluster.jmx.enabled")
+  final val JoinTimeout: FiniteDuration = Duration(getMilliseconds("akka.cluster.join-timeout"), MILLISECONDS)
   final val UseDispatcher: String = getString("akka.cluster.use-dispatcher") match {
     case "" ⇒ Dispatchers.DefaultDispatcherId
     case id ⇒ id
   }
   final val GossipDifferentViewProbability: Double = getDouble("akka.cluster.gossip-different-view-probability")
   final val MaxGossipMergeRate: Double = getDouble("akka.cluster.max-gossip-merge-rate")
-  final val SchedulerTickDuration: Duration = Duration(getMilliseconds("akka.cluster.scheduler.tick-duration"), MILLISECONDS)
+  final val SchedulerTickDuration: FiniteDuration = Duration(getMilliseconds("akka.cluster.scheduler.tick-duration"), MILLISECONDS)
   final val SchedulerTicksPerWheel: Int = getInt("akka.cluster.scheduler.ticks-per-wheel")
   final val SendCircuitBreakerSettings: CircuitBreakerSettings = CircuitBreakerSettings(
     maxFailures = getInt("akka.cluster.send-circuit-breaker.max-failures"),
     callTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.call-timeout"), MILLISECONDS),
     resetTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.reset-timeout"), MILLISECONDS))
+  final val MetricsEnabled: Boolean = getBoolean("akka.cluster.metrics.enabled")
+  final val MetricsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.metrics.metrics-interval"), MILLISECONDS)
+  final val MetricsGossipInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.metrics.gossip-interval"), MILLISECONDS)
+  final val MetricsRateOfDecay: Int = getInt("akka.cluster.metrics.rate-of-decay")
 }
 
-case class CircuitBreakerSettings(maxFailures: Int, callTimeout: Duration, resetTimeout: Duration)
+case class CircuitBreakerSettings(maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)

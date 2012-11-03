@@ -5,8 +5,9 @@ package sample.fsm.buncher
 
 import akka.actor.ActorRefFactory
 import scala.reflect.ClassTag
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import akka.actor.{ FSM, Actor, ActorRef }
+import scala.concurrent.duration.FiniteDuration
 
 /*
 * generic typed object buncher.
@@ -35,7 +36,7 @@ object GenericBuncher {
   }
 }
 
-abstract class GenericBuncher[A: ClassTag, B](val singleTimeout: Duration, val multiTimeout: Duration)
+abstract class GenericBuncher[A: ClassTag, B](val singleTimeout: FiniteDuration, val multiTimeout: FiniteDuration)
   extends Actor with FSM[GenericBuncher.State, B] {
   import GenericBuncher._
   import FSM._
@@ -85,7 +86,7 @@ object Buncher {
   val Flush = GenericBuncher.Flush
 }
 
-class Buncher[A: ClassTag](singleTimeout: Duration, multiTimeout: Duration)
+class Buncher[A: ClassTag](singleTimeout: FiniteDuration, multiTimeout: FiniteDuration)
   extends GenericBuncher[A, List[A]](singleTimeout, multiTimeout) {
 
   import Buncher._

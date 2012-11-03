@@ -9,7 +9,7 @@ import RemoteConnection.getAddrString
 import TestConductorProtocol._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.concurrent.Await
 import akka.event.{ LoggingAdapter, Logging }
@@ -21,8 +21,9 @@ import akka.actor.{ OneForOneStrategy, SupervisorStrategy, Status, Address, Pois
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.util.{ Timeout }
-import scala.concurrent.util.{ Deadline, Duration }
 import scala.reflect.classTag
+import akka.ConfigurationException
+import akka.AkkaException
 
 sealed trait Direction {
   def includes(other: Direction): Boolean
@@ -113,6 +114,10 @@ trait Conductor { this: TestConductorExt ⇒
    * determining how much to send, leading to the correct output rate, but with
    * increased latency.
    *
+   * ====Note====
+   * To use this feature you must activate the `TestConductorTranport`
+   * by specifying `testTransport(on = true)` in your MultiNodeConfig.
+   *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be throttled
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
@@ -120,6 +125,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Double): Future[Done] = {
     import Settings.QueryTimeout
+    requireTestConductorTranport()
     controller ? Throttle(node, target, direction, rateMBit.toFloat) mapTo classTag[Done]
   }
 
@@ -129,18 +135,32 @@ trait Conductor { this: TestConductorExt ⇒
    * submitting them to the Socket or right after receiving them from the
    * Socket.
    *
+   * ====Note====
+   * To use this feature you must activate the `TestConductorTranport`
+   * by specifying `testTransport(on = true)` in your MultiNodeConfig.
+   *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
    * @param direction can be either `Direction.Send`, `Direction.Receive` or `Direction.Both`
    */
   def blackhole(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
     import Settings.QueryTimeout
+    requireTestConductorTranport()
     controller ? Throttle(node, target, direction, 0f) mapTo classTag[Done]
   }
+
+  private def requireTestConductorTranport(): Unit =
+    if (!transport.isInstanceOf[TestConductorTransport])
+      throw new ConfigurationException("To use this feature you must activate the TestConductorTranport by " +
+        "specifying `testTransport(on = true)` in your MultiNodeConfig.")
 
   /**
    * Switch the Netty pipeline of the remote support into pass through mode for
    * sending and/or receiving.
+   *
+   * ====Note====
+   * To use this feature you must activate the `TestConductorTranport`
+   * by specifying `testTransport(on = true)` in your MultiNodeConfig.
    *
    * @param node is the symbolic name of the node which is to be affected
    * @param target is the symbolic name of the other node to which connectivity shall be impeded
@@ -148,6 +168,7 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def passThrough(node: RoleName, target: RoleName, direction: Direction): Future[Done] = {
     import Settings.QueryTimeout
+    requireTestConductorTranport()
     controller ? Throttle(node, target, direction, -1f) mapTo classTag[Done]
   }
 
@@ -187,19 +208,11 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def shutdown(node: RoleName, exitValue: Int): Future[Done] = {
     import Settings.QueryTimeout
-    controller ? Terminate(node, exitValue) mapTo classTag[Done]
+    import system.dispatcher
+    // the recover is needed to handle ClientDisconnectedException exception,
+    // which is normal during shutdown
+    controller ? Terminate(node, exitValue) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
   }
-
-  /**
-   * Tell the SBT plugin to forcibly terminate the given remote node using Process.destroy.
-   *
-   * @param node is the symbolic name of the node which is to be affected
-   */
-  // TODO: uncomment (and implement in Controller) if really needed
-  //  def kill(node: RoleName): Future[Done] = {
-  //    import Settings.QueryTimeout
-  //    controller ? Terminate(node, -1) mapTo classTag[Done]
-  //  }
 
   /**
    * Obtain the list of remote host names currently registered.
@@ -300,7 +313,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
 
   whenUnhandled {
     case Event(ClientDisconnected, Some(s)) ⇒
-      s ! Status.Failure(new RuntimeException("client disconnected in state " + stateName + ": " + channel))
+      s ! Status.Failure(new ClientDisconnectedException("client disconnected in state " + stateName + ": " + channel))
       stop()
     case Event(ClientDisconnected, None) ⇒ stop()
   }
@@ -358,6 +371,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
  */
 private[akka] object Controller {
   case class ClientDisconnected(name: RoleName)
+  class ClientDisconnectedException(msg: String) extends AkkaException(msg)
   case object GetNodes
   case object GetSockAddr
   case class CreateServerFSM(channel: Channel)
@@ -377,7 +391,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   import BarrierCoordinator._
 
   val settings = TestConductor().Settings
-  val connection = RemoteConnection(Server, controllerPort,
+  val connection = RemoteConnection(Server, controllerPort, settings.ServerSocketWorkerPoolSize,
     new ConductorHandler(settings.QueryTimeout, self, Logging(context.system, "ConductorHandler")))
 
   /*
@@ -453,13 +467,9 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case Disconnect(node, target, abort) ⇒
           val t = nodes(target)
           nodes(node).fsm forward ToClient(DisconnectMsg(t.addr, abort))
-        case Terminate(node, exitValueOrKill) ⇒
-          if (exitValueOrKill < 0) {
-            // TODO: kill via SBT
-          } else {
-            barrier ! BarrierCoordinator.RemoveClient(node)
-            nodes(node).fsm forward ToClient(TerminateMsg(exitValueOrKill))
-          }
+        case Terminate(node, exitValue) ⇒
+          barrier ! BarrierCoordinator.RemoveClient(node)
+          nodes(node).fsm forward ToClient(TerminateMsg(exitValue))
         case Remove(node) ⇒
           barrier ! BarrierCoordinator.RemoveClient(node)
       }
@@ -601,7 +611,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
     }
   }
 
-  def getDeadline(timeout: Option[Duration]): Deadline = {
+  def getDeadline(timeout: Option[FiniteDuration]): Deadline = {
     Deadline.now + timeout.getOrElse(TestConductor().Settings.BarrierTimeout.duration)
   }
 

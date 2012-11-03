@@ -8,6 +8,7 @@ import akka.dispatch._
 import akka.routing._
 import akka.event._
 import akka.util.{ Switch, Helpers }
+import scala.util.{ Success, Failure }
 import scala.util.control.NonFatal
 import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.atomic.AtomicLong
@@ -295,19 +296,26 @@ trait ActorRefFactory {
 }
 
 /**
- * Internal Akka use only, used in implementation of system.actorOf.
- */
-private[akka] case class CreateChild(props: Props, name: String)
-
-/**
- * Internal Akka use only, used in implementation of system.actorOf.
- */
-private[akka] case class CreateRandomNameChild(props: Props)
-
-/**
  * Internal Akka use only, used in implementation of system.stop(child).
  */
 private[akka] case class StopChild(child: ActorRef)
+
+/**
+ * INTERNAL API
+ */
+private[akka] object SystemGuardian {
+  /**
+   * For the purpose of orderly shutdown it's possible
+   * to register interest in the termination of systemGuardian
+   * and receive a notification [[akka.actor.Guardian.TerminationHook]]
+   * before systemGuardian is stopped. The registered hook is supposed
+   * to reply with [[akka.actor.Guardian.TerminationHookDone]] and the
+   * systemGuardian will not stop until all registered hooks have replied.
+   */
+  case object RegisterTerminationHook
+  case object TerminationHook
+  case object TerminationHookDone
+}
 
 /**
  * Local ActorRef provider.
@@ -317,6 +325,7 @@ class LocalActorRefProvider(
   override val settings: ActorSystem.Settings,
   val eventStream: EventStream,
   override val scheduler: Scheduler,
+  val dynamicAccess: DynamicAccess,
   override val deployer: Deployer) extends ActorRefProvider {
 
   // this is the constructor needed for reflectively instantiating the provider
@@ -329,6 +338,7 @@ class LocalActorRefProvider(
       settings,
       eventStream,
       scheduler,
+      dynamicAccess,
       new Deployer(settings, dynamicAccess))
 
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
@@ -362,51 +372,33 @@ class LocalActorRefProvider(
 
     def provider: ActorRefProvider = LocalActorRefProvider.this
 
-    override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.toLeft(())) }
-
+    override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.map(Failure(_)).getOrElse(Success(()))) }
     override def isTerminated: Boolean = stopped.isOn
 
-    override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
-      case Failed(ex) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
-      case _                            ⇒ log.error(this + " received unexpected message [" + message + "]")
+    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
+      case Failed(ex, _) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
+      case NullMessage                     ⇒ // do nothing
+      case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
     })
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
-        case Supervise(_)       ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case Supervise(_, _)    ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case ChildTerminated(_) ⇒ stop()
         case _                  ⇒ log.error(this + " received unexpected system message [" + message + "]")
       }
     }
   }
 
-  /**
-   * Overridable supervision strategy to be used by the “/user” guardian.
-   */
-  protected def guardianSupervisionStrategy: SupervisorStrategy = {
-    import akka.actor.SupervisorStrategy._
-    OneForOneStrategy() {
-      case _: ActorKilledException         ⇒ Stop
-      case _: ActorInitializationException ⇒ Stop
-      case _: Exception                    ⇒ Restart
-    }
-  }
-
   /*
-   * Guardians can be asked by ActorSystem to create children, i.e. top-level
-   * actors. Therefore these need to answer to these requests, forwarding any
-   * exceptions which might have occurred.
+   * Root and user guardian
    */
-  private class Guardian extends Actor {
-
-    override val supervisorStrategy: SupervisorStrategy = guardianSupervisionStrategy
+  private class Guardian(override val supervisorStrategy: SupervisorStrategy) extends Actor {
 
     def receive = {
-      case Terminated(_)                ⇒ context.stop(self)
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ Status.Failure(e) })
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ Status.Failure(e) })
-      case StopChild(child)             ⇒ context.stop(child)
-      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case Terminated(_)    ⇒ context.stop(self)
+      case StopChild(child) ⇒ context.stop(child)
+      case m                ⇒ deadLetters ! DeadLetter(m, sender, self)
     }
 
     // guardian MUST NOT lose its children during restart
@@ -414,31 +406,46 @@ class LocalActorRefProvider(
   }
 
   /**
-   * Overridable supervision strategy to be used by the “/system” guardian.
+   * System guardian
    */
-  protected def systemGuardianSupervisionStrategy: SupervisorStrategy = {
-    import akka.actor.SupervisorStrategy._
-    OneForOneStrategy() {
-      case _: ActorKilledException | _: ActorInitializationException ⇒ Stop
-      case _: Exception ⇒ Restart
-    }
-  }
+  private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy) extends Actor {
+    import SystemGuardian._
 
-  /*
-   * Guardians can be asked by ActorSystem to create children, i.e. top-level
-   * actors. Therefore these need to answer to these requests, forwarding any
-   * exceptions which might have occurred.
-   */
-  private class SystemGuardian extends Actor {
-
-    override val supervisorStrategy: SupervisorStrategy = systemGuardianSupervisionStrategy
+    var terminationHooks = Set.empty[ActorRef]
 
     def receive = {
-      case Terminated(_)                ⇒ eventStream.stopDefaultLoggers(); context.stop(self)
-      case CreateChild(child, name)     ⇒ sender ! (try context.actorOf(child, name) catch { case NonFatal(e) ⇒ Status.Failure(e) })
-      case CreateRandomNameChild(child) ⇒ sender ! (try context.actorOf(child) catch { case NonFatal(e) ⇒ Status.Failure(e) })
-      case StopChild(child)             ⇒ context.stop(child); sender ! "ok"
-      case m                            ⇒ deadLetters ! DeadLetter(m, sender, self)
+      case Terminated(`guardian`) ⇒
+        // time for the systemGuardian to stop, but first notify all the
+        // termination hooks, they will reply with TerminationHookDone
+        // and when all are done the systemGuardian is stopped
+        context.become(terminating)
+        terminationHooks foreach { _ ! TerminationHook }
+        stopWhenAllTerminationHooksDone()
+      case Terminated(a) ⇒
+        // a registered, and watched termination hook terminated before
+        // termination process of guardian has started
+        terminationHooks -= a
+      case StopChild(child) ⇒ context.stop(child)
+      case RegisterTerminationHook if sender != context.system.deadLetters ⇒
+        terminationHooks += sender
+        context watch sender
+      case m ⇒ deadLetters ! DeadLetter(m, sender, self)
+    }
+
+    def terminating: Receive = {
+      case Terminated(a)       ⇒ stopWhenAllTerminationHooksDone(a)
+      case TerminationHookDone ⇒ stopWhenAllTerminationHooksDone(sender)
+      case m                   ⇒ deadLetters ! DeadLetter(m, sender, self)
+    }
+
+    def stopWhenAllTerminationHooksDone(remove: ActorRef): Unit = {
+      terminationHooks -= remove
+      stopWhenAllTerminationHooksDone()
+    }
+
+    def stopWhenAllTerminationHooksDone(): Unit = if (terminationHooks.isEmpty) {
+      eventStream.stopDefaultLoggers()
+      context.stop(self)
     }
 
     // guardian MUST NOT lose its children during restart
@@ -472,21 +479,55 @@ class LocalActorRefProvider(
    */
   def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
-  private val guardianProps = Props(new Guardian)
+  private def guardianSupervisorStrategyConfigurator =
+    dynamicAccess.createInstanceFor[SupervisorStrategyConfigurator](settings.SupervisorStrategyClass, Seq()).get
 
-  lazy val rootGuardian: InternalActorRef =
-    new LocalActorRef(system, guardianProps, theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
+  /**
+   * Overridable supervision strategy to be used by the “/user” guardian.
+   */
+  protected def rootGuardianStrategy: SupervisorStrategy = OneForOneStrategy() {
+    case ex ⇒
+      log.error(ex, "guardian failed, shutting down system")
+      SupervisorStrategy.Stop
+  }
+
+  /**
+   * Overridable supervision strategy to be used by the “/user” guardian.
+   */
+  protected def guardianStrategy: SupervisorStrategy = guardianSupervisorStrategyConfigurator.create()
+
+  /**
+   * Overridable supervision strategy to be used by the “/user” guardian.
+   */
+  protected def systemGuardianStrategy: SupervisorStrategy = SupervisorStrategy.defaultStrategy
+
+  lazy val rootGuardian: LocalActorRef =
+    new LocalActorRef(system, Props(new Guardian(rootGuardianStrategy)), theOneWhoWalksTheBubblesOfSpaceTime, rootPath) {
       override def getParent: InternalActorRef = this
       override def getSingleChild(name: String): InternalActorRef = name match {
-        case "temp" ⇒ tempContainer
-        case other  ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
+        case "temp"        ⇒ tempContainer
+        case "deadLetters" ⇒ deadLetters
+        case other         ⇒ extraNames.get(other).getOrElse(super.getSingleChild(other))
       }
     }
 
-  lazy val guardian: LocalActorRef = new LocalActorRef(system, guardianProps, rootGuardian, rootPath / "user")
+  lazy val guardian: LocalActorRef = {
+    val cell = rootGuardian.underlying
+    cell.reserveChild("user")
+    val ref = new LocalActorRef(system, Props(new Guardian(guardianStrategy)), rootGuardian, rootPath / "user")
+    cell.initChild(ref)
+    ref.start()
+    ref
+  }
 
-  lazy val systemGuardian: LocalActorRef =
-    new LocalActorRef(system, guardianProps.withCreator(new SystemGuardian), rootGuardian, rootPath / "system")
+  lazy val systemGuardian: LocalActorRef = {
+    val cell = rootGuardian.underlying
+    cell.reserveChild("system")
+    val ref = new LocalActorRef(system, Props(new SystemGuardian(systemGuardianStrategy)), rootGuardian, rootPath / "system")
+    cell.initChild(ref)
+    ref.start()
+    ref
+  }
 
   lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
@@ -559,4 +600,3 @@ class LocalActorRefProvider(
 
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 }
-

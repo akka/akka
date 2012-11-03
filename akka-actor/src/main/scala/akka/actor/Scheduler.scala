@@ -4,14 +4,16 @@
 
 package akka.actor
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import akka.util.internal.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout, Timer }
 import akka.event.LoggingAdapter
 import akka.dispatch.MessageDispatcher
 import java.io.Closeable
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{ AtomicReference, AtomicLong }
 import scala.annotation.tailrec
 import akka.util.internal._
+import concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 
 //#scheduler
 /**
@@ -28,37 +30,40 @@ trait Scheduler {
    * Schedules a message to be sent repeatedly with an initial delay and
    * frequency. E.g. if you would like a message to be sent immediately and
    * thereafter every 500ms you would set delay=Duration.Zero and
-   * frequency=Duration(500, TimeUnit.MILLISECONDS)
+   * interval=Duration(500, TimeUnit.MILLISECONDS)
    *
    * Java & Scala API
    */
   def schedule(
-    initialDelay: Duration,
-    frequency: Duration,
+    initialDelay: FiniteDuration,
+    interval: FiniteDuration,
     receiver: ActorRef,
-    message: Any): Cancellable
+    message: Any)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a function to be run repeatedly with an initial delay and a
    * frequency. E.g. if you would like the function to be run after 2 seconds
    * and thereafter every 100ms you would set delay = Duration(2, TimeUnit.SECONDS)
-   * and frequency = Duration(100, TimeUnit.MILLISECONDS)
+   * and interval = Duration(100, TimeUnit.MILLISECONDS)
    *
    * Scala API
    */
   def schedule(
-    initialDelay: Duration, frequency: Duration)(f: ⇒ Unit): Cancellable
+    initialDelay: FiniteDuration,
+    interval: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a function to be run repeatedly with an initial delay and
    * a frequency. E.g. if you would like the function to be run after 2
    * seconds and thereafter every 100ms you would set delay = Duration(2,
-   * TimeUnit.SECONDS) and frequency = Duration(100, TimeUnit.MILLISECONDS)
+   * TimeUnit.SECONDS) and interval = Duration(100, TimeUnit.MILLISECONDS)
    *
    * Java API
    */
   def schedule(
-    initialDelay: Duration, frequency: Duration, runnable: Runnable): Cancellable
+    initialDelay: FiniteDuration,
+    interval: FiniteDuration,
+    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a Runnable to be run once with a delay, i.e. a time period that
@@ -66,7 +71,9 @@ trait Scheduler {
    *
    * Java & Scala API
    */
-  def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable
+  def scheduleOnce(
+    delay: FiniteDuration,
+    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a message to be sent once with a delay, i.e. a time period that has
@@ -74,7 +81,10 @@ trait Scheduler {
    *
    * Java & Scala API
    */
-  def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable
+  def scheduleOnce(
+    delay: FiniteDuration,
+    receiver: ActorRef,
+    message: Any)(implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a function to be run once with a delay, i.e. a time period that has
@@ -82,7 +92,8 @@ trait Scheduler {
    *
    * Scala API
    */
-  def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable
+  def scheduleOnce(
+    delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
 }
 //#scheduler
 
@@ -118,79 +129,68 @@ trait Cancellable {
  * if it does not enqueue a task. Once a task is queued, it MUST be executed or
  * returned from stop().
  */
-class DefaultScheduler(hashedWheelTimer: HashedWheelTimer,
-                       log: LoggingAdapter,
-                       dispatcher: ⇒ MessageDispatcher) extends Scheduler with Closeable {
-
-  override def schedule(initialDelay: Duration, delay: Duration, receiver: ActorRef, message: Any): Cancellable = {
+class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) extends Scheduler with Closeable {
+  override def schedule(initialDelay: FiniteDuration,
+                        delay: FiniteDuration,
+                        receiver: ActorRef,
+                        message: Any)(implicit executor: ExecutionContext): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
-        new TimerTask with ContinuousScheduling {
+        new AtomicLong(System.nanoTime + initialDelay.toNanos) with TimerTask with ContinuousScheduling {
           def run(timeout: HWTimeout) {
-            receiver ! message
-            // Check if the receiver is still alive and kicking before reschedule the task
-            if (receiver.isTerminated) log.debug("Could not reschedule message to be sent because receiving actor has been terminated.")
-            else scheduleNext(timeout, delay, continuousCancellable)
+            executor execute new Runnable {
+              override def run = {
+                receiver ! message
+                // Check if the receiver is still alive and kicking before reschedule the task
+                if (receiver.isTerminated) log.debug("Could not reschedule message to be sent because receiving actor {} has been terminated.", receiver)
+                else {
+                  val driftNanos = System.nanoTime - getAndAdd(delay.toNanos)
+                  scheduleNext(timeout, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1)), continuousCancellable)
+                }
+              }
+            }
           }
         },
         initialDelay))
   }
 
-  override def schedule(initialDelay: Duration, delay: Duration)(f: ⇒ Unit): Cancellable = {
+  override def schedule(initialDelay: FiniteDuration,
+                        delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
+    schedule(initialDelay, delay, new Runnable { override def run = f })
+
+  override def schedule(initialDelay: FiniteDuration,
+                        delay: FiniteDuration,
+                        runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
-        new TimerTask with ContinuousScheduling with Runnable {
-          def run = f
-          def run(timeout: HWTimeout) {
-            dispatcher.execute(this)
-            scheduleNext(timeout, delay, continuousCancellable)
-          }
+        new AtomicLong(System.nanoTime + initialDelay.toNanos) with TimerTask with ContinuousScheduling {
+          override def run(timeout: HWTimeout): Unit = executor.execute(new Runnable {
+            override def run = {
+              runnable.run()
+              val driftNanos = System.nanoTime - getAndAdd(delay.toNanos)
+              scheduleNext(timeout, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1)), continuousCancellable)
+            }
+          })
         },
         initialDelay))
   }
 
-  override def schedule(initialDelay: Duration, delay: Duration, runnable: Runnable): Cancellable = {
-    val continuousCancellable = new ContinuousCancellable
-    continuousCancellable.init(
-      hashedWheelTimer.newTimeout(
-        new TimerTask with ContinuousScheduling {
-          def run(timeout: HWTimeout) {
-            dispatcher.execute(runnable)
-            scheduleNext(timeout, delay, continuousCancellable)
-          }
-        },
-        initialDelay))
-  }
-
-  override def scheduleOnce(delay: Duration, runnable: Runnable): Cancellable =
+  override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
     new DefaultCancellable(
       hashedWheelTimer.newTimeout(
-        new TimerTask() {
-          def run(timeout: HWTimeout): Unit = dispatcher.execute(runnable)
-        },
+        new TimerTask() { def run(timeout: HWTimeout): Unit = executor.execute(runnable) },
         delay))
 
-  override def scheduleOnce(delay: Duration, receiver: ActorRef, message: Any): Cancellable =
-    new DefaultCancellable(
-      hashedWheelTimer.newTimeout(
-        new TimerTask {
-          def run(timeout: HWTimeout): Unit = receiver ! message
-        },
-        delay))
+  override def scheduleOnce(delay: FiniteDuration, receiver: ActorRef, message: Any)(implicit executor: ExecutionContext): Cancellable =
+    scheduleOnce(delay, new Runnable { override def run = receiver ! message })
 
-  override def scheduleOnce(delay: Duration)(f: ⇒ Unit): Cancellable =
-    new DefaultCancellable(
-      hashedWheelTimer.newTimeout(
-        new TimerTask with Runnable {
-          def run = f
-          def run(timeout: HWTimeout): Unit = dispatcher.execute(this)
-        },
-        delay))
+  override def scheduleOnce(delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
+    scheduleOnce(delay, new Runnable { override def run = f })
 
   private trait ContinuousScheduling { this: TimerTask ⇒
-    def scheduleNext(timeout: HWTimeout, delay: Duration, delegator: ContinuousCancellable) {
+    def scheduleNext(timeout: HWTimeout, delay: FiniteDuration, delegator: ContinuousCancellable) {
       try delegator.swap(timeout.getTimer.newTimeout(this, delay)) catch { case _: IllegalStateException ⇒ } // stop recurring if timer is stopped
     }
   }

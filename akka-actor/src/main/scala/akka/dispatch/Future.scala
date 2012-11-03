@@ -10,6 +10,7 @@ import scala.concurrent.{ Future, Promise, ExecutionContext, ExecutionContextExe
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.{ LinkedList ⇒ JLinkedList }
 import java.util.concurrent.{ Executor, ExecutorService, ExecutionException, Callable, TimeoutException }
+import scala.util.{ Try, Success, Failure }
 
 /**
  * ExecutionContexts is the Java API for ExecutionContexts
@@ -67,7 +68,7 @@ object ExecutionContexts {
  * Futures is the Java API for Futures and Promises
  */
 object Futures {
-
+  import scala.collection.JavaConverters.iterableAsScalaIterableConverter
   /**
    * Java API, equivalent to Future.apply
    */
@@ -94,7 +95,7 @@ object Futures {
    */
   def find[T <: AnyRef](futures: JIterable[Future[T]], predicate: JFunc[T, java.lang.Boolean], executor: ExecutionContext): Future[JOption[T]] = {
     implicit val ec = executor
-    Future.find[T]((scala.collection.JavaConversions.iterableAsScalaIterable(futures)))(predicate.apply(_))(executor).map(JOption.fromScalaOption(_))
+    Future.find[T](futures.asScala)(predicate.apply(_))(executor).map(JOption.fromScalaOption(_))
   }
 
   /**
@@ -102,7 +103,7 @@ object Futures {
    * Returns a Future to the result of the first future in the list that is completed
    */
   def firstCompletedOf[T <: AnyRef](futures: JIterable[Future[T]], executor: ExecutionContext): Future[T] =
-    Future.firstCompletedOf(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(executor)
+    Future.firstCompletedOf(futures.asScala)(executor)
 
   /**
    * Java API
@@ -112,14 +113,14 @@ object Futures {
    * or the result of the fold.
    */
   def fold[T <: AnyRef, R <: AnyRef](zero: R, futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, R], executor: ExecutionContext): Future[R] =
-    Future.fold(scala.collection.JavaConversions.iterableAsScalaIterable(futures))(zero)(fun.apply)(executor)
+    Future.fold(futures.asScala)(zero)(fun.apply)(executor)
 
   /**
    * Java API.
    * Reduces the results of the supplied futures and binary function.
    */
   def reduce[T <: AnyRef, R >: T](futures: JIterable[Future[T]], fun: akka.japi.Function2[R, T, R], executor: ExecutionContext): Future[R] =
-    Future.reduce[T, R](scala.collection.JavaConversions.iterableAsScalaIterable(futures))(fun.apply)(executor)
+    Future.reduce[T, R](futures.asScala)(fun.apply)(executor)
 
   /**
    * Java API.
@@ -128,11 +129,7 @@ object Futures {
    */
   def sequence[A](in: JIterable[Future[A]], executor: ExecutionContext): Future[JIterable[A]] = {
     implicit val d = executor
-    scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[A]()))((fr, fa) ⇒
-      for (r ← fr; a ← fa) yield {
-        r add a
-        r
-      })
+    in.asScala.foldLeft(Future(new JLinkedList[A]())) { (fr, fa) ⇒ for (r ← fr; a ← fa) yield { r add a; r } }
   }
 
   /**
@@ -143,7 +140,7 @@ object Futures {
    */
   def traverse[A, B](in: JIterable[A], fn: JFunc[A, Future[B]], executor: ExecutionContext): Future[JIterable[B]] = {
     implicit val d = executor
-    scala.collection.JavaConversions.iterableAsScalaIterable(in).foldLeft(Future(new JLinkedList[B]())) { (fr, a) ⇒
+    in.asScala.foldLeft(Future(new JLinkedList[B]())) { (fr, a) ⇒
       val fb = fn(a)
       for (r ← fr; b ← fb) yield { r add b; r }
     }
@@ -229,10 +226,10 @@ abstract class OnFailure extends japi.CallbackBridge[Throwable] {
  *
  * Java API
  */
-abstract class OnComplete[-T] extends japi.CallbackBridge[Either[Throwable, T]] {
-  protected final override def internal(value: Either[Throwable, T]): Unit = value match {
-    case Left(t)  ⇒ onComplete(t, null.asInstanceOf[T])
-    case Right(r) ⇒ onComplete(null, r)
+abstract class OnComplete[-T] extends japi.CallbackBridge[Try[T]] {
+  protected final override def internal(value: Try[T]): Unit = value match {
+    case Failure(t) ⇒ onComplete(t, null.asInstanceOf[T])
+    case Success(r) ⇒ onComplete(null, r)
   }
 
   /**

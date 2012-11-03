@@ -6,11 +6,12 @@ package akka.pattern
 import language.postfixOps
 
 import akka.testkit.AkkaSpec
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import akka.testkit.DefaultTimeout
-import akka.actor.{ Props, ActorRef }
 import akka.util.Timeout
+import scala.util.Failure
+import akka.actor.{ Actor, Props, ActorRef }
 
 class AskSpec extends AkkaSpec {
 
@@ -22,8 +23,8 @@ class AskSpec extends AkkaSpec {
       val f = dead.ask(42)(1 second)
       f.isCompleted must be(true)
       f.value.get match {
-        case Left(_: AskTimeoutException) ⇒
-        case v                            ⇒ fail(v + " was not Left(AskTimeoutException)")
+        case Failure(_: AskTimeoutException) ⇒
+        case v                               ⇒ fail(v + " was not Left(AskTimeoutException)")
       }
     }
 
@@ -33,8 +34,8 @@ class AskSpec extends AkkaSpec {
       val f = empty ? 3.14
       f.isCompleted must be(true)
       f.value.get match {
-        case Left(_: AskTimeoutException) ⇒
-        case v                            ⇒ fail(v + " was not Left(AskTimeoutException)")
+        case Failure(_: AskTimeoutException) ⇒
+        case v                               ⇒ fail(v + " was not Left(AskTimeoutException)")
       }
     }
 
@@ -49,7 +50,7 @@ class AskSpec extends AkkaSpec {
 
     "return broken promises on 0 timeout" in {
       implicit val timeout = Timeout(0 seconds)
-      val echo = system.actorOf(Props(ctx ⇒ { case x ⇒ ctx.sender ! x }))
+      val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender ! x } }))
       val f = echo ? "foo"
       val expectedMsg = "Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format echo
       intercept[IllegalArgumentException] {
@@ -59,19 +60,9 @@ class AskSpec extends AkkaSpec {
 
     "return broken promises on < 0 timeout" in {
       implicit val timeout = Timeout(-1000 seconds)
-      val echo = system.actorOf(Props(ctx ⇒ { case x ⇒ ctx.sender ! x }))
+      val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender ! x } }))
       val f = echo ? "foo"
       val expectedMsg = "Timeout length for an `ask` must be greater or equal to 1.  Question not sent to [%s]" format echo
-      intercept[IllegalArgumentException] {
-        Await.result(f, remaining)
-      }.getMessage must be === expectedMsg
-    }
-
-    "return broken promises on infinite timeout" in {
-      implicit val timeout = Timeout.never
-      val echo = system.actorOf(Props(ctx ⇒ { case x ⇒ ctx.sender ! x }))
-      val f = echo ? "foo"
-      val expectedMsg = "Timeouts to `ask` must be finite. Question not sent to [%s]" format echo
       intercept[IllegalArgumentException] {
         Await.result(f, remaining)
       }.getMessage must be === expectedMsg

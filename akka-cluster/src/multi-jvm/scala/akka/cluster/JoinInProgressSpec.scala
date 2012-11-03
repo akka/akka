@@ -8,8 +8,7 @@ import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Deadline
+import scala.concurrent.duration._
 
 object JoinInProgressMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -25,12 +24,12 @@ object JoinInProgressMultiJvmSpec extends MultiNodeConfig {
               threshold = 4
               acceptable-heartbeat-pause = 1 second
             }
-          }""") // increase the leader action task interval
+          }""")
         .withFallback(MultiNodeClusterSpec.clusterConfig)))
 }
 
-class JoinInProgressMultiJvmNode1 extends JoinInProgressSpec with AccrualFailureDetectorStrategy
-class JoinInProgressMultiJvmNode2 extends JoinInProgressSpec with AccrualFailureDetectorStrategy
+class JoinInProgressMultiJvmNode1 extends JoinInProgressSpec
+class JoinInProgressMultiJvmNode2 extends JoinInProgressSpec
 
 abstract class JoinInProgressSpec
   extends MultiNodeSpec(JoinInProgressMultiJvmSpec)

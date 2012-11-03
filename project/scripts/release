@@ -2,18 +2,15 @@
 #
 # Release script for Akka.
 #
-# To run this script you need a user account on repo.akka.io and contributor access
-# to github.com/akka/akka.
+# To run this script you need access to repo.akka.io and github.com/akka/akka.
 #
-# If your username on repo.akka.io is different from your local username then you can
-# configure ssh to always associate a particular username with repo.akka.io by adding
-# the following to .ssh/config:
+# To always use the akkarepo user with repo.akka.io add the following to .ssh/config:
 #   Host repo.akka.io
-#   User <username on repo.akka.io>
+#   User akkarepo
 
 # defaults
-declare -r default_server="repo.akka.io"
-declare -r default_path="/akka/www"
+declare -r default_server="akkarepo@repo.akka.io"
+declare -r default_path="www"
 
 # settings
 declare -r release_dir="target/release"
@@ -203,12 +200,6 @@ try git checkout -b ${release_branch}
 # find and replace the version
 try ${script_dir}/find-replace ${current_version} ${version}
 
-#find and replace github links
-try ${script_dir}/find-replace http://github.com/akka/akka/tree/master http://github.com/akka/akka/tree/v${version}
-try ${script_dir}/find-replace https://github.com/akka/akka/tree/master http://github.com/akka/akka/tree/v${version}
-try ${script_dir}/find-replace http://github.com/akka/akka/blob/master http://github.com/akka/akka/tree/v${version}
-try ${script_dir}/find-replace https://github.com/akka/akka/blob/master http://github.com/akka/akka/tree/v${version}
-
 # start clean
 try sbt clean
 
@@ -221,8 +212,12 @@ fi
 
 # build the release
 echolog "Building the release..."
-try sbt build-release
-#try cp akka-spring/src/main/resources/akka/spring/akka-*.xsd ${release_dir}
+if [ ! $dry_run ]; then
+  RELEASE_OPT="-Dpublish.maven.central=true"
+else
+  RELEASE_OPT=""
+fi
+try sbt $RELEASE_OPT build-release
 echolog "Creating gzipped tar download..."
 try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka-${version}.tgz akka-${version}
 echolog "Successfully created local release"

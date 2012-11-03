@@ -7,9 +7,8 @@ import language.implicitConversions
 
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.JavaConversions._
 import java.lang.{ Iterable ⇒ JIterable }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 /**
  * INTERNAL API
  */
@@ -24,8 +23,10 @@ private[akka] case object ChildNameReserved extends ChildStats
  * ChildRestartStats is the statistics kept by every parent Actor for every child Actor
  * and is used for SupervisorStrategies to know how to deal with problems that occur for the children.
  */
-case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L)
+case class ChildRestartStats(child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L)
   extends ChildStats {
+
+  var uid: Int = 0
 
   //FIXME How about making ChildRestartStats immutable and then move these methods into the actual supervisor strategies?
   def requestRestartPermission(retriesWindow: (Option[Int], Option[Int])): Boolean =
@@ -59,6 +60,23 @@ case class ChildRestartStats(val child: ActorRef, var maxNrOfRetriesCount: Int =
       true
     }
   }
+}
+
+/**
+ * Implement this interface in order to configure the supervisorStrategy for
+ * the top-level guardian actor (`/user`). An instance of this class must be
+ * instantiable using a no-arg constructor.
+ */
+trait SupervisorStrategyConfigurator {
+  def create(): SupervisorStrategy
+}
+
+final class DefaultSupervisorStrategy extends SupervisorStrategyConfigurator {
+  override def create(): SupervisorStrategy = SupervisorStrategy.defaultStrategy
+}
+
+final class StoppingSupervisorStrategy extends SupervisorStrategyConfigurator {
+  override def create(): SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 }
 
 trait SupervisorStrategyLowPriorityImplicits { this: SupervisorStrategy.type ⇒
@@ -133,9 +151,19 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
       case _: ActorInitializationException ⇒ Stop
       case _: ActorKilledException         ⇒ Stop
       case _: Exception                    ⇒ Restart
-      case _                               ⇒ Escalate
     }
     OneForOneStrategy()(defaultDecider)
+  }
+
+  /**
+   * This strategy resembles Erlang in that failing children are always
+   * terminated (one-for-one).
+   */
+  final val stoppingStrategy: SupervisorStrategy = {
+    def stoppingDecider: Decider = {
+      case _: Exception ⇒ Stop
+    }
+    OneForOneStrategy()(stoppingDecider)
   }
 
   /**
@@ -166,7 +194,10 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
-  def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = makeDecider(trapExit.toSeq)
+  def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = {
+    import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+    makeDecider(trapExit.asScala.toSeq)
+  }
 
   /**
    * Decider builder for Iterables of cause-directive pairs, e.g. a map obtained
@@ -205,6 +236,8 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 
   private[akka] def maxNrOfRetriesOption(maxNrOfRetries: Int): Option[Int] =
     if (maxNrOfRetries < 0) None else Some(maxNrOfRetries)
+
+  private[akka] val escalateDefault = (_: Any) ⇒ Escalate
 }
 
 /**
@@ -251,9 +284,9 @@ abstract class SupervisorStrategy {
    * @param children is a lazy collection (a view)
    */
   def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
-    val directive = if (decider.isDefinedAt(cause)) decider(cause) else Escalate //FIXME applyOrElse in Scala 2.10
+    val directive = decider.applyOrElse(cause, escalateDefault)
     directive match {
-      case Resume   ⇒ resumeChild(child); true
+      case Resume   ⇒ resumeChild(child, cause); true
       case Restart  ⇒ processFailure(context, true, child, cause, stats, children); true
       case Stop     ⇒ processFailure(context, false, child, cause, stats, children); true
       case Escalate ⇒ false
@@ -265,7 +298,7 @@ abstract class SupervisorStrategy {
    * is not the currently failing child</b>. Suspend/resume needs to be done in
    * matching pairs, otherwise actors will wake up too soon or never at all.
    */
-  final def resumeChild(child: ActorRef): Unit = child.asInstanceOf[InternalActorRef].resume(inResponseToFailure = true)
+  final def resumeChild(child: ActorRef, cause: Throwable): Unit = child.asInstanceOf[InternalActorRef].resume(causedByFailure = cause)
 
   /**
    * Restart the given child, possibly suspending it first.
@@ -273,7 +306,7 @@ abstract class SupervisorStrategy {
    * <b>IMPORTANT:</b>
    *
    * If the child is the currently failing one, it will already have been
-   * suspended, hence `suspendFirst` is false. If the child is not the
+   * suspended, hence `suspendFirst` must be false. If the child is not the
    * currently failing one, then it did not request this treatment and is
    * therefore not prepared to be resumed without prior suspend.
    */

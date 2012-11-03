@@ -40,13 +40,10 @@ object Member {
   }
 
   /**
-   * `Member` ordering type class, sorts members by host and port with the exception that
-   * it puts all members that are in MemberStatus.EXITING last.
+   * `Member` ordering type class, sorts members by host and port.
    */
-  implicit val ordering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) ⇒
-    if (a.status == Exiting && b.status != Exiting) false
-    else if (a.status != Exiting && b.status == Exiting) true
-    else addressOrdering.compare(a.address, b.address) < 0
+  implicit val ordering: Ordering[Member] = new Ordering[Member] {
+    def compare(a: Member, b: Member): Int = addressOrdering.compare(a.address, b.address)
   }
 
   def apply(address: Address, status: MemberStatus): Member = new Member(address, status)
@@ -83,19 +80,6 @@ object Member {
     case (Up, Up)           ⇒ m1
   }
 
-  // FIXME Workaround for https://issues.scala-lang.org/browse/SI-5986
-  // SortedSet + and ++ operators replaces existing element
-  // Use these :+ and :++ operators for the Gossip members
-  implicit def sortedSetWorkaround(sortedSet: SortedSet[Member]): SortedSetWorkaround = new SortedSetWorkaround(sortedSet)
-  class SortedSetWorkaround(sortedSet: SortedSet[Member]) {
-    implicit def :+(elem: Member): SortedSet[Member] = {
-      if (sortedSet.contains(elem)) sortedSet
-      else sortedSet + elem
-    }
-
-    implicit def :++(elems: GenTraversableOnce[Member]): SortedSet[Member] =
-      sortedSet ++ (elems.toSet diff sortedSet)
-  }
 }
 
 /**
@@ -103,7 +87,7 @@ object Member {
  *
  * Can be one of: Joining, Up, Leaving, Exiting and Down.
  */
-sealed trait MemberStatus extends ClusterMessage {
+abstract class MemberStatus extends ClusterMessage {
 
   /**
    * Using the same notion for 'unavailable' as 'non-convergence': DOWN
@@ -118,4 +102,34 @@ object MemberStatus {
   case object Exiting extends MemberStatus
   case object Down extends MemberStatus
   case object Removed extends MemberStatus
+
+  /**
+   * JAVA API
+   */
+  def joining: MemberStatus = Joining
+
+  /**
+   * JAVA API
+   */
+  def up: MemberStatus = Up
+
+  /**
+   * JAVA API
+   */
+  def leaving: MemberStatus = Leaving
+
+  /**
+   * JAVA API
+   */
+  def exiting: MemberStatus = Exiting
+
+  /**
+   * JAVA API
+   */
+  def down: MemberStatus = Down
+
+  /**
+   * JAVA API
+   */
+  def removed: MemberStatus = Removed
 }

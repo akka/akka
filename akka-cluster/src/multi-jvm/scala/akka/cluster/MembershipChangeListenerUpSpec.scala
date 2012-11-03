@@ -8,24 +8,27 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
+import akka.actor.Props
+import akka.actor.Actor
 
 object MembershipChangeListenerUpMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class MembershipChangeListenerUpMultiJvmNode1 extends MembershipChangeListenerUpSpec with FailureDetectorPuppetStrategy
-class MembershipChangeListenerUpMultiJvmNode2 extends MembershipChangeListenerUpSpec with FailureDetectorPuppetStrategy
-class MembershipChangeListenerUpMultiJvmNode3 extends MembershipChangeListenerUpSpec with FailureDetectorPuppetStrategy
+class MembershipChangeListenerUpMultiJvmNode1 extends MembershipChangeListenerUpSpec
+class MembershipChangeListenerUpMultiJvmNode2 extends MembershipChangeListenerUpSpec
+class MembershipChangeListenerUpMultiJvmNode3 extends MembershipChangeListenerUpSpec
 
 abstract class MembershipChangeListenerUpSpec
   extends MultiNodeSpec(MembershipChangeListenerUpMultiJvmSpec)
   with MultiNodeClusterSpec {
 
   import MembershipChangeListenerUpMultiJvmSpec._
+  import ClusterEvent._
 
   "A set of connected cluster systems" must {
 
@@ -36,12 +39,17 @@ abstract class MembershipChangeListenerUpSpec
       runOn(first, second) {
         val latch = TestLatch()
         val expectedAddresses = Set(first, second) map address
-        cluster.registerListener(new MembershipChangeListener {
-          def notify(members: SortedSet[Member]) {
-            if (members.map(_.address) == expectedAddresses && members.forall(_.status == MemberStatus.Up))
-              latch.countDown()
+        cluster.subscribe(system.actorOf(Props(new Actor {
+          var members = Set.empty[Member]
+          def receive = {
+            case state: CurrentClusterState ⇒ members = state.members
+            case MemberUp(m) ⇒
+              members = members - m + m
+              if (members.map(_.address) == expectedAddresses)
+                latch.countDown()
+            case _ ⇒ // ignore
           }
-        })
+        })), classOf[MemberEvent])
         enterBarrier("listener-1-registered")
         cluster.join(first)
         latch.await
@@ -58,12 +66,17 @@ abstract class MembershipChangeListenerUpSpec
 
       val latch = TestLatch()
       val expectedAddresses = Set(first, second, third) map address
-      cluster.registerListener(new MembershipChangeListener {
-        def notify(members: SortedSet[Member]) {
-          if (members.map(_.address) == expectedAddresses && members.forall(_.status == MemberStatus.Up))
-            latch.countDown()
+      cluster.subscribe(system.actorOf(Props(new Actor {
+        var members = Set.empty[Member]
+        def receive = {
+          case state: CurrentClusterState ⇒ members = state.members
+          case MemberUp(m) ⇒
+            members = members - m + m
+            if (members.map(_.address) == expectedAddresses)
+              latch.countDown()
+          case _ ⇒ // ignore
         }
-      })
+      })), classOf[MemberEvent])
       enterBarrier("listener-2-registered")
 
       runOn(third) {

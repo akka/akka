@@ -7,7 +7,7 @@ import language.postfixOps
 
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.{ TestProbe, DefaultTimeout, AkkaSpec }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.{ Cancellable, Actor, Props, ActorRef }
 import akka.util.Timeout
 
@@ -18,8 +18,8 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
   def checkZeroMQInstallation =
     try {
       zmq.version match {
-        case ZeroMQVersion(2, 1, _) ⇒ Unit
-        case version                ⇒ invalidZeroMQVersion(version)
+        case ZeroMQVersion(x, y, _) if x >= 3 || (x >= 2 && y >= 1) ⇒ Unit
+        case version ⇒ invalidZeroMQVersion(version)
       }
     } catch {
       case e: LinkageError ⇒ zeroMQNotInstalled
@@ -47,6 +47,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
       val context = Context()
       val publisher = zmq.newSocket(SocketType.Pub, context, Bind(endpoint))
       val subscriber = zmq.newSocket(SocketType.Sub, context, Listener(subscriberProbe.ref), Connect(endpoint), SubscribeAll)
+      import system.dispatcher
       val msgGenerator = system.scheduler.schedule(100 millis, 10 millis, new Runnable {
         var number = 0
         def run() {
@@ -130,6 +131,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
     var genMessages: Cancellable = null
 
     override def preStart() = {
+      import system.dispatcher
       genMessages = system.scheduler.schedule(100 millis, 10 millis, self, "genMessage")
     }
 

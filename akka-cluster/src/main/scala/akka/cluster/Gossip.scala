@@ -8,12 +8,17 @@ import akka.actor.Address
 import scala.collection.immutable.SortedSet
 import MemberStatus._
 
-object Gossip {
+/**
+ * Internal API
+ */
+private[cluster] object Gossip {
   val emptyMembers: SortedSet[Member] = SortedSet.empty
 }
 
 /**
- * Represents the state of the cluster; cluster ring membership, ring convergence, meta data -
+ * INTERNAL API
+ *
+ * Represents the state of the cluster; cluster ring membership, ring convergence -
  * all versioned by a vector clock.
  *
  * When a node is joining the `Member`, with status `Joining`, is added to `members`.
@@ -43,10 +48,9 @@ object Gossip {
  * `Removed` by removing it from the `members` set and sending a `Removed` command to the
  * removed node telling it to shut itself down.
  */
-case class Gossip(
+private[cluster] case class Gossip(
   overview: GossipOverview = GossipOverview(),
   members: SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
-  meta: Map[String, Array[Byte]] = Map.empty,
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {
@@ -84,7 +88,7 @@ case class Gossip(
    */
   def :+(member: Member): Gossip = {
     if (members contains member) this
-    else this copy (members = members :+ member)
+    else this copy (members = members + member)
   }
 
   /**
@@ -97,7 +101,16 @@ case class Gossip(
   }
 
   /**
-   * Merges two Gossip instances including membership tables, meta-data tables and the VectorClock histories.
+   * The nodes that have seen current version of the Gossip.
+   */
+  def seenBy: Set[Address] = {
+    overview.seen.collect {
+      case (address, vclock) if vclock == version ⇒ address
+    }.toSet
+  }
+
+  /**
+   * Merges two Gossip instances including membership tables, and the VectorClock histories.
    */
   def merge(that: Gossip): Gossip = {
     import Member.ordering
@@ -105,20 +118,17 @@ case class Gossip(
     // 1. merge vector clocks
     val mergedVClock = this.version merge that.version
 
-    // 2. merge meta-data
-    val mergedMeta = this.meta ++ that.meta
-
-    // 3. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
+    // 2. merge unreachable by selecting the single Member with highest MemberStatus out of the Member groups
     val mergedUnreachable = Member.pickHighestPriority(this.overview.unreachable, that.overview.unreachable)
 
-    // 4. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
+    // 3. merge members by selecting the single Member with highest MemberStatus out of the Member groups,
     //    and exclude unreachable
-    val mergedMembers = Gossip.emptyMembers :++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
+    val mergedMembers = Gossip.emptyMembers ++ Member.pickHighestPriority(this.members, that.members).filterNot(mergedUnreachable.contains)
 
-    // 5. fresh seen table
+    // 4. fresh seen table
     val mergedSeen = Map.empty[Address, VectorClock]
 
-    Gossip(GossipOverview(mergedSeen, mergedUnreachable), mergedMembers, mergedMeta, mergedVClock)
+    Gossip(GossipOverview(mergedSeen, mergedUnreachable), mergedMembers, mergedVClock)
   }
 
   /**
@@ -151,10 +161,9 @@ case class Gossip(
     !hasUnreachable && allMembersInSeen && seenSame
   }
 
-  def isLeader(address: Address): Boolean =
-    members.nonEmpty && (address == members.head.address)
+  def isLeader(address: Address): Boolean = leader == Some(address)
 
-  def leader: Option[Address] = members.headOption.map(_.address)
+  def leader: Option[Address] = members.find(_.status != Exiting).orElse(members.headOption).map(_.address)
 
   def isSingletonCluster: Boolean = members.size == 1
 
@@ -178,15 +187,15 @@ case class Gossip(
     "Gossip(" +
       "overview = " + overview +
       ", members = [" + members.mkString(", ") +
-      "], meta = [" + meta.mkString(", ") +
       "], version = " + version +
       ")"
 }
 
 /**
+ * INTERNAL API
  * Represents the overview of the cluster, holds the cluster convergence table and set with unreachable nodes.
  */
-case class GossipOverview(
+private[cluster] case class GossipOverview(
   seen: Map[Address, VectorClock] = Map.empty,
   unreachable: Set[Member] = Set.empty) {
 
@@ -200,13 +209,15 @@ case class GossipOverview(
 }
 
 /**
+ * INTERNAL API
  * Envelope adding a sender address to the gossip.
  */
-case class GossipEnvelope(from: Address, gossip: Gossip, conversation: Boolean = true) extends ClusterMessage
+private[cluster] case class GossipEnvelope(from: Address, gossip: Gossip, conversation: Boolean = true) extends ClusterMessage
 
 /**
+ * INTERNAL API
  * When conflicting versions of received and local [[akka.cluster.Gossip]] is detected
  * it's forwarded to the leader for conflict resolution.
  */
-case class GossipMergeConflict(a: GossipEnvelope, b: GossipEnvelope) extends ClusterMessage
+private[cluster] case class GossipMergeConflict(a: GossipEnvelope, b: GossipEnvelope) extends ClusterMessage
 

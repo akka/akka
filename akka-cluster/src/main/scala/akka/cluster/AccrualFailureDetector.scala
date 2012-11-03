@@ -5,14 +5,12 @@
 package akka.cluster
 
 import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
-import akka.remote.RemoteActorRefProvider
 import akka.event.Logging
 import scala.collection.immutable.Map
 import scala.annotation.tailrec
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.TimeUnit.NANOSECONDS
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object AccrualFailureDetector {
   private def realClock: () ⇒ Long = () ⇒ NANOSECONDS.toMillis(System.nanoTime)

@@ -4,12 +4,10 @@
 package akka.actor
 
 import language.postfixOps
-
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.util.Timeout
 import scala.concurrent.{ Await, Future, Promise }
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import java.util.concurrent.atomic.AtomicReference
 import annotation.tailrec
 import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
@@ -193,6 +191,9 @@ object TypedActorSpec {
         })
     }
   }
+
+  trait F { def f(pow: Boolean): Int }
+  class FI extends F { def f(pow: Boolean): Int = if (pow) throw new IllegalStateException("expected") else 1 }
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -203,10 +204,10 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
 
   def newFooBar: Foo = newFooBar(Duration(2, "s"))
 
-  def newFooBar(d: Duration): Foo =
+  def newFooBar(d: FiniteDuration): Foo =
     TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
 
-  def newFooBar(dispatcher: String, d: Duration): Foo =
+  def newFooBar(dispatcher: String, d: FiniteDuration): Foo =
     TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)).withDispatcher(dispatcher))
 
   def newStacked(): Stacked =
@@ -348,6 +349,21 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
         t.read() must be(1) //Make sure state is not reset after failure
 
         mustStop(t)
+      }
+    }
+
+    "be restarted on failure" in {
+      filterEvents(EventFilter[IllegalStateException]("expected")) {
+        val t = newFooBar(Duration(2, "s"))
+        intercept[IllegalStateException] { t.failingOptionPigdog() }.getMessage must be === "expected"
+        t.optionPigdog() must be === Some("Pigdog")
+        mustStop(t)
+
+        val ta: F = TypedActor(system).typedActorOf(TypedProps[FI]())
+        intercept[IllegalStateException] { ta.f(true) }.getMessage must be === "expected"
+        ta.f(false) must be === 1
+
+        mustStop(ta)
       }
     }
 

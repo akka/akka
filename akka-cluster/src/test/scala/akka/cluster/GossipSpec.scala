@@ -20,6 +20,7 @@ class GossipSpec extends WordSpec with MustMatchers {
   val b2 = Member(Address("akka", "sys", "b", 2552), Removed)
   val c1 = Member(Address("akka", "sys", "c", 2552), Leaving)
   val c2 = Member(Address("akka", "sys", "c", 2552), Up)
+  val c3 = Member(Address("akka", "sys", "c", 2552), Exiting)
   val d1 = Member(Address("akka", "sys", "d", 2552), Leaving)
   val d2 = Member(Address("akka", "sys", "d", 2552), Removed)
   val e1 = Member(Address("akka", "sys", "e", 2552), Joining)
@@ -98,6 +99,12 @@ class GossipSpec extends WordSpec with MustMatchers {
 
     "not have non cluster members in seen table" in intercept[IllegalArgumentException] {
       Gossip(members = SortedSet(a1, e1)).seen(a1.address).seen(e1.address).seen(b1.address)
+    }
+
+    "have leader as first member based on ordering, except Exiting status" in {
+      Gossip(members = SortedSet(c2, e2)).leader must be(Some(c2.address))
+      Gossip(members = SortedSet(c3, e2)).leader must be(Some(e2.address))
+      Gossip(members = SortedSet(c3)).leader must be(Some(c3.address))
     }
 
   }

@@ -8,7 +8,9 @@ import akka.actor._
 import akka.util.{ Timeout }
 import akka.dispatch.{ Unwatch, Watch }
 import scala.concurrent.Future
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
+import scala.util.Success
+import scala.concurrent.duration.FiniteDuration
 
 trait GracefulStopSupport {
   /**
@@ -35,7 +37,7 @@ trait GracefulStopSupport {
    * If the target actor isn't terminated within the timeout the [[scala.concurrent.Future]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
-  def gracefulStop(target: ActorRef, timeout: Duration)(implicit system: ActorSystem): Future[Boolean] = {
+  def gracefulStop(target: ActorRef, timeout: FiniteDuration)(implicit system: ActorSystem): Future[Boolean] = {
     if (target.isTerminated) Future successful true
     else system match {
       case e: ExtendedActorSystem ⇒
@@ -45,8 +47,8 @@ trait GracefulStopSupport {
         internalTarget.sendSystemMessage(Watch(target, ref))
         val f = ref.result.future
         f onComplete { // Just making sure we're not leaking here
-          case Right(Terminated(`target`)) ⇒ ()
-          case _                           ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
+          case Success(Terminated(`target`)) ⇒ ()
+          case _                             ⇒ internalTarget.sendSystemMessage(Unwatch(target, ref))
         }
         target ! PoisonPill
         f map {

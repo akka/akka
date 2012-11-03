@@ -7,9 +7,9 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
-object SingletonClusterMultiJvmSpec extends MultiNodeConfig {
+case class SingletonClusterMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
@@ -21,35 +21,38 @@ object SingletonClusterMultiJvmSpec extends MultiNodeConfig {
         failure-detector.threshold = 4
       }
     """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+    withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 
 }
 
-class SingletonClusterWithFailureDetectorPuppetMultiJvmNode1 extends SingletonClusterSpec with FailureDetectorPuppetStrategy
-class SingletonClusterWithFailureDetectorPuppetMultiJvmNode2 extends SingletonClusterSpec with FailureDetectorPuppetStrategy
+class SingletonClusterWithFailureDetectorPuppetMultiJvmNode1 extends SingletonClusterSpec(failureDetectorPuppet = true)
+class SingletonClusterWithFailureDetectorPuppetMultiJvmNode2 extends SingletonClusterSpec(failureDetectorPuppet = true)
 
-class SingletonClusterWithAccrualFailureDetectorMultiJvmNode1 extends SingletonClusterSpec with AccrualFailureDetectorStrategy
-class SingletonClusterWithAccrualFailureDetectorMultiJvmNode2 extends SingletonClusterSpec with AccrualFailureDetectorStrategy
+class SingletonClusterWithAccrualFailureDetectorMultiJvmNode1 extends SingletonClusterSpec(failureDetectorPuppet = false)
+class SingletonClusterWithAccrualFailureDetectorMultiJvmNode2 extends SingletonClusterSpec(failureDetectorPuppet = false)
 
-abstract class SingletonClusterSpec
-  extends MultiNodeSpec(SingletonClusterMultiJvmSpec)
+abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeConfig)
+  extends MultiNodeSpec(multiNodeConfig)
   with MultiNodeClusterSpec {
 
-  import SingletonClusterMultiJvmSpec._
+  def this(failureDetectorPuppet: Boolean) = this(SingletonClusterMultiNodeConfig(failureDetectorPuppet))
+
+  import multiNodeConfig._
+
+  muteMarkingAsUnreachable()
 
   "A cluster of 2 nodes" must {
 
     "become singleton cluster when started with 'auto-join=on' and 'seed-nodes=[]'" taggedAs LongRunningTest in {
-      startClusterNode()
       awaitUpConvergence(1)
-      cluster.isSingletonCluster must be(true)
+      clusterView.isSingletonCluster must be(true)
 
       enterBarrier("after-1")
     }
 
     "not be singleton cluster when joined with other node" taggedAs LongRunningTest in {
       awaitClusterUp(first, second)
-      cluster.isSingletonCluster must be(false)
+      clusterView.isSingletonCluster must be(false)
       assertLeader(first, second)
 
       enterBarrier("after-2")
@@ -58,13 +61,13 @@ abstract class SingletonClusterSpec
     "become singleton cluster when one node is shutdown" taggedAs LongRunningTest in {
       runOn(first) {
         val secondAddress = address(second)
-        testConductor.shutdown(second, 0)
+        testConductor.shutdown(second, 0).await
 
         markNodeAsUnavailable(secondAddress)
 
         awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Seq(secondAddress), 30.seconds)
-        cluster.isSingletonCluster must be(true)
-        assertLeader(first)
+        clusterView.isSingletonCluster must be(true)
+        awaitCond(clusterView.isLeader)
       }
 
       enterBarrier("after-3")

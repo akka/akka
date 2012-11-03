@@ -63,6 +63,8 @@ public class UntypedTransactorTest {
     for (int i = 1; i <= numCounters; i++) {
       final String name = "counter" + i;
       ActorRef counter = system.actorOf(new Props(new UntypedActorFactory() {
+        private static final long serialVersionUID = 1L;
+
         public UntypedActor create() {
           return new UntypedCounter(name);
         }
@@ -75,8 +77,9 @@ public class UntypedTransactorTest {
   @Test
   public void incrementAllCountersWithSuccessfulTransaction() throws Exception {
     CountDownLatch incrementLatch = new CountDownLatch(numCounters);
-    Increment message = new Increment(counters.subList(1, counters.size()), incrementLatch);
-    counters.get(0).tell(message);
+    Increment message = new Increment(counters.subList(1, counters.size()),
+        incrementLatch);
+    counters.get(0).tell(message, null);
     try {
       incrementLatch.await(timeoutSeconds, TimeUnit.SECONDS);
     } catch (InterruptedException exception) {
@@ -90,15 +93,19 @@ public class UntypedTransactorTest {
 
   @Test
   public void incrementNoCountersWithFailingTransaction() throws Exception {
-    EventFilter expectedFailureFilter = (EventFilter) new ErrorFilter(ExpectedFailureException.class);
-    EventFilter coordinatedFilter = (EventFilter) new ErrorFilter(CoordinatedTransactionException.class);
-    Seq<EventFilter> ignoreExceptions = seq(expectedFailureFilter, coordinatedFilter);
+    EventFilter expectedFailureFilter = (EventFilter) new ErrorFilter(
+        ExpectedFailureException.class);
+    EventFilter coordinatedFilter = (EventFilter) new ErrorFilter(
+        CoordinatedTransactionException.class);
+    Seq<EventFilter> ignoreExceptions = seq(expectedFailureFilter,
+        coordinatedFilter);
     system.eventStream().publish(new TestEvent.Mute(ignoreExceptions));
     CountDownLatch incrementLatch = new CountDownLatch(numCounters);
     List<ActorRef> actors = new ArrayList<ActorRef>(counters);
     actors.add(failer);
-    Increment message = new Increment(actors.subList(1, actors.size()), incrementLatch);
-    actors.get(0).tell(message);
+    Increment message = new Increment(actors.subList(1, actors.size()),
+        incrementLatch);
+    actors.get(0).tell(message, null);
     try {
       incrementLatch.await(timeoutSeconds, TimeUnit.SECONDS);
     } catch (InterruptedException exception) {
@@ -111,6 +118,8 @@ public class UntypedTransactorTest {
   }
 
   public <A> Seq<A> seq(A... args) {
-    return JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(args)).asScala().toSeq();
+    return JavaConverters
+        .collectionAsScalaIterableConverter(Arrays.asList(args)).asScala()
+        .toSeq();
   }
 }

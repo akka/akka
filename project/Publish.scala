@@ -67,17 +67,40 @@ object Publish {
   }
 
   def akkaPublishTo: Initialize[Option[Resolver]] = {
-    defaultPublishTo { default =>
-      val property = Option(System.getProperty("akka.publish.repository"))
-      val repo = property map { "Akka Publish Repository" at _ }
-      repo orElse Some(Resolver.file("Default Local Repository", default))
+    (defaultPublishTo, version) { (default, v) =>
+      akkaPublishRepository orElse
+      sonatypeRepo(v) orElse
+      Some(Resolver.file("Default Local Repository", default))
     }
   }
 
-  def akkaCredentials: Seq[Credentials] = {
-    val property = Option(System.getProperty("akka.publish.credentials"))
-    property map (f => Credentials(new File(f))) toSeq
+  def akkaPluginPublishTo: Initialize[Option[Resolver]] = {
+    (defaultPublishTo, version) { (default, version) =>
+      akkaPublishRepository orElse
+      pluginRepo(version) orElse
+      Some(Resolver.file("Default Local Repository", default))
+    }
   }
+
+  def sonatypeRepo(version: String): Option[Resolver] = {
+    Option(sys.props("publish.maven.central")) filter (_.toLowerCase == "true") map { _ =>
+      val nexus = "https://oss.sonatype.org/"
+      if(version endsWith "-SNAPSHOT") ("snapshots" at nexus + "content/repositories/snapshots")
+      else ("releases"  at nexus + "service/local/staging/deploy/maven2")
+    }
+  }
+
+  def pluginRepo(version: String): Option[Resolver] =
+    Option(sys.props("publish.maven.central")) collect { case mc if mc.toLowerCase == "true" =>
+      val name = if (version endsWith "-SNAPSHOT") "sbt-plugin-snapshots" else "sbt-plugin-releases"
+      Resolver.url(name, url("http://scalasbt.artifactoryonline.com/scalasbt/" + name))(Resolver.ivyStylePatterns)
+    }
+
+  def akkaPublishRepository: Option[Resolver] =
+      Option(System.getProperty("akka.publish.repository", null)) map { "Akka Publish Repository" at _ }
+
+  def akkaCredentials: Seq[Credentials] =
+    Option(System.getProperty("akka.publish.credentials", null)) map (f => Credentials(new File(f))) toSeq
 
   // timestamped versions
 

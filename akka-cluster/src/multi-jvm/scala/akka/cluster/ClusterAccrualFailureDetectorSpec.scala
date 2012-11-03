@@ -6,7 +6,7 @@ package akka.cluster
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit._
 
 object ClusterAccrualFailureDetectorMultiJvmSpec extends MultiNodeConfig {
@@ -19,15 +19,17 @@ object ClusterAccrualFailureDetectorMultiJvmSpec extends MultiNodeConfig {
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class ClusterAccrualFailureDetectorMultiJvmNode1 extends ClusterAccrualFailureDetectorSpec with AccrualFailureDetectorStrategy
-class ClusterAccrualFailureDetectorMultiJvmNode2 extends ClusterAccrualFailureDetectorSpec with AccrualFailureDetectorStrategy
-class ClusterAccrualFailureDetectorMultiJvmNode3 extends ClusterAccrualFailureDetectorSpec with AccrualFailureDetectorStrategy
+class ClusterAccrualFailureDetectorMultiJvmNode1 extends ClusterAccrualFailureDetectorSpec
+class ClusterAccrualFailureDetectorMultiJvmNode2 extends ClusterAccrualFailureDetectorSpec
+class ClusterAccrualFailureDetectorMultiJvmNode3 extends ClusterAccrualFailureDetectorSpec
 
 abstract class ClusterAccrualFailureDetectorSpec
   extends MultiNodeSpec(ClusterAccrualFailureDetectorMultiJvmSpec)
   with MultiNodeClusterSpec {
 
   import ClusterAccrualFailureDetectorMultiJvmSpec._
+
+  muteMarkingAsUnreachable()
 
   "A heartbeat driven Failure Detector" must {
 
@@ -44,7 +46,7 @@ abstract class ClusterAccrualFailureDetectorSpec
 
     "mark node as 'unavailable' if a node in the cluster is shut down (and its heartbeats stops)" taggedAs LongRunningTest in {
       runOn(first) {
-        testConductor.shutdown(third, 0)
+        testConductor.shutdown(third, 0).await
       }
 
       enterBarrier("third-shutdown")

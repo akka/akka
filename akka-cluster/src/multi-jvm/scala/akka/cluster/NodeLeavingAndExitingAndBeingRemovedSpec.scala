@@ -8,19 +8,19 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 
-class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode1 extends NodeLeavingAndExitingAndBeingRemovedSpec with FailureDetectorPuppetStrategy
-class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode2 extends NodeLeavingAndExitingAndBeingRemovedSpec with FailureDetectorPuppetStrategy
-class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode3 extends NodeLeavingAndExitingAndBeingRemovedSpec with FailureDetectorPuppetStrategy
+class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode1 extends NodeLeavingAndExitingAndBeingRemovedSpec
+class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode2 extends NodeLeavingAndExitingAndBeingRemovedSpec
+class NodeLeavingAndExitingAndBeingRemovedMultiJvmNode3 extends NodeLeavingAndExitingAndBeingRemovedSpec
 
 abstract class NodeLeavingAndExitingAndBeingRemovedSpec
   extends MultiNodeSpec(NodeLeavingAndExitingAndBeingRemovedMultiJvmSpec)
@@ -43,16 +43,16 @@ abstract class NodeLeavingAndExitingAndBeingRemovedSpec
 
       runOn(first, third) {
         // verify that the 'second' node is no longer part of the 'members' set
-        awaitCond(cluster.latestGossip.members.forall(_.address != address(second)), reaperWaitingTime)
+        awaitCond(clusterView.members.forall(_.address != address(second)), reaperWaitingTime)
 
         // verify that the 'second' node is not part of the 'unreachable' set
-        awaitCond(cluster.latestGossip.overview.unreachable.forall(_.address != address(second)), reaperWaitingTime)
+        awaitCond(clusterView.unreachableMembers.forall(_.address != address(second)), reaperWaitingTime)
       }
 
       runOn(second) {
         // verify that the second node is shut down and has status REMOVED
         awaitCond(!cluster.isRunning, reaperWaitingTime)
-        awaitCond(cluster.status == MemberStatus.Removed, reaperWaitingTime)
+        awaitCond(clusterView.status == MemberStatus.Removed, reaperWaitingTime)
       }
 
       enterBarrier("finished")

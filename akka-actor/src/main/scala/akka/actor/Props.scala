@@ -15,7 +15,7 @@ import akka.util.Reflect
 /**
  * Factory for Props instances.
  *
- * Props is a ActorRef configuration object, that is thread safe and fully sharable.
+ * Props is a ActorRef configuration object, that is immutable, so it is thread safe and fully sharable.
  *
  * Used when creating new actors through; <code>ActorSystem.actorOf</code> and <code>ActorContext.actorOf</code>.
  */
@@ -74,15 +74,10 @@ object Props {
    * using the supplied thunk.
    */
   def apply(creator: Creator[_ <: Actor]): Props = default.withCreator(creator.create)
-
-  /**
-   * Returns a new Props whose creator will instantiate an Actor that has the behavior specified
-   */
-  def apply(behavior: ActorContext ⇒ Actor.Receive): Props = apply(new Actor { def receive = behavior(context) })
 }
 
 /**
- * Props is a ActorRef configuration object, that is thread safe and fully sharable.
+ * Props is a ActorRef configuration object, that is immutable, so it is thread safe and fully sharable.
  * Used when creating new actors through; <code>ActorSystem.actorOf</code> and <code>ActorContext.actorOf</code>.
  *
  * In case of providing code which creates the actual Actor instance, that must not return the same instance multiple times.
@@ -113,7 +108,7 @@ object Props {
  *  Props props = new Props(MyActor.class).withRouter(new RoundRobinRouter(..));
  * }}}
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed when SI-4804 is fixed
+@SerialVersionUID(1L)
 case class Props(
   creator: () ⇒ Actor = Props.defaultCreator,
   dispatcher: String = Dispatchers.DefaultDispatcherId,

@@ -5,24 +5,22 @@
 package akka.camel.internal.component
 
 import language.postfixOps
-
 import java.util.{ Map ⇒ JMap }
-
 import org.apache.camel._
 import org.apache.camel.impl.{ DefaultProducer, DefaultEndpoint, DefaultComponent }
-
 import akka.actor._
 import akka.pattern._
-
 import scala.reflect.BeanProperty
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
-import java.util.concurrent.{ TimeoutException, CountDownLatch }
+import java.util.concurrent.{ TimeUnit, TimeoutException, CountDownLatch }
 import akka.util.Timeout
 import akka.camel.internal.CamelExchangeAdapter
 import akka.camel.{ ActorNotRegisteredException, Camel, Ack, FailureResult, CamelMessage }
+import support.TypeConverterSupport
+import scala.util.{ Failure, Success, Try }
+
 /**
  * For internal use only.
  * Creates Camel [[org.apache.camel.Endpoint]]s that send messages to [[akka.camel.Consumer]] actors through an [[akka.camel.internal.component.ActorProducer]].
@@ -95,9 +93,9 @@ private[camel] trait ActorEndpointConfig {
   def path: ActorEndpointPath
   def camel: Camel
 
-  @BeanProperty var replyTimeout: Duration = camel.settings.replyTimeout
+  @BeanProperty var replyTimeout: FiniteDuration = camel.settings.ReplyTimeout
 
-  @BeanProperty var autoAck: Boolean = camel.settings.autoAck
+  @BeanProperty var autoAck: Boolean = camel.settings.AutoAck
 }
 
 /**
@@ -111,7 +109,7 @@ private[camel] trait ActorEndpointConfig {
 private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) extends DefaultProducer(endpoint) with AsyncProcessor {
   /**
    * Processes the exchange.
-   * Calls the asynchronous version of the method and waits for the result (blocking).
+   * Calls the synchronous version of the method and waits for the result (blocking).
    * @param exchange the exchange to process
    */
   def process(exchange: Exchange): Unit = processExchangeAdapter(new CamelExchangeAdapter(exchange))
@@ -131,13 +129,11 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
   /**
    * For internal use only. Processes the [[akka.camel.internal.CamelExchangeAdapter]]
    * @param exchange the [[akka.camel.internal.CamelExchangeAdapter]]
-   *
-   * WARNING UNBOUNDED BLOCKING AWAITS
    */
   private[camel] def processExchangeAdapter(exchange: CamelExchangeAdapter): Unit = {
     val isDone = new CountDownLatch(1)
     processExchangeAdapter(exchange, new AsyncCallback { def done(doneSync: Boolean) { isDone.countDown() } })
-    isDone.await() // this should never wait forever as the process(exchange, callback) method guarantees that.
+    isDone.await(endpoint.replyTimeout.length, endpoint.replyTimeout.unit)
   }
 
   /**
@@ -153,18 +149,18 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
       callback.done(true)
       true // done sync
     } else {
-      val action: PartialFunction[Either[Throwable, Any], Unit] =
+      val action: PartialFunction[Try[Any], Unit] =
         if (exchange.isOutCapable) {
-          case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
-          case Right(msg)                    ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
-          case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
-          case Left(throwable)               ⇒ exchange.setFailure(FailureResult(throwable))
+          case Success(failure: FailureResult) ⇒ exchange.setFailure(failure)
+          case Success(msg)                    ⇒ exchange.setResponse(CamelMessage.canonicalize(msg))
+          case Failure(e: TimeoutException)    ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+          case Failure(throwable)              ⇒ exchange.setFailure(FailureResult(throwable))
         } else {
-          case Right(Ack)                    ⇒ () /* no response message to set */
-          case Right(failure: FailureResult) ⇒ exchange.setFailure(failure)
-          case Right(msg)                    ⇒ exchange.setFailure(FailureResult(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
-          case Left(e: TimeoutException)     ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
-          case Left(throwable)               ⇒ exchange.setFailure(FailureResult(throwable))
+          case Success(Ack)                    ⇒ () /* no response message to set */
+          case Success(failure: FailureResult) ⇒ exchange.setFailure(failure)
+          case Success(msg)                    ⇒ exchange.setFailure(FailureResult(new IllegalArgumentException("Expected Ack or Failure message, but got: [%s] from actor [%s]" format (msg, endpoint.path))))
+          case Failure(e: TimeoutException)    ⇒ exchange.setFailure(FailureResult(new TimeoutException("Failed to get Ack or Failure response from the actor [%s] within timeout [%s]. Check replyTimeout and blocking settings [%s]" format (endpoint.path, endpoint.replyTimeout, endpoint))))
+          case Failure(throwable)              ⇒ exchange.setFailure(FailureResult(throwable))
         }
       val async = try actorFor(endpoint.path).ask(messageFor(exchange))(Timeout(endpoint.replyTimeout)) catch { case NonFatal(e) ⇒ Future.failed(e) }
       implicit val ec = camel.system.dispatcher // FIXME which ExecutionContext should be used here?
@@ -185,23 +181,17 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 }
 
 /**
- * For internal use only. Converts Strings to [[scala.concurrent.util.Duration]]
+ * For internal use only. Converts Strings to [[scala.concurrent.duration.Duration]]
  */
-private[camel] object DurationTypeConverter extends TypeConverter {
-  override def convertTo[T](`type`: Class[T], value: AnyRef): T = `type`.cast(try {
-    val d = Duration(value.toString)
-    if (`type`.isInstance(d)) d else null
-  } catch {
-    case NonFatal(_) ⇒ null
-  })
+private[camel] object DurationTypeConverter extends TypeConverterSupport {
 
-  def convertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef): T = convertTo(`type`, value)
-  def mandatoryConvertTo[T](`type`: Class[T], value: AnyRef): T = convertTo(`type`, value) match {
-    case null ⇒ throw new NoTypeConversionAvailableException(value, `type`)
-    case some ⇒ some
-  }
-  def mandatoryConvertTo[T](`type`: Class[T], exchange: Exchange, value: AnyRef): T = mandatoryConvertTo(`type`, value)
-  def toString(duration: Duration): String = duration.toNanos + " nanos"
+  @throws(classOf[TypeConversionException])
+  def convertTo[T](valueType: Class[T], exchange: Exchange, value: AnyRef): T = valueType.cast(try {
+    val d = Duration(value.toString)
+    if (valueType.isInstance(d)) d else null
+  } catch {
+    case NonFatal(throwable) ⇒ throw new TypeConversionException(value, valueType, throwable)
+  })
 }
 
 /**

@@ -7,7 +7,7 @@ package akka.camel.internal.component
 import language.postfixOps
 
 import org.scalatest.matchers.MustMatchers
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.camel.TestSupport.SharedCamelSystem
 import org.apache.camel.Component
 import org.scalatest.WordSpec

@@ -9,7 +9,10 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
+import akka.actor.Props
+import akka.actor.Actor
+import akka.cluster.MemberStatus._
 
 object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -20,22 +23,22 @@ object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
         akka.cluster {
-          leader-actions-interval           = 5 s  # increase the leader action task interval
           unreachable-nodes-reaper-interval = 300 s # turn "off" reaping to unreachable node set
         }
       """)
-        .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet)))
 }
 
-class MembershipChangeListenerExitingMultiJvmNode1 extends MembershipChangeListenerExitingSpec with FailureDetectorPuppetStrategy
-class MembershipChangeListenerExitingMultiJvmNode2 extends MembershipChangeListenerExitingSpec with FailureDetectorPuppetStrategy
-class MembershipChangeListenerExitingMultiJvmNode3 extends MembershipChangeListenerExitingSpec with FailureDetectorPuppetStrategy
+class MembershipChangeListenerExitingMultiJvmNode1 extends MembershipChangeListenerExitingSpec
+class MembershipChangeListenerExitingMultiJvmNode2 extends MembershipChangeListenerExitingSpec
+class MembershipChangeListenerExitingMultiJvmNode3 extends MembershipChangeListenerExitingSpec
 
 abstract class MembershipChangeListenerExitingSpec
   extends MultiNodeSpec(MembershipChangeListenerExitingMultiJvmSpec)
   with MultiNodeClusterSpec {
 
   import MembershipChangeListenerExitingMultiJvmSpec._
+  import ClusterEvent._
 
   "A registered MembershipChangeListener" must {
     "be notified when new node is EXITING" taggedAs LongRunningTest in {
@@ -53,12 +56,17 @@ abstract class MembershipChangeListenerExitingSpec
 
       runOn(third) {
         val exitingLatch = TestLatch()
-        cluster.registerListener(new MembershipChangeListener {
-          def notify(members: SortedSet[Member]) {
-            if (members.size == 3 && members.exists(m ⇒ m.address == address(second) && m.status == MemberStatus.Exiting))
+        val secondAddress = address(second)
+        cluster.subscribe(system.actorOf(Props(new Actor {
+          def receive = {
+            case state: CurrentClusterState ⇒
+              if (state.members.exists(m ⇒ m.address == secondAddress && m.status == Exiting))
+                exitingLatch.countDown()
+            case MemberExited(m) if m.address == secondAddress ⇒
               exitingLatch.countDown()
+            case _ ⇒ // ignore
           }
-        })
+        })), classOf[MemberEvent])
         enterBarrier("registered-listener")
         exitingLatch.await
       }

@@ -10,7 +10,7 @@ import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import akka.routing._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object DeployerSpec {
   val deployerConf = ConfigFactory.parseString("""
@@ -34,6 +34,9 @@ object DeployerSpec {
         /service-scatter-gather {
           router = scatter-gather
           within = 2 seconds
+        }
+        /service-consistent-hashing {
+          router = consistent-hashing
         }
         /service-resizer {
           router = round-robin
@@ -116,6 +119,10 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
 
     "be able to parse 'akka.actor.deployment._' with scatter-gather router" in {
       assertRouting("/service-scatter-gather", ScatterGatherFirstCompletedRouter(nrOfInstances = 1, within = 2 seconds), "/service-scatter-gather")
+    }
+
+    "be able to parse 'akka.actor.deployment._' with consistent-hashing router" in {
+      assertRouting("/service-consistent-hashing", ConsistentHashingRouter(1), "/service-consistent-hashing")
     }
 
     "be able to parse 'akka.actor.deployment._' with router resizer" in {

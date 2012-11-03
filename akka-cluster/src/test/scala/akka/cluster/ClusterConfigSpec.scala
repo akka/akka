@@ -8,8 +8,7 @@ import language.postfixOps
 
 import akka.testkit.AkkaSpec
 import akka.dispatch.Dispatchers
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterConfigSpec extends AkkaSpec {
@@ -29,12 +28,15 @@ class ClusterConfigSpec extends AkkaSpec {
       PeriodicTasksInitialDelay must be(1 seconds)
       GossipInterval must be(1 second)
       HeartbeatInterval must be(1 second)
+      NumberOfEndHeartbeats must be(4)
+      MonitoredByNrOfMembers must be(5)
       LeaderActionsInterval must be(1 second)
       UnreachableNodesReaperInterval must be(1 second)
-      PublishStateInterval must be(1 second)
+      PublishStatsInterval must be(10 second)
       JoinTimeout must be(60 seconds)
       AutoJoin must be(true)
       AutoDown must be(false)
+      JmxEnabled must be(true)
       UseDispatcher must be(Dispatchers.DefaultDispatcherId)
       GossipDifferentViewProbability must be(0.8 plusOrMinus 0.0001)
       MaxGossipMergeRate must be(5.0 plusOrMinus 0.0001)
@@ -44,6 +46,10 @@ class ClusterConfigSpec extends AkkaSpec {
         maxFailures = 3,
         callTimeout = 2 seconds,
         resetTimeout = 30 seconds))
+      MetricsEnabled must be(true)
+      MetricsInterval must be(3 seconds)
+      MetricsGossipInterval must be(3 seconds)
+      MetricsRateOfDecay must be(10)
     }
   }
 }

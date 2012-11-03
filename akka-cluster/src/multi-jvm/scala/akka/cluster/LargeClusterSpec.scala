@@ -7,15 +7,17 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
+import akka.testkit.TestEvent._
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
-import scala.concurrent.util.Deadline
 import java.util.concurrent.TimeoutException
 import scala.collection.immutable.SortedSet
 import scala.concurrent.Await
-import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.remote.testconductor.RoleName
+import akka.actor.Props
+import akka.actor.Actor
+import akka.cluster.MemberStatus._
 
 object LargeClusterMultiJvmSpec extends MultiNodeConfig {
   // each jvm simulates a datacenter with many nodes
@@ -37,10 +39,12 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
       gossip-interval = 500 ms
       auto-join = off
       auto-down = on
-      failure-detector.acceptable-heartbeat-pause = 10s
-      publish-state-interval = 0 s # always, when it happens
+      failure-detector.acceptable-heartbeat-pause = 5s
+      publish-stats-interval = 0 s # always, when it happens
     }
+    akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = INFO
+    akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.actor.default-dispatcher.fork-join-executor {
       # when using nodes-per-datacenter=10 we need some extra
       # threads to keep up with netty connect blocking
@@ -48,8 +52,11 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
       parallelism-max = 13
     }
     akka.scheduler.tick-duration = 33 ms
+    akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.execution-pool-size = 4
-    #akka.remote.netty.reconnection-time-window = 1s
+    #akka.remote.netty.reconnection-time-window = 10s
+    akka.remote.netty.read-timeout = 5s
+    akka.remote.netty.write-timeout = 5s
     akka.remote.netty.backoff-timeout = 500ms
     akka.remote.netty.connection-timeout = 500ms
 
@@ -67,17 +74,24 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     """))
 }
 
-class LargeClusterMultiJvmNode1 extends LargeClusterSpec with AccrualFailureDetectorStrategy
-class LargeClusterMultiJvmNode2 extends LargeClusterSpec with AccrualFailureDetectorStrategy
-class LargeClusterMultiJvmNode3 extends LargeClusterSpec with AccrualFailureDetectorStrategy
-class LargeClusterMultiJvmNode4 extends LargeClusterSpec with AccrualFailureDetectorStrategy
-class LargeClusterMultiJvmNode5 extends LargeClusterSpec with AccrualFailureDetectorStrategy
+class LargeClusterMultiJvmNode1 extends LargeClusterSpec
+class LargeClusterMultiJvmNode2 extends LargeClusterSpec
+class LargeClusterMultiJvmNode3 extends LargeClusterSpec
+class LargeClusterMultiJvmNode4 extends LargeClusterSpec
+class LargeClusterMultiJvmNode5 extends LargeClusterSpec
 
 abstract class LargeClusterSpec
   extends MultiNodeSpec(LargeClusterMultiJvmSpec)
   with MultiNodeClusterSpec {
 
   import LargeClusterMultiJvmSpec._
+  import ClusterEvent._
+
+  override def muteLog(sys: ActorSystem = system): Unit = {
+    super.muteLog(sys)
+    muteMarkingAsUnreachable(sys)
+    muteDeadLetters(sys)
+  }
 
   var systems: IndexedSeq[ActorSystem] = IndexedSeq(system)
   val nodesPerDatacenter = system.settings.config.getInt(
@@ -110,15 +124,17 @@ abstract class LargeClusterSpec
 
   def startupSystems(): Unit = {
     // one system is already started by the multi-node test
-    for (n ← 2 to nodesPerDatacenter)
-      systems :+= ActorSystem(myself.name + "-" + n, system.settings.config)
+    for (n ← 2 to nodesPerDatacenter) {
+      val sys = ActorSystem(myself.name + "-" + n, system.settings.config)
+      muteLog(sys)
+      systems :+= sys
+    }
 
     // Initialize the Cluster extensions, i.e. startup the clusters
     systems foreach { Cluster(_) }
   }
 
-  def expectedMaxDuration(totalNodes: Int): Duration =
-    5.seconds + (2.seconds * totalNodes)
+  def expectedMaxDuration(totalNodes: Int): FiniteDuration = 5.seconds + 2.seconds * totalNodes
 
   def joinAll(from: RoleName, to: RoleName, totalNodes: Int, runOnRoles: RoleName*): Unit = {
     val joiningClusters = systems.map(Cluster(_)).toSet
@@ -132,26 +148,32 @@ abstract class LargeClusterSpec
     runOn(runOnRoles: _*) {
       systems.size must be(nodesPerDatacenter) // make sure it is initialized
 
-      val clusterNodes = ifNode(from)(joiningClusterNodes)(systems.map(Cluster(_)).toSet)
+      val clusterNodes = if(isNode(from)) joiningClusterNodes else systems.map(Cluster(_)).toSet
       val startGossipCounts = Map.empty[Cluster, Long] ++
-        clusterNodes.map(c ⇒ (c -> c.latestStats.receivedGossipCount))
+        clusterNodes.map(c ⇒ (c -> c.readView.latestStats.receivedGossipCount))
       def gossipCount(c: Cluster): Long = {
-        c.latestStats.receivedGossipCount - startGossipCounts(c)
+        c.readView.latestStats.receivedGossipCount - startGossipCounts(c)
       }
       val startTime = System.nanoTime
       def tookMillis: String = TimeUnit.NANOSECONDS.toMillis(System.nanoTime - startTime) + " ms"
 
       val latch = TestLatch(clusterNodes.size)
       clusterNodes foreach { c ⇒
-        c.registerListener(new MembershipChangeListener {
-          override def notify(members: SortedSet[Member]): Unit = {
-            if (!latch.isOpen && members.size == totalNodes && members.forall(_.status == MemberStatus.Up)) {
-              log.debug("All [{}] nodes Up in [{}], it took [{}], received [{}] gossip messages",
-                totalNodes, c.selfAddress, tookMillis, gossipCount(c))
-              latch.countDown()
-            }
+        c.subscribe(system.actorOf(Props(new Actor {
+          var upCount = 0
+          def receive = {
+            case state: CurrentClusterState ⇒
+              upCount = state.members.count(_.status == Up)
+            case MemberUp(_) if !latch.isOpen ⇒
+              upCount += 1
+              if (upCount == totalNodes) {
+                log.debug("All [{}] nodes Up in [{}], it took [{}], received [{}] gossip messages",
+                  totalNodes, c.selfAddress, tookMillis, gossipCount(c))
+                latch.countDown()
+              }
+            case _ ⇒ // ignore
           }
-        })
+        })), classOf[MemberEvent])
       }
 
       runOn(from) {
@@ -160,7 +182,7 @@ abstract class LargeClusterSpec
 
       Await.ready(latch, remaining)
 
-      awaitCond(clusterNodes.forall(_.convergence.isDefined))
+      awaitCond(clusterNodes.forall(_.readView.convergence))
       val counts = clusterNodes.map(gossipCount(_))
       val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / clusterNodes.size, counts.min, counts.max)
       log.info("Convergence of [{}] nodes reached, it took [{}], received [{}] gossip messages per node",
@@ -238,7 +260,7 @@ abstract class LargeClusterSpec
       if (bulk.nonEmpty) {
         val totalNodes = nodesPerDatacenter * 4 + bulk.size
         within(expectedMaxDuration(totalNodes)) {
-          val joiningClusters = ifNode(fifthDatacenter)(bulk.map(Cluster(_)).toSet)(Set.empty)
+          val joiningClusters = if(isNode(fifthDatacenter)) bulk.map(Cluster(_)).toSet else Set.empty[Cluster]
           join(joiningClusters, from = fifthDatacenter, to = firstDatacenter, totalNodes,
             runOnRoles = firstDatacenter, secondDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter)
           enterBarrier("fifth-datacenter-joined-" + bulk.size)
@@ -248,7 +270,7 @@ abstract class LargeClusterSpec
       for (i ← 0 until oneByOne.size) {
         val totalNodes = nodesPerDatacenter * 4 + bulk.size + i + 1
         within(expectedMaxDuration(totalNodes)) {
-          val joiningClusters = ifNode(fifthDatacenter)(Set(Cluster(oneByOne(i))))(Set.empty)
+          val joiningClusters = if(isNode(fifthDatacenter)) Set(Cluster(oneByOne(i))) else Set.empty[Cluster]
           join(joiningClusters, from = fifthDatacenter, to = firstDatacenter, totalNodes,
             runOnRoles = firstDatacenter, secondDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter)
           enterBarrier("fifth-datacenter-joined-" + (bulk.size + i))
@@ -260,38 +282,49 @@ abstract class LargeClusterSpec
       val unreachableNodes = nodesPerDatacenter
       val liveNodes = nodesPerDatacenter * 4
 
-      within(30.seconds + (3.seconds * liveNodes)) {
+      within(30.seconds + 3.seconds * liveNodes) {
         val startGossipCounts = Map.empty[Cluster, Long] ++
-          systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).latestStats.receivedGossipCount))
+          systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).readView.latestStats.receivedGossipCount))
         def gossipCount(c: Cluster): Long = {
-          c.latestStats.receivedGossipCount - startGossipCounts(c)
+          c.readView.latestStats.receivedGossipCount - startGossipCounts(c)
         }
         val startTime = System.nanoTime
         def tookMillis: String = TimeUnit.NANOSECONDS.toMillis(System.nanoTime - startTime) + " ms"
 
         val latch = TestLatch(nodesPerDatacenter)
         systems foreach { sys ⇒
-          Cluster(sys).registerListener(new MembershipChangeListener {
-            override def notify(members: SortedSet[Member]): Unit = {
-              if (!latch.isOpen && members.size == liveNodes && Cluster(sys).latestGossip.overview.unreachable.size == unreachableNodes) {
-                log.info("Detected [{}] unreachable nodes in [{}], it took [{}], received [{}] gossip messages",
-                  unreachableNodes, Cluster(sys).selfAddress, tookMillis, gossipCount(Cluster(sys)))
-                latch.countDown()
-              }
+          Cluster(sys).subscribe(sys.actorOf(Props(new Actor {
+            var gotUnreachable = Set.empty[Member]
+            def receive = {
+              case state: CurrentClusterState ⇒
+                gotUnreachable = state.unreachable
+                checkDone()
+              case MemberUnreachable(m) if !latch.isOpen ⇒
+                gotUnreachable = gotUnreachable + m
+                checkDone()
+              case MemberDowned(m) if !latch.isOpen ⇒
+                gotUnreachable = gotUnreachable + m
+                checkDone()
+              case _ ⇒ // not interesting
             }
-          })
+            def checkDone(): Unit = if (gotUnreachable.size == unreachableNodes) {
+              log.info("Detected [{}] unreachable nodes in [{}], it took [{}], received [{}] gossip messages",
+                unreachableNodes, Cluster(sys).selfAddress, tookMillis, gossipCount(Cluster(sys)))
+              latch.countDown()
+            }
+          })), classOf[ClusterDomainEvent])
         }
 
         runOn(firstDatacenter) {
-          testConductor.shutdown(secondDatacenter, 0)
+          testConductor.shutdown(secondDatacenter, 0).await
         }
 
         enterBarrier("second-datacenter-shutdown")
 
         runOn(firstDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter) {
           Await.ready(latch, remaining)
-          awaitCond(systems.forall(Cluster(_).convergence.isDefined))
-          val mergeCount = systems.map(sys ⇒ Cluster(sys).latestStats.mergeCount).sum
+          awaitCond(systems.forall(Cluster(_).readView.convergence))
+          val mergeCount = systems.map(sys ⇒ Cluster(sys).readView.latestStats.mergeCount).sum
           val counts = systems.map(sys ⇒ gossipCount(Cluster(sys)))
           val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / nodesPerDatacenter, counts.min, counts.max)
           log.info("Convergence of [{}] nodes reached after failure, it took [{}], received [{}] gossip messages per node, merged [{}] times",

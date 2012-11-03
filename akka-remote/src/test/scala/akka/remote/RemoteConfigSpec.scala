@@ -7,8 +7,7 @@ import language.postfixOps
 
 import akka.testkit.AkkaSpec
 import akka.actor.ExtendedActorSystem
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import akka.remote.netty.NettyRemoteTransport
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -29,7 +28,7 @@ class RemoteConfigSpec extends AkkaSpec(
       RemoteTransport must be("akka.remote.netty.NettyRemoteTransport")
       UntrustedMode must be(false)
       RemoteSystemDaemonAckTimeout must be(30 seconds)
-      LogRemoteLifeCycleEvents must be(false)
+      LogRemoteLifeCycleEvents must be(true)
     }
 
     "be able to parse Netty config elements" in {
@@ -63,7 +62,32 @@ class RemoteConfigSpec extends AkkaSpec(
       WriteBufferLowWaterMark must be(None)
       SendBufferSize must be(None)
       ReceiveBufferSize must be(None)
+      ServerSocketWorkerPoolSize must be >= (2)
+      ServerSocketWorkerPoolSize must be <= (8)
+      ClientSocketWorkerPoolSize must be >= (2)
+      ClientSocketWorkerPoolSize must be <= (8)
     }
 
+    "contain correct configuration values in reference.conf" in {
+      val c = system.asInstanceOf[ExtendedActorSystem].
+        provider.asInstanceOf[RemoteActorRefProvider].
+        remoteSettings.config.getConfig("akka.remote.netty")
+
+      // server-socket-worker-pool
+      {
+        val pool = c.getConfig("server-socket-worker-pool")
+        pool.getInt("pool-size-min") must equal(2)
+        pool.getDouble("pool-size-factor") must equal(1.0)
+        pool.getInt("pool-size-max") must equal(8)
+      }
+
+      // client-socket-worker-pool
+      {
+        val pool = c.getConfig("client-socket-worker-pool")
+        pool.getInt("pool-size-min") must equal(2)
+        pool.getDouble("pool-size-factor") must equal(1.0)
+        pool.getInt("pool-size-max") must equal(8)
+      }
+    }
   }
 }

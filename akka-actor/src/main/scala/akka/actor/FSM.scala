@@ -4,11 +4,11 @@
 package akka.actor
 
 import language.implicitConversions
-
 import akka.util._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
+import scala.concurrent.duration.FiniteDuration
 
 object FSM {
 
@@ -87,22 +87,19 @@ object FSM {
   /**
    * Internal API
    */
-  private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(implicit system: ActorSystem) {
+  private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext) {
     private var ref: Option[Cancellable] = _
+    private val scheduler = context.system.scheduler
+    private implicit val executionContext = context.dispatcher
 
-    def schedule(actor: ActorRef, timeout: Duration) {
-      if (repeat) {
-        ref = Some(system.scheduler.schedule(timeout, timeout, actor, this))
-      } else {
-        ref = Some(system.scheduler.scheduleOnce(timeout, actor, this))
-      }
-    }
+    def schedule(actor: ActorRef, timeout: FiniteDuration): Unit =
+      ref = Some(
+        if (repeat) scheduler.schedule(timeout, timeout, actor, this)
+        else scheduler.scheduleOnce(timeout, actor, this))
 
-    def cancel {
-      if (ref.isDefined) {
-        ref.get.cancel()
-        ref = None
-      }
+    def cancel(): Unit = if (ref.isDefined) {
+      ref.get.cancel()
+      ref = None
     }
   }
 
@@ -124,15 +121,18 @@ object FSM {
    * name, the state data, possibly custom timeout, stop reason and replies
    * accumulated while processing the last message.
    */
-  case class State[S, D](stateName: S, stateData: D, timeout: Option[Duration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
+  case class State[S, D](stateName: S, stateData: D, timeout: Option[FiniteDuration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
 
     /**
      * Modify state transition descriptor to include a state timeout for the
      * next state. This timeout overrides any default timeout set for the next
      * state.
+     *
+     * Use Duration.Inf to deactivate an existing timeout.
      */
-    def forMax(timeout: Duration): State[S, D] = {
-      copy(timeout = Some(timeout))
+    def forMax(timeout: Duration): State[S, D] = timeout match {
+      case f: FiniteDuration ⇒ copy(timeout = Some(f))
+      case _                 ⇒ copy(timeout = None)
     }
 
     /**
@@ -248,7 +248,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
 
   type State = FSM.State[S, D]
   type StateFunction = scala.PartialFunction[Event, State]
-  type Timeout = Option[Duration]
+  type Timeout = Option[FiniteDuration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
   /*
@@ -282,7 +282,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * @param stateTimeout default state timeout for this state
    * @param stateFunction partial function describing response to input
    */
-  final def when(stateName: S, stateTimeout: Duration = null)(stateFunction: StateFunction): Unit =
+  final def when(stateName: S, stateTimeout: FiniteDuration = null)(stateFunction: StateFunction): Unit =
     register(stateName, stateFunction, Option(stateTimeout))
 
   /**
@@ -342,13 +342,13 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * @param repeat send once if false, scheduleAtFixedRate if true
    * @return current state descriptor
    */
-  final def setTimer(name: String, msg: Any, timeout: Duration, repeat: Boolean): State = {
+  final def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean): State = {
     if (debugEvent)
       log.debug("setting " + (if (repeat) "repeating " else "") + "timer '" + name + "'/" + timeout + ": " + msg)
     if (timers contains name) {
       timers(name).cancel
     }
-    val timer = Timer(name, msg, repeat, timerGen.next)(context.system)
+    val timer = Timer(name, msg, repeat, timerGen.next)(context)
     timer.schedule(self, timeout)
     timers(name) = timer
     stay
@@ -427,6 +427,8 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   /**
    * Set handler which is called upon reception of unhandled messages. Calling
    * this method again will overwrite the previous contents.
+   *
+   * The current state may be queried using ``stateName``.
    */
   final def whenUnhandled(stateFunction: StateFunction): Unit =
     handleEvent = stateFunction orElse handleEventDefault
@@ -600,7 +602,8 @@ trait FSM[S, D] extends Listeners with ActorLogging {
       val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
       if (timeout.isDefined) {
         val t = timeout.get
-        if (t.finite_? && t.length >= 0) {
+        if (t.isFinite && t.length >= 0) {
+          import context.dispatcher
           timeoutFuture = Some(context.system.scheduler.scheduleOnce(t, self, TimeoutMarker(generation)))
         }
       }

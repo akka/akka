@@ -4,14 +4,17 @@
 package akka.cluster
 
 import scala.collection.immutable.SortedSet
-import scala.concurrent.util.{ Deadline, Duration }
+import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, RootActorPath, PoisonPill, Scheduler }
+import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, ReceiveTimeout, RootActorPath, Scheduler }
 import akka.actor.Status.Failure
-import akka.routing.ScatterGatherFirstCompletedRouter
+import akka.event.EventStream
+import akka.pattern.ask
 import akka.util.Timeout
-import akka.pattern.{ AskTimeoutException, ask, pipe }
-import MemberStatus._
+import akka.cluster.MemberStatus._
+import akka.cluster.ClusterEvent._
+import language.existentials
+import language.postfixOps
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -55,6 +58,12 @@ private[cluster] object InternalClusterAction {
   case class JoinTo(address: Address) extends ClusterMessage
 
   /**
+   * Command to initiate the process to join the specified
+   * seed nodes.
+   */
+  case class JoinSeedNodes(seedNodes: IndexedSeq[Address])
+
+  /**
    * Start message of the process to join one of the seed nodes.
    * The node sends `InitJoin` to all seed nodes, which replies
    * with `InitJoinAck`. The first reply is used others are discarded.
@@ -72,15 +81,22 @@ private[cluster] object InternalClusterAction {
    */
   case class InitJoinAck(address: Address) extends ClusterMessage
 
-  case object GossipTick
+  /**
+   * Marker interface for periodic tick messages
+   */
+  sealed trait Tick
 
-  case object HeartbeatTick
+  case object GossipTick extends Tick
 
-  case object ReapUnreachableTick
+  case object HeartbeatTick extends Tick
 
-  case object LeaderActionsTick
+  case object ReapUnreachableTick extends Tick
 
-  case object PublishStateTick
+  case object MetricsTick extends Tick
+
+  case object LeaderActionsTick extends Tick
+
+  case object PublishStatsTick extends Tick
 
   case class SendClusterMessage(to: Address, msg: ClusterMessage)
 
@@ -88,8 +104,18 @@ private[cluster] object InternalClusterAction {
 
   case object GetClusterCoreRef
 
-  case class Ping(timestamp: Long = System.currentTimeMillis) extends ClusterMessage
-  case class Pong(ping: Ping, timestamp: Long = System.currentTimeMillis) extends ClusterMessage
+  sealed trait SubscriptionMessage
+  case class Subscribe(subscriber: ActorRef, to: Class[_]) extends SubscriptionMessage
+  case class Unsubscribe(subscriber: ActorRef, to: Option[Class[_]]) extends SubscriptionMessage
+  /**
+   * @param receiver if `receiver` is defined the event will only be sent to that
+   *   actor, otherwise it will be sent to all subscribers via the `eventStream`.
+   */
+  case class PublishCurrentClusterState(receiver: Option[ActorRef]) extends SubscriptionMessage
+
+  case class PublishChanges(oldGossip: Gossip, newGossip: Gossip)
+  case class PublishEvent(event: ClusterDomainEvent)
+  case object PublishDone
 
 }
 
@@ -113,35 +139,24 @@ private[cluster] object ClusterLeaderAction {
 }
 
 /**
- * INTERNAL API
- *
- * The contextual pieces that ClusterDaemon actors need.
- * Makes it easier to test the actors without using the Cluster extension.
- */
-private[cluster] trait ClusterEnvironment {
-  private[cluster] def settings: ClusterSettings
-  private[cluster] def failureDetector: FailureDetector
-  private[cluster] def selfAddress: Address
-  private[cluster] def scheduler: Scheduler
-  private[cluster] def seedNodes: IndexedSeq[Address]
-  private[cluster] def notifyMembershipChangeListeners(members: SortedSet[Member]): Unit
-  private[cluster] def publishLatestGossip(gossip: Gossip): Unit
-  private[cluster] def publishLatestStats(stats: ClusterStats): Unit
-  private[cluster] def shutdown(): Unit
-}
-
-/**
  * INTERNAL API.
  *
  * Supervisor managing the different Cluster daemons.
  */
-private[cluster] final class ClusterDaemon(environment: ClusterEnvironment) extends Actor with ActorLogging {
+private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Actor with ActorLogging {
 
-  val configuredDispatcher = environment.settings.UseDispatcher
-  val core = context.actorOf(Props(new ClusterCoreDaemon(environment)).
-    withDispatcher(configuredDispatcher), name = "core")
-  val heartbeat = context.actorOf(Props(new ClusterHeartbeatDaemon(environment)).
-    withDispatcher(configuredDispatcher), name = "heartbeat")
+  // Important - don't use Cluster(context.system) here because that would
+  // cause deadlock. The Cluster extension is currently being created and is waiting
+  // for response from GetClusterCoreRef in its constructor.
+
+  val publisher = context.actorOf(Props[ClusterDomainEventPublisher].
+    withDispatcher(context.props.dispatcher), name = "publisher")
+  val core = context.actorOf(Props(new ClusterCoreDaemon(publisher)).
+    withDispatcher(context.props.dispatcher), name = "core")
+  context.actorOf(Props[ClusterHeartbeatReceiver].
+    withDispatcher(context.props.dispatcher), name = "heartbeatReceiver")
+  if (settings.MetricsEnabled) context.actorOf(Props(new ClusterMetricsCollector(publisher)).
+    withDispatcher(context.props.dispatcher), name = "metrics")
 
   def receive = {
     case InternalClusterAction.GetClusterCoreRef ⇒ sender ! core
@@ -152,87 +167,75 @@ private[cluster] final class ClusterDaemon(environment: ClusterEnvironment) exte
 /**
  * INTERNAL API.
  */
-private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) extends Actor with ActorLogging {
+private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging {
   import ClusterLeaderAction._
   import InternalClusterAction._
-  import ClusterHeartbeatSender._
+  import ClusterHeartbeatSender.JoinInProgress
 
-  def selfAddress = environment.selfAddress
-  def clusterScheduler = environment.scheduler
-  def failureDetector = environment.failureDetector
-  val settings = environment.settings
-  import settings._
+  val cluster = Cluster(context.system)
+  import cluster.{ selfAddress, scheduler, failureDetector }
+  import cluster.settings._
 
   val vclockNode = VectorClock.Node(selfAddress.toString)
-  val selfHeartbeat = Heartbeat(selfAddress)
 
   // note that self is not initially member,
   // and the Gossip is not versioned for this 'Node' yet
   var latestGossip: Gossip = Gossip()
-  var joinInProgress: Map[Address, Deadline] = Map.empty
 
   var stats = ClusterStats()
 
-  val heartbeatSender = context.actorOf(Props(new ClusterHeartbeatSender(environment)).
-    withDispatcher(UseDispatcher), name = "heartbeatSender")
-  val coreSender = context.actorOf(Props(new ClusterCoreSender(selfAddress)).
+  val coreSender = context.actorOf(Props[ClusterCoreSender].
     withDispatcher(UseDispatcher), name = "coreSender")
+  val heartbeatSender = context.actorOf(Props[ClusterHeartbeatSender].
+    withDispatcher(UseDispatcher), name = "heartbeatSender")
+
+  import context.dispatcher
 
   // start periodic gossip to random nodes in cluster
-  val gossipTask =
-    FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(GossipInterval), GossipInterval) {
-      self ! GossipTick
-    }
-
-  // start periodic heartbeat to all nodes in cluster
-  val heartbeatTask =
-    FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(HeartbeatInterval), HeartbeatInterval) {
-      self ! HeartbeatTick
-    }
+  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay.max(GossipInterval),
+    GossipInterval, self, GossipTick)
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  val failureDetectorReaperTask =
-    FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval), UnreachableNodesReaperInterval) {
-      self ! ReapUnreachableTick
-    }
+  val failureDetectorReaperTask = scheduler.schedule(PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval),
+    UnreachableNodesReaperInterval, self, ReapUnreachableTick)
 
   // start periodic leader action management (only applies for the current leader)
-  private val leaderActionsTask =
-    FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(LeaderActionsInterval), LeaderActionsInterval) {
-      self ! LeaderActionsTick
-    }
+  val leaderActionsTask = scheduler.schedule(PeriodicTasksInitialDelay.max(LeaderActionsInterval),
+    LeaderActionsInterval, self, LeaderActionsTick)
 
-  // start periodic publish of current state
-  private val publishStateTask: Option[Cancellable] =
-    if (PublishStateInterval == Duration.Zero) None
-    else Some(FixedRateTask(clusterScheduler, PeriodicTasksInitialDelay.max(PublishStateInterval), PublishStateInterval) {
-      self ! PublishStateTick
-    })
+  // start periodic publish of current stats
+  val publishStatsTask: Option[Cancellable] =
+    if (PublishStatsInterval == Duration.Zero) None
+    else Some(scheduler.schedule(PeriodicTasksInitialDelay.max(PublishStatsInterval),
+      PublishStatsInterval, self, PublishStatsTick))
 
   override def preStart(): Unit = {
-    if (AutoJoin) self ! InternalClusterAction.JoinSeedNode
+    if (AutoJoin) self ! JoinSeedNodes(SeedNodes)
   }
 
   override def postStop(): Unit = {
     gossipTask.cancel()
-    heartbeatTask.cancel()
     failureDetectorReaperTask.cancel()
     leaderActionsTask.cancel()
-    publishStateTask foreach { _.cancel() }
+    publishStatsTask foreach { _.cancel() }
   }
 
-  def receive = {
+  def uninitialized: Actor.Receive = {
+    case InitJoin                 ⇒ // skip, not ready yet
+    case JoinTo(address)          ⇒ join(address)
+    case JoinSeedNodes(seedNodes) ⇒ joinSeedNodes(seedNodes)
+    case msg: SubscriptionMessage ⇒ publisher forward msg
+    case _: Tick                  ⇒ // ignore periodic tasks until initialized
+  }
+
+  def initialized: Actor.Receive = {
     case msg: GossipEnvelope              ⇒ receiveGossip(msg)
     case msg: GossipMergeConflict         ⇒ receiveGossipMerge(msg)
     case GossipTick                       ⇒ gossip()
-    case HeartbeatTick                    ⇒ heartbeat()
     case ReapUnreachableTick              ⇒ reapUnreachableMembers()
     case LeaderActionsTick                ⇒ leaderActions()
-    case PublishStateTick                 ⇒ publishState()
-    case JoinSeedNode                     ⇒ joinSeedNode()
+    case PublishStatsTick                 ⇒ publishInternalStats()
     case InitJoin                         ⇒ initJoin()
-    case InitJoinAck(address)             ⇒ join(address)
-    case Failure(e: AskTimeoutException)  ⇒ joinSeedNodeTimeout()
     case JoinTo(address)                  ⇒ join(address)
     case ClusterUserAction.Join(address)  ⇒ joining(address)
     case ClusterUserAction.Down(address)  ⇒ downing(address)
@@ -240,41 +243,50 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     case Exit(address)                    ⇒ exiting(address)
     case Remove(address)                  ⇒ removing(address)
     case SendGossipTo(address)            ⇒ gossipTo(address)
-    case p: Ping                          ⇒ ping(p)
+    case msg: SubscriptionMessage         ⇒ publisher forward msg
 
   }
 
-  def joinSeedNode(): Unit = {
-    val seedRoutees = environment.seedNodes.collect { case a if a != selfAddress ⇒ self.path.toStringWithAddress(a) }
-    if (seedRoutees.isEmpty) join(selfAddress)
-    else {
-      implicit val within = Timeout(SeedNodeTimeout)
-      val seedRouter = context.actorOf(Props.empty.withRouter(ScatterGatherFirstCompletedRouter(routees = seedRoutees, within = within.duration)))
-      seedRouter ! InitJoin
-      seedRouter ! PoisonPill
-    }
+  def removed: Actor.Receive = {
+    case msg: SubscriptionMessage ⇒ publisher forward msg
+    case _: Tick                  ⇒ // ignore periodic tasks
   }
+
+  def receive = uninitialized
 
   def initJoin(): Unit = sender ! InitJoinAck(selfAddress)
 
-  def joinSeedNodeTimeout(): Unit = join(selfAddress)
+  def joinSeedNodes(seedNodes: IndexedSeq[Address]): Unit = {
+    // only the node which is named first in the list of seed nodes will join itself
+    if (seedNodes.isEmpty || seedNodes.head == selfAddress)
+      self ! JoinTo(selfAddress)
+    else
+      context.actorOf(Props(new JoinSeedNodeProcess(seedNodes)).
+        withDispatcher(UseDispatcher), name = "joinSeedNodeProcess")
+  }
 
   /**
    * Try to join this cluster node with the node specified by 'address'.
    * A 'Join(thisNodeAddress)' command is sent to the node to join.
    */
   def join(address: Address): Unit = {
-    val localGossip = latestGossip
-    // wipe our state since a node that joins a cluster must be empty
-    latestGossip = Gossip()
-    joinInProgress = Map(address -> (Deadline.now + JoinTimeout))
+    if (!latestGossip.members.exists(_.address == address)) {
+      val localGossip = latestGossip
+      // wipe our state since a node that joins a cluster must be empty
+      latestGossip = Gossip()
 
-    // wipe the failure detector since we are starting fresh and shouldn't care about the past
-    failureDetector.reset()
+      // wipe the failure detector since we are starting fresh and shouldn't care about the past
+      failureDetector.reset()
 
-    notifyListeners(localGossip)
+      publish(localGossip)
+      heartbeatSender ! JoinInProgress(address, Deadline.now + JoinTimeout)
 
-    coreSender ! SendClusterMessage(address, ClusterUserAction.Join(selfAddress))
+      context.become(initialized)
+      if (address == selfAddress)
+        joining(address)
+      else
+        coreSender ! SendClusterMessage(address, ClusterUserAction.Join(selfAddress))
+    }
   }
 
   /**
@@ -299,7 +311,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
       // add joining node as Joining
       // add self in case someone else joins before self has joined (Set discards duplicates)
-      val newMembers = localMembers :+ Member(node, Joining) :+ Member(selfAddress, Joining)
+      val newMembers = localMembers + Member(node, Joining) + Member(selfAddress, Joining)
       val newGossip = localGossip copy (overview = newOverview, members = newMembers)
 
       val versionedGossip = newGossip :+ vclockNode
@@ -314,7 +326,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
         gossipTo(node)
       }
 
-      notifyListeners(localGossip)
+      publish(localGossip)
     }
   }
 
@@ -333,7 +345,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
       latestGossip = seenVersionedGossip
 
       log.info("Cluster Node [{}] - Marked address [{}] as LEAVING", selfAddress, address)
-      notifyListeners(localGossip)
+      publish(localGossip)
     }
   }
 
@@ -359,9 +371,12 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     val localGossip = latestGossip
     // just cleaning up the gossip state
     latestGossip = Gossip()
-    // make sure the final (removed) state is always published
-    notifyListeners(localGossip)
-    environment.shutdown()
+    publish(localGossip)
+    context.become(removed)
+    // make sure the final (removed) state is published
+    // before shutting down
+    implicit val timeout = Timeout(5 seconds)
+    publisher ? PublishDone onComplete { case _ ⇒ cluster.shutdown() }
   }
 
   /**
@@ -411,7 +426,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     val versionedGossip = newGossip :+ vclockNode
     latestGossip = versionedGossip seen selfAddress
 
-    notifyListeners(localGossip)
+    publish(localGossip)
   }
 
   /**
@@ -483,12 +498,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
           else if (remoteGossip.version < localGossip.version) localGossip // local gossip is newer
           else remoteGossip // remote gossip is newer
 
-        val newJoinInProgress =
-          if (joinInProgress.isEmpty) joinInProgress
-          else joinInProgress -- winningGossip.members.map(_.address) -- winningGossip.overview.unreachable.map(_.address)
-
         latestGossip = winningGossip seen selfAddress
-        joinInProgress = newJoinInProgress
 
         // for all new joining nodes we remove them from the failure detector
         (latestGossip.members -- localGossip.members).foreach {
@@ -505,7 +515,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
         }
 
         stats = stats.incrementReceivedGossipCount
-        notifyListeners(localGossip)
+        publish(localGossip)
 
         if (envelope.conversation &&
           (conflict || (winningGossip ne remoteGossip) || (latestGossip ne remoteGossip))) {
@@ -557,7 +567,7 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
     val localGossip = latestGossip
     val localMembers = localGossip.members
 
-    val isLeader = localMembers.nonEmpty && (selfAddress == localMembers.head.address)
+    val isLeader = localGossip.isLeader(selfAddress)
 
     if (isLeader && isAvailable) {
       // only run the leader actions if we are the LEADER and available
@@ -576,12 +586,10 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
       //   3. Non-exiting remain              -- When all partition handoff has completed
       //   4. Move EXITING     => REMOVED     -- When all nodes have seen that the node is EXITING (convergence) - remove the nodes from the node ring and seen table
       //   5. Move UNREACHABLE => DOWN        -- When the node is in the UNREACHABLE set it can be auto-down by leader
-      //   5. Store away all stuff needed for the side-effecting processing in 10.
       //   6. Updating the vclock version for the changes
       //   7. Updating the 'seen' table
       //   8. Try to update the state with the new gossip
-      //   9. If failure - retry
-      //  10. If success - run all the side-effecting processing
+      //   9. If success - run all the side-effecting processing
 
       val (
         newGossip: Gossip,
@@ -707,32 +715,15 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
           log.info("Cluster Node [{}] - Leader is marking unreachable node [{}] as DOWN", selfAddress, member.address)
         }
 
-        notifyListeners(localGossip)
+        publish(localGossip)
       }
     }
-  }
-
-  def heartbeat(): Unit = {
-    removeOverdueJoinInProgress()
-
-    val beatTo = latestGossip.members.toSeq.map(_.address) ++ joinInProgress.keys
-
-    val deadline = Deadline.now + HeartbeatInterval
-    beatTo.foreach { address ⇒ if (address != selfAddress) heartbeatSender ! SendHeartbeat(selfHeartbeat, address, deadline) }
-  }
-
-  /**
-   * Removes overdue joinInProgress from State.
-   */
-  def removeOverdueJoinInProgress(): Unit = {
-    joinInProgress --= joinInProgress collect { case (address, deadline) if deadline.isOverdue ⇒ address }
   }
 
   /**
    * Reaps the unreachable members (moves them to the 'unreachable' list in the cluster overview) according to the failure detector's verdict.
    */
   def reapUnreachableMembers(): Unit = {
-
     if (!isSingletonCluster && isAvailable) {
       // only scrutinize if we are a non-singleton cluster and available
 
@@ -761,12 +752,10 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
 
         log.error("Cluster Node [{}] - Marking node(s) as UNREACHABLE [{}]", selfAddress, newlyDetectedUnreachableMembers.mkString(", "))
 
-        notifyListeners(localGossip)
+        publish(localGossip)
       }
     }
   }
-
-  def seedNodes: IndexedSeq[Address] = environment.seedNodes
 
   def selectRandomNode(addresses: IndexedSeq[Address]): Option[Address] =
     if (addresses.isEmpty) None
@@ -801,34 +790,85 @@ private[cluster] final class ClusterCoreDaemon(environment: ClusterEnvironment) 
   def gossipTo(address: Address, gossipMsg: GossipEnvelope): Unit = if (address != selfAddress)
     coreSender ! SendClusterMessage(address, gossipMsg)
 
-  def notifyListeners(oldGossip: Gossip): Unit = {
-    if (PublishStateInterval == Duration.Zero) publishState()
-
-    val oldMembersStatus = oldGossip.members.map(m ⇒ (m.address, m.status))
-    val newMembersStatus = latestGossip.members.map(m ⇒ (m.address, m.status))
-    if (newMembersStatus != oldMembersStatus)
-      environment notifyMembershipChangeListeners latestGossip.members
+  def publish(oldGossip: Gossip): Unit = {
+    publisher ! PublishChanges(oldGossip, latestGossip)
+    if (PublishStatsInterval == Duration.Zero) publishInternalStats()
   }
 
-  def publishState(): Unit = {
-    environment.publishLatestGossip(latestGossip)
-    environment.publishLatestStats(stats)
+  def publishInternalStats(): Unit = publisher ! CurrentInternalStats(stats)
+
+}
+
+/**
+ * INTERNAL API.
+ *
+ * Sends InitJoinAck to all seed nodes (except itself) and expect
+ * InitJoinAck reply back. The seed node that replied first
+ * will be used, joined to. InitJoinAck replies received after the
+ * first one are ignored.
+ *
+ * Retries if no InitJoinAck replies are received within the
+ * SeedNodeTimeout.
+ * When at least one reply has been received it stops itself after
+ * an idle SeedNodeTimeout.
+ *
+ * The seed nodes can be started in any order, but they will not be "active",
+ * until they have been able to join another seed node (seed1).
+ * They will retry the join procedure.
+ * So one possible startup scenario is:
+ * 1. seed2 started, but doesn't get any ack from seed1 or seed3
+ * 2. seed3 started, doesn't get any ack from seed1 or seed3 (seed2 doesn't reply)
+ * 3. seed1 is started and joins itself
+ * 4. seed2 retries the join procedure and gets an ack from seed1, and then joins to seed1
+ * 5. seed3 retries the join procedure and gets acks from seed2 first, and then joins to seed2
+ *
+ */
+private[cluster] final class JoinSeedNodeProcess(seedNodes: IndexedSeq[Address]) extends Actor with ActorLogging {
+  import InternalClusterAction._
+
+  def selfAddress = Cluster(context.system).selfAddress
+
+  if (seedNodes.isEmpty || seedNodes.head == selfAddress)
+    throw new IllegalArgumentException("Join seed node should not be done")
+
+  context.setReceiveTimeout(Cluster(context.system).settings.SeedNodeTimeout)
+
+  override def preStart(): Unit = self ! JoinSeedNode
+
+  def receive = {
+    case JoinSeedNode ⇒
+      // send InitJoin to all seed nodes (except myself)
+      seedNodes.collect {
+        case a if a != selfAddress ⇒ context.actorFor(context.parent.path.toStringWithAddress(a))
+      } foreach { _ ! InitJoin }
+    case InitJoinAck(address) ⇒
+      // first InitJoinAck reply
+      context.parent ! JoinTo(address)
+      context.become(done)
+    case ReceiveTimeout ⇒
+      // no InitJoinAck received, try again
+      self ! JoinSeedNode
   }
 
-  def ping(p: Ping): Unit = sender ! Pong(p)
+  def done: Actor.Receive = {
+    case InitJoinAck(_) ⇒ // already received one, skip rest
+    case ReceiveTimeout ⇒ context.stop(self)
+  }
 }
 
 /**
  * INTERNAL API.
  */
-private[cluster] final class ClusterCoreSender(selfAddress: Address) extends Actor with ActorLogging {
+private[cluster] final class ClusterCoreSender extends Actor with ActorLogging {
   import InternalClusterAction._
+
+  val selfAddress = Cluster(context.system).selfAddress
 
   /**
    * Looks up and returns the remote cluster command connection for the specific address.
    */
   private def clusterCoreConnectionFor(address: Address): ActorRef =
-    context.system.actorFor(RootActorPath(address) / "system" / "cluster" / "core")
+    context.actorFor(RootActorPath(address) / "system" / "cluster" / "core")
 
   def receive = {
     case SendClusterMessage(to, msg) ⇒

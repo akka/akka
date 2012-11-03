@@ -31,7 +31,8 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
         val d = netty.system.dispatchers.lookup(id)
         new NioServerSocketChannelFactory(d, d)
       case None ⇒
-        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
+        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(),
+          settings.ServerSocketWorkerPoolSize)
     }
 
   // group of open channels, used for clean-up
@@ -72,7 +73,7 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
           b.setCookie(settings.SecureCookie.get)
         b.build
       }
-      openChannels.write(netty.createControlEnvelope(shutdownSignal)).awaitUninterruptibly
+      openChannels.write(netty.createControlEnvelope(shutdownSignal))
       openChannels.disconnect
       openChannels.close.awaitUninterruptibly
       bootstrap.releaseExternalResources()

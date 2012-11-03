@@ -10,26 +10,26 @@ import akka.actor.Props
 import akka.actor.Actor
 import scala.concurrent.Await
 import scala.concurrent.Awaitable
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit.ImplicitSender
 import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress
 import java.net.InetAddress
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.MultiNodeConfig
+import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec, MultiNodeConfig }
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false))
 
   val master = role("master")
   val slave = role("slave")
+
+  testTransport(on = true)
 }
 
 class TestConductorMultiJvmNode1 extends TestConductorSpec
 class TestConductorMultiJvmNode2 extends TestConductorSpec
 
-class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ImplicitSender {
+class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with STMultiNodeSpec with ImplicitSender {
 
   import TestConductorMultiJvmSpec._
 
@@ -89,11 +89,8 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with Im
       }
 
       val (min, max) =
-        ifNode(master) {
-          (0 seconds, 500 millis)
-        } {
-          (0.6 seconds, 2 seconds)
-        }
+        if(isNode(master))(0 seconds, 500 millis)
+        else (0.6 seconds, 2 seconds)
 
       within(min, max) {
         expectMsg(500 millis, 10)
@@ -105,6 +102,8 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with Im
       runOn(master) {
         testConductor.throttle(slave, master, Direction.Receive, -1).await
       }
+
+      enterBarrier("after")
     }
 
   }

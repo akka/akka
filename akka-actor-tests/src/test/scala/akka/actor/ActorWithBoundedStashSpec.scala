@@ -11,74 +11,115 @@ import akka.testkit.TestEvent._
 import akka.dispatch.BoundedDequeBasedMailbox
 import akka.pattern.ask
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.Assertions.intercept
 import org.scalatest.BeforeAndAfterEach
 
 object ActorWithBoundedStashSpec {
 
-  class StashingActor(implicit sys: ActorSystem) extends Actor with Stash {
+  class StashingActor extends Actor with Stash {
     def receive = {
-      case "hello" ⇒ stash()
-      case "world" ⇒ unstashAll()
+      case msg: String if msg.startsWith("hello") ⇒
+        stash()
+        sender ! "ok"
+
+      case "world" ⇒
+        context.become(afterWorldBehaviour)
+        unstashAll()
+
+    }
+
+    def afterWorldBehaviour: Receive = {
+      case _ ⇒ stash()
     }
   }
 
-  class StashingActorWithOverflow(implicit sys: ActorSystem) extends Actor with Stash {
+  class StashingActorWithOverflow extends Actor with Stash {
     var numStashed = 0
 
     def receive = {
-      case "hello" ⇒
+      case msg: String if msg.startsWith("hello") ⇒
         numStashed += 1
-        try stash() catch { case e: StashOverflowException ⇒ if (numStashed == 21) sender ! "STASHOVERFLOW" }
+        try { stash(); sender ! "ok" } catch {
+          case _: StashOverflowException ⇒
+            if (numStashed == 21) {
+              sender ! "STASHOVERFLOW"
+              context stop self
+            } else {
+              sender ! "Unexpected StashOverflowException: " + numStashed
+            }
+        }
     }
   }
 
+  // bounded deque-based mailbox with capacity 10
+  class Bounded10(settings: Settings, config: Config) extends BoundedDequeBasedMailbox(10, 500 millis)
+
+  class Bounded100(settings: Settings, config: Config) extends BoundedDequeBasedMailbox(100, 500 millis)
+
+  val dispatcherId1 = "my-dispatcher-1"
+  val dispatcherId2 = "my-dispatcher-2"
+
   val testConf: Config = ConfigFactory.parseString("""
-    my-dispatcher {
-      mailbox-type = "akka.actor.ActorWithBoundedStashSpec$Bounded"
+    %s {
+      mailbox-type = "%s"
       stash-capacity = 20
     }
-    """)
-
-  // bounded deque-based mailbox with capacity 10
-  class Bounded(settings: Settings, config: Config) extends BoundedDequeBasedMailbox(10, 1 seconds)
+    %s {
+      mailbox-type = "%s"
+      stash-capacity = 20
+    }
+    """.format(dispatcherId1, classOf[Bounded10].getName, dispatcherId2, classOf[Bounded100].getName))
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testConf) with DefaultTimeout with BeforeAndAfterEach with ImplicitSender {
+class ActorWithBoundedStashSpec extends AkkaSpec(ActorWithBoundedStashSpec.testConf) with BeforeAndAfterEach with DefaultTimeout with ImplicitSender {
   import ActorWithBoundedStashSpec._
 
-  implicit val sys = system
+  override def atStartup: Unit = {
+    system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*hello.*")))
+  }
 
-  override def atStartup { system.eventStream.publish(Mute(EventFilter[Exception]("Crashing..."))) }
+  override def beforeEach(): Unit =
+    system.eventStream.subscribe(testActor, classOf[DeadLetter])
 
-  def myProps(creator: ⇒ Actor): Props = Props(creator).withDispatcher("my-dispatcher")
+  override def afterEach(): Unit =
+    system.eventStream.unsubscribe(testActor, classOf[DeadLetter])
 
-  "An Actor with Stash and BoundedDequeBasedMailbox" must {
+  "An Actor with Stash" must {
 
     "end up in DeadLetters in case of a capacity violation" in {
-      system.eventStream.subscribe(testActor, classOf[DeadLetter])
-
-      val stasher = system.actorOf(myProps(new StashingActor))
+      val stasher = system.actorOf(Props[StashingActor].withDispatcher(dispatcherId1))
       // fill up stash
-      (1 to 11) foreach { _ ⇒ stasher ! "hello" }
+      for (n ← 1 to 11) {
+        stasher ! "hello" + n
+        expectMsg("ok")
+      }
 
       // cause unstashAll with capacity violation
       stasher ! "world"
-      expectMsg(DeadLetter("hello", testActor, stasher))
-      system.eventStream.unsubscribe(testActor, classOf[DeadLetter])
-    }
-  }
+      expectMsg(DeadLetter("hello1", testActor, stasher))
 
-  "An Actor with bounded Stash" must {
+      stasher ! PoisonPill
+      // stashed messages are sent to deadletters when stasher is stopped
+      for (n ← 2 to 11) expectMsg(DeadLetter("hello" + n, testActor, stasher))
+    }
 
     "throw a StashOverflowException in case of a stash capacity violation" in {
-      val stasher = system.actorOf(myProps(new StashingActorWithOverflow))
+      val stasher = system.actorOf(Props[StashingActorWithOverflow].withDispatcher(dispatcherId2))
       // fill up stash
-      (1 to 21) foreach { _ ⇒ stasher ! "hello" }
+      for (n ← 1 to 20) {
+        stasher ! "hello" + n
+        expectMsg("ok")
+      }
+
+      stasher ! "hello21"
       expectMsg("STASHOVERFLOW")
+
+      // stashed messages are sent to deadletters when stasher is stopped,
+      for (n ← 1 to 20) expectMsg(DeadLetter("hello" + n, testActor, stasher))
     }
   }
 }

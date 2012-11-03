@@ -5,16 +5,14 @@
 package akka.actor
 
 import language.postfixOps
-
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import akka.testkit._
 import TestEvent.Mute
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.event._
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import akka.util.Timeout
-import scala.concurrent.util.Duration
 
 object FSMActorSpec {
   val timeout = Timeout(2 seconds)
@@ -33,7 +31,7 @@ object FSMActorSpec {
   case object Locked extends LockState
   case object Open extends LockState
 
-  class Lock(code: String, timeout: Duration, latches: Latches) extends Actor with FSM[LockState, CodeState] {
+  class Lock(code: String, timeout: FiniteDuration, latches: Latches) extends Actor with FSM[LockState, CodeState] {
 
     import latches._
 
@@ -183,6 +181,10 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
     "run onTermination upon ActorRef.stop()" in {
       val started = TestLatch(1)
+      /*
+       * This lazy val trick is beyond evil: KIDS, DON'T TRY THIS AT HOME!
+       * It is necessary here because of the path-dependent type fsm.StopEvent.
+       */
       lazy val fsm = new Actor with FSM[Int, Null] {
         override def preStart = { started.countDown }
         startWith(1, null)

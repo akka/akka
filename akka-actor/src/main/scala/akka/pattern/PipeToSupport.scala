@@ -6,15 +6,16 @@ package akka.pattern
 import language.implicitConversions
 
 import scala.concurrent.{ Future, ExecutionContext }
-import akka.actor.{ Status, ActorRef }
+import scala.util.{ Failure, Success }
+import akka.actor.{ Status, ActorRef, Actor }
 
 trait PipeToSupport {
 
   final class PipeableFuture[T](val future: Future[T])(implicit executionContext: ExecutionContext) {
-    def pipeTo(recipient: ActorRef)(implicit sender: ActorRef = null): Future[T] = {
+    def pipeTo(recipient: ActorRef)(implicit sender: ActorRef = Actor.noSender): Future[T] = {
       future onComplete {
-        case Right(r) ⇒ recipient ! r
-        case Left(f)  ⇒ recipient ! Status.Failure(f)
+        case Success(r) ⇒ recipient ! r
+        case Failure(f) ⇒ recipient ! Status.Failure(f)
       }
       future
     }

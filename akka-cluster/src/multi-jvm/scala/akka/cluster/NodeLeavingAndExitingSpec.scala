@@ -8,7 +8,10 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
+import akka.actor.Props
+import akka.actor.Actor
+import akka.cluster.MemberStatus._
 
 object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -20,18 +23,19 @@ object NodeLeavingAndExitingMultiJvmSpec extends MultiNodeConfig {
       .withFallback(ConfigFactory.parseString("""
           # turn off unreachable reaper
           akka.cluster.unreachable-nodes-reaper-interval = 300 s""")
-        .withFallback(MultiNodeClusterSpec.clusterConfig)))
+        .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet)))
 }
 
-class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec with FailureDetectorPuppetStrategy
-class NodeLeavingAndExitingMultiJvmNode2 extends NodeLeavingAndExitingSpec with FailureDetectorPuppetStrategy
-class NodeLeavingAndExitingMultiJvmNode3 extends NodeLeavingAndExitingSpec with FailureDetectorPuppetStrategy
+class NodeLeavingAndExitingMultiJvmNode1 extends NodeLeavingAndExitingSpec
+class NodeLeavingAndExitingMultiJvmNode2 extends NodeLeavingAndExitingSpec
+class NodeLeavingAndExitingMultiJvmNode3 extends NodeLeavingAndExitingSpec
 
 abstract class NodeLeavingAndExitingSpec
   extends MultiNodeSpec(NodeLeavingAndExitingMultiJvmSpec)
   with MultiNodeClusterSpec {
 
   import NodeLeavingAndExitingMultiJvmSpec._
+  import ClusterEvent._
 
   "A node that is LEAVING a non-singleton cluster" must {
 
@@ -43,22 +47,28 @@ abstract class NodeLeavingAndExitingSpec
         val secondAddess = address(second)
         val leavingLatch = TestLatch()
         val exitingLatch = TestLatch()
-        val expectedAddresses = roles.toSet map address
-        cluster.registerListener(new MembershipChangeListener {
-          def notify(members: SortedSet[Member]) {
-            def check(status: MemberStatus): Boolean =
-              (members.map(_.address) == expectedAddresses &&
-                members.exists(m ⇒ m.address == secondAddess && m.status == status))
-            if (check(MemberStatus.Leaving)) leavingLatch.countDown()
-            if (check(MemberStatus.Exiting)) exitingLatch.countDown()
+        cluster.subscribe(system.actorOf(Props(new Actor {
+          def receive = {
+            case state: CurrentClusterState ⇒
+              if (state.members.exists(m ⇒ m.address == secondAddess && m.status == Leaving))
+                leavingLatch.countDown()
+              if (state.members.exists(m ⇒ m.address == secondAddess && m.status == Exiting))
+                exitingLatch.countDown()
+            case MemberLeft(m) if m.address == secondAddess   ⇒ leavingLatch.countDown()
+            case MemberExited(m) if m.address == secondAddess ⇒ exitingLatch.countDown()
+            case MemberRemoved(m)                             ⇒ // not tested here
+
           }
-        })
+        })), classOf[MemberEvent])
         enterBarrier("registered-listener")
 
         runOn(third) {
           cluster.leave(second)
         }
         enterBarrier("second-left")
+
+        val expectedAddresses = roles.toSet map address
+        awaitCond(clusterView.members.map(_.address) == expectedAddresses)
 
         // Verify that 'second' node is set to LEAVING
         leavingLatch.await

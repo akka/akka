@@ -7,7 +7,7 @@ import akka.japi.*;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.Promise;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.testkit.TestKitExtension;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -93,7 +93,7 @@ public class JavaFutureTests {
     Throwable exception = new NullPointerException();
     cf.failure(exception);
     assertTrue(latch.await(5000, TimeUnit.MILLISECONDS));
-    assertEquals(f.value().get().left().get(), exception);
+    assertEquals(f.value().get().failed().get(), exception);
   }
 
   @Test

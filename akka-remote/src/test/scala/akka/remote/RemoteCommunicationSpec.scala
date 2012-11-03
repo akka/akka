@@ -8,7 +8,9 @@ import akka.actor._
 import com.typesafe.config._
 import scala.concurrent.Future
 import scala.concurrent.Await
+import scala.reflect.classTag
 import akka.pattern.ask
+import akka.event.Logging
 
 object RemoteCommunicationSpec {
   class Echo extends Actor {
@@ -75,9 +77,12 @@ akka {
     }
 
     "send error message for wrong address" in {
-      EventFilter.error(start = "dropping", occurrences = 1).intercept {
+      val old = other.eventStream.logLevel
+      other.eventStream.setLogLevel(Logging.DebugLevel)
+      EventFilter.debug(start = "dropping", occurrences = 1).intercept {
         system.actorFor("akka://remotesys@localhost:12346/user/echo") ! "ping"
       }(other)
+      other.eventStream.setLogLevel(old)
     }
 
     "support ask" in {
@@ -133,7 +138,7 @@ akka {
 
     "not fail ask across node boundaries" in {
       import system.dispatcher
-      val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo manifest[(String, ActorRef)]
+      val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo classTag[(String, ActorRef)]
       Await.result(Future.sequence(f), remaining).map(_._1).toSet must be(Set("pong"))
     }
 

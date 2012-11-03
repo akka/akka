@@ -4,7 +4,7 @@
 
 package akka.actor
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import com.typesafe.config._
 import akka.routing._
 import java.util.concurrent.{ TimeUnit }
@@ -27,7 +27,7 @@ import annotation.tailrec
  * context.actorOf(someProps, "someName", Deploy(scope = RemoteScope("someOtherNodeName")))
  * }}}
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 final case class Deploy(
   path: String = "",
   config: Config = ConfigFactory.empty,
@@ -76,10 +76,14 @@ trait Scope {
   def withFallback(other: Scope): Scope
 }
 
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 abstract class LocalScope extends Scope
 
-//FIXME docs
+/**
+ * The Local Scope is the default one, which is assumed on all deployments
+ * which do not set a different scope. It is also the only scope handled by
+ * the LocalActorRefProvider.
+ */
 case object LocalScope extends LocalScope {
   /**
    * Java API: get the singleton instance
@@ -92,7 +96,7 @@ case object LocalScope extends LocalScope {
 /**
  * This is the default value and as such allows overrides.
  */
-//TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+@SerialVersionUID(1L)
 abstract class NoScopeGiven extends Scope
 case object NoScopeGiven extends NoScopeGiven {
   def withFallback(other: Scope): Scope = other
@@ -105,8 +109,6 @@ case object NoScopeGiven extends NoScopeGiven {
 
 /**
  * Deployer maps actor paths to actor deployments.
- *
- * @author <a href="http://jonasboner.com">Jonas Bon&#233;r</a>
  */
 private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAccess: DynamicAccess) {
 
@@ -143,8 +145,6 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
     val nrOfInstances = deployment.getInt("nr-of-instances")
 
-    val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
-
     val resizer: Option[Resizer] = if (config.hasPath("resizer")) Some(DefaultResizer(deployment.getConfig("resizer"))) else None
 
     val router: RouterConfig = deployment.getString("router") match {
@@ -152,19 +152,22 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
       case "round-robin"      ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
       case "random"           ⇒ RandomRouter(nrOfInstances, routees, resizer)
       case "smallest-mailbox" ⇒ SmallestMailboxRouter(nrOfInstances, routees, resizer)
-      case "scatter-gather"   ⇒ ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
       case "broadcast"        ⇒ BroadcastRouter(nrOfInstances, routees, resizer)
+      case "scatter-gather" ⇒
+        val within = Duration(deployment.getMilliseconds("within"), TimeUnit.MILLISECONDS)
+        ScatterGatherFirstCompletedRouter(nrOfInstances, routees, within, resizer)
+      case "consistent-hashing" ⇒
+        val vnodes = deployment.getInt("virtual-nodes-factor")
+        ConsistentHashingRouter(nrOfInstances, routees, resizer, virtualNodesFactor = vnodes)
       case fqn ⇒
         val args = Seq(classOf[Config] -> deployment)
-        dynamicAccess.createInstanceFor[RouterConfig](fqn, args) match {
-          case Right(router) ⇒ router
-          case Left(exception) ⇒
-            throw new IllegalArgumentException(
-              ("Cannot instantiate router [%s], defined in [%s], " +
-                "make sure it extends [akka.routing.RouterConfig] and has constructor with " +
-                "[com.typesafe.config.Config] parameter")
-                .format(fqn, key), exception)
-        }
+        dynamicAccess.createInstanceFor[RouterConfig](fqn, args).recover({
+          case exception ⇒ throw new IllegalArgumentException(
+            ("Cannot instantiate router [%s], defined in [%s], " +
+              "make sure it extends [akka.routing.RouterConfig] and has constructor with " +
+              "[com.typesafe.config.Config] parameter")
+              .format(fqn, key), exception)
+        }).get
     }
 
     Some(Deploy(key, deployment, router, NoScopeGiven))

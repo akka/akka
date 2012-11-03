@@ -4,44 +4,99 @@
 package akka.cluster
 
 import language.implicitConversions
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec }
 import akka.testkit._
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import akka.testkit.TestEvent._
+import scala.concurrent.duration._
 import org.scalatest.Suite
 import org.scalatest.exceptions.TestFailedException
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.ActorPath
 import akka.actor.RootActorPath
+import akka.event.Logging.ErrorLevel
+import akka.actor.ActorSystem
 
 object MultiNodeClusterSpec {
+
+  def clusterConfigWithFailureDetectorPuppet: Config =
+    ConfigFactory.parseString("akka.cluster.failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet").
+      withFallback(clusterConfig)
+
+  def clusterConfig(failureDetectorPuppet: Boolean): Config =
+    if (failureDetectorPuppet) clusterConfigWithFailureDetectorPuppet else clusterConfig
+
   def clusterConfig: Config = ConfigFactory.parseString("""
+    akka.actor.provider = akka.cluster.ClusterActorRefProvider
     akka.cluster {
-      auto-join                         = off
-      auto-down                         = off
-      gossip-interval                   = 200 ms
-      heartbeat-interval                = 400 ms
-      leader-actions-interval           = 200 ms
-      unreachable-nodes-reaper-interval = 200 ms
-      periodic-tasks-initial-delay      = 300 ms
-      publish-state-interval            = 0 s # always, when it happens
+      auto-join                           = off
+      auto-down                           = off
+      jmx.enabled                         = off
+      gossip-interval                     = 200 ms
+      leader-actions-interval             = 200 ms
+      unreachable-nodes-reaper-interval   = 200 ms
+      periodic-tasks-initial-delay        = 300 ms
+      publish-stats-interval              = 0 s # always, when it happens
+      failure-detector.heartbeat-interval = 400 ms
     }
+    akka.loglevel = INFO
+    akka.remote.log-remote-lifecycle-events = off
+    akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.test {
       single-expect-default = 5 s
     }
     """)
 }
 
-trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: MultiNodeSpec ⇒
+trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeSpec ⇒
 
   override def initialParticipants = roles.size
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
+
+  override def atStartup(): Unit = {
+    muteLog()
+  }
+
+  def muteLog(sys: ActorSystem = system): Unit = {
+    if (!sys.log.isDebugEnabled) {
+      Seq(".*Metrics collection has started successfully.*",
+        ".*Hyperic SIGAR was not found on the classpath.*",
+        ".*Cluster Node.* - registered cluster JMX MBean.*",
+        ".*Cluster Node.* - is starting up.*",
+        ".*Shutting down cluster Node.*",
+        ".*Cluster node successfully shut down.*",
+        ".*Using a dedicated scheduler for cluster.*",
+        ".*Phi value.* for connection.*") foreach { s ⇒
+          sys.eventStream.publish(Mute(EventFilter.info(pattern = s)))
+        }
+
+      Seq(".*received dead letter from.*ClientDisconnected",
+        ".*received dead letter from.*deadLetters.*PoisonPill",
+        ".*installing context org.jboss.netty.channel.DefaultChannelPipeline.*") foreach { s ⇒
+          sys.eventStream.publish(Mute(EventFilter.warning(pattern = s)))
+        }
+    }
+  }
+
+  def muteMarkingAsUnreachable(sys: ActorSystem = system): Unit = if (!sys.log.isDebugEnabled) {
+    sys.eventStream.publish(Mute(EventFilter.error(pattern = ".*Marking.* as UNREACHABLE.*")))
+  }
+
+  def muteDeadLetters(sys: ActorSystem = system): Unit = if (!sys.log.isDebugEnabled) {
+    sys.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*")))
+  }
+
+  override def afterAll(): Unit = {
+    if (!log.isDebugEnabled) {
+      muteDeadLetters()
+      system.eventStream.setLogLevel(ErrorLevel)
+    }
+    super.afterAll()
+  }
 
   /**
    * Lookup the Address for the role.
@@ -80,37 +135,22 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
       throw t
   }
 
-  /**
-   * Make it possible to override/configure seedNodes from tests without
-   * specifying in config. Addresses are unknown before startup time.
-   */
-  protected def seedNodes: IndexedSeq[RoleName] = IndexedSeq.empty
-
-  /**
-   * The cluster node instance. Needs to be lazily created.
-   */
-  private lazy val clusterNode = new Cluster(system.asInstanceOf[ExtendedActorSystem], failureDetector) {
-    override def seedNodes: IndexedSeq[Address] = {
-      val testSeedNodes = MultiNodeClusterSpec.this.seedNodes
-      if (testSeedNodes.isEmpty) super.seedNodes
-      else testSeedNodes map address
-    }
-  }
+  def clusterView: ClusterReadView = cluster.readView
 
   /**
    * Get the cluster node to use.
    */
-  def cluster: Cluster = clusterNode
+  def cluster: Cluster = Cluster(system)
 
   /**
    * Use this method for the initial startup of the cluster node.
    */
   def startClusterNode(): Unit = {
-    if (cluster.latestGossip.members.isEmpty) {
+    if (clusterView.members.isEmpty) {
       cluster join myself
-      awaitCond(cluster.latestGossip.members.exists(_.address == address(myself)))
+      awaitCond(clusterView.members.exists(_.address == address(myself)))
     } else
-      cluster.self
+      clusterView.self
   }
 
   /**
@@ -168,8 +208,11 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   def assertLeaderIn(nodesInCluster: Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
     nodesInCluster.length must not be (0)
     val expectedLeader = roleOfLeader(nodesInCluster)
-    cluster.isLeader must be(ifNode(expectedLeader)(true)(false))
-    cluster.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
+    val leader = clusterView.leader
+    val isLeader = leader == Some(clusterView.selfAddress)
+    assert(isLeader == isNode(expectedLeader),
+      "expectedLeader [%s], got leader [%s], members [%s]".format(expectedLeader, leader, clusterView.members))
+    clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
   }
 
   /**
@@ -179,27 +222,22 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
   def awaitUpConvergence(
     numberOfMembers: Int,
     canNotBePartOfMemberRing: Seq[Address] = Seq.empty[Address],
-    timeout: Duration = 20.seconds): Unit = {
+    timeout: FiniteDuration = 20.seconds): Unit = {
     within(timeout) {
-      awaitCond(cluster.latestGossip.members.size == numberOfMembers)
-      awaitCond(cluster.latestGossip.members.forall(_.status == MemberStatus.Up))
-      awaitCond(cluster.convergence.isDefined)
+      awaitCond(clusterView.members.size == numberOfMembers)
+      awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
+      awaitCond(clusterView.convergence)
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitCond(
-          canNotBePartOfMemberRing forall (address ⇒ !(cluster.latestGossip.members exists (_.address == address))))
+          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
     }
   }
 
   /**
    * Wait until the specified nodes have seen the same gossip overview.
    */
-  def awaitSeenSameState(addresses: Address*): Unit = {
-    awaitCond {
-      val seen = cluster.latestGossip.overview.seen
-      val seenVectorClocks = addresses.flatMap(seen.get(_))
-      seenVectorClocks.size == addresses.size && seenVectorClocks.toSet.size == 1
-    }
-  }
+  def awaitSeenSameState(addresses: Address*): Unit =
+    awaitCond((addresses.toSet -- clusterView.seenBy).isEmpty)
 
   def roleOfLeader(nodesInCluster: Seq[RoleName] = roles): RoleName = {
     nodesInCluster.length must not be (0)
@@ -216,4 +254,25 @@ trait MultiNodeClusterSpec extends FailureDetectorStrategy with Suite { self: Mu
 
   def roleName(addr: Address): Option[RoleName] = roles.find(address(_) == addr)
 
+  /**
+   * Marks a node as available in the failure detector if
+   * [[akka.cluster.FailureDetectorPuppet]] is used as
+   * failure detector.
+   */
+  def markNodeAsAvailable(address: Address): Unit = cluster.failureDetector match {
+    case puppet: FailureDetectorPuppet ⇒ puppet.markNodeAsAvailable(address)
+    case _                             ⇒
+  }
+
+  /**
+   * Marks a node as unavailable in the failure detector if
+   * [[akka.cluster.FailureDetectorPuppet]] is used as
+   * failure detector.
+   */
+  def markNodeAsUnavailable(address: Address): Unit = cluster.failureDetector match {
+    case puppet: FailureDetectorPuppet ⇒ puppet.markNodeAsUnavailable(address)
+    case _                             ⇒
+  }
+
 }
+

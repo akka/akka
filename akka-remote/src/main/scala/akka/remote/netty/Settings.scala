@@ -4,17 +4,19 @@
 package akka.remote.netty
 
 import com.typesafe.config.Config
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit._
 import java.net.InetAddress
 import akka.ConfigurationException
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.concurrent.duration.FiniteDuration
+import akka.dispatch.ThreadPoolConfig
 
 private[akka] class NettySettings(config: Config, val systemName: String) {
 
   import config._
 
-  val BackoffTimeout: Duration = Duration(getMilliseconds("backoff-timeout"), MILLISECONDS)
+  val BackoffTimeout: FiniteDuration = Duration(getMilliseconds("backoff-timeout"), MILLISECONDS)
 
   val SecureCookie: Option[String] = getString("secure-cookie") match {
     case ""     ⇒ None
@@ -33,11 +35,11 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
     case dispatcher ⇒ Some(dispatcher)
   }
 
-  val ReconnectionTimeWindow: Duration = Duration(getMilliseconds("reconnection-time-window"), MILLISECONDS)
-  val ReadTimeout: Duration = Duration(getMilliseconds("read-timeout"), MILLISECONDS)
-  val WriteTimeout: Duration = Duration(getMilliseconds("write-timeout"), MILLISECONDS)
-  val AllTimeout: Duration = Duration(getMilliseconds("all-timeout"), MILLISECONDS)
-  val ReconnectDelay: Duration = Duration(getMilliseconds("reconnect-delay"), MILLISECONDS)
+  val ReconnectionTimeWindow: FiniteDuration = Duration(getMilliseconds("reconnection-time-window"), MILLISECONDS)
+  val ReadTimeout: FiniteDuration = Duration(getMilliseconds("read-timeout"), MILLISECONDS)
+  val WriteTimeout: FiniteDuration = Duration(getMilliseconds("write-timeout"), MILLISECONDS)
+  val AllTimeout: FiniteDuration = Duration(getMilliseconds("all-timeout"), MILLISECONDS)
+  val ReconnectDelay: FiniteDuration = Duration(getMilliseconds("reconnect-delay"), MILLISECONDS)
 
   val MessageFrameSize: Int = getBytes("message-frame-size").toInt
 
@@ -66,11 +68,11 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
   @deprecated("WARNING: This should only be used by professionals.", "2.0")
   val PortSelector: Int = getInt("port")
 
-  val ConnectionTimeout: Duration = Duration(getMilliseconds("connection-timeout"), MILLISECONDS)
+  val ConnectionTimeout: FiniteDuration = Duration(getMilliseconds("connection-timeout"), MILLISECONDS)
 
   val Backlog: Int = getInt("backlog")
 
-  val ExecutionPoolKeepalive: Duration = Duration(getMilliseconds("execution-pool-keepalive"), MILLISECONDS)
+  val ExecutionPoolKeepalive: FiniteDuration = Duration(getMilliseconds("execution-pool-keepalive"), MILLISECONDS)
 
   val ExecutionPoolSize: Int = getInt("execution-pool-size") match {
     case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.netty.execution-pool-size is less than 0")
@@ -138,4 +140,14 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
     }
     enableSSL
   }
+
+  private def computeWPS(config: Config): Int =
+    ThreadPoolConfig.scaledPoolSize(
+      config.getInt("pool-size-min"),
+      config.getDouble("pool-size-factor"),
+      config.getInt("pool-size-max"))
+
+  val ServerSocketWorkerPoolSize = computeWPS(config.getConfig("server-socket-worker-pool"))
+
+  val ClientSocketWorkerPoolSize = computeWPS(config.getConfig("client-socket-worker-pool"))
 }
