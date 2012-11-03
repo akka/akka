@@ -25,14 +25,10 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   val ip = InetAddress.getByName(settings.Hostname)
 
-  private val factory =
-    settings.UseDispatcherForIO match {
-      case Some(id) ⇒
-        val d = netty.system.dispatchers.lookup(id)
-        new NioServerSocketChannelFactory(d, d, settings.ServerSocketWorkerPoolSize)
-      case None ⇒
-        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(), settings.ServerSocketWorkerPoolSize)
-    }
+  private val factory = {
+    val boss, worker = settings.UseDispatcherForIO.map(netty.system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+    new NioServerSocketChannelFactory(boss, worker, settings.ServerSocketWorkerPoolSize)
+  }
 
   // group of open channels, used for clean-up
   private val openChannels: ChannelGroup = new DefaultDisposableChannelGroup("akka-remote-server")
