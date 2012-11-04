@@ -101,33 +101,31 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
 
     "be able to send their routees" in {
+      val names = Iterable("routee1", "routee2", "routee3")
+      val batchSize = 10000
       class TheActor extends Actor {
-        val routee1 = context.actorOf(Props[TestActor], "routee1")
-        val routee2 = context.actorOf(Props[TestActor], "routee2")
-        val routee3 = context.actorOf(Props[TestActor], "routee3")
-        val router = context.actorOf(Props[TestActor].withRouter(
-          ScatterGatherFirstCompletedRouter(
-            routees = List(routee1, routee2, routee3),
-            within = 5 seconds)))
+        val routees = names.map(context.actorOf(Props[TestActor], _))
 
         def receive = {
-          case "doIt"                 ⇒ router ! CurrentRoutees
-          case routees: RouterRoutees ⇒ testActor forward routees
+          case "test" ⇒
+            val props = Props.default.withRouter(ScatterGatherFirstCompletedRouter(routees = routees, within = 5 seconds))
+            val router = context.actorOf(props)
+            router forward CurrentRoutees
+            router ! PoisonPill
         }
       }
 
-      val theActor = system.actorOf(Props(new TheActor), "theActor")
-      theActor ! "doIt"
-      val routees = expectMsgPF() {
-        case RouterRoutees(routees) ⇒ routees.toSet
-      }
+      val router = system.actorOf(Props(new TheActor).withRouter(RoundRobinRouter(64)))
 
-      routees.map(_.path.name) must be(Set("routee1", "routee2", "routee3"))
+      1 to batchSize foreach { _ ⇒ router.tell("test", testActor) }
+
+      1 to batchSize foreach { _ ⇒ expectMsgType[RouterRoutees].routees.map(_.path.name) must be === names }
     }
 
     "use configured nr-of-instances when FromConfig" in {
       val router = system.actorOf(Props[TestActor].withRouter(FromConfig), "router1")
-      Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size must be(3)
+      router.tell(CurrentRoutees, testActor)
+      expectMsgType[RouterRoutees].routees.size must be(3)
       watch(router)
       system.stop(router)
       expectMsgType[Terminated]
@@ -135,7 +133,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
     "use configured nr-of-instances when router is specified" in {
       val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(nrOfInstances = 2)), "router2")
-      Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size must be(3)
+      router.tell(CurrentRoutees, testActor)
+      expectMsgType[RouterRoutees].routees.size must be(3)
       system.stop(router)
     }
 
@@ -150,7 +149,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       }
       val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(resizer = Some(resizer))), "router3")
       Await.ready(latch, remaining)
-      Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size must be(3)
+      router.tell(CurrentRoutees, testActor)
+      expectMsgType[RouterRoutees].routees.size must be(3)
       system.stop(router)
     }
 
