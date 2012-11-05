@@ -78,12 +78,11 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       val metrics = sample.metrics.collect { case m if m.isDefined ⇒ (m.name, m.value.get) }
       val used = metrics collectFirst { case ("heap-memory-used", b) ⇒ b }
       val committed = metrics collectFirst { case ("heap-memory-committed", b) ⇒ b }
-
       metrics foreach {
         case ("total-cores", b)           ⇒ b.intValue must be > (0)
         case ("network-max-rx", b)        ⇒ b.longValue must be > (0L)
         case ("network-max-tx", b)        ⇒ b.longValue must be > (0L)
-        case ("system-load-average", b)   ⇒ // not possible to assert b, allowed to be negative or positive
+        case ("system-load-average", b)   ⇒ b.doubleValue must be >= (0.0)
         case ("processors", b)            ⇒ b.intValue must be >= (0)
         case ("heap-memory-used", b)      ⇒ b.longValue must be >= (0L)
         case ("heap-memory-committed", b) ⇒ b.longValue must be > (0L)
@@ -110,8 +109,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
 
     "collect JMX metrics" in {
       // heap max may be undefined depending on the OS
-      // systemLoadAverage is JMX is SIGAR not present
-      collector.systemLoadAverage.isDefined must be(true)
+      // systemLoadAverage is JMX if SIGAR not present, but not available on all OS
       collector.used.isDefined must be(true)
       collector.committed.isDefined must be(true)
       collector.processors.isDefined must be(true)
