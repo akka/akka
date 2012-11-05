@@ -46,7 +46,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
         def receive = {
           case "lookup" ⇒
             if (childName == child.path.name) sender ! context.actorFor(childName)
-            else sender ! s"§childName is not ${child.path.name}!"
+            else sender ! s"$childName is not ${child.path.name}!"
         }
       }))
       a.tell("lookup", testActor)
