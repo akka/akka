@@ -121,7 +121,7 @@ object Throttler {
    *
    * @see [[akka.contrib.throttle.Throttler.Rate]]
    */
-  implicit class RateInt(numberOfCalls: Int) {
+  implicit class RateInt(val numberOfCalls: Int) extends AnyVal {
     def msgsPer(duration: Int, timeUnit: TimeUnit) = Rate(numberOfCalls, Duration(duration, timeUnit))
     def msgsPer(duration: FiniteDuration) = Rate(numberOfCalls, duration)
     def msgsPerSecond = Rate(numberOfCalls, Duration(1, TimeUnit.SECONDS))
@@ -137,11 +137,9 @@ object Throttler {
 object TimerBasedThrottler {
   private[throttle] case object Tick
 
-  // States of the FSM
+  // States of the FSM: A `TimerBasedThrottler` is in state `Active` iff the timer is running.
   private[throttle] sealed trait State
-  // Idle means we don't deliver messages, either because there are none, or because no target was set.
   private[throttle] case object Idle extends State
-  // Active means we the target is set and we have a message queue that is non-empty.
   private[throttle] case object Active extends State
 
   // Messages, as we queue them to be sent later
@@ -211,7 +209,6 @@ object TimerBasedThrottler {
  * @see [[akka.contrib.throttle.Throttler]]
  */
 class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with FSM[State, Data] {
-
   startWith(Idle, Data(None, rate.numberOfCalls, Q()))
 
   // Idle: no messages, or target not set
@@ -246,15 +243,20 @@ class TimerBasedThrottler(var rate: Rate) extends Actor with Throttler with FSM[
 
     // Set the target (when the new target is None)
     case Event(SetTarget(None), d) ⇒
-      goto(Idle) using d.copy(target = None)
+      // Note: We do not yet switch to state `Inactive` because we need the timer to tick once more before
+      stay using d.copy(target = None)
 
     // Set the target (when the new target is not None)
     case Event(SetTarget(t @ Some(_)), d) ⇒
       stay using d.copy(target = t)
 
-    // Period ends and we have no more messages
+    // Tick after a `SetTarget(None)`: take the additional permits and go to `Idle`
+    case Event(Tick, d @ Data(None, _, _)) ⇒
+      goto(Idle) using d.copy(callsLeftInThisPeriod = rate.numberOfCalls)
+
+    // Period ends and we have no more messages: take the additional permits and go to `Idle`
     case Event(Tick, d @ Data(_, _, Seq())) ⇒
-      goto(Idle)
+      goto(Idle) using d.copy(callsLeftInThisPeriod = rate.numberOfCalls)
 
     // Period ends and we get more occasions to send messages
     case Event(Tick, d @ Data(_, _, _)) ⇒

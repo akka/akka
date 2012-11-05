@@ -27,10 +27,8 @@ object TimerBasedThrottlerSpec {
 }
 
 @RunWith(classOf[JUnitRunner])
-class TimerBasedThrottlerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
+class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSpec")) with ImplicitSender
   with WordSpec with MustMatchers with BeforeAndAfterAll {
-
-  def this() = this(ActorSystem("TimerBasedThrottlerSpec"))
 
   override def afterAll {
     system.shutdown()
@@ -71,13 +69,75 @@ class TimerBasedThrottlerSpec(_system: ActorSystem) extends TestKit(_system) wit
       throttler ! "6"
       expectNoMsg(1 second)
       throttler ! SetTarget(Some(echo))
-      within(2.seconds) {
+      within(2 seconds) {
         expectMsg("1")
         expectMsg("2")
         expectMsg("3")
         expectMsg("4")
         expectMsg("5")
         expectMsg("6")
+      }
+    }
+
+    "send messages after a `SetTarget(None)` pause" in {
+      val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
+      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1 second))))
+      throttler ! SetTarget(Some(echo))
+      throttler ! "1"
+      throttler ! "2"
+      throttler ! "3"
+      throttler ! SetTarget(None)
+      within(1 second) {
+        expectMsg("1")
+        expectMsg("2")
+        expectMsg("3")
+        expectNoMsg(remaining)
+      }
+      expectNoMsg(1 second)
+      throttler ! SetTarget(Some(echo))
+      throttler ! "4"
+      throttler ! "5"
+      throttler ! "6"
+      throttler ! "7"
+      within(1 seconds) {
+        expectMsg("4")
+        expectMsg("5")
+        expectMsg("6")
+        expectNoMsg(remaining)
+      }
+      within(1 second) {
+        expectMsg("7")
+      }
+    }
+
+    "keep messages when the target is set to None" in {
+      val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
+      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1 second))))
+      throttler ! SetTarget(Some(echo))
+      throttler ! "1"
+      throttler ! "2"
+      throttler ! "3"
+      throttler ! "4"
+      throttler ! "5"
+      throttler ! "6"
+      throttler ! "7"
+      throttler ! SetTarget(None)
+      within(1 second) {
+        expectMsg("1")
+        expectMsg("2")
+        expectMsg("3")
+        expectNoMsg(remaining)
+      }
+      expectNoMsg(1 second)
+      throttler ! SetTarget(Some(echo))
+      within(1 seconds) {
+        expectMsg("4")
+        expectMsg("5")
+        expectMsg("6")
+        expectNoMsg(remaining)
+      }
+      within(1 second) {
+        expectMsg("7")
       }
     }
 
