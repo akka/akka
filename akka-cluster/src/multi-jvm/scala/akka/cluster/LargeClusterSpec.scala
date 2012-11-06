@@ -55,7 +55,6 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.execution-pool-size = 4
     #akka.remote.netty.reconnection-time-window = 10s
-    akka.remote.netty.read-timeout = 5s
     akka.remote.netty.write-timeout = 5s
     akka.remote.netty.backoff-timeout = 500ms
     akka.remote.netty.connection-timeout = 500ms
