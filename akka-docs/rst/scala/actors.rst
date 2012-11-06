@@ -174,6 +174,17 @@ form of the ``implicit val context: ActorContext``. Outside of an actor, you�
 have to either declare an implicit :class:`ActorSystem`, or you can give the
 factory explicitly (see further below).
 
+The two possible ways of issuing a ``context.become`` (replacing or adding the
+new behavior) are offered separately to enable a clutter-free notation of
+nested receives:
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala#becomeStacked
+
+Please note that calling ``unbecome`` more often than ``becomeStacked`` results
+in the original behavior being installed, which in case of the :class:`Act`
+trait is the empty behavior (the outer ``become`` just replaces it during
+construction).
+
 Life-cycle hooks are also exposed as DSL elements (see `Start Hook`_ and `Stop
 Hook`_ below), where later invocations of the methods shown below will replace
 the contents of the respective hooks:
