@@ -566,9 +566,8 @@ To hotswap the Actor using ``getContext().become``:
 
 This variant of the :meth:`become` method is useful for many different things,
 such as to implement a Finite State Machine (FSM). It will replace the current
-behavior (i.e. the top of the behavior stack), which means that
-:meth:`unbecome` is not called, instead always the next behavior is explicitly
-installed.
+behavior (i.e. the top of the behavior stack), which means that you do not use
+:meth:`unbecome`, instead always the next behavior is explicitly installed.
 
 The other way of using :meth:`become` does not replace but add to the top of
 the behavior stack. In this case care must be taken to ensure that the number

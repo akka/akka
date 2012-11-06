@@ -669,7 +669,7 @@ To hotswap the Actor behavior using ``become``:
 This variant of the :meth:`become` method is useful for many different things,
 such as to implement a Finite State Machine (FSM, for an example see `Dining
 Hakkers`_). It will replace the current behavior (i.e. the top of the behavior
-stack), which means that :meth:`unbecome` is not called, instead always the
+stack), which means that you do not use :meth:`unbecome`, instead always the
 next behavior is explicitly installed.
 
 .. _Dining Hakkers: @github@/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala
