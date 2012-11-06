@@ -122,8 +122,8 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       enterBarrier("test2b")
       
       runOn(local) {
-        testConductor.throttle(local, remote, Direction.Send, -1)
-        expectTransition(Active, Idle)
+        testConductor.throttle(local, remote, Direction.Send, -1).await
+        within(5 seconds) { expectTransition(Active, Idle) }
       }
       runOn(remote) {
         within(1 second) {
@@ -152,8 +152,8 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       enterBarrier("test3a")
       
       runOn(local) {
-        testConductor.throttle(local, remote, Direction.Receive, -1)
-        expectTransition(Active, Idle)
+        testConductor.throttle(local, remote, Direction.Receive, -1).await
+        within(5 seconds) { expectTransition(Active, Idle) }
       }
       
       enterBarrier("test3b")
