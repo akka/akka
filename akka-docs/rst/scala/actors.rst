@@ -752,9 +752,11 @@ major impact on performance.
   callback. This means it's not possible to write
   ``Actor with MyActor with Stash`` if ``MyActor`` overrides ``preRestart``.
 
-Note that the stash is not persisted across restarts of an actor,
-unlike the actor's mailbox. Therefore, it should be managed like other
-parts of the actor's state which have the same property.
+Note that the stash is part of the ephemeral actor state, unlike the
+mailbox. Therefore, it should be managed like other parts of the
+actor's state which have the same property. The :class:`Stash` trait’s
+implementation of :meth:`preRestart` will call ``unstashAll()``, which is
+usually the desired behavior.
 
 
 Killing an Actor
