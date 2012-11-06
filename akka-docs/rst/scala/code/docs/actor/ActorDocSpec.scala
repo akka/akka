@@ -96,11 +96,11 @@ class Swapper extends Actor {
   def receive = {
     case Swap ⇒
       log.info("Hi")
-      become {
+      become({
         case Swap ⇒
           log.info("Ho")
           unbecome() // resets the latest 'become' (just for fun)
-      }
+      }, discardOld = false) // push on top instead of replace
   }
 }
 

@@ -653,11 +653,10 @@ Upgrade
 -------
 
 Akka supports hotswapping the Actor’s message loop (e.g. its implementation) at
-runtime: Invoke the ``context.become`` method from within the Actor.
-
-Become takes a ``PartialFunction[Any, Unit]`` that implements
-the new message handler. The hotswapped code is kept in a Stack which can be
-pushed and popped.
+runtime: invoke the ``context.become`` method from within the Actor.
+:meth:`become` takes a ``PartialFunction[Any, Unit]`` that implements the new
+message handler. The hotswapped code is kept in a Stack which can be pushed and
+popped.
 
 .. warning::
 
@@ -667,38 +666,26 @@ To hotswap the Actor behavior using ``become``:
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#hot-swap-actor
 
-The ``become`` method is useful for many different things, but a particular nice
-example of it is in example where it is used to implement a Finite State Machine
-(FSM): `Dining Hakkers`_.
+This variant of the :meth:`become` method is useful for many different things,
+such as to implement a Finite State Machine (FSM, for an example see `Dining
+Hakkers`_). It will replace the current behavior (i.e. the top of the behavior
+stack), which means that you do not use :meth:`unbecome`, instead always the
+next behavior is explicitly installed.
 
 .. _Dining Hakkers: @github@/akka-samples/akka-sample-fsm/src/main/scala/DiningHakkersOnBecome.scala
 
-Here is another little cute example of ``become`` and ``unbecome`` in action:
+The other way of using :meth:`become` does not replace but add to the top of
+the behavior stack. In this case care must be taken to ensure that the number
+of “pop” operations (i.e. :meth:`unbecome`) matches the number of “push” ones
+in the long run, otherwise this amounts to a memory leak (which is why this
+behavior is not the default). 
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#swapper
 
 Encoding Scala Actors nested receives without accidentally leaking memory
 -------------------------------------------------------------------------
 
-See this `Unnested receive example <https://github.com/akka/akka/blob/master/akka-docs/scala/code/docs/actor/UnnestedReceives.scala>`_.
-
-
-Downgrade
----------
-
-Since the hotswapped code is pushed to a Stack you can downgrade the code as
-well, all you need to do is to: Invoke the ``context.unbecome`` method from within the Actor.
-
-This will pop the Stack and replace the Actor's implementation with the
-``PartialFunction[Any, Unit]`` that is at the top of the Stack.
-
-Here's how you use the ``unbecome`` method:
-
-.. code-block:: scala
-
-  def receive = {
-    case "revert" => context.unbecome()
-  }
+See this `Unnested receive example <@github@/akka-docs/scala/code/docs/actor/UnnestedReceives.scala>`_.
 
 
 Stash
