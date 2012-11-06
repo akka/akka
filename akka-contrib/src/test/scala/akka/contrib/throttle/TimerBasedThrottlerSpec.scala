@@ -17,6 +17,7 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.BeforeAndAfterAll
+import akka.testkit._
 
 object TimerBasedThrottlerSpec {
   class EchoActor extends Actor {
@@ -36,7 +37,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
 
   "A throttler" must {
 
-    "must pass the ScalaDoc class documentation example prgoram" in {
+    "must pass the ScalaDoc class documentation example program" in {
       //#demo-code
       // A simple actor that prints whatever it receives
       val printer = system.actorOf(Props(new Actor {
@@ -45,7 +46,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
         }
       }))
       // The throttler for this example, setting the rate
-      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1 second))))
+      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second.dilated))))
       // Set the target 
       throttler ! SetTarget(Some(printer))
       // These three messages will be sent to the echoer immediately
@@ -60,7 +61,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
 
     "keep messages until a target is set" in {
       val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
-      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1 second))))
+      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second.dilated))))
       throttler ! "1"
       throttler ! "2"
       throttler ! "3"
@@ -81,7 +82,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
 
     "send messages after a `SetTarget(None)` pause" in {
       val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
-      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1 second))))
+      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second.dilated))))
       throttler ! SetTarget(Some(echo))
       throttler ! "1"
       throttler ! "2"
@@ -112,7 +113,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
 
     "keep messages when the target is set to None" in {
       val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
-      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1 second))))
+      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second.dilated))))
       throttler ! SetTarget(Some(echo))
       throttler ! "1"
       throttler ! "2"
@@ -143,7 +144,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
 
     "respect the rate (3 msg/s)" in {
       val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
-      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1 second))))
+      val throttler = system.actorOf(Props(new TimerBasedThrottler(3 msgsPer (1.second.dilated))))
       throttler ! SetTarget(Some(echo))
       throttler ! "1"
       throttler ! "2"
@@ -171,7 +172,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
 
     "respect the rate (4 msg/s)" in {
       val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
-      val throttler = system.actorOf(Props(new TimerBasedThrottler(4 msgsPer (1 second))))
+      val throttler = system.actorOf(Props(new TimerBasedThrottler(4 msgsPer (1.second.dilated))))
       throttler ! SetTarget(Some(echo))
       throttler ! "1"
       throttler ! "2"

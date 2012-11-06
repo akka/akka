@@ -54,7 +54,7 @@ import akka.AkkaException
  *
  * @see [[akka.contrib.throttle.TimerBasedThrottler]]
  */
-trait Throttler { self: Actor ⇒ }
+trait Throttler { this: Actor ⇒ }
 
 /**
  * Message types understood by [[akka.contrib.throttle.Throttler]]'s.
