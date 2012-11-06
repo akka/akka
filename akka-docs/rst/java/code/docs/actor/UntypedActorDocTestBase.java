@@ -351,24 +351,23 @@ public class UntypedActorDocTestBase {
   static
   //#stash
   public class ActorWithProtocol extends UntypedActorWithStash {
-    private Boolean isOpen = false;
     public void onReceive(Object msg) {
-      if (isOpen) {
-        if (msg.equals("write")) {
-          // do writing...
-        } else if (msg.equals("close")) {
-          unstashAll();
-          isOpen = false;
-        } else {
-          stash();
-        }
+      if (msg.equals("open")) {
+        unstashAll();
+        getContext().become(new Procedure<Object>() {
+          public void apply(Object msg) throws Exception {
+            if (msg.equals("write")) {
+              // do writing...
+            } else if (msg.equals("close")) {
+              unstashAll();
+              getContext().unbecome();
+            } else {
+              stash();
+            }
+          }
+        }, false); // add behavior on top instead of replacing
       } else {
-        if (msg.equals("open")) {
-          unstashAll();
-          isOpen = true;
-        } else {
-          stash();
-        }
+        stash();
       }
     }
   }
