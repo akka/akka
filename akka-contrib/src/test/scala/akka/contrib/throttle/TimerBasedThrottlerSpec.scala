@@ -91,7 +91,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
         expectMsg("1")
         expectMsg("2")
         expectMsg("3")
-        expectNoMsg(remaining)
+        expectNoMsg()
       }
       expectNoMsg(1 second)
       throttler ! SetTarget(Some(echo))
@@ -103,7 +103,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
         expectMsg("4")
         expectMsg("5")
         expectMsg("6")
-        expectNoMsg(remaining)
+        expectNoMsg()
       }
       within(1 second) {
         expectMsg("7")
@@ -126,7 +126,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
         expectMsg("1")
         expectMsg("2")
         expectMsg("3")
-        expectNoMsg(remaining)
+        expectNoMsg()
       }
       expectNoMsg(1 second)
       throttler ! SetTarget(Some(echo))
@@ -134,7 +134,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
         expectMsg("4")
         expectMsg("5")
         expectMsg("6")
-        expectNoMsg(remaining)
+        expectNoMsg()
       }
       within(1 second) {
         expectMsg("7")
@@ -156,13 +156,13 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
         expectMsg("1")
         expectMsg("2")
         expectMsg("3")
-        expectNoMsg(remaining)
+        expectNoMsg()
       }
       within(1 second) {
         expectMsg("4")
         expectMsg("5")
         expectMsg("6")
-        expectNoMsg(remaining)
+        expectNoMsg()
       }
       within(1 second) {
         expectMsg("7")
@@ -187,14 +187,14 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
         expectMsg("2")
         expectMsg("3")
         expectMsg("4")
-        expectNoMsg(remaining)
+        expectNoMsg()
       }
       within(1 second) {
         expectMsg("5")
         expectMsg("6")
         expectMsg("7")
         expectMsg("8")
-        expectNoMsg(remaining)
+        expectNoMsg()
       }
       within(1 second) {
         expectMsg("9")
