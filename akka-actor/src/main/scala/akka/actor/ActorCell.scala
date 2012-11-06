@@ -76,8 +76,14 @@ trait ActorContext extends ActorRefFactory {
 
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
-   * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * This method acts upon the behavior stack as follows:
+   *
+   *  - if `discardOld = true` it will replace the top element (i.e. the current behavior)
+   *  - if `discardOld = false` it will keep the current behavior and push the given one atop
+   *
+   * The default of replacing the current behavior has been chosen to avoid memory leaks in
+   * case client code is written without consulting this documentation first (i.e. always pushing
+   * new closures and never issuing an `unbecome()`)
    */
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
 
@@ -167,14 +173,20 @@ trait UntypedActorContext extends ActorContext {
 
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
-   * Puts the behavior on top of the hotswap stack.
+   * Replaces the current behavior at the top of the hotswap stack.
    */
   def become(behavior: Procedure[Any]): Unit
 
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
-   * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * This method acts upon the behavior stack as follows:
+   *
+   *  - if `discardOld = true` it will replace the top element (i.e. the current behavior)
+   *  - if `discardOld = false` it will keep the current behavior and push the given one atop
+   *
+   * The default of replacing the current behavior has been chosen to avoid memory leaks in
+   * case client code is written without consulting this documentation first (i.e. always pushing
+   * new closures and never issuing an `unbecome()`)
    */
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit
 
