@@ -274,7 +274,7 @@ object AkkaBuild extends Build {
       publishMavenStyle := false, // SBT Plugins should be published as Ivy
       publishTo <<= Publish.akkaPluginPublishTo,
       scalacOptions in Compile := Seq("-encoding", "UTF-8", "-deprecation", "-unchecked"),
-      scalaVersion := "2.9.1",
+      scalaVersion := "2.9.2",
       scalaBinaryVersion <<= scalaVersion
     )
   )
