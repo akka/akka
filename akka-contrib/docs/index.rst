@@ -29,6 +29,7 @@ The Current List of Modules
 .. toctree::
 
    reliable-proxy
+   throttle   
 
 Suggested Way of Using these Contributions
 ------------------------------------------
