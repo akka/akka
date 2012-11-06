@@ -7,7 +7,10 @@ Essentially turning method invocations into asynchronous dispatch instead of syn
 Typed Actors consist of 2 "parts", a public interface and an implementation, and if you've done any work in "enterprise" Java, this will be very familiar to you. As with normal Actors you have an external API (the public interface instance) that will delegate methodcalls asynchronously to
 a private instance of the implementation.
 
-The advantage of Typed Actors vs. Actors is that with TypedActors you have a static contract, and don't need to define your own messages, the downside is that it places some limitations on what you can do and what you can't, i.e. you can't use become/unbecome.
+The advantage of Typed Actors vs. Actors is that with TypedActors you have a
+static contract, and don't need to define your own messages, the downside is
+that it places some limitations on what you can do and what you can't, i.e. you
+cannot use :meth:`become`/:meth:`unbecome`.
 
 Typed Actors are implemented using `JDK Proxies <http://docs.oracle.com/javase/6/docs/api/java/lang/reflect/Proxy.html>`_ which provide a pretty easy-worked API to intercept method calls.
 
