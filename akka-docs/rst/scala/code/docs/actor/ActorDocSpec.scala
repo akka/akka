@@ -316,13 +316,13 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       def receive = {
         case "open" ⇒
           unstashAll()
-          context.become {
+          context.become({
             case "write" ⇒ // do writing...
             case "close" ⇒
               unstashAll()
               context.unbecome()
             case msg ⇒ stash()
-          }
+          }, discardOld = false) // stack on top instead of replacing
         case msg ⇒ stash()
       }
     }

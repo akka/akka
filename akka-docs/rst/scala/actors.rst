@@ -696,7 +696,7 @@ behavior is not the default).
 Encoding Scala Actors nested receives without accidentally leaking memory
 -------------------------------------------------------------------------
 
-See this `Unnested receive example <@github@/akka-docs/scala/code/docs/actor/UnnestedReceives.scala>`_.
+See this `Unnested receive example <@github@/akka-docs/rst/scala/code/docs/actor/UnnestedReceives.scala>`_.
 
 
 Stash
