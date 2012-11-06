@@ -103,6 +103,32 @@ class ActorDSLSpec extends AkkaSpec {
       i.receive() must be("hi")
     }
 
+    "support becomeStacked" in {
+      //#becomeStacked
+      val a = actor(new Act {
+        become { // this will replace the initial (empty) behavior
+          case "info" ⇒ sender ! "A"
+          case "switch" ⇒
+            becomeStacked { // this will stack upon the "A" behavior
+              case "info"   ⇒ sender ! "B"
+              case "switch" ⇒ unbecome() // return to the "A" behavior
+            }
+          case "lobotomize" => unbecome() // OH NOES: Actor.emptyBehavior
+        }
+      })
+      //#becomeStacked
+
+      implicit def sender = testActor
+      a ! "info"
+      expectMsg("A")
+      a ! "switch"
+      a ! "info"
+      expectMsg("B")
+      a ! "switch"
+      a ! "info"
+      expectMsg("A")
+    }
+
     "support setup/teardown" in {
       //#simple-start-stop
       val a = actor(new Act {
@@ -188,7 +214,7 @@ class ActorDSLSpec extends AkkaSpec {
         become {
           case 1 ⇒ stash()
           case 2 ⇒
-            testActor ! 2; unstashAll(); become {
+            testActor ! 2; unstashAll(); becomeStacked {
               case 1 ⇒ testActor ! 1; unbecome()
             }
         }
