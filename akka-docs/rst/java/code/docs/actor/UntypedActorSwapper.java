@@ -32,9 +32,9 @@ public class UntypedActorSwapper {
           @Override
           public void apply(Object message) {
             log.info("Ho");
-            getContext().unbecome(); // resets the latest 'become' (just for fun)
+            getContext().unbecome(); // resets the latest 'become'
           }
-        });
+        }, false); // this signals stacking of the new behavior
       } else {
         unhandled(message);
       }

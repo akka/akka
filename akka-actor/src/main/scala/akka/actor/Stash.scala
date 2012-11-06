@@ -16,13 +16,13 @@ import akka.AkkaException
  *      def receive = {
  *        case "open" ⇒
  *          unstashAll()
- *          context.become {
+ *          context.become({
  *            case "write" ⇒ // do writing...
  *            case "close" ⇒
  *              unstashAll()
  *              context.unbecome()
  *            case msg ⇒ stash()
- *          }
+ *          }, discardOld = false)
  *        case "done" ⇒ // done
  *        case msg    ⇒ stash()
  *      }

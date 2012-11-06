@@ -549,7 +549,8 @@ Upgrade
 
 Akka supports hotswapping the Actor’s message loop (e.g. its implementation) at
 runtime. Use the ``getContext().become`` method from within the Actor.
-The hotswapped code is kept in a Stack which can be pushed and popped.
+The hotswapped code is kept in a Stack which can be pushed (replacing or adding
+at the top) and popped.
 
 .. warning::
 
@@ -563,25 +564,18 @@ To hotswap the Actor using ``getContext().become``:
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
    :include: hot-swap-actor
 
-The ``become`` method is useful for many different things, such as to implement
-a Finite State Machine (FSM).
+This variant of the :meth:`become` method is useful for many different things,
+such as to implement a Finite State Machine (FSM). It will replace the current
+behavior (i.e. the top of the behavior stack), which means that you do not use
+:meth:`unbecome`, instead always the next behavior is explicitly installed.
 
-Here is another little cute example of ``become`` and ``unbecome`` in action:
+The other way of using :meth:`become` does not replace but add to the top of
+the behavior stack. In this case care must be taken to ensure that the number
+of “pop” operations (i.e. :meth:`unbecome`) matches the number of “push” ones
+in the long run, otherwise this amounts to a memory leak (which is why this
+behavior is not the default). 
 
 .. includecode:: code/docs/actor/UntypedActorSwapper.java#swapper
-
-Downgrade
----------
-
-Since the hotswapped code is pushed to a Stack you can downgrade the code as
-well. Use the ``getContext().unbecome`` method from within the Actor.
-
-.. code-block:: java
-
-  public void onReceive(Object message) {
-    if (message.equals("revert")) getContext().unbecome();
-  }
-
 
 Stash
 =====
