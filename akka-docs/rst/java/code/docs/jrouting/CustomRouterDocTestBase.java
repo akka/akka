@@ -180,16 +180,14 @@ public class CustomRouterDocTestBase {
       //#crRoutingLogic
       return new CustomRoute() {
         @Override
-        public Iterable<Destination> destinationsFor(ActorRef sender, Object msg) {
+        public scala.collection.immutable.Seq<Destination> destinationsFor(ActorRef sender, Object msg) {
           switch ((Message) msg) {
           case DemocratVote:
           case DemocratCountResult:
-            return Arrays.asList(
-              new Destination[] { new Destination(sender, democratActor) });
+            return akka.japi.Util.immutableSingletonSeq(new Destination(sender, democratActor));
           case RepublicanVote:
           case RepublicanCountResult:
-            return Arrays.asList(
-              new Destination[] { new Destination(sender, republicanActor) });
+            return akka.japi.Util.immutableSingletonSeq(new Destination(sender, republicanActor));
           default:
             throw new IllegalArgumentException("Unknown message: " + msg);
           }

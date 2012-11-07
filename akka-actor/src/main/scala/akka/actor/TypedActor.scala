@@ -13,6 +13,7 @@ import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.concurrent.{ Await, Future }
 import akka.japi.{ Creator, Option ⇒ JOption }
+import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
 import akka.util.Timeout
 import akka.util.Reflect.instantiator
 import akka.serialization.{ JavaSerializer, SerializationExtension }
@@ -442,7 +443,7 @@ object TypedProps {
    * or a sequence containing only itself, if itself is an interface.
    */
   def extractInterfaces(clazz: Class[_]): immutable.Seq[Class[_]] =
-    if (clazz.isInterface) List[Class[_]](clazz) else clazz.getInterfaces.to[List]
+    if (clazz.isInterface) immutableSingletonSeq(clazz) else immutableSeq(clazz.getInterfaces)
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,

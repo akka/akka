@@ -25,7 +25,7 @@ import akka.testkit.ErrorFilter;
 import akka.testkit.TestEvent;
 import akka.util.Timeout;
 
-import java.util.Arrays;
+import static akka.japi.Util.immutableSeq;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -110,6 +110,6 @@ public class UntypedCoordinatedIncrementTest {
   }
 
   public <A> Seq<A> seq(A... args) {
-    return JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(args)).asScala().toList();
+    return immutableSeq(args);
   }
 }

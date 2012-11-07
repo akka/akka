@@ -7,10 +7,11 @@ package akka.actor
 import scala.concurrent.duration.Duration
 import com.typesafe.config._
 import akka.routing._
+import akka.japi.Util.immutableSeq
 import java.util.concurrent.{ TimeUnit }
 import akka.util.WildcardTree
 import java.util.concurrent.atomic.AtomicReference
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /**
  * This class represents deployment configuration for a given actor path. It is
@@ -141,7 +142,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
     val deployment = config.withFallback(default)
 
-    val routees = Vector() ++ deployment.getStringList("routees.paths").asScala
+    val routees = immutableSeq(deployment.getStringList("routees.paths"))
 
     val nrOfInstances = deployment.getInt("nr-of-instances")
 

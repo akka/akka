@@ -266,9 +266,9 @@ trait ActorClassification { this: ActorEventBus with ActorClassifier ⇒
     }
   }
 
-  protected final def dissociate(monitored: ActorRef): Iterable[ActorRef] = {
+  protected final def dissociate(monitored: ActorRef): immutable.Iterable[ActorRef] = {
     @tailrec
-    def dissociateAsMonitored(monitored: ActorRef): Iterable[ActorRef] = {
+    def dissociateAsMonitored(monitored: ActorRef): immutable.Iterable[ActorRef] = {
       val current = mappings get monitored
       current match {
         case null ⇒ empty

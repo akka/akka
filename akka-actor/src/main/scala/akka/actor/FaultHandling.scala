@@ -7,9 +7,11 @@ import language.implicitConversions
 
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.concurrent.TimeUnit
+import akka.japi.Util.immutableSeq
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
+
 /**
  * INTERNAL API
  */
@@ -171,7 +173,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * Implicit conversion from `Seq` of Throwables to a `Decider`.
    * This maps the given Throwables to restarts, otherwise escalates.
    */
-  implicit def seqThrowable2Decider(trapExit: immutable.Seq[Class[_ <: Throwable]]): Decider = makeImmutableDecider(trapExit)
+  implicit def seqThrowable2Decider(trapExit: immutable.Seq[Class[_ <: Throwable]]): Decider = makeDecider(trapExit)
 
   type Decider = PartialFunction[Throwable, Directive]
   type JDecider = akka.japi.Function[Throwable, Directive]
@@ -181,22 +183,15 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
-  def makeDecider(trapExit: immutable.Seq[Class[_ <: Throwable]]): Decider = makeImmutableDecider(trapExit)
+  def makeDecider(trapExit: immutable.Seq[Class[_ <: Throwable]]): Decider = {
+    case x ⇒ if (trapExit exists (_ isInstance x)) Restart else Escalate
+  }
+
   /**
    * Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
-  def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider =
-    makeImmutableDecider(scala.collection.JavaConverters.iterableAsScalaIterableConverter(trapExit).asScala)
-
-  private[this] def makeImmutableDecider(trapExit: Iterable[Class[_]]): Decider = {
-    val traps = trapExit match { // This is the sad, awkward, truth
-      case s: immutable.Seq[_] ⇒ s.asInstanceOf[immutable.Seq[Class[_]]]
-      case other               ⇒ other.to[immutable.Seq]
-    }
-
-    { case x ⇒ if (traps exists (_ isInstance x)) Restart else Escalate }
-  }
+  def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = makeDecider(immutableSeq(trapExit))
 
   /**
    * Decider builder for Iterables of cause-directive pairs, e.g. a map obtained
@@ -228,7 +223,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
         case x  ⇒ buf insert (x, ca)
       }
       buf
-    }.to[immutable.Seq]
+    }.to[immutable.IndexedSeq]
 
   private[akka] def withinTimeRangeOption(withinTimeRange: Duration): Option[Duration] =
     if (withinTimeRange.isFinite && withinTimeRange >= Duration.Zero) Some(withinTimeRange) else None

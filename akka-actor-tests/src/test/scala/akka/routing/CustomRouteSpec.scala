@@ -19,7 +19,7 @@ class CustomRouteSpec extends AkkaSpec {
       provider.createRoutees(1)
 
       {
-        case (sender, message: String) ⇒ Seq(Destination(sender, target))
+        case (sender, message: String) ⇒ List(Destination(sender, target))
         case (sender, message)         ⇒ toAll(sender, provider.routees)
       }
     }
@@ -43,8 +43,8 @@ class CustomRouteSpec extends AkkaSpec {
       val r = Await.result(router.ask(CurrentRoutees)(1 second).
         mapTo[RouterRoutees], 1 second)
       r.routees.size must be(1)
-      route(testActor -> "hallo") must be(Seq(Destination(testActor, target)))
-      route(testActor -> 12) must be(Seq(Destination(testActor, r.routees.head)))
+      route(testActor -> "hallo") must be(List(Destination(testActor, target)))
+      route(testActor -> 12) must be(List(Destination(testActor, r.routees.head)))
       //#test-route
     }
 

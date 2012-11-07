@@ -3,6 +3,8 @@
  */
 package akka.actor
 import scala.annotation.tailrec
+import scala.collection.immutable
+import akka.japi.Util.immutableSeq
 import java.net.MalformedURLException
 
 object ActorPath {
@@ -20,6 +22,8 @@ object ActorPath {
    * http://www.ietf.org/rfc/rfc2396.txt
    */
   val ElementRegex = """(?:[-\w:@&=+,.!~*'_;]|%\p{XDigit}{2})(?:[-\w:@&=+,.!~*'$_;]|%\p{XDigit}{2})*""".r
+
+  private[akka] final val emptyActorPath: immutable.Iterable[String] = List("")
 }
 
 /**
@@ -68,23 +72,18 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * ''Java API'': Recursively create a descendant’s path by appending all child names.
    */
-  def descendant(names: java.lang.Iterable[String]): ActorPath = {
-    import scala.collection.JavaConverters._
-    /(names.asScala)
-  }
+  def descendant(names: java.lang.Iterable[String]): ActorPath = /(immutableSeq(names))
 
   /**
    * Sequence of names for this path from root to this. Performance implication: has to allocate a list.
    */
-  def elements: Iterable[String]
+  def elements: immutable.Iterable[String]
 
   /**
    * ''Java API'': Sequence of names for this path from root to this. Performance implication: has to allocate a list.
    */
-  def getElements: java.lang.Iterable[String] = {
-    import scala.collection.JavaConverters._
-    elements.asJava
-  }
+  def getElements: java.lang.Iterable[String] =
+    scala.collection.JavaConverters.asJavaIterableConverter(elements).asJava
 
   /**
    * Walk up the tree to obtain and return the RootActorPath.
@@ -112,7 +111,7 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
 
   override def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  override val elements: Iterable[String] = List("")
+  override def elements: immutable.Iterable[String] = ActorPath.emptyActorPath
 
   override val toString: String = address + name
 
@@ -134,9 +133,9 @@ final class ChildActorPath(val parent: ActorPath, val name: String) extends Acto
 
   override def /(child: String): ActorPath = new ChildActorPath(this, child)
 
-  override def elements: Iterable[String] = {
+  override def elements: immutable.Iterable[String] = {
     @tailrec
-    def rec(p: ActorPath, acc: List[String]): Iterable[String] = p match {
+    def rec(p: ActorPath, acc: List[String]): immutable.Iterable[String] = p match {
       case r: RootActorPath ⇒ acc
       case _                ⇒ rec(p.parent, p.name :: acc)
     }

@@ -7,7 +7,7 @@ import language.postfixOps
 
 import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
-import scala.collection.mutable.LinkedList
+import scala.collection.immutable
 import akka.testkit._
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -17,7 +17,7 @@ import akka.pattern.{ ask, pipe }
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.config.Config
 import akka.dispatch.Dispatchers
-import akka.util.Timeout
+import akka.util.Collections.EmptyImmutableSeq
 
 object RoutingSpec {
 
@@ -54,11 +54,10 @@ object RoutingSpec {
   class MyRouter(config: Config) extends RouterConfig {
     val foo = config.getString("foo")
     def createRoute(routeeProvider: RouteeProvider): Route = {
-      val routees = IndexedSeq(routeeProvider.context.actorOf(Props[Echo]))
-      routeeProvider.registerRoutees(routees)
+      routeeProvider.registerRoutees(List(routeeProvider.context.actorOf(Props[Echo])))
 
       {
-        case (sender, message) ⇒ Nil
+        case (sender, message) ⇒ EmptyImmutableSeq
       }
     }
     def routerDispatcher: String = Dispatchers.DefaultDispatcherId
@@ -251,15 +250,15 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       val doneLatch = new TestLatch(connectionCount)
 
       //lets create some connections.
-      var actors = new LinkedList[ActorRef]
-      var counters = new LinkedList[AtomicInteger]
+      @volatile var actors = immutable.IndexedSeq[ActorRef]()
+      @volatile var counters = immutable.IndexedSeq[AtomicInteger]()
       for (i ← 0 until connectionCount) {
         counters = counters :+ new AtomicInteger()
 
         val actor = system.actorOf(Props(new Actor {
           def receive = {
             case "end"    ⇒ doneLatch.countDown()
-            case msg: Int ⇒ counters.get(i).get.addAndGet(msg)
+            case msg: Int ⇒ counters(i).addAndGet(msg)
           }
         }))
         actors = actors :+ actor
@@ -278,10 +277,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       //now wait some and do validations.
       Await.ready(doneLatch, remaining)
 
-      for (i ← 0 until connectionCount) {
-        val counter = counters.get(i).get
-        counter.get must be((iterationCount * (i + 1)))
-      }
+      for (i ← 0 until connectionCount)
+        counters(i).get must be((iterationCount * (i + 1)))
     }
 
     "deliver a broadcast message using the !" in {

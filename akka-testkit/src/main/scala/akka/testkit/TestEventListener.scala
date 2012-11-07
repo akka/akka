@@ -6,7 +6,6 @@ package akka.testkit
 import language.existentials
 
 import scala.util.matching.Regex
-import scala.collection.JavaConverters
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
@@ -14,8 +13,9 @@ import akka.actor.{ DeadLetter, ActorSystem, Terminated, UnhandledMessage }
 import akka.dispatch.{ SystemMessage, Terminate }
 import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug, LoggerInitialized }
 import akka.event.Logging
-import java.lang.{ Iterable ⇒ JIterable }
 import akka.actor.NoSerializationVerificationNeeded
+import akka.japi.Util.immutableSeq
+import java.lang.{ Iterable ⇒ JIterable }
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`
@@ -45,7 +45,7 @@ object TestEvent {
     /**
      * Java API
      */
-    def this(filters: JIterable[EventFilter]) = this(JavaConverters.iterableAsScalaIterableConverter(filters).asScala.to[immutable.Seq])
+    def this(filters: JIterable[EventFilter]) = this(immutableSeq(filters))
   }
   object UnMute {
     def apply(filter: EventFilter, filters: EventFilter*): UnMute = new UnMute(filter +: filters.to[immutable.Seq])
@@ -54,7 +54,7 @@ object TestEvent {
     /**
      * Java API
      */
-    def this(filters: JIterable[EventFilter]) = this(JavaConverters.iterableAsScalaIterableConverter(filters).asScala.to[immutable.Seq])
+    def this(filters: JIterable[EventFilter]) = this(immutableSeq(filters))
   }
 }
 

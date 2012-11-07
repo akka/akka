@@ -6,7 +6,6 @@ package akka.osgi
 import de.kalpatec.pojosr.framework.launch.{ BundleDescriptor, PojoServiceRegistryFactory, ClasspathScanner }
 
 import scala.collection.JavaConversions.seqAsJavaList
-import scala.collection.JavaConversions.collectionAsScalaIterable
 import org.apache.commons.io.IOUtils.copy
 
 import org.osgi.framework._
@@ -138,12 +137,12 @@ class BundleDescriptorBuilder(name: String) {
   }
 
   def extractHeaders(file: File): HashMap[String, String] = {
+    import scala.collection.JavaConverters.iterableAsScalaIterableConverter
     val headers = new HashMap[String, String]()
-
     val jis = new JarInputStream(new FileInputStream(file))
     try {
-      for (entry ← jis.getManifest().getMainAttributes().entrySet())
-        headers.put(entry.getKey().toString(), entry.getValue().toString())
+      for (entry ← jis.getManifest.getMainAttributes.entrySet.asScala)
+        headers.put(entry.getKey.toString, entry.getValue.toString)
     } finally jis.close()
 
     headers

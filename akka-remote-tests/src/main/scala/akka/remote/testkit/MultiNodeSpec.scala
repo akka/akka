@@ -402,10 +402,8 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     }
     import scala.collection.JavaConverters._
     ConfigFactory.parseString(deployString).root.asScala foreach {
-      case (key, value: ConfigObject) ⇒
-        deployer.parseConfig(key, value.toConfig) foreach deployer.deploy
-      case (key, x) ⇒
-        throw new IllegalArgumentException("key " + key + " must map to deployment section, not simple value " + x)
+      case (key, value: ConfigObject) ⇒ deployer.parseConfig(key, value.toConfig) foreach deployer.deploy
+      case (key, x)                   ⇒ throw new IllegalArgumentException(s"key $key must map to deployment section, not simple value $x")
     }
   }
 

@@ -120,13 +120,12 @@ object AddressFromURIString {
  * Given an ActorPath it returns the Address and the path elements if the path is well-formed
  */
 object ActorPathExtractor extends PathUtils {
-  def unapply(addr: String): Option[(Address, Iterable[String])] =
+  def unapply(addr: String): Option[(Address, immutable.Iterable[String])] =
     try {
       val uri = new URI(addr)
-      if (uri.getRawPath == null) None
-      else AddressFromURIString.unapply(uri) match {
-        case None       ⇒ None
-        case Some(addr) ⇒ Some((addr, split(uri.getRawPath).drop(1)))
+      uri.getRawPath match {
+        case null ⇒ None
+        case path ⇒ AddressFromURIString.unapply(uri).map((_, split(path).drop(1)))
       }
     } catch {
       case _: URISyntaxException ⇒ None

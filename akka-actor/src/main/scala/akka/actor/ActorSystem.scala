@@ -6,7 +6,7 @@ package akka.actor
 
 import akka.event._
 import akka.dispatch._
-import akka.pattern.ask
+import akka.japi.Util.immutableSeq
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -144,7 +144,7 @@ object ActorSystem {
 
     final val LogLevel: String = getString("akka.loglevel")
     final val StdoutLogLevel: String = getString("akka.stdout-loglevel")
-    final val EventHandlers: immutable.Seq[String] = getStringList("akka.event-handlers").asScala.to[Vector]
+    final val EventHandlers: immutable.Seq[String] = immutableSeq(getStringList("akka.event-handlers"))
     final val EventHandlerStartTimeout: Timeout = Timeout(Duration(getMilliseconds("akka.event-handler-startup-timeout"), MILLISECONDS))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
 
@@ -273,8 +273,7 @@ abstract class ActorSystem extends ActorRefFactory {
   /**
    * ''Java API'': Recursively create a descendant’s path by appending all child names.
    */
-  def descendant(names: java.lang.Iterable[String]): ActorPath =
-    /(scala.collection.JavaConverters.iterableAsScalaIterableConverter(names).asScala)
+  def descendant(names: java.lang.Iterable[String]): ActorPath = /(immutableSeq(names))
 
   /**
    * Start-up time in milliseconds since the epoch.
@@ -674,15 +673,14 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null
 
   private def loadExtensions() {
-    scala.collection.JavaConverters.collectionAsScalaIterableConverter(
-      settings.config.getStringList("akka.extensions")).asScala foreach { fqcn ⇒
-        dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil) } match {
-          case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
-          case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
-          case Success(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
-          case Failure(problem)                ⇒ log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
-        }
+    immutableSeq(settings.config.getStringList("akka.extensions")) foreach { fqcn ⇒
+      dynamicAccess.getObjectFor[AnyRef](fqcn) recoverWith { case _ ⇒ dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil) } match {
+        case Success(p: ExtensionIdProvider) ⇒ registerExtension(p.lookup())
+        case Success(p: ExtensionId[_])      ⇒ registerExtension(p)
+        case Success(other)                  ⇒ log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
+        case Failure(problem)                ⇒ log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
       }
+    }
   }
 
   override def toString: String = lookupRoot.path.root.address.toString
