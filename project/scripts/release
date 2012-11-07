@@ -2,11 +2,88 @@
 #
 # Release script for Akka.
 #
-# To run this script you need access to repo.akka.io and github.com/akka/akka.
+# Prerequisites and Installation Instructions
 #
-# To always use the akkarepo user with repo.akka.io add the following to .ssh/config:
-#   Host repo.akka.io
-#   User akkarepo
+# 1) You must be able to sign the artifacts with PGP
+#
+# 1.1) If you don't have PGP and a PGP key
+#      On OS X from othe command line:
+#        shell> brew install gnupg
+#        shell> gpg --gen-key
+#
+#      Default values for the key type and 2048 bits is OK.
+#      Make sure to use the email address that you will use later to register
+#      with Sonatype.
+#
+# 1.2) Install the sbt-pgp plugin from http://www.scala-sbt.org/sbt-pgp/
+#      The plugin will try to use the default key stored in ~/.gnupg/pubring.gpg
+#      and ~/.gnupg/secring.gpg.
+#
+# 1.3) Check that signing works
+#      From inside sbt do the following
+#        sbt> publish-local
+#      It should should ask you for your pass phrase, and create .asc files for
+#      all artifacts
+#
+# 1.4) Publish your key to a server that Sonatype use
+#      From the command line:
+#        shell> gpg --keyserver hkp://pool.sks-keyservers.net/ --send-keys <your key id>
+#      To find out your key id do this from the command line:
+#        shell> gpg --list-keys
+#        pub    2048/<your key id> ...
+#
+# 2) You must have publishing rights to oss.sonatype.org
+#
+# 2.1) Register with oss.sonatype.org by only following the instructions under
+#      sign up here https://docs.sonatype.org/display/Repository/Sonatype+OSS+Maven+Repository+Usage+Guide
+#      Use the same email address as you used for the pgp key.
+#
+# 2.2) Ask Jonas who is the original creator of this ticket https://issues.sonatype.org/browse/OSSRH-3097
+#      to add a comment that says that your username (not your full name) should
+#      have publish access to that project. There is manual administration of
+#      the ticket at Sonatype, so it could take a little while.
+#
+# 2.3) Add your credentials to sbt by adding a global.sbt file in your sbt home
+#      directory containing the following.
+#        credentials += Credentials("Sonatype Nexus Repository Manager",
+#                          "oss.sonatype.org",
+#                          "<your username>",
+#                          "<your password>")
+#
+# 3) You must have publishing rights to scalasbt.artifactoryonline.com
+#
+# 3.1) Politely ask the Q-branch to create a user for you
+#
+# 3.2) Add your credentials to sbt by adding this to your global.sbt file
+#        credentials += Credentials("Artifactory Realm",
+#                          "scalasbt.artifactoryonline.com",
+#                          "<your username>",
+#                          "<your encrypted password>")
+#      The encrypted password is available in your profile here
+#      http://scalasbt.artifactoryonline.com/scalasbt/webapp/profile.html
+#
+# 4) You must have access to repo.akka.io
+#
+# 4.1) Ask someone in the team for login information for the akkarepo user.
+#
+# 4.2) Install your public ssh key to avoid typing in your password.
+#      From the command line:
+#        shell> cat ~/.ssh/id_rsa.pub | ssh akkarepo@repo.akka.io "cat >> ~/.ssh/authorized_keys"
+#
+# 5) Have access to github.com/akka/akka. This should be a given.
+#
+# Now you should be all set to run the script
+#
+# Run the script in two stages.
+#  First a dry run:
+#    shell> project/scripts/release --dry-run <version>
+#  And if all goes well a real run:
+#    shell> project/scripts/release <version>
+#
+# The sbt plugin is published directly to scalasbt.artifactoryonline.com, but the
+# artifacts published to oss.sonatype.org needs to be released by following the
+# instructions under release here
+# https://docs.sonatype.org/display/Repository/Sonatype+OSS+Maven+Repository+Usage+Guide
 
 # defaults
 declare -r default_server="akkarepo@repo.akka.io"
