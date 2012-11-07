@@ -109,8 +109,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
 
     "collect JMX metrics" in {
       // heap max may be undefined depending on the OS
-      // systemLoadAverage is JMX is SIGAR not present
-      collector.systemLoadAverage.isDefined must be(true)
+      // systemLoadAverage is JMX if SIGAR not present, but not available on all OS
       collector.used.isDefined must be(true)
       collector.committed.isDefined must be(true)
       collector.processors.isDefined must be(true)
