@@ -713,8 +713,8 @@ Some `Specs2 <http://specs2.org>`_ users have contributed examples of how to wor
   actually beneficial also for the third point—is to apply the TestKit together
   with :class:`org.specs2.specification.Scope`.
 * The Specification traits provide a :class:`Duration` DSL which uses partly
-  the same method names as :class:`scala.concurrent.util.Duration`, resulting in ambiguous
-  implicits if ``akka.util.duration._`` is imported. There are two work-arounds:
+  the same method names as :class:`scala.concurrent.duration.Duration`, resulting in ambiguous
+  implicits if ``scala.concurrent.duration._`` is imported. There are two work-arounds:
 
   * either use the Specification variant of Duration and supply an implicit
     conversion to the Akka Duration. This conversion is not supplied with the
