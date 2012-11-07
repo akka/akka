@@ -12,7 +12,8 @@ import akka.actor.Address
 import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with ImplicitSender with AbstractClusterMetricsSpec with MetricSpec {
+class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with ImplicitSender with MetricSpec
+  with MetricsCollectorFactory {
 
   val collector = createMetricsCollector
 
@@ -21,27 +22,25 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
       val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
-      var localGossip = MetricsGossip(DefaultRateOfDecay)
+      var localGossip = MetricsGossip()
       localGossip :+= m1
       localGossip.nodes.size must be(1)
       localGossip.nodeKeys.size must be(localGossip.nodes.size)
       assertMasterMetricsAgainstGossipMetrics(Set(m1), localGossip)
-      assertExpectedSampleSize(collector.isSigar, localGossip)
-      assertInitialized(localGossip.rateOfDecay, collectNodeMetrics(localGossip.nodes).toSet)
+      collector.sample.metrics.size must be > (3)
 
       localGossip :+= m2
       localGossip.nodes.size must be(2)
       localGossip.nodeKeys.size must be(localGossip.nodes.size)
       assertMasterMetricsAgainstGossipMetrics(Set(m1, m2), localGossip)
-      assertExpectedSampleSize(collector.isSigar, localGossip)
-      assertInitialized(localGossip.rateOfDecay, collectNodeMetrics(localGossip.nodes).toSet)
+      collector.sample.metrics.size must be > (3)
     }
 
     "merge peer metrics" in {
       val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
       val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
-      var remoteGossip = MetricsGossip(DefaultRateOfDecay)
+      var remoteGossip = MetricsGossip()
       remoteGossip :+= m1
       remoteGossip :+= m2
       remoteGossip.nodes.size must be(2)
@@ -51,7 +50,7 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       remoteGossip :+= m2Updated // merge peers
       remoteGossip.nodes.size must be(2)
       assertMasterMetricsAgainstGossipMetrics(beforeMergeNodes, remoteGossip)
-      assertExpectedSampleSize(collector.isSigar, remoteGossip)
+      remoteGossip.nodes.foreach(_.metrics.size must be > (3))
       remoteGossip.nodes collect { case peer if peer.address == m2.address ⇒ peer.timestamp must be(m2Updated.timestamp) }
     }
 
@@ -61,11 +60,11 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       val m3 = NodeMetrics(Address("akka", "sys", "a", 2556), newTimestamp, collector.sample.metrics)
       val m2Updated = m2 copy (metrics = collector.sample.metrics, timestamp = newTimestamp)
 
-      var localGossip = MetricsGossip(DefaultRateOfDecay)
+      var localGossip = MetricsGossip()
       localGossip :+= m1
       localGossip :+= m2
 
-      var remoteGossip = MetricsGossip(DefaultRateOfDecay)
+      var remoteGossip = MetricsGossip()
       remoteGossip :+= m3
       remoteGossip :+= m2Updated
 
@@ -76,15 +75,13 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       val mergedGossip = localGossip merge remoteGossip
       mergedGossip.nodes.size must be(3)
       assertExpectedNodeAddresses(mergedGossip, Set(m1, m2, m3))
-      assertExpectedSampleSize(collector.isSigar, mergedGossip)
-      assertCreatedUninitialized(mergedGossip)
-      assertInitialized(mergedGossip)
+      mergedGossip.nodes.foreach(_.metrics.size must be > (3))
       mergedGossip.nodes.find(_.address == m2.address).get.timestamp must be(m2Updated.timestamp)
     }
 
     "get the current NodeMetrics if it exists in the local nodes" in {
       val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      var localGossip = MetricsGossip(DefaultRateOfDecay)
+      var localGossip = MetricsGossip()
       localGossip :+= m1
       localGossip.metricsFor(m1).nonEmpty must be(true)
     }
@@ -93,7 +90,7 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
       val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
       val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
-      var localGossip = MetricsGossip(DefaultRateOfDecay)
+      var localGossip = MetricsGossip()
       localGossip :+= m1
       localGossip :+= m2
 

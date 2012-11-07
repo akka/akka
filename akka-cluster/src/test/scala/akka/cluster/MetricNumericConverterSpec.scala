@@ -5,39 +5,43 @@
 package akka.cluster
 
 import akka.testkit.{ ImplicitSender, AkkaSpec }
+import akka.cluster.NodeMetrics.MetricValues._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricNumericConverter with ImplicitSender with AbstractClusterMetricsSpec {
+class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricNumericConverter with ImplicitSender with MetricSpec
+  with MetricsCollectorFactory {
 
   "MetricNumericConverter" must {
     val collector = createMetricsCollector
 
     "convert " in {
-      convert(0).isLeft must be(true)
-      convert(1).left.get must be(1)
-      convert(1L).isLeft must be(true)
-      convert(0.0).isRight must be(true)
+      convertNumber(0).isLeft must be(true)
+      convertNumber(1).left.get must be(1)
+      convertNumber(1L).isLeft must be(true)
+      convertNumber(0.0).isRight must be(true)
     }
 
     "define a new metric" in {
-      val metric = Metric("heap-memory-used", Some(0L))
-      metric.initializable must be(true)
-      metric.name must not be (null)
-      metric.average.isEmpty must be(true)
-      metric.trendable must be(true)
+      val metric = Metric(HeapMemoryUsed, Some(256L), decay = Some(10))
+      metric.name must be(HeapMemoryUsed)
+      metric.isDefined must be(true)
+      metric.value must be(Some(256L))
+      metric.average.isDefined must be(true)
+      metric.average.get.ewma must be(256L)
 
-      if (collector.isSigar) {
-        val cores = collector.totalCores
-        cores.isDefined must be(true)
-        cores.value.get.intValue must be > (0)
-        cores.initializable must be(false)
+      collector match {
+        case c: SigarMetricsCollector ⇒
+          val cores = c.totalCores
+          cores.isDefined must be(true)
+          cores.value.get.intValue must be > (0)
+        case _ ⇒
       }
     }
 
     "define an undefined value with a None " in {
-      Metric("x", Some(-1)).value.isDefined must be(false)
-      Metric("x", Some(java.lang.Double.NaN)).value.isDefined must be(false)
-      Metric("x", None).isDefined must be(false)
+      Metric("x", Some(-1), None).value.isDefined must be(false)
+      Metric("x", Some(java.lang.Double.NaN), None).value.isDefined must be(false)
+      Metric("x", None, None).isDefined must be(false)
     }
 
     "recognize whether a metric value is defined" in {

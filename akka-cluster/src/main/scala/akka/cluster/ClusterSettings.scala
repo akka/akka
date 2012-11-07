@@ -71,9 +71,16 @@ class ClusterSettings(val config: Config, val systemName: String) {
     callTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.call-timeout"), MILLISECONDS),
     resetTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.reset-timeout"), MILLISECONDS))
   final val MetricsEnabled: Boolean = getBoolean("akka.cluster.metrics.enabled")
-  final val MetricsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.metrics.metrics-interval"), MILLISECONDS)
+  final val MetricsCollectorClass: String = getString("akka.cluster.metrics.collector-class")
+  final val MetricsInterval: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.metrics.collect-interval"), MILLISECONDS)
+    require(d > Duration.Zero, "metrics.collect-interval must be > 0"); d
+  }
   final val MetricsGossipInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.metrics.gossip-interval"), MILLISECONDS)
-  final val MetricsRateOfDecay: Int = getInt("akka.cluster.metrics.rate-of-decay")
+  final val MetricsRateOfDecay: Int = {
+    val n = getInt("akka.cluster.metrics.rate-of-decay")
+    require(n >= 1, "metrics.rate-of-decay must be >= 1"); n
+  }
 }
 
 case class CircuitBreakerSettings(maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)

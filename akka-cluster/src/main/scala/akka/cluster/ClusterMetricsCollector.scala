@@ -4,29 +4,36 @@
 
 package akka.cluster
 
-import scala.language.postfixOps
-import scala.concurrent.duration._
-import scala.collection.immutable.{ SortedSet, Map }
-import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.util.{ Try, Success, Failure }
-import math.{ ScalaNumber, ScalaNumericConversions }
-import scala.runtime.{ RichLong, RichDouble, RichInt }
-
-import akka.actor._
-import akka.event.LoggingAdapter
-import akka.cluster.MemberStatus.Up
-
-import java.lang.management.{ OperatingSystemMXBean, MemoryMXBean, ManagementFactory }
-import java.lang.reflect.Method
+import java.io.Closeable
 import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
+import java.lang.management.{ OperatingSystemMXBean, MemoryMXBean, ManagementFactory }
+import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.Method
+
+import scala.collection.immutable.{ SortedSet, Map }
+import scala.concurrent.duration._
+import scala.concurrent.forkjoin.ThreadLocalRandom
+import scala.runtime.{ RichLong, RichDouble, RichInt }
+import scala.util.{ Try, Success, Failure }
+
+import akka.ConfigurationException
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.DynamicAccess
+import akka.actor.ExtendedActorSystem
+import akka.cluster.MemberStatus.Up
+import akka.event.Logging
 
 /**
  * INTERNAL API.
  *
- * This strategy is primarily for load-balancing of nodes. It controls metrics sampling
+ * Cluster metrics is primarily for load-balancing of nodes. It controls metrics sampling
  * at a regular frequency, prepares highly variable data for further analysis by other entities,
- * and publishes the latest cluster metrics data around the node ring to assist in determining
- * the need to redirect traffic to the least-loaded nodes.
+ * and publishes the latest cluster metrics data around the node ring and local eventStream
+ * to assist in determining the need to redirect traffic to the least-loaded nodes.
  *
  * Metrics sampling is delegated to the [[akka.cluster.MetricsCollector]].
  *
@@ -43,8 +50,6 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   import cluster.{ selfAddress, scheduler, settings }
   import settings._
 
-  val DefaultRateOfDecay: Int = 10
-
   /**
    * The node ring gossipped that contains only members that are Up.
    */
@@ -53,12 +58,12 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * The latest metric values with their statistical data.
    */
-  var latestGossip: MetricsGossip = MetricsGossip(if (MetricsRateOfDecay <= 0) DefaultRateOfDecay else MetricsRateOfDecay)
+  var latestGossip: MetricsGossip = MetricsGossip()
 
   /**
    * The metrics collector that samples data on the node.
    */
-  val collector: MetricsCollector = MetricsCollector(selfAddress, log, context.system.asInstanceOf[ExtendedActorSystem].dynamicAccess)
+  val collector: MetricsCollector = MetricsCollector(context.system.asInstanceOf[ExtendedActorSystem], settings)
 
   /**
    * Start periodic gossip to random nodes in cluster
@@ -160,7 +165,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
  *
  * @param nodes metrics per node
  */
-private[cluster] case class MetricsGossip(rateOfDecay: Int, nodes: Set[NodeMetrics] = Set.empty) {
+private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics] = Set.empty) {
 
   /**
    * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus.Up]]
@@ -194,11 +199,10 @@ private[cluster] case class MetricsGossip(rateOfDecay: Int, nodes: Set[NodeMetri
     val names = previous map (_.name)
 
     val (toMerge: Set[Metric], unseen: Set[Metric]) = data.metrics partition (a ⇒ names contains a.name)
-    val initialized = unseen.map(_.initialize(rateOfDecay))
     val merged = toMerge flatMap (latest ⇒ previous.collect { case peer if latest same peer ⇒ peer :+ latest })
 
     val refreshed = nodes filterNot (_.address == data.address)
-    copy(nodes = refreshed + data.copy(metrics = initialized ++ merged))
+    copy(nodes = refreshed + data.copy(metrics = unseen ++ merged))
   }
 
   /**
@@ -231,6 +235,8 @@ private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: Metrics
  * INTERNAL API
  *
  * @param decay sets how quickly the exponential weighting decays for past data compared to new data
+ *              Corresponds to 'N time periods' as explained in
+ *              http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
  *
  * @param ewma the current exponentially weighted moving average, e.g. Y(n - 1), or,
  *             the sampled value resulting from the previous smoothing iteration.
@@ -240,36 +246,30 @@ private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: Metrics
  *
  * @param startTime the time of initial sampling for this data stream
  */
-private[cluster] case class DataStream(decay: Int, ewma: ScalaNumericConversions, startTime: Long, timestamp: Long)
-  extends ClusterMessage with MetricNumericConverter {
+private[cluster] case class DataStream(decay: Int, ewma: Double, startTime: Long, timestamp: Long)
+  extends ClusterMessage {
+
+  require(decay >= 1, "Rate of decay must be >= 1")
 
   /**
    * The rate at which the weights of past observations
    * decay as they become more distant.
    */
-  private val α = 2 / decay + 1
+  private val α = 2.0 / (decay + 1)
 
   /**
    * Calculates the exponentially weighted moving average for a given monitored data set.
-   * The datam can be too large to fit into an int or long, thus we use ScalaNumericConversions,
-   * and defer to BigInt or BigDecimal.
-   *
-   * FIXME - look into the math: the new ewma becomes the new value
-   * value: 416979936, prev ewma: 416581760, new ewma: 416979936
    *
    * @param xn the new data point
    *
    * @return a [[akka.cluster.DataStream]] with the updated yn and timestamp
    */
-  def :+(xn: ScalaNumericConversions): DataStream = if (xn != ewma) convert(xn) fold (
-    nl ⇒ copy(ewma = BigInt((α * nl) + (1 - α) * ewma.longValue()), timestamp = newTimestamp),
-    nd ⇒ copy(ewma = BigDecimal((α * nd) + (1 - α) * ewma.doubleValue()), timestamp = newTimestamp))
-  else this
+  def :+(xn: Double): DataStream = copy(ewma = (α * xn) + (1 - α) * ewma, timestamp = newTimestamp)
 
   /**
    * The duration of observation for this data stream
    */
-  def duration: FiniteDuration = (timestamp - startTime) millis
+  def duration: FiniteDuration = (timestamp - startTime).millis
 
 }
 
@@ -278,19 +278,17 @@ private[cluster] case class DataStream(decay: Int, ewma: ScalaNumericConversions
  *
  * @param name the metric name
  *
- * @param value the metric value, which may or may not be defined
+ * @param value the metric value, which may or may not be defined, it must be a valid numerical value,
+ *   see [[akka.cluster.MetricNumericConverter.defined()]]
  *
  * @param average the data stream of the metric value, for trending over time. Metrics that are already
  *                averages (e.g. system load average) or finite (e.g. as total cores), are not trended.
  */
-private[cluster] case class Metric(name: String, value: Option[ScalaNumericConversions], average: Option[DataStream])
+private[cluster] case class Metric private (name: String, value: Option[Number], average: Option[DataStream],
+                                            dummy: Boolean) // dummy because of overloading clash with apply
   extends ClusterMessage with MetricNumericConverter {
 
-  /**
-   * Returns the metric with a new data stream for data trending if eligible,
-   * otherwise returns the unchanged metric.
-   */
-  def initialize(decay: Int): Metric = if (initializable) copy(average = Some(DataStream(decay, value.get, newTimestamp, newTimestamp))) else this
+  require(value.isEmpty || defined(value.get), "Invalid Metric [%s] value [%]".format(name, value))
 
   /**
    * If defined ( [[akka.cluster.MetricNumericConverter.defined()]] ), updates the new
@@ -298,35 +296,26 @@ private[cluster] case class Metric(name: String, value: Option[ScalaNumericConve
    */
   def :+(latest: Metric): Metric = latest.value match {
     case Some(v) if this same latest ⇒ average match {
-      case Some(previous)                    ⇒ copy(value = Some(v), average = Some(previous :+ v))
-      case None if latest.average.isDefined  ⇒ copy(value = Some(v), average = latest.average)
-      case None if !latest.average.isDefined ⇒ copy(value = Some(v))
+      case Some(previous)                   ⇒ copy(value = latest.value, average = Some(previous :+ v.doubleValue))
+      case None if latest.average.isDefined ⇒ copy(value = latest.value, average = latest.average)
+      case None if latest.average.isEmpty   ⇒ copy(value = latest.value)
     }
     case None ⇒ this
   }
 
+  def isDefined: Boolean = value.isDefined
+
   /**
-   * @see [[akka.cluster.MetricNumericConverter.defined()]]
+   * The numerical value of the average, if defined, otherwise the latest value,
+   * if defined.
    */
-  def isDefined: Boolean = value match {
-    case Some(a) ⇒ defined(a)
-    case None    ⇒ false
-  }
+  def averageValue: Option[Double] =
+    average map (_.ewma) orElse value.map(_.doubleValue)
 
   /**
    * Returns true if <code>that</code> is tracking the same metric as this.
    */
   def same(that: Metric): Boolean = name == that.name
-
-  /**
-   * Returns true if the metric requires initialization.
-   */
-  def initializable: Boolean = trendable && isDefined && average.isEmpty
-
-  /**
-   * Returns true if the metric is a value applicable for trending.
-   */
-  def trendable: Boolean = !(Metric.noStream contains name)
 
 }
 
@@ -336,65 +325,30 @@ private[cluster] case class Metric(name: String, value: Option[ScalaNumericConve
  * Companion object of Metric class.
  */
 private[cluster] object Metric extends MetricNumericConverter {
+  import NodeMetrics.MetricValues._
 
-  /**
-   * The metrics that are already averages or finite are not trended over time.
-   */
-  private val noStream = Set("system-load-average", "total-cores", "processors")
+  private def definedValue(value: Option[Number]): Option[Number] =
+    if (value.isDefined && defined(value.get)) value else None
 
   /**
    * Evaluates validity of <code>value</code> based on whether it is available (SIGAR on classpath)
    * or defined for the OS (JMX). If undefined we set the value option to None and do not modify
    * the latest sampled metric to avoid skewing the statistical trend.
+   *
+   * @param decay rate of decay for values applicable for trending
    */
-  def apply(name: String, value: Option[ScalaNumericConversions]): Metric = value match {
-    case Some(v) if defined(v) ⇒ Metric(name, value, None)
-    case _                     ⇒ Metric(name, None, None)
+  def apply(name: String, value: Option[Number], decay: Option[Int]): Metric = {
+    val dv = definedValue(value)
+    val average =
+      if (decay.isDefined && dv.isDefined) {
+        val now = newTimestamp
+        Some(DataStream(decay.get, dv.get.doubleValue, now, now))
+      } else
+        None
+    new Metric(name, dv, average, true)
   }
-}
 
-/**
- * Reusable logic for particular metric categories or to leverage all for routing.
- */
-private[cluster] trait MetricsAwareClusterNodeSelector {
-  import NodeMetrics._
-  import NodeMetrics.NodeMetricsComparator._
-
-  /**
-   * Returns the address of the available node with the lowest cumulative difference
-   * between heap memory max and used/committed.
-   */
-  def selectByMemory(nodes: Set[NodeMetrics]): Option[Address] = Try(Some(nodes.map {
-    n ⇒
-      val (used, committed, max) = MetricValues.unapply(n.heapMemory)
-      (n.address, max match {
-        case Some(m) ⇒ ((committed - used) + (m - used) + (m - committed))
-        case None    ⇒ committed - used
-      })
-  }.min._1)) getOrElse None
-
-  // TODO
-  def selectByNetworkLatency(nodes: Set[NodeMetrics]): Option[Address] = None
-  /* Try(nodes.map {
-      n ⇒
-        val (rxBytes, txBytes) = MetricValues.unapply(n.networkLatency).get
-        (n.address, (rxBytes + txBytes))
-    }.min._1) getOrElse None // TODO: min or max
-  */
-
-  // TODO
-  def selectByCpu(nodes: Set[NodeMetrics]): Option[Address] = None
-  /* Try(nodes.map {
-      n ⇒
-        val (loadAverage, processors, combinedCpu, cores) = MetricValues.unapply(n.cpu)
-        var cumulativeDifference = 0
-        // TODO: calculate
-        combinedCpu.get
-        cores.get
-        (n.address, cumulativeDifference)
-    }.min._1) getOrElse None  // TODO min or max
-  }*/
-
+  def apply(name: String): Metric = new Metric(name, None, None, true)
 }
 
 /**
@@ -417,6 +371,7 @@ private[cluster] trait MetricsAwareClusterNodeSelector {
  */
 private[cluster] case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] = Set.empty[Metric]) extends ClusterMessage {
   import NodeMetrics._
+  import NodeMetrics.MetricValues._
 
   /**
    * Returns the most recent data.
@@ -436,13 +391,13 @@ private[cluster] case class NodeMetrics(address: Address, timestamp: Long, metri
   /**
    * Of all the data streams, this fluctuates the most.
    */
-  def heapMemory: HeapMemory = HeapMemory(metric("heap-memory-used"), metric("heap-memory-committed"), metric("heap-memory-max"))
+  def heapMemory: HeapMemory = HeapMemory(metric(HeapMemoryUsed), metric(HeapMemoryCommitted), metric(HeapMemoryMax))
 
-  def networkLatency: NetworkLatency = NetworkLatency(metric("network-max-rx"), metric("network-max-tx"))
+  def networkLatency: NetworkLatency = NetworkLatency(metric(NetworkInboundRate), metric(NetworkOutboundRate))
 
-  def cpu: Cpu = Cpu(metric("system-load-average"), metric("processors"), metric("cpu-combined"), metric("total-cores"))
+  def cpu: Cpu = Cpu(metric(SystemLoadAverage), metric(Processors), metric(CpuCombined), metric(TotalCores))
 
-  def metric(key: String): Metric = metrics.collectFirst { case m if m.name == key ⇒ m } getOrElse Metric(key, None)
+  def metric(key: String): Metric = metrics.collectFirst { case m if m.name == key ⇒ m } getOrElse Metric(key)
 
 }
 
@@ -456,44 +411,36 @@ private[cluster] case class NodeMetrics(address: Address, timestamp: Long, metri
  */
 private[cluster] object NodeMetrics {
 
-  object NodeMetricsComparator extends MetricNumericConverter {
-
-    implicit val longMinOrdering: Ordering[Long] = Ordering.fromLessThan[Long] { (a, b) ⇒ (a < b) }
-
-    implicit val longMinAddressOrdering: Ordering[(Address, Long)] = new Ordering[(Address, Long)] {
-      def compare(a: (Address, Long), b: (Address, Long)): Int = longMinOrdering.compare(a._2, b._2)
-    }
-
-    def maxAddressLong(seq: Seq[(Address, Long)]): (Address, Long) =
-      seq.reduceLeft((a: (Address, Long), b: (Address, Long)) ⇒ if (a._2 > b._2) a else b)
-
-    implicit val doubleMinOrdering: Ordering[Double] = Ordering.fromLessThan[Double] { (a, b) ⇒ (a < b) }
-
-    implicit val doubleMinAddressOrdering: Ordering[(Address, Double)] = new Ordering[(Address, Double)] {
-      def compare(a: (Address, Double), b: (Address, Double)): Int = doubleMinOrdering.compare(a._2, b._2)
-    }
-
-    def maxAddressDouble(seq: Seq[(Address, Double)]): (Address, Double) =
-      seq.reduceLeft((a: (Address, Double), b: (Address, Double)) ⇒ if (a._2 > b._2) a else b)
-  }
-
   sealed trait MetricValues
 
   object MetricValues {
 
+    final val HeapMemoryUsed = "heap-memory-used"
+    final val HeapMemoryCommitted = "heap-memory-committed"
+    final val HeapMemoryMax = "heap-memory-max"
+    final val NetworkInboundRate = "network-max-inbound"
+    final val NetworkOutboundRate = "network-max-outbound"
+    final val SystemLoadAverage = "system-load-average"
+    final val Processors = "processors"
+    final val CpuCombined = "cpu-combined"
+    final val TotalCores = "total-cores"
+
     def unapply(v: HeapMemory): Tuple3[Long, Long, Option[Long]] =
-      (v.used.average.get.ewma.longValue(),
-        v.committed.average.get.ewma.longValue(),
-        Try(Some(v.max.average.get.ewma.longValue())) getOrElse None)
+      (v.used.averageValue.get.longValue,
+        v.committed.averageValue.get.longValue,
+        v.max.averageValue map (_.longValue) orElse None)
 
     def unapply(v: NetworkLatency): Option[(Long, Long)] =
-      Try(Some(v.maxRxIO.average.get.ewma.longValue(), v.maxTxIO.average.get.ewma.longValue())) getOrElse None
+      (v.inbound.averageValue, v.outbound.averageValue) match {
+        case (Some(a), Some(b)) ⇒ Some((a.longValue, b.longValue))
+        case _                  ⇒ None
+      }
 
-    def unapply(v: Cpu): Tuple4[Double, Int, Option[Double], Option[Int]] =
-      (v.systemLoadAverage.value.get.doubleValue(),
-        v.processors.value.get.intValue(),
-        Try(Some(v.combinedCpu.average.get.ewma.doubleValue())) getOrElse None,
-        Try(Some(v.cores.value.get.intValue())) getOrElse None)
+    def unapply(v: Cpu): Tuple4[Option[Double], Int, Option[Double], Option[Int]] =
+      (v.systemLoadAverage.averageValue map (_.doubleValue),
+        v.processors.averageValue.get.intValue,
+        v.combinedCpu.averageValue map (_.doubleValue),
+        v.cores.averageValue map (_.intValue))
   }
 
   /**
@@ -505,14 +452,17 @@ private[cluster] object NodeMetrics {
    * @param max the maximum amount of memory (in bytes) that can be used for JVM memory management.
    *            Can be undefined on some OS.
    */
-  case class HeapMemory(used: Metric, committed: Metric, max: Metric) extends MetricValues
+  case class HeapMemory(used: Metric, committed: Metric, max: Metric) extends MetricValues {
+    require(used.isDefined, "used must be defined")
+    require(committed.isDefined, "committed must be defined")
+  }
 
   /**
-   * @param maxRxIO the max network IO rx value, in bytes
+   * @param inbound the inbound network IO rate, in bytes
    *
-   * @param maxTxIO the max network IO tx value, in bytes
+   * @param outbound the outbound network IO rate, in bytes
    */
-  case class NetworkLatency(maxRxIO: Metric, maxTxIO: Metric) extends MetricValues
+  case class NetworkLatency(inbound: Metric, outbound: Metric) extends MetricValues
 
   /**
    * @param systemLoadAverage OS-specific average load on the CPUs in the system, for the past 1 minute
@@ -524,7 +474,9 @@ private[cluster] object NodeMetrics {
    *
    * @param cores the number of cores (multi-core: per processor)
    */
-  private[cluster] case class Cpu(systemLoadAverage: Metric, processors: Metric, combinedCpu: Metric, cores: Metric) extends MetricValues
+  private[cluster] case class Cpu(systemLoadAverage: Metric, processors: Metric, combinedCpu: Metric, cores: Metric) extends MetricValues {
+    require(processors.isDefined, "processors must be defined")
+  }
 
 }
 
@@ -537,43 +489,151 @@ private[cluster] object NodeMetrics {
 private[cluster] trait MetricNumericConverter {
 
   /**
-   * A defined value is neither a -1 or NaN/Infinite:
+   * An undefined value is neither a -1 (negative) or NaN/Infinite:
    * <ul><li>JMX system load average and max heap can be 'undefined' for certain OS, in which case a -1 is returned</li>
    * <li>SIGAR combined CPU can occasionally return a NaN or Infinite (known bug)</li></ul>
    */
-  def defined(value: ScalaNumericConversions): Boolean =
-    convert(value) fold (a ⇒ value.underlying != -1, b ⇒ !(b.isNaN || b.isInfinite))
+  def defined(value: Number): Boolean = convertNumber(value) match {
+    case Left(a)  ⇒ a >= 0
+    case Right(b) ⇒ !(b.isNaN || b.isInfinite)
+  }
 
   /**
    * May involve rounding or truncation.
    */
-  def convert(from: ScalaNumericConversions): Either[Long, Double] = from match {
-    case n: BigInt     ⇒ Left(n.longValue())
-    case n: BigDecimal ⇒ Right(n.doubleValue())
+  def convertNumber(from: Any): Either[Long, Double] = from match {
+    case n: Int        ⇒ Left(n)
+    case n: Long       ⇒ Left(n)
+    case n: Double     ⇒ Right(n)
+    case n: Float      ⇒ Right(n)
     case n: RichInt    ⇒ Left(n.abs)
     case n: RichLong   ⇒ Left(n.self)
     case n: RichDouble ⇒ Right(n.self)
+    case n: BigInt     ⇒ Left(n.longValue)
+    case n: BigDecimal ⇒ Right(n.doubleValue)
+    case x             ⇒ throw new IllegalArgumentException("Not a number [%s]" format x)
   }
 
 }
 
 /**
  * INTERNAL API
+ */
+private[cluster] trait MetricsCollector extends Closeable {
+  /**
+   * Samples and collects new data points.
+   */
+  def sample: NodeMetrics
+}
+
+/**
+ * INTERNAL API
  *
- * Loads JVM metrics through JMX monitoring beans. If Hyperic SIGAR is on the classpath, this
- * loads wider and more accurate range of metrics in combination with SIGAR's native OS library.
- *
- * FIXME switch to Scala reflection
- *
- * @param sigar the optional org.hyperic.Sigar instance
+ * Loads JVM metrics through JMX monitoring beans.
  *
  * @param address The [[akka.actor.Address]] of the node being sampled
+ * @param decay how quickly the exponential weighting of past data is decayed
  */
-private[cluster] class MetricsCollector private (private val sigar: Option[AnyRef], address: Address) extends MetricNumericConverter {
+private[cluster] class JmxMetricsCollector(address: Address, decay: Int) extends MetricsCollector {
+  import NodeMetrics.MetricValues._
+
+  private def this(cluster: Cluster) =
+    this(cluster.selfAddress, cluster.settings.MetricsRateOfDecay)
+
+  def this(system: ActorSystem) = this(Cluster(system))
+
+  private val decayOption = Some(decay)
 
   private val memoryMBean: MemoryMXBean = ManagementFactory.getMemoryMXBean
 
   private val osMBean: OperatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean
+
+  /**
+   * Samples and collects new data points.
+   */
+  def sample: NodeMetrics = NodeMetrics(address, newTimestamp, Set(
+    systemLoadAverage, heapUsed, heapCommitted, heapMax, processors))
+
+  /**
+   * JMX Returns the OS-specific average load on the CPUs in the system, for the past 1 minute.
+   * On some systems the JMX OS system load average may not be available, in which case a -1 is returned,
+   * which means that the returned Metric is undefined.
+   */
+  def systemLoadAverage: Metric = Metric(
+    name = SystemLoadAverage,
+    value = Some(osMBean.getSystemLoadAverage),
+    decay = None)
+
+  /**
+   * (JMX) Returns the number of available processors
+   */
+  def processors: Metric = Metric(
+    name = Processors,
+    value = Some(osMBean.getAvailableProcessors),
+    decay = None)
+
+  // FIXME those three heap calls should be done at once
+
+  /**
+   * (JMX) Returns the current sum of heap memory used from all heap memory pools (in bytes).
+   */
+  def heapUsed: Metric = Metric(
+    name = HeapMemoryUsed,
+    value = Some(memoryMBean.getHeapMemoryUsage.getUsed),
+    decay = decayOption)
+
+  /**
+   * (JMX) Returns the current sum of heap memory guaranteed to be available to the JVM
+   * from all heap memory pools (in bytes).
+   */
+  def heapCommitted: Metric = Metric(
+    name = HeapMemoryCommitted,
+    value = Some(memoryMBean.getHeapMemoryUsage.getCommitted),
+    decay = decayOption)
+
+  /**
+   * (JMX) Returns the maximum amount of memory (in bytes) that can be used
+   * for JVM memory management. If not defined the metrics value is None, i.e.
+   * never negative.
+   */
+  def heapMax: Metric = Metric(
+    name = HeapMemoryMax,
+    value = Some(memoryMBean.getHeapMemoryUsage.getMax),
+    decay = None)
+
+  def close(): Unit = ()
+
+}
+
+/**
+ * INTERNAL API
+ *
+ * Loads metrics through Hyperic SIGAR and JMX monitoring beans. This
+ * loads wider and more accurate range of metrics compared to JmxMetricsCollector
+ * by using SIGAR's native OS library.
+ *
+ * The constructor will by design throw exception if org.hyperic.sigar.Sigar can't be loaded, due
+ * to missing classes or native libraries.
+ *
+ * TODO switch to Scala reflection
+ *
+ * @param address The [[akka.actor.Address]] of the node being sampled
+ * @param decay how quickly the exponential weighting of past data is decayed
+ * @param sigar the org.hyperic.Sigar instance
+ */
+private[cluster] class SigarMetricsCollector(address: Address, decay: Int, sigar: AnyRef)
+  extends JmxMetricsCollector(address, decay) {
+  import NodeMetrics.MetricValues._
+
+  def this(address: Address, decay: Int, dynamicAccess: DynamicAccess) =
+    this(address, decay, dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Seq.empty).get)
+
+  private def this(cluster: Cluster) =
+    this(cluster.selfAddress, cluster.settings.MetricsRateOfDecay, cluster.system.dynamicAccess)
+
+  def this(system: ActorSystem) = this(Cluster(system))
+
+  private val decayOption = Some(decay)
 
   private val LoadAverage: Option[Method] = createMethodFrom(sigar, "getLoadAverage")
 
@@ -585,48 +645,41 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
 
   private val CombinedCpu: Option[Method] = Try(Cpu.get.getReturnType.getMethod("getCombined")).toOption
 
+  private val Pid: Option[Method] = createMethodFrom(sigar, "getPid")
+
+  // Do something initially, in constructor, to make sure that the native library can be loaded.
+  // This will by design throw exception if sigar isn't usable
+  val pid: Long = createMethodFrom(sigar, "getPid") match {
+    case Some(method) ⇒
+      try method.invoke(sigar).asInstanceOf[Long] catch {
+        case e: InvocationTargetException if e.getCause.isInstanceOf[LinkageError] ⇒
+          // native libraries not in place
+          // don't throw fatal LinkageError, but something less harmless
+          throw new IllegalArgumentException(e.getCause.toString)
+        case e: InvocationTargetException ⇒ throw e.getCause
+      }
+    case None ⇒ throw new IllegalArgumentException("Wrong version of Sigar, expected 'getPid' method")
+  }
+
   /**
    * Samples and collects new data points.
-   *
-   * @return [[akka.cluster.NodeMetrics]]
    */
-  def sample: NodeMetrics = NodeMetrics(address, newTimestamp, Set(cpuCombined, totalCores,
-    systemLoadAverage, used, committed, max, processors, networkMaxRx, networkMaxTx))
+  override def sample: NodeMetrics = NodeMetrics(address, newTimestamp, Set(cpuCombined, totalCores,
+    systemLoadAverage, heapUsed, heapCommitted, heapMax, processors, networkMaxRx, networkMaxTx))
 
   /**
    * (SIGAR / JMX) Returns the OS-specific average load on the CPUs in the system, for the past 1 minute.
-   * On some systems the JMX OS system load average may not be available, in which case a Metric with
-   * undefined value is returned.
+   * On some systems the JMX OS system load average may not be available, in which case a -1 is returned,
+   * which means that the returned Metric is undefined.
    * Hyperic SIGAR provides more precise values, thus, if the library is on the classpath, it is the default.
    */
-  def systemLoadAverage: Metric = Metric("system-load-average",
-    Try(LoadAverage.get.invoke(sigar.get).asInstanceOf[Array[Double]].toSeq.head).getOrElse(
-      osMBean.getSystemLoadAverage) match {
-        case x if x < 0 ⇒ None // load average may be unavailable on some platform
-        case x          ⇒ Some(BigDecimal(x))
-      })
-
-  /**
-   * (JMX) Returns the number of available processors
-   */
-  def processors: Metric = Metric("processors", Some(BigInt(osMBean.getAvailableProcessors)))
-
-  /**
-   * (JMX) Returns the current sum of heap memory used from all heap memory pools (in bytes).
-   */
-  def used: Metric = Metric("heap-memory-used", Some(BigInt(memoryMBean.getHeapMemoryUsage.getUsed)))
-
-  /**
-   * (JMX) Returns the current sum of heap memory guaranteed to be available to the JVM
-   * from all heap memory pools (in bytes).
-   */
-  def committed: Metric = Metric("heap-memory-committed", Some(BigInt(memoryMBean.getHeapMemoryUsage.getCommitted)))
-
-  /**
-   * (JMX) Returns the maximum amount of memory (in bytes) that can be used
-   * for JVM memory management. If undefined, returns -1.
-   */
-  def max: Metric = Metric("heap-memory-max", Some(BigInt(memoryMBean.getHeapMemoryUsage.getMax)))
+  override def systemLoadAverage: Metric = {
+    val m = Metric(
+      name = SystemLoadAverage,
+      value = Try(LoadAverage.get.invoke(sigar).asInstanceOf[Array[AnyRef]].head.asInstanceOf[Number]).toOption,
+      decay = None)
+    if (m.isDefined) m else super.systemLoadAverage
+  }
 
   /**
    * (SIGAR) Returns the combined CPU sum of User + Sys + Nice + Wait, in percentage. This metric can describe
@@ -636,49 +689,61 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
    * In the data stream, this will sometimes return with a valid metric value, and sometimes as a NaN or Infinite.
    * Documented bug https://bugzilla.redhat.com/show_bug.cgi?id=749121 and several others.
    */
-  def cpuCombined: Metric = Metric("cpu-combined", Try(BigDecimal(CombinedCpu.get.invoke(Cpu.get.invoke(sigar.get)).asInstanceOf[Double])).toOption)
+  def cpuCombined: Metric = Metric(
+    name = CpuCombined,
+    value = Try(CombinedCpu.get.invoke(Cpu.get.invoke(sigar)).asInstanceOf[Number]).toOption,
+    decay = decayOption)
 
   /**
    * FIXME: Array[Int].head - expose all if cores per processor might differ.
    * (SIGAR) Returns the total number of cores.
+   *
+   * FIXME do we need this information, isn't it enough with jmx processors?
    */
-  def totalCores: Metric = Metric("total-cores", Try(BigInt(CpuList.get.invoke(sigar.get).asInstanceOf[Array[AnyRef]].map(cpu ⇒
-    createMethodFrom(Some(cpu), "getTotalCores").get.invoke(cpu).asInstanceOf[Int]).head)).toOption)
+  def totalCores: Metric = Metric(
+    name = TotalCores,
+    value = Try(CpuList.get.invoke(sigar).asInstanceOf[Array[AnyRef]].map(cpu ⇒
+      createMethodFrom(cpu, "getTotalCores").get.invoke(cpu).asInstanceOf[Number]).head).toOption,
+    decay = None)
+
+  // FIXME those two network calls should be combined into one
 
   /**
    * (SIGAR) Returns the max network IO read/write value, in bytes, for network latency evaluation.
    */
-  def networkMaxRx: Metric = networkMaxFor("getRxBytes", "network-max-rx")
+  def networkMaxRx: Metric = networkFor("getRxBytes", NetworkInboundRate)
 
   /**
-   * (SIGAR) Returns the max network IO tx value, in bytes.
+   * (SIGAR) Returns the max network IO outbound value, in bytes.
    */
-  def networkMaxTx: Metric = networkMaxFor("getTxBytes", "network-max-tx")
-
-  /**
-   * Returns the network stats per interface.
-   */
-  def networkStats: Map[String, AnyRef] = Try(NetInterfaces.get.invoke(sigar.get).asInstanceOf[Array[String]].map(arg ⇒
-    arg -> (createMethodFrom(sigar, "getNetInterfaceStat", Array(classOf[String])).get.invoke(sigar.get, arg))).toMap) getOrElse Map.empty[String, AnyRef]
-
-  /**
-   * Returns true if SIGAR is successfully installed on the classpath, otherwise false.
-   */
-  def isSigar: Boolean = sigar.isDefined
+  def networkMaxTx: Metric = networkFor("getTxBytes", NetworkOutboundRate)
 
   /**
    * Releases any native resources associated with this instance.
    */
-  def close(): Unit = if (isSigar) Try(createMethodFrom(sigar, "close").get.invoke(sigar.get)) getOrElse Unit
+  override def close(): Unit = Try(createMethodFrom(sigar, "close").get.invoke(sigar))
+
+  // FIXME network metrics needs thought and refactoring
 
   /**
    * Returns the max bytes for the given <code>method</code> in metric for <code>metric</code> from the network interface stats.
    */
-  private def networkMaxFor(method: String, metric: String): Metric = Metric(metric, Try(Some(BigInt(
-    networkStats.collect { case (_, a) ⇒ createMethodFrom(Some(a), method).get.invoke(a).asInstanceOf[Long] }.max))) getOrElse None)
+  private def networkFor(method: String, metric: String): Metric = Metric(
+    name = metric,
+    value = Try(networkStats.collect {
+      case (_, a) ⇒
+        createMethodFrom(a, method).get.invoke(a).asInstanceOf[Long]
+    }.max.asInstanceOf[Number]).toOption.orElse(None),
+    decay = decayOption)
 
-  private def createMethodFrom(ref: Option[AnyRef], method: String, types: Array[(Class[_])] = Array.empty[(Class[_])]): Option[Method] =
-    Try(ref.get.getClass.getMethod(method, types: _*)).toOption
+  /**
+   * Returns the network stats per interface.
+   */
+  private def networkStats: Map[String, AnyRef] = Try(NetInterfaces.get.invoke(sigar).asInstanceOf[Array[String]].map(arg ⇒
+    arg -> (createMethodFrom(sigar, "getNetInterfaceStat", Array(classOf[String])).get.invoke(sigar, arg))).toMap) getOrElse Map.empty[String, AnyRef]
+
+  private def createMethodFrom(ref: AnyRef, method: String, types: Array[(Class[_])] = Array.empty[(Class[_])]): Option[Method] =
+    Try(ref.getClass.getMethod(method, types: _*)).toOption
 
 }
 
@@ -687,16 +752,26 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
  * Companion object of MetricsCollector class.
  */
 private[cluster] object MetricsCollector {
-  def apply(address: Address, log: LoggingAdapter, dynamicAccess: DynamicAccess): MetricsCollector =
-    dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Seq.empty) match {
-      case Success(identity) ⇒ new MetricsCollector(Some(identity), address)
-      case Failure(e) ⇒
-        log.debug(e.toString)
-        log.info("Hyperic SIGAR was not found on the classpath or not installed properly. " +
-          "Metrics will be retreived from MBeans, and may be incorrect on some platforms. " +
-          "To increase metric accuracy add the 'sigar.jar' to the classpath and the appropriate" +
-          "platform-specific native libary to 'java.library.path'.")
-        new MetricsCollector(None, address)
+  def apply(system: ExtendedActorSystem, settings: ClusterSettings): MetricsCollector = {
+    import settings.{ MetricsCollectorClass ⇒ fqcn }
+    def log = Logging(system, "MetricsCollector")
+    if (fqcn == classOf[SigarMetricsCollector].getName) {
+      Try(new SigarMetricsCollector(system)) match {
+        case Success(sigarCollector) ⇒ sigarCollector
+        case Failure(e) ⇒
+          log.info("Metrics will be retreived from MBeans, and may be incorrect on some platforms. " +
+            "To increase metric accuracy add the 'sigar.jar' to the classpath and the appropriate " +
+            "platform-specific native libary to 'java.library.path'. Reason: " +
+            e.toString)
+          new JmxMetricsCollector(system)
+      }
+
+    } else {
+      system.dynamicAccess.createInstanceFor[MetricsCollector](
+        fqcn, Seq(classOf[ActorSystem] -> system)).recover({
+          case e ⇒ throw new ConfigurationException("Could not create custom metrics collector [" + fqcn + "] due to:" + e.toString)
+        }).get
     }
+  }
 }
 

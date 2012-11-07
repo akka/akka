@@ -64,7 +64,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   def muteLog(sys: ActorSystem = system): Unit = {
     if (!sys.log.isDebugEnabled) {
       Seq(".*Metrics collection has started successfully.*",
-        ".*Hyperic SIGAR was not found on the classpath.*",
+        ".*Metrics will be retreived from MBeans.*",
         ".*Cluster Node.* - registered cluster JMX MBean.*",
         ".*Cluster Node.* - is starting up.*",
         ".*Shutting down cluster Node.*",
