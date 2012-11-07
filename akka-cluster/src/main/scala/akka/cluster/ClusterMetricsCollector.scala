@@ -463,11 +463,16 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
 
   /**
    * (SIGAR / JMX) Returns the OS-specific average system load on the CPUs in the system, for the past 1 minute.
-   * On some systems the JMX OS system load average may not be available, in which case a -1 is returned.
+   * On some systems the JMX OS system load average may not be available, in which case a Metric with
+   * undefined value is returned.
    * Hyperic SIGAR provides more precise values, thus, if the library is on the classpath, it is the default.
    */
-  def systemLoadAverage: Metric = Metric("system-load-average", Some(BigDecimal(Try(
-    LoadAverage.get.invoke(sigar.get).asInstanceOf[Array[Double]].toSeq.head) getOrElse osMBean.getSystemLoadAverage)))
+  def systemLoadAverage: Metric = Metric("system-load-average",
+    Try(LoadAverage.get.invoke(sigar.get).asInstanceOf[Array[Double]].toSeq.head).getOrElse(
+      osMBean.getSystemLoadAverage) match {
+        case x if x < 0 ⇒ None // load average may be unavailable on some platform
+        case x          ⇒ Some(BigDecimal(x))
+      })
 
   /**
    * (JMX) Returns the number of available processors
