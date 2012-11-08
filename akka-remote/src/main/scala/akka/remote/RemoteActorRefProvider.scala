@@ -24,7 +24,8 @@ class RemoteActorRefProvider(
 
   val remoteSettings: RemoteSettings = new RemoteSettings(settings.config, systemName)
 
-  val deployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
+  // this is lazy to be able to override it in subclass
+  lazy val deployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
   private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, dynamicAccess, deployer)
 

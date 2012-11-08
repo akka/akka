@@ -28,7 +28,7 @@ class ClusterMetricsMultiJvmNode3 extends ClusterMetricsSpec
 class ClusterMetricsMultiJvmNode4 extends ClusterMetricsSpec
 class ClusterMetricsMultiJvmNode5 extends ClusterMetricsSpec
 
-abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSpec) with MultiNodeClusterSpec with MetricSpec {
+abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSpec) with MultiNodeClusterSpec {
   import ClusterMetricsMultiJvmSpec._
 
   def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]

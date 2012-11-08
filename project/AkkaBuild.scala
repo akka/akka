@@ -327,6 +327,10 @@ object AkkaBuild extends Build {
     dependencies = Seq(cluster, remoteTests % "test", testkit % "test"),
     settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.clusterSample,
+      javaOptions in run ++= Seq(
+        "-Djava.library.path=./sigar",
+        "-Xms128m", "-Xmx1024m"),
+      Keys.fork in run := true,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -673,6 +677,9 @@ object Dependencies {
     // Camel Sample
     val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % camelCore.revision // ApacheV2
 
+    // Cluster Sample
+    val sigar       = "org.hyperic"                 % "sigar"                        % "1.6.4"            // ApacheV2
+
     // Test
 
     object Test {
@@ -729,7 +736,7 @@ object Dependencies {
 
   val zeroMQ = Seq(protobuf, zeroMQClient, Test.scalatest, Test.junit)
 
-  val clusterSample = Seq(Test.scalatest)
+  val clusterSample = Seq(Test.scalatest, sigar)
 
   val contrib = Seq(Test.junitIntf)
 

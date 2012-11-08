@@ -1,4 +1,5 @@
 /*
+
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
@@ -11,7 +12,8 @@ import scala.util.{ Success, Try, Failure }
 
 import akka.actor._
 import akka.testkit._
-import akka.cluster.NodeMetrics.MetricValues._
+import akka.cluster.StandardMetrics.HeapMemory.Fields._
+import akka.cluster.StandardMetrics.Cpu.Fields._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
@@ -20,14 +22,12 @@ object MetricsEnabledSpec {
     akka.cluster.metrics.enabled = on
     akka.cluster.metrics.collect-interval = 1 s
     akka.cluster.metrics.gossip-interval = 1 s
-    akka.cluster.metrics.rate-of-decay = 10
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
     """
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with ImplicitSender with MetricSpec
-  with MetricsCollectorFactory {
+class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with ImplicitSender with MetricsCollectorFactory {
   import system.dispatcher
 
   val collector = createMetricsCollector
@@ -38,25 +38,25 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       for (i ← 1 to 20) {
         val sample1 = collector.sample.metrics
         val sample2 = collector.sample.metrics
-        var merged = sample2 flatMap (latest ⇒ sample1 collect {
-          case peer if latest same peer ⇒ {
+        val merged12 = sample2 flatMap (latest ⇒ sample1 collect {
+          case peer if latest sameAs peer ⇒ {
             val m = peer :+ latest
-            assertMerged(latest, peer, m)
+            m.value must be(latest.value)
+            m.isSmooth must be(peer.isSmooth || latest.isSmooth)
             m
           }
         })
 
         val sample3 = collector.sample.metrics
         val sample4 = collector.sample.metrics
-        merged = sample4 flatMap (latest ⇒ sample3 collect {
-          case peer if latest same peer ⇒ {
+        val merged34 = sample4 flatMap (latest ⇒ sample3 collect {
+          case peer if latest sameAs peer ⇒ {
             val m = peer :+ latest
-            assertMerged(latest, peer, m)
+            m.value must be(latest.value)
+            m.isSmooth must be(peer.isSmooth || latest.isSmooth)
             m
           }
         })
-        merged.size must be(sample3.size)
-        merged.size must be(sample4.size)
       }
     }
   }
@@ -69,13 +69,10 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
 
     "collect accurate metrics for a node" in {
       val sample = collector.sample
-      val metrics = sample.metrics.collect { case m if m.isDefined ⇒ (m.name, m.value.get) }
+      val metrics = sample.metrics.collect { case m ⇒ (m.name, m.value) }
       val used = metrics collectFirst { case (HeapMemoryUsed, b) ⇒ b }
       val committed = metrics collectFirst { case (HeapMemoryCommitted, b) ⇒ b }
       metrics foreach {
-        case (TotalCores, b)          ⇒ b.intValue must be > (0)
-        case (NetworkInboundRate, b)  ⇒ b.longValue must be > (0L)
-        case (NetworkOutboundRate, b) ⇒ b.longValue must be > (0L)
         case (SystemLoadAverage, b)   ⇒ b.doubleValue must be >= (0.0)
         case (Processors, b)          ⇒ b.intValue must be >= (0)
         case (HeapMemoryUsed, b)      ⇒ b.longValue must be >= (0L)
@@ -91,25 +88,14 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
       }
     }
 
-    "collect SIGAR metrics if it is on the classpath" in {
-      collector match {
-        case c: SigarMetricsCollector ⇒
-          // combined cpu may or may not be defined on a given sampling
-          // systemLoadAverage is not present on all platforms
-          c.networkMaxRx.isDefined must be(true)
-          c.networkMaxTx.isDefined must be(true)
-          c.totalCores.isDefined must be(true)
-        case _ ⇒
-      }
-    }
-
     "collect JMX metrics" in {
       // heap max may be undefined depending on the OS
       // systemLoadAverage is JMX when SIGAR not present, but
       // it's not present on all platforms
       val c = collector.asInstanceOf[JmxMetricsCollector]
-      c.heapUsed.isDefined must be(true)
-      c.heapCommitted.isDefined must be(true)
+      val heap = c.heapMemoryUsage
+      c.heapUsed(heap).isDefined must be(true)
+      c.heapCommitted(heap).isDefined must be(true)
       c.processors.isDefined must be(true)
     }
 
@@ -123,47 +109,6 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
   }
 }
 
-trait MetricSpec extends WordSpec with MustMatchers { this: { def system: ActorSystem } ⇒
-
-  def assertMasterMetricsAgainstGossipMetrics(master: Set[NodeMetrics], gossip: MetricsGossip): Unit = {
-    val masterMetrics = collectNodeMetrics(master)
-    val gossipMetrics = collectNodeMetrics(gossip.nodes)
-    gossipMetrics.size must be(masterMetrics.size plusOrMinus 1) // combined cpu
-  }
-
-  def assertExpectedNodeAddresses(gossip: MetricsGossip, nodes: Set[NodeMetrics]): Unit =
-    gossip.nodes.map(_.address) must be(nodes.map(_.address))
-
-  def assertMerged(latest: Metric, peer: Metric, merged: Metric): Unit = if (latest same peer) {
-    if (latest.isDefined) {
-      if (peer.isDefined) {
-        merged.isDefined must be(true)
-        merged.value.get must be(latest.value.get)
-        merged.average.isDefined must be(latest.average.isDefined)
-      } else {
-        merged.isDefined must be(true)
-        merged.value.get must be(latest.value.get)
-        merged.average.isDefined must be(latest.average.isDefined || peer.average.isDefined)
-      }
-    } else {
-      if (peer.isDefined) {
-        merged.isDefined must be(true)
-        merged.value.get must be(peer.value.get)
-        merged.average.isDefined must be(peer.average.isDefined)
-      } else {
-        merged.isDefined must be(false)
-        merged.average.isEmpty must be(true)
-      }
-    }
-  }
-
-  def collectNodeMetrics(nodes: Set[NodeMetrics]): Seq[Metric] = {
-    var r: Seq[Metric] = Seq.empty
-    nodes.foreach(n ⇒ r ++= n.metrics.filter(_.isDefined))
-    r
-  }
-}
-
 /**
  * Used when testing metrics without full cluster
  */
@@ -173,15 +118,15 @@ trait MetricsCollectorFactory { this: AkkaSpec ⇒
 
   def selfAddress = extendedActorSystem.provider.rootPath.address
 
-  val defaultRateOfDecay = 10
+  val defaultDecayFactor = 2.0 / (1 + 10)
 
   def createMetricsCollector: MetricsCollector =
-    Try(new SigarMetricsCollector(selfAddress, defaultRateOfDecay, extendedActorSystem.dynamicAccess)) match {
+    Try(new SigarMetricsCollector(selfAddress, defaultDecayFactor,
+      extendedActorSystem.dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Seq.empty).get)) match {
       case Success(sigarCollector) ⇒ sigarCollector
       case Failure(e) ⇒
-        log.debug("Metrics will be retreived from MBeans, Sigar failed to load. Reason: " +
-          e.getMessage)
-        new JmxMetricsCollector(selfAddress, defaultRateOfDecay)
+        log.debug("Metrics will be retreived from MBeans, Sigar failed to load. Reason: " + e)
+        new JmxMetricsCollector(selfAddress, defaultDecayFactor)
     }
 
   def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]

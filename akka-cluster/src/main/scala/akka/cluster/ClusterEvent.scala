@@ -10,6 +10,8 @@ import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
 import akka.event.EventStream
 import akka.actor.AddressTerminated
+import java.lang.Iterable
+import scala.collection.JavaConverters
 
 /**
  * Domain events published to the event bus.
@@ -139,11 +141,18 @@ object ClusterEvent {
   }
 
   /**
-   * INTERNAL API
    *
-   * Current snapshot of cluster member metrics. Published to subscribers.
+   * Current snapshot of cluster node metrics. Published to subscribers.
    */
-  case class ClusterMetricsChanged(nodes: Set[NodeMetrics]) extends ClusterDomainEvent
+  case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterDomainEvent {
+    /**
+     * Java API
+     */
+    def getNodeMetrics: java.lang.Iterable[NodeMetrics] = {
+      import scala.collection.JavaConverters._
+      nodeMetrics.asJava
+    }
+  }
 
   /**
    * INTERNAL API
