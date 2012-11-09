@@ -30,8 +30,7 @@ object AkkaBuild extends Build {
     organization := "com.typesafe.akka",
     version      := "2.2-SNAPSHOT",
     // FIXME: use 2.10.0 for final
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC2"),
-    scalaBinaryVersion <<= scalaVersion.identity // FIXME remove for 2.10.0 final
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC2")
   )
 
   lazy val akka = Project(
@@ -406,9 +405,7 @@ object AkkaBuild extends Build {
       shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
     )
 
-  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings ++ Seq(
-    resolvers += "Sonatype Release" at "https://oss.sonatype.org/content/repositories/releases" // FIXME remove after staging RC2
-  )
+  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
 
   lazy val parentSettings = baseSettings ++ Seq(
     publishArtifact in Compile := false
