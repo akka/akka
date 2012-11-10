@@ -7,3 +7,4 @@ import org.scalatest.Tag
 
 object TimingTest extends Tag("timing")
 object LongRunningTest extends Tag("long-running")
+object NatRemotingTest extends Tag("nat-remoting")
