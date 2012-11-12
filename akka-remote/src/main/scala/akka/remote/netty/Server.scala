@@ -29,7 +29,8 @@ class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   private val factory = new NioServerSocketChannelFactory(
     Executors.newCachedThreadPool(netty.system.threadFactory),
-    Executors.newCachedThreadPool(netty.system.threadFactory))
+    Executors.newCachedThreadPool(netty.system.threadFactory),
+    settings.ServerSocketWorkerPoolSize)
 
   private val executionHandler = new ExecutionHandler(netty.executor)
 
