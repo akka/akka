@@ -91,7 +91,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
    * `RouterConfig.createRoute` and `Resizer.resize`
    */
   private[akka] def addRoutees(newRoutees: immutable.Iterable[ActorRef]): Unit = {
-    _routees = _routees ++ newRoutees
+    _routees ++= newRoutees
     // subscribe to Terminated messages for all route destinations, to be handled by Router actor
     newRoutees foreach watch
   }
@@ -107,30 +107,27 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   }
 
   override def tell(message: Any, sender: ActorRef): Unit = {
-    resize()
-
+    resize() // Mucho importante
     val s = if (sender eq null) system.deadLetters else sender
-
-    val msg = message match {
-      case wrapped: RouterEnvelope ⇒ wrapped.message
-      case m                       ⇒ m
-    }
-
     applyRoute(s, message) match {
-      case Destination(_, x) :: Nil if x == self ⇒ super.tell(message, s)
-      case refs ⇒
-        refs foreach (p ⇒
-          if (p.recipient == self) super.tell(msg, p.sender)
-          else p.recipient.!(msg)(p.sender))
+      case Destination(_, x) :: Nil if x == self ⇒
+        super.tell(message, s)
+      case refs ⇒ refs foreach { p ⇒
+        val msg = message match {
+          case wrapped: RouterEnvelope ⇒ wrapped.message
+          case m                       ⇒ m
+        }
+        if (p.recipient == self) super.tell(msg, p.sender)
+        else p.recipient.!(msg)(p.sender)
+      }
     }
   }
 
-  def resize(): Unit = {
+  def resize(): Unit =
     for (r ← routerConfig.resizer) {
       if (r.isTimeForResize(resizeCounter.getAndIncrement()) && resizeInProgress.compareAndSet(false, true))
         super.tell(Router.Resize, self)
     }
-  }
 }
 
 /**
