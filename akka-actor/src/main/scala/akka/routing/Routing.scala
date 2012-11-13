@@ -7,7 +7,6 @@ import language.implicitConversions
 import language.postfixOps
 
 import scala.collection.immutable
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.concurrent.duration._
 import akka.actor._
 import akka.ConfigurationException
@@ -19,6 +18,7 @@ import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.annotation.tailrec
+import akka.event.Logging.Warning
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
