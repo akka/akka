@@ -21,6 +21,7 @@ class DurationSpec extends AkkaSpec {
       val barrier = TestLatch()
       val job = system.scheduler.scheduleOnce(longish.duration)(barrier.countDown())
       intercept[TimeoutException] {
+        // this used to fire after 46 seconds due to wrap-around
         Await.ready(barrier, 90 seconds)
       }
       job.cancel()
