@@ -14,7 +14,7 @@ The Akka remoting is a separate jar file. Make sure that you have the following 
   <dependency>
     <groupId>com.typesafe.akka</groupId>
     <artifactId>akka-remote</artifactId>
-    <version>2.0.4-SNAPSHOT</version>
+    <version>2.0.4</version>
   </dependency>
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
@@ -154,7 +154,7 @@ Description of the Remoting Sample
 
 There is a more extensive remote example that comes with the Akka distribution.
 Please have a look here for more information: `Remote Sample
-<https://github.com/akka/akka/tree/master/akka-samples/akka-sample-remote>`_
+<http://github.com/akka/akka/tree/v2.0.4/akka-samples/akka-sample-remote>`_
 This sample demonstrates both, remote deployment and look-up of remote actors.
 First, let us have a look at the common setup for both scenarios (this is
 ``common.conf``):

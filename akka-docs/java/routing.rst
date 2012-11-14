@@ -323,7 +323,7 @@ from incoming sender/message to a ``List`` of ``Destination(sender, routee)``.
 The sender is what "parent" the routee should see - changing this could be useful if you for example want
 another actor than the original sender to intermediate the result of the routee (if there is a result).
 For more information about how to alter the original sender we refer to the source code of
-`ScatterGatherFirstCompletedRouter <https://github.com/akka/akka/blob/master/akka-actor/src/main/scala/akka/routing/Routing.scala#L375>`_
+`ScatterGatherFirstCompletedRouter <http://github.com/akka/akka/tree/v2.0.4/akka-actor/src/main/scala/akka/routing/Routing.scala#L375>`_
 
 All in all the custom router looks like this:
 
