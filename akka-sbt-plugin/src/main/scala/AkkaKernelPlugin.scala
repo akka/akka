@@ -137,8 +137,8 @@ object AkkaKernelPlugin extends Plugin {
     |AKKA_CLASSPATH="$AKKA_HOME/config:$AKKA_HOME/lib/*"
     |JAVA_OPTS="%s"
     |
-    |java $JAVA_OPTS -cp "$AKKA_CLASSPATH" -Dakka.home="$AKKA_HOME" %s %s "$@"
-    |""".stripMargin.format(jvmOptions, mainClass, bootClass)
+    |java $JAVA_OPTS -cp "$AKKA_CLASSPATH" -Dakka.home="$AKKA_HOME" %s%s "$@"
+    |""".stripMargin.format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
 
     private def distBatScript =
       """|@echo off
@@ -146,8 +146,8 @@ object AkkaKernelPlugin extends Plugin {
     |set AKKA_CLASSPATH=%%AKKA_HOME%%\config;%%AKKA_HOME%%\lib\*
     |set JAVA_OPTS=%s
     |
-    |java %%JAVA_OPTS%% -cp "%%AKKA_CLASSPATH%%" -Dakka.home="%%AKKA_HOME%%" %s %s %%*
-    |""".stripMargin.format(jvmOptions, mainClass, bootClass)
+    |java %%JAVA_OPTS%% -cp "%%AKKA_CLASSPATH%%" -Dakka.home="%%AKKA_HOME%%" %s%s %%*
+    |""".stripMargin.format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
 
     private def setExecutable(target: File, executable: Boolean): Option[String] = {
       val success = target.setExecutable(executable, false)
