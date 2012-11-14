@@ -3,7 +3,10 @@
  */
 package akka.zeromq
 
+import scala.collection.immutable
+
 object Frame {
+  def apply(bytes: Array[Byte]): Frame = new Frame(bytes)
   def apply(text: String): Frame = new Frame(text)
 }
 
@@ -11,8 +14,8 @@ object Frame {
  * A single message frame of a zeromq message
  * @param payload
  */
-case class Frame(payload: Seq[Byte]) {
-  def this(bytes: Array[Byte]) = this(bytes.toSeq)
+case class Frame(payload: immutable.Seq[Byte]) {
+  def this(bytes: Array[Byte]) = this(bytes.to[immutable.Seq])
   def this(text: String) = this(text.getBytes("UTF-8"))
 }
 
@@ -20,5 +23,5 @@ case class Frame(payload: Seq[Byte]) {
  * Deserializes ZeroMQ messages into an immutable sequence of frames
  */
 class ZMQMessageDeserializer extends Deserializer {
-  def apply(frames: Seq[Frame]): ZMQMessage = ZMQMessage(frames)
+  def apply(frames: immutable.Seq[Frame]): ZMQMessage = ZMQMessage(frames)
 }

@@ -5,7 +5,8 @@ package akka.actor
 import java.net.URI
 import java.net.URISyntaxException
 import java.net.MalformedURLException
-import annotation.tailrec
+import scala.annotation.tailrec
+import scala.collection.immutable
 
 /**
  * The address specifies the physical location under which an Actor can be
@@ -71,7 +72,7 @@ private[akka] trait PathUtils {
 }
 
 object RelativeActorPath extends PathUtils {
-  def unapply(addr: String): Option[Iterable[String]] = {
+  def unapply(addr: String): Option[immutable.Seq[String]] = {
     try {
       val uri = new URI(addr)
       if (uri.isAbsolute) None
@@ -119,13 +120,12 @@ object AddressFromURIString {
  * Given an ActorPath it returns the Address and the path elements if the path is well-formed
  */
 object ActorPathExtractor extends PathUtils {
-  def unapply(addr: String): Option[(Address, Iterable[String])] =
+  def unapply(addr: String): Option[(Address, immutable.Iterable[String])] =
     try {
       val uri = new URI(addr)
-      if (uri.getRawPath == null) None
-      else AddressFromURIString.unapply(uri) match {
-        case None       ⇒ None
-        case Some(addr) ⇒ Some((addr, split(uri.getRawPath).drop(1)))
+      uri.getRawPath match {
+        case null ⇒ None
+        case path ⇒ AddressFromURIString.unapply(uri).map((_, split(path).drop(1)))
       }
     } catch {
       case _: URISyntaxException ⇒ None

@@ -4,20 +4,20 @@
 package akka.remote.testconductor
 
 import language.postfixOps
+
+import java.util.concurrent.TimeoutException
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, PoisonPill, Status, Address, Scheduler }
-import RemoteConnection.getAddrString
+import akka.remote.testconductor.RemoteConnection.getAddrString
+import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Await, Future }
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+import scala.reflect.classTag
 import akka.util.Timeout
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent, WriteCompletionEvent, ExceptionEvent }
-import com.typesafe.config.ConfigFactory
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.TimeoutException
 import akka.pattern.{ ask, pipe, AskTimeoutException }
-import scala.util.control.NoStackTrace
 import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
-import scala.reflect.classTag
-import concurrent.{ ExecutionContext, Await, Future }
 
 /**
  * The Player is the client component of the
@@ -67,15 +67,13 @@ trait Player { this: TestConductorExt ⇒
    * Enter the named barriers, one after the other, in the order given. Will
    * throw an exception in case of timeouts or other errors.
    */
-  def enter(name: String*) {
-    enter(Settings.BarrierTimeout, name)
-  }
+  def enter(name: String*): Unit = enter(Settings.BarrierTimeout, name.to[immutable.Seq])
 
   /**
    * Enter the named barriers, one after the other, in the order given. Will
    * throw an exception in case of timeouts or other errors.
    */
-  def enter(timeout: Timeout, name: Seq[String]) {
+  def enter(timeout: Timeout, name: immutable.Seq[String]) {
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
     val stop = Deadline.now + timeout.duration
     name foreach { b ⇒

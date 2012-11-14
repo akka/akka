@@ -8,7 +8,9 @@ import java.net.InetSocketAddress
 import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.concurrent.Executors
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
+import scala.collection.immutable
+import scala.util.control.NonFatal
 import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroupFuture }
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.jboss.netty.channel.{ ChannelHandlerContext, Channel, DefaultChannelPipeline, ChannelHandler, ChannelPipelineFactory, ChannelLocal }
@@ -20,7 +22,6 @@ import org.jboss.netty.util.{ DefaultObjectSizeEstimator, HashedWheelTimer }
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
 import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
-import scala.util.control.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
 import com.google.protobuf.MessageLite
 
@@ -53,7 +54,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      * Construct a DefaultChannelPipeline from a sequence of handlers; to be used
      * in implementations of ChannelPipelineFactory.
      */
-    def apply(handlers: Seq[ChannelHandler]): DefaultChannelPipeline =
+    def apply(handlers: immutable.Seq[ChannelHandler]): DefaultChannelPipeline =
       (new DefaultChannelPipeline /: handlers) { (p, h) ⇒ p.addLast(Logging.simpleName(h.getClass), h); p }
 
     /**
@@ -69,7 +70,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      * Construct a default protocol stack, excluding the “head” handler (i.e. the one which
      * actually dispatches the received messages to the local target actors).
      */
-    def defaultStack(withTimeout: Boolean, isClient: Boolean): Seq[ChannelHandler] =
+    def defaultStack(withTimeout: Boolean, isClient: Boolean): immutable.Seq[ChannelHandler] =
       (if (settings.EnableSSL) List(NettySSLSupport(settings, NettyRemoteTransport.this.log, isClient)) else Nil) :::
         (if (withTimeout) List(timeout) else Nil) :::
         msgFormat :::
@@ -138,7 +139,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
   def createPipeline(endpoint: ⇒ ChannelHandler, withTimeout: Boolean, isClient: Boolean): ChannelPipelineFactory =
     PipelineFactory(Seq(endpoint), withTimeout, isClient)
 
-  private val remoteClients = new HashMap[Address, RemoteClient]
+  private val remoteClients = new mutable.HashMap[Address, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock
 
   override protected def useUntrustedMode = remoteSettings.UntrustedMode

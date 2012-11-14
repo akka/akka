@@ -8,21 +8,22 @@ import language.postfixOps
 
 import org.scalatest.BeforeAndAfterAll
 
-import akka.actor._
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.stm._
+import scala.collection.immutable
+import scala.util.Random.{ nextInt ⇒ random }
+import scala.util.control.NonFatal
+import akka.actor._
 import akka.testkit._
 import akka.testkit.TestEvent.Mute
-import scala.concurrent.stm._
-import scala.util.Random.{ nextInt ⇒ random }
 import java.util.concurrent.CountDownLatch
 import akka.pattern.{ AskTimeoutException, ask }
 import akka.util.Timeout
-import scala.util.control.NonFatal
 
 object FickleFriends {
-  case class FriendlyIncrement(friends: Seq[ActorRef], timeout: Timeout, latch: CountDownLatch)
-  case class Increment(friends: Seq[ActorRef])
+  case class FriendlyIncrement(friends: immutable.Seq[ActorRef], timeout: Timeout, latch: CountDownLatch)
+  case class Increment(friends: immutable.Seq[ActorRef])
   case object GetCount
 
   /**
@@ -120,7 +121,7 @@ class FickleFriendsSpec extends AkkaSpec with BeforeAndAfterAll {
 
   "Coordinated fickle friends" should {
     "eventually succeed to increment all counters by one" in {
-      val ignoreExceptions = Seq(
+      val ignoreExceptions = immutable.Seq(
         EventFilter[ExpectedFailureException](),
         EventFilter[CoordinatedTransactionException](),
         EventFilter[AskTimeoutException]())

@@ -6,7 +6,6 @@ package akka.osgi
 import de.kalpatec.pojosr.framework.launch.{ BundleDescriptor, PojoServiceRegistryFactory, ClasspathScanner }
 
 import scala.collection.JavaConversions.seqAsJavaList
-import scala.collection.JavaConversions.collectionAsScalaIterable
 import org.apache.commons.io.IOUtils.copy
 
 import org.osgi.framework._
@@ -17,7 +16,7 @@ import java.io._
 import org.scalatest.{ BeforeAndAfterAll, Suite }
 import java.util.{ UUID, Date, ServiceLoader, HashMap }
 import scala.reflect.ClassTag
-import scala.Some
+import scala.collection.immutable
 
 /**
  * Trait that provides support for building akka-osgi tests using PojoSR
@@ -31,7 +30,7 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
    * All bundles being found on the test classpath are automatically installed and started in the PojoSR runtime.
    * Implement this to define the extra bundles that should be available for testing.
    */
-  def testBundles: Seq[BundleDescriptor]
+  def testBundles: immutable.Seq[BundleDescriptor]
 
   val bufferedLoadingErrors = new ByteArrayOutputStream()
 
@@ -82,15 +81,11 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
     }
   }
 
-  protected def buildTestBundles(builders: Seq[BundleDescriptorBuilder]): Seq[BundleDescriptor] = builders map (_.build)
+  protected def buildTestBundles(builders: immutable.Seq[BundleDescriptorBuilder]): immutable.Seq[BundleDescriptor] =
+    builders map (_.build)
 
-  def filterErrors()(block: ⇒ Unit): Unit = {
-    try {
-      block
-    } catch {
-      case e: Throwable ⇒ System.err.write(bufferedLoadingErrors.toByteArray); throw e
-    }
-  }
+  def filterErrors()(block: ⇒ Unit): Unit =
+    try block catch { case e: Throwable ⇒ System.err.write(bufferedLoadingErrors.toByteArray); throw e }
 }
 
 object PojoSRTestSupport {
@@ -142,12 +137,12 @@ class BundleDescriptorBuilder(name: String) {
   }
 
   def extractHeaders(file: File): HashMap[String, String] = {
+    import scala.collection.JavaConverters.iterableAsScalaIterableConverter
     val headers = new HashMap[String, String]()
-
     val jis = new JarInputStream(new FileInputStream(file))
     try {
-      for (entry ← jis.getManifest().getMainAttributes().entrySet())
-        headers.put(entry.getKey().toString(), entry.getValue().toString())
+      for (entry ← jis.getManifest.getMainAttributes.entrySet.asScala)
+        headers.put(entry.getKey.toString, entry.getValue.toString)
     } finally jis.close()
 
     headers

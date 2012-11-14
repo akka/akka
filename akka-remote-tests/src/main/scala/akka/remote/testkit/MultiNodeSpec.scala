@@ -7,16 +7,17 @@ import language.implicitConversions
 import language.postfixOps
 
 import java.net.InetSocketAddress
+import java.util.concurrent.TimeoutException
 import com.typesafe.config.{ ConfigObject, ConfigFactory, Config }
+import scala.concurrent.{ Await, Awaitable }
+import scala.util.control.NonFatal
+import scala.collection.immutable
 import akka.actor._
 import akka.util.Timeout
 import akka.remote.testconductor.{ TestConductorExt, TestConductor, RoleName }
 import akka.remote.RemoteActorRefProvider
 import akka.testkit._
-import scala.concurrent.{ Await, Awaitable }
-import scala.util.control.NonFatal
 import scala.concurrent.duration._
-import java.util.concurrent.TimeoutException
 import akka.remote.testconductor.RoleName
 import akka.remote.testconductor.TestConductorTransport
 import akka.actor.RootActorPath
@@ -30,7 +31,7 @@ abstract class MultiNodeConfig {
   private var _commonConf: Option[Config] = None
   private var _nodeConf = Map[RoleName, Config]()
   private var _roles = Vector[RoleName]()
-  private var _deployments = Map[RoleName, Seq[String]]()
+  private var _deployments = Map[RoleName, immutable.Seq[String]]()
   private var _allDeploy = Vector[String]()
   private var _testTransport = false
 
@@ -106,9 +107,9 @@ abstract class MultiNodeConfig {
     configs reduce (_ withFallback _)
   }
 
-  private[testkit] def deployments(node: RoleName): Seq[String] = (_deployments get node getOrElse Nil) ++ _allDeploy
+  private[testkit] def deployments(node: RoleName): immutable.Seq[String] = (_deployments get node getOrElse Nil) ++ _allDeploy
 
-  private[testkit] def roles: Seq[RoleName] = _roles
+  private[testkit] def roles: immutable.Seq[RoleName] = _roles
 
 }
 
@@ -234,7 +235,7 @@ object MultiNodeSpec {
  * `AskTimeoutException: sending to terminated ref breaks promises`. Using lazy
  * val is fine.
  */
-abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles: Seq[RoleName], deployments: RoleName ⇒ Seq[String])
+abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles: immutable.Seq[RoleName], deployments: RoleName ⇒ Seq[String])
   extends TestKit(_system) with MultiNodeSpecCallbacks {
 
   import MultiNodeSpec._
@@ -294,7 +295,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   /**
    * All registered roles
    */
-  def roles: Seq[RoleName] = _roles
+  def roles: immutable.Seq[RoleName] = _roles
 
   /**
    * TO BE DEFINED BY USER: Defines the number of participants required for starting the test. This
@@ -335,9 +336,10 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * Enter the named barriers in the order given. Use the remaining duration from
    * the innermost enclosing `within` block or the default `BarrierTimeout`
    */
-  def enterBarrier(name: String*) {
-    testConductor.enter(Timeout.durationToTimeout(remainingOr(testConductor.Settings.BarrierTimeout.duration)), name)
-  }
+  def enterBarrier(name: String*): Unit =
+    testConductor.enter(
+      Timeout.durationToTimeout(remainingOr(testConductor.Settings.BarrierTimeout.duration)),
+      name.to[immutable.Seq])
 
   /**
    * Query the controller for the transport address of the given node (by role name) and
@@ -400,10 +402,8 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     }
     import scala.collection.JavaConverters._
     ConfigFactory.parseString(deployString).root.asScala foreach {
-      case (key, value: ConfigObject) ⇒
-        deployer.parseConfig(key, value.toConfig) foreach deployer.deploy
-      case (key, x) ⇒
-        throw new IllegalArgumentException("key " + key + " must map to deployment section, not simple value " + x)
+      case (key, value: ConfigObject) ⇒ deployer.parseConfig(key, value.toConfig) foreach deployer.deploy
+      case (key, x)                   ⇒ throw new IllegalArgumentException(s"key $key must map to deployment section, not simple value $x")
     }
   }
 

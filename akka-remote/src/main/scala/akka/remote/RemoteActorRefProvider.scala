@@ -70,7 +70,7 @@ class RemoteActorRefProvider(
 
     _transport = {
       val fqn = remoteSettings.RemoteTransport
-      val args = Seq(
+      val args = List(
         classOf[ExtendedActorSystem] -> system,
         classOf[RemoteActorRefProvider] -> this)
 

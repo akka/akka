@@ -51,7 +51,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
       val msgGenerator = system.scheduler.schedule(100 millis, 10 millis, new Runnable {
         var number = 0
         def run() {
-          publisher ! ZMQMessage(Seq(Frame(number.toString.getBytes), Frame(Seq())))
+          publisher ! ZMQMessage(Frame(number.toString), Frame(Nil))
           number += 1
         }
       })
@@ -88,8 +88,8 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
 
       try {
         replierProbe.expectMsg(Connecting)
-        val request = ZMQMessage(Seq(Frame("Request")))
-        val reply = ZMQMessage(Seq(Frame("Reply")))
+        val request = ZMQMessage(Frame("Request"))
+        val reply = ZMQMessage(Frame("Reply"))
 
         requester ! request
         replierProbe.expectMsg(request)
@@ -112,7 +112,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
 
       try {
         pullerProbe.expectMsg(Connecting)
-        val message = ZMQMessage(Seq(Frame("Pushed message")))
+        val message = ZMQMessage(Frame("Pushed message"))
 
         pusher ! message
         pullerProbe.expectMsg(message)

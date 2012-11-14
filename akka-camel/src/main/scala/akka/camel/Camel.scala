@@ -4,16 +4,15 @@
 
 package akka.camel
 
-import internal._
+import akka.camel.internal._
 import akka.actor._
+import akka.ConfigurationException
 import org.apache.camel.ProducerTemplate
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.model.RouteDefinition
 import com.typesafe.config.Config
-import akka.ConfigurationException
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import java.util.concurrent.TimeUnit._
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * Camel trait encapsulates the underlying camel machinery.
@@ -88,8 +87,8 @@ class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess
   final val StreamingCache: Boolean = config.getBoolean("akka.camel.streamingCache")
 
   final val Conversions: (String, RouteDefinition) ⇒ RouteDefinition = {
-    import scala.collection.JavaConverters.asScalaSetConverter
     val specifiedConversions = {
+      import scala.collection.JavaConverters.asScalaSetConverter
       val section = config.getConfig("akka.camel.conversions")
       section.entrySet.asScala.map(e ⇒ (e.getKey, section.getString(e.getKey)))
     }

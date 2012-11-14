@@ -420,7 +420,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
       case "unbounded" ⇒ UnboundedMailbox()
       case "bounded"   ⇒ new BoundedMailbox(prerequisites.settings, config)
       case fqcn ⇒
-        val args = Seq(classOf[ActorSystem.Settings] -> prerequisites.settings, classOf[Config] -> config)
+        val args = List(classOf[ActorSystem.Settings] -> prerequisites.settings, classOf[Config] -> config)
         prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
           case exception ⇒
             throw new IllegalArgumentException(
@@ -436,7 +436,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
       case null | "" | "fork-join-executor" ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
       case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
-        val args = Seq(
+        val args = List(
           classOf[Config] -> config,
           classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args).recover({
