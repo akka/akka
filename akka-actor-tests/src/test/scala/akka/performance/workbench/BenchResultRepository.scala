@@ -12,17 +12,18 @@ import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import scala.collection.mutable.{ Map ⇒ MutableMap }
+import scala.collection.immutable
 import akka.actor.ActorSystem
 import akka.event.Logging
 
 trait BenchResultRepository {
   def add(stats: Stats)
 
-  def get(name: String): Seq[Stats]
+  def get(name: String): immutable.Seq[Stats]
 
   def get(name: String, load: Int): Option[Stats]
 
-  def getWithHistorical(name: String, load: Int): Seq[Stats]
+  def getWithHistorical(name: String, load: Int): immutable.Seq[Stats]
 
   def isBaseline(stats: Stats): Boolean
 
@@ -38,9 +39,9 @@ object BenchResultRepository {
 }
 
 class FileBenchResultRepository extends BenchResultRepository {
-  private val statsByName = MutableMap[String, Seq[Stats]]()
+  private val statsByName = MutableMap[String, immutable.Seq[Stats]]()
   private val baselineStats = MutableMap[Key, Stats]()
-  private val historicalStats = MutableMap[Key, Seq[Stats]]()
+  private val historicalStats = MutableMap[Key, immutable.Seq[Stats]]()
   private def resultDir = BenchmarkConfig.config.getString("benchmark.resultDir")
   private val serDir = resultDir + "/ser"
   private def serDirExists: Boolean = new File(serDir).exists
@@ -51,13 +52,13 @@ class FileBenchResultRepository extends BenchResultRepository {
   case class Key(name: String, load: Int)
 
   def add(stats: Stats): Unit = synchronized {
-    val values = statsByName.getOrElseUpdate(stats.name, IndexedSeq.empty)
+    val values = statsByName.getOrElseUpdate(stats.name, Vector.empty)
     statsByName(stats.name) = values :+ stats
     save(stats)
   }
 
-  def get(name: String): Seq[Stats] = synchronized {
-    statsByName.getOrElse(name, IndexedSeq.empty)
+  def get(name: String): immutable.Seq[Stats] = synchronized {
+    statsByName.getOrElse(name, Vector.empty)
   }
 
   def get(name: String, load: Int): Option[Stats] = synchronized {
@@ -68,13 +69,13 @@ class FileBenchResultRepository extends BenchResultRepository {
     baselineStats.get(Key(stats.name, stats.load)) == Some(stats)
   }
 
-  def getWithHistorical(name: String, load: Int): Seq[Stats] = synchronized {
+  def getWithHistorical(name: String, load: Int): immutable.Seq[Stats] = synchronized {
     val key = Key(name, load)
-    val historical = historicalStats.getOrElse(key, IndexedSeq.empty)
+    val historical = historicalStats.getOrElse(key, Vector.empty)
     val baseline = baselineStats.get(key)
     val current = get(name, load)
 
-    val limited = (IndexedSeq.empty ++ historical ++ baseline ++ current).takeRight(maxHistorical)
+    val limited = (Vector.empty ++ historical ++ baseline ++ current).takeRight(maxHistorical)
     limited.sortBy(_.timestamp)
   }
 
@@ -94,7 +95,7 @@ class FileBenchResultRepository extends BenchResultRepository {
       }
       val historical = load(historicalFiles)
       for (h ← historical) {
-        val values = historicalStats.getOrElseUpdate(Key(h.name, h.load), IndexedSeq.empty)
+        val values = historicalStats.getOrElseUpdate(Key(h.name, h.load), Vector.empty)
         historicalStats(Key(h.name, h.load)) = values :+ h
       }
     }
@@ -120,7 +121,7 @@ class FileBenchResultRepository extends BenchResultRepository {
     }
   }
 
-  private def load(files: Iterable[File]): Seq[Stats] = {
+  private def load(files: Iterable[File]): immutable.Seq[Stats] = {
     val result =
       for (f ← files) yield {
         var in: ObjectInputStream = null
@@ -132,11 +133,11 @@ class FileBenchResultRepository extends BenchResultRepository {
           case e: Throwable ⇒
             None
         } finally {
-          if (in ne null) try { in.close() } catch { case ignore: Exception ⇒ }
+          if (in ne null) try in.close() catch { case ignore: Exception ⇒ }
         }
       }
 
-    result.flatten.toSeq.sortBy(_.timestamp)
+    result.flatten.toVector.sortBy(_.timestamp)
   }
 
   loadFiles()

@@ -4,14 +4,15 @@
 package akka.actor
 
 import language.postfixOps
+
 import akka.testkit._
 import org.scalatest.junit.JUnitSuite
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.collection.JavaConverters
-import java.util.concurrent.{ TimeUnit, RejectedExecutionException, CountDownLatch, ConcurrentLinkedQueue }
+import java.util.concurrent.{ RejectedExecutionException, ConcurrentLinkedQueue }
 import akka.util.Timeout
+import akka.japi.Util.immutableSeq
 import scala.concurrent.Future
 import akka.pattern.ask
 
@@ -102,8 +103,6 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
     }
 
     "run termination callbacks in order" in {
-      import scala.collection.JavaConverters._
-
       val system2 = ActorSystem("TerminationCallbacks", AkkaSpec.testConf)
       val result = new ConcurrentLinkedQueue[Int]
       val count = 10
@@ -121,13 +120,11 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       Await.ready(latch, 5 seconds)
 
       val expected = (for (i ← 1 to count) yield i).reverse
-      result.asScala.toSeq must be(expected)
 
+      immutableSeq(result) must be(expected)
     }
 
     "awaitTermination after termination callbacks" in {
-      import scala.collection.JavaConverters._
-
       val system2 = ActorSystem("AwaitTermination", AkkaSpec.testConf)
       @volatile
       var callbackWasRun = false

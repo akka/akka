@@ -10,10 +10,9 @@ import akka.testkit.TestEvent._
 import akka.actor.Props
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.collection.immutable
 import akka.actor.ActorRef
-import java.util.concurrent.atomic.AtomicInteger
 import akka.pattern.ask
-import java.util.concurrent.TimeoutException
 import scala.util.Try
 
 object ResizerSpec {
@@ -61,10 +60,10 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         lowerBound = 2,
         upperBound = 3)
 
-      val c1 = resizer.capacity(IndexedSeq.empty[ActorRef])
+      val c1 = resizer.capacity(immutable.IndexedSeq.empty[ActorRef])
       c1 must be(2)
 
-      val current = IndexedSeq(system.actorOf(Props[TestActor]), system.actorOf(Props[TestActor]))
+      val current = immutable.IndexedSeq(system.actorOf(Props[TestActor]), system.actorOf(Props[TestActor]))
       val c2 = resizer.capacity(current)
       c2 must be(0)
     }

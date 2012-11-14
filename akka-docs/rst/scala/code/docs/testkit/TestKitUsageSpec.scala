@@ -22,6 +22,7 @@ import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
 import akka.testkit.TestKit
 import scala.concurrent.duration._
+import scala.collection.immutable
 
 /**
  * a Test to show some TestKit examples
@@ -38,8 +39,8 @@ class TestKitUsageSpec
   val filterRef = system.actorOf(Props(new FilteringActor(testActor)))
   val randomHead = Random.nextInt(6)
   val randomTail = Random.nextInt(10)
-  val headList = Seq().padTo(randomHead, "0")
-  val tailList = Seq().padTo(randomTail, "1")
+  val headList = immutable.Seq().padTo(randomHead, "0")
+  val tailList = immutable.Seq().padTo(randomTail, "1")
   val seqRef =
     system.actorOf(Props(new SequencingActor(testActor, headList, tailList)))
 
@@ -145,7 +146,7 @@ object TestKitUsageSpec {
    * like to test that the interesting value is received and that you cant
    * be bothered with the rest
    */
-  class SequencingActor(next: ActorRef, head: Seq[String], tail: Seq[String])
+  class SequencingActor(next: ActorRef, head: immutable.Seq[String], tail: immutable.Seq[String])
     extends Actor {
     def receive = {
       case msg ⇒ {

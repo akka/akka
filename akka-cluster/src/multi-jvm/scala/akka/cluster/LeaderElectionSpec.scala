@@ -10,6 +10,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.duration._
+import scala.collection.immutable
 
 case class LeaderElectionMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val controller = role("controller")
@@ -42,7 +43,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
   import multiNodeConfig._
 
   // sorted in the order used by the cluster
-  lazy val sortedRoles = Seq(first, second, third, fourth).sorted
+  lazy val sortedRoles = List(first, second, third, fourth).sorted
 
   "A cluster of four nodes" must {
 

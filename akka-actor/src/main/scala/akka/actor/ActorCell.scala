@@ -6,7 +6,7 @@ package akka.actor
 
 import java.io.{ ObjectOutputStream, NotSerializableException }
 import scala.annotation.tailrec
-import scala.collection.immutable.TreeSet
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import akka.actor.dungeon.ChildrenContainer
@@ -108,7 +108,7 @@ trait ActorContext extends ActorRefFactory {
    * val goodLookup = context.actorFor("kid")
    * }}}
    */
-  def children: Iterable[ActorRef]
+  def children: immutable.Iterable[ActorRef]
 
   /**
    * Get the child with the given name if it exists.
@@ -287,7 +287,7 @@ private[akka] object ActorCell {
 
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
-  final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
+  final val emptyActorRefSet: Set[ActorRef] = immutable.TreeSet.empty
 }
 
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)

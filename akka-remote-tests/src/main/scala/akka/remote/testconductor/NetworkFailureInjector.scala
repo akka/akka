@@ -6,13 +6,13 @@ package akka.remote.testconductor
 import language.postfixOps
 import java.net.InetSocketAddress
 import scala.annotation.tailrec
-import scala.collection.immutable.Queue
+import scala.collection.immutable
+import scala.concurrent.duration._
 import org.jboss.netty.buffer.ChannelBuffer
 import org.jboss.netty.channel.{ SimpleChannelHandler, MessageEvent, Channels, ChannelStateEvent, ChannelHandlerContext, ChannelFutureListener, ChannelFuture }
 import akka.actor.{ Props, LoggingFSM, Address, ActorSystem, ActorRef, ActorLogging, Actor, FSM }
 import akka.event.Logging
 import akka.remote.netty.ChannelAddress
-import scala.concurrent.duration._
 
 /**
  * INTERNAL API.
@@ -230,7 +230,7 @@ private[akka] object ThrottleActor {
   case object Throttle extends State
   case object Blackhole extends State
 
-  case class Data(lastSent: Long, rateMBit: Float, queue: Queue[Send])
+  case class Data(lastSent: Long, rateMBit: Float, queue: immutable.Queue[Send])
 
   case class Send(ctx: ChannelHandlerContext, direction: Direction, future: Option[ChannelFuture], msg: AnyRef)
   case class SetRate(rateMBit: Float)
@@ -248,7 +248,7 @@ private[akka] class ThrottleActor(channelContext: ChannelHandlerContext)
 
   private val packetSplitThreshold = TestConductor(context.system).Settings.PacketSplitThreshold
 
-  startWith(PassThrough, Data(0, -1, Queue()))
+  startWith(PassThrough, Data(0, -1, immutable.Queue()))
 
   when(PassThrough) {
     case Event(s @ Send(_, _, _, msg), _) ⇒
@@ -258,8 +258,8 @@ private[akka] class ThrottleActor(channelContext: ChannelHandlerContext)
   }
 
   when(Throttle) {
-    case Event(s: Send, data @ Data(_, _, Queue())) ⇒
-      stay using sendThrottled(data.copy(lastSent = System.nanoTime, queue = Queue(s)))
+    case Event(s: Send, data @ Data(_, _, immutable.Queue())) ⇒
+      stay using sendThrottled(data.copy(lastSent = System.nanoTime, queue = immutable.Queue(s)))
     case Event(s: Send, data) ⇒
       stay using sendThrottled(data.copy(queue = data.queue.enqueue(s)))
     case Event(Tick, data) ⇒
@@ -286,7 +286,7 @@ private[akka] class ThrottleActor(channelContext: ChannelHandlerContext)
   whenUnhandled {
     case Event(SetRate(rate), d) ⇒
       if (rate > 0) {
-        goto(Throttle) using d.copy(lastSent = System.nanoTime, rateMBit = rate, queue = Queue())
+        goto(Throttle) using d.copy(lastSent = System.nanoTime, rateMBit = rate, queue = immutable.Queue())
       } else if (rate == 0) {
         goto(Blackhole)
       } else {
@@ -328,7 +328,7 @@ private[akka] class ThrottleActor(channelContext: ChannelHandlerContext)
    */
   private def schedule(d: Data): (Data, Seq[Send], Option[FiniteDuration]) = {
     val now = System.nanoTime
-    @tailrec def rec(d: Data, toSend: Seq[Send]): (Data, Seq[Send], Option[FiniteDuration]) = {
+    @tailrec def rec(d: Data, toSend: immutable.Seq[Send]): (Data, immutable.Seq[Send], Option[FiniteDuration]) = {
       if (d.queue.isEmpty) (d, toSend, None)
       else {
         val timeForPacket = d.lastSent + (1000 * size(d.queue.head.msg) / d.rateMBit).toLong
@@ -344,7 +344,7 @@ private[akka] class ThrottleActor(channelContext: ChannelHandlerContext)
         }
       }
     }
-    rec(d, Seq())
+    rec(d, Nil)
   }
 
   /**

@@ -3,11 +3,11 @@
  */
 package akka.routing
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.collection.immutable
+import akka.japi.Util.immutableSeq
 import scala.util.control.NonFatal
 import akka.actor.ActorRef
 import akka.actor.SupervisorStrategy
-import akka.actor.Props
 import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.serialization.SerializationExtension
@@ -19,16 +19,13 @@ object ConsistentHashingRouter {
   /**
    * Creates a new ConsistentHashingRouter, routing to the specified routees
    */
-  def apply(routees: Iterable[ActorRef]): ConsistentHashingRouter =
+  def apply(routees: immutable.Iterable[ActorRef]): ConsistentHashingRouter =
     new ConsistentHashingRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
    */
-  def create(routees: java.lang.Iterable[ActorRef]): ConsistentHashingRouter = {
-    import scala.collection.JavaConverters._
-    apply(routees.asScala)
-  }
+  def create(routees: java.lang.Iterable[ActorRef]): ConsistentHashingRouter = apply(immutableSeq(routees))
 
   /**
    * If you don't define the `hashMapping` when
@@ -146,7 +143,7 @@ object ConsistentHashingRouter {
  */
 @SerialVersionUID(1L)
 case class ConsistentHashingRouter(
-  nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+  nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
   val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy,
   val virtualNodesFactor: Int = 0,
@@ -165,7 +162,7 @@ case class ConsistentHashingRouter(
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = this(routees = routeePaths.asScala)
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -227,7 +224,7 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
 
-  def routees: Iterable[String]
+  def routees: immutable.Iterable[String]
 
   def virtualNodesFactor: Int
 

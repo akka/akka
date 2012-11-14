@@ -184,31 +184,31 @@ public class JavaTestKit {
   }
 
   public Object expectMsgAnyOf(Object... msgs) {
-    return p.expectMsgAnyOf(Util.arrayToSeq(msgs));
+    return p.expectMsgAnyOf(Util.immutableSeq(msgs));
   }
 
   public Object expectMsgAnyOf(FiniteDuration max, Object... msgs) {
-    return p.expectMsgAnyOf(max, Util.arrayToSeq(msgs));
+    return p.expectMsgAnyOf(max, Util.immutableSeq(msgs));
   }
 
   public Object[] expectMsgAllOf(Object... msgs) {
-    return (Object[]) p.expectMsgAllOf(Util.arrayToSeq(msgs)).toArray(
+    return (Object[]) p.expectMsgAllOf(Util.immutableSeq(msgs)).toArray(
         Util.classTag(Object.class));
   }
 
   public Object[] expectMsgAllOf(FiniteDuration max, Object... msgs) {
-    return (Object[]) p.expectMsgAllOf(max, Util.arrayToSeq(msgs)).toArray(
+    return (Object[]) p.expectMsgAllOf(max, Util.immutableSeq(msgs)).toArray(
         Util.classTag(Object.class));
   }
 
   @SuppressWarnings("unchecked")
   public <T> T expectMsgAnyClassOf(Class<? extends T>... classes) {
-    final Object result = p.expectMsgAnyClassOf(Util.arrayToSeq(classes));
+    final Object result = p.expectMsgAnyClassOf(Util.immutableSeq(classes));
     return (T) result;
   }
 
   public Object expectMsgAnyClassOf(FiniteDuration max, Class<?>... classes) {
-    return p.expectMsgAnyClassOf(max, Util.arrayToSeq(classes));
+    return p.expectMsgAnyClassOf(max, Util.immutableSeq(classes));
   }
 
   public void expectNoMsg() {
