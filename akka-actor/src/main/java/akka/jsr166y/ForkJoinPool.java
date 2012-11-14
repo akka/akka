@@ -1372,7 +1372,7 @@ public class ForkJoinPool extends AbstractExecutorService {
         }
 
         if (ex != null)                     // rethrow
-            U.throwException(ex);
+            rethrow(ex);
     }
 
 
@@ -2854,6 +2854,17 @@ public class ForkJoinPool extends AbstractExecutorService {
      */
     private static sun.misc.Unsafe getUnsafe() {
         return Unsafe.instance;
+    }
+
+    final static void rethrow(final Throwable t) {
+        throwSoftUnchecked(t, RuntimeException.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    private final static <T extends Throwable> void throwSoftUnchecked(
+      final Throwable t,
+      final Class<T> infer) throws T {
+          throw (T)t;
     }
 
 }
