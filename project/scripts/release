@@ -12,8 +12,8 @@
 #   User <username on repo.akka.io>
 
 # defaults
-declare -r default_server="repo.akka.io"
-declare -r default_path="/akka/www"
+declare -r default_server="akkarepo@repo.akka.io"
+declare -r default_path="www"
 
 # settings
 declare -r release_dir="target/release"
