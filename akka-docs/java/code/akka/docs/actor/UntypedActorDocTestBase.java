@@ -234,7 +234,7 @@ public class UntypedActorDocTestBase {
 
     final ArrayList<Future<Object>> futures = new ArrayList<Future<Object>>();
     futures.add(ask(actorA, "request", 1000)); // using 1000ms timeout
-    futures.add(ask(actorB, "reqeest", t)); // using timeout from above
+    futures.add(ask(actorB, "request", t)); // using timeout from above
 
     final Future<Iterable<Object>> aggregate = Futures.sequence(futures, system.dispatcher());
     
@@ -313,7 +313,7 @@ public class UntypedActorDocTestBase {
     Procedure<Object> angry = new Procedure<Object>() {
       @Override
       public void apply(Object message) {
-        if (message.equals("foo")) {
+        if (message.equals("bar")) {
           getSender().tell("I am already angry?");
         } else if (message.equals("foo")) {
           getContext().become(happy);

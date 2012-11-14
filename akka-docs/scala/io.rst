@@ -184,7 +184,7 @@ And it's companion object:
 
 And the OKResponse:
 
-.. includecode:: code/docs/io/HTTPServer.scala
+.. includecode:: code/akka/docs/io/HTTPServer.scala
    :include: ok-response
 
 A ``main`` method to start everything up:

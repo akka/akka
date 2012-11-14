@@ -180,7 +180,7 @@ at runtime::
 
   system.eventStream.setLogLevel(Logging.DebugLevel)
 
-This means that log events for a level which will not be logged are not
+This means that log events for a level which will not be logged are 
 typically not dispatched at all (unless manual subscriptions to the respective
 event class have been done)
 
