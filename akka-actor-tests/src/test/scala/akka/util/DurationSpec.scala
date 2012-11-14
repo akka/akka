@@ -8,10 +8,31 @@ import language.postfixOps
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import scala.concurrent.duration._
+import scala.concurrent.Await
 
 import java.util.concurrent.TimeUnit._
+import akka.testkit.AkkaSpec
+import akka.testkit.TestLatch
+import java.util.concurrent.TimeoutException
+import akka.testkit.LongRunningTest
 
-class DurationSpec extends WordSpec with MustMatchers {
+class DurationSpec extends AkkaSpec {
+
+  "A HashedWheelTimer" must {
+
+    "not mess up long timeouts" taggedAs LongRunningTest in {
+      val longish = Long.MaxValue.nanos
+      val barrier = TestLatch()
+      import system.dispatcher
+      val job = system.scheduler.scheduleOnce(longish)(barrier.countDown())
+      intercept[TimeoutException] {
+        // this used to fire after 46 seconds due to wrap-around
+        Await.ready(barrier, 90 seconds)
+      }
+      job.cancel()
+    }
+
+  }
 
   "Duration" must {
 
