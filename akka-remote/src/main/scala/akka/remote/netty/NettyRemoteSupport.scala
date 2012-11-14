@@ -61,7 +61,8 @@ class NettyRemoteTransport(val remoteSettings: RemoteSettings, val system: Actor
 
   val clientChannelFactory = new NioClientSocketChannelFactory(
     Executors.newCachedThreadPool(system.threadFactory),
-    Executors.newCachedThreadPool(system.threadFactory))
+    Executors.newCachedThreadPool(system.threadFactory),
+    settings.ClientSocketWorkerPoolSize)
 
   private val remoteClients = new HashMap[Address, RemoteClient]
   private val clientsLock = new ReentrantReadWriteLock
