@@ -52,12 +52,15 @@ private[akka] class RepointableActorRef(
    *
    * This is protected so that others can have different initialization.
    */
-  def initialize(): this.type = {
-    val uid = ThreadLocalRandom.current.nextInt()
-    swapCell(new UnstartedCell(system, this, props, supervisor, uid))
-    supervisor.sendSystemMessage(Supervise(this, uid))
-    this
-  }
+  def initialize(): this.type =
+    underlying match {
+      case null ⇒
+        val uid = ThreadLocalRandom.current.nextInt()
+        swapCell(new UnstartedCell(system, this, props, supervisor, uid))
+        supervisor.sendSystemMessage(Supervise(this, uid))
+        this
+      case other ⇒ this
+    }
 
   /**
    * This method is supposed to be called by the supervisor in handleSupervise()
@@ -65,13 +68,12 @@ private[akka] class RepointableActorRef(
    * modification of the `underlying` field, though it is safe to send messages
    * at any time.
    */
-  def activate(): this.type = {
+  def activate(): this.type =
     underlying match {
-      case u: UnstartedCell ⇒ u.replaceWith(newCell(u))
-      case _                ⇒ // this happens routinely for things which were created async=false
+      case u: UnstartedCell ⇒ u.replaceWith(newCell(u)); this
+      case null             ⇒ throw new IllegalStateException("underlying cell is null")
+      case _                ⇒ this // this happens routinely for things which were created async=false
     }
-    this
-  }
 
   /**
    * This is called by activate() to obtain the cell which is to replace the
