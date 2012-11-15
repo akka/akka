@@ -65,7 +65,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
 
   "The japi stats sample" must {
 
-    "illustrate how to startup cluster" in within(10 seconds) {
+    "illustrate how to startup cluster" in within(15 seconds) {
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
@@ -89,7 +89,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
     }
 
 
-    "show usage of the statsService from one node" in within(5 seconds) {
+    "show usage of the statsService from one node" in within(15 seconds) {
       runOn(second) {
         val service = system.actorFor(node(third) / "user" / "statsService")
         service ! new StatsJob("this is the text that will be analyzed")
@@ -103,7 +103,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
     }
     //#test-statsService
     
-    "show usage of the statsService from all nodes" in within(5 seconds) {
+    "show usage of the statsService from all nodes" in within(15 seconds) {
       val service = system.actorFor(node(third) / "user" / "statsService")
       service ! new StatsJob("this is the text that will be analyzed")
       val meanWordLength = expectMsgPF() {
