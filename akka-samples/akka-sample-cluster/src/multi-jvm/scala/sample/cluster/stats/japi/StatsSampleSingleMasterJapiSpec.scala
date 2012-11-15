@@ -66,7 +66,7 @@ abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSample
   override def afterAll() = multiNodeSpecAfterAll()
 
   "The japi stats sample with single master" must {
-    "illustrate how to startup cluster" in within(10 seconds) {
+    "illustrate how to startup cluster" in within(15 seconds) {
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
