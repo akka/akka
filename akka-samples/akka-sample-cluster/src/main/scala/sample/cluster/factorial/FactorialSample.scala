@@ -13,34 +13,62 @@ import akka.routing.FromConfig
 
 //#imports
 
+import akka.cluster.Cluster
+import akka.cluster.ClusterEvent.CurrentClusterState
+import akka.cluster.ClusterEvent.MemberUp
+
 object FactorialFrontend {
   def main(args: Array[String]): Unit = {
     val upToN = if (args.isEmpty) 200 else args(0).toInt
 
     val system = ActorSystem("ClusterSystem")
-    val frontend = system.actorOf(Props[FactorialFrontend], name = "factorialFrontend")
 
-    system.log.info("Starting up")
-    // wait to let cluster converge and gather metrics
-    Thread.sleep(10000)
+    // start the calculations when there is at least 2 other members
+    system.actorOf(Props(new Actor with ActorLogging {
+      var memberCount = 0
 
-    system.log.info("Starting many factorials up to [{}]", upToN)
-    for (_ ← 1 to 1000; n ← 1 to upToN) {
-      frontend ! n
-    }
+      log.info("Factorials will start when 3 members in the cluster.")
+      Cluster(context.system).subscribe(self, classOf[MemberUp])
+
+      def receive = {
+        case state: CurrentClusterState ⇒
+          memberCount = state.members.size
+          runWhenReady()
+        case MemberUp(member) ⇒
+          memberCount += 1
+          runWhenReady()
+      }
+
+      def runWhenReady(): Unit = if (memberCount >= 3) {
+        context.system.actorOf(Props(new FactorialFrontend(upToN, repeat = true)),
+          name = "factorialFrontend")
+        context stop self
+      }
+
+    }), name = "startup")
+
   }
 }
 
 //#frontend
-class FactorialFrontend extends Actor with ActorLogging {
+class FactorialFrontend(upToN: Int, repeat: Boolean) extends Actor with ActorLogging {
 
   val backend = context.actorOf(Props[FactorialBackend].withRouter(FromConfig),
     name = "factorialBackendRouter")
 
+  override def preStart(): Unit = sendJobs()
+
   def receive = {
-    case n: Int ⇒ backend ! n
     case (n: Int, factorial: BigInt) ⇒
-      log.info("{}! = {}", n, factorial)
+      if (n == upToN) {
+        log.debug("{}! = {}", n, factorial)
+        if (repeat) sendJobs()
+      }
+  }
+
+  def sendJobs(): Unit = {
+    log.info("Starting batch of factorials up to [{}]", upToN)
+    1 to upToN foreach { backend ! _ }
   }
 }
 //#frontend
@@ -83,6 +111,7 @@ class FactorialBackend extends Actor with ActorLogging {
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.ClusterMetricsChanged
 import akka.cluster.ClusterEvent.CurrentClusterState
+import akka.cluster.NodeMetrics
 import akka.cluster.StandardMetrics.HeapMemory
 import akka.cluster.StandardMetrics.Cpu
 
@@ -97,20 +126,24 @@ class MetricsListener extends Actor with ActorLogging {
     Cluster(context.system).unsubscribe(self)
 
   def receive = {
-    case ClusterMetricsChanged(nodeMetrics) ⇒
-      nodeMetrics.filter(_.address == selfAddress) foreach { n ⇒
-        n match {
-          case HeapMemory(address, timestamp, used, committed, max) ⇒
-            log.info("Used heap: {} MB", used.doubleValue / 1024 / 1024)
-          case _ ⇒ // no heap info
-        }
-        n match {
-          case Cpu(address, timestamp, Some(systemLoadAverage), cpuCombined, processors) ⇒
-            log.info("Load: {} ({} processors)", systemLoadAverage, processors)
-          case _ ⇒ // no cpu info
-        }
+    case ClusterMetricsChanged(clusterMetrics) ⇒
+      clusterMetrics.filter(_.address == selfAddress) foreach { nodeMetrics ⇒
+        logHeap(nodeMetrics)
+        logCpu(nodeMetrics)
       }
     case state: CurrentClusterState ⇒ // ignore
+  }
+
+  def logHeap(nodeMetrics: NodeMetrics): Unit = nodeMetrics match {
+    case HeapMemory(address, timestamp, used, committed, max) ⇒
+      log.info("Used heap: {} MB", used.doubleValue / 1024 / 1024)
+    case _ ⇒ // no heap info
+  }
+
+  def logCpu(nodeMetrics: NodeMetrics): Unit = nodeMetrics match {
+    case Cpu(address, timestamp, Some(systemLoadAverage), cpuCombined, processors) ⇒
+      log.info("Load: {} ({} processors)", systemLoadAverage, processors)
+    case _ ⇒ // no cpu info
   }
 }
 

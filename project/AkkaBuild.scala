@@ -553,6 +553,7 @@ object AkkaBuild extends Build {
             case BinVer(bv) => bv
             case _          => s
           }),
+        "sigarVersion" -> Dependencies.Compile.sigar.revision,
         "github" -> "http://github.com/akka/akka/tree/%s".format((if (isSnapshot) "master" else "v" + v))
       )
     },

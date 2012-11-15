@@ -14,8 +14,7 @@ import scala.util.{ Success, Try, Failure }
 
 import akka.actor._
 import akka.testkit._
-import akka.cluster.StandardMetrics.HeapMemory.Fields._
-import akka.cluster.StandardMetrics.Cpu.Fields._
+import akka.cluster.StandardMetrics._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 
@@ -41,23 +40,21 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
         val sample1 = collector.sample.metrics
         val sample2 = collector.sample.metrics
         val merged12 = sample2 flatMap (latest ⇒ sample1 collect {
-          case peer if latest sameAs peer ⇒ {
+          case peer if latest sameAs peer ⇒
             val m = peer :+ latest
             m.value must be(latest.value)
             m.isSmooth must be(peer.isSmooth || latest.isSmooth)
             m
-          }
         })
 
         val sample3 = collector.sample.metrics
         val sample4 = collector.sample.metrics
         val merged34 = sample4 flatMap (latest ⇒ sample3 collect {
-          case peer if latest sameAs peer ⇒ {
+          case peer if latest sameAs peer ⇒
             val m = peer :+ latest
             m.value must be(latest.value)
             m.isSmooth must be(peer.isSmooth || latest.isSmooth)
             m
-          }
         })
       }
     }
@@ -124,12 +121,12 @@ trait MetricsCollectorFactory { this: AkkaSpec ⇒
 
   def createMetricsCollector: MetricsCollector =
     Try(new SigarMetricsCollector(selfAddress, defaultDecayFactor,
-      extendedActorSystem.dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Nil).get)) match {
-      case Success(sigarCollector) ⇒ sigarCollector
-      case Failure(e) ⇒
-        log.debug("Metrics will be retreived from MBeans, Sigar failed to load. Reason: " + e)
-        new JmxMetricsCollector(selfAddress, defaultDecayFactor)
-    }
+      extendedActorSystem.dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Nil))).
+      recover {
+        case e ⇒
+          log.debug("Metrics will be retreived from MBeans, Sigar failed to load. Reason: " + e)
+          new JmxMetricsCollector(selfAddress, defaultDecayFactor)
+      }.get
 
   def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
 }

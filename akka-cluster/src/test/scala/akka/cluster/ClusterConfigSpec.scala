@@ -50,7 +50,7 @@ class ClusterConfigSpec extends AkkaSpec {
       MetricsCollectorClass must be(classOf[SigarMetricsCollector].getName)
       MetricsInterval must be(3 seconds)
       MetricsGossipInterval must be(3 seconds)
-      MetricsDecayHalfLifeDuration must be(12 seconds)
+      MetricsMovingAverageHalfLife must be(12 seconds)
     }
   }
 }

@@ -33,13 +33,13 @@ import akka.routing.RouteeProvider
 import akka.routing.RouterConfig
 
 object AdaptiveLoadBalancingRouter {
-  private val defaultSupervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
+  private val escalateStrategy: SupervisorStrategy = OneForOneStrategy() {
     case _ ⇒ SupervisorStrategy.Escalate
   }
 }
 
 /**
- * A Router that performs load balancing to cluster nodes based on
+ * A Router that performs load balancing of messages to cluster nodes based on
  * cluster metric data.
  *
  * It uses random selection of routees based probabilities derived from
@@ -71,11 +71,11 @@ object AdaptiveLoadBalancingRouter {
  */
 @SerialVersionUID(1L)
 case class AdaptiveLoadBalancingRouter(
-  metricsSelector: MetricsSelector = MixMetricsSelector(),
+  metricsSelector: MetricsSelector = MixMetricsSelector,
   nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil,
   override val resizer: Option[Resizer] = None,
   val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  val supervisorStrategy: SupervisorStrategy = AdaptiveLoadBalancingRouter.defaultSupervisorStrategy)
+  val supervisorStrategy: SupervisorStrategy = AdaptiveLoadBalancingRouter.escalateStrategy)
   extends RouterConfig with AdaptiveLoadBalancingRouterLike {
 
   /**
@@ -137,7 +137,7 @@ case class AdaptiveLoadBalancingRouter(
 /**
  * INTERNAL API.
  *
- * This strategy is a metrics-aware router which performs load balancing of
+ * This strategy is a metrics-aware router which performs load balancing of messages to
  * cluster nodes based on cluster metric data. It consumes [[akka.cluster.ClusterMetricsChanged]]
  * events and the [[akka.cluster.routing.MetricsSelector]] creates an mix of
  * weighted routees based on the node metrics. Messages are routed randomly to the
@@ -181,7 +181,7 @@ trait AdaptiveLoadBalancingRouterLike { this: RouterConfig ⇒
       }
 
       def receiveMetrics(metrics: Set[NodeMetrics]): Unit = {
-        // update the state outside of the actor, not a recommended practice, but works fine here
+        // this is the only place from where weightedRoutees is updated
         weightedRoutees = Some(new WeightedRoutees(routeeProvider.routees, cluster.selfAddress,
           metricsSelector.weights(metrics)))
       }
@@ -276,14 +276,34 @@ case object SystemLoadAverageMetricsSelector extends CapacityMetricsSelector {
 }
 
 /**
+ * Singleton instance of the default MixMetricsSelector, which uses [akka.cluster.routing.HeapMetricsSelector],
+ * [akka.cluster.routing.CpuMetricsSelector], and [akka.cluster.routing.SystemLoadAverageMetricsSelector]
+ */
+@SerialVersionUID(1L)
+object MixMetricsSelector extends MixMetricsSelectorBase(
+  Vector(HeapMetricsSelector, CpuMetricsSelector, SystemLoadAverageMetricsSelector)) {
+
+  /**
+   * Java API: get the default singleton instance
+   */
+  def getInstance = this
+}
+
+/**
  * MetricsSelector that combines other selectors and aggregates their capacity
  * values. By default it uses [akka.cluster.routing.HeapMetricsSelector],
  * [akka.cluster.routing.CpuMetricsSelector], and [akka.cluster.routing.SystemLoadAverageMetricsSelector]
  */
 @SerialVersionUID(1L)
 case class MixMetricsSelector(
-  selectors: immutable.IndexedSeq[CapacityMetricsSelector] = Vector(
-    HeapMetricsSelector, CpuMetricsSelector, SystemLoadAverageMetricsSelector))
+  selectors: immutable.IndexedSeq[CapacityMetricsSelector])
+  extends MixMetricsSelectorBase(selectors)
+
+/**
+ * Base class for MetricsSelector that combines other selectors and aggregates their capacity.
+ */
+@SerialVersionUID(1L)
+abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMetricsSelector])
   extends CapacityMetricsSelector {
 
   /**
@@ -298,18 +318,11 @@ case class MixMetricsSelector(
       case (acc, (address, capacity)) ⇒
         val (sum, count) = acc(address)
         acc + (address -> (sum + capacity, count + 1))
-    }.mapValues {
-      case (sum, count) ⇒ sum / count
-    }.toMap
+    }.map {
+      case (addr, (sum, count)) ⇒ (addr -> sum / count)
+    }
   }
 
-}
-
-case object MixMetricsSelector {
-  /**
-   * Java API: get the default singleton instance
-   */
-  def getInstance = MixMetricsSelector()
 }
 
 /**
@@ -349,7 +362,7 @@ abstract class CapacityMetricsSelector extends MetricsSelector {
       val (_, min) = capacity.minBy { case (_, c) ⇒ c }
       // lowest usable capacity is 1% (>= 0.5% will be rounded to weight 1), also avoids div by zero
       val divisor = math.max(0.01, min)
-      capacity mapValues { c ⇒ math.round((c) / divisor).toInt }
+      capacity map { case (addr, c) ⇒ (addr -> math.round((c) / divisor).toInt) }
     }
   }
 
@@ -379,12 +392,13 @@ private[cluster] class WeightedRoutees(refs: immutable.IndexedSeq[ActorRef], sel
     }
     val buckets = Array.ofDim[Int](refs.size)
     val meanWeight = if (weights.isEmpty) 1 else weights.values.sum / weights.size
-    val w = weights.withDefaultValue(meanWeight)
+    val w = weights.withDefaultValue(meanWeight) // we don’t necessarily have metrics for all addresses
+    var i = 0
     var sum = 0
-    refs.zipWithIndex foreach {
-      case (ref, i) ⇒
-        sum += w(fullAddress(ref))
-        buckets(i) = sum
+    refs foreach { ref ⇒
+      sum += w(fullAddress(ref))
+      buckets(i) = sum
+      i += 1
     }
     buckets
   }
@@ -397,20 +411,21 @@ private[cluster] class WeightedRoutees(refs: immutable.IndexedSeq[ActorRef], sel
    * Pick the routee matching a value, from 1 to total.
    */
   def apply(value: Int): ActorRef = {
-    // converts the result of Arrays.binarySearch into a index in the buckets array
-    // see documentation of Arrays.binarySearch for what it returns
-    def idx(i: Int): Int = {
-      if (i >= 0) i // exact match
-      else {
-        val j = math.abs(i + 1)
-        if (j >= buckets.length) throw new IndexOutOfBoundsException(
-          "Requested index [%s] is > max index [%s]".format(i, buckets.length))
-        else j
-      }
-    }
-
     require(1 <= value && value <= total, "value must be between [1 - %s]" format total)
     refs(idx(Arrays.binarySearch(buckets, value)))
+  }
 
+  /**
+   * Converts the result of Arrays.binarySearch into a index in the buckets array
+   * see documentation of Arrays.binarySearch for what it returns
+   */
+  private def idx(i: Int): Int = {
+    if (i >= 0) i // exact match
+    else {
+      val j = math.abs(i + 1)
+      if (j >= buckets.length) throw new IndexOutOfBoundsException(
+        "Requested index [%s] is > max index [%s]".format(i, buckets.length))
+      else j
+    }
   }
 }

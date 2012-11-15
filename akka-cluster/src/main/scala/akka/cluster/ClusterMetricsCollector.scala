@@ -12,7 +12,6 @@ import java.lang.reflect.Method
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.runtime.{ RichLong, RichDouble, RichInt }
 import scala.util.{ Try, Success, Failure }
 import akka.ConfigurationException
 import akka.actor.Actor
@@ -183,9 +182,10 @@ private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics]) {
    */
   def merge(remoteGossip: MetricsGossip): MetricsGossip = {
     val remoteNodes = remoteGossip.nodes.map(n ⇒ n.address -> n).toMap
-    val toMerge = nodeKeys intersect remoteNodes.keySet
-    val onlyInRemote = remoteNodes.keySet -- nodeKeys
-    val onlyInLocal = nodeKeys -- remoteNodes.keySet
+    val remoteNodesKeySet = remoteNodes.keySet
+    val toMerge = nodeKeys intersect remoteNodesKeySet
+    val onlyInRemote = remoteNodesKeySet -- nodeKeys
+    val onlyInLocal = nodeKeys -- remoteNodesKeySet
 
     val seen = nodes.collect {
       case n if toMerge contains n.address     ⇒ n merge remoteNodes(n.address)
@@ -198,7 +198,7 @@ private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics]) {
   }
 
   /**
-   * Adds new local [[akka.cluster.NodeMetrics]] and initializes the data, or merges an existing.
+   * Adds new local [[akka.cluster.NodeMetrics]], or merges an existing.
    */
   def :+(data: NodeMetrics): MetricsGossip = {
     val previous = metricsFor(data.address)
@@ -233,15 +233,23 @@ private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: Metrics
 
 object EWMA {
   /**
+   * math.log(2)
+   */
+  private val LogOf2 = 0.69315
+
+  /**
    * Calculate the alpha (decay factor) used in [[akka.cluster.EWMA]]
    * from specified half-life and interval between observations.
-   * It takes about 4 half-life to drop below 10% contribution, and 7 to drop
-   * below 1%.
+   * Half-life is the interval over which the weights decrease by a factor of two.
+   * The relevance of each data sample is halved for every passing half-life duration,
+   * i.e. after 4 times the half-life, a data sample’s relevance is reduced to 6% of
+   * its original relevance. The initial relevance of a data sample is given by
+   * 1 – 0.5 ^ (collect-interval / half-life).
    */
   def alpha(halfLife: FiniteDuration, collectInterval: FiniteDuration): Double = {
     val halfLifeMillis = halfLife.toMillis
     require(halfLife.toMillis > 0, "halfLife must be > 0 s")
-    val decayRate = 0.69315 / halfLifeMillis
+    val decayRate = LogOf2 / halfLifeMillis
     1 - math.exp(-decayRate * collectInterval.toMillis)
   }
 }
@@ -277,7 +285,11 @@ private[cluster] case class EWMA(value: Double, alpha: Double) extends ClusterMe
    * @param xn the new data point
    * @return a new [[akka.cluster.EWMA]] with the updated value
    */
-  def :+(xn: Double): EWMA = copy(value = (alpha * xn) + (1 - alpha) * value)
+  def :+(xn: Double): EWMA = {
+    val newValue = (alpha * xn) + (1 - alpha) * value
+    if (newValue == value) this // no change
+    else copy(value = newValue)
+  }
 
 }
 
@@ -291,7 +303,7 @@ private[cluster] case class EWMA(value: Double, alpha: Double) extends ClusterMe
 case class Metric private (name: String, value: Number, private val average: Option[EWMA])
   extends ClusterMessage with MetricNumericConverter {
 
-  require(defined(value), "Invalid Metric [%s] value [%]".format(name, value))
+  require(defined(value), s"Invalid Metric [$name] value [$value]")
 
   /**
    * If defined ( [[akka.cluster.MetricNumericConverter.defined()]] ), updates the new
@@ -398,16 +410,17 @@ case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] =
  */
 object StandardMetrics {
 
+  // Constants for the heap related Metric names
+  final val HeapMemoryUsed = "heap-memory-used"
+  final val HeapMemoryCommitted = "heap-memory-committed"
+  final val HeapMemoryMax = "heap-memory-max"
+
+  // Constants for the cpu related Metric names
+  final val SystemLoadAverage = "system-load-average"
+  final val Processors = "processors"
+  final val CpuCombined = "cpu-combined"
+
   object HeapMemory {
-    /**
-     * Constants for the heap related Metric names
-     */
-    object Fields {
-      final val HeapMemoryUsed = "heap-memory-used"
-      final val HeapMemoryCommitted = "heap-memory-committed"
-      final val HeapMemoryMax = "heap-memory-max"
-    }
-    import Fields._
 
     /**
      * Given a NodeMetrics it returns the HeapMemory data if the nodeMetrics contains
@@ -418,9 +431,9 @@ object StandardMetrics {
       for {
         used ← nodeMetrics.metric(HeapMemoryUsed)
         committed ← nodeMetrics.metric(HeapMemoryCommitted)
-        maxOption = nodeMetrics.metric(HeapMemoryMax).map(_.smoothValue.longValue)
       } yield (nodeMetrics.address, nodeMetrics.timestamp,
-        used.smoothValue.longValue, committed.smoothValue.longValue, maxOption)
+        used.smoothValue.longValue, committed.smoothValue.longValue,
+        nodeMetrics.metric(HeapMemoryMax).map(_.smoothValue.longValue))
     }
 
   }
@@ -431,6 +444,7 @@ object StandardMetrics {
    */
   def extractHeapMemory(nodeMetrics: NodeMetrics): HeapMemory = nodeMetrics match {
     case HeapMemory(address, timestamp, used, committed, max) ⇒
+      // note that above extractor returns tuple
       HeapMemory(address, timestamp, used, committed, max)
     case _ ⇒ null
   }
@@ -454,15 +468,6 @@ object StandardMetrics {
   }
 
   object Cpu {
-    /**
-     * Constants for the cpu related Metric names
-     */
-    object Fields {
-      final val SystemLoadAverage = "system-load-average"
-      final val Processors = "processors"
-      final val CpuCombined = "cpu-combined"
-    }
-    import Fields._
 
     /**
      * Given a NodeMetrics it returns the Cpu data if the nodeMetrics contains
@@ -472,10 +477,9 @@ object StandardMetrics {
     def unapply(nodeMetrics: NodeMetrics): Option[(Address, Long, Option[Double], Option[Double], Int)] = {
       for {
         processors ← nodeMetrics.metric(Processors)
-        systemLoadAverageOption = nodeMetrics.metric(SystemLoadAverage).map(_.smoothValue)
-        cpuCombinedOption = nodeMetrics.metric(CpuCombined).map(_.smoothValue)
       } yield (nodeMetrics.address, nodeMetrics.timestamp,
-        systemLoadAverageOption, cpuCombinedOption, processors.value.intValue)
+        nodeMetrics.metric(SystemLoadAverage).map(_.smoothValue),
+        nodeMetrics.metric(CpuCombined).map(_.smoothValue), processors.value.intValue)
     }
 
   }
@@ -486,6 +490,7 @@ object StandardMetrics {
    */
   def extractCpu(nodeMetrics: NodeMetrics): Cpu = nodeMetrics match {
     case Cpu(address, timestamp, systemLoadAverage, cpuCombined, processors) ⇒
+      // note that above extractor returns tuple
       Cpu(address, timestamp, systemLoadAverage, cpuCombined, processors)
     case _ ⇒ null
   }
@@ -508,7 +513,7 @@ object StandardMetrics {
     processors: Int) {
 
     cpuCombined match {
-      case Some(x) ⇒ require(0.0 <= x && x <= 1.0, "cpuCombined must be between [0.0 - 1.0], was [%s]" format x)
+      case Some(x) ⇒ require(0.0 <= x && x <= 1.0, s"cpuCombined must be between [0.0 - 1.0], was [$x]")
       case None    ⇒
     }
 
@@ -542,12 +547,9 @@ private[cluster] trait MetricNumericConverter {
     case n: Long       ⇒ Left(n)
     case n: Double     ⇒ Right(n)
     case n: Float      ⇒ Right(n)
-    case n: RichInt    ⇒ Left(n.abs)
-    case n: RichLong   ⇒ Left(n.self)
-    case n: RichDouble ⇒ Right(n.self)
     case n: BigInt     ⇒ Left(n.longValue)
     case n: BigDecimal ⇒ Right(n.doubleValue)
-    case x             ⇒ throw new IllegalArgumentException("Not a number [%s]" format x)
+    case x             ⇒ throw new IllegalArgumentException(s"Not a number [$x]")
   }
 
 }
@@ -569,13 +571,15 @@ private[cluster] trait MetricsCollector extends Closeable {
  * @param decay how quickly the exponential weighting of past data is decayed
  */
 class JmxMetricsCollector(address: Address, decayFactor: Double) extends MetricsCollector {
-  import StandardMetrics.HeapMemory.Fields._
-  import StandardMetrics.Cpu.Fields._
+  import StandardMetrics._
 
   private def this(cluster: Cluster) =
     this(cluster.selfAddress,
-      EWMA.alpha(cluster.settings.MetricsDecayHalfLifeDuration, cluster.settings.MetricsInterval))
+      EWMA.alpha(cluster.settings.MetricsMovingAverageHalfLife, cluster.settings.MetricsInterval))
 
+  /**
+   * This constructor is used when creating an instance from configured FQCN
+   */
   def this(system: ActorSystem) = this(Cluster(system))
 
   private val decayFactorOption = Some(decayFactor)
@@ -586,6 +590,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
 
   /**
    * Samples and collects new data points.
+   * Creates a new instance each time.
    */
   def sample: NodeMetrics = NodeMetrics(address, newTimestamp, metrics)
 
@@ -598,6 +603,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
    * JMX Returns the OS-specific average load on the CPUs in the system, for the past 1 minute.
    * On some systems the JMX OS system load average may not be available, in which case a -1 is
    * returned from JMX, and None is returned from this method.
+   * Creates a new instance each time.
    */
   def systemLoadAverage: Option[Metric] = Metric.create(
     name = SystemLoadAverage,
@@ -606,6 +612,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
 
   /**
    * (JMX) Returns the number of available processors
+   * Creates a new instance each time.
    */
   def processors: Option[Metric] = Metric.create(
     name = Processors,
@@ -619,6 +626,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
 
   /**
    * (JMX) Returns the current sum of heap memory used from all heap memory pools (in bytes).
+   * Creates a new instance each time.
    */
   def heapUsed(heap: MemoryUsage): Option[Metric] = Metric.create(
     name = HeapMemoryUsed,
@@ -628,6 +636,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
   /**
    * (JMX) Returns the current sum of heap memory guaranteed to be available to the JVM
    * from all heap memory pools (in bytes).
+   * Creates a new instance each time.
    */
   def heapCommitted(heap: MemoryUsage): Option[Metric] = Metric.create(
     name = HeapMemoryCommitted,
@@ -638,6 +647,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
    * (JMX) Returns the maximum amount of memory (in bytes) that can be used
    * for JVM memory management. If not defined the metrics value is None, i.e.
    * never negative.
+   * Creates a new instance each time.
    */
   def heapMax(heap: MemoryUsage): Option[Metric] = Metric.create(
     name = HeapMemoryMax,
@@ -665,14 +675,16 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
 class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef)
   extends JmxMetricsCollector(address, decayFactor) {
 
-  import StandardMetrics.HeapMemory.Fields._
-  import StandardMetrics.Cpu.Fields._
+  import StandardMetrics._
 
   private def this(cluster: Cluster) =
     this(cluster.selfAddress,
-      EWMA.alpha(cluster.settings.MetricsDecayHalfLifeDuration, cluster.settings.MetricsInterval),
+      EWMA.alpha(cluster.settings.MetricsMovingAverageHalfLife, cluster.settings.MetricsInterval),
       cluster.system.dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Nil).get)
 
+  /**
+   * This constructor is used when creating an instance from configured FQCN
+   */
   def this(system: ActorSystem) = this(Cluster(system))
 
   private val decayFactorOption = Some(decayFactor)
@@ -689,7 +701,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
       try method.invoke(sigar).asInstanceOf[Long] catch {
         case e: InvocationTargetException if e.getCause.isInstanceOf[LinkageError] ⇒
           // native libraries not in place
-          // don't throw fatal LinkageError, but something less harmless
+          // don't throw fatal LinkageError, but something harmless
           throw new IllegalArgumentException(e.getCause.toString)
         case e: InvocationTargetException ⇒ throw e.getCause
       }
@@ -705,6 +717,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
    * On some systems the JMX OS system load average may not be available, in which case a -1 is returned
    * from JMX, which means that None is returned from this method.
    * Hyperic SIGAR provides more precise values, thus, if the library is on the classpath, it is the default.
+   * Creates a new instance each time.
    */
   override def systemLoadAverage: Option[Metric] = Metric.create(
     name = SystemLoadAverage,
@@ -718,6 +731,8 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
    *
    * In the data stream, this will sometimes return with a valid metric value, and sometimes as a NaN or Infinite.
    * Documented bug https://bugzilla.redhat.com/show_bug.cgi?id=749121 and several others.
+   *
+   * Creates a new instance each time.
    */
   def cpuCombined: Option[Metric] = Metric.create(
     name = CpuCombined,
@@ -756,10 +771,10 @@ private[cluster] object MetricsCollector {
       }
 
     } else {
-      system.dynamicAccess.createInstanceFor[MetricsCollector](
-        fqcn, List(classOf[ActorSystem] -> system)).recover({
+      system.dynamicAccess.createInstanceFor[MetricsCollector](fqcn, List(classOf[ActorSystem] -> system)).
+        recover {
           case e ⇒ throw new ConfigurationException("Could not create custom metrics collector [" + fqcn + "] due to:" + e.toString)
-        }).get
+        }.get
     }
   }
 }

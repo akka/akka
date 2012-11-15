@@ -131,10 +131,10 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
         val router1 = startRouter("router1")
 
         // collect some metrics before we start
-        Thread.sleep(10000)
+        Thread.sleep(cluster.settings.MetricsInterval.toMillis * 10)
 
         val iterationCount = 100
-        for (i ← 0 until iterationCount) {
+        1 to iterationCount foreach { _ ⇒
           router1 ! "hit"
           // wait a while between each message, since metrics is collected periodically
           Thread.sleep(10)

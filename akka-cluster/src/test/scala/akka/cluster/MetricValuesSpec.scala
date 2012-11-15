@@ -7,8 +7,7 @@ package akka.cluster
 import scala.util.Try
 import akka.actor.Address
 import akka.testkit.AkkaSpec
-import akka.cluster.StandardMetrics.HeapMemory
-import akka.cluster.StandardMetrics.Cpu
+import akka.cluster.StandardMetrics._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricValuesSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricsCollectorFactory {
@@ -19,21 +18,17 @@ class MetricValuesSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricsC
   val node2 = NodeMetrics(Address("akka", "sys", "a", 2555), 1, collector.sample.metrics)
 
   val nodes: Seq[NodeMetrics] = {
-    var nodes = Seq(node1, node2)
-    // work up the data streams where applicable
-    for (i ← 1 to 100) {
-      nodes = nodes map { n ⇒
+    (1 to 100).foldLeft(List(node1, node2)) { (nodes, _) ⇒
+      nodes map { n ⇒
         n.copy(metrics = collector.sample.metrics.flatMap(latest ⇒ n.metrics.collect {
           case streaming if latest sameAs streaming ⇒ streaming :+ latest
         }))
       }
     }
-    nodes
   }
 
   "NodeMetrics.MetricValues" must {
     "extract expected metrics for load balancing" in {
-      import HeapMemory.Fields._
       val stream1 = node2.metric(HeapMemoryCommitted).get.value.longValue
       val stream2 = node1.metric(HeapMemoryUsed).get.value.longValue
       stream1 must be >= (stream2)
@@ -53,7 +48,6 @@ class MetricValuesSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricsC
             committed must be > (0L)
             // extract is the java api
             StandardMetrics.extractCpu(node) must not be (null)
-          case _ ⇒ fail("no heap")
         }
 
         node match {
@@ -67,7 +61,6 @@ class MetricValuesSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricsC
             }
             // extract is the java api
             StandardMetrics.extractCpu(node) must not be (null)
-          case _ ⇒ fail("no cpu")
         }
       }
     }

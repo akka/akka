@@ -5,8 +5,8 @@
 package akka.cluster
 
 import akka.testkit.{ ImplicitSender, AkkaSpec }
-import akka.cluster.StandardMetrics.HeapMemory.Fields._
-import scala.util.Try
+import akka.cluster.StandardMetrics._
+import scala.util.Failure
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricNumericConverter with ImplicitSender
@@ -33,7 +33,7 @@ class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) wit
     "define an undefined value with a None " in {
       Metric.create("x", -1, None).isDefined must be(false)
       Metric.create("x", java.lang.Double.NaN, None).isDefined must be(false)
-      Metric.create("x", Try(throw new RuntimeException), None).isDefined must be(false)
+      Metric.create("x", Failure(new RuntimeException), None).isDefined must be(false)
     }
 
     "recognize whether a metric value is defined" in {

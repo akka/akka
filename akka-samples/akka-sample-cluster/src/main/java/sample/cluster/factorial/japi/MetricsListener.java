@@ -36,15 +36,8 @@ public class MetricsListener extends UntypedActor {
       ClusterMetricsChanged clusterMetrics = (ClusterMetricsChanged) message;
       for (NodeMetrics nodeMetrics : clusterMetrics.getNodeMetrics()) {
         if (nodeMetrics.address().equals(cluster.selfAddress())) {
-          HeapMemory heap = StandardMetrics.extractHeapMemory(nodeMetrics);
-          if (heap != null) {
-            log.info("Used heap: {} MB", ((double) heap.used()) / 1024 / 1024);
-          }
-          Cpu cpu = StandardMetrics.extractCpu(nodeMetrics);
-          if (cpu != null && cpu.systemLoadAverage().isDefined()) {
-            log.info("Load: {} ({} processors)", cpu.systemLoadAverage().get(), 
-              cpu.processors());
-          }
+          logHeap(nodeMetrics);
+          logCpu(nodeMetrics);
         }
       }
 
@@ -53,6 +46,21 @@ public class MetricsListener extends UntypedActor {
 
     } else {
       unhandled(message);
+    }
+  }
+
+  void logHeap(NodeMetrics nodeMetrics) {
+    HeapMemory heap = StandardMetrics.extractHeapMemory(nodeMetrics);
+    if (heap != null) {
+      log.info("Used heap: {} MB", ((double) heap.used()) / 1024 / 1024);
+    }
+  }
+
+  void logCpu(NodeMetrics nodeMetrics) {
+    Cpu cpu = StandardMetrics.extractCpu(nodeMetrics);
+    if (cpu != null && cpu.systemLoadAverage().isDefined()) {
+      log.info("Load: {} ({} processors)", cpu.systemLoadAverage().get(), 
+        cpu.processors());
     }
   }
 
