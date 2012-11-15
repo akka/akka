@@ -119,5 +119,4 @@ public class LoggingDocTestBase {
     }
   }
   //#deadletter-actor
-
 }

@@ -878,15 +878,25 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
   protected def notifyDebug(message: String): Unit = bus.publish(Debug(logSource, logClass, message))
 }
 
-private[akka] object NoLogging extends LoggingAdapter {
-  def isErrorEnabled = false
-  def isWarningEnabled = false
-  def isInfoEnabled = false
-  def isDebugEnabled = false
+/**
+ * NoLogging is a LoggingAdapter that does absolutely nothing – no logging at all.
+ */
+object NoLogging extends LoggingAdapter {
 
-  protected def notifyError(message: String): Unit = ()
-  protected def notifyError(cause: Throwable, message: String): Unit = ()
-  protected def notifyWarning(message: String): Unit = ()
-  protected def notifyInfo(message: String): Unit = ()
-  protected def notifyDebug(message: String): Unit = ()
+  /**
+   * Java API to return the reference to NoLogging
+   * @return The NoLogging instance
+   */
+  def getInstance = this
+
+  final override def isErrorEnabled = false
+  final override def isWarningEnabled = false
+  final override def isInfoEnabled = false
+  final override def isDebugEnabled = false
+
+  final protected override def notifyError(message: String): Unit = ()
+  final protected override def notifyError(cause: Throwable, message: String): Unit = ()
+  final protected override def notifyWarning(message: String): Unit = ()
+  final protected override def notifyInfo(message: String): Unit = ()
+  final protected override def notifyDebug(message: String): Unit = ()
 }
