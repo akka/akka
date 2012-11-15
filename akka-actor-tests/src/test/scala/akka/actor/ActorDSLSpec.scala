@@ -113,7 +113,7 @@ class ActorDSLSpec extends AkkaSpec {
               case "info"   ⇒ sender ! "B"
               case "switch" ⇒ unbecome() // return to the "A" behavior
             }
-          case "lobotomize" => unbecome() // OH NOES: Actor.emptyBehavior
+          case "lobotomize" ⇒ unbecome() // OH NOES: Actor.emptyBehavior
         }
       })
       //#becomeStacked
