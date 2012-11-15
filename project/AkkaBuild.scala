@@ -30,7 +30,7 @@ object AkkaBuild extends Build {
     organization := "com.typesafe.akka",
     version      := "2.2-SNAPSHOT",
     // FIXME: use 2.10.0 for final
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC1")
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC2")
   )
 
   lazy val akka = Project(
@@ -221,7 +221,6 @@ object AkkaBuild extends Build {
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
     settings = defaultSettings ++ OSGi.zeroMQ ++ Seq(
-      resolvers += "sonatype" at "http://oss.sonatype.org/content/repositories/releases",
       libraryDependencies ++= Dependencies.zeroMQ,
       previousArtifact := akkaPreviousArtifact("akka-zeromq")
     )
@@ -668,7 +667,7 @@ object Dependencies {
     val scalaStm      = "org.scala-stm"               % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
-    val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding_2.10"    % "0.0.6-RC1"       // ApacheV2
+    val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding"         % "0.0.6" cross CrossVersion.full // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
@@ -688,7 +687,7 @@ object Dependencies {
       val junit       = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
       val logback     = "ch.qos.logback"              % "logback-classic"              % "1.0.7"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito     = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
-      val scalatest   = "org.scalatest"               % "scalatest"                    % "1.8"              % "test" cross CrossVersion.full // ApacheV2
+      val scalatest   = "org.scalatest"               % "scalatest"                    % "1.8-B2"           % "test" cross CrossVersion.full // ApacheV2
       val scalacheck  = "org.scalacheck"              % "scalacheck"                   % "1.10.0"           % "test" cross CrossVersion.full // New BSD
       val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
       val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2

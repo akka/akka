@@ -9,7 +9,7 @@ import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
 import java.lang.management.{ OperatingSystemMXBean, MemoryMXBean, ManagementFactory }
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
-import scala.collection.immutable.{ SortedSet, Map }
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.runtime.{ RichLong, RichDouble, RichInt }
@@ -52,7 +52,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * The node ring gossipped that contains only members that are Up.
    */
-  var nodes: SortedSet[Address] = SortedSet.empty
+  var nodes: immutable.SortedSet[Address] = immutable.SortedSet.empty
 
   /**
    * The latest metric values with their statistical data.
@@ -144,12 +144,12 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Gossip to peer nodes.
    */
-  def gossip(): Unit = selectRandomNode((nodes - selfAddress).toIndexedSeq) foreach gossipTo
+  def gossip(): Unit = selectRandomNode((nodes - selfAddress).toVector) foreach gossipTo
 
   def gossipTo(address: Address): Unit =
     context.actorFor(self.path.toStringWithAddress(address)) ! MetricsGossipEnvelope(selfAddress, latestGossip)
 
-  def selectRandomNode(addresses: IndexedSeq[Address]): Option[Address] =
+  def selectRandomNode(addresses: immutable.IndexedSeq[Address]): Option[Address] =
     if (addresses.isEmpty) None else Some(addresses(ThreadLocalRandom.current nextInt addresses.size))
 
   /**
@@ -163,7 +163,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
  * INTERNAL API
  */
 private[cluster] object MetricsGossip {
-  val empty = MetricsGossip()
+  val empty = MetricsGossip(Set.empty[NodeMetrics])
 }
 
 /**
@@ -171,7 +171,7 @@ private[cluster] object MetricsGossip {
  *
  * @param nodes metrics per node
  */
-private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics] = Set.empty) {
+private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics]) {
 
   /**
    * Removes nodes if their correlating node ring members are not [[akka.cluster.MemberStatus.Up]]
@@ -385,10 +385,8 @@ case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] =
   /**
    * Java API
    */
-  def getMetrics: java.lang.Iterable[Metric] = {
-    import scala.collection.JavaConverters._
-    metrics.asJava
-  }
+  def getMetrics: java.lang.Iterable[Metric] =
+    scala.collection.JavaConverters.asJavaIterableConverter(metrics).asJava
 
 }
 
@@ -673,12 +671,13 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
   private def this(cluster: Cluster) =
     this(cluster.selfAddress,
       EWMA.alpha(cluster.settings.MetricsDecayHalfLifeDuration, cluster.settings.MetricsInterval),
-      cluster.system.dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Seq.empty).get)
+      cluster.system.dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Nil).get)
 
   def this(system: ActorSystem) = this(Cluster(system))
 
   private val decayFactorOption = Some(decayFactor)
 
+  private val EmptyClassArray: Array[(Class[_])] = Array.empty[(Class[_])]
   private val LoadAverage: Option[Method] = createMethodFrom(sigar, "getLoadAverage")
   private val Cpu: Option[Method] = createMethodFrom(sigar, "getCpuPerc")
   private val CombinedCpu: Option[Method] = Try(Cpu.get.getReturnType.getMethod("getCombined")).toOption
@@ -730,7 +729,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
    */
   override def close(): Unit = Try(createMethodFrom(sigar, "close").get.invoke(sigar))
 
-  private def createMethodFrom(ref: AnyRef, method: String, types: Array[(Class[_])] = Array.empty[(Class[_])]): Option[Method] =
+  private def createMethodFrom(ref: AnyRef, method: String, types: Array[(Class[_])] = EmptyClassArray): Option[Method] =
     Try(ref.getClass.getMethod(method, types: _*)).toOption
 
 }
@@ -758,7 +757,7 @@ private[cluster] object MetricsCollector {
 
     } else {
       system.dynamicAccess.createInstanceFor[MetricsCollector](
-        fqcn, Seq(classOf[ActorSystem] -> system)).recover({
+        fqcn, List(classOf[ActorSystem] -> system)).recover({
           case e ⇒ throw new ConfigurationException("Could not create custom metrics collector [" + fqcn + "] due to:" + e.toString)
         }).get
     }

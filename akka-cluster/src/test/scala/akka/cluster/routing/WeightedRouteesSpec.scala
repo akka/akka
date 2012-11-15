@@ -29,7 +29,7 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
 
     "allocate weighted refs" in {
       val weights = Map(a1 -> 1, b1 -> 3, c1 -> 10)
-      val refs = IndexedSeq(refA, refB, refC)
+      val refs = Vector(refA, refB, refC)
       val weighted = new WeightedRoutees(refs, a1, weights)
 
       weighted(1) must be(refA)
@@ -41,7 +41,7 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
     "check boundaries" in {
       val empty = new WeightedRoutees(Vector(), a1, Map.empty)
       empty.total must be(0)
-      val weighted = new WeightedRoutees(IndexedSeq(refA, refB, refC), a1, Map.empty)
+      val weighted = new WeightedRoutees(Vector(refA, refB, refC), a1, Map.empty)
       weighted.total must be(3)
       intercept[IllegalArgumentException] {
         weighted(0)
@@ -53,7 +53,7 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
 
     "allocate refs for undefined weight" in {
       val weights = Map(a1 -> 1, b1 -> 7)
-      val refs = IndexedSeq(refA, refB, refC)
+      val refs = Vector(refA, refB, refC)
       val weighted = new WeightedRoutees(refs, a1, weights)
 
       weighted(1) must be(refA)
@@ -65,7 +65,7 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
 
     "allocate weighted local refs" in {
       val weights = Map(a1 -> 2, b1 -> 1, c1 -> 10)
-      val refs = IndexedSeq(testActor, refB, refC)
+      val refs = Vector(testActor, refB, refC)
       val weighted = new WeightedRoutees(refs, a1, weights)
 
       1 to 2 foreach { weighted(_) must be(testActor) }
@@ -74,7 +74,7 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
 
     "not allocate ref with weight zero" in {
       val weights = Map(a1 -> 0, b1 -> 2, c1 -> 10)
-      val refs = IndexedSeq(refA, refB, refC)
+      val refs = Vector(refA, refB, refC)
       val weighted = new WeightedRoutees(refs, a1, weights)
 
       1 to weighted.total foreach { weighted(_) must not be (refA) }

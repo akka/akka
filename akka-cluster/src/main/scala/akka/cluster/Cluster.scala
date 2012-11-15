@@ -17,7 +17,7 @@ import akka.util._
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.annotation.tailrec
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -75,7 +75,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   val failureDetector: FailureDetector = {
     import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
     system.dynamicAccess.createInstanceFor[FailureDetector](
-      fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({
+      fqcn, List(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({
         case e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
       }).get
   }
@@ -241,7 +241,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * in config. Especially useful from tests when Addresses are unknown
    * before startup time.
    */
-  private[cluster] def joinSeedNodes(seedNodes: IndexedSeq[Address]): Unit =
+  private[cluster] def joinSeedNodes(seedNodes: immutable.IndexedSeq[Address]): Unit =
     clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes)
 
   /**

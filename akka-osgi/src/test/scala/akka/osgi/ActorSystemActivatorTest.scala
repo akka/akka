@@ -10,6 +10,7 @@ import akka.actor.ActorSystem
 import akka.pattern.ask
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.collection.immutable
 import akka.util.Timeout
 import de.kalpatec.pojosr.framework.launch.BundleDescriptor
 import test.{ RuntimeNameActorSystemActivator, TestActivators, PingPongActorSystemActivator }
@@ -32,7 +33,7 @@ class PingPongActorSystemActivatorTest extends WordSpec with MustMatchers with P
 
   import ActorSystemActivatorTest._
 
-  val testBundles: Seq[BundleDescriptor] = buildTestBundles(Seq(
+  val testBundles: immutable.Seq[BundleDescriptor] = buildTestBundles(List(
     bundle(TEST_BUNDLE_NAME).withActivator(classOf[PingPongActorSystemActivator])))
 
   "PingPongActorSystemActivator" must {
@@ -65,7 +66,8 @@ class RuntimeNameActorSystemActivatorTest extends WordSpec with MustMatchers wit
 
   import ActorSystemActivatorTest._
 
-  val testBundles: Seq[BundleDescriptor] = buildTestBundles(Seq(bundle(TEST_BUNDLE_NAME).withActivator(classOf[RuntimeNameActorSystemActivator])))
+  val testBundles: immutable.Seq[BundleDescriptor] =
+    buildTestBundles(List(bundle(TEST_BUNDLE_NAME).withActivator(classOf[RuntimeNameActorSystemActivator])))
 
   "RuntimeNameActorSystemActivator" must {
 

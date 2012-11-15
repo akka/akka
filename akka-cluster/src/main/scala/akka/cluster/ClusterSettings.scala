@@ -3,15 +3,16 @@
  */
 package akka.cluster
 
+import scala.collection.immutable
 import com.typesafe.config.Config
 import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.ConfigurationException
-import scala.collection.JavaConverters._
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration.FiniteDuration
+import akka.japi.Util.immutableSeq
 
 class ClusterSettings(val config: Config, val systemName: String) {
   import config._
@@ -45,9 +46,8 @@ class ClusterSettings(val config: Config, val systemName: String) {
     require(n > 0, "failure-detector.monitored-by-nr-of-members must be > 0"); n
   }
 
-  final val SeedNodes: IndexedSeq[Address] = getStringList("akka.cluster.seed-nodes").asScala.map {
-    case AddressFromURIString(addr) ⇒ addr
-  }.toIndexedSeq
+  final val SeedNodes: immutable.IndexedSeq[Address] =
+    immutableSeq(getStringList("akka.cluster.seed-nodes")).map { case AddressFromURIString(addr) ⇒ addr }.toVector
   final val SeedNodeTimeout: FiniteDuration = Duration(getMilliseconds("akka.cluster.seed-node-timeout"), MILLISECONDS)
   final val PeriodicTasksInitialDelay: FiniteDuration = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
   final val GossipInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.gossip-interval"), MILLISECONDS)

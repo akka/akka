@@ -3,7 +3,6 @@
  */
 package akka.cluster
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import com.typesafe.config.Config
 import akka.ConfigurationException
 import akka.actor.Actor
@@ -19,15 +18,16 @@ import akka.actor.Props
 import akka.actor.Scheduler
 import akka.actor.Scope
 import akka.actor.Terminated
-import akka.cluster.routing.ClusterRouterConfig
-import akka.cluster.routing.ClusterRouterSettings
 import akka.dispatch.ChildTerminated
 import akka.event.EventStream
+import akka.japi.Util.immutableSeq
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteDeployer
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing.RouterConfig
 import akka.routing.DefaultResizer
+import akka.cluster.routing.ClusterRouterConfig
+import akka.cluster.routing.ClusterRouterSettings
 import akka.cluster.routing.AdaptiveLoadBalancingRouter
 import akka.cluster.routing.MixMetricsSelector
 import akka.cluster.routing.HeapMetricsSelector
@@ -119,7 +119,7 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
   }
 
   override protected def createRouterConfig(routerType: String, key: String, config: Config, deployment: Config): RouterConfig = {
-    val routees = Vector() ++ deployment.getStringList("routees.paths").asScala
+    val routees = immutableSeq(deployment.getStringList("routees.paths"))
     val nrOfInstances = deployment.getInt("nr-of-instances")
     val resizer = if (config.hasPath("resizer")) Some(DefaultResizer(deployment.getConfig("resizer"))) else None
 
@@ -131,7 +131,7 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
           case "cpu"  ⇒ CpuMetricsSelector
           case "load" ⇒ SystemLoadAverageMetricsSelector
           case fqn ⇒
-            val args = Seq(classOf[Config] -> deployment)
+            val args = List(classOf[Config] -> deployment)
             dynamicAccess.createInstanceFor[MetricsSelector](fqn, args).recover({
               case exception ⇒ throw new IllegalArgumentException(
                 ("Cannot instantiate metrics-selector [%s], defined in [%s], " +

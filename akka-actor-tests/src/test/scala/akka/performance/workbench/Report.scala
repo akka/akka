@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import akka.actor.ActorSystem
 import akka.event.Logging
-import scala.collection.immutable.TreeMap
+import scala.collection.immutable
 
 class Report(
   system: ActorSystem,
@@ -19,7 +19,7 @@ class Report(
   val legendTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
   val fileTimestampFormat = new SimpleDateFormat("yyyyMMddHHmmss")
 
-  def html(statistics: Seq[Stats]) {
+  def html(statistics: immutable.Seq[Stats]) {
 
     val current = statistics.last
     val sb = new StringBuilder
@@ -80,13 +80,13 @@ class Report(
     chartUrl
   }
 
-  def comparePercentilesAndMeanChart(stats: Stats): Seq[String] = {
+  def comparePercentilesAndMeanChart(stats: Stats): immutable.Seq[String] = {
     for {
-      compareName ← compareResultWith.toSeq
+      compareName ← compareResultWith.to[immutable.Seq]
       compareStats ← resultRepository.get(compareName, stats.load)
     } yield {
       val chartTitle = stats.name + " vs. " + compareName + ", " + stats.load + " clients" + ", Percentiles and Mean (microseconds)"
-      val chartUrl = GoogleChartBuilder.percentilesAndMeanChartUrl(Seq(compareStats, stats), chartTitle, _.name)
+      val chartUrl = GoogleChartBuilder.percentilesAndMeanChartUrl(List(compareStats, stats), chartTitle, _.name)
       chartUrl
     }
   }
@@ -102,17 +102,17 @@ class Report(
     }
   }
 
-  def compareWithHistoricalTpsChart(statistics: Seq[Stats]): Option[String] = {
+  def compareWithHistoricalTpsChart(statistics: immutable.Seq[Stats]): Option[String] = {
 
     if (statistics.isEmpty) {
       None
     } else {
       val histTimestamps = resultRepository.getWithHistorical(statistics.head.name, statistics.head.load).map(_.timestamp)
-      val statsByTimestamp = TreeMap[Long, Seq[Stats]]() ++
+      val statsByTimestamp = immutable.TreeMap[Long, Seq[Stats]]() ++
         (for (ts ← histTimestamps) yield {
           val seq =
             for (stats ← statistics) yield {
-              val withHistorical: Seq[Stats] = resultRepository.getWithHistorical(stats.name, stats.load)
+              val withHistorical: immutable.Seq[Stats] = resultRepository.getWithHistorical(stats.name, stats.load)
               val cell = withHistorical.find(_.timestamp == ts)
               cell.getOrElse(Stats(stats.name, stats.load, ts))
             }
@@ -131,7 +131,7 @@ class Report(
     chartUrl
   }
 
-  def formatResultsTable(statsSeq: Seq[Stats]): String = {
+  def formatResultsTable(statsSeq: immutable.Seq[Stats]): String = {
 
     val name = statsSeq.head.name
 

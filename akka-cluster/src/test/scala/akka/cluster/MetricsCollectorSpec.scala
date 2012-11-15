@@ -6,6 +6,8 @@
 package akka.cluster
 
 import scala.language.postfixOps
+
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.{ Success, Try, Failure }
@@ -122,7 +124,7 @@ trait MetricsCollectorFactory { this: AkkaSpec ⇒
 
   def createMetricsCollector: MetricsCollector =
     Try(new SigarMetricsCollector(selfAddress, defaultDecayFactor,
-      extendedActorSystem.dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Seq.empty).get)) match {
+      extendedActorSystem.dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Nil).get)) match {
       case Success(sigarCollector) ⇒ sigarCollector
       case Failure(e) ⇒
         log.debug("Metrics will be retreived from MBeans, Sigar failed to load. Reason: " + e)

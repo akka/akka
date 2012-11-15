@@ -203,8 +203,8 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
   }
 
   override def close(): Unit = {
-    import scala.collection.JavaConverters._
-    hashedWheelTimer.stop().asScala foreach execDirectly
+    val i = hashedWheelTimer.stop().iterator()
+    while (i.hasNext) execDirectly(i.next())
   }
 }
 

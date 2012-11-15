@@ -5,16 +5,13 @@ package akka.cluster.routing
 
 import java.lang.IllegalStateException
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import com.typesafe.config.ConfigFactory
 import akka.ConfigurationException
-import akka.actor.Actor
 import akka.actor.ActorContext
 import akka.actor.ActorRef
-import akka.actor.ActorSystemImpl
 import akka.actor.Address
 import akka.actor.Deploy
-import akka.actor.InternalActorRef
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.cluster.Cluster
@@ -51,7 +48,7 @@ final case class ClusterRouterConfig(local: RouterConfig, settings: ClusterRoute
 
     // Intercept ClusterDomainEvent and route them to the ClusterRouterActor
     ({
-      case (sender, message: ClusterDomainEvent) ⇒ Seq(Destination(sender, routeeProvider.context.self))
+      case (sender, message: ClusterDomainEvent) ⇒ List(Destination(sender, routeeProvider.context.self))
     }: Route) orElse localRoute
   }
 
@@ -130,7 +127,7 @@ case class ClusterRouterSettings private[akka] (
   if (isRouteesPathDefined && maxInstancesPerNode != 1)
     throw new IllegalArgumentException("maxInstancesPerNode of cluster router must be 1 when routeesPath is defined")
 
-  val routeesPathElements: Iterable[String] = routeesPath match {
+  val routeesPathElements: immutable.Iterable[String] = routeesPath match {
     case RelativeActorPath(elements) ⇒ elements
     case _ ⇒
       throw new IllegalArgumentException("routeesPath [%s] is not a valid relative actor path" format routeesPath)
@@ -156,7 +153,7 @@ private[akka] class ClusterRouteeProvider(
   // need this counter as instance variable since Resizer may call createRoutees several times
   private val childNameCounter = new AtomicInteger
 
-  override def registerRouteesFor(paths: Iterable[String]): Unit =
+  override def registerRouteesFor(paths: immutable.Iterable[String]): Unit =
     throw new ConfigurationException("Cluster deployment can not be combined with routees for [%s]"
       format context.self.path.toString)
 
@@ -183,7 +180,7 @@ private[akka] class ClusterRouteeProvider(
             context.asInstanceOf[ActorCell].attachChild(routeeProps.withDeploy(deploy), name, systemService = false)
           }
         // must register each one, since registered routees are used in selectDeploymentTarget
-        registerRoutees(Some(ref))
+        registerRoutees(List(ref))
 
         // recursion until all created
         doCreateRoutees()
@@ -222,27 +219,26 @@ private[akka] class ClusterRouteeProvider(
     case a                         ⇒ a
   }
 
-  private[routing] def availableNodes: SortedSet[Address] = {
+  private[routing] def availableNodes: immutable.SortedSet[Address] = {
     import Member.addressOrdering
     val currentNodes = nodes
     if (currentNodes.isEmpty && settings.allowLocalRoutees)
       //use my own node, cluster information not updated yet
-      SortedSet(cluster.selfAddress)
+      immutable.SortedSet(cluster.selfAddress)
     else
       currentNodes
   }
 
   @volatile
-  private[routing] var nodes: SortedSet[Address] = {
+  private[routing] var nodes: immutable.SortedSet[Address] = {
     import Member.addressOrdering
     cluster.readView.members.collect {
       case m if isAvailable(m) ⇒ m.address
     }
   }
 
-  private[routing] def isAvailable(m: Member): Boolean = {
+  private[routing] def isAvailable(m: Member): Boolean =
     m.status == MemberStatus.Up && (settings.allowLocalRoutees || m.address != cluster.selfAddress)
-  }
 
 }
 

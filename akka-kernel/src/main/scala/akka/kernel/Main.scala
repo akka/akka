@@ -9,6 +9,7 @@ import java.io.File
 import java.lang.Boolean.getBoolean
 import java.net.URLClassLoader
 import java.util.jar.JarFile
+import scala.collection.immutable
 import scala.collection.JavaConverters._
 
 /**
@@ -77,8 +78,8 @@ object Main {
 
     Thread.currentThread.setContextClassLoader(classLoader)
 
-    val bootClasses: Seq[String] = args.toSeq
-    val bootables: Seq[Bootable] = bootClasses map { c ⇒ classLoader.loadClass(c).newInstance.asInstanceOf[Bootable] }
+    val bootClasses: immutable.Seq[String] = args.to[immutable.Seq]
+    val bootables: immutable.Seq[Bootable] = bootClasses map { c ⇒ classLoader.loadClass(c).newInstance.asInstanceOf[Bootable] }
 
     for (bootable ← bootables) {
       log("Starting up " + bootable.getClass.getName)
@@ -122,7 +123,7 @@ object Main {
     new URLClassLoader(urls, Thread.currentThread.getContextClassLoader)
   }
 
-  private def addShutdownHook(bootables: Seq[Bootable]): Unit = {
+  private def addShutdownHook(bootables: immutable.Seq[Bootable]): Unit = {
     Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
       def run = {
         log("")

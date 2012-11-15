@@ -5,8 +5,9 @@
 package akka.cluster.routing
 
 import java.util.Arrays
+
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.collection.immutable
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -21,6 +22,7 @@ import akka.cluster.NodeMetrics
 import akka.cluster.StandardMetrics.Cpu
 import akka.cluster.StandardMetrics.HeapMemory
 import akka.event.Logging
+import akka.japi.Util.immutableSeq
 import akka.routing.Broadcast
 import akka.routing.Destination
 import akka.routing.FromConfig
@@ -70,7 +72,7 @@ object AdaptiveLoadBalancingRouter {
 @SerialVersionUID(1L)
 case class AdaptiveLoadBalancingRouter(
   metricsSelector: MetricsSelector = MixMetricsSelector(),
-  nrOfInstances: Int = 0, routees: Iterable[String] = Nil,
+  nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil,
   override val resizer: Option[Resizer] = None,
   val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   val supervisorStrategy: SupervisorStrategy = AdaptiveLoadBalancingRouter.defaultSupervisorStrategy)
@@ -92,7 +94,7 @@ case class AdaptiveLoadBalancingRouter(
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
   def this(selector: MetricsSelector, routeePaths: java.lang.Iterable[String]) =
-    this(metricsSelector = selector, routees = routeePaths.asScala)
+    this(metricsSelector = selector, routees = immutableSeq(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -148,7 +150,7 @@ trait AdaptiveLoadBalancingRouterLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
 
-  def routees: Iterable[String]
+  def routees: immutable.Iterable[String]
 
   def routerDispatcher: String
 
@@ -280,17 +282,17 @@ case object SystemLoadAverageMetricsSelector extends CapacityMetricsSelector {
  */
 @SerialVersionUID(1L)
 case class MixMetricsSelector(
-  selectors: IndexedSeq[CapacityMetricsSelector] = Vector(
+  selectors: immutable.IndexedSeq[CapacityMetricsSelector] = Vector(
     HeapMetricsSelector, CpuMetricsSelector, SystemLoadAverageMetricsSelector))
   extends CapacityMetricsSelector {
 
   /**
    * Java API
    */
-  def this(selectors: java.lang.Iterable[CapacityMetricsSelector]) = this(selectors.asScala.toIndexedSeq)
+  def this(selectors: java.lang.Iterable[CapacityMetricsSelector]) = this(immutableSeq(selectors).toVector)
 
   override def capacity(nodeMetrics: Set[NodeMetrics]): Map[Address, Double] = {
-    val combined: IndexedSeq[(Address, Double)] = selectors.flatMap(_.capacity(nodeMetrics).toSeq)
+    val combined: immutable.IndexedSeq[(Address, Double)] = selectors.flatMap(_.capacity(nodeMetrics).toSeq)
     // aggregated average of the capacities by address
     combined.foldLeft(Map.empty[Address, (Double, Int)].withDefaultValue((0.0, 0))) {
       case (acc, (address, capacity)) ⇒
@@ -365,7 +367,7 @@ abstract class CapacityMetricsSelector extends MetricsSelector {
  *
  * Pick routee based on its weight. Higher weight, higher probability.
  */
-private[cluster] class WeightedRoutees(refs: IndexedSeq[ActorRef], selfAddress: Address, weights: Map[Address, Int]) {
+private[cluster] class WeightedRoutees(refs: immutable.IndexedSeq[ActorRef], selfAddress: Address, weights: Map[Address, Int]) {
 
   // fill an array of same size as the refs with accumulated weights,
   // binarySearch is used to pick the right bucket from a requested value
