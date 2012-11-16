@@ -5,7 +5,7 @@
 package akka.actor
 
 import java.io.ObjectStreamException
-import java.util.{ LinkedList ⇒ JLinkedList, Queue ⇒ JQueue }
+import java.util.{ LinkedList ⇒ JLinkedList, ListIterator ⇒ JListIterator }
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 
@@ -13,9 +13,10 @@ import scala.annotation.tailrec
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
 import akka.actor.dungeon.ChildrenContainer
-import akka.dispatch.{ Envelope, Supervise, SystemMessage, Terminate }
 import akka.event.Logging.Warning
 import akka.util.Unsafe
+import akka.dispatch._
+import util.Try
 
 /**
  * This actor ref starts out with some dummy cell (by default just enqueuing
@@ -93,7 +94,11 @@ private[akka] class RepointableActorRef(
 
   def restart(cause: Throwable): Unit = underlying.restart(cause)
 
-  def isStarted: Boolean = !underlying.isInstanceOf[UnstartedCell]
+  def isStarted: Boolean = underlying match {
+    case _: UnstartedCell ⇒ false
+    case null             ⇒ throw new IllegalStateException("isStarted called before initialized")
+    case _                ⇒ true
+  }
 
   def isTerminated: Boolean = underlying.isTerminated
 
@@ -137,44 +142,36 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
   private[this] final val lock = new ReentrantLock
 
   // use Envelope to keep on-send checks in the same place ACCESS MUST BE PROTECTED BY THE LOCK
-  private[this] final val queue: JQueue[Envelope] = new JLinkedList()
-  private[this] final val systemQueue: JQueue[SystemMessage] = new JLinkedList()
-  private[this] var suspendCount: Int = 0
+  private[this] final val queue = new JLinkedList[Any]()
+  // ACCESS MUST BE PROTECTED BY THE LOCK, is used to detect when messages are sent during replace
+  private[this] final var isBeingReplaced = false
 
   import systemImpl.settings.UnstartedPushTimeout.{ duration ⇒ timeout }
 
   def replaceWith(cell: Cell): Unit = locked {
+    isBeingReplaced = true
     try {
-      /*
-       * The CallingThreadDispatcher nicely dives under the ReentrantLock and
-       * breaks things by enqueueing into stale queues from within the message
-       * processing which happens in-line for sendSystemMessage() and tell().
-       * Since this is the only possible way to f*ck things up within this 
-       * lock, double-tap (well, N-tap, really); concurrent modification is
-       * still not possible because we’re the only thread accessing the queues.
-       */
-      while (!systemQueue.isEmpty || !queue.isEmpty) {
-        while (!systemQueue.isEmpty) {
-          val msg = systemQueue.poll()
-          cell.sendSystemMessage(msg)
-        }
-        if (!queue.isEmpty) {
-          val envelope = queue.poll()
-          cell.tell(envelope.message, envelope.sender)
+      while (!queue.isEmpty) {
+        queue.poll() match {
+          case s: SystemMessage ⇒ cell.sendSystemMessage(s)
+          case e: Envelope      ⇒ cell.tell(e.message, e.sender)
         }
       }
-    } finally try
+    } finally {
+      isBeingReplaced = false
       self.swapCell(cell)
-    finally try
-      for (_ ← 1 to suspendCount) cell.suspend()
+    }
   }
 
   def system: ActorSystem = systemImpl
-  def suspend(): Unit = locked { suspendCount += 1 }
-  def resume(causedByFailure: Throwable): Unit = locked { suspendCount -= 1 }
-  def restart(cause: Throwable): Unit = locked { suspendCount -= 1 }
+  def suspend(): Unit = sendSystemMessage(Suspend())
+  def resume(causedByFailure: Throwable): Unit = sendSystemMessage(Resume(causedByFailure))
+  def restart(cause: Throwable): Unit = sendSystemMessage(Recreate(cause))
   def stop(): Unit = sendSystemMessage(Terminate())
-  def isTerminated: Boolean = false
+  def isTerminated: Boolean = locked {
+    val cell = self.underlying
+    if (cellIsReady(cell)) cell.isTerminated else false
+  }
   def parent: InternalActorRef = supervisor
   def childrenRefs: ChildrenContainer = ChildrenContainer.EmptyChildrenContainer
   def getChildByName(name: String): Option[ChildRestartStats] = None
@@ -184,7 +181,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
     if (lock.tryLock(timeout.length, timeout.unit)) {
       try {
         val cell = self.underlying
-        if (cell ne this) {
+        if (cellIsReady(cell)) {
           cell.tell(message, useSender)
         } else if (!queue.offer(Envelope(message, useSender, system))) {
           system.eventStream.publish(Warning(self.path.toString, getClass, "dropping message of type " + message.getClass + " due to enqueue failure"))
@@ -202,11 +199,22 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
     if (lock.tryLock(timeout.length, timeout.unit)) {
       try {
         val cell = self.underlying
-        if (cell ne this) {
+        if (cellIsReady(cell)) {
           cell.sendSystemMessage(msg)
-        } else if (!systemQueue.offer(msg)) {
-          system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to enqueue failure"))
-          system.deadLetters ! DeadLetter(msg, self, self)
+        } else {
+          // systemMessages that are sent during replace need to jump to just after the last system message in the queue, so it's processed before other messages
+          val wasEnqueued = if (isBeingReplaced && !queue.isEmpty()) {
+            @tailrec def tryEnqueue(i: JListIterator[Any] = queue.listIterator(), insertIntoIndex: Int = -1): Boolean =
+              if (i.hasNext()) tryEnqueue(i, if (i.next().isInstanceOf[SystemMessage]) i.nextIndex() else insertIntoIndex)
+              else if (insertIntoIndex == -1) queue.offer(msg)
+              else Try(queue.add(insertIntoIndex, msg)).isSuccess
+            tryEnqueue()
+          } else queue.offer(msg)
+
+          if (!wasEnqueued) {
+            system.eventStream.publish(Warning(self.path.toString, getClass, "dropping system message " + msg + " due to enqueue failure"))
+            system.deadLetters ! DeadLetter(msg, self, self)
+          }
         }
       } finally lock.unlock()
     } else {
@@ -215,14 +223,17 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
     }
 
   def isLocal = true
+
+  private[this] final def cellIsReady(cell: Cell): Boolean = (cell ne this) && (cell ne null)
+
   def hasMessages: Boolean = locked {
     val cell = self.underlying
-    if (cell eq this) !queue.isEmpty else cell.hasMessages
+    if (cellIsReady(cell)) cell.hasMessages else !queue.isEmpty
   }
 
   def numberOfMessages: Int = locked {
     val cell = self.underlying
-    if (cell eq this) queue.size else cell.numberOfMessages
+    if (cellIsReady(cell)) cell.numberOfMessages else queue.size
   }
 
   private[this] final def locked[T](body: ⇒ T): T = {

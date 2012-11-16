@@ -146,7 +146,7 @@ private[akka] trait Children { this: ActorCell ⇒
     childrenRefs match { // The match must be performed BEFORE the removeChild
       case TerminatingChildrenContainer(_, _, reason) ⇒
         removeChild(child) match {
-          case c: TerminatingChildrenContainer ⇒ None
+          case _: TerminatingChildrenContainer ⇒ None
           case _                               ⇒ Some(reason)
         }
       case _ ⇒
