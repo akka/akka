@@ -46,7 +46,7 @@ package object dataflow {
   implicit class DataflowPromise[T](val promise: Promise[T]) extends AnyVal {
 
     /**
-     * Completes the Promise with the speicifed value or throws an exception if already
+     * Completes the Promise with the specified value or throws an exception if already
      * completed. See Promise.success(value) for semantics.
      *
      * @param value The value which denotes the successful value of the Promise
@@ -59,7 +59,7 @@ package object dataflow {
     /**
      * Completes this Promise with the value of the specified Future when/if it completes.
      *
-     * @param other The Future whose value will be transfered to this Promise upon completion
+     * @param other The Future whose value will be transferred to this Promise upon completion
      * @param ec An ExecutionContext which will be used to execute callbacks registered in this method
      * @return A Future representing the result of this operation
      */
@@ -75,7 +75,7 @@ package object dataflow {
     /**
      * Completes this Promise with the value of the specified Promise when/if it completes.
      *
-     * @param other The Promise whose value will be transfered to this Promise upon completion
+     * @param other The Promise whose value will be transferred to this Promise upon completion
      * @param ec An ExecutionContext which will be used to execute callbacks registered in this method
      * @return A Future representing the result of this operation
      */
