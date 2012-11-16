@@ -259,12 +259,12 @@ private[akka] trait Cell {
    */
   def isLocal: Boolean
   /**
-   * If the actor isLocal, returns whether messages are currently queued,
+   * If the actor isLocal, returns whether "user messages" are currently queued,
    * “false” otherwise.
    */
   def hasMessages: Boolean
   /**
-   * If the actor isLocal, returns the number of messages currently queued,
+   * If the actor isLocal, returns the number of "user messages" currently queued,
    * which may be a costly operation, 0 otherwise.
    */
   def numberOfMessages: Int
