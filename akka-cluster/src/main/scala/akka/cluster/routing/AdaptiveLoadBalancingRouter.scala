@@ -190,7 +190,7 @@ trait AdaptiveLoadBalancingRouterLike { this: RouterConfig ⇒
 
     def getNext(): ActorRef = weightedRoutees match {
       case Some(weighted) ⇒
-        if (weighted.total == 0) routeeProvider.context.system.deadLetters
+        if (weighted.isEmpty) routeeProvider.context.system.deadLetters
         else weighted(ThreadLocalRandom.current.nextInt(weighted.total) + 1)
       case None ⇒
         val currentRoutees = routeeProvider.routees
@@ -403,9 +403,12 @@ private[cluster] class WeightedRoutees(refs: immutable.IndexedSeq[ActorRef], sel
     buckets
   }
 
-  def total: Int =
-    if (buckets.length == 0) 0
-    else buckets(buckets.length - 1)
+  def isEmpty: Boolean = buckets.length == 0
+
+  def total: Int = {
+    require(!isEmpty, "WeightedRoutees must not be used when empty")
+    buckets(buckets.length - 1)
+  }
 
   /**
    * Pick the routee matching a value, from 1 to total.

@@ -343,8 +343,7 @@ object Metric extends MetricNumericConverter {
 
   /**
    * Creates a new Metric instance if the value is valid, otherwise None
-   * is returned. Invalid numeric values are negative Int/Long and NaN/Infinite
-   * Double values.
+   * is returned. Invalid numeric values are negative and NaN/Infinite.
    */
   def create(name: String, value: Number, decayFactor: Option[Double]): Option[Metric] =
     if (defined(value)) Some(new Metric(name, value, ceateEWMA(value.doubleValue, decayFactor)))
@@ -352,8 +351,7 @@ object Metric extends MetricNumericConverter {
 
   /**
    * Creates a new Metric instance if the Try is successful and the value is valid,
-   * otherwise None is returned. Invalid numeric values are negative Int/Long and
-   * NaN/Infinite Double values.
+   * otherwise None is returned. Invalid numeric values are negative and NaN/Infinite.
    */
   def create(name: String, value: Try[Number], decayFactor: Option[Double]): Option[Metric] = value match {
     case Success(v) ⇒ create(name, v, decayFactor)
@@ -530,13 +528,13 @@ object StandardMetrics {
 private[cluster] trait MetricNumericConverter {
 
   /**
-   * An undefined value is neither a -1 (negative) or NaN/Infinite:
+   * An defined value is neither negative nor NaN/Infinite:
    * <ul><li>JMX system load average and max heap can be 'undefined' for certain OS, in which case a -1 is returned</li>
    * <li>SIGAR combined CPU can occasionally return a NaN or Infinite (known bug)</li></ul>
    */
   def defined(value: Number): Boolean = convertNumber(value) match {
     case Left(a)  ⇒ a >= 0
-    case Right(b) ⇒ !(b.isNaN || b.isInfinite)
+    case Right(b) ⇒ !(b < 0.0 || b.isNaN || b.isInfinite)
   }
 
   /**

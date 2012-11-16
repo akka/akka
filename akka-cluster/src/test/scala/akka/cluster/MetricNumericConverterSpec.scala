@@ -15,7 +15,7 @@ class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) wit
   "MetricNumericConverter" must {
     val collector = createMetricsCollector
 
-    "convert " in {
+    "convert" in {
       convertNumber(0).isLeft must be(true)
       convertNumber(1).left.get must be(1)
       convertNumber(1L).isLeft must be(true)
@@ -43,6 +43,7 @@ class MetricNumericConverterSpec extends AkkaSpec(MetricsEnabledSpec.config) wit
 
     "recognize whether a metric value is not defined" in {
       defined(-1) must be(false)
+      defined(-1.0) must be(false)
       defined(Double.NaN) must be(false)
     }
   }
