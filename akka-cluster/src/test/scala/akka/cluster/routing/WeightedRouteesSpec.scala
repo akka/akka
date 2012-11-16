@@ -40,7 +40,10 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
 
     "check boundaries" in {
       val empty = new WeightedRoutees(Vector(), a1, Map.empty)
-      empty.total must be(0)
+      empty.isEmpty must be(true)
+      intercept[IllegalArgumentException] {
+        empty.total
+      }
       val weighted = new WeightedRoutees(Vector(refA, refB, refC), a1, Map.empty)
       weighted.total must be(3)
       intercept[IllegalArgumentException] {
