@@ -189,15 +189,16 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl, val self: Rep
   def childrenRefs: ChildrenContainer = ChildrenContainer.EmptyChildrenContainer
   def getChildByName(name: String): Option[ChildRestartStats] = None
   def tell(message: Any, sender: ActorRef): Unit = {
+    val useSender = if (sender eq Actor.noSender) system.deadLetters else sender
     if (lock.tryLock(timeout, TimeUnit.MILLISECONDS)) {
       try {
-        if (self.underlying eq this) queue enqueue Envelope(message, sender, system)
-        else self.underlying.tell(message, sender)
+        if (self.underlying eq this) queue enqueue Envelope(message, useSender, system)
+        else self.underlying.tell(message, useSender)
       } finally {
         lock.unlock()
       }
     } else {
-      system.deadLetters ! DeadLetter(message, sender, self)
+      system.deadLetters ! DeadLetter(message, useSender, self)
     }
   }
   def sendSystemMessage(msg: SystemMessage): Unit = {
