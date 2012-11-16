@@ -5,7 +5,6 @@ package akka.routing
 
 import language.postfixOps
 
-import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import scala.collection.immutable
 import akka.testkit._
@@ -18,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.config.Config
 import akka.dispatch.Dispatchers
 import akka.util.Collections.EmptyImmutableSeq
+import akka.util.Timeout
+import java.util.concurrent.atomic.AtomicInteger
 
 object RoutingSpec {
 
@@ -100,33 +101,34 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
 
     "be able to send their routees" in {
-      class TheActor extends Actor {
-        val routee1 = context.actorOf(Props[TestActor], "routee1")
-        val routee2 = context.actorOf(Props[TestActor], "routee2")
-        val routee3 = context.actorOf(Props[TestActor], "routee3")
-        val router = context.actorOf(Props[TestActor].withRouter(
-          ScatterGatherFirstCompletedRouter(
-            routees = List(routee1, routee2, routee3),
-            within = 5 seconds)))
-
+      case class TestRun(id: String, names: immutable.Iterable[String], actors: Int)
+      val actor = system.actorOf(Props(new Actor {
         def receive = {
-          case "doIt"                 ⇒ router ! CurrentRoutees
-          case routees: RouterRoutees ⇒ testActor forward routees
+          case TestRun(id, names, actors) ⇒
+            val routerProps = Props[TestActor].withRouter(
+              ScatterGatherFirstCompletedRouter(
+                routees = names map { context.actorOf(Props(new TestActor), _) },
+                within = 5 seconds))
+
+            1 to actors foreach { i ⇒ context.actorOf(routerProps, id + i).tell(CurrentRoutees, testActor) }
         }
-      }
+      }))
 
-      val theActor = system.actorOf(Props(new TheActor), "theActor")
-      theActor ! "doIt"
-      val routees = expectMsgPF() {
-        case RouterRoutees(routees) ⇒ routees.toSet
-      }
+      val actors = 15
+      val names = 1 to 20 map { "routee" + _ } toList
 
-      routees.map(_.path.name) must be(Set("routee1", "routee2", "routee3"))
+      actor ! TestRun("test", names, actors)
+      1 to actors foreach { _ ⇒
+        val routees = expectMsgType[RouterRoutees].routees
+        routees.map(_.path.name) must be === names
+      }
+      expectNoMsg(500.millis)
     }
 
     "use configured nr-of-instances when FromConfig" in {
       val router = system.actorOf(Props[TestActor].withRouter(FromConfig), "router1")
-      Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size must be(3)
+      router ! CurrentRoutees
+      expectMsgType[RouterRoutees].routees.size must be(3)
       watch(router)
       system.stop(router)
       expectMsgType[Terminated]
@@ -134,7 +136,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
     "use configured nr-of-instances when router is specified" in {
       val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(nrOfInstances = 2)), "router2")
-      Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size must be(3)
+      router ! CurrentRoutees
+      expectMsgType[RouterRoutees].routees.size must be(3)
       system.stop(router)
     }
 
@@ -149,7 +152,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       }
       val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(resizer = Some(resizer))), "router3")
       Await.ready(latch, remaining)
-      Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size must be(3)
+      router ! CurrentRoutees
+      expectMsgType[RouterRoutees].routees.size must be(3)
       system.stop(router)
     }
 
