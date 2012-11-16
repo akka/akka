@@ -15,7 +15,9 @@ import com.typesafe.config.{ Config, ConfigFactory }
  * If you're looking for a way to set up Akka using Blueprint without the namespace handler, you should use
  * [[akka.osgi.OsgiActorSystemFactory]] instead.
  */
-class BlueprintActorSystemFactory(context: BundleContext, name: String) extends OsgiActorSystemFactory(context) {
+class BlueprintActorSystemFactory(context: BundleContext, name: String, fallbackClassLoader: Option[ClassLoader]) extends OsgiActorSystemFactory(context, fallbackClassLoader) {
+
+  def this(context: BundleContext, name: String) = this(context, name, Some(OsgiActorSystemFactory.akkaActorClassLoader))
 
   var config: Option[String] = None
 
