@@ -16,6 +16,7 @@ import akka.japi.Util.immutableSeq
 import com.typesafe.config.Config
 import java.util.concurrent.atomic.{ AtomicLong, AtomicBoolean }
 import java.util.concurrent.TimeUnit
+import akka.event.Logging.Warning
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.annotation.tailrec
 import akka.event.Logging.Warning
