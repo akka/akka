@@ -536,7 +536,7 @@ private[akka] class VirtualPathContainer(
 
   def hasChildren: Boolean = !children.isEmpty
 
-  def foreachChild(f: ActorRef ⇒ Unit) = {
+  def foreachChild(f: ActorRef ⇒ Unit): Unit = {
     val iter = children.values.iterator
     while (iter.hasNext) f(iter.next)
   }
