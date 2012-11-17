@@ -52,4 +52,5 @@ Full Source Code of the Fault Tolerance Sample (Scala)
 ------------------------------------------------------
 
 .. includecode:: code/akka/docs/actor/FaultHandlingDocSample.scala#all
+   :exclude: imports,messages,dummydb
 

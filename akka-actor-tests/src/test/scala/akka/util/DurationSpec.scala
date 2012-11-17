@@ -6,8 +6,28 @@ package akka.util
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
 import duration._
+import akka.testkit.AkkaSpec
+import akka.testkit.TestLatch
+import java.util.concurrent.TimeoutException
+import akka.dispatch.Await
+import akka.testkit.TimingTest
 
-class DurationSpec extends WordSpec with MustMatchers {
+class DurationSpec extends AkkaSpec {
+
+  "A HashedWheelTimer" must {
+
+    "not mess up long timeouts" taggedAs TimingTest in {
+      val longish = Timeout(Long.MaxValue)
+      val barrier = TestLatch()
+      val job = system.scheduler.scheduleOnce(longish.duration)(barrier.countDown())
+      intercept[TimeoutException] {
+        // this used to fire after 46 seconds due to wrap-around
+        Await.ready(barrier, 90 seconds)
+      }
+      job.cancel()
+    }
+
+  }
 
   "Duration" must {
 

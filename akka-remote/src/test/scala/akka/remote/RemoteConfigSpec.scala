@@ -57,7 +57,32 @@ class RemoteConfigSpec extends AkkaSpec(
       WriteTimeout must be(10 seconds)
       AllTimeout must be(0 millis)
       ReconnectionTimeWindow must be(10 minutes)
+      ServerSocketWorkerPoolSize must be >= (2)
+      ServerSocketWorkerPoolSize must be <= (128)
+      ClientSocketWorkerPoolSize must be >= (2)
+      ClientSocketWorkerPoolSize must be <= (128)
     }
 
+    "contain correct configuration values in reference.conf" in {
+      val c = system.asInstanceOf[ExtendedActorSystem].
+        provider.asInstanceOf[RemoteActorRefProvider].
+        remoteSettings.config.getConfig("akka.remote.netty")
+
+      // server-socket-worker-pool
+      {
+        val pool = c.getConfig("server-socket-worker-pool")
+        pool.getInt("pool-size-min") must equal(2)
+        pool.getDouble("pool-size-factor") must equal(2.0)
+        pool.getInt("pool-size-max") must equal(128)
+      }
+
+      // client-socket-worker-pool
+      {
+        val pool = c.getConfig("client-socket-worker-pool")
+        pool.getInt("pool-size-min") must equal(2)
+        pool.getDouble("pool-size-factor") must equal(2.0)
+        pool.getInt("pool-size-max") must equal(128)
+      }
+    }
   }
 }

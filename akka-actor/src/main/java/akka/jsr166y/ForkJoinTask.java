@@ -592,7 +592,7 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
                         (s == EXCEPTIONAL) ? getThrowableException() :
                         null);
         if (ex != null)
-            U.throwException(ex);
+            ForkJoinPool.rethrow(ex);
     }
 
     // public methods
@@ -730,7 +730,7 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
             }
         }
         if (ex != null)
-            U.throwException(ex);
+            ForkJoinPool.rethrow(ex);
     }
 
     /**
@@ -787,7 +787,7 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
             }
         }
         if (ex != null)
-            U.throwException(ex);
+            ForkJoinPool.rethrow(ex);
         return tasks;
     }
 

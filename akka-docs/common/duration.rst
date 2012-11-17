@@ -49,7 +49,7 @@ method calls instead:
 Deadline
 ========
 
-Durations have a brother name :class:`Deadline`, which is a class holding a representation
+Durations have a brother named :class:`Deadline`, which is a class holding a representation
 of an absolute point in time, and support deriving a duration from this by calculating the
 difference between now and the deadline. This is useful when you want to keep one overall
 deadline without having to take care of the book-keeping wrt. the passing of time yourself::

@@ -24,7 +24,7 @@ and then there's the whole package, the Akka Microkernel, which is a standalone
 container to deploy your Akka application in. With CPUs growing more and more
 cores every cycle, Akka is the alternative that provides outstanding performance
 even if you're only running it on one machine. Akka also supplies a wide array
-of concurrency-paradigms, allowing for users to choose the right tool for the
+of concurrency-paradigms, allowing users to choose the right tool for the
 job.
 
 

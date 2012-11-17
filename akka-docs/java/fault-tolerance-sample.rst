@@ -50,4 +50,5 @@ Full Source Code of the Fault Tolerance Sample (Java)
 ------------------------------------------------------
 
 .. includecode:: code/akka/docs/actor/japi/FaultHandlingDocSample.java#all
+   :exclude: imports,messages,dummydb
 

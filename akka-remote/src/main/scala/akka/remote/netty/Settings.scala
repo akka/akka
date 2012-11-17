@@ -8,6 +8,7 @@ import akka.util.Duration
 import java.util.concurrent.TimeUnit._
 import java.net.InetAddress
 import akka.config.ConfigurationException
+import akka.dispatch.ThreadPoolConfig
 
 @deprecated("Will become private[akka] in 2.1, this is not user-api", "2.0.2")
 class NettySettings(config: Config, val systemName: String) {
@@ -69,5 +70,15 @@ class NettySettings(config: Config, val systemName: String) {
     case sz if sz < 0 ⇒ throw new IllegalArgumentException("akka.remote.netty.max-total-memory-size is less than 0 bytes")
     case sz           ⇒ sz
   }
+
+  private def computeWPS(config: Config): Int =
+    ThreadPoolConfig.scaledPoolSize(
+      config.getInt("pool-size-min"),
+      config.getDouble("pool-size-factor"),
+      config.getInt("pool-size-max"))
+
+  val ServerSocketWorkerPoolSize = computeWPS(config.getConfig("server-socket-worker-pool"))
+
+  val ClientSocketWorkerPoolSize = computeWPS(config.getConfig("client-socket-worker-pool"))
 
 }

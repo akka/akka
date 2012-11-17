@@ -47,6 +47,7 @@ html_show_sphinx = False
 html_show_copyright = True
 htmlhelp_basename = 'Akkadoc'
 html_add_permalinks = ''
+html_use_smartypants = False
 
 html_context = {
   'include_analytics': 'online' in tags

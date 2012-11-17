@@ -57,7 +57,7 @@ In addition to being able to supply looked-up remote actors as routees, you can
 make the router deploy its created children on a set of remote hosts; this will
 be done in round-robin fashion. In order to do that, wrap the router
 configuration in a :class:`RemoteRouterConfig`, attaching the remote addresses of
-the nodes to deploy to. Naturally, this requires your to include the
+the nodes to deploy to. Naturally, this requires you to include the
 ``akka-remote`` module on your classpath:
 
 .. includecode:: code/akka/docs/jrouting/RouterViaProgramExample.java#remoteRoutees
@@ -104,7 +104,7 @@ Routers vs. Supervision
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 As explained in the previous section, routers create new actor instances as
-children of the “head” router, who therefor also is their supervisor. The
+children of the “head” router, who therefore also is their supervisor. The
 supervisor strategy of this actor can be configured by means of the
 :meth:`RouterConfig.supervisorStrategy` property, which is supported for all
 built-in router types. It defaults to “always escalate”, which leads to the
@@ -338,7 +338,7 @@ Configured Custom Router
 
 It is possible to define configuration properties for custom routers. In the ``router`` property of the deployment
 configuration you define the fully qualified class name of the router class. The router class must extend
-``akka.routing.CustomRouterConfig`` and and have constructor with ``com.typesafe.config.Config`` parameter.
+``akka.routing.CustomRouterConfig`` and have a constructor with one ``com.typesafe.config.Config`` parameter.
 The deployment section of the configuration is passed to the constructor.
 
 Custom Resizer
