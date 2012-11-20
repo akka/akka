@@ -24,8 +24,8 @@ import scala.annotation.tailrec
  */
 trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
 
-  val MAX_WAIT_TIME = 12800
-  val START_WAIT_TIME = 50
+  val MaxWaitDuration = 12800.millis
+  val SleepyTime = 50.millis
 
   /**
    * All bundles being found on the test classpath are automatically installed and started in the PojoSR runtime.
@@ -70,21 +70,21 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
   def serviceForType[T](implicit t: ClassTag[T]): T =
     context.getService(awaitReference(t.runtimeClass)).asInstanceOf[T]
 
-  def awaitReference(serviceType: Class[_]): ServiceReference = awaitReference(serviceType, START_WAIT_TIME)
+  def awaitReference(serviceType: Class[_]): ServiceReference = awaitReference(serviceType, SleepyTime)
 
-  def awaitReference(serviceType: Class[_], wait: Long): ServiceReference = {
+  def awaitReference(serviceType: Class[_], wait: FiniteDuration): ServiceReference = {
 
     @tailrec def poll(step: Duration, deadline: Deadline): ServiceReference = context.getServiceReference(serviceType.getName) match {
       case null ⇒
         if (deadline.isOverdue()) fail("Gave up waiting for service of type %s".format(serviceType))
         else {
-          Thread.sleep((step min deadline.timeLeft).toMillis)
+          Thread.sleep((step min deadline.timeLeft max Duration.Zero).toMillis)
           poll(step, deadline)
         }
       case some ⇒ some
     }
 
-    poll(wait.millis, Deadline.now + MAX_WAIT_TIME.millis)
+    poll(wait, Deadline.now + MaxWaitDuration)
   }
 
   protected def buildTestBundles(builders: immutable.Seq[BundleDescriptorBuilder]): immutable.Seq[BundleDescriptor] =
