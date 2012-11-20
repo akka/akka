@@ -66,7 +66,7 @@ In addition to being able to supply looked-up remote actors as routees, you can
 make the router deploy its created children on a set of remote hosts; this will
 be done in round-robin fashion. In order to do that, wrap the router
 configuration in a :class:`RemoteRouterConfig`, attaching the remote addresses of
-the nodes to deploy to. Naturally, this requires your to include the
+the nodes to deploy to. Naturally, this requires you to include the
 ``akka-remote`` module on your classpath:
 
 .. includecode:: code/docs/routing/RouterViaProgramExample.scala#remoteRoutees
@@ -430,7 +430,7 @@ Configured Custom Router
 
 It is possible to define configuration properties for custom routers. In the ``router`` property of the deployment
 configuration you define the fully qualified class name of the router class. The router class must extend
-``akka.routing.RouterConfig`` and and have constructor with ``com.typesafe.config.Config`` parameter.
+``akka.routing.RouterConfig`` and have constructor with one ``com.typesafe.config.Config`` parameter.
 The deployment section of the configuration is passed to the constructor.
 
 Custom Resizer
