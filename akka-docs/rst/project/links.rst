@@ -73,7 +73,8 @@ Make sure that you add the repository to the sbt resolvers::
 
 Define the library dependencies with the timestamp as version. For example::
 
-    libraryDependencies += "com.typesafe.akka" % "akka-remote_@binVersion@" % "2.1-20121016-001042"
+    libraryDependencies += "com.typesafe.akka" % "akka-remote_@binVersion@" % 
+      "2.1-20121016-001042"
 
 maven definition of snapshot repository
 ---------------------------------------
