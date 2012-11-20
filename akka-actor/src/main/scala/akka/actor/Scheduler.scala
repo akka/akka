@@ -15,6 +15,7 @@ import akka.util.internal._
 import concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
+// The Scheduler trait is included in the documentation. KEEP THE LINES SHORT!!!
 //#scheduler
 /**
  * An Akka scheduler service. This one needs one special behavior: if
@@ -50,7 +51,8 @@ trait Scheduler {
    */
   def schedule(
     initialDelay: FiniteDuration,
-    interval: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
+    interval: FiniteDuration)(f: ⇒ Unit)(
+      implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a function to be run repeatedly with an initial delay and
@@ -93,7 +95,8 @@ trait Scheduler {
    * Scala API
    */
   def scheduleOnce(
-    delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
+    delay: FiniteDuration)(f: ⇒ Unit)(
+      implicit executor: ExecutionContext): Cancellable
 }
 //#scheduler
 

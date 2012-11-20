@@ -66,8 +66,9 @@ Java:
 ::
   
   // Use this Actors' Dispatcher as ExecutionContext
-  getContext().system().scheduler().scheduleOnce(Duration.create(10, TimeUnit.SECONDS)",
-    getSelf(), new Reconnect(), getContext().getDispatcher());
+  getContext().system().scheduler().scheduleOnce(Duration.create(
+    10, TimeUnit.SECONDS), getSelf(), new Reconnect(), 
+    getContext().getDispatcher());
 
   // Use ActorSystem's default Dispatcher as ExecutionContext
   system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
@@ -394,13 +395,17 @@ This has been done to enable OSGi bundles that don't have conflicting package na
 
 Change the following import statements. Please note that the serializers are often referenced from configuration.
 
-================================================ =======================================================
-Search                                           Replace with
-================================================ =======================================================
-``akka.routing.RemoteRouterConfig``              ``akka.remote.routing.RemoteRouterConfig``
-``akka.serialization.ProtobufSerializer``        ``akka.remote.serialization.ProtobufSerializer``
-``akka.serialization.DaemonMsgCreateSerializer`` ``akka.remote.serialization.DaemonMsgCreateSerializer``
-================================================ =======================================================
+Search -> Replace with::
+
+  akka.routing.RemoteRouterConfig -> 
+  akka.remote.routing.RemoteRouterConfig
+
+  akka.serialization.ProtobufSerializer ->
+  akka.remote.serialization.ProtobufSerializer
+
+  akka.serialization.DaemonMsgCreateSerializer -> 
+  akka.remote.serialization.DaemonMsgCreateSerializer
+
 
 Package Name Changes in Durable Mailboxes
 =========================================
@@ -410,14 +415,20 @@ This has been done to enable OSGi bundles that don't have conflicting package na
 
 Change the following import statements. Please note that the ``FileBasedMailboxType`` is often referenced from configuration.
 
-================================================ =========================================================
-Search                                           Replace with
-================================================ =========================================================
-``akka.actor.mailbox.FileBasedMailboxType``      ``akka.actor.mailbox.filebased.FileBasedMailboxType``
-``akka.actor.mailbox.FileBasedMailboxSettings``  ``akka.actor.mailbox.filebased.FileBasedMailboxSettings``
-``akka.actor.mailbox.FileBasedMessageQueue``     ``akka.actor.mailbox.filebased.FileBasedMessageQueue``
-``akka.actor.mailbox.filequeue.*``               ``akka.actor.mailbox.filebased.filequeue.*``
-================================================ =========================================================
+Search -> Replace with::
+
+  akka.actor.mailbox.FileBasedMailboxType ->
+  akka.actor.mailbox.filebased.FileBasedMailboxType
+
+  akka.actor.mailbox.FileBasedMailboxSettings ->
+  akka.actor.mailbox.filebased.FileBasedMailboxSettings
+
+  akka.actor.mailbox.FileBasedMessageQueue ->
+  akka.actor.mailbox.filebased.FileBasedMessageQueue
+
+  akka.actor.mailbox.filequeue.* ->
+  akka.actor.mailbox.filebased.filequeue.*
+
    
 Actor Receive Timeout
 =====================
