@@ -57,7 +57,6 @@ object Dist {
         val base = unzipped / ("akka-" + version)
         val distBase = projectBase / "akka-kernel" / "src" / "main" / "dist"
         val deploy = base / "deploy"
-        val deployReadme = deploy / "readme"
         val doc = base / "doc" / "akka"
         val api = doc / "api"
         val docs = doc / "docs"
