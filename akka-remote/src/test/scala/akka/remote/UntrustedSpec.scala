@@ -34,7 +34,7 @@ akka.loglevel = DEBUG
       akka.actor.provider = akka.remote.RemoteActorRefProvider
       akka.remote.netty.port = 0
       """))
-  val addr = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.addresses.head
+  val addr = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
   val target1 = other.actorFor(RootActorPath(addr) / "remote")
   val target2 = other.actorFor(RootActorPath(addr) / testActor.path.elements)
 

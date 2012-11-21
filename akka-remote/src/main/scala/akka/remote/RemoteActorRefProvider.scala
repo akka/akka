@@ -84,10 +84,10 @@ class RemoteActorRefProvider(
     // this enables reception of remote requests
     _transport.start()
 
-    //FIXME defaultaddress maybe?
     _rootPath = RootActorPath(local.rootPath.address.copy(
-      host = transport.addresses.head.host,
-      port = transport.addresses.head.port))
+      protocol = transport.defaultAddress.protocol,
+      host = transport.defaultAddress.host,
+      port = transport.defaultAddress.port))
 
     val remoteClientLifeCycleHandler = system.systemActorOf(Props(new Actor {
       def receive = {

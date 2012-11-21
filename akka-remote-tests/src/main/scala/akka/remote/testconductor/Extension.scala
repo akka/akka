@@ -72,7 +72,7 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
   /**
    * Transport address of this Netty-like remote transport.
    */
-  val address = transport.addresses.head //FIXME: Workaround for old-remoting -- must be removed later
+  val address = transport.defaultAddress
 
   /**
    * INTERNAL API.

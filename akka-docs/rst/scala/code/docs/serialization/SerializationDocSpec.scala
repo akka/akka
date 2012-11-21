@@ -216,7 +216,7 @@ package docs.serialization {
       object ExternalAddress extends ExtensionKey[ExternalAddressExt]
 
       class ExternalAddressExt(system: ExtendedActorSystem) extends Extension {
-        def addressForAkka: Address = akka.transportOf(system).addresses.head
+        def addressForAkka: Address = akka.transportOf(system).defaultAddress
       }
 
       def serializeAkkaDefault(ref: ActorRef): String =

@@ -39,7 +39,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   import ClusterSpec._
 
   // FIXME: temporary workaround. See #2663
-  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[ClusterActorRefProvider].transport.addresses.head
+  val selfAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[ClusterActorRefProvider].transport.defaultAddress
 
   val cluster = Cluster(system)
   def clusterView = cluster.readView

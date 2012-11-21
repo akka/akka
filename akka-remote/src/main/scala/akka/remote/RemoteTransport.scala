@@ -180,6 +180,12 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
   def addresses: immutable.Set[Address]
 
   /**
+   * The default transport address of the actorsystem
+   * @return The listen address of the default transport
+   */
+  def defaultAddress: Address
+
+  /**
    * Resolves the correct local address to be used for contacting the given remote address
    * @param remote the remote address
    * @return the local address to be used for the given remote address
@@ -245,7 +251,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
   def toRemoteActorRefProtocol(actor: ActorRef): ActorRefProtocol =
-    ActorRefProtocol.newBuilder.setPath(actor.path.toStringWithAddress(addresses.head)).build
+    ActorRefProtocol.newBuilder.setPath(actor.path.toStringWithAddress(defaultAddress)).build
 
   /**
    * Returns a new RemoteMessageProtocol containing the serialized representation of the given parameters.
@@ -254,7 +260,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
     val messageBuilder = RemoteMessageProtocol.newBuilder.setRecipient(toRemoteActorRefProtocol(recipient))
     if (senderOption.isDefined) messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
 
-    Serialization.currentTransportAddress.withValue(addresses.head) {
+    Serialization.currentTransportAddress.withValue(defaultAddress) {
       messageBuilder.setMessage(MessageSerializer.serialize(system, message.asInstanceOf[AnyRef]))
     }
 

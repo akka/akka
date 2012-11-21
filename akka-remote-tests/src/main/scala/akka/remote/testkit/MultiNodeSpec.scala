@@ -410,7 +410,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   // useful to see which jvm is running which role, used by LogRoleReplace utility
   log.info("Role [{}] started with address [{}]", myself.name,
     //FIXME: Workaround for old-remoting -- must be removed later
-    system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.addresses.head)
+    system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress)
 
 }
 

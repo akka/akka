@@ -17,6 +17,8 @@ import scala.util.control.NonFatal
 import java.net.URLEncoder
 import java.util.concurrent.TimeoutException
 import scala.util.{ Failure, Success }
+import scala.collection.immutable
+import akka.japi.Util.immutableSeq
 
 class RemotingSettings(config: Config) {
 
@@ -40,10 +42,10 @@ class RemotingSettings(config: Config) {
   val BackoffPeriod: FiniteDuration =
     Duration(getMilliseconds("akka.remoting.backoff-interval"), MILLISECONDS)
 
-  val Transports: List[(String, Config)] =
-    config.getConfigList("akka.remoting.transports").asScala.map {
+  val Transports: immutable.Seq[(String, Config)] =
+    immutableSeq(config.getConfigList("akka.remoting.transports")).map {
       conf ⇒ (conf.getString("transport-class"), conf.getConfig("settings"))
-    }.toList
+    }
 }
 
 private[remote] object Remoting {
@@ -82,8 +84,11 @@ private[remote] object Remoting {
 private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
 
   @volatile private var endpointManager: ActorRef = _
-  @volatile var transportMapping: Map[String, Set[(Transport, Address)]] = _
+  @volatile private var transportMapping: Map[String, Set[(Transport, Address)]] = _
   @volatile var addresses: Set[Address] = _
+  // FIXME: Temporary workaround until next Pull Request as the means of configuration changed
+  override def defaultAddress: Address = addresses.head
+
   private val settings = new RemotingSettings(provider.remoteSettings.config)
 
   override def localAddressForRemote(remote: Address): Address = Remoting.localAddressForRemote(transportMapping, remote)
@@ -320,14 +325,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
     listens.onComplete {
       case Success(results) ⇒
-        val transportsAndAddresses = (for ((transport, (address, promise)) ← results) yield {
-          promise.success(self)
-          transport -> address
-        }).toSet
-        addressesPromise.success(transportsAndAddresses)
-
-        context.become(accepting)
-
         transportMapping = HashMap() ++ results.groupBy { case (_, (transportAddress, _)) ⇒ transportAddress }.map {
           case (a, t) ⇒
             if (t.size > 1)
@@ -335,6 +332,14 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
             a -> t.head._1
         }
+
+        val transportsAndAddresses = (for ((transport, (address, promise)) ← results) yield {
+          promise.success(self)
+          transport -> address
+        }).toSet
+        addressesPromise.success(transportsAndAddresses)
+
+        context.become(accepting)
 
       case Failure(reason) ⇒ addressesPromise.failure(reason)
     }

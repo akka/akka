@@ -40,7 +40,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
   val settings = new NettySettings(remoteSettings.config.getConfig("akka.remote.netty"), remoteSettings.systemName)
 
   // Workaround to emulate the support of multiple local addresses
-  override def localAddressForRemote(remote: Address): Address = addresses.head
+  override def localAddressForRemote(remote: Address): Address = defaultAddress
 
   // TODO replace by system.scheduler
   val timer: HashedWheelTimer = new HashedWheelTimer(system.threadFactory)
@@ -164,7 +164,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
    * the normal one, e.g. for inserting security hooks. Get this transport’s
    * address from `this.address`.
    */
-  protected def createClient(recipient: Address): RemoteClient = new ActiveRemoteClient(this, recipient, addresses.head)
+  protected def createClient(recipient: Address): RemoteClient = new ActiveRemoteClient(this, recipient, defaultAddress)
 
   // the address is set in start() or from the RemoteServerHandler, whichever comes first
   private val _address = new AtomicReference[Address]
@@ -177,8 +177,9 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
   }
 
   // Workaround to emulate the support of multiple local addresses
-  def addresses = Set(address)
+  override def addresses = Set(address)
   def address = _address.get
+  override def defaultAddress: Address = _address.get
 
   lazy val log = Logging(system.eventStream, "NettyRemoteTransport(" + addresses + ")")
 

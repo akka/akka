@@ -61,7 +61,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   import settings._
 
   val selfAddress: Address = system.provider match {
-    case c: ClusterActorRefProvider ⇒ c.transport.addresses.head // FIXME: temporary workaround. See #2663
+    case c: ClusterActorRefProvider ⇒ c.transport.defaultAddress
     case other ⇒ throw new ConfigurationException(
       "ActorSystem [%s] needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses [%s]".
         format(system, other.getClass.getName))
