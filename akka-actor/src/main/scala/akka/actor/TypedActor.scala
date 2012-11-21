@@ -4,22 +4,25 @@
 package akka.actor
 
 import language.existentials
-import akka.japi.{ Creator, Option ⇒ JOption }
-import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
-import akka.util.Timeout
+
 import scala.util.control.NonFatal
+import scala.util.{ Try, Success, Failure }
+import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
 import scala.concurrent.{ Await, Future }
+import akka.japi.{ Creator, Option ⇒ JOption }
+import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
+import akka.util.Timeout
 import akka.util.Reflect.instantiator
+import akka.serialization.{ JavaSerializer, SerializationExtension }
 import akka.dispatch._
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import scala.reflect.ClassTag
-import akka.serialization.{ JavaSerializer, SerializationExtension }
 import java.io.ObjectStreamException
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.duration.FiniteDuration
+import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
@@ -439,8 +442,8 @@ object TypedProps {
    * @return a sequence of interfaces that the specified class implements,
    * or a sequence containing only itself, if itself is an interface.
    */
-  def extractInterfaces(clazz: Class[_]): Seq[Class[_]] =
-    if (clazz.isInterface) Seq[Class[_]](clazz) else clazz.getInterfaces.toList
+  def extractInterfaces(clazz: Class[_]): immutable.Seq[Class[_]] =
+    if (clazz.isInterface) immutableSingletonSeq(clazz) else immutableSeq(clazz.getInterfaces)
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,
@@ -489,7 +492,7 @@ object TypedProps {
  */
 @SerialVersionUID(1L)
 case class TypedProps[T <: AnyRef] protected[TypedProps] (
-  interfaces: Seq[Class[_]],
+  interfaces: immutable.Seq[Class[_]],
   creator: () ⇒ T,
   dispatcher: String = TypedProps.defaultDispatcherId,
   deploy: Deploy = Props.defaultDeploy,

@@ -9,8 +9,8 @@ import scala.concurrent.duration._
 import scala.collection.immutable.{ SortedSet, Map }
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.{ Try, Success, Failure }
-import scala.math.ScalaNumericConversions
-import scala.runtime.{ RichLong, RichDouble, RichInt }
+import scala.math.ScalaNumericAnyConversions
+import runtime.{ ScalaNumberProxy, RichLong, RichDouble, RichInt }
 
 import akka.actor._
 import akka.event.LoggingAdapter
@@ -238,7 +238,7 @@ private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: Metrics
  *
  * @param startTime the time of initial sampling for this data stream
  */
-private[cluster] case class DataStream(decay: Int, ewma: ScalaNumericConversions, startTime: Long, timestamp: Long)
+private[cluster] case class DataStream(decay: Int, ewma: ScalaNumericAnyConversions, startTime: Long, timestamp: Long)
   extends ClusterMessage with MetricNumericConverter {
 
   /**
@@ -249,13 +249,13 @@ private[cluster] case class DataStream(decay: Int, ewma: ScalaNumericConversions
 
   /**
    * Calculates the exponentially weighted moving average for a given monitored data set.
-   * The datam can be too large to fit into an int or long, thus we use ScalaNumericConversions,
+   * The datam can be too large to fit into an int or long, thus we use ScalaNumericAnyConversions,
    * and defer to BigInt or BigDecimal.
    *
    * @param xn the new data point
    * @return an new [[akka.cluster.DataStream]] with the updated yn and timestamp
    */
-  def :+(xn: ScalaNumericConversions): DataStream = convert(xn) fold (
+  def :+(xn: ScalaNumericAnyConversions): DataStream = convert(xn) fold (
     nl ⇒ copy(ewma = BigInt(α * nl + 1 - α * ewma.longValue()), timestamp = newTimestamp),
     nd ⇒ copy(ewma = BigDecimal(α * nd + 1 - α * ewma.doubleValue()), timestamp = newTimestamp))
 
@@ -273,7 +273,7 @@ private[cluster] case class DataStream(decay: Int, ewma: ScalaNumericConversions
  */
 private[cluster] object DataStream {
 
-  def apply(decay: Int, data: ScalaNumericConversions): Option[DataStream] = if (decay > 0)
+  def apply(decay: Int, data: ScalaNumericAnyConversions): Option[DataStream] = if (decay > 0)
     Some(DataStream(decay, data, newTimestamp, newTimestamp)) else None
 
 }
@@ -288,7 +288,7 @@ private[cluster] object DataStream {
  * @param average the data stream of the metric value, for trending over time. Metrics that are already
  *                averages (e.g. system load average) or finite (e.g. as total cores), are not trended.
  */
-private[cluster] case class Metric(name: String, value: Option[ScalaNumericConversions], average: Option[DataStream])
+private[cluster] case class Metric(name: String, value: Option[ScalaNumericAnyConversions], average: Option[DataStream])
   extends ClusterMessage with MetricNumericConverter {
 
   /**
@@ -352,7 +352,7 @@ private[cluster] object Metric extends MetricNumericConverter {
    * or defined for the OS (JMX). If undefined we set the value option to None and do not modify
    * the latest sampled metric to avoid skewing the statistical trend.
    */
-  def apply(name: String, value: Option[ScalaNumericConversions]): Metric = value match {
+  def apply(name: String, value: Option[ScalaNumericAnyConversions]): Metric = value match {
     case Some(v) if defined(v) ⇒ Metric(name, value, None)
     case _                     ⇒ Metric(name, None, None)
   }
@@ -409,13 +409,13 @@ private[cluster] trait MetricNumericConverter {
    * <ul><li>JMX system load average and max heap can be 'undefined' for certain OS, in which case a -1 is returned</li>
    * <li>SIGAR combined CPU can occasionally return a NaN or Infinite (known bug)</li></ul>
    */
-  def defined(value: ScalaNumericConversions): Boolean =
+  def defined(value: ScalaNumericAnyConversions): Boolean =
     convert(value) fold (a ⇒ value.underlying != -1, b ⇒ !(b.isNaN || b.isInfinite))
 
   /**
    * May involve rounding or truncation.
    */
-  def convert(from: ScalaNumericConversions): Either[Long, Double] = from match {
+  def convert(from: ScalaNumericAnyConversions): Either[Long, Double] = from match {
     case n: BigInt     ⇒ Left(n.longValue())
     case n: BigDecimal ⇒ Right(n.doubleValue())
     case n: RichInt    ⇒ Left(n.abs)
@@ -463,11 +463,16 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
 
   /**
    * (SIGAR / JMX) Returns the OS-specific average system load on the CPUs in the system, for the past 1 minute.
-   * On some systems the JMX OS system load average may not be available, in which case a -1 is returned.
+   * On some systems the JMX OS system load average may not be available, in which case a Metric with
+   * undefined value is returned.
    * Hyperic SIGAR provides more precise values, thus, if the library is on the classpath, it is the default.
    */
-  def systemLoadAverage: Metric = Metric("system-load-average", Some(BigDecimal(Try(
-    LoadAverage.get.invoke(sigar.get).asInstanceOf[Array[Double]].toSeq.head) getOrElse osMBean.getSystemLoadAverage)))
+  def systemLoadAverage: Metric = Metric("system-load-average",
+    Try(LoadAverage.get.invoke(sigar.get).asInstanceOf[Array[Double]].toSeq.head).getOrElse(
+      osMBean.getSystemLoadAverage) match {
+        case x if x < 0 ⇒ None // load average may be unavailable on some platform
+        case x          ⇒ Some(BigDecimal(x))
+      })
 
   /**
    * (JMX) Returns the number of available processors
@@ -552,7 +557,7 @@ private[cluster] class MetricsCollector private (private val sigar: Option[AnyRe
  */
 private[cluster] object MetricsCollector {
   def apply(address: Address, log: LoggingAdapter, dynamicAccess: DynamicAccess): MetricsCollector =
-    dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Seq.empty) match {
+    dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Nil) match {
       case Success(identity) ⇒ new MetricsCollector(Some(identity), address)
       case Failure(e) ⇒
         log.debug(e.toString)

@@ -52,7 +52,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
   override def afterAll() = multiNodeSpecAfterAll()
 
   "The transformation sample" must {
-    "illustrate how to start first frontend" in {
+    "illustrate how to start first frontend" in within(15 seconds) {
       runOn(frontend1) {
         // this will only run on the 'first' node
         Cluster(system) join node(frontend1).address

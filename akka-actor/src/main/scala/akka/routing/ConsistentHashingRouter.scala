@@ -3,30 +3,29 @@
  */
 package akka.routing
 
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.collection.immutable
+import akka.japi.Util.immutableSeq
 import scala.util.control.NonFatal
 import akka.actor.ActorRef
 import akka.actor.SupervisorStrategy
-import akka.actor.Props
 import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.serialization.SerializationExtension
 import java.util.concurrent.atomic.AtomicReference
+import akka.actor.Address
+import akka.actor.ExtendedActorSystem
 
 object ConsistentHashingRouter {
   /**
    * Creates a new ConsistentHashingRouter, routing to the specified routees
    */
-  def apply(routees: Iterable[ActorRef]): ConsistentHashingRouter =
+  def apply(routees: immutable.Iterable[ActorRef]): ConsistentHashingRouter =
     new ConsistentHashingRouter(routees = routees map (_.path.toString))
 
   /**
    * Java API to create router with the supplied 'routees' actors.
    */
-  def create(routees: java.lang.Iterable[ActorRef]): ConsistentHashingRouter = {
-    import scala.collection.JavaConverters._
-    apply(routees.asScala)
-  }
+  def create(routees: java.lang.Iterable[ActorRef]): ConsistentHashingRouter = apply(immutableSeq(routees))
 
   /**
    * If you don't define the `hashMapping` when
@@ -144,7 +143,7 @@ object ConsistentHashingRouter {
  */
 @SerialVersionUID(1L)
 case class ConsistentHashingRouter(
-  nrOfInstances: Int = 0, routees: Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+  nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
   val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   val supervisorStrategy: SupervisorStrategy = Router.defaultSupervisorStrategy,
   val virtualNodesFactor: Int = 0,
@@ -163,7 +162,7 @@ case class ConsistentHashingRouter(
    * @param routeePaths string representation of the actor paths of the routees that will be looked up
    *   using `actorFor` in [[akka.actor.ActorRefProvider]]
    */
-  def this(routeePaths: java.lang.Iterable[String]) = this(routees = routeePaths.asScala)
+  def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
 
   /**
    * Constructor that sets the resizer to be used.
@@ -225,7 +224,7 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
 
   def nrOfInstances: Int
 
-  def routees: Iterable[String]
+  def routees: immutable.Iterable[String]
 
   def virtualNodesFactor: Int
 
@@ -238,20 +237,22 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
     }
 
     val log = Logging(routeeProvider.context.system, routeeProvider.context.self)
+    val selfAddress = routeeProvider.context.system.asInstanceOf[ExtendedActorSystem].provider.rootPath.address
     val vnodes =
       if (virtualNodesFactor == 0) routeeProvider.context.system.settings.DefaultVirtualNodesFactor
       else virtualNodesFactor
 
     // tuple of routees and the ConsistentHash, updated together in updateConsistentHash
-    val consistentHashRef = new AtomicReference[(IndexedSeq[ActorRef], ConsistentHash[ActorRef])]((null, null))
+    val consistentHashRef = new AtomicReference[(IndexedSeq[ConsistentActorRef], ConsistentHash[ConsistentActorRef])]((null, null))
     updateConsistentHash()
 
     // update consistentHash when routees has changed
     // changes to routees are rare and when no changes this is a quick operation
-    def updateConsistentHash(): ConsistentHash[ActorRef] = {
+    def updateConsistentHash(): ConsistentHash[ConsistentActorRef] = {
       val oldConsistentHashTuple = consistentHashRef.get
       val (oldConsistentHashRoutees, oldConsistentHash) = oldConsistentHashTuple
-      val currentRoutees = routeeProvider.routees
+      val currentRoutees = routeeProvider.routees map { ConsistentActorRef(_, selfAddress) }
+
       if (currentRoutees ne oldConsistentHashRoutees) {
         // when other instance, same content, no need to re-hash, but try to set routees
         val consistentHash =
@@ -267,9 +268,9 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
       val currentConsistenHash = updateConsistentHash()
       if (currentConsistenHash.isEmpty) routeeProvider.context.system.deadLetters
       else hashData match {
-        case bytes: Array[Byte] ⇒ currentConsistenHash.nodeFor(bytes)
-        case str: String        ⇒ currentConsistenHash.nodeFor(str)
-        case x: AnyRef          ⇒ currentConsistenHash.nodeFor(SerializationExtension(routeeProvider.context.system).serialize(x).get)
+        case bytes: Array[Byte] ⇒ currentConsistenHash.nodeFor(bytes).actorRef
+        case str: String        ⇒ currentConsistenHash.nodeFor(str).actorRef
+        case x: AnyRef          ⇒ currentConsistenHash.nodeFor(SerializationExtension(routeeProvider.context.system).serialize(x).get).actorRef
       }
     } catch {
       case NonFatal(e) ⇒
@@ -292,6 +293,23 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
             List(Destination(sender, routeeProvider.context.system.deadLetters))
         }
 
+    }
+  }
+}
+
+/**
+ * INTERNAL API
+ * Important to use ActorRef with full address, with host and port, in the hash ring,
+ * so that same ring is produced on different nodes.
+ * The ConsistentHash uses toString of the ring nodes, and the ActorRef itself
+ * isn't a good representation, because LocalActorRef doesn't include the
+ * host and port.
+ */
+private[akka] case class ConsistentActorRef(actorRef: ActorRef, selfAddress: Address) {
+  override def toString: String = {
+    actorRef.path.address match {
+      case Address(_, _, None, None) ⇒ actorRef.path.toStringWithAddress(selfAddress)
+      case a                         ⇒ actorRef.path.toString
     }
   }
 }

@@ -1,5 +1,7 @@
 package akka.japi;
 
+import akka.event.LoggingAdapter;
+import akka.event.NoLogging;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -45,5 +47,11 @@ public class JavaAPITestBase {
   @Test
   public void shouldBeSingleton() {
     assertSame(Option.none(), Option.none());
+  }
+
+  @Test
+  public void mustBeAbleToGetNoLogging() {
+      LoggingAdapter a = NoLogging.getInstance();
+      assertNotNull(a);
   }
 }

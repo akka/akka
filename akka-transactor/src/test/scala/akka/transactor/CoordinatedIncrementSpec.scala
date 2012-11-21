@@ -6,12 +6,13 @@ package akka.transactor
 
 import org.scalatest.BeforeAndAfterAll
 
-import akka.actor._
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.stm._
+import scala.collection.immutable
+import akka.actor._
 import akka.util.Timeout
 import akka.testkit._
-import scala.concurrent.stm._
 import akka.pattern.{ AskTimeoutException, ask }
 
 object CoordinatedIncrement {
@@ -30,7 +31,7 @@ object CoordinatedIncrement {
     }
   """
 
-  case class Increment(friends: Seq[ActorRef])
+  case class Increment(friends: immutable.Seq[ActorRef])
   case object GetCount
 
   class Counter(name: String) extends Actor {

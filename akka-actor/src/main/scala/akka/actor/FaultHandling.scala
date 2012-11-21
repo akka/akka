@@ -5,10 +5,13 @@ package akka.actor
 
 import language.implicitConversions
 
-import java.util.concurrent.TimeUnit
-import scala.collection.mutable.ArrayBuffer
 import java.lang.{ Iterable ⇒ JIterable }
+import java.util.concurrent.TimeUnit
+import akka.japi.Util.immutableSeq
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
+
 /**
  * INTERNAL API
  */
@@ -170,7 +173,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * Implicit conversion from `Seq` of Throwables to a `Decider`.
    * This maps the given Throwables to restarts, otherwise escalates.
    */
-  implicit def seqThrowable2Decider(trapExit: Seq[Class[_ <: Throwable]]): Decider = makeDecider(trapExit)
+  implicit def seqThrowable2Decider(trapExit: immutable.Seq[Class[_ <: Throwable]]): Decider = makeDecider(trapExit)
 
   type Decider = PartialFunction[Throwable, Directive]
   type JDecider = akka.japi.Function[Throwable, Directive]
@@ -180,24 +183,15 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * Decider builder which just checks whether one of
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
-  def makeDecider(trapExit: Array[Class[_]]): Decider =
-    { case x ⇒ if (trapExit exists (_ isInstance x)) Restart else Escalate }
-
-  /**
-   * Decider builder which just checks whether one of
-   * the given Throwables matches the cause and restarts, otherwise escalates.
-   */
-  def makeDecider(trapExit: Seq[Class[_ <: Throwable]]): Decider =
-    { case x ⇒ if (trapExit exists (_ isInstance x)) Restart else Escalate }
-
-  /**
-   * Decider builder which just checks whether one of
-   * the given Throwables matches the cause and restarts, otherwise escalates.
-   */
-  def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = {
-    import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-    makeDecider(trapExit.asScala.toSeq)
+  def makeDecider(trapExit: immutable.Seq[Class[_ <: Throwable]]): Decider = {
+    case x ⇒ if (trapExit exists (_ isInstance x)) Restart else Escalate
   }
+
+  /**
+   * Decider builder which just checks whether one of
+   * the given Throwables matches the cause and restarts, otherwise escalates.
+   */
+  def makeDecider(trapExit: JIterable[Class[_ <: Throwable]]): Decider = makeDecider(immutableSeq(trapExit))
 
   /**
    * Decider builder for Iterables of cause-directive pairs, e.g. a map obtained
@@ -222,14 +216,14 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    *
    * INTERNAL API
    */
-  private[akka] def sort(in: Iterable[CauseDirective]): Seq[CauseDirective] =
+  private[akka] def sort(in: Iterable[CauseDirective]): immutable.Seq[CauseDirective] =
     (new ArrayBuffer[CauseDirective](in.size) /: in) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
         case -1 ⇒ buf append ca
         case x  ⇒ buf insert (x, ca)
       }
       buf
-    }
+    }.to[immutable.IndexedSeq]
 
   private[akka] def withinTimeRangeOption(withinTimeRange: Duration): Option[Duration] =
     if (withinTimeRange.isFinite && withinTimeRange >= Duration.Zero) Some(withinTimeRange) else None
@@ -338,10 +332,6 @@ case class AllForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration
 
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, trapExit: JIterable[Class[_ <: Throwable]]) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(trapExit))
-
-  def this(maxNrOfRetries: Int, withinTimeRange: Duration, trapExit: Array[Class[_]]) =
-    this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(trapExit))
-
   /*
    *  this is a performance optimization to avoid re-allocating the pairs upon
    *  every call to requestRestartPermission, assuming that strategies are shared
@@ -378,9 +368,6 @@ case class OneForOneStrategy(maxNrOfRetries: Int = -1, withinTimeRange: Duration
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
 
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, trapExit: JIterable[Class[_ <: Throwable]]) =
-    this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(trapExit))
-
-  def this(maxNrOfRetries: Int, withinTimeRange: Duration, trapExit: Array[Class[_]]) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(trapExit))
 
   /*

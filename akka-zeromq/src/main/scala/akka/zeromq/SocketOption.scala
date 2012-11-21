@@ -4,9 +4,10 @@
 package akka.zeromq
 
 import com.google.protobuf.Message
-import org.zeromq.{ ZMQ ⇒ JZMQ }
 import akka.actor.ActorRef
 import scala.concurrent.duration._
+import scala.collection.immutable
+import org.zeromq.{ ZMQ ⇒ JZMQ }
 import org.zeromq.ZMQ.{ Poller, Socket }
 
 /**
@@ -36,7 +37,7 @@ sealed trait SocketConnectOption extends SocketOption {
  * A base trait for pubsub options for the ZeroMQ socket
  */
 sealed trait PubSubOption extends SocketOption {
-  def payload: Seq[Byte]
+  def payload: immutable.Seq[Byte]
 }
 
 /**
@@ -79,7 +80,7 @@ class Context(numIoThreads: Int) extends SocketMeta {
  * A base trait for message deserializers
  */
 trait Deserializer extends SocketOption {
-  def apply(frames: Seq[Frame]): Any
+  def apply(frames: immutable.Seq[Frame]): Any
 }
 
 /**
@@ -172,12 +173,12 @@ case class Bind(endpoint: String) extends SocketConnectOption
  *
  * @param payload the topic to subscribe to
  */
-case class Subscribe(payload: Seq[Byte]) extends PubSubOption {
-  def this(topic: String) = this(topic.getBytes("UTF-8"))
+case class Subscribe(payload: immutable.Seq[Byte]) extends PubSubOption {
+  def this(topic: String) = this(topic.getBytes("UTF-8").to[immutable.Seq])
 }
 object Subscribe {
   def apply(topic: String): Subscribe = new Subscribe(topic)
-  val all = Subscribe(Seq.empty)
+  val all = Subscribe("")
 }
 
 /**
@@ -189,8 +190,8 @@ object Subscribe {
  *
  * @param payload
  */
-case class Unsubscribe(payload: Seq[Byte]) extends PubSubOption {
-  def this(topic: String) = this(topic.getBytes("UTF-8"))
+case class Unsubscribe(payload: immutable.Seq[Byte]) extends PubSubOption {
+  def this(topic: String) = this(topic.getBytes("UTF-8").to[immutable.Seq])
 }
 object Unsubscribe {
   def apply(topic: String): Unsubscribe = new Unsubscribe(topic)
@@ -200,17 +201,17 @@ object Unsubscribe {
  * Send a message over the zeromq socket
  * @param frames
  */
-case class Send(frames: Seq[Frame]) extends Request
+case class Send(frames: immutable.Seq[Frame]) extends Request
 
 /**
  * A message received over the zeromq socket
  * @param frames
  */
-case class ZMQMessage(frames: Seq[Frame]) {
+case class ZMQMessage(frames: immutable.Seq[Frame]) {
 
-  def this(frame: Frame) = this(Seq(frame))
-  def this(frame1: Frame, frame2: Frame) = this(Seq(frame1, frame2))
-  def this(frameArray: Array[Frame]) = this(frameArray.toSeq)
+  def this(frame: Frame) = this(List(frame))
+  def this(frame1: Frame, frame2: Frame) = this(List(frame1, frame2))
+  def this(frameArray: Array[Frame]) = this(frameArray.to[immutable.Seq])
 
   /**
    * Convert the bytes in the first frame to a String, using specified charset.
@@ -224,8 +225,9 @@ case class ZMQMessage(frames: Seq[Frame]) {
   def payload(frameIndex: Int): Array[Byte] = frames(frameIndex).payload.toArray
 }
 object ZMQMessage {
-  def apply(bytes: Array[Byte]): ZMQMessage = ZMQMessage(Seq(Frame(bytes)))
-  def apply(message: Message): ZMQMessage = ZMQMessage(message.toByteArray)
+  def apply(bytes: Array[Byte]): ZMQMessage = new ZMQMessage(List(Frame(bytes)))
+  def apply(frames: Frame*): ZMQMessage = new ZMQMessage(frames.to[immutable.Seq])
+  def apply(message: Message): ZMQMessage = apply(message.toByteArray)
 }
 
 /**

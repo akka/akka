@@ -5,14 +5,12 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.util.control.NonFatal
+import scala.collection.immutable
 import akka.actor._
-import akka.actor.ActorCell
 import akka.actor.ActorPath.ElementRegex
 import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Helpers }
-import akka.actor.ChildNameReserved
 
 private[akka] trait Children { this: ActorCell ⇒
 
@@ -24,8 +22,9 @@ private[akka] trait Children { this: ActorCell ⇒
   def childrenRefs: ChildrenContainer =
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.childrenOffset).asInstanceOf[ChildrenContainer]
 
-  final def children: Iterable[ActorRef] = childrenRefs.children
-  final def getChildren(): java.lang.Iterable[ActorRef] = children.asJava
+  final def children: immutable.Iterable[ActorRef] = childrenRefs.children
+  final def getChildren(): java.lang.Iterable[ActorRef] =
+    scala.collection.JavaConverters.asJavaIterableConverter(children).asJava
 
   final def child(name: String): Option[ActorRef] = Option(getChild(name))
   final def getChild(name: String): ActorRef = childrenRefs.getByName(name) match {
@@ -141,7 +140,7 @@ private[akka] trait Children { this: ActorCell ⇒
 
   protected def getChildByRef(ref: ActorRef): Option[ChildRestartStats] = childrenRefs.getByRef(ref)
 
-  protected def getAllChildStats: Iterable[ChildRestartStats] = childrenRefs.stats
+  protected def getAllChildStats: immutable.Iterable[ChildRestartStats] = childrenRefs.stats
 
   protected def removeChildAndGetStateChange(child: ActorRef): Option[SuspendReason] = {
     childrenRefs match {

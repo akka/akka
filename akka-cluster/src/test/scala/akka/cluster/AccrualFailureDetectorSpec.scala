@@ -7,7 +7,7 @@ package akka.cluster
 import akka.actor.Address
 import akka.testkit._
 import akka.testkit.TestEvent._
-import scala.collection.immutable.TreeMap
+import scala.collection.immutable
 import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -27,7 +27,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
     val conn = Address("akka", "", "localhost", 2552)
     val conn2 = Address("akka", "", "localhost", 2553)
 
-    def fakeTimeGenerator(timeIntervals: Seq[Long]): () ⇒ Long = {
+    def fakeTimeGenerator(timeIntervals: immutable.Seq[Long]): () ⇒ Long = {
       var times = timeIntervals.tail.foldLeft(List[Long](timeIntervals.head))((acc, c) ⇒ acc ::: List[Long](acc.last + c))
       def timeGenerator(): Long = {
         val currentTime = times.head
@@ -73,7 +73,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("""
 
     "return realistic phi values" in {
       val fd = createFailureDetector()
-      val test = TreeMap(0 -> 0.0, 500 -> 0.1, 1000 -> 0.3, 1200 -> 1.6, 1400 -> 4.7, 1600 -> 10.8, 1700 -> 15.3)
+      val test = immutable.TreeMap(0 -> 0.0, 500 -> 0.1, 1000 -> 0.3, 1200 -> 1.6, 1400 -> 4.7, 1600 -> 10.8, 1700 -> 15.3)
       for ((timeDiff, expectedPhi) ← test) {
         fd.phi(timeDiff = timeDiff, mean = 1000.0, stdDeviation = 100.0) must be(expectedPhi plusOrMinus (0.1))
       }

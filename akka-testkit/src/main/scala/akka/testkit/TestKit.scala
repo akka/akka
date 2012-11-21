@@ -5,18 +5,18 @@ package akka.testkit
 
 import language.postfixOps
 
+import scala.annotation.{ varargs, tailrec }
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
+import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
+import java.util.concurrent.atomic.AtomicInteger
 import akka.actor._
 import akka.actor.Actor._
-import scala.concurrent.duration._
-import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque, TimeUnit, atomic }
-import atomic.AtomicInteger
-import scala.annotation.tailrec
 import akka.util.{ Timeout, BoxedType }
-import scala.annotation.varargs
-import scala.reflect.ClassTag
 
 object TestActor {
-  type Ignore = Option[PartialFunction[AnyRef, Boolean]]
+  type Ignore = Option[PartialFunction[Any, Boolean]]
 
   abstract class AutoPilot {
     def run(sender: ActorRef, msg: Any): AutoPilot
@@ -138,7 +138,7 @@ trait TestKitBase {
    * Ignore all messages in the test actor for which the given partial
    * function returns true.
    */
-  def ignoreMsg(f: PartialFunction[AnyRef, Boolean]) { testActor ! TestActor.SetIgnore(Some(f)) }
+  def ignoreMsg(f: PartialFunction[Any, Boolean]) { testActor ! TestActor.SetIgnore(Some(f)) }
 
   /**
    * Stop ignoring messages in the test actor.
@@ -415,7 +415,7 @@ trait TestKitBase {
   /**
    * Same as `expectMsgAllOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllOf[T](obj: T*): Seq[T] = expectMsgAllOf_internal(remaining, obj: _*)
+  def expectMsgAllOf[T](obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(remaining, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -430,19 +430,19 @@ trait TestKitBase {
    *   expectMsgAllOf(1 second, Result1(), Result2())
    * </pre>
    */
-  def expectMsgAllOf[T](max: FiniteDuration, obj: T*): Seq[T] = expectMsgAllOf_internal(max.dilated, obj: _*)
+  def expectMsgAllOf[T](max: FiniteDuration, obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(max.dilated, obj: _*)
 
-  private def expectMsgAllOf_internal[T](max: FiniteDuration, obj: T*): Seq[T] = {
+  private def expectMsgAllOf_internal[T](max: FiniteDuration, obj: T*): immutable.Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
     obj foreach (x ⇒ assert(recv exists (x == _), "not found " + x))
     recv foreach (x ⇒ assert(obj exists (x == _), "found unexpected " + x))
-    recv.asInstanceOf[Seq[T]]
+    recv.asInstanceOf[immutable.Seq[T]]
   }
 
   /**
    * Same as `expectMsgAllClassOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllClassOf[T](obj: Class[_ <: T]*): Seq[T] = internalExpectMsgAllClassOf(remaining, obj: _*)
+  def expectMsgAllClassOf[T](obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllClassOf(remaining, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -452,19 +452,19 @@ trait TestKitBase {
    * Wait time is bounded by the given duration, with an AssertionFailure
    * being thrown in case of timeout.
    */
-  def expectMsgAllClassOf[T](max: FiniteDuration, obj: Class[_ <: T]*): Seq[T] = internalExpectMsgAllClassOf(max.dilated, obj: _*)
+  def expectMsgAllClassOf[T](max: FiniteDuration, obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllClassOf(max.dilated, obj: _*)
 
-  private def internalExpectMsgAllClassOf[T](max: FiniteDuration, obj: Class[_ <: T]*): Seq[T] = {
+  private def internalExpectMsgAllClassOf[T](max: FiniteDuration, obj: Class[_ <: T]*): immutable.Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
     obj foreach (x ⇒ assert(recv exists (_.getClass eq BoxedType(x)), "not found " + x))
     recv foreach (x ⇒ assert(obj exists (c ⇒ BoxedType(c) eq x.getClass), "found non-matching object " + x))
-    recv.asInstanceOf[Seq[T]]
+    recv.asInstanceOf[immutable.Seq[T]]
   }
 
   /**
    * Same as `expectMsgAllConformingOf(remaining, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllConformingOf[T](obj: Class[_ <: T]*): Seq[T] = internalExpectMsgAllConformingOf(remaining, obj: _*)
+  def expectMsgAllConformingOf[T](obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllConformingOf(remaining, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -477,13 +477,13 @@ trait TestKitBase {
    * Beware that one object may satisfy all given class constraints, which
    * may be counter-intuitive.
    */
-  def expectMsgAllConformingOf[T](max: FiniteDuration, obj: Class[_ <: T]*): Seq[T] = internalExpectMsgAllConformingOf(max.dilated, obj: _*)
+  def expectMsgAllConformingOf[T](max: FiniteDuration, obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllConformingOf(max.dilated, obj: _*)
 
-  private def internalExpectMsgAllConformingOf[T](max: FiniteDuration, obj: Class[_ <: T]*): Seq[T] = {
+  private def internalExpectMsgAllConformingOf[T](max: FiniteDuration, obj: Class[_ <: T]*): immutable.Seq[T] = {
     val recv = receiveN_internal(obj.size, max)
     obj foreach (x ⇒ assert(recv exists (BoxedType(x) isInstance _), "not found " + x))
     recv foreach (x ⇒ assert(obj exists (c ⇒ BoxedType(c) isInstance x), "found non-matching object " + x))
-    recv.asInstanceOf[Seq[T]]
+    recv.asInstanceOf[immutable.Seq[T]]
   }
 
   /**
@@ -520,7 +520,7 @@ trait TestKitBase {
    * assert(series == (1 to 7).toList)
    * </pre>
    */
-  def receiveWhile[T](max: Duration = Duration.Undefined, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[AnyRef, T]): Seq[T] = {
+  def receiveWhile[T](max: Duration = Duration.Undefined, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[AnyRef, T]): immutable.Seq[T] = {
     val stop = now + remainingOrDilated(max)
     var msg: Message = NullMessage
 
@@ -553,14 +553,14 @@ trait TestKitBase {
    * Same as `receiveN(n, remaining)` but correctly taking into account
    * Duration.timeFactor.
    */
-  def receiveN(n: Int): Seq[AnyRef] = receiveN_internal(n, remaining)
+  def receiveN(n: Int): immutable.Seq[AnyRef] = receiveN_internal(n, remaining)
 
   /**
    * Receive N messages in a row before the given deadline.
    */
-  def receiveN(n: Int, max: FiniteDuration): Seq[AnyRef] = receiveN_internal(n, max.dilated)
+  def receiveN(n: Int, max: FiniteDuration): immutable.Seq[AnyRef] = receiveN_internal(n, max.dilated)
 
-  private def receiveN_internal(n: Int, max: Duration): Seq[AnyRef] = {
+  private def receiveN_internal(n: Int, max: Duration): immutable.Seq[AnyRef] = {
     val stop = max + now
     for { x ← 1 to n } yield {
       val timeout = stop - now

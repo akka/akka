@@ -11,6 +11,7 @@ import akka.AkkaException
 import akka.serialization.Serialization
 import akka.remote.RemoteProtocol._
 import akka.actor._
+import scala.collection.immutable
 
 /**
  * Remote life-cycle events.
@@ -176,7 +177,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
   /**
    * Address to be used in RootActorPath of refs generated for this transport.
    */
-  def addresses: Set[Address]
+  def addresses: immutable.Set[Address]
 
   /**
    * Resolves the correct local address to be used for contacting the given remote address

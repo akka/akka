@@ -6,19 +6,17 @@ package akka.remote.routing
 import akka.routing.{ Route, Router, RouterConfig, RouteeProvider, Resizer }
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorContext
-import akka.actor.ActorRef
 import akka.actor.Deploy
-import akka.actor.InternalActorRef
 import akka.actor.Props
-import akka.ConfigurationException
-import akka.remote.RemoteScope
-import akka.actor.AddressFromURIString
 import akka.actor.SupervisorStrategy
 import akka.actor.Address
-import scala.collection.JavaConverters._
+import akka.actor.ActorCell
+import akka.ConfigurationException
+import akka.remote.RemoteScope
+import akka.japi.Util.immutableSeq
+import scala.collection.immutable
 import java.util.concurrent.atomic.AtomicInteger
 import java.lang.IllegalStateException
-import akka.actor.ActorCell
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -29,7 +27,7 @@ import akka.actor.ActorCell
 @SerialVersionUID(1L)
 final case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address]) extends RouterConfig {
 
-  def this(local: RouterConfig, nodes: java.lang.Iterable[Address]) = this(local, nodes.asScala)
+  def this(local: RouterConfig, nodes: java.lang.Iterable[Address]) = this(local, immutableSeq(nodes))
   def this(local: RouterConfig, nodes: Array[Address]) = this(local, nodes: Iterable[Address])
 
   override def createRouteeProvider(context: ActorContext, routeeProps: Props) =
@@ -64,20 +62,20 @@ final case class RemoteRouterConfig(local: RouterConfig, nodes: Iterable[Address
 final class RemoteRouteeProvider(nodes: Iterable[Address], _context: ActorContext, _routeeProps: Props, _resizer: Option[Resizer])
   extends RouteeProvider(_context, _routeeProps, _resizer) {
 
-  if (nodes.isEmpty) throw new ConfigurationException("Must specify list of remote target.nodes for [%s]"
-    format context.self.path.toString)
+  if (nodes.isEmpty)
+    throw new ConfigurationException("Must specify list of remote target.nodes for [%s]" format context.self.path.toString)
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
   private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
   // need this counter as instance variable since Resizer may call createRoutees several times
   private val childNameCounter = new AtomicInteger
 
-  override def registerRouteesFor(paths: Iterable[String]): Unit =
+  override def registerRouteesFor(paths: immutable.Iterable[String]): Unit =
     throw new ConfigurationException("Remote target.nodes can not be combined with routees for [%s]"
       format context.self.path.toString)
 
   override def createRoutees(nrOfInstances: Int): Unit = {
-    val refs = IndexedSeq.fill(nrOfInstances) {
+    val refs = immutable.IndexedSeq.fill(nrOfInstances) {
       val name = "c" + childNameCounter.incrementAndGet
       val deploy = Deploy(config = ConfigFactory.empty(), routerConfig = routeeProps.routerConfig,
         scope = RemoteScope(nodeAddressIter.next))

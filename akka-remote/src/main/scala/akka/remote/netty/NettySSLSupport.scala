@@ -12,50 +12,27 @@ import java.io.{ IOException, FileNotFoundException, FileInputStream }
 import akka.remote.security.provider.AkkaProvider
 import java.security._
 import com.typesafe.config.Config
-import scala.collection.JavaConverters._
-import scala.Some
+import akka.japi.Util._
 import akka.ConfigurationException
 
 private[akka] class SslSettings(config: Config) {
   import config._
 
-  val SSLKeyStore = getString("key-store") match {
-    case ""       ⇒ None
-    case keyStore ⇒ Some(keyStore)
-  }
+  val SSLKeyStore = Option(getString("key-store")).filter(_.length > 0)
+  val SSLTrustStore = Option(getString("trust-store")).filter(_.length > 0)
+  val SSLKeyStorePassword = Option(getString("key-store-password")).filter(_.length > 0)
 
-  val SSLTrustStore = getString("trust-store") match {
-    case ""         ⇒ None
-    case trustStore ⇒ Some(trustStore)
-  }
+  val SSLTrustStorePassword = Option(getString("trust-store-password")).filter(_.length > 0)
 
-  val SSLKeyStorePassword = getString("key-store-password") match {
-    case ""       ⇒ None
-    case password ⇒ Some(password)
-  }
+  val SSLEnabledAlgorithms = immutableSeq(getStringList("enabled-algorithms")).to[Set]
 
-  val SSLTrustStorePassword = getString("trust-store-password") match {
-    case ""       ⇒ None
-    case password ⇒ Some(password)
-  }
+  val SSLProtocol = Option(getString("protocol")).filter(_.length > 0)
 
-  val SSLEnabledAlgorithms = iterableAsScalaIterableConverter(getStringList("enabled-algorithms")).asScala.toSet[String]
+  val SSLRandomSource = Option(getString("sha1prng-random-source")).filter(_.length > 0)
 
-  val SSLProtocol = getString("protocol") match {
-    case ""       ⇒ None
-    case protocol ⇒ Some(protocol)
-  }
+  val SSLRandomNumberGenerator = Option(getString("random-number-generator")).filter(_.length > 0)
 
-  val SSLRandomSource = getString("sha1prng-random-source") match {
-    case ""   ⇒ None
-    case path ⇒ Some(path)
-  }
-
-  val SSLRandomNumberGenerator = getString("random-number-generator") match {
-    case ""  ⇒ None
-    case rng ⇒ Some(rng)
-  }
-
+  // FIXME: Change messages to reflect new configuration
   if (SSLProtocol.isEmpty) throw new ConfigurationException(
     "Configuration option 'akka.remote.netty.ssl.enable is turned on but no protocol is defined in 'akka.remote.netty.ssl.protocol'.")
   if (SSLKeyStore.isEmpty && SSLTrustStore.isEmpty) throw new ConfigurationException(

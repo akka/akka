@@ -95,7 +95,7 @@ object Futures {
    */
   def find[T <: AnyRef](futures: JIterable[Future[T]], predicate: JFunc[T, java.lang.Boolean], executor: ExecutionContext): Future[JOption[T]] = {
     implicit val ec = executor
-    Future.find[T](futures.asScala)(predicate.apply(_))(executor).map(JOption.fromScalaOption(_))
+    Future.find[T](futures.asScala)(predicate.apply(_))(executor) map JOption.fromScalaOption
   }
 
   /**

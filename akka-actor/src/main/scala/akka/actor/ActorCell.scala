@@ -6,7 +6,7 @@ package akka.actor
 
 import java.io.{ ObjectOutputStream, NotSerializableException }
 import scala.annotation.tailrec
-import scala.collection.immutable.TreeSet
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import akka.actor.dungeon.ChildrenContainer
@@ -76,8 +76,14 @@ trait ActorContext extends ActorRefFactory {
 
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
-   * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * This method acts upon the behavior stack as follows:
+   *
+   *  - if `discardOld = true` it will replace the top element (i.e. the current behavior)
+   *  - if `discardOld = false` it will keep the current behavior and push the given one atop
+   *
+   * The default of replacing the current behavior has been chosen to avoid memory leaks in
+   * case client code is written without consulting this documentation first (i.e. always pushing
+   * new closures and never issuing an `unbecome()`)
    */
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
 
@@ -102,7 +108,7 @@ trait ActorContext extends ActorRefFactory {
    * val goodLookup = context.actorFor("kid")
    * }}}
    */
-  def children: Iterable[ActorRef]
+  def children: immutable.Iterable[ActorRef]
 
   /**
    * Get the child with the given name if it exists.
@@ -167,14 +173,20 @@ trait UntypedActorContext extends ActorContext {
 
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
-   * Puts the behavior on top of the hotswap stack.
+   * Replaces the current behavior at the top of the hotswap stack.
    */
   def become(behavior: Procedure[Any]): Unit
 
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
-   * Puts the behavior on top of the hotswap stack.
-   * If "discardOld" is true, an unbecome will be issued prior to pushing the new behavior to the stack
+   * This method acts upon the behavior stack as follows:
+   *
+   *  - if `discardOld = true` it will replace the top element (i.e. the current behavior)
+   *  - if `discardOld = false` it will keep the current behavior and push the given one atop
+   *
+   * The default of replacing the current behavior has been chosen to avoid memory leaks in
+   * case client code is written without consulting this documentation first (i.e. always pushing
+   * new closures and never issuing an `unbecome()`)
    */
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit
 
@@ -247,12 +259,12 @@ private[akka] trait Cell {
    */
   def isLocal: Boolean
   /**
-   * If the actor isLocal, returns whether messages are currently queued,
+   * If the actor isLocal, returns whether "user messages" are currently queued,
    * “false” otherwise.
    */
   def hasMessages: Boolean
   /**
-   * If the actor isLocal, returns the number of messages currently queued,
+   * If the actor isLocal, returns the number of "user messages" currently queued,
    * which may be a costly operation, 0 otherwise.
    */
   def numberOfMessages: Int
@@ -275,7 +287,7 @@ private[akka] object ActorCell {
 
   final val emptyBehaviorStack: List[Actor.Receive] = Nil
 
-  final val emptyActorRefSet: Set[ActorRef] = TreeSet.empty
+  final val emptyActorRefSet: Set[ActorRef] = immutable.TreeSet.empty
 }
 
 //ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)

@@ -6,13 +6,14 @@ package akka.cluster
 import language.postfixOps
 
 import org.scalatest.BeforeAndAfter
+import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 import akka.actor.Address
 import akka.remote.testconductor.{ RoleName, Direction }
 import scala.concurrent.duration._
+import scala.collection.immutable
 
 case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -45,7 +46,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
 
   muteMarkingAsUnreachable()
 
-  def allBut(role: RoleName, roles: Seq[RoleName] = roles): Seq[RoleName] = {
+  def allBut(role: RoleName, roles: immutable.Seq[RoleName] = roles): immutable.Seq[RoleName] = {
     roles.filterNot(_ == role)
   }
 
@@ -125,7 +126,7 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
       }
 
       runOn(allBut(victim): _*) {
-        awaitUpConvergence(roles.size - 1, Seq(victim))
+        awaitUpConvergence(roles.size - 1, List(victim))
       }
 
       endBarrier

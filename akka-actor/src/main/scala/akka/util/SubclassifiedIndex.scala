@@ -3,6 +3,8 @@
  */
 package akka.util
 
+import scala.collection.immutable
+
 /**
  * Typeclass which describes a classification hierarchy. Observe the contract between `isEqual` and `isSubclass`!
  */
@@ -55,7 +57,7 @@ private[akka] object SubclassifiedIndex {
   }
 
   private[SubclassifiedIndex] def emptyMergeMap[K, V] = internalEmptyMergeMap.asInstanceOf[Map[K, Set[V]]]
-  private[this] val internalEmptyMergeMap = Map[AnyRef, Set[AnyRef]]().withDefault(_ ⇒ Set[AnyRef]())
+  private[this] val internalEmptyMergeMap = Map[AnyRef, Set[AnyRef]]().withDefaultValue(Set[AnyRef]())
 }
 
 /**
@@ -74,7 +76,7 @@ private[akka] class SubclassifiedIndex[K, V] private (private var values: Set[V]
 
   import SubclassifiedIndex._
 
-  type Changes = Seq[(K, Set[V])]
+  type Changes = immutable.Seq[(K, Set[V])]
 
   protected var subkeys = Vector.empty[Nonroot[K, V]]
 
@@ -208,5 +210,5 @@ private[akka] class SubclassifiedIndex[K, V] private (private var values: Set[V]
   private def mergeChangesByKey(changes: Changes): Changes =
     (emptyMergeMap[K, V] /: changes) {
       case (m, (k, s)) ⇒ m.updated(k, m(k) ++ s)
-    }.toSeq
+    }.to[immutable.Seq]
 }

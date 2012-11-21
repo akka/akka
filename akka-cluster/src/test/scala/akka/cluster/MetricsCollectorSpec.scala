@@ -5,14 +5,16 @@
 package akka.cluster
 
 import scala.language.postfixOps
+
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import scala.util.{ Success, Try, Failure }
 
 import akka.actor._
 import akka.testkit._
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
-import util.{ Success, Try, Failure }
 
 object MetricsEnabledSpec {
   val config = """
@@ -109,8 +111,7 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsEnabledSpec.config) with Impl
 
     "collect JMX metrics" in {
       // heap max may be undefined depending on the OS
-      // systemLoadAverage is JMX is SIGAR not present
-      collector.systemLoadAverage.isDefined must be(true)
+      // systemLoadAverage is JMX if SIGAR not present, but not available on all OS
       collector.used.isDefined must be(true)
       collector.committed.isDefined must be(true)
       collector.processors.isDefined must be(true)
@@ -208,11 +209,10 @@ trait MetricSpec extends WordSpec with MustMatchers {
     if (decay > 0) metrics.collect { case m if m.trendable && (!m.initializable) ⇒ m }.foreach(_.average.isDefined must be(true))
   }
 
-  def collectNodeMetrics(nodes: Set[NodeMetrics]): Seq[Metric] = {
-    var r: Seq[Metric] = Seq.empty
-    nodes.foreach(n ⇒ r ++= n.metrics.filter(_.isDefined))
-    r
-  }
+  def collectNodeMetrics(nodes: Set[NodeMetrics]): immutable.Seq[Metric] =
+    nodes.foldLeft(Vector[Metric]()) {
+      case (r, n) ⇒ r ++ n.metrics.filter(_.isDefined)
+    }
 }
 
 trait AbstractClusterMetricsSpec extends DefaultTimeout {

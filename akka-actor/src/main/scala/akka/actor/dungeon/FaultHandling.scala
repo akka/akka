@@ -10,7 +10,7 @@ import akka.dispatch._
 import akka.event.Logging.{ Warning, Error, Debug }
 import scala.util.control.NonFatal
 import akka.event.Logging
-import scala.Some
+import scala.collection.immutable
 import akka.dispatch.ChildTerminated
 import akka.actor.PreRestartException
 import akka.actor.Failed
@@ -160,7 +160,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     }
   }
 
-  final def handleInvokeFailure(childrenNotToSuspend: Iterable[ActorRef], t: Throwable, message: String): Unit = {
+  final def handleInvokeFailure(childrenNotToSuspend: immutable.Iterable[ActorRef], t: Throwable, message: String): Unit = {
     publish(Error(t, self.path.toString, clazz(actor), message))
     // prevent any further messages to be processed until the actor has been restarted
     if (!isFailed) try {

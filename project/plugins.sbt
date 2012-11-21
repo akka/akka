@@ -3,7 +3,7 @@ resolvers += Classpaths.typesafeResolver
 
 // these comment markers are for including code into the docs
 //#sbt-multi-jvm
-addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.3")
+addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.4")
 //#sbt-multi-jvm
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.0.0")

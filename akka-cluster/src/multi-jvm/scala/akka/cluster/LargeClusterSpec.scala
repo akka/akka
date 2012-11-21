@@ -55,7 +55,6 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.execution-pool-size = 4
     #akka.remote.netty.reconnection-time-window = 10s
-    akka.remote.netty.read-timeout = 5s
     akka.remote.netty.write-timeout = 5s
     akka.remote.netty.backoff-timeout = 500ms
     akka.remote.netty.connection-timeout = 500ms
@@ -148,7 +147,7 @@ abstract class LargeClusterSpec
     runOn(runOnRoles: _*) {
       systems.size must be(nodesPerDatacenter) // make sure it is initialized
 
-      val clusterNodes = ifNode(from)(joiningClusterNodes)(systems.map(Cluster(_)).toSet)
+      val clusterNodes = if(isNode(from)) joiningClusterNodes else systems.map(Cluster(_)).toSet
       val startGossipCounts = Map.empty[Cluster, Long] ++
         clusterNodes.map(c ⇒ (c -> c.readView.latestStats.receivedGossipCount))
       def gossipCount(c: Cluster): Long = {
@@ -260,7 +259,7 @@ abstract class LargeClusterSpec
       if (bulk.nonEmpty) {
         val totalNodes = nodesPerDatacenter * 4 + bulk.size
         within(expectedMaxDuration(totalNodes)) {
-          val joiningClusters = ifNode(fifthDatacenter)(bulk.map(Cluster(_)).toSet)(Set.empty)
+          val joiningClusters = if(isNode(fifthDatacenter)) bulk.map(Cluster(_)).toSet else Set.empty[Cluster]
           join(joiningClusters, from = fifthDatacenter, to = firstDatacenter, totalNodes,
             runOnRoles = firstDatacenter, secondDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter)
           enterBarrier("fifth-datacenter-joined-" + bulk.size)
@@ -270,7 +269,7 @@ abstract class LargeClusterSpec
       for (i ← 0 until oneByOne.size) {
         val totalNodes = nodesPerDatacenter * 4 + bulk.size + i + 1
         within(expectedMaxDuration(totalNodes)) {
-          val joiningClusters = ifNode(fifthDatacenter)(Set(Cluster(oneByOne(i))))(Set.empty)
+          val joiningClusters = if(isNode(fifthDatacenter)) Set(Cluster(oneByOne(i))) else Set.empty[Cluster]
           join(joiningClusters, from = fifthDatacenter, to = firstDatacenter, totalNodes,
             runOnRoles = firstDatacenter, secondDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter)
           enterBarrier("fifth-datacenter-joined-" + (bulk.size + i))

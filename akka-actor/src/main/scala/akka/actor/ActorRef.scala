@@ -419,7 +419,10 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
  * to the ActorSystem's EventStream
  */
 @SerialVersionUID(1L)
-case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
+case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef) {
+  require(sender ne null, "DeadLetter sender may not be null")
+  require(recipient ne null, "DeadLetter recipient may not be null")
+}
 
 private[akka] object DeadLetterActorRef {
   @SerialVersionUID(1L)
@@ -446,8 +449,11 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
   override def sendSystemMessage(message: SystemMessage): Unit = specialHandle(message)
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
-    case d: DeadLetter ⇒ specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
-    case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
+    case d: DeadLetter ⇒
+      specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
+    case _ if !specialHandle(message) ⇒
+      eventStream.publish(DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+    case _ ⇒
   }
 
   protected def specialHandle(msg: Any): Boolean = msg match {
@@ -530,7 +536,7 @@ private[akka] class VirtualPathContainer(
 
   def hasChildren: Boolean = !children.isEmpty
 
-  def foreachChild(f: ActorRef ⇒ Unit) = {
+  def foreachChild(f: ActorRef ⇒ Unit): Unit = {
     val iter = children.values.iterator
     while (iter.hasNext) f(iter.next)
   }

@@ -18,52 +18,65 @@ You can add it as a plugin by adding the following to your project/plugins.sbt:
 .. includecode:: ../../../project/plugins.sbt#sbt-multi-jvm
 
 You can then add multi-JVM testing to ``project/Build.scala`` by including the ``MultiJvm``
-settings and config. For example, here is an example of how the akka-remote-tests project adds
-multi-JVM testing (Simplified for clarity):
+settings and config. Please note that MultiJvm test sources are located in ``src/multi-jvm/...``,
+and not in ``src/test/...``.
+
+Here is an example Build.scala file that uses the MultiJvm plugin:
 
 .. parsed-literal::
 
    import sbt._
    import Keys._
    import com.typesafe.sbt.SbtMultiJvm
-   import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions }
+   import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm }
 
-   object AkkaBuild extends Build {
+   object ExampleBuild extends Build {
 
-    lazy val remoteTests = Project(
-      id = "akka-remote-tests",
-      base = file("akka-remote-tests"),
-      dependencies = Seq(remote, actorTests % "test->test",
-        testkit % "test->test"),
-      settings = defaultSettings ++ Seq(
-        // disable parallel tests
-        parallelExecution in Test := false,
-        extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-          (name: String) => (src ** (name + ".conf")).get.
-            headOption.map("-Dakka.config=" + _.absolutePath).toSeq
-        },
-        executeTests in Test <<= ((executeTests in Test),
-                                  (executeTests in MultiJvm)) map {
-          case ((_, testResults), (_, multiJvmResults)) =>
-            val results = testResults ++ multiJvmResults
-            (Tests.overall(results.values), results)
-        }
-      )
-    ) configs (MultiJvm)
+     lazy val buildSettings = Defaults.defaultSettings ++ multiJvmSettings ++ Seq(
+       organization := "example",
+       version      := "1.0",
+       scalaVersion := "@scalaVersion@",
+       // make sure that the artifacts don't have the scala version in the name
+       crossPaths   := false
+     )
 
-    lazy val buildSettings = Defaults.defaultSettings ++
-      SbtMultiJvm.multiJvmSettings ++ Seq(
-      organization := "com.typesafe.akka",
-      version      := "@version@",
-      scalaVersion := "@scalaVersion@",
-      crossPaths   := false
-    )
+     lazy val example = Project(
+       id = "example",
+       base = file("."),
+       settings = buildSettings ++
+         Seq(libraryDependencies ++= Dependencies.example)
+     ) configs(MultiJvm)
 
-    lazy val defaultSettings = buildSettings ++ Seq(
-      resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
-    )
+     lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ Seq(
+       // make sure that MultiJvm test are compiled by the default test compilation
+       compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
+       // disable parallel tests
+       parallelExecution in Test := false,
+       // make sure that MultiJvm tests are executed by the default test target
+       executeTests in Test <<=
+         ((executeTests in Test), (executeTests in MultiJvm)) map {
+           case ((_, testResults), (_, multiJvmResults))  =>
+             val results = testResults ++ multiJvmResults
+             (Tests.overall(results.values), results)
+       }
+     )
 
-  }
+     object Dependencies {
+       val example = Seq(
+         // ---- application dependencies ----
+         "com.typesafe.akka"  %% "akka-actor" % "@version@" @crossString@,
+         "com.typesafe.akka"  %% "akka-remote" % "@version@" @crossString@,
+
+         // ---- test dependencies ----
+         "com.typesafe.akka" %% "akka-testkit" % "@version@" %
+           "test" cross CrossVersion.full,
+         "com.typesafe.akka" %% "akka-remote-tests-experimental" % "@version@" %
+           "test" cross CrossVersion.full,
+         "org.scalatest"     %% "scalatest" % "1.8-B2" % "test" cross CrossVersion.full,
+         "junit"              % "junit" % "4.5" % "test"
+       )
+     }
+   }
 
 You can specify JVM options for the forked JVMs::
 
@@ -73,7 +86,7 @@ You can specify JVM options for the forked JVMs::
 Running tests
 =============
 
-The multi-jvm tasks are similar to the normal tasks: ``test``, ``test-only``,
+The multi-JVM tasks are similar to the normal tasks: ``test``, ``test-only``,
 and ``run``, but are under the ``multi-jvm`` configuration.
 
 So in Akka, to run all the multi-JVM tests in the akka-remote project use (at
@@ -111,8 +124,8 @@ options after the test names and ``--``. For example:
 Creating application tests
 ==========================
 
-The tests are discovered, and combined, through a naming convention. MultiJvm tests are
-located in ``src/multi-jvm/scala`` directory. A test is named with the following pattern:
+The tests are discovered, and combined, through a naming convention. MultiJvm test sources
+are located in ``src/multi-jvm/...``. A test is named with the following pattern:
 
 .. code-block:: none
 
@@ -162,13 +175,25 @@ spawned, one for each node. It will look like this:
     [success] Total time: ...
 
 
-Naming
-======
+Changing Defaults
+=================
+
+You can chenge the name of the multi-JVM test source directory by adding the following
+configuration to your project:
+
+.. code-block:: none
+
+   unmanagedSourceDirectories in MultiJvm <<=
+      Seq(baseDirectory(_ / "src/some_directory_here")).join
+
 
 You can change what the ``MultiJvm`` identifier is. For example, to change it to
-``ClusterTest`` use the ``multiJvmMarker`` setting::
+``ClusterTest`` use the ``multiJvmMarker`` setting:
+
+.. code-block:: none
 
    multiJvmMarker in MultiJvm := "ClusterTest"
+
 
 Your tests should now be named ``{TestName}ClusterTest{NodeName}``.
 

@@ -8,6 +8,7 @@ import language.postfixOps
 import akka.testkit.{ AkkaSpec ⇒ MyFavoriteTestFrameWorkPlusAkkaTestKit }
 //#test-code
 import akka.actor.Props
+import scala.collection.immutable
 
 class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
 
@@ -24,7 +25,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
     case object Flush
 
     // sent events
-    case class Batch(obj: Seq[Any])
+    case class Batch(obj: immutable.Seq[Any])
     //#simple-events
     //#simple-state
     // states
@@ -34,7 +35,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
 
     sealed trait Data
     case object Uninitialized extends Data
-    case class Todo(target: ActorRef, queue: Seq[Any]) extends Data
+    case class Todo(target: ActorRef, queue: immutable.Seq[Any]) extends Data
     //#simple-state
     //#simple-fsm
     class Buncher extends Actor with FSM[State, Data] {
@@ -193,12 +194,12 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
       buncher ! SetTarget(testActor)
       buncher ! Queue(42)
       buncher ! Queue(43)
-      expectMsg(Batch(Seq(42, 43)))
+      expectMsg(Batch(immutable.Seq(42, 43)))
       buncher ! Queue(44)
       buncher ! Flush
       buncher ! Queue(45)
-      expectMsg(Batch(Seq(44)))
-      expectMsg(Batch(Seq(45)))
+      expectMsg(Batch(immutable.Seq(44)))
+      expectMsg(Batch(immutable.Seq(45)))
     }
 
     "batch not if uninitialized" in {

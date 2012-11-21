@@ -9,12 +9,13 @@ import akka.actor._
 import akka.{ ConfigurationException, AkkaException }
 import akka.actor.ActorSystem.Settings
 import akka.util.{ Timeout, ReentrantGuard }
-import scala.concurrent.duration._
 import java.util.concurrent.atomic.AtomicInteger
-import scala.util.control.NoStackTrace
 import java.util.concurrent.TimeoutException
+import scala.annotation.implicitNotFound
+import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.concurrent.Await
-import annotation.implicitNotFound
+import scala.util.control.NoStackTrace
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -448,7 +449,7 @@ object Logging {
   }
 
   // these type ascriptions/casts are necessary to avoid CCEs during construction while retaining correct type
-  val AllLogLevels: Seq[LogLevel] = Seq(ErrorLevel, WarningLevel, InfoLevel, DebugLevel)
+  val AllLogLevels: immutable.Seq[LogLevel] = Vector(ErrorLevel, WarningLevel, InfoLevel, DebugLevel)
 
   /**
    * Obtain LoggingAdapter for the given actor system and source object. This
@@ -877,15 +878,25 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
   protected def notifyDebug(message: String): Unit = bus.publish(Debug(logSource, logClass, message))
 }
 
-private[akka] object NoLogging extends LoggingAdapter {
-  def isErrorEnabled = false
-  def isWarningEnabled = false
-  def isInfoEnabled = false
-  def isDebugEnabled = false
+/**
+ * NoLogging is a LoggingAdapter that does absolutely nothing – no logging at all.
+ */
+object NoLogging extends LoggingAdapter {
 
-  protected def notifyError(message: String): Unit = ()
-  protected def notifyError(cause: Throwable, message: String): Unit = ()
-  protected def notifyWarning(message: String): Unit = ()
-  protected def notifyInfo(message: String): Unit = ()
-  protected def notifyDebug(message: String): Unit = ()
+  /**
+   * Java API to return the reference to NoLogging
+   * @return The NoLogging instance
+   */
+  def getInstance = this
+
+  final override def isErrorEnabled = false
+  final override def isWarningEnabled = false
+  final override def isInfoEnabled = false
+  final override def isDebugEnabled = false
+
+  final protected override def notifyError(message: String): Unit = ()
+  final protected override def notifyError(cause: Throwable, message: String): Unit = ()
+  final protected override def notifyWarning(message: String): Unit = ()
+  final protected override def notifyInfo(message: String): Unit = ()
+  final protected override def notifyDebug(message: String): Unit = ()
 }

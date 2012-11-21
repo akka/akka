@@ -59,7 +59,7 @@ object AkkaKernelPlugin extends Plugin {
     (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state) map { (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st) ⇒
 
       if (isKernelProject(allDeps)) {
-        val log = logger(st)
+        val log = st.log
         val distBinPath = conf.outputDirectory / "bin"
         val distConfigPath = conf.outputDirectory / "config"
         val distDeployPath = conf.outputDirectory / "deploy"
@@ -201,7 +201,7 @@ object AkkaKernelPlugin extends Plugin {
 
     def setting[A](key: SettingKey[A], errorMessage: ⇒ String) = {
       optionalSetting(key) getOrElse {
-        logger(state).error(errorMessage);
+        state.log.error(errorMessage);
         throw new IllegalArgumentException()
       }
     }

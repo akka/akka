@@ -45,6 +45,9 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getInt("akka.actor.deployment.default.virtual-nodes-factor") must be(10)
         settings.DefaultVirtualNodesFactor must be(10)
+
+        getMilliseconds("akka.actor.unstarted-push-timeout") must be(10.seconds.toMillis)
+        settings.UnstartedPushTimeout.duration must be(10.seconds)
       }
 
       {
