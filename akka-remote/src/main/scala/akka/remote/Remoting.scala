@@ -189,20 +189,34 @@ private[remote] object EndpointManager {
 
   // Not threadsafe -- only to be used in HeadActor
   private[EndpointManager] class EndpointRegistry {
-    @volatile private var addressToEndpointAndPolicy = HashMap[Address, EndpointPolicy]()
-    @volatile private var endpointToAddress = HashMap[ActorRef, Address]()
+    private var addressToEndpointAndPolicy = HashMap[Address, EndpointPolicy]()
+    private var endpointToAddress = HashMap[ActorRef, Address]()
+    private var addressToPassive = HashMap[Address, ActorRef]()
 
     def getEndpointWithPolicy(address: Address): Option[EndpointPolicy] = addressToEndpointAndPolicy.get(address)
 
+    def hasActiveEndpointFor(address: Address): Boolean = addressToEndpointAndPolicy.get(address) match {
+      case Some(Pass(_)) ⇒ true
+      case _             ⇒ false
+    }
+
+    def passiveEndpointFor(address: Address): Option[ActorRef] = addressToPassive.get(address)
+
     def prune(pruneAge: Long): Unit = {
       addressToEndpointAndPolicy = addressToEndpointAndPolicy.filter {
-        case (_, Pass(_))                ⇒ true
         case (_, Latched(timeOfFailure)) ⇒ timeOfFailure + pruneAge > System.nanoTime()
+        case _                           ⇒ true
       }
     }
 
-    def registerEndpoint(address: Address, endpoint: ActorRef): ActorRef = {
+    def registerActiveEndpoint(address: Address, endpoint: ActorRef): ActorRef = {
       addressToEndpointAndPolicy = addressToEndpointAndPolicy + (address -> Pass(endpoint))
+      endpointToAddress = endpointToAddress + (endpoint -> address)
+      endpoint
+    }
+
+    def registerPassiveEndpoint(address: Address, endpoint: ActorRef): ActorRef = {
+      addressToPassive = addressToPassive + (address -> endpoint)
       endpointToAddress = endpointToAddress + (endpoint -> address)
       endpoint
     }
@@ -285,19 +299,29 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
       endpoints.getEndpointWithPolicy(recipientAddress) match {
         case Some(Pass(endpoint)) ⇒ endpoint ! s
-        case Some(Latched(timeOfFailure)) ⇒ if (retryLatchOpen(timeOfFailure))
-          createEndpoint(recipientAddress, recipientRef.localAddressToUse, None) ! s
-        else extendedSystem.deadLetters ! message
+        case Some(Latched(timeOfFailure)) ⇒ if (retryLatchOpen(timeOfFailure)) {
+          val endpoint = createEndpoint(recipientAddress, recipientRef.localAddressToUse, None)
+          endpoints.registerActiveEndpoint(recipientAddress, endpoint)
+          endpoint ! s
+        } else extendedSystem.deadLetters ! message
         case Some(Quarantined(_)) ⇒ extendedSystem.deadLetters ! message
-        case None                 ⇒ createEndpoint(recipientAddress, recipientRef.localAddressToUse, None) ! s
+        case None ⇒
+          val endpoint = createEndpoint(recipientAddress, recipientRef.localAddressToUse, None)
+          endpoints.registerActiveEndpoint(recipientAddress, endpoint)
+          endpoint ! s
 
       }
 
-    case InboundAssociation(handle) ⇒
-      val endpoint = createEndpoint(handle.remoteAddress, handle.localAddress, Some(handle))
-      eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
-      if (settings.UsePassiveConnections) endpoints.registerEndpoint(handle.localAddress, endpoint)
-    case Terminated(endpoint) ⇒ endpoints.removeIfNotLatched(endpoint)
+    case InboundAssociation(handle) ⇒ endpoints.passiveEndpointFor(handle.remoteAddress) match {
+      case Some(endpoint) ⇒ endpoint ! EndpointWriter.TakeOver(handle)
+      case None ⇒
+        val endpoint = createEndpoint(handle.remoteAddress, handle.localAddress, Some(handle))
+        eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
+        if (settings.UsePassiveConnections && !endpoints.hasActiveEndpointFor(handle.remoteAddress)) {
+          endpoints.registerActiveEndpoint(handle.remoteAddress, endpoint)
+        } else endpoints.registerPassiveEndpoint(handle.remoteAddress, endpoint)
+    }
+    case Terminated(endpoint) ⇒ endpoints.removeIfNotLatched(endpoint);
     case Prune                ⇒ endpoints.prune(settings.RetryLatchClosedFor)
   }
 
@@ -363,7 +387,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       .withDispatcher("akka.remoting.writer-dispatcher"),
       "endpointWriter-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + endpointId)
 
-    endpoints.registerEndpoint(remoteAddress, endpoint)
+    context.watch(endpoint) // TODO: see what to do with this
+
   }
 
   private def retryLatchOpen(timeOfFailure: Long): Boolean = (timeOfFailure + settings.RetryLatchClosedFor) < System.nanoTime()

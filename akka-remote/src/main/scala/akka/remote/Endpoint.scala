@@ -83,6 +83,7 @@ class DefaultMessageDispatcher(private val system: ExtendedActorSystem,
 
 object EndpointWriter {
 
+  case class TakeOver(handle: AssociationHandle)
   case object BackoffTimer
 
   sealed trait State
@@ -107,10 +108,12 @@ private[remote] class EndpointWriter(
   import context.dispatcher
 
   val extendedSystem: ExtendedActorSystem = context.system.asInstanceOf[ExtendedActorSystem]
+  val eventPublisher = new EventPublisher(context.system, log, settings.LogLifecycleEvents)
+
   var reader: ActorRef = null
   var handle: AssociationHandle = handleOrActive.getOrElse(null)
   var inbound = false
-  val eventPublisher = new EventPublisher(context.system, log, settings.LogLifecycleEvents)
+  var readerId = 0
 
   override val supervisorStrategy = OneForOneStrategy() {
     case NonFatal(e) ⇒
@@ -178,13 +181,25 @@ private[remote] class EndpointWriter(
         case NonFatal(e) ⇒ publishAndThrow("Failed to write message to the transport", e)
       }
       if (success) stay else {
-        stash
+        stash()
         goto(Buffering)
       }
   }
 
   whenUnhandled {
-    case Event(Terminated(r), _) if r == reader ⇒ stop()
+    case Event(Terminated(r), _) if r == reader ⇒ publishAndThrow("Disassociated", null)
+    case Event(TakeOver(newHandle), _) ⇒
+      // Shutdown old reader
+      if (handle ne null) handle.disassociate()
+      if (reader ne null) {
+        context.unwatch(reader)
+        context.stop(reader)
+      }
+      handle = newHandle
+      inbound = true
+      startReadEndpoint()
+      unstashAll()
+      goto(Writing)
   }
 
   onTransition {
@@ -199,6 +214,7 @@ private[remote] class EndpointWriter(
 
   onTermination {
     case StopEvent(_, _, _) ⇒ if (handle ne null) {
+      unstashAll()
       handle.disassociate()
       eventPublisher.notifyListeners(DisassociatedEvent(localAddress, remoteAddress, inbound))
     }
@@ -207,6 +223,7 @@ private[remote] class EndpointWriter(
   private def startReadEndpoint(): Unit = {
     reader = context.actorOf(Props(new EndpointReader(codec, handle.localAddress, msgDispatch)),
       "endpointReader-" + URLEncoder.encode(remoteAddress.toString, "utf-8"))
+    readerId += 1
     handle.readHandlerPromise.success(reader)
     context.watch(reader)
   }
