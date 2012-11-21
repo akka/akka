@@ -14,7 +14,7 @@ option optimize_for = SPEED;
 *******************************************/
 
 message AkkaRemoteProtocol {
-  optional RemoteMessageProtocol message = 1;
+  optional bytes payload = 1;
   optional RemoteControlProtocol instruction = 2;
 }
 

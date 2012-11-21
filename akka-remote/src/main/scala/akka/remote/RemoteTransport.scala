@@ -239,7 +239,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
    * Returns a newly created AkkaRemoteProtocol with the given message payload.
    */
   def createMessageSendEnvelope(rmp: RemoteMessageProtocol): AkkaRemoteProtocol =
-    AkkaRemoteProtocol.newBuilder.setMessage(rmp).build
+    AkkaRemoteProtocol.newBuilder.setPayload(rmp.toByteString).build
 
   /**
    * Returns a newly created AkkaRemoteProtocol with the given control payload.

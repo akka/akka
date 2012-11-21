@@ -188,6 +188,19 @@ class RemoteActorRefProvider(
     case _ ⇒ local.actorFor(ref, path)
   }
 
+  /*
+   * INTERNAL API
+   * Called in deserialization of incoming remote messages. In this case the correct local address is known, therefore
+   * this method is faster than the actorFor above.
+   */
+  def actorForWithLocalAddress(ref: InternalActorRef, path: String, localAddress: Address): InternalActorRef = path match {
+    case ActorPathExtractor(address, elems) ⇒
+      if (isSelfAddress(address)) actorFor(rootGuardian, elems)
+      else new RemoteActorRef(this, transport, localAddress,
+        new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
+    case _ ⇒ local.actorFor(ref, path)
+  }
+
   def actorFor(ref: InternalActorRef, path: Iterable[String]): InternalActorRef = local.actorFor(ref, path)
 
   /**

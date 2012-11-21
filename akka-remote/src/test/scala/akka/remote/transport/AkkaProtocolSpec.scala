@@ -68,10 +68,9 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
   val codec = AkkaPduProtobufCodec
 
-  val provider = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
-
   val testMsg = RemoteProtocol.MessageProtocol.newBuilder().setSerializerId(0).setMessage(PByteString.copyFromUtf8("foo")).build
-  val testMsgPdu: ByteString = codec.constructMessagePdu(localAkkaAddress, self, testMsg, None)
+  val testEnvelope = codec.constructMessage(localAkkaAddress, self, testMsg, None)
+  val testMsgPdu: ByteString = codec.constructPayload(testEnvelope)
 
   def testHeartbeat = InboundPayload(codec.constructHeartbeat)
   def testPayload = InboundPayload(testMsgPdu)
@@ -91,7 +90,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
   def lastActivityIsHeartbeat(registry: AssociationRegistry) = if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
     case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-      codec.decodePdu(payload, provider) match {
+      codec.decodePdu(payload) match {
         case Heartbeat ⇒ true
         case _         ⇒ false
       }
@@ -100,7 +99,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
   def lastActivityIsAssociate(registry: AssociationRegistry, cookie: Option[String]) = if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
     case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-      codec.decodePdu(payload, provider) match {
+      codec.decodePdu(payload) match {
         case Associate(c, origin) if c == cookie && origin == localAddress ⇒ true
         case _ ⇒ false
       }
@@ -109,7 +108,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
   def lastActivityIsDisassociate(registry: AssociationRegistry) = if (registry.logSnapshot.isEmpty) false else registry.logSnapshot.last match {
     case WriteAttempt(sender, recipient, payload) if sender == localAddress && recipient == remoteAddress ⇒
-      codec.decodePdu(payload, provider) match {
+      codec.decodePdu(payload) match {
         case Disassociate ⇒ true
         case _            ⇒ false
       }
@@ -161,7 +160,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       reader ! testPayload
 
       expectMsgPF() {
-        case InboundPayload(p) ⇒ p must be === testMsgPdu
+        case InboundPayload(p) ⇒ p must be === testEnvelope
       }
     }
 

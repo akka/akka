@@ -224,9 +224,7 @@ private[transport] class AkkaProtocolHandle(
   private val codec: AkkaPduCodec)
   extends AssociationHandle {
 
-  // FIXME: This is currently a hack! The caller should not know anything about the format of the Akka protocol
-  // but here it does. This is temporary and will be fixed.
-  override def write(payload: ByteString): Boolean = wrappedHandle.write(payload)
+  override def write(payload: ByteString): Boolean = wrappedHandle.write(codec.constructPayload(payload))
 
   override def disassociate(): Unit = stateActor ! DisassociateUnderlying
 
@@ -295,9 +293,6 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
            failureDetector: FailureDetector) = {
     this(InboundUnassociated(associationHandler, wrappedHandle), localAddress, settings, codec, failureDetector)
   }
-
-  // FIXME: This may break with ClusterActorRefProvider if it does not extends RemoteActorRefProvider
-  val provider = context.system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
 
   initialData match {
     case d: OutboundUnassociated ⇒
@@ -375,10 +370,10 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
           stop()
 
         // Any other activity is considered an implicit acknowledgement of the association
-        case Message(recipient, recipientAddress, serializedMessage, senderOption) ⇒
+        case Payload(payload) ⇒
           sendHeartbeat(wrappedHandle)
           goto(Open) using
-            AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue(p))
+            AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue(payload))
 
         case Heartbeat ⇒
           sendHeartbeat(wrappedHandle)
@@ -405,9 +400,9 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
 
         case Heartbeat ⇒ failureDetector.heartbeat(); stay()
 
-        case Message(recipient, recipientAddress, serializedMessage, senderOption) ⇒
+        case Payload(payload) ⇒
           // Queue message until handler is registered
-          stay() using AssociatedWaitHandler(handlerFuture, wrappedHandle, queue :+ p)
+          stay() using AssociatedWaitHandler(handlerFuture, wrappedHandle, queue :+ payload)
 
         case _ ⇒ stay()
       }
@@ -419,8 +414,8 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
 
         case Heartbeat ⇒ failureDetector.heartbeat(); stay()
 
-        case Message(recipient, recipientAddress, serializedMessage, senderOption) ⇒
-          handler ! InboundPayload(p)
+        case Payload(payload) ⇒
+          handler ! InboundPayload(payload)
           stay()
 
         case _ ⇒ stay()
@@ -525,7 +520,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
   }
 
   private def decodePdu(pdu: ByteString): AkkaPdu = ape("Error while decoding incoming Akka PDU of length: " + pdu.length) {
-    codec.decodePdu(pdu, provider)
+    codec.decodePdu(pdu)
   }
 
   // Neither heartbeats neither disassociate cares about backing off if write fails:

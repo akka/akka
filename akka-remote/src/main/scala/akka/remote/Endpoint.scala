@@ -173,7 +173,7 @@ private[remote] class EndpointWriter(
 
   when(Writing) {
     case Event(Send(msg, senderOption, recipient), _) ⇒
-      val pdu = codec.constructMessagePdu(recipient.localAddressToUse, recipient, serializeMessage(msg), senderOption)
+      val pdu = codec.constructMessage(recipient.localAddressToUse, recipient, serializeMessage(msg), senderOption)
       val success = try handle.write(pdu) catch {
         case NonFatal(e) ⇒ publishAndThrow("Failed to write message to the transport", e)
       }
@@ -205,7 +205,7 @@ private[remote] class EndpointWriter(
   }
 
   private def startReadEndpoint(): Unit = {
-    reader = context.actorOf(Props(new EndpointReader(codec, msgDispatch)),
+    reader = context.actorOf(Props(new EndpointReader(codec, handle.localAddress, msgDispatch)),
       "endpointReader-" + URLEncoder.encode(remoteAddress.toString, "utf-8"))
     handle.readHandlerPromise.success(reader)
     context.watch(reader)
@@ -221,6 +221,7 @@ private[remote] class EndpointWriter(
 
 private[remote] class EndpointReader(
   val codec: AkkaPduCodec,
+  val localAddress: Address,
   val msgDispatch: InboundMessageDispatcher) extends Actor {
 
   val provider = context.system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider]
@@ -228,18 +229,13 @@ private[remote] class EndpointReader(
   override def receive: Receive = {
     case Disassociated ⇒ context.stop(self)
 
-    // FIXME: Do 2 step deserialization (old-remoting must be removed first)
-    case InboundPayload(p) ⇒ decodePdu(p) match {
-
-      case Message(recipient, recipientAddress, serializedMessage, senderOption) ⇒
-        msgDispatch.dispatch(recipient, recipientAddress, serializedMessage, senderOption)
-
-      case _ ⇒
-    }
+    case InboundPayload(p) ⇒
+      val msg = decodePdu(p)
+      msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.senderOption)
   }
 
-  private def decodePdu(pdu: ByteString): AkkaPdu = try {
-    codec.decodePdu(pdu, provider)
+  private def decodePdu(pdu: ByteString): Message = try {
+    codec.decodeMessage(pdu, provider, localAddress)
   } catch {
     case NonFatal(e) ⇒ throw new EndpointException("Error while decoding incoming Akka PDU", e)
   }

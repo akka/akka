@@ -12,7 +12,7 @@ import org.jboss.netty.channel.{ ChannelFutureListener, ChannelHandler, DefaultC
 import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
 import org.jboss.netty.handler.execution.ExecutionHandler
 import org.jboss.netty.handler.timeout.{ IdleState, IdleStateEvent, IdleStateAwareChannelHandler, IdleStateHandler }
-import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
+import akka.remote.RemoteProtocol.{ RemoteMessageProtocol, RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
 import akka.remote.{ RemoteProtocol, RemoteMessage, RemoteLifeCycleEvent, RemoteClientStarted, RemoteClientShutdown, RemoteClientException, RemoteClientError, RemoteClientDisconnected, RemoteClientConnected }
 import akka.AkkaException
 import akka.event.Logging
@@ -273,8 +273,8 @@ private[akka] class ActiveRemoteClientHandler(
             case CommandType.SHUTDOWN ⇒ runOnceNow { client.netty.shutdownClientConnection(remoteAddress) }
             case _                    ⇒ //Ignore others
           }
-        case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
-          client.netty.receiveMessage(new RemoteMessage(arp.getMessage, client.netty.system))
+        case arp: AkkaRemoteProtocol if arp.hasPayload ⇒
+          client.netty.receiveMessage(new RemoteMessage(RemoteMessageProtocol.parseFrom(arp.getPayload), client.netty.system))
         case other ⇒
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.netty, client.remoteAddress)
       }
