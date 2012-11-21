@@ -45,6 +45,18 @@ object RemotingSpec {
       backlog = 4096
       hostname = localhost
       enable-ssl = false
+
+      server-socket-worker-pool {
+        pool-size-min = 2
+        pool-size-factor = 1.0
+        pool-size-max = 8
+      }
+
+      client-socket-worker-pool {
+        pool-size-min = 2
+        pool-size-factor = 1.0
+        pool-size-max = 8
+      }
     }
 
     common-ssl-settings {
