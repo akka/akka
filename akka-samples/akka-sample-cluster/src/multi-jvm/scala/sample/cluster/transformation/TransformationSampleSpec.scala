@@ -88,6 +88,8 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
         Cluster(system) join node(frontend1).address
         system.actorOf(Props[TransformationFrontend], name = "frontend")
       }
+      testConductor.enter("frontend2-started")
+
       runOn(backend2, backend3) {
         Cluster(system) join node(backend1).address
         system.actorOf(Props[TransformationBackend], name = "backend")
