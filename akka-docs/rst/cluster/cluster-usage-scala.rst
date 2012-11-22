@@ -496,7 +496,8 @@ Run it without parameters to see instructions about how to use the script::
                 is-available - Checks if the member node is available
                   is-running - Checks if the member node is running
              has-convergence - Checks if there is a cluster convergence
-  Where the <node-url> should be on the format of 'akka://actor-system-name@hostname:port'
+  Where the <node-url> should be on the format of 
+    'akka://actor-system-name@hostname:port'
 
   Examples: bin/akka-cluster localhost:9999 is-available
             bin/akka-cluster localhost:9999 join akka://MySystem@darkstar:2552
