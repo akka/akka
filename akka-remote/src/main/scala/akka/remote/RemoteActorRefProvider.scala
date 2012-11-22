@@ -14,6 +14,10 @@ import scala.util.control.NonFatal
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
+ * 
+ * INTERNAL API!
+ * 
+ * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
 class RemoteActorRefProvider(
   val systemName: String,
