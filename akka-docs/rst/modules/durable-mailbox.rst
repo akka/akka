@@ -96,7 +96,8 @@ added in concrete subclass like this:
 
 To use ``DurableMailboxDocSpec`` add this dependency::
 
-  "com.typesafe.akka" %% "akka-mailboxes-common" % "@version@" classifier "test" @crossString@
+  "com.typesafe.akka" %% "akka-mailboxes-common" % 
+    "@version@" classifier "test" @crossString@
 
 For more inspiration you can look at the old implementations based on Redis, MongoDB, Beanstalk,
 and ZooKeeper, which can be found in Akka git repository tag
