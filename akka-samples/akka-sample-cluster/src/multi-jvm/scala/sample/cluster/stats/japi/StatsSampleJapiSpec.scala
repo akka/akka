@@ -76,6 +76,11 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       Cluster(system) join firstAddress
 
       system.actorOf(Props[StatsWorker], "statsWorker")
+      // FIXME 2654
+      // statsWorker must be started on all nodes before the
+      // statsService router is started and looks it up
+      testConductor.enter("statsWorker-started")
+
       system.actorOf(Props[StatsService], "statsService")
 
       expectMsgAllOf(
@@ -88,32 +93,35 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       testConductor.enter("all-up")
     }
 
-
     "show usage of the statsService from one node" in within(15 seconds) {
       runOn(second) {
-        val service = system.actorFor(node(third) / "user" / "statsService")
-        service ! new StatsJob("this is the text that will be analyzed")
-        val meanWordLength = expectMsgPF() {
-          case r: StatsResult ⇒ r.getMeanWordLength
-        }
-        meanWordLength must be(3.875 plusOrMinus 0.001)
+        assertServiceOk
       }
 
       testConductor.enter("done-2")
     }
-    //#test-statsService
-    
-    "show usage of the statsService from all nodes" in within(15 seconds) {
+
+    def assertServiceOk: Unit = {
       val service = system.actorFor(node(third) / "user" / "statsService")
-      service ! new StatsJob("this is the text that will be analyzed")
-      val meanWordLength = expectMsgPF() {
-        case r: StatsResult ⇒ r.getMeanWordLength
+      // eventually the service should be ok,
+      // first attempts might fail because worker actors not started yet
+      awaitCond {
+        service ! new StatsJob("this is the text that will be analyzed")
+        expectMsgPF() {
+          case unavailble: JobFailed ⇒ false
+          case r: StatsResult ⇒
+            r.getMeanWordLength must be(3.875 plusOrMinus 0.001)
+            true
+        }
       }
-      meanWordLength must be(3.875 plusOrMinus 0.001)
+    }
+    //#test-statsService
+
+    "show usage of the statsService from all nodes" in within(15 seconds) {
+      assertServiceOk
 
       testConductor.enter("done-3")
     }
-
 
   }
 
