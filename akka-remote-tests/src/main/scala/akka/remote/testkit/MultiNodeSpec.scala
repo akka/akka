@@ -103,7 +103,7 @@ abstract class MultiNodeConfig {
       else ConfigFactory.empty
 
     val configs = (_nodeConf get myself).toList ::: _commonConf.toList ::: transportConfig :: MultiNodeSpec.nodeConfig :: MultiNodeSpec.baseConfig :: Nil
-    configs reduce (_ withFallback _)
+    configs reduceLeft (_ withFallback _)
   }
 
   private[testkit] def deployments(node: RoleName): Seq[String] = (_deployments get node getOrElse Nil) ++ _allDeploy
