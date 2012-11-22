@@ -54,7 +54,7 @@ class StatsService extends Actor {
 
 class StatsAggregator(expectedResults: Int, replyTo: ActorRef) extends Actor {
   var results = IndexedSeq.empty[Int]
-  context.setReceiveTimeout(5 seconds)
+  context.setReceiveTimeout(3 seconds)
 
   def receive = {
     case wordCount: Int ⇒
@@ -106,7 +106,7 @@ class StatsFacade extends Actor with ActorLogging {
     case job: StatsJob if currentMaster.isEmpty ⇒
       sender ! JobFailed("Service unavailable, try again later")
     case job: StatsJob ⇒
-      implicit val timeout = Timeout(10.seconds)
+      implicit val timeout = Timeout(5.seconds)
       currentMaster foreach {
         _ ? job recover {
           case _ ⇒ JobFailed("Service unavailable, try again later")

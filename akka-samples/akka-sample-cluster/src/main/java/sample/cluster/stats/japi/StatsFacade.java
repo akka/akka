@@ -49,7 +49,7 @@ public class StatsFacade extends UntypedActor {
 
     } else if (message instanceof StatsJob) {
       StatsJob job = (StatsJob) message;
-      Future<Object> f = ask(currentMaster, job, new Timeout(10, SECONDS)).
+      Future<Object> f = ask(currentMaster, job, new Timeout(5, SECONDS)).
         recover(new Recover<Object>() {
           public Object recover(Throwable t) {
             return new JobFailed("Service unavailable, try again later");
