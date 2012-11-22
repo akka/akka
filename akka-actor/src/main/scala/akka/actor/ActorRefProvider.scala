@@ -146,6 +146,11 @@ trait ActorRefProvider {
    * attempt is made to verify actual reachability).
    */
   def getExternalAddressFor(addr: Address): Option[Address]
+
+  /**
+   * Obtain the external address of the default transport.
+   */
+  def getDefaultAddress: Address
 }
 
 /**
@@ -597,4 +602,6 @@ class LocalActorRefProvider(
   }
 
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
+
+  def getDefaultAddress: Address = rootPath.address
 }

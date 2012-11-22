@@ -32,9 +32,7 @@ class RemoteActorRefProvider(
   private var _log = local.log
   def log: LoggingAdapter = _log
 
-  @volatile
-  private var _rootPath = local.rootPath
-  override def rootPath: ActorPath = _rootPath
+  override def rootPath: ActorPath = local.rootPath
   override def deadLetters: InternalActorRef = local.deadLetters
 
   // these are only available after init()
@@ -63,7 +61,7 @@ class RemoteActorRefProvider(
   def init(system: ActorSystemImpl): Unit = {
     local.init(system)
 
-    _remoteDaemon = new RemoteSystemDaemon(system, local.rootPath / "remote", rootGuardian, log, untrustedMode = remoteSettings.UntrustedMode)
+    _remoteDaemon = new RemoteSystemDaemon(system, rootPath / "remote", rootGuardian, log, untrustedMode = remoteSettings.UntrustedMode)
     local.registerExtraNames(Map(("remote", remoteDaemon)))
 
     _serialization = SerializationExtension(system)
@@ -83,8 +81,6 @@ class RemoteActorRefProvider(
 
     // this enables reception of remote requests
     _transport.start()
-
-    _rootPath = RootActorPath(local.rootPath.address.copy(host = transport.address.host, port = transport.address.port))
 
     val remoteClientLifeCycleHandler = system.systemActorOf(Props(new Actor {
       def receive = {
@@ -201,8 +197,10 @@ class RemoteActorRefProvider(
     }
   }
 
+  def getDefaultAddress: Address = transport.address
+
   private def isSelfAddress(address: Address): Boolean =
-    address == local.rootPath.address || address == rootPath.address || address == transport.address
+    address == rootPath.address || address == transport.address
 
 }
 
