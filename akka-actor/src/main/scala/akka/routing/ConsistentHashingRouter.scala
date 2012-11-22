@@ -240,7 +240,7 @@ trait ConsistentHashingLike { this: RouterConfig ⇒
     }
 
     val log = Logging(routeeProvider.context.system, routeeProvider.context.self)
-    val selfAddress = routeeProvider.context.system.asInstanceOf[ExtendedActorSystem].provider.rootPath.address
+    val selfAddress = routeeProvider.context.system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
     val vnodes =
       if (virtualNodesFactor == 0) routeeProvider.context.system.settings.DefaultVirtualNodesFactor
       else virtualNodesFactor
