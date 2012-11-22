@@ -126,13 +126,14 @@ private[remote] class AkkaProtocolTransport(
     statusPromise.future
   }
 
-  override def shutdown(): Unit = {
-    manager ! PoisonPill
-  }
+  override def shutdown(): Unit = manager ! PoisonPill
+
 }
 
-private[transport] class AkkaProtocolManager(private val wrappedTransport: Transport,
-                                             private val settings: AkkaProtocolSettings) extends Actor {
+private[transport] class AkkaProtocolManager(
+  private val wrappedTransport: Transport,
+  private val settings: AkkaProtocolSettings)
+  extends Actor {
 
   import context.dispatcher
 
@@ -142,7 +143,7 @@ private[transport] class AkkaProtocolManager(private val wrappedTransport: Trans
     case NonFatal(_) ⇒ Stop
   }
 
-  private var nextId = 0L
+  private val nextId = Iterator from 0
 
   private val associationHandlerPromise: Promise[ActorRef] = Promise()
   associationHandlerPromise.future.map { HandlerRegistered(_) } pipeTo self
@@ -176,10 +177,8 @@ private[transport] class AkkaProtocolManager(private val wrappedTransport: Trans
     case InboundAssociation(handle) ⇒ handle.disassociate()
   }
 
-  private def actorNameFor(remoteAddress: Address): String = {
-    nextId += 1
-    "akkaProtocol-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + nextId
-  }
+  private def actorNameFor(remoteAddress: Address): String =
+    "akkaProtocol-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + nextId.next()
 
   private def ready: Receive = {
     case InboundAssociation(handle) ⇒
@@ -202,7 +201,7 @@ private[transport] class AkkaProtocolManager(private val wrappedTransport: Trans
         createFailureDetector())), actorNameFor(remoteAddress))
   }
 
-  private def createFailureDetector(): PhiAccrualFailureDetector = new PhiAccrualFailureDetector(
+  private def createFailureDetector(): FailureDetector = new PhiAccrualFailureDetector(
     settings.FailureDetectorThreshold,
     settings.FailureDetectorMaxSampleSize,
     settings.FailureDetectorStdDeviation,
@@ -232,8 +231,27 @@ private[transport] class AkkaProtocolHandle(
 
 private[transport] object ProtocolStateActor {
   sealed trait AssociationState
+
+  /*
+   * State when the underlying transport is not yet initialized
+   * State data can be OutboundUnassociated
+   */
   case object Closed extends AssociationState
+
+  /*
+   * State when the underlying transport is initialized, there is an association present, and we are waiting
+   * for the first message. Outbound connections can skip this phase if WaitActivity configuration parameter
+   * is turned off.
+   * State data can be OutboundUnderlyingAssociated (for outbound associations) or InboundUnassociated (for inbound
+   * when upper layer is not notified yet)
+   */
   case object WaitActivity extends AssociationState
+
+  /*
+   * State when the underlying transport is initialized and the handshake succeeded.
+   * If the upper layer did not yet provided a handler for incoming messages, state data is AssociatedWaitHandler.
+   * If everything is initialized, the state data is HandlerReady
+   */
   case object Open extends AssociationState
 
   case object HeartbeatTimer
@@ -241,7 +259,7 @@ private[transport] object ProtocolStateActor {
   sealed trait ProtocolStateData
   trait InitialProtocolStateData extends ProtocolStateData
 
-  // Nor the underlying, nor the provided transport is associated
+  // Neither the underlying, nor the provided transport is associated
   case class OutboundUnassociated(remoteAddress: Address, statusPromise: Promise[Status], transport: Transport)
     extends InitialProtocolStateData
 
@@ -301,7 +319,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
 
     case d: InboundUnassociated ⇒
       d.wrappedHandle.readHandlerPromise.success(self)
-      startWith(Closed, d)
+      startWith(WaitActivity, d)
   }
 
   when(Closed) {
@@ -321,11 +339,45 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
       failureDetector.heartbeat()
       initTimers()
 
-      if (settings.WaitActivityEnabled) {
+      if (settings.WaitActivityEnabled)
         goto(WaitActivity) using OutboundUnderlyingAssociated(statusPromise, wrappedHandle)
-      } else {
+      else
         goto(Open) using AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue.empty)
+
+    case Event(DisassociateUnderlying, _) ⇒
+      stop()
+
+    case _ ⇒ stay()
+
+  }
+
+  // Timeout of this state is implicitly handled by the failure detector
+  when(WaitActivity) {
+    case Event(Disassociated, _) ⇒
+      stop()
+
+    case Event(InboundPayload(p), OutboundUnderlyingAssociated(statusPromise, wrappedHandle)) ⇒
+      decodePdu(p) match {
+        case Disassociate ⇒
+          stop()
+
+        // Any other activity is considered an implicit acknowledgement of the association
+        case Payload(payload) ⇒
+          sendHeartbeat(wrappedHandle)
+          goto(Open) using
+            AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue(payload))
+
+        case Heartbeat ⇒
+          sendHeartbeat(wrappedHandle)
+          failureDetector.heartbeat()
+          goto(Open) using
+            AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue.empty)
+
+        case _ ⇒ goto(Open) using
+          AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue.empty)
       }
+
+    case Event(HeartbeatTimer, OutboundUnderlyingAssociated(_, wrappedHandle)) ⇒ handleTimers(wrappedHandle)
 
     // Events for inbound associations
     case Event(InboundPayload(p), InboundUnassociated(associationHandler, wrappedHandle)) ⇒
@@ -352,71 +404,27 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
 
       }
 
-    case Event(DisassociateUnderlying, _) ⇒
-      stop()
-
-    case _ ⇒ stay()
-
-  }
-
-  // Timeout of this state is implicitly handled by the failure detector
-  when(WaitActivity) {
-    case Event(Disassociated, OutboundUnderlyingAssociated(_, _)) ⇒
-      stop()
-
-    case Event(InboundPayload(p), OutboundUnderlyingAssociated(statusPromise, wrappedHandle)) ⇒
-      decodePdu(p) match {
-        case Disassociate ⇒
-          stop()
-
-        // Any other activity is considered an implicit acknowledgement of the association
-        case Payload(payload) ⇒
-          sendHeartbeat(wrappedHandle)
-          goto(Open) using
-            AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue(payload))
-
-        case Heartbeat ⇒
-          sendHeartbeat(wrappedHandle)
-          failureDetector.heartbeat()
-          goto(Open) using
-            AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue.empty)
-
-        case _ ⇒ goto(Open) using
-          AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue.empty)
-      }
-
-    case Event(HeartbeatTimer, OutboundUnderlyingAssociated(_, wrappedHandle)) ⇒ handleTimers(wrappedHandle)
-
   }
 
   when(Open) {
     case Event(Disassociated, _) ⇒
       stop()
 
-    case Event(InboundPayload(p), AssociatedWaitHandler(handlerFuture, wrappedHandle, queue)) ⇒
+    case Event(InboundPayload(p), _) ⇒
       decodePdu(p) match {
         case Disassociate ⇒
           stop()
 
         case Heartbeat ⇒ failureDetector.heartbeat(); stay()
 
-        case Payload(payload) ⇒
-          // Queue message until handler is registered
-          stay() using AssociatedWaitHandler(handlerFuture, wrappedHandle, queue :+ payload)
-
-        case _ ⇒ stay()
-      }
-
-    case Event(InboundPayload(p), HandlerReady(handler, _)) ⇒
-      decodePdu(p) match {
-        case Disassociate ⇒
-          stop()
-
-        case Heartbeat ⇒ failureDetector.heartbeat(); stay()
-
-        case Payload(payload) ⇒
-          handler ! InboundPayload(payload)
-          stay()
+        case Payload(payload) ⇒ stateData match {
+          case AssociatedWaitHandler(handlerFuture, wrappedHandle, queue) ⇒
+            // Queue message until handler is registered
+            stay() using AssociatedWaitHandler(handlerFuture, wrappedHandle, queue :+ payload)
+          case HandlerReady(handler, _) ⇒
+            handler ! InboundPayload(payload)
+            stay()
+        }
 
         case _ ⇒ stay()
       }

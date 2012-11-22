@@ -166,7 +166,6 @@ class RemoteActorRefProvider(
           } else {
             val localAddress = transport.localAddressForRemote(addr)
             val rpath = RootActorPath(addr) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements
-            useActorOnNode(rpath, props, d, supervisor)
             new RemoteActorRef(this, transport, localAddress, rpath, supervisor, Some(props), Some(d))
           }
 

@@ -195,14 +195,13 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "support remote look-ups" in {
       here ! "ping"
-      expectMsgPF() {
-        case ("pong", s: AnyRef) if s eq testActor ⇒ true
-      }
+      expectMsg("pong")
+      lastSender must be(testActor)
     }
 
     "send error message for wrong address" in {
       EventFilter.error(start = "AssociationError", occurrences = 1).intercept {
-        system.actorFor("test.akka://remotesys@localhost:12346/user/echo") ! "ping"
+        system.actorFor("test.akka://nonexistingsystem@localhost:12346/user/echo") ! "ping"
       }
     }
 

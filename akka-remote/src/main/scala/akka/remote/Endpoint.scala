@@ -41,7 +41,7 @@ class DefaultMessageDispatcher(private val system: ExtendedActorSystem,
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
     val originalReceiver = recipient.path
 
-    lazy val msgLog = "RemoteMessage: " + payload + " to " + recipient + "<+{" + originalReceiver + "} from " + sender
+    lazy val msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender]"
 
     recipient match {
 
@@ -115,11 +115,7 @@ private[remote] class EndpointWriter(
   var inbound = false
   var readerId = 0
 
-  override val supervisorStrategy = OneForOneStrategy() {
-    case NonFatal(e) ⇒
-      publishAndThrow(e)
-      Stop
-  }
+  override val supervisorStrategy = OneForOneStrategy() { case NonFatal(e) ⇒ publishAndThrow(e) }
 
   val msgDispatch =
     new DefaultMessageDispatcher(extendedSystem, extendedSystem.provider.asInstanceOf[RemoteActorRefProvider], log)
@@ -154,11 +150,11 @@ private[remote] class EndpointWriter(
       stash()
       stay
     case Event(Transport.Invalid(e), _) ⇒
-      log.error(e, "Tried to associate with invalid remote address " + remoteAddress +
-        ". Address is now quarantined, all messages to this address will be delivered to dead letters.")
+      log.error(e, "Tried to associate with invalid remote address [{}]. " +
+        "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
       publishAndThrow(new InvalidAssociation(localAddress, remoteAddress, e))
 
-    case Event(Transport.Fail(e), _) ⇒ publishAndThrow(s"Association failed with $remoteAddress", e)
+    case Event(Transport.Fail(e), _) ⇒ publishAndThrow(s"Association failed with [$remoteAddress]", e)
     case Event(Transport.Ready(inboundHandle), _) ⇒
       handle = inboundHandle
       startReadEndpoint()

@@ -15,7 +15,7 @@ import com.typesafe.config.Config
 import akka.japi.Util._
 import akka.ConfigurationException
 
-private[akka] class SslSettings(config: Config) {
+private[akka] class SSLSettings(config: Config) {
   import config._
 
   val SSLKeyStore = Option(getString("key-store")).filter(_.length > 0)
@@ -54,7 +54,7 @@ private[akka] object NettySSLSupport {
   /**
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
    */
-  def apply(settings: SslSettings, log: LoggingAdapter, isClient: Boolean): SslHandler =
+  def apply(settings: SSLSettings, log: LoggingAdapter, isClient: Boolean): SslHandler =
     if (isClient) initializeClientSSL(settings, log) else initializeServerSSL(settings, log)
 
   def initializeCustomSecureRandom(rngName: Option[String], sourceOfRandomness: Option[String], log: LoggingAdapter): SecureRandom = {
@@ -88,10 +88,10 @@ private[akka] object NettySSLSupport {
     rng
   }
 
-  def initializeClientSSL(settings: SslSettings, log: LoggingAdapter): SslHandler = {
+  def initializeClientSSL(settings: SSLSettings, log: LoggingAdapter): SslHandler = {
     log.debug("Client SSL is enabled, initialising ...")
 
-    def constructClientContext(settings: SslSettings, log: LoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] =
+    def constructClientContext(settings: SSLSettings, log: LoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] =
       try {
         val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)
         val trustManagers: Array[TrustManager] = {
@@ -137,10 +137,10 @@ private[akka] object NettySSLSupport {
     }
   }
 
-  def initializeServerSSL(settings: SslSettings, log: LoggingAdapter): SslHandler = {
+  def initializeServerSSL(settings: SSLSettings, log: LoggingAdapter): SslHandler = {
     log.debug("Server SSL is enabled, initialising ...")
 
-    def constructServerContext(settings: SslSettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, protocol: String): Option[SSLContext] =
+    def constructServerContext(settings: SSLSettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, protocol: String): Option[SSLContext] =
       try {
         val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)
         val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)

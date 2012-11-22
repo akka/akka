@@ -14,7 +14,7 @@ class PduCodecException(msg: String, cause: Throwable) extends AkkaException(msg
 private[remote] object AkkaPduCodec {
 
   /**
-   * Trait that represents decoded Akka PDUs
+   * Trait that represents decoded Akka PDUs (Protocol Data Units)
    */
   sealed trait AkkaPdu
 
@@ -30,7 +30,7 @@ private[remote] object AkkaPduCodec {
 }
 
 /**
- * A Codec that is able to convert Akka PDUs from and to [[akka.util.ByteString]]s.
+ * A Codec that is able to convert Akka PDUs (Protocol Data Units) from and to [[akka.util.ByteString]]s.
  */
 private[remote] trait AkkaPduCodec {
 
@@ -68,11 +68,11 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     senderOption foreach { ref ⇒ messageBuilder.setSender(serializeActorRef(localAddress, ref)) }
     messageBuilder.setMessage(serializedMessage)
 
-    akkaMessageProtocolToByteString(messageBuilder.build)
+    ByteString(messageBuilder.build.toByteArray)
   }
 
-  override def constructPayload(payload: ByteString): ByteString = akkaRemoteProtocolToByteString(
-    AkkaRemoteProtocol.newBuilder().setPayload(PByteString.copyFrom(payload.asByteBuffer)).build)
+  override def constructPayload(payload: ByteString): ByteString =
+    ByteString(AkkaRemoteProtocol.newBuilder().setPayload(PByteString.copyFrom(payload.asByteBuffer)).build.toByteArray)
 
   override def constructAssociate(cookie: Option[String], origin: Address): ByteString =
     constructControlMessagePdu(RemoteProtocol.CommandType.CONNECT, cookie, Some(origin))
@@ -139,13 +139,8 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     for (originAddress ← origin; serialized ← serializeAddress(originAddress))
       controlMessageBuilder.setOrigin(serialized)
 
-    akkaRemoteProtocolToByteString(AkkaRemoteProtocol.newBuilder().setInstruction(controlMessageBuilder.build).build)
+    ByteString(AkkaRemoteProtocol.newBuilder().setInstruction(controlMessageBuilder.build).build.toByteArray)
   }
-
-  private def akkaRemoteProtocolToByteString(pdu: AkkaRemoteProtocol): ByteString = ByteString(pdu.toByteArray)
-
-  private def akkaMessageProtocolToByteString(message: RemoteMessageProtocol): ByteString =
-    ByteString(message.toByteArray)
 
   private def serializeActorRef(defaultAddress: Address, ref: ActorRef): ActorRefProtocol = {
     val fullActorRefString: String = if (ref.path.address.host.isDefined)

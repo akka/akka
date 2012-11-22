@@ -3,7 +3,7 @@ package akka.remote.transport.netty
 import akka.ConfigurationException
 import akka.actor.{ Address, ExtendedActorSystem, ActorRef }
 import akka.event.Logging
-import akka.remote.netty.{ SslSettings, NettySSLSupport, DefaultDisposableChannelGroup }
+import akka.remote.netty.{ SSLSettings, NettySSLSupport, DefaultDisposableChannelGroup }
 import akka.remote.transport.Transport._
 import akka.remote.transport.netty.NettyTransportSettings.{ Udp, Tcp, Mode }
 import akka.remote.transport.{ AssociationHandle, Transport }
@@ -37,7 +37,7 @@ class NettyTransportSettings(config: Config) {
   val TransportMode: Mode = getString("transport-protocol") match {
     case "tcp" ⇒ Tcp
     case "udp" ⇒ Udp
-    case s @ _ ⇒ throw new ConfigurationException("Unknown transport: " + s)
+    case s @ _ ⇒ throw new ConfigurationException("Unknown transport specified in transport-protocol: " + s)
   }
 
   val EnableSsl: Boolean = if (getBoolean("enable-ssl") && TransportMode == Udp)
@@ -76,7 +76,7 @@ class NettyTransportSettings(config: Config) {
   @deprecated("WARNING: This should only be used by professionals.", "2.0")
   val PortSelector: Int = getInt("port")
 
-  val SslSettings: Option[SslSettings] = if (EnableSsl) Some(new SslSettings(config.getConfig("ssl"))) else None
+  val SslSettings: Option[SSLSettings] = if (EnableSsl) Some(new SSLSettings(config.getConfig("ssl"))) else None
 
   val ServerSocketWorkerPoolSize: Int = computeWPS(config.getConfig("server-socket-worker-pool"))
 

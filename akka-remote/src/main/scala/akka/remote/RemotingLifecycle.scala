@@ -24,27 +24,32 @@ trait AssociationEvent extends RemotingLifecycleEvent {
 case class AssociatedEvent(
   localAddress: Address,
   remoteAddress: Address,
-  inbound: Boolean) extends AssociationEvent {
+  inbound: Boolean)
+  extends AssociationEvent {
+
   protected override val eventName: String = "Associated"
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
+
 }
 
 case class DisassociatedEvent(
   localAddress: Address,
   remoteAddress: Address,
-  inbound: Boolean) extends AssociationEvent {
+  inbound: Boolean)
+  extends AssociationEvent {
   protected override val eventName: String = "Disassociated"
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
 }
 
 case class AssociationErrorEvent(
-  @BeanProperty cause: Throwable,
+  cause: Throwable,
   localAddress: Address,
   remoteAddress: Address,
   inbound: Boolean) extends AssociationEvent {
   protected override val eventName: String = "AssociationError"
   override def logLevel: Logging.LogLevel = Logging.ErrorLevel
   override def toString: String = s"${super.toString}: Error[${Logging.stackTraceFor(cause)}]"
+  def getCause: Throwable = cause
 }
 
 case class RemotingListenEvent(listenAddresses: Set[Address]) extends RemotingLifecycleEvent {

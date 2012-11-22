@@ -99,7 +99,7 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
 
   val ClientSocketWorkerPoolSize = computeWPS(config.getConfig("client-socket-worker-pool"))
 
-  val SslSettings = new SslSettings(config.getConfig("ssl"))
+  val SslSettings = new SSLSettings(config.getConfig("ssl"))
 
   val EnableSSL = getBoolean("ssl.enable")
 }

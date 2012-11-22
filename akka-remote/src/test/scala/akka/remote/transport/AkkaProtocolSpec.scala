@@ -31,34 +31,34 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
   val conf = ConfigFactory.parseString(
     """
-      |  akka.remoting {
-      |
-      |    failure-detector {
-      |      threshold = 7.0
-      |      max-sample-size = 100
-      |      min-std-deviation = 100 ms
-      |      acceptable-heartbeat-pause = 3 s
-      |    }
-      |
-      |    heartbeat-interval = 0.1 s
-      |
-      |    wait-activity-enabled = on
-      |
-      |    backoff-interval = 1 s
-      |
-      |    require-cookie = off
-      |
-      |    secure-cookie = "abcde"
-      |
-      |    shutdown-timeout = 5 s
-      |
-      |    startup-timeout = 5 s
-      |
-      |    retry-latch-closed-for = 0 s
-      |
-      |    use-passive-connections = on
-      |  }
-    """.stripMargin)
+      akka.remoting {
+
+        failure-detector {
+          threshold = 7.0
+          max-sample-size = 100
+          min-std-deviation = 100 ms
+          acceptable-heartbeat-pause = 3 s
+        }
+
+       heartbeat-interval = 0.1 s
+
+        wait-activity-enabled = on
+
+        backoff-interval = 1 s
+
+        require-cookie = off
+
+        secure-cookie = "abcde"
+
+        shutdown-timeout = 5 s
+
+        startup-timeout = 5 s
+
+        retry-latch-closed-for = 0 s
+
+        use-passive-connections = on
+      }
+  """)
 
   val localAddress = Address("test", "testsystem", "testhost", 1234)
   val localAkkaAddress = Address("test.akka", "testsystem", "testhost", 1234)
@@ -69,7 +69,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
   val codec = AkkaPduProtobufCodec
 
   val testMsg = RemoteProtocol.MessageProtocol.newBuilder().setSerializerId(0).setMessage(PByteString.copyFromUtf8("foo")).build
-  val testEnvelope = codec.constructMessage(localAkkaAddress, self, testMsg, None)
+  val testEnvelope = codec.constructMessage(localAkkaAddress, testActor, testMsg, None)
   val testMsgPdu: ByteString = codec.constructPayload(testEnvelope)
 
   def testHeartbeat = InboundPayload(codec.constructHeartbeat)
@@ -123,7 +123,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       system.actorOf(Props(new ProtocolStateActor(
         localAddress,
         handle,
-        self,
+        testActor,
         new AkkaProtocolSettings(conf),
         codec,
         failureDetector)))
@@ -137,7 +137,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         localAddress,
         handle,
-        self,
+        testActor,
         new AkkaProtocolSettings(conf),
         codec,
         failureDetector)))
@@ -150,7 +150,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case InboundAssociation(h) ⇒ h
       }
 
-      wrappedHandle.readHandlerPromise.success(self)
+      wrappedHandle.readHandlerPromise.success(testActor)
 
       failureDetector.called must be(true)
 
@@ -170,7 +170,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         localAddress,
         handle,
-        self,
+        testActor,
         new AkkaProtocolSettings(conf),
         codec,
         failureDetector)))
@@ -257,7 +257,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         localAddress,
         handle,
-        self,
+        testActor,
         new AkkaProtocolSettings(ConfigFactory.parseString("akka.remoting.require-cookie = on").withFallback(conf)),
         codec,
         failureDetector)))
@@ -276,7 +276,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         localAddress,
         handle,
-        self,
+        testActor,
         new AkkaProtocolSettings(ConfigFactory.parseString("akka.remoting.require-cookie = on").withFallback(conf)),
         codec,
         failureDetector)))
@@ -288,7 +288,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case InboundAssociation(h) ⇒ h
       }
 
-      wrappedHandle.readHandlerPromise.success(self)
+      wrappedHandle.readHandlerPromise.success(testActor)
 
       failureDetector.called must be(true)
 
@@ -309,9 +309,9 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         transport,
         new AkkaProtocolSettings(ConfigFactory.parseString(
           """
-            | akka.remoting.require-cookie = on
-            | akka.remoting.wait-activity-enabled = off
-          """.stripMargin).withFallback(conf)),
+             akka.remoting.require-cookie = on
+             akka.remoting.wait-activity-enabled = off
+          """).withFallback(conf)),
         codec,
         failureDetector)))
 
@@ -350,7 +350,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case _ ⇒ fail()
       }
 
-      wrappedHandle.readHandlerPromise.success(self)
+      wrappedHandle.readHandlerPromise.success(testActor)
 
       lastActivityIsAssociate(registry, None) must be(true)
 
@@ -388,7 +388,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case _ ⇒ fail()
       }
 
-      wrappedHandle.readHandlerPromise.success(self)
+      wrappedHandle.readHandlerPromise.success(testActor)
 
       Thread.sleep(100)
 
@@ -421,7 +421,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case _ ⇒ fail()
       }
 
-      wrappedHandle.readHandlerPromise.success(self)
+      wrappedHandle.readHandlerPromise.success(testActor)
 
       lastActivityIsAssociate(registry, None) must be(true)
 
@@ -459,7 +459,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       stateActor ! Disassociated
 
-      wrappedHandle.readHandlerPromise.success(self)
+      wrappedHandle.readHandlerPromise.success(testActor)
 
       expectMsg(Disassociated)
 

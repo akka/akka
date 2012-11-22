@@ -4,8 +4,7 @@ import akka.actor.SupervisorStrategy._
 import akka.actor._
 import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.gracefulStop
-import akka.remote.EndpointManager.Listen
-import akka.remote.EndpointManager.Send
+import akka.remote.EndpointManager.{ StartupFinished, Listen, Send }
 import akka.remote.transport.Transport.InboundAssociation
 import akka.remote.transport._
 import akka.util.Timeout
@@ -31,7 +30,7 @@ class RemotingSettings(config: Config) {
 
   val StartupTimeout: FiniteDuration = Duration(getMilliseconds("akka.remoting.startup-timeout"), MILLISECONDS)
 
-  val RetryLatchClosedFor: Long = getMilliseconds("akka.remoting.retry-latch-closed-for")
+  val RetryGateClosedFor: Long = getMilliseconds("akka.remoting.retry-gate-closed-for")
 
   val UsePassiveConnections: Boolean = getBoolean("akka.remoting.use-passive-connections")
 
@@ -50,18 +49,18 @@ class RemotingSettings(config: Config) {
 
 private[remote] object Remoting {
 
-  val EndpointManagerName = "remoteTransportHeadActor"
+  final val EndpointManagerName = "endpointManager"
 
   def localAddressForRemote(transportMapping: Map[String, Set[(Transport, Address)]], remote: Address): Address = {
 
     transportMapping.get(remote.protocol) match {
       case Some(transports) ⇒
-        val responsibleTransports = transports.filter(_._1.isResponsibleFor(remote))
+        val responsibleTransports = transports.filter { case (t, _) ⇒ t.isResponsibleFor(remote) }
 
         responsibleTransports.size match {
           case 0 ⇒
             throw new RemoteTransportException(
-              s"No transport is responsible for address: ${remote} although protocol ${remote.protocol} is available." +
+              s"No transport is responsible for address: [${remote}] although protocol [${remote.protocol}] is available." +
                 " Make sure at least one transport is configured to be responsible for the address.",
               null)
 
@@ -70,7 +69,7 @@ private[remote] object Remoting {
 
           case _ ⇒
             throw new RemoteTransportException(
-              s"Multiple transports are available for ${remote}: ${responsibleTransports.mkString(",")}. " +
+              s"Multiple transports are available for [${remote}]: [${responsibleTransports.mkString(",")}]. " +
                 "Remoting cannot decide which transport to use to reach the remote system. Change your configuration " +
                 "so that only one transport is responsible for the address.",
               null)
@@ -135,6 +134,8 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
           _.toSet
         }
 
+        endpointManager ! StartupFinished
+
         addresses = transports.map { _._2 }.toSet
         eventPublisher.notifyListeners(RemotingListenEvent(addresses))
 
@@ -175,6 +176,7 @@ private[remote] object EndpointManager {
 
   sealed trait RemotingCommand
   case class Listen(addressesPromise: Promise[Set[(Transport, Address)]]) extends RemotingCommand
+  case object StartupFinished extends RemotingCommand
 
   case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) extends RemotingCommand {
     override def toString = s"Remote message $senderOption -> $recipient"
@@ -182,7 +184,7 @@ private[remote] object EndpointManager {
 
   sealed trait EndpointPolicy
   case class Pass(endpoint: ActorRef) extends EndpointPolicy
-  case class Latched(timeOfFailure: Long) extends EndpointPolicy
+  case class Gated(timeOfFailure: Long) extends EndpointPolicy
   case class Quarantined(reason: Throwable) extends EndpointPolicy
 
   case object Prune
@@ -202,10 +204,15 @@ private[remote] object EndpointManager {
 
     def passiveEndpointFor(address: Address): Option[ActorRef] = addressToPassive.get(address)
 
+    def isQuarantined(address: Address): Boolean = addressToEndpointAndPolicy.get(address) match {
+      case Some(Quarantined(_)) ⇒ true
+      case _                    ⇒ false
+    }
+
     def prune(pruneAge: Long): Unit = {
       addressToEndpointAndPolicy = addressToEndpointAndPolicy.filter {
-        case (_, Latched(timeOfFailure)) ⇒ timeOfFailure + pruneAge > System.nanoTime()
-        case _                           ⇒ true
+        case (_, Gated(timeOfFailure)) ⇒ timeOfFailure + pruneAge > System.nanoTime()
+        case _                         ⇒ true
       }
     }
 
@@ -222,14 +229,14 @@ private[remote] object EndpointManager {
     }
 
     def markFailed(endpoint: ActorRef, timeOfFailure: Long): Unit = {
-      addressToEndpointAndPolicy += endpointToAddress(endpoint) -> Latched(timeOfFailure)
+      addressToEndpointAndPolicy += endpointToAddress(endpoint) -> Gated(timeOfFailure)
       endpointToAddress = endpointToAddress - endpoint
     }
 
     def markQuarantine(address: Address, reason: Throwable): Unit =
       addressToEndpointAndPolicy += address -> Quarantined(reason)
 
-    def removeIfNotLatched(endpoint: ActorRef): Unit = {
+    def removeIfNotGated(endpoint: ActorRef): Unit = {
       endpointToAddress.get(endpoint) foreach { address ⇒
         addressToEndpointAndPolicy.get(address) foreach { policy ⇒
           policy match {
@@ -251,7 +258,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
   val settings = new RemotingSettings(conf)
   val extendedSystem = context.system.asInstanceOf[ExtendedActorSystem]
-  var endpointId: Long = 0L
+  val endpointId: Iterator[Int] = Iterator from 0
 
   val eventPublisher = new EventPublisher(context.system, log, settings.LogLifecycleEvents)
 
@@ -261,9 +268,9 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   // Mapping between transports and the local addresses they listen to
   var transportMapping: Map[Address, Transport] = Map()
 
-  val retryLatchEnabled = settings.RetryLatchClosedFor > 0L
-  val pruneInterval: Long = if (retryLatchEnabled) settings.RetryLatchClosedFor * 2L else 0L
-  val pruneTimerCancellable: Option[Cancellable] = if (retryLatchEnabled)
+  val retryGateEnabled = settings.RetryGateClosedFor > 0L
+  val pruneInterval: Long = if (retryGateEnabled) settings.RetryGateClosedFor * 2L else 0L
+  val pruneTimerCancellable: Option[Cancellable] = if (retryGateEnabled)
     Some(context.system.scheduler.schedule(pruneInterval milliseconds, pruneInterval milliseconds, self, Prune))
   else None
 
@@ -273,13 +280,13 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       Stop
 
     case NonFatal(e) ⇒
-      if (!retryLatchEnabled)
+      if (!retryGateEnabled)
         // This strategy keeps all the messages in the stash of the endpoint so restart will transfer the queue
         // to the restarted endpoint -- thus no messages are lost
         Restart
       else {
         // This strategy throws away all the messages enqueued in the endpoint (in its stash), registers the time of failure,
-        // keeps throwing away messages until the retry latch becomes open (time specified in RetryLatchClosedFor)
+        // keeps throwing away messages until the retry gate becomes open (time specified in RetryGateClosedFor)
         endpoints.markFailed(sender, System.nanoTime())
         Stop
       }
@@ -291,6 +298,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         addressesPromise.failure(e)
         context.stop(self)
     }
+
+    case StartupFinished ⇒ context.become(accepting)
   }
 
   val accepting: Receive = {
@@ -299,7 +308,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
       endpoints.getEndpointWithPolicy(recipientAddress) match {
         case Some(Pass(endpoint)) ⇒ endpoint ! s
-        case Some(Latched(timeOfFailure)) ⇒ if (retryLatchOpen(timeOfFailure)) {
+        case Some(Gated(timeOfFailure)) ⇒ if (retryGateOpen(timeOfFailure)) {
           val endpoint = createEndpoint(recipientAddress, recipientRef.localAddressToUse, None)
           endpoints.registerActiveEndpoint(recipientAddress, endpoint)
           endpoint ! s
@@ -319,10 +328,12 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
         if (settings.UsePassiveConnections && !endpoints.hasActiveEndpointFor(handle.remoteAddress)) {
           endpoints.registerActiveEndpoint(handle.remoteAddress, endpoint)
-        } else endpoints.registerPassiveEndpoint(handle.remoteAddress, endpoint)
+        } else if (!endpoints.isQuarantined(handle.remoteAddress))
+          endpoints.registerPassiveEndpoint(handle.remoteAddress, endpoint)
+        else handle.disassociate()
     }
-    case Terminated(endpoint) ⇒ endpoints.removeIfNotLatched(endpoint);
-    case Prune                ⇒ endpoints.prune(settings.RetryLatchClosedFor)
+    case Terminated(endpoint) ⇒ endpoints.removeIfNotGated(endpoint);
+    case Prune                ⇒ endpoints.prune(settings.RetryGateClosedFor)
   }
 
   private def initializeTransports(addressesPromise: Promise[Set[(Transport, Address)]]): Unit = {
@@ -330,7 +341,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
       val args = Seq(classOf[ExtendedActorSystem] -> context.system, classOf[Config] -> config)
 
-      val wrappedTransport = context.system.asInstanceOf[ActorSystemImpl].dynamicAccess
+      val wrappedTransport = extendedSystem.dynamicAccess
         .createInstanceFor[Transport](fqn, args).recover({
 
           case exception ⇒ throw new IllegalArgumentException(
@@ -345,16 +356,16 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     }
 
     val listens: Future[Seq[(Transport, (Address, Promise[ActorRef]))]] = Future.sequence(
-      transports.map { transport ⇒ transport.listen.map { transport -> _ } })
+      transports.map { transport ⇒ transport.listen map (transport -> _) })
 
     listens.onComplete {
       case Success(results) ⇒
-        transportMapping = HashMap() ++ results.groupBy { case (_, (transportAddress, _)) ⇒ transportAddress }.map {
-          case (a, t) ⇒
-            if (t.size > 1)
-              throw new RemoteTransportException(s"There are more than one transports listening on local address $a", null)
-
-            a -> t.head._1
+        transportMapping = results.groupBy {
+          case (_, (transportAddress, _)) ⇒ transportAddress
+        } map {
+          case (a, t) if t.size > 1 ⇒
+            throw new RemoteTransportException(s"There are more than one transports listening on local address [$a]", null)
+          case (a, t) ⇒ a -> t.head._1
         }
 
         val transportsAndAddresses = (for ((transport, (address, promise)) ← results) yield {
@@ -363,8 +374,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         }).toSet
         addressesPromise.success(transportsAndAddresses)
 
-        context.become(accepting)
-
       case Failure(reason) ⇒ addressesPromise.failure(reason)
     }
   }
@@ -372,9 +381,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   private def createEndpoint(remoteAddress: Address,
                              localAddress: Address,
                              handleOption: Option[AssociationHandle]): ActorRef = {
-    assert(transportMapping.contains(localAddress))
-    val id = endpointId
-    endpointId += 1L
+    assert(transportMapping contains (localAddress))
 
     val endpoint = context.actorOf(Props(
       new EndpointWriter(
@@ -385,21 +392,20 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         settings,
         AkkaPduProtobufCodec))
       .withDispatcher("akka.remoting.writer-dispatcher"),
-      "endpointWriter-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + endpointId)
+      "endpointWriter-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + endpointId.next())
 
     context.watch(endpoint) // TODO: see what to do with this
 
   }
 
-  private def retryLatchOpen(timeOfFailure: Long): Boolean = (timeOfFailure + settings.RetryLatchClosedFor) < System.nanoTime()
+  private def retryGateOpen(timeOfFailure: Long): Boolean = (timeOfFailure + settings.RetryGateClosedFor) < System.nanoTime()
 
   override def postStop(): Unit = {
     pruneTimerCancellable.foreach { _.cancel() }
     transportMapping.values foreach { transport ⇒
-      try transport.shutdown()
-      catch {
+      try transport.shutdown() catch {
         case NonFatal(e) ⇒
-          log.error(e, s"Unable to shut down the underlying Transport: $transport")
+          log.error(e, s"Unable to shut down the underlying Transport: [$transport]")
       }
     }
   }

@@ -37,7 +37,7 @@ trait TcpHandlers extends CommonHandlers with HasTransport {
 
   override def onException(ctx: ChannelHandlerContext, e: ExceptionEvent) {
     trySend(e.getChannel, Disassociated)
-    e.getChannel.close() // No graceful close here -- force TCP reset
+    e.getChannel.close() // No graceful close here
   }
 }
 
