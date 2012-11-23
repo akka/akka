@@ -127,10 +127,11 @@ UntypedActor API
 The :class:`UntypedActor` class defines only one abstract method, the above mentioned
 :meth:`onReceive(Object message)`, which implements the behavior of the actor.
 
-If the current actor behavior does not match a received message,
-:meth:`unhandled` is called, which by default publishes a ``new
+If the current actor behavior does not match a received message, it's recommended that
+you call the :meth:`unhandled` method, which by default publishes a ``new
 akka.actor.UnhandledMessage(message, sender, recipient)`` on the actor system’s
-event stream.
+event stream (set configuration item ``akka.actor.debug.unhandled`` to ``on`` 
+to have them converted into actual Debug messages).
 
 In addition, it offers:
 
