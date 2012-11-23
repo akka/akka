@@ -46,13 +46,15 @@ class DefaultMessageDispatcher(private val system: ExtendedActorSystem,
     recipient match {
 
       case `remoteDaemon` ⇒
-        if (LogReceive) log.debug("received daemon message {}", msgLog)
-        payload match {
-          case m @ (_: DaemonMsg | _: Terminated) ⇒
-            try remoteDaemon ! m catch {
-              case NonFatal(e) ⇒ log.error(e, "exception while processing remote command {} from {}", m, sender)
-            }
-          case x ⇒ log.debug("remoteDaemon received illegal message {} from {}", x, sender)
+        if (UntrustedMode) log.debug("dropping daemon message in untrusted mode") else {
+          if (LogReceive) log.debug("received daemon message {}", msgLog)
+          payload match {
+            case m @ (_: DaemonMsg | _: Terminated) ⇒
+              try remoteDaemon ! m catch {
+                case NonFatal(e) ⇒ log.error(e, "exception while processing remote command {} from {}", m, sender)
+              }
+            case x ⇒ log.debug("remoteDaemon received illegal message {} from {}", x, sender)
+          }
         }
 
       case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒

@@ -1,14 +1,15 @@
 package akka.remote
 
+import scala.language.postfixOps
 import akka.actor.SupervisorStrategy._
 import akka.actor._
 import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.gracefulStop
-import akka.remote.EndpointManager.{ StartupFinished, Listen, Send }
-import akka.remote.transport.Transport.InboundAssociation
+import akka.remote.EndpointManager.{ StartupFinished, ManagementCommand, Listen, Send }
+import akka.remote.transport.Transport.{ AssociationEventListener, InboundAssociation }
 import akka.remote.transport._
 import akka.util.Timeout
-import com.typesafe.config.Config
+import com.typesafe.config.{ ConfigFactory, Config }
 import scala.collection.immutable.{ Seq, HashMap }
 import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Await, Future }
@@ -18,8 +19,9 @@ import java.util.concurrent.TimeoutException
 import scala.util.{ Failure, Success }
 import scala.collection.immutable
 import akka.japi.Util.immutableSeq
+import akka.remote.Remoting.RegisterTransportActor
 
-class RemotingSettings(config: Config) {
+class RemotingSettings(val config: Config) {
 
   import config._
   import scala.collection.JavaConverters._
@@ -30,7 +32,7 @@ class RemotingSettings(config: Config) {
 
   val StartupTimeout: FiniteDuration = Duration(getMilliseconds("akka.remoting.startup-timeout"), MILLISECONDS)
 
-  val RetryGateClosedFor: Long = getMilliseconds("akka.remoting.retry-gate-closed-for")
+  val RetryGateClosedFor: Long = getNanoseconds("akka.remoting.retry-gate-closed-for")
 
   val UsePassiveConnections: Boolean = getBoolean("akka.remoting.use-passive-connections")
 
@@ -41,10 +43,21 @@ class RemotingSettings(config: Config) {
   val BackoffPeriod: FiniteDuration =
     Duration(getMilliseconds("akka.remoting.backoff-interval"), MILLISECONDS)
 
-  val Transports: immutable.Seq[(String, Config)] =
-    immutableSeq(config.getConfigList("akka.remoting.transports")).map {
-      conf ⇒ (conf.getString("transport-class"), conf.getConfig("settings"))
-    }
+  val Transports: Seq[(String, Seq[String], Config)] = transportNames.map { name ⇒
+    val transportConfig = transportConfigFor(name)
+    (transportConfig.getString("transport-class"),
+      immutableSeq(transportConfig.getStringList("applied-adapters")),
+      transportConfig)
+  }
+
+  val Adapters: Map[String, String] = configToMap(getConfig("akka.remoting.adapters"))
+
+  private def transportNames: Seq[String] = immutableSeq(getStringList("akka.remoting.enabled-transports"))
+
+  private def transportConfigFor(transportName: String): Config = getConfig("akka.remoting.transports." + transportName)
+
+  private def configToMap(cfg: Config): Map[String, String] =
+    cfg.root.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
 }
 
 private[remote] object Remoting {
@@ -60,7 +73,7 @@ private[remote] object Remoting {
         responsibleTransports.size match {
           case 0 ⇒
             throw new RemoteTransportException(
-              s"No transport is responsible for address: [${remote}] although protocol [${remote.protocol}] is available." +
+              s"No transport is responsible for address: ${remote} although protocol ${remote.protocol} is available." +
                 " Make sure at least one transport is configured to be responsible for the address.",
               null)
 
@@ -74,9 +87,12 @@ private[remote] object Remoting {
                 "so that only one transport is responsible for the address.",
               null)
         }
-      case None ⇒ throw new RemoteTransportException(s"No transport is loaded for protocol: ${remote.protocol}", null)
+      case None ⇒ throw new RemoteTransportException(
+        s"No transport is loaded for protocol: ${remote.protocol}, available protocols: ${transportMapping.keys.mkString}", null)
     }
   }
+
+  case class RegisterTransportActor(props: Props, name: String)
 
 }
 
@@ -89,6 +105,16 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   override def defaultAddress: Address = addresses.head
 
   private val settings = new RemotingSettings(provider.remoteSettings.config)
+
+  val transportSupervisor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new Actor {
+    override def supervisorStrategy = OneForOneStrategy() {
+      case NonFatal(e) ⇒ Restart
+    }
+
+    def receive = {
+      case RegisterTransportActor(props, name) ⇒ sender ! context.actorOf(props, name)
+    }
+  }), "transports")
 
   override def localAddressForRemote(remote: Address): Address = Remoting.localAddressForRemote(transportMapping, remote)
 
@@ -164,6 +190,12 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     endpointManager.tell(Send(message, senderOption, recipient), sender = Actor.noSender)
   }
 
+  override def managementCommand(cmd: Any): Future[Boolean] = {
+    val statusPromise = Promise[Boolean]()
+    endpointManager.tell(ManagementCommand(cmd, statusPromise), sender = Actor.noSender)
+    statusPromise.future
+  }
+
   // Not used anywhere only to keep compatibility with RemoteTransport interface
   protected def useUntrustedMode: Boolean = provider.remoteSettings.UntrustedMode
 
@@ -181,6 +213,8 @@ private[remote] object EndpointManager {
   case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef) extends RemotingCommand {
     override def toString = s"Remote message $senderOption -> $recipient"
   }
+
+  case class ManagementCommand(cmd: Any, statusPromise: Promise[Boolean]) extends RemotingCommand
 
   sealed trait EndpointPolicy
   case class Pass(endpoint: ActorRef) extends EndpointPolicy
@@ -299,10 +333,15 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         context.stop(self)
     }
 
-    case StartupFinished ⇒ context.become(accepting)
+    case ManagementCommand(_, statusPromise) ⇒ statusPromise.success(false)
+
+    case StartupFinished                     ⇒ context.become(accepting)
   }
 
   val accepting: Receive = {
+    case ManagementCommand(cmd, statusPromise) ⇒
+      transportMapping.values foreach { _.managementCommand(cmd, statusPromise) }
+
     case s @ Send(message, senderOption, recipientRef) ⇒
       val recipientAddress = recipientRef.path.address
 
@@ -337,11 +376,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   }
 
   private def initializeTransports(addressesPromise: Promise[Set[(Transport, Address)]]): Unit = {
-    val transports = for ((fqn, config) ← settings.Transports) yield {
+    val transports = for ((fqn, adapters, config) ← settings.Transports) yield {
 
       val args = Seq(classOf[ExtendedActorSystem] -> context.system, classOf[Config] -> config)
 
-      val wrappedTransport = extendedSystem.dynamicAccess
+      val driver = extendedSystem.dynamicAccess
         .createInstanceFor[Transport](fqn, args).recover({
 
           case exception ⇒ throw new IllegalArgumentException(
@@ -351,11 +390,17 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
         }).get
 
+      val wrappedTransport =
+        adapters.map { TransportAdaptersExtension.get(context.system).getAdapterProvider(_) }.foldLeft(driver) {
+          (t: Transport, provider: TransportAdapterProvider) ⇒
+            provider(t, context.system.asInstanceOf[ExtendedActorSystem])
+        }
+
       new AkkaProtocolTransport(wrappedTransport, context.system, new AkkaProtocolSettings(conf), AkkaPduProtobufCodec)
 
     }
 
-    val listens: Future[Seq[(Transport, (Address, Promise[ActorRef]))]] = Future.sequence(
+    val listens: Future[Seq[(Transport, (Address, Promise[AssociationEventListener]))]] = Future.sequence(
       transports.map { transport ⇒ transport.listen map (transport -> _) })
 
     listens.onComplete {
@@ -394,7 +439,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       .withDispatcher("akka.remoting.writer-dispatcher"),
       "endpointWriter-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + endpointId.next())
 
-    context.watch(endpoint) // TODO: see what to do with this
+    context.watch(endpoint)
 
   }
 

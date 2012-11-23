@@ -164,9 +164,15 @@ class RemoteActorRefProvider(
           if (isSelfAddress(addr)) {
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else {
-            val localAddress = transport.localAddressForRemote(addr)
-            val rpath = RootActorPath(addr) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements
-            new RemoteActorRef(this, transport, localAddress, rpath, supervisor, Some(props), Some(d))
+            try {
+              val localAddress = transport.localAddressForRemote(addr)
+              val rpath = RootActorPath(addr) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements
+              new RemoteActorRef(this, transport, localAddress, rpath, supervisor, Some(props), Some(d))
+            } catch {
+              case NonFatal(e) ⇒
+                log.error(e, "Error while looking up address {}", addr)
+                new EmptyLocalActorRef(this, path, eventStream)
+            }
           }
 
         case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
@@ -174,10 +180,17 @@ class RemoteActorRefProvider(
     }
   }
 
-  def actorFor(path: ActorPath): InternalActorRef =
+  def actorFor(path: ActorPath): InternalActorRef = {
     if (isSelfAddress(path.address)) actorFor(rootGuardian, path.elements)
-    else new RemoteActorRef(this, transport, transport.localAddressForRemote(path.address),
-      path, Nobody, props = None, deploy = None)
+    else try {
+      new RemoteActorRef(this, transport, transport.localAddressForRemote(path.address),
+        path, Nobody, props = None, deploy = None)
+    } catch {
+      case NonFatal(e) ⇒
+        log.error(e, "Error while looking up address {}", path.address)
+        new EmptyLocalActorRef(this, path, eventStream)
+    }
+  }
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒

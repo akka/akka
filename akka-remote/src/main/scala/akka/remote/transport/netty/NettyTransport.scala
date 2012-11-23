@@ -1,7 +1,7 @@
 package akka.remote.transport.netty
 
 import akka.ConfigurationException
-import akka.actor.{ Address, ExtendedActorSystem, ActorRef }
+import akka.actor.{ Address, ExtendedActorSystem }
 import akka.event.Logging
 import akka.remote.netty.{ SSLSettings, NettySSLSupport, DefaultDisposableChannelGroup }
 import akka.remote.transport.Transport._
@@ -21,6 +21,7 @@ import scala.concurrent.{ ExecutionContext, Promise, Future }
 import scala.util.Random
 import scala.util.control.NonFatal
 import akka.dispatch.ThreadPoolConfig
+import akka.remote.transport.AssociationHandle.HandleEventListener
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -37,7 +38,7 @@ class NettyTransportSettings(config: Config) {
   val TransportMode: Mode = getString("transport-protocol") match {
     case "tcp" ⇒ Tcp
     case "udp" ⇒ Udp
-    case s @ _ ⇒ throw new ConfigurationException("Unknown transport specified in transport-protocol: " + s)
+    case s @ _ ⇒ throw new ConfigurationException("Unknown transport: " + s)
   }
 
   val EnableSsl: Boolean = if (getBoolean("enable-ssl") && TransportMode == Udp)
@@ -95,13 +96,15 @@ trait HasTransport {
 }
 
 trait CommonHandlers extends NettyHelpers with HasTransport {
-  import transport.executionContext
 
   final override def onOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = transport.channels.add(e.getChannel)
 
   protected def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle
 
-  protected def registerReader(channel: Channel, readerRef: ActorRef, msg: ChannelBuffer, remoteSocketAddress: InetSocketAddress): Unit
+  protected def registerListener(channel: Channel,
+                                 listener: HandleEventListener,
+                                 msg: ChannelBuffer,
+                                 remoteSocketAddress: InetSocketAddress): Unit
 
   final protected def init(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer)(op: (AssociationHandle ⇒ Any)): Unit = {
     import transport._
@@ -109,8 +112,8 @@ trait CommonHandlers extends NettyHelpers with HasTransport {
       case (Some(localAddress), Some(remoteAddress)) ⇒
         val handle = createHandle(channel, localAddress, remoteAddress)
         handle.readHandlerPromise.future.onSuccess {
-          case readerRef: ActorRef ⇒
-            registerReader(channel, readerRef, msg, remoteSocketAddress.asInstanceOf[InetSocketAddress])
+          case listener: HandleEventListener ⇒
+            registerListener(channel, listener, msg, remoteSocketAddress.asInstanceOf[InetSocketAddress])
             channel.setReadable(true)
         }
         op(handle)
@@ -121,14 +124,15 @@ trait CommonHandlers extends NettyHelpers with HasTransport {
 }
 
 abstract class ServerHandler(protected final val transport: NettyTransport,
-                             private final val associationHandlerFuture: Future[ActorRef])
+                             private final val associationListenerFuture: Future[AssociationEventListener])
   extends NettyServerHelpers with CommonHandlers with HasTransport {
+
   import transport.executionContext
 
   final protected def initInbound(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit = {
     channel.setReadable(false)
-    associationHandlerFuture.onSuccess {
-      case ref: ActorRef ⇒ init(channel, remoteSocketAddress, msg) { ref ! InboundAssociation(_) }
+    associationListenerFuture.onSuccess {
+      case listener: AssociationEventListener ⇒ init(channel, remoteSocketAddress, msg) { listener notify InboundAssociation(_) }
     }
   }
 
@@ -157,6 +161,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
 
   import NettyTransport._
   import settings._
+
   implicit val executionContext: ExecutionContext = system.dispatcher
 
   override val schemeIdentifier: String = TransportMode + (if (EnableSsl) ".ssl" else "")
@@ -169,7 +174,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
 
   private val log = Logging(system, this.getClass)
 
-  final val udpConnectionTable = new ConcurrentHashMap[SocketAddress, ActorRef]()
+  final val udpConnectionTable = new ConcurrentHashMap[SocketAddress, HandleEventListener]()
 
   val channels = new DefaultDisposableChannelGroup("netty-transport-" + Random.nextString(20))
 
@@ -202,13 +207,13 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
     pipeline
   }
 
-  private val associationHandlerPromise: Promise[ActorRef] = Promise()
+  private val associationListenerPromise: Promise[AssociationEventListener] = Promise()
   private val serverPipelineFactory: ChannelPipelineFactory = new ChannelPipelineFactory {
     override def getPipeline: ChannelPipeline = {
       val pipeline = newPipeline
       if (EnableSsl) pipeline.addFirst("SslHandler", NettySSLSupport(settings.SslSettings.get, log, false))
-      val handler = if (isDatagram) new UdpServerHandler(NettyTransport.this, associationHandlerPromise.future)
-      else new TcpServerHandler(NettyTransport.this, associationHandlerPromise.future)
+      val handler = if (isDatagram) new UdpServerHandler(NettyTransport.this, associationListenerPromise.future)
+      else new TcpServerHandler(NettyTransport.this, associationListenerPromise.future)
       pipeline.addLast("ServerHandler", handler)
       pipeline
     }
@@ -266,8 +271,8 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   def addressToSocketAddress(addr: Address): InetSocketAddress =
     new InetSocketAddress(InetAddress.getByName(addr.host.get), addr.port.get)
 
-  override def listen: Future[(Address, Promise[ActorRef])] = {
-    val listenPromise: Promise[(Address, Promise[ActorRef])] = Promise()
+  override def listen: Future[(Address, Promise[AssociationEventListener])] = {
+    val listenPromise: Promise[(Address, Promise[AssociationEventListener])] = Promise()
 
     try {
       masterChannel = inboundBootstrap match {
@@ -282,12 +287,12 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
 
       addressFromSocketAddress(masterChannel.getLocalAddress, Some(system.name), Some(settings.Hostname)) match {
         case Some(address) ⇒
-          val handlerPromise: Promise[ActorRef] = Promise()
-          listenPromise.success((address, handlerPromise))
+          val listenerPromise: Promise[AssociationEventListener] = Promise()
+          listenPromise.success((address, listenerPromise))
           localAddress = address
-          handlerPromise.future.onSuccess {
-            case ref: ActorRef ⇒
-              associationHandlerPromise.success(ref)
+          listenerPromise.future.onSuccess {
+            case listener: AssociationEventListener ⇒
+              associationListenerPromise.success(listener)
               masterChannel.setReadable(true)
           }
 
@@ -338,7 +343,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
                 case addr: InetSocketAddress ⇒
                   statusPromise.success(Ready(handle))
                   handle.readHandlerPromise.future.onSuccess {
-                    case ref: ActorRef ⇒ udpConnectionTable.put(addr, ref)
+                    case listener: HandleEventListener ⇒ udpConnectionTable.put(addr, listener)
                   }
                 case a @ _ ⇒ statusPromise.success(Fail(
                   new NettyTransportException("Unknown remote address type " + a.getClass, null)))

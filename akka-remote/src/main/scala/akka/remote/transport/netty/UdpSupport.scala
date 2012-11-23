@@ -1,9 +1,9 @@
 package akka.remote.transport.netty
 
-import akka.actor.{ ActorRef, Address }
+import akka.actor.{ Address }
 import akka.remote.transport.AssociationHandle
-import akka.remote.transport.AssociationHandle.InboundPayload
-import akka.remote.transport.Transport.Status
+import akka.remote.transport.AssociationHandle.{ HandleEventListener, InboundPayload }
+import akka.remote.transport.Transport.{ AssociationEventListener, Status }
 import akka.util.ByteString
 import java.net.{ SocketAddress, InetAddress, InetSocketAddress }
 import org.jboss.netty.buffer.{ ChannelBuffer, ChannelBuffers }
@@ -15,16 +15,16 @@ trait UdpHandlers extends CommonHandlers with HasTransport {
   override def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle =
     new UdpAssociationHandle(localAddress, remoteAddress, channel, transport)
 
-  override def registerReader(channel: Channel,
-                              readerRef: ActorRef,
-                              msg: ChannelBuffer,
-                              remoteSocketAddress: InetSocketAddress): Unit = {
-    val oldReader: ActorRef = transport.udpConnectionTable.putIfAbsent(remoteSocketAddress, readerRef)
+  override def registerListener(channel: Channel,
+                                listener: HandleEventListener,
+                                msg: ChannelBuffer,
+                                remoteSocketAddress: InetSocketAddress): Unit = {
+    val oldReader: HandleEventListener = transport.udpConnectionTable.putIfAbsent(remoteSocketAddress, listener)
     if (oldReader ne null) {
-      throw new NettyTransportException(s"Reader $readerRef attempted to register for remote address $remoteSocketAddress" +
+      throw new NettyTransportException(s"Listener $listener attempted to register for remote address $remoteSocketAddress" +
         s" but $oldReader was already registered.", null)
     }
-    readerRef ! InboundPayload(ByteString(msg.array()))
+    listener notify InboundPayload(ByteString(msg.array()))
   }
 
   override def onMessage(ctx: ChannelHandlerContext, e: MessageEvent) {
@@ -35,8 +35,8 @@ trait UdpHandlers extends CommonHandlers with HasTransport {
         initUdp(e.getChannel, e.getRemoteAddress, e.getMessage.asInstanceOf[ChannelBuffer])
 
       } else {
-        val reader = transport.udpConnectionTable.get(inetSocketAddress)
-        reader ! InboundPayload(ByteString(e.getMessage.asInstanceOf[ChannelBuffer].array()))
+        val listener = transport.udpConnectionTable.get(inetSocketAddress)
+        listener notify InboundPayload(ByteString(e.getMessage.asInstanceOf[ChannelBuffer].array()))
       }
     }
   }
@@ -44,8 +44,8 @@ trait UdpHandlers extends CommonHandlers with HasTransport {
   def initUdp(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit
 }
 
-class UdpServerHandler(_transport: NettyTransport, _associationHandlerFuture: Future[ActorRef])
-  extends ServerHandler(_transport, _associationHandlerFuture) with UdpHandlers {
+class UdpServerHandler(_transport: NettyTransport, _associationListenerFuture: Future[AssociationEventListener])
+  extends ServerHandler(_transport, _associationListenerFuture) with UdpHandlers {
 
   override def initUdp(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit =
     initInbound(channel, remoteSocketAddress, msg)
@@ -63,7 +63,7 @@ class UdpAssociationHandle(val localAddress: Address,
                            private val channel: Channel,
                            private val transport: NettyTransport) extends AssociationHandle {
 
-  override val readHandlerPromise: Promise[ActorRef] = Promise()
+  override val readHandlerPromise: Promise[HandleEventListener] = Promise()
 
   override def write(payload: ByteString): Boolean = {
     if (!channel.isConnected)

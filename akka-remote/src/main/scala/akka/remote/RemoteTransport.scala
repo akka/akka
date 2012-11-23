@@ -12,6 +12,7 @@ import akka.serialization.Serialization
 import akka.remote.RemoteProtocol._
 import akka.actor._
 import scala.collection.immutable
+import scala.concurrent.Future
 
 /**
  * Remote life-cycle events.
@@ -219,6 +220,14 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
     system.eventStream.publish(message)
     if (logRemoteLifeCycleEvents) log.log(message.logLevel, "{}", message)
   }
+
+  /**
+   * Sends a management command to the underlying transport stack. The call returns with a Future that indicates
+   * if the command was handled successfully or dropped.
+   * @param cmd Command message to send to the transports.
+   * @return A Future that indicates when the message was successfully handled or dropped.
+   */
+  def managementCommand(cmd: Any): Future[Boolean] = { Future.successful(false) }
 
   /**
    * A Logger that can be used to log issues that may occur

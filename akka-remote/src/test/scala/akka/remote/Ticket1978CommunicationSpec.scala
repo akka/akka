@@ -33,7 +33,7 @@ object Configuration {
         filter-leeway = 10s
         default-timeout = 10s
       }
-
+      remote.transport = "akka.remote.netty.NettyRemoteTransport"
       remote.netty {
         hostname = localhost
         port = %d

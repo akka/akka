@@ -25,16 +25,15 @@ import akka.actor.PoisonPill
 class UntrustedSpec extends AkkaSpec("""
 akka.actor.provider = akka.remote.RemoteActorRefProvider
 akka.remote.untrusted-mode = on
-akka.remote.netty.port = 0
-akka.remote.log-remote-lifecycle-events = off
+akka.remoting.transports.tcp.port = 0
 akka.loglevel = DEBUG
 """) with ImplicitSender {
 
   val other = ActorSystem("UntrustedSpec-client", ConfigFactory.parseString("""
       akka.actor.provider = akka.remote.RemoteActorRefProvider
-      akka.remote.netty.port = 0
-      """))
-  val addr = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
+      akka.remoting.transports.tcp.port = 0
+  """))
+  val addr = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.addresses.head
   val target1 = other.actorFor(RootActorPath(addr) / "remote")
   val target2 = other.actorFor(RootActorPath(addr) / testActor.path.elements)
 

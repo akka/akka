@@ -390,7 +390,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       wrappedHandle.readHandlerPromise.success(testActor)
 
-      Thread.sleep(100)
+      Thread.sleep(100) //FIXME: Remove this
 
       reader ! Disassociated
 

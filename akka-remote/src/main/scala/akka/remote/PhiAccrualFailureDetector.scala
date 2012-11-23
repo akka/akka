@@ -134,7 +134,8 @@ class PhiAccrualFailureDetector(
 
   /**
    * Cumulative distribution function for N(mean, stdDeviation) normal distribution.
-   * This is an approximation defined in β Mathematics Handbook.
+   * This is an approximation defined in β Mathematics Handbook (Logistic approximation).
+   * Error is 0.00014 at +- 3.16
    */
   private[akka] def cumulativeDistributionFunction(x: Double, mean: Double, stdDeviation: Double): Double = {
     val y = (x - mean) / stdDeviation

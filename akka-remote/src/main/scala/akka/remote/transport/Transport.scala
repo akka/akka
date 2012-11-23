@@ -3,23 +3,27 @@ package akka.remote.transport
 import concurrent.{ Promise, Future }
 import akka.actor.{ ActorRef, Address }
 import akka.util.ByteString
+import akka.remote.transport.Transport.AssociationEvent
+import akka.remote.transport.AssociationHandle.HandleEventListener
 
 object Transport {
+
+  trait AssociationEvent
 
   /**
    * Represents fine grained status of an association attempt.
    */
-  sealed trait Status
+  sealed trait Status extends AssociationEvent
 
   /**
    * Indicates that the association setup request is invalid, and it is impossible to recover (malformed IP address,
-   * hostname, etc.). Invalid association requests are impossible to recover.
+   * hostname, etc.).
    */
   case class Invalid(cause: Throwable) extends Status
 
   /**
-   * The association setup has failed, but no information can be provided about the probability of the success of a
-   * setup retry.
+   * The association setup has failed, but it is not known that a recovery is possible or not. Generally it means
+   * that the transport gave up its attempts to associate, but a retry might be successful at a later time.
    *
    * @param cause Cause of the failure
    */
@@ -36,19 +40,42 @@ object Transport {
   case class Ready(association: AssociationHandle) extends Status
 
   /**
-   * Message sent to an actor registered to a transport (via the Promise returned by
-   * [[akka.remote.transport.Transport.listen]]) when an inbound association request arrives.
+   * Message sent to a [[akka.remote.transport.Transport.AssociationEventListener]] registered to a transport
+   * (via the Promise returned by [[akka.remote.transport.Transport.listen]]) when an inbound association request arrives.
    *
    * @param association
    *   The handle for the inbound association.
    */
-  case class InboundAssociation(association: AssociationHandle)
+  case class InboundAssociation(association: AssociationHandle) extends AssociationEvent
 
+  /**
+   * An interface that needs to be implemented by the user of a transport to listen to association events
+   */
+  trait AssociationEventListener {
+
+    /**
+     * Called by the transport to notify the listener about an AssociationEvent
+     * @param ev The AssociationEvent of the transport
+     */
+    def notify(ev: AssociationEvent): Unit
+  }
+
+  /**
+   * Class to convert ordinary [[akka.actor.ActorRef]] instances to an AssociationEventListener. The adapter will
+   * forward event objects as messages to the provided ActorRef.
+   * @param actor
+   */
+  case class ActorAssociationEventListener(actor: ActorRef) extends AssociationEventListener {
+    override def notify(ev: AssociationEvent): Unit = actor ! ev
+  }
+
+  implicit def actorRef2HandleEventListener(actor: ActorRef): AssociationEventListener =
+    ActorAssociationEventListener(actor)
 }
 
 /**
- * An SPI layer for implementing asynchronous transport mechanisms. The transport is responsible for initializing the
- * underlying transport mechanism and setting up logical links between transport entities.
+ * An SPI layer for implementing asynchronous transport mechanisms. The Transport is responsible for initializing the
+ * underlying transmission mechanism and setting up logical links between transport entities.
  *
  * Transport implementations that are loaded dynamically by the remoting must have a constructor that accepts a
  * [[com.typesafe.config.Config]] and an [[akka.actor.ExtendedActorSystem]] as parameters.
@@ -86,14 +113,15 @@ trait Transport {
   /**
    * Asynchronously attempts to setup the transport layer to listen and accept incoming associations. The result of the
    * attempt is wrapped by a Future returned by this method. The pair contained in the future contains a Promise for an
-   * ActorRef. By completing this Promise with an ActorRef, that ActorRef becomes responsible for handling incoming
-   * associations. Until the Promise is not completed, no associations are processed.
+   * ActorRef. By completing this Promise with an [[akka.remote.transport.Transport.AssociationEventListener]], that
+   * listener becomes responsible for handling incoming associations. Until the Promise is not completed, no associations
+   * are processed.
    *
    * @return
-   *   A Future containing a pair of the bound local address and a Promise of an ActorRef that must be fulfilled
-   *   by the consumer of the future.
+   *   A Future containing a pair of the bound local address and a Promise of an AssociationListener that must be
+   *   completed by the consumer of the future.
    */
-  def listen: Future[(Address, Promise[ActorRef])]
+  def listen: Future[(Address, Promise[AssociationEventListener])]
 
   /**
    * Asynchronously opens a logical duplex link between two Transport Entities over a network. It could be backed by a
@@ -118,36 +146,69 @@ trait Transport {
    */
   def shutdown(): Unit
 
+  /**
+   * This method allows upper layers to send management commands to the transport. It is the responsibility of the
+   * sender to send appropriate commands to different transport implementations. Unknown commands will be ignored.
+   *
+   * @param cmd Command message to the transport
+   * @return Future that succeeds when the command was handled or dropped
+   */
+  def managementCommand(cmd: Any, statusPromise: Promise[Boolean]): Unit = { statusPromise.success(false) }
+
 }
 
 object AssociationHandle {
 
   /**
-   * Trait for events that the registered actor for an [[akka.remote.transport.AssociationHandle]] might receive.
+   * Trait for events that the registered listener for an [[akka.remote.transport.AssociationHandle]] might receive.
    */
-  sealed trait AssociationEvent
+  sealed trait HandleEvent
 
   /**
-   * Message sent to the actor registered to an association (via the Promise returned by
+   * Message sent to the listener registered to an association (via the Promise returned by
    * [[akka.remote.transport.AssociationHandle.readHandlerPromise]]) when an inbound payload arrives.
    *
    * @param payload
    *   The raw bytes that were sent by the remote endpoint.
    */
-  case class InboundPayload(payload: ByteString) extends AssociationEvent
+  case class InboundPayload(payload: ByteString) extends HandleEvent {
+    override def toString: String = s"InboundPayload(size = ${payload.length} bytes)"
+  }
 
   /**
-   * Message sent to te actor registered to an association
+   * Message sent to the listener registered to an association
    */
-  case object Disassociated extends AssociationEvent
+  case object Disassociated extends HandleEvent
 
+  /**
+   * An interface that needs to be implemented by the user of an [[akka.remote.transport.AssociationHandle]]
+   * to listen to association events.
+   */
+  trait HandleEventListener {
+    /**
+     * Called by the transport to notify the listener about a HandleEvent
+     * @param ev The HandleEvent of the handle
+     */
+    def notify(ev: HandleEvent): Unit
+  }
+
+  /**
+   * Class to convert ordinary [[akka.actor.ActorRef]] instances to a HandleEventListener. The adapter will
+   * forward event objects as messages to the provided ActorRef.
+   * @param actor
+   */
+  case class ActorHandleEventListener(actor: ActorRef) extends HandleEventListener {
+    override def notify(ev: HandleEvent): Unit = actor ! ev
+  }
+
+  implicit def actorRef2HandleEventListener(actor: ActorRef): HandleEventListener = ActorHandleEventListener(actor)
 }
 
 /**
- * An SPI layer for abstracting over logical links (associations) created by [[akka.remote.transport.Transport]].
+ * An SPI layer for abstracting over logical links (associations) created by a [[akka.remote.transport.Transport]].
  * Handles are responsible for providing an API for sending and receiving from the underlying channel.
  *
- * To register an actor for processing incoming payload data, the actor must be registered by completing the Promise
+ * To register a listener for processing incoming payload data, the listener must be registered by completing the Promise
  * returned by [[akka.remote.transport.AssociationHandle#readHandlerPromise]]. Incoming data is not processed until
  * this registration takes place.
  */
@@ -170,22 +231,23 @@ trait AssociationHandle {
   def remoteAddress: Address
 
   /**
-   * The Promise returned by this call must be completed with an [[akka.actor.ActorRef]] to register an actor
-   * responsible for handling incoming payload.
+   * The Promise returned by this call must be completed with an [[akka.remote.transport.AssociationHandle.HandleEventListener]]
+   * to register a listener responsible for handling incoming payload. Until the listener is not registered the
+   * transport SHOULD buffer incoming messages.
    *
    * @return
-   *   Promise of the ActorRef of the actor responsible for handling incoming data.
+   *   Promise that must be completed with the listener responsible for handling incoming data.
    */
-  def readHandlerPromise: Promise[ActorRef]
+  def readHandlerPromise: Promise[HandleEventListener]
 
   /**
-   * Asynchronously sends the specified payload to the remote endpoint. This method must be thread-safe as it might
-   * be called from different threads. This method must not block.
+   * Asynchronously sends the specified payload to the remote endpoint. This method MUST be thread-safe as it might
+   * be called from different threads. This method MUST NOT block.
    *
    * Writes guarantee ordering of messages, but not their reception. The call to write returns with
    * a Boolean indicating if the channel was ready for writes or not. A return value of false indicates that the
    * channel is not yet ready for delivery (e.g.: the write buffer is full) and the sender needs to wait
-   * until the channel becomes ready again. Returning false also means that the current write was dropped (this is
+   * until the channel becomes ready again. Returning false also means that the current write was dropped (this MUST be
    * guaranteed to ensure duplication-free delivery).
    *
    * @param payload
@@ -196,9 +258,10 @@ trait AssociationHandle {
   def write(payload: ByteString): Boolean
 
   /**
-   * Closes the underlying transport link, if needed. Some transport may not need an explicit teardown (UDP) and
-   * some transports may not support it (hardware connections). Remote endpoint of the channel or connection ''may''
-   * be notified, but this is not guaranteed.
+   * Closes the underlying transport link, if needed. Some transports might not need an explicit teardown (UDP) and
+   * some transports may not support it (hardware connections). Remote endpoint of the channel or connection MAY
+   * be notified, but this is not guaranteed. The Transport that provides the handle MUST guarantee that disassociate()
+   * could be called arbitrarily many times.
    *
    */
   def disassociate(): Unit

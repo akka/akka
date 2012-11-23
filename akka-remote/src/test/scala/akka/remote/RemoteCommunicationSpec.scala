@@ -38,6 +38,7 @@ object RemoteCommunicationSpec {
 class RemoteCommunicationSpec extends AkkaSpec("""
 akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
+  remote.transport = "akka.remote.netty.NettyRemoteTransport"
   remote.netty {
     hostname = localhost
     port = 12345
@@ -48,7 +49,7 @@ akka {
     /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
   }
 }
-""") with ImplicitSender with DefaultTimeout {
+                                               """) with ImplicitSender with DefaultTimeout {
 
   import RemoteCommunicationSpec._
 
