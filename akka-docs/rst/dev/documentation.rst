@@ -127,7 +127,7 @@ Add texlive bin to $PATH:
 
 ::
 
-  /usr/local/texlive/2010basic/bin/universal-darwin
+  /usr/local/texlive/2012basic/bin/universal-darwin
 
 Add missing tex packages:
 
@@ -140,10 +140,3 @@ Add missing tex packages:
   sudo tlmgr install wrapfig
   sudo tlmgr install helvetic
   sudo tlmgr install courier
-
-Link the akka pygments style:
-
-::
-
-  cd /usr/local/Cellar/python/2.7.1/lib/python2.7/site-packages/pygments/styles
-  ln -s /path/to/akka/akka-docs/themes/akka/pygments/akka.py akka.py
