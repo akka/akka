@@ -53,14 +53,15 @@ private[akka] class RepointableActorRef(
    *
    * This is protected so that others can have different initialization.
    */
-  def initialize(): this.type =
+  def initialize(async: Boolean): this.type =
     underlying match {
       case null ⇒
         val uid = ThreadLocalRandom.current.nextInt()
         swapCell(new UnstartedCell(system, this, props, supervisor, uid))
-        supervisor.sendSystemMessage(Supervise(this, uid))
+        supervisor.sendSystemMessage(Supervise(this, async, uid))
+        if (!async) point()
         this
-      case other ⇒ this
+      case other ⇒ throw new IllegalStateException("initialize called more than once!")
     }
 
   /**
@@ -69,7 +70,7 @@ private[akka] class RepointableActorRef(
    * modification of the `underlying` field, though it is safe to send messages
    * at any time.
    */
-  def activate(): this.type =
+  def point(): this.type =
     underlying match {
       case u: UnstartedCell ⇒ u.replaceWith(newCell(u)); this
       case null             ⇒ throw new IllegalStateException("underlying cell is null")
@@ -80,9 +81,8 @@ private[akka] class RepointableActorRef(
    * This is called by activate() to obtain the cell which is to replace the
    * unstarted cell. The cell must be fully functional.
    */
-  def newCell(old: Cell): Cell =
-    new ActorCell(system, this, props, supervisor).
-      init(old.asInstanceOf[UnstartedCell].uid, sendSupervise = false).start()
+  def newCell(old: UnstartedCell): Cell =
+    new ActorCell(system, this, props, supervisor).init(old.uid, sendSupervise = false).start()
 
   def start(): Unit = ()
 

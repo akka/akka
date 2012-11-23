@@ -36,7 +36,7 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
 
   _props.routerConfig.verifyConfig()
 
-  override def newCell(old: Cell): Cell = new RoutedActorCell(system, this, props, supervisor, old.asInstanceOf[UnstartedCell].uid)
+  override def newCell(old: UnstartedCell): Cell = new RoutedActorCell(system, this, props, supervisor, old.uid)
 
 }
 

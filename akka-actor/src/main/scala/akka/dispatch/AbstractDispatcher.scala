@@ -108,7 +108,7 @@ private[akka] case class Terminate() extends SystemMessage // sent to self from 
 /**
  * INTERNAL API
  */
-private[akka] case class Supervise(child: ActorRef, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+private[akka] case class Supervise(child: ActorRef, async: Boolean, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 /**
  * INTERNAL API
  */
