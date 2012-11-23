@@ -29,7 +29,8 @@ object ZeromqDocSpec {
 
   class HealthProbe extends Actor {
 
-    val pubSocket = ZeroMQExtension(context.system).newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:1235"))
+    val pubSocket = ZeroMQExtension(context.system).newSocket(SocketType.Pub, 
+      Bind("tcp://127.0.0.1:1235"))
     val memory = ManagementFactory.getMemoryMXBean
     val os = ManagementFactory.getOperatingSystemMXBean
     val ser = SerializationExtension(context.system)

@@ -24,9 +24,6 @@ sample as it is easy to follow the log output to understand what is happening in
 
    fault-tolerance-sample
 
-.. includecode:: code/docs/actor/FaultHandlingDocSample.scala#all
-   :exclude: imports,messages,dummydb
-
 Creating a Supervisor Strategy
 ------------------------------
 

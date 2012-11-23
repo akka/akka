@@ -52,7 +52,7 @@ object Dependency {
     val Akka      = "2.2-SNAPSHOT"
   }
 
-  val akkaKernel        = "com.typesafe.akka" %% "akka-kernel"       % V.Akka cross CrossVersion.full
-  val akkaSlf4j         = "com.typesafe.akka" %% "akka-slf4j"        % V.Akka cross CrossVersion.full
-  val logback           = "ch.qos.logback"    % "logback-classic"    % "1.0.0"
+  val akkaKernel = "com.typesafe.akka" %% "akka-kernel" % V.Akka cross CrossVersion.full
+  val akkaSlf4j  = "com.typesafe.akka" %% "akka-slf4j"  % V.Akka cross CrossVersion.full
+  val logback    = "ch.qos.logback"    % "logback-classic" % "1.0.0"
 }
