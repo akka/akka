@@ -84,7 +84,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     case GossipTick                 ⇒ gossip()
     case MetricsTick                ⇒ collect()
     case state: CurrentClusterState ⇒ receiveState(state)
-    case MemberUp(m)                ⇒ receiveMember(m)
+    case MemberUp(m)                ⇒ addMember(m)
     case e: MemberEvent             ⇒ removeMember(e)
     case msg: MetricsGossipEnvelope ⇒ receiveGossip(msg)
   }
@@ -99,7 +99,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Adds a member to the node ring.
    */
-  def receiveMember(member: Member): Unit = nodes += member.address
+  def addMember(member: Member): Unit = nodes += member.address
 
   /**
    * Removes a member from the member node ring.
@@ -113,7 +113,8 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Updates the initial node ring for those nodes that are [[akka.cluster.MemberStatus.Up]].
    */
-  def receiveState(state: CurrentClusterState): Unit = nodes = state.members collect { case m if m.status == Up ⇒ m.address }
+  def receiveState(state: CurrentClusterState): Unit =
+    nodes = state.members collect { case m if m.status == Up ⇒ m.address }
 
   /**
    * Samples the latest metrics for the node, updates metrics statistics in
@@ -128,16 +129,16 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
 
   /**
    * Receives changes from peer nodes, merges remote with local gossip nodes, then publishes
-   * changes to the event stream for load balancing router consumption, and gossips to peers.
+   * changes to the event stream for load balancing router consumption, and gossip back.
    */
   def receiveGossip(envelope: MetricsGossipEnvelope): Unit = {
-    val remoteGossip = envelope.gossip
-
-    if (remoteGossip != latestGossip) {
-      latestGossip = latestGossip merge remoteGossip
-      publish()
-      gossipTo(envelope.from)
-    }
+    // remote node might not have same view of member nodes, this side should only care
+    // about nodes that are known here, otherwise removed nodes can come back
+    val otherGossip = envelope.gossip.filter(nodes)
+    latestGossip = latestGossip merge otherGossip
+    publish()
+    if (!envelope.reply)
+      replyGossipTo(envelope.from)
   }
 
   /**
@@ -146,7 +147,13 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   def gossip(): Unit = selectRandomNode((nodes - selfAddress).toVector) foreach gossipTo
 
   def gossipTo(address: Address): Unit =
-    context.actorFor(self.path.toStringWithAddress(address)) ! MetricsGossipEnvelope(selfAddress, latestGossip)
+    sendGossip(address, MetricsGossipEnvelope(selfAddress, latestGossip, reply = false))
+
+  def replyGossipTo(address: Address): Unit =
+    sendGossip(address, MetricsGossipEnvelope(selfAddress, latestGossip, reply = true))
+
+  def sendGossip(address: Address, envelope: MetricsGossipEnvelope): Unit =
+    context.actorFor(self.path.toStringWithAddress(address)) ! envelope
 
   def selectRandomNode(addresses: immutable.IndexedSeq[Address]): Option[Address] =
     if (addresses.isEmpty) None else Some(addresses(ThreadLocalRandom.current nextInt addresses.size))
@@ -178,50 +185,30 @@ private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics]) {
   def remove(node: Address): MetricsGossip = copy(nodes = nodes filterNot (_.address == node))
 
   /**
+   * Only the nodes that are in the `includeNodes` Set.
+   */
+  def filter(includeNodes: Set[Address]): MetricsGossip =
+    copy(nodes = nodes filter { includeNodes contains _.address })
+
+  /**
    * Adds new remote [[akka.cluster.NodeMetrics]] and merges existing from a remote gossip.
    */
-  def merge(remoteGossip: MetricsGossip): MetricsGossip = {
-    val remoteNodes = remoteGossip.nodes.map(n ⇒ n.address -> n).toMap
-    val remoteNodesKeySet = remoteNodes.keySet
-    val toMerge = nodeKeys intersect remoteNodesKeySet
-    val onlyInRemote = remoteNodesKeySet -- nodeKeys
-    val onlyInLocal = nodeKeys -- remoteNodesKeySet
-
-    val seen = nodes.collect {
-      case n if toMerge contains n.address     ⇒ n merge remoteNodes(n.address)
-      case n if onlyInLocal contains n.address ⇒ n
-    }
-
-    val unseen = remoteGossip.nodes.collect { case n if onlyInRemote contains n.address ⇒ n }
-
-    copy(nodes = seen ++ unseen)
-  }
+  def merge(otherGossip: MetricsGossip): MetricsGossip =
+    otherGossip.nodes.foldLeft(this) { (gossip, nodeMetrics) ⇒ gossip :+ nodeMetrics }
 
   /**
    * Adds new local [[akka.cluster.NodeMetrics]], or merges an existing.
    */
-  def :+(data: NodeMetrics): MetricsGossip = {
-    val previous = metricsFor(data.address)
-    val names = previous map (_.name)
-
-    val (toMerge: Set[Metric], unseen: Set[Metric]) = data.metrics partition (a ⇒ names contains a.name)
-    val merged = toMerge flatMap (latest ⇒ previous.collect { case peer if latest sameAs peer ⇒ peer :+ latest })
-
-    val refreshed = nodes filterNot (_.address == data.address)
-    copy(nodes = refreshed + data.copy(metrics = unseen ++ merged))
+  def :+(newNodeMetrics: NodeMetrics): MetricsGossip = nodeMetricsFor(newNodeMetrics.address) match {
+    case Some(existingNodeMetrics) ⇒
+      copy(nodes = nodes - existingNodeMetrics + (existingNodeMetrics merge newNodeMetrics))
+    case None ⇒ copy(nodes = nodes + newNodeMetrics)
   }
 
   /**
-   * Returns a set of [[akka.actor.Address]] for a given node set.
+   * Returns [[akka.cluster.NodeMetrics]] for a node if exists.
    */
-  def nodeKeys: Set[Address] = nodes map (_.address)
-
-  /**
-   * Returns metrics for a node if exists.
-   */
-  def metricsFor(address: Address): Set[Metric] = nodes collectFirst {
-    case n if (n.address == address) ⇒ n.metrics
-  } getOrElse Set.empty[Metric]
+  def nodeMetricsFor(address: Address): Option[NodeMetrics] = nodes find { n ⇒ n.address == address }
 
 }
 
@@ -229,7 +216,8 @@ private[cluster] case class MetricsGossip(nodes: Set[NodeMetrics]) {
  * INTERNAL API
  * Envelope adding a sender address to the gossip.
  */
-private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: MetricsGossip) extends ClusterMessage
+private[cluster] case class MetricsGossipEnvelope(from: Address, gossip: MetricsGossip, reply: Boolean)
+  extends ClusterMessage
 
 object EWMA {
   /**
@@ -294,6 +282,10 @@ private[cluster] case class EWMA(value: Double, alpha: Double) extends ClusterMe
 }
 
 /**
+ * Metrics key/value.
+ *
+ * Equality of Metric is based on its name.
+ *
  * @param name the metric name
  * @param value the metric value, which may or may not be defined, it must be a valid numerical value,
  *   see [[akka.cluster.MetricNumericConverter.defined()]]
@@ -334,6 +326,12 @@ case class Metric private (name: String, value: Number, private val average: Opt
    */
   def sameAs(that: Metric): Boolean = name == that.name
 
+  override def hashCode = name.##
+  override def equals(obj: Any) = obj match {
+    case other: Metric ⇒ sameAs(other)
+    case _             ⇒ false
+  }
+
 }
 
 /**
@@ -369,6 +367,8 @@ object Metric extends MetricNumericConverter {
  * The snapshot of current sampled health metrics for any monitored process.
  * Collected and gossipped at regular intervals for dynamic cluster management strategies.
  *
+ * Equality of NodeMetrics is based on its address.
+ *
  * @param address [[akka.actor.Address]] of the node the metrics are gathered at
  * @param timestamp the time of sampling, in milliseconds since midnight, January 1, 1970 UTC
  * @param metrics the set of sampled [[akka.actor.Metric]]
@@ -378,17 +378,14 @@ case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] =
   /**
    * Returns the most recent data.
    */
-  def merge(that: NodeMetrics): NodeMetrics = if (this updatable that) copy(metrics = that.metrics, timestamp = that.timestamp) else this
-
-  /**
-   * Returns true if <code>that</code> address is the same as this and its metric set is more recent.
-   */
-  def updatable(that: NodeMetrics): Boolean = (this sameAs that) && (that.timestamp > timestamp)
-
-  /**
-   * Returns true if <code>that</code> address is the same as this
-   */
-  def sameAs(that: NodeMetrics): Boolean = address == that.address
+  def merge(that: NodeMetrics): NodeMetrics = {
+    require(address == that.address, s"merge only allowed for same address, [$address] != [$that.address]")
+    if (timestamp >= that.timestamp) this // that is older
+    else {
+      // equality is based on the name of the Metric and Set doesn't replace existing element
+      copy(metrics = that.metrics ++ metrics, timestamp = that.timestamp)
+    }
+  }
 
   def metric(key: String): Option[Metric] = metrics.collectFirst { case m if m.name == key ⇒ m }
 
@@ -397,6 +394,17 @@ case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] =
    */
   def getMetrics: java.lang.Iterable[Metric] =
     scala.collection.JavaConverters.asJavaIterableConverter(metrics).asJava
+
+  /**
+   * Returns true if <code>that</code> address is the same as this
+   */
+  def sameAs(that: NodeMetrics): Boolean = address == that.address
+
+  override def hashCode = address.##
+  override def equals(obj: Any) = obj match {
+    case other: NodeMetrics ⇒ sameAs(other)
+    case _                  ⇒ false
+  }
 
 }
 
