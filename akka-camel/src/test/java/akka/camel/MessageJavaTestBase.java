@@ -18,7 +18,7 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 
 /**
- * @author Martin Krasser
+ *
  */
 public class MessageJavaTestBase {
     static Camel camel;
