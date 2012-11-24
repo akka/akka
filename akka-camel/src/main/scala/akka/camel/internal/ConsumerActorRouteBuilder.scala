@@ -16,7 +16,7 @@ import org.apache.camel.model.RouteDefinition
  *
  * @param endpointUri endpoint URI of the consumer actor.
  *
- * @author Martin Krasser
+ *
  */
 private[camel] class ConsumerActorRouteBuilder(endpointUri: String, consumer: ActorRef, config: ConsumerConfig, settings: CamelSettings) extends RouteBuilder {
 
