@@ -8,6 +8,7 @@ import akka.actor.ActorSystem;
 import akka.dispatch.Mapper;
 import akka.japi.Function;
 import org.apache.camel.NoTypeConversionAvailableException;
+import org.apache.camel.converter.stream.InputStreamCache;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -98,6 +99,14 @@ public class MessageJavaTestBase {
         assertEquals(
             message("test1" , createMap("C", "3")),
             message("test1" , createMap("A", "1")).withHeaders(createMap("C", "3")));
+    }
+
+    @Test
+    public void shouldBeAbleToReReadStreamCacheBody() throws Exception {
+      CamelMessage msg = new CamelMessage(new InputStreamCache("test1".getBytes("utf-8")), empty);
+      assertEquals("test1", msg.getBodyAs(String.class, camel.context()));
+      // re-read
+      assertEquals("test1", msg.getBodyAs(String.class, camel.context()));
     }
 
     private static Set<String> createSet(String... entries) {
