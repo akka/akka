@@ -43,8 +43,6 @@ private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteT
 
   def shutdown(): Boolean
 
-  def isBoundTo(address: Address): Boolean = remoteAddress == address
-
   /**
    * Converts the message to the wireprotocol and sends the message across the wire
    */
