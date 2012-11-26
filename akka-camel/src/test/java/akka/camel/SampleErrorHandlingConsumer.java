@@ -15,7 +15,7 @@ import scala.Option;
 import scala.concurrent.duration.FiniteDuration;
 
 /**
- * @author Martin Krasser
+ *
  */
 public class SampleErrorHandlingConsumer extends UntypedConsumerActor {
     private static Mapper<RouteDefinition, ProcessorDefinition<?>> mapper = new Mapper<RouteDefinition, ProcessorDefinition<?>>() {
