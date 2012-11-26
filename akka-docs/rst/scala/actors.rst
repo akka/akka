@@ -234,8 +234,8 @@ If the current actor behavior does not match a received message,
 :meth:`unhandled` is called, which by default publishes an
 ``akka.actor.UnhandledMessage(message, sender, recipient)`` on the actor
 system’s event stream (set configuration item
-``akka.event-handler-startup-timeout`` to ``true`` to have them converted into
-actual Debug messages)
+``akka.actor.debug.unhandled`` to ``on`` to have them converted into
+actual Debug messages).
 
 In addition, it offers:
 
