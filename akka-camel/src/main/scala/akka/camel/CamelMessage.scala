@@ -14,7 +14,6 @@ import akka.dispatch.Mapper
 
 /**
  * An immutable representation of a Camel message.
- * @author Martin Krasser
  */
 case class CamelMessage(body: Any, headers: Map[String, Any]) {
   def this(body: Any, headers: JMap[String, Any]) = this(body, headers.toMap) //for Java
@@ -138,7 +137,6 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
 /**
  * Companion object of CamelMessage class.
  *
- * @author Martin Krasser
  */
 object CamelMessage {
 
@@ -182,7 +180,7 @@ object CamelMessage {
 /**
  * Positive acknowledgement message (used for application-acknowledged message receipts).
  * When `autoAck` is set to false in the [[akka.camel.Consumer]], you can send an `Ack` to the sender of the CamelMessage.
- * @author Martin Krasser
+ *
  */
 case object Ack {
   /** Java API to get the Ack singleton */

@@ -6,15 +6,14 @@ package akka.camel.internal
 
 import akka.actor._
 import collection.mutable.WeakHashMap
-import akka.camel._
-import internal.ActivationProtocol._
+import akka.camel.internal.ActivationProtocol._
 
 /**
  * For internal use only. An actor that tracks activation and de-activation of endpoints.
  */
-private[akka] final class ActivationTracker extends Actor with ActorLogging {
-  val activations = new WeakHashMap[ActorRef, ActivationStateMachine]
+private[camel] class ActivationTracker extends Actor with ActorLogging {
 
+  val activations = new WeakHashMap[ActorRef, ActivationStateMachine]
   /**
    * A state machine that keeps track of the endpoint activation status of an actor.
    */
@@ -22,7 +21,6 @@ private[akka] final class ActivationTracker extends Actor with ActorLogging {
     type State = PartialFunction[ActivationMessage, Unit]
 
     var receive: State = notActivated()
-
     /**
      * Not activated state
      * @return a partial function that handles messages in the 'not activated' state
@@ -68,8 +66,12 @@ private[akka] final class ActivationTracker extends Actor with ActorLogging {
      * @return a partial function that handles messages in the 'de-activated' state
      */
     def deactivated: State = {
+      // deactivated means it was activated at some point, so tell sender it was activated
       case AwaitActivation(ref)   ⇒ sender ! EndpointActivated(ref)
       case AwaitDeActivation(ref) ⇒ sender ! EndpointDeActivated(ref)
+      //resurrected at restart.
+      case msg @ EndpointActivated(ref) ⇒
+        receive = activated(Nil)
     }
 
     /**
@@ -80,6 +82,7 @@ private[akka] final class ActivationTracker extends Actor with ActorLogging {
     def failedToActivate(cause: Throwable): State = {
       case AwaitActivation(ref)   ⇒ sender ! EndpointFailedToActivate(ref, cause)
       case AwaitDeActivation(ref) ⇒ sender ! EndpointFailedToActivate(ref, cause)
+      case EndpointDeActivated(_) ⇒ // the de-register at termination always sends a de-activated when the cleanup is done. ignoring.
     }
 
     /**
@@ -90,6 +93,7 @@ private[akka] final class ActivationTracker extends Actor with ActorLogging {
     def failedToDeActivate(cause: Throwable): State = {
       case AwaitActivation(ref)   ⇒ sender ! EndpointActivated(ref)
       case AwaitDeActivation(ref) ⇒ sender ! EndpointFailedToDeActivate(ref, cause)
+      case EndpointDeActivated(_) ⇒ // the de-register at termination always sends a de-activated when the cleanup is done. ignoring.
     }
 
   }

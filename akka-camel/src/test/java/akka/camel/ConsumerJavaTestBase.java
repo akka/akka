@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import akka.testkit.AkkaSpec;
 import static org.junit.Assert.*;
 /**
- * @author Martin Krasser
+ *
  */
 public class ConsumerJavaTestBase {
 
