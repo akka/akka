@@ -11,21 +11,21 @@ import org.apache.commons.io.IOUtils.copy
 
 import org.osgi.framework._
 import java.net.URL
-
 import java.util.jar.JarInputStream
 import java.io._
 import org.scalatest.{ BeforeAndAfterAll, Suite }
 import java.util.{ UUID, Date, ServiceLoader, HashMap }
 import scala.reflect.ClassTag
-import scala.Some
+import scala.concurrent.duration._
+import scala.annotation.tailrec
 
 /**
  * Trait that provides support for building akka-osgi tests using PojoSR
  */
 trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
 
-  val MAX_WAIT_TIME = 12800
-  val START_WAIT_TIME = 50
+  val MaxWaitDuration = 12800.millis
+  val SleepyTime = 50.millis
 
   /**
    * All bundles being found on the test classpath are automatically installed and started in the PojoSR runtime.
@@ -70,16 +70,21 @@ trait PojoSRTestSupport extends Suite with BeforeAndAfterAll {
   def serviceForType[T](implicit t: ClassTag[T]): T =
     context.getService(awaitReference(t.runtimeClass)).asInstanceOf[T]
 
-  def awaitReference(serviceType: Class[_]): ServiceReference = awaitReference(serviceType, START_WAIT_TIME)
+  def awaitReference(serviceType: Class[_]): ServiceReference = awaitReference(serviceType, SleepyTime)
 
-  def awaitReference(serviceType: Class[_], wait: Long): ServiceReference = {
-    val option = Option(context.getServiceReference(serviceType.getName))
-    Thread.sleep(wait) //FIXME No sleep please
-    option match {
-      case Some(reference)                ⇒ reference
-      case None if (wait > MAX_WAIT_TIME) ⇒ fail("Gave up waiting for service of type %s".format(serviceType))
-      case None                           ⇒ awaitReference(serviceType, wait * 2)
+  def awaitReference(serviceType: Class[_], wait: FiniteDuration): ServiceReference = {
+
+    @tailrec def poll(step: Duration, deadline: Deadline): ServiceReference = context.getServiceReference(serviceType.getName) match {
+      case null ⇒
+        if (deadline.isOverdue()) fail("Gave up waiting for service of type %s".format(serviceType))
+        else {
+          Thread.sleep((step min deadline.timeLeft max Duration.Zero).toMillis)
+          poll(step, deadline)
+        }
+      case some ⇒ some
     }
+
+    poll(wait, Deadline.now + MaxWaitDuration)
   }
 
   protected def buildTestBundles(builders: Seq[BundleDescriptorBuilder]): Seq[BundleDescriptor] = builders map (_.build)
