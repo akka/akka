@@ -33,15 +33,32 @@ private[akka] class RepointableActorRef(
   val path: ActorPath)
   extends ActorRefWithCell with RepointableRef {
 
-  import AbstractActorRef.cellOffset
+  import AbstractActorRef.{ cellOffset, lookupOffset }
 
+  /*
+   * H E R E   B E   D R A G O N S !
+   * 
+   * There are two main functions of a Cell: message queueing and child lookup.
+   * When switching out the UnstartedCell for its real replacement, the former
+   * must be switched after all messages have been drained from the temporary
+   * queue into the real mailbox, while the latter must be switched before
+   * processing the very first message (i.e. before Cell.start()). Hence there
+   * are two refs here, one for each function, and they are switched just so.
+   */
   @volatile private var _cellDoNotCallMeDirectly: Cell = _
+  @volatile private var _lookupDoNotCallMeDirectly: Cell = _
 
   def underlying: Cell = Unsafe.instance.getObjectVolatile(this, cellOffset).asInstanceOf[Cell]
+  private def lookup = Unsafe.instance.getObjectVolatile(this, lookupOffset).asInstanceOf[Cell]
 
   @tailrec final def swapCell(next: Cell): Cell = {
     val old = underlying
     if (Unsafe.instance.compareAndSwapObject(this, cellOffset, old, next)) old else swapCell(next)
+  }
+
+  @tailrec final def swapLookup(next: Cell): Cell = {
+    val old = lookup
+    if (Unsafe.instance.compareAndSwapObject(this, lookupOffset, old, next)) old else swapLookup(next)
   }
 
   /**
@@ -58,6 +75,7 @@ private[akka] class RepointableActorRef(
       case null ⇒
         val uid = ThreadLocalRandom.current.nextInt()
         swapCell(new UnstartedCell(system, this, props, supervisor, uid))
+        swapLookup(underlying)
         supervisor.sendSystemMessage(Supervise(this, async, uid))
         if (!async) point()
         this
@@ -72,9 +90,21 @@ private[akka] class RepointableActorRef(
    */
   def point(): this.type =
     underlying match {
-      case u: UnstartedCell ⇒ u.replaceWith(newCell(u)); this
-      case null             ⇒ throw new IllegalStateException("underlying cell is null")
-      case _                ⇒ this // this happens routinely for things which were created async=false
+      case u: UnstartedCell ⇒
+        /*
+         * The problem here was that if the real actor (which will start running 
+         * at cell.start()) creates children in its constructor, then this may 
+         * happen before the swapCell in u.replaceWith, meaning that those
+         * children cannot be looked up immediately, e.g. if they shall become
+         * routees.
+         */
+        val cell = newCell(u)
+        swapLookup(cell)
+        cell.start()
+        u.replaceWith(cell)
+        this
+      case null ⇒ throw new IllegalStateException("underlying cell is null")
+      case _    ⇒ this // this happens routinely for things which were created async=false
     }
 
   /**
@@ -82,7 +112,7 @@ private[akka] class RepointableActorRef(
    * unstarted cell. The cell must be fully functional.
    */
   def newCell(old: UnstartedCell): Cell =
-    new ActorCell(system, this, props, supervisor).init(old.uid, sendSupervise = false).start()
+    new ActorCell(system, this, props, supervisor).init(old.uid, sendSupervise = false)
 
   def start(): Unit = ()
 
@@ -114,7 +144,7 @@ private[akka] class RepointableActorRef(
         case ".." ⇒ getParent.getChild(name)
         case ""   ⇒ getChild(name)
         case other ⇒
-          underlying.getChildByName(other) match {
+          lookup.getChildByName(other) match {
             case Some(crs: ChildRestartStats) ⇒ crs.child.asInstanceOf[InternalActorRef].getChild(name)
             case _                            ⇒ Nobody
           }
@@ -164,6 +194,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
   }
 
   def system: ActorSystem = systemImpl
+  def start(): this.type = this
   def suspend(): Unit = sendSystemMessage(Suspend())
   def resume(causedByFailure: Throwable): Unit = sendSystemMessage(Resume(causedByFailure))
   def restart(cause: Throwable): Unit = sendSystemMessage(Recreate(cause))
@@ -205,7 +236,10 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
           // systemMessages that are sent during replace need to jump to just after the last system message in the queue, so it's processed before other messages
           val wasEnqueued = if (isBeingReplaced && !queue.isEmpty()) {
             @tailrec def tryEnqueue(i: JListIterator[Any] = queue.listIterator(), insertIntoIndex: Int = -1): Boolean =
-              if (i.hasNext()) tryEnqueue(i, if (i.next().isInstanceOf[SystemMessage]) i.nextIndex() else insertIntoIndex)
+              if (i.hasNext())
+                tryEnqueue(i,
+                  if (i.next().isInstanceOf[SystemMessage]) i.nextIndex() // update last sysmsg seen so far
+                  else insertIntoIndex) // or just keep the last seen one
               else if (insertIntoIndex == -1) queue.offer(msg)
               else Try(queue.add(insertIntoIndex, msg)).isSuccess
             tryEnqueue()

@@ -14,6 +14,10 @@ import java.util.concurrent.{ TimeUnit, RejectedExecutionException, CountDownLat
 import akka.util.Timeout
 import scala.concurrent.Future
 import akka.pattern.ask
+import akka.dispatch._
+import com.typesafe.config.Config
+import java.util.concurrent.{ LinkedBlockingQueue, BlockingQueue, TimeUnit }
+import akka.util.Switch
 
 class JavaExtensionSpec extends JavaExtension with JUnitSuite
 
@@ -67,10 +71,57 @@ object ActorSystemSpec {
     }
   }
 
+  case class FastActor(latch: TestLatch, testActor: ActorRef) extends Actor {
+    val ref1 = context.actorOf(Props.empty)
+    val ref2 = context.actorFor(ref1.path.toString)
+    testActor ! ref2.getClass
+    latch.countDown()
+
+    def receive = {
+      case _ ⇒
+    }
+  }
+
+  class SlowDispatcher(_config: Config, _prerequisites: DispatcherPrerequisites) extends MessageDispatcherConfigurator(_config, _prerequisites) {
+    private val instance = new Dispatcher(
+      prerequisites,
+      config.getString("id"),
+      config.getInt("throughput"),
+      Duration(config.getNanoseconds("throughput-deadline-time"), TimeUnit.NANOSECONDS),
+      mailboxType,
+      configureExecutor(),
+      Duration(config.getMilliseconds("shutdown-timeout"), TimeUnit.MILLISECONDS)) {
+      val doneIt = new Switch
+      override protected[akka] def registerForExecution(mbox: Mailbox, hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = {
+        val ret = super.registerForExecution(mbox, hasMessageHint, hasSystemMessageHint)
+        doneIt.switchOn {
+          TestKit.awaitCond(mbox.actor.actor != null, 1.second)
+          mbox.actor.actor match {
+            case FastActor(latch, _) ⇒ Await.ready(latch, 1.second)
+          }
+        }
+        ret
+      }
+    }
+
+    /**
+     * Returns the same dispatcher instance for each invocation
+     */
+    override def dispatcher(): MessageDispatcher = instance
+  }
+
+  val config = s"""
+      akka.extensions = ["akka.actor.TestExtension"]
+      slow {
+        type="${classOf[SlowDispatcher].getName}"
+      }"""
+
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExtension"]""") with ImplicitSender {
+class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSender {
+
+  import ActorSystemSpec.FastActor
 
   "An ActorSystem" must {
 
@@ -166,6 +217,11 @@ class ActorSystemSpec extends AkkaSpec("""akka.extensions = ["akka.actor.TestExt
       implicit val timeout = Timeout(30 seconds)
       val waves = for (i ← 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
       Await.result(Future.sequence(waves), timeout.duration + 5.seconds) must be === Seq("done", "done", "done")
+    }
+
+    "find actors that just have been created" in {
+      system.actorOf(Props(new FastActor(TestLatch(), testActor)).withDispatcher("slow"))
+      expectMsgType[Class[_]] must be(classOf[LocalActorRef])
     }
 
     "reliable deny creation of actors while shutting down" in {
