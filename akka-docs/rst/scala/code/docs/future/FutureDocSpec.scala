@@ -417,7 +417,7 @@ class FutureDocSpec extends AkkaSpec {
     val delayed = after(200 millis, using = system.scheduler)(Future.failed(
       new IllegalStateException("OHNOES")))
     val future = Future { Thread.sleep(1000); "foo" }
-    val result = future either delayed
+    val result = Future firstCompletedOf Seq(future, delayed)
     //#after
     intercept[IllegalStateException] { Await.result(result, 2 second) }
   }
