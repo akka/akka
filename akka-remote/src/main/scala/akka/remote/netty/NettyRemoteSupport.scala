@@ -248,7 +248,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
       if (remoteClients.contains(remoteAddress)) false
       else {
         client.connect()
-        remoteClients.put(remoteAddress, client).foreach(_.shutdown())
+        remoteClients.put(remoteAddress, client)
         true
       }
     } finally {
