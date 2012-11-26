@@ -71,7 +71,6 @@ abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSample
       expectMsgClass(classOf[CurrentClusterState])
 
       Cluster(system) join node(first).address
-      system.actorOf(Props[StatsFacade], "statsFacade")
 
       expectMsgAllOf(
         MemberUp(Member(node(first).address, MemberStatus.Up)),
@@ -80,10 +79,12 @@ abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSample
 
       Cluster(system).unsubscribe(testActor)
 
+      system.actorOf(Props[StatsFacade], "statsFacade")
+
       testConductor.enter("all-up")
     }
 
-    "show usage of the statsFacade" in within(15 seconds) {
+    "show usage of the statsFacade" in within(20 seconds) {
       val facade = system.actorFor(RootActorPath(node(third).address) / "user" / "statsFacade")
 
       // eventually the service should be ok,
