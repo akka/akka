@@ -97,7 +97,7 @@ object AkkaBuild extends Build {
     id = "akka-testkit",
     base = file("akka-testkit"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.testkit ++ Seq(
       libraryDependencies ++= Dependencies.testkit,
       initialCommands += "import akka.testkit._",
       previousArtifact := akkaPreviousArtifact("akka-testkit")
@@ -634,6 +634,8 @@ object AkkaBuild extends Build {
     val dataflow = exports(Seq("akka.dataflow.*"))
 
     val transactor = exports(Seq("akka.transactor.*"))
+
+    val testkit = exports(Seq("akka.testkit.*"))
 
     val zeroMQ = exports(Seq("akka.zeromq.*"))
 
