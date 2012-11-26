@@ -30,7 +30,7 @@ private[akka] object SubclassifiedIndex {
       val kids = subkeys flatMap (_ addValue value)
       if (!(values contains value)) {
         values += value
-        kids :+ ((key, values))
+        kids :+ ((key, Set(value)))
       } else kids
     }
 
