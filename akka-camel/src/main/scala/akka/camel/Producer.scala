@@ -13,8 +13,6 @@ import org.apache.camel.processor.SendProcessor
 
 /**
  * Support trait for producing messages to Camel endpoints.
- *
- * @author Martin Krasser
  */
 trait ProducerSupport extends Actor with CamelSupport {
   private[this] var messages = Map[ActorRef, Any]()
@@ -160,20 +158,20 @@ trait Producer extends ProducerSupport { this: Actor ⇒
 
 /**
  * For internal use only.
- * @author Martin Krasser
+ *
  */
 private case class MessageResult(message: CamelMessage) extends NoSerializationVerificationNeeded
 
 /**
  * For internal use only.
- * @author Martin Krasser
+ *
  */
 private case class FailureResult(cause: Throwable, headers: Map[String, Any] = Map.empty) extends NoSerializationVerificationNeeded
 
 /**
  * A one-way producer.
  *
- * @author Martin Krasser
+ *
  */
 trait Oneway extends Producer { this: Actor ⇒
   override def oneway: Boolean = true
