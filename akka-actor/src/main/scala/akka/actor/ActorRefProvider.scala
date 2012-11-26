@@ -41,8 +41,7 @@ trait ActorRefProvider {
   def deadLetters: ActorRef
 
   /**
-   * The root path for all actors within this actor system, including remote
-   * address if enabled.
+   * The root path for all actors within this actor system, not including any remote address information.
    */
   def rootPath: ActorPath
 
@@ -145,6 +144,11 @@ trait ActorRefProvider {
    * attempt is made to verify actual reachability).
    */
   def getExternalAddressFor(addr: Address): Option[Address]
+
+  /**
+   * Obtain the external address of the default transport.
+   */
+  def getDefaultAddress: Address
 }
 
 /**
@@ -319,6 +323,10 @@ private[akka] object SystemGuardian {
 
 /**
  * Local ActorRef provider.
+ * 
+ * INTERNAL API!
+ * 
+ * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
 class LocalActorRefProvider(
   _systemName: String,
@@ -599,4 +607,6 @@ class LocalActorRefProvider(
   }
 
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
+
+  def getDefaultAddress: Address = rootPath.address
 }
