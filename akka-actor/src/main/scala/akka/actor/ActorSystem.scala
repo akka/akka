@@ -23,7 +23,7 @@ import util.{ Failure, Success }
 
 object ActorSystem {
 
-  val Version: String = "2.1-SNAPSHOT"
+  val Version: String = "2.1.0-RC3"
 
   val EnvHome: Option[String] = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
