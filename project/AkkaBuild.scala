@@ -621,13 +621,13 @@ object AkkaBuild extends Build {
 
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
-    val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
+    val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"), imports = Seq(protobufImport()))
 
     val osgi = exports(Seq("akka.osgi")) ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.impl"))
 
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
-    val remote = exports(Seq("akka.remote.*"))
+    val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
 
     val slf4j = exports(Seq("akka.event.slf4j.*"))
 
@@ -637,16 +637,17 @@ object AkkaBuild extends Build {
 
     val testkit = exports(Seq("akka.testkit.*"))
 
-    val zeroMQ = exports(Seq("akka.zeromq.*"))
+    val zeroMQ = exports(Seq("akka.zeromq.*"), imports = Seq(protobufImport()) )
 
-    def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
-      OsgiKeys.importPackage := defaultImports,
+    def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = osgiSettings ++ Seq(
+      OsgiKeys.importPackage := imports ++ defaultImports,
       OsgiKeys.exportPackage := packages
     )
 
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
     def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,1.1.0)\"".format(packageName)
+    def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.4.0,2.5.0)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
   }
 }
