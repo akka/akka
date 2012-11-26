@@ -323,9 +323,9 @@ private[akka] object SystemGuardian {
 
 /**
  * Local ActorRef provider.
- * 
+ *
  * INTERNAL API!
- * 
+ *
  * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
 class LocalActorRefProvider(
