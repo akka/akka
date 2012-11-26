@@ -13,7 +13,7 @@ import akka.dispatch.Mapper
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
  *
- * @author Martin Krasser
+ *
  */
 trait Consumer extends Actor with CamelSupport {
   import Consumer._

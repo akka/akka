@@ -11,7 +11,7 @@ import akka.camel.{ FailureResult, AkkaCamelException, CamelMessage }
  *  This adapter is used to convert to immutable messages to be used with Actors, and convert the immutable messages back
  *  to org.apache.camel.Message when using Camel.
  *
- * @author Martin Krasser
+ *
  */
 private[camel] class CamelExchangeAdapter(val exchange: Exchange) {
   /**

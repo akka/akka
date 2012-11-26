@@ -30,7 +30,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
 
     "Consumer must throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
       filterEvents(EventFilter[ActorActivationException](occurrences = 1)) {
-        val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
+        val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")), "invalidActor")
         intercept[FailedToCreateRouteException] {
           Await.result(camel.activationFutureFor(actorRef), defaultTimeoutDuration)
         }

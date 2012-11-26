@@ -31,7 +31,7 @@ import scala.util.{ Failure, Success, Try }
  * Messages are sent to [[akka.camel.Consumer]] actors through a [[akka.camel.internal.component.ActorEndpoint]] that
  * this component provides.
  *
- * @author Martin Krasser
+ *
  */
 private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends DefaultComponent {
   /**
@@ -52,7 +52,7 @@ private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends D
  * <code>[actorPath]?[options]%s</code>,
  * where <code>[actorPath]</code> refers to the actor path to the actor.
  *
- * @author Martin Krasser
+ *
  */
 private[camel] class ActorEndpoint(uri: String,
                                    comp: ActorComponent,
@@ -104,7 +104,7 @@ private[camel] trait ActorEndpointConfig {
  * @see akka.camel.component.ActorComponent
  * @see akka.camel.component.ActorEndpoint
  *
- * @author Martin Krasser
+ *
  */
 private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) extends DefaultProducer(endpoint) with AsyncProcessor {
   /**
