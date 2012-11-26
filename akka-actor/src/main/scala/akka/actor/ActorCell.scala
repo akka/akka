@@ -209,6 +209,11 @@ private[akka] trait Cell {
    */
   def systemImpl: ActorSystemImpl
   /**
+   * Start the cell: enqueued message must not be processed before this has
+   * been called. The usual action is to attach the mailbox to a dispatcher.
+   */
+  def start(): this.type
+  /**
    * Recursively suspend this actor and all its children. Must not throw exceptions.
    */
   def suspend(): Unit
@@ -361,10 +366,10 @@ private[akka] class ActorCell(
             case null                  ⇒ faultResume(inRespToFailure)
             case w: WaitingForChildren ⇒ w.enqueue(message)
           }
-        case Terminate()            ⇒ terminate()
-        case Supervise(child, uid)  ⇒ supervise(child, uid)
-        case ChildTerminated(child) ⇒ todo = handleChildTerminated(child)
-        case NoMessage              ⇒ // only here to suppress warning
+        case Terminate()                  ⇒ terminate()
+        case Supervise(child, async, uid) ⇒ supervise(child, async, uid)
+        case ChildTerminated(child)       ⇒ todo = handleChildTerminated(child)
+        case NoMessage                    ⇒ // only here to suppress warning
       }
     } catch {
       case e @ (_: InterruptedException | NonFatal(_)) ⇒ handleInvokeFailure(Nil, e, "error while processing " + message)
@@ -492,21 +497,21 @@ private[akka] class ActorCell(
         }
     }
 
-  private def supervise(child: ActorRef, uid: Int): Unit = if (!isTerminating) {
+  private def supervise(child: ActorRef, async: Boolean, uid: Int): Unit = if (!isTerminating) {
     // Supervise is the first thing we get from a new child, so store away the UID for later use in handleFailure()
     initChild(child) match {
       case Some(crs) ⇒
         crs.uid = uid
-        handleSupervise(child)
+        handleSupervise(child, async)
         if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(actor), "now supervising " + child))
       case None ⇒ publish(Error(self.path.toString, clazz(actor), "received Supervise from unregistered child " + child + ", this will not end well"))
     }
   }
 
   // future extension point
-  protected def handleSupervise(child: ActorRef): Unit = child match {
-    case r: RepointableActorRef ⇒ r.activate()
-    case _                      ⇒
+  protected def handleSupervise(child: ActorRef, async: Boolean): Unit = child match {
+    case r: RepointableActorRef if async ⇒ r.point()
+    case _                               ⇒
   }
 
   final protected def clearActorFields(actorInstance: Actor): Unit = {
