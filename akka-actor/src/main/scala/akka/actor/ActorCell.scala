@@ -209,6 +209,11 @@ private[akka] trait Cell {
    */
   def systemImpl: ActorSystemImpl
   /**
+   * Start the cell: enqueued message must not be processed before this has
+   * been called. The usual action is to attach the mailbox to a dispatcher.
+   */
+  def start(): this.type
+  /**
    * Recursively suspend this actor and all its children. Must not throw exceptions.
    */
   def suspend(): Unit

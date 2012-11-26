@@ -37,11 +37,11 @@ private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _sup
 
   _props.routerConfig.verifyConfig()
 
-  override def newCell(old: UnstartedCell): Cell = new RoutedActorCell(system, this, props, supervisor, old.uid)
+  override def newCell(old: UnstartedCell): Cell = new RoutedActorCell(system, this, props, supervisor).init(old.uid, sendSupervise = false)
 
 }
 
-private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef, _uid: Int)
+private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActorRef, _props: Props, _supervisor: InternalActorRef)
   extends ActorCell(
     _system,
     _ref,
@@ -71,8 +71,6 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
     }
     r
   }
-
-  init(_uid, sendSupervise = false).start()
 
   /*
    * end of construction
