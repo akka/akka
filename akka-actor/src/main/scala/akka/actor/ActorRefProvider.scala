@@ -391,7 +391,7 @@ class LocalActorRefProvider(
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
-        case Supervise(_, _)    ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case Supervise(_, _, _) ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case ChildTerminated(_) ⇒ stop()
         case _                  ⇒ log.error(this + " received unexpected system message [" + message + "]")
       }
@@ -595,14 +595,13 @@ class LocalActorRefProvider(
         if (settings.DebugRouterMisconfiguration && deployer.lookup(path).isDefined)
           log.warning("Configuration says that {} should be a router, but code disagrees. Remove the config or add a routerConfig to its Props.")
 
-        if (async) new RepointableActorRef(system, props, supervisor, path).initialize()
+        if (async) new RepointableActorRef(system, props, supervisor, path).initialize(async)
         else new LocalActorRef(system, props, supervisor, path)
       case router ⇒
         val lookup = if (lookupDeploy) deployer.lookup(path) else None
         val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
         val d = fromProps ++ deploy.iterator ++ lookup.iterator reduce ((a, b) ⇒ b withFallback a)
-        val ref = new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path).initialize()
-        if (async) ref else ref.activate()
+        new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path).initialize(async)
     }
   }
 
