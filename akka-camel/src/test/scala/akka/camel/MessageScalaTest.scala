@@ -5,11 +5,11 @@
 package akka.camel
 
 import java.io.InputStream
-
 import org.apache.camel.NoTypeConversionAvailableException
 import akka.camel.TestSupport.{ SharedCamelSystem }
 import org.scalatest.FunSuite
 import org.scalatest.matchers.MustMatchers
+import org.apache.camel.converter.stream.InputStreamCache
 
 class MessageScalaTest extends FunSuite with MustMatchers with SharedCamelSystem {
   implicit def camelContext = camel.context
@@ -44,12 +44,17 @@ class MessageScalaTest extends FunSuite with MustMatchers with SharedCamelSystem
   test("mustSetBodyAndPreserveHeaders") {
     CamelMessage("test1", Map("A" -> "1")).copy(body = "test2") must be(
       CamelMessage("test2", Map("A" -> "1")))
-
   }
 
   test("mustSetHeadersAndPreserveBody") {
     CamelMessage("test1", Map("A" -> "1")).copy(headers = Map("C" -> "3")) must be(
       CamelMessage("test1", Map("C" -> "3")))
+  }
 
+  test("mustBeAbleToReReadStreamCacheBody") {
+    val msg = CamelMessage(new InputStreamCache("test1".getBytes("utf-8")), Map.empty)
+    msg.bodyAs[String] must be("test1")
+    // re-read
+    msg.bodyAs[String] must be("test1")
   }
 }
