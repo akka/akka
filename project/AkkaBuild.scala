@@ -666,7 +666,7 @@ object Dependencies {
     val scalaStm      = "org.scala-stm"               % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
-    val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding_2.10.0-RC2"         % "0.0.6" //cross CrossVersion.full // ApacheV2
+    val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding"         % "0.0.6" cross CrossVersion.full // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
