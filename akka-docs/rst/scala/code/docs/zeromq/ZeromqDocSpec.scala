@@ -188,8 +188,8 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
 
   def checkZeroMQInstallation() = try {
     ZeroMQExtension(system).version match {
-      case ZeroMQVersion(2, 1, _) ⇒ Unit
-      case version                ⇒ pending
+      case ZeroMQVersion(x, y, _) if x >= 3 || (x >= 2 && y >= 1) ⇒ Unit
+      case version ⇒ pending
     }
   } catch {
     case e: LinkageError ⇒ pending
