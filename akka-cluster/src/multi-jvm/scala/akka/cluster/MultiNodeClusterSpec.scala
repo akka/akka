@@ -223,7 +223,9 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     within(timeout) {
       awaitCond(clusterView.members.size == numberOfMembers)
       awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
-      awaitCond(clusterView.convergence)
+      // clusterView.leader is updated by LeaderChanged, await that to be updated also
+      val expectedLeader = clusterView.members.headOption.map(_.address)
+      awaitCond(clusterView.leader == expectedLeader)
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitCond(
           canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))

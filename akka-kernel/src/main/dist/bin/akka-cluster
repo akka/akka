@@ -129,19 +129,6 @@ case "$2" in
         $JMX_CLIENT $HOST akka:type=Cluster Singleton
         ;;
 
-    has-convergence)
-        if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> is-convergence"
-            exit 1
-        fi
-
-        ensureNodeIsRunningAndAvailable
-        shift
-
-        echo "Checking for cluster convergence"
-        $JMX_CLIENT $HOST akka:type=Cluster Convergence
-        ;;
-
     is-available)
         if [ $# -ne 2 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> is-available"

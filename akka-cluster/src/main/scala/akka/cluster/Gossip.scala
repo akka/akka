@@ -135,7 +135,7 @@ private[cluster] case class Gossip(
    * Checks if we have a cluster convergence. If there are any unreachable nodes then we can't have a convergence -
    * waiting for user to act (issuing DOWN) or leader to act (issuing DOWN through auto-down).
    *
-   * @return Some(convergedGossip) if convergence have been reached and None if not
+   * @return true if convergence have been reached and false if not
    */
   def convergence: Boolean = {
     val unreachable = overview.unreachable
@@ -151,8 +151,10 @@ private[cluster] case class Gossip(
     def allMembersInSeen = members.forall(m ⇒ seen.contains(m.address))
 
     def seenSame: Boolean =
-      if (seen.isEmpty) false
-      else {
+      if (seen.isEmpty) {
+        // if both seen and members are empty, then every(no)body has seen the same thing
+        members.isEmpty
+      } else {
         val values = seen.values
         val seenHead = values.head
         values.forall(_ == seenHead)

@@ -252,9 +252,11 @@ private[akka] class ClusterRouteeProvider(
  */
 private[akka] class ClusterRouterActor extends Router {
 
-  // subscribe to cluster changes, MemberEvent
   // re-subscribe when restart
-  override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])
+  override def preStart(): Unit = {
+    cluster.subscribe(self, classOf[MemberEvent])
+    cluster.subscribe(self, classOf[UnreachableMember])
+  }
   override def postStop(): Unit = cluster.unsubscribe(self)
 
   // lazy to not interfere with RoutedActorCell initialization
@@ -267,6 +269,19 @@ private[akka] class ClusterRouterActor extends Router {
   def cluster: Cluster = routeeProvider.cluster
 
   def fullAddress(actorRef: ActorRef): Address = routeeProvider.fullAddress(actorRef)
+
+  def unregisterRoutees(member: Member) = {
+    val address = member.address
+    routeeProvider.nodes -= address
+
+    // unregister routees that live on that node
+    val affectedRoutes = routeeProvider.routees.filter(fullAddress(_) == address)
+    routeeProvider.unregisterRoutees(affectedRoutes)
+
+    // createRoutees will not create more than createRoutees and maxInstancesPerNode
+    // this is useful when totalInstances < upNodes.size
+    routeeProvider.createRoutees()
+  }
 
   override def routerReceive: Receive = {
     case s: CurrentClusterState ⇒
@@ -282,17 +297,10 @@ private[akka] class ClusterRouterActor extends Router {
 
     case other: MemberEvent ⇒
       // other events means that it is no longer interesting, such as
-      // MemberJoined, MemberLeft, MemberExited, MemberUnreachable, MemberRemoved
-      val address = other.member.address
-      routeeProvider.nodes -= address
+      // MemberJoined, MemberLeft, MemberExited, MemberRemoved
+      unregisterRoutees(other.member)
 
-      // unregister routees that live on that node
-      val affectedRoutes = routeeProvider.routees.filter(fullAddress(_) == address)
-      routeeProvider.unregisterRoutees(affectedRoutes)
-
-      // createRoutees will not create more than createRoutees and maxInstancesPerNode
-      // this is useful when totalInstances < upNodes.size
-      routeeProvider.createRoutees()
-
+    case UnreachableMember(m) ⇒
+      unregisterRoutees(m)
   }
 }
