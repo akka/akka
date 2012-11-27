@@ -67,7 +67,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       clusterView.self.address must be(selfAddress)
       clusterView.members.map(_.address) must be(Set(selfAddress))
       clusterView.status must be(MemberStatus.Joining)
-      clusterView.convergence must be(true)
       leaderActions()
       awaitCond(clusterView.status == MemberStatus.Up)
     }
