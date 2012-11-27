@@ -5,7 +5,7 @@
 package akka.cluster
 
 import scala.language.postfixOps
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.remote.testkit.{ MultiNodeSpec, MultiNodeConfig }
 import com.typesafe.config.ConfigFactory
 import akka.testkit.LongRunningTest

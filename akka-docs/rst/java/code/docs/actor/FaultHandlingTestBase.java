@@ -7,14 +7,18 @@ package docs.actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.SupervisorStrategy;
-import static akka.actor.SupervisorStrategy.*;
+import static akka.actor.SupervisorStrategy.resume;
+import static akka.actor.SupervisorStrategy.restart;
+import static akka.actor.SupervisorStrategy.stop;
+import static akka.actor.SupervisorStrategy.escalate;
+import akka.actor.SupervisorStrategy.Directive;
 import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
 import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;
 
@@ -23,10 +27,11 @@ import akka.testkit.ErrorFilter;
 import akka.testkit.EventFilter;
 import akka.testkit.TestEvent;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static akka.japi.Util.immutableSeq;
 import akka.japi.Function;
 import scala.Option;
 import scala.collection.JavaConverters;
-import scala.collection.Seq;
+import scala.collection.immutable.Seq;
 
 import org.junit.Test;
 import org.junit.BeforeClass;
@@ -41,7 +46,7 @@ public class FaultHandlingTestBase {
 
     //#strategy
     private static SupervisorStrategy strategy =
-      new OneForOneStrategy(10, Duration.parse("1 minute"),
+      new OneForOneStrategy(10, Duration.create("1 minute"),
         new Function<Throwable, Directive>() {
           @Override
           public Directive apply(Throwable t) {
@@ -81,7 +86,7 @@ public class FaultHandlingTestBase {
 
     //#strategy2
     private static SupervisorStrategy strategy = new OneForOneStrategy(10,
-      Duration.parse("1 minute"),
+      Duration.create("1 minute"),
         new Function<Throwable, Directive>() {
           @Override
           public Directive apply(Throwable t) {
@@ -215,8 +220,7 @@ public class FaultHandlingTestBase {
 
   //#testkit
   public <A> Seq<A> seq(A... args) {
-    return JavaConverters.collectionAsScalaIterableConverter(
-      java.util.Arrays.asList(args)).asScala().toSeq();
+    return immutableSeq(args);
   }
   //#testkit
 }

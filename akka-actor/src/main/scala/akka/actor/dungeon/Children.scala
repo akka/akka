@@ -5,14 +5,12 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.util.control.NonFatal
+import scala.collection.immutable
 import akka.actor._
-import akka.actor.ActorCell
 import akka.actor.ActorPath.ElementRegex
 import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Helpers }
-import akka.actor.ChildNameReserved
 
 private[akka] trait Children { this: ActorCell ⇒
 
@@ -24,8 +22,9 @@ private[akka] trait Children { this: ActorCell ⇒
   def childrenRefs: ChildrenContainer =
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.childrenOffset).asInstanceOf[ChildrenContainer]
 
-  final def children: Iterable[ActorRef] = childrenRefs.children
-  final def getChildren(): java.lang.Iterable[ActorRef] = children.asJava
+  final def children: immutable.Iterable[ActorRef] = childrenRefs.children
+  final def getChildren(): java.lang.Iterable[ActorRef] =
+    scala.collection.JavaConverters.asJavaIterableConverter(children).asJava
 
   final def child(name: String): Option[ActorRef] = Option(getChild(name))
   final def getChild(name: String): ActorRef = childrenRefs.getByName(name) match {
@@ -53,19 +52,24 @@ private[akka] trait Children { this: ActorCell ⇒
   }
 
   final def stop(actor: ActorRef): Unit = {
-    val started = actor match {
-      case r: RepointableRef ⇒ r.isStarted
-      case _                 ⇒ true
+    if (childrenRefs.getByRef(actor).isDefined) {
+      @tailrec def shallDie(ref: ActorRef): Boolean = {
+        val c = childrenRefs
+        swapChildrenRefs(c, c.shallDie(ref)) || shallDie(ref)
+      }
+
+      if (actor match {
+        case r: RepointableRef ⇒ r.isStarted
+        case _                 ⇒ true
+      }) shallDie(actor)
     }
-    if (childrenRefs.getByRef(actor).isDefined && started) shallDie(actor)
     actor.asInstanceOf[InternalActorRef].stop()
   }
 
   /*
    * low level CAS helpers
    */
-
-  @inline private def swapChildrenRefs(oldChildren: ChildrenContainer, newChildren: ChildrenContainer): Boolean =
+  @inline private final def swapChildrenRefs(oldChildren: ChildrenContainer, newChildren: ChildrenContainer): Boolean =
     Unsafe.instance.compareAndSwapObject(this, AbstractActorCell.childrenOffset, oldChildren, newChildren)
 
   @tailrec final def reserveChild(name: String): Boolean = {
@@ -88,18 +92,6 @@ private[akka] trait Children { this: ActorCell ⇒
         if (swapChildrenRefs(cc, cc.add(name, crs))) Some(crs) else initChild(ref)
       case None ⇒ None
     }
-  }
-
-  @tailrec final protected def shallDie(ref: ActorRef): Boolean = {
-    val c = childrenRefs
-    swapChildrenRefs(c, c.shallDie(ref)) || shallDie(ref)
-  }
-
-  @tailrec final private def removeChild(ref: ActorRef): ChildrenContainer = {
-    val c = childrenRefs
-    val n = c.remove(ref)
-    if (swapChildrenRefs(c, n)) n
-    else removeChild(ref)
   }
 
   @tailrec final protected def setChildrenTerminationReason(reason: ChildrenContainer.SuspendReason): Boolean = {
@@ -141,13 +133,21 @@ private[akka] trait Children { this: ActorCell ⇒
 
   protected def getChildByRef(ref: ActorRef): Option[ChildRestartStats] = childrenRefs.getByRef(ref)
 
-  protected def getAllChildStats: Iterable[ChildRestartStats] = childrenRefs.stats
+  protected def getAllChildStats: immutable.Iterable[ChildRestartStats] = childrenRefs.stats
 
   protected def removeChildAndGetStateChange(child: ActorRef): Option[SuspendReason] = {
-    childrenRefs match {
+    @tailrec def removeChild(ref: ActorRef): ChildrenContainer = {
+      val c = childrenRefs
+      val n = c.remove(ref)
+      if (swapChildrenRefs(c, n)) n else removeChild(ref)
+    }
+
+    childrenRefs match { // The match must be performed BEFORE the removeChild
       case TerminatingChildrenContainer(_, _, reason) ⇒
-        val newContainer = removeChild(child)
-        if (!newContainer.isInstanceOf[TerminatingChildrenContainer]) Some(reason) else None
+        removeChild(child) match {
+          case _: TerminatingChildrenContainer ⇒ None
+          case _                               ⇒ Some(reason)
+        }
       case _ ⇒
         removeChild(child)
         None
@@ -192,6 +192,7 @@ private[akka] trait Children { this: ActorCell ⇒
       // mailbox==null during RoutedActorCell constructor, where suspends are queued otherwise
       if (mailbox ne null) for (_ ← 1 to mailbox.suspendCount) actor.suspend()
       initChild(actor)
+      actor.start()
       actor
     }
   }

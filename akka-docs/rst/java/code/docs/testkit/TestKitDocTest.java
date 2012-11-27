@@ -26,7 +26,7 @@ import akka.testkit.TestActor;
 import akka.testkit.TestActor.AutoPilot;
 import akka.testkit.TestActorRef;
 import akka.testkit.JavaTestKit;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 
 public class TestKitDocTest {
   

@@ -17,13 +17,12 @@ built using `Sphinx`_.
 Sphinx
 ======
 
-More to come...
-
+For more details see `The Sphinx Documentation <http://sphinx.pocoo.org/contents.html>`_
 
 reStructuredText
 ================
 
-More to come...
+For more details see `The reST Quickref <http://docutils.sourceforge.net/docs/user/rst/quickref.html>`_
 
 Sections
 --------
@@ -75,16 +74,17 @@ First install `Sphinx`_. See below.
 Building
 --------
 
-::
+For the html version of the docs::
 
-  cd akka-docs
+    sbt sphinx:generate-html
 
-  make html
-  open _build/html/index.html
+    open <project-dir>/akka-docs/target/sphinx/html/index.html
 
-  make pdf
-  open _build/latex/Akka.pdf
+For the pdf version of the docs::
 
+    sbt sphinx:generate-pdf
+
+    open <project-dir>/akka-docs/target/sphinx/latex/Akka.pdf
 
 Installing Sphinx on OS X
 -------------------------
@@ -127,7 +127,7 @@ Add texlive bin to $PATH:
 
 ::
 
-  /usr/local/texlive/2010basic/bin/universal-darwin
+  /usr/local/texlive/2012basic/bin/universal-darwin
 
 Add missing tex packages:
 
@@ -140,10 +140,3 @@ Add missing tex packages:
   sudo tlmgr install wrapfig
   sudo tlmgr install helvetic
   sudo tlmgr install courier
-
-Link the akka pygments style:
-
-::
-
-  cd /usr/local/Cellar/python/2.7.1/lib/python2.7/site-packages/pygments/styles
-  ln -s /path/to/akka/akka-docs/themes/akka/pygments/akka.py akka.py

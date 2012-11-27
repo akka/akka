@@ -19,7 +19,7 @@ import akka.routing.RoutedActorRef
 import akka.routing.Resizer
 import akka.routing.RouteeProvider
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object RoundRobinRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 

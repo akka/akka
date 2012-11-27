@@ -47,6 +47,17 @@ Alternatives to blocking are discussed further within this documentation.
 Also note that the ``Future`` returned by an ``UntypedActor`` is a ``Future<Object>`` since an ``UntypedActor`` is dynamic.
 That is why the cast to ``String`` is used in the above sample.
 
+.. warning::
+
+   ``Await.result`` and ``Await.ready`` are provided for exceptional situations where you **must** block,
+   a good rule of thumb is to only use them if you know why you **must** block. For all other cases, use
+   asynchronous composition as described below.
+
+To send the result of a ``Future`` to an ``Actor``, you can use the ``pipe`` construct:
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: pipe-to
+
 Use Directly
 ------------
 
@@ -74,6 +85,11 @@ Or failures:
 
 .. includecode:: code/docs/future/FutureDocTestBase.java
    :include: failed
+
+For these examples ``PrintResult`` is defined as follows:
+
+.. includecode:: code/docs/future/FutureDocTestBase.java
+   :include: print-result
 
 Functional Futures
 ------------------

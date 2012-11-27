@@ -7,7 +7,8 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
+import scala.collection.immutable
 
 case class SingletonClusterMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -61,11 +62,11 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
     "become singleton cluster when one node is shutdown" taggedAs LongRunningTest in {
       runOn(first) {
         val secondAddress = address(second)
-        testConductor.shutdown(second, 0)
+        testConductor.shutdown(second, 0).await
 
         markNodeAsUnavailable(secondAddress)
 
-        awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = Seq(secondAddress), 30.seconds)
+        awaitUpConvergence(numberOfMembers = 1, canNotBePartOfMemberRing = List(secondAddress), 30.seconds)
         clusterView.isSingletonCluster must be(true)
         awaitCond(clusterView.isLeader)
       }

@@ -11,7 +11,7 @@ import akka.testkit.TestEvent._
 import akka.dispatch.BoundedDequeBasedMailbox
 import akka.pattern.ask
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.Assertions.intercept

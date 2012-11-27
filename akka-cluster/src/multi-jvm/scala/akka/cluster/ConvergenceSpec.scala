@@ -9,7 +9,7 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.Address
 
 case class ConvergenceMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
@@ -61,7 +61,7 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
 
       runOn(first) {
         // kill 'third' node
-        testConductor.shutdown(third, 0)
+        testConductor.shutdown(third, 0).await
         markNodeAsUnavailable(thirdAddress)
       }
 

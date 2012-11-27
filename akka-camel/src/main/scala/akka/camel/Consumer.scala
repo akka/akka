@@ -7,13 +7,13 @@ package akka.camel
 import akka.camel.internal.CamelSupervisor.Register
 import org.apache.camel.model.{ RouteDefinition, ProcessorDefinition }
 import akka.actor._
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration._
 import akka.dispatch.Mapper
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
  *
- * @author Martin Krasser
+ *
  */
 trait Consumer extends Actor with CamelSupport {
   import Consumer._

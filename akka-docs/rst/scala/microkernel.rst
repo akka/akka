@@ -10,7 +10,7 @@ having to create a launcher script.
 
 The Akka Microkernel is included in the Akka download found at `downloads`_.
 
-.. _downloads: http://akka.io/downloads
+.. _downloads: http://typesafe.com/stack/downloads/akka
 
 To run an application with the microkernel you need to create a Bootable class
 that handles the startup and shutdown the application. An example is included below.

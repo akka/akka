@@ -3,8 +3,7 @@ package akka.agent
 import language.postfixOps
 
 import scala.concurrent.{ Await, Future }
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._

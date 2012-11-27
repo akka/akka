@@ -11,7 +11,7 @@ import akka.actor._
 import java.io._
 import scala.concurrent.Await
 import akka.util.Timeout
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.reflect.BeanInfo
 import com.google.protobuf.Message
 import akka.pattern.ask

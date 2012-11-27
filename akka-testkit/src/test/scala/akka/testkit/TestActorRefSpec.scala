@@ -9,11 +9,10 @@ import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import akka.event.Logging.Warning
 import scala.concurrent.{ Future, Promise, Await }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.dispatch.Dispatcher
-import scala.concurrent.util.Duration
 
 /**
  * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.

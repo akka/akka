@@ -7,7 +7,7 @@ package akka.camel;
 import akka.camel.javaapi.UntypedProducerActor;
 
 /**
- * @author Martin Krasser
+ *
  */
 public class SampleUntypedReplyingProducer extends UntypedProducerActor {
 

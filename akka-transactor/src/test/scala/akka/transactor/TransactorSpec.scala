@@ -7,15 +7,16 @@ package akka.transactor
 import language.postfixOps
 
 import akka.actor._
+import scala.collection.immutable
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
+import scala.concurrent.stm._
 import akka.util.Timeout
 import akka.testkit._
-import scala.concurrent.stm._
 import akka.pattern.{ AskTimeoutException, ask }
 
 object TransactorIncrement {
-  case class Increment(friends: Seq[ActorRef], latch: TestLatch)
+  case class Increment(friends: immutable.Seq[ActorRef], latch: TestLatch)
   case object GetCount
 
   class Counter(name: String) extends Transactor {

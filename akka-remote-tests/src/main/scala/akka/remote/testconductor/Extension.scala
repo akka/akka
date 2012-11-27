@@ -5,7 +5,9 @@ import akka.remote.RemoteActorRefProvider
 import akka.util.Timeout
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.ConcurrentHashMap
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
+import com.typesafe.config.Config
+import akka.dispatch.ThreadPoolConfig
 
 /**
  * Access to the [[akka.remote.testconductor.TestConductorExt]] extension:
@@ -41,15 +43,25 @@ object TestConductor extends ExtensionKey[TestConductorExt] {
 class TestConductorExt(val system: ExtendedActorSystem) extends Extension with Conductor with Player {
 
   object Settings {
-    val config = system.settings.config
+    val config = system.settings.config.getConfig("akka.testconductor")
 
-    val ConnectTimeout = Duration(config.getMilliseconds("akka.testconductor.connect-timeout"), MILLISECONDS)
-    val ClientReconnects = config.getInt("akka.testconductor.client-reconnects")
-    val ReconnectBackoff = Duration(config.getMilliseconds("akka.testconductor.reconnect-backoff"), MILLISECONDS)
+    val ConnectTimeout = Duration(config.getMilliseconds("connect-timeout"), MILLISECONDS)
+    val ClientReconnects = config.getInt("client-reconnects")
+    val ReconnectBackoff = Duration(config.getMilliseconds("reconnect-backoff"), MILLISECONDS)
 
-    implicit val BarrierTimeout = Timeout(Duration(config.getMilliseconds("akka.testconductor.barrier-timeout"), MILLISECONDS))
-    implicit val QueryTimeout = Timeout(Duration(config.getMilliseconds("akka.testconductor.query-timeout"), MILLISECONDS))
-    val PacketSplitThreshold = Duration(config.getMilliseconds("akka.testconductor.packet-split-threshold"), MILLISECONDS)
+    implicit val BarrierTimeout = Timeout(Duration(config.getMilliseconds("barrier-timeout"), MILLISECONDS))
+    implicit val QueryTimeout = Timeout(Duration(config.getMilliseconds("query-timeout"), MILLISECONDS))
+    val PacketSplitThreshold = Duration(config.getMilliseconds("packet-split-threshold"), MILLISECONDS)
+
+    private def computeWPS(config: Config): Int =
+      ThreadPoolConfig.scaledPoolSize(
+        config.getInt("pool-size-min"),
+        config.getDouble("pool-size-factor"),
+        config.getInt("pool-size-max"))
+
+    val ServerSocketWorkerPoolSize = computeWPS(config.getConfig("netty.server-socket-worker-pool"))
+
+    val ClientSocketWorkerPoolSize = computeWPS(config.getConfig("netty.client-socket-worker-pool"))
   }
 
   /**

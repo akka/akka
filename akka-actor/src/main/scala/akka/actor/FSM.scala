@@ -5,10 +5,10 @@ package akka.actor
 
 import language.implicitConversions
 import akka.util._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 object FSM {
 
@@ -427,6 +427,8 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   /**
    * Set handler which is called upon reception of unhandled messages. Calling
    * this method again will overwrite the previous contents.
+   *
+   * The current state may be queried using ``stateName``.
    */
   final def whenUnhandled(stateFunction: StateFunction): Unit =
     handleEvent = stateFunction orElse handleEventDefault
@@ -519,7 +521,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    *       Main actor receive() method
    * *******************************************
    */
-  override final def receive: Receive = {
+  override def receive: Receive = {
     case TimeoutMarker(gen) ⇒
       if (generation == gen) {
         processMsg(StateTimeout, "state timeout")

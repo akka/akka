@@ -9,7 +9,7 @@ import language.postfixOps
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestFSMRefSpec extends AkkaSpec {

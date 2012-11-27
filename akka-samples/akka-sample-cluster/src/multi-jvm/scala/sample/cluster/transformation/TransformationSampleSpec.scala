@@ -1,7 +1,7 @@
 package sample.cluster.transformation
 
 import language.postfixOps
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 
@@ -52,7 +52,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
   override def afterAll() = multiNodeSpecAfterAll()
 
   "The transformation sample" must {
-    "illustrate how to start first frontend" in {
+    "illustrate how to start first frontend" in within(15 seconds) {
       runOn(frontend1) {
         // this will only run on the 'first' node
         Cluster(system) join node(frontend1).address
@@ -88,6 +88,8 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
         Cluster(system) join node(frontend1).address
         system.actorOf(Props[TransformationFrontend], name = "frontend")
       }
+      testConductor.enter("frontend2-started")
+
       runOn(backend2, backend3) {
         Cluster(system) join node(backend1).address
         system.actorOf(Props[TransformationBackend], name = "backend")

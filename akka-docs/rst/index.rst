@@ -20,7 +20,7 @@ Links
 
 * :ref:`migration`
 
-* `Downloads <http://akka.io/downloads/>`_
+* `Downloads <http://typesafe.com/stack/downloads/akka/>`_
 
 * `Source Code <http://github.com/akka/akka>`_
 

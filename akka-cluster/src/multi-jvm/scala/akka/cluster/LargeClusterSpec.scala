@@ -8,19 +8,16 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.testkit.TestEvent._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.ActorSystem
-import scala.concurrent.util.Deadline
 import java.util.concurrent.TimeoutException
 import scala.collection.immutable.SortedSet
 import scala.concurrent.Await
-import scala.concurrent.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.remote.testconductor.RoleName
 import akka.actor.Props
 import akka.actor.Actor
 import akka.cluster.MemberStatus._
-import scala.concurrent.util.FiniteDuration
 
 object LargeClusterMultiJvmSpec extends MultiNodeConfig {
   // each jvm simulates a datacenter with many nodes
@@ -42,7 +39,7 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
       gossip-interval = 500 ms
       auto-join = off
       auto-down = on
-      failure-detector.acceptable-heartbeat-pause = 10s
+      failure-detector.acceptable-heartbeat-pause = 5s
       publish-stats-interval = 0 s # always, when it happens
     }
     akka.event-handlers = ["akka.testkit.TestEventListener"]
@@ -57,7 +54,8 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     akka.scheduler.tick-duration = 33 ms
     akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.execution-pool-size = 4
-    #akka.remote.netty.reconnection-time-window = 1s
+    #akka.remote.netty.reconnection-time-window = 10s
+    akka.remote.netty.write-timeout = 5s
     akka.remote.netty.backoff-timeout = 500ms
     akka.remote.netty.connection-timeout = 500ms
 
@@ -135,9 +133,7 @@ abstract class LargeClusterSpec
     systems foreach { Cluster(_) }
   }
 
-  def expectedMaxDuration(totalNodes: Int): FiniteDuration =
-    // this cast will always succeed, but the compiler does not know about it ...
-    (5.seconds + (2.seconds * totalNodes)).asInstanceOf[FiniteDuration]
+  def expectedMaxDuration(totalNodes: Int): FiniteDuration = 5.seconds + 2.seconds * totalNodes
 
   def joinAll(from: RoleName, to: RoleName, totalNodes: Int, runOnRoles: RoleName*): Unit = {
     val joiningClusters = systems.map(Cluster(_)).toSet
@@ -151,7 +147,7 @@ abstract class LargeClusterSpec
     runOn(runOnRoles: _*) {
       systems.size must be(nodesPerDatacenter) // make sure it is initialized
 
-      val clusterNodes = ifNode(from)(joiningClusterNodes)(systems.map(Cluster(_)).toSet)
+      val clusterNodes = if(isNode(from)) joiningClusterNodes else systems.map(Cluster(_)).toSet
       val startGossipCounts = Map.empty[Cluster, Long] ++
         clusterNodes.map(c ⇒ (c -> c.readView.latestStats.receivedGossipCount))
       def gossipCount(c: Cluster): Long = {
@@ -263,7 +259,7 @@ abstract class LargeClusterSpec
       if (bulk.nonEmpty) {
         val totalNodes = nodesPerDatacenter * 4 + bulk.size
         within(expectedMaxDuration(totalNodes)) {
-          val joiningClusters = ifNode(fifthDatacenter)(bulk.map(Cluster(_)).toSet)(Set.empty)
+          val joiningClusters = if(isNode(fifthDatacenter)) bulk.map(Cluster(_)).toSet else Set.empty[Cluster]
           join(joiningClusters, from = fifthDatacenter, to = firstDatacenter, totalNodes,
             runOnRoles = firstDatacenter, secondDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter)
           enterBarrier("fifth-datacenter-joined-" + bulk.size)
@@ -273,7 +269,7 @@ abstract class LargeClusterSpec
       for (i ← 0 until oneByOne.size) {
         val totalNodes = nodesPerDatacenter * 4 + bulk.size + i + 1
         within(expectedMaxDuration(totalNodes)) {
-          val joiningClusters = ifNode(fifthDatacenter)(Set(Cluster(oneByOne(i))))(Set.empty)
+          val joiningClusters = if(isNode(fifthDatacenter)) Set(Cluster(oneByOne(i))) else Set.empty[Cluster]
           join(joiningClusters, from = fifthDatacenter, to = firstDatacenter, totalNodes,
             runOnRoles = firstDatacenter, secondDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter)
           enterBarrier("fifth-datacenter-joined-" + (bulk.size + i))
@@ -285,7 +281,7 @@ abstract class LargeClusterSpec
       val unreachableNodes = nodesPerDatacenter
       val liveNodes = nodesPerDatacenter * 4
 
-      within((30.seconds + (3.seconds * liveNodes)).asInstanceOf[FiniteDuration]) {
+      within(30.seconds + 3.seconds * liveNodes) {
         val startGossipCounts = Map.empty[Cluster, Long] ++
           systems.map(sys ⇒ (Cluster(sys) -> Cluster(sys).readView.latestStats.receivedGossipCount))
         def gossipCount(c: Cluster): Long = {
@@ -319,7 +315,7 @@ abstract class LargeClusterSpec
         }
 
         runOn(firstDatacenter) {
-          testConductor.shutdown(secondDatacenter, 0)
+          testConductor.shutdown(secondDatacenter, 0).await
         }
 
         enterBarrier("second-datacenter-shutdown")

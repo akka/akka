@@ -3,6 +3,10 @@
 Developer Guidelines
 ====================
 
+.. note::
+
+    First read `The Akka Contributor Guidelines <https://github.com/akka/akka/blob/master/CONTRIBUTING.md>`_ .
+
 Code Style
 ----------
 
@@ -51,7 +55,7 @@ There is a testing standard that should be followed: `Ticket001Spec <https://git
 Actor TestKit
 ^^^^^^^^^^^^^
 
-There is a useful test kit for testing actors: `akka.util.TestKit <https://github.com/akka/akka/tree/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala>`_. It enables assertions concerning replies received and their timing, there is more documentation in the :ref:`akka-testkit` module.
+There is a useful test kit for testing actors: `akka.util.TestKit <@github@/akka-testkit/src/main/scala/akka/testkit/TestKit.scala>`_. It enables assertions concerning replies received and their timing, there is more documentation in the :ref:`akka-testkit` module.
 
 Multi-JVM Testing
 ^^^^^^^^^^^^^^^^^

@@ -11,7 +11,7 @@ import akka.actor.Status._
 import akka.pattern.ask
 import akka.testkit.{ EventFilter, filterEvents, filterException }
 import scala.concurrent.{ Await, Promise, Future }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit.{ DefaultTimeout, TestLatch, AkkaSpec }
 import java.util.concurrent.TimeoutException
 
@@ -271,9 +271,7 @@ class DataflowSpec extends AkkaSpec with DefaultTimeout {
       assert(checkType(rString, classTag[String]))
       assert(checkType(rInt, classTag[Int]))
       assert(!checkType(rInt, classTag[String]))
-      assert(intercept[java.lang.Exception] {
-        assert(!checkType(rInt, classTag[Nothing]))
-      }.getMessage == "Nothing is a bottom type, therefore its erasure does not return a value") // When this fails, remove the intercept
+      assert(!checkType(rInt, classTag[Nothing]))
       assert(!checkType(rInt, classTag[Any]))
 
       Await.result(rString, timeout.duration)

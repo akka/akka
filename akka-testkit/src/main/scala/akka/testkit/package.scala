@@ -3,15 +3,17 @@ package akka
 import language.implicitConversions
 
 import akka.actor.ActorSystem
-import scala.concurrent.util.{ Duration, FiniteDuration }
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.reflect.ClassTag
+import scala.collection.immutable
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 package object testkit {
   def filterEvents[T](eventFilters: Iterable[EventFilter])(block: ⇒ T)(implicit system: ActorSystem): T = {
     def now = System.currentTimeMillis
 
-    system.eventStream.publish(TestEvent.Mute(eventFilters.toSeq))
+    system.eventStream.publish(TestEvent.Mute(eventFilters.to[immutable.Seq]))
+
     try {
       val result = block
 
@@ -23,7 +25,7 @@ package object testkit {
 
       result
     } finally {
-      system.eventStream.publish(TestEvent.UnMute(eventFilters.toSeq))
+      system.eventStream.publish(TestEvent.UnMute(eventFilters.to[immutable.Seq]))
     }
   }
 
@@ -35,7 +37,7 @@ package object testkit {
    * Scala API. Scale timeouts (durations) during tests with the configured
    * 'akka.test.timefactor'.
    * Implicit conversion to add dilated function to Duration.
-   * import scala.concurrent.util.duration._
+   * import scala.concurrent.duration._
    * import akka.testkit._
    * 10.milliseconds.dilated
    *

@@ -7,7 +7,7 @@ import akka.japi.*;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.Promise;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.testkit.TestKitExtension;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

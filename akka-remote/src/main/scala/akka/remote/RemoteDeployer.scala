@@ -6,8 +6,9 @@ package akka.remote
 import akka.actor._
 import akka.routing._
 import akka.remote.routing._
-import com.typesafe.config._
 import akka.ConfigurationException
+import akka.japi.Util.immutableSeq
+import com.typesafe.config._
 
 @SerialVersionUID(1L)
 case class RemoteScope(node: Address) extends Scope {
@@ -22,9 +23,9 @@ private[akka] class RemoteDeployer(_settings: ActorSystem.Settings, _pm: Dynamic
       case d @ Some(deploy) ⇒
         deploy.config.getString("remote") match {
           case AddressFromURIString(r) ⇒ Some(deploy.copy(scope = RemoteScope(r)))
-          case str ⇒
-            if (!str.isEmpty) throw new ConfigurationException("unparseable remote node name " + str)
-            val nodes = deploy.config.getStringList("target.nodes").asScala.toIndexedSeq map (AddressFromURIString(_))
+          case str if !str.isEmpty     ⇒ throw new ConfigurationException("unparseable remote node name " + str)
+          case _ ⇒
+            val nodes = immutableSeq(deploy.config.getStringList("target.nodes")).map(AddressFromURIString(_))
             if (nodes.isEmpty || deploy.routerConfig == NoRouter) d
             else Some(deploy.copy(routerConfig = RemoteRouterConfig(deploy.routerConfig, nodes)))
         }

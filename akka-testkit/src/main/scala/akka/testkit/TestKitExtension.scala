@@ -4,11 +4,11 @@
 package akka.testkit
 
 import com.typesafe.config.Config
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import akka.util.Timeout
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.actor.{ ExtensionId, ActorSystem, Extension, ExtendedActorSystem }
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 object TestKitExtension extends ExtensionId[TestKitSettings] {
   override def get(system: ActorSystem): TestKitSettings = super.get(system)

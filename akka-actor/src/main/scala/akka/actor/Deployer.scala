@@ -4,13 +4,14 @@
 
 package akka.actor
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import com.typesafe.config._
 import akka.routing._
+import akka.japi.Util.immutableSeq
 import java.util.concurrent.{ TimeUnit }
 import akka.util.WildcardTree
 import java.util.concurrent.atomic.AtomicReference
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /**
  * This class represents deployment configuration for a given actor path. It is
@@ -79,7 +80,11 @@ trait Scope {
 @SerialVersionUID(1L)
 abstract class LocalScope extends Scope
 
-//FIXME docs
+/**
+ * The Local Scope is the default one, which is assumed on all deployments
+ * which do not set a different scope. It is also the only scope handled by
+ * the LocalActorRefProvider.
+ */
 case object LocalScope extends LocalScope {
   /**
    * Java API: get the singleton instance
@@ -137,7 +142,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
     val deployment = config.withFallback(default)
 
-    val routees = Vector() ++ deployment.getStringList("routees.paths").asScala
+    val routees = immutableSeq(deployment.getStringList("routees.paths"))
 
     val nrOfInstances = deployment.getInt("nr-of-instances")
 
@@ -156,7 +161,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
         val vnodes = deployment.getInt("virtual-nodes-factor")
         ConsistentHashingRouter(nrOfInstances, routees, resizer, virtualNodesFactor = vnodes)
       case fqn ⇒
-        val args = Seq(classOf[Config] -> deployment)
+        val args = List(classOf[Config] -> deployment)
         dynamicAccess.createInstanceFor[RouterConfig](fqn, args).recover({
           case exception ⇒ throw new IllegalArgumentException(
             ("Cannot instantiate router [%s], defined in [%s], " +

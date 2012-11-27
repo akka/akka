@@ -2,7 +2,7 @@ package sample.cluster.transformation
 
 //#imports
 import language.postfixOps
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -68,7 +68,8 @@ class TransformationFrontend extends Actor {
       context watch sender
       backends = backends :+ sender
 
-    case Terminated(a) ⇒ backends.filterNot(_ == a)
+    case Terminated(a) ⇒
+      backends = backends.filterNot(_ == a)
   }
 }
 //#frontend

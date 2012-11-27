@@ -17,7 +17,7 @@ package akka.util.internal;
 
 import java.util.Set;
 
-import scala.concurrent.util.FiniteDuration;
+import scala.concurrent.duration.FiniteDuration;
 
 /**
  * Schedules {@link TimerTask}s for one-time future execution in a background

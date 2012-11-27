@@ -36,7 +36,7 @@ import akka.japi.{ Creator }
  *      }
  *    }
  *
- *   private static SupervisorStrategy strategy = new OneForOneStrategy(10, Duration.parse("1 minute"),
+ *   private static SupervisorStrategy strategy = new OneForOneStrategy(10, Duration.create("1 minute"),
  *     new Function<Throwable, Directive>() {
  *       @Override
  *       public Directive apply(Throwable t) {

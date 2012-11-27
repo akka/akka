@@ -5,22 +5,21 @@ package akka.actor
 
 import language.postfixOps
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-import akka.util.Timeout
+import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.{ Await, Future, Promise }
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
-import java.util.concurrent.atomic.AtomicReference
-import annotation.tailrec
+import scala.concurrent.duration._
 import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
+import akka.util.Timeout
 import akka.japi.{ Option ⇒ JOption }
 import akka.testkit.DefaultTimeout
-import akka.dispatch.{ Dispatchers }
+import akka.dispatch.Dispatchers
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
 import akka.actor.TypedActor._
+import java.util.concurrent.atomic.AtomicReference
 import java.lang.IllegalStateException
 import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
-import scala.concurrent.util.FiniteDuration
 
 object TypedActorSpec {
 
@@ -37,9 +36,9 @@ object TypedActorSpec {
     }
     """
 
-  class CyclicIterator[T](val items: Seq[T]) extends Iterator[T] {
+  class CyclicIterator[T](val items: immutable.Seq[T]) extends Iterator[T] {
 
-    private[this] val current: AtomicReference[Seq[T]] = new AtomicReference(items)
+    private[this] val current = new AtomicReference(items)
 
     def hasNext = items != Nil
 

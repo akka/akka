@@ -7,7 +7,7 @@ import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
 import scala.concurrent.{ Future, Await }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.pattern.ask
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -76,6 +76,13 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
       expectMsgAllConformingOf(5 seconds, classOf[Int]) must be(Seq(42))
       expectMsgAllClassOf(classOf[Int]) must be(Seq(42))
       expectMsgAllClassOf(5 seconds, classOf[Int]) must be(Seq(42))
+    }
+
+    "be able to ignore primitive types" in {
+      ignoreMsg { case 42 ⇒ true }
+      testActor ! 42
+      testActor ! "pigdog"
+      expectMsg("pigdog")
     }
 
   }

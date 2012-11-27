@@ -4,22 +4,25 @@
 package akka.actor
 
 import language.existentials
-import akka.japi.{ Creator, Option ⇒ JOption }
-import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
-import akka.util.Timeout
+
 import scala.util.control.NonFatal
-import scala.concurrent.util.Duration
+import scala.util.{ Try, Success, Failure }
+import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
 import scala.concurrent.{ Await, Future }
+import akka.japi.{ Creator, Option ⇒ JOption }
+import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
+import akka.util.Timeout
 import akka.util.Reflect.instantiator
+import akka.serialization.{ JavaSerializer, SerializationExtension }
 import akka.dispatch._
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import scala.reflect.ClassTag
-import akka.serialization.{ JavaSerializer, SerializationExtension }
 import java.io.ObjectStreamException
-import scala.util.{ Try, Success, Failure }
-import scala.concurrent.util.FiniteDuration
+import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
@@ -439,8 +442,8 @@ object TypedProps {
    * @return a sequence of interfaces that the specified class implements,
    * or a sequence containing only itself, if itself is an interface.
    */
-  def extractInterfaces(clazz: Class[_]): Seq[Class[_]] =
-    if (clazz.isInterface) Seq[Class[_]](clazz) else clazz.getInterfaces.toList
+  def extractInterfaces(clazz: Class[_]): immutable.Seq[Class[_]] =
+    if (clazz.isInterface) immutableSingletonSeq(clazz) else immutableSeq(clazz.getInterfaces)
 
   /**
    * Uses the supplied class as the factory for the TypedActor implementation,
@@ -489,7 +492,7 @@ object TypedProps {
  */
 @SerialVersionUID(1L)
 case class TypedProps[T <: AnyRef] protected[TypedProps] (
-  interfaces: Seq[Class[_]],
+  interfaces: immutable.Seq[Class[_]],
   creator: () ⇒ T,
   dispatcher: String = TypedProps.defaultDispatcherId,
   deploy: Deploy = Props.defaultDeploy,
@@ -607,8 +610,7 @@ class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory
   protected def actorFactory: ActorRefFactory = system
   protected def typedActor = this
 
-  val serialization = SerializationExtension(system)
-  val settings = system.settings
+  import system.settings
 
   /**
    * Default timeout for typed actor methods with non-void return type
@@ -635,23 +637,18 @@ class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory
   private[akka] def createActorRefProxy[R <: AnyRef, T <: R](props: TypedProps[T], proxyVar: AtomVar[R], actorRef: ⇒ ActorRef): R = {
     //Warning, do not change order of the following statements, it's some elaborate chicken-n-egg handling
     val actorVar = new AtomVar[ActorRef](null)
-    val classLoader: ClassLoader = if (props.loader.nonEmpty) props.loader.get else props.interfaces.headOption.map(_.getClassLoader).orNull //If we have no loader, we arbitrarily take the loader of the first interface
     val proxy = Proxy.newProxyInstance(
-      classLoader,
+      (props.loader orElse props.interfaces.collectFirst { case any ⇒ any.getClassLoader }).orNull, //If we have no loader, we arbitrarily take the loader of the first interface
       props.interfaces.toArray,
-      new TypedActorInvocationHandler(
-        this,
-        actorVar,
-        if (props.timeout.isDefined) props.timeout.get else DefaultReturnTimeout)).asInstanceOf[R]
+      new TypedActorInvocationHandler(this, actorVar, props.timeout getOrElse DefaultReturnTimeout)).asInstanceOf[R]
 
-    proxyVar match {
-      case null ⇒
-        actorVar.set(actorRef)
-        proxy
-      case _ ⇒
-        proxyVar.set(proxy) // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
-        actorVar.set(actorRef) //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
-        proxyVar.get
+    if (proxyVar eq null) {
+      actorVar set actorRef
+      proxy
+    } else {
+      proxyVar set proxy // Chicken and egg situation we needed to solve, set the proxy so that we can set the self-reference inside each receive
+      actorVar set actorRef //Make sure the InvocationHandler gets ahold of the actor reference, this is not a problem since the proxy hasn't escaped this method yet
+      proxyVar.get
     }
   }
 

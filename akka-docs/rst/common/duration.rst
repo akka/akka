@@ -5,7 +5,7 @@ Duration
 ########
 
 Durations are used throughout the Akka library, wherefore this concept is
-represented by a special data type, :class:`scala.concurrent.util.Duration`.
+represented by a special data type, :class:`scala.concurrent.duration.Duration`.
 Values of this type may represent infinite (:obj:`Duration.Inf`,
 :obj:`Duration.MinusInf`) or finite durations, or be :obj:`Duration.Undefined`.
 

@@ -2,13 +2,12 @@ package akka.camel.internal
 
 import language.postfixOps
 import org.scalatest.matchers.MustMatchers
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import org.scalatest.{ GivenWhenThen, BeforeAndAfterEach, BeforeAndAfterAll, WordSpec }
 import akka.actor.{ Props, ActorSystem }
 import akka.camel._
 import akka.testkit.{ TimingTest, TestProbe, TestKit }
 import akka.camel.internal.ActivationProtocol._
-import scala.concurrent.util.FiniteDuration
 
 class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec with MustMatchers with BeforeAndAfterAll with BeforeAndAfterEach with GivenWhenThen {
 
@@ -108,6 +107,14 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
       publish(EndpointFailedToDeActivate(actor.ref, cause))
       awaiting.awaitActivation()
 
+      awaiting.verifyActivated()
+    }
+
+    "send activation message when an actor is activated, deactivated and activated again" taggedAs TimingTest in {
+      publish(EndpointActivated(actor.ref))
+      publish(EndpointDeActivated(actor.ref))
+      publish(EndpointActivated(actor.ref))
+      awaiting.awaitActivation()
       awaiting.verifyActivated()
     }
   }

@@ -70,7 +70,7 @@ public class RouterViaProgramExample {
     int upperBound = 15;
     DefaultResizer resizer = new DefaultResizer(lowerBound, upperBound);
     ActorRef router3 = system.actorOf(
-      new Props(ExampleActor.class).withRouter(new RoundRobinRouter(nrOfInstances)));
+      new Props(ExampleActor.class).withRouter(new RoundRobinRouter(resizer)));
     //#programmaticRoutingWithResizer
     for (int i = 1; i <= 6; i++) {
       router3.tell(new ExampleActor.Message(i), null);

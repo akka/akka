@@ -30,7 +30,7 @@ import akka.actor.UntypedActor;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.serialization.SerializationExtension;
 import akka.serialization.Serialization;
 import java.io.Serializable;

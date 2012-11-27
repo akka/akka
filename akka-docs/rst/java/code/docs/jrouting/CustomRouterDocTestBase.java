@@ -11,6 +11,7 @@ import static docs.jrouting.CustomRouterDocTestBase.Message.RepublicanVote;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.After;
@@ -19,7 +20,7 @@ import org.junit.Test;
 
 import scala.concurrent.Await;
 import scala.concurrent.Future;
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.OneForOneStrategy;
@@ -68,8 +69,8 @@ public class CustomRouterDocTestBase {
   public void demonstrateSupervisor() {
     //#supervision
     final SupervisorStrategy strategy =
-      new OneForOneStrategy(5, Duration.parse("1 minute"),
-        new Class<?>[] { Exception.class });
+      new OneForOneStrategy(5, Duration.create("1 minute"),
+         Collections.<Class<? extends Throwable>>singletonList(Exception.class));
     final ActorRef router = system.actorOf(new Props(MyActor.class)
         .withRouter(new RoundRobinRouter(5).withSupervisorStrategy(strategy)));
     //#supervision
@@ -179,16 +180,14 @@ public class CustomRouterDocTestBase {
       //#crRoutingLogic
       return new CustomRoute() {
         @Override
-        public Iterable<Destination> destinationsFor(ActorRef sender, Object msg) {
+        public scala.collection.immutable.Seq<Destination> destinationsFor(ActorRef sender, Object msg) {
           switch ((Message) msg) {
           case DemocratVote:
           case DemocratCountResult:
-            return Arrays.asList(
-              new Destination[] { new Destination(sender, democratActor) });
+            return akka.japi.Util.immutableSingletonSeq(new Destination(sender, democratActor));
           case RepublicanVote:
           case RepublicanCountResult:
-            return Arrays.asList(
-              new Destination[] { new Destination(sender, republicanActor) });
+            return akka.japi.Util.immutableSingletonSeq(new Destination(sender, republicanActor));
           default:
             throw new IllegalArgumentException("Unknown message: " + msg);
           }

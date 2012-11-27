@@ -3,21 +3,19 @@
  */
 package akka.remote.netty
 
+import akka.actor.Address
+import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
+import akka.remote._
+import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.nio.channels.ClosedChannelException
 import java.util.concurrent.Executors
-import scala.Option.option2Iterable
 import org.jboss.netty.bootstrap.ServerBootstrap
-import org.jboss.netty.channel.ChannelHandler.Sharable
+import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.ChannelGroup
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
-import org.jboss.netty.handler.codec.frame.{ LengthFieldPrepender, LengthFieldBasedFrameDecoder }
-import org.jboss.netty.handler.execution.ExecutionHandler
-import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
-import akka.remote.{ RemoteServerShutdown, RemoteServerError, RemoteServerClientDisconnected, RemoteServerClientConnected, RemoteServerClientClosed, RemoteProtocol, RemoteMessage }
-import akka.actor.Address
-import java.net.InetAddress
-import akka.actor.ActorSystemImpl
-import org.jboss.netty.channel._
+import scala.util.control.NonFatal
+import akka.AkkaException
 
 private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
@@ -25,14 +23,10 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   protected val ip = InetAddress.getByName(settings.BindHostname)
 
-  private val factory =
-    settings.UseDispatcherForIO match {
-      case Some(id) ⇒
-        val d = netty.system.dispatchers.lookup(id)
-        new NioServerSocketChannelFactory(d, d)
-      case None ⇒
-        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
-    }
+  private val factory = {
+    val boss, worker = settings.UseDispatcherForIO.map(netty.system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+    new NioServerSocketChannelFactory(boss, worker, settings.ServerSocketWorkerPoolSize)
+  }
 
   // group of open channels, used for clean-up
   private val openChannels: ChannelGroup = new DefaultDisposableChannelGroup("akka-remote-server")
@@ -154,7 +148,6 @@ private[akka] class RemoteServerHandler(
     event.getMessage match {
       case remote: AkkaRemoteProtocol if remote.hasMessage ⇒
         netty.receiveMessage(new RemoteMessage(remote.getMessage, netty.system))
-
       case remote: AkkaRemoteProtocol if remote.hasInstruction ⇒
         val instruction = remote.getInstruction
         instruction.getCommandType match {
@@ -179,8 +172,14 @@ private[akka] class RemoteServerHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    netty.notifyListeners(RemoteServerError(event.getCause, netty))
-    event.getChannel.close()
+    val cause = if (event.getCause ne null) event.getCause else new AkkaException("Unknown cause")
+    cause match {
+      case _: ClosedChannelException ⇒ // Ignore
+      case NonFatal(e) ⇒
+        netty.notifyListeners(RemoteServerError(e, netty))
+        event.getChannel.close()
+      case e: Throwable ⇒ throw e // Rethrow fatals
+    }
   }
 }
 

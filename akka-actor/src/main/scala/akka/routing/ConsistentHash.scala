@@ -4,7 +4,7 @@
 
 package akka.routing
 
-import scala.collection.immutable.SortedMap
+import scala.collection.immutable
 import scala.reflect.ClassTag
 import java.util.Arrays
 
@@ -18,7 +18,7 @@ import java.util.Arrays
  * hash, i.e. make sure it is different for different nodes.
  *
  */
-class ConsistentHash[T: ClassTag] private (nodes: SortedMap[Int, T], virtualNodesFactor: Int) {
+class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], val virtualNodesFactor: Int) {
 
   import ConsistentHash._
 
@@ -106,7 +106,7 @@ class ConsistentHash[T: ClassTag] private (nodes: SortedMap[Int, T], virtualNode
 
 object ConsistentHash {
   def apply[T: ClassTag](nodes: Iterable[T], virtualNodesFactor: Int): ConsistentHash[T] = {
-    new ConsistentHash(SortedMap.empty[Int, T] ++
+    new ConsistentHash(immutable.SortedMap.empty[Int, T] ++
       (for (node ← nodes; vnode ← 1 to virtualNodesFactor) yield (nodeHashFor(node, vnode) -> node)),
       virtualNodesFactor)
   }
@@ -120,8 +120,10 @@ object ConsistentHash {
     apply(nodes.asScala, virtualNodesFactor)(ClassTag(classOf[Any].asInstanceOf[Class[T]]))
   }
 
-  private def nodeHashFor(node: Any, vnode: Int): Int =
-    hashFor((node + ":" + vnode).getBytes("UTF-8"))
+  private def nodeHashFor(node: Any, vnode: Int): Int = {
+    val baseStr = node.toString + ":"
+    hashFor(baseStr + vnode)
+  }
 
   private def hashFor(bytes: Array[Byte]): Int = MurmurHash.arrayHash(bytes)
 

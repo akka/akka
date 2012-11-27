@@ -7,7 +7,7 @@ package akka.actor
 import language.postfixOps
 import akka.testkit._
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.util.Timeout
 import scala.concurrent.Future
 import scala.util.Success
@@ -43,9 +43,10 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       val childName = "akka%3A%2F%2FClusterSystem%40127.0.0.1%3A2552"
       val a = system.actorOf(Props(new Actor {
         val child = context.actorOf(Props.empty, name = childName)
-        assert(childName == child.path.name)
         def receive = {
-          case "lookup" ⇒ sender ! context.actorFor(childName)
+          case "lookup" ⇒
+            if (childName == child.path.name) sender ! context.actorFor(childName)
+            else sender ! s"$childName is not ${child.path.name}!"
         }
       }))
       a.tell("lookup", testActor)

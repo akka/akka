@@ -9,7 +9,7 @@ import RemoteConnection.getAddrString
 import TestConductorProtocol._
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent }
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.concurrent.Await
 import akka.event.{ LoggingAdapter, Logging }
@@ -21,10 +21,9 @@ import akka.actor.{ OneForOneStrategy, SupervisorStrategy, Status, Address, Pois
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.util.{ Timeout }
-import scala.concurrent.util.{ Deadline, Duration }
 import scala.reflect.classTag
-import scala.concurrent.util.FiniteDuration
 import akka.ConfigurationException
+import akka.AkkaException
 
 sealed trait Direction {
   def includes(other: Direction): Boolean
@@ -209,7 +208,10 @@ trait Conductor { this: TestConductorExt ⇒
    */
   def shutdown(node: RoleName, exitValue: Int): Future[Done] = {
     import Settings.QueryTimeout
-    controller ? Terminate(node, exitValue) mapTo classTag[Done]
+    import system.dispatcher
+    // the recover is needed to handle ClientDisconnectedException exception,
+    // which is normal during shutdown
+    controller ? Terminate(node, exitValue) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
   }
 
   /**
@@ -311,7 +313,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
 
   whenUnhandled {
     case Event(ClientDisconnected, Some(s)) ⇒
-      s ! Status.Failure(new RuntimeException("client disconnected in state " + stateName + ": " + channel))
+      s ! Status.Failure(new ClientDisconnectedException("client disconnected in state " + stateName + ": " + channel))
       stop()
     case Event(ClientDisconnected, None) ⇒ stop()
   }
@@ -369,6 +371,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
  */
 private[akka] object Controller {
   case class ClientDisconnected(name: RoleName)
+  class ClientDisconnectedException(msg: String) extends AkkaException(msg)
   case object GetNodes
   case object GetSockAddr
   case class CreateServerFSM(channel: Channel)
@@ -388,7 +391,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
   import BarrierCoordinator._
 
   val settings = TestConductor().Settings
-  val connection = RemoteConnection(Server, controllerPort,
+  val connection = RemoteConnection(Server, controllerPort, settings.ServerSocketWorkerPoolSize,
     new ConductorHandler(settings.QueryTimeout, self, Logging(context.system, "ConductorHandler")))
 
   /*
@@ -566,7 +569,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
   }
 
   onTransition {
-    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft.asInstanceOf[FiniteDuration], false)
+    case Idle -> Waiting ⇒ setTimer("Timeout", StateTimeout, nextStateData.deadline.timeLeft, false)
     case Waiting -> Idle ⇒ cancelTimer("Timeout")
   }
 
@@ -577,7 +580,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
       val enterDeadline = getDeadline(timeout)
       // we only allow the deadlines to get shorter
       if (enterDeadline.timeLeft < deadline.timeLeft) {
-        setTimer("Timeout", StateTimeout, enterDeadline.timeLeft.asInstanceOf[FiniteDuration], false)
+        setTimer("Timeout", StateTimeout, enterDeadline.timeLeft, false)
         handleBarrier(d.copy(arrived = together, deadline = enterDeadline))
       } else
         handleBarrier(d.copy(arrived = together))
@@ -608,7 +611,7 @@ private[akka] class BarrierCoordinator extends Actor with LoggingFSM[BarrierCoor
     }
   }
 
-  def getDeadline(timeout: Option[Duration]): Deadline = {
+  def getDeadline(timeout: Option[FiniteDuration]): Deadline = {
     Deadline.now + timeout.getOrElse(TestConductor().Settings.BarrierTimeout.duration)
   }
 

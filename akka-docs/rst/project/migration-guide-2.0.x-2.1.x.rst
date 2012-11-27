@@ -24,7 +24,7 @@ Config Dependency
 dependency of akka-actor and it is no longer embedded in ``akka-actor.jar``. 
 If your are using a build tool with dependency resolution, such as sbt or maven you 
 will not notice the difference, but if you have manually constructed classpaths 
-you need to add `config-0.5.0.jar <http://mirrors.ibiblio.org/maven2/com/typesafe/config/0.5.0/>`_.
+you need to add `config-1.0.0.jar <http://mirrors.ibiblio.org/maven2/com/typesafe/config/1.0.0/>`_.
 
 Pieces Moved to Scala Standard Library
 ======================================
@@ -38,9 +38,9 @@ Search                               Replace with
 ``akka.dispatch.Future``             ``scala.concurrent.Future``
 ``akka.dispatch.Promise``            ``scala.concurrent.Promise``
 ``akka.dispatch.ExecutionContext``   ``scala.concurrent.ExecutionContext``
-``akka.util.Duration``               ``scala.concurrent.util.Duration``
-``akka.util.duration``               ``scala.concurrent.util.duration``
-``akka.util.Deadline``               ``scala.concurrent.util.Deadline``
+``akka.util.Duration``               ``scala.concurrent.duration.Duration``
+``akka.util.duration``               ``scala.concurrent.duration``
+``akka.util.Deadline``               ``scala.concurrent.duration.Deadline``
 ``akka.util.NonFatal``               ``scala.util.control.NonFatal``
 ``akka.japi.Util.manifest``          ``akka.japi.Util.classTag``
 ==================================== ====================================
@@ -66,8 +66,9 @@ Java:
 ::
   
   // Use this Actors' Dispatcher as ExecutionContext
-  getContext().system().scheduler().scheduleOnce(Duration.parse("10 seconds",
-    getSelf(), new Reconnect(), getContext().getDispatcher());
+  getContext().system().scheduler().scheduleOnce(Duration.create(
+    10, TimeUnit.SECONDS), getSelf(), new Reconnect(), 
+    getContext().getDispatcher());
 
   // Use ActorSystem's default Dispatcher as ExecutionContext
   system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
@@ -203,17 +204,17 @@ v2.0 Scala::
 
 v2.1 Scala::
 
-  val router2 = system.actorOf(Props[ExampleActor1].withRouter(
-    RoundRobinRouter(routees = routees)))    
+  val router2 = system.actorOf(Props.empty.withRouter(
+    RoundRobinRouter(routees = routees)))
 
 v2.0 Java::
 
-  ActorRef router2 = system.actorOf(new Props(ExampleActor.class).withRouter(
+  ActorRef router2 = system.actorOf(new Props().withRouter(
     RoundRobinRouter.create(routees)));
 
 v2.1 Java::
 
-  ActorRef router2 = system.actorOf(new Props().withRouter(
+  ActorRef router2 = system.actorOf(Props.empty().withRouter(
     RoundRobinRouter.create(routees)));
 
 Props: Function-based creation
@@ -383,7 +384,7 @@ v2.0::
 
 v2.1::
 
-  final FiniteDuration d = Duration.create("1 second");
+  final FiniteDuration d = Duration.create(1, TimeUnit.SECONDS);
   final Timeout t = new Timeout(d); // always required finite duration, now enforced
 
 Package Name Changes in Remoting
@@ -394,13 +395,17 @@ This has been done to enable OSGi bundles that don't have conflicting package na
 
 Change the following import statements. Please note that the serializers are often referenced from configuration.
 
-================================================ =======================================================
-Search                                           Replace with
-================================================ =======================================================
-``akka.routing.RemoteRouterConfig``              ``akka.remote.routing.RemoteRouterConfig``
-``akka.serialization.ProtobufSerializer``        ``akka.remote.serialization.ProtobufSerializer``
-``akka.serialization.DaemonMsgCreateSerializer`` ``akka.remote.serialization.DaemonMsgCreateSerializer``
-================================================ =======================================================
+Search -> Replace with::
+
+  akka.routing.RemoteRouterConfig -> 
+  akka.remote.routing.RemoteRouterConfig
+
+  akka.serialization.ProtobufSerializer ->
+  akka.remote.serialization.ProtobufSerializer
+
+  akka.serialization.DaemonMsgCreateSerializer -> 
+  akka.remote.serialization.DaemonMsgCreateSerializer
+
 
 Package Name Changes in Durable Mailboxes
 =========================================
@@ -410,14 +415,20 @@ This has been done to enable OSGi bundles that don't have conflicting package na
 
 Change the following import statements. Please note that the ``FileBasedMailboxType`` is often referenced from configuration.
 
-================================================ =========================================================
-Search                                           Replace with
-================================================ =========================================================
-``akka.actor.mailbox.FileBasedMailboxType``      ``akka.actor.mailbox.filebased.FileBasedMailboxType``
-``akka.actor.mailbox.FileBasedMailboxSettings``  ``akka.actor.mailbox.filebased.FileBasedMailboxSettings``
-``akka.actor.mailbox.FileBasedMessageQueue``     ``akka.actor.mailbox.filebased.FileBasedMessageQueue``
-``akka.actor.mailbox.filequeue.*``               ``akka.actor.mailbox.filebased.filequeue.*``
-================================================ =========================================================
+Search -> Replace with::
+
+  akka.actor.mailbox.FileBasedMailboxType ->
+  akka.actor.mailbox.filebased.FileBasedMailboxType
+
+  akka.actor.mailbox.FileBasedMailboxSettings ->
+  akka.actor.mailbox.filebased.FileBasedMailboxSettings
+
+  akka.actor.mailbox.FileBasedMessageQueue ->
+  akka.actor.mailbox.filebased.FileBasedMessageQueue
+
+  akka.actor.mailbox.filequeue.* ->
+  akka.actor.mailbox.filebased.filequeue.*
+
    
 Actor Receive Timeout
 =====================

@@ -7,8 +7,7 @@ import akka.event.Logging
 import akka.camel.{ CamelSettings, Camel }
 import akka.camel.internal.ActivationProtocol._
 import scala.util.control.NonFatal
-import scala.concurrent.util.Duration
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration._
 import org.apache.camel.ProducerTemplate
 import concurrent.{ Future, ExecutionContext }
 import akka.util.Timeout

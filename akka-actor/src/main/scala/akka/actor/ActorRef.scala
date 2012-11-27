@@ -194,6 +194,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
   /*
    * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).
    */
+  def start(): Unit
   def resume(causedByFailure: Throwable): Unit
   def suspend(): Unit
   def restart(cause: Throwable): Unit
@@ -259,13 +260,16 @@ private[akka] class LocalActorRef private[akka] (
 
   /*
    * Safe publication of this class’s fields is guaranteed by mailbox.setActor()
-   * which is called indirectly from actorCell.start() (if you’re wondering why
+   * which is called indirectly from actorCell.init() (if you’re wondering why
    * this is at all important, remember that under the JMM final fields are only
    * frozen at the _end_ of the constructor, but we are publishing “this” before
    * that is reached).
+   * This means that the result of newActorCell needs to be written to the val
+   * actorCell before we call init and start, since we can start using "this"
+   * object from another thread as soon as we run init.
    */
   private val actorCell: ActorCell = newActorCell(_system, this, _props, _supervisor)
-  actorCell.start(sendSupervise = true, ThreadLocalRandom.current.nextInt())
+  actorCell.init(ThreadLocalRandom.current.nextInt(), sendSupervise = true)
 
   protected def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, supervisor)
@@ -278,6 +282,11 @@ private[akka] class LocalActorRef private[akka] (
    * returns false, you cannot be sure if it's alive still (race condition)
    */
   override def isTerminated: Boolean = actorCell.isTerminated
+
+  /**
+   * Starts the actor after initialization.
+   */
+  override def start(): Unit = actorCell.start()
 
   /**
    * Suspends the actor so that it will not process messages until resumed. The
@@ -390,6 +399,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override def getParent: InternalActorRef = Nobody
   override def getChild(names: Iterator[String]): InternalActorRef = if (names.forall(_.isEmpty)) this else Nobody
 
+  override def start(): Unit = ()
   override def suspend(): Unit = ()
   override def resume(causedByFailure: Throwable): Unit = ()
   override def stop(): Unit = ()
@@ -409,7 +419,10 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
  * to the ActorSystem's EventStream
  */
 @SerialVersionUID(1L)
-case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef)
+case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef) {
+  require(sender ne null, "DeadLetter sender may not be null")
+  require(recipient ne null, "DeadLetter recipient may not be null")
+}
 
 private[akka] object DeadLetterActorRef {
   @SerialVersionUID(1L)
@@ -436,8 +449,11 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
   override def sendSystemMessage(message: SystemMessage): Unit = specialHandle(message)
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
-    case d: DeadLetter ⇒ specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
-    case _             ⇒ if (!specialHandle(message)) eventStream.publish(DeadLetter(message, sender, this))
+    case d: DeadLetter ⇒
+      specialHandle(d.message) // do NOT form endless loops, since deadLetters will resend!
+    case _ if !specialHandle(message) ⇒
+      eventStream.publish(DeadLetter(message, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+    case _ ⇒
   }
 
   protected def specialHandle(msg: Any): Boolean = msg match {
@@ -520,7 +536,7 @@ private[akka] class VirtualPathContainer(
 
   def hasChildren: Boolean = !children.isEmpty
 
-  def foreachChild(f: ActorRef ⇒ Unit) = {
+  def foreachChild(f: ActorRef ⇒ Unit): Unit = {
     val iter = children.values.iterator
     while (iter.hasNext) f(iter.next)
   }

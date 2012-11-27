@@ -5,10 +5,6 @@ package docs.dispatcher;
 
 //#imports
 import akka.actor.*;
-import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 //#imports
 
 //#imports-prio
@@ -37,6 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import scala.Option;
+import scala.concurrent.ExecutionContext;
 
 import com.typesafe.config.ConfigFactory;
 
@@ -74,6 +71,14 @@ public class DispatcherDocTestBase {
     ActorRef myActor = system.actorOf(new Props(MyUntypedActor.class)
         .withDispatcher("my-pinned-dispatcher"));
     //#defining-pinned-dispatcher
+  }
+  
+  public void compileLookup() {
+    //#lookup
+    // this is scala.concurrent.ExecutionContext
+    // for use with Futures, Scheduler, etc.
+    final ExecutionContext ex = system.dispatchers().lookup("my-dispatcher");
+    //#lookup
   }
 
   @Test

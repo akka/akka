@@ -127,10 +127,11 @@ UntypedActor API
 The :class:`UntypedActor` class defines only one abstract method, the above mentioned
 :meth:`onReceive(Object message)`, which implements the behavior of the actor.
 
-If the current actor behavior does not match a received message,
-:meth:`unhandled` is called, which by default publishes a ``new
+If the current actor behavior does not match a received message, it's recommended that
+you call the :meth:`unhandled` method, which by default publishes a ``new
 akka.actor.UnhandledMessage(message, sender, recipient)`` on the actor system’s
-event stream.
+event stream (set configuration item ``akka.actor.debug.unhandled`` to ``on`` 
+to have them converted into actual Debug messages).
 
 In addition, it offers:
 
@@ -431,13 +432,20 @@ defaults to a 'dead-letter' actor ref.
     getSender().tell(result);       // will have dead-letter actor as default
   }
 
-Initial receive timeout
-=======================
+Receive timeout
+===============
 
-A timeout mechanism can be used to receive a message when no initial message is
-received within a certain time. To receive this timeout you have to set the
-``receiveTimeout`` property and declare handing for the ReceiveTimeout
-message.
+The `UntypedActorContext` :meth:`setReceiveTimeout` defines the inactivity timeout after which
+the sending of a `ReceiveTimeout` message is triggered.
+When specified, the receive function should be able to handle an `akka.actor.ReceiveTimeout` message.
+1 millisecond is the minimum supported timeout.
+
+Please note that the receive timeout might fire and enqueue the `ReceiveTimeout` message right after
+another message was enqueued; hence it is **not guaranteed** that upon reception of the receive
+timeout there must have been an idle period beforehand as configured via this method.
+
+Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
+periods). Pass in `Duration.Undefined` to switch off this feature.
 
 .. includecode:: code/docs/actor/MyReceivedTimeoutUntypedActor.java#receive-timeout
 
@@ -542,7 +550,8 @@ Upgrade
 
 Akka supports hotswapping the Actor’s message loop (e.g. its implementation) at
 runtime. Use the ``getContext().become`` method from within the Actor.
-The hotswapped code is kept in a Stack which can be pushed and popped.
+The hotswapped code is kept in a Stack which can be pushed (replacing or adding
+at the top) and popped.
 
 .. warning::
 
@@ -556,25 +565,18 @@ To hotswap the Actor using ``getContext().become``:
 .. includecode:: code/docs/actor/UntypedActorDocTestBase.java
    :include: hot-swap-actor
 
-The ``become`` method is useful for many different things, such as to implement
-a Finite State Machine (FSM).
+This variant of the :meth:`become` method is useful for many different things,
+such as to implement a Finite State Machine (FSM). It will replace the current
+behavior (i.e. the top of the behavior stack), which means that you do not use
+:meth:`unbecome`, instead always the next behavior is explicitly installed.
 
-Here is another little cute example of ``become`` and ``unbecome`` in action:
+The other way of using :meth:`become` does not replace but add to the top of
+the behavior stack. In this case care must be taken to ensure that the number
+of “pop” operations (i.e. :meth:`unbecome`) matches the number of “push” ones
+in the long run, otherwise this amounts to a memory leak (which is why this
+behavior is not the default). 
 
 .. includecode:: code/docs/actor/UntypedActorSwapper.java#swapper
-
-Downgrade
----------
-
-Since the hotswapped code is pushed to a Stack you can downgrade the code as
-well. Use the ``getContext().unbecome`` method from within the Actor.
-
-.. code-block:: java
-
-  public void onReceive(Object message) {
-    if (message.equals("revert")) getContext().unbecome();
-  }
-
 
 Stash
 =====
@@ -620,9 +622,11 @@ The stash is backed by a ``scala.collection.immutable.Vector``. As a
 result, even a very large number of messages may be stashed without a
 major impact on performance.
 
-Note that the stash is not persisted across restarts of an actor,
-unlike the actor's mailbox. Therefore, it should be managed like other
-parts of the actor's state which have the same property.
+Note that the stash is part of the ephemeral actor state, unlike the
+mailbox. Therefore, it should be managed like other parts of the
+actor's state which have the same property. The :class:`Stash` trait’s
+implementation of :meth:`preRestart` will call ``unstashAll()``, which is
+usually the desired behavior.
 
 
 Killing an Actor

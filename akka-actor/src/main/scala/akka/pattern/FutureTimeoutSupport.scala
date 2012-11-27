@@ -4,11 +4,11 @@ package akka.pattern
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.concurrent.{ ExecutionContext, Promise, Future }
 import akka.actor._
 import scala.util.control.NonFatal
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 trait FutureTimeoutSupport {
   /**

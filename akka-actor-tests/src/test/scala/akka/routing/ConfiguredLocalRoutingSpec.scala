@@ -12,7 +12,7 @@ import akka.ConfigurationException
 import scala.concurrent.Await
 import akka.pattern.{ ask, gracefulStop }
 import akka.testkit.{ TestLatch, ImplicitSender, DefaultTimeout, AkkaSpec }
-import scala.concurrent.util.duration.intToDurationInt
+import scala.concurrent.duration._
 import akka.actor.UnstartedCell
 
 object ConfiguredLocalRoutingSpec {

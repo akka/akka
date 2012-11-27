@@ -14,8 +14,7 @@ import akka.pattern._
 import akka.remote._
 import akka.routing._
 import akka.util._
-import scala.concurrent.util.duration._
-import scala.concurrent.util.{ Duration, Deadline }
+import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.annotation.tailrec
 import scala.collection.immutable.SortedSet
@@ -24,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import akka.util.internal.HashedWheelTimer
 import concurrent.{ ExecutionContext, Await }
-import scala.concurrent.util.FiniteDuration
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -62,7 +60,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   val settings = new ClusterSettings(system.settings.config, system.name)
   import settings._
 
-  val selfAddress = system.provider match {
+  val selfAddress: Address = system.provider match {
     case c: ClusterActorRefProvider ⇒ c.transport.address
     case other ⇒ throw new ConfigurationException(
       "ActorSystem [%s] needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses [%s]".
@@ -74,10 +72,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
 
-  val failureDetector = {
+  val failureDetector: FailureDetector = {
     import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
     system.dynamicAccess.createInstanceFor[FailureDetector](
-      fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({
+      fqcn, List(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({
         case e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
       }).get
   }

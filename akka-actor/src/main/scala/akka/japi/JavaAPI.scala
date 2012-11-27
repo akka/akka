@@ -5,10 +5,13 @@
 package akka.japi
 
 import language.implicitConversions
-import scala.Some
+
+import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.control.NoStackTrace
 import scala.runtime.AbstractPartialFunction
+import akka.util.Collections.EmptyImmutableSeq
+import java.util.Collections.{ emptyList, singletonList }
 
 /**
  * A Function interface. Used to create first-class-functions is Java.
@@ -114,13 +117,11 @@ abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
  * Java API
  */
 sealed abstract class Option[A] extends java.lang.Iterable[A] {
-  import scala.collection.JavaConversions._
-
   def get: A
   def isEmpty: Boolean
   def isDefined: Boolean = !isEmpty
   def asScala: scala.Option[A]
-  def iterator: java.util.Iterator[A] = if (isEmpty) Iterator.empty else Iterator.single(get)
+  def iterator: java.util.Iterator[A] = if (isEmpty) emptyList[A].iterator else singletonList(get).iterator
 }
 
 object Option {
@@ -175,9 +176,40 @@ object Option {
  * This class hold common utilities for Java
  */
 object Util {
+
+  /**
+   * Returns a ClassTag describing the provided Class.
+   *
+   * Java API
+   */
   def classTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
 
-  def arrayToSeq[T](arr: Array[T]): Seq[T] = arr.toSeq
+  /**
+   * Returns an immutable.Seq representing the provided array of Classes,
+   * an overloading of the generic immutableSeq in Util, to accommodate for erasure.
+   *
+   * Java API
+   */
+  def immutableSeq(arr: Array[Class[_]]): immutable.Seq[Class[_]] = immutableSeq[Class[_]](arr)
 
-  def arrayToSeq(classes: Array[Class[_]]): Seq[Class[_]] = classes.toSeq
+  /**
+   *
+   */
+  def immutableSeq[T](arr: Array[T]): immutable.Seq[T] = if ((arr ne null) && arr.length > 0) Vector(arr: _*) else Nil
+
+  def immutableSeq[T](iterable: java.lang.Iterable[T]): immutable.Seq[T] =
+    iterable match {
+      case imm: immutable.Seq[_] ⇒ imm.asInstanceOf[immutable.Seq[T]]
+      case other ⇒
+        val i = other.iterator()
+        if (i.hasNext) {
+          val builder = new immutable.VectorBuilder[T]
+
+          do { builder += i.next() } while (i.hasNext)
+
+          builder.result()
+        } else EmptyImmutableSeq
+    }
+
+  def immutableSingletonSeq[T](value: T): immutable.Seq[T] = value :: Nil
 }

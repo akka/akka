@@ -4,23 +4,21 @@
 package akka.cluster
 
 import language.implicitConversions
+
+import org.scalatest.Suite
+import org.scalatest.exceptions.TestFailedException
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import akka.actor.{ Address, ExtendedActorSystem }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec }
 import akka.testkit._
 import akka.testkit.TestEvent._
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
-import org.scalatest.Suite
-import org.scalatest.exceptions.TestFailedException
-import java.util.concurrent.ConcurrentHashMap
-import akka.actor.ActorPath
-import akka.actor.RootActorPath
-import scala.concurrent.util.FiniteDuration
+import akka.actor.{ ActorSystem, Address }
 import akka.event.Logging.ErrorLevel
-import akka.actor.ActorSystem
+import scala.concurrent.duration._
+import scala.collection.immutable
+import java.util.concurrent.ConcurrentHashMap
 
 object MultiNodeClusterSpec {
 
@@ -160,7 +158,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * nodes (roles). First node will be started first
    * and others will join the first.
    */
-  def startCluster(roles: RoleName*): Unit = awaitStartCluster(false, roles.toSeq)
+  def startCluster(roles: RoleName*): Unit = awaitStartCluster(false, roles.to[immutable.Seq])
 
   /**
    * Initialize the cluster of the specified member
@@ -168,11 +166,9 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    * First node will be started first  and others will join
    * the first.
    */
-  def awaitClusterUp(roles: RoleName*): Unit = {
-    awaitStartCluster(true, roles.toSeq)
-  }
+  def awaitClusterUp(roles: RoleName*): Unit = awaitStartCluster(true, roles.to[immutable.Seq])
 
-  private def awaitStartCluster(upConvergence: Boolean = true, roles: Seq[RoleName]): Unit = {
+  private def awaitStartCluster(upConvergence: Boolean = true, roles: immutable.Seq[RoleName]): Unit = {
     runOn(roles.head) {
       // make sure that the node-to-join is started before other join
       startClusterNode()
@@ -198,19 +194,21 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
     expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address must be(a) }
   }
 
-  def assertLeader(nodesInCluster: RoleName*): Unit = if (nodesInCluster.contains(myself)) {
-    assertLeaderIn(nodesInCluster)
-  }
+  def assertLeader(nodesInCluster: RoleName*): Unit =
+    if (nodesInCluster.contains(myself)) assertLeaderIn(nodesInCluster.to[immutable.Seq])
 
   /**
    * Assert that the cluster has elected the correct leader
    * out of all nodes in the cluster. First
    * member in the cluster ring is expected leader.
    */
-  def assertLeaderIn(nodesInCluster: Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
+  def assertLeaderIn(nodesInCluster: immutable.Seq[RoleName]): Unit = if (nodesInCluster.contains(myself)) {
     nodesInCluster.length must not be (0)
     val expectedLeader = roleOfLeader(nodesInCluster)
-    clusterView.isLeader must be(ifNode(expectedLeader)(true)(false))
+    val leader = clusterView.leader
+    val isLeader = leader == Some(clusterView.selfAddress)
+    assert(isLeader == isNode(expectedLeader),
+      "expectedLeader [%s], got leader [%s], members [%s]".format(expectedLeader, leader, clusterView.members))
     clusterView.status must (be(MemberStatus.Up) or be(MemberStatus.Leaving))
   }
 
@@ -220,7 +218,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    */
   def awaitUpConvergence(
     numberOfMembers: Int,
-    canNotBePartOfMemberRing: Seq[Address] = Seq.empty[Address],
+    canNotBePartOfMemberRing: immutable.Seq[Address] = Nil,
     timeout: FiniteDuration = 20.seconds): Unit = {
     within(timeout) {
       awaitCond(clusterView.members.size == numberOfMembers)
@@ -238,7 +236,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
   def awaitSeenSameState(addresses: Address*): Unit =
     awaitCond((addresses.toSet -- clusterView.seenBy).isEmpty)
 
-  def roleOfLeader(nodesInCluster: Seq[RoleName] = roles): RoleName = {
+  def roleOfLeader(nodesInCluster: immutable.Seq[RoleName] = roles): RoleName = {
     nodesInCluster.length must not be (0)
     nodesInCluster.sorted.head
   }

@@ -7,6 +7,7 @@ project/plugins/project
 project/boot/*
 */project/build/target
 */project/boot
+*/project/project.target.config-classes
 lib_managed
 etags
 tags
@@ -67,3 +68,4 @@ redis/
 beanstalk/
 .scalastyle
 bin/
+.worksheet
