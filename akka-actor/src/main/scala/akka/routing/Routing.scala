@@ -106,12 +106,12 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
   }
 
   override def tell(message: Any, sender: ActorRef): Unit = {
-    resize() // Mucho importante
     val s = if (sender eq null) system.deadLetters else sender
     applyRoute(s, message) match {
       case Destination(_, x) :: Nil if x == self ⇒
         super.tell(message, s)
       case refs ⇒ refs foreach { p ⇒
+        resize() // Mucho importante
         val msg = message match {
           case wrapped: RouterEnvelope ⇒ wrapped.message
           case m                       ⇒ m
