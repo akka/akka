@@ -12,7 +12,7 @@ import akka.pattern.ask
 import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
 import akka.actor.Terminated
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.remote.RemoteActorRef
 import akka.actor.ActorRef
@@ -34,7 +34,7 @@ object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
   }
   
   
- def setup(public: Boolean, host: String, port: Int) = 
+ def setupConfig(public: Boolean, host: String, port: Int) = 
    ConfigFactory.parseString("""akka.remote.netty {
           force-bind-address = %b
           hostname = "%s"
@@ -55,11 +55,11 @@ object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
     ConfigFactory.parseString("akka.remote.log-remote-lifecycle-events = off")))
 
   val master = role("master")
-  nodeConfig(master,setup(true, natRouterIp, 6996))
+  nodeConfig(master)(setupConfig(true, natRouterIp, 6996))
   
   val slave = role("slave")
   val slavePort = 3663
-  nodeConfig(slave,setup(true, natRouterIp, slavePort))
+  nodeConfig(slave)(setupConfig(true, natRouterIp, slavePort))
   
   val slaveUri = ("akka://NewRemoteActorSpec@%s:" + slavePort).format(natRouterIp)
   val slavesUriAddress = akka.actor.AddressFromURIString(slaveUri)
