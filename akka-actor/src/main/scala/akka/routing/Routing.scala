@@ -23,7 +23,7 @@ import akka.event.Logging.Warning
 
 /**
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
- * send a message to on (or more) of these actors.
+ * send a message to one (or more) of these actors.
  */
 private[akka] class RoutedActorRef(_system: ActorSystemImpl, _props: Props, _supervisor: InternalActorRef, _path: ActorPath)
   extends RepointableActorRef(_system, _props, _supervisor, _path) {
@@ -77,7 +77,7 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
    */
 
   def applyRoute(sender: ActorRef, message: Any): immutable.Iterable[Destination] = message match {
-    case _: AutoReceivedMessage                ⇒ Destination(self, self) :: Nil
+    case _: AutoReceivedMessage                ⇒ Destination(sender, self) :: Nil
     case CurrentRoutees                        ⇒ sender ! RouterRoutees(_routees); Nil
     case msg if route.isDefinedAt(sender, msg) ⇒ route(sender, message)
     case _                                     ⇒ Nil
@@ -105,20 +105,31 @@ private[akka] class RoutedActorCell(_system: ActorSystemImpl, _ref: InternalActo
     _routees = abandonedRoutees.foldLeft(_routees) { (xs, x) ⇒ unwatch(x); xs.filterNot(_ == x) }
   }
 
+  /**
+   * Send the message to the destinations defined by the `route` function.
+   *
+   * If the message is a [[akka.routing.RouterEnvelope]] it will be
+   * unwrapped before sent to the destinations.
+   *
+   * When [[akka.routing.CurrentRoutees]] is sent to the RoutedActorRef it
+   * replies with [[akka.routing.RouterRoutees]].
+   *
+   * Resize is triggered when messages are sent to the routees, and the
+   * resizer is invoked asynchronously, i.e. not necessarily before the
+   * message has been sent.
+   */
   override def tell(message: Any, sender: ActorRef): Unit = {
     val s = if (sender eq null) system.deadLetters else sender
-    applyRoute(s, message) match {
-      case Destination(_, x) :: Nil if x == self ⇒
-        super.tell(message, s)
-      case refs ⇒ refs foreach { p ⇒
-        resize() // Mucho importante
-        val msg = message match {
-          case wrapped: RouterEnvelope ⇒ wrapped.message
-          case m                       ⇒ m
-        }
-        if (p.recipient == self) super.tell(msg, p.sender)
-        else p.recipient.!(msg)(p.sender)
-      }
+    val msg = message match {
+      case wrapped: RouterEnvelope ⇒ wrapped.message
+      case m                       ⇒ m
+    }
+    applyRoute(s, message) foreach {
+      case Destination(snd, `self`) ⇒
+        super.tell(msg, snd)
+      case Destination(snd, recipient) ⇒
+        resize() // only resize when the message target is one of the routees
+        recipient.tell(msg, snd)
     }
   }
 
@@ -195,7 +206,9 @@ trait RouterConfig {
 
   /**
    * Routers with dynamically resizable number of routees return the [[akka.routing.Resizer]]
-   * to use.
+   * to use. The resizer is invoked once when the router is created, before any messages can
+   * be sent to it. Resize is also triggered when messages are sent to the routees, and the
+   * resizer is invoked asynchronously, i.e. not necessarily before the message has been sent.
    */
   def resizer: Option[Resizer] = None
 
