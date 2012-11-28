@@ -189,6 +189,15 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
     }
     //#fsm-code-elided
 
+    "demonstrate NullFunction" in {
+      class A extends Actor with FSM[Int, Null] {
+        val SomeState = 0
+        //#NullFunction
+        when(SomeState)(FSM.NullFunction)
+        //#NullFunction
+      }
+    }
+
     "batch correctly" in {
       val buncher = system.actorOf(Props(new Buncher))
       buncher ! SetTarget(testActor)
