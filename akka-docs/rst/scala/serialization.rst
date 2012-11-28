@@ -138,23 +138,11 @@ concrete address handy you can create a dummy one for the right protocol using
 ``Address(protocol, "", "", 0)`` (assuming that the actual transport used is as
 lenient as Akka’s RemoteActorRefProvider).
 
-There is a possible simplification available if you are just using the default
-:class:`NettyRemoteTransport` with the :meth:`RemoteActorRefProvider`, which is
-enabled by the fact that this combination has just a single remote address.
-This approach relies on internal API, which means that it is not guaranteed to
-be supported in future versions. To make this caveat more obvious, some bridge
-code in the ``akka`` package is required to make it work:
-
-.. includecode:: code/docs/serialization/SerializationDocSpec.scala
-   :include: extract-transport
-
-And with this, the address extraction goes like this:
+There is also a default remote address which is the one used by cluster support
+(and typical systems have just this one); you can get it like this:
 
 .. includecode:: code/docs/serialization/SerializationDocSpec.scala
    :include: external-address-default
-
-This solution has to be adapted once other providers are used (like the planned
-extensions for clustering).
 
 Deep serialization of Actors
 ----------------------------

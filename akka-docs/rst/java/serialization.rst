@@ -149,15 +149,11 @@ concrete address handy you can create a dummy one for the right protocol using
 ``new Address(protocol, "", "", 0)`` (assuming that the actual transport used is as
 lenient as Akka’s RemoteActorRefProvider).
 
-There is a possible simplification available if you are just using the default
-:class:`NettyRemoteTransport` with the :meth:`RemoteActorRefProvider`, which is
-enabled by the fact that this combination has just a single remote address:
+There is also a default remote address which is the one used by cluster support
+(and typical systems have just this one); you can get it like this:
 
 .. includecode:: code/docs/serialization/SerializationDocTestBase.java
    :include: external-address-default
-
-This solution has to be adapted once other providers are used (like the planned
-extensions for clustering).
 
 Deep serialization of Actors
 ----------------------------
