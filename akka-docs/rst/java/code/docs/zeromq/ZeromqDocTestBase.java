@@ -99,6 +99,9 @@ public class ZeromqDocTestBase {
     pubSocket.tell(new ZMQMessage(new Frame("foo.bar"), new Frame(payload)), null);
     //#pub-topic
 
+    system.stop(subSocket);
+    system.stop(subTopicSocket);
+
     //#high-watermark
     ActorRef highWatermarkSocket = ZeroMQExtension.get(system).newRouterSocket(
         new SocketOption[] { new Listener(listener),
