@@ -139,16 +139,24 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   }
 
   def parseConfig(key: String, config: Config): Option[Deploy] = {
-
     val deployment = config.withFallback(default)
+    val router = createRouterConfig(deployment.getString("router"), key, config, deployment)
+    Some(Deploy(key, deployment, router, NoScopeGiven))
+  }
 
+  /**
+   * Factory method for creating `RouterConfig`
+   * @param routerType the configured name of the router, or FQCN
+   * @param key the full configuration key of the deployment section
+   * @param config the user defined config of the deployment, without defaults
+   * @param deployment the deployment config, with defaults
+   */
+  protected def createRouterConfig(routerType: String, key: String, config: Config, deployment: Config): RouterConfig = {
     val routees = immutableSeq(deployment.getStringList("routees.paths"))
-
     val nrOfInstances = deployment.getInt("nr-of-instances")
+    val resizer = if (config.hasPath("resizer")) Some(DefaultResizer(deployment.getConfig("resizer"))) else None
 
-    val resizer: Option[Resizer] = if (config.hasPath("resizer")) Some(DefaultResizer(deployment.getConfig("resizer"))) else None
-
-    val router: RouterConfig = deployment.getString("router") match {
+    routerType match {
       case "from-code"        ⇒ NoRouter
       case "round-robin"      ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
       case "random"           ⇒ RandomRouter(nrOfInstances, routees, resizer)
@@ -170,7 +178,6 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
               .format(fqn, key), exception)
         }).get
     }
-
-    Some(Deploy(key, deployment, router, NoScopeGiven))
   }
+
 }

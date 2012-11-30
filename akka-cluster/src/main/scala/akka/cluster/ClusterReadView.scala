@@ -5,7 +5,7 @@
 package akka.cluster
 
 import java.io.Closeable
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl, Address, Props }
 import akka.cluster.ClusterEvent._
 import akka.actor.PoisonPill
@@ -81,7 +81,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   /**
    * Current cluster members, sorted by address.
    */
-  def members: SortedSet[Member] = state.members
+  def members: immutable.SortedSet[Member] = state.members
 
   /**
    * Members that has been detected as unreachable.
