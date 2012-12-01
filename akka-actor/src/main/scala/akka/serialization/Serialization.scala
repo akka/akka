@@ -32,7 +32,7 @@ object Serialization {
 
     private final def configToMap(path: String): Map[String, String] = {
       import scala.collection.JavaConverters._
-      config.getConfig(path).root.unwrapped.asScala.mapValues(_.toString).toMap
+      config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) ⇒ (k -> v.toString) }
     }
   }
 }

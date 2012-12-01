@@ -28,8 +28,10 @@ class ClusterMetricsMultiJvmNode3 extends ClusterMetricsSpec
 class ClusterMetricsMultiJvmNode4 extends ClusterMetricsSpec
 class ClusterMetricsMultiJvmNode5 extends ClusterMetricsSpec
 
-abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSpec) with MultiNodeClusterSpec with MetricSpec {
+abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSpec) with MultiNodeClusterSpec {
   import ClusterMetricsMultiJvmSpec._
+
+  def isSigar(collector: MetricsCollector): Boolean = collector.isInstanceOf[SigarMetricsCollector]
 
   "Cluster metrics" must {
     "periodically collect metrics on each node, publish ClusterMetricsChanged to the event stream, " +
@@ -38,9 +40,8 @@ abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSp
         enterBarrier("cluster-started")
         awaitCond(clusterView.members.filter(_.status == MemberStatus.Up).size == roles.size)
         awaitCond(clusterView.clusterMetrics.size == roles.size)
-        assertInitialized(cluster.settings.MetricsRateOfDecay, collectNodeMetrics(clusterView.clusterMetrics).toSet)
-        val collector = MetricsCollector(cluster.selfAddress, log, system.asInstanceOf[ExtendedActorSystem].dynamicAccess)
-        clusterView.clusterMetrics.foreach(n ⇒ assertExpectedSampleSize(collector.isSigar, cluster.settings.MetricsRateOfDecay, n))
+        val collector = MetricsCollector(cluster.system, cluster.settings)
+        collector.sample.metrics.size must be > (3)
         enterBarrier("after")
       }
     "reflect the correct number of node metrics in cluster view" taggedAs LongRunningTest in within(30 seconds) {

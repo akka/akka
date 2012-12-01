@@ -5,14 +5,14 @@
 package akka.cluster
 
 import akka.actor.Address
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import MemberStatus._
 
 /**
  * Internal API
  */
 private[cluster] object Gossip {
-  val emptyMembers: SortedSet[Member] = SortedSet.empty
+  val emptyMembers: immutable.SortedSet[Member] = immutable.SortedSet.empty
 }
 
 /**
@@ -50,7 +50,7 @@ private[cluster] object Gossip {
  */
 private[cluster] case class Gossip(
   overview: GossipOverview = GossipOverview(),
-  members: SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
+  members: immutable.SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {

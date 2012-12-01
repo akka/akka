@@ -4,12 +4,15 @@
 package akka.cluster
 
 import language.postfixOps
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address }
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
 import akka.event.EventStream
 import akka.actor.AddressTerminated
+import java.lang.Iterable
+import akka.japi.Util.immutableSeq
+import akka.util.Collections.EmptyImmutableSeq
 
 /**
  * Domain events published to the event bus.
@@ -28,7 +31,7 @@ object ClusterEvent {
    * Current snapshot state of the cluster. Sent to new subscriber.
    */
   case class CurrentClusterState(
-    members: SortedSet[Member] = SortedSet.empty,
+    members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
     unreachable: Set[Member] = Set.empty,
     convergence: Boolean = false,
     seenBy: Set[Address] = Set.empty,
@@ -47,19 +50,15 @@ object ClusterEvent {
      * Java API
      * Read only
      */
-    def getUnreachable: java.util.Set[Member] = {
-      import scala.collection.JavaConverters._
-      unreachable.asJava
-    }
+    def getUnreachable: java.util.Set[Member] =
+      scala.collection.JavaConverters.setAsJavaSetConverter(unreachable).asJava
 
     /**
      * Java API
      * Read only
      */
-    def getSeenBy: java.util.Set[Address] = {
-      import scala.collection.JavaConverters._
-      seenBy.asJava
-    }
+    def getSeenBy: java.util.Set[Address] =
+      scala.collection.JavaConverters.setAsJavaSetConverter(seenBy).asJava
 
     /**
      * Java API
@@ -139,11 +138,16 @@ object ClusterEvent {
   }
 
   /**
-   * INTERNAL API
    *
-   * Current snapshot of cluster member metrics. Published to subscribers.
+   * Current snapshot of cluster node metrics. Published to subscribers.
    */
-  case class ClusterMetricsChanged(nodes: Set[NodeMetrics]) extends ClusterDomainEvent
+  case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterDomainEvent {
+    /**
+     * Java API
+     */
+    def getNodeMetrics: java.lang.Iterable[NodeMetrics] =
+      scala.collection.JavaConverters.asJavaIterableConverter(nodeMetrics).asJava
+  }
 
   /**
    * INTERNAL API
@@ -159,7 +163,7 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diff(oldGossip: Gossip, newGossip: Gossip): IndexedSeq[ClusterDomainEvent] = {
+  private[cluster] def diff(oldGossip: Gossip, newGossip: Gossip): immutable.IndexedSeq[ClusterDomainEvent] = {
     val newMembers = newGossip.members -- oldGossip.members
 
     val membersGroupedByAddress = (newGossip.members.toList ++ oldGossip.members.toList).groupBy(_.address)
@@ -194,18 +198,18 @@ object ClusterEvent {
 
     val newConvergence = newGossip.convergence
     val convergenceChanged = newConvergence != oldGossip.convergence
-    val convergenceEvents = if (convergenceChanged) Seq(ConvergenceChanged(newConvergence)) else Seq.empty
+    val convergenceEvents = if (convergenceChanged) List(ConvergenceChanged(newConvergence)) else EmptyImmutableSeq
 
     val leaderEvents =
-      if (newGossip.leader != oldGossip.leader) Seq(LeaderChanged(newGossip.leader))
-      else Seq.empty
+      if (newGossip.leader != oldGossip.leader) List(LeaderChanged(newGossip.leader))
+      else EmptyImmutableSeq
 
     val newSeenBy = newGossip.seenBy
     val seenEvents =
-      if (convergenceChanged || newSeenBy != oldGossip.seenBy) Seq(SeenChanged(newConvergence, newSeenBy))
-      else Seq.empty
+      if (convergenceChanged || newSeenBy != oldGossip.seenBy) List(SeenChanged(newConvergence, newSeenBy))
+      else EmptyImmutableSeq
 
-    memberEvents.toIndexedSeq ++ unreachableEvents ++ downedEvents ++ unreachableDownedEvents ++ removedEvents ++
+    memberEvents.toVector ++ unreachableEvents ++ downedEvents ++ unreachableDownedEvents ++ removedEvents ++
       leaderEvents ++ convergenceEvents ++ seenEvents
   }
 

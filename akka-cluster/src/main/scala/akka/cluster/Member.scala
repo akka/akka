@@ -6,7 +6,7 @@ package akka.cluster
 
 import language.implicitConversions
 
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import scala.collection.GenTraversableOnce
 import akka.actor.Address
 import MemberStatus._

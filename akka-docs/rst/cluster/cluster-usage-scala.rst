@@ -32,8 +32,7 @@ Try it out:
 1. Add the following ``application.conf`` in your project, place it in ``src/main/resources``:
 
 
-.. literalinclude:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf
-   :language: none
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#cluster
 
 To enable cluster capabilities in your Akka project you should, at a minimum, add the :ref:`remoting-scala`
 settings, but with ``akka.cluster.ClusterActorRefProvider``.
@@ -265,6 +264,8 @@ This is how the curve looks like for ``acceptable-heartbeat-pause`` configured t
 
 .. image:: images/phi3.png
 
+.. _cluster_aware_routers_scala:
+
 Cluster Aware Routers
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -396,6 +397,97 @@ service nodes and 1 client::
 
 .. note:: The above example, especially the last part, will be simplified when the cluster handles automatic actor partitioning.
 
+
+Cluster Metrics
+^^^^^^^^^^^^^^^
+
+The member nodes of the cluster collects system health metrics and publishes that to other nodes and to 
+registered subscribers. This information is primarily used for load-balancing routers.
+
+Hyperic Sigar
+-------------
+
+The built-in metrics is gathered from JMX MBeans, and optionally you can use `Hyperic Sigar <http://www.hyperic.com/products/sigar>`_
+for a wider and more accurate range of metrics compared to what can be retrieved from ordinary MBeans.
+Sigar is using a native OS library. To enable usage of Sigar you need to add the directory of the native library to 
+``-Djava.libarary.path=<path_of_sigar_libs>`` add the following dependency::
+
+    "org.hyperic" % "sigar" % "@sigarVersion@"
+ 
+
+Adaptive Load Balancing
+-----------------------
+
+The ``AdaptiveLoadBalancingRouter`` performs load balancing of messages to cluster nodes based on the cluster metrics data.
+It uses random selection of routees with probabilities derived from the remaining capacity of the corresponding node.
+It can be configured to use a specific MetricsSelector to produce the probabilities, a.k.a. weights:
+
+* ``heap`` / ``HeapMetricsSelector`` - Used and max JVM heap memory. Weights based on remaining heap capacity; (max - used) / max
+* ``load`` / ``SystemLoadAverageMetricsSelector`` - System load average for the past 1 minute, corresponding value can be found in ``top`` of Linux systems. The system is possibly nearing a bottleneck if the system load average is nearing number of cpus/cores. Weights based on remaining load capacity; 1 - (load / processors) 
+* ``cpu`` / ``CpuMetricsSelector`` - CPU utilization in percentage, sum of User + Sys + Nice + Wait. Weights based on remaining cpu capacity; 1 - utilization
+* ``mix`` / ``MixMetricsSelector`` - Combines heap, cpu and load. Weights based on mean of remaining capacity of the combined selectors.
+* Any custom implementation of ``akka.cluster.routing.MetricsSelector``
+
+The collected metrics values are smoothed with `exponential weighted moving average <http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average>`_. In the :ref:`cluster_configuration_scala` you can adjust how quickly past data is decayed compared to new data.
+
+Let's take a look at this router in action.
+
+In this example the following imports are used:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/factorial/FactorialSample.scala#imports
+
+The backend worker that performs the factorial calculation:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/factorial/FactorialSample.scala#backend
+
+The frontend that receives user jobs and delegates to the backends via the router:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/factorial/FactorialSample.scala#frontend
+
+
+As you can see, the router is defined in the same way as other routers, and in this case it's configured as follows:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/resources/application.conf#adaptive-router
+
+It's only router type ``adaptive`` and the ``metrics-selector`` that is specific to this router, other things work 
+in the same way as other routers.
+
+The same type of router could also have been defined in code:
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/factorial/FactorialSample.scala#router-lookup-in-code
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/factorial/FactorialSample.scala#router-deploy-in-code
+
+This example is included in ``akka-samples/akka-sample-cluster``
+and you can try by starting nodes in different terminal windows. For example, starting 3 backend nodes and one frontend::
+
+  sbt
+
+  project akka-sample-cluster-experimental
+
+  run-main sample.cluster.factorial.FactorialBackend 2551
+
+  run-main sample.cluster.factorial.FactorialBackend 2552
+
+  run-main sample.cluster.factorial.FactorialBackend
+
+  run-main sample.cluster.factorial.FactorialFrontend
+
+Press ctrl-c in the terminal window of the frontend to stop the factorial calculations.
+
+Subscribe to Metrics Events
+---------------------------
+
+It's possible to subscribe to the metrics events directly to implement other functionality.
+
+.. includecode:: ../../../akka-samples/akka-sample-cluster/src/main/scala/sample/cluster/factorial/FactorialSample.scala#metrics-listener
+
+Custom Metrics Collector
+------------------------
+
+You can plug-in your own metrics collector instead of 
+``akka.cluster.SigarMetricsCollector`` or ``akka.cluster.JmxMetricsCollector``. Look at those two implementations
+for inspiration. The implementation class can be defined in the :ref:`cluster_configuration_scala`.
 
 How to Test
 ^^^^^^^^^^^

@@ -3,7 +3,7 @@
  */
 package akka.cluster
 
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, ReceiveTimeout, RootActorPath, Scheduler }
@@ -61,7 +61,7 @@ private[cluster] object InternalClusterAction {
    * Command to initiate the process to join the specified
    * seed nodes.
    */
-  case class JoinSeedNodes(seedNodes: IndexedSeq[Address])
+  case class JoinSeedNodes(seedNodes: immutable.IndexedSeq[Address])
 
   /**
    * Start message of the process to join one of the seed nodes.
@@ -256,7 +256,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   def initJoin(): Unit = sender ! InitJoinAck(selfAddress)
 
-  def joinSeedNodes(seedNodes: IndexedSeq[Address]): Unit = {
+  def joinSeedNodes(seedNodes: immutable.IndexedSeq[Address]): Unit = {
     // only the node which is named first in the list of seed nodes will join itself
     if (seedNodes.isEmpty || seedNodes.head == selfAddress)
       self ! JoinTo(selfAddress)
@@ -770,7 +770,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
    *
    * @return the used [[akka.actor.Address] if any
    */
-  private def gossipToRandomNodeOf(addresses: IndexedSeq[Address]): Option[Address] = {
+  private def gossipToRandomNodeOf(addresses: immutable.IndexedSeq[Address]): Option[Address] = {
     log.debug("Cluster Node [{}] - Selecting random node to gossip to [{}]", selfAddress, addresses.mkString(", "))
     // filter out myself
     val peer = selectRandomNode(addresses filterNot (_ == selfAddress))
@@ -823,7 +823,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
  * 5. seed3 retries the join procedure and gets acks from seed2 first, and then joins to seed2
  *
  */
-private[cluster] final class JoinSeedNodeProcess(seedNodes: IndexedSeq[Address]) extends Actor with ActorLogging {
+private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq[Address]) extends Actor with ActorLogging {
   import InternalClusterAction._
 
   def selfAddress = Cluster(context.system).selfAddress
