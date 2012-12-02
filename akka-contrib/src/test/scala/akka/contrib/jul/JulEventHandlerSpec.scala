@@ -1,16 +1,15 @@
 package akka.contrib.jul
 
-import akka.actor.{ActorSystem, Actor, ActorLogging}
-import java.util.logging
-import akka.testkit.{TestActorRef, TestKit}
 import com.typesafe.config.ConfigFactory
-import org.specs2.mutable.{Before, Specification}
-import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
-
+import akka.actor.{ ActorSystem, Actor, ActorLogging, Props }
+import akka.testkit.AkkaSpec
+import java.util.logging
+import java.util.concurrent.{ TimeUnit, LinkedBlockingQueue }
+import org.scalatest.BeforeAndAfterEach
 
 object JavaLoggingEventHandlerSpec {
 
-  val config = ConfigFactory.parseString( """
+  val config = ConfigFactory.parseString("""
     akka {
       loglevel = INFO
       event-handlers = ["akka.contrib.jul.JavaLoggingEventHandler"]
@@ -26,7 +25,7 @@ object JavaLoggingEventHandlerSpec {
   }
 
   val queue = new LinkedBlockingQueue[logging.LogRecord]
-  val logger = logging.Logger.getLogger("akka://test/user/log")
+  val logger = logging.Logger.getLogger("akka://JavaLoggingEventHandlerSpec/user/log")
   logger.addHandler(new logging.Handler {
     def publish(record: logging.LogRecord) {
       queue.add(record)
@@ -38,32 +37,32 @@ object JavaLoggingEventHandlerSpec {
   })
 }
 
-import JavaLoggingEventHandlerSpec._
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class JavaLoggingEventHandlerSpec extends AkkaSpec(JavaLoggingEventHandlerSpec.config) with BeforeAndAfterEach {
 
-class JavaLoggingEventHandlerSpec extends TestKit(ActorSystem("test", config))
-with Specification with Before {
+  import JavaLoggingEventHandlerSpec._
 
-  val producer = TestActorRef[LogProducer]("log")
+  val producer = system.actorOf(Props[LogProducer], name = "log")
 
-  def before() {
+  override def beforeEach(): Unit = {
     queue.clear()
   }
 
-  "JavaLoggingEventHandler" should {
+  "JavaLoggingEventHandler" must {
 
     "log error with stackTrace" in {
-      producer ! new RuntimeException("Simulated error")
+      producer ! new RuntimeException("Simulated error (ignore the stacktrace)")
 
       val record = queue.poll(5, TimeUnit.SECONDS)
 
-      record mustNotEqual null
-      record.getMillis mustNotEqual 0
-      record.getThreadID mustNotEqual 0
-      record.getLevel mustEqual logging.Level.SEVERE
-      record.getMessage mustEqual "Simulated error"
-      record.getThrown must beAnInstanceOf[RuntimeException]
-      record.getSourceClassName mustEqual "akka.contrib.jul.JavaLoggingEventHandlerSpec$LogProducer"
-      record.getSourceMethodName mustEqual "<unknown>"
+      record must not be (null)
+      record.getMillis must not be (0)
+      record.getThreadID must not be (0)
+      record.getLevel must be(logging.Level.SEVERE)
+      record.getMessage must be("Simulated error (ignore the stacktrace)")
+      record.getThrown.isInstanceOf[RuntimeException] must be(true)
+      record.getSourceClassName must be("akka.contrib.jul.JavaLoggingEventHandlerSpec$LogProducer")
+      record.getSourceMethodName must be("<unknown>")
     }
 
     "log info without stackTrace" in {
@@ -71,14 +70,14 @@ with Specification with Before {
 
       val record = queue.poll(5, TimeUnit.SECONDS)
 
-      record mustNotEqual null
-      record.getMillis mustNotEqual 0
-      record.getThreadID mustNotEqual 0
-      record.getLevel mustEqual logging.Level.INFO
-      record.getMessage mustEqual "3 is the magic number"
-      record.getThrown mustEqual null
-      record.getSourceClassName mustEqual "akka.contrib.jul.JavaLoggingEventHandlerSpec$LogProducer"
-      record.getSourceMethodName mustEqual "<unknown>"
+      record must not be (null)
+      record.getMillis must not be (0)
+      record.getThreadID must not be (0)
+      record.getLevel must be(logging.Level.INFO)
+      record.getMessage must be("3 is the magic number")
+      record.getThrown must be(null)
+      record.getSourceClassName must be("akka.contrib.jul.JavaLoggingEventHandlerSpec$LogProducer")
+      record.getSourceMethodName must be("<unknown>")
     }
   }
 
