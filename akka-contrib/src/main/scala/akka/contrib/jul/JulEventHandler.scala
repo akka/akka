@@ -4,20 +4,20 @@ import akka.event.Logging._
 import akka.actor._
 import akka.event.LoggingAdapter
 import java.util.logging
-import concurrent.{ExecutionContext, Future}
+import concurrent.{ ExecutionContext, Future }
 
-
-/** Makes `java.util.logging` available as a `logger` field
-  * and provides convenience logging methods from the
-  * `akka.event.Logging` API. This trait does not require
-  * an `ActorSystem` and is encouraged to be used as a
-  * general purpose Scala logging API.
-  *
-  * WARNING: Use `ActorLogging` from `Actor`s to use
-  * the Akka Logging system.
-  *
-  * @author Sam Halliday
-  */
+/**
+ * Makes `java.util.logging` available as a `logger` field
+ * and provides convenience logging methods from the
+ * `akka.event.Logging` API. This trait does not require
+ * an `ActorSystem` and is encouraged to be used as a
+ * general purpose Scala logging API.
+ *
+ * WARNING: Use `ActorLogging` from `Actor`s to use
+ * the Akka Logging system.
+ *
+ * @author Sam Halliday
+ */
 trait JavaLogging extends LoggingAdapter {
 
   @transient
@@ -64,10 +64,9 @@ trait JavaLogging extends LoggingAdapter {
     if (loggingExecutionContext.isDefined) {
       implicit val context = loggingExecutionContext.get
       Future(logger.log(record)).onFailure {
-        case thrown: Throwable => thrown.printStackTrace()
+        case thrown: Throwable ⇒ thrown.printStackTrace()
       }
-    }
-    else
+    } else
       logger.log(record)
   }
 
@@ -76,11 +75,11 @@ trait JavaLogging extends LoggingAdapter {
     val throwable = new Throwable()
     val stack = throwable.getStackTrace
     val source = stack.find {
-      frame =>
+      frame ⇒
         val cname = frame.getClassName
         cname != javaLoggerTraitName &&
-        !cname.startsWith("java.lang.reflect.") &&
-        !cname.startsWith("sun.reflect.")
+          !cname.startsWith("java.lang.reflect.") &&
+          !cname.startsWith("sun.reflect.")
     }
     if (source.isDefined) {
       record.setSourceClassName(source.get.getClassName)
@@ -91,23 +90,24 @@ trait JavaLogging extends LoggingAdapter {
   private final val javaLoggerTraitName = classOf[JavaLogging].getName + "$class"
 }
 
-/** `java.util.logging` EventHandler.
-  *
-  * @author Sam Halliday
-  */
+/**
+ * `java.util.logging` EventHandler.
+ *
+ * @author Sam Halliday
+ */
 class JavaLoggingEventHandler extends Actor with JavaLogging {
 
   def receive = {
-    case event@Error(cause, logSource, logClass, message) ⇒
+    case event @ Error(cause, logSource, logClass, message) ⇒
       log(logging.Level.SEVERE, cause, logSource, logClass, message, event)
 
-    case event@Warning(logSource, logClass, message) ⇒
+    case event @ Warning(logSource, logClass, message) ⇒
       log(logging.Level.WARNING, null, logSource, logClass, message, event)
 
-    case event@Info(logSource, logClass, message) ⇒
+    case event @ Info(logSource, logClass, message) ⇒
       log(logging.Level.INFO, null, logSource, logClass, message, event)
 
-    case event@Debug(logSource, logClass, message) ⇒
+    case event @ Debug(logSource, logClass, message) ⇒
       log(logging.Level.CONFIG, null, logSource, logClass, message, event)
 
     case InitializeLogger(_) ⇒
