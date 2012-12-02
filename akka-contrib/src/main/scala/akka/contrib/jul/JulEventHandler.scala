@@ -4,7 +4,6 @@ import akka.event.Logging._
 import akka.actor._
 import akka.event.LoggingAdapter
 import java.util.logging
-import sun.misc.SharedSecrets
 import concurrent.{ExecutionContext, Future}
 
 
@@ -74,22 +73,18 @@ trait JavaLogging extends LoggingAdapter {
 
   // it is unfortunate that this workaround is needed
   private def updateSource(record: logging.LogRecord) {
-    // code duplication with LogRecord
-    val access = SharedSecrets.getJavaLangAccess
     val throwable = new Throwable()
-    val depth = access.getStackTraceDepth(throwable)
-    var i = 0
-    while (i < depth) {
-      val frame = access.getStackTraceElement(throwable, i)
-      val cname = frame.getClassName
-      if (!cname.startsWith("java.lang.reflect.") &&
-        !cname.startsWith("sun.reflect.") &&
-        cname != javaLoggerTraitName) {
-        record.setSourceClassName(cname)
-        record.setSourceMethodName(frame.getMethodName)
-        return
-      }
-      i += 1
+    val stack = throwable.getStackTrace
+    val source = stack.find {
+      frame =>
+        val cname = frame.getClassName
+        !cname.startsWith("java.lang.reflect.") &&
+          !cname.startsWith("sun.reflect.") &&
+          cname != javaLoggerTraitName
+    }
+    if (source.isDefined) {
+      record.setSourceClassName(source.get.getClassName)
+      record.setSourceMethodName(source.get.getMethodName)
     }
   }
 
