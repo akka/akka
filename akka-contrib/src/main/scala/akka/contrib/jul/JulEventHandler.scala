@@ -78,9 +78,9 @@ trait JavaLogging extends LoggingAdapter {
     val source = stack.find {
       frame =>
         val cname = frame.getClassName
+        cname != javaLoggerTraitName &&
         !cname.startsWith("java.lang.reflect.") &&
-          !cname.startsWith("sun.reflect.") &&
-          cname != javaLoggerTraitName
+        !cname.startsWith("sun.reflect.")
     }
     if (source.isDefined) {
       record.setSourceClassName(source.get.getClassName)
