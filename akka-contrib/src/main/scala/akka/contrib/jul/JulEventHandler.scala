@@ -7,14 +7,6 @@ import java.util.logging
 import sun.misc.SharedSecrets
 import concurrent.{ExecutionContext, Future}
 
-/** Mix in `ActorPathLogging` to your `Actor` to easily obtain a reference
-  * to a logger, which registers the context path as the message source.
-  */
-trait ActorPathLogging {
-  this: Actor =>
-
-  val log = akka.event.Logging(context.system, self.path.name)
-}
 
 /** Makes `java.util.logging` available as a `logger` field
   * and provides convenience logging methods that agree exactly
