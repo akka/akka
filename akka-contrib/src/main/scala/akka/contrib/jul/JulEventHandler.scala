@@ -15,8 +15,6 @@ import concurrent.{ ExecutionContext, Future }
  * logging API.
  *
  * For `Actor`s, use `ActorLogging` instead.
- *
- * @author Sam Halliday
  */
 trait JavaLogging {
 
@@ -28,8 +26,6 @@ trait JavaLogging {
 
 /**
  * `java.util.logging` EventHandler.
- *
- * @author Sam Halliday
  */
 class JavaLoggingEventHandler extends Actor {
 
@@ -100,7 +96,7 @@ trait JavaLoggingAdapter extends LoggingAdapter {
 
   @inline
   def log(level: logging.Level, cause: Throwable, message: String) {
-    val record = new logging.LogRecord(level, message.toString)
+    val record = new logging.LogRecord(level, message)
     record.setLoggerName(logger.getName)
     record.setThrown(cause)
     updateSource(record)
@@ -116,8 +112,7 @@ trait JavaLoggingAdapter extends LoggingAdapter {
 
   // it is unfortunate that this workaround is needed
   private def updateSource(record: logging.LogRecord) {
-    val throwable = new Throwable()
-    val stack = throwable.getStackTrace
+    val stack = Thread.currentThread.getStackTrace
     val source = stack.find {
       frame ⇒
         val cname = frame.getClassName
