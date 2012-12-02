@@ -9,13 +9,13 @@ import concurrent.{ExecutionContext, Future}
 
 
 /** Makes `java.util.logging` available as a `logger` field
-  * and provides convenience logging methods that agree exactly
-  * with the `akka.event.Logging` API.
+  * and provides convenience logging methods from the
+  * `akka.event.Logging` API. This trait does not require
+  * an `ActorSystem` and is encouraged to be used as a
+  * general purpose Scala logging API.
   *
-  * Calling class and
-  *
-  * WARNING: Not suitable for use from an `Actor`. Instead, mixin
-  * `ActorLogging` or create an instance of `akka.event.Logging`.
+  * WARNING: Use `ActorLogging` from `Actor`s to use
+  * the Akka Logging system.
   *
   * @author Sam Halliday
   */
