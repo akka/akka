@@ -22,7 +22,7 @@ import concurrent.{ExecutionContext, Future}
 trait JavaLogging extends LoggingAdapter {
 
   @transient
-  protected lazy val logger = logging.Logger.getLogger(toScalaClassName(getClass.getName))
+  protected lazy val logger = logging.Logger.getLogger(getClass.getName)
 
   /** Override-able option for asynchronous logging */
   def loggingExecutionContext: Option[ExecutionContext] = None
@@ -85,7 +85,7 @@ trait JavaLogging extends LoggingAdapter {
       if (!cname.startsWith("java.lang.reflect.") &&
         !cname.startsWith("sun.reflect.") &&
         cname != javaLoggerTraitName) {
-        record.setSourceClassName(toScalaClassName(cname))
+        record.setSourceClassName(cname)
         record.setSourceMethodName(frame.getMethodName)
         return
       }
@@ -93,14 +93,7 @@ trait JavaLogging extends LoggingAdapter {
     }
   }
 
-  // can this be set automatically?
-  private final val javaLoggerTraitName = "akka.contrib.jul.JavaLogging$class"
-
-  @inline
-  private final def toScalaClassName(cname: String) =
-    if (cname.endsWith("$"))
-      cname.substring(0, cname.length - 1)
-    else cname
+  private final val javaLoggerTraitName = classOf[JavaLogging].getName + "$class"
 }
 
 /** `java.util.logging` EventHandler.
