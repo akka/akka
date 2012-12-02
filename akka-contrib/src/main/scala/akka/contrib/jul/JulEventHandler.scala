@@ -7,21 +7,65 @@ import java.util.logging
 import concurrent.{ ExecutionContext, Future }
 
 /**
- * Makes `java.util.logging` available as a `logger` field
- * and provides convenience logging methods from the
- * `akka.event.Logging` API. This trait does not require
- * an `ActorSystem` and is encouraged to be used as a
- * general purpose Scala logging API.
+ * Makes the Akka `Logging` API available as the `log`
+ * field, using `java.util.logging` as the backend.
  *
- * WARNING: Use `ActorLogging` from `Actor`s to use
- * the Akka Logging system.
+ * This trait does not require an `ActorSystem` and is
+ * encouraged to be used as a general purpose Scala
+ * logging API.
+ *
+ * For `Actor`s, use `ActorLogging` instead.
  *
  * @author Sam Halliday
  */
-trait JavaLogging extends LoggingAdapter {
+trait JavaLogging {
 
   @transient
-  protected lazy val logger = logging.Logger.getLogger(getClass.getName)
+  protected lazy val log = new JavaLoggingAdapter {
+    def logger = logging.Logger.getLogger(JavaLogging.this.getClass.getName)
+  }
+}
+
+/**
+ * `java.util.logging` EventHandler.
+ *
+ * @author Sam Halliday
+ */
+class JavaLoggingEventHandler extends Actor {
+
+  def receive = {
+    case event @ Error(cause, logSource, logClass, message) ⇒
+      log(logging.Level.SEVERE, cause, logSource, logClass, message, event)
+
+    case event @ Warning(logSource, logClass, message) ⇒
+      log(logging.Level.WARNING, null, logSource, logClass, message, event)
+
+    case event @ Info(logSource, logClass, message) ⇒
+      log(logging.Level.INFO, null, logSource, logClass, message, event)
+
+    case event @ Debug(logSource, logClass, message) ⇒
+      log(logging.Level.CONFIG, null, logSource, logClass, message, event)
+
+    case InitializeLogger(_) ⇒
+      sender ! LoggerInitialized
+  }
+
+  @inline
+  def log(level: logging.Level, cause: Throwable, logSource: String, logClass: Class[_], message: Any, event: LogEvent) {
+    val logger = logging.Logger.getLogger(logSource)
+    val record = new logging.LogRecord(level, message.toString)
+    record.setLoggerName(logger.getName)
+    record.setThrown(cause)
+    record.setThreadID(event.thread.getId.toInt)
+    record.setSourceClassName(logClass.getName)
+    record.setSourceMethodName(null) // lost forever
+    logger.log(record)
+  }
+}
+
+trait JavaLoggingAdapter extends LoggingAdapter {
+
+  def logger: logging.Logger
 
   /** Override-able option for asynchronous logging */
   def loggingExecutionContext: Option[ExecutionContext] = None
@@ -77,54 +121,18 @@ trait JavaLogging extends LoggingAdapter {
     val source = stack.find {
       frame ⇒
         val cname = frame.getClassName
-        cname != javaLoggerTraitName &&
+        !cname.startsWith("akka.contrib.jul.") &&
+          !cname.startsWith("akka.event.LoggingAdapter") &&
           !cname.startsWith("java.lang.reflect.") &&
           !cname.startsWith("sun.reflect.")
     }
     if (source.isDefined) {
       record.setSourceClassName(source.get.getClassName)
       record.setSourceMethodName(source.get.getMethodName)
+    } else {
+      record.setSourceClassName(null)
+      record.setSourceMethodName(null)
     }
   }
 
-  private final val javaLoggerTraitName = classOf[JavaLogging].getName + "$class"
 }
-
-/**
- * `java.util.logging` EventHandler.
- *
- * @author Sam Halliday
- */
-class JavaLoggingEventHandler extends Actor with JavaLogging {
-
-  def receive = {
-    case event @ Error(cause, logSource, logClass, message) ⇒
-      log(logging.Level.SEVERE, cause, logSource, logClass, message, event)
-
-    case event @ Warning(logSource, logClass, message) ⇒
-      log(logging.Level.WARNING, null, logSource, logClass, message, event)
-
-    case event @ Info(logSource, logClass, message) ⇒
-      log(logging.Level.INFO, null, logSource, logClass, message, event)
-
-    case event @ Debug(logSource, logClass, message) ⇒
-      log(logging.Level.CONFIG, null, logSource, logClass, message, event)
-
-    case InitializeLogger(_) ⇒
-      logger.config("starting")
-      sender ! LoggerInitialized
-  }
-
-  @inline
-  def log(level: logging.Level, cause: Throwable, logSource: String, logClass: Class[_], message: Any, event: LogEvent) {
-    val sourceLogger = logging.Logger.getLogger(logSource)
-    val record = new logging.LogRecord(level, message.toString)
-    record.setLoggerName(sourceLogger.getName)
-    record.setThrown(cause)
-    record.setThreadID(event.thread.getId.toInt)
-    record.setSourceClassName(logClass.getName)
-    record.setSourceMethodName("<unknown>") // lost forever
-    sourceLogger.log(record)
-  }
-}
-

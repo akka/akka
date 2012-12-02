@@ -62,7 +62,7 @@ class JavaLoggingEventHandlerSpec extends AkkaSpec(JavaLoggingEventHandlerSpec.c
       record.getMessage must be("Simulated error (ignore the stacktrace)")
       record.getThrown.isInstanceOf[RuntimeException] must be(true)
       record.getSourceClassName must be("akka.contrib.jul.JavaLoggingEventHandlerSpec$LogProducer")
-      record.getSourceMethodName must be("<unknown>")
+      record.getSourceMethodName must be(null)
     }
 
     "log info without stackTrace" in {
@@ -77,7 +77,7 @@ class JavaLoggingEventHandlerSpec extends AkkaSpec(JavaLoggingEventHandlerSpec.c
       record.getMessage must be("3 is the magic number")
       record.getThrown must be(null)
       record.getSourceClassName must be("akka.contrib.jul.JavaLoggingEventHandlerSpec$LogProducer")
-      record.getSourceMethodName must be("<unknown>")
+      record.getSourceMethodName must be(null)
     }
   }
 
