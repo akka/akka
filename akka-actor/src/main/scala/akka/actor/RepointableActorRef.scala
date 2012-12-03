@@ -49,7 +49,7 @@ private[akka] class RepointableActorRef(
   @volatile private var _lookupDoNotCallMeDirectly: Cell = _
 
   def underlying: Cell = Unsafe.instance.getObjectVolatile(this, cellOffset).asInstanceOf[Cell]
-  private def lookup = Unsafe.instance.getObjectVolatile(this, lookupOffset).asInstanceOf[Cell]
+  def lookup = Unsafe.instance.getObjectVolatile(this, lookupOffset).asInstanceOf[Cell]
 
   @tailrec final def swapCell(next: Cell): Cell = {
     val old = underlying
@@ -173,13 +173,10 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
 
   // use Envelope to keep on-send checks in the same place ACCESS MUST BE PROTECTED BY THE LOCK
   private[this] final val queue = new JLinkedList[Any]()
-  // ACCESS MUST BE PROTECTED BY THE LOCK, is used to detect when messages are sent during replace
-  private[this] final var isBeingReplaced = false
 
   import systemImpl.settings.UnstartedPushTimeout.{ duration ⇒ timeout }
 
   def replaceWith(cell: Cell): Unit = locked {
-    isBeingReplaced = true
     try {
       while (!queue.isEmpty) {
         queue.poll() match {
@@ -188,7 +185,6 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
         }
       }
     } finally {
-      isBeingReplaced = false
       self.swapCell(cell)
     }
   }
@@ -234,7 +230,7 @@ private[akka] class UnstartedCell(val systemImpl: ActorSystemImpl,
           cell.sendSystemMessage(msg)
         } else {
           // systemMessages that are sent during replace need to jump to just after the last system message in the queue, so it's processed before other messages
-          val wasEnqueued = if (isBeingReplaced && !queue.isEmpty()) {
+          val wasEnqueued = if ((self.lookup ne this) && (self.underlying eq this) && !queue.isEmpty()) {
             @tailrec def tryEnqueue(i: JListIterator[Any] = queue.listIterator(), insertIntoIndex: Int = -1): Boolean =
               if (i.hasNext())
                 tryEnqueue(i,
