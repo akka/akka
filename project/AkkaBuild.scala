@@ -325,7 +325,13 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-cluster"),
     dependencies = Seq(cluster, remoteTests % "test", testkit % "test"),
     settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
+      // sigar is in Typesafe repo
+      resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
       libraryDependencies ++= Dependencies.clusterSample,
+      javaOptions in run ++= Seq(
+        "-Djava.library.path=./sigar",
+        "-Xms128m", "-Xmx1024m"),
+      Keys.fork in run := true,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -446,7 +452,9 @@ object AkkaBuild extends Build {
       case key: String if key.startsWith("multinode.") => "-D" + key + "=" + System.getProperty(key)
       case key: String if key.startsWith("akka.") => "-D" + key + "=" + System.getProperty(key)
     }
-    akkaProperties ::: (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
+
+    "-Xmx256m" :: akkaProperties ::: 
+      (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
   }
 
   // for excluding tests by name use system property: -Dakka.test.names.exclude=TimingSpec
@@ -549,6 +557,7 @@ object AkkaBuild extends Build {
             case BinVer(bv) => bv
             case _          => s
           }),
+        "sigarVersion" -> Dependencies.Compile.sigar.revision,
         "github" -> "http://github.com/akka/akka/tree/%s".format((if (isSnapshot) "master" else "v" + v))
       )
     },
@@ -675,6 +684,9 @@ object Dependencies {
     // Camel Sample
     val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % camelCore.revision // ApacheV2
 
+    // Cluster Sample
+    val sigar       = "org.hyperic"                 % "sigar"                        % "1.6.4"            // ApacheV2
+
     // Test
 
     object Test {
@@ -731,7 +743,7 @@ object Dependencies {
 
   val zeroMQ = Seq(protobuf, zeroMQClient, Test.scalatest, Test.junit)
 
-  val clusterSample = Seq(Test.scalatest)
+  val clusterSample = Seq(Test.scalatest, sigar)
 
   val contrib = Seq(Test.junitIntf)
 

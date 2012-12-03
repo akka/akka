@@ -5,7 +5,7 @@ package akka.cluster
 
 import language.postfixOps
 
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import java.net.URLEncoder

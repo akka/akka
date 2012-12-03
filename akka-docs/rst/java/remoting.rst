@@ -122,6 +122,15 @@ actor systems has to have a JAR containing the class.
   object, which in most cases is not serializable. It is best to make a static
   inner class which implements :class:`UntypedActorFactory`.
 
+.. note::
+
+  You can use asterisks as wildcard matches for the actor path sections, so you could specify:
+  ``/*/sampleActor`` and that would match all ``sampleActor`` on that level in the hierarchy.
+  You can also use wildcard in the last position to match all actors at a certain level:
+  ``/someParent/*``. Non-wildcard matches always have higher priority to match than wildcards, so:
+  ``/foo/bar`` is considered **more specific** than ``/foo/*`` and only the highest priority match is used.
+  Please note that it **cannot** be used to partially match section, like this: ``/foo*/bar``, ``/f*o/bar`` etc.
+
 .. warning::
 
   *Caveat:* Remote deployment ties both systems together in a tight fashion,
