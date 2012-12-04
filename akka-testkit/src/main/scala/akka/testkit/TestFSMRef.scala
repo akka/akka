@@ -80,6 +80,10 @@ class TestFSMRef[S, D, T <: Actor](
    */
   def timerActive_?(name: String) = fsm.timerActive_?(name)
 
+  /**
+   * Proxy for FSM.timerActive_?.
+   */
+  def isStateTimerActive = fsm.isStateTimerActive
 }
 
 object TestFSMRef {
