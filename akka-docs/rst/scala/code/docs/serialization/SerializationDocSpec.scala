@@ -2,19 +2,6 @@
  * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
  */
 
-//#extract-transport
-package object akka {
-  // needs to be inside the akka package because accessing unsupported API !
-  def transportOf(system: actor.ExtendedActorSystem): remote.RemoteTransport =
-    system.provider match {
-      case r: remote.RemoteActorRefProvider ⇒ r.transport
-      case _ ⇒
-        throw new UnsupportedOperationException(
-          "this method requires the RemoteActorRefProvider to be configured")
-    }
-}
-//#extract-transport
-
 package docs.serialization {
 
   import org.scalatest.matchers.MustMatchers
@@ -216,7 +203,7 @@ package docs.serialization {
       object ExternalAddress extends ExtensionKey[ExternalAddressExt]
 
       class ExternalAddressExt(system: ExtendedActorSystem) extends Extension {
-        def addressForAkka: Address = akka.transportOf(system).address
+        def addressForAkka: Address = system.provider.getDefaultAddress
       }
 
       def serializeAkkaDefault(ref: ActorRef): String =
