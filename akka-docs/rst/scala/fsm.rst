@@ -179,6 +179,18 @@ demonstrated below:
 The :class:`Event(msg: Any, data: D)` case class is parameterized with the data
 type held by the FSM for convenient pattern matching.
 
+.. warning::
+
+  It is required that you define handlers for each of the possible FSM states,
+  otherwise there will be failures when trying to switch to undeclared states.
+
+It is recommended practice to declare the states as objects extending a
+sealed trait and then verify that there is a ``when`` clause for each of the
+states. If you want to leave the handling of a state “unhandled” (more below),
+it still needs to be declared like this:
+
+.. includecode:: code/docs/actor/FSMDocSpec.scala#NullFunction
+
 Defining the Initial State
 --------------------------
 
