@@ -30,7 +30,7 @@ object AkkaBuild extends Build {
     organization := "com.typesafe.akka",
     version      := "2.2-SNAPSHOT",
     // FIXME: use 2.10.0 for final
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC2")
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC3")
   )
 
   lazy val akka = Project(
@@ -695,7 +695,7 @@ object Dependencies {
       val junit       = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
       val logback     = "ch.qos.logback"              % "logback-classic"              % "1.0.7"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito     = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
-      val scalatest   = "org.scalatest"               % "scalatest"                    % "1.8-B2"           % "test" cross CrossVersion.full // ApacheV2
+      val scalatest   = "org.scalatest"               % "scalatest"                    % "1.8-B1"           % "test" cross CrossVersion.full // ApacheV2
       val scalacheck  = "org.scalacheck"              % "scalacheck"                   % "1.10.0"           % "test" cross CrossVersion.full // New BSD
       val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
       val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
