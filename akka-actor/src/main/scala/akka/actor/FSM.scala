@@ -381,6 +381,11 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   final def setStateTimeout(state: S, timeout: Timeout): Unit = stateTimeouts(state) = timeout
 
   /**
+   * Internal API, used for testing.
+   */
+  private[akka] final def isStateTimerActive = timeoutFuture.isDefined
+
+  /**
    * Set handler which is called upon each state transition, i.e. not when
    * staying in the same state. This may use the pair extractor defined in the
    * FSM companion object like so:
@@ -634,6 +639,8 @@ trait FSM[S, D] extends Listeners with ActorLogging {
         case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
         case _                      ⇒
       }
+      for (timer ← timers.values) timer.cancel()
+      timers.clear()
       val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)
       if (terminateEvent.isDefinedAt(stopEvent))
         terminateEvent(stopEvent)
