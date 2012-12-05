@@ -302,7 +302,7 @@ private[akka] class ThrottleActor(channelContext: ChannelHandlerContext)
       log.debug("sending msg (Tick): {}", s.msg)
       send(s)
     }
-    if (!timerActive_?("send"))
+    if (!isTimerActive("send"))
       for (time ← toTick) {
         log.debug("scheduling next Tick in {}", time)
         setTimer("send", Tick, time, false)
