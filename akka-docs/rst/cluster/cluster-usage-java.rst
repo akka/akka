@@ -623,7 +623,7 @@ introduce the extra overhead of another thread.
 ::
 
   # shorter tick-duration of default scheduler when using cluster
-  akka.scheduler.tick-duration.tick-duration = 33ms
+  akka.scheduler.tick-duration = 33ms
 
 
 
