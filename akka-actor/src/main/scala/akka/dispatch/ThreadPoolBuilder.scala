@@ -170,7 +170,7 @@ case class MonitorableThreadFactory(name: String,
                                     contextClassLoader: Option[ClassLoader],
                                     exceptionHandler: Thread.UncaughtExceptionHandler = MonitorableThreadFactory.doNothing)
   extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
-  protected val counter = new AtomicLong
+  protected val counter = new AtomicLong(MTF.tfCounter.getAndIncrement())
 
   def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = {
     val t = wire(ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool))
@@ -187,6 +187,14 @@ case class MonitorableThreadFactory(name: String,
     contextClassLoader foreach t.setContextClassLoader
     t
   }
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object MTF {
+  // this is a hacky near-backport of the fix for #2778; real fix would not be binary compatible
+  private[akka] val tfCounter = new AtomicLong
 }
 
 /**
