@@ -168,15 +168,10 @@ private[cluster] case class Gossip(
   def isSingletonCluster: Boolean = members.size == 1
 
   /**
-   * Returns true if the node is UP or JOINING.
+   * Returns true if the node is in the unreachable set
    */
-  def isAvailable(address: Address): Boolean = !isUnavailable(address)
-
-  def isUnavailable(address: Address): Boolean = {
-    val isUnreachable = overview.unreachable exists { _.address == address }
-    val hasUnavailableMemberStatus = members exists { m ⇒ m.status.isUnavailable && m.address == address }
-    isUnreachable || hasUnavailableMemberStatus
-  }
+  def isUnreachable(address: Address): Boolean =
+    overview.unreachable exists { _.address == address }
 
   def member(address: Address): Member = {
     members.find(_.address == address).orElse(overview.unreachable.find(_.address == address)).

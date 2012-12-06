@@ -87,13 +87,7 @@ object Member {
  *
  * Can be one of: Joining, Up, Leaving, Exiting and Down.
  */
-abstract class MemberStatus extends ClusterMessage {
-
-  /**
-   * Using the same notion for 'unavailable' as 'non-convergence': DOWN
-   */
-  def isUnavailable: Boolean = this == Down
-}
+abstract class MemberStatus extends ClusterMessage
 
 object MemberStatus {
   case object Joining extends MemberStatus

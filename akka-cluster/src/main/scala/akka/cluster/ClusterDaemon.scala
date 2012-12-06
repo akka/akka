@@ -763,7 +763,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   def isSingletonCluster: Boolean = latestGossip.isSingletonCluster
 
-  def isAvailable: Boolean = latestGossip.isAvailable(selfAddress)
+  def isAvailable: Boolean = !latestGossip.isUnreachable(selfAddress)
 
   /**
    * Gossips latest gossip to a random member in the set of members passed in as argument.
