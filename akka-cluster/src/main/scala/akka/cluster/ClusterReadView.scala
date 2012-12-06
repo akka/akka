@@ -74,9 +74,9 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   }
 
   /**
-   * Returns true if the cluster node is up and running, false if it is shut down.
+   * Returns true if this cluster instance has be shutdown.
    */
-  def isRunning: Boolean = cluster.isRunning
+  def isTerminated: Boolean = cluster.isTerminated
 
   /**
    * Current cluster members, sorted by address.
@@ -118,11 +118,14 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   def convergence: Boolean = state.convergence
 
   /**
-   * Returns true if the node is UP or JOINING.
+   * Returns true if the node is not unreachable and not `Down`
+   * and not `Removed`.
    */
   def isAvailable: Boolean = {
     val myself = self
-    !unreachableMembers.contains(myself) && !myself.status.isUnavailable
+    !unreachableMembers.contains(myself) &&
+      myself.status != MemberStatus.Down &&
+      myself.status != MemberStatus.Removed
   }
 
   /**

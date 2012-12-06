@@ -45,7 +45,7 @@ abstract class MBeanSpec
     "expose attributes" taggedAs LongRunningTest in {
       val info = mbeanServer.getMBeanInfo(mbeanName)
       info.getAttributes.map(_.getName).toSet must be(Set(
-        "ClusterStatus", "Members", "Unreachable", "MemberStatus", "Leader", "Singleton", "Available", "Running"))
+        "ClusterStatus", "Members", "Unreachable", "MemberStatus", "Leader", "Singleton", "Available"))
       enterBarrier("after-1")
     }
 
@@ -58,8 +58,7 @@ abstract class MBeanSpec
 
     "change attributes after startup" taggedAs LongRunningTest in {
       runOn(first) {
-        mbeanServer.getAttribute(mbeanName, "Running").asInstanceOf[Boolean] must be(true)
-        mbeanServer.getAttribute(mbeanName, "Available").asInstanceOf[Boolean] must be(true)
+        mbeanServer.getAttribute(mbeanName, "Available").asInstanceOf[Boolean] must be(false)
         mbeanServer.getAttribute(mbeanName, "Singleton").asInstanceOf[Boolean] must be(false)
         mbeanServer.getAttribute(mbeanName, "Leader") must be("")
         mbeanServer.getAttribute(mbeanName, "Members") must be("")
@@ -73,6 +72,7 @@ abstract class MBeanSpec
         mbeanServer.getAttribute(mbeanName, "Singleton").asInstanceOf[Boolean] must be(true)
         mbeanServer.getAttribute(mbeanName, "Members") must be(address(first).toString)
         mbeanServer.getAttribute(mbeanName, "Unreachable") must be("")
+        mbeanServer.getAttribute(mbeanName, "Available").asInstanceOf[Boolean] must be(true)
       }
       enterBarrier("after-3")
     }
@@ -86,7 +86,7 @@ abstract class MBeanSpec
       awaitUpConvergence(4)
       assertMembers(clusterView.members, roles.map(address(_)): _*)
       awaitCond(mbeanServer.getAttribute(mbeanName, "MemberStatus") == "Up")
-      val expectedMembers = roles.sorted.map(address(_)).mkString(", ")
+      val expectedMembers = roles.sorted.map(address(_)).mkString(",")
       awaitCond(mbeanServer.getAttribute(mbeanName, "Members") == expectedMembers)
       val expectedLeader = address(roleOfLeader())
       awaitCond(mbeanServer.getAttribute(mbeanName, "Leader") == expectedLeader.toString)
@@ -104,7 +104,7 @@ abstract class MBeanSpec
 
       runOn(first, second, third) {
         awaitCond(mbeanServer.getAttribute(mbeanName, "Unreachable") == fourthAddress.toString)
-        val expectedMembers = Seq(first, second, third).sorted.map(address(_)).mkString(", ")
+        val expectedMembers = Seq(first, second, third).sorted.map(address(_)).mkString(",")
         awaitCond(mbeanServer.getAttribute(mbeanName, "Members") == expectedMembers)
       }
       enterBarrier("fourth-unreachable")
@@ -130,11 +130,11 @@ abstract class MBeanSpec
       runOn(first, second) {
         awaitUpConvergence(2)
         assertMembers(clusterView.members, first, second)
-        val expectedMembers = Seq(first, second).sorted.map(address(_)).mkString(", ")
+        val expectedMembers = Seq(first, second).sorted.map(address(_)).mkString(",")
         awaitCond(mbeanServer.getAttribute(mbeanName, "Members") == expectedMembers)
       }
       runOn(third) {
-        awaitCond(!cluster.isRunning)
+        awaitCond(cluster.isTerminated)
         // mbean should be unregistered, i.e. throw InstanceNotFoundException
         awaitCond(Try { mbeanServer.getMBeanInfo(mbeanName); false } recover {
           case e: InstanceNotFoundException ⇒ true
