@@ -579,14 +579,14 @@ Run it without parameters to see instructions about how to use the script::
             leave <node-url> - Sends a request for node with URL to LEAVE the cluster
              down <node-url> - Sends a request for marking node with URL as DOWN
                member-status - Asks the member node for its current status
+                     members - Asks the cluster for addresses of current members
+                 unreachable - Asks the cluster for addresses of unreachable members
               cluster-status - Asks the cluster for its current status (member ring,
                                unavailable nodes, meta data etc.)
                       leader - Asks the cluster who the current leader is
                 is-singleton - Checks if the cluster is a singleton cluster (single
                                node cluster)
                 is-available - Checks if the member node is available
-                  is-running - Checks if the member node is running
-             has-convergence - Checks if there is a cluster convergence
   Where the <node-url> should be on the format of 
     'akka://actor-system-name@hostname:port'
 
