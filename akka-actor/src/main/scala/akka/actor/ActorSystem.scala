@@ -613,7 +613,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   protected def createScheduler(): Scheduler =
     new DefaultScheduler(
       new HashedWheelTimer(log,
-        threadFactory.copy(threadFactory.name + "-scheduler"),
+        threadFactory.withName(threadFactory.name + "-scheduler"),
         settings.SchedulerTickDuration,
         settings.SchedulerTicksPerWheel),
       log)

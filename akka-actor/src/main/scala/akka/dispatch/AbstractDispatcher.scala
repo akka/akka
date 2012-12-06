@@ -527,7 +527,7 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
     val tf = threadFactory match {
       case m: MonitorableThreadFactory ⇒
         // add the dispatcher id to the thread names
-        m.copy(m.name + "-" + id)
+        m.withName(m.name + "-" + id)
       case other ⇒ other
     }
     new ForkJoinExecutorServiceFactory(
