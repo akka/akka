@@ -24,3 +24,10 @@ Search                               Replace with
 
 If you need to convert from Java to ``scala.collection.immutable.Seq`` or ``scala.collection.immutable.Iterable`` you should use ``akka.japi.Util.immutableSeq(…)``,
 and if you need to convert from Scala you can simply switch to using immutable collections yourself or use the ``to[immutable.<collection-type>]`` method.
+
+API changes to FSM and TestFSMRef
+=================================
+
+The ``timerActive_?`` method has been deprecated in both the ``FSM`` trait and the ``TestFSMRef``
+class. You should now use the ``isTimerActive`` method instead. The old method will remain
+throughout 2.2.x. It will be removed in Akka 2.3.
