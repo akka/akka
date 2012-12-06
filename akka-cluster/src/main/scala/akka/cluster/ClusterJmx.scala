@@ -16,17 +16,65 @@ import javax.management.InstanceNotFoundException
  * Interface for the cluster JMX MBean.
  */
 trait ClusterNodeMBean {
+
+  /**
+   * Member status for this node.
+   */
   def getMemberStatus: String
+
+  /**
+   * Comma separated addresses of member nodes, sorted in the cluster ring order.
+   */
+  def getMembers: String
+
+  /**
+   * Comma separated addresses of unreachable member nodes.
+   */
+  def getUnreachable: String
+
+  /*
+   * String that will list all nodes in the node ring as follows:
+   * {{{
+   * Members:
+   *         Member(address = akka://system0@localhost:5550, status = Up)
+   *         Member(address = akka://system1@localhost:5551, status = Up)
+   * Unreachable:
+   *         Member(address = akka://system2@localhost:5553, status = Down)
+   * }}}
+   */
   def getClusterStatus: String
+
+  /**
+   * Get the address of the current leader.
+   */
   def getLeader: String
 
+  /**
+   * Does the cluster consist of only one member?
+   */
   def isSingleton: Boolean
-  def isConvergence: Boolean
+
+  /**
+   * Returns true if the node is UP or JOINING.
+   */
   def isAvailable: Boolean
+  /**
+   * Returns true if the cluster node is up and running, false if it is shut down.
+   */
   def isRunning: Boolean
 
+  /**
+   * Try to join this cluster node with the node specified by 'address'.
+   * A 'Join(thisNodeAddress)' command is sent to the node to join.
+   */
   def join(address: String)
+  /**
+   * Send command to issue state transition to LEAVING for the node specified by 'address'.
+   */
   def leave(address: String)
+  /**
+   * Send command to DOWN the node specified by 'address'.
+   */
   def down(address: String)
 }
 
@@ -47,29 +95,23 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
 
       // JMX attributes (bean-style)
 
-      /*
-       * Sends a string to the JMX client that will list all nodes in the node ring as follows:
-       * {{{
-       * Members:
-       *         Member(address = akka://system0@localhost:5550, status = Up)
-       *         Member(address = akka://system1@localhost:5551, status = Up)
-       * Unreachable:
-       *         Member(address = akka://system2@localhost:5553, status = Down)
-       * }}}
-       */
       def getClusterStatus: String = {
         val unreachable = clusterView.unreachableMembers
         "\nMembers:\n\t" + clusterView.members.mkString("\n\t") +
           { if (unreachable.nonEmpty) "\nUnreachable:\n\t" + unreachable.mkString("\n\t") else "" }
       }
 
+      def getMembers: String =
+        clusterView.members.toSeq.map(_.address).mkString(", ")
+
+      def getUnreachable: String =
+        clusterView.unreachableMembers.map(_.address).mkString(", ")
+
       def getMemberStatus: String = clusterView.status.toString
 
-      def getLeader: String = clusterView.leader.toString
+      def getLeader: String = clusterView.leader.getOrElse("").toString
 
       def isSingleton: Boolean = clusterView.isSingletonCluster
-
-      def isConvergence: Boolean = clusterView.convergence
 
       def isAvailable: Boolean = clusterView.isAvailable
 
