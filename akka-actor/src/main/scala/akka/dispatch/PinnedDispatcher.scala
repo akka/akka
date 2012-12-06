@@ -20,7 +20,7 @@ class PinnedDispatcher(
   _id: String,
   _mailboxType: MailboxType,
   _shutdownTimeout: FiniteDuration,
-  _threadPoolConfig: ThreadPoolConfig = ThreadPoolConfig())
+  _threadPoolConfig: ThreadPoolConfig)
   extends Dispatcher(_prerequisites,
     _id,
     Int.MaxValue,
