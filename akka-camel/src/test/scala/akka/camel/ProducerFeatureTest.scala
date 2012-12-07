@@ -242,6 +242,19 @@ class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)
       stop(consumer)
       stop(producer)
     }
+    "be able to transform outgoing messages and have a valid sender reference" in {
+      import TestSupport._
+      filterEvents(EventFilter[Exception](occurrences = 1)) {
+        val producerSupervisor = system.actorOf(Props(new ProducerSupervisor(Props(new ChildProducer("mock:mock", true)))), "ignore-deadletter-sender-ref-test")
+        mockEndpoint.reset()
+        producerSupervisor.tell(CamelMessage("test", Map()), testActor)
+        producerSupervisor.tell(CamelMessage("err", Map()), testActor)
+        mockEndpoint.expectedMessageCount(1)
+        mockEndpoint.expectedBodiesReceived("TEST")
+        expectMsg("TEST")
+        system.stop(producerSupervisor)
+      }
+    }
   }
 
   private def mockEndpoint = camel.context.getEndpoint("mock:mock", classOf[MockEndpoint])
@@ -254,6 +267,44 @@ class ProducerFeatureTest extends TestKit(ActorSystem("test", AkkaSpec.testConf)
 }
 
 object ProducerFeatureTest {
+  class ProducerSupervisor(childProps: Props) extends Actor {
+    override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
+    val child = context.actorOf(childProps, "producer-supervisor-child")
+    val duration = 10 seconds
+    implicit val timeout = Timeout(duration)
+    implicit val ec = context.system.dispatcher
+    Await.ready(CamelExtension(context.system).activationFutureFor(child), timeout.duration)
+    def receive = {
+      case msg: CamelMessage ⇒
+        child forward (msg)
+      case (aref: ActorRef, msg: String) ⇒
+        aref ! msg
+    }
+  }
+  class ChildProducer(uri: String, upper: Boolean = false) extends Actor with Producer {
+    override def oneway = true
+
+    var lastSender: Option[ActorRef] = None
+    var lastMessage: Option[String] = None
+    def endpointUri = uri
+
+    override def transformOutgoingMessage(msg: Any) = msg match {
+      case msg: CamelMessage ⇒ if (upper) msg.mapBody {
+        body: String ⇒
+          if (body == "err") throw new Exception("Crash!")
+          val upperMsg = body.toUpperCase
+          lastSender = Some(sender)
+          lastMessage = Some(upperMsg)
+      }
+      else msg
+    }
+
+    override def postStop() {
+      for (msg ← lastMessage; aref ← lastSender) context.parent ! (aref, msg)
+      super.postStop()
+    }
+  }
+
   class TestProducer(uri: String, upper: Boolean = false) extends Actor with Producer {
     def endpointUri = uri
 
