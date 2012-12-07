@@ -371,7 +371,7 @@ which is guaranteed to work immediately, meaning that the scheduled message
 will not be processed after this call even if the timer already fired and
 queued it. The status of any timer may be inquired with
 
-  :func:`timerActive_?(name)`
+  :func:`isTimerActive(name)`
 
 These named timers complement state timeouts because they are not affected by
 intervening reception of other messages.

@@ -78,7 +78,13 @@ class TestFSMRef[S, D, T <: Actor](
   /**
    * Proxy for FSM.timerActive_?.
    */
-  def timerActive_?(name: String) = fsm.timerActive_?(name)
+  @deprecated("Use isTimerActive(name) instead.", "2.2")
+  def timerActive_?(name: String) = isTimerActive(name)
+
+  /**
+   * Proxy for FSM.isTimerActive.
+   */
+  def isTimerActive(name: String) = fsm.isTimerActive(name)
 
   /**
    * Proxy for FSM.timerActive_?.
