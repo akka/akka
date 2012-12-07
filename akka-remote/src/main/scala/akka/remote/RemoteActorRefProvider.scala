@@ -161,7 +161,7 @@ class RemoteActorRefProvider(
 
       Iterator(props.deploy) ++ deployment.iterator reduce ((a, b) ⇒ b withFallback a) match {
         case d @ Deploy(_, _, _, RemoteScope(addr)) ⇒
-          if (isSelfAddress(addr)) {
+          if (hasAddress(addr)) {
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else {
             try {
@@ -181,7 +181,7 @@ class RemoteActorRefProvider(
   }
 
   def actorFor(path: ActorPath): InternalActorRef = {
-    if (isSelfAddress(path.address)) actorFor(rootGuardian, path.elements)
+    if (hasAddress(path.address)) actorFor(rootGuardian, path.elements)
     else try {
       new RemoteActorRef(this, transport, transport.localAddressForRemote(path.address),
         path, Nobody, props = None, deploy = None)
@@ -194,7 +194,7 @@ class RemoteActorRefProvider(
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
-      if (isSelfAddress(address)) actorFor(rootGuardian, elems)
+      if (hasAddress(address)) actorFor(rootGuardian, elems)
       else new RemoteActorRef(this, transport, transport.localAddressForRemote(address),
         new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
     case _ ⇒ local.actorFor(ref, path)
@@ -207,7 +207,7 @@ class RemoteActorRefProvider(
    */
   def actorForWithLocalAddress(ref: InternalActorRef, path: String, localAddress: Address): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
-      if (isSelfAddress(address)) actorFor(rootGuardian, elems)
+      if (hasAddress(address)) actorFor(rootGuardian, elems)
       else new RemoteActorRef(this, transport, localAddress,
         new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
     case _ ⇒ local.actorFor(ref, path)
@@ -227,13 +227,13 @@ class RemoteActorRefProvider(
 
   def getExternalAddressFor(addr: Address): Option[Address] = {
     addr match {
-      case _ if isSelfAddress(addr)             ⇒ Some(local.rootPath.address)
+      case _ if hasAddress(addr)             ⇒ Some(local.rootPath.address)
       case Address("akka", _, Some(_), Some(_)) ⇒ Some(transport.localAddressForRemote(addr))
       case _                                    ⇒ None
     }
   }
 
-  private def isSelfAddress(address: Address): Boolean =
+  private def hasAddress(address: Address): Boolean =
     address == local.rootPath.address || address == rootPath.address || transport.addresses(address)
 
 }

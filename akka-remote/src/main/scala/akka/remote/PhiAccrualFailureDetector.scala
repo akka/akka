@@ -4,6 +4,7 @@ import akka.remote.FailureDetector.Clock
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
+import scala.collection.immutable
 
 /**
  * Implementation of 'The Phi Accrual Failure Detector' by Hayashibara et al. as defined in their paper:
@@ -68,11 +69,9 @@ class PhiAccrualFailureDetector(
    * Implement using optimistic lockless concurrency, all state is represented
    * by this immutable case class and managed by an AtomicReference.
    */
-  private case class State(
-    history: HeartbeatHistory = firstHeartbeat,
-    timestamp: Option[Long] = None)
+  private case class State(history: HeartbeatHistory, timestamp: Option[Long])
 
-  private val state = new AtomicReference[State](State())
+  private val state = new AtomicReference[State](State(history = firstHeartbeat, timestamp = None))
 
   override def isAvailable: Boolean = phi < threshold
 
@@ -123,10 +122,8 @@ class PhiAccrualFailureDetector(
     }
   }
 
-  private[akka] def phi(timeDiff: Long, mean: Double, stdDeviation: Double): Double = {
-    val cdf = cumulativeDistributionFunction(timeDiff, mean, stdDeviation)
-    -math.log10(1.0 - cdf)
-  }
+  private[akka] def phi(timeDiff: Long, mean: Double, stdDeviation: Double): Double =
+    -math.log10(1.0 - cumulativeDistributionFunction(timeDiff, mean, stdDeviation))
 
   private val minStdDeviationMillis = minStdDeviation.toMillis
 
@@ -154,7 +151,7 @@ private[akka] object HeartbeatHistory {
    */
   def apply(maxSampleSize: Int): HeartbeatHistory = HeartbeatHistory(
     maxSampleSize = maxSampleSize,
-    intervals = IndexedSeq.empty,
+    intervals = immutable.IndexedSeq.empty,
     intervalSum = 0L,
     squaredIntervalSum = 0L)
 
@@ -169,12 +166,14 @@ private[akka] object HeartbeatHistory {
  */
 private[akka] case class HeartbeatHistory private (
   maxSampleSize: Int,
-  intervals: IndexedSeq[Long],
+  intervals: immutable.IndexedSeq[Long],
   intervalSum: Long,
   squaredIntervalSum: Long) {
 
   if (maxSampleSize < 1)
     throw new IllegalArgumentException(s"maxSampleSize must be >= 1, got [$maxSampleSize]")
+  if (intervals.size == 0)
+    throw new IllegalArgumentException("intervals.size must be > 0")
   if (intervalSum < 0L)
     throw new IllegalArgumentException(s"intervalSum must be >= 0, got [$intervalSum]")
   if (squaredIntervalSum < 0L)

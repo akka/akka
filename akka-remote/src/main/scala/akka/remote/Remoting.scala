@@ -160,9 +160,9 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
           _.toSet
         }
 
-        endpointManager ! StartupFinished
-
         addresses = transports.map { _._2 }.toSet
+
+        endpointManager ! StartupFinished
         eventPublisher.notifyListeners(RemotingListenEvent(addresses))
 
       } catch {
@@ -186,9 +186,9 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     // Ignore
   }
 
-  override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = {
+  // FIXME: Keep senders down the stack
+  override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit =
     endpointManager.tell(Send(message, senderOption, recipient), sender = Actor.noSender)
-  }
 
   override def managementCommand(cmd: Any): Future[Boolean] = {
     val statusPromise = Promise[Boolean]()
@@ -371,7 +371,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           endpoints.registerPassiveEndpoint(handle.remoteAddress, endpoint)
         else handle.disassociate()
     }
-    case Terminated(endpoint) ⇒ endpoints.removeIfNotGated(endpoint);
+    case Terminated(endpoint) ⇒ endpoints.removeIfNotGated(endpoint)
     case Prune                ⇒ endpoints.prune(settings.RetryGateClosedFor)
   }
 
@@ -397,7 +397,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         }
 
       new AkkaProtocolTransport(wrappedTransport, context.system, new AkkaProtocolSettings(conf), AkkaPduProtobufCodec)
-
     }
 
     val listens: Future[Seq[(Transport, (Address, Promise[AssociationEventListener]))]] = Future.sequence(
@@ -426,9 +425,9 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   private def createEndpoint(remoteAddress: Address,
                              localAddress: Address,
                              handleOption: Option[AssociationHandle]): ActorRef = {
-    assert(transportMapping contains (localAddress))
+    assert(transportMapping contains localAddress)
 
-    val endpoint = context.actorOf(Props(
+    context.watch(context.actorOf(Props(
       new EndpointWriter(
         handleOption,
         localAddress,
@@ -437,9 +436,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         settings,
         AkkaPduProtobufCodec))
       .withDispatcher("akka.remoting.writer-dispatcher"),
-      "endpointWriter-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + endpointId.next())
-
-    context.watch(endpoint)
+      "endpointWriter-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + endpointId.next()))
 
   }
 
@@ -450,7 +447,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     transportMapping.values foreach { transport ⇒
       try transport.shutdown() catch {
         case NonFatal(e) ⇒
-          log.error(e, s"Unable to shut down the underlying Transport: [$transport]")
+          log.error(e, s"Unable to shut down the underlying transport: [$transport]")
       }
     }
   }

@@ -1,10 +1,10 @@
 package akka.remote.transport
 
-import concurrent.{ Promise, Future }
+import scala.concurrent.{ Promise, Future }
 import akka.actor.{ ActorRef, Address }
 import akka.util.ByteString
-import akka.remote.transport.Transport.AssociationEvent
 import akka.remote.transport.AssociationHandle.HandleEventListener
+
 
 object Transport {
 

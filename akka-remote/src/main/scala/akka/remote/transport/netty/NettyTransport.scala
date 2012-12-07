@@ -150,6 +150,7 @@ abstract class ClientHandler(protected final val transport: NettyTransport,
 }
 
 private[transport] object NettyTransport {
+  // 4 bytes will be used to represent the frame length. Used by netty LengthFieldPrepender downstream handler.
   val FrameLengthFieldLength = 4
   def gracefulClose(channel: Channel): Unit = channel.disconnect().addListener(ChannelFutureListener.CLOSE)
 

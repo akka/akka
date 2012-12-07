@@ -17,7 +17,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Success, Failure }
 import java.net.URLEncoder
-import scala.collection.immutable.Queue
+import scala.collection.immutable
 import akka.remote.transport.ActorTransportAdapter._
 
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
@@ -223,7 +223,7 @@ private[transport] object ProtocolStateActor {
 
   // Both transports are associated, but the handler for the handle has not yet been provided
   case class AssociatedWaitHandler(handleListener: Future[HandleEventListener], wrappedHandle: AssociationHandle,
-                                   queue: Queue[ByteString])
+                                   queue: immutable.Queue[ByteString])
     extends ProtocolStateData
 
   case class ListenerReady(listener: HandleEventListener, wrappedHandle: AssociationHandle)
@@ -316,16 +316,16 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
         case Payload(payload) ⇒
           sendHeartbeat(wrappedHandle)
           goto(Open) using
-            AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue(payload))
+            AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, immutable.Queue(payload))
 
         case Heartbeat ⇒
           sendHeartbeat(wrappedHandle)
           failureDetector.heartbeat()
           goto(Open) using
-            AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue.empty)
+            AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, immutable.Queue.empty)
 
         case _ ⇒ goto(Open) using
-          AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue.empty)
+          AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, immutable.Queue.empty)
       }
 
     case Event(HeartbeatTimer, OutboundUnderlyingAssociated(_, wrappedHandle)) ⇒ handleTimers(wrappedHandle)
@@ -343,7 +343,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
 
             failureDetector.heartbeat()
             initTimers()
-            goto(Open) using AssociatedWaitHandler(notifyInboundHandler(wrappedHandle, origin, associationHandler), wrappedHandle, Queue.empty)
+            goto(Open) using AssociatedWaitHandler(notifyInboundHandler(wrappedHandle, origin, associationHandler), wrappedHandle, immutable.Queue.empty)
           } else {
             stop()
           }
@@ -431,9 +431,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
     case StopEvent(_, _, AssociatedWaitHandler(handlerFuture, wrappedHandle, queue)) ⇒
       // Invalidate exposed but still unfinished promise. The underlying association disappeared, so after
       // registration immediately signal a disassociate
-      handlerFuture.onSuccess {
-        case listener: HandleEventListener ⇒ listener notify Disassociated
-      }
+      handlerFuture foreach { _ notify Disassociated }
 
     case StopEvent(_, _, ListenerReady(handler, wrappedHandle)) ⇒
       handler notify Disassociated

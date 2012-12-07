@@ -6,11 +6,11 @@ import scala.beans.BeanProperty
 import java.util.{ Set ⇒ JSet }
 import scala.collection.JavaConverters.setAsJavaSetConverter
 
-trait RemotingLifecycleEvent extends Serializable {
+sealed trait RemotingLifecycleEvent extends Serializable {
   def logLevel: Logging.LogLevel
 }
 
-trait AssociationEvent extends RemotingLifecycleEvent {
+sealed trait AssociationEvent extends RemotingLifecycleEvent {
   def localAddress: Address
   def remoteAddress: Address
   def inbound: Boolean
@@ -21,7 +21,7 @@ trait AssociationEvent extends RemotingLifecycleEvent {
   override def toString: String = s"$eventName [$localAddress]${if (inbound) " <- " else " -> "}[$remoteAddress]"
 }
 
-case class AssociatedEvent(
+final case class AssociatedEvent(
   localAddress: Address,
   remoteAddress: Address,
   inbound: Boolean)
@@ -32,7 +32,7 @@ case class AssociatedEvent(
 
 }
 
-case class DisassociatedEvent(
+final case class DisassociatedEvent(
   localAddress: Address,
   remoteAddress: Address,
   inbound: Boolean)
@@ -41,7 +41,7 @@ case class DisassociatedEvent(
   override def logLevel: Logging.LogLevel = Logging.DebugLevel
 }
 
-case class AssociationErrorEvent(
+final case class AssociationErrorEvent(
   cause: Throwable,
   localAddress: Address,
   remoteAddress: Address,
@@ -52,8 +52,8 @@ case class AssociationErrorEvent(
   def getCause: Throwable = cause
 }
 
-case class RemotingListenEvent(listenAddresses: Set[Address]) extends RemotingLifecycleEvent {
-  final def getListenAddresses: JSet[Address] = listenAddresses.asJava
+final case class RemotingListenEvent(listenAddresses: Set[Address]) extends RemotingLifecycleEvent {
+  def getListenAddresses: JSet[Address] = listenAddresses.asJava
   override def logLevel: Logging.LogLevel = Logging.InfoLevel
   override def toString: String = "Remoting now listens on addresses: " + listenAddresses.mkString("[", ", ", "]")
 }
@@ -63,7 +63,7 @@ case object RemotingShutdownEvent extends RemotingLifecycleEvent {
   override val toString: String = "Remoting shut down"
 }
 
-case class RemotingErrorEvent(@BeanProperty cause: Throwable) extends RemotingLifecycleEvent {
+final case class RemotingErrorEvent(@BeanProperty cause: Throwable) extends RemotingLifecycleEvent {
   override def logLevel: Logging.LogLevel = Logging.ErrorLevel
   override def toString: String = s"Remoting error: [${Logging.stackTraceFor(cause)}]"
 }

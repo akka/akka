@@ -4,10 +4,10 @@
 
 package akka.remote
 
-import akka.event.LoggingAdapter
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
+import java.util.concurrent.locks.{ ReentrantLock, Lock }
 
 /**
  * A lock-less thread-safe implementation of [[akka.remote.FailureDetectorRegistry]].
@@ -18,67 +18,53 @@ import scala.collection.immutable.Map
  */
 class DefaultFailureDetectorRegistry[A](val detectorFactory: () ⇒ FailureDetector) extends FailureDetectorRegistry[A] {
 
-  private val table = new AtomicReference[Map[A, FailureDetector]](Map())
+  private val resourceToFailureDetector = new AtomicReference[Map[A, FailureDetector]](Map())
+  private final val failureDectorCreationLock: Lock = new ReentrantLock
 
   /**
    * Returns true if the resource is considered to be up and healthy and returns false otherwise. For unregistered
    * resources it returns true.
    */
-  final override def isAvailable(resource: A): Boolean = table.get.get(resource) match {
+  final override def isAvailable(resource: A): Boolean = resourceToFailureDetector.get.get(resource) match {
     case Some(r) ⇒ r.isAvailable
     case _       ⇒ true
   }
 
-  final override def heartbeat(resource: A): Unit = {
+  @tailrec final override def heartbeat(resource: A): Unit = {
 
-    // Second option parameter is there to avoid the unnecessary creation of failure detectors when a CAS loop happens
-    // Note, _one_ unnecessary detector might be created -- but no more.
-    @tailrec
-    def doHeartbeat(resource: A, detector: Option[FailureDetector]): Unit = {
-      val oldTable = table.get
+    val oldTable = resourceToFailureDetector.get
 
-      oldTable.get(resource) match {
-        case Some(failureDetector) ⇒ failureDetector.heartbeat()
-        case None ⇒
-          val newDetector = detector getOrElse detectorFactory()
-          val newTable = oldTable + (resource -> newDetector)
-          if (!table.compareAndSet(oldTable, newTable))
-            doHeartbeat(resource, Some(newDetector))
-          else
-            newDetector.heartbeat()
-      }
+    oldTable.get(resource) match {
+      case Some(failureDetector) ⇒ failureDetector.heartbeat()
+      case None ⇒
+        // First one wins and creates the new FailureDetector
+        if (failureDectorCreationLock.tryLock()) try {
+          val newDetector: FailureDetector = detectorFactory()
+          newDetector.heartbeat()
+          resourceToFailureDetector.set(oldTable + (resource -> newDetector))
+        } finally failureDectorCreationLock.unlock()
+        else heartbeat(resource) // The thread that lost the race will try to reread
     }
-
-    doHeartbeat(resource, None)
   }
 
-  final override def remove(resource: A): Unit = {
+  @tailrec final override def remove(resource: A): Unit = {
 
-    @tailrec
-    def doRemove(resource: A): Unit = {
-      val oldTable = table.get
+    val oldTable = resourceToFailureDetector.get
 
-      if (oldTable.contains(resource)) {
-        val newTable = oldTable - resource
+    if (oldTable.contains(resource)) {
+      val newTable = oldTable - resource
 
-        // if we won the race then update else try again
-        if (!table.compareAndSet(oldTable, newTable)) doRemove(resource) // recur
-      }
-    }
-
-    doRemove(resource)
-  }
-
-  final override def reset(): Unit = {
-
-    @tailrec
-    def doReset(): Unit = {
-      val oldTable = table.get
       // if we won the race then update else try again
-      if (!table.compareAndSet(oldTable, Map.empty[A, FailureDetector])) doReset() // recur
+      if (!resourceToFailureDetector.compareAndSet(oldTable, newTable)) remove(resource) // recur
     }
+  }
 
-    doReset()
+  @tailrec final override def reset(): Unit = {
+
+    val oldTable = resourceToFailureDetector.get
+    // if we won the race then update else try again
+    if (!resourceToFailureDetector.compareAndSet(oldTable, Map.empty[A, FailureDetector])) reset() // recur
+
   }
 }
 

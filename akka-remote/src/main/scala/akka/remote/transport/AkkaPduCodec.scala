@@ -86,14 +86,9 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   override def decodePdu(raw: ByteString): AkkaPdu = {
     try {
       val pdu = AkkaRemoteProtocol.parseFrom(raw.toArray)
-
-      if (pdu.hasPayload) {
-        Payload(ByteString(pdu.getPayload.asReadOnlyByteBuffer()))
-      } else if (pdu.hasInstruction) {
-        decodeControlPdu(pdu.getInstruction)
-      } else {
-        throw new PduCodecException("Error decoding Akka PDU: Neither message nor control message were contained", null)
-      }
+      if (pdu.hasPayload) Payload(ByteString(pdu.getPayload.asReadOnlyByteBuffer()))
+      else if (pdu.hasInstruction) decodeControlPdu(pdu.getInstruction)
+      else throw new PduCodecException("Error decoding Akka PDU: Neither message nor control message were contained", null)
     } catch {
       case e: InvalidProtocolBufferException ⇒ throw new PduCodecException("Decoding PDU failed.", e)
     }
@@ -108,9 +103,8 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
       recipient = provider.actorForWithLocalAddress(provider.rootGuardian, msgPdu.getRecipient.getPath, localAddress),
       recipientAddress = AddressFromURIString(msgPdu.getRecipient.getPath),
       serializedMessage = msgPdu.getMessage,
-      senderOption = (if (msgPdu.hasSender)
-        Some(provider.actorForWithLocalAddress(provider.rootGuardian, msgPdu.getSender.getPath, localAddress))
-      else None))
+      senderOption = if (!msgPdu.hasSender) None
+      else Some(provider.actorForWithLocalAddress(provider.rootGuardian, msgPdu.getSender.getPath, localAddress)))
   }
 
   private def decodeControlPdu(controlPdu: RemoteControlProtocol): AkkaPdu = {
@@ -135,7 +129,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     val controlMessageBuilder = RemoteControlProtocol.newBuilder()
 
     controlMessageBuilder.setCommandType(code)
-    cookie foreach { controlMessageBuilder.setCookie(_) }
+    cookie foreach controlMessageBuilder.setCookie
     for (originAddress ← origin; serialized ← serializeAddress(originAddress))
       controlMessageBuilder.setOrigin(serialized)
 
@@ -143,12 +137,9 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   }
 
   private def serializeActorRef(defaultAddress: Address, ref: ActorRef): ActorRefProtocol = {
-    val fullActorRefString: String = if (ref.path.address.host.isDefined)
-      ref.path.toString
-    else
-      ref.path.toStringWithAddress(defaultAddress)
-
-    ActorRefProtocol.newBuilder.setPath(fullActorRefString).build()
+    ActorRefProtocol.newBuilder.setPath(
+      if(ref.path.address.host.isDefined) ref.path.toString else ref.path.toStringWithAddress(defaultAddress)
+    ).build()
   }
 
   private def serializeAddress(address: Address): Option[AddressProtocol] = {
