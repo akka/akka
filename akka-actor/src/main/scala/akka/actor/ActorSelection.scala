@@ -23,7 +23,6 @@ abstract class ActorSelection {
 
   def tell(msg: Any, sender: ActorRef): Unit = target.tell(toMessage(msg, path), sender)
 
-  // FIXME make this so that "next" instead is the remaining path
   private def toMessage(msg: Any, path: Array[AnyRef]): Any = {
     var acc = msg
     var index = path.length - 1
@@ -70,5 +69,5 @@ object ActorSelection {
 trait ScalaActorSelection {
   this: ActorSelection ⇒
 
-  def !(msg: Any)(implicit sender: ActorRef = null) = tell(msg, sender)
+  def !(msg: Any)(implicit sender: ActorRef = Actor.noSender) = tell(msg, sender)
 }

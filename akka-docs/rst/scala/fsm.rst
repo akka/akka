@@ -124,6 +124,14 @@ obvious that an actor is actually created:
    :include: simple-fsm
    :exclude: fsm-body
 
+.. note::
+
+   The FSM trait defines a ``receive`` method which handles internal messages
+   and passes everything else through to the FSM logic (according to the
+   current state). When overriding the ``receive`` method, keep in mind that
+   e.g. state timeout handling depends on actually passing the messages through
+   the FSM logic.
+
 The :class:`FSM` trait takes two type parameters:
 
  #. the supertype of all state names, usually a sealed trait with case objects
@@ -171,6 +179,18 @@ demonstrated below:
 The :class:`Event(msg: Any, data: D)` case class is parameterized with the data
 type held by the FSM for convenient pattern matching.
 
+.. warning::
+
+  It is required that you define handlers for each of the possible FSM states,
+  otherwise there will be failures when trying to switch to undeclared states.
+
+It is recommended practice to declare the states as objects extending a
+sealed trait and then verify that there is a ``when`` clause for each of the
+states. If you want to leave the handling of a state “unhandled” (more below),
+it still needs to be declared like this:
+
+.. includecode:: code/docs/actor/FSMDocSpec.scala#NullFunction
+
 Defining the Initial State
 --------------------------
 
@@ -191,6 +211,9 @@ do something else in this case you can specify that with
 
 .. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: unhandled-syntax
+
+Within this handler the state of the FSM may be queried using the
+:meth:`stateName` method.
 
 **IMPORTANT**: This handler is not stacked, meaning that each invocation of
 :func:`whenUnhandled` replaces the previously installed handler.
@@ -348,7 +371,7 @@ which is guaranteed to work immediately, meaning that the scheduled message
 will not be processed after this call even if the timer already fired and
 queued it. The status of any timer may be inquired with
 
-  :func:`timerActive_?(name)`
+  :func:`isTimerActive(name)`
 
 These named timers complement state timeouts because they are not affected by
 intervening reception of other messages.

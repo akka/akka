@@ -6,8 +6,9 @@ package akka.actor
 import language.higherKinds
 import language.postfixOps
 
+import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import akka.util.ByteString
 import java.net.{ SocketAddress, InetSocketAddress }
@@ -122,7 +123,7 @@ object IO {
      * @return a new SocketHandle that can be used to perform actions on the
      *         new connection's SocketChannel.
      */
-    def accept(options: Seq[SocketOption] = Seq.empty)(implicit socketOwner: ActorRef): SocketHandle = {
+    def accept(options: immutable.Seq[SocketOption] = Nil)(implicit socketOwner: ActorRef): SocketHandle = {
       val socket = SocketHandle(socketOwner, ioManager)
       ioManager ! Accept(socket, this, options)
       socket
@@ -250,7 +251,7 @@ object IO {
    *
    * Normally sent using IOManager.listen()
    */
-  case class Listen(server: ServerHandle, address: SocketAddress, options: Seq[ServerSocketOption] = Seq.empty) extends IOMessage
+  case class Listen(server: ServerHandle, address: SocketAddress, options: immutable.Seq[ServerSocketOption] = Nil) extends IOMessage
 
   /**
    * Message from an [[akka.actor.IOManager]] that the ServerSocketChannel is
@@ -272,7 +273,7 @@ object IO {
    *
    * Normally sent using [[akka.actor.IO.ServerHandle]].accept()
    */
-  case class Accept(socket: SocketHandle, server: ServerHandle, options: Seq[SocketOption] = Seq.empty) extends IOMessage
+  case class Accept(socket: SocketHandle, server: ServerHandle, options: immutable.Seq[SocketOption] = Nil) extends IOMessage
 
   /**
    * Message to an [[akka.actor.IOManager]] to create a SocketChannel connected
@@ -280,7 +281,7 @@ object IO {
    *
    * Normally sent using IOManager.connect()
    */
-  case class Connect(socket: SocketHandle, address: SocketAddress, options: Seq[SocketOption] = Seq.empty) extends IOMessage
+  case class Connect(socket: SocketHandle, address: SocketAddress, options: immutable.Seq[SocketOption] = Nil) extends IOMessage
 
   /**
    * Message from an [[akka.actor.IOManager]] that the SocketChannel has
@@ -832,7 +833,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param option Seq of [[akka.actor.IO.ServerSocketOptions]] to setup on socket
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
-  def listen(address: SocketAddress, options: Seq[IO.ServerSocketOption])(implicit owner: ActorRef): IO.ServerHandle = {
+  def listen(address: SocketAddress, options: immutable.Seq[IO.ServerSocketOption])(implicit owner: ActorRef): IO.ServerHandle = {
     val server = IO.ServerHandle(owner, actor)
     actor ! IO.Listen(server, address, options)
     server
@@ -847,7 +848,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
-  def listen(address: SocketAddress)(implicit owner: ActorRef): IO.ServerHandle = listen(address, Seq.empty)
+  def listen(address: SocketAddress)(implicit owner: ActorRef): IO.ServerHandle = listen(address, Nil)
 
   /**
    * Create a ServerSocketChannel listening on a host and port. Messages will
@@ -860,7 +861,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.ServerHandle]] to uniquely identify the created socket
    */
-  def listen(host: String, port: Int, options: Seq[IO.ServerSocketOption] = Seq.empty)(implicit owner: ActorRef): IO.ServerHandle =
+  def listen(host: String, port: Int, options: immutable.Seq[IO.ServerSocketOption] = Nil)(implicit owner: ActorRef): IO.ServerHandle =
     listen(new InetSocketAddress(host, port), options)(owner)
 
   /**
@@ -873,7 +874,7 @@ final class IOManager private (system: ExtendedActorSystem) extends Extension { 
    * @param owner the ActorRef that will receive messages from the IOManagerActor
    * @return a [[akka.actor.IO.SocketHandle]] to uniquely identify the created socket
    */
-  def connect(address: SocketAddress, options: Seq[IO.SocketOption] = Seq.empty)(implicit owner: ActorRef): IO.SocketHandle = {
+  def connect(address: SocketAddress, options: immutable.Seq[IO.SocketOption] = Nil)(implicit owner: ActorRef): IO.SocketHandle = {
     val socket = IO.SocketHandle(owner, actor)
     actor ! IO.Connect(socket, address, options)
     socket
@@ -991,7 +992,7 @@ final class IOManagerActor(val settings: Settings) extends Actor with ActorLoggi
 
   private def forwardFailure(f: ⇒ Unit): Unit = try f catch { case NonFatal(e) ⇒ sender ! Status.Failure(e) }
 
-  private def setSocketOptions(socket: java.net.Socket, options: Seq[IO.SocketOption]) {
+  private def setSocketOptions(socket: java.net.Socket, options: immutable.Seq[IO.SocketOption]) {
     options foreach {
       case IO.KeepAlive(on)           ⇒ forwardFailure(socket.setKeepAlive(on))
       case IO.OOBInline(on)           ⇒ forwardFailure(socket.setOOBInline(on))

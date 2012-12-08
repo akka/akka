@@ -9,7 +9,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
 import akka.actor.{ Scheduler, DynamicAccess, ActorSystem }
 import akka.event.Logging.Warning
 import akka.event.EventStream
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 
 /**
  * DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher
@@ -147,7 +147,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
       case "BalancingDispatcher" ⇒ new BalancingDispatcherConfigurator(cfg, prerequisites)
       case "PinnedDispatcher"    ⇒ new PinnedDispatcherConfigurator(cfg, prerequisites)
       case fqn ⇒
-        val args = Seq(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
+        val args = List(classOf[Config] -> cfg, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess.createInstanceFor[MessageDispatcherConfigurator](fqn, args).recover({
           case exception ⇒
             throw new IllegalArgumentException(

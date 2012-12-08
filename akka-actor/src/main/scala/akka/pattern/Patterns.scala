@@ -6,14 +6,14 @@ package akka.pattern
 import akka.actor.Scheduler
 import scala.concurrent.ExecutionContext
 import java.util.concurrent.Callable
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 object Patterns {
   import akka.actor.{ ActorRef, ActorSystem }
   import akka.pattern.{ ask ⇒ scalaAsk, pipe ⇒ scalaPipe, gracefulStop ⇒ scalaGracefulStop, after ⇒ scalaAfter }
   import akka.util.Timeout
   import scala.concurrent.Future
-  import scala.concurrent.util.Duration
+  import scala.concurrent.duration.Duration
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>

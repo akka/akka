@@ -7,7 +7,7 @@ import akka.actor.{ ActorSystem, ExtensionId, ExtensionIdProvider, ExtendedActor
 import akka.actor.Extension
 import com.typesafe.config.Config
 import akka.util.Timeout
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 
 /**

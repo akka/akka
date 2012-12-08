@@ -5,14 +5,14 @@
 package akka.cluster
 
 import akka.actor.Address
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import MemberStatus._
 
 /**
  * Internal API
  */
 private[cluster] object Gossip {
-  val emptyMembers: SortedSet[Member] = SortedSet.empty
+  val emptyMembers: immutable.SortedSet[Member] = immutable.SortedSet.empty
 }
 
 /**
@@ -50,7 +50,7 @@ private[cluster] object Gossip {
  */
 private[cluster] case class Gossip(
   overview: GossipOverview = GossipOverview(),
-  members: SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
+  members: immutable.SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {
@@ -168,15 +168,10 @@ private[cluster] case class Gossip(
   def isSingletonCluster: Boolean = members.size == 1
 
   /**
-   * Returns true if the node is UP or JOINING.
+   * Returns true if the node is in the unreachable set
    */
-  def isAvailable(address: Address): Boolean = !isUnavailable(address)
-
-  def isUnavailable(address: Address): Boolean = {
-    val isUnreachable = overview.unreachable exists { _.address == address }
-    val hasUnavailableMemberStatus = members exists { m ⇒ m.status.isUnavailable && m.address == address }
-    isUnreachable || hasUnavailableMemberStatus
-  }
+  def isUnreachable(address: Address): Boolean =
+    overview.unreachable exists { _.address == address }
 
   def member(address: Address): Member = {
     members.find(_.address == address).orElse(overview.unreachable.find(_.address == address)).

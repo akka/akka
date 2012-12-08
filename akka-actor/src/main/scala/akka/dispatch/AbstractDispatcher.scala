@@ -13,10 +13,10 @@ import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Index }
 import scala.annotation.tailrec
 import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.concurrent.{ ExecutionContext, Await, Awaitable }
 import scala.util.control.NonFatal
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
@@ -108,7 +108,7 @@ private[akka] case class Terminate() extends SystemMessage // sent to self from 
 /**
  * INTERNAL API
  */
-private[akka] case class Supervise(child: ActorRef, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+private[akka] case class Supervise(child: ActorRef, async: Boolean, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 /**
  * INTERNAL API
  */
@@ -288,7 +288,7 @@ abstract class MessageDispatcher(val prerequisites: DispatcherPrerequisites) ext
     if (debug) actors.remove(this, actor.self)
     addInhabitants(-1)
     val mailBox = actor.swapMailbox(deadLetterMailbox)
-    mailBox.becomeClosed() // FIXME reschedule in tell if possible race with cleanUp is detected in order to properly clean up
+    mailBox.becomeClosed()
     mailBox.cleanUp()
   }
 
@@ -420,7 +420,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
       case "unbounded" ⇒ UnboundedMailbox()
       case "bounded"   ⇒ new BoundedMailbox(prerequisites.settings, config)
       case fqcn ⇒
-        val args = Seq(classOf[ActorSystem.Settings] -> prerequisites.settings, classOf[Config] -> config)
+        val args = List(classOf[ActorSystem.Settings] -> prerequisites.settings, classOf[Config] -> config)
         prerequisites.dynamicAccess.createInstanceFor[MailboxType](fqcn, args).recover({
           case exception ⇒
             throw new IllegalArgumentException(
@@ -436,7 +436,7 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
       case null | "" | "fork-join-executor" ⇒ new ForkJoinExecutorConfigurator(config.getConfig("fork-join-executor"), prerequisites)
       case "thread-pool-executor"           ⇒ new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case fqcn ⇒
-        val args = Seq(
+        val args = List(
           classOf[Config] -> config,
           classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess.createInstanceFor[ExecutorServiceConfigurator](fqcn, args).recover({

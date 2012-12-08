@@ -19,6 +19,7 @@ object AkkaKernelPlugin extends Plugin {
     configSourceDirs: Seq[File],
     distJvmOptions: String,
     distMainClass: String,
+    distBootClass: String,
     libFilter: File ⇒ Boolean,
     additionalLibs: Seq[File])
 
@@ -30,8 +31,12 @@ object AkkaKernelPlugin extends Plugin {
   val configSourceDirs = TaskKey[Seq[File]]("config-source-directories",
     "Configuration files are copied from these directories")
 
-  val distJvmOptions = SettingKey[String]("kernel-jvm-options", "JVM parameters to use in start script")
-  val distMainClass = SettingKey[String]("kernel-main-class", "Kernel main class to use in start script")
+  val distJvmOptions = SettingKey[String]("kernel-jvm-options",
+    "JVM parameters to use in start script")
+  val distMainClass = SettingKey[String]("kernel-main-class",
+    "main class to use in start script, defaults to akka.kernel.Main to load an akka.kernel.Bootable")
+  val distBootClass = SettingKey[String]("kernel-boot-class",
+    "class implementing akka.kernel.Bootable, which gets loaded by the default 'distMainClass'")
 
   val libFilter = SettingKey[File ⇒ Boolean]("lib-filter", "Filter of dependency jar files")
   val additionalLibs = TaskKey[Seq[File]]("additional-libs", "Additional dependency jar files")
@@ -50,16 +55,17 @@ object AkkaKernelPlugin extends Plugin {
       configSourceDirs <<= defaultConfigSourceDirs,
       distJvmOptions := "-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC",
       distMainClass := "akka.kernel.Main",
+      distBootClass := "",
       libFilter := { f ⇒ true },
       additionalLibs <<= defaultAdditionalLibs,
-      distConfig <<= (outputDirectory, configSourceDirs, distJvmOptions, distMainClass, libFilter, additionalLibs) map DistConfig)) ++
+      distConfig <<= (outputDirectory, configSourceDirs, distJvmOptions, distMainClass, distBootClass, libFilter, additionalLibs) map DistConfig)) ++
       Seq(dist <<= (dist in Dist), distNeedsPackageBin)
 
   private def distTask: Initialize[Task[File]] =
     (distConfig, sourceDirectory, crossTarget, dependencyClasspath, projectDependencies, allDependencies, buildStructure, state) map { (conf, src, tgt, cp, projDeps, allDeps, buildStruct, st) ⇒
 
       if (isKernelProject(allDeps)) {
-        val log = logger(st)
+        val log = st.log
         val distBinPath = conf.outputDirectory / "bin"
         val distConfigPath = conf.outputDirectory / "config"
         val distDeployPath = conf.outputDirectory / "deploy"
@@ -69,7 +75,7 @@ object AkkaKernelPlugin extends Plugin {
 
         log.info("Creating distribution %s ..." format conf.outputDirectory)
         IO.createDirectory(conf.outputDirectory)
-        Scripts(conf.distJvmOptions, conf.distMainClass).writeScripts(distBinPath)
+        Scripts(conf.distJvmOptions, conf.distMainClass, conf.distBootClass).writeScripts(distBinPath)
         copyDirectories(conf.configSourceDirs, distConfigPath)
         copyJars(tgt, distDeployPath)
 
@@ -109,7 +115,7 @@ object AkkaKernelPlugin extends Plugin {
     Seq.empty[File]
   }
 
-  private case class Scripts(jvmOptions: String, mainClass: String) {
+  private case class Scripts(jvmOptions: String, mainClass: String, bootClass: String) {
 
     def writeScripts(to: File) = {
       scripts.map { script ⇒
@@ -131,8 +137,8 @@ object AkkaKernelPlugin extends Plugin {
     |AKKA_CLASSPATH="$AKKA_HOME/config:$AKKA_HOME/lib/*"
     |JAVA_OPTS="%s"
     |
-    |java $JAVA_OPTS -cp "$AKKA_CLASSPATH" -Dakka.home="$AKKA_HOME" %s "$@"
-    |""".stripMargin.format(jvmOptions, mainClass)
+    |java $JAVA_OPTS -cp "$AKKA_CLASSPATH" -Dakka.home="$AKKA_HOME" %s%s "$@"
+    |""".stripMargin.format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
 
     private def distBatScript =
       """|@echo off
@@ -140,8 +146,8 @@ object AkkaKernelPlugin extends Plugin {
     |set AKKA_CLASSPATH=%%AKKA_HOME%%\config;%%AKKA_HOME%%\lib\*
     |set JAVA_OPTS=%s
     |
-    |java %%JAVA_OPTS%% -cp "%%AKKA_CLASSPATH%%" -Dakka.home="%%AKKA_HOME%%" %s %%*
-    |""".stripMargin.format(jvmOptions, mainClass)
+    |java %%JAVA_OPTS%% -cp "%%AKKA_CLASSPATH%%" -Dakka.home="%%AKKA_HOME%%" %s%s %%*
+    |""".stripMargin.format(jvmOptions, mainClass, if (bootClass.nonEmpty) " " + bootClass else "")
 
     private def setExecutable(target: File, executable: Boolean): Option[String] = {
       val success = target.setExecutable(executable, false)
@@ -201,7 +207,7 @@ object AkkaKernelPlugin extends Plugin {
 
     def setting[A](key: SettingKey[A], errorMessage: ⇒ String) = {
       optionalSetting(key) getOrElse {
-        logger(state).error(errorMessage);
+        state.log.error(errorMessage);
         throw new IllegalArgumentException()
       }
     }

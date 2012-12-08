@@ -10,7 +10,8 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import akka.actor._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
+import scala.collection.immutable
 
 case class LeaderDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -51,7 +52,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
       val fourthAddress = address(fourth)
       runOn(first) {
         // kill 'fourth' node
-        testConductor.shutdown(fourth, 0)
+        testConductor.shutdown(fourth, 0).await
         enterBarrier("down-fourth-node")
 
         // mark the node as unreachable in the failure detector
@@ -59,7 +60,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
 
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
 
-        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(fourthAddress), 30.seconds)
+        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = List(fourthAddress), 30.seconds)
       }
 
       runOn(fourth) {
@@ -69,7 +70,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
       runOn(second, third) {
         enterBarrier("down-fourth-node")
 
-        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Seq(fourthAddress), 30.seconds)
+        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = List(fourthAddress), 30.seconds)
       }
 
       enterBarrier("await-completion-1")
@@ -81,7 +82,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
       enterBarrier("before-down-second-node")
       runOn(first) {
         // kill 'second' node
-        testConductor.shutdown(second, 0)
+        testConductor.shutdown(second, 0).await
         enterBarrier("down-second-node")
 
         // mark the node as unreachable in the failure detector
@@ -89,7 +90,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
 
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
 
-        awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = Seq(secondAddress), 30.seconds)
+        awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = List(secondAddress), 30.seconds)
       }
 
       runOn(second) {
@@ -99,7 +100,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
       runOn(third) {
         enterBarrier("down-second-node")
 
-        awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = Seq(secondAddress), 30 seconds)
+        awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = List(secondAddress), 30 seconds)
       }
 
       enterBarrier("await-completion-2")

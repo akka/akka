@@ -6,7 +6,7 @@ package akka.actor
 
 import akka.testkit._
 import org.scalatest.BeforeAndAfterEach
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import akka.pattern.ask
 

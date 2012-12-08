@@ -1,13 +1,18 @@
+/**
+ * Copyright (C) 2009-2012 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.camel
+
+import language.postfixOps
 
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
+import scala.concurrent.{ Promise, Await, Future }
+import scala.collection.immutable
 import akka.camel.TestSupport.NonSharedCamelSystem
 import akka.actor.{ ActorRef, Props, Actor }
 import akka.routing.BroadcastRouter
-import concurrent.{ Promise, Await, Future }
-import scala.concurrent.util.duration._
-import language.postfixOps
+import scala.concurrent.duration._
 import akka.testkit._
 import akka.util.Timeout
 import org.apache.camel.model.RouteDefinition
@@ -58,7 +63,7 @@ class ConcurrentActivationTest extends WordSpec with MustMatchers with NonShared
         activations.size must be(2 * number * number)
         // must be the size of the activated activated producers and consumers
         deactivations.size must be(2 * number * number)
-        def partitionNames(refs: Seq[ActorRef]) = refs.map(_.path.name).partition(_.startsWith("concurrent-test-echo-consumer"))
+        def partitionNames(refs: immutable.Seq[ActorRef]) = refs.map(_.path.name).partition(_.startsWith("concurrent-test-echo-consumer"))
         def assertContainsSameElements(lists: (Seq[_], Seq[_])) {
           val (a, b) = lists
           a.intersect(b).size must be(a.size)

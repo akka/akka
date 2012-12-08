@@ -8,8 +8,9 @@ import akka.dispatch._
 import akka.routing._
 import akka.event._
 import akka.util.{ Switch, Helpers }
+import akka.japi.Util.immutableSeq
+import akka.util.Collections.EmptyImmutableSeq
 import scala.util.{ Success, Failure }
-import scala.util.control.NonFatal
 import scala.concurrent.{ Future, Promise }
 import java.util.concurrent.atomic.AtomicLong
 
@@ -41,8 +42,7 @@ trait ActorRefProvider {
   def deadLetters: ActorRef
 
   /**
-   * The root path for all actors within this actor system, including remote
-   * address if enabled.
+   * The root path for all actors within this actor system, not including any remote address information.
    */
   def rootPath: ActorPath
 
@@ -145,6 +145,11 @@ trait ActorRefProvider {
    * attempt is made to verify actual reachability).
    */
   def getExternalAddressFor(addr: Address): Option[Address]
+
+  /**
+   * Obtain the external address of the default transport.
+   */
+  def getDefaultAddress: Address
 }
 
 /**
@@ -271,10 +276,7 @@ trait ActorRefFactory {
    *
    * For maximum performance use a collection with efficient head & tail operations.
    */
-  def actorFor(path: java.lang.Iterable[String]): ActorRef = {
-    import scala.collection.JavaConverters._
-    provider.actorFor(lookupRoot, path.asScala)
-  }
+  def actorFor(path: java.lang.Iterable[String]): ActorRef = provider.actorFor(lookupRoot, immutableSeq(path))
 
   /**
    * Construct an [[akka.actor.ActorSelection]] from the given path, which is
@@ -319,6 +321,10 @@ private[akka] object SystemGuardian {
 
 /**
  * Local ActorRef provider.
+ *
+ * INTERNAL API!
+ *
+ * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
 class LocalActorRefProvider(
   _systemName: String,
@@ -375,7 +381,7 @@ class LocalActorRefProvider(
     override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.map(Failure(_)).getOrElse(Success(()))) }
     override def isTerminated: Boolean = stopped.isOn
 
-    override def !(message: Any)(implicit sender: ActorRef = null): Unit = stopped.ifOff(message match {
+    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
       case Failed(ex, _) if sender ne null ⇒ causeOfTermination = Some(ex); sender.asInstanceOf[InternalActorRef].stop()
       case NullMessage                     ⇒ // do nothing
       case _                               ⇒ log.error(this + " received unexpected message [" + message + "]")
@@ -383,7 +389,7 @@ class LocalActorRefProvider(
 
     override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
       message match {
-        case Supervise(_, _)    ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
+        case Supervise(_, _, _) ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case ChildTerminated(_) ⇒ stop()
         case _                  ⇒ log.error(this + " received unexpected system message [" + message + "]")
       }
@@ -480,7 +486,7 @@ class LocalActorRefProvider(
   def registerExtraNames(_extras: Map[String, InternalActorRef]): Unit = extraNames ++= _extras
 
   private def guardianSupervisorStrategyConfigurator =
-    dynamicAccess.createInstanceFor[SupervisorStrategyConfigurator](settings.SupervisorStrategyClass, Seq()).get
+    dynamicAccess.createInstanceFor[SupervisorStrategyConfigurator](settings.SupervisorStrategyClass, EmptyImmutableSeq).get
 
   /**
    * Overridable supervision strategy to be used by the “/user” guardian.
@@ -516,6 +522,7 @@ class LocalActorRefProvider(
     cell.reserveChild("user")
     val ref = new LocalActorRef(system, Props(new Guardian(guardianStrategy)), rootGuardian, rootPath / "user")
     cell.initChild(ref)
+    ref.start()
     ref
   }
 
@@ -524,6 +531,7 @@ class LocalActorRefProvider(
     cell.reserveChild("system")
     val ref = new LocalActorRef(system, Props(new SystemGuardian(systemGuardianStrategy)), rootGuardian, rootPath / "system")
     cell.initChild(ref)
+    ref.start()
     ref
   }
 
@@ -585,16 +593,17 @@ class LocalActorRefProvider(
         if (settings.DebugRouterMisconfiguration && deployer.lookup(path).isDefined)
           log.warning("Configuration says that {} should be a router, but code disagrees. Remove the config or add a routerConfig to its Props.")
 
-        if (async) new RepointableActorRef(system, props, supervisor, path).initialize()
+        if (async) new RepointableActorRef(system, props, supervisor, path).initialize(async)
         else new LocalActorRef(system, props, supervisor, path)
       case router ⇒
         val lookup = if (lookupDeploy) deployer.lookup(path) else None
         val fromProps = Iterator(props.deploy.copy(routerConfig = props.deploy.routerConfig withFallback router))
         val d = fromProps ++ deploy.iterator ++ lookup.iterator reduce ((a, b) ⇒ b withFallback a)
-        val ref = new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path).initialize()
-        if (async) ref else ref.activate()
+        new RoutedActorRef(system, props.withRouter(d.routerConfig), supervisor, path).initialize(async)
     }
   }
 
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
+
+  def getDefaultAddress: Address = rootPath.address
 }

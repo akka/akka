@@ -4,12 +4,13 @@
 package akka.remote.netty
 
 import com.typesafe.config.Config
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit._
 import java.net.InetAddress
 import akka.ConfigurationException
-import scala.collection.JavaConverters.iterableAsScalaIterableConverter
-import scala.concurrent.util.FiniteDuration
+import akka.japi.Util.immutableSeq
+import scala.concurrent.duration.FiniteDuration
+import akka.dispatch.ThreadPoolConfig
 
 private[akka] class NettySettings(config: Config, val systemName: String) {
 
@@ -88,42 +89,19 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
     case sz           ⇒ sz
   }
 
-  val SSLKeyStore = getString("ssl.key-store") match {
-    case ""       ⇒ None
-    case keyStore ⇒ Some(keyStore)
-  }
+  val SSLKeyStore = Option(getString("ssl.key-store")).filter(_.length > 0)
+  val SSLTrustStore = Option(getString("ssl.trust-store")).filter(_.length > 0)
+  val SSLKeyStorePassword = Option(getString("ssl.key-store-password")).filter(_.length > 0)
 
-  val SSLTrustStore = getString("ssl.trust-store") match {
-    case ""         ⇒ None
-    case trustStore ⇒ Some(trustStore)
-  }
+  val SSLTrustStorePassword = Option(getString("ssl.trust-store-password")).filter(_.length > 0)
 
-  val SSLKeyStorePassword = getString("ssl.key-store-password") match {
-    case ""       ⇒ None
-    case password ⇒ Some(password)
-  }
+  val SSLEnabledAlgorithms = immutableSeq(getStringList("ssl.enabled-algorithms")).to[Set]
 
-  val SSLTrustStorePassword = getString("ssl.trust-store-password") match {
-    case ""       ⇒ None
-    case password ⇒ Some(password)
-  }
+  val SSLProtocol = Option(getString("ssl.protocol")).filter(_.length > 0)
 
-  val SSLEnabledAlgorithms = iterableAsScalaIterableConverter(getStringList("ssl.enabled-algorithms")).asScala.toSet[String]
+  val SSLRandomSource = Option(getString("ssl.sha1prng-random-source")).filter(_.length > 0)
 
-  val SSLProtocol = getString("ssl.protocol") match {
-    case ""       ⇒ None
-    case protocol ⇒ Some(protocol)
-  }
-
-  val SSLRandomSource = getString("ssl.sha1prng-random-source") match {
-    case ""   ⇒ None
-    case path ⇒ Some(path)
-  }
-
-  val SSLRandomNumberGenerator = getString("ssl.random-number-generator") match {
-    case ""  ⇒ None
-    case rng ⇒ Some(rng)
-  }
+  val SSLRandomNumberGenerator = Option(getString("ssl.random-number-generator")).filter(_.length > 0)
 
   val EnableSSL = {
     val enableSSL = getBoolean("ssl.enable")
@@ -139,4 +117,14 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
     }
     enableSSL
   }
+
+  private def computeWPS(config: Config): Int =
+    ThreadPoolConfig.scaledPoolSize(
+      config.getInt("pool-size-min"),
+      config.getDouble("pool-size-factor"),
+      config.getInt("pool-size-max"))
+
+  val ServerSocketWorkerPoolSize = computeWPS(config.getConfig("server-socket-worker-pool"))
+
+  val ClientSocketWorkerPoolSize = computeWPS(config.getConfig("client-socket-worker-pool"))
 }

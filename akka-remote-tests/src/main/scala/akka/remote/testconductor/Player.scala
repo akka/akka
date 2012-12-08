@@ -4,22 +4,20 @@
 package akka.remote.testconductor
 
 import language.postfixOps
+
+import java.util.concurrent.TimeoutException
 import akka.actor.{ Actor, ActorRef, ActorSystem, LoggingFSM, Props, PoisonPill, Status, Address, Scheduler }
-import RemoteConnection.getAddrString
-import scala.concurrent.util.{ Duration, Deadline }
-import scala.concurrent.util.duration._
+import akka.remote.testconductor.RemoteConnection.getAddrString
+import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Await, Future }
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+import scala.reflect.classTag
 import akka.util.Timeout
 import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelHandlerContext, ChannelStateEvent, MessageEvent, WriteCompletionEvent, ExceptionEvent }
-import com.typesafe.config.ConfigFactory
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import java.util.concurrent.TimeoutException
 import akka.pattern.{ ask, pipe, AskTimeoutException }
-import scala.util.control.NoStackTrace
 import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
-import scala.reflect.classTag
-import concurrent.{ ExecutionContext, Await, Future }
-import scala.concurrent.util.FiniteDuration
 
 /**
  * The Player is the client component of the
@@ -69,25 +67,23 @@ trait Player { this: TestConductorExt ⇒
    * Enter the named barriers, one after the other, in the order given. Will
    * throw an exception in case of timeouts or other errors.
    */
-  def enter(name: String*) {
-    enter(Settings.BarrierTimeout, name)
-  }
+  def enter(name: String*): Unit = enter(Settings.BarrierTimeout, name.to[immutable.Seq])
 
   /**
    * Enter the named barriers, one after the other, in the order given. Will
    * throw an exception in case of timeouts or other errors.
    */
-  def enter(timeout: Timeout, name: Seq[String]) {
+  def enter(timeout: Timeout, name: immutable.Seq[String]) {
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
     val stop = Deadline.now + timeout.duration
     name foreach { b ⇒
-      val barrierTimeout = stop.timeLeft.asInstanceOf[FiniteDuration]
+      val barrierTimeout = stop.timeLeft
       if (barrierTimeout < Duration.Zero) {
         client ! ToServer(FailBarrier(b))
         throw new TimeoutException("Server timed out while waiting for barrier " + b);
       }
       try {
-        implicit val timeout = Timeout((barrierTimeout + Settings.QueryTimeout.duration).asInstanceOf[FiniteDuration])
+        implicit val timeout = Timeout(barrierTimeout + Settings.QueryTimeout.duration)
         Await.result(client ? ToServer(EnterBarrier(b, Option(barrierTimeout))), Duration.Inf)
       } catch {
         case e: AskTimeoutException ⇒
@@ -145,7 +141,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
   val settings = TestConductor().Settings
 
   val handler = new PlayerHandler(controllerAddr, settings.ClientReconnects, settings.ReconnectBackoff,
-    self, Logging(context.system, "PlayerHandler"), context.system.scheduler)(context.dispatcher)
+    settings.ClientSocketWorkerPoolSize, self, Logging(context.system, "PlayerHandler"),
+    context.system.scheduler)(context.dispatcher)
 
   startWith(Connecting, Data(None, None))
 
@@ -255,7 +252,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
 private[akka] class PlayerHandler(
   server: InetSocketAddress,
   private var reconnects: Int,
-  backoff: Duration,
+  backoff: FiniteDuration,
+  poolSize: Int,
   fsm: ActorRef,
   log: LoggingAdapter,
   scheduler: Scheduler)(implicit executor: ExecutionContext)
@@ -278,14 +276,14 @@ private[akka] class PlayerHandler(
     event.getCause match {
       case c: ConnectException if reconnects > 0 ⇒
         reconnects -= 1
-        scheduler.scheduleOnce(nextAttempt.timeLeft.asInstanceOf[FiniteDuration])(reconnect())
+        scheduler.scheduleOnce(nextAttempt.timeLeft)(reconnect())
       case e ⇒ fsm ! ConnectionFailure(e.getMessage)
     }
   }
 
   private def reconnect(): Unit = {
     nextAttempt = Deadline.now + backoff
-    RemoteConnection(Client, server, this)
+    RemoteConnection(Client, server, poolSize, this)
   }
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {

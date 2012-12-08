@@ -14,7 +14,7 @@ import akka.camel.TestSupport.SharedCamelSystem
 import akka.actor.Props
 import akka.pattern._
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import org.scalatest._
 import akka.testkit._
 import matchers.MustMatchers

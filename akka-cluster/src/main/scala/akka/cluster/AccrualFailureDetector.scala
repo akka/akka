@@ -6,12 +6,11 @@ package akka.cluster
 
 import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.event.Logging
-import scala.collection.immutable.Map
+import scala.collection.immutable
 import scala.annotation.tailrec
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.TimeUnit.NANOSECONDS
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object AccrualFailureDetector {
   private def realClock: () ⇒ Long = () ⇒ NANOSECONDS.toMillis(System.nanoTime)
@@ -234,7 +233,7 @@ private[cluster] object HeartbeatHistory {
    */
   def apply(maxSampleSize: Int): HeartbeatHistory = HeartbeatHistory(
     maxSampleSize = maxSampleSize,
-    intervals = IndexedSeq.empty,
+    intervals = immutable.IndexedSeq.empty,
     intervalSum = 0L,
     squaredIntervalSum = 0L)
 
@@ -249,7 +248,7 @@ private[cluster] object HeartbeatHistory {
  */
 private[cluster] case class HeartbeatHistory private (
   maxSampleSize: Int,
-  intervals: IndexedSeq[Long],
+  intervals: immutable.IndexedSeq[Long],
   intervalSum: Long,
   squaredIntervalSum: Long) {
 

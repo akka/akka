@@ -9,8 +9,7 @@ import language.postfixOps
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import akka.actor.{ IOManager, ActorSystem }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -25,8 +24,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
       {
         import config._
 
-        getString("akka.version") must equal("2.1-SNAPSHOT")
-        settings.ConfigVersion must equal("2.1-SNAPSHOT")
+        getString("akka.version") must equal("2.2-SNAPSHOT")
+        settings.ConfigVersion must equal("2.2-SNAPSHOT")
 
         getBoolean("akka.daemonic") must equal(false)
         getBoolean("akka.actor.serialize-messages") must equal(false)
@@ -46,6 +45,9 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getInt("akka.actor.deployment.default.virtual-nodes-factor") must be(10)
         settings.DefaultVirtualNodesFactor must be(10)
+
+        getMilliseconds("akka.actor.unstarted-push-timeout") must be(10.seconds.toMillis)
+        settings.UnstartedPushTimeout.duration must be(10.seconds)
       }
 
       {

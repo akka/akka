@@ -6,10 +6,8 @@ package akka.actor.dsl
 
 import scala.concurrent.Await
 import akka.actor.ActorLogging
-import scala.concurrent.util.Deadline
 import scala.collection.immutable.TreeSet
-import scala.concurrent.util.{ Duration, FiniteDuration }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.Cancellable
 import akka.actor.{ Actor, Stash, SupervisorStrategy }
 import scala.collection.mutable.Queue
@@ -31,7 +29,9 @@ trait Creators { this: ActorDSL.type ⇒
    * for quickly trying things out in the REPL. It makes the following keywords
    * available:
    *
-   *  - `become` mapped to `context.become(_, discardOld = false)`
+   *  - `become` mapped to `context.become(_, discardOld = true)`
+   *
+   *  - `becomeStacked` mapped to `context.become(_, discardOld = false)`
    *
    *  - `unbecome` mapped to `context.unbecome`
    *
@@ -89,7 +89,14 @@ trait Creators { this: ActorDSL.type ⇒
      * stack is cleared upon restart. Use `unbecome()` to pop an element off
      * this stack.
      */
-    def become(r: Receive) = context.become(r, discardOld = false)
+    def becomeStacked(r: Receive) = context.become(r, discardOld = false)
+
+    /**
+     * Replace the behavior at the top of the behavior stack for this actor. The
+     * stack is cleared upon restart. Use `unbecome()` to pop an element off
+     * this stack or `becomeStacked()` to push a new element on top of it.
+     */
+    def become(r: Receive) = context.become(r, discardOld = true)
 
     /**
      * Pop the active behavior from the behavior stack of this actor. This stack

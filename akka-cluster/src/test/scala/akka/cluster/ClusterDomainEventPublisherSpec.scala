@@ -6,7 +6,7 @@ package akka.cluster
 
 import language.postfixOps
 import scala.collection.immutable.SortedSet
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterEach
 import akka.actor.Address
 import akka.actor.Props
@@ -16,22 +16,11 @@ import akka.cluster.ClusterEvent._
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.actor.ActorRef
-
-object ClusterDomainEventPublisherSpec {
-  val config = """
-    akka.cluster.auto-join = off
-    akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
-    akka.remote.log-remote-lifecycle-events = off
-    akka.remote.netty.port = 0
-    """
-
-  case class GossipTo(address: Address)
-}
+import akka.testkit.TestProbe
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublisherSpec.config)
+class ClusterDomainEventPublisherSpec extends AkkaSpec
   with BeforeAndAfterEach with ImplicitSender {
-  import ClusterDomainEventPublisherSpec._
 
   var publisher: ActorRef = _
   val a1 = Member(Address("akka", "sys", "a", 2552), Up)
@@ -47,14 +36,15 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
   val g4 = Gossip(members = SortedSet(d1, a1, b1, c2)).seen(a1.address)
   val g5 = Gossip(members = SortedSet(d1, a1, b1, c2)).seen(a1.address).seen(b1.address).seen(c2.address).seen(d1.address)
 
+  override def atStartup(): Unit = {
+    system.eventStream.subscribe(testActor, classOf[ClusterDomainEvent])
+  }
+
   override def beforeEach(): Unit = {
     publisher = system.actorOf(Props[ClusterDomainEventPublisher])
-    publisher ! Subscribe(testActor, classOf[ClusterDomainEvent])
-    expectMsgType[CurrentClusterState]
   }
 
   override def afterEach(): Unit = {
-    publisher ! Unsubscribe(testActor, None)
     system.stop(publisher)
   }
 
@@ -116,10 +106,23 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       expectMsgType[SeenChanged]
     }
 
+    "send CurrentClusterState when subscribe" in {
+      val subscriber = TestProbe()
+      publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
+      subscriber.expectMsgType[CurrentClusterState]
+      // but only to the new subscriber
+      expectNoMsg(1 second)
+    }
+
     "support unsubscribe" in {
-      publisher ! Unsubscribe(testActor, Some(classOf[ClusterDomainEvent]))
-      publisher ! PublishChanges(g1, g2)
-      expectNoMsg
+      val subscriber = TestProbe()
+      publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
+      subscriber.expectMsgType[CurrentClusterState]
+      publisher ! Unsubscribe(subscriber.ref, Some(classOf[ClusterDomainEvent]))
+      publisher ! PublishChanges(Gossip(members = SortedSet(a1)), Gossip(members = SortedSet(a1, b1)))
+      subscriber.expectNoMsg(1 second)
+      // but testActor is still subscriber
+      expectMsg(MemberUp(b1))
     }
 
   }

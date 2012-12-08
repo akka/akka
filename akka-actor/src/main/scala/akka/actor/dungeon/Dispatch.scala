@@ -38,12 +38,11 @@ private[akka] trait Dispatch { this: ActorCell ⇒
   final def isTerminated: Boolean = mailbox.isClosed
 
   /**
-   * Start this cell, i.e. attach it to the dispatcher. The UID must reasonably
-   * be different from the previous UID of a possible actor with the same path,
+   * Initialize this cell, i.e. set up mailboxes and supervision. The UID must be
+   * reasonably different from the previous UID of a possible actor with the same path,
    * which can be achieved by using ThreadLocalRandom.current.nextInt().
    */
-  final def start(sendSupervise: Boolean, uid: Int): this.type = {
-
+  final def init(uid: Int, sendSupervise: Boolean): this.type = {
     /*
      * Create the mailbox and enqueue the Create() message to ensure that
      * this is processed before anything else.
@@ -56,13 +55,18 @@ private[akka] trait Dispatch { this: ActorCell ⇒
 
     if (sendSupervise) {
       // ➡➡➡ NEVER SEND THE SAME SYSTEM MESSAGE OBJECT TO TWO ACTORS ⬅⬅⬅
-      parent.sendSystemMessage(akka.dispatch.Supervise(self, uid))
+      parent.sendSystemMessage(akka.dispatch.Supervise(self, async = false, uid))
       parent ! NullMessage // read ScalaDoc of NullMessage to see why
     }
+    this
+  }
 
+  /**
+   * Start this cell, i.e. attach it to the dispatcher.
+   */
+  final def start(): this.type = {
     // This call is expected to start off the actor by scheduling its mailbox.
     dispatcher.attach(this)
-
     this
   }
 

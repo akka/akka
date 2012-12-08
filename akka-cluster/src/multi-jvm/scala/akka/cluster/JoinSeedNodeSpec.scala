@@ -3,12 +3,13 @@
  */
 package akka.cluster
 
+import scala.collection.immutable
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.Address
 
 object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
@@ -35,7 +36,7 @@ abstract class JoinSeedNodeSpec
 
   import JoinSeedNodeMultiJvmSpec._
 
-  def seedNodes: IndexedSeq[Address] = IndexedSeq(seed1, seed2, seed3)
+  def seedNodes: immutable.IndexedSeq[Address] = Vector(seed1, seed2, seed3)
 
   "A cluster with seed nodes" must {
     "be able to start the seed nodes concurrently" taggedAs LongRunningTest in {

@@ -5,7 +5,7 @@ package akka.event
 
 import language.postfixOps
 
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl, ActorSystem, Props, UnhandledMessage }
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._

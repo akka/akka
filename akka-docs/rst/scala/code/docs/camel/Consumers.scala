@@ -59,7 +59,7 @@ object Consumers {
   object Sample4 {
     //#Consumer4
     import akka.camel.{ CamelMessage, Consumer }
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
 
     class Consumer4 extends Consumer {
       def endpointUri = "jetty:http://localhost:8877/camel/default"

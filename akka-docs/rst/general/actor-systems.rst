@@ -89,10 +89,9 @@ Actor Best Practices
    bothering everyone else needlessly and avoid hogging resources. Translated
    to programming this means to process events and generate responses (or more
    requests) in an event-driven manner. Actors should not block (i.e. passively
-   wait while occupying a Thread) on some external entity, which might be a
-   lock, a network socket, etc. The blocking operations should be done in some
-   special-cased thread which sends messages to the actors which shall act on
-   them.
+   wait while occupying a Thread) on some external entity—which might be a
+   lock, a network socket, etc.—unless it is unavoidable; in the latter case
+   see below.
 
 #. Do not pass mutable objects between actors. In order to ensure that, prefer
    immutable messages. If the encapsulation of actors is broken by exposing
@@ -109,8 +108,55 @@ Actor Best Practices
 #. Top-level actors are the innermost part of your Error Kernel, so create them
    sparingly and prefer truly hierarchical systems. This has benefits wrt.
    fault-handling (both considering the granularity of configuration and the
-   performance) and it also reduces the number of blocking calls made, since
-   the creation of top-level actors involves synchronous messaging.
+   performance) and it also reduces the strain on the guardian actor, which is
+   a single point of contention if over-used.
+
+Blocking Needs Careful Management
+---------------------------------
+
+In some cases it is unavoidable to do blocking operations, i.e. to put a thread
+to sleep for an indeterminate time, waiting for an external event to occur.
+Examples are legacy RDBMS drivers or messaging APIs, and the underlying reason
+in typically that (network) I/O occurs under the covers. When facing this, you
+may be tempted to just wrap the blocking call inside a :class:`Future` and work
+with that instead, but this strategy is too simple: you are quite likely to
+find bottle-necks or run out of memory or threads when the application runs
+under increased load.
+
+The non-exhaustive list of adequate solutions to the “blocking problem”
+includes the following suggestions:
+
+ - Do the blocking call within an actor (or a set of actors managed by a router
+   [:ref:`Java <routing-java>`, :ref:`Scala <routing-scala>`]), making sure to
+   configure a thread pool which is either dedicated for this purpose or
+   sufficiently sized.
+
+ - Do the blocking call within a :class:`Future`, ensuring an upper bound on
+   the number of such calls at any point in time (submitting an unbounded
+   number of tasks of this nature will exhaust your memory or thread limits).
+
+ - Do the blocking call within a :class:`Future`, providing a thread pool with
+   an upper limit on the number of threads which is appropriate for the
+   hardware on which the application runs.
+
+ - Dedicate a single thread to manage a set of blocking resources (e.g. a NIO
+   selector driving multiple channels) and dispatch events as they occur as
+   actor messages.
+
+The first possibility is especially well-suited for resources which are
+single-threaded in nature, like database handles which traditionally can only
+execute one outstanding query at a time and use internal synchronization to
+ensure this. A common pattern is to create a router for N actors, each of which
+wraps a single DB connection and handles queries as sent to the router. The
+number N must then be tuned for maximum throughput, which will vary depending
+on which DBMS is deployed on what hardware.
+
+.. note::
+
+   Configuring thread pools is a task best delegated to Akka, simply configure
+   in the ``application.conf`` and instantiate through an :class:`ActorSystem`
+   [:ref:`Java <dispatcher-lookup-java>`, :ref:`Scala
+   <dispatcher-lookup-scala>`]
 
 What you should not concern yourself with
 -----------------------------------------

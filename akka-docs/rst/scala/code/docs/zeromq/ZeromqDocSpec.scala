@@ -5,13 +5,13 @@ package docs.zeromq
 
 import language.postfixOps
 
+import scala.concurrent.duration._
+import scala.collection.immutable
 import akka.actor.{ Actor, Props }
-import scala.concurrent.util.duration._
 import akka.testkit._
-import akka.zeromq.{ ZeroMQVersion, ZeroMQExtension }
+import akka.zeromq.{ ZeroMQVersion, ZeroMQExtension, SocketType, Bind }
 import java.text.SimpleDateFormat
 import java.util.Date
-import akka.zeromq.{ SocketType, Bind }
 
 object ZeromqDocSpec {
 
@@ -29,7 +29,8 @@ object ZeromqDocSpec {
 
   class HealthProbe extends Actor {
 
-    val pubSocket = ZeroMQExtension(context.system).newSocket(SocketType.Pub, Bind("tcp://127.0.0.1:1235"))
+    val pubSocket = ZeroMQExtension(context.system).newSocket(SocketType.Pub,
+      Bind("tcp://127.0.0.1:1235"))
     val memory = ManagementFactory.getMemoryMXBean
     val os = ManagementFactory.getOperatingSystemMXBean
     val ser = SerializationExtension(context.system)
@@ -52,12 +53,12 @@ object ZeromqDocSpec {
         val heapPayload = ser.serialize(Heap(timestamp, currentHeap.getUsed,
           currentHeap.getMax)).get
         // the first frame is the topic, second is the message
-        pubSocket ! ZMQMessage(Seq(Frame("health.heap"), Frame(heapPayload)))
+        pubSocket ! ZMQMessage(immutable.Seq(Frame("health.heap"), Frame(heapPayload)))
 
         // use akka SerializationExtension to convert to bytes
         val loadPayload = ser.serialize(Load(timestamp, os.getSystemLoadAverage)).get
         // the first frame is the topic, second is the message
-        pubSocket ! ZMQMessage(Seq(Frame("health.load"), Frame(loadPayload)))
+        pubSocket ! ZMQMessage(immutable.Seq(Frame("health.load"), Frame(loadPayload)))
     }
   }
   //#health
@@ -146,7 +147,7 @@ class ZeromqDocSpec extends AkkaSpec("akka.loglevel=INFO") {
 
     val payload = Array.empty[Byte]
     //#pub-topic
-    pubSocket ! ZMQMessage(Seq(Frame("foo.bar"), Frame(payload)))
+    pubSocket ! ZMQMessage(Frame("foo.bar"), Frame(payload))
     //#pub-topic
 
     system.stop(subSocket)

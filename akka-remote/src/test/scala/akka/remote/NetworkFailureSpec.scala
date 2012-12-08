@@ -17,7 +17,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec ⇒
   import Actor._
-  import scala.concurrent.util.Duration
+  import scala.concurrent.duration.Duration
 
   import system.dispatcher
 

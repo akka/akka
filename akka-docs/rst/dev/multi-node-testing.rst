@@ -207,6 +207,9 @@ surprising ways.
 
   * Don't issue a shutdown of the first node. The first node is the controller and if it shuts down your test will break.
 
+  * To be able to use ``blackhole``, ``passThrough``, and ``throttle`` you must activate the ``TestConductorTranport`` 
+    by specifying ``testTransport(on = true)`` in your MultiNodeConfig.
+
   * Throttling, shutdown and other failure injections can only be done from the first node, which again is the controller.
 
   * Don't ask for the address of a node using ``node(address)`` after the node has been shut down. Grab the address before

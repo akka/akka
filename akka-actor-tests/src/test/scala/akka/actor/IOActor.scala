@@ -7,16 +7,14 @@ package akka.actor
 import language.postfixOps
 import akka.util.ByteString
 import scala.concurrent.{ ExecutionContext, Await, Future, Promise }
-import scala.concurrent.util.{ Duration, Deadline }
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.util.continuations._
 import akka.testkit._
 import akka.dispatch.MessageDispatcher
 import akka.pattern.ask
 import java.net.{ Socket, InetSocketAddress, InetAddress, SocketAddress }
 import scala.util.Failure
-import annotation.tailrec
-import scala.concurrent.util.FiniteDuration
+import scala.annotation.tailrec
 
 object IOActorSpec {
 
@@ -57,6 +55,8 @@ object IOActorSpec {
 
     def receive = {
 
+      case _: IO.Connected ⇒ //don't care
+
       case bytes: ByteString ⇒
         val source = sender
         socket write bytes
@@ -67,9 +67,9 @@ object IOActorSpec {
 
       case IO.Closed(`socket`, cause) ⇒
         state(cause)
-        throw cause match {
-          case IO.Error(e) ⇒ e
-          case _           ⇒ new RuntimeException("Socket closed")
+        cause match {
+          case IO.Error(e) ⇒ throw e
+          case _           ⇒ throw new RuntimeException("Socket closed")
         }
     }
 
@@ -156,6 +156,8 @@ object IOActorSpec {
       case IO.Read(socket, bytes) ⇒
         state(socket)(IO Chunk bytes)
 
+      case _: IO.Connected ⇒ //don't care
+
       case IO.Closed(socket, cause) ⇒
         state -= socket
 
@@ -182,6 +184,8 @@ object IOActorSpec {
         state flatMap { _ ⇒
           readResult map (source !)
         }
+
+      case _: IO.Connected ⇒ //don't care
 
       case IO.Read(`socket`, bytes) ⇒
         state(IO Chunk bytes)
@@ -278,7 +282,7 @@ class IOActorSpec extends AkkaSpec with DefaultTimeout {
   }
 
   "an IO Actor" must {
-    implicit val ec = system.dispatcher
+    import system.dispatcher
     "run echo server" in {
       filterException[java.net.ConnectException] {
         val addressPromise = Promise[SocketAddress]()

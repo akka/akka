@@ -63,7 +63,7 @@ private[akka] class RemoteSystemDaemon(
     }
   }
 
-  override def !(msg: Any)(implicit sender: ActorRef = null): Unit = msg match {
+  override def !(msg: Any)(implicit sender: ActorRef = Actor.noSender): Unit = msg match {
     case message: DaemonMsg ⇒
       log.debug("Received command [{}] to RemoteSystemDaemon on [{}]", message, path.address)
       message match {
@@ -102,7 +102,10 @@ private[akka] class RemoteSystemDaemon(
       }
 
     case AddressTerminated(address) ⇒
-      foreachChild { case a: InternalActorRef if a.getParent.path.address == address ⇒ system.stop(a) }
+      foreachChild {
+        case a: InternalActorRef if a.getParent.path.address == address ⇒ system.stop(a)
+        case _ ⇒ // skip, this child doesn't belong to the terminated address
+      }
 
     case unknown ⇒ log.warning("Unknown message {} received by {}", unknown, this)
   }

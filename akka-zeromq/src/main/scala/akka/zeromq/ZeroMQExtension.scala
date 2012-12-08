@@ -7,12 +7,13 @@ import org.zeromq.{ ZMQ ⇒ JZMQ }
 import org.zeromq.ZMQ.Poller
 import akka.actor._
 import akka.pattern.ask
+import scala.collection.immutable
 import scala.concurrent.Await
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit
 import akka.util.Timeout
 import org.zeromq.ZMQException
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * A Model to represent a version of the zeromq library
@@ -66,7 +67,8 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
       case s: SocketType.ZMQSocketType ⇒ true
       case _                           ⇒ false
     }, "A socket type is required")
-    Props(new ConcurrentSocketActor(socketParameters)).withDispatcher("akka.zeromq.socket-dispatcher")
+    val params = socketParameters.to[immutable.Seq]
+    Props(new ConcurrentSocketActor(params)).withDispatcher("akka.zeromq.socket-dispatcher")
   }
 
   /**

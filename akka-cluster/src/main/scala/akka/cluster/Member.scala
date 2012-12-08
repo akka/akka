@@ -6,7 +6,7 @@ package akka.cluster
 
 import language.implicitConversions
 
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import scala.collection.GenTraversableOnce
 import akka.actor.Address
 import MemberStatus._
@@ -87,13 +87,7 @@ object Member {
  *
  * Can be one of: Joining, Up, Leaving, Exiting and Down.
  */
-abstract class MemberStatus extends ClusterMessage {
-
-  /**
-   * Using the same notion for 'unavailable' as 'non-convergence': DOWN
-   */
-  def isUnavailable: Boolean = this == Down
-}
+abstract class MemberStatus extends ClusterMessage
 
 object MemberStatus {
   case object Joining extends MemberStatus

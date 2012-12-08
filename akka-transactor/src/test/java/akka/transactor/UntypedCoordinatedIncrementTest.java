@@ -25,14 +25,14 @@ import akka.testkit.ErrorFilter;
 import akka.testkit.TestEvent;
 import akka.util.Timeout;
 
-import java.util.Arrays;
+import static akka.japi.Util.immutableSeq;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import scala.collection.JavaConverters;
-import scala.collection.Seq;
+import scala.collection.immutable.Seq;
 
 public class UntypedCoordinatedIncrementTest {
   private static ActorSystem system;
@@ -110,6 +110,6 @@ public class UntypedCoordinatedIncrementTest {
   }
 
   public <A> Seq<A> seq(A... args) {
-    return JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(args)).asScala().toSeq();
+    return immutableSeq(args);
   }
 }

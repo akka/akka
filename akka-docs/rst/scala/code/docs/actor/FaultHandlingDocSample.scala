@@ -9,8 +9,7 @@ import language.postfixOps
 //#imports
 import akka.actor._
 import akka.actor.SupervisorStrategy._
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.event.LoggingReceive
 import akka.pattern.{ ask, pipe }

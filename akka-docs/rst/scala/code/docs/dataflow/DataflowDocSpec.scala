@@ -5,7 +5,7 @@ package docs.dataflow
 
 import language.postfixOps
 
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import org.scalatest.WordSpec
 import org.scalatest.matchers.MustMatchers
@@ -44,21 +44,23 @@ class DataflowDocSpec extends WordSpec with MustMatchers {
   }
 
   "demonstrate the use of dataflow variables" in {
-    def println[T](any: Try[T]): Unit = any.get must be === 20
+    val result = Promise[Int]()
+    def println(any: Try[Int]): Unit = result.complete(any)
     //#dataflow-variable-a
+    val v1, v2 = Promise[Int]()
     flow {
-      val v1, v2 = Promise[Int]()
-
       // v1 will become the value of v2 + 10 when v2 gets a value
       v1 << v2() + 10
-      v2 << flow { 5 } // As you can see, no blocking!
       v1() + v2()
     } onComplete println
+    flow { v2 << 5 } // As you can see, no blocking above!
     //#dataflow-variable-a
+    Await.result(result.future, 10.seconds) must be === 20
   }
 
   "demonstrate the difference between for and flow" in {
-    def println[T](any: Try[T]): Unit = any.get must be === 2
+    val result = Promise[Int]()
+    def println(any: Try[Int]): Unit = result.tryComplete(any)
     //#for-vs-flow
     val f1, f2 = Future { 1 }
 
@@ -68,6 +70,7 @@ class DataflowDocSpec extends WordSpec with MustMatchers {
     usingFor onComplete println
     usingFlow onComplete println
     //#for-vs-flow
+    Await.result(result.future, 10.seconds) must be === 2
   }
 
 }

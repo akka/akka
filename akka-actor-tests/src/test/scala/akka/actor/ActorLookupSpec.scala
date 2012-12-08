@@ -6,7 +6,7 @@ package akka.actor
 import language.postfixOps
 
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import akka.pattern.ask
 import java.net.MalformedURLException

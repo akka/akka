@@ -3,7 +3,7 @@ package sample.cluster.stats
 //#imports
 import language.postfixOps
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -22,6 +22,9 @@ import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.MemberStatus
 import akka.routing.FromConfig
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
+import akka.pattern.ask
+import akka.pattern.pipe
+import akka.util.Timeout
 //#imports
 
 //#messages
@@ -51,7 +54,7 @@ class StatsService extends Actor {
 
 class StatsAggregator(expectedResults: Int, replyTo: ActorRef) extends Actor {
   var results = IndexedSeq.empty[Int]
-  context.setReceiveTimeout(10 seconds)
+  context.setReceiveTimeout(3 seconds)
 
   def receive = {
     case wordCount: Int ⇒
@@ -88,6 +91,7 @@ class StatsWorker extends Actor {
 
 //#facade
 class StatsFacade extends Actor with ActorLogging {
+  import context.dispatcher
   val cluster = Cluster(context.system)
 
   var currentMaster: Option[ActorRef] = None
@@ -102,7 +106,12 @@ class StatsFacade extends Actor with ActorLogging {
     case job: StatsJob if currentMaster.isEmpty ⇒
       sender ! JobFailed("Service unavailable, try again later")
     case job: StatsJob ⇒
-      currentMaster foreach { _ forward job }
+      implicit val timeout = Timeout(5.seconds)
+      currentMaster foreach {
+        _ ? job recover {
+          case _ ⇒ JobFailed("Service unavailable, try again later")
+        } pipeTo sender
+      }
     case state: CurrentClusterState ⇒
       state.leader foreach updateCurrentMaster
     case LeaderChanged(Some(leaderAddress)) ⇒

@@ -115,9 +115,9 @@ private[camel] class Registry(activationTracker: ActorRef) extends Actor with Ca
     case msg @ Register(producer, _, None) ⇒
       if (!producers(producer)) {
         producers += producer
-        producerRegistrar forward msg
         parent ! AddWatch(producer)
       }
+      producerRegistrar forward msg
     case DeRegister(actorRef) ⇒
       producers.find(_ == actorRef).foreach { p ⇒
         deRegisterProducer(p)
@@ -155,6 +155,8 @@ private[camel] class ProducerRegistrar(activationTracker: ActorRef) extends Acto
         } catch {
           case NonFatal(e) ⇒ throw new ActorActivationException(producer, e)
         }
+      } else {
+        camelObjects.get(producer).foreach { case (endpoint, processor) ⇒ producer ! CamelProducerObjects(endpoint, processor) }
       }
     case DeRegister(producer) ⇒
       camelObjects.get(producer).foreach {

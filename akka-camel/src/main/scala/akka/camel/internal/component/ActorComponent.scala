@@ -11,8 +11,7 @@ import org.apache.camel.impl.{ DefaultProducer, DefaultEndpoint, DefaultComponen
 import akka.actor._
 import akka.pattern._
 import scala.reflect.BeanProperty
-import scala.concurrent.util.duration._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
 import java.util.concurrent.{ TimeUnit, TimeoutException, CountDownLatch }
@@ -21,7 +20,6 @@ import akka.camel.internal.CamelExchangeAdapter
 import akka.camel.{ ActorNotRegisteredException, Camel, Ack, FailureResult, CamelMessage }
 import support.TypeConverterSupport
 import scala.util.{ Failure, Success, Try }
-import scala.concurrent.util.FiniteDuration
 
 /**
  * For internal use only.
@@ -33,7 +31,7 @@ import scala.concurrent.util.FiniteDuration
  * Messages are sent to [[akka.camel.Consumer]] actors through a [[akka.camel.internal.component.ActorEndpoint]] that
  * this component provides.
  *
- * @author Martin Krasser
+ *
  */
 private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends DefaultComponent {
   /**
@@ -54,7 +52,7 @@ private[camel] class ActorComponent(camel: Camel, system: ActorSystem) extends D
  * <code>[actorPath]?[options]%s</code>,
  * where <code>[actorPath]</code> refers to the actor path to the actor.
  *
- * @author Martin Krasser
+ *
  */
 private[camel] class ActorEndpoint(uri: String,
                                    comp: ActorComponent,
@@ -106,7 +104,7 @@ private[camel] trait ActorEndpointConfig {
  * @see akka.camel.component.ActorComponent
  * @see akka.camel.component.ActorEndpoint
  *
- * @author Martin Krasser
+ *
  */
 private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) extends DefaultProducer(endpoint) with AsyncProcessor {
   /**
@@ -135,7 +133,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
   private[camel] def processExchangeAdapter(exchange: CamelExchangeAdapter): Unit = {
     val isDone = new CountDownLatch(1)
     processExchangeAdapter(exchange, new AsyncCallback { def done(doneSync: Boolean) { isDone.countDown() } })
-    isDone.await(camel.settings.ReplyTimeout.toMillis, TimeUnit.MILLISECONDS)
+    isDone.await(endpoint.replyTimeout.length, endpoint.replyTimeout.unit)
   }
 
   /**
@@ -183,7 +181,7 @@ private[camel] class ActorProducer(val endpoint: ActorEndpoint, camel: Camel) ex
 }
 
 /**
- * For internal use only. Converts Strings to [[scala.concurrent.util.Duration]]
+ * For internal use only. Converts Strings to [[scala.concurrent.duration.Duration]]
  */
 private[camel] object DurationTypeConverter extends TypeConverterSupport {
 

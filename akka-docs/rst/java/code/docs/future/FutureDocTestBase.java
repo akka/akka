@@ -12,7 +12,7 @@ import akka.util.Timeout;
 //#imports1
 
 //#imports2
-import scala.concurrent.util.Duration;
+import scala.concurrent.duration.Duration;
 import akka.japi.Function;
 import java.util.concurrent.Callable;
 import static akka.dispatch.Futures.future;
@@ -43,10 +43,10 @@ import scala.concurrent.ExecutionContext$;
 
 //#imports8
 import static akka.pattern.Patterns.after;
+import java.util.Arrays;
 //#imports8
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,6 +79,21 @@ public class FutureDocTestBase {
     system.shutdown();
   }
 
+  public final static class PrintResult<T> extends OnSuccess<T> {
+        @Override public final void onSuccess(T t) {
+            // print t
+        }
+    }
+
+  public final static class Demo {
+      //#print-result
+      public final static class PrintResult<T> extends OnSuccess<T> {
+        @Override public final void onSuccess(T t) {
+            System.out.println(t);
+        }
+      }
+      //#print-result
+  }
   @SuppressWarnings("unchecked") @Test public void useCustomExecutionContext() throws Exception {
       ExecutorService yourExecutorServiceGoesHere = Executors.newSingleThreadExecutor();
       //#diy-execution-context
@@ -102,6 +117,9 @@ public class FutureDocTestBase {
     Future<Object> future = Patterns.ask(actor, msg, timeout);
     String result = (String) Await.result(future, timeout.duration());
     //#ask-blocking
+    //#pipe-to
+    akka.pattern.Patterns.pipe(future, system.dispatcher()).to(actor);
+    //#pipe-to
     assertEquals("HELLO", result);
   }
 
@@ -113,9 +131,11 @@ public class FutureDocTestBase {
         return "Hello" + "World";
       }
     }, system.dispatcher());
-    String result = (String) Await.result(f, Duration.create(1, SECONDS));
+
+    f.onSuccess(new PrintResult<String>(), system.dispatcher());
     //#future-eval
-    assertEquals("HelloWorld", result);
+      String result = (String) Await.result(f, Duration.create(5, SECONDS));
+      assertEquals("HelloWorld", result);
   }
 
   @Test
@@ -135,9 +155,10 @@ public class FutureDocTestBase {
       }
     }, ec);
 
-    int result = Await.result(f2, Duration.create(1, SECONDS));
-    assertEquals(10, result);
+    f2.onSuccess(new PrintResult<Integer>(), system.dispatcher());
     //#map
+    int result = Await.result(f2, Duration.create(5, SECONDS));
+    assertEquals(10, result);
   }
 
   @Test
@@ -158,8 +179,9 @@ public class FutureDocTestBase {
       }
     }, ec);
 
+    f2.onSuccess(new PrintResult<Integer>(), system.dispatcher());
     //#map2
-    int result = Await.result(f2, Duration.create(1, SECONDS));
+    int result = Await.result(f2, Duration.create(5, SECONDS));
     assertEquals(10, result);
   }
 
@@ -174,7 +196,8 @@ public class FutureDocTestBase {
       }
     }, ec);
 
-    Thread.sleep(100);
+    // Thread.sleep is only here to prove a point
+    Thread.sleep(100); // Do not use this in your code
 
     Future<Integer> f2 = f1.map(new Mapper<String, Integer>() {
       public Integer apply(String s) {
@@ -182,8 +205,9 @@ public class FutureDocTestBase {
       }
     }, ec);
 
+    f2.onSuccess(new PrintResult<Integer>(), system.dispatcher());
     //#map3
-    int result = Await.result(f2, Duration.create(1, SECONDS));
+    int result = Await.result(f2, Duration.create(5, SECONDS));
     assertEquals(10, result);
   }
 
@@ -208,8 +232,9 @@ public class FutureDocTestBase {
       }
     }, ec);
 
+    f2.onSuccess(new PrintResult<Integer>(), system.dispatcher());
     //#flat-map
-    int result = Await.result(f2, Duration.create(1, SECONDS));
+    int result = Await.result(f2, Duration.create(5, SECONDS));
     assertEquals(10, result);
   }
 
@@ -238,8 +263,9 @@ public class FutureDocTestBase {
         }
       }, ec);
 
-    long result = Await.result(futureSum, Duration.create(1, SECONDS));
+    futureSum.onSuccess(new PrintResult<Long>(), system.dispatcher());
     //#sequence
+    long result = Await.result(futureSum, Duration.create(5, SECONDS));
     assertEquals(3L, result);
   }
 
@@ -262,9 +288,10 @@ public class FutureDocTestBase {
       }, ec);
 
     //Returns the sequence of strings as upper case
-    Iterable<String> result = Await.result(futureResult, Duration.create(1, SECONDS));
-    assertEquals(Arrays.asList("A", "B", "C"), result);
+    futureResult.onSuccess(new PrintResult<Iterable<String>>(), system.dispatcher());
     //#traverse
+    Iterable<String> result = Await.result(futureResult, Duration.create(5, SECONDS));
+    assertEquals(Arrays.asList("A", "B", "C"), result);
   }
 
   @Test
@@ -286,9 +313,10 @@ public class FutureDocTestBase {
           return r + t; //Just concatenate
         }
       }, ec);
-    String result = Await.result(resultFuture, Duration.create(1, SECONDS));
-    //#fold
 
+    resultFuture.onSuccess(new PrintResult<String>(), system.dispatcher());
+    //#fold
+    String result = Await.result(resultFuture, Duration.create(5, SECONDS));
     assertEquals("ab", result);
   }
 
@@ -310,8 +338,9 @@ public class FutureDocTestBase {
         }
       }, ec);
 
-    Object result = Await.result(resultFuture, Duration.create(1, SECONDS));
+    resultFuture.onSuccess(new PrintResult<Object>(), system.dispatcher());
     //#reduce
+    Object result = Await.result(resultFuture, Duration.create(5, SECONDS));
 
     assertEquals("ab", result);
   }
@@ -326,10 +355,10 @@ public class FutureDocTestBase {
     Future<String> otherFuture = Futures.failed(
       new IllegalArgumentException("Bang!"));
     //#failed
-    Object result = Await.result(future, Duration.create(1, SECONDS));
+    Object result = Await.result(future, Duration.create(5, SECONDS));
     assertEquals("Yay!", result);
     Throwable result2 = Await.result(otherFuture.failed(),
-      Duration.create(1, SECONDS));
+      Duration.create(5, SECONDS));
     assertEquals("Bang!", result2.getMessage());
   }
 
@@ -399,9 +428,11 @@ public class FutureDocTestBase {
           throw problem;
       }
     }, ec);
-    int result = Await.result(future, Duration.create(1, SECONDS));
-    assertEquals(result, 0);
+
+    future.onSuccess(new PrintResult<Integer>(), system.dispatcher());
     //#recover
+    int result = Await.result(future, Duration.create(5, SECONDS));
+    assertEquals(result, 0);
   }
 
   @Test
@@ -425,9 +456,11 @@ public class FutureDocTestBase {
           throw problem;
       }
     }, ec);
-    int result = Await.result(future, Duration.create(1, SECONDS));
-    assertEquals(result, 0);
+
+    future.onSuccess(new PrintResult<Integer>(), system.dispatcher());
     //#try-recover
+    int result = Await.result(future, Duration.create(5, SECONDS));
+    assertEquals(result, 0);
   }
 
   @Test
@@ -497,9 +530,10 @@ public class FutureDocTestBase {
           }
         }, ec);
 
-      String result = Await.result(future3, Duration.create(1, SECONDS));
-      assertEquals("foo bar", result);
+      future3.onSuccess(new PrintResult<String>(), system.dispatcher());
       //#zip
+      String result = Await.result(future3, Duration.create(5, SECONDS));
+      assertEquals("foo bar", result);
     }
 
     {
@@ -509,9 +543,10 @@ public class FutureDocTestBase {
       Future<String> future3 = Futures.successful("bar");
       // Will have "bar" in this case
       Future<String> future4 = future1.fallbackTo(future2).fallbackTo(future3);
-      String result = Await.result(future4, Duration.create(1, SECONDS));
-      assertEquals("bar", result);
+      future4.onSuccess(new PrintResult<String>(), system.dispatcher());
       //#fallback-to
+      String result = Await.result(future4, Duration.create(5, SECONDS));
+      assertEquals("bar", result);
     }
 
   }
@@ -529,7 +564,7 @@ public class FutureDocTestBase {
         return "foo";
       }
     }, ec);
-    Future<String> result = future.either(delayed);
+    Future<String> result = Futures.firstCompletedOf(Arrays.asList(future, delayed), ec);
     //#after
     Await.result(result, Duration.create(2, SECONDS));
   }

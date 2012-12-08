@@ -8,7 +8,7 @@ import akka.testkit.AkkaSpec
 import akka.actor.Props
 import akka.actor.Actor
 import akka.testkit.ImplicitSender
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.FSM
 import akka.actor.ActorRef
 

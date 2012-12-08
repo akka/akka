@@ -5,10 +5,10 @@ package akka.actor
 
 import language.implicitConversions
 import akka.util._
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
 object FSM {
 
@@ -238,7 +238,7 @@ object FSM {
  *   setTimer("tock", TockMsg, 1 second, true) // repeating
  *   setTimer("lifetime", TerminateMsg, 1 hour, false) // single-shot
  *   cancelTimer("tock")
- *   timerActive_? ("tock")
+ *   isTimerActive("tock")
  * </pre>
  */
 trait FSM[S, D] extends Listeners with ActorLogging {
@@ -372,13 +372,26 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * timer does not exist, has previously been canceled or if it was a
    * single-shot timer whose message was already received.
    */
-  final def timerActive_?(name: String) = timers contains name
+  @deprecated("Use isTimerActive(name) instead.", "2.2")
+  final def timerActive_?(name: String) = isTimerActive(name)
+
+  /**
+   * Inquire whether the named timer is still active. Returns true unless the
+   * timer does not exist, has previously been canceled or if it was a
+   * single-shot timer whose message was already received.
+   */
+  final def isTimerActive(name: String) = timers contains name
 
   /**
    * Set state timeout explicitly. This method can safely be used from within a
    * state handler.
    */
   final def setStateTimeout(state: S, timeout: Timeout): Unit = stateTimeouts(state) = timeout
+
+  /**
+   * Internal API, used for testing.
+   */
+  private[akka] final def isStateTimerActive = timeoutFuture.isDefined
 
   /**
    * Set handler which is called upon each state transition, i.e. not when
@@ -427,6 +440,8 @@ trait FSM[S, D] extends Listeners with ActorLogging {
   /**
    * Set handler which is called upon reception of unhandled messages. Calling
    * this method again will overwrite the previous contents.
+   *
+   * The current state may be queried using ``stateName``.
    */
   final def whenUnhandled(stateFunction: StateFunction): Unit =
     handleEvent = stateFunction orElse handleEventDefault
@@ -519,7 +534,7 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    *       Main actor receive() method
    * *******************************************
    */
-  override final def receive: Receive = {
+  override def receive: Receive = {
     case TimeoutMarker(gen) ⇒
       if (generation == gen) {
         processMsg(StateTimeout, "state timeout")
@@ -632,6 +647,8 @@ trait FSM[S, D] extends Listeners with ActorLogging {
         case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
         case _                      ⇒
       }
+      for (timer ← timers.values) timer.cancel()
+      timers.clear()
       val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)
       if (terminateEvent.isDefinedAt(stopEvent))
         terminateEvent(stopEvent)

@@ -10,8 +10,7 @@ import akka.actor.Props
 import akka.actor.Actor
 import scala.concurrent.Await
 import scala.concurrent.Awaitable
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit.ImplicitSender
 import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress
@@ -23,6 +22,8 @@ object TestConductorMultiJvmSpec extends MultiNodeConfig {
 
   val master = role("master")
   val slave = role("slave")
+
+  testTransport(on = true)
 }
 
 class TestConductorMultiJvmNode1 extends TestConductorSpec
@@ -88,11 +89,8 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
       }
 
       val (min, max) =
-        ifNode(master) {
-          (0 seconds, 500 millis)
-        } {
-          (0.6 seconds, 2 seconds)
-        }
+        if(isNode(master))(0 seconds, 500 millis)
+        else (0.6 seconds, 2 seconds)
 
       within(min, max) {
         expectMsg(500 millis, 10)

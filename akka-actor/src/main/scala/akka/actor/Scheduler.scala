@@ -4,17 +4,18 @@
 
 package akka.actor
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import akka.util.internal.{ TimerTask, HashedWheelTimer, Timeout ⇒ HWTimeout, Timer }
 import akka.event.LoggingAdapter
 import akka.dispatch.MessageDispatcher
 import java.io.Closeable
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{ AtomicReference, AtomicLong }
 import scala.annotation.tailrec
 import akka.util.internal._
 import concurrent.ExecutionContext
-import scala.concurrent.util.FiniteDuration
+import scala.concurrent.duration.FiniteDuration
 
+// The Scheduler trait is included in the documentation. KEEP THE LINES SHORT!!!
 //#scheduler
 /**
  * An Akka scheduler service. This one needs one special behavior: if
@@ -50,7 +51,8 @@ trait Scheduler {
    */
   def schedule(
     initialDelay: FiniteDuration,
-    interval: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
+    interval: FiniteDuration)(f: ⇒ Unit)(
+      implicit executor: ExecutionContext): Cancellable
 
   /**
    * Schedules a function to be run repeatedly with an initial delay and
@@ -93,7 +95,8 @@ trait Scheduler {
    * Scala API
    */
   def scheduleOnce(
-    delay: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable
+    delay: FiniteDuration)(f: ⇒ Unit)(
+      implicit executor: ExecutionContext): Cancellable
 }
 //#scheduler
 
@@ -137,14 +140,17 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
-        new TimerTask with ContinuousScheduling {
+        new AtomicLong(System.nanoTime + initialDelay.toNanos) with TimerTask with ContinuousScheduling {
           def run(timeout: HWTimeout) {
             executor execute new Runnable {
               override def run = {
                 receiver ! message
                 // Check if the receiver is still alive and kicking before reschedule the task
                 if (receiver.isTerminated) log.debug("Could not reschedule message to be sent because receiving actor {} has been terminated.", receiver)
-                else scheduleNext(timeout, delay, continuousCancellable)
+                else {
+                  val driftNanos = System.nanoTime - getAndAdd(delay.toNanos)
+                  scheduleNext(timeout, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1)), continuousCancellable)
+                }
               }
             }
           }
@@ -162,11 +168,12 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
-        new TimerTask with ContinuousScheduling {
+        new AtomicLong(System.nanoTime + initialDelay.toNanos) with TimerTask with ContinuousScheduling {
           override def run(timeout: HWTimeout): Unit = executor.execute(new Runnable {
             override def run = {
               runnable.run()
-              scheduleNext(timeout, delay, continuousCancellable)
+              val driftNanos = System.nanoTime - getAndAdd(delay.toNanos)
+              scheduleNext(timeout, Duration.fromNanos(Math.max(delay.toNanos - driftNanos, 1)), continuousCancellable)
             }
           })
         },
@@ -199,8 +206,8 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
   }
 
   override def close(): Unit = {
-    import scala.collection.JavaConverters._
-    hashedWheelTimer.stop().asScala foreach execDirectly
+    val i = hashedWheelTimer.stop().iterator()
+    while (i.hasNext) execDirectly(i.next())
   }
 }
 

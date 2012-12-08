@@ -3,7 +3,7 @@
  */
 package akka.actor
 
-import scala.util.control.NonFatal
+import scala.collection.immutable
 import java.lang.reflect.InvocationTargetException
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -25,7 +25,7 @@ abstract class DynamicAccess {
    * val obj = DynamicAccess.createInstanceFor(clazz, Seq(classOf[Config] -> config, classOf[String] -> name))
    * }}}
    */
-  def createInstanceFor[T: ClassTag](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Try[T]
+  def createInstanceFor[T: ClassTag](clazz: Class[_], args: immutable.Seq[(Class[_], AnyRef)]): Try[T]
 
   /**
    * Obtain a `Class[_]` object loaded with the right class loader (i.e. the one
@@ -40,7 +40,7 @@ abstract class DynamicAccess {
    * `args` argument. The exact usage of args depends on which type is requested,
    * see the relevant requesting code for details.
    */
-  def createInstanceFor[T: ClassTag](fqcn: String, args: Seq[(Class[_], AnyRef)]): Try[T]
+  def createInstanceFor[T: ClassTag](fqcn: String, args: immutable.Seq[(Class[_], AnyRef)]): Try[T]
 
   /**
    * Obtain the Scala “object” instance for the given fully-qualified class name, if there is one.
@@ -70,7 +70,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
       if (t.isAssignableFrom(c)) c else throw new ClassCastException(t + " is not assignable from " + c)
     })
 
-  override def createInstanceFor[T: ClassTag](clazz: Class[_], args: Seq[(Class[_], AnyRef)]): Try[T] =
+  override def createInstanceFor[T: ClassTag](clazz: Class[_], args: immutable.Seq[(Class[_], AnyRef)]): Try[T] =
     Try {
       val types = args.map(_._1).toArray
       val values = args.map(_._2).toArray
@@ -81,7 +81,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
       if (t.isInstance(obj)) obj.asInstanceOf[T] else throw new ClassCastException(clazz.getName + " is not a subtype of " + t)
     } recover { case i: InvocationTargetException if i.getTargetException ne null ⇒ throw i.getTargetException }
 
-  override def createInstanceFor[T: ClassTag](fqcn: String, args: Seq[(Class[_], AnyRef)]): Try[T] =
+  override def createInstanceFor[T: ClassTag](fqcn: String, args: immutable.Seq[(Class[_], AnyRef)]): Try[T] =
     getClassFor(fqcn) flatMap { c ⇒ createInstanceFor(c, args) }
 
   override def getObjectFor[T: ClassTag](fqcn: String): Try[T] = {

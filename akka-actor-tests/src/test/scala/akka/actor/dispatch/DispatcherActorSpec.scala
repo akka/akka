@@ -7,8 +7,7 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 import akka.testkit.{ filterEvents, EventFilter, AkkaSpec }
 import akka.actor.{ Props, Actor }
 import scala.concurrent.Await
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.testkit.DefaultTimeout
 import akka.dispatch.{ PinnedDispatcher, Dispatchers, Dispatcher }
 import akka.pattern.ask

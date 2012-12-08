@@ -1,7 +1,7 @@
 package sample.cluster.stats.japi
 
 import language.postfixOps
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 import akka.actor.Props
 import akka.actor.RootActorPath
@@ -31,6 +31,8 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-join = off
+    # don't use sigar for tests, native lib not in path
+    akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     akka.actor.deployment {
       /statsService/workerRouter {
           router = consistent-hashing
@@ -65,7 +67,7 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
 
   "The japi stats sample" must {
 
-    "illustrate how to startup cluster" in within(10 seconds) {
+    "illustrate how to startup cluster" in within(15 seconds) {
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
@@ -88,32 +90,35 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       testConductor.enter("all-up")
     }
 
-
-    "show usage of the statsService from one node" in within(5 seconds) {
+    "show usage of the statsService from one node" in within(15 seconds) {
       runOn(second) {
-        val service = system.actorFor(node(third) / "user" / "statsService")
-        service ! new StatsJob("this is the text that will be analyzed")
-        val meanWordLength = expectMsgPF() {
-          case r: StatsResult ⇒ r.getMeanWordLength
-        }
-        meanWordLength must be(3.875 plusOrMinus 0.001)
+        assertServiceOk
       }
 
       testConductor.enter("done-2")
+    }
+
+    def assertServiceOk: Unit = {
+      val service = system.actorFor(node(third) / "user" / "statsService")
+      // eventually the service should be ok,
+      // first attempts might fail because worker actors not started yet
+      awaitCond {
+        service ! new StatsJob("this is the text that will be analyzed")
+        expectMsgPF() {
+          case unavailble: JobFailed ⇒ false
+          case r: StatsResult ⇒
+            r.getMeanWordLength must be(3.875 plusOrMinus 0.001)
+            true
+        }
+      }
     }
     //#test-statsService
-    
-    "show usage of the statsService from all nodes" in within(5 seconds) {
-      val service = system.actorFor(node(third) / "user" / "statsService")
-      service ! new StatsJob("this is the text that will be analyzed")
-      val meanWordLength = expectMsgPF() {
-        case r: StatsResult ⇒ r.getMeanWordLength
-      }
-      meanWordLength must be(3.875 plusOrMinus 0.001)
 
-      testConductor.enter("done-2")
+    "show usage of the statsService from all nodes" in within(15 seconds) {
+      assertServiceOk
+
+      testConductor.enter("done-3")
     }
-
 
   }
 

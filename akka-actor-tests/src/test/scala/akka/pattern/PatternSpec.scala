@@ -9,8 +9,7 @@ import language.postfixOps
 import akka.testkit.AkkaSpec
 import akka.actor.{ Props, Actor }
 import scala.concurrent.{ Future, Promise, Await }
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object PatternSpec {
   case class Work(duration: Duration)

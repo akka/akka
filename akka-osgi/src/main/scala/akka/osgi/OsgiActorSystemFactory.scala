@@ -12,12 +12,12 @@ import org.osgi.framework.BundleContext
  * Factory class to create ActorSystem implementations in an OSGi environment.  This mainly involves dealing with
  * bundle classloaders appropriately to ensure that configuration files and classes get loaded properly
  */
-class OsgiActorSystemFactory(val context: BundleContext) {
+class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader: Option[ClassLoader]) {
 
   /*
    * Classloader that delegates to the bundle for which the factory is creating an ActorSystem
    */
-  private val classloader = BundleDelegatingClassLoader(context)
+  private val classloader = new BundleDelegatingClassLoader(context.getBundle, fallbackClassLoader)
 
   /**
    * Creates the [[akka.actor.ActorSystem]], using the name specified
@@ -37,7 +37,7 @@ class OsgiActorSystemFactory(val context: BundleContext) {
    * loaded from the akka-actor bundle.
    */
   def actorSystemConfig(context: BundleContext): Config =
-    ConfigFactory.load(classloader).withFallback(ConfigFactory.defaultReference(classOf[ActorSystem].getClassLoader))
+    ConfigFactory.load(classloader).withFallback(ConfigFactory.defaultReference(OsgiActorSystemFactory.akkaActorClassLoader))
 
   /**
    * Determine the name for the [[akka.actor.ActorSystem]]
@@ -49,8 +49,13 @@ class OsgiActorSystemFactory(val context: BundleContext) {
 }
 
 object OsgiActorSystemFactory {
+  /**
+   * Class loader of akka-actor bundle.
+   */
+  def akkaActorClassLoader = classOf[ActorSystem].getClassLoader
+
   /*
    * Create an [[OsgiActorSystemFactory]] instance to set up Akka in an OSGi environment
    */
-  def apply(context: BundleContext): OsgiActorSystemFactory = new OsgiActorSystemFactory(context)
+  def apply(context: BundleContext): OsgiActorSystemFactory = new OsgiActorSystemFactory(context, Some(akkaActorClassLoader))
 }

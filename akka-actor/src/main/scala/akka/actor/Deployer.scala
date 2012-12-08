@@ -4,13 +4,14 @@
 
 package akka.actor
 
-import scala.concurrent.util.Duration
+import scala.concurrent.duration.Duration
 import com.typesafe.config._
 import akka.routing._
+import akka.japi.Util.immutableSeq
 import java.util.concurrent.{ TimeUnit }
 import akka.util.WildcardTree
 import java.util.concurrent.atomic.AtomicReference
-import annotation.tailrec
+import scala.annotation.tailrec
 
 /**
  * This class represents deployment configuration for a given actor path. It is
@@ -79,7 +80,11 @@ trait Scope {
 @SerialVersionUID(1L)
 abstract class LocalScope extends Scope
 
-//FIXME docs
+/**
+ * The Local Scope is the default one, which is assumed on all deployments
+ * which do not set a different scope. It is also the only scope handled by
+ * the LocalActorRefProvider.
+ */
 case object LocalScope extends LocalScope {
   /**
    * Java API: get the singleton instance
@@ -134,16 +139,24 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   }
 
   def parseConfig(key: String, config: Config): Option[Deploy] = {
-
     val deployment = config.withFallback(default)
+    val router = createRouterConfig(deployment.getString("router"), key, config, deployment)
+    Some(Deploy(key, deployment, router, NoScopeGiven))
+  }
 
-    val routees = Vector() ++ deployment.getStringList("routees.paths").asScala
-
+  /**
+   * Factory method for creating `RouterConfig`
+   * @param routerType the configured name of the router, or FQCN
+   * @param key the full configuration key of the deployment section
+   * @param config the user defined config of the deployment, without defaults
+   * @param deployment the deployment config, with defaults
+   */
+  protected def createRouterConfig(routerType: String, key: String, config: Config, deployment: Config): RouterConfig = {
+    val routees = immutableSeq(deployment.getStringList("routees.paths"))
     val nrOfInstances = deployment.getInt("nr-of-instances")
+    val resizer = if (config.hasPath("resizer")) Some(DefaultResizer(deployment.getConfig("resizer"))) else None
 
-    val resizer: Option[Resizer] = if (config.hasPath("resizer")) Some(DefaultResizer(deployment.getConfig("resizer"))) else None
-
-    val router: RouterConfig = deployment.getString("router") match {
+    routerType match {
       case "from-code"        ⇒ NoRouter
       case "round-robin"      ⇒ RoundRobinRouter(nrOfInstances, routees, resizer)
       case "random"           ⇒ RandomRouter(nrOfInstances, routees, resizer)
@@ -156,7 +169,7 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
         val vnodes = deployment.getInt("virtual-nodes-factor")
         ConsistentHashingRouter(nrOfInstances, routees, resizer, virtualNodesFactor = vnodes)
       case fqn ⇒
-        val args = Seq(classOf[Config] -> deployment)
+        val args = List(classOf[Config] -> deployment)
         dynamicAccess.createInstanceFor[RouterConfig](fqn, args).recover({
           case exception ⇒ throw new IllegalArgumentException(
             ("Cannot instantiate router [%s], defined in [%s], " +
@@ -165,7 +178,6 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
               .format(fqn, key), exception)
         }).get
     }
-
-    Some(Deploy(key, deployment, router, NoScopeGiven))
   }
+
 }

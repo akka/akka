@@ -17,7 +17,7 @@ import org.apache.camel.builder.Builder
 import org.apache.camel.{ FailedToCreateRouteException, CamelExecutionException }
 import java.util.concurrent.{ ExecutionException, TimeUnit, TimeoutException }
 import akka.actor.Status.Failure
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import concurrent.{ ExecutionContext, Await }
 import akka.testkit._
 import akka.util.Timeout
@@ -30,7 +30,7 @@ class ConsumerIntegrationTest extends WordSpec with MustMatchers with NonSharedC
 
     "Consumer must throw FailedToCreateRouteException, while awaiting activation, if endpoint is invalid" in {
       filterEvents(EventFilter[ActorActivationException](occurrences = 1)) {
-        val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")))
+        val actorRef = system.actorOf(Props(new TestActor(uri = "some invalid uri")), "invalidActor")
         intercept[FailedToCreateRouteException] {
           Await.result(camel.activationFutureFor(actorRef), defaultTimeoutDuration)
         }

@@ -53,7 +53,7 @@ import akka.dispatch.MessageQueue
 import akka.actor.mailbox.DurableMessageQueue
 import akka.actor.mailbox.DurableMessageSerialization
 import akka.pattern.CircuitBreaker
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 class MyMailboxType(systemSettings: ActorSystem.Settings, config: Config)
   extends MailboxType {

@@ -14,6 +14,10 @@ import scala.util.control.NonFatal
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
+ *
+ * INTERNAL API!
+ *
+ * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
 class RemoteActorRefProvider(
   val systemName: String,
@@ -24,7 +28,13 @@ class RemoteActorRefProvider(
 
   val remoteSettings: RemoteSettings = new RemoteSettings(settings.config, systemName)
 
-  val deployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
+  override val deployer: Deployer = createDeployer
+
+  /**
+   * Factory method to make it possible to override deployer in subclass
+   * Creates a new instance every time
+   */
+  protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
   private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, dynamicAccess, deployer)
 
@@ -68,7 +78,7 @@ class RemoteActorRefProvider(
 
     _transport = {
       val fqn = remoteSettings.RemoteTransport
-      val args = Seq(
+      val args = List(
         classOf[ExtendedActorSystem] -> system,
         classOf[RemoteActorRefProvider] -> this)
 
@@ -154,12 +164,11 @@ class RemoteActorRefProvider(
 
       Iterator(props.deploy) ++ deployment.iterator reduce ((a, b) ⇒ b withFallback a) match {
         case d @ Deploy(_, _, _, RemoteScope(addr)) ⇒
-          if (addr == rootPath.address || addr == transport.address) {
+          if (isSelfAddress(addr)) {
             local.actorOf(system, props, supervisor, path, false, deployment.headOption, false, async)
           } else {
             val rpath = RootActorPath(addr) / "remote" / transport.address.hostPort / path.elements
-            useActorOnNode(rpath, props, d, supervisor)
-            new RemoteActorRef(this, transport, rpath, supervisor)
+            new RemoteActorRef(this, transport, rpath, supervisor, Some(props), Some(d))
           }
 
         case _ ⇒ local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
@@ -168,13 +177,13 @@ class RemoteActorRefProvider(
   }
 
   def actorFor(path: ActorPath): InternalActorRef =
-    if (path.address == rootPath.address || path.address == transport.address) actorFor(rootGuardian, path.elements)
-    else new RemoteActorRef(this, transport, path, Nobody)
+    if (isSelfAddress(path.address)) actorFor(rootGuardian, path.elements)
+    else new RemoteActorRef(this, transport, path, Nobody, props = None, deploy = None)
 
   def actorFor(ref: InternalActorRef, path: String): InternalActorRef = path match {
     case ActorPathExtractor(address, elems) ⇒
-      if (address == rootPath.address || address == transport.address) actorFor(rootGuardian, elems)
-      else new RemoteActorRef(this, transport, new RootActorPath(address) / elems, Nobody)
+      if (isSelfAddress(address)) actorFor(rootGuardian, elems)
+      else new RemoteActorRef(this, transport, new RootActorPath(address) / elems, Nobody, props = None, deploy = None)
     case _ ⇒ local.actorFor(ref, path)
   }
 
@@ -191,14 +200,18 @@ class RemoteActorRefProvider(
   }
 
   def getExternalAddressFor(addr: Address): Option[Address] = {
-    val ta = transport.address
-    val ra = rootPath.address
     addr match {
-      case `ta` | `ra`                          ⇒ Some(rootPath.address)
+      case _ if isSelfAddress(addr)             ⇒ Some(local.rootPath.address)
       case Address("akka", _, Some(_), Some(_)) ⇒ Some(transport.address)
       case _                                    ⇒ None
     }
   }
+
+  def getDefaultAddress: Address = transport.address
+
+  private def isSelfAddress(address: Address): Boolean =
+    address == rootPath.address || address == transport.address
+
 }
 
 private[akka] trait RemoteRef extends ActorRefScope {
@@ -213,7 +226,9 @@ private[akka] class RemoteActorRef private[akka] (
   val provider: RemoteActorRefProvider,
   remote: RemoteTransport,
   val path: ActorPath,
-  val getParent: InternalActorRef)
+  val getParent: InternalActorRef,
+  props: Option[Props],
+  deploy: Option[Deploy])
   extends InternalActorRef with RemoteRef {
 
   def getChild(name: Iterator[String]): InternalActorRef = {
@@ -221,7 +236,7 @@ private[akka] class RemoteActorRef private[akka] (
     s.headOption match {
       case None       ⇒ this
       case Some("..") ⇒ getParent getChild name
-      case _          ⇒ new RemoteActorRef(provider, remote, path / s, Nobody)
+      case _          ⇒ new RemoteActorRef(provider, remote, path / s, Nobody, props = None, deploy = None)
     }
   }
 
@@ -235,13 +250,15 @@ private[akka] class RemoteActorRef private[akka] (
         provider.deadLetters ! message
     }
 
-  override def !(message: Any)(implicit sender: ActorRef = null): Unit =
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
     try remote.send(message, Option(sender), this)
     catch {
       case e @ (_: InterruptedException | NonFatal(_)) ⇒
         remote.system.eventStream.publish(Error(e, path.toString, classOf[RemoteActorRef], "swallowing exception during message send"))
         provider.deadLetters ! message
     }
+
+  def start(): Unit = if (props.isDefined && deploy.isDefined) provider.useActorOnNode(path, props.get, deploy.get, getParent)
 
   def suspend(): Unit = sendSystemMessage(Suspend())
 

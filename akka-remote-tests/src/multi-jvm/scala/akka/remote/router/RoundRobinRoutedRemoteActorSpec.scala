@@ -12,14 +12,16 @@ import akka.actor.PoisonPill
 import akka.actor.Address
 import scala.concurrent.Await
 import akka.pattern.ask
-import akka.remote.testkit.{STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec}
+import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
 import akka.routing.Broadcast
+import akka.routing.CurrentRoutees
+import akka.routing.RouterRoutees
 import akka.routing.RoundRobinRouter
 import akka.routing.RoutedActorRef
 import akka.routing.Resizer
 import akka.routing.RouteeProvider
 import akka.testkit._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 object RoundRobinRoutedRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
@@ -59,7 +61,7 @@ class RoundRobinRoutedRemoteActorMultiJvmNode3 extends RoundRobinRoutedRemoteAct
 class RoundRobinRoutedRemoteActorMultiJvmNode4 extends RoundRobinRoutedRemoteActorSpec
 
 class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemoteActorMultiJvmSpec)
- with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
+  with STMultiNodeSpec with ImplicitSender with DefaultTimeout {
   import RoundRobinRoutedRemoteActorMultiJvmSpec._
 
   def initialParticipants = 4
@@ -105,7 +107,7 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
   }
 
   "A new remote actor configured with a RoundRobin router and Resizer" must {
-    "be locally instantiated on a remote node after several resize rounds" taggedAs LongRunningTest in {
+    "be locally instantiated on a remote node after several resize rounds" taggedAs LongRunningTest in within(5 seconds) {
 
       runOn(first, second, third) {
         enterBarrier("start", "broadcast-end", "end", "done")
@@ -117,22 +119,21 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
           resizer = Some(new TestResizer))), "service-hello2")
         actor.isInstanceOf[RoutedActorRef] must be(true)
 
-        val iterationCount = 9
+        actor ! CurrentRoutees
+        expectMsgType[RouterRoutees].routees.size must be(1)
 
         val repliesFrom: Set[ActorRef] =
-          (for {
-            i ← 0 until iterationCount
-          } yield {
+          (for (n ← 2 to 8) yield {
             actor ! "hit"
-            receiveOne(5 seconds) match { case ref: ActorRef ⇒ ref }
+            awaitCond(Await.result(actor ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size == n)
+            expectMsgType[ActorRef]
           }).toSet
 
         enterBarrier("broadcast-end")
         actor ! Broadcast(PoisonPill)
 
         enterBarrier("end")
-        // at least more than one actor per node
-        repliesFrom.size must be > (3)
+        repliesFrom.size must be(7)
         val repliesFromAddresses = repliesFrom.map(_.path.address)
         repliesFromAddresses must be === (Set(node(first), node(second), node(third)).map(_.address))
 

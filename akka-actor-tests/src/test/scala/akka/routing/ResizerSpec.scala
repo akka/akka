@@ -9,13 +9,10 @@ import akka.testkit._
 import akka.testkit.TestEvent._
 import akka.actor.Props
 import scala.concurrent.Await
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
+import scala.collection.immutable
 import akka.actor.ActorRef
-import java.util.concurrent.atomic.AtomicInteger
 import akka.pattern.ask
-import scala.concurrent.util.Duration
-import java.util.concurrent.TimeoutException
-import scala.concurrent.util.FiniteDuration
 import scala.util.Try
 
 object ResizerSpec {
@@ -63,10 +60,10 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         lowerBound = 2,
         upperBound = 3)
 
-      val c1 = resizer.capacity(IndexedSeq.empty[ActorRef])
+      val c1 = resizer.capacity(immutable.IndexedSeq.empty[ActorRef])
       c1 must be(2)
 
-      val current = IndexedSeq(system.actorOf(Props[TestActor]), system.actorOf(Props[TestActor]))
+      val current = immutable.IndexedSeq(system.actorOf(Props[TestActor]), system.actorOf(Props[TestActor]))
       val c2 = resizer.capacity(current)
       c2 must be(0)
     }
@@ -162,7 +159,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
           // sending in too quickly will result in skipped resize due to many resizeInProgress conflicts
           Thread.sleep(20.millis.dilated.toMillis)
         }
-        within((((d * loops).asInstanceOf[FiniteDuration] / resizer.lowerBound) + 2.seconds.dilated).asInstanceOf[FiniteDuration]) {
+        within((d * loops / resizer.lowerBound) + 2.seconds.dilated) {
           for (m ← 0 until loops) expectMsg("done")
         }
       }
@@ -176,20 +173,21 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       routeeSize(router) must be(resizer.upperBound)
     }
 
-    "backoff" in {
+    "backoff" in within(10 seconds) {
 
       val resizer = DefaultResizer(
         lowerBound = 1,
         upperBound = 5,
         rampupRate = 1.0,
         backoffRate = 1.0,
-        backoffThreshold = 0.20,
+        backoffThreshold = 0.40,
         pressureThreshold = 1,
         messagesPerResize = 1)
 
       val router = system.actorOf(Props(new Actor {
         def receive = {
-          case n: Int ⇒ Thread.sleep((n millis).dilated.toMillis)
+          case n: Int if n <= 0 ⇒ // done
+          case n: Int           ⇒ Thread.sleep((n millis).dilated.toMillis)
         }
       }).withRouter(RoundRobinRouter(resizer = Some(resizer))))
 
@@ -205,12 +203,11 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       Thread.sleep((300 millis).dilated.toMillis)
 
       // let it cool down
-      for (m ← 0 to 5) {
-        router ! 1
-        Thread.sleep((500 millis).dilated.toMillis)
-      }
+      awaitCond({
+        router ! 0 // trigger resize
+        routeeSize(router) < z
+      }, interval = 500.millis.dilated)
 
-      awaitCond(Try(routeeSize(router) < (z)).getOrElse(false))
     }
 
   }

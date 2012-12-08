@@ -9,7 +9,7 @@ import language.postfixOps
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestFSMRefSpec extends AkkaSpec {
@@ -51,11 +51,11 @@ class TestFSMRefSpec extends AkkaSpec {
           case x ⇒ stay
         }
       }, "test-fsm-ref-2")
-      fsm.timerActive_?("test") must be(false)
+      fsm.isTimerActive("test") must be(false)
       fsm.setTimer("test", 12, 10 millis, true)
-      fsm.timerActive_?("test") must be(true)
+      fsm.isTimerActive("test") must be(true)
       fsm.cancelTimer("test")
-      fsm.timerActive_?("test") must be(false)
+      fsm.isTimerActive("test") must be(false)
     }
   }
 }

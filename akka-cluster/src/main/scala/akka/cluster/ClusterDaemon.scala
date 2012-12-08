@@ -3,9 +3,8 @@
  */
 package akka.cluster
 
-import scala.collection.immutable.SortedSet
-import scala.concurrent.util.{ Deadline, Duration }
-import scala.concurrent.util.duration._
+import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.{ Actor, ActorLogging, ActorRef, Address, Cancellable, Props, ReceiveTimeout, RootActorPath, Scheduler }
 import akka.actor.Status.Failure
@@ -16,7 +15,6 @@ import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
 import language.existentials
 import language.postfixOps
-import scala.concurrent.util.FiniteDuration
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -63,7 +61,7 @@ private[cluster] object InternalClusterAction {
    * Command to initiate the process to join the specified
    * seed nodes.
    */
-  case class JoinSeedNodes(seedNodes: IndexedSeq[Address])
+  case class JoinSeedNodes(seedNodes: immutable.IndexedSeq[Address])
 
   /**
    * Start message of the process to join one of the seed nodes.
@@ -155,8 +153,8 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
     withDispatcher(context.props.dispatcher), name = "publisher")
   val core = context.actorOf(Props(new ClusterCoreDaemon(publisher)).
     withDispatcher(context.props.dispatcher), name = "core")
-  context.actorOf(Props[ClusterHeartbeatDaemon].
-    withDispatcher(context.props.dispatcher), name = "heartbeat")
+  context.actorOf(Props[ClusterHeartbeatReceiver].
+    withDispatcher(context.props.dispatcher), name = "heartbeatReceiver")
   if (settings.MetricsEnabled) context.actorOf(Props(new ClusterMetricsCollector(publisher)).
     withDispatcher(context.props.dispatcher), name = "metrics")
 
@@ -172,59 +170,44 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
 private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Actor with ActorLogging {
   import ClusterLeaderAction._
   import InternalClusterAction._
-  import ClusterHeartbeatSender._
+  import ClusterHeartbeatSender.JoinInProgress
 
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler, failureDetector }
   import cluster.settings._
 
   val vclockNode = VectorClock.Node(selfAddress.toString)
-  val selfHeartbeat = Heartbeat(selfAddress)
 
   // note that self is not initially member,
   // and the Gossip is not versioned for this 'Node' yet
   var latestGossip: Gossip = Gossip()
-  var joinInProgress: Map[Address, Deadline] = Map.empty
 
   var stats = ClusterStats()
 
-  val heartbeatSender = context.actorOf(Props[ClusterHeartbeatSender].
-    withDispatcher(UseDispatcher), name = "heartbeatSender")
   val coreSender = context.actorOf(Props[ClusterCoreSender].
     withDispatcher(UseDispatcher), name = "coreSender")
+  val heartbeatSender = context.actorOf(Props[ClusterHeartbeatSender].
+    withDispatcher(UseDispatcher), name = "heartbeatSender")
 
   import context.dispatcher
 
   // start periodic gossip to random nodes in cluster
-  val gossipTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(GossipInterval).asInstanceOf[FiniteDuration], GossipInterval) {
-      self ! GossipTick
-    }
-
-  // start periodic heartbeat to all nodes in cluster
-  val heartbeatTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(HeartbeatInterval).asInstanceOf[FiniteDuration], HeartbeatInterval) {
-      self ! HeartbeatTick
-    }
+  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay.max(GossipInterval),
+    GossipInterval, self, GossipTick)
 
   // start periodic cluster failure detector reaping (moving nodes condemned by the failure detector to unreachable list)
-  val failureDetectorReaperTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval).asInstanceOf[FiniteDuration], UnreachableNodesReaperInterval) {
-      self ! ReapUnreachableTick
-    }
+  val failureDetectorReaperTask = scheduler.schedule(PeriodicTasksInitialDelay.max(UnreachableNodesReaperInterval),
+    UnreachableNodesReaperInterval, self, ReapUnreachableTick)
 
   // start periodic leader action management (only applies for the current leader)
-  private val leaderActionsTask =
-    FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(LeaderActionsInterval).asInstanceOf[FiniteDuration], LeaderActionsInterval) {
-      self ! LeaderActionsTick
-    }
+  val leaderActionsTask = scheduler.schedule(PeriodicTasksInitialDelay.max(LeaderActionsInterval),
+    LeaderActionsInterval, self, LeaderActionsTick)
 
   // start periodic publish of current stats
-  private val publishStatsTask: Option[Cancellable] =
+  val publishStatsTask: Option[Cancellable] =
     if (PublishStatsInterval == Duration.Zero) None
-    else Some(FixedRateTask(scheduler, PeriodicTasksInitialDelay.max(PublishStatsInterval).asInstanceOf[FiniteDuration], PublishStatsInterval) {
-      self ! PublishStatsTick
-    })
+    else Some(scheduler.schedule(PeriodicTasksInitialDelay.max(PublishStatsInterval),
+      PublishStatsInterval, self, PublishStatsTick))
 
   override def preStart(): Unit = {
     if (AutoJoin) self ! JoinSeedNodes(SeedNodes)
@@ -232,7 +215,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   override def postStop(): Unit = {
     gossipTask.cancel()
-    heartbeatTask.cancel()
     failureDetectorReaperTask.cancel()
     leaderActionsTask.cancel()
     publishStatsTask foreach { _.cancel() }
@@ -250,7 +232,6 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     case msg: GossipEnvelope              ⇒ receiveGossip(msg)
     case msg: GossipMergeConflict         ⇒ receiveGossipMerge(msg)
     case GossipTick                       ⇒ gossip()
-    case HeartbeatTick                    ⇒ heartbeat()
     case ReapUnreachableTick              ⇒ reapUnreachableMembers()
     case LeaderActionsTick                ⇒ leaderActions()
     case PublishStatsTick                 ⇒ publishInternalStats()
@@ -275,7 +256,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   def initJoin(): Unit = sender ! InitJoinAck(selfAddress)
 
-  def joinSeedNodes(seedNodes: IndexedSeq[Address]): Unit = {
+  def joinSeedNodes(seedNodes: immutable.IndexedSeq[Address]): Unit = {
     // only the node which is named first in the list of seed nodes will join itself
     if (seedNodes.isEmpty || seedNodes.head == selfAddress)
       self ! JoinTo(selfAddress)
@@ -293,12 +274,12 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
       val localGossip = latestGossip
       // wipe our state since a node that joins a cluster must be empty
       latestGossip = Gossip()
-      joinInProgress = Map(address -> (Deadline.now + JoinTimeout))
 
       // wipe the failure detector since we are starting fresh and shouldn't care about the past
       failureDetector.reset()
 
       publish(localGossip)
+      heartbeatSender ! JoinInProgress(address, Deadline.now + JoinTimeout)
 
       context.become(initialized)
       if (address == selfAddress)
@@ -517,12 +498,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
           else if (remoteGossip.version < localGossip.version) localGossip // local gossip is newer
           else remoteGossip // remote gossip is newer
 
-        val newJoinInProgress =
-          if (joinInProgress.isEmpty) joinInProgress
-          else joinInProgress -- winningGossip.members.map(_.address) -- winningGossip.overview.unreachable.map(_.address)
-
         latestGossip = winningGossip seen selfAddress
-        joinInProgress = newJoinInProgress
 
         // for all new joining nodes we remove them from the failure detector
         (latestGossip.members -- localGossip.members).foreach {
@@ -744,27 +720,10 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
     }
   }
 
-  def heartbeat(): Unit = {
-    removeOverdueJoinInProgress()
-
-    val beatTo = latestGossip.members.toSeq.map(_.address) ++ joinInProgress.keys
-
-    val deadline = Deadline.now + HeartbeatInterval
-    beatTo.foreach { address ⇒ if (address != selfAddress) heartbeatSender ! SendHeartbeat(selfHeartbeat, address, deadline) }
-  }
-
-  /**
-   * Removes overdue joinInProgress from State.
-   */
-  def removeOverdueJoinInProgress(): Unit = {
-    joinInProgress --= joinInProgress collect { case (address, deadline) if deadline.isOverdue ⇒ address }
-  }
-
   /**
    * Reaps the unreachable members (moves them to the 'unreachable' list in the cluster overview) according to the failure detector's verdict.
    */
   def reapUnreachableMembers(): Unit = {
-
     if (!isSingletonCluster && isAvailable) {
       // only scrutinize if we are a non-singleton cluster and available
 
@@ -804,14 +763,14 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
 
   def isSingletonCluster: Boolean = latestGossip.isSingletonCluster
 
-  def isAvailable: Boolean = latestGossip.isAvailable(selfAddress)
+  def isAvailable: Boolean = !latestGossip.isUnreachable(selfAddress)
 
   /**
    * Gossips latest gossip to a random member in the set of members passed in as argument.
    *
    * @return the used [[akka.actor.Address] if any
    */
-  private def gossipToRandomNodeOf(addresses: IndexedSeq[Address]): Option[Address] = {
+  private def gossipToRandomNodeOf(addresses: immutable.IndexedSeq[Address]): Option[Address] = {
     log.debug("Cluster Node [{}] - Selecting random node to gossip to [{}]", selfAddress, addresses.mkString(", "))
     // filter out myself
     val peer = selectRandomNode(addresses filterNot (_ == selfAddress))
@@ -864,7 +823,7 @@ private[cluster] final class ClusterCoreDaemon(publisher: ActorRef) extends Acto
  * 5. seed3 retries the join procedure and gets acks from seed2 first, and then joins to seed2
  *
  */
-private[cluster] final class JoinSeedNodeProcess(seedNodes: IndexedSeq[Address]) extends Actor with ActorLogging {
+private[cluster] final class JoinSeedNodeProcess(seedNodes: immutable.IndexedSeq[Address]) extends Actor with ActorLogging {
   import InternalClusterAction._
 
   def selfAddress = Cluster(context.system).selfAddress

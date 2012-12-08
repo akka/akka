@@ -1,7 +1,7 @@
 package sample.cluster.stats
 
 import language.postfixOps
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 
@@ -33,6 +33,8 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-join = off
+    # don't use sigar for tests, native lib not in path
+    akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     #//#router-deploy-config
     akka.actor.deployment {
       /statsFacade/statsService/workerRouter {
@@ -67,12 +69,11 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
   override def afterAll() = multiNodeSpecAfterAll()
 
   "The stats sample with single master" must {
-    "illustrate how to startup cluster" in within(10 seconds) {
+    "illustrate how to startup cluster" in within(15 seconds) {
       Cluster(system).subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
       Cluster(system) join node(first).address
-      system.actorOf(Props[StatsFacade], "statsFacade")
 
       expectMsgAllOf(
         MemberUp(Member(node(first).address, MemberStatus.Up)),
@@ -80,15 +81,17 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
         MemberUp(Member(node(third).address, MemberStatus.Up)))
 
       Cluster(system).unsubscribe(testActor)
+      
+      system.actorOf(Props[StatsFacade], "statsFacade")
 
       testConductor.enter("all-up")
     }
 
-    "show usage of the statsFacade" in within(5 seconds) {
+    "show usage of the statsFacade" in within(20 seconds) {
       val facade = system.actorFor(RootActorPath(node(third).address) / "user" / "statsFacade")
 
       // eventually the service should be ok,
-      // worker nodes might not be up yet
+      // service and worker nodes might not be up yet
       awaitCond {
         facade ! StatsJob("this is the text that will be analyzed")
         expectMsgPF() {

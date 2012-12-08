@@ -10,7 +10,7 @@ import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
 import scala.concurrent.Await
 import akka.pattern.ask
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.junit.JUnitSuite

@@ -18,7 +18,7 @@ import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import org.scalatest.matchers.MustMatchers
 import akka.testkit._
 import akka.util._
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.Actor.Receive
 import scala.concurrent.Await
 
@@ -96,11 +96,11 @@ class Swapper extends Actor {
   def receive = {
     case Swap ⇒
       log.info("Hi")
-      become {
+      become({
         case Swap ⇒
           log.info("Ho")
           unbecome() // resets the latest 'become' (just for fun)
-      }
+      }, discardOld = false) // push on top instead of replace
   }
 }
 
@@ -245,7 +245,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "using implicit timeout" in {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-implicit-timeout
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
     import akka.util.Timeout
     import akka.pattern.ask
     implicit val timeout = Timeout(5 seconds)
@@ -258,7 +258,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "using explicit timeout" in {
     val myActor = system.actorOf(Props(new FirstActor))
     //#using-explicit-timeout
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
     import akka.pattern.ask
     val future = myActor.ask("hello")(5 seconds)
     //#using-explicit-timeout
@@ -268,12 +268,18 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
   "using receiveTimeout" in {
     //#receive-timeout
     import akka.actor.ReceiveTimeout
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
     class MyActor extends Actor {
+      // To set an initial delay
       context.setReceiveTimeout(30 milliseconds)
       def receive = {
-        case "Hello"        ⇒ //...
-        case ReceiveTimeout ⇒ throw new RuntimeException("received timeout")
+        case "Hello" ⇒
+          // To set in a response to a message
+          context.setReceiveTimeout(100 milliseconds)
+        case ReceiveTimeout ⇒
+          // To turn it off
+          context.setReceiveTimeout(Duration.Undefined)
+          throw new RuntimeException("Receive timed out")
       }
     }
     //#receive-timeout
@@ -310,13 +316,13 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       def receive = {
         case "open" ⇒
           unstashAll()
-          context.become {
+          context.become({
             case "write" ⇒ // do writing...
             case "close" ⇒
               unstashAll()
               context.unbecome()
             case msg ⇒ stash()
-          }
+          }, discardOld = false) // stack on top instead of replacing
         case msg ⇒ stash()
       }
     }

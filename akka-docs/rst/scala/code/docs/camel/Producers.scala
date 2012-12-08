@@ -17,7 +17,7 @@ object Producers {
     //#Producer1
     //#AskProducer
     import akka.pattern.ask
-    import scala.concurrent.util.duration._
+    import scala.concurrent.duration._
     implicit val timeout = Timeout(10 seconds)
 
     val system = ActorSystem("some-system")

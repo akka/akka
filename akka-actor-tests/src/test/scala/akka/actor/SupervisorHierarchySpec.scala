@@ -7,8 +7,7 @@ package akka.actor
 import language.postfixOps
 import java.util.concurrent.{ TimeUnit, CountDownLatch }
 import scala.concurrent.Await
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration.intToDurationInt
+import scala.concurrent.duration._
 import scala.math.BigInt.int2bigInt
 import scala.util.Random
 import scala.util.control.NoStackTrace
@@ -195,7 +194,7 @@ object SupervisorHierarchySpec {
       case x ⇒ (x, x)
     }
     override val supervisorStrategy = OneForOneStrategy()(unwrap andThen {
-      case _: Failure if pongsToGo > 0 ⇒
+      case (_: Failure, _) if pongsToGo > 0 ⇒
         log :+= Event("pongOfDeath resuming " + sender, identityHashCode(this))
         Resume
       case (f: Failure, orig) ⇒
@@ -392,10 +391,10 @@ object SupervisorHierarchySpec {
 
     // don’t escalate from this one!
     override val supervisorStrategy = OneForOneStrategy() {
-      case f: Failure                               ⇒ f.directive
-      case OriginalRestartException(f: Failure)     ⇒ f.directive
-      case ActorInitializationException(f: Failure) ⇒ f.directive
-      case _                                        ⇒ Stop
+      case f: Failure ⇒ f.directive
+      case OriginalRestartException(f: Failure) ⇒ f.directive
+      case ActorInitializationException(_, _, f: Failure) ⇒ f.directive
+      case _ ⇒ Stop
     }
 
     var children = Vector.empty[ActorRef]

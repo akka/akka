@@ -5,13 +5,11 @@
 package akka.actor
 
 import scala.collection.mutable.Queue
-import scala.concurrent.util.Duration
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.concurrent.Await
 import akka.util.Timeout
 import scala.collection.immutable.TreeSet
-import scala.concurrent.util.Deadline
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.TimeUnit

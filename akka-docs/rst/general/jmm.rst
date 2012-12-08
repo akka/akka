@@ -13,9 +13,9 @@ Prior to Java 5, the Java Memory Model (JMM) was ill defined. It was possible to
 shared memory was accessed by multiple threads, such as:
 
 * a thread not seeing values written by other threads: a visibility problem
-* a thread observing 'impossible' behavior of other threads, caused by instructions not being executed in the order
-
-expected: an instruction reordering problem.
+* a thread observing 'impossible' behavior of other threads, caused by
+  instructions not being executed in the order expected: an instruction
+  reordering problem.
 
 With the implementation of JSR 133 in Java 5, a lot of these issues have been resolved. The JMM is a set of rules based
 on the "happens-before" relation, which constrain when one memory access must happen before another, and conversely,

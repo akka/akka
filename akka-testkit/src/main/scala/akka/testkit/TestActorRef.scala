@@ -42,6 +42,9 @@ class TestActorRef[T <: Actor](
     _supervisor,
     _supervisor.path / name) {
 
+  // we need to start ourselves since the creation of an actor has been split into initialization and starting
+  underlying.start()
+
   import TestActorRef.InternalGetActor
 
   override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props, supervisor: InternalActorRef): ActorCell =
@@ -135,7 +138,7 @@ object TestActorRef {
   def apply[T <: Actor](implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](randomName)
 
   def apply[T <: Actor](name: String)(implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] = apply[T](Props({
-    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[T](t.runtimeClass, Seq()).recover({
+    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[T](t.runtimeClass, Nil).recover({
       case exception ⇒ throw ActorInitializationException(null,
         "Could not instantiate Actor" +
           "\nMake sure Actor is NOT defined inside a class/trait," +

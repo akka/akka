@@ -4,9 +4,11 @@
 
 package docs.duration
 
+import language.postfixOps
+
 object Scala {
   //#dsl
-  import scala.concurrent.util.duration._ // notice the small d
+  import scala.concurrent.duration._
 
   val fivesec = 5.seconds
   val threemillis = 3.millis

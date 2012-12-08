@@ -14,17 +14,15 @@ import akka.pattern._
 import akka.remote._
 import akka.routing._
 import akka.util._
-import scala.concurrent.util.duration._
-import scala.concurrent.util.{ Duration, Deadline }
+import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.annotation.tailrec
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import akka.util.internal.HashedWheelTimer
 import concurrent.{ ExecutionContext, Await }
-import scala.concurrent.util.FiniteDuration
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.
@@ -62,22 +60,22 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   val settings = new ClusterSettings(system.settings.config, system.name)
   import settings._
 
-  val selfAddress = system.provider match {
+  val selfAddress: Address = system.provider match {
     case c: ClusterActorRefProvider ⇒ c.transport.address
     case other ⇒ throw new ConfigurationException(
       "ActorSystem [%s] needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses [%s]".
         format(system, other.getClass.getName))
   }
 
-  private val _isRunning = new AtomicBoolean(true)
+  private val _isTerminated = new AtomicBoolean(false)
   private val log = Logging(system, "Cluster")
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
 
-  val failureDetector = {
+  val failureDetector: FailureDetector = {
     import settings.{ FailureDetectorImplementationClass ⇒ fqcn }
     system.dynamicAccess.createInstanceFor[FailureDetector](
-      fqcn, Seq(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({
+      fqcn, List(classOf[ActorSystem] -> system, classOf[ClusterSettings] -> settings)).recover({
         case e ⇒ throw new ConfigurationException("Could not create custom failure detector [" + fqcn + "] due to:" + e.toString)
       }).get
   }
@@ -171,9 +169,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   // ======================================================
 
   /**
-   * Returns true if the cluster node is up and running, false if it is shut down.
+   * Returns true if this cluster instance has be shutdown.
    */
-  def isRunning: Boolean = _isRunning.get
+  def isTerminated: Boolean = _isTerminated.get
 
   /**
    * Subscribe to cluster domain events.
@@ -243,7 +241,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * in config. Especially useful from tests when Addresses are unknown
    * before startup time.
    */
-  private[cluster] def joinSeedNodes(seedNodes: IndexedSeq[Address]): Unit =
+  private[cluster] def joinSeedNodes(seedNodes: immutable.IndexedSeq[Address]): Unit =
     clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes)
 
   /**
@@ -255,7 +253,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * to go through graceful handoff process `LEAVE -> EXITING -> REMOVED -> SHUTDOWN`.
    */
   private[cluster] def shutdown(): Unit = {
-    if (_isRunning.compareAndSet(true, false)) {
+    if (_isTerminated.compareAndSet(false, true)) {
       log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", selfAddress)
 
       system.stop(clusterDaemons)

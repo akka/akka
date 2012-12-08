@@ -57,6 +57,13 @@ reference file for more information:
 .. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
    :language: none
 
+.. note::
+
+   Setting properties like the listening IP and port number programmatically is
+   best done by using something like the following:
+
+   .. includecode:: ../java/code/docs/remoting/RemoteDeploymentDocTestBase.java#programmatic
+
 Types of Remote Interaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -121,6 +128,15 @@ actor systems has to have a JAR containing the class.
   this will inherently capture a reference to its enclosing object, which in
   most cases is not serializable. It is best to create a factory method in the
   companion object of the actor’s class.
+
+.. note::
+
+  You can use asterisks as wildcard matches for the actor paths, so you could specify:
+  ``/*/sampleActor`` and that would match all ``sampleActor`` on that level in the hierarchy.
+  You can also use wildcard in the last position to match all actors at a certain level:
+  ``/someParent/*``. Non-wildcard matches always have higher priority to match than wildcards, so:
+  ``/foo/bar`` is considered **more specific** than ``/foo/*`` and only the highest priority match is used.
+  Please note that it **cannot** be used to partially match section, like this: ``/foo*/bar``, ``/f*o/bar`` etc.
 
 .. warning::
 
@@ -193,7 +209,7 @@ Description of the Remoting Sample
 
 There is a more extensive remote example that comes with the Akka distribution.
 Please have a look here for more information: `Remote Sample
-<https://github.com/akka/akka/tree/master/akka-samples/akka-sample-remote>`_
+<@github@/akka-samples/akka-sample-remote>`_
 This sample demonstrates both, remote deployment and look-up of remote actors.
 First, let us have a look at the common setup for both scenarios (this is
 ``common.conf``):

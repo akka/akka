@@ -20,7 +20,8 @@ import akka.actor.{ DeadLetter, Address, ActorRef }
 import akka.util.Switch
 import scala.util.control.NonFatal
 import org.jboss.netty.handler.ssl.SslHandler
-import scala.concurrent.util.Deadline
+import scala.concurrent.duration._
+import java.nio.channels.ClosedChannelException
 
 /**
  * This is the abstract baseclass for netty remote clients, currently there's only an
@@ -43,8 +44,6 @@ private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteT
 
   def shutdown(): Boolean
 
-  def isBoundTo(address: Address): Boolean = remoteAddress == address
-
   /**
    * Converts the message to the wireprotocol and sends the message across the wire
    */
@@ -63,21 +62,23 @@ private[akka] abstract class RemoteClient private[akka] (val netty: NettyRemoteT
   private def send(request: (Any, Option[ActorRef], ActorRef)): Unit = {
     try {
       val channel = currentChannel
-      val f = channel.write(request)
-      f.addListener(
-        new ChannelFutureListener {
-          import netty.system.deadLetters
-          def operationComplete(future: ChannelFuture): Unit =
-            if (future.isCancelled || !future.isSuccess) request match {
-              case (msg, sender, recipient) ⇒ deadLetters ! DeadLetter(msg, sender.getOrElse(deadLetters), recipient)
-              // We don't call notifyListeners here since we don't think failed message deliveries are errors
-              /// If the connection goes down we'll get the error reporting done by the pipeline.
-            }
-        })
-      // Check if we should back off
-      if (!channel.isWritable) {
-        val backoff = netty.settings.BackoffTimeout
-        if (backoff.length > 0 && !f.await(backoff.length, backoff.unit)) f.cancel() //Waited as long as we could, now back off
+      if (channel.isOpen) {
+        val f = channel.write(request)
+        f.addListener(
+          new ChannelFutureListener {
+            import netty.system.deadLetters
+            def operationComplete(future: ChannelFuture): Unit =
+              if (future.isCancelled || !future.isSuccess) request match {
+                case (msg, sender, recipient) ⇒ deadLetters ! DeadLetter(msg, sender.getOrElse(deadLetters), recipient)
+                // We don't call notifyListeners here since we don't think failed message deliveries are errors
+                /// If the connection goes down we'll get the error reporting done by the pipeline.
+              }
+          })
+        // Check if we should back off
+        if (!channel.isWritable) {
+          val backoff = netty.settings.BackoffTimeout
+          if (backoff.length > 0 && !f.await(backoff.length, backoff.unit)) f.cancel() //Waited as long as we could, now back off
+        }
       }
     } catch {
       case NonFatal(e) ⇒ netty.notifyListeners(RemoteClientError(e, netty, remoteAddress))
@@ -195,8 +196,11 @@ private[akka] class ActiveRemoteClient private[akka] (
     notifyListeners(RemoteClientShutdown(netty, remoteAddress))
     try {
       if ((connection ne null) && (connection.getChannel ne null)) {
-        ChannelAddress.remove(connection.getChannel)
-        connection.getChannel.close()
+        val channel = connection.getChannel
+        ChannelAddress.remove(channel)
+        // Try to disconnect first to reduce "connection reset by peer" events
+        if (channel.isConnected) channel.disconnect()
+        if (channel.isOpen) channel.close()
       }
     } finally {
       try {
@@ -267,10 +271,8 @@ private[akka] class ActiveRemoteClientHandler(
             case CommandType.SHUTDOWN ⇒ runOnceNow { client.netty.shutdownClientConnection(remoteAddress) }
             case _                    ⇒ //Ignore others
           }
-
         case arp: AkkaRemoteProtocol if arp.hasMessage ⇒
           client.netty.receiveMessage(new RemoteMessage(arp.getMessage, client.netty.system))
-
         case other ⇒
           throw new RemoteClientException("Unknown message received in remote client handler: " + other, client.netty, client.remoteAddress)
       }
@@ -307,9 +309,14 @@ private[akka] class ActiveRemoteClientHandler(
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) = {
-    val cause = if (event.getCause ne null) event.getCause else new Exception("Unknown cause")
-    client.notifyListeners(RemoteClientError(cause, client.netty, client.remoteAddress))
-    event.getChannel.close()
+    val cause = if (event.getCause ne null) event.getCause else new AkkaException("Unknown cause")
+    cause match {
+      case _: ClosedChannelException ⇒ // Ignore
+      case NonFatal(e) ⇒
+        client.notifyListeners(RemoteClientError(e, client.netty, client.remoteAddress))
+        event.getChannel.close()
+      case e: Throwable ⇒ throw e // Rethrow fatals
+    }
   }
 }
 

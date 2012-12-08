@@ -10,7 +10,7 @@ import org.scalatest.matchers.MustMatchers
 import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import scala.concurrent.util.duration._
+import scala.concurrent.duration._
 import akka.actor.{ Props, Actor, PoisonPill, ActorSystem }
 
 object DispatcherDocSpec {
@@ -184,6 +184,13 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     val myActor =
       context.actorOf(Props[MyActor].withDispatcher("my-pinned-dispatcher"), "myactor2")
     //#defining-pinned-dispatcher
+  }
+
+  "looking up a dispatcher" in {
+    //#lookup
+    // for use with Futures, Scheduler, etc.
+    implicit val executionContext = system.dispatchers.lookup("my-dispatcher")
+    //#lookup
   }
 
   "defining priority dispatcher" in {
