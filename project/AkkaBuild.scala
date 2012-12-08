@@ -31,7 +31,8 @@ object AkkaBuild extends Build {
     version      := "2.1-SNAPSHOT",
     // FIXME: use 2.10.0 for final
     // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC3")
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC5"),
+    scalaBinaryVersion <<= scalaVersion // FIXME: Remove after 2.1.0-RC4 build
   )
 
   lazy val akka = Project(
@@ -523,7 +524,9 @@ object AkkaBuild extends Build {
     },
 
     // show full stack traces and test case durations
-    testOptions in Test += Tests.Argument("-oDF")
+    testOptions in Test += Tests.Argument("-oDF"),
+
+    resolvers += "Sonatype Release" at "https://oss.sonatype.org/content/repositories/releases" // FIXME: Remove after 2.1.0-RC4 build
   )
 
   // preprocessing settings for sphinx
