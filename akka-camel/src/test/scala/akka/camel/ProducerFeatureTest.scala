@@ -274,14 +274,11 @@ object ProducerFeatureTest {
     implicit val timeout = Timeout(duration)
     implicit val ec = context.system.dispatcher
     Await.ready(CamelExtension(context.system).activationFutureFor(child), timeout.duration)
-    context.watch(child)
     def receive = {
       case msg: CamelMessage ⇒
         child forward (msg)
       case (aref: ActorRef, msg: String) ⇒
         aref ! msg
-      case Terminated(_) ⇒
-
     }
   }
   class ChildProducer(uri: String, upper: Boolean = false) extends Actor with Producer {
@@ -303,7 +300,7 @@ object ProducerFeatureTest {
     }
 
     override def postStop() {
-      lastMessage.foreach(msg ⇒ lastSender.foreach(aref ⇒ context.parent ! (aref, msg)))
+      for (msg ← lastMessage; aref ← lastSender) context.parent ! (aref, msg)
       super.postStop()
     }
   }
