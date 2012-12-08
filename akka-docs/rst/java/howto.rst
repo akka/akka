@@ -24,7 +24,7 @@ Single-Use Actor Trees with High-Level Error Reporting
 A nice way to enter the actor world from java is the use of Patterns.ask().
 This method starts a temporary actor to forward the message and collect the result from the actor to be "asked".
 In case of errors within the asked actor the default supervision handling will take over.
-The caller of Patterns.ask() will not be notified.
+The caller of Patterns.ask() will *not* be notified.
 
 If that caller is interested in such an exception, he must make sure that the asked actor replies with Status.Failure(Throwable).
 Behind the asked actor a complex actor hierarchy might be spawned to accomplish asynchronous work.
@@ -51,6 +51,7 @@ Afterwards the actor hierarchy is stopped.
 
 Finally we are able to execute an actor and receive the results or exceptions.
 
+.. includecode:: code/docs/pattern/SupervisedAskSpec.java
 
 Template Pattern
 ================
