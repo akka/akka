@@ -1,23 +1,28 @@
 package docs.pattern;
 
-import docs.testkit.TestKitSampleTest.SomeActor;
-import scala.actors.Future;
-import actor.ActorRef;
-import actor.Props;
+import akka.actor.ActorRef;
+import akka.actor.ActorRefFactory;
+import akka.actor.Props;
+import akka.actor.UntypedActor;
+import akka.dispatch.Await;
+import akka.dispatch.Future;
+import akka.util.Timeout;
 
 public class SupervisedAskSpec {
 
-  public void execute() {
+  public Object execute(Class<? extends UntypedActor> someActor,
+      Object message, Timeout timeout, ActorRefFactory actorSystem)
+      throws Exception {
     // example usage
     try {
       ActorRef supervisorCreator = SupervisedAsk
           .createSupervisorCreator(actorSystem);
       Future<Object> finished = SupervisedAsk.askOf(supervisorCreator,
-          Props.apply(SomeActor.class), message, timeout);
-      Object result = Await.result(finished,
-          timeout.duration());
+          Props.apply(someActor), message, timeout);
+      return Await.result(finished, timeout.duration());
     } catch (Exception e) {
       // exception propagated by supervision
+      throw e;
     }
   }
 }
