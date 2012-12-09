@@ -95,7 +95,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       new DefaultScheduler(
         new HashedWheelTimer(log,
           system.threadFactory match {
-            case tf: MonitorableThreadFactory ⇒ tf.copy(name = tf.name + "-cluster-scheduler")
+            case tf: MonitorableThreadFactory ⇒ tf.withName(tf.name + "-cluster-scheduler")
             case tf                           ⇒ tf
           },
           SchedulerTickDuration,
