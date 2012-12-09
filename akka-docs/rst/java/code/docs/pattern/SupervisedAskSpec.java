@@ -1,11 +1,11 @@
 package docs.pattern;
 
+import scala.concurrent.Await;
+import scala.concurrent.Future;
 import akka.actor.ActorRef;
 import akka.actor.ActorRefFactory;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
-import akka.dispatch.Await;
-import akka.dispatch.Future;
 import akka.util.Timeout;
 
 public class SupervisedAskSpec {
