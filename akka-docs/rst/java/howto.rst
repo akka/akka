@@ -1,4 +1,3 @@
-
 .. _howto-java:
 
 ######################
@@ -47,6 +46,43 @@ and schedule the initial message send again.
    under pressure, but only schedule a new tick message when we have seen the previous one.
 
 .. includecode:: code/docs/pattern/SchedulerPatternTest.java#schedule-receive
+
+Single-Use Actor Trees with High-Level Error Reporting
+======================================================
+
+*Contributed by: Rick Latrine*
+
+A nice way to enter the actor world from java is the use of Patterns.ask().
+This method starts a temporary actor to forward the message and collect the result from the actor to be "asked".
+In case of errors within the asked actor the default supervision handling will take over.
+The caller of Patterns.ask() will *not* be notified.
+
+If that caller is interested in such an exception, he must make sure that the asked actor replies with Status.Failure(Throwable).
+Behind the asked actor a complex actor hierarchy might be spawned to accomplish asynchronous work.
+Then supervision is the established way to control error handling.
+
+Unfortunately the asked actor must know about supervision and must catch the exceptions.
+Such an actor is unlikely to be reused in a different actor hierarchy and contains crippled try/catch blocks.
+
+This pattern provides a way to encapsulate supervision and error propagation to the temporary actor.
+Finally the promise returned by Patterns.ask() is fulfilled as a failure, including the exception.
+
+Let's have a look at the example code:
+
+.. includecode:: code/docs/pattern/SupervisedAsk.java
+
+In the askOf method the SupervisorCreator is sent the user message.
+The SupervisorCreator creates a SupervisorActor and forwards the message.
+This prevents the actor system from overloading due to actor creations.
+The SupervisorActor is responsible to create the user actor, forwards the message, handles actor termination and supervision.
+Additionally the SupervisorActor stops the user actor if execution time expired.
+
+In case of an exception the supervisor tells the temporary actor which exception was thrown.
+Afterwards the actor hierarchy is stopped.
+
+Finally we are able to execute an actor and receive the results or exceptions.
+
+.. includecode:: code/docs/pattern/SupervisedAskSpec.java
 
 Template Pattern
 ================
