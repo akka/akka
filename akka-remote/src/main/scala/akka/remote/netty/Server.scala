@@ -21,7 +21,7 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
 
   import netty.settings
 
-  val ip = InetAddress.getByName(settings.Hostname)
+  protected val ip = InetAddress.getByName(settings.BindHostname)
 
   private val factory = {
     val boss, worker = settings.UseDispatcherForIO.map(netty.system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()

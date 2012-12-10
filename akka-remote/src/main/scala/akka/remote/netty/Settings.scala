@@ -55,9 +55,20 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
   val SendBufferSize: Option[Int] = optionSize("send-buffer-size")
   val ReceiveBufferSize: Option[Int] = optionSize("receive-buffer-size")
 
+  val forceBindAddress: Boolean = getBoolean("force-bind-address")
+
   val Hostname: String = getString("hostname") match {
     case ""    ⇒ InetAddress.getLocalHost.getHostAddress
     case value ⇒ value
+  }
+
+  /**
+   * Used exclusively by akka.remote.netty.Server to determine if a connection should be accepted.
+   */
+  val BindHostname: String = if (forceBindAddress) {
+    "0.0.0.0" //accept all incoming connections
+  } else {
+    Hostname // accept only incoming connection addressed to me, IPs matching my NIC card
   }
 
   val OutboundLocalAddress: Option[String] = getString("outbound-local-address") match {
