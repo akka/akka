@@ -67,7 +67,7 @@ object AkkaBuild extends Build {
       generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity
 
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, osgiTests, docs, contrib, samples)
   )
 
   lazy val actor = Project(
@@ -262,6 +262,16 @@ object AkkaBuild extends Build {
     dependencies = Seq(osgi % "compile;test->test"),
     settings = defaultSettings ++ OSGi.osgiAries ++ Seq(
       libraryDependencies ++= Dependencies.osgiAries,
+      parallelExecution in Test := false
+    )
+  )
+
+  lazy val osgiTests = Project(
+    id = "akka-osgi-tests",
+    base = file("akka-osgi-tests"),
+    dependencies = Seq(osgi % "compile;test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.osgiTests,
       parallelExecution in Test := false
     )
   )
@@ -666,6 +676,7 @@ object AkkaBuild extends Build {
 
 object Dependencies {
 
+
   object Compile {
     // Compile
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.0" exclude("org.slf4j", "slf4j-api") // ApacheV2
@@ -703,6 +714,30 @@ object Dependencies {
       val tinybundles = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j       = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf   = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
+      
+
+      val paxExamVersion = "3.0.0.M4"
+
+      val javaxInject = "javax.inject"                % "javax.inject"                 % "1"                % "test" // TODO License
+      val paxExamUnit = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % paxExamVersion     % "test" // TODO License
+      val paxExamSpi  = "org.ops4j.pax.exam"          % "pax-exam-spi"                 % paxExamVersion     % "test"
+      val paxInject   = "org.ops4j.pax.exam"          % "pax-exam-inject"              % paxExamVersion     % "test" // TODO License
+      val paxLinkAssembly = "org.ops4j.pax.exam"      % "pax-exam-link-assembly"       % paxExamVersion     % "test" // TODO License
+      val paxExamForge    = "org.ops4j.pax.exam"      % "pax-exam-testforge"           % paxExamVersion     % "test" // TODO License
+      val paxExamMvn  = "org.ops4j.pax.exam"          % "pax-exam-link-mvn"            % paxExamVersion     % "test" // TODO License
+      val paxAether   = "org.ops4j.pax.url"           % "pax-url-aether"               % "1.5.0"            % "test" // TODO License
+
+      val paxExamRunner   = "org.ops4j.pax.exam"      % "pax-exam-container-native"    % paxExamVersion     % "test" // TODO License
+      //val paxExamRunner   = "org.ops4j.pax.exam"      % "pax-exam-container-forked"    % paxExamVersion     % "test" // TODO License
+      //val paxExamRunner   = "org.ops4j.pax.exam"      % "pax-exam-container-paxrunner" % paxExamVersion     % "test" // TODO License
+
+      val paxNoJcl    = "org.ops4j.pax.runner"        % "pax-runner-no-jcl"            % "1.7.6"            % "test" // TODO License
+      //val paxFelix    = "org.ops4j.pax.runner"        % "pax-runner-platform-felix"    % "1.7.6"            % "test" // TODO License
+      //val paxEquinox  = "org.ops4j.pax.runner"        % "pax-runner-platform-equinox"  % "1.7.6"            % "test" // TODO License
+      //val paxRunner   = "org.ops4j.pax.runner"        % "pax-runner"                   % "1.7.6"            % "test" // TODO License
+
+      val felix       = "org.apache.felix"            % "org.apache.felix.framework"   % "4.0.3"            % "test" // ApacheV2
+      val equinox     = "org.eclipse.tycho"           % "org.eclipse.osgi"             % "3.8.1.v20120830-144521"  % "test" // EPL
     }
   }
 
@@ -739,6 +774,8 @@ object Dependencies {
   val osgi = Seq(osgiCore,Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
   val osgiAries = Seq(osgiCore, ariesBlueprint, Test.ariesProxy)
+
+  val osgiTests = Seq(osgiCore, slf4jApi, Test.scalatest, Test.junit, Test.paxExamUnit , Test.paxLinkAssembly, Test.paxExamSpi, Test.paxInject, Test.paxExamRunner, Test.paxNoJcl Test.paxExamForge, Test.paxExamMvn, Test.paxAether, Test.javaxInject, Test.felix )
 
   val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
 
