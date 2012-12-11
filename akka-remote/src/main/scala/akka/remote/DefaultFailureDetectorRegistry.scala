@@ -32,16 +32,22 @@ class DefaultFailureDetectorRegistry[A](val detectorFactory: () ⇒ FailureDetec
 
   @tailrec final override def heartbeat(resource: A): Unit = {
 
-    val oldTable = resourceToFailureDetector.get
-
-    oldTable.get(resource) match {
+    resourceToFailureDetector.get.get(resource) match {
       case Some(failureDetector) ⇒ failureDetector.heartbeat()
       case None ⇒
         // First one wins and creates the new FailureDetector
         if (failureDectorCreationLock.tryLock()) try {
-          val newDetector: FailureDetector = detectorFactory()
-          newDetector.heartbeat()
-          resourceToFailureDetector.set(oldTable + (resource -> newDetector))
+          // First check for non-existing key was outside the lock, and a second thread might just released the lock
+          // when this one acquired it, so the second check is needed.
+          val oldTable = resourceToFailureDetector.get
+          oldTable.get(resource) match {
+            case Some(failureDetector) ⇒
+              failureDetector.heartbeat()
+            case None ⇒
+              val newDetector: FailureDetector = detectorFactory()
+              newDetector.heartbeat()
+              resourceToFailureDetector.set(oldTable + (resource -> newDetector))
+          }
         } finally failureDectorCreationLock.unlock()
         else heartbeat(resource) // The thread that lost the race will try to reread
     }

@@ -5,7 +5,6 @@ import akka.actor.{ ActorRef, Address }
 import akka.util.ByteString
 import akka.remote.transport.AssociationHandle.HandleEventListener
 
-
 object Transport {
 
   trait AssociationEvent

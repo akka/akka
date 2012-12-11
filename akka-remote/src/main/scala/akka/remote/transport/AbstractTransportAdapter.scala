@@ -4,7 +4,7 @@ import scala.language.postfixOps
 import akka.actor._
 import akka.pattern.ask
 import akka.remote.transport.Transport._
-import akka.remote.{ RemotingSettings, RemoteActorRefProvider }
+import akka.remote.{ RARP, RemotingSettings, RemoteActorRefProvider }
 import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext, Promise, Future }
 import scala.util.Success
@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 trait TransportAdapterProvider extends ((Transport, ExtendedActorSystem) ⇒ Transport)
 
 class TransportAdapters(system: ExtendedActorSystem) extends Extension {
-  val settings = new RemotingSettings(system.provider.asInstanceOf[RemoteActorRefProvider].remoteSettings.config)
+  val settings = new RemotingSettings(RARP(system).provider.remoteSettings.config)
 
   private val adaptersTable: Map[String, TransportAdapterProvider] = for ((name, fqn) ← settings.Adapters) yield {
     name -> system.dynamicAccess.createInstanceFor[TransportAdapterProvider](fqn, immutable.Seq.empty).recover({

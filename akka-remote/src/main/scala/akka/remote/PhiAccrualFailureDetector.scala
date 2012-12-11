@@ -170,10 +170,10 @@ private[akka] case class HeartbeatHistory private (
   intervalSum: Long,
   squaredIntervalSum: Long) {
 
+  // Heartbeat histories are created trough the firstHeartbeat variable of the PhiAccrualFailureDetector
+  // which always have intervals.size > 0.
   if (maxSampleSize < 1)
     throw new IllegalArgumentException(s"maxSampleSize must be >= 1, got [$maxSampleSize]")
-  if (intervals.size == 0)
-    throw new IllegalArgumentException("intervals.size must be > 0")
   if (intervalSum < 0L)
     throw new IllegalArgumentException(s"intervalSum must be >= 0, got [$intervalSum]")
   if (squaredIntervalSum < 0L)

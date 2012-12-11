@@ -293,7 +293,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
       if (settings.WaitActivityEnabled)
         goto(WaitActivity) using OutboundUnderlyingAssociated(statusPromise, wrappedHandle)
       else
-        goto(Open) using AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, Queue.empty)
+        goto(Open) using AssociatedWaitHandler(notifyOutboundHandler(wrappedHandle, statusPromise), wrappedHandle, immutable.Queue.empty)
 
     case Event(DisassociateUnderlying, _) ⇒
       stop()

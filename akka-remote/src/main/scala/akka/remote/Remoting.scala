@@ -19,7 +19,7 @@ import java.util.concurrent.TimeoutException
 import scala.util.{ Failure, Success }
 import scala.collection.immutable
 import akka.japi.Util.immutableSeq
-import akka.remote.Remoting.RegisterTransportActor
+import akka.remote.Remoting.{ TransportSupervisor, RegisterTransportActor }
 
 class RemotingSettings(val config: Config) {
 
@@ -60,6 +60,14 @@ class RemotingSettings(val config: Config) {
     cfg.root.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
 }
 
+private[remote] case class RARP(provider: RemoteActorRefProvider) extends Extension
+private[remote] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
+
+  override def lookup() = RARP
+
+  override def createExtension(system: ExtendedActorSystem) = RARP(system.provider.asInstanceOf[RemoteActorRefProvider])
+}
+
 private[remote] object Remoting {
 
   final val EndpointManagerName = "endpointManager"
@@ -94,6 +102,16 @@ private[remote] object Remoting {
 
   case class RegisterTransportActor(props: Props, name: String)
 
+  private[Remoting] class TransportSupervisor extends Actor {
+    override def supervisorStrategy = OneForOneStrategy() {
+      case NonFatal(e) ⇒ Restart
+    }
+
+    def receive = {
+      case RegisterTransportActor(props, name) ⇒ sender ! context.actorOf(props, name)
+    }
+  }
+
 }
 
 private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
@@ -106,15 +124,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   private val settings = new RemotingSettings(provider.remoteSettings.config)
 
-  val transportSupervisor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(new Actor {
-    override def supervisorStrategy = OneForOneStrategy() {
-      case NonFatal(e) ⇒ Restart
-    }
-
-    def receive = {
-      case RegisterTransportActor(props, name) ⇒ sender ! context.actorOf(props, name)
-    }
-  }), "transports")
+  val transportSupervisor = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props[TransportSupervisor], "transports")
 
   override def localAddressForRemote(remote: Address): Address = Remoting.localAddressForRemote(transportMapping, remote)
 
