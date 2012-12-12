@@ -9,14 +9,13 @@ import akka.remote.transport.AkkaProtocolTransport._
 import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.ProtocolStateActor._
 import akka.remote.transport.Transport._
-import akka.remote.{ PhiAccrualFailureDetector, FailureDetector, RemoteActorRefProvider }
+import akka.remote.{ AddressUrlEncoder, PhiAccrualFailureDetector, FailureDetector, RemoteActorRefProvider }
 import akka.util.ByteString
 import com.typesafe.config.Config
 import scala.concurrent.duration.{ Duration, FiniteDuration, MILLISECONDS }
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Success, Failure }
-import java.net.URLEncoder
 import scala.collection.immutable
 import akka.remote.transport.ActorTransportAdapter._
 
@@ -130,7 +129,7 @@ private[transport] class AkkaProtocolManager(
   }
 
   private def actorNameFor(remoteAddress: Address): String =
-    "akkaProtocol-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + nextId.next()
+    "akkaProtocol-" + AddressUrlEncoder(remoteAddress) + "-" + nextId.next()
 
   private def ready: Receive = {
     case InboundAssociation(handle) ⇒
@@ -453,10 +452,13 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
       wrappedHandle.disassociate()
   }
 
+  private def listenForListenerRegistration(readHandlerPromise: Promise[HandleEventListener]): Unit =
+    readHandlerPromise.future.map { HandleListenerRegistered(_) } pipeTo self
+
   private def notifyOutboundHandler(wrappedHandle: AssociationHandle,
                                     statusPromise: Promise[Status]): Future[HandleEventListener] = {
     val readHandlerPromise: Promise[HandleEventListener] = Promise()
-    readHandlerPromise.future.map { HandleListenerRegistered(_) } pipeTo self
+    listenForListenerRegistration(readHandlerPromise)
 
     val exposedHandle =
       new AkkaProtocolHandle(
@@ -475,7 +477,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
                                    originAddress: Address,
                                    associationListener: AssociationEventListener): Future[HandleEventListener] = {
     val readHandlerPromise: Promise[HandleEventListener] = Promise()
-    readHandlerPromise.future.map { HandleListenerRegistered(_) } pipeTo self
+    listenForListenerRegistration(readHandlerPromise)
 
     val exposedHandle =
       new AkkaProtocolHandle(

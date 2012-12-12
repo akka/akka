@@ -60,6 +60,10 @@ class RemotingSettings(val config: Config) {
     cfg.root.unwrapped.asScala.toMap.map { case (k, v) ⇒ (k, v.toString) }
 }
 
+private[remote] object AddressUrlEncoder {
+  def apply(address: Address): String = URLEncoder.encode(address.toString, "utf-8")
+}
+
 private[remote] case class RARP(provider: RemoteActorRefProvider) extends Extension
 private[remote] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
 
@@ -444,6 +448,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           case (_, (transportAddress, _)) ⇒ transportAddress
         } map {
           case (a, t) if t.size > 1 ⇒
+            // FIXME: Throwing on the wrong thread
             throw new RemoteTransportException(s"There are more than one transports listening on local address [$a]", null)
           case (a, t) ⇒ a -> t.head._1
         }
@@ -474,7 +479,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         endpointSettings,
         AkkaPduProtobufCodec))
       .withDispatcher("akka.remoting.writer-dispatcher"),
-      "endpointWriter-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + endpointId.next()))
+      "endpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
   }
 
   private def retryGateOpen(timeOfFailure: Long): Boolean = (timeOfFailure + settings.RetryGateClosedFor) < System.nanoTime()

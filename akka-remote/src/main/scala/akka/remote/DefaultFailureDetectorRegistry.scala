@@ -19,7 +19,7 @@ import java.util.concurrent.locks.{ ReentrantLock, Lock }
 class DefaultFailureDetectorRegistry[A](val detectorFactory: () ⇒ FailureDetector) extends FailureDetectorRegistry[A] {
 
   private val resourceToFailureDetector = new AtomicReference[Map[A, FailureDetector]](Map())
-  private final val failureDectorCreationLock: Lock = new ReentrantLock
+  private final val failureDetectorCreationLock: Lock = new ReentrantLock
 
   /**
    * Returns true if the resource is considered to be up and healthy and returns false otherwise. For unregistered
@@ -30,13 +30,14 @@ class DefaultFailureDetectorRegistry[A](val detectorFactory: () ⇒ FailureDetec
     case _       ⇒ true
   }
 
-  @tailrec final override def heartbeat(resource: A): Unit = {
+  final override def heartbeat(resource: A): Unit = {
 
     resourceToFailureDetector.get.get(resource) match {
       case Some(failureDetector) ⇒ failureDetector.heartbeat()
       case None ⇒
         // First one wins and creates the new FailureDetector
-        if (failureDectorCreationLock.tryLock()) try {
+        failureDetectorCreationLock.lock()
+        try {
           // First check for non-existing key was outside the lock, and a second thread might just released the lock
           // when this one acquired it, so the second check is needed.
           val oldTable = resourceToFailureDetector.get
@@ -48,8 +49,7 @@ class DefaultFailureDetectorRegistry[A](val detectorFactory: () ⇒ FailureDetec
               newDetector.heartbeat()
               resourceToFailureDetector.set(oldTable + (resource -> newDetector))
           }
-        } finally failureDectorCreationLock.unlock()
-        else heartbeat(resource) // The thread that lost the race will try to reread
+        } finally failureDetectorCreationLock.unlock()
     }
   }
 

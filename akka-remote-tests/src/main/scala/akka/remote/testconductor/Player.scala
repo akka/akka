@@ -216,9 +216,11 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           import context.dispatcher // FIXME is this the right EC for the future below?
           val mode = if (t.rateMBit < 0.0f) Unthrottled
           else if (t.rateMBit == 0.0f) Blackhole
-          else TokenBucket(500, t.rateMBit * 125000.0, 0, 0)
+          // Conversion needed as the TokenBucket measures in octets: 125000 Octets/s = 1Mbit/s
+          else TokenBucket(capacity = 500, tokensPerSecond = t.rateMBit * 125000.0, lastSend = 0, availableTokens = 0)
 
           val cmdFuture = TestConductor().transport.managementCommand(SetThrottle(t.target, t.direction, mode))
+
           cmdFuture onSuccess {
             case b: Boolean ⇒ self ! ToServer(Done)
             case _ ⇒ throw new RuntimeException("Throttle was requested from the TestConductor, but no transport " +

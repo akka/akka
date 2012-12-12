@@ -15,7 +15,7 @@ private[remote] object ChannelLocalActor extends ChannelLocal[Option[HandleEvent
   def notifyListener(channel: Channel, msg: HandleEvent): Unit = get(channel) foreach { _ notify msg }
 }
 
-private[remote] trait TcpHandlers extends CommonHandlers with HasTransport {
+private[remote] trait TcpHandlers extends CommonHandlers {
 
   import ChannelLocalActor._
 

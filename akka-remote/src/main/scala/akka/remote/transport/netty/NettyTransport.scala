@@ -22,6 +22,7 @@ import scala.util.Random
 import scala.util.control.NonFatal
 import akka.dispatch.ThreadPoolConfig
 import akka.remote.transport.AssociationHandle.HandleEventListener
+import java.util.concurrent.atomic.AtomicInteger
 
 object NettyTransportSettings {
   sealed trait Mode
@@ -91,13 +92,10 @@ class NettyTransportSettings(config: Config) {
 
 }
 
-trait HasTransport {
+trait CommonHandlers extends NettyHelpers {
   protected val transport: NettyTransport
-}
 
-trait CommonHandlers extends NettyHelpers with HasTransport {
-
-  final override def onOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = transport.channels.add(e.getChannel)
+  final override def onOpen(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = transport.channelGroup.add(e.getChannel)
 
   protected def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle
 
@@ -125,7 +123,7 @@ trait CommonHandlers extends NettyHelpers with HasTransport {
 
 abstract class ServerHandler(protected final val transport: NettyTransport,
                              private final val associationListenerFuture: Future[AssociationEventListener])
-  extends NettyServerHelpers with CommonHandlers with HasTransport {
+  extends NettyServerHelpers with CommonHandlers {
 
   import transport.executionContext
 
@@ -140,7 +138,7 @@ abstract class ServerHandler(protected final val transport: NettyTransport,
 
 abstract class ClientHandler(protected final val transport: NettyTransport,
                              private final val statusPromise: Promise[Status])
-  extends NettyClientHelpers with CommonHandlers with HasTransport {
+  extends NettyClientHelpers with CommonHandlers {
 
   final protected def initOutbound(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit = {
     channel.setReadable(false)
@@ -154,8 +152,10 @@ private[transport] object NettyTransport {
   val FrameLengthFieldLength = 4
   def gracefulClose(channel: Channel): Unit = channel.disconnect().addListener(ChannelFutureListener.CLOSE)
 
+  val uniqueIdCounter = new AtomicInteger(0)
 }
 
+// FIXME: Split into separate UDP and TCP classes
 class NettyTransport(private val settings: NettyTransportSettings, private val system: ExtendedActorSystem) extends Transport {
 
   def this(system: ExtendedActorSystem, conf: Config) = this(new NettyTransportSettings(conf), system)
@@ -166,29 +166,36 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   implicit val executionContext: ExecutionContext = system.dispatcher
 
   override val schemeIdentifier: String = TransportMode + (if (EnableSsl) ".ssl" else "")
-  override val maximumPayloadBytes: Int = 32000
+  override val maximumPayloadBytes: Int = 32000 // The number of octets required by the remoting specification
 
   private final val isDatagram: Boolean = TransportMode == Udp
 
   @volatile private var localAddress: Address = _
-  @volatile private var masterChannel: Channel = _
+  @volatile private var serverChannel: Channel = _
 
   private val log = Logging(system, this.getClass)
 
   final val udpConnectionTable = new ConcurrentHashMap[SocketAddress, HandleEventListener]()
 
-  val channels = new DefaultDisposableChannelGroup("netty-transport-" + Random.nextString(20))
-
-  private def executor: Executor = UseDispatcherForIo.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+  val channelGroup = new DefaultDisposableChannelGroup("akka-netty-transport-driver-channelgroup-" +
+    uniqueIdCounter.getAndIncrement)
 
   private val clientChannelFactory: ChannelFactory = TransportMode match {
-    case Tcp ⇒ new NioClientSocketChannelFactory(executor, executor, ClientSocketWorkerPoolSize)
-    case Udp ⇒ new NioDatagramChannelFactory(executor, ClientSocketWorkerPoolSize)
+    case Tcp ⇒
+      val boss, worker = UseDispatcherForIo.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+      new NioClientSocketChannelFactory(boss, worker, ClientSocketWorkerPoolSize)
+    case Udp ⇒
+      val pool = UseDispatcherForIo.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+      new NioDatagramChannelFactory(pool, ClientSocketWorkerPoolSize)
   }
 
   private val serverChannelFactory: ChannelFactory = TransportMode match {
-    case Tcp ⇒ new NioServerSocketChannelFactory(executor, executor, ServerSocketWorkerPoolSize)
-    case Udp ⇒ new NioDatagramChannelFactory(executor, ServerSocketWorkerPoolSize)
+    case Tcp ⇒
+      val boss, worker = UseDispatcherForIo.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+      new NioServerSocketChannelFactory(boss, worker, ServerSocketWorkerPoolSize)
+    case Udp ⇒
+      val pool = UseDispatcherForIo.map(system.dispatchers.lookup) getOrElse Executors.newCachedThreadPool()
+      new NioDatagramChannelFactory(pool, ServerSocketWorkerPoolSize)
   }
 
   private def newPipeline: DefaultChannelPipeline = {
@@ -232,6 +239,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   }
 
   private def setupBootstrap[B <: Bootstrap](bootstrap: B, pipelineFactory: ChannelPipelineFactory): B = {
+    // FIXME: Expose these settings in configuration
     bootstrap.setPipelineFactory(pipelineFactory)
     bootstrap.setOption("backlog", settings.Backlog)
     bootstrap.setOption("tcpNoDelay", true)
@@ -276,17 +284,17 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
     val listenPromise: Promise[(Address, Promise[AssociationEventListener])] = Promise()
 
     try {
-      masterChannel = inboundBootstrap match {
+      serverChannel = inboundBootstrap match {
         case b: ServerBootstrap ⇒ b.bind(new InetSocketAddress(InetAddress.getByName(settings.Hostname), settings.PortSelector))
         case b: ConnectionlessBootstrap ⇒
           b.bind(new InetSocketAddress(InetAddress.getByName(settings.Hostname), settings.PortSelector))
       }
 
       // Block reads until a handler actor is registered
-      masterChannel.setReadable(false)
-      channels.add(masterChannel)
+      serverChannel.setReadable(false)
+      channelGroup.add(serverChannel)
 
-      addressFromSocketAddress(masterChannel.getLocalAddress, Some(system.name), Some(settings.Hostname)) match {
+      addressFromSocketAddress(serverChannel.getLocalAddress, Some(system.name), Some(settings.Hostname)) match {
         case Some(address) ⇒
           val listenerPromise: Promise[AssociationEventListener] = Promise()
           listenPromise.success((address, listenerPromise))
@@ -294,12 +302,12 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
           listenerPromise.future.onSuccess {
             case listener: AssociationEventListener ⇒
               associationListenerPromise.success(listener)
-              masterChannel.setReadable(true)
+              serverChannel.setReadable(true)
           }
 
         case None ⇒
           listenPromise.failure(
-            new NettyTransportException(s"Unknown local address type ${masterChannel.getLocalAddress.getClass}", null))
+            new NettyTransportException(s"Unknown local address type ${serverChannel.getLocalAddress.getClass}", null))
       }
 
     } catch {
@@ -312,7 +320,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   override def associate(remoteAddress: Address): Future[Status] = {
     val statusPromise: Promise[Status] = Promise()
 
-    if (!masterChannel.isBound) statusPromise.success(Fail(new NettyTransportException("Transport is not bound", null)))
+    if (!serverChannel.isBound) statusPromise.success(Fail(new NettyTransportException("Transport is not bound", null)))
 
     try {
       if (!isDatagram) {
@@ -367,10 +375,10 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   }
 
   override def shutdown(): Unit = {
-    channels.unbind()
-    channels.disconnect().addListener(new ChannelGroupFutureListener {
+    channelGroup.unbind()
+    channelGroup.disconnect().addListener(new ChannelGroupFutureListener {
       def operationComplete(future: ChannelGroupFuture) {
-        channels.close()
+        channelGroup.close()
         inboundBootstrap.releaseExternalResources()
       }
     })

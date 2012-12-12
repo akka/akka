@@ -10,7 +10,7 @@ import org.jboss.netty.buffer.{ ChannelBuffer, ChannelBuffers }
 import org.jboss.netty.channel._
 import scala.concurrent.{ Future, Promise }
 
-private[remote] trait UdpHandlers extends CommonHandlers with HasTransport {
+private[remote] trait UdpHandlers extends CommonHandlers {
 
   override def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle =
     new UdpAssociationHandle(localAddress, remoteAddress, channel, transport)

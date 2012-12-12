@@ -12,7 +12,6 @@ import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.{ AkkaPduCodec, Transport, AssociationHandle }
 import akka.serialization.Serialization
 import akka.util.ByteString
-import java.net.URLEncoder
 import scala.util.control.NonFatal
 
 /**
@@ -244,7 +243,7 @@ private[remote] class EndpointWriter(
       val readerDispatcher = msgDispatch
       reader = Some(
         context.watch(context.actorOf(Props(new EndpointReader(readerCodec, readerLocalAddress, readerDispatcher)),
-          "endpointReader-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + readerId.next())))
+          "endpointReader-" + AddressUrlEncoder(remoteAddress) + "-" + readerId.next())))
       h.readHandlerPromise.success(reader.get)
     case None ⇒ throw new EndpointException("Internal error: No handle was present during creation of the endpoint" +
       "reader.", null)
