@@ -10,10 +10,12 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
+import com.typesafe.config.ConfigFactory
 import akka.actor.Address
-import akka.remote.testconductor.{ RoleName, Direction }
+import akka.remote.testconductor.RoleName
 import scala.concurrent.duration._
 import scala.collection.immutable
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -21,7 +23,12 @@ case class UnreachableNodeRejoinsClusterMultiNodeConfig(failureDetectorPuppet: B
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(ConfigFactory.parseString(
+    """
+      akka.remoting.log-remote-lifecycle-events = off
+      akka.cluster.publish-stats-interval = 0s
+      akka.loglevel = INFO
+    """).withFallback(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig)))
 
   testTransport(on = true)
 }

@@ -19,7 +19,6 @@ import akka.remote.RemoteActorRefProvider
 import akka.testkit._
 import scala.concurrent.duration._
 import akka.remote.testconductor.RoleName
-import akka.remote.testconductor.TestConductorTransport
 import akka.actor.RootActorPath
 import akka.event.{ Logging, LoggingAdapter }
 
@@ -64,7 +63,7 @@ abstract class MultiNodeConfig {
           receive = on
           fsm = on
         }
-        akka.remote.log-remote-lifecycle-events = on
+        akka.remoting.log-remote-lifecycle-events = on
         """)
     else
       ConfigFactory.empty
@@ -100,7 +99,7 @@ abstract class MultiNodeConfig {
 
   private[testkit] def config: Config = {
     val transportConfig =
-      if (_testTransport) ConfigFactory.parseString("akka.remote.transport=" + classOf[TestConductorTransport].getName)
+      if (_testTransport) ConfigFactory.parseString("akka.remoting.transports.tcp.applied-adapters = [gremlin, trttl]")
       else ConfigFactory.empty
 
     val configs = (_nodeConf get myself).toList ::: _commonConf.toList ::: transportConfig :: MultiNodeSpec.nodeConfig :: MultiNodeSpec.baseConfig :: Nil
@@ -191,8 +190,8 @@ object MultiNodeSpec {
 
   private[testkit] val nodeConfig = mapToConfig(Map(
     "akka.actor.provider" -> "akka.remote.RemoteActorRefProvider",
-    "akka.remote.netty.hostname" -> selfName,
-    "akka.remote.netty.port" -> selfPort))
+    "akka.remoting.transports.tcp.hostname" -> selfName,
+    "akka.remoting.transports.tcp.port" -> selfPort))
 
   private[testkit] val baseConfig: Config = ConfigFactory.parseString("""
       akka {
@@ -409,7 +408,6 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
 
   // useful to see which jvm is running which role, used by LogRoleReplace utility
   log.info("Role [{}] started with address [{}]", myself.name,
-    //FIXME: Workaround for old-remoting -- must be removed later
     system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress)
 
 }

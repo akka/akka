@@ -18,6 +18,7 @@ import org.jboss.netty.channel.{ Channel, SimpleChannelUpstreamHandler, ChannelH
 import akka.pattern.{ ask, pipe, AskTimeoutException }
 import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
+import akka.remote.transport.ThrottlerTransportAdapter.{ SetThrottle, TokenBucket, Blackhole, Unthrottled }
 
 /**
  * The Player is the client component of the
@@ -213,12 +214,21 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case t: ThrottleMsg ⇒
           import settings.QueryTimeout
           import context.dispatcher // FIXME is this the right EC for the future below?
-          TestConductor().failureInjector ? t map (_ ⇒ ToServer(Done)) pipeTo self
+          val mode = if (t.rateMBit < 0.0f) Unthrottled
+            else if (t.rateMBit == 0.0f) Blackhole
+            else TokenBucket(500, t.rateMBit * 125000.0, 0, 0)
+
+          val cmdFuture = TestConductor().transport.managementCommand(SetThrottle(t.target, t.direction, mode))
+          cmdFuture onSuccess {
+            case b: Boolean ⇒ self ! ToServer(Done)
+            case _ => throw new RuntimeException("Throttle was requested from the TestConductor, but no transport "+
+              "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig")
+          }
           stay
         case d: DisconnectMsg ⇒
           import settings.QueryTimeout
           import context.dispatcher // FIXME is this the right EC for the future below?
-          TestConductor().failureInjector ? d map (_ ⇒ ToServer(Done)) pipeTo self
+          // FIXME: Currently ignoring, needs support from Remoting
           stay
         case TerminateMsg(exit) ⇒
           System.exit(exit)

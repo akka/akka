@@ -14,6 +14,7 @@ import akka.actor.Address
 import org.jboss.netty.handler.codec.oneone.OneToOneDecoder
 import scala.concurrent.duration._
 import akka.remote.testconductor.TestConductorProtocol.BarrierOp
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 case class RoleName(name: String)
 

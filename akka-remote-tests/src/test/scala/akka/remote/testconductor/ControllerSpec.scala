@@ -15,7 +15,6 @@ object ControllerSpec {
   val config = """
     akka.testconductor.barrier-timeout = 5s
     akka.actor.provider = akka.remote.RemoteActorRefProvider
-    akka.remote.netty.port = 0
     akka.actor.debug.fsm = on
     akka.actor.debug.lifecycle = on
     """

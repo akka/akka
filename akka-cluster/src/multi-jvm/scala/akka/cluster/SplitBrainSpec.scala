@@ -9,10 +9,11 @@ import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
+import scala.concurrent.duration._
 import akka.actor.Address
-import akka.remote.testconductor.Direction
 import scala.concurrent.duration._
 import scala.collection.immutable
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -23,6 +24,7 @@ case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends Mul
 
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
+        akka.remoting.retry-latch-closed-for = 3 s
         akka.cluster {
           auto-down = on
           failure-detector.threshold = 4

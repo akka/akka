@@ -24,28 +24,7 @@ import akka.util.{ Timeout }
 import scala.reflect.classTag
 import akka.ConfigurationException
 import akka.AkkaException
-
-sealed trait Direction {
-  def includes(other: Direction): Boolean
-}
-
-object Direction {
-  case object Send extends Direction {
-    override def includes(other: Direction): Boolean = other match {
-      case Send ⇒ true
-      case _    ⇒ false
-    }
-  }
-  case object Receive extends Direction {
-    override def includes(other: Direction): Boolean = other match {
-      case Receive ⇒ true
-      case _       ⇒ false
-    }
-  }
-  case object Both extends Direction {
-    override def includes(other: Direction): Boolean = true
-  }
-}
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 /**
  * The conductor is the one orchestrating the test: it governs the
@@ -149,10 +128,9 @@ trait Conductor { this: TestConductorExt ⇒
     controller ? Throttle(node, target, direction, 0f) mapTo classTag[Done]
   }
 
-  private def requireTestConductorTranport(): Unit =
-    if (!transport.isInstanceOf[TestConductorTransport])
-      throw new ConfigurationException("To use this feature you must activate the TestConductorTranport by " +
-        "specifying `testTransport(on = true)` in your MultiNodeConfig.")
+  private def requireTestConductorTranport(): Unit = if (!transport.defaultAddress.protocol.contains(".gremlin.trttl."))
+    throw new ConfigurationException("To use this feature you must activate the failure injector adapters "+
+      "(gremlin, trttl) by specifying `testTransport(on = true)` in your MultiNodeConfig.")
 
   /**
    * Switch the Netty pipeline of the remote support into pass through mode for

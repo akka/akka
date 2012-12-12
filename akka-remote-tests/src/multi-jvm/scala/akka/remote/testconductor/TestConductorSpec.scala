@@ -16,6 +16,7 @@ import akka.testkit.LongRunningTest
 import java.net.InetSocketAddress
 import java.net.InetAddress
 import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeSpec, MultiNodeConfig }
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false))
