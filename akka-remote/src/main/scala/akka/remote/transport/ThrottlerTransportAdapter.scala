@@ -125,10 +125,9 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
   import context.dispatcher
 
   private val ids = Iterator from 0
-  var localAddress: Address = _
   private var associationListener: AssociationEventListener = _
   private var throttlingModes = Map[Address, (ThrottleMode, Direction)]()
-  private var handleTable = Map[Address, ThrottlerHandle]()
+  private var handleTable = List[(Address, ThrottlerHandle)]()
 
   private def nakedAddress(address: Address): Address = address.copy(protocol = "", system = "")
 
@@ -136,7 +135,6 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
 
   def receive: Receive = {
     case ListenUnderlying(listenAddress, upstreamListenerFuture) ⇒
-      localAddress = listenAddress
       upstreamListenerFuture.future.map { ListenerRegistered(_) } pipeTo self
 
     case ListenerRegistered(listener) ⇒
@@ -159,20 +157,20 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
           val inMode = getInboundMode(nakedAddress(remoteAddress))
           wrappedHandle.outboundThrottleMode.set(getOutboundMode(nakedAddress(remoteAddress)))
           wrappedHandle.readHandlerPromise.future.map { (_, inMode) } pipeTo wrappedHandle.throttlerActor
-
+          handleTable ::= nakedAddress(remoteAddress) -> wrappedHandle
           statusPromise.success(Ready(wrappedHandle))
         case s @ _ ⇒ statusPromise.complete(s)
       }
     case s @ SetThrottle(address, direction, mode) ⇒
       val naked = nakedAddress(address)
       throttlingModes += naked -> (mode, direction)
-      handleTable.get(naked) match {
-        case Some(handle) ⇒ setMode(handle, mode, direction)
-        case None         ⇒
+      handleTable.foreach {
+        case (addr, handle) ⇒
+          if (addr == naked) setMode(handle, mode, direction)
       }
     case Checkin(origin, handle) ⇒
       val naked: Address = nakedAddress(origin)
-      handleTable += naked -> handle
+      handleTable ::= naked -> handle
       setMode(naked, handle)
 
   }
@@ -207,9 +205,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
     val managerRef = self
     val throttlerActor = context.actorOf(Props(new ThrottledAssociation(managerRef, listener, originalHandle, inbound)),
       "throttler" + ids.next())
-    val handle = ThrottlerHandle(originalHandle, throttlerActor)
-    handleTable += nakedAddress(originalHandle.remoteAddress) -> handle
-    handle
+    ThrottlerHandle(originalHandle, throttlerActor)
   }
 
 }

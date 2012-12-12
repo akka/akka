@@ -129,7 +129,7 @@ trait Conductor { this: TestConductorExt ⇒
   }
 
   private def requireTestConductorTranport(): Unit = if (!transport.defaultAddress.protocol.contains(".gremlin.trttl."))
-    throw new ConfigurationException("To use this feature you must activate the failure injector adapters "+
+    throw new ConfigurationException("To use this feature you must activate the failure injector adapters " +
       "(gremlin, trttl) by specifying `testTransport(on = true)` in your MultiNodeConfig.")
 
   /**

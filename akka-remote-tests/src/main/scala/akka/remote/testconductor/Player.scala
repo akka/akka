@@ -215,13 +215,13 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           import settings.QueryTimeout
           import context.dispatcher // FIXME is this the right EC for the future below?
           val mode = if (t.rateMBit < 0.0f) Unthrottled
-            else if (t.rateMBit == 0.0f) Blackhole
-            else TokenBucket(500, t.rateMBit * 125000.0, 0, 0)
+          else if (t.rateMBit == 0.0f) Blackhole
+          else TokenBucket(500, t.rateMBit * 125000.0, 0, 0)
 
           val cmdFuture = TestConductor().transport.managementCommand(SetThrottle(t.target, t.direction, mode))
           cmdFuture onSuccess {
             case b: Boolean ⇒ self ! ToServer(Done)
-            case _ => throw new RuntimeException("Throttle was requested from the TestConductor, but no transport "+
+            case _ ⇒ throw new RuntimeException("Throttle was requested from the TestConductor, but no transport " +
               "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig")
           }
           stay

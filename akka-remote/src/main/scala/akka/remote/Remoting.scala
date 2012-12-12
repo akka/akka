@@ -279,9 +279,12 @@ private[remote] object EndpointManager {
       endpoint
     }
 
+    // FIXME: Temporary hack to verify the bug
+    def isPassive(endpoint: ActorRef): Boolean = addressToPassive.contains(endpointToAddress(endpoint))
+
     def markFailed(endpoint: ActorRef, timeOfFailure: Long): Unit = {
       addressToEndpointAndPolicy += endpointToAddress(endpoint) -> Gated(timeOfFailure)
-      endpointToAddress = endpointToAddress - endpoint
+      if (!isPassive(endpoint)) endpointToAddress = endpointToAddress - endpoint
     }
 
     def markQuarantine(address: Address, reason: Throwable): Unit =
@@ -289,12 +292,13 @@ private[remote] object EndpointManager {
 
     def removeIfNotGated(endpoint: ActorRef): Unit = {
       endpointToAddress.get(endpoint) foreach { address ⇒
-        addressToEndpointAndPolicy.get(address) foreach {
-          case Pass(_) ⇒
-            addressToEndpointAndPolicy = addressToEndpointAndPolicy - address
-            endpointToAddress = endpointToAddress - endpoint
-          case _ ⇒
+        addressToEndpointAndPolicy.get(address) foreach { 
+          case Pass(_) ⇒ addressToEndpointAndPolicy = addressToEndpointAndPolicy - address
+          case _       ⇒
         }
+
+        endpointToAddress = endpointToAddress - endpoint
+        addressToPassive = addressToPassive - address
       }
     }
   }
@@ -471,6 +475,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         AkkaPduProtobufCodec))
       .withDispatcher("akka.remoting.writer-dispatcher"),
       "endpointWriter-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + endpointId.next()))
+
+    context.watch(endpoint)
 
   }
 
