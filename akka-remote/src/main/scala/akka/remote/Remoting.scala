@@ -292,7 +292,7 @@ private[remote] object EndpointManager {
 
     def removeIfNotGated(endpoint: ActorRef): Unit = {
       endpointToAddress.get(endpoint) foreach { address ⇒
-        addressToEndpointAndPolicy.get(address) foreach { 
+        addressToEndpointAndPolicy.get(address) foreach {
           case Pass(_) ⇒ addressToEndpointAndPolicy = addressToEndpointAndPolicy - address
           case _       ⇒
         }
@@ -475,9 +475,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         AkkaPduProtobufCodec))
       .withDispatcher("akka.remoting.writer-dispatcher"),
       "endpointWriter-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + endpointId.next()))
-
-    context.watch(endpoint)
-
   }
 
   private def retryGateOpen(timeOfFailure: Long): Boolean = (timeOfFailure + settings.RetryGateClosedFor) < System.nanoTime()

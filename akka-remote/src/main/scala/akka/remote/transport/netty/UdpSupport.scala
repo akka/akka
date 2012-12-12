@@ -20,15 +20,15 @@ private[remote] trait UdpHandlers extends CommonHandlers with HasTransport {
                                 msg: ChannelBuffer,
                                 remoteSocketAddress: InetSocketAddress): Unit = {
     transport.udpConnectionTable.putIfAbsent(remoteSocketAddress, listener) match {
-      case null => listener notify InboundPayload(ByteString(msg.array()))
-      case oldReader =>
+      case null ⇒ listener notify InboundPayload(ByteString(msg.array()))
+      case oldReader ⇒
         throw new NettyTransportException(s"Listener $listener attempted to register for remote address $remoteSocketAddress" +
-        s" but $oldReader was already registered.", null)
+          s" but $oldReader was already registered.", null)
     }
   }
 
   override def onMessage(ctx: ChannelHandlerContext, e: MessageEvent): Unit = e.getRemoteAddress match {
-    case inetSocketAddress: InetSocketAddress =>
+    case inetSocketAddress: InetSocketAddress ⇒
       if (!transport.udpConnectionTable.containsKey(inetSocketAddress)) {
         e.getChannel.setReadable(false)
         initUdp(e.getChannel, e.getRemoteAddress, e.getMessage.asInstanceOf[ChannelBuffer])
@@ -36,7 +36,7 @@ private[remote] trait UdpHandlers extends CommonHandlers with HasTransport {
         val listener = transport.udpConnectionTable.get(inetSocketAddress)
         listener notify InboundPayload(ByteString(e.getMessage.asInstanceOf[ChannelBuffer].array()))
       }
-    case _ =>
+    case _ ⇒
   }
 
   def initUdp(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit
@@ -57,9 +57,9 @@ private[remote] class UdpClientHandler(_transport: NettyTransport, _statusPromis
 }
 
 private[remote] class UdpAssociationHandle(val localAddress: Address,
-                           val remoteAddress: Address,
-                           private val channel: Channel,
-                           private val transport: NettyTransport) extends AssociationHandle {
+                                           val remoteAddress: Address,
+                                           private val channel: Channel,
+                                           private val transport: NettyTransport) extends AssociationHandle {
 
   override val readHandlerPromise: Promise[HandleEventListener] = Promise()
 
@@ -74,6 +74,6 @@ private[remote] class UdpAssociationHandle(val localAddress: Address,
   }
 
   override def disassociate(): Unit = try channel.close()
-    finally transport.udpConnectionTable.remove(transport.addressToSocketAddress(remoteAddress))
+  finally transport.udpConnectionTable.remove(transport.addressToSocketAddress(remoteAddress))
 
 }

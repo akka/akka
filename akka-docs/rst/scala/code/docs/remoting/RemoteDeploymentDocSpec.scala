@@ -20,7 +20,7 @@ object RemoteDeploymentDocSpec {
 
 class RemoteDeploymentDocSpec extends AkkaSpec("""
     akka.actor.provider = "akka.remote.RemoteActorRefProvider"
-    akka.remote.netty.port = 0
+    akka.remoting.transports.tcp.port = 0
 """) with ImplicitSender {
 
   import RemoteDeploymentDocSpec._
@@ -42,8 +42,8 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
 
   "demonstrate address extractor" in {
     //#make-address
-    val one = AddressFromURIString("akka://sys@host:1234")
-    val two = Address("akka", "sys", "host", 1234) // this gives the same
+    val one = AddressFromURIString("tcp.akka://sys@host:1234")
+    val two = Address("tcp.akka", "sys", "host", 1234) // this gives the same
     //#make-address
     one must be === two
   }
