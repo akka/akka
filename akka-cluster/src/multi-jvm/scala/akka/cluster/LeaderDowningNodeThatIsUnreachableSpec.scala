@@ -60,7 +60,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
 
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
 
-        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = List(fourthAddress), 30.seconds)
+        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Set(fourthAddress), 30.seconds)
       }
 
       runOn(fourth) {
@@ -70,7 +70,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
       runOn(second, third) {
         enterBarrier("down-fourth-node")
 
-        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = List(fourthAddress), 30.seconds)
+        awaitUpConvergence(numberOfMembers = 3, canNotBePartOfMemberRing = Set(fourthAddress), 30.seconds)
       }
 
       enterBarrier("await-completion-1")
@@ -90,7 +90,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
 
         // --- HERE THE LEADER SHOULD DETECT FAILURE AND AUTO-DOWN THE UNREACHABLE NODE ---
 
-        awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = List(secondAddress), 30.seconds)
+        awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = Set(secondAddress), 30.seconds)
       }
 
       runOn(second) {
@@ -100,7 +100,7 @@ abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDow
       runOn(third) {
         enterBarrier("down-second-node")
 
-        awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = List(secondAddress), 30 seconds)
+        awaitUpConvergence(numberOfMembers = 2, canNotBePartOfMemberRing = Set(secondAddress), 30 seconds)
       }
 
       enterBarrier("await-completion-2")

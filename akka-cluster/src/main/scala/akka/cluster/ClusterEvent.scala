@@ -284,18 +284,24 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     // keep the latestGossip to be sent to new subscribers
     latestGossip = newGossip
     // first publish the diffUnreachable between the last two gossips
-    diffUnreachable(oldGossip, newGossip) foreach { event ⇒
-      publish(event)
-      // notify DeathWatch about unreachable node
-      publish(AddressTerminated(event.member.address))
-    }
+    diffUnreachable(oldGossip, newGossip) foreach publish
     // buffer up the MemberEvents waiting for convergence
     memberEvents ++= diffMemberEvents(oldGossip, newGossip)
     // if we have convergence then publish the MemberEvents and possibly a LeaderChanged
     if (newGossip.convergence) {
       val previousConvergedGossip = latestConvergedGossip
       latestConvergedGossip = newGossip
-      memberEvents foreach publish
+      memberEvents foreach { event ⇒
+        event match {
+          case m @ (MemberDowned(_) | MemberRemoved(_)) ⇒
+            // TODO MemberDowned match should probably be covered by MemberRemoved, see ticket #2788
+            //   but right now we don't change Downed to Removed
+            publish(event)
+            // notify DeathWatch about downed node
+            publish(AddressTerminated(m.member.address))
+          case _ ⇒ publish(event)
+        }
+      }
       memberEvents = immutable.Seq.empty
       diffLeader(previousConvergedGossip, latestConvergedGossip) foreach publish
     }

@@ -218,17 +218,17 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec { self: MultiNodeS
    */
   def awaitUpConvergence(
     numberOfMembers: Int,
-    canNotBePartOfMemberRing: immutable.Seq[Address] = Nil,
+    canNotBePartOfMemberRing: Set[Address] = Set.empty,
     timeout: FiniteDuration = 20.seconds): Unit = {
     within(timeout) {
+      if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
+        awaitCond(
+          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
       awaitCond(clusterView.members.size == numberOfMembers)
       awaitCond(clusterView.members.forall(_.status == MemberStatus.Up))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.headOption.map(_.address)
       awaitCond(clusterView.leader == expectedLeader)
-      if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
-        awaitCond(
-          canNotBePartOfMemberRing forall (address ⇒ !(clusterView.members exists (_.address == address))))
     }
   }
 

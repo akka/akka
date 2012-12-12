@@ -140,7 +140,6 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
    * Unregisters the cluster JMX MBean from MBean server.
    */
   def unregisterMBean(): Unit = {
-    clusterView.close()
     try {
       mBeanServer.unregisterMBean(clusterMBeanName)
     } catch {
