@@ -30,7 +30,7 @@ trait FailureDetectorRegistry[A] {
   def remove(resource: A): Unit
 
   /**
-   * Removes all resources and starts over.
+   * Removes all resources and any associated failure detector state.
    */
   def reset(): Unit
 }

@@ -54,7 +54,7 @@ private[remote] object AkkaProtocolTransport {
 }
 
 /**
- * Implementation of the Akka protocol as a Trasnsport that wraps an underlying Transport instance.
+ * Implementation of the Akka protocol as a Transport that wraps an underlying Transport instance.
  *
  * Features provided by this transport are:
  *  - Soft-state associations via the use of heartbeats and failure detectors
@@ -90,7 +90,11 @@ private[remote] class AkkaProtocolTransport(
 
   override val maximumOverhead: Int = AkkaProtocolTransport.AkkaOverhead
   protected def managerName = s"akkaprotocolmanager.${wrappedTransport.schemeIdentifier}${UniqueId.getAndIncrement}"
-  protected def managerProps = Props(new AkkaProtocolManager(wrappedTransport, settings))
+  protected def managerProps = {
+    val wt = wrappedTransport
+    val s = settings
+    Props(new AkkaProtocolManager(wt, s))
+  }
 }
 
 private[transport] class AkkaProtocolManager(
@@ -130,23 +134,31 @@ private[transport] class AkkaProtocolManager(
 
   private def ready: Receive = {
     case InboundAssociation(handle) ⇒
+      val stateActorLocalAddress = localAddress
+      val stateActorAssociationHandler = associationHandler
+      val stateActorSettings = settings
+      val failureDetector = createFailureDetector()
       context.actorOf(Props(new ProtocolStateActor(
-        localAddress,
+        stateActorLocalAddress,
         handle,
-        associationHandler,
-        settings,
+        stateActorAssociationHandler,
+        stateActorSettings,
         AkkaPduProtobufCodec,
-        createFailureDetector())), actorNameFor(handle.remoteAddress))
+        failureDetector)), actorNameFor(handle.remoteAddress))
 
     case AssociateUnderlying(remoteAddress, statusPromise) ⇒
+      val stateActorLocalAddress = localAddress
+      val stateActorSettings = settings
+      val stateActorWrappedTransport = wrappedTransport
+      val failureDetector = createFailureDetector()
       context.actorOf(Props(new ProtocolStateActor(
-        localAddress,
+        stateActorLocalAddress,
         remoteAddress,
         statusPromise,
-        wrappedTransport,
-        settings,
+        stateActorWrappedTransport,
+        stateActorSettings,
         AkkaPduProtobufCodec,
-        createFailureDetector())), actorNameFor(remoteAddress))
+        failureDetector)), actorNameFor(remoteAddress))
   }
 
   private def createFailureDetector(): FailureDetector = new PhiAccrualFailureDetector(
@@ -479,29 +491,37 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
   }
 
   // Helper method for exception translation
-  private def ape[T](errorMsg: String)(body: ⇒ T): T = try body catch {
+  private def tryOrThrowAkkaProtocolException[T](errorMsg: String)(body: ⇒ T): T = try body catch {
     case NonFatal(e) ⇒ throw new AkkaProtocolException(errorMsg, e)
   }
 
-  private def decodePdu(pdu: ByteString): AkkaPdu = ape("Error while decoding incoming Akka PDU of length: " + pdu.length) {
-    codec.decodePdu(pdu)
+  private def decodePdu(pdu: ByteString): AkkaPdu = {
+    tryOrThrowAkkaProtocolException("Error while decoding incoming Akka PDU of length: " + pdu.length) {
+      codec.decodePdu(pdu)
+    }
   }
 
   // Neither heartbeats neither disassociate cares about backing off if write fails:
   //  - Missing heartbeats are not critical
   //  - Disassociate messages are not guaranteed anyway
-  private def sendHeartbeat(wrappedHandle: AssociationHandle): Unit = ape("Error writing HEARTBEAT to transport") {
-    wrappedHandle.write(codec.constructHeartbeat)
+  private def sendHeartbeat(wrappedHandle: AssociationHandle): Unit = {
+    tryOrThrowAkkaProtocolException("Error writing HEARTBEAT to transport") {
+      wrappedHandle.write(codec.constructHeartbeat)
+    }
   }
 
-  private def sendDisassociate(wrappedHandle: AssociationHandle): Unit = ape("Error writing DISASSOCIATE to transport") {
-    wrappedHandle.write(codec.constructDisassociate)
+  private def sendDisassociate(wrappedHandle: AssociationHandle): Unit = {
+    tryOrThrowAkkaProtocolException("Error writing DISASSOCIATE to transport") {
+      wrappedHandle.write(codec.constructDisassociate)
+    }
   }
 
   // Associate should be the first message, so backoff is not needed
-  private def sendAssociate(wrappedHandle: AssociationHandle): Unit = ape("Error writing ASSOCIATE to transport") {
-    val cookie = if (settings.RequireCookie) Some(settings.SecureCookie) else None
-    wrappedHandle.write(codec.constructAssociate(cookie, localAddress))
+  private def sendAssociate(wrappedHandle: AssociationHandle): Unit = {
+    tryOrThrowAkkaProtocolException("Error writing ASSOCIATE to transport") {
+      val cookie = if (settings.RequireCookie) Some(settings.SecureCookie) else None
+      wrappedHandle.write(codec.constructAssociate(cookie, localAddress))
+    }
   }
 
 }

@@ -126,7 +126,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
 
   private val ids = Iterator from 0
   var localAddress: Address = _
-  private var associationHandler: AssociationEventListener = _
+  private var associationListener: AssociationEventListener = _
   private var throttlingModes = Map[Address, (ThrottleMode, Direction)]()
   private var handleTable = Map[Address, ThrottlerHandle]()
 
@@ -140,7 +140,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
       upstreamListenerFuture.future.map { ListenerRegistered(_) } pipeTo self
 
     case ListenerRegistered(listener) ⇒
-      associationHandler = listener
+      associationListener = listener
       context.become(ready)
 
     // Block inbound associations until handler is registered
@@ -150,12 +150,12 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
 
   private def ready: Receive = {
     case InboundAssociation(handle) ⇒
-      val wrappedHandle = wrapHandle(handle, true)
+      val wrappedHandle = wrapHandle(handle, associationListener, inbound = true)
       wrappedHandle.throttlerActor ! wrappedHandle
     case AssociateUnderlying(remoteAddress, statusPromise) ⇒
       wrappedTransport.associate(remoteAddress).onComplete {
         case Success(Ready(handle)) ⇒
-          val wrappedHandle = wrapHandle(handle, false)
+          val wrappedHandle = wrapHandle(handle, associationListener, inbound = false)
           val inMode = getInboundMode(nakedAddress(remoteAddress))
           wrappedHandle.outboundThrottleMode.set(getOutboundMode(nakedAddress(remoteAddress)))
           wrappedHandle.readHandlerPromise.future.map { (_, inMode) } pipeTo wrappedHandle.throttlerActor
@@ -203,8 +203,9 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
     if (direction.includes(Direction.Send)) handle.outboundThrottleMode.set(mode)
   }
 
-  private def wrapHandle(originalHandle: AssociationHandle, inbound: Boolean): ThrottlerHandle = {
-    val throttlerActor = context.actorOf(Props(new ThrottledAssociation(self, associationHandler, originalHandle, inbound)),
+  private def wrapHandle(originalHandle: AssociationHandle, listener: AssociationEventListener, inbound: Boolean): ThrottlerHandle = {
+    val managerRef = self
+    val throttlerActor = context.actorOf(Props(new ThrottledAssociation(managerRef, listener, originalHandle, inbound)),
       "throttler" + ids.next())
     val handle = ThrottlerHandle(originalHandle, throttlerActor)
     handleTable += nakedAddress(originalHandle.remoteAddress) -> handle

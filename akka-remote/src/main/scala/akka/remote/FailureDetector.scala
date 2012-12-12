@@ -3,7 +3,7 @@ package akka.remote
 import java.util.concurrent.TimeUnit._
 
 /**
- * A failure detector is a thread-safe mutable construct that registers heartbeat events of a resource and is able to
+ * A failure detector must be a thread-safe mutable construct that registers heartbeat events of a resource and is able to
  * decide the availability of that monitored resource.
  */
 trait FailureDetector {
@@ -27,7 +27,7 @@ object FailureDetector {
    * Abstraction of a clock that returns time in milliseconds. Clock can only be used to measure elapsed
    * time and is not related to any other notion of system or wall-clock time.
    */
-  trait Clock extends (() ⇒ Long)
+  abstract class Clock extends (() ⇒ Long)
 
   implicit val defaultClock = new Clock {
     def apply() = NANOSECONDS.toMillis(System.nanoTime)

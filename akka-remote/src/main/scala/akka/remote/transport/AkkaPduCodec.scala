@@ -11,6 +11,12 @@ import com.google.protobuf.{ ByteString ⇒ PByteString }
 
 class PduCodecException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
 
+/**
+ * Internal API
+ *
+ * Companion object of the [[akka.remote.transport.AkkaPduCodec]] trait. Contains the representation case classes
+ * of decoded Akka Protocol Data Units (PDUs).
+ */
 private[remote] object AkkaPduCodec {
 
   /**
@@ -34,13 +40,36 @@ private[remote] object AkkaPduCodec {
  */
 private[remote] trait AkkaPduCodec {
 
-  def constructPayload(payload: ByteString): ByteString
+  /**
+   * Returns an [[akka.remote.transport.AkkaPduCodec.AkkaPdu]] instance that represents the PDU contained in the raw
+   * ByteString.
+   * @param raw
+   *   Encoded raw byte representation of an Akka PDU
+   * @return
+   *   Case class representation of the decoded PDU that can be used in a match statement
+   */
+  def decodePdu(raw: ByteString): AkkaPdu
 
-  def constructMessage(
-    localAddress: Address,
-    recipient: ActorRef,
-    serializedMessage: MessageProtocol,
-    senderOption: Option[ActorRef]): ByteString
+  /**
+   * Takes an [[akka.remote.transport.AkkaPduCodec.AkkaPdu]] representation of an Akka PDU and returns its encoded
+   * form as a [[akka.util.ByteString]].
+   *
+   * For the same effect the constructXXX methods might be called directly, taking method parameters instead of the
+   * [[akka.remote.transport.AkkaPduCodec.AkkaPdu]] case classes.
+   *
+   * @param pdu
+   *   The Akka Protocol Data Unit to be encoded
+   * @return
+   *   Encoded form as raw bytes
+   */
+  def encodePdu(pdu: AkkaPdu): ByteString = pdu match {
+    case Associate(cookie, origin) ⇒ constructAssociate(cookie, origin)
+    case Payload(bytes)            ⇒ constructPayload(bytes)
+    case Disassociate              ⇒ constructDisassociate
+    case Heartbeat                 ⇒ constructHeartbeat
+  }
+
+  def constructPayload(payload: ByteString): ByteString
 
   def constructAssociate(cookie: Option[String], origin: Address): ByteString
 
@@ -48,10 +77,13 @@ private[remote] trait AkkaPduCodec {
 
   def constructHeartbeat: ByteString
 
-  def decodePdu(raw: ByteString): AkkaPdu
-
   def decodeMessage(raw: ByteString, provider: RemoteActorRefProvider, localAddress: Address): Message
 
+  def constructMessage(
+    localAddress: Address,
+    recipient: ActorRef,
+    serializedMessage: MessageProtocol,
+    senderOption: Option[ActorRef]): ByteString
 }
 
 private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {

@@ -1,6 +1,6 @@
 package akka.remote.transport.netty
 
-import akka.actor.{ Address }
+import akka.actor.Address
 import akka.remote.transport.AssociationHandle
 import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListener, Disassociated, InboundPayload }
 import akka.remote.transport.Transport.{ AssociationEventListener, Status }
@@ -10,12 +10,12 @@ import org.jboss.netty.buffer.{ ChannelBuffers, ChannelBuffer }
 import org.jboss.netty.channel._
 import scala.concurrent.{ Future, Promise }
 
-object ChannelLocalActor extends ChannelLocal[Option[HandleEventListener]] {
+private[remote] object ChannelLocalActor extends ChannelLocal[Option[HandleEventListener]] {
   override def initialValue(channel: Channel): Option[HandleEventListener] = None
   def notifyListener(channel: Channel, msg: HandleEvent): Unit = get(channel) foreach { _ notify msg }
 }
 
-trait TcpHandlers extends CommonHandlers with HasTransport {
+private[remote] trait TcpHandlers extends CommonHandlers with HasTransport {
 
   import ChannelLocalActor._
 
@@ -41,7 +41,7 @@ trait TcpHandlers extends CommonHandlers with HasTransport {
   }
 }
 
-class TcpServerHandler(_transport: NettyTransport, _associationListenerFuture: Future[AssociationEventListener])
+private[remote] class TcpServerHandler(_transport: NettyTransport, _associationListenerFuture: Future[AssociationEventListener])
   extends ServerHandler(_transport, _associationListenerFuture) with TcpHandlers {
 
   override def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
@@ -50,7 +50,7 @@ class TcpServerHandler(_transport: NettyTransport, _associationListenerFuture: F
 
 }
 
-class TcpClientHandler(_transport: NettyTransport, _statusPromise: Promise[Status])
+private[remote] class TcpClientHandler(_transport: NettyTransport, _statusPromise: Promise[Status])
   extends ClientHandler(_transport, _statusPromise) with TcpHandlers {
 
   override def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
@@ -59,7 +59,7 @@ class TcpClientHandler(_transport: NettyTransport, _statusPromise: Promise[Statu
 
 }
 
-class TcpAssociationHandle(val localAddress: Address, val remoteAddress: Address, private val channel: Channel)
+private[remote] class TcpAssociationHandle(val localAddress: Address, val remoteAddress: Address, private val channel: Channel)
   extends AssociationHandle {
 
   override val readHandlerPromise: Promise[HandleEventListener] = Promise()

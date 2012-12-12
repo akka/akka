@@ -116,8 +116,10 @@ private[remote] object Remoting {
 
 private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider) extends RemoteTransport(_system, _provider) {
 
-  @volatile private var endpointManager: ActorRef = _
+  @volatile private var endpointManager: Option[ActorRef] = None
   @volatile private var transportMapping: Map[String, Set[(Transport, Address)]] = _
+  // This is effectively a write-once variable similar to a lazy val. The reason for not using a lazy val is exception
+  // handling.
   @volatile var addresses: Set[Address] = _
   // FIXME: Temporary workaround until next Pull Request as the means of configuration changed
   override def defaultAddress: Address = addresses.head
@@ -135,53 +137,55 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     eventPublisher.notifyListeners(RemotingErrorEvent(new RemoteTransportException(msg, cause)))
 
   override def shutdown(): Unit = {
-    if (endpointManager != null) {
-      try {
-        val stopped: Future[Boolean] = gracefulStop(endpointManager, settings.ShutdownTimeout)(system)
+    endpointManager match {
+      case Some(manager) ⇒
+        try {
+          val stopped: Future[Boolean] = gracefulStop(manager, settings.ShutdownTimeout)(system)
 
-        if (Await.result(stopped, settings.ShutdownTimeout)) {
-          eventPublisher.notifyListeners(RemotingShutdownEvent)
-        }
+          if (Await.result(stopped, settings.ShutdownTimeout)) {
+            eventPublisher.notifyListeners(RemotingShutdownEvent)
+          }
 
-      } catch {
-        case e: TimeoutException ⇒ notifyError("Shutdown timed out.", e)
-        case NonFatal(e)         ⇒ notifyError("Shutdown failed.", e)
-      } finally {
-        endpointManager = null
-      }
+        } catch {
+          case e: TimeoutException ⇒ notifyError("Shutdown timed out.", e)
+          case NonFatal(e)         ⇒ notifyError("Shutdown failed.", e)
+        } finally endpointManager = None
+      case None ⇒ log.warning("Remoting is not running. Ignoring shutdown attempt.")
     }
   }
 
   // Start assumes that it cannot be followed by another start() without having a shutdown() first
   override def start(): Unit = {
-    if (endpointManager eq null) {
-      log.info("Starting remoting")
-      endpointManager = system.asInstanceOf[ActorSystemImpl].systemActorOf(
-        Props(new EndpointManager(provider.remoteSettings.config, log)), Remoting.EndpointManagerName)
+    endpointManager match {
+      case None ⇒
+        log.info("Starting remoting")
+        val manager: ActorRef = system.asInstanceOf[ActorSystemImpl].systemActorOf(
+          Props(new EndpointManager(provider.remoteSettings.config, log)), Remoting.EndpointManagerName)
+        endpointManager = Some(manager)
 
-      implicit val timeout = new Timeout(settings.StartupTimeout)
+        implicit val timeout = new Timeout(settings.StartupTimeout)
 
-      try {
-        val addressesPromise: Promise[Set[(Transport, Address)]] = Promise()
-        endpointManager ! Listen(addressesPromise)
+        try {
+          val addressesPromise: Promise[Set[(Transport, Address)]] = Promise()
+          manager ! Listen(addressesPromise)
 
-        val transports: Set[(Transport, Address)] = Await.result(addressesPromise.future, timeout.duration)
-        transportMapping = transports.groupBy { case (transport, _) ⇒ transport.schemeIdentifier }.mapValues {
-          _.toSet
+          val transports: Set[(Transport, Address)] = Await.result(addressesPromise.future, timeout.duration)
+          transportMapping = transports.groupBy { case (transport, _) ⇒ transport.schemeIdentifier }.mapValues {
+            _.toSet
+          }
+
+          addresses = transports.map { _._2 }.toSet
+
+          manager ! StartupFinished
+          eventPublisher.notifyListeners(RemotingListenEvent(addresses))
+
+        } catch {
+          case e: TimeoutException ⇒ notifyError("Startup timed out", e)
+          case NonFatal(e)         ⇒ notifyError("Startup failed", e)
         }
 
-        addresses = transports.map { _._2 }.toSet
-
-        endpointManager ! StartupFinished
-        eventPublisher.notifyListeners(RemotingListenEvent(addresses))
-
-      } catch {
-        case e: TimeoutException ⇒ notifyError("Startup timed out", e)
-        case NonFatal(e)         ⇒ notifyError("Startup failed", e)
-      }
-
-    } else {
-      log.warning("Remoting was already started. Ignoring start attempt.")
+      case Some(_) ⇒
+        log.warning("Remoting was already started. Ignoring start attempt.")
     }
   }
 
@@ -196,14 +200,17 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     // Ignore
   }
 
-  // FIXME: Keep senders down the stack
-  override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit =
-    endpointManager.tell(Send(message, senderOption, recipient), sender = Actor.noSender)
+  override def send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef): Unit = endpointManager match {
+    case Some(manager) ⇒ manager.tell(Send(message, senderOption, recipient), sender = senderOption getOrElse Actor.noSender)
+    case None          ⇒ throw new IllegalStateException("Attempted to send remote message but Remoting is not running.")
+  }
 
-  override def managementCommand(cmd: Any): Future[Boolean] = {
-    val statusPromise = Promise[Boolean]()
-    endpointManager.tell(ManagementCommand(cmd, statusPromise), sender = Actor.noSender)
-    statusPromise.future
+  override def managementCommand(cmd: Any): Future[Boolean] = endpointManager match {
+    case Some(manager) ⇒
+      val statusPromise = Promise[Boolean]()
+      manager.tell(ManagementCommand(cmd, statusPromise), sender = Actor.noSender)
+      statusPromise.future
+    case None ⇒ throw new IllegalStateException("Attempted to send management command but Remoting is not running.")
   }
 
   // Not used anywhere only to keep compatibility with RemoteTransport interface
@@ -282,13 +289,11 @@ private[remote] object EndpointManager {
 
     def removeIfNotGated(endpoint: ActorRef): Unit = {
       endpointToAddress.get(endpoint) foreach { address ⇒
-        addressToEndpointAndPolicy.get(address) foreach { policy ⇒
-          policy match {
-            case Pass(_) ⇒
-              addressToEndpointAndPolicy = addressToEndpointAndPolicy - address
-              endpointToAddress = endpointToAddress - endpoint
-            case _ ⇒
-          }
+        addressToEndpointAndPolicy.get(address) foreach {
+          case Pass(_) ⇒
+            addressToEndpointAndPolicy = addressToEndpointAndPolicy - address
+            endpointToAddress = endpointToAddress - endpoint
+          case _ ⇒
         }
       }
     }
@@ -312,7 +317,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   // Mapping between transports and the local addresses they listen to
   var transportMapping: Map[Address, Transport] = Map()
 
-  val retryGateEnabled = settings.RetryGateClosedFor > 0L
+  def retryGateEnabled = settings.RetryGateClosedFor > 0L
   val pruneInterval: Long = if (retryGateEnabled) settings.RetryGateClosedFor * 2L else 0L
   val pruneTimerCancellable: Option[Cancellable] = if (retryGateEnabled)
     Some(context.system.scheduler.schedule(pruneInterval milliseconds, pruneInterval milliseconds, self, Prune))
@@ -337,11 +342,13 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   }
 
   def receive = {
-    case Listen(addressesPromise) ⇒ try initializeTransports(addressesPromise) catch {
-      case NonFatal(e) ⇒
-        addressesPromise.failure(e)
-        context.stop(self)
-    }
+    case Listen(addressesPromise) ⇒
+
+      try initializeTransports(addressesPromise) catch {
+        case NonFatal(e) ⇒
+          addressesPromise.failure(e)
+          context.stop(self)
+      }
 
     case ManagementCommand(_, statusPromise) ⇒ statusPromise.success(false)
 
@@ -358,13 +365,23 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       endpoints.getEndpointWithPolicy(recipientAddress) match {
         case Some(Pass(endpoint)) ⇒ endpoint ! s
         case Some(Gated(timeOfFailure)) ⇒ if (retryGateOpen(timeOfFailure)) {
-          val endpoint = createEndpoint(recipientAddress, recipientRef.localAddressToUse, None)
+          val endpoint = createEndpoint(
+            recipientAddress,
+            recipientRef.localAddressToUse,
+            transportMapping(recipientRef.localAddressToUse),
+            settings,
+            None)
           endpoints.registerActiveEndpoint(recipientAddress, endpoint)
           endpoint ! s
-        } else extendedSystem.deadLetters ! message
-        case Some(Quarantined(_)) ⇒ extendedSystem.deadLetters ! message
+        } else extendedSystem.deadLetters forward message
+        case Some(Quarantined(_)) ⇒ extendedSystem.deadLetters forward message
         case None ⇒
-          val endpoint = createEndpoint(recipientAddress, recipientRef.localAddressToUse, None)
+          val endpoint = createEndpoint(
+            recipientAddress,
+            recipientRef.localAddressToUse,
+            transportMapping(recipientRef.localAddressToUse),
+            settings,
+            None)
           endpoints.registerActiveEndpoint(recipientAddress, endpoint)
           endpoint ! s
 
@@ -373,7 +390,12 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case InboundAssociation(handle) ⇒ endpoints.passiveEndpointFor(handle.remoteAddress) match {
       case Some(endpoint) ⇒ endpoint ! EndpointWriter.TakeOver(handle)
       case None ⇒
-        val endpoint = createEndpoint(handle.remoteAddress, handle.localAddress, Some(handle))
+        val endpoint = createEndpoint(
+          handle.remoteAddress,
+          handle.localAddress,
+          transportMapping(handle.localAddress),
+          settings,
+          Some(handle))
         eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, true))
         if (settings.UsePassiveConnections && !endpoints.hasActiveEndpointFor(handle.remoteAddress)) {
           endpoints.registerActiveEndpoint(handle.remoteAddress, endpoint)
@@ -434,6 +456,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
   private def createEndpoint(remoteAddress: Address,
                              localAddress: Address,
+                             transport: Transport,
+                             endpointSettings: RemotingSettings,
                              handleOption: Option[AssociationHandle]): ActorRef = {
     assert(transportMapping contains localAddress)
 
@@ -442,8 +466,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         handleOption,
         localAddress,
         remoteAddress,
-        transportMapping(localAddress),
-        settings,
+        transport,
+        endpointSettings,
         AkkaPduProtobufCodec))
       .withDispatcher("akka.remoting.writer-dispatcher"),
       "endpointWriter-" + URLEncoder.encode(remoteAddress.toString, "utf-8") + "-" + endpointId.next()))

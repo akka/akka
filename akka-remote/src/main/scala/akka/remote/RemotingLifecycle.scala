@@ -63,7 +63,8 @@ case object RemotingShutdownEvent extends RemotingLifecycleEvent {
   override val toString: String = "Remoting shut down"
 }
 
-final case class RemotingErrorEvent(@BeanProperty cause: Throwable) extends RemotingLifecycleEvent {
+final case class RemotingErrorEvent(cause: Throwable) extends RemotingLifecycleEvent {
+  def getCause: Throwable = cause
   override def logLevel: Logging.LogLevel = Logging.ErrorLevel
   override def toString: String = s"Remoting error: [${Logging.stackTraceFor(cause)}]"
 }
