@@ -174,6 +174,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   private val selfReference = new ThreadLocal[AnyRef]
   private val currentContext = new ThreadLocal[ActorContext]
 
+  //TODO add @SerialVersionUID(1L) when SI-4804 is fixed
+  private case object NullResponse
+
   /**
    * Returns the reference to the proxy when called inside a method call in a TypedActor
    *
@@ -272,14 +275,16 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         if (m.isOneWay) m(me)
         else {
           try {
-            if (m.returnsFuture_?) {
-              val s = sender
-              m(me).asInstanceOf[Future[Any]] onComplete {
-                case Left(f)  ⇒ s ! Status.Failure(f)
-                case Right(r) ⇒ s ! r
-              }
-            } else {
-              sender ! m(me)
+            val s = sender
+            m(me) match {
+              case f: Future[_] if m.returnsFuture_? ⇒
+                f onComplete {
+                  case Right(null)   ⇒ s ! NullResponse
+                  case Right(result) ⇒ s ! result
+                  case Left(f)       ⇒ s ! Status.Failure(f)
+                }
+              case null   ⇒ s ! NullResponse
+              case result ⇒ s ! result
             }
           } catch {
             case NonFatal(e) ⇒
@@ -374,16 +379,22 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case _ ⇒
         import akka.pattern.ask
         MethodCall(method, args) match {
-          case m if m.isOneWay        ⇒ actor ! m; null //Null return value
-          case m if m.returnsFuture_? ⇒ ask(actor, m)(timeout)
+          case m if m.isOneWay ⇒ actor ! m; null //Null return value
+          case m if m.returnsFuture_? ⇒ ask(actor, m)(timeout) map {
+            case NullResponse ⇒ null
+            case other        ⇒ other
+          }
           case m if m.returnsJOption_? || m.returnsOption_? ⇒
             val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
-              case None | Some(Right(null))     ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
-              case Some(Right(joption: AnyRef)) ⇒ joption
-              case Some(Left(ex))               ⇒ throw ex
+              case None | Some(Right(NullResponse)) ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
+              case Some(Right(joption))             ⇒ joption.asInstanceOf[AnyRef]
+              case Some(Left(ex))                   ⇒ throw ex
             }
-          case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration).asInstanceOf[AnyRef]
+          case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration) match {
+            case NullResponse ⇒ null
+            case other        ⇒ other.asInstanceOf[AnyRef]
+          }
         }
     }
   }
