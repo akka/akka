@@ -93,6 +93,14 @@ object TypedActorSpec {
     @throws(classOf[TimeoutException])
     def joptionPigdog(delay: Long): JOption[String]
 
+    def nullFuture(): Future[Any] = null
+
+    def nullJOption(): JOption[Any] = null
+
+    def nullOption(): Option[Any] = null
+
+    def nullReturn(): Any = null
+
     def incr()
 
     @throws(classOf[TimeoutException])
@@ -280,6 +288,14 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       val t = newFooBar
       t.pigdog() must be("Pigdog")
       mustStop(t)
+    }
+
+    "be able to call null returning methods" in {
+      val t = newFooBar
+      t.nullJOption() must be === JOption.none
+      t.nullOption() must be === None
+      t.nullReturn() must be === null
+      Await.result(t.nullFuture(), remaining) must be === null
     }
 
     "be able to call Future-returning methods non-blockingly" in {
