@@ -58,16 +58,16 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * using the optional type hint to the Serializer and the optional ClassLoader ot load it into.
    * Returns either the resulting object or an Exception if one was thrown.
    */
-  def deserialize(bytes: Array[Byte], serializerId: Int, clazz: Option[Class[_]]): Try[AnyRef] =
-    Try(serializerByIdentity(serializerId).fromBinary(bytes, clazz))
+  def deserialize[T](bytes: Array[Byte], serializerId: Int, clazz: Option[Class[_ <: T]]): Try[T] =
+    Try(serializerByIdentity(serializerId).fromBinary(bytes, clazz).asInstanceOf[T])
 
   /**
    * Deserializes the given array of bytes using the specified type to look up what Serializer should be used.
    * You can specify an optional ClassLoader to load the object into.
    * Returns either the resulting object or an Exception if one was thrown.
    */
-  def deserialize(bytes: Array[Byte], clazz: Class[_]): Try[AnyRef] =
-    Try(serializerFor(clazz).fromBinary(bytes, Some(clazz)))
+  def deserialize[T](bytes: Array[Byte], clazz: Class[T]): Try[T] =
+    Try(serializerFor(clazz).fromBinary(bytes, Some(clazz)).asInstanceOf[T])
 
   /**
    * Returns the Serializer configured for the given object, returns the NullSerializer if it's null.
