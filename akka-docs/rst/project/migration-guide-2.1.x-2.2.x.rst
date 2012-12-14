@@ -31,3 +31,11 @@ API changes to FSM and TestFSMRef
 The ``timerActive_?`` method has been deprecated in both the ``FSM`` trait and the ``TestFSMRef``
 class. You should now use the ``isTimerActive`` method instead. The old method will remain
 throughout 2.2.x. It will be removed in Akka 2.3.
+
+ThreadPoolConfigBuilder
+=======================
+
+``akka.dispatch.ThreadPoolConfigBuilder`` companion object has been removed,
+and with it the ``conf_?`` method that was essentially only a type-inferencer aid for creation
+of optional transformations on ``ThreadPoolConfigBuilder``.
+Instead use: ``option.map(o => (t: ThreadPoolConfigBuilder) => t.op(o))``.

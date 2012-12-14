@@ -128,9 +128,13 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   case class MethodCall(method: Method, parameters: Array[AnyRef]) {
 
     def isOneWay = method.getReturnType == java.lang.Void.TYPE
-    def returnsFuture_? = classOf[Future[_]].isAssignableFrom(method.getReturnType)
-    def returnsJOption_? = classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
-    def returnsOption_? = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
+    def returnsFuture = classOf[Future[_]] isAssignableFrom method.getReturnType
+    def returnsJOption = classOf[akka.japi.Option[_]] isAssignableFrom method.getReturnType
+    def returnsOption = classOf[scala.Option[_]] isAssignableFrom method.getReturnType
+
+    @deprecated("use returnsFuture instead", "2.2") def returnsFuture_? = returnsFuture
+    @deprecated("use returnsJOption instead", "2.2") def returnsJOption_? = returnsJOption
+    @deprecated("use returnsOption instead", "2.2") def returnsOption_? = returnsOption
 
     /**
      * Invokes the Method on the supplied instance
@@ -296,7 +300,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         if (m.isOneWay) m(me)
         else {
           try {
-            if (m.returnsFuture_?) {
+            if (m.returnsFuture) {
               val s = sender
               m(me).asInstanceOf[Future[Any]] onComplete {
                 case Failure(f) ⇒ s ! Status.Failure(f)
@@ -400,12 +404,12 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case _ ⇒
         import akka.pattern.ask
         MethodCall(method, args) match {
-          case m if m.isOneWay        ⇒ actor ! m; null //Null return value
-          case m if m.returnsFuture_? ⇒ ask(actor, m)(timeout)
-          case m if m.returnsJOption_? || m.returnsOption_? ⇒
+          case m if m.isOneWay      ⇒ actor ! m; null //Null return value
+          case m if m.returnsFuture ⇒ ask(actor, m)(timeout)
+          case m if m.returnsJOption || m.returnsOption ⇒
             val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
-              case None | Some(Success(null)) ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
+              case None | Some(Success(null)) ⇒ if (m.returnsJOption) JOption.none[Any] else None
               case Some(t: Try[_])            ⇒ t.get.asInstanceOf[AnyRef]
             }
           case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration).asInstanceOf[AnyRef]
@@ -655,8 +659,8 @@ class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory
   /**
    * INTERNAL USE ONLY
    */
-  private[akka] def invocationHandlerFor(typedActor_? : AnyRef): TypedActorInvocationHandler =
-    if ((typedActor_? ne null) && Proxy.isProxyClass(typedActor_?.getClass)) typedActor_? match {
+  private[akka] def invocationHandlerFor(@deprecatedName('typedActor_?) typedActor: AnyRef): TypedActorInvocationHandler =
+    if ((typedActor ne null) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {
       case null ⇒ null
       case other ⇒ Proxy.getInvocationHandler(other) match {
         case null                                 ⇒ null
