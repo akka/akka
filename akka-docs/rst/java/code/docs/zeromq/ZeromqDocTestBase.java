@@ -16,7 +16,7 @@ import akka.zeromq.Subscribe;
 import akka.zeromq.Unsubscribe;
 //#import-unsub-topic-socket
 //#import-pub-topic
-import akka.zeromq.Frame;
+import akka.util.ByteString;
 import akka.zeromq.ZMQMessage;
 //#import-pub-topic
 
@@ -96,7 +96,7 @@ public class ZeromqDocTestBase {
 
     byte[] payload = new byte[0];
     //#pub-topic
-    pubSocket.tell(new ZMQMessage(new Frame("foo.bar"), new Frame(payload)), null);
+    pubSocket.tell(ZMQMessage.withFrames(ByteString.fromString("foo.bar"), ByteString.fromArray(payload)), null);
     //#pub-topic
 
     system.stop(subSocket);
@@ -136,7 +136,7 @@ public class ZeromqDocTestBase {
   private boolean checkZeroMQInstallation() {
     try {
       ZeroMQVersion v = ZeroMQExtension.get(system).version();
-      return (v.major() == 2 && v.minor() == 1);
+      return (v.major() >= 3 || (v.major() >= 2 && v.minor() >= 1));
     } catch (LinkageError e) {
       return false;
     }
@@ -213,18 +213,23 @@ public class ZeromqDocTestBase {
         long timestamp = System.currentTimeMillis();
 
         // use akka SerializationExtension to convert to bytes
-        byte[] heapPayload = ser.serializerFor(Heap.class).toBinary(
-            new Heap(timestamp, currentHeap.getUsed(), currentHeap.getMax()));
+        ByteString heapTopic = ByteString.fromString("health.heap", "UTF-8");
+        ByteString heapPayload = ByteString.fromArray(
+                ser.serialize(
+                    new Heap(timestamp,
+                          currentHeap.getUsed(),
+                          currentHeap.getMax())
+                ).get());
         // the first frame is the topic, second is the message
-        pubSocket.tell(new ZMQMessage(new Frame("health.heap"),
-          new Frame(heapPayload)), getSelf());
+        pubSocket.tell(ZMQMessage.withFrames(heapTopic, heapPayload), getSelf());
 
         // use akka SerializationExtension to convert to bytes
-        byte[] loadPayload = ser.serializerFor(Load.class).toBinary(
-          new Load(timestamp, os.getSystemLoadAverage()));
+        ByteString loadTopic = ByteString.fromString("health.load", "UTF-8");
+        ByteString loadPayload = ByteString.fromArray(
+                ser.serialize(new Load(timestamp, os.getSystemLoadAverage())).get()
+        );
         // the first frame is the topic, second is the message
-        pubSocket.tell(new ZMQMessage(new Frame("health.load"),
-          new Frame(loadPayload)), getSelf());
+        pubSocket.tell(ZMQMessage.withFrames(loadTopic, loadPayload), getSelf());
       } else {
         unhandled(message);
       }
@@ -248,13 +253,14 @@ public class ZeromqDocTestBase {
     public void onReceive(Object message) {
       if (message instanceof ZMQMessage) {
         ZMQMessage m = (ZMQMessage) message;
+        String topic = m.frame(0).utf8String();
         // the first frame is the topic, second is the message
-        if (m.firstFrameAsString().equals("health.heap")) {
-          Heap heap = (Heap) ser.serializerFor(Heap.class).fromBinary(m.payload(1));
+        if ("health.heap".equals(topic)) {
+          Heap heap = ser.deserialize(m.frame(1).toArray(), Heap.class).get();
           log.info("Used heap {} bytes, at {}", heap.used,
             timestampFormat.format(new Date(heap.timestamp)));
-        } else if (m.firstFrameAsString().equals("health.load")) {
-          Load load = (Load) ser.serializerFor(Load.class).fromBinary(m.payload(1));
+        } else if ("health.load".equals(topic)) {
+          Load load = ser.deserialize(m.frame(1).toArray(), Load.class).get();
           log.info("Load average {}, at {}", load.loadAverage,
             timestampFormat.format(new Date(load.timestamp)));
         }
@@ -282,9 +288,10 @@ public class ZeromqDocTestBase {
     public void onReceive(Object message) {
       if (message instanceof ZMQMessage) {
         ZMQMessage m = (ZMQMessage) message;
+        String topic = m.frame(0).utf8String();
         // the first frame is the topic, second is the message
-        if (m.firstFrameAsString().equals("health.heap")) {
-          Heap heap = (Heap) ser.serializerFor(Heap.class).fromBinary(m.payload(1));
+        if ("health.heap".equals(topic)) {
+          Heap heap = ser.<Heap>deserialize(m.frame(1).toArray(), Heap.class).get();
           if (((double) heap.used / heap.max) > 0.9) {
             count += 1;
           } else {

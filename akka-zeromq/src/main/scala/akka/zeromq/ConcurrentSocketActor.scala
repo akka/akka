@@ -14,6 +14,7 @@ import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
 import akka.event.Logging
 import java.util.concurrent.TimeUnit
+import akka.util.ByteString
 
 private[zeromq] object ConcurrentSocketActor {
   private sealed trait PollMsg
@@ -29,7 +30,6 @@ private[zeromq] object ConcurrentSocketActor {
 private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption]) extends Actor {
 
   import ConcurrentSocketActor._
-  private val noBytes = Array[Byte]()
   private val zmqContext = params collectFirst { case c: Context ⇒ c } getOrElse DefaultContext
 
   private var deserializer = params collectFirst { case d: Deserializer ⇒ d } getOrElse new ZMQMessageDeserializer
@@ -41,7 +41,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
   private val socket: Socket = zmqContext.socket(socketType)
   private val poller: Poller = zmqContext.poller
 
-  private val pendingSends = new ListBuffer[immutable.Seq[Frame]]
+  private val pendingSends = new ListBuffer[immutable.Seq[ByteString]]
 
   def receive = {
     case m: PollMsg         ⇒ doPoll(m)
@@ -152,13 +152,13 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
     }
   } finally notifyListener(Closed)
 
-  @tailrec private def flushMessage(i: immutable.Seq[Frame]): Boolean =
+  @tailrec private def flushMessage(i: immutable.Seq[ByteString]): Boolean =
     if (i.isEmpty)
       true
     else {
       val head = i.head
       val tail = i.tail
-      if (socket.send(head.payload.toArray, if (tail.nonEmpty) JZMQ.SNDMORE else 0)) flushMessage(tail)
+      if (socket.send(head.toArray, if (tail.nonEmpty) JZMQ.SNDMORE else 0)) flushMessage(tail)
       else {
         pendingSends.prepend(i) // Reenqueue the rest of the message so the next flush takes care of it
         self ! Flush
@@ -199,7 +199,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
       case frames ⇒ notifyListener(deserializer(frames)); doPoll(mode, togo - 1)
     }
 
-  @tailrec private def receiveMessage(mode: PollMsg, currentFrames: Vector[Frame] = Vector.empty): immutable.Seq[Frame] =
+  @tailrec private def receiveMessage(mode: PollMsg, currentFrames: Vector[ByteString] = Vector.empty): immutable.Seq[ByteString] =
     if (mode == PollCareful && (poller.poll(0) <= 0)) {
       if (currentFrames.isEmpty) currentFrames else throw new IllegalStateException("Received partial transmission!")
     } else {
@@ -207,7 +207,7 @@ private[zeromq] class ConcurrentSocketActor(params: immutable.Seq[SocketOption])
         case null ⇒ /*EAGAIN*/
           if (currentFrames.isEmpty) currentFrames else receiveMessage(mode, currentFrames)
         case bytes ⇒
-          val frames = currentFrames :+ Frame(if (bytes.length == 0) noBytes else bytes)
+          val frames = currentFrames :+ ByteString(bytes)
           if (socket.hasReceiveMore) receiveMessage(mode, frames) else frames
       }
     }
