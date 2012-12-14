@@ -26,7 +26,7 @@ class RemoteDeploymentDocSpec extends AkkaSpec("""
   import RemoteDeploymentDocSpec._
 
   val other = ActorSystem("remote", system.settings.config)
-  val address = other.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address("akka", "s", "host", 1)).get
+  val address = other.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address("tcp.akka", "s", "host", 1)).get
 
   override def atTermination() { other.shutdown() }
 

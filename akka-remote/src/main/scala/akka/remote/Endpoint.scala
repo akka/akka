@@ -135,11 +135,12 @@ private[remote] class EndpointWriter(
 
   def inbound = handle.isDefined
 
-  private def publishAndThrow(reason: Throwable): Nothing =
+  private def publishAndThrow(reason: Throwable): Nothing = {
     try
-      // FIXME: Casting seems very evil here...
-      eventPublisher.notifyListeners(AssociationErrorEvent(reason, localAddress, remoteAddress, inbound)).asInstanceOf[Nothing]
-    finally throw reason
+      eventPublisher.notifyListeners(AssociationErrorEvent(reason, localAddress, remoteAddress, inbound))
+    catch { case NonFatal(e) ⇒ log.error(e, "Unable to publish error event to EventStream.") }
+    throw reason
+  }
 
   override def postRestart(reason: Throwable): Unit = {
     handle = None // Wipe out the possibly injected handle
@@ -185,10 +186,12 @@ private[remote] class EndpointWriter(
   when(Writing) {
     case Event(Send(msg, senderOption, recipient), _) ⇒
       val pdu = codec.constructMessage(recipient.localAddressToUse, recipient, serializeMessage(msg), senderOption)
-      val success = try handle match {
-        case Some(h) ⇒ h.write(pdu)
-        case None ⇒ throw new EndpointException("Internal error: Endpoint is in state Writing, but no association" +
-          "handle is present.", null)
+      val success = try {
+        handle match {
+          case Some(h) ⇒ h.write(pdu)
+          case None ⇒ throw new EndpointException("Internal error: Endpoint is in state Writing, but no association" +
+            "handle is present.", null)
+        }
       } catch {
         case NonFatal(e) ⇒ publishAndThrow(new EndpointException("Failed to write message to the transport", e))
       }
@@ -199,7 +202,7 @@ private[remote] class EndpointWriter(
   }
 
   whenUnhandled {
-    case Event(Terminated(r), _) if r == reader ⇒ publishAndThrow(new EndpointException("Disassociated", null))
+    case Event(Terminated(r), _) if Some(r) == reader ⇒ publishAndThrow(new EndpointException("Disassociated", null))
     case Event(TakeOver(newHandle), _) ⇒
       // Shutdown old reader
       handle foreach { _.disassociate() }

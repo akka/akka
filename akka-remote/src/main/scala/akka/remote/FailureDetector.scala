@@ -27,6 +27,7 @@ object FailureDetector {
    * Abstraction of a clock that returns time in milliseconds. Clock can only be used to measure elapsed
    * time and is not related to any other notion of system or wall-clock time.
    */
+  // Abstract class to be able to extend it from Java
   abstract class Clock extends (() ⇒ Long)
 
   implicit val defaultClock = new Clock {

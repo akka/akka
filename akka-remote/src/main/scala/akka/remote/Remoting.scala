@@ -463,10 +463,20 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   }
 
   private def listens: Future[Seq[(Transport, Address, Promise[AssociationEventListener])]] = {
-    val transports = for ((fqn, adapters, config) ← settings.Transports) yield {
+    /*
+     * Constructs chains of adapters on top of each driver as given in configuration. The resulting structure looks
+     * like the following:
+     *   AkkaProtocolTransport <- Adapter <- ... <- Adapter <- Driver
+     *
+     * The transports variable contains only the heads of each chains (the AkkaProtocolTransport instances).
+     */
+    val transports: Seq[AkkaProtocolTransport] = for ((fqn, adapters, config) ← settings.Transports) yield {
 
       val args = Seq(classOf[ExtendedActorSystem] -> context.system, classOf[Config] -> config)
 
+      // Loads the driver -- the bottom element of the chain.
+      // The chain at this point:
+      //   Driver
       val driver = extendedSystem.dynamicAccess
         .createInstanceFor[Transport](fqn, args).recover({
 
@@ -477,12 +487,19 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
         }).get
 
+      // Iteratively decorates the bottom level driver with a list of adapters.
+      // The chain at this point:
+      //   Adapter <- ... <- Adapter <- Driver
       val wrappedTransport =
         adapters.map { TransportAdaptersExtension.get(context.system).getAdapterProvider(_) }.foldLeft(driver) {
           (t: Transport, provider: TransportAdapterProvider) ⇒
+            // The TransportAdapterProvider will wrap the given Transport and returns with a wrapped one
             provider(t, context.system.asInstanceOf[ExtendedActorSystem])
         }
 
+      // Apply AkkaProtocolTransport wrapper to the end of the chain
+      // The chain at this point:
+      //   AkkaProtocolTransport <- Adapter <- ... <- Adapter <- Driver
       new AkkaProtocolTransport(wrappedTransport, context.system, new AkkaProtocolSettings(conf), AkkaPduProtobufCodec)
     }
 

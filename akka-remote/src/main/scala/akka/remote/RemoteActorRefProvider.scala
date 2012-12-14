@@ -227,9 +227,9 @@ class RemoteActorRefProvider(
 
   def getExternalAddressFor(addr: Address): Option[Address] = {
     addr match {
-      case _ if hasAddress(addr)                ⇒ Some(local.rootPath.address)
-      case Address("akka", _, Some(_), Some(_)) ⇒ Some(transport.defaultAddress)
-      case _                                    ⇒ None
+      case _ if hasAddress(addr)           ⇒ Some(local.rootPath.address)
+      case Address(_, _, Some(_), Some(_)) ⇒ try Some(transport.localAddressForRemote(addr)) catch { case NonFatal(_) ⇒ None }
+      case _                               ⇒ None
     }
   }
 
