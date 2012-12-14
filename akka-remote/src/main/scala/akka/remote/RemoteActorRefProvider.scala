@@ -9,8 +9,58 @@ import akka.dispatch._
 import akka.event.{ Logging, LoggingAdapter, EventStream }
 import akka.event.Logging.Error
 import akka.serialization.{ Serialization, SerializationExtension }
+import akka.pattern.pipe
 import scala.concurrent.Future
 import scala.util.control.NonFatal
+import akka.actor.SystemGuardian.{ TerminationHookDone, TerminationHook, RegisterTerminationHook }
+
+object RemoteActorRefProvider {
+  private case class Internals(transport: RemoteTransport, serialization: Serialization, remoteDaemon: InternalActorRef)
+
+  sealed trait TerminatorState
+  case object Uninitialized extends TerminatorState
+  case object Idle extends TerminatorState
+  case object WaitDaemonShutdown extends TerminatorState
+  case object WaitTransportShutdown extends TerminatorState
+  case object Finished extends TerminatorState
+
+  private class RemotingTerminator extends Actor with FSM[TerminatorState, Option[Internals]] {
+    import context.dispatcher
+    val systemGuardian = context.system.asInstanceOf[ExtendedActorSystem].provider.systemGuardian
+
+    startWith(Uninitialized, None)
+
+    when(Uninitialized) {
+      case Event(i: Internals, _) ⇒
+        systemGuardian.tell(RegisterTerminationHook, self)
+        goto(Idle) using Some(i)
+    }
+
+    when(Idle) {
+      case Event(TerminationHook, Some(internals)) ⇒
+        log.info("Shutting down remote daemon.")
+        internals.remoteDaemon ! TerminationHook
+        goto(WaitDaemonShutdown)
+    }
+
+    // TODO: state timeout
+    when(WaitDaemonShutdown) {
+      case Event(TerminationHookDone, Some(internals)) ⇒
+        log.info("Remote daemon shut down.")
+        log.info("Shutting down remoting.")
+        internals.transport.shutdown() pipeTo self
+        goto(WaitTransportShutdown)
+    }
+
+    when(WaitTransportShutdown) {
+      case Event((), _) ⇒
+        log.info("Remoting shut down.")
+        systemGuardian.tell(TerminationHookDone, self)
+        stop()
+    }
+
+  }
+}
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
@@ -21,6 +71,7 @@ class RemoteActorRefProvider(
   val eventStream: EventStream,
   val scheduler: Scheduler,
   val dynamicAccess: DynamicAccess) extends ActorRefProvider {
+  import RemoteActorRefProvider._
 
   val remoteSettings: RemoteSettings = new RemoteSettings(settings.config, systemName)
 
@@ -49,40 +100,54 @@ class RemoteActorRefProvider(
   override def tempContainer: VirtualPathContainer = local.tempContainer
 
   @volatile
-  private var _transport: RemoteTransport = _
-  def transport: RemoteTransport = _transport
+  private var _internals: Internals = _
 
-  @volatile
-  private var _serialization: Serialization = _
-  def serialization: Serialization = _serialization
+  def transport: RemoteTransport = _internals.transport
+  def serialization: Serialization = _internals.serialization
+  def remoteDaemon: InternalActorRef = _internals.remoteDaemon
 
+  // This actor ensures the ordering of shutdown between remoteDaemon and the transport
   @volatile
-  private var _remoteDaemon: InternalActorRef = _
-  def remoteDaemon: InternalActorRef = _remoteDaemon
+  private var remotingTerminator: ActorRef = _
 
   def init(system: ActorSystemImpl): Unit = {
     local.init(system)
 
-    _remoteDaemon = new RemoteSystemDaemon(system, local.rootPath / "remote", rootGuardian, log, untrustedMode = remoteSettings.UntrustedMode)
-    local.registerExtraNames(Map(("remote", remoteDaemon)))
+    remotingTerminator = system.systemActorOf(Props[RemotingTerminator], "remoting-terminator")
 
-    _serialization = SerializationExtension(system)
+    val internals = Internals(
+      remoteDaemon = {
+        val d = new RemoteSystemDaemon(
+          system,
+          local.rootPath / "remote",
+          rootGuardian,
+          remotingTerminator,
+          log,
+          untrustedMode = remoteSettings.UntrustedMode)
+        local.registerExtraNames(Map(("remote", d)))
+        d
+      },
 
-    _transport = {
-      val fqn = remoteSettings.RemoteTransport
-      val args = List(
-        classOf[ExtendedActorSystem] -> system,
-        classOf[RemoteActorRefProvider] -> this)
+      serialization = SerializationExtension(system),
 
-      system.dynamicAccess.createInstanceFor[RemoteTransport](fqn, args).recover({
-        case problem ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
-      }).get
-    }
+      transport = {
+        val fqn = remoteSettings.RemoteTransport
+        val args = List(
+          classOf[ExtendedActorSystem] -> system,
+          classOf[RemoteActorRefProvider] -> this)
+
+        system.dynamicAccess.createInstanceFor[RemoteTransport](fqn, args).recover({
+          case problem ⇒ throw new RemoteTransportException("Could not load remote transport layer " + fqn, problem)
+        }).get
+      })
+
+    remotingTerminator ! internals
+    _internals = internals
 
     _log = Logging(eventStream, "RemoteActorRefProvider")
 
     // this enables reception of remote requests
-    _transport.start()
+    transport.start()
 
     _rootPath = RootActorPath(local.rootPath.address.copy(
       protocol = transport.defaultAddress.protocol,
@@ -99,7 +164,6 @@ class RemoteActorRefProvider(
 
     system.eventStream.subscribe(remoteClientLifeCycleHandler, classOf[RemoteLifeCycleEvent])
 
-    system.registerOnTermination(transport.shutdown())
   }
 
   def actorOf(system: ActorSystemImpl, props: Props, supervisor: InternalActorRef, path: ActorPath,

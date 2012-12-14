@@ -26,6 +26,7 @@ private[akka] class RemoteSystemDaemon(
   system: ActorSystemImpl,
   _path: ActorPath,
   _parent: InternalActorRef,
+  terminator: ActorRef,
   _log: LoggingAdapter,
   val untrustedMode: Boolean)
   extends VirtualPathContainer(system.provider, _path, _parent, _log) {
@@ -33,8 +34,6 @@ private[akka] class RemoteSystemDaemon(
   import akka.actor.SystemGuardian._
 
   private val terminating = new Switch(false)
-
-  system.provider.systemGuardian.tell(RegisterTerminationHook, this)
 
   system.eventStream.subscribe(this, classOf[AddressTerminated])
 
@@ -111,7 +110,7 @@ private[akka] class RemoteSystemDaemon(
   }
 
   def terminationHookDoneWhenNoChildren(): Unit = terminating.whileOn {
-    if (!hasChildren) system.provider.systemGuardian.tell(TerminationHookDone, this)
+    if (!hasChildren) terminator.tell(TerminationHookDone, this)
   }
 
 }

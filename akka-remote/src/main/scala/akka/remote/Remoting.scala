@@ -19,6 +19,7 @@ import scala.collection.immutable.{ Seq, HashMap }
 import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Await, Future }
 import scala.util.control.NonFatal
+import scala.util.{ Failure, Success }
 
 class RemotingSettings(val config: Config) {
 
@@ -142,23 +143,34 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   private def notifyError(msg: String, cause: Throwable): Unit =
     eventPublisher.notifyListeners(RemotingErrorEvent(new RemoteTransportException(msg, cause)))
 
-  override def shutdown(): Unit = {
+  override def shutdown(): Future[Unit] = {
+    import scala.concurrent.ExecutionContext.Implicits.global
     endpointManager match {
       case Some(manager) ⇒
-        try {
-          implicit val timeout = new Timeout(settings.ShutdownTimeout)
-          val stopped: Future[Boolean] = (manager ? ShutdownAndFlush).mapTo[Boolean]
+        implicit val timeout = new Timeout(settings.ShutdownTimeout)
+        val stopped: Future[Boolean] = (manager ? ShutdownAndFlush).mapTo[Boolean]
 
-          if (!Await.result(stopped, settings.ShutdownTimeout))
-            log.warning("Shutdown finished, but flushing timed out. Some messages might not have been sent. " +
-              "Increase akka.remoting.flush-wait-on-shutdown to a larger value to avoid this message.")
+        def finalize(): Unit = {
           eventPublisher.notifyListeners(RemotingShutdownEvent)
+          endpointManager = None
+        }
 
-        } catch {
-          case e: TimeoutException ⇒ notifyError("Shutdown timed out.", e)
-          case NonFatal(e)         ⇒ notifyError("Shutdown failed.", e)
-        } finally endpointManager = None
-      case None ⇒ log.warning("Remoting is not running. Ignoring shutdown attempt.")
+        stopped.onComplete {
+          case Success(flushSuccessful) ⇒
+            if (!flushSuccessful)
+              log.warning("Shutdown finished, but flushing timed out. Some messages might not have been sent. " +
+                "Increase akka.remoting.flush-wait-on-shutdown to a larger value to avoid this.")
+            finalize()
+
+          case Failure(e) ⇒
+            notifyError("Failure during shutdown of remoting.", e)
+            finalize()
+        }
+
+        stopped map { _ ⇒ () } // RARP needs only type Unit, not a boolean
+      case None ⇒
+        log.warning("Remoting is not running. Ignoring shutdown attempt.")
+        Future successful ()
     }
   }
 

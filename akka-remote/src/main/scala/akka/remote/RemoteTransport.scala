@@ -173,7 +173,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
   /**
    * Shuts down the remoting
    */
-  def shutdown(): Unit
+  def shutdown(): Future[Unit]
 
   /**
    * Address to be used in RootActorPath of refs generated for this transport.

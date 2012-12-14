@@ -25,6 +25,7 @@ import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefPr
 import scala.util.control.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
 import com.google.protobuf.MessageLite
+import scala.concurrent.Future
 
 private[akka] object ChannelAddress extends ChannelLocal[Option[Address]] {
   override def initialValue(ch: Channel): Option[Address] = None
@@ -189,7 +190,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
     notifyListeners(RemoteServerStarted(this))
   }
 
-  def shutdown(): Unit = {
+  def shutdown(): Future[Unit] = {
     clientsLock.writeLock().lock()
     try {
       remoteClients foreach {
@@ -210,6 +211,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
         }
       }
     }
+    Future successful ()
   }
 
   def send(
