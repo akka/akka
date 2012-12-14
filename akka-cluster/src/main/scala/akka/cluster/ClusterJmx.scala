@@ -21,7 +21,6 @@ trait ClusterNodeMBean {
   def getLeader: String
 
   def isSingleton: Boolean
-  def isConvergence: Boolean
   def isAvailable: Boolean
   def isRunning: Boolean
 
@@ -68,8 +67,6 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
       def getLeader: String = clusterView.leader.toString
 
       def isSingleton: Boolean = clusterView.isSingletonCluster
-
-      def isConvergence: Boolean = clusterView.convergence
 
       def isAvailable: Boolean = clusterView.isAvailable
 
