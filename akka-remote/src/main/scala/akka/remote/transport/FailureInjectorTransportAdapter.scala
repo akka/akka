@@ -37,7 +37,7 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
 
   import extendedSystem.dispatcher
 
-  private val rng = ThreadLocalRandom.current()
+  private def rng = ThreadLocalRandom.current()
   private val log = Logging(extendedSystem, "FailureInjector (gremlin)")
 
   @volatile private var upstreamListener: Option[AssociationEventListener] = None
@@ -59,12 +59,12 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
   }
 
   protected def interceptListen(listenAddress: Address,
-                                listenerFuture: Future[AssociationEventListener]): AssociationEventListener = {
+                                listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener] = {
     log.warning("FailureInjectorTransport is active on this system. Gremlins might munch your packets.")
     listenerFuture.onSuccess {
       case listener: AssociationEventListener ⇒ upstreamListener = Some(listener)
     }
-    this
+    Future.successful(this)
   }
 
   protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[Status]): Unit = {

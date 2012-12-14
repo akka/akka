@@ -6,7 +6,7 @@ import akka.pattern.ask
 import akka.remote.transport.Transport._
 import akka.remote.{ RARP, RemotingSettings, RemoteActorRefProvider }
 import scala.collection.immutable
-import scala.concurrent.{ Await, ExecutionContext, Promise, Future }
+import scala.concurrent.{ ExecutionContext, Promise, Future }
 import scala.util.Success
 import scala.util.Failure
 import akka.remote.Remoting.RegisterTransportActor
@@ -60,7 +60,7 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
   protected def maximumOverhead: Int
 
   protected def interceptListen(listenAddress: Address,
-                                listenerFuture: Future[AssociationEventListener]): AssociationEventListener
+                                listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener]
 
   protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[Status]): Unit
 
@@ -76,7 +76,7 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
     wrappedTransport.listen.onComplete {
       case Success((listenAddress, listenerPromise)) ⇒
         // Register to downstream
-        listenerPromise.success(interceptListen(listenAddress, upstreamListenerPromise.future))
+        listenerPromise.tryCompleteWith(interceptListen(listenAddress, upstreamListenerPromise.future))
         // Notify upstream
         listenPromise.success((augmentScheme(listenAddress), upstreamListenerPromise))
       case Failure(reason) ⇒ listenPromise.failure(reason)
@@ -131,16 +131,19 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
 
   protected def managerName: String
   protected def managerProps: Props
-  // The blocking call below is only called during the startup sequence.
-  protected val manager = Await.result(registerManager(), 3 seconds)
+  // Write once variable initialized when Listen is called.
+  @volatile protected var manager: ActorRef = _
 
   private def registerManager(): Future[ActorRef] =
     (system.actorFor("/system/transports") ? RegisterTransportActor(managerProps, managerName)).mapTo[ActorRef]
 
-  protected def interceptListen(listenAddress: Address,
-                                listenerPromise: Future[AssociationEventListener]): AssociationEventListener = {
-    manager ! ListenUnderlying(listenAddress, listenerPromise)
-    manager
+  override def interceptListen(listenAddress: Address,
+                               listenerPromise: Future[AssociationEventListener]): Future[AssociationEventListener] = {
+    registerManager().map { mgr ⇒
+      manager = mgr
+      manager ! ListenUnderlying(listenAddress, listenerPromise)
+      manager
+    }
   }
 
   override def interceptAssociate(remoteAddress: Address, statusPromise: Promise[Status]): Unit =
