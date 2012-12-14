@@ -296,9 +296,16 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
           }
           publish(event)
 
-        case MemberUnreachable(m) ⇒
+        case MemberDowned(m) ⇒
+          // TODO this case might be collapsed with MemberRemoved, see ticket #2788
+          //   but right now we don't change Downed to Removed
           publish(event)
-          // notify DeathWatch about unreachable node
+          // notify DeathWatch about downed node
+          publish(AddressTerminated(m.address))
+
+        case MemberRemoved(m) ⇒
+          publish(event)
+          // notify DeathWatch about removed node
           publish(AddressTerminated(m.address))
 
         case _ ⇒
