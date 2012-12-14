@@ -18,7 +18,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
   def checkZeroMQInstallation =
     try {
       zmq.version match {
-        case ZeroMQVersion(x, y, _) if x >= 3 || (x >= 2 && y >= 1) ⇒ Unit
+        case ZeroMQVersion(x, y, _) if x >= 3 || (x >= 2 && y >= 2) ⇒ Unit
         case version ⇒ invalidZeroMQVersion(version)
       }
     } catch {
@@ -87,6 +87,7 @@ class ConcurrentSocketActorSpec extends AkkaSpec {
       val replier = zmq.newSocket(SocketType.Rep, context, Listener(replierProbe.ref), Connect(endpoint))
 
       try {
+        requesterProbe.expectMsg(Binding)
         replierProbe.expectMsg(Connecting)
         val request = ZMQMessage(Frame("Request"))
         val reply = ZMQMessage(Frame("Reply"))

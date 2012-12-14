@@ -1,3 +1,8 @@
+Following this discussion: http://stackoverflow.com/questions/12096192/akka-zeromq-actor-seems-to-be-slow-for-rep-req
+And the analysis and discussion initiated by Jacob Kolind here: https://groups.google.com/forum/#!topic/akka-user/lGBb8GTouV0/discussion
+
+We attempt write a new implementation that improve the throughput of Akka's Actors using ZeroMQ and the Request / Reply pattern.
+
 h1. Akka
 
 We believe that writing correct concurrent, fault-tolerant and scalable applications is too hard. Most of the time it's because we are using the wrong tools and the wrong level of abstraction.

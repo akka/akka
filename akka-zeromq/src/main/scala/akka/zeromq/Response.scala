@@ -17,6 +17,17 @@ case object Connecting extends Response {
    */
   def getInstance = this
 }
+
+/**
+ * When the ZeroMQ socket binds it sends this message to a listener
+ */
+case object Binding extends Response {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}
+
 /**
  * When the ZeroMQ socket disconnects it sends this message to a listener
  */
