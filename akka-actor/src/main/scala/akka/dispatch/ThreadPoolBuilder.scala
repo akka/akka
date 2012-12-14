@@ -99,10 +99,6 @@ case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.def
   }
 }
 
-object ThreadPoolConfigBuilder {
-  def conf_?[T](opt: Option[T])(fun: (T) ⇒ ThreadPoolConfigBuilder ⇒ ThreadPoolConfigBuilder): Option[(ThreadPoolConfigBuilder) ⇒ ThreadPoolConfigBuilder] = opt map fun
-}
-
 /**
  * A DSL to configure and create a MessageDispatcher with a ThreadPoolExecutor
  */
