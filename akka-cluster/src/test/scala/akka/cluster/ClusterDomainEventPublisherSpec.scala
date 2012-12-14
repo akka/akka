@@ -54,6 +54,10 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
 
   override def beforeEach(): Unit = {
     publisher = system.actorOf(Props[ClusterDomainEventPublisher])
+    publisher ! PublishChanges(g0)
+    expectMsg(MemberUp(a1))
+    expectMsg(LeaderChanged(Some(a1.address)))
+    expectMsgType[SeenChanged]
   }
 
   override def afterEach(): Unit = {
@@ -62,59 +66,63 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
 
   "ClusterDomainEventPublisher" must {
 
-    "publish MemberUp when member status changed to Up" in {
-      publisher ! PublishChanges(g1, g2)
-      expectMsg(MemberUp(c2))
-      expectMsg(ConvergenceChanged(false))
+    "not publish MemberUp when there is no convergence" in {
+      publisher ! PublishChanges(g2)
       expectMsgType[SeenChanged]
     }
 
-    "publish convergence true when all seen it" in {
-      publisher ! PublishChanges(g2, g3)
-      expectMsg(ConvergenceChanged(true))
+    "publish MemberEvents when there is convergence" in {
+      publisher ! PublishChanges(g2)
+      expectMsgType[SeenChanged]
+      publisher ! PublishChanges(g3)
+      expectMsg(MemberUp(b1))
+      expectMsg(MemberUp(c2))
       expectMsgType[SeenChanged]
     }
 
     "publish leader changed when new leader after convergence" in {
-      publisher ! PublishChanges(g3, g4)
-      expectMsg(MemberUp(d1))
-      expectMsg(ConvergenceChanged(false))
+      publisher ! PublishChanges(g4)
       expectMsgType[SeenChanged]
       expectNoMsg(1 second)
 
-      publisher ! PublishChanges(g4, g5)
+      publisher ! PublishChanges(g5)
+      expectMsg(MemberUp(d1))
+      expectMsg(MemberUp(b1))
+      expectMsg(MemberUp(c2))
       expectMsg(LeaderChanged(Some(d1.address)))
-      expectMsg(ConvergenceChanged(true))
       expectMsgType[SeenChanged]
     }
 
     "publish leader changed when new leader and convergence both before and after" in {
       // convergence both before and after
-      publisher ! PublishChanges(g3, g5)
+      publisher ! PublishChanges(g3)
+      expectMsg(MemberUp(b1))
+      expectMsg(MemberUp(c2))
+      expectMsgType[SeenChanged]
+      publisher ! PublishChanges(g5)
       expectMsg(MemberUp(d1))
       expectMsg(LeaderChanged(Some(d1.address)))
       expectMsgType[SeenChanged]
     }
 
     "not publish leader changed when not convergence" in {
-      publisher ! PublishChanges(g2, g4)
-      expectMsg(MemberUp(d1))
+      publisher ! PublishChanges(g4)
+      expectMsgType[SeenChanged]
       expectNoMsg(1 second)
     }
 
     "not publish leader changed when changed convergence but still same leader" in {
-      publisher ! PublishChanges(g2, g5)
+      publisher ! PublishChanges(g5)
       expectMsg(MemberUp(d1))
+      expectMsg(MemberUp(b1))
+      expectMsg(MemberUp(c2))
       expectMsg(LeaderChanged(Some(d1.address)))
-      expectMsg(ConvergenceChanged(true))
       expectMsgType[SeenChanged]
 
-      publisher ! PublishChanges(g5, g4)
-      expectMsg(ConvergenceChanged(false))
+      publisher ! PublishChanges(g4)
       expectMsgType[SeenChanged]
 
-      publisher ! PublishChanges(g4, g5)
-      expectMsg(ConvergenceChanged(true))
+      publisher ! PublishChanges(g5)
       expectMsgType[SeenChanged]
     }
 
@@ -131,12 +139,12 @@ class ClusterDomainEventPublisherSpec extends AkkaSpec(ClusterDomainEventPublish
       publisher ! Subscribe(subscriber.ref, classOf[ClusterDomainEvent])
       subscriber.expectMsgType[CurrentClusterState]
       publisher ! Unsubscribe(subscriber.ref, Some(classOf[ClusterDomainEvent]))
-      publisher ! PublishChanges(Gossip(members = SortedSet(a1)), Gossip(members = SortedSet(a1, b1)))
+      publisher ! PublishChanges(g3)
       subscriber.expectNoMsg(1 second)
       // but testActor is still subscriber
       expectMsg(MemberUp(b1))
+      expectMsg(MemberUp(c2))
+      expectMsgType[SeenChanged]
     }
-
   }
-
 }

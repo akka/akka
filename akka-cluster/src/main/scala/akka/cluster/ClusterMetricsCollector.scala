@@ -72,6 +72,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
 
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
+    cluster.subscribe(self, classOf[UnreachableMember])
     log.info("Metrics collection has started successfully on node [{}]", selfAddress)
   }
 
@@ -80,7 +81,8 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
     case MetricsTick                ⇒ collect()
     case state: CurrentClusterState ⇒ receiveState(state)
     case MemberUp(m)                ⇒ receiveMember(m)
-    case e: MemberEvent             ⇒ removeMember(e)
+    case e: MemberEvent             ⇒ removeMember(e.member)
+    case UnreachableMember(m)       ⇒ removeMember(m)
     case msg: MetricsGossipEnvelope ⇒ receiveGossip(msg)
   }
 
@@ -99,9 +101,9 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Removes a member from the member node ring.
    */
-  def removeMember(event: MemberEvent): Unit = {
-    nodes -= event.member.address
-    latestGossip = latestGossip remove event.member.address
+  def removeMember(member: Member): Unit = {
+    nodes -= member.address
+    latestGossip = latestGossip remove member.address
     publish()
   }
 

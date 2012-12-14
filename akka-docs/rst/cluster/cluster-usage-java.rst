@@ -481,7 +481,6 @@ Run it without parameters to see instructions about how to use the script::
                                node cluster)
                 is-available - Checks if the member node is available
                   is-running - Checks if the member node is running
-             has-convergence - Checks if there is a cluster convergence
   Where the <node-url> should be on the format of 
     'akka://actor-system-name@hostname:port'
 

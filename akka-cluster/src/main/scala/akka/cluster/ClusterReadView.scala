@@ -45,25 +45,25 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
       override def postStop(): Unit = cluster.unsubscribe(self)
 
       def receive = {
-        case SeenChanged(convergence, seenBy) ⇒
-          state = state.copy(convergence = convergence, seenBy = seenBy)
-        case MemberRemoved(member) ⇒
-          state = state.copy(members = state.members - member, unreachable = state.unreachable - member)
-        case MemberUnreachable(member) ⇒
-          // replace current member with new member (might have different status, only address is used in equals)
-          state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
-        case MemberDowned(member) ⇒
-          // replace current member with new member (might have different status, only address is used in equals)
-          state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
-        case event: MemberEvent ⇒
-          // replace current member with new member (might have different status, only address is used in equals)
-          state = state.copy(members = state.members - event.member + event.member)
-        case LeaderChanged(leader)           ⇒ state = state.copy(leader = leader)
-        case ConvergenceChanged(convergence) ⇒ state = state.copy(convergence = convergence)
-        case s: CurrentClusterState          ⇒ state = s
-        case CurrentInternalStats(stats)     ⇒ _latestStats = stats
-        case ClusterMetricsChanged(nodes)    ⇒ _clusterMetrics = nodes
-        case _                               ⇒ // ignore, not interesting
+        case e: ClusterDomainEvent ⇒ e match {
+          case SeenChanged(convergence, seenBy) ⇒
+            state = state.copy(seenBy = seenBy)
+          case MemberRemoved(member) ⇒
+            state = state.copy(members = state.members - member, unreachable = state.unreachable - member)
+          case UnreachableMember(member) ⇒
+            // replace current member with new member (might have different status, only address is used in equals)
+            state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
+          case MemberDowned(member) ⇒
+            // replace current member with new member (might have different status, only address is used in equals)
+            state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
+          case event: MemberEvent ⇒
+            // replace current member with new member (might have different status, only address is used in equals)
+            state = state.copy(members = state.members - event.member + event.member)
+          case LeaderChanged(leader)        ⇒ state = state.copy(leader = leader)
+          case s: CurrentClusterState       ⇒ state = s
+          case CurrentInternalStats(stats)  ⇒ _latestStats = stats
+          case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
+        }
       }
     }).withDispatcher(cluster.settings.UseDispatcher), name = "clusterEventBusListener")
   }
@@ -111,11 +111,6 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
    * Is this node a singleton cluster?
    */
   def isSingletonCluster: Boolean = members.size == 1
-
-  /**
-   * Checks if we have a cluster convergence.
-   */
-  def convergence: Boolean = state.convergence
 
   /**
    * Returns true if the node is UP or JOINING.
