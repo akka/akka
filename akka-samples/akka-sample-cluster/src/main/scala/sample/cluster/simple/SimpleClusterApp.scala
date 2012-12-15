@@ -22,7 +22,7 @@ object SimpleClusterApp {
           log.info("Member joined: {}", member)
         case MemberUp(member) ⇒
           log.info("Member is Up: {}", member)
-        case MemberUnreachable(member) ⇒
+        case UnreachableMember(member) ⇒
           log.info("Member detected as unreachable: {}", member)
         case _: ClusterDomainEvent ⇒ // ignore
 
