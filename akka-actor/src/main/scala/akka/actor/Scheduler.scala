@@ -39,7 +39,7 @@ trait Scheduler {
     initialDelay: FiniteDuration,
     interval: FiniteDuration,
     receiver: ActorRef,
-    message: Any)(implicit executor: ExecutionContext): Cancellable
+    message: Any)(implicit executor: ExecutionContext, sender: ActorRef = Actor.noSender): Cancellable
 
   /**
    * Schedules a function to be run repeatedly with an initial delay and a
@@ -136,7 +136,7 @@ class DefaultScheduler(hashedWheelTimer: HashedWheelTimer, log: LoggingAdapter) 
   override def schedule(initialDelay: FiniteDuration,
                         delay: FiniteDuration,
                         receiver: ActorRef,
-                        message: Any)(implicit executor: ExecutionContext): Cancellable = {
+                        message: Any)(implicit executor: ExecutionContext, sender: ActorRef = Actor.noSender): Cancellable = {
     val continuousCancellable = new ContinuousCancellable
     continuousCancellable.init(
       hashedWheelTimer.newTimeout(
