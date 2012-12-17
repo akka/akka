@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import akka.util.Helpers;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import akka.event.LoggingAdapter;
@@ -91,7 +92,6 @@ public class HashedWheelTimer implements Timer {
     final ReusableIterator<HashedWheelTimeout>[] iterators;
     final int mask;
     final ReadWriteLock lock = new ReentrantReadWriteLock();
-    final boolean isWindows = System.getProperty("os.name", "").toLowerCase().indexOf("win") >= 0;
     volatile int wheelCursor;
     private LoggingAdapter logger;
 
@@ -396,7 +396,7 @@ public class HashedWheelTimer implements Timer {
                 // the JVM if it runs on windows.
                 //
                 // See https://github.com/netty/netty/issues/356
-                if (isWindows) {
+                if (Helpers.isWindows()) {
                   sleepTimeMs = (sleepTimeMs / 10) * 10;
                 }
                 
