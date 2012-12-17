@@ -28,8 +28,11 @@ class GossipSpec extends WordSpec with MustMatchers {
 
   "A Gossip" must {
 
-    "merge members by status priority" in {
+    "reach convergence when it's empty" in {
+      Gossip().convergence must be(true)
+    }
 
+    "merge members by status priority" in {
       val g1 = Gossip(members = SortedSet(a1, c1, e1))
       val g2 = Gossip(members = SortedSet(a2, c2, e2))
 
@@ -44,7 +47,6 @@ class GossipSpec extends WordSpec with MustMatchers {
     }
 
     "merge unreachable by status priority" in {
-
       val g1 = Gossip(members = Gossip.emptyMembers, overview = GossipOverview(unreachable = Set(a1, b1, c1, d1)))
       val g2 = Gossip(members = Gossip.emptyMembers, overview = GossipOverview(unreachable = Set(a2, b2, c2, d2)))
 

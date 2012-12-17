@@ -94,7 +94,6 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
               members.forall(_.status == MemberStatus.Up)
           })
           clusterView.unreachableMembers.map(_.address) must be((allButVictim map address).toSet)
-          clusterView.convergence must be(false)
         }
       }
 
@@ -112,8 +111,6 @@ abstract class UnreachableNodeRejoinsClusterSpec(multiNodeConfig: UnreachableNod
           // still one unreachable
           clusterView.unreachableMembers.size must be(1)
           clusterView.unreachableMembers.head.address must be(node(victim).address)
-          // and therefore no convergence
-          clusterView.convergence must be(false)
         }
       }
 
