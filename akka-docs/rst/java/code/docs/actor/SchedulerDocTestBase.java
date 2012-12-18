@@ -79,7 +79,7 @@ public class SchedulerDocTestBase {
     //to the tickActor after 0ms repeating every 50ms
     Cancellable cancellable = system.scheduler().schedule(Duration.Zero(),
     Duration.create(50, TimeUnit.MILLISECONDS), tickActor, "Tick",
-    system.dispatcher());
+    system.dispatcher(), null);
 
     //This cancels further Ticks to be sent
     cancellable.cancel();

@@ -148,7 +148,7 @@ public class FaultHandlingDocSample {
         progressListener = getSender();
         getContext().system().scheduler().schedule(
             Duration.Zero(), Duration.create(1, "second"), getSelf(), Do,
-          getContext().dispatcher()
+          getContext().dispatcher(), null
         );
       } else if (msg.equals(Do)) {
         counterService.tell(new Increment(1), getSelf());
