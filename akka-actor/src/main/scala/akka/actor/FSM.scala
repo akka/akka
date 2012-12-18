@@ -525,17 +525,21 @@ trait FSM[S, D] extends Listeners {
   override def postStop(): Unit = { terminate(stay withStopReason Shutdown) }
 
   private def terminate(nextState: State): Unit = {
-    if (!currentState.stopReason.isDefined) {
+    if (currentState.stopReason.isEmpty) {
       val reason = nextState.stopReason.get
       reason match {
         case Failure(ex: Throwable) ⇒ log.error(ex, "terminating due to Failure")
         case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
         case _                      ⇒
       }
+
+      for (timer ← timers.values) timer.cancel
+      timers.clear()
+      currentState = nextState
+
       val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)
       if (terminateEvent.isDefinedAt(stopEvent))
         terminateEvent(stopEvent)
-      currentState = nextState
     }
   }
 
