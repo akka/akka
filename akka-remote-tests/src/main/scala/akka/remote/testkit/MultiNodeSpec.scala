@@ -99,7 +99,11 @@ abstract class MultiNodeConfig {
 
   private[testkit] def config: Config = {
     val transportConfig =
-      if (_testTransport) ConfigFactory.parseString("akka.remoting.transports.tcp.applied-adapters = [gremlin, trttl]")
+      if (_testTransport) ConfigFactory.parseString(
+        """
+           akka.remoting.transports.tcp.applied-adapters = [gremlin, trttl]
+           akka.remoting.retry-gate-closed-for = 1 s
+        """)
       else ConfigFactory.empty
 
     val configs = (_nodeConf get myself).toList ::: _commonConf.toList ::: transportConfig :: MultiNodeSpec.nodeConfig :: MultiNodeSpec.baseConfig :: Nil
