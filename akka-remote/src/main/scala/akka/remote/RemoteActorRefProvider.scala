@@ -26,13 +26,13 @@ object RemoteActorRefProvider {
 
   private class RemotingTerminator extends Actor with FSM[TerminatorState, Option[Internals]] {
     import context.dispatcher
-    val systemGuardian = context.system.asInstanceOf[ExtendedActorSystem].provider.systemGuardian
+    val systemGuardian = context.actorFor("/system")
 
     startWith(Uninitialized, None)
 
     when(Uninitialized) {
       case Event(i: Internals, _) ⇒
-        systemGuardian.tell(RegisterTerminationHook, self)
+        systemGuardian ! RegisterTerminationHook
         goto(Idle) using Some(i)
     }
 
@@ -46,8 +46,7 @@ object RemoteActorRefProvider {
     // TODO: state timeout
     when(WaitDaemonShutdown) {
       case Event(TerminationHookDone, Some(internals)) ⇒
-        log.info("Remote daemon shut down.")
-        log.info("Shutting down remoting.")
+        log.info("Remote daemon shut down; proceeding with flushing remote transports.")
         internals.transport.shutdown() pipeTo self
         goto(WaitTransportShutdown)
     }
@@ -55,7 +54,7 @@ object RemoteActorRefProvider {
     when(WaitTransportShutdown) {
       case Event((), _) ⇒
         log.info("Remoting shut down.")
-        systemGuardian.tell(TerminationHookDone, self)
+        systemGuardian ! TerminationHookDone
         stop()
     }
 
@@ -141,8 +140,8 @@ class RemoteActorRefProvider(
         }).get
       })
 
-    remotingTerminator ! internals
     _internals = internals
+    remotingTerminator ! internals
 
     _log = Logging(eventStream, "RemoteActorRefProvider")
 

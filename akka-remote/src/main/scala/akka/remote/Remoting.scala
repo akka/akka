@@ -8,8 +8,7 @@ import akka.japi.Util.immutableSeq
 import akka.pattern.{ gracefulStop, pipe, ask }
 import akka.remote.EndpointManager._
 import akka.remote.Remoting.TransportSupervisor
-import akka.remote.transport.Transport.AssociationEventListener
-import akka.remote.transport.Transport.InboundAssociation
+import akka.remote.transport.Transport.{ ActorAssociationEventListener, AssociationEventListener, InboundAssociation }
 import akka.remote.transport._
 import akka.util.Timeout
 import com.typesafe.config.Config
@@ -386,7 +385,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       // Register to each transport as listener and collect mapping to addresses
       val transportsAndAddresses = results map {
         case (transport, address, promise) ⇒
-          promise.success(self)
+          promise.success(ActorAssociationEventListener(self))
           transport -> address
       }
       addressesPromise.success(transportsAndAddresses)

@@ -7,7 +7,7 @@ import akka.remote.transport.ActorTransportAdapter.AssociateUnderlying
 import akka.remote.transport.ActorTransportAdapter.ListenUnderlying
 import akka.remote.transport.ActorTransportAdapter.ListenerRegistered
 import akka.remote.transport.AkkaPduCodec.Associate
-import akka.remote.transport.AssociationHandle.{ Disassociated, InboundPayload, HandleEventListener }
+import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload, HandleEventListener }
 import akka.remote.transport.ThrottledAssociation._
 import akka.remote.transport.ThrottlerManager.Checkin
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
@@ -255,14 +255,14 @@ private[transport] class ThrottledAssociation(
   override def postStop(): Unit = originalHandle.disassociate()
 
   if (inbound) startWith(WaitExposedHandle, Uninitialized) else {
-    originalHandle.readHandlerPromise.success(self)
+    originalHandle.readHandlerPromise.success(ActorHandleEventListener(self))
     startWith(WaitModeAndUpstreamListener, Uninitialized)
   }
 
   when(WaitExposedHandle) {
     case Event(handle: ThrottlerHandle, Uninitialized) ⇒
       // register to downstream layer and wait for origin
-      originalHandle.readHandlerPromise.success(self)
+      originalHandle.readHandlerPromise.success(ActorHandleEventListener(self))
       goto(WaitOrigin) using ExposedHandle(handle)
   }
 

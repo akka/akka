@@ -1,17 +1,20 @@
 package akka.remote.transport
 
 import akka.actor.{ ExtendedActorSystem, Address }
-import akka.remote.transport.AssociationHandle.Disassociated
-import akka.remote.transport.AssociationHandle.InboundPayload
+import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload }
 import akka.remote.transport.TestTransport._
-import akka.remote.transport.Transport.Fail
-import akka.remote.transport.Transport.InboundAssociation
-import akka.remote.transport.Transport.Ready
-import akka.remote.transport.Transport.Status
+import akka.remote.transport.Transport._
 import akka.testkit.{ ImplicitSender, DefaultTimeout, AkkaSpec }
 import akka.util.ByteString
 import scala.concurrent.{ Future, Await }
 import akka.remote.RemoteActorRefProvider
+import akka.remote.transport.Transport.InboundAssociation
+import akka.remote.transport.TestTransport.DisassociateAttempt
+import akka.remote.transport.TestTransport.WriteAttempt
+import akka.remote.transport.TestTransport.ListenAttempt
+import akka.remote.transport.Transport.Fail
+import akka.remote.transport.TestTransport.AssociateAttempt
+import akka.remote.transport.Transport.Ready
 
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
   extends AkkaSpec("""akka.actor.provider = "akka.remote.RemoteActorRefProvider" """)
@@ -61,8 +64,8 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       val transportB = newTransportB(registry)
 
       // Must complete the returned promise to receive events
-      Await.result(transportA.listen, timeout.duration)._2.success(self)
-      Await.result(transportB.listen, timeout.duration)._2.success(self)
+      Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
+      Await.result(transportB.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
 
       awaitCond(registry.transportsReady(addressATest, addressBTest))
 
@@ -79,7 +82,7 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       val registry = new AssociationRegistry
       val transportA = newTransportA(registry)
 
-      Await.result(transportA.listen, timeout.duration)._2.success(self)
+      Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
       awaitCond(registry.transportsReady(addressATest))
 
       Await.result(transportA.associate(nonExistingAddress), timeout.duration) match {
@@ -93,8 +96,8 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       val transportA = newTransportA(registry)
       val transportB = newTransportB(registry)
 
-      Await.result(transportA.listen, timeout.duration)._2.success(self)
-      Await.result(transportB.listen, timeout.duration)._2.success(self)
+      Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
+      Await.result(transportB.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
 
       awaitCond(registry.transportsReady(addressATest, addressBTest))
 
@@ -106,8 +109,8 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       val Ready(handleA) = Await.result(associate, timeout.duration)
 
       // Initialize handles
-      handleA.readHandlerPromise.success(self)
-      handleB.readHandlerPromise.success(self)
+      handleA.readHandlerPromise.success(ActorHandleEventListener(self))
+      handleB.readHandlerPromise.success(ActorHandleEventListener(self))
 
       val payload = ByteString("PDU")
       val pdu = if (withAkkaProtocol) AkkaPduProtobufCodec.constructPayload(payload) else payload
@@ -131,8 +134,8 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       val transportA = newTransportA(registry)
       val transportB = newTransportB(registry)
 
-      Await.result(transportA.listen, timeout.duration)._2.success(self)
-      Await.result(transportB.listen, timeout.duration)._2.success(self)
+      Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
+      Await.result(transportB.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
 
       awaitCond(registry.transportsReady(addressATest, addressBTest))
 
@@ -144,8 +147,8 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       val Ready(handleA) = Await.result(associate, timeout.duration)
 
       // Initialize handles
-      handleA.readHandlerPromise.success(self)
-      handleB.readHandlerPromise.success(self)
+      handleA.readHandlerPromise.success(ActorHandleEventListener(self))
+      handleB.readHandlerPromise.success(ActorHandleEventListener(self))
 
       awaitCond(registry.existsAssociation(addressATest, addressBTest))
 

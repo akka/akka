@@ -19,7 +19,7 @@ class RemoteConfigSpec extends AkkaSpec(
   }
   """) {
 
-  // These tests are ignored as it tests configuration specific to the old remoting.
+  // FIXME: These tests are ignored as it tests configuration specific to the old remoting.
   "Remoting" must {
 
     "be able to parse generic remote config elements" ignore {

@@ -80,7 +80,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
 
       expectMsgPF(30 seconds) {
         case (received: Int, lost: Int) ⇒
-          log.warning(s" ######## Received ${received - lost} messages from ${received} ########")
+          log.debug(s" ######## Received ${received - lost} messages from ${received} ########")
       }
     }
   }

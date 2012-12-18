@@ -3,7 +3,7 @@ package akka.remote.transport
 import akka.actor.{ ExtendedActorSystem, Address, Props }
 import akka.remote.transport.AkkaPduCodec.{ Disassociate, Associate, Heartbeat }
 import akka.remote.transport.AkkaProtocolSpec.TestFailureDetector
-import akka.remote.transport.AssociationHandle.{ Disassociated, InboundPayload }
+import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload }
 import akka.remote.transport.TestTransport._
 import akka.remote.transport.Transport._
 import akka.remote.{ RemoteProtocol, RemoteActorRefProvider, FailureDetector }
@@ -123,7 +123,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       system.actorOf(Props(new ProtocolStateActor(
         localAddress,
         handle,
-        testActor,
+        ActorAssociationEventListener(testActor),
         new AkkaProtocolSettings(conf),
         codec,
         failureDetector)))
@@ -137,7 +137,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         localAddress,
         handle,
-        testActor,
+        ActorAssociationEventListener(testActor),
         new AkkaProtocolSettings(conf),
         codec,
         failureDetector)))
@@ -150,7 +150,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case InboundAssociation(h) ⇒ h
       }
 
-      wrappedHandle.readHandlerPromise.success(testActor)
+      wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
       failureDetector.called must be(true)
 
@@ -170,7 +170,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         localAddress,
         handle,
-        testActor,
+        ActorAssociationEventListener(testActor),
         new AkkaProtocolSettings(conf),
         codec,
         failureDetector)))
@@ -257,7 +257,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         localAddress,
         handle,
-        testActor,
+        ActorAssociationEventListener(testActor),
         new AkkaProtocolSettings(ConfigFactory.parseString("akka.remoting.require-cookie = on").withFallback(conf)),
         codec,
         failureDetector)))
@@ -276,7 +276,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       val reader = system.actorOf(Props(new ProtocolStateActor(
         localAddress,
         handle,
-        testActor,
+        ActorAssociationEventListener(testActor),
         new AkkaProtocolSettings(ConfigFactory.parseString("akka.remoting.require-cookie = on").withFallback(conf)),
         codec,
         failureDetector)))
@@ -288,7 +288,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case InboundAssociation(h) ⇒ h
       }
 
-      wrappedHandle.readHandlerPromise.success(testActor)
+      wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
       failureDetector.called must be(true)
 
@@ -350,7 +350,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case _ ⇒ fail()
       }
 
-      wrappedHandle.readHandlerPromise.success(testActor)
+      wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
       lastActivityIsAssociate(registry, None) must be(true)
 
@@ -388,7 +388,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case _ ⇒ fail()
       }
 
-      wrappedHandle.readHandlerPromise.success(testActor)
+      wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
       Thread.sleep(100) //FIXME: Remove this
 
@@ -421,7 +421,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         case _ ⇒ fail()
       }
 
-      wrappedHandle.readHandlerPromise.success(testActor)
+      wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
       lastActivityIsAssociate(registry, None) must be(true)
 
@@ -459,7 +459,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       stateActor ! Disassociated
 
-      wrappedHandle.readHandlerPromise.success(testActor)
+      wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
       expectMsg(Disassociated)
 

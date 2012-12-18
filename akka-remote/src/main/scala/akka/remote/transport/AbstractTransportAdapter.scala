@@ -54,7 +54,7 @@ trait SchemeAugmenter {
 /**
  * An adapter that wraps a transport and provides interception
  */
-abstract class AbstractTransportAdapter(protected val wrappedTransport: Transport, implicit val ec: ExecutionContext)
+abstract class AbstractTransportAdapter(protected val wrappedTransport: Transport)(implicit val ec: ExecutionContext)
   extends Transport with SchemeAugmenter {
 
   protected def maximumOverhead: Int
@@ -125,7 +125,7 @@ object ActorTransportAdapter {
 }
 
 abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorSystem)
-  extends AbstractTransportAdapter(wrappedTransport, system.dispatcher) {
+  extends AbstractTransportAdapter(wrappedTransport)(system.dispatcher) {
   import ActorTransportAdapter._
   private implicit val timeout = new Timeout(3 seconds)
 
@@ -140,9 +140,12 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
   override def interceptListen(listenAddress: Address,
                                listenerPromise: Future[AssociationEventListener]): Future[AssociationEventListener] = {
     registerManager().map { mgr ⇒
+      // Side effecting: storing the manager instance in volatile var
+      // This is done only once: during the initialization of the protocol stack. The variable manager is not read
+      // before listen is called.
       manager = mgr
       manager ! ListenUnderlying(listenAddress, listenerPromise)
-      manager
+      ActorAssociationEventListener(manager)
     }
   }
 

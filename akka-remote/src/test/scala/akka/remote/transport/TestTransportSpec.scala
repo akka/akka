@@ -6,7 +6,7 @@ import akka.actor.Address
 import akka.remote.transport.Transport._
 import akka.remote.transport.TestTransport._
 import akka.util.ByteString
-import akka.remote.transport.AssociationHandle.{ Disassociated, InboundPayload }
+import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload }
 
 class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
@@ -37,8 +37,8 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       val transportB = new TestTransport(addressB, registry)
 
       // Must complete the returned promise to receive events
-      Await.result(transportA.listen, timeout.duration)._2.success(self)
-      Await.result(transportB.listen, timeout.duration)._2.success(self)
+      Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
+      Await.result(transportB.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
 
       awaitCond(registry.transportsReady(addressA, addressB))
 
@@ -54,7 +54,7 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       val registry = new AssociationRegistry
       var transportA = new TestTransport(addressA, registry)
 
-      Await.result(transportA.listen, timeout.duration)._2.success(self)
+      Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
       Await.result(transportA.associate(nonExistingAddress), timeout.duration) match {
         case Fail(_) ⇒
         case _       ⇒ fail()
@@ -66,8 +66,8 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       val transportA = new TestTransport(addressA, registry)
       val transportB = new TestTransport(addressB, registry)
 
-      Await.result(transportA.listen, timeout.duration)._2.success(self)
-      Await.result(transportB.listen, timeout.duration)._2.success(self)
+      Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
+      Await.result(transportB.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
 
       awaitCond(registry.transportsReady(addressA, addressB))
 
@@ -79,8 +79,8 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       val Ready(handleA) = Await.result(associate, timeout.duration)
 
       // Initialize handles
-      handleA.readHandlerPromise.success(self)
-      handleB.readHandlerPromise.success(self)
+      handleA.readHandlerPromise.success(ActorHandleEventListener(self))
+      handleB.readHandlerPromise.success(ActorHandleEventListener(self))
 
       val akkaPDU = ByteString("AkkaPDU")
 
@@ -103,8 +103,8 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       val transportA = new TestTransport(addressA, registry)
       val transportB = new TestTransport(addressB, registry)
 
-      Await.result(transportA.listen, timeout.duration)._2.success(self)
-      Await.result(transportB.listen, timeout.duration)._2.success(self)
+      Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
+      Await.result(transportB.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
 
       awaitCond(registry.transportsReady(addressA, addressB))
 
@@ -116,8 +116,8 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       val Ready(handleA) = Await.result(associate, timeout.duration)
 
       // Initialize handles
-      handleA.readHandlerPromise.success(self)
-      handleB.readHandlerPromise.success(self)
+      handleA.readHandlerPromise.success(ActorHandleEventListener(self))
+      handleB.readHandlerPromise.success(ActorHandleEventListener(self))
 
       awaitCond(registry.existsAssociation(addressA, addressB))
 

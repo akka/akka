@@ -280,7 +280,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
       startWith(Closed, d)
 
     case d: InboundUnassociated ⇒
-      d.wrappedHandle.readHandlerPromise.success(self)
+      d.wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(self))
       startWith(WaitActivity, d)
   }
 
@@ -296,7 +296,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
       stop()
 
     case Event(Ready(wrappedHandle), OutboundUnassociated(_, statusPromise, _)) ⇒
-      wrappedHandle.readHandlerPromise.success(self)
+      wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(self))
       sendAssociate(wrappedHandle)
       failureDetector.heartbeat()
       initTimers()

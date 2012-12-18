@@ -68,8 +68,6 @@ object Transport {
     override def notify(ev: AssociationEvent): Unit = actor ! ev
   }
 
-  implicit def actorRef2HandleEventListener(actor: ActorRef): AssociationEventListener =
-    ActorAssociationEventListener(actor)
 }
 
 /**
@@ -199,8 +197,6 @@ object AssociationHandle {
   case class ActorHandleEventListener(actor: ActorRef) extends HandleEventListener {
     override def notify(ev: HandleEvent): Unit = actor ! ev
   }
-
-  implicit def actorRef2HandleEventListener(actor: ActorRef): HandleEventListener = ActorHandleEventListener(actor)
 }
 
 /**

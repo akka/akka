@@ -248,7 +248,7 @@ private[remote] class EndpointWriter(
       reader = Some(
         context.watch(context.actorOf(Props(new EndpointReader(readerCodec, readerLocalAddress, readerDispatcher)),
           "endpointReader-" + AddressUrlEncoder(remoteAddress) + "-" + readerId.next())))
-      h.readHandlerPromise.success(reader.get)
+      h.readHandlerPromise.success(ActorHandleEventListener(reader.get))
     case None ⇒ throw new EndpointException("Internal error: No handle was present during creation of the endpoint" +
       "reader.", null)
   }
