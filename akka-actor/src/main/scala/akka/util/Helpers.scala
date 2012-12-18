@@ -9,6 +9,8 @@ import java.util.regex.Pattern
 
 object Helpers {
 
+  val isWindows: Boolean = System.getProperty("os.name", "").toLowerCase.indexOf("win") >= 0
+
   def makePattern(s: String): Pattern = Pattern.compile("^\\Q" + s.replace("?", "\\E.\\Q").replace("*", "\\E.*\\Q") + "\\E$")
 
   def compareIdentityHash(a: AnyRef, b: AnyRef): Int = {
