@@ -109,6 +109,14 @@ class ActivationTrackerTest extends TestKit(ActorSystem("test")) with WordSpec w
 
       awaiting.verifyActivated()
     }
+
+    "send activation message when an actor is activated, deactivated and activated again" taggedAs TimingTest in {
+      publish(EndpointActivated(actor.ref))
+      publish(EndpointDeActivated(actor.ref))
+      publish(EndpointActivated(actor.ref))
+      awaiting.awaitActivation()
+      awaiting.verifyActivated()
+    }
   }
 
   class Awaiting(actor: TestProbe) {

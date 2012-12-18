@@ -4,8 +4,6 @@
 
 package akka.actor
 
-import language.existentials
-
 import akka.dispatch._
 import akka.japi.Creator
 import scala.reflect.ClassTag

@@ -110,11 +110,11 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     fsm.setState(stateName = 1)
     assert(fsm.stateName == 1)
 
-    assert(fsm.timerActive_?("test") == false)
+    assert(fsm.isTimerActive("test") == false)
     fsm.setTimer("test", 12, 10 millis, true)
-    assert(fsm.timerActive_?("test") == true)
+    assert(fsm.isTimerActive("test") == true)
     fsm.cancelTimer("test")
-    assert(fsm.timerActive_?("test") == false)
+    assert(fsm.isTimerActive("test") == false)
     //#test-fsm-ref
   }
 
@@ -232,7 +232,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#test-probe-forward
   }
 
-  "demonstrate " in {
+  "demonstrate calling thread dispatcher" in {
     //#calling-thread-dispatcher
     import akka.testkit.CallingThreadDispatcher
     val ref = system.actorOf(Props[MyActor].withDispatcher(CallingThreadDispatcher.Id))

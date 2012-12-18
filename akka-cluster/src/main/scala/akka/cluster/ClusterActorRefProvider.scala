@@ -18,16 +18,29 @@ import akka.actor.Props
 import akka.actor.Scheduler
 import akka.actor.Scope
 import akka.actor.Terminated
-import akka.cluster.routing.ClusterRouterConfig
-import akka.cluster.routing.ClusterRouterSettings
 import akka.dispatch.ChildTerminated
 import akka.event.EventStream
+import akka.japi.Util.immutableSeq
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteDeployer
 import akka.remote.routing.RemoteRouterConfig
+import akka.routing.RouterConfig
+import akka.routing.DefaultResizer
+import akka.cluster.routing.ClusterRouterConfig
+import akka.cluster.routing.ClusterRouterSettings
+import akka.cluster.routing.AdaptiveLoadBalancingRouter
+import akka.cluster.routing.MixMetricsSelector
+import akka.cluster.routing.HeapMetricsSelector
+import akka.cluster.routing.SystemLoadAverageMetricsSelector
+import akka.cluster.routing.CpuMetricsSelector
+import akka.cluster.routing.MetricsSelector
 
 /**
  * INTERNAL API
+ *
+ * The `ClusterActorRefProvider` will load the [[akka.cluster.Cluster]]
+ * extension, i.e. the cluster will automatically be started when
+ * the `ClusterActorRefProvider` is used.
  */
 class ClusterActorRefProvider(
   _systemName: String,
@@ -42,10 +55,17 @@ class ClusterActorRefProvider(
   override def init(system: ActorSystemImpl): Unit = {
     super.init(system)
 
+    // initialize/load the Cluster extension
+    Cluster(system)
+
     remoteDeploymentWatcher = system.systemActorOf(Props[RemoteDeploymentWatcher], "RemoteDeploymentWatcher")
   }
 
-  override val deployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
+  /**
+   * Factory method to make it possible to override deployer in subclass
+   * Creates a new instance every time
+   */
+  override protected def createDeployer: ClusterDeployer = new ClusterDeployer(settings, dynamicAccess)
 
   /**
    * This method is overridden here to keep track of remote deployed actors to
@@ -107,6 +127,36 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
         } else d
       case None ⇒ None
     }
+  }
+
+  override protected def createRouterConfig(routerType: String, key: String, config: Config, deployment: Config): RouterConfig = {
+    val routees = immutableSeq(deployment.getStringList("routees.paths"))
+    val nrOfInstances = deployment.getInt("nr-of-instances")
+    val resizer = if (config.hasPath("resizer")) Some(DefaultResizer(deployment.getConfig("resizer"))) else None
+
+    routerType match {
+      case "adaptive" ⇒
+        val metricsSelector = deployment.getString("metrics-selector") match {
+          case "mix"  ⇒ MixMetricsSelector
+          case "heap" ⇒ HeapMetricsSelector
+          case "cpu"  ⇒ CpuMetricsSelector
+          case "load" ⇒ SystemLoadAverageMetricsSelector
+          case fqn ⇒
+            val args = List(classOf[Config] -> deployment)
+            dynamicAccess.createInstanceFor[MetricsSelector](fqn, args).recover({
+              case exception ⇒ throw new IllegalArgumentException(
+                ("Cannot instantiate metrics-selector [%s], defined in [%s], " +
+                  "make sure it extends [akka.cluster.routing.MetricsSelector] and " +
+                  "has constructor with [com.typesafe.config.Config] parameter")
+                  .format(fqn, key), exception)
+            }).get
+        }
+
+        AdaptiveLoadBalancingRouter(metricsSelector, nrOfInstances, routees, resizer)
+
+      case _ ⇒ super.createRouterConfig(routerType, key, config, deployment)
+    }
+
   }
 }
 

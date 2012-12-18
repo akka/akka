@@ -128,9 +128,13 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   case class MethodCall(method: Method, parameters: Array[AnyRef]) {
 
     def isOneWay = method.getReturnType == java.lang.Void.TYPE
-    def returnsFuture_? = classOf[Future[_]].isAssignableFrom(method.getReturnType)
-    def returnsJOption_? = classOf[akka.japi.Option[_]].isAssignableFrom(method.getReturnType)
-    def returnsOption_? = classOf[scala.Option[_]].isAssignableFrom(method.getReturnType)
+    def returnsFuture = classOf[Future[_]] isAssignableFrom method.getReturnType
+    def returnsJOption = classOf[akka.japi.Option[_]] isAssignableFrom method.getReturnType
+    def returnsOption = classOf[scala.Option[_]] isAssignableFrom method.getReturnType
+
+    @deprecated("use returnsFuture instead", "2.2") def returnsFuture_? = returnsFuture
+    @deprecated("use returnsJOption instead", "2.2") def returnsJOption_? = returnsJOption
+    @deprecated("use returnsOption instead", "2.2") def returnsOption_? = returnsOption
 
     /**
      * Invokes the Method on the supplied instance
@@ -195,6 +199,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
 
   private val selfReference = new ThreadLocal[AnyRef]
   private val currentContext = new ThreadLocal[ActorContext]
+
+  @SerialVersionUID(1L)
+  private case object NullResponse
 
   /**
    * Returns the reference to the proxy when called inside a method call in a TypedActor
@@ -296,14 +303,17 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         if (m.isOneWay) m(me)
         else {
           try {
-            if (m.returnsFuture_?) {
-              val s = sender
-              m(me).asInstanceOf[Future[Any]] onComplete {
-                case Failure(f) ⇒ s ! Status.Failure(f)
-                case Success(r) ⇒ s ! r
-              }
-            } else {
-              sender ! m(me)
+            val s = sender
+            m(me) match {
+              case f: Future[_] if m.returnsFuture ⇒
+                implicit val dispatcher = context.dispatcher
+                f onComplete {
+                  case Success(null)   ⇒ s ! NullResponse
+                  case Success(result) ⇒ s ! result
+                  case Failure(f)      ⇒ s ! Status.Failure(f)
+                }
+              case null   ⇒ s ! NullResponse
+              case result ⇒ s ! result
             }
           } catch {
             case NonFatal(e) ⇒
@@ -391,6 +401,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    * INTERNAL USE ONLY
    */
   private[akka] class TypedActorInvocationHandler(@transient val extension: TypedActorExtension, @transient val actorVar: AtomVar[ActorRef], @transient val timeout: Timeout) extends InvocationHandler with Serializable {
+
     def actor = actorVar.get
     @throws(classOf[Throwable])
     def invoke(proxy: AnyRef, method: Method, args: Array[AnyRef]): AnyRef = method.getName match {
@@ -398,17 +409,24 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case "equals"   ⇒ (args.length == 1 && (proxy eq args(0)) || actor == extension.getActorRefFor(args(0))).asInstanceOf[AnyRef] //Force boxing of the boolean
       case "hashCode" ⇒ actor.hashCode.asInstanceOf[AnyRef]
       case _ ⇒
+        implicit val dispatcher = extension.system.dispatcher
         import akka.pattern.ask
         MethodCall(method, args) match {
-          case m if m.isOneWay        ⇒ actor ! m; null //Null return value
-          case m if m.returnsFuture_? ⇒ ask(actor, m)(timeout)
-          case m if m.returnsJOption_? || m.returnsOption_? ⇒
+          case m if m.isOneWay ⇒ actor ! m; null //Null return value
+          case m if m.returnsFuture ⇒ ask(actor, m)(timeout) map {
+            case NullResponse ⇒ null
+            case other        ⇒ other
+          }
+          case m if m.returnsJOption || m.returnsOption ⇒
             val f = ask(actor, m)(timeout)
             (try { Await.ready(f, timeout.duration).value } catch { case _: TimeoutException ⇒ None }) match {
-              case None | Some(Success(null)) ⇒ if (m.returnsJOption_?) JOption.none[Any] else None
-              case Some(t: Try[_])            ⇒ t.get.asInstanceOf[AnyRef]
+              case None | Some(Success(NullResponse)) ⇒ if (m.returnsJOption) JOption.none[Any] else None
+              case Some(t: Try[_])                    ⇒ t.get.asInstanceOf[AnyRef]
             }
-          case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration).asInstanceOf[AnyRef]
+          case m ⇒ Await.result(ask(actor, m)(timeout), timeout.duration) match {
+            case NullResponse ⇒ null
+            case other        ⇒ other.asInstanceOf[AnyRef]
+          }
         }
     }
     @throws(classOf[ObjectStreamException]) private def writeReplace(): AnyRef = SerializedTypedActorInvocationHandler(actor, timeout.duration)
@@ -605,7 +623,7 @@ case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFac
   override def isTypedActor(proxyOrNot: AnyRef): Boolean = typedActor.isTypedActor(proxyOrNot)
 }
 
-class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory with Extension {
+class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFactory with Extension {
   import TypedActor._ //Import the goodies from the companion object
   protected def actorFactory: ActorRefFactory = system
   protected def typedActor = this
@@ -655,8 +673,8 @@ class TypedActorExtension(system: ExtendedActorSystem) extends TypedActorFactory
   /**
    * INTERNAL USE ONLY
    */
-  private[akka] def invocationHandlerFor(typedActor_? : AnyRef): TypedActorInvocationHandler =
-    if ((typedActor_? ne null) && Proxy.isProxyClass(typedActor_?.getClass)) typedActor_? match {
+  private[akka] def invocationHandlerFor(@deprecatedName('typedActor_?) typedActor: AnyRef): TypedActorInvocationHandler =
+    if ((typedActor ne null) && Proxy.isProxyClass(typedActor.getClass)) typedActor match {
       case null ⇒ null
       case other ⇒ Proxy.getInvocationHandler(other) match {
         case null                                 ⇒ null

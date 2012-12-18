@@ -16,7 +16,7 @@
 
 declare AKKA_HOME="$(cd "$(cd "$(dirname "$0")"; pwd -P)"/..; pwd)"
 
-[ -n "$JMX_CLIENT_CLASSPATH" ] || JMX_CLIENT_CLASSPATH="$AKKA_HOME/lib/akka/akka-kernel-*"
+[ -n "$JMX_CLIENT_CLASSPATH" ] || JMX_CLIENT_CLASSPATH="$AKKA_HOME/lib/akka/akka-kernel*"
 
 # NOTE: The 'cmdline-jmxclient' is available as part of the Akka distribution.
 JMX_CLIENT="java -cp $JMX_CLIENT_CLASSPATH akka.jmx.Client -"
@@ -103,6 +103,32 @@ case "$2" in
         $JMX_CLIENT $HOST akka:type=Cluster ClusterStatus
         ;;
 
+    members)
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> members"
+            exit 1
+        fi
+
+        ensureNodeIsRunningAndAvailable
+        shift
+
+        echo "Querying members"
+        $JMX_CLIENT $HOST akka:type=Cluster Members
+        ;;
+
+    unreachable)
+        if [ $# -ne 2 ]; then
+            echo "Usage: $SELF <node-hostname:jmx-port> unreachable"
+            exit 1
+        fi
+
+        ensureNodeIsRunningAndAvailable
+        shift
+
+        echo "Querying unreachable members"
+        $JMX_CLIENT $HOST akka:type=Cluster Unreachable
+        ;;
+
     leader)
         if [ $# -ne 2 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> leader"
@@ -129,19 +155,6 @@ case "$2" in
         $JMX_CLIENT $HOST akka:type=Cluster Singleton
         ;;
 
-    has-convergence)
-        if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> is-convergence"
-            exit 1
-        fi
-
-        ensureNodeIsRunningAndAvailable
-        shift
-
-        echo "Checking for cluster convergence"
-        $JMX_CLIENT $HOST akka:type=Cluster Convergence
-        ;;
-
     is-available)
         if [ $# -ne 2 ]; then
             echo "Usage: $SELF <node-hostname:jmx-port> is-available"
@@ -155,19 +168,6 @@ case "$2" in
         $JMX_CLIENT $HOST akka:type=Cluster Available
         ;;
 
-    is-running)
-        if [ $# -ne 2 ]; then
-            echo "Usage: $SELF <node-hostname:jmx-port> is-running"
-            exit 1
-        fi
-
-        ensureNodeIsRunningAndAvailable
-        shift
-
-        echo "Checking if member node on $HOST is RUNNING"
-        $JMX_CLIENT $HOST akka:type=Cluster Running
-        ;;
-
     *)
         printf "Usage: bin/$SELF <node-hostname:jmx-port> <command> ...\n"
         printf "\n"
@@ -176,12 +176,12 @@ case "$2" in
         printf "%26s - %s\n" "leave <node-url>"  "Sends a request for node with URL to LEAVE the cluster"
         printf "%26s - %s\n" "down <node-url>"   "Sends a request for marking node with URL as DOWN"
         printf "%26s - %s\n" member-status       "Asks the member node for its current status"
+        printf "%26s - %s\n" members             "Asks the cluster for addresses of current members"
+        printf "%26s - %s\n" unreachable         "Asks the cluster for addresses of unreachable members"
         printf "%26s - %s\n" cluster-status      "Asks the cluster for its current status (member ring, unavailable nodes, meta data etc.)"
         printf "%26s - %s\n" leader              "Asks the cluster who the current leader is"
         printf "%26s - %s\n" is-singleton        "Checks if the cluster is a singleton cluster (single node cluster)"
         printf "%26s - %s\n" is-available        "Checks if the member node is available"
-        printf "%26s - %s\n" is-running          "Checks if the member node is running"
-        printf "%26s - %s\n" has-convergence     "Checks if there is a cluster convergence"
         printf "Where the <node-url> should be on the format of 'akka://actor-system-name@hostname:port'\n"
         printf "\n"
         printf "Examples: bin/$SELF localhost:9999 is-available\n"

@@ -63,6 +63,10 @@ object RemoteActorRefProvider {
 
 /**
  * Remote ActorRefProvider. Starts up actor on remote node and creates a RemoteActorRef representing it.
+ *
+ * INTERNAL API!
+ *
+ * Depending on this class is not supported, only the [[ActorRefProvider]] interface is supported.
  */
 class RemoteActorRefProvider(
   val systemName: String,
@@ -74,7 +78,13 @@ class RemoteActorRefProvider(
 
   val remoteSettings: RemoteSettings = new RemoteSettings(settings.config, systemName)
 
-  val deployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
+  override val deployer: Deployer = createDeployer
+
+  /**
+   * Factory method to make it possible to override deployer in subclass
+   * Creates a new instance every time
+   */
+  protected def createDeployer: RemoteDeployer = new RemoteDeployer(settings, dynamicAccess)
 
   private val local = new LocalActorRefProvider(systemName, settings, eventStream, scheduler, dynamicAccess, deployer)
 
@@ -82,9 +92,7 @@ class RemoteActorRefProvider(
   private var _log = local.log
   def log: LoggingAdapter = _log
 
-  @volatile
-  private var _rootPath = local.rootPath
-  override def rootPath: ActorPath = _rootPath
+  override def rootPath: ActorPath = local.rootPath
   override def deadLetters: InternalActorRef = local.deadLetters
 
   // these are only available after init()
@@ -147,11 +155,6 @@ class RemoteActorRefProvider(
 
     // this enables reception of remote requests
     transport.start()
-
-    _rootPath = RootActorPath(local.rootPath.address.copy(
-      protocol = transport.defaultAddress.protocol,
-      host = transport.defaultAddress.host,
-      port = transport.defaultAddress.port))
 
     val remoteClientLifeCycleHandler = system.systemActorOf(Props(new Actor {
       def receive = {
@@ -295,6 +298,8 @@ class RemoteActorRefProvider(
       case _                               ⇒ None
     }
   }
+
+  def getDefaultAddress: Address = transport.address
 
   private def hasAddress(address: Address): Boolean =
     address == local.rootPath.address || address == rootPath.address || transport.addresses(address)

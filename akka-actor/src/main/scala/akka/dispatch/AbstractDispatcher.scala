@@ -108,7 +108,7 @@ private[akka] case class Terminate() extends SystemMessage // sent to self from 
 /**
  * INTERNAL API
  */
-private[akka] case class Supervise(child: ActorRef, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+private[akka] case class Supervise(child: ActorRef, async: Boolean, uid: Int) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 /**
  * INTERNAL API
  */
@@ -450,7 +450,6 @@ abstract class MessageDispatcherConfigurator(val config: Config, val prerequisit
 }
 
 class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
-  import ThreadPoolConfigBuilder.conf_?
 
   val threadPoolConfig: ThreadPoolConfig = createThreadPoolConfigBuilder(config, prerequisites).config
 
@@ -461,15 +460,15 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
       .setCorePoolSizeFromFactor(config getInt "core-pool-size-min", config getDouble "core-pool-size-factor", config getInt "core-pool-size-max")
       .setMaxPoolSizeFromFactor(config getInt "max-pool-size-min", config getDouble "max-pool-size-factor", config getInt "max-pool-size-max")
       .configure(
-        conf_?(Some(config getInt "task-queue-size") flatMap {
+        Some(config getInt "task-queue-size") flatMap {
           case size if size > 0 ⇒
             Some(config getString "task-queue-type") map {
               case "array"       ⇒ ThreadPoolConfig.arrayBlockingQueue(size, false) //TODO config fairness?
               case "" | "linked" ⇒ ThreadPoolConfig.linkedBlockingQueue(size)
               case x             ⇒ throw new IllegalArgumentException("[%s] is not a valid task-queue-type [array|linked]!" format x)
-            }
+            } map { qf ⇒ (q: ThreadPoolConfigBuilder) ⇒ q.setQueueFactory(qf) }
           case _ ⇒ None
-        })(queueFactory ⇒ _.setQueueFactory(queueFactory)))
+        })
   }
 
   def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
@@ -527,7 +526,7 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
     val tf = threadFactory match {
       case m: MonitorableThreadFactory ⇒
         // add the dispatcher id to the thread names
-        m.copy(m.name + "-" + id)
+        m.withName(m.name + "-" + id)
       case other ⇒ other
     }
     new ForkJoinExecutorServiceFactory(

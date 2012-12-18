@@ -5,7 +5,7 @@ package akka.cluster
 
 import language.postfixOps
 
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import java.net.URLEncoder
@@ -96,7 +96,10 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   val heartbeatTask = scheduler.schedule(PeriodicTasksInitialDelay max HeartbeatInterval,
     HeartbeatInterval, self, HeartbeatTick)
 
-  override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])
+  override def preStart(): Unit = {
+    cluster.subscribe(self, classOf[MemberEvent])
+    cluster.subscribe(self, classOf[UnreachableMember])
+  }
 
   override def postStop(): Unit = {
     heartbeatTask.cancel()
@@ -112,7 +115,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   def receive = {
     case HeartbeatTick          ⇒ heartbeat()
     case s: CurrentClusterState ⇒ reset(s)
-    case MemberUnreachable(m)   ⇒ removeMember(m)
+    case UnreachableMember(m)   ⇒ removeMember(m)
     case MemberRemoved(m)       ⇒ removeMember(m)
     case e: MemberEvent         ⇒ addMember(e.member)
     case JoinInProgress(a, d)   ⇒ addJoinInProgress(a, d)

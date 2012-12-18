@@ -179,6 +179,18 @@ demonstrated below:
 The :class:`Event(msg: Any, data: D)` case class is parameterized with the data
 type held by the FSM for convenient pattern matching.
 
+.. warning::
+
+  It is required that you define handlers for each of the possible FSM states,
+  otherwise there will be failures when trying to switch to undeclared states.
+
+It is recommended practice to declare the states as objects extending a
+sealed trait and then verify that there is a ``when`` clause for each of the
+states. If you want to leave the handling of a state “unhandled” (more below),
+it still needs to be declared like this:
+
+.. includecode:: code/docs/actor/FSMDocSpec.scala#NullFunction
+
 Defining the Initial State
 --------------------------
 
@@ -359,7 +371,7 @@ which is guaranteed to work immediately, meaning that the scheduled message
 will not be processed after this call even if the timer already fired and
 queued it. The status of any timer may be inquired with
 
-  :func:`timerActive_?(name)`
+  :func:`isTimerActive(name)`
 
 These named timers complement state timeouts because they are not affected by
 intervening reception of other messages.

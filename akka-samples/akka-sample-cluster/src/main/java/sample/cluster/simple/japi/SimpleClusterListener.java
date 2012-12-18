@@ -4,8 +4,8 @@ import akka.actor.UntypedActor;
 import akka.cluster.ClusterEvent.ClusterDomainEvent;
 import akka.cluster.ClusterEvent.CurrentClusterState;
 import akka.cluster.ClusterEvent.MemberJoined;
-import akka.cluster.ClusterEvent.MemberUnreachable;
 import akka.cluster.ClusterEvent.MemberUp;
+import akka.cluster.ClusterEvent.UnreachableMember;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
@@ -26,8 +26,8 @@ public class SimpleClusterListener extends UntypedActor {
       MemberUp mUp = (MemberUp) message;
       log.info("Member is Up: {}", mUp.member());
 
-    } else if (message instanceof MemberUnreachable) {
-      MemberUnreachable mUnreachable = (MemberUnreachable) message;
+    } else if (message instanceof UnreachableMember) {
+      UnreachableMember mUnreachable = (UnreachableMember) message;
       log.info("Member detected as unreachable: {}", mUnreachable.member());
 
     } else if (message instanceof ClusterDomainEvent) {

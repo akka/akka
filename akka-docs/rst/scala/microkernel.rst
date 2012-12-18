@@ -19,11 +19,7 @@ Put your application jar in the ``deploy`` directory to have it automatically
 loaded.
 
 To start the kernel use the scripts in the ``bin`` directory, passing the boot
-classes for your application.
-
-There is a simple example of an application setup for running with the
-microkernel included in the akka download. This can be run with the following
-command (on a unix-based system):
+classes for your application. Example command (on a unix-based system):
 
 .. code-block:: none
 

@@ -25,7 +25,7 @@ public class StatsAggregator extends UntypedActor {
 
   @Override
   public void preStart() {
-    getContext().setReceiveTimeout(Duration.create(5, TimeUnit.SECONDS));
+    getContext().setReceiveTimeout(Duration.create(3, TimeUnit.SECONDS));
   }
 
   @Override

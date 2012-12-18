@@ -9,6 +9,7 @@ import akka.testkit.AkkaSpec
 import akka.actor.ExtendedActorSystem
 import scala.concurrent.duration._
 import akka.remote.netty.NettyRemoteTransport
+import akka.util.Helpers
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class RemoteConfigSpec extends AkkaSpec(
@@ -50,6 +51,7 @@ class RemoteConfigSpec extends AkkaSpec(
       MessageFrameSize must be(1048576)
       ConnectionTimeout must be(2 minutes)
       Backlog must be(4096)
+      ReuseAddress must be(!Helpers.isWindows)
       ExecutionPoolKeepalive must be(1 minute)
       ExecutionPoolSize must be(4)
       MaxChannelMemorySize must be(0)
@@ -88,6 +90,10 @@ class RemoteConfigSpec extends AkkaSpec(
         pool.getInt("pool-size-min") must equal(2)
         pool.getDouble("pool-size-factor") must equal(1.0)
         pool.getInt("pool-size-max") must equal(8)
+      }
+
+      {
+        c.getString("reuse-address") must be("off-for-windows")
       }
     }
   }

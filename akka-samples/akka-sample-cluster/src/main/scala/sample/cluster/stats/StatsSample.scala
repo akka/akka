@@ -15,10 +15,7 @@ import akka.actor.ReceiveTimeout
 import akka.actor.RelativeActorPath
 import akka.actor.RootActorPath
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.CurrentClusterState
-import akka.cluster.ClusterEvent.LeaderChanged
-import akka.cluster.ClusterEvent.MemberEvent
-import akka.cluster.ClusterEvent.MemberUp
+import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
 import akka.routing.FromConfig
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
@@ -54,7 +51,7 @@ class StatsService extends Actor {
 
 class StatsAggregator(expectedResults: Int, replyTo: ActorRef) extends Actor {
   var results = IndexedSeq.empty[Int]
-  context.setReceiveTimeout(5 seconds)
+  context.setReceiveTimeout(3 seconds)
 
   def receive = {
     case wordCount: Int ⇒
@@ -106,7 +103,7 @@ class StatsFacade extends Actor with ActorLogging {
     case job: StatsJob if currentMaster.isEmpty ⇒
       sender ! JobFailed("Service unavailable, try again later")
     case job: StatsJob ⇒
-      implicit val timeout = Timeout(10.seconds)
+      implicit val timeout = Timeout(5.seconds)
       currentMaster foreach {
         _ ? job recover {
           case _ ⇒ JobFailed("Service unavailable, try again later")
@@ -219,7 +216,10 @@ class StatsSampleClient(servicePath: String) extends Actor {
 
   var nodes = Set.empty[Address]
 
-  override def preStart(): Unit = cluster.subscribe(self, classOf[MemberEvent])
+  override def preStart(): Unit = {
+    cluster.subscribe(self, classOf[MemberEvent])
+    cluster.subscribe(self, classOf[UnreachableMember])
+  }
   override def postStop(): Unit = {
     cluster.unsubscribe(self)
     tickTask.cancel()
@@ -237,8 +237,9 @@ class StatsSampleClient(servicePath: String) extends Actor {
       println(failed)
     case state: CurrentClusterState ⇒
       nodes = state.members.collect { case m if m.status == MemberStatus.Up ⇒ m.address }
-    case MemberUp(m)        ⇒ nodes += m.address
-    case other: MemberEvent ⇒ nodes -= other.member.address
+    case MemberUp(m)          ⇒ nodes += m.address
+    case other: MemberEvent   ⇒ nodes -= other.member.address
+    case UnreachableMember(m) ⇒ nodes -= m.address
   }
 
 }

@@ -177,7 +177,6 @@ abstract class LargeClusterSpec
 
       Await.ready(latch, remaining)
 
-      awaitCond(clusterNodes.forall(_.readView.convergence))
       val counts = clusterNodes.map(gossipCount(_))
       val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / clusterNodes.size, counts.min, counts.max)
       log.info("Convergence of [{}] nodes reached, it took [{}], received [{}] gossip messages per node",
@@ -274,7 +273,7 @@ abstract class LargeClusterSpec
     }
 
     "detect failure and auto-down crashed nodes in second-datacenter" taggedAs LongRunningTest in {
-      val unreachableNodes = nodesPerDatacenter
+      val downedNodes = nodesPerDatacenter
       val liveNodes = nodesPerDatacenter * 4
 
       within(30.seconds + 3.seconds * liveNodes) {
@@ -289,22 +288,19 @@ abstract class LargeClusterSpec
         val latch = TestLatch(nodesPerDatacenter)
         systems foreach { sys ⇒
           Cluster(sys).subscribe(sys.actorOf(Props(new Actor {
-            var gotUnreachable = Set.empty[Member]
+            var gotDowned = Set.empty[Member]
             def receive = {
               case state: CurrentClusterState ⇒
-                gotUnreachable = state.unreachable
-                checkDone()
-              case MemberUnreachable(m) if !latch.isOpen ⇒
-                gotUnreachable = gotUnreachable + m
+                gotDowned = gotDowned ++ state.unreachable.filter(_.status == Down)
                 checkDone()
               case MemberDowned(m) if !latch.isOpen ⇒
-                gotUnreachable = gotUnreachable + m
+                gotDowned = gotDowned + m
                 checkDone()
               case _ ⇒ // not interesting
             }
-            def checkDone(): Unit = if (gotUnreachable.size == unreachableNodes) {
-              log.info("Detected [{}] unreachable nodes in [{}], it took [{}], received [{}] gossip messages",
-                unreachableNodes, Cluster(sys).selfAddress, tookMillis, gossipCount(Cluster(sys)))
+            def checkDone(): Unit = if (gotDowned.size == downedNodes) {
+              log.info("Detected [{}] downed nodes in [{}], it took [{}], received [{}] gossip messages",
+                downedNodes, Cluster(sys).selfAddress, tookMillis, gossipCount(Cluster(sys)))
               latch.countDown()
             }
           })), classOf[ClusterDomainEvent])
@@ -318,7 +314,6 @@ abstract class LargeClusterSpec
 
         runOn(firstDatacenter, thirdDatacenter, fourthDatacenter, fifthDatacenter) {
           Await.ready(latch, remaining)
-          awaitCond(systems.forall(Cluster(_).readView.convergence))
           val mergeCount = systems.map(sys ⇒ Cluster(sys).readView.latestStats.mergeCount).sum
           val counts = systems.map(sys ⇒ gossipCount(Cluster(sys)))
           val formattedStats = "mean=%s min=%s max=%s".format(counts.sum / nodesPerDatacenter, counts.min, counts.max)

@@ -31,6 +31,8 @@ object StatsSampleJapiSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-join = off
+    # don't use sigar for tests, native lib not in path
+    akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     akka.actor.deployment {
       /statsService/workerRouter {
           router = consistent-hashing
@@ -88,32 +90,35 @@ abstract class StatsSampleJapiSpec extends MultiNodeSpec(StatsSampleJapiSpecConf
       testConductor.enter("all-up")
     }
 
-
     "show usage of the statsService from one node" in within(15 seconds) {
       runOn(second) {
-        val service = system.actorFor(node(third) / "user" / "statsService")
-        service ! new StatsJob("this is the text that will be analyzed")
-        val meanWordLength = expectMsgPF() {
-          case r: StatsResult ⇒ r.getMeanWordLength
-        }
-        meanWordLength must be(3.875 plusOrMinus 0.001)
+        assertServiceOk
       }
 
       testConductor.enter("done-2")
     }
-    //#test-statsService
-    
-    "show usage of the statsService from all nodes" in within(15 seconds) {
+
+    def assertServiceOk: Unit = {
       val service = system.actorFor(node(third) / "user" / "statsService")
-      service ! new StatsJob("this is the text that will be analyzed")
-      val meanWordLength = expectMsgPF() {
-        case r: StatsResult ⇒ r.getMeanWordLength
+      // eventually the service should be ok,
+      // first attempts might fail because worker actors not started yet
+      awaitCond {
+        service ! new StatsJob("this is the text that will be analyzed")
+        expectMsgPF() {
+          case unavailble: JobFailed ⇒ false
+          case r: StatsResult ⇒
+            r.getMeanWordLength must be(3.875 plusOrMinus 0.001)
+            true
+        }
       }
-      meanWordLength must be(3.875 plusOrMinus 0.001)
+    }
+    //#test-statsService
+
+    "show usage of the statsService from all nodes" in within(15 seconds) {
+      assertServiceOk
 
       testConductor.enter("done-3")
     }
-
 
   }
 

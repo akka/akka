@@ -5,7 +5,7 @@
 package akka.cluster
 
 import java.io.Closeable
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl, Address, Props }
 import akka.cluster.ClusterEvent._
 import akka.actor.PoisonPill
@@ -45,25 +45,25 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
       override def postStop(): Unit = cluster.unsubscribe(self)
 
       def receive = {
-        case SeenChanged(convergence, seenBy) ⇒
-          state = state.copy(convergence = convergence, seenBy = seenBy)
-        case MemberRemoved(member) ⇒
-          state = state.copy(members = state.members - member, unreachable = state.unreachable - member)
-        case MemberUnreachable(member) ⇒
-          // replace current member with new member (might have different status, only address is used in equals)
-          state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
-        case MemberDowned(member) ⇒
-          // replace current member with new member (might have different status, only address is used in equals)
-          state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
-        case event: MemberEvent ⇒
-          // replace current member with new member (might have different status, only address is used in equals)
-          state = state.copy(members = state.members - event.member + event.member)
-        case LeaderChanged(leader)           ⇒ state = state.copy(leader = leader)
-        case ConvergenceChanged(convergence) ⇒ state = state.copy(convergence = convergence)
-        case s: CurrentClusterState          ⇒ state = s
-        case CurrentInternalStats(stats)     ⇒ _latestStats = stats
-        case ClusterMetricsChanged(nodes)    ⇒ _clusterMetrics = nodes
-        case _                               ⇒ // ignore, not interesting
+        case e: ClusterDomainEvent ⇒ e match {
+          case SeenChanged(convergence, seenBy) ⇒
+            state = state.copy(seenBy = seenBy)
+          case MemberRemoved(member) ⇒
+            state = state.copy(members = state.members - member, unreachable = state.unreachable - member)
+          case UnreachableMember(member) ⇒
+            // replace current member with new member (might have different status, only address is used in equals)
+            state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
+          case MemberDowned(member) ⇒
+            // replace current member with new member (might have different status, only address is used in equals)
+            state = state.copy(members = state.members - member, unreachable = state.unreachable - member + member)
+          case event: MemberEvent ⇒
+            // replace current member with new member (might have different status, only address is used in equals)
+            state = state.copy(members = state.members - event.member + event.member)
+          case LeaderChanged(leader)        ⇒ state = state.copy(leader = leader)
+          case s: CurrentClusterState       ⇒ state = s
+          case CurrentInternalStats(stats)  ⇒ _latestStats = stats
+          case ClusterMetricsChanged(nodes) ⇒ _clusterMetrics = nodes
+        }
       }
     }).withDispatcher(cluster.settings.UseDispatcher), name = "clusterEventBusListener")
   }
@@ -74,14 +74,14 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   }
 
   /**
-   * Returns true if the cluster node is up and running, false if it is shut down.
+   * Returns true if this cluster instance has be shutdown.
    */
-  def isRunning: Boolean = cluster.isRunning
+  def isTerminated: Boolean = cluster.isTerminated
 
   /**
    * Current cluster members, sorted by address.
    */
-  def members: SortedSet[Member] = state.members
+  def members: immutable.SortedSet[Member] = state.members
 
   /**
    * Members that has been detected as unreachable.
@@ -108,21 +108,19 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   def leader: Option[Address] = state.leader
 
   /**
-   * Is this node a singleton cluster?
+   * Does the cluster consist of only one member?
    */
   def isSingletonCluster: Boolean = members.size == 1
 
   /**
-   * Checks if we have a cluster convergence.
-   */
-  def convergence: Boolean = state.convergence
-
-  /**
-   * Returns true if the node is UP or JOINING.
+   * Returns true if the node is not unreachable and not `Down`
+   * and not `Removed`.
    */
   def isAvailable: Boolean = {
     val myself = self
-    !unreachableMembers.contains(myself) && !myself.status.isUnavailable
+    !unreachableMembers.contains(myself) &&
+      myself.status != MemberStatus.Down &&
+      myself.status != MemberStatus.Removed
   }
 
   /**

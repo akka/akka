@@ -75,11 +75,18 @@ class TestFSMRef[S, D, T <: Actor](
    */
   def cancelTimer(name: String) { fsm.cancelTimer(name) }
 
+  @deprecated("Use isTimerActive", "2.2")
+  def timerActive_?(name: String): Boolean = isTimerActive(name)
+
+  /**
+   * Proxy for FSM.isTimerActive.
+   */
+  def isTimerActive(name: String) = fsm.isTimerActive(name)
+
   /**
    * Proxy for FSM.timerActive_?.
    */
-  def timerActive_?(name: String) = fsm.timerActive_?(name)
-
+  def isStateTimerActive = fsm.isStateTimerActive
 }
 
 object TestFSMRef {

@@ -17,7 +17,7 @@ import akka.util._
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.annotation.tailrec
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -67,7 +67,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         format(system, other.getClass.getName))
   }
 
-  private val _isRunning = new AtomicBoolean(true)
+  private val _isTerminated = new AtomicBoolean(false)
   private val log = Logging(system, "Cluster")
 
   log.info("Cluster Node [{}] - is starting up...", selfAddress)
@@ -95,7 +95,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       new DefaultScheduler(
         new HashedWheelTimer(log,
           system.threadFactory match {
-            case tf: MonitorableThreadFactory ⇒ tf.copy(name = tf.name + "-cluster-scheduler")
+            case tf: MonitorableThreadFactory ⇒ tf.withName(tf.name + "-cluster-scheduler")
             case tf                           ⇒ tf
           },
           SchedulerTickDuration,
@@ -108,7 +108,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         override def close(): Unit = () // we are using system.scheduler, which we are not responsible for closing
 
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration,
-                              receiver: ActorRef, message: Any)(implicit executor: ExecutionContext): Cancellable =
+                              receiver: ActorRef, message: Any)(implicit executor: ExecutionContext, sender: ActorRef = Actor.noSender): Cancellable =
           systemScheduler.schedule(initialDelay, interval, receiver, message)
 
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit)(implicit executor: ExecutionContext): Cancellable =
@@ -169,9 +169,9 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   // ======================================================
 
   /**
-   * Returns true if the cluster node is up and running, false if it is shut down.
+   * Returns true if this cluster instance has be shutdown.
    */
-  def isRunning: Boolean = _isRunning.get
+  def isTerminated: Boolean = _isTerminated.get
 
   /**
    * Subscribe to cluster domain events.
@@ -232,6 +232,24 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   def down(address: Address): Unit =
     clusterCore ! ClusterUserAction.Down(address)
 
+  /**
+   * The supplied thunk will be run, once, when current cluster member is `Up`.
+   * Typically used together with configuration option `akka.cluster.min-nr-of-members'
+   * to defer some action, such as starting actors, until the cluster has reached
+   * a certain size.
+   */
+  def registerOnMemberUp[T](code: ⇒ T): Unit =
+    registerOnMemberUp(new Runnable { def run = code })
+
+  /**
+   * The supplied callback will be run, once, when current cluster member is `Up`.
+   * Typically used together with configuration option `akka.cluster.min-nr-of-members'
+   * to defer some action, such as starting actors, until the cluster has reached
+   * a certain size.
+   * JAVA API
+   */
+  def registerOnMemberUp(callback: Runnable): Unit = clusterDaemons ! InternalClusterAction.AddOnMemberUpListener(callback)
+
   // ========================================================
   // ===================== INTERNAL API =====================
   // ========================================================
@@ -241,7 +259,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * in config. Especially useful from tests when Addresses are unknown
    * before startup time.
    */
-  private[cluster] def joinSeedNodes(seedNodes: IndexedSeq[Address]): Unit =
+  private[cluster] def joinSeedNodes(seedNodes: immutable.IndexedSeq[Address]): Unit =
     clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes)
 
   /**
@@ -253,7 +271,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * to go through graceful handoff process `LEAVE -> EXITING -> REMOVED -> SHUTDOWN`.
    */
   private[cluster] def shutdown(): Unit = {
-    if (_isRunning.compareAndSet(true, false)) {
+    if (_isTerminated.compareAndSet(false, true)) {
       log.info("Cluster Node [{}] - Shutting down cluster Node and cluster daemons...", selfAddress)
 
       system.stop(clusterDaemons)
@@ -268,4 +286,3 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   }
 
 }
-

@@ -160,7 +160,7 @@ case class VectorClock(
    * Compare two vector clocks. The outcomes will be one of the following:
    * <p/>
    * {{{
-   *   1. Clock 1 is BEFORE (>)      Clock 2 if there exists an i such that c1(i) <= c(2) and there does not exist a j such that c1(j) > c2(j).
+   *   1. Clock 1 is BEFORE (>)      Clock 2 if there exists an i such that c1(i) <= c2(i) and there does not exist a j such that c1(j) > c2(j).
    *   2. Clock 1 is CONCURRENT (<>) to Clock 2 if there exists an i, j such that c1(i) < c2(i) and c1(j) > c2(j).
    *   3. Clock 1 is AFTER (<)       Clock 2 otherwise.
    * }}}

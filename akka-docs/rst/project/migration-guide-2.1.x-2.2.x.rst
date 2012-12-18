@@ -24,3 +24,32 @@ Search                               Replace with
 
 If you need to convert from Java to ``scala.collection.immutable.Seq`` or ``scala.collection.immutable.Iterable`` you should use ``akka.japi.Util.immutableSeq(…)``,
 and if you need to convert from Scala you can simply switch to using immutable collections yourself or use the ``to[immutable.<collection-type>]`` method.
+
+API changes to FSM and TestFSMRef
+=================================
+
+The ``timerActive_?`` method has been deprecated in both the ``FSM`` trait and the ``TestFSMRef``
+class. You should now use the ``isTimerActive`` method instead. The old method will remain
+throughout 2.2.x. It will be removed in Akka 2.3.
+
+
+ThreadPoolConfigBuilder
+=======================
+
+``akka.dispatch.ThreadPoolConfigBuilder`` companion object has been removed,
+and with it the ``conf_?`` method that was essentially only a type-inferencer aid for creation
+of optional transformations on ``ThreadPoolConfigBuilder``.
+Instead use: ``option.map(o => (t: ThreadPoolConfigBuilder) => t.op(o))``.
+
+Scheduler
+=========
+
+Akka's ``Scheduler`` has been augmented to also include a ``sender`` when scheduling to send messages, this should work Out-Of-The-Box for Scala users,
+but for Java Users you will need to manually provide the ``sender`` – as usual use ``null`` to designate "no sender" which will behave just as before the change.
+
+ZeroMQ ByteString
+=================
+
+``akka.zeromq.Frame`` and the use of ``Seq[Byte]`` in the API has been removed and is replaced by ``akka.util.ByteString``.
+
+``ZMQMessage.firstFrameAsString`` has been removed, please use ``ZMQMessage.frames`` or ``ZMQMessage.frame(int)`` to access the frames.

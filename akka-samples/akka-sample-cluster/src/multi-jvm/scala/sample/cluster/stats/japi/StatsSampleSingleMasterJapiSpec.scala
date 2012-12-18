@@ -34,6 +34,8 @@ object StatsSampleSingleMasterJapiSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-join = off
+    # don't use sigar for tests, native lib not in path
+    akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     akka.actor.deployment {
       /statsFacade/statsService/workerRouter {
           router = consistent-hashing
@@ -71,7 +73,6 @@ abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSample
       expectMsgClass(classOf[CurrentClusterState])
 
       Cluster(system) join node(first).address
-      system.actorOf(Props[StatsFacade], "statsFacade")
 
       expectMsgAllOf(
         MemberUp(Member(node(first).address, MemberStatus.Up)),
@@ -80,10 +81,12 @@ abstract class StatsSampleSingleMasterJapiSpec extends MultiNodeSpec(StatsSample
 
       Cluster(system).unsubscribe(testActor)
 
+      system.actorOf(Props[StatsFacade], "statsFacade")
+
       testConductor.enter("all-up")
     }
 
-    "show usage of the statsFacade" in within(15 seconds) {
+    "show usage of the statsFacade" in within(20 seconds) {
       val facade = system.actorFor(RootActorPath(node(third).address) / "user" / "statsFacade")
 
       // eventually the service should be ok,

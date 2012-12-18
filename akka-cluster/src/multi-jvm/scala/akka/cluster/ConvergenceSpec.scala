@@ -76,8 +76,6 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
           // still one unreachable
           clusterView.unreachableMembers.size must be(1)
           clusterView.unreachableMembers.head.address must be(thirdAddress)
-          // and therefore no convergence
-          clusterView.convergence must be(false)
 
         }
       }
@@ -94,23 +92,33 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
       def memberStatus(address: Address): Option[MemberStatus] =
         clusterView.members.collectFirst { case m if m.address == address ⇒ m.status }
 
-      def assertNotMovedUp: Unit = {
+      def assertNotMovedUp(joining: Boolean): Unit = {
         within(20 seconds) {
-          awaitCond(clusterView.members.size == 3)
+          if (joining) awaitCond(clusterView.members.size == 0)
+          else awaitCond(clusterView.members.size == 2)
           awaitSeenSameState(first, second, fourth)
-          memberStatus(first) must be(Some(MemberStatus.Up))
-          memberStatus(second) must be(Some(MemberStatus.Up))
+          if (joining) memberStatus(first) must be(None)
+          else memberStatus(first) must be(Some(MemberStatus.Up))
+          if (joining) memberStatus(second) must be(None)
+          else memberStatus(second) must be(Some(MemberStatus.Up))
           // leader is not allowed to move the new node to Up
-          memberStatus(fourth) must be(Some(MemberStatus.Joining))
-          // still no convergence
-          clusterView.convergence must be(false)
+          memberStatus(fourth) must be(None)
         }
       }
 
-      runOn(first, second, fourth) {
+      enterBarrier("after-join")
+
+      runOn(first, second) {
         for (n ← 1 to 5) {
-          log.debug("assertNotMovedUp#" + n)
-          assertNotMovedUp
+          assertNotMovedUp(joining = false)
+          // wait and then check again
+          Thread.sleep(1.second.dilated.toMillis)
+        }
+      }
+
+      runOn(fourth) {
+        for (n ← 1 to 5) {
+          assertNotMovedUp(joining = true)
           // wait and then check again
           Thread.sleep(1.second.dilated.toMillis)
         }

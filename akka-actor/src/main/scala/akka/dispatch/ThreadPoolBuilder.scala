@@ -92,15 +92,11 @@ case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.def
     val tf = threadFactory match {
       case m: MonitorableThreadFactory ⇒
         // add the dispatcher id to the thread names
-        m.copy(m.name + "-" + id)
+        m.withName(m.name + "-" + id)
       case other ⇒ other
     }
     new ThreadPoolExecutorServiceFactory(tf)
   }
-}
-
-object ThreadPoolConfigBuilder {
-  def conf_?[T](opt: Option[T])(fun: (T) ⇒ ThreadPoolConfigBuilder ⇒ ThreadPoolConfigBuilder): Option[(ThreadPoolConfigBuilder) ⇒ ThreadPoolConfigBuilder] = opt map fun
 }
 
 /**
@@ -183,9 +179,9 @@ object MonitorableThreadFactory {
 case class MonitorableThreadFactory(name: String,
                                     daemonic: Boolean,
                                     contextClassLoader: Option[ClassLoader],
-                                    exceptionHandler: Thread.UncaughtExceptionHandler = MonitorableThreadFactory.doNothing)
+                                    exceptionHandler: Thread.UncaughtExceptionHandler = MonitorableThreadFactory.doNothing,
+                                    protected val counter: AtomicLong = new AtomicLong)
   extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
-  protected val counter = new AtomicLong
 
   def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = {
     val t = wire(new MonitorableThreadFactory.AkkaForkJoinWorkerThread(pool))
@@ -195,6 +191,8 @@ case class MonitorableThreadFactory(name: String,
   }
 
   def newThread(runnable: Runnable): Thread = wire(new Thread(runnable, name + "-" + counter.incrementAndGet()))
+
+  def withName(newName: String): MonitorableThreadFactory = copy(newName)
 
   protected def wire[T <: Thread](t: T): T = {
     t.setUncaughtExceptionHandler(exceptionHandler)

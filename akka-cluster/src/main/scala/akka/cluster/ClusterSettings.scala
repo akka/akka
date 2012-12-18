@@ -3,15 +3,16 @@
  */
 package akka.cluster
 
+import scala.collection.immutable
 import com.typesafe.config.Config
 import scala.concurrent.duration.Duration
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import akka.ConfigurationException
-import scala.collection.JavaConverters._
 import akka.actor.Address
 import akka.actor.AddressFromURIString
 import akka.dispatch.Dispatchers
 import scala.concurrent.duration.FiniteDuration
+import akka.japi.Util.immutableSeq
 
 class ClusterSettings(val config: Config, val systemName: String) {
   import config._
@@ -45,7 +46,8 @@ class ClusterSettings(val config: Config, val systemName: String) {
     require(n > 0, "failure-detector.monitored-by-nr-of-members must be > 0"); n
   }
 
-  final val SeedNodes: IndexedSeq[Address] = getStringList("akka.cluster.seed-nodes").asScala.map { case AddressFromURIString(addr) ⇒ addr }.toIndexedSeq
+  final val SeedNodes: immutable.IndexedSeq[Address] =
+    immutableSeq(getStringList("akka.cluster.seed-nodes")).map { case AddressFromURIString(addr) ⇒ addr }.toVector
   final val SeedNodeTimeout: FiniteDuration = Duration(getMilliseconds("akka.cluster.seed-node-timeout"), MILLISECONDS)
   final val PeriodicTasksInitialDelay: FiniteDuration = Duration(getMilliseconds("akka.cluster.periodic-tasks-initial-delay"), MILLISECONDS)
   final val GossipInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.gossip-interval"), MILLISECONDS)
@@ -54,6 +56,10 @@ class ClusterSettings(val config: Config, val systemName: String) {
   final val PublishStatsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.publish-stats-interval"), MILLISECONDS)
   final val AutoJoin: Boolean = getBoolean("akka.cluster.auto-join")
   final val AutoDown: Boolean = getBoolean("akka.cluster.auto-down")
+  final val MinNrOfMembers: Int = {
+    val n = getInt("akka.cluster.min-nr-of-members")
+    require(n > 0, "min-nr-of-members must be > 0"); n
+  }
   final val JmxEnabled: Boolean = getBoolean("akka.cluster.jmx.enabled")
   final val JoinTimeout: FiniteDuration = Duration(getMilliseconds("akka.cluster.join-timeout"), MILLISECONDS)
   final val UseDispatcher: String = getString("akka.cluster.use-dispatcher") match {
@@ -69,9 +75,16 @@ class ClusterSettings(val config: Config, val systemName: String) {
     callTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.call-timeout"), MILLISECONDS),
     resetTimeout = Duration(getMilliseconds("akka.cluster.send-circuit-breaker.reset-timeout"), MILLISECONDS))
   final val MetricsEnabled: Boolean = getBoolean("akka.cluster.metrics.enabled")
-  final val MetricsInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.metrics.metrics-interval"), MILLISECONDS)
+  final val MetricsCollectorClass: String = getString("akka.cluster.metrics.collector-class")
+  final val MetricsInterval: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.metrics.collect-interval"), MILLISECONDS)
+    require(d > Duration.Zero, "metrics.collect-interval must be > 0"); d
+  }
   final val MetricsGossipInterval: FiniteDuration = Duration(getMilliseconds("akka.cluster.metrics.gossip-interval"), MILLISECONDS)
-  final val MetricsRateOfDecay: Int = getInt("akka.cluster.metrics.rate-of-decay")
+  final val MetricsMovingAverageHalfLife: FiniteDuration = {
+    val d = Duration(getMilliseconds("akka.cluster.metrics.moving-average-half-life"), MILLISECONDS)
+    require(d > Duration.Zero, "metrics.moving-average-half-life must be > 0"); d
+  }
 }
 
 case class CircuitBreakerSettings(maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)

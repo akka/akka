@@ -5,7 +5,7 @@
 package akka.camel
 
 import java.util.{ Map ⇒ JMap, Set ⇒ JSet }
-import org.apache.camel.{ CamelContext, Message ⇒ JCamelMessage }
+import org.apache.camel.{ CamelContext, Message ⇒ JCamelMessage, StreamCache }
 import akka.AkkaException
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -14,7 +14,6 @@ import akka.dispatch.Mapper
 
 /**
  * An immutable representation of a Camel message.
- * @author Martin Krasser
  */
 case class CamelMessage(body: Any, headers: Map[String, Any]) {
   def this(body: Any, headers: JMap[String, Any]) = this(body, headers.toMap) //for Java
@@ -108,7 +107,21 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
    * Java API
    *
    */
-  def getBodyAs[T](clazz: Class[T], camelContext: CamelContext): T = camelContext.getTypeConverter.mandatoryConvertTo[T](clazz, body)
+  def getBodyAs[T](clazz: Class[T], camelContext: CamelContext): T = {
+    val result = camelContext.getTypeConverter.mandatoryConvertTo[T](clazz, body)
+    // to be able to re-read a StreamCache we must "undo" the side effect by resetting the StreamCache
+    resetStreamCache()
+    result
+  }
+
+  /**
+   * Reset StreamCache body. Nothing is done if the body is not a StreamCache.
+   * See http://camel.apache.org/stream-caching.html
+   */
+  def resetStreamCache(): Unit = body match {
+    case stream: StreamCache ⇒ stream.reset
+    case _                   ⇒
+  }
 
   /**
    * Returns a new CamelMessage with a new body, while keeping the same headers.
@@ -138,7 +151,6 @@ case class CamelMessage(body: Any, headers: Map[String, Any]) {
 /**
  * Companion object of CamelMessage class.
  *
- * @author Martin Krasser
  */
 object CamelMessage {
 
@@ -182,7 +194,7 @@ object CamelMessage {
 /**
  * Positive acknowledgement message (used for application-acknowledged message receipts).
  * When `autoAck` is set to false in the [[akka.camel.Consumer]], you can send an `Ack` to the sender of the CamelMessage.
- * @author Martin Krasser
+ *
  */
 case object Ack {
   /** Java API to get the Ack singleton */

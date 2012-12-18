@@ -5,14 +5,14 @@
 package akka.cluster
 
 import akka.actor.Address
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable
 import MemberStatus._
 
 /**
  * Internal API
  */
 private[cluster] object Gossip {
-  val emptyMembers: SortedSet[Member] = SortedSet.empty
+  val emptyMembers: immutable.SortedSet[Member] = immutable.SortedSet.empty
 }
 
 /**
@@ -50,7 +50,7 @@ private[cluster] object Gossip {
  */
 private[cluster] case class Gossip(
   overview: GossipOverview = GossipOverview(),
-  members: SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
+  members: immutable.SortedSet[Member] = Gossip.emptyMembers, // sorted set of members with their status, sorted by address
   version: VectorClock = VectorClock()) // vector clock version
   extends ClusterMessage // is a serializable cluster message
   with Versioned[Gossip] {
@@ -135,7 +135,7 @@ private[cluster] case class Gossip(
    * Checks if we have a cluster convergence. If there are any unreachable nodes then we can't have a convergence -
    * waiting for user to act (issuing DOWN) or leader to act (issuing DOWN through auto-down).
    *
-   * @return Some(convergedGossip) if convergence have been reached and None if not
+   * @return true if convergence have been reached and false if not
    */
   def convergence: Boolean = {
     val unreachable = overview.unreachable
@@ -151,8 +151,10 @@ private[cluster] case class Gossip(
     def allMembersInSeen = members.forall(m ⇒ seen.contains(m.address))
 
     def seenSame: Boolean =
-      if (seen.isEmpty) false
-      else {
+      if (seen.isEmpty) {
+        // if both seen and members are empty, then every(no)body has seen the same thing
+        members.isEmpty
+      } else {
         val values = seen.values
         val seenHead = values.head
         values.forall(_ == seenHead)
@@ -168,15 +170,10 @@ private[cluster] case class Gossip(
   def isSingletonCluster: Boolean = members.size == 1
 
   /**
-   * Returns true if the node is UP or JOINING.
+   * Returns true if the node is in the unreachable set
    */
-  def isAvailable(address: Address): Boolean = !isUnavailable(address)
-
-  def isUnavailable(address: Address): Boolean = {
-    val isUnreachable = overview.unreachable exists { _.address == address }
-    val hasUnavailableMemberStatus = members exists { m ⇒ m.status.isUnavailable && m.address == address }
-    isUnreachable || hasUnavailableMemberStatus
-  }
+  def isUnreachable(address: Address): Boolean =
+    overview.unreachable exists { _.address == address }
 
   def member(address: Address): Member = {
     members.find(_.address == address).orElse(overview.unreachable.find(_.address == address)).

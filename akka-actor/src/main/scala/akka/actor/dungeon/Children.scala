@@ -52,19 +52,24 @@ private[akka] trait Children { this: ActorCell ⇒
   }
 
   final def stop(actor: ActorRef): Unit = {
-    val started = actor match {
-      case r: RepointableRef ⇒ r.isStarted
-      case _                 ⇒ true
+    if (childrenRefs.getByRef(actor).isDefined) {
+      @tailrec def shallDie(ref: ActorRef): Boolean = {
+        val c = childrenRefs
+        swapChildrenRefs(c, c.shallDie(ref)) || shallDie(ref)
+      }
+
+      if (actor match {
+        case r: RepointableRef ⇒ r.isStarted
+        case _                 ⇒ true
+      }) shallDie(actor)
     }
-    if (childrenRefs.getByRef(actor).isDefined && started) shallDie(actor)
     actor.asInstanceOf[InternalActorRef].stop()
   }
 
   /*
    * low level CAS helpers
    */
-
-  @inline private def swapChildrenRefs(oldChildren: ChildrenContainer, newChildren: ChildrenContainer): Boolean =
+  @inline private final def swapChildrenRefs(oldChildren: ChildrenContainer, newChildren: ChildrenContainer): Boolean =
     Unsafe.instance.compareAndSwapObject(this, AbstractActorCell.childrenOffset, oldChildren, newChildren)
 
   @tailrec final def reserveChild(name: String): Boolean = {
@@ -87,18 +92,6 @@ private[akka] trait Children { this: ActorCell ⇒
         if (swapChildrenRefs(cc, cc.add(name, crs))) Some(crs) else initChild(ref)
       case None ⇒ None
     }
-  }
-
-  @tailrec final protected def shallDie(ref: ActorRef): Boolean = {
-    val c = childrenRefs
-    swapChildrenRefs(c, c.shallDie(ref)) || shallDie(ref)
-  }
-
-  @tailrec final private def removeChild(ref: ActorRef): ChildrenContainer = {
-    val c = childrenRefs
-    val n = c.remove(ref)
-    if (swapChildrenRefs(c, n)) n
-    else removeChild(ref)
   }
 
   @tailrec final protected def setChildrenTerminationReason(reason: ChildrenContainer.SuspendReason): Boolean = {
@@ -143,10 +136,18 @@ private[akka] trait Children { this: ActorCell ⇒
   protected def getAllChildStats: immutable.Iterable[ChildRestartStats] = childrenRefs.stats
 
   protected def removeChildAndGetStateChange(child: ActorRef): Option[SuspendReason] = {
-    childrenRefs match {
+    @tailrec def removeChild(ref: ActorRef): ChildrenContainer = {
+      val c = childrenRefs
+      val n = c.remove(ref)
+      if (swapChildrenRefs(c, n)) n else removeChild(ref)
+    }
+
+    childrenRefs match { // The match must be performed BEFORE the removeChild
       case TerminatingChildrenContainer(_, _, reason) ⇒
-        val newContainer = removeChild(child)
-        if (!newContainer.isInstanceOf[TerminatingChildrenContainer]) Some(reason) else None
+        removeChild(child) match {
+          case _: TerminatingChildrenContainer ⇒ None
+          case _                               ⇒ Some(reason)
+        }
       case _ ⇒
         removeChild(child)
         None

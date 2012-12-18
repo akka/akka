@@ -9,6 +9,10 @@ import scala.concurrent.duration._
 import scala.collection.immutable
 import org.zeromq.{ ZMQ ⇒ JZMQ }
 import org.zeromq.ZMQ.{ Poller, Socket }
+import akka.japi.Util.immutableSeq
+import akka.util.ByteString
+import akka.util.Collections.EmptyImmutableSeq
+import annotation.varargs
 
 /**
  * Marker trait representing request messages for zeromq
@@ -37,7 +41,7 @@ sealed trait SocketConnectOption extends SocketOption {
  * A base trait for pubsub options for the ZeroMQ socket
  */
 sealed trait PubSubOption extends SocketOption {
-  def payload: immutable.Seq[Byte]
+  def payload: ByteString
 }
 
 /**
@@ -80,7 +84,7 @@ class Context(numIoThreads: Int) extends SocketMeta {
  * A base trait for message deserializers
  */
 trait Deserializer extends SocketOption {
-  def apply(frames: immutable.Seq[Frame]): Any
+  def apply(frames: immutable.Seq[ByteString]): Any
 }
 
 /**
@@ -173,12 +177,15 @@ case class Bind(endpoint: String) extends SocketConnectOption
  *
  * @param payload the topic to subscribe to
  */
-case class Subscribe(payload: immutable.Seq[Byte]) extends PubSubOption {
-  def this(topic: String) = this(topic.getBytes("UTF-8").to[immutable.Seq])
+case class Subscribe(payload: ByteString) extends PubSubOption {
+  def this(topic: String) = this(ByteString(topic))
 }
 object Subscribe {
-  def apply(topic: String): Subscribe = new Subscribe(topic)
-  val all = Subscribe("")
+  val all = Subscribe(ByteString.empty)
+  def apply(topic: String): Subscribe = topic match {
+    case null | "" ⇒ all
+    case t         ⇒ new Subscribe(t)
+  }
 }
 
 /**
@@ -190,8 +197,8 @@ object Subscribe {
  *
  * @param payload
  */
-case class Unsubscribe(payload: immutable.Seq[Byte]) extends PubSubOption {
-  def this(topic: String) = this(topic.getBytes("UTF-8").to[immutable.Seq])
+case class Unsubscribe(payload: ByteString) extends PubSubOption {
+  def this(topic: String) = this(ByteString(topic))
 }
 object Unsubscribe {
   def apply(topic: String): Unsubscribe = new Unsubscribe(topic)
@@ -201,33 +208,34 @@ object Unsubscribe {
  * Send a message over the zeromq socket
  * @param frames
  */
-case class Send(frames: immutable.Seq[Frame]) extends Request
+case class Send(frames: immutable.Seq[ByteString]) extends Request
 
 /**
  * A message received over the zeromq socket
  * @param frames
  */
-case class ZMQMessage(frames: immutable.Seq[Frame]) {
-
-  def this(frame: Frame) = this(List(frame))
-  def this(frame1: Frame, frame2: Frame) = this(List(frame1, frame2))
-  def this(frameArray: Array[Frame]) = this(frameArray.to[immutable.Seq])
-
-  /**
-   * Convert the bytes in the first frame to a String, using specified charset.
-   */
-  def firstFrameAsString(charsetName: String): String = new String(frames.head.payload.toArray, charsetName)
-  /**
-   * Convert the bytes in the first frame to a String, using "UTF-8" charset.
-   */
-  def firstFrameAsString: String = firstFrameAsString("UTF-8")
-
-  def payload(frameIndex: Int): Array[Byte] = frames(frameIndex).payload.toArray
+case class ZMQMessage(frames: immutable.Seq[ByteString]) {
+  def frame(frameIndex: Int): ByteString = frames(frameIndex)
 }
 object ZMQMessage {
-  def apply(bytes: Array[Byte]): ZMQMessage = new ZMQMessage(List(Frame(bytes)))
-  def apply(frames: Frame*): ZMQMessage = new ZMQMessage(frames.to[immutable.Seq])
-  def apply(message: Message): ZMQMessage = apply(message.toByteArray)
+  val empty = new ZMQMessage(EmptyImmutableSeq)
+
+  /**
+   * Scala API
+   * @param frames the frames of the returned ZMQMessage
+   * @return a ZMQMessage with the given frames
+   */
+  def apply(frames: ByteString*): ZMQMessage =
+    if ((frames eq null) || frames.length == 0) empty else new ZMQMessage(frames.to[immutable.Seq])
+
+  /**
+   * Java API
+   * @param frames the frames of the returned ZMQMessage
+   * @return a ZMQMessage with the given frames
+   */
+  @varargs def withFrames(frames: ByteString*): ZMQMessage = apply(frames: _*)
+
+  def apply[T](frames: T*)(implicit converter: T ⇒ ByteString): ZMQMessage = apply(frames map converter: _*)
 }
 
 /**

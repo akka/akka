@@ -13,8 +13,6 @@ import org.apache.camel.processor.SendProcessor
 
 /**
  * Support trait for producing messages to Camel endpoints.
- *
- * @author Martin Krasser
  */
 trait ProducerSupport extends Actor with CamelSupport {
   private[this] var messages = Map[ActorRef, Any]()
@@ -66,7 +64,7 @@ trait ProducerSupport extends Actor with CamelSupport {
           for (
             child ← producerChild;
             (sender, msg) ← messages
-          ) child.tell(msg, sender)
+          ) child.tell(transformOutgoingMessage(msg), sender)
           Map()
         }
       }
@@ -78,7 +76,7 @@ trait ProducerSupport extends Actor with CamelSupport {
 
     case msg ⇒
       producerChild match {
-        case Some(child) ⇒ child forward msg
+        case Some(child) ⇒ child forward transformOutgoingMessage(msg)
         case None        ⇒ messages += (sender -> msg)
       }
   }
@@ -110,7 +108,7 @@ trait ProducerSupport extends Actor with CamelSupport {
   private class ProducerChild(endpoint: Endpoint, processor: SendProcessor) extends Actor {
     def receive = {
       case msg @ (_: FailureResult | _: MessageResult) ⇒ context.parent forward msg
-      case msg                                         ⇒ produce(endpoint, processor, transformOutgoingMessage(msg), if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
+      case msg                                         ⇒ produce(endpoint, processor, msg, if (oneway) ExchangePattern.InOnly else ExchangePattern.InOut)
     }
     /**
      * Initiates a message exchange of given <code>pattern</code> with the endpoint specified by
@@ -160,20 +158,20 @@ trait Producer extends ProducerSupport { this: Actor ⇒
 
 /**
  * For internal use only.
- * @author Martin Krasser
+ *
  */
 private case class MessageResult(message: CamelMessage) extends NoSerializationVerificationNeeded
 
 /**
  * For internal use only.
- * @author Martin Krasser
+ *
  */
 private case class FailureResult(cause: Throwable, headers: Map[String, Any] = Map.empty) extends NoSerializationVerificationNeeded
 
 /**
  * A one-way producer.
  *
- * @author Martin Krasser
+ *
  */
 trait Oneway extends Producer { this: Actor ⇒
   override def oneway: Boolean = true

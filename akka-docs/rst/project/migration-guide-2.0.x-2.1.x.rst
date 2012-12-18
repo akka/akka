@@ -4,27 +4,35 @@
  Migration Guide 2.0.x to 2.1.x
 ################################
 
-The 2.1 release contains several structural changes that require some
-simple, mechanical source-level changes in client code. Several things have
-been moved to Scala standard library, such as ``Future``, and some package
-names have been changed in Remoting and Durable Mailboxes.
+Some parts of the 2.0 API have changed in the Akka 2.1 release. This guide lists the the changes and
+explains what you will need to do to upgrade your program to work with Akka 2.1.
 
-When migrating from 1.3.x to 2.1.x you should first follow the instructions for
-migrating `1.3.x to 2.0.x <http://doc.akka.io/docs/akka/2.0.3/project/migration-guide-1.3.x-2.0.x.html>`_.
+Migrating from Akka 2.0.x to Akka 2.1.x is relatively straightforward. In Akka 2.1 the API has
+undergone some basic housekeeping, for example some package names have changed, but otherwise usage
+is largely unchanged. User programs will generally only need simple, mechanical changes in order to
+work with Akka 2.1.
+
+If you are migrating from Akka 1.3.x you will need to follow the instructions for
+`migrating from Akka 1.3.x to 2.0.x <http://doc.akka.io/docs/akka/2.0.3/project/migration-guide-1.3.x-2.0.x.html>`_
+before following the instructions in this guide.
 
 Scala Version
 =============
 
+Akka 2.1 uses a new version of Scala.
 Change your project build and dependencies to Scala version ``@scalaVersion@``.
 
 Config Dependency
 =================
 
-`Typesafe config <https://github.com/typesafehub/config>`_ library is a normal 
-dependency of akka-actor and it is no longer embedded in ``akka-actor.jar``. 
-If your are using a build tool with dependency resolution, such as sbt or maven you 
-will not notice the difference, but if you have manually constructed classpaths 
-you need to add `config-1.0.0.jar <http://mirrors.ibiblio.org/maven2/com/typesafe/config/1.0.0/>`_.
+Akka's configuration system has graduated from Akka to become the `Typesafe config
+<https://github.com/typesafehub/config>`_ project. The configuration system was previously embedded
+within ``akka-actor.jar``, now it is specified as a dependency of ``akka-actor.jar``.
+
+If your are using a build tool with automatic dependency resolution, such as sbt or Maven, then you 
+will not notice a difference. Otherwise you will need to ensure that
+`config-1.0.0.jar <http://mirrors.ibiblio.org/maven2/com/typesafe/config/1.0.0/>`_
+is present on your classpath.
 
 Pieces Moved to Scala Standard Library
 ======================================
@@ -48,7 +56,8 @@ Search                               Replace with
 Scheduler Dispatcher
 ====================
 
-The ``ExecutionContext`` to use for running scheduled tasks must be specified.
+The ``ExecutionContext`` to use for running scheduled tasks must now be specified.
+You can use an Akka ``Dispatcher`` for this purpose.
 
 Scala:
 
@@ -66,8 +75,9 @@ Java:
 ::
   
   // Use this Actors' Dispatcher as ExecutionContext
-  getContext().system().scheduler().scheduleOnce(Duration.create(10, TimeUnit.SECONDS)",
-    getSelf(), new Reconnect(), getContext().getDispatcher());
+  getContext().system().scheduler().scheduleOnce(Duration.create(
+    10, TimeUnit.SECONDS), getSelf(), new Reconnect(), 
+    getContext().getDispatcher());
 
   // Use ActorSystem's default Dispatcher as ExecutionContext
   system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
@@ -79,7 +89,7 @@ Java:
     }, system.dispatcher());
 
 
-API Changes of Future - Scala
+API Changes to Future - Scala
 =============================
 
 v2.0::
@@ -105,7 +115,7 @@ v2.1::
 
 
 
-API Changes of Future - Java
+API Changes to Future - Java
 ============================
 
 v2.0::
@@ -181,17 +191,17 @@ v2.1::
       }
     }, ec);
 
-API changes of DynamicAccess
+API changes to DynamicAccess
 ============================
 
-All methods with scala.Either[Throwable, X] have been changed to used scala.util.Try[X].
+All methods with scala.Either[Throwable, X] have been changed to use scala.util.Try[X].
 
 DynamicAccess.withErrorHandling has been removed since scala.util.Try now fulfills that role.
 
-API changes of Serialization
+API changes to Serialization
 ============================
 
-All methods with scala.Either[Throwable, X] have been changed to used scala.util.Try[X].
+All methods with scala.Either[Throwable, X] have been changed to use scala.util.Try[X].
 
 Empty Props
 ===========
@@ -230,14 +240,14 @@ v2.1 Scala::
 Failing Send
 ============
 
-When failing to send to a remote actor or actor with bounded or durable mailbox the message will 
-silently be delivered to ``ActorSystem.deadletters`` instead of throwing an exception.
+When failing to send to a remote actor or an actor with a bounded or durable mailbox the message will 
+now be silently delivered to ``ActorSystem.deadletters`` instead of throwing an exception.
 
 Graceful Stop Exception
 =======================
 
 If the target actor of ``akka.pattern.gracefulStop`` isn't terminated within the 
-timeout the ``Future`` is completed with failure ``akka.pattern.AskTimeoutException``.
+timeout then the ``Future`` is completed with a failure of ``akka.pattern.AskTimeoutException``.
 In 2.0 it was ``akka.actor.ActorTimeoutException``.
 
 getInstance for Singletons - Java
@@ -275,23 +285,23 @@ v2.1::
 log-remote-lifecycle-events
 ===========================
 
-Default value of akka.remote.log-remote-lifecycle-events has changed to **on**.
-If you don't want these in the log you need to add this to your configuration::
+The default value of akka.remote.log-remote-lifecycle-events has changed to **on**.
+If you don't want these events in the log then you need to add this to your configuration::
 
   akka.remote.log-remote-lifecycle-events = off
 
 Stash postStop
 ==============
 
-Both Actors and UntypedActors using ``Stash`` now overrides postStop to make sure that
-stashed messages are put into the dead letters when the actor stops, make sure you call
+Both Actors and UntypedActors using ``Stash`` now override postStop to make sure that
+stashed messages are put into the dead letters when the actor stops. Make sure you call
 super.postStop if you override it.
 
-Forward of Terminated message
-=============================
+Forwarding Terminated messages
+==============================
 
-Forward of ``Terminated`` message is no longer supported. Instead, if you forward
-``Terminated`` you should send the information in you own message.
+Forwarding ``Terminated`` messages is no longer supported. Instead, if you forward
+``Terminated`` you should send the information in your own message.
 
 v2.0::
 
@@ -312,12 +322,12 @@ v2.1::
   }
 
 
-Custom Router or Resizer
-========================
+Custom Routers and Resizers
+===========================
 
 The API of ``RouterConfig``, ``RouteeProvider`` and ``Resizer`` has been 
 cleaned up. If you use these to build your own router functionality the 
-compiler will tell you you to do some adjustments. 
+compiler will tell you if you need to make adjustments. 
 
 v2.0::
 
@@ -362,19 +372,20 @@ v2.1::
 Duration and Timeout
 ====================
 
-The Duration class in the scala library is an improved version of the previous
-:class:`akka.util.Duration`. Among others it keeps the static type of
-:class:`FiniteDuration` more consistently, which has been used to tighten APIs.
-The advantage is that instead of runtime exceptions you’ll get compiler errors
-telling you if you try to pass a possibly non-finite duration where it does not
-belong.
+The :class:`akka.util.Duration` class has been moved into the Scala library under
+the ``scala.concurrent.duration`` package. Several changes have been made to tighten
+up the duration and timeout API.
+
+:class:`FiniteDuration` is now used more consistently throught the API.
+The advantage is that if you try to pass a possibly non-finite duration where
+it does not belong you’ll get compile errors instead of runtime exceptions.
 
 The main source incompatibility is that you may have to change the declared
 type of fields from ``Duration`` to ``FiniteDuration`` (factory methods already
 return the more precise type wherever possible).
 
-Another change is that ``Duration.parse`` was not accepted by the scala-library
-maintainers, use ``Duration.create`` instead.
+Another change is that ``Duration.parse`` was not accepted by the Scala library
+maintainers; use ``Duration.create`` instead.
 
 v2.0::
 
@@ -392,38 +403,49 @@ Package Name Changes in Remoting
 The package name of all classes in the ``akka-remote.jar`` artifact now starts with ``akka.remote``.
 This has been done to enable OSGi bundles that don't have conflicting package names.
 
-Change the following import statements. Please note that the serializers are often referenced from configuration.
+Change the following import statements. Please note that serializers are often referenced from
+configuration files.
 
-================================================ =======================================================
-Search                                           Replace with
-================================================ =======================================================
-``akka.routing.RemoteRouterConfig``              ``akka.remote.routing.RemoteRouterConfig``
-``akka.serialization.ProtobufSerializer``        ``akka.remote.serialization.ProtobufSerializer``
-``akka.serialization.DaemonMsgCreateSerializer`` ``akka.remote.serialization.DaemonMsgCreateSerializer``
-================================================ =======================================================
+Search -> Replace with::
+
+  akka.routing.RemoteRouterConfig -> 
+  akka.remote.routing.RemoteRouterConfig
+
+  akka.serialization.ProtobufSerializer ->
+  akka.remote.serialization.ProtobufSerializer
+
+  akka.serialization.DaemonMsgCreateSerializer -> 
+  akka.remote.serialization.DaemonMsgCreateSerializer
+
 
 Package Name Changes in Durable Mailboxes
 =========================================
 
-The package name of all classes in the ``akka-file-mailbox.jar`` artifact now starts with ``akka.actor.mailbox.filebased``.
+The package names of all classes in the ``akka-file-mailbox.jar`` artifact now start with ``akka.actor.mailbox.filebased``.
 This has been done to enable OSGi bundles that don't have conflicting package names.
 
 Change the following import statements. Please note that the ``FileBasedMailboxType`` is often referenced from configuration.
 
-================================================ =========================================================
-Search                                           Replace with
-================================================ =========================================================
-``akka.actor.mailbox.FileBasedMailboxType``      ``akka.actor.mailbox.filebased.FileBasedMailboxType``
-``akka.actor.mailbox.FileBasedMailboxSettings``  ``akka.actor.mailbox.filebased.FileBasedMailboxSettings``
-``akka.actor.mailbox.FileBasedMessageQueue``     ``akka.actor.mailbox.filebased.FileBasedMessageQueue``
-``akka.actor.mailbox.filequeue.*``               ``akka.actor.mailbox.filebased.filequeue.*``
-================================================ =========================================================
+Search -> Replace with::
+
+  akka.actor.mailbox.FileBasedMailboxType ->
+  akka.actor.mailbox.filebased.FileBasedMailboxType
+
+  akka.actor.mailbox.FileBasedMailboxSettings ->
+  akka.actor.mailbox.filebased.FileBasedMailboxSettings
+
+  akka.actor.mailbox.FileBasedMessageQueue ->
+  akka.actor.mailbox.filebased.FileBasedMessageQueue
+
+  akka.actor.mailbox.filequeue.* ->
+  akka.actor.mailbox.filebased.filequeue.*
+
    
 Actor Receive Timeout
 =====================
 
 The API for setting and querying the receive timeout has been made more
-consisten in always taking and returning a ``Duration``, the wrapping in
+consistent in always taking and returning a ``Duration``; the wrapping in
 ``Option`` has been removed.
 
 (Samples for Java, Scala sources are affected in exactly the same way.)
@@ -445,7 +467,7 @@ v2.1::
 ConsistentHash
 ==============
 
-``akka.routing.ConsistentHash`` has been changed to an immutable data structure.
+``akka.routing.ConsistentHash`` has been changed into an immutable data structure.
 
 v2.0::
 

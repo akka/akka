@@ -118,6 +118,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       val names = 1 to 20 map { "routee" + _ } toList
 
       actor ! TestRun("test", names, actors)
+
       1 to actors foreach { _ ⇒
         val routees = expectMsgType[RouterRoutees].routees
         routees.map(_.path.name) must be === names

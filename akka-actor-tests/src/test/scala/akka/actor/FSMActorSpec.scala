@@ -13,6 +13,9 @@ import akka.event._
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import akka.util.Timeout
+import org.scalatest.matchers.Matcher
+import org.scalatest.matchers.HavePropertyMatcher
+import org.scalatest.matchers.HavePropertyMatchResult
 
 object FSMActorSpec {
   val timeout = Timeout(2 seconds)
@@ -197,6 +200,45 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       Await.ready(started, timeout.duration)
       system.stop(ref)
       expectMsg(1 second, fsm.StopEvent(FSM.Shutdown, 1, null))
+    }
+
+    "cancel all timers when terminated" in {
+      val timerNames = List("timer-1", "timer-2", "timer-3")
+
+      // Lazy so fsmref can refer to checkTimersActive
+      lazy val fsmref = TestFSMRef(new Actor with FSM[String, Null] {
+        startWith("not-started", null)
+        when("not-started") {
+          case Event("start", _) ⇒ goto("started") replying "starting"
+        }
+        when("started", stateTimeout = 10 seconds) {
+          case Event("stop", _) ⇒ stop()
+        }
+        onTransition {
+          case "not-started" -> "started" ⇒
+            for (timerName ← timerNames) setTimer(timerName, (), 10 seconds, false)
+        }
+        onTermination {
+          case _ ⇒ {
+            checkTimersActive(false)
+            testActor ! "stopped"
+          }
+        }
+      })
+
+      def checkTimersActive(active: Boolean) {
+        for (timer ← timerNames) fsmref.isTimerActive(timer) must be(active)
+        fsmref.isStateTimerActive must be(active)
+      }
+
+      checkTimersActive(false)
+
+      fsmref ! "start"
+      expectMsg(1 second, "starting")
+      checkTimersActive(true)
+
+      fsmref ! "stop"
+      expectMsg(1 second, "stopped")
     }
 
     "log events and transitions if asked to do so" in {

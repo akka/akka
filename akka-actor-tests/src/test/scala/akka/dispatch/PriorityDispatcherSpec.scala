@@ -51,19 +51,28 @@ class PriorityDispatcherSpec extends AkkaSpec(PriorityDispatcherSpec.config) wit
   def testOrdering(dispatcherKey: String) {
     val msgs = (1 to 100) toList
 
+    // It's important that the actor under test is not a top level actor
+    // with RepointableActorRef, since messages might be queued in
+    // UnstartedCell and the sent to the PriorityQueue and consumed immediately
+    // without the ordering taking place.
     val actor = system.actorOf(Props(new Actor {
+      context.actorOf(Props(new Actor {
 
-      val acc = scala.collection.mutable.ListBuffer[Int]()
+        val acc = scala.collection.mutable.ListBuffer[Int]()
 
-      scala.util.Random.shuffle(msgs) foreach { m ⇒ self ! m }
+        scala.util.Random.shuffle(msgs) foreach { m ⇒ self ! m }
 
-      self.tell('Result, testActor)
+        self.tell('Result, testActor)
 
-      def receive = {
-        case i: Int  ⇒ acc += i
-        case 'Result ⇒ sender ! acc.toList
-      }
-    }).withDispatcher(dispatcherKey))
+        def receive = {
+          case i: Int  ⇒ acc += i
+          case 'Result ⇒ sender ! acc.toList
+        }
+      }).withDispatcher(dispatcherKey))
+
+      def receive = Actor.emptyBehavior
+
+    }))
 
     expectMsgType[List[_]] must be === msgs
   }

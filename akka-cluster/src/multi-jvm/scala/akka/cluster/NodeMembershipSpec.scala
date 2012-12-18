@@ -43,7 +43,6 @@ abstract class NodeMembershipSpec
         awaitCond {
           clusterView.members.forall(_.status == MemberStatus.Up)
         }
-        awaitCond(clusterView.convergence)
       }
 
       enterBarrier("after-1")
@@ -60,7 +59,6 @@ abstract class NodeMembershipSpec
       awaitCond {
         clusterView.members.forall(_.status == MemberStatus.Up)
       }
-      awaitCond(clusterView.convergence)
 
       enterBarrier("after-2")
     }

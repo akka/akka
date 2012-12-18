@@ -238,7 +238,7 @@ object FSM {
  *   setTimer("tock", TockMsg, 1 second, true) // repeating
  *   setTimer("lifetime", TerminateMsg, 1 hour, false) // single-shot
  *   cancelTimer("tock")
- *   timerActive_? ("tock")
+ *   isTimerActive("tock")
  * </pre>
  */
 trait FSM[S, D] extends Listeners with ActorLogging {
@@ -372,13 +372,26 @@ trait FSM[S, D] extends Listeners with ActorLogging {
    * timer does not exist, has previously been canceled or if it was a
    * single-shot timer whose message was already received.
    */
-  final def timerActive_?(name: String) = timers contains name
+  @deprecated("use isTimerActive instead", "2.2")
+  final def timerActive_?(name: String): Boolean = isTimerActive(name)
+
+  /**
+   * Inquire whether the named timer is still active. Returns true unless the
+   * timer does not exist, has previously been canceled or if it was a
+   * single-shot timer whose message was already received.
+   */
+  final def isTimerActive(name: String): Boolean = timers contains name
 
   /**
    * Set state timeout explicitly. This method can safely be used from within a
    * state handler.
    */
   final def setStateTimeout(state: S, timeout: Timeout): Unit = stateTimeouts(state) = timeout
+
+  /**
+   * Internal API, used for testing.
+   */
+  private[akka] final def isStateTimerActive = timeoutFuture.isDefined
 
   /**
    * Set handler which is called upon each state transition, i.e. not when
@@ -634,6 +647,8 @@ trait FSM[S, D] extends Listeners with ActorLogging {
         case Failure(msg: AnyRef)   ⇒ log.error(msg.toString)
         case _                      ⇒
       }
+      for (timer ← timers.values) timer.cancel()
+      timers.clear()
       val stopEvent = StopEvent(reason, currentState.stateName, currentState.stateData)
       if (terminateEvent.isDefinedAt(stopEvent))
         terminateEvent(stopEvent)

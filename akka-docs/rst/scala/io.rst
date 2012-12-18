@@ -138,9 +138,9 @@ Receiving messages from the ``IOManager``:
 IO.Iteratee
 ^^^^^^^^^^^
 
-Included with Akka's IO support is a basic implementation of ``Iteratee``\s. ``Iteratee``\s are an effective way of handling a stream of data without needing to wait for all the data to arrive. This is especially useful when dealing with non blocking IO since we will usually receive data in chunks which may not include enough information to process, or it may contain much more data then we currently need.
+Included with Akka's IO support is a basic implementation of ``Iteratee``\s. ``Iteratee``\s are an effective way of handling a stream of data without needing to wait for all the data to arrive. This is especially useful when dealing with non blocking IO since we will usually receive data in chunks which may not include enough information to process, or it may contain much more data than we currently need.
 
-This ``Iteratee`` implementation is much more basic then what is usually found. There is only support for ``ByteString`` input, and enumerators aren't used. The reason for this limited implementation is to reduce the amount of explicit type signatures needed and to keep things simple. It is important to note that Akka's ``Iteratee``\s are completely optional, incoming data can be handled in any way, including other ``Iteratee`` libraries.
+This ``Iteratee`` implementation is much more basic than what is usually found. There is only support for ``ByteString`` input, and enumerators aren't used. The reason for this limited implementation is to reduce the amount of explicit type signatures needed and to keep things simple. It is important to note that Akka's ``Iteratee``\s are completely optional, incoming data can be handled in any way, including other ``Iteratee`` libraries.
 
 ``Iteratee``\s work by processing the data that it is given and returning either the result (with any unused input) or a continuation if more input is needed. They are monadic, so methods like ``flatMap`` can be used to pass the result of an ``Iteratee`` to another.
 
@@ -204,7 +204,7 @@ Following the path we read in the query (if it exists):
 .. includecode:: code/docs/io/HTTPServer.scala
    :include: read-query
 
-It is much simpler then reading the path since we aren't doing any parsing of the query since there is no standard format of the query string.
+It is much simpler than reading the path since we aren't doing any parsing of the query since there is no standard format of the query string.
 
 Both the path and query used the ``readUriPart`` ``Iteratee``, which is next:
 

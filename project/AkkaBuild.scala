@@ -30,7 +30,8 @@ object AkkaBuild extends Build {
     organization := "com.typesafe.akka",
     version      := "2.2-SNAPSHOT",
     // FIXME: use 2.10.0 for final
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC2")
+    // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC3")
   )
 
   lazy val akka = Project(
@@ -51,7 +52,7 @@ object AkkaBuild extends Build {
            |import com.typesafe.config.ConfigFactory
            |import scala.concurrent.duration._
            |import akka.util.Timeout
-           |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG")
+           |val config = ConfigFactory.parseString("akka.stdout-loglevel=INFO,akka.loglevel=DEBUG,pinned{type=PinnedDispatcher,executor=thread-pool-executor,throughput=1000}")
            |val remoteConfig = ConfigFactory.parseString("akka.remote.netty{port=0,use-dispatcher-for-io=akka.actor.default-dispatcher,execution-pool-size=0},akka.actor.provider=akka.remote.RemoteActorRefProvider").withFallback(config)
            |var system: ActorSystem = null
            |implicit def _system = system
@@ -97,7 +98,7 @@ object AkkaBuild extends Build {
     id = "akka-testkit",
     base = file("akka-testkit"),
     dependencies = Seq(actor),
-    settings = defaultSettings ++ Seq(
+    settings = defaultSettings ++ OSGi.testkit ++ Seq(
       libraryDependencies ++= Dependencies.testkit,
       initialCommands += "import akka.testkit._",
       previousArtifact := akkaPreviousArtifact("akka-testkit")
@@ -325,7 +326,13 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-cluster"),
     dependencies = Seq(cluster, remoteTests % "test", testkit % "test"),
     settings = sampleSettings ++ multiJvmSettings ++ experimentalSettings ++ Seq(
+      // sigar is in Typesafe repo
+      resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
       libraryDependencies ++= Dependencies.clusterSample,
+      javaOptions in run ++= Seq(
+        "-Djava.library.path=./sigar",
+        "-Xms128m", "-Xmx1024m"),
+      Keys.fork in run := true,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -446,7 +453,9 @@ object AkkaBuild extends Build {
       case key: String if key.startsWith("multinode.") => "-D" + key + "=" + System.getProperty(key)
       case key: String if key.startsWith("akka.") => "-D" + key + "=" + System.getProperty(key)
     }
-    akkaProperties ::: (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
+
+    "-Xmx256m" :: akkaProperties ::: 
+      (if (getBoolean("sbt.log.noformat")) List("-Dakka.test.nocolor=true") else Nil)
   }
 
   // for excluding tests by name use system property: -Dakka.test.names.exclude=TimingSpec
@@ -549,6 +558,7 @@ object AkkaBuild extends Build {
             case BinVer(bv) => bv
             case _          => s
           }),
+        "sigarVersion" -> Dependencies.Compile.sigar.revision,
         "github" -> "http://github.com/akka/akka/tree/%s".format((if (isSnapshot) "master" else "v" + v))
       )
     },
@@ -621,13 +631,13 @@ object AkkaBuild extends Build {
 
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
-    val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"))
+    val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"), imports = Seq(protobufImport()))
 
     val osgi = exports(Seq("akka.osgi")) ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.impl"))
 
     val osgiAries = exports() ++ Seq(OsgiKeys.privatePackage := Seq("akka.osgi.aries.*"))
 
-    val remote = exports(Seq("akka.remote.*"))
+    val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
 
     val slf4j = exports(Seq("akka.event.slf4j.*"))
 
@@ -635,16 +645,19 @@ object AkkaBuild extends Build {
 
     val transactor = exports(Seq("akka.transactor.*"))
 
-    val zeroMQ = exports(Seq("akka.zeromq.*"))
+    val testkit = exports(Seq("akka.testkit.*"))
 
-    def exports(packages: Seq[String] = Seq()) = osgiSettings ++ Seq(
-      OsgiKeys.importPackage := defaultImports,
+    val zeroMQ = exports(Seq("akka.zeromq.*"), imports = Seq(protobufImport()) )
+
+    def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = osgiSettings ++ Seq(
+      OsgiKeys.importPackage := imports ++ defaultImports,
       OsgiKeys.exportPackage := packages
     )
 
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
     def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.1,2.2)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[0.4.1,1.1.0)\"".format(packageName)
+    def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.4.0,2.5.0)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
   }
 }
@@ -672,6 +685,9 @@ object Dependencies {
     // Camel Sample
     val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % camelCore.revision // ApacheV2
 
+    // Cluster Sample
+    val sigar       = "org.hyperic"                 % "sigar"                        % "1.6.4"            // ApacheV2
+
     // Test
 
     object Test {
@@ -680,7 +696,7 @@ object Dependencies {
       val junit       = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
       val logback     = "ch.qos.logback"              % "logback-classic"              % "1.0.7"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito     = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
-      val scalatest   = "org.scalatest"               % "scalatest"                    % "1.8-B2"           % "test" cross CrossVersion.full // ApacheV2
+      val scalatest   = "org.scalatest"               % "scalatest"                    % "1.8-B1"           % "test" cross CrossVersion.full // ApacheV2
       val scalacheck  = "org.scalacheck"              % "scalacheck"                   % "1.10.0"           % "test" cross CrossVersion.full // New BSD
       val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
       val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
@@ -728,7 +744,7 @@ object Dependencies {
 
   val zeroMQ = Seq(protobuf, zeroMQClient, Test.scalatest, Test.junit)
 
-  val clusterSample = Seq(Test.scalatest)
+  val clusterSample = Seq(Test.scalatest, sigar)
 
   val contrib = Seq(Test.junitIntf)
 

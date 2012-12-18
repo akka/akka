@@ -29,6 +29,8 @@ object TransformationSampleSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.auto-join = off
+    # don't use sigar for tests, native lib not in path
+    akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     """))
 
 }
@@ -88,6 +90,8 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
         Cluster(system) join node(frontend1).address
         system.actorOf(Props[TransformationFrontend], name = "frontend")
       }
+      testConductor.enter("frontend2-started")
+
       runOn(backend2, backend3) {
         Cluster(system) join node(backend1).address
         system.actorOf(Props[TransformationBackend], name = "backend")

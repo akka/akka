@@ -35,7 +35,7 @@ public class SchedulerPatternTest {
     private final Cancellable tick = getContext().system().scheduler().schedule(
       Duration.create(500, TimeUnit.MILLISECONDS),
       Duration.create(1000, TimeUnit.MILLISECONDS),
-      getSelf(), "tick", getContext().dispatcher());
+      getSelf(), "tick", getContext().dispatcher(), null);
     //#schedule-constructor
     // this variable and constructor is declared here to not show up in the docs
     final ActorRef target;
