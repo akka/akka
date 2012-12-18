@@ -299,7 +299,7 @@ class RemoteActorRefProvider(
     }
   }
 
-  def getDefaultAddress: Address = transport.address
+  def getDefaultAddress: Address = transport.defaultAddress
 
   private def hasAddress(address: Address): Boolean =
     address == local.rootPath.address || address == rootPath.address || transport.addresses(address)
