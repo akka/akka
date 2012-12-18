@@ -11,6 +11,7 @@ import akka.ConfigurationException
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.concurrent.duration.FiniteDuration
 import akka.dispatch.ThreadPoolConfig
+import akka.util.Helpers
 
 private[akka] class NettySettings(config: Config, val systemName: String) {
 
@@ -71,6 +72,11 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
   val ConnectionTimeout: FiniteDuration = Duration(getMilliseconds("connection-timeout"), MILLISECONDS)
 
   val Backlog: Int = getInt("backlog")
+
+  val ReuseAddress: Boolean = getString("reuse-address") match {
+    case "off-for-windows" ⇒ !Helpers.isWindows
+    case _                 ⇒ getBoolean("reuse-address")
+  }
 
   val ExecutionPoolKeepalive: FiniteDuration = Duration(getMilliseconds("execution-pool-keepalive"), MILLISECONDS)
 
