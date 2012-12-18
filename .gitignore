@@ -3,6 +3,7 @@
 *#
 src_managed
 activemq-data
+project/akka-build.properties
 project/plugins/project
 project/boot/*
 */project/build/target
