@@ -5,9 +5,11 @@ package akka.serialization
  */
 
 import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
+import java.util.concurrent.Callable
 import akka.util.ClassLoaderObjectInputStream
 import akka.actor.ExtendedActorSystem
 import scala.util.DynamicVariable
+import akka.serialization.JavaSerializer.CurrentSystem
 
 /**
  * A Serializer represents a bimap between an object and an array of bytes representing that object.
@@ -93,9 +95,22 @@ object JavaSerializer {
    * currentSystem.withValue(system) {
    *   ...code...
    * }
+   *
+   * or
+   *
+   * currentSystem.withValue(system, callable)
    */
-  val currentSystem = new DynamicVariable[ExtendedActorSystem](null)
-
+  val currentSystem = new CurrentSystem
+  final class CurrentSystem extends DynamicVariable[ExtendedActorSystem](null) {
+    /**
+     * Java API
+     * @param value - the current value under the call to callable.call()
+     * @param callable - the operation to be performed
+     * @tparam S - the return type
+     * @return the result of callable.call()
+     */
+    def withValue[S](value: ExtendedActorSystem, callable: Callable[S]): S = super.withValue[S](value)(callable.call)
+  }
 }
 
 /**
