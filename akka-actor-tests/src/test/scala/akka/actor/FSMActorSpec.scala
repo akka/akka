@@ -194,6 +194,57 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       expectMsg(1 second, fsm.StopEvent(FSM.Shutdown, 1, null))
     }
 
+    "run onTermination with updated state upon stop(reason, stateData)" in {
+      val expected = "pigdog"
+      val actor = system.actorOf(Props(new Actor with FSM[Int, String] {
+        startWith(1, null)
+        when(1) {
+          case Event(2, null) ⇒ stop(FSM.Normal, expected)
+        }
+        onTermination {
+          case StopEvent(FSM.Normal, 1, `expected`) ⇒ testActor ! "green"
+        }
+      }))
+      actor ! 2
+      expectMsg("green")
+    }
+
+    "cancel all timers when terminated" in {
+      val timerNames = List("timer-1", "timer-2", "timer-3")
+
+      // Lazy so fsmref can refer to checkTimersActive
+      lazy val fsmref = TestFSMRef(new Actor with FSM[String, Null] {
+        startWith("not-started", null)
+        when("not-started") {
+          case Event("start", _) ⇒ goto("started") replying "starting"
+        }
+        when("started", stateTimeout = 10 seconds) {
+          case Event("stop", _) ⇒ stop()
+        }
+        onTransition {
+          case "not-started" -> "started" ⇒
+            for (timerName ← timerNames) setTimer(timerName, (), 10 seconds, false)
+        }
+        onTermination {
+          case _ ⇒ {
+            checkTimersActive(false)
+            testActor ! "stopped"
+          }
+        }
+      })
+
+      def checkTimersActive(active: Boolean): Unit = for (timer ← timerNames) fsmref.timerActive_?(timer) must be(active)
+
+      checkTimersActive(false)
+
+      fsmref ! "start"
+      expectMsg(1 second, "starting")
+      checkTimersActive(true)
+
+      fsmref ! "stop"
+      expectMsg(1 second, "stopped")
+    }
+
     "log events and transitions if asked to do so" in {
       import scala.collection.JavaConverters._
       val config = ConfigFactory.parseMap(Map("akka.loglevel" -> "DEBUG",
