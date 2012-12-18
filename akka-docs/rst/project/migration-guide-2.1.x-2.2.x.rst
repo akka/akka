@@ -41,6 +41,11 @@ and with it the ``conf_?`` method that was essentially only a type-inferencer ai
 of optional transformations on ``ThreadPoolConfigBuilder``.
 Instead use: ``option.map(o => (t: ThreadPoolConfigBuilder) => t.op(o))``.
 
+Scheduler
+=========
+
+Akka's ``Scheduler`` has been augmented to also include a ``sender`` when scheduling to send messages, this should work Out-Of-The-Box for Scala users,
+but for Java Users you will need to manually provide the ``sender`` – as usual use ``null`` to designate "no sender" which will behave just as before the change.
 
 ZeroMQ ByteString
 =================
