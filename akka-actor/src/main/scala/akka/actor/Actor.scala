@@ -84,7 +84,7 @@ case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
  * Used for remote death watch. Failure detector publish this to the
  * `eventStream` when a remote node is detected to be unreachable and/or decided to
  * be removed.
- * The watcher ([[akka.actor.DeathWatch]]) subscribes to the `eventStream`
+ * The watcher ([[akka.actor.dungeon.DeathWatch]]) subscribes to the `eventStream`
  * and translates this event to [[akka.actor.Terminated]], which is sent itself.
  */
 @SerialVersionUID(1L)
@@ -180,8 +180,8 @@ object ActorInitializationException {
  *
  * @param actor is the actor whose preRestart() hook failed
  * @param cause is the exception thrown by that actor within preRestart()
- * @param origCause is the exception which caused the restart in the first place
- * @param msg is the message which was optionally passed into preRestart()
+ * @param originalCause is the exception which caused the restart in the first place
+ * @param messageOption is the message which was optionally passed into preRestart()
  */
 @SerialVersionUID(1L)
 case class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable, messageOption: Option[Any])
@@ -197,7 +197,7 @@ case class PreRestartException private[akka] (actor: ActorRef, cause: Throwable,
  *
  * @param actor is the actor whose constructor or postRestart() hook failed
  * @param cause is the exception thrown by that actor within preRestart()
- * @param origCause is the exception which caused the restart in the first place
+ * @param originalCause is the exception which caused the restart in the first place
  */
 @SerialVersionUID(1L)
 case class PostRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable)
