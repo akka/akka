@@ -37,7 +37,7 @@ private[akka] class NettyRemoteServer(val netty: NettyRemoteTransport) {
     b.setOption("backlog", settings.Backlog)
     b.setOption("tcpNoDelay", true)
     b.setOption("child.keepAlive", true)
-    b.setOption("reuseAddress", true)
+    b.setOption("reuseAddress", settings.ReuseAddress)
     settings.ReceiveBufferSize.foreach(sz ⇒ b.setOption("receiveBufferSize", sz))
     settings.SendBufferSize.foreach(sz ⇒ b.setOption("sendBufferSize", sz))
     settings.WriteBufferHighWaterMark.foreach(sz ⇒ b.setOption("writeBufferHighWaterMark", sz))
