@@ -38,6 +38,7 @@ object RemoteCommunicationSpec {
 class RemoteCommunicationSpec extends AkkaSpec("""
 akka {
   actor.provider = "akka.remote.RemoteActorRefProvider"
+  remote.transport = "akka.remote.netty.NettyRemoteTransport"
   remote.netty {
     hostname = localhost
     port = 12345
@@ -48,7 +49,7 @@ akka {
     /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
   }
 }
-""") with ImplicitSender with DefaultTimeout {
+                                               """) with ImplicitSender with DefaultTimeout {
 
   import RemoteCommunicationSpec._
 
@@ -100,7 +101,7 @@ akka {
 
     "create and supervise children on remote node" in {
       val r = system.actorOf(Props[Echo], "blub")
-      r.path.toString must be === "akka://remote-sys@localhost:12346/remote/RemoteCommunicationSpec@localhost:12345/user/blub"
+      r.path.toString must be === "akka://remote-sys@localhost:12346/remote/akka/RemoteCommunicationSpec@localhost:12345/user/blub"
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {

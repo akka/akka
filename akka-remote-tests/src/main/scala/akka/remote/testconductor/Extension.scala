@@ -72,14 +72,6 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
   /**
    * Transport address of this Netty-like remote transport.
    */
-  val address = transport.address
-
-  /**
-   * INTERNAL API.
-   *
-   * [[akka.remote.testconductor.NetworkFailureInjector]]s register themselves here so that
-   * failures can be injected.
-   */
-  private[akka] val failureInjector = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props[FailureInjector], "FailureInjector")
+  val address = transport.defaultAddress
 
 }

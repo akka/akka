@@ -95,35 +95,6 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
     case sz           ⇒ sz
   }
 
-  val SSLKeyStore = Option(getString("ssl.key-store")).filter(_.length > 0)
-  val SSLTrustStore = Option(getString("ssl.trust-store")).filter(_.length > 0)
-  val SSLKeyStorePassword = Option(getString("ssl.key-store-password")).filter(_.length > 0)
-
-  val SSLTrustStorePassword = Option(getString("ssl.trust-store-password")).filter(_.length > 0)
-
-  val SSLEnabledAlgorithms = immutableSeq(getStringList("ssl.enabled-algorithms")).to[Set]
-
-  val SSLProtocol = Option(getString("ssl.protocol")).filter(_.length > 0)
-
-  val SSLRandomSource = Option(getString("ssl.sha1prng-random-source")).filter(_.length > 0)
-
-  val SSLRandomNumberGenerator = Option(getString("ssl.random-number-generator")).filter(_.length > 0)
-
-  val EnableSSL = {
-    val enableSSL = getBoolean("ssl.enable")
-    if (enableSSL) {
-      if (SSLProtocol.isEmpty) throw new ConfigurationException(
-        "Configuration option 'akka.remote.netty.ssl.enable is turned on but no protocol is defined in 'akka.remote.netty.ssl.protocol'.")
-      if (SSLKeyStore.isEmpty && SSLTrustStore.isEmpty) throw new ConfigurationException(
-        "Configuration option 'akka.remote.netty.ssl.enable is turned on but no key/trust store is defined in 'akka.remote.netty.ssl.key-store' / 'akka.remote.netty.ssl.trust-store'.")
-      if (SSLKeyStore.isDefined && SSLKeyStorePassword.isEmpty) throw new ConfigurationException(
-        "Configuration option 'akka.remote.netty.ssl.key-store' is defined but no key-store password is defined in 'akka.remote.netty.ssl.key-store-password'.")
-      if (SSLTrustStore.isDefined && SSLTrustStorePassword.isEmpty) throw new ConfigurationException(
-        "Configuration option 'akka.remote.netty.ssl.trust-store' is defined but no trust-store password is defined in 'akka.remote.netty.ssl.trust-store-password'.")
-    }
-    enableSSL
-  }
-
   private def computeWPS(config: Config): Int =
     ThreadPoolConfig.scaledPoolSize(
       config.getInt("pool-size-min"),
@@ -133,4 +104,8 @@ private[akka] class NettySettings(config: Config, val systemName: String) {
   val ServerSocketWorkerPoolSize = computeWPS(config.getConfig("server-socket-worker-pool"))
 
   val ClientSocketWorkerPoolSize = computeWPS(config.getConfig("client-socket-worker-pool"))
+
+  val SslSettings = new SSLSettings(config.getConfig("ssl"))
+
+  val EnableSSL = getBoolean("ssl.enable")
 }

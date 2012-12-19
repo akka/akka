@@ -11,6 +11,8 @@ import akka.AkkaException
 import akka.serialization.Serialization
 import akka.remote.RemoteProtocol._
 import akka.actor._
+import scala.collection.immutable
+import scala.concurrent.Future
 
 /**
  * Remote life-cycle events.
@@ -171,12 +173,25 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
   /**
    * Shuts down the remoting
    */
-  def shutdown(): Unit
+  def shutdown(): Future[Unit]
 
   /**
    * Address to be used in RootActorPath of refs generated for this transport.
    */
-  def address: Address
+  def addresses: immutable.Set[Address]
+
+  /**
+   * The default transport address of the actorsystem
+   * @return The listen address of the default transport
+   */
+  def defaultAddress: Address
+
+  /**
+   * Resolves the correct local address to be used for contacting the given remote address
+   * @param remote the remote address
+   * @return the local address to be used for the given remote address
+   */
+  def localAddressForRemote(remote: Address): Address
 
   /**
    * Start up the transport, i.e. enable incoming connections.
@@ -184,14 +199,14 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
   def start(): Unit
 
   /**
-   * Shuts down a specific client connected to the supplied remote address returns true if successful
+   * Attempts to shut down a specific client connected to the supplied remote address
    */
-  def shutdownClientConnection(address: Address): Boolean
+  def shutdownClientConnection(address: Address): Unit
 
   /**
-   * Restarts a specific client connected to the supplied remote address, but only if the client is not shut down
+   * Attempts to restart a specific client connected to the supplied remote address, but only if the client is not shut down
    */
-  def restartClientConnection(address: Address): Boolean
+  def restartClientConnection(address: Address): Unit
 
   /**
    * Sends the given message to the recipient supplying the sender if any
@@ -207,9 +222,12 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
   }
 
   /**
-   * Returns this RemoteTransports Address' textual representation
+   * Sends a management command to the underlying transport stack. The call returns with a Future that indicates
+   * if the command was handled successfully or dropped.
+   * @param cmd Command message to send to the transports.
+   * @return A Future that indicates when the message was successfully handled or dropped.
    */
-  override def toString: String = address.toString
+  def managementCommand(cmd: Any): Future[Boolean] = { Future.successful(false) }
 
   /**
    * A Logger that can be used to log issues that may occur
@@ -230,7 +248,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
    * Returns a newly created AkkaRemoteProtocol with the given message payload.
    */
   def createMessageSendEnvelope(rmp: RemoteMessageProtocol): AkkaRemoteProtocol =
-    AkkaRemoteProtocol.newBuilder.setMessage(rmp).build
+    AkkaRemoteProtocol.newBuilder.setPayload(rmp.toByteString).build
 
   /**
    * Returns a newly created AkkaRemoteProtocol with the given control payload.
@@ -242,7 +260,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
    * Serializes the ActorRef instance into a Protocol Buffers (protobuf) Message.
    */
   def toRemoteActorRefProtocol(actor: ActorRef): ActorRefProtocol =
-    ActorRefProtocol.newBuilder.setPath(actor.path.toStringWithAddress(address)).build
+    ActorRefProtocol.newBuilder.setPath(actor.path.toStringWithAddress(defaultAddress)).build
 
   /**
    * Returns a new RemoteMessageProtocol containing the serialized representation of the given parameters.
@@ -251,7 +269,7 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
     val messageBuilder = RemoteMessageProtocol.newBuilder.setRecipient(toRemoteActorRefProtocol(recipient))
     if (senderOption.isDefined) messageBuilder.setSender(toRemoteActorRefProtocol(senderOption.get))
 
-    Serialization.currentTransportAddress.withValue(address) {
+    Serialization.currentTransportAddress.withValue(defaultAddress) {
       messageBuilder.setMessage(MessageSerializer.serialize(system, message.asInstanceOf[AnyRef]))
     }
 
@@ -289,16 +307,16 @@ abstract class RemoteTransport(val system: ExtendedActorSystem, val provider: Re
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !useUntrustedMode ⇒
         if (provider.remoteSettings.LogReceive) log.debug("received remote-destined message {}", remoteMessage)
         remoteMessage.originalReceiver match {
-          case AddressFromURIString(address) if address == provider.transport.address ⇒
+          case AddressFromURIString(address) if provider.transport.addresses(address) ⇒
             // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
             r.!(remoteMessage.payload)(remoteMessage.sender)
           case r ⇒
-            log.debug("dropping message {} for non-local recipient {} arriving at {} inbound address is {}",
-              remoteMessage.payloadClass, r, address, provider.transport.address)
+            log.debug("dropping message {} for non-local recipient {} arriving at {} inbound addresses are {}",
+              remoteMessage.payloadClass, r, addresses, provider.transport.addresses)
         }
       case r ⇒
-        log.debug("dropping message {} for unknown recipient {} arriving at {} inbound address is {}",
-          remoteMessage.payloadClass, r, address, provider.transport.address)
+        log.debug("dropping message {} for unknown recipient {} arriving at {} inbound addresses are {}",
+          remoteMessage.payloadClass, r, addresses, provider.transport.addresses)
     }
   }
 }

@@ -10,7 +10,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import org.scalatest.BeforeAndAfterEach
-import akka.remote.testconductor.Direction
+import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.actor.Props
 import akka.actor.Actor
 import akka.testkit.ImplicitSender

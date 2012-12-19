@@ -4,7 +4,7 @@
 package akka.remote.netty
 
 import akka.actor.Address
-import akka.remote.RemoteProtocol.{ RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
+import akka.remote.RemoteProtocol.{ RemoteMessageProtocol, RemoteControlProtocol, CommandType, AkkaRemoteProtocol }
 import akka.remote._
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -146,8 +146,8 @@ private[akka] class RemoteServerHandler(
 
   override def messageReceived(ctx: ChannelHandlerContext, event: MessageEvent) = try {
     event.getMessage match {
-      case remote: AkkaRemoteProtocol if remote.hasMessage ⇒
-        netty.receiveMessage(new RemoteMessage(remote.getMessage, netty.system))
+      case remote: AkkaRemoteProtocol if remote.hasPayload ⇒
+        netty.receiveMessage(new RemoteMessage(RemoteMessageProtocol.parseFrom(remote.getPayload), netty.system))
       case remote: AkkaRemoteProtocol if remote.hasInstruction ⇒
         val instruction = remote.getInstruction
         instruction.getCommandType match {
