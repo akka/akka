@@ -211,7 +211,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
         }
       }
     }
-    Future successful ()
+    Future successful (())
   }
 
   def send(
@@ -271,10 +271,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
   def shutdownClientConnection(remoteAddress: Address): Unit = {
     clientsLock.writeLock().lock()
     try {
-      remoteClients.remove(remoteAddress) match {
-        case Some(client) ⇒ client.shutdown()
-        case None         ⇒ false
-      }
+      remoteClients.remove(remoteAddress) foreach (_.shutdown())
     } finally {
       clientsLock.writeLock().unlock()
     }
@@ -283,10 +280,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
   def restartClientConnection(remoteAddress: Address): Unit = {
     clientsLock.readLock().lock()
     try {
-      remoteClients.get(remoteAddress) match {
-        case Some(client) ⇒ client.connect(reconnectIfAlreadyConnected = true)
-        case None         ⇒ false
-      }
+      remoteClients.get(remoteAddress) foreach (_.connect(reconnectIfAlreadyConnected = true))
     } finally {
       clientsLock.readLock().unlock()
     }

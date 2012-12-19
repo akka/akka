@@ -155,7 +155,7 @@ class TestTransport(
     })
 
   private[akka] def write(handle: TestAssociationHandle, payload: ByteString): Boolean =
-    Await.result(writeBehavior((handle, payload)), 3 seconds)
+    Await.result(writeBehavior((handle, payload)), 3.seconds)
 
   private[akka] def disassociate(handle: TestAssociationHandle): Unit = disassociateBehavior(handle)
 

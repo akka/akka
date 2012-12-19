@@ -333,7 +333,7 @@ private[transport] class ThrottledAssociation(
         if (inboundThrottleMode == Unthrottled && !queue.isEmpty) self ! Dequeue
         else if (!queue.isEmpty) {
           context.system.scheduler.scheduleOnce(
-            inboundThrottleMode.timeToAvailable(System.nanoTime(), queue.head.length) nanoseconds, self, Dequeue)
+            inboundThrottleMode.timeToAvailable(System.nanoTime(), queue.head.length).nanos, self, Dequeue)
         }
       }
       stay()
@@ -376,7 +376,7 @@ private[transport] class ThrottledAssociation(
           queue = queue.enqueue(payload)
 
           context.system.scheduler.scheduleOnce(
-            inboundThrottleMode.timeToAvailable(System.nanoTime(), tokens) nanoseconds, self, Dequeue)
+            inboundThrottleMode.timeToAvailable(System.nanoTime(), tokens).nanos, self, Dequeue)
         }
       } else {
         queue = queue.enqueue(payload)

@@ -169,7 +169,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
         stopped map { _ ⇒ () } // RARP needs only type Unit, not a boolean
       case None ⇒
         log.warning("Remoting is not running. Ignoring shutdown attempt.")
-        Future successful ()
+        Future successful (())
     }
   }
 
@@ -463,6 +463,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   def flushing: Receive = {
     case s: Send               ⇒ forwardToDeadLetters(s)
     case InboundAssociation(h) ⇒ h.disassociate()
+    case Terminated(_)         ⇒ // why should we care now?
   }
 
   private def forwardToDeadLetters(s: Send): Unit = {

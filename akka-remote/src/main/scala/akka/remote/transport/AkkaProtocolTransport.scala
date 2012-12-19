@@ -386,6 +386,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
           case ListenerReady(listener, _) ⇒
             listener notify InboundPayload(payload)
             stay()
+          case msg ⇒ throw new AkkaProtocolException("unhandled message in Open state: " + msg, null)
         }
 
         case _ ⇒ stay()
@@ -398,6 +399,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
       val handle = stateData match {
         case ListenerReady(_, wrappedHandle)            ⇒ wrappedHandle
         case AssociatedWaitHandler(_, wrappedHandle, _) ⇒ wrappedHandle
+        case msg                                        ⇒ throw new AkkaProtocolException("unhandled message in Open state: " + msg, null)
       }
       sendDisassociate(handle)
       stop()
