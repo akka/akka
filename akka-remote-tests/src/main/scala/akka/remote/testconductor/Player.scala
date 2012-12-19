@@ -217,7 +217,8 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           val mode = if (t.rateMBit < 0.0f) Unthrottled
           else if (t.rateMBit == 0.0f) Blackhole
           // Conversion needed as the TokenBucket measures in octets: 125000 Octets/s = 1Mbit/s
-          else TokenBucket(capacity = 500, tokensPerSecond = t.rateMBit * 125000.0, lastSend = 0, availableTokens = 0)
+          // FIXME: Initial capacity should be carefully chosen
+          else TokenBucket(capacity = 1000, tokensPerSecond = t.rateMBit * 125000.0, lastSend = 0, availableTokens = 0)
 
           val cmdFuture = TestConductor().transport.managementCommand(SetThrottle(t.target, t.direction, mode))
 

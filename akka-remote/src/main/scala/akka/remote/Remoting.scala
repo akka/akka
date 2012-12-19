@@ -469,7 +469,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   private def forwardToDeadLetters(s: Send): Unit = {
     val sender = s.senderOption match {
       case Some(sender) ⇒ sender
-      case None         ⇒ Actor.noSender
+      case None         ⇒ extendedSystem.deadLetters
     }
     extendedSystem.deadLetters.tell(s.message, sender)
   }

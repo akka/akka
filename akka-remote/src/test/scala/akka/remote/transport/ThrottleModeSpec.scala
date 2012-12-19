@@ -6,6 +6,8 @@ import java.util.concurrent.TimeUnit
 
 class ThrottleModeSpec extends AkkaSpec {
 
+  val halfSecond: Long = TimeUnit.MILLISECONDS.toNanos(500)
+
   "ThrottleMode" must {
 
     "allow consumption of infinite amount of tokens when untrhottled" in {
@@ -35,7 +37,6 @@ class ThrottleModeSpec extends AkkaSpec {
     }
 
     "accurately replenish tokens" in {
-      val halfSecond: Long = TimeUnit.MILLISECONDS.toNanos(500)
       val bucket = TokenBucket(capacity = 100, tokensPerSecond = 100, lastSend = 0L, availableTokens = 0)
       val (bucket1, success1) = bucket.tryConsumeTokens(timeOfSend = 0L, 0)
       bucket1 must be(TokenBucket(100, 100, 0, 0))
@@ -55,7 +56,6 @@ class ThrottleModeSpec extends AkkaSpec {
     }
 
     "accurately interleave replenish and consume" in {
-      val halfSecond: Long = TimeUnit.MILLISECONDS.toNanos(500)
       val bucket = TokenBucket(capacity = 100, tokensPerSecond = 100, lastSend = 0L, availableTokens = 20)
       val (bucket1, success1) = bucket.tryConsumeTokens(timeOfSend = 0L, 10)
       bucket1 must be(TokenBucket(100, 100, 0, 10))
@@ -75,7 +75,6 @@ class ThrottleModeSpec extends AkkaSpec {
     }
 
     "allow oversized packets through by loaning" in {
-      val halfSecond: Long = TimeUnit.MILLISECONDS.toNanos(500)
       val bucket = TokenBucket(capacity = 100, tokensPerSecond = 100, lastSend = 0L, availableTokens = 20)
       val (bucket1, success1) = bucket.tryConsumeTokens(timeOfSend = 0L, 30)
       bucket1 must be(TokenBucket(100, 100, 0, 20))

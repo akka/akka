@@ -91,7 +91,7 @@ class TestConductorSpec extends MultiNodeSpec(TestConductorMultiJvmSpec) with ST
 
       val (min, max) =
         if(isNode(master))(0 seconds, 500 millis)
-        else (0.6 seconds, 2 seconds)
+        else (0.3 seconds, 2 seconds)
 
       within(min, max) {
         expectMsg(500 millis, 10)
