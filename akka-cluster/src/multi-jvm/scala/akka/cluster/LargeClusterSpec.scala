@@ -59,10 +59,6 @@ object LargeClusterMultiJvmSpec extends MultiNodeConfig {
     akka.remote.netty.backoff-timeout = 500ms
     akka.remote.netty.connection-timeout = 500ms
 
-    # don't use testconductor transport in this test, especially not
-    # when using use-dispatcher-for-io
-    akka.remote.transport = "akka.remote.netty.NettyRemoteTransport"
-
     # Using a separate dispatcher for netty io doesn't reduce number
     # of needed threads
     # akka.remote.netty.use-dispatcher-for-io=akka.test.io-dispatcher

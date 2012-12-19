@@ -20,9 +20,10 @@ class RemoteConfigSpec extends AkkaSpec(
   }
   """) {
 
+  // FIXME: These tests are ignored as it tests configuration specific to the old remoting.
   "Remoting" must {
 
-    "be able to parse generic remote config elements" in {
+    "be able to parse generic remote config elements" ignore {
       val settings = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].remoteSettings
       import settings._
 
@@ -32,7 +33,7 @@ class RemoteConfigSpec extends AkkaSpec(
       LogRemoteLifeCycleEvents must be(true)
     }
 
-    "be able to parse Netty config elements" in {
+    "be able to parse Netty config elements" ignore {
       val settings =
         system.asInstanceOf[ExtendedActorSystem]
           .provider.asInstanceOf[RemoteActorRefProvider]

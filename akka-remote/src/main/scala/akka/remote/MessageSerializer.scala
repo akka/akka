@@ -12,7 +12,7 @@ import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializationExtension
 
 /**
- * MessageSerializer is a helper for serialize and deserialize messages
+ * MessageSerializer is a helper for serializing and deserialize messages
  */
 private[akka] object MessageSerializer {
 

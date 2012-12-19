@@ -22,8 +22,10 @@ import org.jboss.netty.util.{ DefaultObjectSizeEstimator, HashedWheelTimer }
 import akka.event.Logging
 import akka.remote.RemoteProtocol.AkkaRemoteProtocol
 import akka.remote.{ RemoteTransportException, RemoteTransport, RemoteActorRefProvider, RemoteActorRef, RemoteServerStarted }
+import scala.util.control.NonFatal
 import akka.actor.{ ExtendedActorSystem, Address, ActorRef }
 import com.google.protobuf.MessageLite
+import scala.concurrent.Future
 
 private[akka] object ChannelAddress extends ChannelLocal[Option[Address]] {
   override def initialValue(ch: Channel): Option[Address] = None
@@ -37,6 +39,9 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
   import provider.remoteSettings
 
   val settings = new NettySettings(remoteSettings.config.getConfig("akka.remote.netty"), remoteSettings.systemName)
+
+  // Workaround to emulate the support of multiple local addresses
+  override def localAddressForRemote(remote: Address): Address = defaultAddress
 
   // TODO replace by system.scheduler
   val timer: HashedWheelTimer = new HashedWheelTimer(system.threadFactory)
@@ -71,7 +76,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
      * actually dispatches the received messages to the local target actors).
      */
     def defaultStack(withTimeout: Boolean, isClient: Boolean): immutable.Seq[ChannelHandler] =
-      (if (settings.EnableSSL) List(NettySSLSupport(settings, NettyRemoteTransport.this.log, isClient)) else Nil) :::
+      (if (settings.EnableSSL) List(NettySSLSupport(settings.SslSettings, NettyRemoteTransport.this.log, isClient)) else Nil) :::
         (if (withTimeout) List(timeout) else Nil) :::
         msgFormat :::
         authenticator :::
@@ -160,7 +165,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
    * the normal one, e.g. for inserting security hooks. Get this transport’s
    * address from `this.address`.
    */
-  protected def createClient(recipient: Address): RemoteClient = new ActiveRemoteClient(this, recipient, address)
+  protected def createClient(recipient: Address): RemoteClient = new ActiveRemoteClient(this, recipient, defaultAddress)
 
   // the address is set in start() or from the RemoteServerHandler, whichever comes first
   private val _address = new AtomicReference[Address]
@@ -172,9 +177,12 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
     _address.compareAndSet(null, Address("akka", remoteSettings.systemName, settings.Hostname, addr.getPort))
   }
 
+  // Workaround to emulate the support of multiple local addresses
+  override def addresses = Set(address)
   def address = _address.get
+  override def defaultAddress: Address = _address.get
 
-  lazy val log = Logging(system.eventStream, "NettyRemoteTransport(" + address + ")")
+  lazy val log = Logging(system.eventStream, "NettyRemoteTransport(" + addresses + ")")
 
   def start(): Unit = {
     server.start()
@@ -182,7 +190,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
     notifyListeners(RemoteServerStarted(this))
   }
 
-  def shutdown(): Unit = {
+  def shutdown(): Future[Unit] = {
     clientsLock.writeLock().lock()
     try {
       remoteClients foreach {
@@ -203,6 +211,7 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
         }
       }
     }
+    Future successful (())
   }
 
   def send(
@@ -259,25 +268,19 @@ private[akka] class NettyRemoteTransport(_system: ExtendedActorSystem, _provider
 
   def unbindClient(remoteAddress: Address): Unit = shutdownClientConnection(remoteAddress)
 
-  def shutdownClientConnection(remoteAddress: Address): Boolean = {
+  def shutdownClientConnection(remoteAddress: Address): Unit = {
     clientsLock.writeLock().lock()
     try {
-      remoteClients.remove(remoteAddress) match {
-        case Some(client) ⇒ client.shutdown()
-        case None         ⇒ false
-      }
+      remoteClients.remove(remoteAddress) foreach (_.shutdown())
     } finally {
       clientsLock.writeLock().unlock()
     }
   }
 
-  def restartClientConnection(remoteAddress: Address): Boolean = {
+  def restartClientConnection(remoteAddress: Address): Unit = {
     clientsLock.readLock().lock()
     try {
-      remoteClients.get(remoteAddress) match {
-        case Some(client) ⇒ client.connect(reconnectIfAlreadyConnected = true)
-        case None         ⇒ false
-      }
+      remoteClients.get(remoteAddress) foreach (_.connect(reconnectIfAlreadyConnected = true))
     } finally {
       clientsLock.readLock().unlock()
     }

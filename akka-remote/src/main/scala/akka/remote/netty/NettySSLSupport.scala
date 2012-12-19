@@ -11,6 +11,37 @@ import akka.event.LoggingAdapter
 import java.io.{ IOException, FileNotFoundException, FileInputStream }
 import akka.remote.security.provider.AkkaProvider
 import java.security._
+import com.typesafe.config.Config
+import akka.japi.Util._
+import akka.ConfigurationException
+
+private[akka] class SSLSettings(config: Config) {
+  import config._
+
+  val SSLKeyStore = Option(getString("key-store")).filter(_.length > 0)
+  val SSLTrustStore = Option(getString("trust-store")).filter(_.length > 0)
+  val SSLKeyStorePassword = Option(getString("key-store-password")).filter(_.length > 0)
+
+  val SSLTrustStorePassword = Option(getString("trust-store-password")).filter(_.length > 0)
+
+  val SSLEnabledAlgorithms = immutableSeq(getStringList("enabled-algorithms")).to[Set]
+
+  val SSLProtocol = Option(getString("protocol")).filter(_.length > 0)
+
+  val SSLRandomSource = Option(getString("sha1prng-random-source")).filter(_.length > 0)
+
+  val SSLRandomNumberGenerator = Option(getString("random-number-generator")).filter(_.length > 0)
+
+  // FIXME: Change messages to reflect new configuration
+  if (SSLProtocol.isEmpty) throw new ConfigurationException(
+    "Configuration option 'akka.remote.netty.ssl.enable is turned on but no protocol is defined in 'akka.remote.netty.ssl.protocol'.")
+  if (SSLKeyStore.isEmpty && SSLTrustStore.isEmpty) throw new ConfigurationException(
+    "Configuration option 'akka.remote.netty.ssl.enable is turned on but no key/trust store is defined in 'akka.remote.netty.ssl.key-store' / 'akka.remote.netty.ssl.trust-store'.")
+  if (SSLKeyStore.isDefined && SSLKeyStorePassword.isEmpty) throw new ConfigurationException(
+    "Configuration option 'akka.remote.netty.ssl.key-store' is defined but no key-store password is defined in 'akka.remote.netty.ssl.key-store-password'.")
+  if (SSLTrustStore.isDefined && SSLTrustStorePassword.isEmpty) throw new ConfigurationException(
+    "Configuration option 'akka.remote.netty.ssl.trust-store' is defined but no trust-store password is defined in 'akka.remote.netty.ssl.trust-store-password'.")
+}
 
 /**
  * Used for adding SSL support to Netty pipeline
@@ -23,7 +54,7 @@ private[akka] object NettySSLSupport {
   /**
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
    */
-  def apply(settings: NettySettings, log: LoggingAdapter, isClient: Boolean): SslHandler =
+  def apply(settings: SSLSettings, log: LoggingAdapter, isClient: Boolean): SslHandler =
     if (isClient) initializeClientSSL(settings, log) else initializeServerSSL(settings, log)
 
   def initializeCustomSecureRandom(rngName: Option[String], sourceOfRandomness: Option[String], log: LoggingAdapter): SecureRandom = {
@@ -57,10 +88,10 @@ private[akka] object NettySSLSupport {
     rng
   }
 
-  def initializeClientSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
+  def initializeClientSSL(settings: SSLSettings, log: LoggingAdapter): SslHandler = {
     log.debug("Client SSL is enabled, initialising ...")
 
-    def constructClientContext(settings: NettySettings, log: LoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] =
+    def constructClientContext(settings: SSLSettings, log: LoggingAdapter, trustStorePath: String, trustStorePassword: String, protocol: String): Option[SSLContext] =
       try {
         val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)
         val trustManagers: Array[TrustManager] = {
@@ -106,10 +137,10 @@ private[akka] object NettySSLSupport {
     }
   }
 
-  def initializeServerSSL(settings: NettySettings, log: LoggingAdapter): SslHandler = {
+  def initializeServerSSL(settings: SSLSettings, log: LoggingAdapter): SslHandler = {
     log.debug("Server SSL is enabled, initialising ...")
 
-    def constructServerContext(settings: NettySettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, protocol: String): Option[SSLContext] =
+    def constructServerContext(settings: SSLSettings, log: LoggingAdapter, keyStorePath: String, keyStorePassword: String, protocol: String): Option[SSLContext] =
       try {
         val rng = initializeCustomSecureRandom(settings.SSLRandomNumberGenerator, settings.SSLRandomSource, log)
         val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
