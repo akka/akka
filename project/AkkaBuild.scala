@@ -31,7 +31,7 @@ object AkkaBuild extends Build {
     version      := "2.2-SNAPSHOT",
     // FIXME: use 2.10.0 for final
     // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC3")
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC5")
   )
 
   lazy val akka = Project(
