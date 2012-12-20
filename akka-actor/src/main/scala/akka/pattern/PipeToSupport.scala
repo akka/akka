@@ -19,7 +19,7 @@ trait PipeToSupport {
       }
       future
     }
-    def to(recipient: ActorRef): PipeableFuture[T] = to(recipient, null)
+    def to(recipient: ActorRef): PipeableFuture[T] = to(recipient, Actor.noSender)
     def to(recipient: ActorRef, sender: ActorRef): PipeableFuture[T] = {
       pipeTo(recipient)(sender)
       this
