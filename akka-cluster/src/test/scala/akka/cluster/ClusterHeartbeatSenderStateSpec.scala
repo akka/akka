@@ -13,12 +13,12 @@ import scala.concurrent.duration._
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ClusterHeartbeatSenderStateSpec extends WordSpec with MustMatchers {
 
-  val selfAddress = Address("akka", "sys", "myself", 2552)
-  val aa = Address("akka", "sys", "aa", 2552)
-  val bb = Address("akka", "sys", "bb", 2552)
-  val cc = Address("akka", "sys", "cc", 2552)
-  val dd = Address("akka", "sys", "dd", 2552)
-  val ee = Address("akka", "sys", "ee", 2552)
+  val selfAddress = Address("tcp.akka", "sys", "myself", 2552)
+  val aa = Address("tcp.akka", "sys", "aa", 2552)
+  val bb = Address("tcp.akka", "sys", "bb", 2552)
+  val cc = Address("tcp.akka", "sys", "cc", 2552)
+  val dd = Address("tcp.akka", "sys", "dd", 2552)
+  val ee = Address("tcp.akka", "sys", "ee", 2552)
 
   val emptyState = ClusterHeartbeatSenderState.empty(ConsistentHash(Seq.empty[Address], 10),
     selfAddress.toString, 3)

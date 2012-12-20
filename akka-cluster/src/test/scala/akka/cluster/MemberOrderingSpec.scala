@@ -35,8 +35,8 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
     "be sorted by address correctly" in {
       import Member.ordering
       // sorting should be done on host and port, only
-      val m1 = Member(Address("akka", "sys1", "host1", 9000), MemberStatus.Up)
-      val m2 = Member(Address("akka", "sys1", "host1", 10000), MemberStatus.Up)
+      val m1 = Member(Address("tcp.akka", "sys1", "host1", 9000), MemberStatus.Up)
+      val m2 = Member(Address("tcp.akka", "sys1", "host1", 10000), MemberStatus.Up)
       val m3 = Member(Address("cluster", "sys2", "host2", 8000), MemberStatus.Up)
       val m4 = Member(Address("cluster", "sys2", "host2", 9000), MemberStatus.Up)
       val m5 = Member(Address("cluster", "sys1", "host2", 10000), MemberStatus.Up)
@@ -48,9 +48,9 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
     }
 
     "have stable equals and hashCode" in {
-      val m1 = Member(Address("akka", "sys1", "host1", 9000), MemberStatus.Joining)
-      val m2 = Member(Address("akka", "sys1", "host1", 9000), MemberStatus.Up)
-      val m3 = Member(Address("akka", "sys1", "host1", 10000), MemberStatus.Up)
+      val m1 = Member(Address("tcp.akka", "sys1", "host1", 9000), MemberStatus.Joining)
+      val m2 = Member(Address("tcp.akka", "sys1", "host1", 9000), MemberStatus.Up)
+      val m3 = Member(Address("tcp.akka", "sys1", "host1", 10000), MemberStatus.Up)
 
       m1 must be(m2)
       m1.hashCode must be(m2.hashCode)
@@ -60,8 +60,8 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
     }
 
     "have consistent ordering and equals" in {
-      val address1 = Address("akka", "sys1", "host1", 9001)
-      val address2 = Address("akka", "sys1", "host1", 9002)
+      val address1 = Address("tcp.akka", "sys1", "host1", 9001)
+      val address2 = Address("tcp.akka", "sys1", "host1", 9002)
 
       val x = Member(address1, Exiting)
       val y = Member(address1, Removed)
@@ -71,9 +71,9 @@ class MemberOrderingSpec extends WordSpec with MustMatchers {
     }
 
     "work with SortedSet" in {
-      val address1 = Address("akka", "sys1", "host1", 9001)
-      val address2 = Address("akka", "sys1", "host1", 9002)
-      val address3 = Address("akka", "sys1", "host1", 9003)
+      val address1 = Address("tcp.akka", "sys1", "host1", 9001)
+      val address2 = Address("tcp.akka", "sys1", "host1", 9002)
+      val address3 = Address("tcp.akka", "sys1", "host1", 9003)
 
       (SortedSet(Member(address1, MemberStatus.Joining)) - Member(address1, MemberStatus.Up)) must be(SortedSet.empty[Member])
       (SortedSet(Member(address1, MemberStatus.Exiting)) - Member(address1, MemberStatus.Removed)) must be(SortedSet.empty[Member])
