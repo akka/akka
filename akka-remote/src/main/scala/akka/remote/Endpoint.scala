@@ -12,7 +12,7 @@ import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.{ AkkaPduCodec, Transport, AssociationHandle }
 import akka.serialization.Serialization
 import akka.util.ByteString
-import scala.util.control.NonFatal
+import util.control.{ NoStackTrace, NonFatal }
 
 /**
  * Internal API
@@ -106,7 +106,7 @@ private[remote] object EndpointWriter {
   case object Writing extends State
 }
 
-private[remote] class EndpointException(msg: String, cause: Throwable) extends AkkaException(msg, cause) {
+private[remote] class EndpointException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with NoStackTrace {
   def this(msg: String) = this(msg, null)
 }
 
