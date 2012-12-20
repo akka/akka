@@ -349,7 +349,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel) ex
  */
 private[akka] object Controller {
   case class ClientDisconnected(name: RoleName)
-  class ClientDisconnectedException(msg: String) extends AkkaException(msg)
+  class ClientDisconnectedException(msg: String) extends AkkaException(msg) with NoStackTrace
   case object GetNodes
   case object GetSockAddr
   case class CreateServerFSM(channel: Channel)
