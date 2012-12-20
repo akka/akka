@@ -10,8 +10,9 @@ import akka.util.ByteString
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.concurrent.{ Future, Promise }
+import scala.util.control.NoStackTrace
 
-case class FailureInjectorException(msg: String) extends AkkaException(msg)
+case class FailureInjectorException(msg: String) extends AkkaException(msg) with NoStackTrace
 
 class FailureInjectorProvider extends TransportAdapterProvider {
 
