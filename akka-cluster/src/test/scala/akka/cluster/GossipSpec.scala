@@ -14,17 +14,17 @@ class GossipSpec extends WordSpec with MustMatchers {
 
   import MemberStatus._
 
-  val a1 = Member(Address("akka", "sys", "a", 2552), Up)
-  val a2 = Member(Address("akka", "sys", "a", 2552), Joining)
-  val b1 = Member(Address("akka", "sys", "b", 2552), Up)
-  val b2 = Member(Address("akka", "sys", "b", 2552), Removed)
-  val c1 = Member(Address("akka", "sys", "c", 2552), Leaving)
-  val c2 = Member(Address("akka", "sys", "c", 2552), Up)
-  val c3 = Member(Address("akka", "sys", "c", 2552), Exiting)
-  val d1 = Member(Address("akka", "sys", "d", 2552), Leaving)
-  val d2 = Member(Address("akka", "sys", "d", 2552), Removed)
-  val e1 = Member(Address("akka", "sys", "e", 2552), Joining)
-  val e2 = Member(Address("akka", "sys", "e", 2552), Up)
+  val a1 = Member(Address("tcp.akka", "sys", "a", 2552), Up)
+  val a2 = Member(Address("tcp.akka", "sys", "a", 2552), Joining)
+  val b1 = Member(Address("tcp.akka", "sys", "b", 2552), Up)
+  val b2 = Member(Address("tcp.akka", "sys", "b", 2552), Removed)
+  val c1 = Member(Address("tcp.akka", "sys", "c", 2552), Leaving)
+  val c2 = Member(Address("tcp.akka", "sys", "c", 2552), Up)
+  val c3 = Member(Address("tcp.akka", "sys", "c", 2552), Exiting)
+  val d1 = Member(Address("tcp.akka", "sys", "d", 2552), Leaving)
+  val d2 = Member(Address("tcp.akka", "sys", "d", 2552), Removed)
+  val e1 = Member(Address("tcp.akka", "sys", "e", 2552), Joining)
+  val e2 = Member(Address("tcp.akka", "sys", "e", 2552), Up)
 
   "A Gossip" must {
 
