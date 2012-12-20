@@ -14,8 +14,8 @@ class MetricValuesSpec extends AkkaSpec(MetricsEnabledSpec.config) with MetricsC
 
   val collector = createMetricsCollector
 
-  val node1 = NodeMetrics(Address("akka", "sys", "a", 2554), 1, collector.sample.metrics)
-  val node2 = NodeMetrics(Address("akka", "sys", "a", 2555), 1, collector.sample.metrics)
+  val node1 = NodeMetrics(Address("tcp.akka", "sys", "a", 2554), 1, collector.sample.metrics)
+  val node2 = NodeMetrics(Address("tcp.akka", "sys", "a", 2555), 1, collector.sample.metrics)
 
   val nodes: Seq[NodeMetrics] = {
     (1 to 100).foldLeft(List(node1, node2)) { (nodes, _) ⇒
