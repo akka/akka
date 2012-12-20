@@ -317,21 +317,21 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
     }
 
     "be able to call methods returning Java Options" in {
-      val t = newFooBar(Duration(500, "ms"))
-      t.joptionPigdog(200).get must be("Pigdog")
-      t.joptionPigdog(700) must be(JOption.none[String])
+      val t = newFooBar(1 second)
+      t.joptionPigdog(500).get must be("Pigdog")
+      t.joptionPigdog(1500) must be(JOption.none[String])
       mustStop(t)
     }
 
     "be able to call methods returning Scala Options" in {
-      val t = newFooBar(Duration(500, "ms"))
-      t.optionPigdog(200).get must be("Pigdog")
-      t.optionPigdog(1000) must be(None)
+      val t = newFooBar(1 second)
+      t.optionPigdog(500).get must be("Pigdog")
+      t.optionPigdog(1500) must be(None)
       mustStop(t)
     }
 
     "be able to compose futures without blocking" in {
-      val t, t2 = newFooBar(Duration(2, "s"))
+      val t, t2 = newFooBar(2 seconds)
       val f = t.futureComposePigdogFrom(t2)
       f.isCompleted must be(false)
       Await.result(f, timeout.duration) must equal("PIGDOG")
