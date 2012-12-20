@@ -31,6 +31,7 @@ The Current List of Modules
    reliable-proxy
    throttle
    jul
+   peek-mailbox
 
 Suggested Way of Using these Contributions
 ------------------------------------------
