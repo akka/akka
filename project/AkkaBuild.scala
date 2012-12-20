@@ -21,9 +21,16 @@ import ls.Plugin.{ lsSettings, LsKeys }
 import java.lang.Boolean.getBoolean
 import sbt.Tests
 import LsKeys.{ lsync, docsUrl => lsDocsUrl, tags => lsTags }
+import java.io.{BufferedReader, InputStreamReader, FileInputStream, File}
+import java.nio.charset.Charset
+import java.util.Properties
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
+
+  // Load system properties from a file to make configuration from Jenkins easier
+  loadSystemProperties("project/akka-build.properties")
+
   val enableMiMa = false
 
   lazy val buildSettings = Seq(
@@ -616,6 +623,19 @@ object AkkaBuild extends Build {
   def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.0"): Option[sbt.ModuleID] =
     if (enableMiMa) Some(organization % id % version) // the artifact to compare binary compatibility with
     else None
+
+  def loadSystemProperties(fileName: String): Unit = {
+    import scala.collection.JavaConverters._
+    val file = new File(fileName)
+    if (file.exists()) {
+      println("Loading system properties from file `" + fileName + "`")
+      val in = new InputStreamReader(new FileInputStream(file), "UTF-8")
+      val props = new Properties
+      props.load(in)
+      in.close()
+      sys.props ++ props.asScala
+    }
+  }
 
   // OSGi settings
 
