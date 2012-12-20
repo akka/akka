@@ -678,6 +678,9 @@ object SupervisorHierarchySpec {
       case Event(StateTimeout, _) ⇒
         println("pingChildren:\n" + pingChildren.view.map(_.path.toString).toSeq.sorted.mkString("\n"))
         ignoreNotResumedLogs = false
+        // make sure that we get the logs of the remaining pingChildren
+        pingChildren.foreach(getErrorsUp)
+        // this will ensure that the error logs get printed and we stop the test
         context stop hierarchy
         goto(Failed)
       case Event(Abort, _) ⇒
