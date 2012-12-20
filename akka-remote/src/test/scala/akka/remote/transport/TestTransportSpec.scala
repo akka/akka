@@ -55,10 +55,10 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       var transportA = new TestTransport(addressA, registry)
 
       Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
-      Await.result(transportA.associate(nonExistingAddress), timeout.duration) match {
-        case Fail(_) ⇒
-        case _       ⇒ fail()
-      }
+
+      // TestTransport throws IllegalArgumentException when trying to associate with non-existing system
+      intercept[IllegalArgumentException] { Await.result(transportA.associate(nonExistingAddress), timeout.duration) }
+
     }
 
     "emulate sending PDUs and logs write" in {
@@ -71,12 +71,12 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
 
       awaitCond(registry.transportsReady(addressA, addressB))
 
-      val associate: Future[Status] = transportA.associate(addressB)
+      val associate: Future[AssociationHandle] = transportA.associate(addressB)
       val handleB = expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
         case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handle
       }
 
-      val Ready(handleA) = Await.result(associate, timeout.duration)
+      val handleA = Await.result(associate, timeout.duration)
 
       // Initialize handles
       handleA.readHandlerPromise.success(ActorHandleEventListener(self))
@@ -108,12 +108,12 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
 
       awaitCond(registry.transportsReady(addressA, addressB))
 
-      val associate: Future[Status] = transportA.associate(addressB)
+      val associate: Future[AssociationHandle] = transportA.associate(addressB)
       val handleB: AssociationHandle = expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
         case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handle
       }
 
-      val Ready(handleA) = Await.result(associate, timeout.duration)
+      val handleA = Await.result(associate, timeout.duration)
 
       // Initialize handles
       handleA.readHandlerPromise.success(ActorHandleEventListener(self))

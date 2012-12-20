@@ -19,7 +19,9 @@ import scala.util.{ Success, Failure }
 import scala.collection.immutable
 import akka.remote.transport.ActorTransportAdapter._
 
-class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace
+class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
+  def this(msg: String) = this(msg, null)
+}
 
 private[remote] class AkkaProtocolSettings(config: Config) {
 
@@ -221,11 +223,11 @@ private[transport] object ProtocolStateActor {
   trait InitialProtocolStateData extends ProtocolStateData
 
   // Neither the underlying, nor the provided transport is associated
-  case class OutboundUnassociated(remoteAddress: Address, statusPromise: Promise[Status], transport: Transport)
+  case class OutboundUnassociated(remoteAddress: Address, statusPromise: Promise[AssociationHandle], transport: Transport)
     extends InitialProtocolStateData
 
   // The underlying transport is associated, but the handshake of the akka protocol is not yet finished
-  case class OutboundUnderlyingAssociated(statusPromise: Promise[Status], wrappedHandle: AssociationHandle)
+  case class OutboundUnderlyingAssociated(statusPromise: Promise[AssociationHandle], wrappedHandle: AssociationHandle)
     extends ProtocolStateData
 
   // The underlying transport is associated, but the handshake of the akka protocol is not yet finished
@@ -256,7 +258,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
   // Outbound case
   def this(localAddress: Address,
            remoteAddress: Address,
-           statusPromise: Promise[Status],
+           statusPromise: Promise[AssociationHandle],
            transport: Transport,
            settings: AkkaProtocolSettings,
            codec: AkkaPduCodec,
@@ -287,15 +289,11 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
   when(Closed) {
 
     // Transport layer events for outbound associations
-    case Event(s @ Invalid(_), OutboundUnassociated(_, statusPromise, _)) ⇒
-      statusPromise.success(s)
+    case Event(Status.Failure(e), OutboundUnassociated(_, statusPromise, _)) ⇒
+      statusPromise.failure(e)
       stop()
 
-    case Event(s @ Fail(_), OutboundUnassociated(_, statusPromise, _)) ⇒
-      statusPromise.success(s)
-      stop()
-
-    case Event(Ready(wrappedHandle), OutboundUnassociated(_, statusPromise, _)) ⇒
+    case Event(wrappedHandle: AssociationHandle, OutboundUnassociated(_, statusPromise, _)) ⇒
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(self))
       sendAssociate(wrappedHandle)
       failureDetector.heartbeat()
@@ -431,14 +429,14 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
 
   onTermination {
     case StopEvent(_, _, OutboundUnassociated(remoteAddress, statusPromise, transport)) ⇒
-      statusPromise.trySuccess(Fail(new AkkaProtocolException("Transport disassociated before handshake finished", null)))
+      statusPromise.tryFailure(new AkkaProtocolException("Transport disassociated before handshake finished", null))
 
     case StopEvent(reason, _, OutboundUnderlyingAssociated(statusPromise, wrappedHandle)) ⇒
       val msg = reason match {
         case FSM.Failure(TimeoutReason) ⇒ "No response from remote. Handshake timed out."
         case _                          ⇒ "Remote endpoint disassociated before handshake finished"
       }
-      statusPromise.trySuccess(Fail(new AkkaProtocolException(msg, null)))
+      statusPromise.tryFailure(new AkkaProtocolException(msg, null))
       wrappedHandle.disassociate()
 
     case StopEvent(_, _, AssociatedWaitHandler(handlerFuture, wrappedHandle, queue)) ⇒
@@ -458,7 +456,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
     readHandlerPromise.future.map { HandleListenerRegistered(_) } pipeTo self
 
   private def notifyOutboundHandler(wrappedHandle: AssociationHandle,
-                                    statusPromise: Promise[Status]): Future[HandleEventListener] = {
+                                    statusPromise: Promise[AssociationHandle]): Future[HandleEventListener] = {
     val readHandlerPromise: Promise[HandleEventListener] = Promise()
     listenForListenerRegistration(readHandlerPromise)
 
@@ -471,7 +469,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
         self,
         codec)
 
-    statusPromise.success(Ready(exposedHandle))
+    statusPromise.success(exposedHandle)
     readHandlerPromise.future
   }
 

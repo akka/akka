@@ -3,7 +3,7 @@ package akka.remote.transport.netty
 import akka.actor.Address
 import akka.remote.transport.AssociationHandle
 import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListener, Disassociated, InboundPayload }
-import akka.remote.transport.Transport.{ AssociationEventListener, Status }
+import akka.remote.transport.Transport.AssociationEventListener
 import akka.util.ByteString
 import java.net.InetSocketAddress
 import org.jboss.netty.buffer.{ ChannelBuffers, ChannelBuffer }
@@ -50,7 +50,7 @@ private[remote] class TcpServerHandler(_transport: NettyTransport, _associationL
 
 }
 
-private[remote] class TcpClientHandler(_transport: NettyTransport, _statusPromise: Promise[Status])
+private[remote] class TcpClientHandler(_transport: NettyTransport, _statusPromise: Promise[AssociationHandle])
   extends ClientHandler(_transport, _statusPromise) with TcpHandlers {
 
   override def onConnect(ctx: ChannelHandlerContext, e: ChannelStateEvent) {

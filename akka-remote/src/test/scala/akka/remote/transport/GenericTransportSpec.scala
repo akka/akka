@@ -8,13 +8,7 @@ import akka.testkit.{ ImplicitSender, DefaultTimeout, AkkaSpec }
 import akka.util.ByteString
 import scala.concurrent.{ Future, Await }
 import akka.remote.RemoteActorRefProvider
-import akka.remote.transport.Transport.InboundAssociation
-import akka.remote.transport.TestTransport.DisassociateAttempt
-import akka.remote.transport.TestTransport.WriteAttempt
-import akka.remote.transport.TestTransport.ListenAttempt
-import akka.remote.transport.Transport.Fail
-import akka.remote.transport.TestTransport.AssociateAttempt
-import akka.remote.transport.Transport.Ready
+import akka.remote.transport.TestTransport.{ DisassociateAttempt, WriteAttempt, ListenAttempt, AssociateAttempt }
 
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
   extends AkkaSpec("""akka.actor.provider = "akka.remote.RemoteActorRefProvider" """)
@@ -85,10 +79,8 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
       Await.result(transportA.listen, timeout.duration)._2.success(ActorAssociationEventListener(self))
       awaitCond(registry.transportsReady(addressATest))
 
-      Await.result(transportA.associate(nonExistingAddress), timeout.duration) match {
-        case Fail(_) ⇒
-        case _       ⇒ fail()
-      }
+      // TestTransport throws IllegalArgumentException when trying to associate with non-existing system
+      intercept[IllegalArgumentException] { Await.result(transportA.associate(nonExistingAddress), timeout.duration) }
     }
 
     "successfully send PDUs" in {
@@ -101,12 +93,12 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
 
       awaitCond(registry.transportsReady(addressATest, addressBTest))
 
-      val associate: Future[Status] = transportA.associate(addressB)
+      val associate: Future[AssociationHandle] = transportA.associate(addressB)
       val handleB = expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
         case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handle
       }
 
-      val Ready(handleA) = Await.result(associate, timeout.duration)
+      val handleA = Await.result(associate, timeout.duration)
 
       // Initialize handles
       handleA.readHandlerPromise.success(ActorHandleEventListener(self))
@@ -139,12 +131,12 @@ abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
 
       awaitCond(registry.transportsReady(addressATest, addressBTest))
 
-      val associate: Future[Status] = transportA.associate(addressB)
+      val associate: Future[AssociationHandle] = transportA.associate(addressB)
       val handleB: AssociationHandle = expectMsgPF(timeout.duration, "Expect InboundAssociation from A") {
         case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒ handle
       }
 
-      val Ready(handleA) = Await.result(associate, timeout.duration)
+      val handleA = Await.result(associate, timeout.duration)
 
       // Initialize handles
       handleA.readHandlerPromise.success(ActorHandleEventListener(self))
