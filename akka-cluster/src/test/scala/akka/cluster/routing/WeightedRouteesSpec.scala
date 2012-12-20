@@ -16,10 +16,10 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       akka.remote.netty.port = 0
       """)) {
 
-  val a1 = Address("akka", "sys", "a1", 2551)
-  val b1 = Address("akka", "sys", "b1", 2551)
-  val c1 = Address("akka", "sys", "c1", 2551)
-  val d1 = Address("akka", "sys", "d1", 2551)
+  val a1 = Address("tcp.akka", "sys", "a1", 2551)
+  val b1 = Address("tcp.akka", "sys", "b1", 2551)
+  val c1 = Address("tcp.akka", "sys", "c1", 2551)
+  val d1 = Address("tcp.akka", "sys", "d1", 2551)
 
   val refA = system.actorFor(RootActorPath(a1) / "user" / "a")
   val refB = system.actorFor(RootActorPath(b1) / "user" / "b")

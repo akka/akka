@@ -18,8 +18,8 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
 
   "A MetricsGossip" must {
     "add new NodeMetrics" in {
-      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("tcp.akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m2 = NodeMetrics(Address("tcp.akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
       m1.metrics.size must be > (3)
       m2.metrics.size must be > (3)
@@ -35,8 +35,8 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
     }
 
     "merge peer metrics" in {
-      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("tcp.akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m2 = NodeMetrics(Address("tcp.akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
       val g1 = MetricsGossip.empty :+ m1 :+ m2
       g1.nodes.size must be(2)
@@ -51,9 +51,9 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
     }
 
     "merge an existing metric set for a node and update node ring" in {
-      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
-      val m3 = NodeMetrics(Address("akka", "sys", "a", 2556), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("tcp.akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m2 = NodeMetrics(Address("tcp.akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+      val m3 = NodeMetrics(Address("tcp.akka", "sys", "a", 2556), newTimestamp, collector.sample.metrics)
       val m2Updated = m2 copy (metrics = collector.sample.metrics, timestamp = m2.timestamp + 1000)
 
       val g1 = MetricsGossip.empty :+ m1 :+ m2
@@ -72,14 +72,14 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
     }
 
     "get the current NodeMetrics if it exists in the local nodes" in {
-      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("tcp.akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
       val g1 = MetricsGossip.empty :+ m1
       g1.nodeMetricsFor(m1.address).map(_.metrics) must be(Some(m1.metrics))
     }
 
     "remove a node if it is no longer Up" in {
-      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("tcp.akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m2 = NodeMetrics(Address("tcp.akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
       val g1 = MetricsGossip.empty :+ m1 :+ m2
       g1.nodes.size must be(2)
@@ -91,8 +91,8 @@ class MetricsGossipSpec extends AkkaSpec(MetricsEnabledSpec.config) with Implici
     }
 
     "filter nodes" in {
-      val m1 = NodeMetrics(Address("akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
-      val m2 = NodeMetrics(Address("akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
+      val m1 = NodeMetrics(Address("tcp.akka", "sys", "a", 2554), newTimestamp, collector.sample.metrics)
+      val m2 = NodeMetrics(Address("tcp.akka", "sys", "a", 2555), newTimestamp, collector.sample.metrics)
 
       val g1 = MetricsGossip.empty :+ m1 :+ m2
       g1.nodes.size must be(2)

@@ -15,19 +15,19 @@ class ClusterDomainEventSpec extends WordSpec with MustMatchers {
   import MemberStatus._
   import ClusterEvent._
 
-  val a1 = Member(Address("akka", "sys", "a", 2552), Up)
-  val a2 = Member(Address("akka", "sys", "a", 2552), Joining)
-  val a3 = Member(Address("akka", "sys", "a", 2552), Removed)
-  val b1 = Member(Address("akka", "sys", "b", 2552), Up)
-  val b2 = Member(Address("akka", "sys", "b", 2552), Removed)
-  val b3 = Member(Address("akka", "sys", "b", 2552), Down)
-  val c1 = Member(Address("akka", "sys", "c", 2552), Leaving)
-  val c2 = Member(Address("akka", "sys", "c", 2552), Up)
-  val d1 = Member(Address("akka", "sys", "d", 2552), Leaving)
-  val d2 = Member(Address("akka", "sys", "d", 2552), Removed)
-  val e1 = Member(Address("akka", "sys", "e", 2552), Joining)
-  val e2 = Member(Address("akka", "sys", "e", 2552), Up)
-  val e3 = Member(Address("akka", "sys", "e", 2552), Down)
+  val a1 = Member(Address("tcp.akka", "sys", "a", 2552), Up)
+  val a2 = Member(Address("tcp.akka", "sys", "a", 2552), Joining)
+  val a3 = Member(Address("tcp.akka", "sys", "a", 2552), Removed)
+  val b1 = Member(Address("tcp.akka", "sys", "b", 2552), Up)
+  val b2 = Member(Address("tcp.akka", "sys", "b", 2552), Removed)
+  val b3 = Member(Address("tcp.akka", "sys", "b", 2552), Down)
+  val c1 = Member(Address("tcp.akka", "sys", "c", 2552), Leaving)
+  val c2 = Member(Address("tcp.akka", "sys", "c", 2552), Up)
+  val d1 = Member(Address("tcp.akka", "sys", "d", 2552), Leaving)
+  val d2 = Member(Address("tcp.akka", "sys", "d", 2552), Removed)
+  val e1 = Member(Address("tcp.akka", "sys", "e", 2552), Joining)
+  val e2 = Member(Address("tcp.akka", "sys", "e", 2552), Up)
+  val e3 = Member(Address("tcp.akka", "sys", "e", 2552), Down)
 
   def converge(gossip: Gossip): (Gossip, Set[Address]) =
     ((gossip, Set.empty[Address]) /: gossip.members) { (gs, m) ⇒ (gs._1.seen(m.address), gs._2 + m.address) }
