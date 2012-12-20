@@ -85,7 +85,7 @@ abstract class TransformationSampleSpec extends MultiNodeSpec(TransformationSamp
       testConductor.enter("frontend1-backend1-ok")
     }
 
-    "illustrate how more nodes registers" in within(15 seconds) {
+    "illustrate how more nodes registers" in within(20 seconds) {
       runOn(frontend2) {
         Cluster(system) join node(frontend1).address
         system.actorOf(Props[TransformationFrontend], name = "frontend")
