@@ -5,9 +5,10 @@ import akka.remote.transport.TestTransport.SwitchableLoggedBehavior
 import scala.concurrent.{ Await, Promise }
 import scala.util.Failure
 import akka.AkkaException
+import scala.util.control.NoStackTrace
 
 object SwitchableLoggedBehaviorSpec {
-  object TestException extends AkkaException("Test exception")
+  object TestException extends AkkaException("Test exception") with NoStackTrace
 }
 
 class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
