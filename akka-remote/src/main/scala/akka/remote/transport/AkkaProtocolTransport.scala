@@ -1,6 +1,6 @@
 package akka.remote.transport
 
-import akka.AkkaException
+import akka.{ OnlyCauseStackTrace, AkkaException }
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.pattern.pipe
@@ -19,7 +19,7 @@ import scala.util.{ Success, Failure }
 import scala.collection.immutable
 import akka.remote.transport.ActorTransportAdapter._
 
-class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
+class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace
 
 private[remote] class AkkaProtocolSettings(config: Config) {
 

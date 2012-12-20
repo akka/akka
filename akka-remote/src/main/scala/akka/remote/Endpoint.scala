@@ -1,6 +1,6 @@
 package akka.remote
 
-import akka.AkkaException
+import akka.{ OnlyCauseStackTrace, AkkaException }
 import akka.actor._
 import akka.dispatch.SystemMessage
 import akka.event.LoggingAdapter
@@ -106,7 +106,7 @@ private[remote] object EndpointWriter {
   case object Writing extends State
 }
 
-private[remote] class EndpointException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with NoStackTrace {
+private[remote] class EndpointException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
   def this(msg: String) = this(msg, null)
 }
 
