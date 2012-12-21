@@ -3,7 +3,7 @@ package akka.remote.transport.netty
 import akka.actor.Address
 import akka.remote.transport.AssociationHandle
 import akka.remote.transport.AssociationHandle.{ HandleEventListener, InboundPayload }
-import akka.remote.transport.Transport.{ AssociationEventListener, Status }
+import akka.remote.transport.Transport.AssociationEventListener
 import akka.util.ByteString
 import java.net.{ SocketAddress, InetAddress, InetSocketAddress }
 import org.jboss.netty.buffer.{ ChannelBuffer, ChannelBuffers }
@@ -49,7 +49,7 @@ private[remote] class UdpServerHandler(_transport: NettyTransport, _associationL
     initInbound(channel, remoteSocketAddress, msg)
 }
 
-private[remote] class UdpClientHandler(_transport: NettyTransport, _statusPromise: Promise[Status])
+private[remote] class UdpClientHandler(_transport: NettyTransport, _statusPromise: Promise[AssociationHandle])
   extends ClientHandler(_transport, _statusPromise) with UdpHandlers {
 
   override def initUdp(channel: Channel, remoteSocketAddress: SocketAddress, msg: ChannelBuffer): Unit =

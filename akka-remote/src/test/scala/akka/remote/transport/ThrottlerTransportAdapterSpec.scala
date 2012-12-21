@@ -5,11 +5,7 @@ import akka.actor._
 import akka.testkit.{ TimingTest, DefaultTimeout, ImplicitSender, AkkaSpec }
 import ThrottlerTransportAdapterSpec._
 import scala.concurrent.duration._
-import akka.remote.transport.TestTransport.{ WriteAttempt, AssociationRegistry }
-import scala.concurrent.{ Promise, Future, Await }
-import akka.remote.transport.Transport.{ Ready, InboundAssociation, Status }
-import akka.util.ByteString
-import akka.remote.transport.AssociationHandle.InboundPayload
+import scala.concurrent.Await
 import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, TokenBucket, SetThrottle }
 import akka.remote.RemoteActorRefProvider
 

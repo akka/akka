@@ -62,7 +62,7 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
   protected def interceptListen(listenAddress: Address,
                                 listenerFuture: Future[AssociationEventListener]): Future[AssociationEventListener]
 
-  protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[Status]): Unit
+  protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[AssociationHandle]): Unit
 
   override def schemeIdentifier: String = augmentScheme(wrappedTransport.schemeIdentifier)
 
@@ -71,22 +71,17 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
   override def maximumPayloadBytes: Int = wrappedTransport.maximumPayloadBytes - maximumOverhead
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
-    val listenPromise: Promise[(Address, Promise[AssociationEventListener])] = Promise()
     val upstreamListenerPromise: Promise[AssociationEventListener] = Promise()
-    wrappedTransport.listen.onComplete {
+    wrappedTransport.listen andThen {
       case Success((listenAddress, listenerPromise)) ⇒
         // Register to downstream
         listenerPromise.tryCompleteWith(interceptListen(listenAddress, upstreamListenerPromise.future))
-        // Notify upstream
-        listenPromise.success((augmentScheme(listenAddress), upstreamListenerPromise))
-      case Failure(reason) ⇒ listenPromise.failure(reason)
-    }
-    listenPromise.future
+    } map { case (listenAddress, _) ⇒ (augmentScheme(listenAddress), upstreamListenerPromise) }
   }
 
-  override def associate(remoteAddress: Address): Future[Status] = {
+  override def associate(remoteAddress: Address): Future[AssociationHandle] = {
     // Prepare a future, and pass its promise to the manager
-    val statusPromise: Promise[Status] = Promise()
+    val statusPromise: Promise[AssociationHandle] = Promise()
 
     interceptAssociate(removeScheme(remoteAddress), statusPromise)
 
@@ -118,7 +113,7 @@ object ActorTransportAdapter {
   sealed trait TransportOperation
 
   case class ListenerRegistered(listener: AssociationEventListener) extends TransportOperation
-  case class AssociateUnderlying(remoteAddress: Address, statusPromise: Promise[Status]) extends TransportOperation
+  case class AssociateUnderlying(remoteAddress: Address, statusPromise: Promise[AssociationHandle]) extends TransportOperation
   case class ListenUnderlying(listenAddress: Address,
                               upstreamListener: Future[AssociationEventListener]) extends TransportOperation
   case object DisassociateUnderlying extends TransportOperation
@@ -149,7 +144,7 @@ abstract class ActorTransportAdapter(wrappedTransport: Transport, system: ActorS
     }
   }
 
-  override def interceptAssociate(remoteAddress: Address, statusPromise: Promise[Status]): Unit =
+  override def interceptAssociate(remoteAddress: Address, statusPromise: Promise[AssociationHandle]): Unit =
     manager ! AssociateUnderlying(remoteAddress, statusPromise)
 
   override def shutdown(): Unit = manager ! PoisonPill
