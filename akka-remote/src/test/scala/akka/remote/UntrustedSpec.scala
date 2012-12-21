@@ -37,6 +37,10 @@ akka.loglevel = DEBUG
   val target1 = other.actorFor(RootActorPath(addr) / "remote")
   val target2 = other.actorFor(RootActorPath(addr) / testActor.path.elements)
 
+  override def atTermination() {
+    other.shutdown()
+  }
+
   // need to enable debug log-level without actually printing those messages
   system.eventStream.publish(TestEvent.Mute(EventFilter.debug()))
 

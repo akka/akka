@@ -4,39 +4,17 @@ import scala.concurrent.{ Promise, Future }
 import akka.actor.{ ActorRef, Address }
 import akka.util.ByteString
 import akka.remote.transport.AssociationHandle.HandleEventListener
+import akka.AkkaException
 
 object Transport {
 
   trait AssociationEvent
 
   /**
-   * Represents fine grained status of an association attempt.
-   */
-  sealed trait Status extends AssociationEvent
-
-  /**
    * Indicates that the association setup request is invalid, and it is impossible to recover (malformed IP address,
    * hostname, etc.).
    */
-  case class Invalid(cause: Throwable) extends Status
-
-  /**
-   * The association setup has failed, but it is not known that a recovery is possible or not. Generally it means
-   * that the transport gave up its attempts to associate, but a retry might be successful at a later time.
-   *
-   * @param cause Cause of the failure
-   */
-  case class Fail(cause: Throwable) extends Status
-
-  /**
-   * No detectable errors happened during association. Generally a status of Ready does not guarantee that the
-   * association was successful. For example in the case of UDP, the transport MAY return Ready immediately after an
-   * association setup was requested.
-   *
-   * @param association
-   *   The handle for the created association.
-   */
-  case class Ready(association: AssociationHandle) extends Status
+  case class InvalidAssociationException(msg: String, cause: Throwable) extends AkkaException(msg, cause)
 
   /**
    * Message sent to a [[akka.remote.transport.Transport.AssociationEventListener]] registered to a transport
@@ -125,15 +103,16 @@ trait Transport {
    * real transport-layer connection (TCP), more lightweight connections provided over datagram protocols (UDP with
    * additional services), substreams of multiplexed connections (SCTP) or physical links (serial port).
    *
-   * This call returns a fine-grained status indication of the attempt wrapped in a Future. See
-   * [[akka.remote.transport.Transport.Status]] for details.
+   * This call returns a future of an [[akka.remote.transport.AssociationHandle]]. A failed future indicates that
+   * the association attempt was unsuccessful. If the exception is [[akka.remote.transport.Transport.InvalidAssociationException]]
+   * then the association request was invalid, and it is impossible to recover.
    *
    * @param remoteAddress
    *   The address of the remote transport entity.
    * @return
    *   A status instance representing failure or a success containing an [[akka.remote.transport.AssociationHandle]]
    */
-  def associate(remoteAddress: Address): Future[Status]
+  def associate(remoteAddress: Address): Future[AssociationHandle]
 
   /**
    * Shuts down the transport layer and releases all the corresponding resources. Shutdown is asynchronous, may be

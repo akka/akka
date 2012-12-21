@@ -44,10 +44,10 @@ class TestTransport(
     associationListenerPromise.future.onSuccess {
       case listener: AssociationEventListener ⇒ registry.registerTransport(this, listener)
     }
-    Promise.successful((localAddress, associationListenerPromise)).future
+    Future.successful((localAddress, associationListenerPromise))
   }
 
-  private def defaultAssociate(remoteAddress: Address): Future[Status] = {
+  private def defaultAssociate(remoteAddress: Address): Future[AssociationHandle] = {
     registry.transportFor(remoteAddress) match {
 
       case Some((remoteTransport, listener)) ⇒
@@ -61,10 +61,10 @@ class TestTransport(
         registry.registerListenerPair(localHandle.key, bothSides)
         listener notify InboundAssociation(remoteHandle)
 
-        Promise.successful(Ready(localHandle)).future
+        Future.successful(localHandle)
 
       case None ⇒
-        Promise.successful(Fail(new IllegalArgumentException(s"No registered transport: $remoteAddress"))).future
+        Future.failed(new IllegalArgumentException(s"No registered transport: $remoteAddress"))
     }
   }
 
@@ -75,7 +75,7 @@ class TestTransport(
     (localHandle, remoteHandle)
   }
 
-  private def defaultShutdown: Future[Unit] = Promise.successful(()).future
+  private def defaultShutdown: Future[Unit] = Future.successful(())
 
   /**
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the listen() method.
@@ -87,7 +87,7 @@ class TestTransport(
   /**
    * The [[akka.remote.transport.TestTransport.SwitchableLoggedBehavior]] for the associate() method.
    */
-  val associateBehavior = new SwitchableLoggedBehavior[Address, Status](
+  val associateBehavior = new SwitchableLoggedBehavior[Address, AssociationHandle](
     defaultAssociate _,
     (remoteAddress) ⇒ registry.logActivity(AssociateAttempt(localAddress, remoteAddress)))
 
@@ -99,7 +99,7 @@ class TestTransport(
     (_) ⇒ registry.logActivity(ShutdownAttempt(localAddress)))
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = listenBehavior()
-  override def associate(remoteAddress: Address): Future[Status] = associateBehavior(remoteAddress)
+  override def associate(remoteAddress: Address): Future[AssociationHandle] = associateBehavior(remoteAddress)
   override def shutdown(): Unit = shutdownBehavior()
 
   private def defaultWrite(params: (TestAssociationHandle, ByteString)): Future[Boolean] = {
@@ -111,7 +111,7 @@ class TestTransport(
         }
         writePromise.future
       case None ⇒
-        Promise.failed(new IllegalStateException("No association present")).future
+        Future.failed(new IllegalStateException("No association present"))
     }
   }
 
@@ -123,7 +123,7 @@ class TestTransport(
       }
 
     }
-    Promise.successful(()).future
+    Future.successful(())
   }
 
   /**
@@ -210,7 +210,7 @@ object TestTransport {
      *   The constant the future will be completed with.
      */
     def pushConstant(c: B): Unit = push {
-      (x) ⇒ Promise.successful(c).future
+      (x) ⇒ Future.successful(c)
     }
 
     /**
@@ -220,7 +220,7 @@ object TestTransport {
      *   The throwable the failed future will contain.
      */
     def pushError(e: Throwable): Unit = push {
-      (x) ⇒ Promise.failed(e).future
+      (x) ⇒ Future.failed(e)
     }
 
     /**
@@ -332,8 +332,8 @@ object TestTransport {
      * Indicates if all given transports were successfully registered. No associations can be established between
      * transports that are not yet registered.
      *
-     * @param transports
-     *   The transports that participate in the test case.
+     * @param addresses
+     *   The listen addresses of transports that participate in the test case.
      * @return
      *   True if all transports are successfully registered.
      */

@@ -13,6 +13,7 @@ import akka.remote.transport.{ AkkaPduCodec, Transport, AssociationHandle }
 import akka.serialization.Serialization
 import akka.util.ByteString
 import util.control.{ NoStackTrace, NonFatal }
+import akka.remote.transport.Transport.InvalidAssociationException
 
 /**
  * Internal API
@@ -164,14 +165,14 @@ private[remote] class EndpointWriter(
     case Event(Send(msg, senderOption, recipient), _) ⇒
       stash()
       stay()
-    case Event(Transport.Invalid(e), _) ⇒
+    case Event(Status.Failure(e: InvalidAssociationException), _) ⇒
       log.error(e, "Tried to associate with invalid remote address [{}]. " +
         "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
       publishAndThrow(new InvalidAssociation(localAddress, remoteAddress, e))
 
-    case Event(Transport.Fail(e), _) ⇒
+    case Event(Status.Failure(e), _) ⇒
       publishAndThrow(new EndpointException(s"Association failed with [$remoteAddress]", e))
-    case Event(Transport.Ready(inboundHandle), _) ⇒
+    case Event(inboundHandle: AssociationHandle, _) ⇒
       handle = Some(inboundHandle)
       startReadEndpoint()
       goto(Writing)

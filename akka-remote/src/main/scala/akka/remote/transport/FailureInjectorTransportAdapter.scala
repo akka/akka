@@ -71,18 +71,14 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
     Future.successful(this)
   }
 
-  protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[Status]): Unit = {
+  protected def interceptAssociate(remoteAddress: Address, statusPromise: Promise[AssociationHandle]): Unit = {
     // Association is simulated to be failed if there was either an inbound or outbound message drop
     if (shouldDropInbound(remoteAddress) || shouldDropOutbound(remoteAddress))
-      statusPromise.success(Fail(new FailureInjectorException("Simulated failure of association to " + remoteAddress)))
+      statusPromise.failure(new FailureInjectorException("Simulated failure of association to " + remoteAddress))
     else
-      statusPromise.completeWith(wrappedTransport.associate(remoteAddress).map {
-        _ match {
-          case Ready(handle) ⇒
-            addressChaosTable.putIfAbsent(handle.remoteAddress.copy(protocol = "", system = ""), PassThru)
-            Ready(new FailureInjectorHandle(handle, this))
-          case s: Status ⇒ s
-        }
+      statusPromise.completeWith(wrappedTransport.associate(remoteAddress).map { handle ⇒
+        addressChaosTable.putIfAbsent(handle.remoteAddress.copy(protocol = "", system = ""), PassThru)
+        new FailureInjectorHandle(handle, this)
       })
   }
 

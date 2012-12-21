@@ -19,7 +19,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 import scala.concurrent.Promise
 import scala.math.min
-import scala.util.Success
+import scala.util.{ Success, Failure }
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 
@@ -151,16 +151,20 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
       val wrappedHandle = wrapHandle(handle, associationListener, inbound = true)
       wrappedHandle.throttlerActor ! wrappedHandle
     case AssociateUnderlying(remoteAddress, statusPromise) ⇒
-      wrappedTransport.associate(remoteAddress).onComplete {
-        case Success(Ready(handle)) ⇒
-          val wrappedHandle = wrapHandle(handle, associationListener, inbound = false)
-          val inMode = getInboundMode(nakedAddress(remoteAddress))
-          wrappedHandle.outboundThrottleMode.set(getOutboundMode(nakedAddress(remoteAddress)))
-          wrappedHandle.readHandlerPromise.future.map { (_, inMode) } pipeTo wrappedHandle.throttlerActor
-          handleTable ::= nakedAddress(remoteAddress) -> wrappedHandle
-          statusPromise.success(Ready(wrappedHandle))
-        case s @ _ ⇒ statusPromise.complete(s)
+      wrappedTransport.associate(remoteAddress) onComplete {
+        // Slight modification of pipe, only success is sent, failure is propagated to a separate future
+        case Success(handle) ⇒ self ! (handle, statusPromise)
+        case Failure(e) ⇒ statusPromise.failure(e)
       }
+    // Finished outbound association and got back the handle
+    case (handle: AssociationHandle, statusPromise: Promise[AssociationHandle]) ⇒
+      val wrappedHandle = wrapHandle(handle, associationListener, inbound = false)
+      val naked = nakedAddress(handle.remoteAddress)
+      val inMode = getInboundMode(naked)
+      wrappedHandle.outboundThrottleMode.set(getOutboundMode(naked))
+      wrappedHandle.readHandlerPromise.future.map { (_, inMode) } pipeTo wrappedHandle.throttlerActor
+      handleTable ::= nakedAddress(naked) -> wrappedHandle
+      statusPromise.success(wrappedHandle)
     case s @ SetThrottle(address, direction, mode) ⇒
       val naked = nakedAddress(address)
       throttlingModes += naked -> (mode, direction)
