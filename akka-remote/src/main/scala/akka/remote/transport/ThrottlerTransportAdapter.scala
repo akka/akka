@@ -154,7 +154,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport) extends A
       wrappedTransport.associate(remoteAddress) onComplete {
         // Slight modification of pipe, only success is sent, failure is propagated to a separate future
         case Success(handle) ⇒ self ! (handle, statusPromise)
-        case Failure(e) ⇒ statusPromise.failure(e)
+        case Failure(e)      ⇒ statusPromise.failure(e)
       }
     // Finished outbound association and got back the handle
     case (handle: AssociationHandle, statusPromise: Promise[AssociationHandle]) ⇒

@@ -169,7 +169,6 @@ private[remote] class EndpointWriter(
       log.error(e, "Tried to associate with invalid remote address [{}]. " +
         "Address is now quarantined, all messages to this address will be delivered to dead letters.", remoteAddress)
       publishAndThrow(new InvalidAssociation(localAddress, remoteAddress, e))
-
     case Event(Status.Failure(e), _) ⇒
       publishAndThrow(new EndpointException(s"Association failed with [$remoteAddress]", e))
     case Event(inboundHandle: AssociationHandle, _) ⇒
