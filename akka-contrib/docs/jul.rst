@@ -1,5 +1,5 @@
 Java Logging (JUL)
-=================
+==================
 
 This extension module provides a logging backend which uses the `java.util.logging` (j.u.l)
 API to do the endpoint logging for `akka.event.Logging`.
