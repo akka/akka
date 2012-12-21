@@ -32,7 +32,7 @@ object PeekMailboxSpec {
 class PeekMailboxSpec extends AkkaSpec("""
     peek-dispatcher {
       mailbox-type = "akka.contrib.mailbox.PeekMailboxType"
-      max-tries = 3
+      max-retries = 2
     }
     """) with ImplicitSender {
 
