@@ -36,9 +36,8 @@ object AkkaBuild extends Build {
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.2-SNAPSHOT",
-    // FIXME: use 2.10.0 for final
     // Also change ScalaVersion in akka-sbt-plugin/sample/project/Build.scala
-    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0-RC5")
+    scalaVersion := System.getProperty("akka.scalaVersion", "2.10.0")
   )
 
   lazy val akka = Project(
@@ -502,7 +501,8 @@ object AkkaBuild extends Build {
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Ywarn-adapted-args"),
     javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
 
-    crossVersion := CrossVersion.full,
+    // if changing this between binary and full, also change at the bottom of akka-sbt-plugin/sample/project/Build.scala
+    crossVersion := CrossVersion.binary,
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
@@ -693,10 +693,10 @@ object Dependencies {
     val config        = "com.typesafe"                % "config"                       % "1.0.0"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.5.8.Final" // ApacheV2
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.4.1"       // New BSD
-    val scalaStm      = "org.scala-stm"               % "scala-stm"                    % "0.6" cross CrossVersion.full // Modified BSD (Scala)
+    val scalaStm      = "org.scala-stm"               % "scala-stm"                    % "0.6"         cross CrossVersion.full // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.2"       // MIT
-    val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding"         % "0.0.6" cross CrossVersion.full // ApacheV2
+    val zeroMQClient  = "org.zeromq"                  % "zeromq-scala-binding_2.10"    % "0.0.7"       // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
@@ -716,7 +716,7 @@ object Dependencies {
       val junit       = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
       val logback     = "ch.qos.logback"              % "logback-classic"              % "1.0.7"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito     = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
-      val scalatest   = "org.scalatest"               % "scalatest"                    % "1.8-B1"           % "test" cross CrossVersion.full // ApacheV2
+      val scalatest   = "org.scalatest"               % "scalatest"                    % "1.8"              % "test" cross CrossVersion.full // ApacheV2
       val scalacheck  = "org.scalacheck"              % "scalacheck"                   % "1.10.0"           % "test" cross CrossVersion.full // New BSD
       val ariesProxy  = "org.apache.aries.proxy"      % "org.apache.aries.proxy.impl"  % "0.3"              % "test" // ApacheV2
       val pojosr      = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.1.4"            % "test" // ApacheV2
