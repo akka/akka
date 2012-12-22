@@ -66,7 +66,7 @@ object AkkaBuild extends Build {
       generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity
 
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, /*akkaSbtPlugin,*/ osgi, osgiAries, docs, contrib, samples)
   )
 
   lazy val actor = Project(
