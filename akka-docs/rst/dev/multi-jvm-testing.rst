@@ -72,7 +72,7 @@ Here is an example Build.scala file that uses the MultiJvm plugin:
            "test" @crossString@,
          "com.typesafe.akka" %% "akka-remote-tests-experimental" % "@version@" %
            "test" @crossString@,
-         "org.scalatest"     %% "scalatest" % "1.8" % "test" cross CrossVersion.full,
+         "org.scalatest"     %% "scalatest" % "1.9" % "test",
          "junit"              % "junit" % "4.5" % "test"
        )
      }
