@@ -22,8 +22,8 @@ private[remote] trait UdpHandlers extends CommonHandlers {
     transport.udpConnectionTable.putIfAbsent(remoteSocketAddress, listener) match {
       case null ⇒ listener notify InboundPayload(ByteString(msg.array()))
       case oldReader ⇒
-        throw new NettyTransportException(s"Listener $listener attempted to register for remote address $remoteSocketAddress" +
-          s" but $oldReader was already registered.", null)
+        throw new NettyTransportException(
+          s"Listener $listener attempted to register for remote address $remoteSocketAddress but $oldReader was already registered.")
     }
   }
 
