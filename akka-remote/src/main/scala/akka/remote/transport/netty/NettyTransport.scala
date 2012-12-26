@@ -339,8 +339,8 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
         case NonFatal(e) ⇒
           Future.failed(e)
       }) onFailure {
-        case t: ConnectException ⇒ statusPromise failure new NettyTransportException(t.getMessage, t.getCause)
-        case t ⇒ statusPromise failure t
+        case t: ConnectException ⇒ statusPromise failure new NettyTransportException(t.getMessage, t.getCause) with NoStackTrace
+        case t                   ⇒ statusPromise failure t
       }
 
       statusPromise.future
