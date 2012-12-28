@@ -641,7 +641,8 @@ object AkkaBuild extends Build {
 
   object OSGi {
 
-    val actor = exports(Seq("akka*"))
+    val actor = exports(Seq("akka*"), imports = Seq("akka.remote.*;resolution:=optional", "akka.cluster.*;resolution:=optional"))
+
 
     val agent = exports(Seq("akka.agent.*"))
 
