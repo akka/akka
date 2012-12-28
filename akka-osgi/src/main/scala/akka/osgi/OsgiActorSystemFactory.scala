@@ -7,6 +7,7 @@ import impl.BundleDelegatingClassLoader
 import akka.actor.ActorSystem
 import com.typesafe.config.{ ConfigFactory, Config }
 import org.osgi.framework.BundleContext
+import java.io.File
 
 /**
  * Factory class to create ActorSystem implementations in an OSGi environment.  This mainly involves dealing with
@@ -32,6 +33,21 @@ class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader
   def createActorSystem(name: Option[String]): ActorSystem =
     ActorSystem(actorSystemName(name), actorSystemConfig(context), classloader)
 
+  /**
+   * Strategy method to create the Config for the ActorSystem, based on configuration files found in etc directory,
+   * ensuring that the default/reference configuration is loaded from the akka-actor bundle.
+   * The configuration is based on
+   * File(etc/bundle-SYMBOLICNAME.conf)
+   * File(etc/bundle-ID.conf)
+   * File(etc/akka.conf)
+   * Configuration files found in akka-actor bundle
+   */
+  def extendedActorSystemConfig(context: BundleContext): Config = {
+    val bunleNameAkkaConfig = ConfigFactory.parseFile(new File("etc/bundle-%s.conf" format context.getBundle.getSymbolicName))
+    val bunleIDAkkaConfig = ConfigFactory.parseFile(new File("etc/bundle-%s.conf" format context.getBundle.getBundleId))
+    val defaultAkkaConfig = ConfigFactory.parseFile(new File("etc/akka.conf"))
+    bunleNameAkkaConfig.withFallback(bunleIDAkkaConfig.withFallback(defaultAkkaConfig).withFallback(actorSystemConfig(context)))
+  }
   /**
    * Strategy method to create the Config for the ActorSystem, ensuring that the default/reference configuration is
    * loaded from the akka-actor bundle.
