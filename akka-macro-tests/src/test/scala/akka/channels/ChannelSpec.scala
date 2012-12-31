@@ -13,7 +13,7 @@ import scala.tools.reflect.ToolBoxError
 object ChannelSpec {
 
   trait Msg
-  
+
   trait A extends Msg
   object A extends A
   object A1 extends A
@@ -21,10 +21,10 @@ object ChannelSpec {
 
   trait B extends Msg
   object B extends B
-  
+
   trait C extends Msg
   object C extends C
-  
+
   trait D extends Msg
   object D extends D
 
@@ -48,6 +48,24 @@ object ChannelSpec {
         x ! B
         x ! C
     }
+  }
+
+  // pos compile test for children
+  class Children extends Channels[Parent[TNil], Channel[A, B] :=: Channel[C, D] :=: TNil] {
+    val c = createChild(new Channels[Parent[A :-: TNil], Channel[B, C]:=: TNil] {
+      channel[B] { case (B, s) ⇒ s ! C }
+    })
+
+    var client: ActorRef = _
+    channel[A] {
+      case (A, s) ⇒ c ! B; client = sender
+    }
+    channel[C] {
+      case (C, _) ⇒ client ! C
+    }
+
+    createChild(new Channels[Parent[C :-: TNil], TNil])
+    createChild(new Channels[Parent[A :-: C :-: TNil], TNil])
   }
 }
 
@@ -149,6 +167,36 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
             |}
             """.stripMargin)
       }.message must include("This ChannelRef does not support messages of type akka.channels.ChannelSpec.C.type")
+    }
+
+    "not permit Nothing children" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |new Channels[Parent[TNil], Channel[A, B] :=: Channel[C, D] :=: TNil] {
+            |  createChild(new Channels)
+            |}
+            """.stripMargin)
+      }.message must include("Parent argument must not be Nothing")
+    }
+
+    "not permit too demanding children" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |new Channels[Parent[TNil], Channel[A, B] :=: Channel[C, D] :=: TNil] {
+            |  createChild(new Channels[Parent[B :-: TNil], TNil])
+            |}
+            """.stripMargin)
+      }.message must include("This actor cannot support a child requiring channels akka.channels.ChannelSpec.B")
+    }
+
+    "have a working selfChannel" in {
+      val ref = ChannelExt(system).actorOf(new Children)
+      ref ! A
+      expectMsg(C)
     }
 
   }

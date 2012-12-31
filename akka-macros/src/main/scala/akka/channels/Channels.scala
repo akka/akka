@@ -10,10 +10,15 @@ import scala.reflect.macros.Context
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.macros.Universe
 import scala.runtime.AbstractPartialFunction
+import akka.actor.Props
 
-trait Channels[P <: Parent[_], C <: ChannelList] extends Actor {
+class Channels[P <: Parent[_], C <: ChannelList: TypeTag] extends Actor {
 
   import Channels._
+
+  def createChild[Pa <: Parent[_], Ch <: ChannelList](factory: Channels[Pa, Ch]): ChannelRef[Ch] = macro createChildImpl[C, Pa, Ch]
+
+  implicit val selfChannel = new ChannelRef[C](self)
 
   /*
    * Warning Ugly Hack Ahead
@@ -27,7 +32,7 @@ trait Channels[P <: Parent[_], C <: ChannelList] extends Actor {
    */
   private var behavior = List.empty[Recv[Any, ChannelList]]
 
-  def channel[T]: Channels[P, C]#Behaviorist[T, _ <: ChannelList] = macro Channels.channelImpl[T, C, P, ChannelList]
+  def channel[T]: Channels[P, C]#Behaviorist[T, _ <: ChannelList] = macro channelImpl[T, C, P, ChannelList]
 
   protected def _channel[T, Ch <: ChannelList] = new Behaviorist[T, Ch]
   protected class Behaviorist[T, Ch <: ChannelList] {
@@ -84,6 +89,42 @@ object Channels {
         Select(c.prefix.tree, newTermName("_channel")), List(
           TypeTree().setType(c.weakTypeOf[T]),
           TypeTree().setType(channels))))
+    }
+  }
+
+  def createChildImpl[C <: ChannelList: c.WeakTypeTag, Pa <: Parent[_]: c.WeakTypeTag, Ch <: ChannelList: c.WeakTypeTag](
+    c: Context {
+      type PrefixType = Channels[_, C]
+    })(factory: c.Expr[Channels[Pa, Ch]]): c.Expr[ChannelRef[Ch]] = {
+
+    import c.universe._
+    if (weakTypeOf[Pa] =:= weakTypeOf[Nothing]) {
+      c.abort(c.enclosingPosition, "Parent argument must not be Nothing")
+    }
+    if (weakTypeOf[Ch] =:= weakTypeOf[Nothing]) {
+      c.abort(c.enclosingPosition, "channel list must not be Nothing")
+    }
+    val missing = missingChannels(c.universe)(weakTypeOf[C], parentChannels(c.universe)(weakTypeOf[Pa]))
+    if (missing.isEmpty) {
+      implicit val t = c.TypeTag[Ch](c.weakTypeOf[Ch])
+      reify(new ChannelRef[Ch](c.prefix.splice.context.actorOf(Props(factory.splice))))
+    } else {
+      c.error(c.enclosingPosition, s"This actor cannot support a child requiring channels ${missing mkString ", "}")
+      reify(null)
+    }
+  }
+
+  /**
+   * get all required channels from a Parent[_]
+   */
+  final def parentChannels(u: Universe)(list: u.Type): List[u.Type] = {
+    import u._
+    def rec(l: u.Type, acc: List[u.Type]): List[u.Type] = l match {
+      case TypeRef(_, _, ch :: tail :: Nil) ⇒ rec(tail, ch :: acc)
+      case _                                ⇒ acc.reverse
+    }
+    list match {
+      case TypeRef(_, _, ch :: Nil) ⇒ rec(ch, Nil)
     }
   }
 
