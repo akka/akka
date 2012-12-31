@@ -73,7 +73,7 @@ object AkkaBuild extends Build {
       generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docs.id) map identity
 
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples)
+    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor, mailboxes, zeroMQ, kernel, akkaSbtPlugin, osgi, osgiAries, docs, contrib, samples, macros, macroTests)
   )
 
   lazy val actor = Project(
@@ -409,6 +409,24 @@ object AkkaBuild extends Build {
     )
   ) configs (MultiJvm)
 
+  lazy val macros = Project(
+    id = "akka-macros",
+    base = file("akka-macros"),
+    dependencies = Seq(actor),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _)
+    )
+  )
+
+  lazy val macroTests = Project(
+    id = "akka-macro-tests",
+    base = file("akka-macro-tests"),
+    dependencies = Seq(macros, testkit % "compile;test->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
+    )
+  )
+
   // Settings
 
   override lazy val settings =
@@ -700,7 +718,6 @@ object Dependencies {
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val ariesBlueprint = "org.apache.aries.blueprint" % "org.apache.aries.blueprint"   % "0.3.2"       // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.2.0"       // ApacheV2
-
 
     // Camel Sample
     val camelJetty  = "org.apache.camel"            % "camel-jetty"                  % camelCore.revision // ApacheV2
