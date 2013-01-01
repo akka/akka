@@ -8,11 +8,6 @@ package object channels {
   trait Channel[I, O]
 
   sealed trait ChannelList
-  sealed trait ParentList
-  sealed trait TNil extends ChannelList with ParentList
-
+  sealed trait TNil extends ChannelList
   sealed trait :=:[A <: Channel[_, _], B <: ChannelList] extends ChannelList
-  sealed trait :-:[A, B <: ParentList] extends ParentList
-
-  trait Parent[T <: ParentList]
 }

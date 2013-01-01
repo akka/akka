@@ -11,55 +11,101 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.macros.Universe
 import scala.runtime.AbstractPartialFunction
 import akka.actor.Props
+import scala.collection.immutable
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect.{ classTag, ClassTag }
 
-class Channels[P <: Parent[_], C <: ChannelList: TypeTag] extends Actor {
+/**
+ * Typed channels atop untyped actors.
+ *
+ * The idea is that the actor declares all its input types up front, including
+ * what it expects the sender to handle wrt.replies, and then ChannelRef
+ * carries this information for statically verifying that messages sent to an
+ * actor have an actual chance of being processed.
+ *
+ * There are several implementation-imposed restrictions:
+ *
+ *  - not two channels with different input types may have the same erased
+ *    type; this is currently not enforced at compile time (and leads to
+ *    channels being “ignored” at runtime)
+ *  - messages received by the actor are dispatched to channels based on the
+ *    erased type, which may be less precise than the actual channel type; this
+ *    can lead to ClassCastExceptions if sending through the untyped ActorRef
+ */
+class Channels[P <: ChannelList, C <: ChannelList: TypeTag] extends Actor {
 
   import Channels._
 
-  def createChild[Pa <: Parent[_], Ch <: ChannelList](factory: Channels[Pa, Ch]): ChannelRef[Ch] = macro createChildImpl[C, Pa, Ch]
-
-  implicit val selfChannel = new ChannelRef[C](self)
-
-  /*
-   * Warning Ugly Hack Ahead
-   * 
-   * The current problem is that the partial function literals shall be 
-   * checked against the right types, but that leads to unfortunate 
-   * optimizations in the pattern matcher (it leaves out instanceof checks
-   * based on the static types). Hence the try-catch in receive’s 
-   * applyOrElse implementation. What I’d really like is a way to re-create
-   * the PF literals after type-checking but with a different expected type.
+  /**
+   * Create a child actor with properly typed ChannelRef, verifying that this
+   * actor can handle everything which the child tries to send via its
+   * `parent` ChannelRef.
    */
-  private var behavior = List.empty[Recv[Any, ChannelList]]
+  def createChild[Pa <: ChannelList, Ch <: ChannelList](factory: Channels[Pa, Ch]): ChannelRef[Ch] = macro createChildImpl[C, Pa, Ch]
 
+  /**
+   * Properly typed ChannelRef for the context.parent.
+   */
+  def parentChannel: ChannelRef[P] = new ChannelRef(context.parent)
+
+  /**
+   * The properly typed self-channel is used implicitly when sending to other
+   * typed channels for verifying that replies can be handled.
+   */
+  implicit def selfChannel = new ChannelRef[C](self)
+
+  private var behavior = Map.empty[Class[_], Recv[Any, ChannelList]]
+
+  /**
+   * Declare an input channel of the given type; the returned object takes a partial function:
+   *
+   * {{{
+   * channel[A] {
+   *   case (a, s) =>
+   *     // a is of type A and
+   *     // s is a ChannelRef for the sender, capable of sending the declared reply type for A
+   * }
+   * }}}
+   */
   def channel[T]: Channels[P, C]#Behaviorist[T, _ <: ChannelList] = macro channelImpl[T, C, P, ChannelList]
 
-  protected def _channel[T, Ch <: ChannelList] = new Behaviorist[T, Ch]
-  protected class Behaviorist[T, Ch <: ChannelList] {
-    def apply(recv: Recv[T, Ch]): Unit = behavior ::= recv.asInstanceOf[Recv[Any, ChannelList]]
+  protected def _channel[T, Ch <: ChannelList](cls: Class[_]) = new Behaviorist[T, Ch](cls)
+  protected class Behaviorist[T, Ch <: ChannelList](cls: Class[_]) {
+    def apply(recv: Recv[T, Ch]): Unit =
+      behavior += cls -> recv.asInstanceOf[Recv[Any, ChannelList]]
   }
+
+  /**
+   * Sort so that subtypes always precede their supertypes, but without
+   * obeying any order between unrelated subtypes (insert sort).
+   */
+  private def sortClasses(in: Iterable[Class[_]]): immutable.Seq[Class[_]] =
+    (new ArrayBuffer[Class[_]](in.size) /: in) { (buf, cls) ⇒
+      buf.indexWhere(_ isAssignableFrom cls) match {
+        case -1 ⇒ buf append cls
+        case x  ⇒ buf insert (x, cls)
+      }
+      buf
+    }.to[immutable.IndexedSeq]
 
   final lazy val receive = new AbstractPartialFunction[Any, Unit] {
 
-    val behaviors = behavior.reverse
+    val index = sortClasses(behavior.keys)
 
     override def applyOrElse[A, B >: Unit](x: A, default: A ⇒ B): B = {
-      val envelope = (x, new ChannelRef(sender))
-      def rec(list: List[Recv[Any, ChannelList]]): B = list match {
-        case head :: tail ⇒
-          try head.applyOrElse(envelope, (dummy: (A, ChannelRef[_])) ⇒ rec(tail))
-          catch {
-            // see comment above for why this ugliness
-            case _: ClassCastException ⇒ rec(tail)
-          }
-        case _ ⇒ default(x)
+      val msgClass = x.getClass
+      index find (_ isAssignableFrom msgClass) match {
+        case None      ⇒ default(x)
+        case Some(cls) ⇒ behavior(cls).applyOrElse((x, new ChannelRef(sender)), (pair: (A, ChannelRef[C])) ⇒ default(pair._1))
       }
-      rec(behaviors)
     }
 
     def isDefinedAt(x: Any): Boolean = {
-      val envelope = (x, null) // hmm ...
-      behaviors.exists(_.isDefinedAt(envelope))
+      val msgClass = x.getClass
+      index find (_ isAssignableFrom msgClass) match {
+        case None      ⇒ false
+        case Some(cls) ⇒ behavior(cls).isDefinedAt((x, new ChannelRef(sender)))
+      }
     }
   }
 }
@@ -73,7 +119,7 @@ object Channels {
    * into a _channel[] call with precise reply channel descriptors, so that the
    * partial function it is applied to can enjoy proper type checking.
    */
-  def channelImpl[T: c.WeakTypeTag, C <: ChannelList: c.WeakTypeTag, P <: Parent[_]: c.WeakTypeTag, Ch <: ChannelList](
+  def channelImpl[T: c.WeakTypeTag, C <: ChannelList: c.WeakTypeTag, P <: ChannelList: c.WeakTypeTag, Ch <: ChannelList](
     c: Context {
       type PrefixType = Channels[P, C]
     }): c.Expr[Channels[P, C]#Behaviorist[T, Ch]] = {
@@ -85,14 +131,20 @@ object Channels {
       reify(null)
     } else {
       val channels = toChannels(c.universe)(out)
-      c.Expr(TypeApply(
-        Select(c.prefix.tree, newTermName("_channel")), List(
-          TypeTree().setType(c.weakTypeOf[T]),
-          TypeTree().setType(channels))))
+      c.Expr(Apply(
+        TypeApply(
+          Select(c.prefix.tree, "_channel"), List(
+            TypeTree().setType(c.weakTypeOf[T]),
+            TypeTree().setType(channels))),
+        List(Select(
+          TypeApply(
+            Select(Select(Ident("scala"), "reflect"), "classTag"),
+            List(TypeTree().setType(c.weakTypeOf[T]))),
+          "runtimeClass"))))
     }
   }
 
-  def createChildImpl[C <: ChannelList: c.WeakTypeTag, Pa <: Parent[_]: c.WeakTypeTag, Ch <: ChannelList: c.WeakTypeTag](
+  def createChildImpl[C <: ChannelList: c.WeakTypeTag, Pa <: ChannelList: c.WeakTypeTag, Ch <: ChannelList: c.WeakTypeTag](
     c: Context {
       type PrefixType = Channels[_, C]
     })(factory: c.Expr[Channels[Pa, Ch]]): c.Expr[ChannelRef[Ch]] = {
@@ -104,28 +156,26 @@ object Channels {
     if (weakTypeOf[Ch] =:= weakTypeOf[Nothing]) {
       c.abort(c.enclosingPosition, "channel list must not be Nothing")
     }
-    val missing = missingChannels(c.universe)(weakTypeOf[C], parentChannels(c.universe)(weakTypeOf[Pa]))
+    val missing = missingChannels(c.universe)(weakTypeOf[C], inputChannels(c.universe)(weakTypeOf[Pa]))
     if (missing.isEmpty) {
       implicit val t = c.TypeTag[Ch](c.weakTypeOf[Ch])
       reify(new ChannelRef[Ch](c.prefix.splice.context.actorOf(Props(factory.splice))))
     } else {
       c.error(c.enclosingPosition, s"This actor cannot support a child requiring channels ${missing mkString ", "}")
-      reify(null)
+      reify(???)
     }
   }
 
   /**
    * get all required channels from a Parent[_]
    */
-  final def parentChannels(u: Universe)(list: u.Type): List[u.Type] = {
+  final def inputChannels(u: Universe)(list: u.Type): List[u.Type] = {
     import u._
     def rec(l: u.Type, acc: List[u.Type]): List[u.Type] = l match {
-      case TypeRef(_, _, ch :: tail :: Nil) ⇒ rec(tail, ch :: acc)
-      case _                                ⇒ acc.reverse
+      case TypeRef(_, _, TypeRef(_, _, in :: _) :: tail :: Nil) ⇒ rec(tail, in :: acc)
+      case _ ⇒ acc.reverse
     }
-    list match {
-      case TypeRef(_, _, ch :: Nil) ⇒ rec(ch, Nil)
-    }
+    rec(list, Nil)
   }
 
   /**

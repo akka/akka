@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 import scala.reflect.macros.Universe
 import akka.actor.Actor
 
-class ChannelRef[+T <: ChannelList: TypeTag](val actorRef: ActorRef) {
+class ChannelRef[+T <: ChannelList](val actorRef: ActorRef) extends AnyVal {
 
   def ![M](msg: M): Unit = macro ChannelRef.tell[T, M]
 
