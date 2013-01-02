@@ -2856,14 +2856,13 @@ public class ForkJoinPool extends AbstractExecutorService {
         return Unsafe.instance;
     }
 
-    final static void rethrow(final Throwable t) {
-        throwSoftUnchecked(t, RuntimeException.class);
+    public final static void rethrow(final Throwable t) {
+        ForkJoinPool.<RuntimeException>throwSoftUnchecked(t);
+        return;
     }
 
     @SuppressWarnings("unchecked")
-    private final static <T extends Throwable> void throwSoftUnchecked(
-      final Throwable t,
-      final Class<T> infer) throws T {
+    private final static <T extends Throwable> void throwSoftUnchecked(final Throwable t) throws T {
           throw (T)t;
     }
 

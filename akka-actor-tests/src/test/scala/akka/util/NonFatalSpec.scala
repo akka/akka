@@ -5,6 +5,7 @@ package akka.util
 
 import org.scalatest.matchers.MustMatchers
 import akka.testkit.AkkaSpec
+import java.io.IOException
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class NonFatalSpec extends AkkaSpec with MustMatchers {
@@ -55,6 +56,19 @@ class NonFatalSpec extends AkkaSpec with MustMatchers {
       } catch {
         case NonFatal(_) | _: InterruptedException ⇒ // as expected
       }
+    }
+
+    "be able to rethrow non-RuntimeException" in {
+      val ioe = new IOException
+      val e = new Exception
+      val re = new RuntimeException
+      val err = new Error
+      val t = new Throwable
+      intercept[IOException] { akka.jsr166y.ForkJoinPool.rethrow(ioe) } must be(ioe)
+      intercept[Exception] { akka.jsr166y.ForkJoinPool.rethrow(e) } must be(e)
+      intercept[RuntimeException] { akka.jsr166y.ForkJoinPool.rethrow(re) } must be(re)
+      intercept[Error] { akka.jsr166y.ForkJoinPool.rethrow(err) } must be(err)
+      intercept[Throwable] { akka.jsr166y.ForkJoinPool.rethrow(t) } must be(t)
     }
 
   }
