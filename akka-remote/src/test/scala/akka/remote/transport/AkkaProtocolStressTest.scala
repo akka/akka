@@ -5,6 +5,9 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import AkkaProtocolStressTest._
 import akka.actor._
 import scala.concurrent.duration._
+import akka.testkit.TestEvent
+import akka.testkit.EventFilter
+import akka.remote.EndpointException
 
 object AkkaProtocolStressTest {
   val configA: Config = ConfigFactory parseString ("""
@@ -26,7 +29,7 @@ object AkkaProtocolStressTest {
 
       remoting.transports.tcp {
         applied-adapters = ["gremlin"]
-        port = 12345
+        port = 0
       }
 
     }
@@ -62,17 +65,15 @@ object AkkaProtocolStressTest {
 
 class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {
 
-  val configB = ConfigFactory.parseString("akka.remoting.transports.tcp.port = 12346")
-    .withFallback(system.settings.config).resolve()
-
-  val systemB = ActorSystem("systemB", configB)
+  val systemB = ActorSystem("systemB", system.settings.config)
   val remote = systemB.actorOf(Props(new Actor {
     def receive = {
       case seq: Int ⇒ sender ! seq
     }
   }), "echo")
 
-  val here = system.actorFor("tcp.gremlin.akka://systemB@localhost:12346/user/echo")
+  val rootB = RootActorPath(systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress)
+  val here = system.actorFor(rootB / "user" / "echo")
 
   "AkkaProtocolTransport" must {
     "guarantee at-most-once delivery and message ordering despite packet loss" taggedAs TimingTest in {
@@ -82,6 +83,13 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
         case (received: Int, lost: Int) ⇒
           log.debug(s" ######## Received ${received - lost} messages from ${received} ########")
       }
+      system.eventStream.publish(TestEvent.Mute(
+        EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+      systemB.eventStream.publish(TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
     }
   }
 
