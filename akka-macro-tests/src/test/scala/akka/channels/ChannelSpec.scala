@@ -29,7 +29,7 @@ object ChannelSpec {
   object D extends D
 
   // used for sender verification in the first two test cases
-  class Tester extends Channels[TNil, Channel[A, C] :=: Channel[B, D] :=: TNil] {
+  class Tester extends Channels[TNil, (A, C) :=: (B, D) :=: TNil] {
     channel[A.type] {
       case (A, s) ⇒ s ! C
     }
@@ -37,12 +37,12 @@ object ChannelSpec {
       case (B, s) ⇒ s ! D
     }
   }
-  class RecvC(ref: ActorRef) extends Channels[TNil, Channel[C, Nothing] :=: TNil] {
+  class RecvC(ref: ActorRef) extends Channels[TNil, (C, Nothing) :=: TNil] {
     channel[C] { case (x, _) ⇒ ref ! x }
   }
 
   // pos compile test for multiple reply channels
-  class SubChannels extends Channels[TNil, Channel[A, B] :=: Channel[A, C] :=: TNil] {
+  class SubChannels extends Channels[TNil, (A, B) :=: (A, C) :=: TNil] {
     channel[A] {
       case (A1, x) ⇒
         x ! B
@@ -51,8 +51,8 @@ object ChannelSpec {
   }
 
   // pos compile test for children
-  class Children extends Channels[TNil, Channel[A, B] :=: Channel[C, D] :=: TNil] {
-    val c = createChild(new Channels[Channel[A, Nothing]:=: TNil, Channel[B, C]:=: TNil] {
+  class Children extends Channels[TNil, (A, B) :=: (C, D) :=: TNil] {
+    val c = createChild(new Channels[(A, Nothing) :=: TNil, (B, C) :=: TNil] {
       channel[B] { case (B, s) ⇒ s ! C }
     })
 
@@ -64,8 +64,8 @@ object ChannelSpec {
       case (C, _) ⇒ client ! C
     }
 
-    createChild(new Channels[Channel[C, Nothing]:=: TNil, TNil])
-    createChild(new Channels[Channel[A, Nothing]:=: Channel[C, Nothing]:=: TNil, TNil])
+    createChild(new Channels[(C, Nothing) :=: TNil, TNil])
+    createChild(new Channels[(A, Nothing) :=:(C, Nothing) :=: TNil, TNil])
   }
 }
 
@@ -98,7 +98,7 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |new ChannelRef[Channel[A, C] :=: TNil](null) ! B
+            |new ChannelRef[(A, C) :=: TNil](null) ! B
             """.stripMargin)
       }.message must include("This ChannelRef does not support messages of type akka.channels.ChannelSpec.B.type")
     }
@@ -108,7 +108,7 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |new ChannelRef[Channel[A, C] :=: Channel[B, D] :=: TNil](null) ! C
+            |new ChannelRef[(A, C) :=: (B, D) :=: TNil](null) ! C
             """.stripMargin)
       }.message must include("This ChannelRef does not support messages of type akka.channels.ChannelSpec.C.type")
     }
@@ -118,15 +118,15 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |implicit val s = new ChannelRef[Channel[C, D] :=: TNil](null)
-            |new ChannelRef[Channel[A, B] :=: TNil](null) ! A
+            |implicit val s = new ChannelRef[(C, D) :=: TNil](null)
+            |new ChannelRef[(A, B) :=: TNil](null) ! A
             """.stripMargin)
       }.message must include("The implicit sender `value s` does not support messages of the reply types akka.channels.ChannelSpec.B")
     }
 
     "permit any sender for Nothing replies" in {
       implicit val s = new ChannelRef[TNil](testActor)
-      new ChannelRef[Channel[A, Nothing]:=: TNil](testActor) ! A
+      new ChannelRef[(A, Nothing) :=: TNil](testActor) ! A
       expectMsg(A)
     }
 
@@ -136,7 +136,7 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
             |import akka.channels._
             |import ChannelSpec._
             |implicit val s = new ChannelRef[TNil](null)
-            |new ChannelRef[Channel[A, B] :=: Channel[A, C] :=: TNil](null) ! A
+            |new ChannelRef[(A, B) :=: (A, C) :=: TNil](null) ! A
             """.stripMargin)
       }.message must include("The implicit sender `value s` does not support messages of the reply types akka.channels.ChannelSpec.B, akka.channels.ChannelSpec.C")
     }
@@ -146,7 +146,7 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |new Channels[TNil, Channel[A, B] :=: TNil] {
+            |new Channels[TNil, (A, B) :=: TNil] {
             |  channel[B] {
             |    case (B, _) =>
             |  }
@@ -160,7 +160,7 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |new Channels[TNil, Channel[A, B] :=: Channel[A1.type, C] :=: TNil] {
+            |new Channels[TNil, (A, B) :=: (A1.type, C) :=: TNil] {
             |  channel[A] {
             |    case (A1, x) => x ! C
             |  }
@@ -174,7 +174,7 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |new Channels[TNil, Channel[A, B] :=: Channel[C, D] :=: TNil] {
+            |new Channels[TNil, (A, B) :=: (C, D) :=: TNil] {
             |  createChild(new Channels)
             |}
             """.stripMargin)
@@ -186,8 +186,8 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
         eval("""
             |import akka.channels._
             |import ChannelSpec._
-            |new Channels[TNil, Channel[A, B] :=: Channel[C, D] :=: TNil] {
-            |  createChild(new Channels[Channel[B, Nothing] :=: TNil, TNil])
+            |new Channels[TNil, (A, B) :=: (C, D) :=: TNil] {
+            |  createChild(new Channels[(B, Nothing) :=: TNil, TNil])
             |}
             """.stripMargin)
       }.message must include("This actor cannot support a child requiring channels akka.channels.ChannelSpec.B")

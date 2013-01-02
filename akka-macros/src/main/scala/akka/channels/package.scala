@@ -5,9 +5,7 @@
 package akka
 
 package object channels {
-  trait Channel[I, O]
-
   sealed trait ChannelList
   sealed trait TNil extends ChannelList
-  sealed trait :=:[A <: Channel[_, _], B <: ChannelList] extends ChannelList
+  sealed trait :=:[A <: Tuple2[_, _], B <: ChannelList] extends ChannelList
 }

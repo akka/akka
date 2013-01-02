@@ -221,7 +221,7 @@ object Channels {
       case head :: (tail: List[Type]) ⇒
         rec(tail,
           appliedType(weakTypeOf[:=:[_, _]].typeConstructor, List(
-            appliedType(weakTypeOf[Channel[_, _]].typeConstructor, List(
+            appliedType(weakTypeOf[Tuple2[_, _]].typeConstructor, List(
               head,
               weakTypeOf[Nothing])),
             acc)))
