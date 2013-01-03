@@ -26,7 +26,12 @@ akka {
   val other = ActorSystem("other", ConfigFactory.parseString("akka.remoting.transports.tcp.port=2666")
     .withFallback(system.settings.config))
 
-  override def atTermination() {
+  override def beforeTermination() {
+    system.eventStream.publish(TestEvent.Mute(
+      EventFilter.warning(pattern = "received dead letter.*Disassociate")))
+  }
+
+  override def afterTermination() {
     other.shutdown()
   }
 

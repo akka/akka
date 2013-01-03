@@ -8,6 +8,9 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, TokenBucket, SetThrottle }
 import akka.remote.RemoteActorRefProvider
+import akka.testkit.TestEvent
+import akka.testkit.EventFilter
+import akka.remote.EndpointException
 
 object ThrottlerTransportAdapterSpec {
   val configA: Config = ConfigFactory parseString ("""
@@ -19,7 +22,7 @@ object ThrottlerTransportAdapterSpec {
       remoting.log-remote-lifecycle-events = on
 
       remoting.transports.tcp.applied-adapters = ["trttl"]
-      remoting.transports.tcp.port = 12345
+      remoting.transports.tcp.port = 0
     }
                                                    """)
 
@@ -56,28 +59,37 @@ object ThrottlerTransportAdapterSpec {
 }
 
 class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {
-  val configB = ConfigFactory.parseString("akka.remoting.transports.tcp.port = 12346")
-    .withFallback(system.settings.config).resolve()
 
-  val systemB = ActorSystem("systemB", configB)
+  val systemB = ActorSystem("systemB", system.settings.config)
   val remote = systemB.actorOf(Props[Echo], "echo")
 
-  val here = system.actorFor("tcp.trttl.akka://systemB@localhost:12346/user/echo")
+  val rootB = RootActorPath(systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress)
+  val here = system.actorFor(rootB / "user" / "echo")
 
   "ThrottlerTransportAdapter" must {
     "maintain average message rate" taggedAs TimingTest in {
       Await.result(
         system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport
-          .managementCommand(SetThrottle(Address("akka", "systemB", "localhost", 12346), Direction.Send, TokenBucket(200, 500, 0, 0))), 3 seconds)
+          .managementCommand(SetThrottle(Address("akka", "systemB", "localhost", rootB.address.port.get), Direction.Send, TokenBucket(200, 500, 0, 0))), 3.seconds)
       val tester = system.actorOf(Props(new ThrottlingTester(here, self))) ! "start"
 
-      expectMsgPF((TotalTime + 3) seconds) {
+      expectMsgPF((TotalTime + 3).seconds) {
         case time: Long ⇒ log.warning("Total time of transmission: " + NANOSECONDS.toSeconds(time))
       }
     }
   }
 
-  override def atTermination(): Unit = systemB.shutdown()
+  override def beforeTermination() {
+    system.eventStream.publish(TestEvent.Mute(
+      EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
+      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+    systemB.eventStream.publish(TestEvent.Mute(
+      EventFilter[EndpointException](),
+      EventFilter.error(start = "AssociationError"),
+      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+  }
+
+  override def afterTermination(): Unit = systemB.shutdown()
 }
 
 class ThrottlerTransportAdapterGenericSpec extends GenericTransportSpec(withAkkaProtocol = true) {

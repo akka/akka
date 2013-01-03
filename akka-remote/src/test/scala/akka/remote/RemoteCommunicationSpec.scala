@@ -41,20 +41,31 @@ akka {
   remote.transport = "akka.remote.netty.NettyRemoteTransport"
   remote.netty {
     hostname = localhost
-    port = 12345
-  }
-  actor.deployment {
-    /blub.remote = "akka://remote-sys@localhost:12346"
-    /looker/child.remote = "akka://remote-sys@localhost:12346"
-    /looker/child/grandchild.remote = "akka://RemoteCommunicationSpec@localhost:12345"
+    port = 0
   }
 }
                                                """) with ImplicitSender with DefaultTimeout {
 
   import RemoteCommunicationSpec._
 
-  val conf = ConfigFactory.parseString("akka.remote.netty.port=12346").withFallback(system.settings.config)
-  val other = ActorSystem("remote-sys", conf)
+  val other = ActorSystem("remote-sys", system.settings.config)
+
+  val localAddr = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  val remoteAddr = other.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+
+  val deploys = Seq(
+    Deploy("/blub", scope = RemoteScope(remoteAddr)),
+    Deploy("/looker/child", scope = RemoteScope(remoteAddr)),
+    Deploy("/looker/child/grandchild", scope = RemoteScope(localAddr)))
+
+  def deploy(sys: ActorSystem, d: Deploy) {
+    sys.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].deployer.deploy(d)
+  }
+
+  for (d ← deploys) {
+    deploy(system, d)
+    deploy(other, d)
+  }
 
   val remote = other.actorOf(Props(new Actor {
     def receive = {
@@ -62,9 +73,9 @@ akka {
     }
   }), "echo")
 
-  val here = system.actorFor("akka://remote-sys@localhost:12346/user/echo")
+  val here = system.actorFor(RootActorPath(remoteAddr) / "user" / "echo")
 
-  override def atTermination() {
+  override def afterTermination() {
     other.shutdown()
   }
 
@@ -81,7 +92,7 @@ akka {
       val old = other.eventStream.logLevel
       other.eventStream.setLogLevel(Logging.DebugLevel)
       EventFilter.debug(start = "dropping", occurrences = 1).intercept {
-        system.actorFor("akka://remotesys@localhost:12346/user/echo") ! "ping"
+        system.actorFor(RootActorPath(remoteAddr.copy(system = "remotesys")) / "user" / "echo") ! "ping"
       }(other)
       other.eventStream.setLogLevel(old)
     }
@@ -95,13 +106,13 @@ akka {
 
     "send dead letters on remote if actor does not exist" in {
       EventFilter.warning(pattern = "dead.*buh", occurrences = 1).intercept {
-        system.actorFor("akka://remote-sys@localhost:12346/does/not/exist") ! "buh"
+        system.actorFor(RootActorPath(remoteAddr) / "does" / "not" / "exist") ! "buh"
       }(other)
     }
 
     "create and supervise children on remote node" in {
       val r = system.actorOf(Props[Echo], "blub")
-      r.path.toString must be === "akka://remote-sys@localhost:12346/remote/akka/RemoteCommunicationSpec@localhost:12345/user/blub"
+      r.path.toString must be === s"akka://remote-sys@localhost:${remoteAddr.port.get}/remote/akka/RemoteCommunicationSpec@localhost:${localAddr.port.get}/user/blub"
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {

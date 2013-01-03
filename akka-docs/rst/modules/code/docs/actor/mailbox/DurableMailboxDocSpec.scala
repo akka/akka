@@ -127,7 +127,7 @@ class MyMailboxSpec extends DurableMailboxSpec("MyStorage", MyMailboxSpec.config
   override def atStartup() {
   }
 
-  override def atTermination() {
+  override def afterTermination() {
   }
 
   "MyMailbox" must {
