@@ -34,7 +34,8 @@ private[remote] trait UdpHandlers extends CommonHandlers {
         initUdp(e.getChannel, e.getRemoteAddress, e.getMessage.asInstanceOf[ChannelBuffer])
       } else {
         val listener = transport.udpConnectionTable.get(inetSocketAddress)
-        listener notify InboundPayload(ByteString(e.getMessage.asInstanceOf[ChannelBuffer].array()))
+        val bytes: Array[Byte] = e.getMessage.asInstanceOf[ChannelBuffer].array()
+        if (bytes.length > 0)listener notify InboundPayload(ByteString(bytes))
       }
     case _ ⇒
   }
