@@ -96,7 +96,7 @@ class Channels[P <: ChannelList, C <: ChannelList: TypeTag] extends Actor {
       val msgClass = x.getClass
       index find (_ isAssignableFrom msgClass) match {
         case None      ⇒ default(x)
-        case Some(cls) ⇒ behavior(cls).applyOrElse((x, new ChannelRef(sender)), (pair: (A, ChannelRef[C])) ⇒ default(pair._1))
+        case Some(cls) ⇒ behavior(cls).apply(x, new ChannelRef(sender))
       }
     }
 
@@ -104,7 +104,7 @@ class Channels[P <: ChannelList, C <: ChannelList: TypeTag] extends Actor {
       val msgClass = x.getClass
       index find (_ isAssignableFrom msgClass) match {
         case None      ⇒ false
-        case Some(cls) ⇒ behavior(cls).isDefinedAt((x, new ChannelRef(sender)))
+        case Some(cls) ⇒ true
       }
     }
   }
@@ -112,7 +112,7 @@ class Channels[P <: ChannelList, C <: ChannelList: TypeTag] extends Actor {
 
 object Channels {
 
-  type Recv[T, Ch <: ChannelList] = PartialFunction[(T, ChannelRef[Ch]), Unit]
+  type Recv[T, Ch <: ChannelList] = Function2[T, ChannelRef[Ch], Unit]
 
   /**
    * This macro transforms a channel[] call which returns “some” Behaviorist
@@ -220,7 +220,7 @@ object Channels {
     def rec(l: List[Type], acc: Type): Type = l match {
       case head :: (tail: List[Type]) ⇒
         rec(tail,
-          appliedType(weakTypeOf[:=:[_, _]].typeConstructor, List(
+          appliedType(weakTypeOf[:+:[_, _]].typeConstructor, List(
             appliedType(weakTypeOf[Tuple2[_, _]].typeConstructor, List(
               head,
               weakTypeOf[Nothing])),
