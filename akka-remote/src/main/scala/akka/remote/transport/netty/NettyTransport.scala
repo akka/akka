@@ -11,7 +11,7 @@ import com.typesafe.config.Config
 import java.net.{ UnknownHostException, SocketAddress, InetAddress, InetSocketAddress, ConnectException }
 import java.util.concurrent.{ ConcurrentHashMap, Executor, Executors, CancellationException }
 import org.jboss.netty.bootstrap.{ ConnectionlessBootstrap, Bootstrap, ClientBootstrap, ServerBootstrap }
-import org.jboss.netty.buffer.{ChannelBuffers, ChannelBuffer}
+import org.jboss.netty.buffer.{ ChannelBuffers, ChannelBuffer }
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ ChannelGroupFuture, ChannelGroupFutureListener }
 import org.jboss.netty.channel.socket.nio.{ NioDatagramChannelFactory, NioServerSocketChannelFactory, NioClientSocketChannelFactory }
@@ -241,7 +241,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   private val serverPipelineFactory: ChannelPipelineFactory = new ChannelPipelineFactory {
     override def getPipeline: ChannelPipeline = {
       val pipeline = newPipeline
-      if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(false))
+      if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = false))
       val handler = if (isDatagram) new UdpServerHandler(NettyTransport.this, associationListenerPromise.future)
       else new TcpServerHandler(NettyTransport.this, associationListenerPromise.future)
       pipeline.addLast("ServerHandler", handler)
@@ -252,7 +252,7 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   private def clientPipelineFactory(statusPromise: Promise[AssociationHandle]): ChannelPipelineFactory = new ChannelPipelineFactory {
     override def getPipeline: ChannelPipeline = {
       val pipeline = newPipeline
-      if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(true))
+      if (EnableSsl) pipeline.addFirst("SslHandler", sslHandler(isClient = true))
       val handler = if (isDatagram) new UdpClientHandler(NettyTransport.this, statusPromise)
       else new TcpClientHandler(NettyTransport.this, statusPromise)
       pipeline.addLast("clienthandler", handler)
