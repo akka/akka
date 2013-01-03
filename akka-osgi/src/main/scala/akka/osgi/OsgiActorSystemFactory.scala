@@ -37,23 +37,19 @@ class OsgiActorSystemFactory(val context: BundleContext, val fallbackClassLoader
    * Strategy method to create the Config for the ActorSystem, based on configuration files found in etc directory,
    * ensuring that the default/reference configuration is loaded from the akka-actor bundle.
    * The configuration is based on
-   * File(etc/bundle-SYMBOLICNAME.conf)
-   * File(etc/bundle-ID.conf)
-   * File(etc/akka.conf)
+   * etc/bundle-SYMBOLICNAME, etc/bundle-ID, etc/akka.conf
+   * in either ".conf", ".properties", ".json" formats
    * Configuration files found in akka-actor bundle
    */
-  def extendedActorSystemConfig(context: BundleContext): Config = {
-    val bunleNameAkkaConfig = ConfigFactory.parseFile(new File("etc/bundle-%s.conf" format context.getBundle.getSymbolicName))
-    val bunleIDAkkaConfig = ConfigFactory.parseFile(new File("etc/bundle-%s.conf" format context.getBundle.getBundleId))
-    val defaultAkkaConfig = ConfigFactory.parseFile(new File("etc/akka.conf"))
-    bunleNameAkkaConfig.withFallback(bunleIDAkkaConfig.withFallback(defaultAkkaConfig).withFallback(actorSystemConfig(context)))
+  def actorSystemConfig(context: BundleContext): Config = {
+    val bundleSymbolicName = context.getBundle.getSymbolicName
+    val bundleId = context.getBundle.getBundleId
+    val acceptedFileExtension = List("conf", "properties", "json")
+    val acceptedFileName = List(s"bundle-$bundleSymbolicName", s"bundle-$bundleId", "akka")
+    val configurationFiles = acceptedFileName.flatMap(x => acceptedFileExtension.map(y => s"etc/$x.$y"))
+    val applicationConfiguration = configurationFiles.foldLeft(ConfigFactory.empty())((x, y) => x.withFallback(ConfigFactory.parseFileAnySyntax(new File(y))))
+    applicationConfiguration.withFallback(ConfigFactory.load(classloader).withFallback(ConfigFactory.defaultReference(OsgiActorSystemFactory.akkaActorClassLoader)))
   }
-  /**
-   * Strategy method to create the Config for the ActorSystem, ensuring that the default/reference configuration is
-   * loaded from the akka-actor bundle.
-   */
-  def actorSystemConfig(context: BundleContext): Config =
-    ConfigFactory.load(classloader).withFallback(ConfigFactory.defaultReference(OsgiActorSystemFactory.akkaActorClassLoader))
 
   /**
    * Determine the name for the [[akka.actor.ActorSystem]]
