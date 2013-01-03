@@ -92,7 +92,7 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
       expectMsg(C)
       lastSender must be(sender.actorRef)
     }
-    
+
     "correctly dispatch to subchannels" in {
       val ref = ChannelExt(system).actorOf(new Tester)
       implicit val sender = ChannelExt(system).actorOf(new RecvC(testActor))
@@ -205,6 +205,30 @@ class ChannelSpec extends AkkaSpec with ImplicitSender {
       val ref = ChannelExt(system).actorOf(new Children)
       ref ! A
       expectMsg(C)
+    }
+
+    "have a working parentChannel" in {
+      val parent = ChannelExt(system).actorOf(new Channels[TNil, (A, Nothing) :+: TNil] {
+        createChild(new Channels[(A, Nothing) :+: TNil, TNil] {
+          parentChannel ! A
+        })
+        channel[A] { (msg, snd) ⇒ testActor ! msg }
+      })
+      expectMsg(A)
+    }
+
+    "not permit sending wrong things to parents" in {
+      intercept[ToolBoxError] {
+        eval("""
+            |import akka.channels._
+            |import ChannelSpec._
+            |new Channels[TNil, (A, Nothing) :+: TNil] {
+            |  createChild(new Channels[(A, Nothing) :+: TNil, TNil] {
+            |    parentChannel ! B
+            |  })
+            |}
+            """.stripMargin)
+      }.message must include("This ChannelRef does not support messages of type akka.channels.ChannelSpec.B.type")
     }
 
   }
