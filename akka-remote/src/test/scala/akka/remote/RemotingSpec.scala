@@ -53,9 +53,9 @@ object RemotingSpec {
       remoting.log-remote-lifecycle-events = on
       remoting.enabled-transports = [test, tcp, udp, ssl]
 
-      remoting.transports.tcp.port = 12345
-      remoting.transports.udp.port = 12345
-      remoting.transports.ssl.port = 23456
+      remoting.transports.tcp.port = 0
+      remoting.transports.udp.port = 0
+      remoting.transports.ssl.port = 0
       remoting.transports.ssl.ssl = ${common-ssl-settings}
 
       remoting.transports.test {
@@ -69,9 +69,6 @@ object RemotingSpec {
 
       actor.deployment {
         /blub.remote = "test.akka://remote-sys@localhost:12346"
-        /gonk.remote = "tcp.akka://remote-sys@localhost:12346"
-        /zagzag.remote = "udp.akka://remote-sys@localhost:12346"
-        /roghtaar.remote = "tcp.ssl.akka://remote-sys@localhost:23457"
         /looker/child.remote = "test.akka://remote-sys@localhost:12346"
         /looker/child/grandchild.remote = "test.akka://RemotingSpec@localhost:12345"
       }
@@ -90,13 +87,24 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
   val conf = ConfigFactory.parseString(
     """
       akka.remoting.transports {
-        tcp.port = 12346
-        udp.port = 12346
-        ssl.port = 23457
         test.local-address = "test://remote-sys@localhost:12346"
       }
     """).withFallback(system.settings.config).resolve()
   val other = ActorSystem("remote-sys", conf)
+
+  for (
+    (name, proto) ← Seq(
+      "/gonk" -> "tcp",
+      "/zagzag" -> "udp",
+      "/roghtaar" -> "tcp.ssl")
+  ) deploy(system, Deploy(name, scope = RemoteScope(addr(other, proto))))
+
+  def addr(sys: ActorSystem, proto: String) =
+    sys.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address(s"$proto.akka", "", "", 0)).get
+  def port(sys: ActorSystem, proto: String) = addr(sys, proto).port.get
+  def deploy(sys: ActorSystem, d: Deploy) {
+    sys.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].deployer.deploy(d)
+  }
 
   val remote = other.actorOf(Props(new Actor {
     def receive = {
@@ -119,7 +127,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     }
 
     "send error message for wrong address" in {
-      EventFilter.error(start = "AssociationError").intercept {
+      filterEvents(EventFilter[EndpointException](occurrences = 6), EventFilter.error(start = "Association", occurrences = 6)) {
         system.actorFor("test.akka://nonexistingsystem@localhost:12346/user/echo") ! "ping"
       }
     }
@@ -183,7 +191,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "be able to use multiple transports and use the appropriate one (TCP)" in {
       val r = system.actorOf(Props[Echo], "gonk")
-      r.path.toString must be === "tcp.akka://remote-sys@localhost:12346/remote/tcp.akka/RemotingSpec@localhost:12345/user/gonk"
+      r.path.toString must be ===
+        s"tcp.akka://remote-sys@localhost:${port(other, "tcp")}/remote/tcp.akka/RemotingSpec@localhost:${port(system, "tcp")}/user/gonk"
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
@@ -198,7 +207,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "be able to use multiple transports and use the appropriate one (UDP)" in {
       val r = system.actorOf(Props[Echo], "zagzag")
-      r.path.toString must be === "udp.akka://remote-sys@localhost:12346/remote/udp.akka/RemotingSpec@localhost:12345/user/zagzag"
+      r.path.toString must be ===
+        s"udp.akka://remote-sys@localhost:${port(other, "udp")}/remote/udp.akka/RemotingSpec@localhost:${port(system, "udp")}/user/zagzag"
       r ! 42
       expectMsg(10 seconds, 42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
@@ -213,7 +223,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
     "be able to use multiple transports and use the appropriate one (SSL)" in {
       val r = system.actorOf(Props[Echo], "roghtaar")
-      r.path.toString must be === "tcp.ssl.akka://remote-sys@localhost:23457/remote/tcp.ssl.akka/RemotingSpec@localhost:23456/user/roghtaar"
+      r.path.toString must be ===
+        s"tcp.ssl.akka://remote-sys@localhost:${port(other, "tcp.ssl")}/remote/tcp.ssl.akka/RemotingSpec@localhost:${port(system, "tcp.ssl")}/user/roghtaar"
       r ! 42
       expectMsg(10 seconds, 42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
@@ -224,6 +235,15 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg(42)
       system.stop(r)
       expectMsg("postStop")
+    }
+
+    "shut down more logging" in {
+      system.eventStream.publish(TestEvent.Mute(
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+      other.eventStream.publish(TestEvent.Mute(
+        EventFilter[EndpointException](),
+        EventFilter.error(start = "AssociationError"),
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
     }
 
   }
