@@ -31,7 +31,7 @@ akka {
       EventFilter.warning(pattern = "received dead letter.*Disassociate")))
   }
 
-  override def atTermination() {
+  override def afterTermination() {
     other.shutdown()
   }
 

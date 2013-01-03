@@ -37,7 +37,7 @@ akka.loglevel = DEBUG
   val target1 = other.actorFor(RootActorPath(addr) / "remote")
   val target2 = other.actorFor(RootActorPath(addr) / testActor.path.elements)
 
-  override def atTermination() {
+  override def afterTermination() {
     other.shutdown()
   }
 

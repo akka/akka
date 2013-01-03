@@ -77,14 +77,14 @@ abstract class AkkaSpec(_system: ActorSystem)
         system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
         println(system.asInstanceOf[ActorSystemImpl].printTree)
     }
-    atTermination()
+    afterTermination()
   }
 
   protected def atStartup() {}
 
   protected def beforeTermination() {}
 
-  protected def atTermination() {}
+  protected def afterTermination() {}
 
   def spawn(dispatcherId: String = Dispatchers.DefaultDispatcherId)(body: ⇒ Unit): Unit =
     Future(body)(system.dispatchers.lookup(dispatcherId))

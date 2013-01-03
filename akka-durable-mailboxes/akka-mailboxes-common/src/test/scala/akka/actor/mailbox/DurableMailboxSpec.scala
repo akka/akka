@@ -84,14 +84,14 @@ abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
     try system.awaitTermination(5 seconds) catch {
       case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }
-    atTermination()
+    afterTermination()
   }
 
   /**
    * May be implemented in concrete subclass to do additional things once after all
    * test cases have been run.
    */
-  def atTermination() {}
+  def afterTermination() {}
 
   protected def streamMustContain(in: InputStream, words: String): Unit = {
     val output = new Array[Byte](8192)

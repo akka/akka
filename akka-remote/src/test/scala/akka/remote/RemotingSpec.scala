@@ -114,7 +114,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
   val here = system.actorFor("test.akka://remote-sys@localhost:12346/user/echo")
 
-  override def atTermination() {
+  override def afterTermination() {
     other.shutdown()
     AssociationRegistry.clear()
   }

@@ -272,7 +272,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
         if (verifySystemShutdown) throw new RuntimeException(msg)
         else system.log.warning(msg)
     }
-    atTermination()
+    afterTermination()
   }
 
   /**
@@ -293,7 +293,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   /**
    * Override this method to do something when the whole test is terminating.
    */
-  protected def atTermination(): Unit = {}
+  protected def afterTermination(): Unit = {}
 
   /**
    * All registered roles

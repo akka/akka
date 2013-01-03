@@ -70,7 +70,7 @@ akka.actor.deployment {
 }""").withFallback(system.settings.config)
   val otherSystem = ActorSystem("remote-sys", conf)
 
-  override def atTermination() {
+  override def afterTermination() {
     otherSystem.shutdown()
   }
 

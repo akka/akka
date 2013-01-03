@@ -75,7 +75,7 @@ akka {
 
   val here = system.actorFor(RootActorPath(remoteAddr) / "user" / "echo")
 
-  override def atTermination() {
+  override def afterTermination() {
     other.shutdown()
   }
 
