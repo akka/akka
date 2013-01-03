@@ -79,7 +79,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
     "guarantee at-most-once delivery and message ordering despite packet loss" taggedAs TimingTest in {
       val tester = system.actorOf(Props(new SequenceVerifier(here, self))) ! "start"
 
-      expectMsgPF(30 seconds) {
+      expectMsgPF(30.seconds) {
         case (received: Int, lost: Int) ⇒
           log.debug(s" ######## Received ${received - lost} messages from ${received} ########")
       }

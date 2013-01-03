@@ -210,7 +210,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       r.path.toString must be ===
         s"udp.akka://remote-sys@localhost:${port(other, "udp")}/remote/udp.akka/RemotingSpec@localhost:${port(system, "udp")}/user/zagzag"
       r ! 42
-      expectMsg(10 seconds, 42)
+      expectMsg(10.seconds, 42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
         r ! new Exception("crash")
       }(other)
@@ -226,7 +226,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       r.path.toString must be ===
         s"tcp.ssl.akka://remote-sys@localhost:${port(other, "tcp.ssl")}/remote/tcp.ssl.akka/RemotingSpec@localhost:${port(system, "tcp.ssl")}/user/roghtaar"
       r ! 42
-      expectMsg(10 seconds, 42)
+      expectMsg(10.seconds, 42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
         r ! new Exception("crash")
       }(other)

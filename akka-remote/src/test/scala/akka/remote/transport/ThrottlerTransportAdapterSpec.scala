@@ -70,10 +70,10 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
     "maintain average message rate" taggedAs TimingTest in {
       Await.result(
         system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport
-          .managementCommand(SetThrottle(Address("akka", "systemB", "localhost", rootB.address.port.get), Direction.Send, TokenBucket(200, 500, 0, 0))), 3 seconds)
+          .managementCommand(SetThrottle(Address("akka", "systemB", "localhost", rootB.address.port.get), Direction.Send, TokenBucket(200, 500, 0, 0))), 3.seconds)
       val tester = system.actorOf(Props(new ThrottlingTester(here, self))) ! "start"
 
-      expectMsgPF((TotalTime + 3) seconds) {
+      expectMsgPF((TotalTime + 3).seconds) {
         case time: Long ⇒ log.warning("Total time of transmission: " + NANOSECONDS.toSeconds(time))
       }
       system.eventStream.publish(TestEvent.Mute(
