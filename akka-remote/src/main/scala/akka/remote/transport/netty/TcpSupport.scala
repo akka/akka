@@ -32,7 +32,8 @@ private[remote] trait TcpHandlers extends CommonHandlers {
   }
 
   override def onMessage(ctx: ChannelHandlerContext, e: MessageEvent) {
-    notifyListener(e.getChannel, InboundPayload(ByteString(e.getMessage.asInstanceOf[ChannelBuffer].array())))
+    val bytes: Array[Byte] = e.getMessage.asInstanceOf[ChannelBuffer].array()
+    if (bytes.length > 0) notifyListener(e.getChannel, InboundPayload(ByteString(bytes)))
   }
 
   override def onException(ctx: ChannelHandlerContext, e: ExceptionEvent) {
