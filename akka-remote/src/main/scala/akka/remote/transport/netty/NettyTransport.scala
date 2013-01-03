@@ -11,7 +11,7 @@ import com.typesafe.config.Config
 import java.net.{ UnknownHostException, SocketAddress, InetAddress, InetSocketAddress, ConnectException }
 import java.util.concurrent.{ ConcurrentHashMap, Executor, Executors, CancellationException }
 import org.jboss.netty.bootstrap.{ ConnectionlessBootstrap, Bootstrap, ClientBootstrap, ServerBootstrap }
-import org.jboss.netty.buffer.ChannelBuffer
+import org.jboss.netty.buffer.{ChannelBuffers, ChannelBuffer}
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ ChannelGroupFuture, ChannelGroupFutureListener }
 import org.jboss.netty.channel.socket.nio.{ NioDatagramChannelFactory, NioServerSocketChannelFactory, NioClientSocketChannelFactory }
@@ -348,13 +348,22 @@ class NettyTransport(private val settings: NettyTransportSettings, private val s
   }
 
   override def shutdown(): Unit = {
-    channelGroup.unbind()
-    channelGroup.disconnect().addListener(new ChannelGroupFutureListener {
+    // Force flush by trying to write an empty buffer and wait for success
+    channelGroup.write(ChannelBuffers.buffer(0)).addListener(new ChannelGroupFutureListener {
       def operationComplete(future: ChannelGroupFuture) {
-        channelGroup.close()
-        inboundBootstrap.releaseExternalResources()
+        channelGroup.unbind()
+        channelGroup.disconnect().addListener(new ChannelGroupFutureListener {
+          def operationComplete(future: ChannelGroupFuture) {
+            channelGroup.close().addListener(new ChannelGroupFutureListener {
+              def operationComplete(future: ChannelGroupFuture) {
+                inboundBootstrap.releaseExternalResources()
+              }
+            })
+          }
+        })
       }
     })
+
   }
 
 }
