@@ -37,8 +37,9 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
 
   override def afterEach {
     runOn(local) {
-      testConductor.throttle(local, remote, Direction.Both, -1).await
+      testConductor.passThrough(local, remote, Direction.Both).await
     }
+    enterBarrier("after-each")
   }
 
   @volatile var target: ActorRef = system.deadLetters
@@ -46,8 +47,8 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
 
   def expectState(s: State) = expectMsg(FSM.CurrentState(proxy, s))
   def expectTransition(s1: State, s2: State) = expectMsg(FSM.Transition(proxy, s1, s2))
-  
-  def sendN(n: Int) =  (1 to n) foreach (proxy ! _)
+
+  def sendN(n: Int) = (1 to n) foreach (proxy ! _)
   def expectN(n: Int) = (1 to n) foreach { n ⇒ expectMsg(n); lastSender must be === target }
 
   "A ReliableProxy" must {
@@ -82,6 +83,8 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(remote) {
         expectMsg("hello")
       }
+
+      enterBarrier("initialize-done")
     }
 
     "forward messages in sequence" in {
@@ -95,9 +98,9 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectN(100)
         }
       }
-      
+
       enterBarrier("test1a")
-      
+
       runOn(local) {
         sendN(100)
         expectTransition(Idle, Active)
@@ -108,7 +111,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectN(100)
         }
       }
-      
+
       enterBarrier("test1b")
     }
 
@@ -121,17 +124,17 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectNoMsg
         }
       }
-      
+
       enterBarrier("test2a")
-      
+
       runOn(remote) {
         expectNoMsg(0 seconds)
       }
-      
+
       enterBarrier("test2b")
-      
+
       runOn(local) {
-        testConductor.throttle(local, remote, Direction.Send, -1).await
+        testConductor.passThrough(local, remote, Direction.Send).await
         within(5 seconds) { expectTransition(Active, Idle) }
       }
       runOn(remote) {
@@ -139,7 +142,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectN(100)
         }
       }
-      
+
       enterBarrier("test2c")
     }
 
@@ -157,14 +160,14 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectN(100)
         }
       }
-      
+
       enterBarrier("test3a")
-      
+
       runOn(local) {
-        testConductor.throttle(local, remote, Direction.Receive, -1).await
+        testConductor.passThrough(local, remote, Direction.Receive).await
         within(5 seconds) { expectTransition(Active, Idle) }
       }
-      
+
       enterBarrier("test3b")
     }
 
@@ -182,11 +185,11 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectN(50)
         }
       }
-      
+
       enterBarrier("test4a")
-      
+
       runOn(local) {
-        testConductor.throttle(local, remote, Direction.Send, rateMBit = -1).await
+        testConductor.passThrough(local, remote, Direction.Send).await
         testConductor.throttle(local, remote, Direction.Receive, rateMBit = 0.1).await
         sendN(50)
         within(5 seconds) {
@@ -199,8 +202,8 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           expectN(50)
         }
       }
-      
-      enterBarrier("test4a")
+
+      enterBarrier("test4b")
     }
 
   }

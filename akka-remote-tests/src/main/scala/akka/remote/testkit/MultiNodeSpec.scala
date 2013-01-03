@@ -87,8 +87,8 @@ abstract class MultiNodeConfig {
 
   /**
    * To be able to use `blackhole`, `passThrough`, and `throttle` you must
-   * activate the TestConductorTranport by specifying
-   * `testTransport(on = true)` in your MultiNodeConfig.
+   * activate the failure injector and throttler transport adapters by
+   * specifying `testTransport(on = true)` in your MultiNodeConfig.
    */
   def testTransport(on: Boolean): Unit = _testTransport = on
 
