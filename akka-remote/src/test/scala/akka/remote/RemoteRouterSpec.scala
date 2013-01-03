@@ -70,7 +70,7 @@ akka.actor.deployment {
 }""").withFallback(system.settings.config)
   val otherSystem = ActorSystem("remote-sys", conf)
 
-  override def atTermination() {
+  override def afterTermination() {
     otherSystem.shutdown()
   }
 
@@ -217,6 +217,11 @@ akka.actor.deployment {
       expectMsgType[ActorKilledException]
     }
 
+  }
+
+  override def beforeTermination() {
+    system.eventStream.publish(TestEvent.Mute(
+      EventFilter.warning(pattern = "received dead letter.*Disassociate")))
   }
 
 }

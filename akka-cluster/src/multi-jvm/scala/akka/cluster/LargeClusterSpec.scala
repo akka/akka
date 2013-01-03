@@ -100,7 +100,7 @@ abstract class LargeClusterSpec
    */
   override def cluster: Cluster = Cluster(system)
 
-  override def atTermination(): Unit = {
+  override def afterTermination(): Unit = {
     systems foreach { _.shutdown }
     val shutdownTimeout = 20.seconds
     val deadline = Deadline.now + shutdownTimeout

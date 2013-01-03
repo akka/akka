@@ -202,7 +202,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         codec,
         failureDetector)))
 
-      Await.result(statusPromise.future, 3 seconds) match {
+      Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
           h.remoteAddress must be === remoteAkkaAddress
           h.localAddress must be === localAkkaAddress
@@ -241,7 +241,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       // finish connection by sending back a payload
       reader ! testPayload
 
-      Await.result(statusPromise.future, 3 seconds) match {
+      Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
           h.remoteAddress must be === remoteAkkaAddress
           h.localAddress must be === localAkkaAddress
@@ -315,7 +315,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         codec,
         failureDetector)))
 
-      Await.result(statusPromise.future, 3 seconds) match {
+      Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
           h.remoteAddress must be === remoteAkkaAddress
           h.localAddress must be === localAkkaAddress
@@ -341,7 +341,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         codec,
         failureDetector)))
 
-      val wrappedHandle = Await.result(statusPromise.future, 3 seconds) match {
+      val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
           h.remoteAddress must be === remoteAkkaAddress
           h.localAddress must be === localAkkaAddress
@@ -379,7 +379,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       // Finish association with a heartbeat -- pushes state out of WaitActivity
       reader ! testHeartbeat
 
-      val wrappedHandle = Await.result(statusPromise.future, 3 seconds) match {
+      val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
           h.remoteAddress must be === remoteAkkaAddress
           h.localAddress must be === localAkkaAddress
@@ -412,7 +412,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         codec,
         failureDetector)))
 
-      val wrappedHandle = Await.result(statusPromise.future, 3 seconds) match {
+      val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
           h.remoteAddress must be === remoteAkkaAddress
           h.localAddress must be === localAkkaAddress
@@ -448,7 +448,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         codec,
         failureDetector)))
 
-      val wrappedHandle = Await.result(statusPromise.future, 3 seconds) match {
+      val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
           h.remoteAddress must be === remoteAkkaAddress
           h.localAddress must be === localAkkaAddress
