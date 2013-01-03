@@ -237,15 +237,15 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       expectMsg("postStop")
     }
 
-    "shut down more logging" in {
-      system.eventStream.publish(TestEvent.Mute(
-        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
-      other.eventStream.publish(TestEvent.Mute(
-        EventFilter[EndpointException](),
-        EventFilter.error(start = "AssociationError"),
-        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
-    }
+  }
 
+  override def beforeTermination() {
+    system.eventStream.publish(TestEvent.Mute(
+      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+    other.eventStream.publish(TestEvent.Mute(
+      EventFilter[EndpointException](),
+      EventFilter.error(start = "AssociationError"),
+      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
   }
 
 }

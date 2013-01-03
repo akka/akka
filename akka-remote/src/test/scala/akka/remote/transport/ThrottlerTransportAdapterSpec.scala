@@ -76,14 +76,17 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
       expectMsgPF((TotalTime + 3).seconds) {
         case time: Long ⇒ log.warning("Total time of transmission: " + NANOSECONDS.toSeconds(time))
       }
-      system.eventStream.publish(TestEvent.Mute(
-        EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
-        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
-      systemB.eventStream.publish(TestEvent.Mute(
-        EventFilter[EndpointException](),
-        EventFilter.error(start = "AssociationError"),
-        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
     }
+  }
+
+  override def beforeTermination() {
+    system.eventStream.publish(TestEvent.Mute(
+      EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
+      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
+    systemB.eventStream.publish(TestEvent.Mute(
+      EventFilter[EndpointException](),
+      EventFilter.error(start = "AssociationError"),
+      EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))
   }
 
   override def atTermination(): Unit = systemB.shutdown()

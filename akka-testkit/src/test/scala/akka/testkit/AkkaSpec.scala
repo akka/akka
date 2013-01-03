@@ -70,6 +70,7 @@ abstract class AkkaSpec(_system: ActorSystem)
   }
 
   final override def afterAll {
+    beforeTermination()
     system.shutdown()
     try system.awaitTermination(5 seconds) catch {
       case _: TimeoutException ⇒
@@ -80,6 +81,8 @@ abstract class AkkaSpec(_system: ActorSystem)
   }
 
   protected def atStartup() {}
+
+  protected def beforeTermination() {}
 
   protected def atTermination() {}
 

@@ -219,4 +219,9 @@ akka.actor.deployment {
 
   }
 
+  override def beforeTermination() {
+    system.eventStream.publish(TestEvent.Mute(
+      EventFilter.warning(pattern = "received dead letter.*Disassociate")))
+  }
+
 }
